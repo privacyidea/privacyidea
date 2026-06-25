@@ -173,6 +173,11 @@
                        ng-model="form.options[optionname]"
                        ng-if="option.type==='str' && !option.value">
 
+                <input type="number" class="form-control"
+                       ng-required="option.required && !option.value"
+                       ng-model="form.options[optionname]"
+                       ng-if="option.type==='int' && !option.value">
+
                 <input type="checkbox"
                        ng-model="form.options[optionname]"
                        ng-if="option.type==='bool' && !option.value">

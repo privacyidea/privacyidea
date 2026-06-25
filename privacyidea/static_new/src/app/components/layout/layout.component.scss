@@ -2,12 +2,10 @@
 @use "table";
 
 .layout {
-  &:has(.self-service-layout) {
-    --max-height: calc(100vh - 64px - var(--global-padding) * 2);
-  }
+  --max-height: calc(100vh - 64px - var(--global-padding) * 2);
 
-  &:has(.admin-layout) {
-    --max-height: calc(100vh - 192px - var(--global-padding) * 2);
+  &.with-secondary-toolbar {
+    --max-height: calc(100vh - 176px - var(--global-padding) * 2);
   }
 }
 
@@ -30,7 +28,7 @@
 
 .loading-url {
   margin-left: auto;
-  margin-right: 16px;
+  margin-right: var(--global-padding);
   margin-bottom: 2px;
   color: var(--mat-sys-primary);
   opacity: 0.33;
@@ -47,6 +45,7 @@
   display: flex;
   justify-content: center;
   align-items: baseline;
+  padding: var(--global-padding);
 }
 
 .self-service-layout {

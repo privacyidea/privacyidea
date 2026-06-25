@@ -28,7 +28,7 @@ import { NotificationService } from "@services/notification/notification.service
 import { SubscriptionService } from "@services/subscription/subscription.service";
 import { MockDialogService, MockNotificationService, MockPiResponse } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
-import { MockSubscriptionService } from "@testing/mock-services/mock-subscription-serivce";
+import { MockSubscriptionService } from "@testing/mock-services/mock-subscription-service";
 import { of } from "rxjs";
 import { SubscriptionComponent } from "./subscription.component";
 
