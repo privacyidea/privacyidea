@@ -18,20 +18,29 @@
  **/
 import { NgClass, NgOptimizedImage, NgTemplateOutlet } from "@angular/common";
 import { AfterViewInit, Component, computed, ElementRef, inject, OnDestroy, signal, ViewChild } from "@angular/core";
-import { MatIconButton } from "@angular/material/button";
+import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
 import { MatMenuModule } from "@angular/material/menu";
 import { MatToolbar } from "@angular/material/toolbar";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { Router, RouterLink } from "@angular/router";
+import { WidgetPaletteComponent } from "@components/dashboard/widget-palette/widget-palette.component";
 import { UserUtilsPanelComponent } from "@components/layout/user-utils-panel/user-utils-panel.component";
 import { environment } from "@env/environment";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ConfigService, ConfigServiceInterface } from "@services/config/config.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import {
+  DashboardLayoutService,
+  DashboardLayoutServiceInterface
+} from "@services/dashboard/dashboard-layout.service";
 import { DocumentationService, DocumentationServiceInterface } from "@services/documentation/documentation.service";
 import { EventService, EventServiceInterface } from "@services/event/event.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import {
+  PendingChangesService,
+  PendingChangesServiceInterface
+} from "@services/pending-changes/pending-changes.service";
 import { PeriodicTaskService } from "@services/periodic-task/periodic-task.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { SessionTimerService, SessionTimerServiceInterface } from "@services/session-timer/session-timer.service";
@@ -65,6 +74,7 @@ export interface SubNavSection {
   host: { "[class.has-custom-logo]": "customLogo()" },
   imports: [
     MatToolbar,
+    MatButton,
     MatIconButton,
     MatIconModule,
     NgOptimizedImage,
@@ -75,7 +85,8 @@ export interface SubNavSection {
     UserUtilsPanelComponent,
     NgTemplateOutlet,
     MatMenuModule,
-    OverflowNavDirective
+    OverflowNavDirective,
+    WidgetPaletteComponent
   ],
   templateUrl: "./navigation.component.html",
   styleUrl: "./navigation.component.scss"
@@ -93,12 +104,15 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
   protected readonly eventService: EventServiceInterface = inject(EventService);
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly configService: ConfigServiceInterface = inject(ConfigService);
+  protected readonly dashboardLayoutService: DashboardLayoutServiceInterface = inject(DashboardLayoutService);
+  private readonly pendingChanges: PendingChangesServiceInterface = inject(PendingChangesService);
   protected readonly router = inject(Router);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   private itemWidths = new Map<string, number>();
   private resizeObserver: ResizeObserver | null = null;
   @ViewChild("mainNavRef", { static: false }) mainNavRef!: ElementRef<HTMLElement>;
   primaryNavItems: NavItem[] = [
+    { icon: "dashboard", label: $localize`Dashboard`, route: ROUTE_PATHS.DASHBOARD, section: "dashboard" },
     { icon: "shield", label: $localize`Token`, route: ROUTE_PATHS.TOKENS, section: "token" },
     { icon: "folder", label: $localize`Container`, route: ROUTE_PATHS.CONTAINERS, section: "container" },
     { icon: "supervised_user_circle", label: $localize`Users`, route: ROUTE_PATHS.USERS, section: "users" },
@@ -119,6 +133,7 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
     }
   ];
   visibleNavCount = signal(this.primaryNavItems.length);
+  landingPage = computed(() => (this.authService.adminDashboard() ? ROUTE_PATHS.DASHBOARD : ROUTE_PATHS.TOKENS));
   customLogo = computed(() => {
     if (!this.configService.config()?.logo) {
       return null;
@@ -133,6 +148,7 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
   });
   activeSection = computed(() => {
     const url = this.contentService.routeUrl();
+    if (url.startsWith(ROUTE_PATHS.DASHBOARD)) return "dashboard";
     if (url.startsWith(ROUTE_PATHS.CONTAINERS)) return "container";
     if (url.startsWith(ROUTE_PATHS.USERS)) return "users";
     if (url.startsWith(ROUTE_PATHS.POLICIES)) return "policies";
@@ -199,9 +215,31 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
     window.open(url, "_blank");
   }
 
+  enterDashboardEdit(): void {
+    this.dashboardLayoutService.beginEdit();
+    this.pendingChanges.registerHasChanges(() => this.dashboardLayoutService.hasPendingChanges());
+    this.pendingChanges.registerValidChanges(() => true);
+    this.pendingChanges.registerSave(() => {
+      this.dashboardLayoutService.saveEdit();
+      return Promise.resolve(true);
+    });
+  }
+
+  saveDashboard(): void {
+    this.dashboardLayoutService.saveEdit();
+    this.pendingChanges.clearAllRegistrations();
+  }
+
+  cancelDashboard(): void {
+    this.dashboardLayoutService.cancelEdit();
+    this.pendingChanges.clearAllRegistrations();
+  }
+
   private getFilteredNavItems(): NavItem[] {
     return this.primaryNavItems.filter((item) => {
       switch (item.section) {
+        case "dashboard":
+          return this.authService.adminDashboard();
         case "token":
           return this.authService.anyTokenActionAllowed();
         case "container":
