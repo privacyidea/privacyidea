@@ -9,3 +9,8 @@
     ".table-scroll-container"
   );
 }
+
+.cell-scroll {
+  max-height: 120px;
+  overflow-y: auto;
+}

@@ -150,6 +150,8 @@ const columnKeysMap: { key: string; label: string; filterable: boolean; sortable
 export class AuthenticationLog {
   readonly columnKeysMap = columnKeysMap;
   readonly eventTypeOptions: readonly string[] = AUTH_EVENT_TYPES.map((entry) => entry.value);
+  // Cells whose content can grow tall (stacked serials, long JSON) get a capped, scrollable cell.
+  readonly scrollableColumnKeys = ["serial", "other_info"];
   // Client filter: show the friendly user-agent name, filter by its identifier prefix (a trailing "*" is applied by
   // the multi-select component since client_label stores the full user-agent string incl. version).
   readonly clientLabelOptions: readonly MultiSelectFilterOption[] = USER_AGENT_PRESETS.map((preset) => ({
