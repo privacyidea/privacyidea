@@ -1,0 +1,18 @@
+.filter-value-button {
+  background: unset;
+  border: unset;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  // Visibility hook: a parent can hide/reveal via --filter-button-opacity on an ancestor (default visible).
+  opacity: var(--filter-button-opacity, 1);
+  transition: opacity 0.15s ease-in-out;
+}
+
+.filter-value-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  color: var(--mat-sys-surface-container-high);
+}

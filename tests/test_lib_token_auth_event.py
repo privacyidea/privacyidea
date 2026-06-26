@@ -16,7 +16,7 @@
 # SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-from privacyidea.lib.conditional_access.authentication_error_codes import (AuthEventType, AUTH_EVENT_TYPE_KEY,
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
                                                                            REQUEST_EVENT_PRECEDENCE,
                                                                            reduce_request_events)
 from privacyidea.lib.policies.actions import PolicyAction
@@ -103,24 +103,53 @@ class AuthEventClassificationTestCase(MyTestCase):
             _res, reply = check_user_pass(self.user, "000000", options={"transaction_id": transaction_id})
             self.assertEqual(AuthEventType.CHALLENGE_ANSWERED_FAIL, reply.get(AUTH_EVENT_TYPE_KEY))
 
-            # Correct response (counter 0) -> challenge answered ok
+            # Correct response (counter 0) -> login success
             _res, reply = check_user_pass(self.user, "755224", options={"transaction_id": transaction_id})
-            self.assertEqual(AuthEventType.CHALLENGE_ANSWERED_OK, reply.get(AUTH_EVENT_TYPE_KEY))
+            self.assertEqual(AuthEventType.LOGIN_SUCCESS, reply.get(AUTH_EVENT_TYPE_KEY))
         finally:
             delete_policy("authevt_cr")
 
-    def test_08_otp_fail_otppin_none(self):
+    def test_08_token_only_fail_otppin_none(self):
         from privacyidea.lib.policy import PolicyClass
         set_policy("authevt_otppin_none", scope=SCOPE.AUTH, action=f"{PolicyAction.OTPPIN}=none")
         fake_g = FakeFlaskG()
         fake_g.policy_object = PolicyClass()
         fake_g.audit_object = FakeAudit()
         fake_g.client_ip = "10.0.0.1"
-        # OTPPIN=none: there is no first factor, so a wrong OTP is OTP_FAIL, not the high-signal MFA_FAIL.
+        # OTPPIN=none: there is no first factor, so only the token is verified -> TOKEN_ONLY_FAIL, not the
+        # high-signal MFA_FAIL.
         tokens = get_tokens(user=self.user)
         _res, reply = check_token_list(tokens, "000000", user=self.user, options={"g": fake_g})
-        self.assertEqual(AuthEventType.OTP_FAIL, reply.get(AUTH_EVENT_TYPE_KEY))
+        self.assertEqual(AuthEventType.TOKEN_ONLY_FAIL, reply.get(AUTH_EVENT_TYPE_KEY))
         delete_policy("authevt_otppin_none")
+
+    def test_09_token_only_success_otppin_none(self):
+        from privacyidea.lib.policy import PolicyClass
+        set_policy("authevt_otppin_none", scope=SCOPE.AUTH, action=f"{PolicyAction.OTPPIN}=none")
+        fake_g = FakeFlaskG()
+        fake_g.policy_object = PolicyClass()
+        fake_g.audit_object = FakeAudit()
+        fake_g.client_ip = "10.0.0.1"
+        # OTPPIN=none: only the token is verified, and the correct OTP succeeds -> LOGIN_SUCCESS.
+        tokens = get_tokens(user=self.user)
+        _res, reply = check_token_list(tokens, "755224", user=self.user, options={"g": fake_g})
+        self.assertEqual(AuthEventType.LOGIN_SUCCESS, reply.get(AUTH_EVENT_TYPE_KEY))
+        delete_policy("authevt_otppin_none")
+
+    def test_10_pin_given_when_otppin_none_is_pin_fail(self):
+        from privacyidea.lib.policy import PolicyClass
+        set_policy("authevt_otppin_none", scope=SCOPE.AUTH, action=f"{PolicyAction.OTPPIN}=none")
+        fake_g = FakeFlaskG()
+        fake_g.policy_object = PolicyClass()
+        fake_g.audit_object = FakeAudit()
+        fake_g.client_ip = "10.0.0.1"
+        # OTPPIN=none but a PIN is supplied anyway: the PIN check fails and the OTP is never checked, so this is a
+        # rejected first-factor attempt -> PIN_FAIL (matches PIN brute-force)
+        tokens = get_tokens(user=self.user)
+        _res, reply = check_token_list(tokens, "somepin755224", user=self.user, options={"g": fake_g})
+        self.assertEqual(AuthEventType.PIN_FAIL, reply.get(AUTH_EVENT_TYPE_KEY))
+        delete_policy("authevt_otppin_none")
+
 
 
 class RequestEventPrecedenceTestCase(MyTestCase):

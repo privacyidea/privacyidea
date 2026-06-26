@@ -1,0 +1,31 @@
+@use "styles";
+@use "table";
+
+.authentication-log-table-container {
+  @include styles.main-component-style;
+  @include table.base-table-structure(
+    ".authentication-log-table",
+    ".authentication-log-table-filter",
+    ".table-scroll-container"
+  );
+}
+
+.cell-scroll {
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+// Reveal the inline cell actions (filter + copy) only while the row is hovered or holds focus, to keep dense rows
+// calm. Both buttons live in child components and expose a `--*-button-opacity` hook; custom properties inherit
+// across the encapsulation boundary, so we drive their visibility from the row without reaching into them.
+// :focus-within keeps the actions reachable for keyboard/AT users.
+.authentication-log-table tr.mat-mdc-row {
+  --copy-button-opacity: 0;
+  --filter-button-opacity: 0;
+
+  &:hover,
+  &:focus-within {
+    --copy-button-opacity: 1;
+    --filter-button-opacity: 1;
+  }
+}

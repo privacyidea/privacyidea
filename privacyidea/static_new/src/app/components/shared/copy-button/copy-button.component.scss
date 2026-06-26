@@ -1,6 +1,13 @@
 @use "styles";
 @use "table";
 
+.copy-button {
+  // Visibility hook: a parent can hide/reveal the copy button by setting --copy-button-opacity on an ancestor
+  // (custom properties cross the component boundary). Defaults to fully visible.
+  opacity: var(--copy-button-opacity, 1);
+  transition: opacity 0.15s ease-in-out;
+}
+
 .copy-icon {
   font-size: var(--copy-icon-size, 16px);
   display: flex !important;

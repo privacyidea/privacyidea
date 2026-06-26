@@ -1,0 +1,58 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+<button
+  [matMenuTriggerFor]="menu"
+  class="filter-button"
+  i18n-matTooltip
+  mat-icon-button
+  matTooltip="Filter by {{ label() }}">
+  <mat-icon class="keyword-button-icon margin-left-0"> filter_list </mat-icon>
+</button>
+
+<mat-menu
+  #menu="matMenu"
+  class="filter-select-menu">
+  <!-- Custom-entry on top so it stays reachable with long option lists; it closes the menu and hands off to the
+       parent (which switches the main filter input to free-text for this key). -->
+  @if (allowCustom()) {
+    <button
+      (click)="onAddCustom()"
+      mat-menu-item>
+      <mat-icon>edit</mat-icon>
+      <span i18n>Enter Custom Value</span>
+    </button>
+  }
+  <button
+    (click)="clear()"
+    mat-menu-item>
+    <mat-icon>filter_alt_off</mat-icon>
+    <span i18n>Clear Filter</span>
+  </button>
+  <mat-divider />
+  <!-- Each click toggles one value; stopPropagation keeps the menu open for further selections. -->
+  @for (option of normalizedOptions(); track option.value) {
+    <button
+      (click)="$event.stopPropagation(); toggle(option)"
+      mat-menu-item>
+      <mat-icon>{{ isSelected(option) ? "check_box" : "check_box_outline_blank" }}</mat-icon>
+      <span>{{ option.label }}</span>
+    </button>
+  }
+</mat-menu>

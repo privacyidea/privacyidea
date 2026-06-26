@@ -38,6 +38,7 @@ export interface ContentServiceInterface {
 
   onLogin: Signal<boolean>;
   onAudit: Signal<boolean>;
+  onAuthenticationLog: Signal<boolean>;
   onClients: Signal<boolean>;
   onTokens: Signal<boolean>;
   onUsers: Signal<boolean>;
@@ -115,6 +116,7 @@ export class ContentService implements ContentServiceInterface {
   machineResolver = signal("");
   onLogin = computed(() => this.routeUrl() === ROUTE_PATHS.LOGIN);
   onAudit = computed(() => this.routeUrl() === ROUTE_PATHS.AUDIT);
+  onAuthenticationLog = computed(() => this.routeUrl() === ROUTE_PATHS.AUTHENTICATION_LOG);
   onClients = computed(() => this.routeUrl() === ROUTE_PATHS.CLIENTS);
   onTokens = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS);
   onUsers = computed(() => this.routeUrl() === ROUTE_PATHS.USERS);
