@@ -148,8 +148,10 @@
   <button
     type="button"
     (click)="openSupport()"
-    aria-label="Support"
+    aria-label="Get enterprise support"
     i18n-aria-label
+    matTooltip="Get enterprise support"
+    i18n-matTooltip
     class="nav-button support-color docs-button-full">
     <mat-icon>support_agent</mat-icon>
     <span i18n>Support</span>
@@ -157,9 +159,9 @@
   <button
     mat-icon-button
     (click)="openSupport()"
-    aria-label="Support"
+    aria-label="Get enterprise support"
     i18n-aria-label
-    matTooltip="Support"
+    matTooltip="Get enterprise support"
     i18n-matTooltip
     class="support-color docs-button-icon">
     <mat-icon>support_agent</mat-icon>
@@ -182,6 +184,15 @@
     i18n-matTooltip
     class="docs-button-icon">
     <mat-icon>info_outline</mat-icon>
+  </button>
+  <button
+    mat-icon-button
+    (click)="openExternalLink('https://hosted.weblate.org/projects/privacyidea/privacyidea-webui-next/')"
+    aria-label="Help translate"
+    i18n-aria-label
+    matTooltip="Help translate this interface on Weblate"
+    i18n-matTooltip>
+    <mat-icon>translate</mat-icon>
   </button>
   <span class="version-text">
     <span class="version-prefix">
