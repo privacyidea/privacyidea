@@ -73,7 +73,6 @@ export class MachineResolverHostsTabComponent implements OnInit {
 
   isValid(data: MachineResolverData): boolean {
     if (data.type !== "hosts") return false;
-    if ((data as HostsMachineResolverData).filename?.trim() === "") return false;
-    return true;
+    return !!(data as HostsMachineResolverData).filename?.trim();
   }
 }

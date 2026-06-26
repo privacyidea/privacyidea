@@ -25,7 +25,7 @@
           matInput
           placeholder="ldap://privacyidea.server1, ldap://privacyidea.server2"
           [disabled]="!isEditMode()"
-          [value]="hostsData().LDAPURI"
+          [value]="hostsData().LDAPURI ?? ''"
           (input)="updateData({ LDAPURI: $event.target['value'] })" />
       </mat-form-field>
     </div>
@@ -47,7 +47,7 @@
             matInput
             placeholder="/etc/privacyidea/ldap-ca.crt"
             [disabled]="!isEditMode()"
-            [value]="hostsData().TLS_CA_FILE"
+            [value]="hostsData().TLS_CA_FILE ?? ''"
             (input)="updateData({ TLS_CA_FILE: $event.target['value'] })" />
           <mat-hint i18n="@@tlsCaFileHint">
             Path to a CA certificate file to verify the LDAP server's TLS certificate.
@@ -64,7 +64,7 @@
           matInput
           placeholder="ou=users,dc=domain,dc=tld"
           [disabled]="!isEditMode()"
-          [value]="hostsData().LDAPBASE"
+          [value]="hostsData().LDAPBASE ?? ''"
           (input)="updateData({ LDAPBASE: $event.target['value'] })" />
       </mat-form-field>
       <mat-form-field>
@@ -73,7 +73,7 @@
           matInput
           placeholder="cn=admin,ou=users,dc=domain,dc=tld"
           [disabled]="!isEditMode()"
-          [value]="hostsData().BINDDN"
+          [value]="hostsData().BINDDN ?? ''"
           (input)="updateData({ BINDDN: $event.target['value'] })" />
       </mat-form-field>
     </div>
@@ -86,7 +86,7 @@
           matInput
           placeholder="topsecret"
           [disabled]="!isEditMode()"
-          [value]="hostsData().BINDPW"
+          [value]="hostsData().BINDPW ?? ''"
           (input)="updateData({ BINDPW: $event.target['value'] })" />
       </mat-form-field>
 
@@ -111,7 +111,7 @@
           matInput
           placeholder="5"
           [disabled]="!isEditMode()"
-          [value]="hostsData().TIMEOUT"
+          [value]="hostsData().TIMEOUT ?? ''"
           (input)="updateData({ TIMEOUT: $event.target['value'] })" />
       </mat-form-field>
 
@@ -122,7 +122,7 @@
           matInput
           placeholder="500"
           [disabled]="!isEditMode()"
-          [value]="hostsData().SIZELIMIT"
+          [value]="hostsData().SIZELIMIT ?? ''"
           (input)="updateData({ SIZELIMIT: $event.target['value'] })" />
       </mat-form-field>
     </div>
@@ -157,7 +157,7 @@
           matInput
           placeholder="DN"
           [disabled]="!isEditMode()"
-          [value]="hostsData().IDATTRIBUTE"
+          [value]="hostsData().IDATTRIBUTE ?? ''"
           (input)="updateData({ IDATTRIBUTE: $event.target['value'] })" />
         <mat-hint i18n="@@idAttributeHint"> An attribute or DN to identify the machine </mat-hint>
       </mat-form-field>
@@ -168,7 +168,7 @@
           matInput
           placeholder="(objectClass=computer)"
           [disabled]="!isEditMode()"
-          [value]="hostsData().SEARCHFILTER"
+          [value]="hostsData().SEARCHFILTER ?? ''"
           (input)="updateData({ SEARCHFILTER: $event.target['value'] })" />
       </mat-form-field>
     </div>
@@ -180,7 +180,7 @@
           matInput
           placeholder="dNSHostName"
           [disabled]="!isEditMode()"
-          [value]="hostsData().HOSTNAMEATTRIBUTE"
+          [value]="hostsData().HOSTNAMEATTRIBUTE ?? ''"
           (input)="updateData({ HOSTNAMEATTRIBUTE: $event.target['value'] })" />
       </mat-form-field>
       <mat-form-field>
@@ -188,7 +188,7 @@
         <input
           matInput
           [disabled]="!isEditMode()"
-          [value]="hostsData().IPATTRIBUTE"
+          [value]="hostsData().IPATTRIBUTE ?? ''"
           (input)="updateData({ IPATTRIBUTE: $event.target['value'] })" />
         <mat-hint i18n="@@ipAttributeHint">An attribute that contains the IP address of the machine. </mat-hint>
       </mat-form-field>
