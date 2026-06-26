@@ -23,6 +23,7 @@ import logging
 
 from sqlalchemy import select
 
+from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType, AUTH_EVENT_TYPE_KEY
 from privacyidea.lib.container import find_container_for_token
 from privacyidea.lib.crypto import hash_with_pepper, verify_with_pepper
 from privacyidea.lib.log import log_with
@@ -148,9 +149,13 @@ def check_webui_user(user, password, options=None, superuser_realms=None, check_
         except Exception as e:
             log.debug(f"Error authenticating user against privacyIDEA: {e!r}")
     else:
-        # check the password of the user against the userstore
+        # check the password of the user against the user store
+        details = {}
         if user.check_password(password):
             user_auth = True
+            details[AUTH_EVENT_TYPE_KEY] = AuthEventType.LOGIN_SUCCESS
+        else:
+            details[AUTH_EVENT_TYPE_KEY] = AuthEventType.PASSWORD_FAIL
 
     # If the realm is in the SUPERUSER_REALM then the authorization role
     # is risen to "admin".

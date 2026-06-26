@@ -22,7 +22,6 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from flask_babel import _
 import json
 import logging
 import re
@@ -33,11 +32,10 @@ from copy import copy
 from urllib.parse import unquote
 
 import jwt
-from flask import (jsonify,
-                   current_app, Response)
+from flask import jsonify, current_app, Response, request, g
+from flask_babel import _
 
-from privacyidea.lib.utils import (prepare_result, get_version, to_unicode,
-                                   get_plugin_info_from_useragent)
+from privacyidea.lib.conditional_access.authentication_log import log_authentication_event
 # Re-exported from privacyidea.lib.params for backwards-compatibility with
 # callers that import these names from privacyidea.api.lib.utils.
 from privacyidea.lib.params import (  # noqa: F401
@@ -50,6 +48,7 @@ from privacyidea.lib.params import (  # noqa: F401
 )
 # check_policy_name lives in lib/policy; re-exported here for backward compatibility
 from privacyidea.lib.policy import check_policy_name  # noqa: F401
+from privacyidea.lib.utils import prepare_result, get_version, to_unicode, get_plugin_info_from_useragent
 from ...lib.error import (PolicyError, ResourceNotFoundError,
                           PrivacyIDEAError, AuthError, Error)
 from ...lib.log import log_with
@@ -83,7 +82,6 @@ NO_UNQUOTE_USER_AGENTS = {
 }
 
 SESSION_KEY_LENGTH = 32
-
 
 
 def send_result(obj, rid=1, details=None, **kwargs) -> Response:
@@ -230,6 +228,39 @@ def getLowerParams(param):
             lval = param[key]
             ret[lkey] = lval
     return ret
+
+
+def log_authentication(event_type, user=None, serial=None, transaction_id=None, login=None):
+    """
+    Write one authentication_log entry for the current request.
+
+    This is the single API-layer persistence point: the lib layer classifies
+    the outcome and the views call this to record it. ``source_ip`` uses the
+    same client-IP resolution as the audit log; ``client_label`` is the
+    ``client_id`` parameter if supplied, otherwise the User-Agent header.
+
+    The ``(resolver, uid, realm)`` identity tuple is only written for a resolved
+    user; an unresolvable user (e.g. USER_UNKNOWN) is logged with all three None.
+    ``login`` records the claimed username for forensics when there is no resolved
+    identity, stored in ``other_info``.
+    """
+    if not event_type:
+        log.debug("Not logging authentication event, because no event type is given.")
+        return
+    client_label = get_optional(request.all_data, "client_id") or (request.user_agent.string or None)
+    # TODO: replace by user function (after related PR is merged)
+    resolved = bool(user and user.resolver)
+    log_authentication_event(
+        event_type=event_type,
+        transaction_id=transaction_id,
+        resolver=user.resolver if resolved else None,
+        uid=user.uid if resolved else None,
+        realm=user.realm if resolved else None,
+        source_ip=g.client_ip,
+        client_label=client_label,
+        serial=serial,
+        other_info={"login": login} if login else None,
+    )
 
 
 def check_unquote(request, data):
@@ -381,8 +412,6 @@ def verify_auth_token(auth_token, required_role=None):
                           "role ({required_role}) to access this resource!").format(required_role=required_role),
                         id=Error.AUTHENTICATE_MISSING_RIGHT)
     return r
-
-
 
 
 def is_fqdn(x):
