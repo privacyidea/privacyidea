@@ -39,7 +39,7 @@ from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.token import get_tokens
 from .log import log_with
 from .utils import get_plugin_info_from_useragent
-from ..models import Subscription, db
+from ..models import ClientApplication, Subscription, db
 
 EXPIRE_MESSAGE = lazy_gettext("My subscription has expired.")
 SUBSCRIPTION_DATE_FORMAT = "%Y-%m-%d"
@@ -69,6 +69,7 @@ APPLICATIONS = {"demo_application": 0,
                 "privacyidea-ldap-proxy": 50,
                 "privacyidea-cp": 50,
                 "privacyidea-pam": 10000,
+                "pam-passkey": 10000,
                 "privacyidea-shibboleth": 10000,
                 "privacyidea-adfs": 50,
                 "privacyidea-keycloak": 10000,
@@ -76,6 +77,21 @@ APPLICATIONS = {"demo_application": 0,
                 "privacyidea-simplesamlphp": 10000,
                 "privacyidea authenticator": 10,
                 "privacyidea": 50}
+
+# Plugins shown on the dashboard subscription overview. The API response
+# preserves this order; the frontend re-sorts by status and uses this as
+# the per-bucket tiebreaker. Display names live on the frontend (see
+# ``pluginDisplayName`` in dashboardControllers.js).
+DASHBOARD_PLUGINS = [
+    "privacyidea-cp",
+    "privacyidea-adfs",
+    "privacyidea-pam",
+    "pam-passkey",
+    "privacyidea-shibboleth",
+    "privacyidea-keycloak",
+]
+
+EXPIRING_THRESHOLD_DAYS = 30
 
 log = logging.getLogger(__name__)
 
@@ -98,6 +114,147 @@ def get_users_with_active_tokens():
     result = db.session.execute(stmt)
     rows = result.all()
     return len(rows)
+
+
+def _classify_subscription_date(
+        date_till: datetime.datetime,
+        now: datetime.datetime) -> tuple[str, int]:
+    """
+    Map a subscription's ``date_till`` to a dashboard status. The caller is
+    responsible for handling the "no subscription on file" case before
+    calling this helper.
+
+    :return: ``(status, days_left)`` where status is one of ``"active"``,
+        ``"expiring"`` or ``"expired"``, and ``days_left`` is the integer
+        day delta (negative when expired).
+    """
+    days_left = (date_till - now).days
+    if date_till < now:
+        return "expired", days_left
+    if days_left < EXPIRING_THRESHOLD_DAYS:
+        return "expiring", days_left
+    return "active", days_left
+
+
+def get_plugin_subscription_status() -> list[dict]:
+    """
+    Return a dashboard status entry for each plugin in :data:`DASHBOARD_PLUGINS`.
+
+    Each entry has a ``status`` field. Possible values, with the colour the
+    frontend dashboard maps them to:
+
+    * ``active`` (green) — used, valid subscription, at least
+      :data:`EXPIRING_THRESHOLD_DAYS` days left.
+    * ``expiring`` (orange) — used, valid subscription, within
+      :data:`EXPIRING_THRESHOLD_DAYS` days of expiry.
+    * ``expired`` (red) — used, subscription exists but ``date_till`` is in
+      the past. Distinct from ``no_subscription`` so the dashboard can
+      surface former customers whose subscription lapsed.
+    * ``no_subscription`` (orange) — used, no subscription on file, token-user
+      count still within the free limit from :data:`APPLICATIONS`.
+    * ``exceeded`` (red) — used, no subscription on file, token-user count
+      exceeds the free limit.
+    * ``unused`` (grey) — plugin has not contacted this server.
+
+    Plugin usage is derived from the ``ClientApplication`` table by parsing
+    each stored user-agent string with
+    :func:`~privacyidea.lib.utils.get_plugin_info_from_useragent`.
+
+    :return: list of dicts in the order of :data:`DASHBOARD_PLUGINS`. Each
+        dict has the keys ``application``, ``status``, ``last_seen``,
+        ``date_till`` and ``days_left``.
+    :rtype: list[dict]
+    """
+    stmt = (
+        select(ClientApplication.clienttype,
+               func.max(ClientApplication.lastseen).label("max_lastseen"))
+        .group_by(ClientApplication.clienttype)
+    )
+    last_seen_by_plugin: dict[str, datetime.datetime] = {}
+    for clienttype, max_lastseen in db.session.execute(stmt).all():
+        # MAX() can return NULL when every row for a clienttype has a NULL
+        # lastseen; skip those so a later real timestamp doesn't compare
+        # against None.
+        if max_lastseen is None:
+            continue
+        plugin = get_plugin_info_from_useragent(clienttype)[0]
+        if not plugin:
+            continue
+        key = plugin.lower()
+        current = last_seen_by_plugin.get(key)
+        if current is None or max_lastseen > current:
+            last_seen_by_plugin[key] = max_lastseen
+
+    # Batch-load every subscription once instead of per-plugin lookups.
+    # Sort by date_till ascending so that, when multiple rows exist for the
+    # same application, the dict ends up keyed to the row with the latest
+    # date_till — deterministic regardless of DB iteration order.
+    all_subscriptions = sorted(get_subscription(),
+                               key=lambda s: s.get("date_till") or datetime.datetime.min)
+    # Subscription.application is nullable and Subscription.get() omits None
+    # fields, so a row with application=NULL has no "application" key.
+    subscriptions_by_app = {sub["application"].lower(): sub
+                            for sub in all_subscriptions
+                            if sub.get("application")}
+
+    # Lazily computed — only the no_subscription/exceeded branch needs it.
+    token_users: int | None = None
+    now = datetime.datetime.now()
+    overview = []
+    for plugin in DASHBOARD_PLUGINS:
+        entry = {"application": plugin,
+                 "last_seen": last_seen_by_plugin.get(plugin.lower()),
+                 "date_till": None,
+                 "days_left": None,
+                 "status": "unused"}
+        if entry["last_seen"] is None:
+            overview.append(entry)
+            continue
+
+        subscription = subscriptions_by_app.get(plugin.lower())
+        date_till = subscription.get("date_till") if subscription else None
+        if date_till:
+            status, days_left = _classify_subscription_date(date_till, now)
+            entry["date_till"] = date_till
+            entry["days_left"] = days_left
+            entry["status"] = status
+        else:
+            if token_users is None:
+                token_users = get_users_with_active_tokens()
+            free_limit = APPLICATIONS[plugin.lower()]
+            entry["status"] = "exceeded" if token_users > free_limit else "no_subscription"
+        overview.append(entry)
+    return overview
+
+
+def get_server_subscription_status() -> dict:
+    """
+    Dashboard status entry for the privacyIDEA server itself. Same shape as
+    entries from :func:`get_plugin_subscription_status` plus ``is_server: True``.
+    Lets the frontend render the server row without duplicating the
+    :data:`EXPIRING_THRESHOLD_DAYS` rule.
+
+    :rtype: dict
+    """
+    entry = {"application": "privacyidea",
+             "is_server": True,
+             "last_seen": None,
+             "date_till": None,
+             "days_left": None,
+             "status": "no_subscription"}
+    # Pick the row with the latest date_till for determinism when multiple
+    # server subscriptions exist.
+    subscriptions = sorted(get_subscription("privacyidea"),
+                           key=lambda s: s.get("date_till") or datetime.datetime.min,
+                           reverse=True)
+    subscription = subscriptions[0] if subscriptions else None
+    date_till = subscription.get("date_till") if subscription else None
+    if date_till:
+        status, days_left = _classify_subscription_date(date_till, datetime.datetime.now())
+        entry["date_till"] = date_till
+        entry["days_left"] = days_left
+        entry["status"] = status
+    return entry
 
 
 def subscription_status(component="privacyidea", tokentype=None):
