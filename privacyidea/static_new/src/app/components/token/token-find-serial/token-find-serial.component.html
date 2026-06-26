@@ -56,9 +56,13 @@
       [disabled]="otpValue() === ''"
       class="action-button-primary button-width-m margin-bottom-16"
       mat-stroked-button>
-      <mat-icon>{{ currentStep() !== "searching" ? "play_arrow" : "stop" }}</mat-icon>
-      {{ currentStep() !== "searching" ? "Run" : "Stop" }}
-      <span i18n>Search</span>
+      @if (currentStep() !== "searching") {
+        <mat-icon>play_arrow</mat-icon>
+        <span i18n>Run Search</span>
+      } @else {
+        <mat-icon>stop</mat-icon>
+        <span i18n>Stop Search</span>
+      }
     </button>
   </div>
   <div class="margin-left-16">

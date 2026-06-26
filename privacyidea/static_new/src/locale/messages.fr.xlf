@@ -16649,6 +16649,14 @@
         <source>Generate System Documentation</source>
         <target>Générer la documentation système</target>
       </trans-unit>
+      <trans-unit id="4403428470348449365" datatype="html">
+        <source>Run Search</source>
+        <target>Lancer la recherche</target>
+      </trans-unit>
+      <trans-unit id="3806403282349267238" datatype="html">
+        <source>Stop Search</source>
+        <target>Arrêter la recherche</target>
+      </trans-unit>
     </body>
   </file>
 </xliff>

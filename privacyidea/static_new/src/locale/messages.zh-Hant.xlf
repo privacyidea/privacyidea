@@ -16649,6 +16649,14 @@
         <source>Generate System Documentation</source>
         <target>產生系統文件</target>
       </trans-unit>
+      <trans-unit id="4403428470348449365" datatype="html">
+        <source>Run Search</source>
+        <target>開始搜尋</target>
+      </trans-unit>
+      <trans-unit id="3806403282349267238" datatype="html">
+        <source>Stop Search</source>
+        <target>停止搜尋</target>
+      </trans-unit>
     </body>
   </file>
 </xliff>

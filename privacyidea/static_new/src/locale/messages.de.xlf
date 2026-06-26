@@ -7075,7 +7075,7 @@
         <target> Ein Open-Source-Projekt <x id="START_LINK" ctype="x-a" equiv-text="&lt;a
           href=&quot;https://netknights.it/&quot;
           target=&quot;_blank&quot;
-          &gt;"/>gepflegt von NetKnights <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/></target>
+          &gt;"/>entwickelt von NetKnights <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/navigation/navigation.component.html</context>
           <context context-type="linenumber">109,116</context>
@@ -7086,10 +7086,10 @@
           href=&quot;https://github.com/privacyidea/privacyidea&quot;
           target=&quot;_blank&quot;
           &gt;"/>community contributors <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/></source>
-        <target> in Zusammenarbeit mit <x id="START_LINK" ctype="x-a" equiv-text="&lt;a
+        <target> in Zusammenarbeit mit der <x id="START_LINK" ctype="x-a" equiv-text="&lt;a
           href=&quot;https://github.com/privacyidea/privacyidea&quot;
           target=&quot;_blank&quot;
-          &gt;"/>Community-Mitwirkenden <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/></target>
+          &gt;"/>Community <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/navigation/navigation.component.html</context>
           <context context-type="linenumber">117,124</context>
@@ -16637,6 +16637,14 @@
       <trans-unit id="7578660057481779670" datatype="html">
         <source>Generate System Documentation</source>
         <target>Systemdokumentation generieren</target>
+      </trans-unit>
+      <trans-unit id="4403428470348449365" datatype="html">
+        <source>Run Search</source>
+        <target>Suche starten</target>
+      </trans-unit>
+      <trans-unit id="3806403282349267238" datatype="html">
+        <source>Stop Search</source>
+        <target>Suche stoppen</target>
       </trans-unit>
     </body>
   </file>
