@@ -145,6 +145,7 @@
                     </a>
                     <app-filter-value-button
                       class="margin-left-8"
+                      [label]="filterTooltip('serial')"
                       [value]="serial"
                       (filterValue)="addFilterValue('serial', '*' + $event + '*')" />
                   </app-copyable>
@@ -166,6 +167,7 @@
                     </a>
                     <app-filter-value-button
                       class="margin-left-8"
+                      [label]="filterTooltip('username')"
                       [value]="element.username"
                       (filterValue)="addFilterValue('username', $event)" />
                   </app-copyable>
@@ -192,6 +194,7 @@
                     </a>
                     <app-filter-value-button
                       class="margin-left-8"
+                      [label]="filterTooltip('resolver')"
                       [value]="element.resolver"
                       (filterValue)="addFilterValue('resolver', $event)" />
                   </app-copyable>
@@ -212,6 +215,7 @@
                     @if (showInlineCellFilter(column.key)) {
                       <app-filter-value-button
                         class="margin-left-8"
+                        [label]="filterTooltip(column.key)"
                         [value]="element[column.key]"
                         (filterValue)="addFilterValue(column.key, $event)" />
                     }

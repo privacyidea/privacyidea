@@ -102,19 +102,32 @@ const USER_SCOPED_COLUMN_KEYS = ["username", "realm", "resolver", "uid"];
 // `sortable` mirrors SORTABLE_COLUMNS in privacyidea/lib/conditional_access/authentication_log.py. Every column is
 // sortable except `other_info`, which is a JSON column the backend cannot order on meaningfully.
 const columnKeysMap: { key: string; label: string; filterable: boolean; sortable: boolean }[] = [
-  { key: "timestamp", label: "Timestamp", filterable: false, sortable: true },
-  { key: "event_type", label: "Event Type", filterable: true, sortable: true },
-  { key: "username", label: "User", filterable: true, sortable: true },
-  { key: "realm", label: "Realm", filterable: true, sortable: true },
-  { key: "resolver", label: "Resolver", filterable: true, sortable: true },
-  { key: "uid", label: "UID", filterable: true, sortable: true },
-  { key: "source_ip", label: "Source IP", filterable: true, sortable: true },
-  { key: "client_label", label: "Client", filterable: true, sortable: true },
-  { key: "serial", label: "Serial", filterable: true, sortable: true },
-  { key: "transaction_id", label: "Transaction ID", filterable: true, sortable: true },
-  { key: "previous_transaction_id", label: "Previous Transaction ID", filterable: true, sortable: true },
-  { key: "other_info", label: "Info", filterable: false, sortable: false }
+  { key: "timestamp", label: $localize`Timestamp`, filterable: false, sortable: true },
+  { key: "event_type", label: $localize`Event Type`, filterable: true, sortable: true },
+  { key: "username", label: $localize`User`, filterable: true, sortable: true },
+  { key: "realm", label: $localize`Realm`, filterable: true, sortable: true },
+  { key: "resolver", label: $localize`Resolver`, filterable: true, sortable: true },
+  { key: "uid", label: $localize`UID`, filterable: true, sortable: true },
+  { key: "source_ip", label: $localize`Source IP`, filterable: true, sortable: true },
+  { key: "client_label", label: $localize`Client`, filterable: true, sortable: true },
+  { key: "serial", label: $localize`Serial`, filterable: true, sortable: true },
+  { key: "transaction_id", label: $localize`Transaction ID`, filterable: true, sortable: true },
+  { key: "previous_transaction_id", label: $localize`Previous Transaction ID`, filterable: true, sortable: true },
+  { key: "other_info", label: $localize`Info`, filterable: false, sortable: false }
 ];
+
+// Full, independently-translatable tooltip per column that has an inline filter button. Kept as complete sentences
+// (not noun-interpolated) so each language can phrase determiner/grammar correctly; a column without an entry falls
+// back to the button's generic default.
+const FILTER_TOOLTIPS: Record<string, string> = {
+  username: $localize`Filter by this user`,
+  resolver: $localize`Filter by this resolver`,
+  uid: $localize`Filter by this UID`,
+  source_ip: $localize`Filter by this source IP`,
+  serial: $localize`Filter by this serial`,
+  transaction_id: $localize`Filter by this transaction ID`,
+  previous_transaction_id: $localize`Filter by this previous transaction ID`
+};
 
 @Component({
   selector: "app-authentication-log",
@@ -293,6 +306,11 @@ export class AuthenticationLog {
     if (columnKey === "client_label") return false;
     if (columnKey === "source_ip") return !this.showSourceIpMenu();
     return true;
+  }
+
+  // Localized tooltip for a cell's inline filter button, falling back to the generic phrasing.
+  filterTooltip(columnKey: string): string {
+    return FILTER_TOOLTIPS[columnKey] ?? $localize`Filter by this value`;
   }
 
   // Inline "filter by this value" action on a cell: add the value to the column's filter (a no-op if already there).
