@@ -16657,6 +16657,122 @@
         <source>Stop Search</source>
         <target>தேடலை நிறுத்து</target>
       </trans-unit>
+      <trans-unit id="2166204747375209188" datatype="html">
+        <source> By entering an OTP value you can get the serial number of the token. You can also enter additional optional parameters, to narrow down the search for the token. So you can only search within certain token types or in assigned or unassigned tokens. </source>
+        <target>OTP மதிப்பை உள்ளிடுவதன் மூலம் டோக்கனின் வரிசை எண்ணைப் பெறலாம். டோக்கனுக்கான தேடலைக் குறுக்க கூடுதல் விருப்ப அளவுருக்களையும் உள்ளிடலாம். இதன் மூலம் குறிப்பிட்ட டோக்கன் வகைகளில் அல்லது ஒதுக்கப்பட்ட அல்லது ஒதுக்கப்படாத டோக்கன்களில் மட்டும் தேடலாம்.</target>
+      </trans-unit>
+      <trans-unit id="6392899775498865074" datatype="html">
+        <source>The HOTP token is an event based token. With a smartphone app like the privacyIDEA Authenticator you can turn your smartphone into an authentication device.</source>
+        <target>HOTP டோக்கன் என்பது நிகழ்வு அடிப்படையிலான டோக்கன். privacyIDEA Authenticator போன்ற ஸ்மார்ட்போன் செயலியின் மூலம் உங்கள் ஸ்மார்ட்போனை அங்கீகார சாதனமாக மாற்றலாம்.</target>
+      </trans-unit>
+      <trans-unit id="2219912678330864666" datatype="html">
+        <source>The TOTP token is a time based token. With a smartphone app like the privacyIDEA Authenticator you can turn your smartphone into an authentication device.</source>
+        <target>TOTP டோக்கன் என்பது நேர அடிப்படையிலான டோக்கன். privacyIDEA Authenticator போன்ற ஸ்மார்ட்போன் செயலியின் மூலம் உங்கள் ஸ்மார்ட்போனை அங்கீகார சாதனமாக மாற்றலாம்.</target>
+      </trans-unit>
+      <trans-unit id="1360266651720144685" datatype="html">
+        <source>The Simple Pass Token does not take additional arguments. You only need to specify an OTP PIN.</source>
+        <target>Simple Pass டோக்கனுக்கு கூடுதல் அளவுருக்கள் தேவையில்லை. நீங்கள் ஒரு OTP PIN-ஐ மட்டும் குறிப்பிட வேண்டும்.</target>
+      </trans-unit>
+      <trans-unit id="5955717275094550179" datatype="html">
+        <source>The mOTP token is a time based OTP token for mobile devices. You can have the server generate the secret and scan the QR code.</source>
+        <target>mOTP டோக்கன் என்பது மொபைல் சாதனங்களுக்கான நேர அடிப்படையிலான OTP டோக்கன். ரகசியத்தை சர்வர் உருவாக்கச் செய்து QR குறியீட்டை ஸ்கேன் செய்யலாம்.</target>
+      </trans-unit>
+      <trans-unit id="9045310995152847776" datatype="html">
+        <source>The SSH Key Token stores the public SSH Key in the server. This can be used to authenticate to a secure shell.</source>
+        <target>SSH Key டோக்கன் பொது SSH விசையை சர்வரில் சேமிக்கிறது. இதை ஒரு பாதுகாப்பான ஷெல்லில் அங்கீகரிக்கப் பயன்படுத்தலாம்.</target>
+      </trans-unit>
+      <trans-unit id="1865447960052355160" datatype="html">
+        <source>The Yubikey Token is an USB device that emits an event based One Time Password. You can initialize the Yubikey using the YubiKey personalization tools. The secret hex key and the final OTP length are needed here. For tokens compatible with the Yubico cloud service the OTP length must be 44 (12 characters UID and 32 characters OTP). When programming the token for the Yubico cloud service, the Public Identity Length must be 6 bytes, which will give you a UID with 12 characters. The current OTP length of a programmed YubiKey can automatically be determined by inserting it in the test field.</source>
+        <target>Yubikey டோக்கன் என்பது நிகழ்வு அடிப்படையிலான ஒரு முறை கடவுச்சொல்லை வெளியிடும் USB சாதனம். YubiKey தனிப்பயனாக்கக் கருவிகளைப் பயன்படுத்தி Yubikey-ஐ துவக்கலாம். இங்கு ரகசிய hex விசையும் இறுதி OTP நீளமும் தேவை. Yubico cloud சேவையுடன் இணக்கமான டோக்கன்களுக்கு OTP நீளம் 44 ஆக இருக்க வேண்டும் (12 எழுத்து UID மற்றும் 32 எழுத்து OTP). Yubico cloud சேவைக்காக டோக்கனை நிரல் செய்யும்போது, Public Identity Length 6 பைட்டுகளாக இருக்க வேண்டும், இது 12 எழுத்து UID-ஐ வழங்கும். நிரல் செய்யப்பட்ட YubiKey-இன் தற்போதைய OTP நீளத்தை சோதனை புலத்தில் செருகுவதன் மூலம் தானாக கண்டறியலாம்.</target>
+      </trans-unit>
+      <trans-unit id="8384046806629419904" datatype="html">
+        <source>The remote token forwards the authentication request to another privacyIDEA server.</source>
+        <target>Remote டோக்கன் அங்கீகார கோரிக்கையை மற்றொரு privacyIDEA சர்வருக்கு அனுப்புகிறது.</target>
+      </trans-unit>
+      <trans-unit id="527506791750128839" datatype="html">
+        <source>The Yubico Cloud mode forwards the authentication request to the YubiCloud. The Yubikey needs to be registered with the YubiCloud.</source>
+        <target>Yubico Cloud பயன்முறை அங்கீகார கோரிக்கையை YubiCloud-க்கு அனுப்புகிறது. Yubikey YubiCloud-இல் பதிவு செய்யப்பட்டிருக்க வேண்டும்.</target>
+      </trans-unit>
+      <trans-unit id="2206399931329776968" datatype="html">
+        <source>The SMS Token sends an OTP value to the mobile phone of the user.</source>
+        <target>SMS டோக்கன் பயனரின் கைபேசிக்கு ஒரு OTP மதிப்பை அனுப்புகிறது.</target>
+      </trans-unit>
+      <trans-unit id="3456116978392706361" datatype="html">
+        <source>The 4 Eyes token will only authenticate if two or more users use their token in succession. You can define how many tokens are required for a successful authentication.</source>
+        <target>4 Eyes டோக்கன் இரண்டு அல்லது அதற்கு மேற்பட்ட பயனர்கள் தொடர்ச்சியாக தங்கள் டோக்கனைப் பயன்படுத்தினால் மட்டுமே அங்கீகரிக்கும். வெற்றிகரமான அங்கீகாரத்திற்கு எத்தனை டோக்கன்கள் தேவை என்பதை நீங்கள் வரையறுக்கலாம்.</target>
+      </trans-unit>
+      <trans-unit id="8205334020810457115" datatype="html">
+        <source>The Application Specific Password token is a static password, that is bound to certain services.</source>
+        <target>Application Specific Password டோக்கன் என்பது குறிப்பிட்ட சேவைகளுடன் இணைக்கப்பட்ட நிலையான கடவுச்சொல்.</target>
+      </trans-unit>
+      <trans-unit id="2819852211224085257" datatype="html">
+        <source>The Certificate Token lets you enroll an x509 certificate with the specified Certificate Authority.</source>
+        <target>Certificate டோக்கன், குறிப்பிடப்பட்ட சான்றிதழ் அதிகாரத்துடன் ஒரு x509 சான்றிதழைப் பதிவு செய்ய அனுமதிக்கிறது.</target>
+      </trans-unit>
+      <trans-unit id="7288739030687501836" datatype="html">
+        <source>The DayPassword token is a time based password token with a larger time window. OTP values of this token can be reused by default.</source>
+        <target>DayPassword டோக்கன் என்பது பெரிய நேர சாளரத்துடன் கூடிய நேர அடிப்படையிலான கடவுச்சொல் டோக்கன். இந்த டோக்கனின் OTP மதிப்புகளை இயல்பாகவே மீண்டும் பயன்படுத்தலாம்.</target>
+      </trans-unit>
+      <trans-unit id="7397566638624945632" datatype="html">
+        <source>The Email Token sends the OTP value to the users email address.</source>
+        <target>Email டோக்கன் OTP மதிப்பை பயனரின் மின்னஞ்சல் முகவரிக்கு அனுப்புகிறது.</target>
+      </trans-unit>
+      <trans-unit id="40124416364770338" datatype="html">
+        <source>The indexed secret Token is based on a shared secret between privacyIDEA and the user. During authentication, the user is asked for characters at random positions of this known secret.</source>
+        <target>Indexed Secret டோக்கன், privacyIDEA-க்கும் பயனருக்கும் இடையேயான பகிரப்பட்ட ரகசியத்தை அடிப்படையாகக் கொண்டது. அங்கீகாரத்தின்போது, இந்த அறியப்பட்ட ரகசியத்தின் சீரற்ற இடங்களில் உள்ள எழுத்துகள் பயனரிடம் கேட்கப்படும்.</target>
+      </trans-unit>
+      <trans-unit id="7117574318243810355" datatype="html">
+        <source>The Paper token will let you print a list of OTP values. In contrast to the TAN token, the OTP values have to be used in order.</source>
+        <target>Paper டோக்கன், OTP மதிப்புகளின் பட்டியலை அச்சிட அனுமதிக்கிறது. TAN டோக்கனைப் போலன்றி, OTP மதிப்புகளை வரிசையாகப் பயன்படுத்த வேண்டும்.</target>
+      </trans-unit>
+      <trans-unit id="600202539253247298" datatype="html">
+        <source>The PUSH token works with the privacyIDEA Authenticator App. It will send an authentication request to the app, which can be accepted by just tapping a button. Optionally, it can require users to use the configured unlock mechanism (PIN/Biometric) on their smartphone to accept. The smartphone needs to be able to reach privacyIDEA for this token to work.</source>
+        <target>PUSH டோக்கன் privacyIDEA Authenticator செயலியுடன் இயங்குகிறது. இது செயலிக்கு ஒரு அங்கீகார கோரிக்கையை அனுப்புகிறது, அதை ஒரு பொத்தானைத் தொடுவதன் மூலம் ஏற்கலாம். விருப்பத்தேர்வாக, ஏற்றுக்கொள்ள பயனர்கள் தங்கள் ஸ்மார்ட்போனில் கட்டமைக்கப்பட்ட திறப்பு முறையை (PIN/பயோமெட்ரிக்) பயன்படுத்த வேண்டும் என்று கோரலாம். இந்த டோக்கன் இயங்க, ஸ்மார்ட்போன் privacyIDEA-ஐ அணுக முடிய வேண்டும்.</target>
+      </trans-unit>
+      <trans-unit id="6622205130010651145" datatype="html">
+        <source>The Questionnaire token will let you define answers to questions. When authenticating with this type of token, you will be asked a random question and then need to provide the previously defined answer.</source>
+        <target>Questionnaire டோக்கன், கேள்விகளுக்கான பதில்களை வரையறுக்க அனுமதிக்கிறது. இந்த வகை டோக்கனுடன் அங்கீகரிக்கும்போது, ஒரு சீரற்ற கேள்வி கேட்கப்படும், அதற்கு நீங்கள் முன்பே வரையறுத்த பதிலை வழங்க வேண்டும்.</target>
+      </trans-unit>
+      <trans-unit id="5084885484619124774" datatype="html">
+        <source>The registration token is a code, that the user can use to authenticate once. Then the token is deleted automatically. This can be useful for setting up users.</source>
+        <target>Registration டோக்கன் என்பது பயனர் ஒரு முறை அங்கீகரிக்கப் பயன்படுத்தக்கூடிய ஒரு குறியீடு. பிறகு டோக்கன் தானாகவே நீக்கப்படும். இது பயனர்களை அமைப்பதற்கு பயனுள்ளதாக இருக்கும்.</target>
+      </trans-unit>
+      <trans-unit id="3064487866327029597" datatype="html">
+        <source>The TAN token will let you print a list of OTP values. In contrast to the Paper token, the OTP values can be used in an arbitrary order.</source>
+        <target>TAN டோக்கன், OTP மதிப்புகளின் பட்டியலை அச்சிட அனுமதிக்கிறது. Paper டோக்கனைப் போலன்றி, OTP மதிப்புகளை எந்த வரிசையிலும் பயன்படுத்தலாம்.</target>
+      </trans-unit>
+      <trans-unit id="4938607091737367687" datatype="html">
+        <source>The TiQR token is a Smartphone App token, which allows easy authentication by just scanning a QR Code during the authentication process.</source>
+        <target>TiQR டோக்கன் என்பது ஒரு ஸ்மார்ட்போன் செயலி டோக்கன் ஆகும், இது அங்கீகார செயல்முறையின்போது ஒரு QR குறியீட்டை ஸ்கேன் செய்வதன் மூலம் எளிதான அங்கீகாரத்தை அனுமதிக்கிறது.</target>
+      </trans-unit>
+      <trans-unit id="7695163949951296069" datatype="html">
+        <source>The U2F token is a token defined by the Fido Alliance. It is the predecessor to WebAuthn/Passkey, has been superseded by them, and therefore should not be used any more.</source>
+        <target>U2F டோக்கன் என்பது Fido Alliance வரையறுத்த ஒரு டோக்கன். இது WebAuthn/Passkey-இன் முன்னோடி, அவற்றால் மாற்றப்பட்டது, எனவே இனி பயன்படுத்தப்படக்கூடாது.</target>
+      </trans-unit>
+      <trans-unit id="8593780268461047037" datatype="html">
+        <source>The VASCO token is a proprietary OTP token. You can paste the VASCO token blob in hex format.</source>
+        <target>VASCO டோக்கன் என்பது ஒரு தனியுரிம OTP டோக்கன். VASCO டோக்கன் blob-ஐ hex வடிவத்தில் ஒட்டலாம்.</target>
+      </trans-unit>
+      <trans-unit id="7276164817994424208" datatype="html">
+        <source>A WebAuthn token is a phishing-resistant credential that uses public-key cryptography to prove your identity without sharing a secret. The WebAuthn token stores the encrypted key on the server to allow unlimited registrations.</source>
+        <target>WebAuthn டோக்கன் என்பது ஃபிஷிங்-எதிர்ப்பு சான்று ஆகும், இது ஒரு ரகசியத்தைப் பகிராமல் உங்கள் அடையாளத்தை நிரூபிக்க பொது-விசை குறியாக்கவியலைப் பயன்படுத்துகிறது. வரம்பற்ற பதிவுகளை அனுமதிக்க WebAuthn டோக்கன் குறியாக்கப்பட்ட விசையை சர்வரில் சேமிக்கிறது.</target>
+      </trans-unit>
+      <trans-unit id="1679688806824990842" datatype="html">
+        <source>A passkey is a phishing-resistant credential that uses public-key cryptography to prove your identity without sharing a secret. The private key is stored securely on your authenticator (like a phone or hardware token) and is unlocked for each sign-in using your device&apos;s PIN, fingerprint, or face scan.</source>
+        <target>Passkey என்பது ஃபிஷிங்-எதிர்ப்பு சான்று ஆகும், இது ஒரு ரகசியத்தைப் பகிராமல் உங்கள் அடையாளத்தை நிரூபிக்க பொது-விசை குறியாக்கவியலைப் பயன்படுத்துகிறது. தனிப்பட்ட விசை உங்கள் அங்கீகரிப்பான் (தொலைபேசி அல்லது வன்பொருள் டோக்கன் போன்றவை) இல் பாதுகாப்பாக சேமிக்கப்படுகிறது, மேலும் ஒவ்வொரு உள்நுழைவின்போதும் உங்கள் சாதனத்தின் PIN, கைரேகை அல்லது முக ஸ்கேன் மூலம் திறக்கப்படுகிறது.</target>
+      </trans-unit>
+      <trans-unit id="4834337133856721893" datatype="html">
+        <source>Help translate</source>
+        <target>மொழிபெயர்க்க உதவுங்கள்</target>
+      </trans-unit>
+      <trans-unit id="1455194643992517806" datatype="html">
+        <source>Help translate this interface on Weblate</source>
+        <target>இந்த இடைமுகத்தை Weblate-இல் மொழிபெயர்க்க உதவுங்கள்</target>
+      </trans-unit>
+      <trans-unit id="8829918656748785902" datatype="html">
+        <source>Get enterprise support</source>
+        <target>எண்டர்பிரைஸ் ஆதரவைப் பெறுங்கள்</target>
+      </trans-unit>
     </body>
   </file>
 </xliff>

@@ -16657,6 +16657,122 @@
         <source>Stop Search</source>
         <target>Ferma ricerca</target>
       </trans-unit>
+      <trans-unit id="2166204747375209188" datatype="html">
+        <source> By entering an OTP value you can get the serial number of the token. You can also enter additional optional parameters, to narrow down the search for the token. So you can only search within certain token types or in assigned or unassigned tokens. </source>
+        <target>Inserendo un valore OTP puoi ottenere il numero di serie del token. Puoi anche inserire ulteriori parametri facoltativi per restringere la ricerca del token. In questo modo puoi cercare solo all'interno di determinati tipi di token o tra token assegnati o non assegnati.</target>
+      </trans-unit>
+      <trans-unit id="6392899775498865074" datatype="html">
+        <source>The HOTP token is an event based token. With a smartphone app like the privacyIDEA Authenticator you can turn your smartphone into an authentication device.</source>
+        <target>Il token HOTP è un token basato su eventi. Con un'app per smartphone come privacyIDEA Authenticator puoi trasformare il tuo smartphone in un dispositivo di autenticazione.</target>
+      </trans-unit>
+      <trans-unit id="2219912678330864666" datatype="html">
+        <source>The TOTP token is a time based token. With a smartphone app like the privacyIDEA Authenticator you can turn your smartphone into an authentication device.</source>
+        <target>Il token TOTP è un token basato sul tempo. Con un'app per smartphone come privacyIDEA Authenticator puoi trasformare il tuo smartphone in un dispositivo di autenticazione.</target>
+      </trans-unit>
+      <trans-unit id="1360266651720144685" datatype="html">
+        <source>The Simple Pass Token does not take additional arguments. You only need to specify an OTP PIN.</source>
+        <target>Il token Simple Pass non richiede argomenti aggiuntivi. Devi solo specificare un PIN OTP.</target>
+      </trans-unit>
+      <trans-unit id="5955717275094550179" datatype="html">
+        <source>The mOTP token is a time based OTP token for mobile devices. You can have the server generate the secret and scan the QR code.</source>
+        <target>Il token mOTP è un token OTP basato sul tempo per dispositivi mobili. Puoi far generare il segreto dal server e scansionare il codice QR.</target>
+      </trans-unit>
+      <trans-unit id="9045310995152847776" datatype="html">
+        <source>The SSH Key Token stores the public SSH Key in the server. This can be used to authenticate to a secure shell.</source>
+        <target>Il token SSH Key memorizza la chiave SSH pubblica sul server. Può essere usata per autenticarsi su una shell sicura.</target>
+      </trans-unit>
+      <trans-unit id="1865447960052355160" datatype="html">
+        <source>The Yubikey Token is an USB device that emits an event based One Time Password. You can initialize the Yubikey using the YubiKey personalization tools. The secret hex key and the final OTP length are needed here. For tokens compatible with the Yubico cloud service the OTP length must be 44 (12 characters UID and 32 characters OTP). When programming the token for the Yubico cloud service, the Public Identity Length must be 6 bytes, which will give you a UID with 12 characters. The current OTP length of a programmed YubiKey can automatically be determined by inserting it in the test field.</source>
+        <target>Il token Yubikey è un dispositivo USB che emette una password monouso basata su eventi. Puoi inizializzare la Yubikey con gli strumenti di personalizzazione YubiKey. Qui servono la chiave esadecimale segreta e la lunghezza finale dell'OTP. Per i token compatibili con il servizio cloud Yubico, la lunghezza dell'OTP deve essere 44 (12 caratteri di UID e 32 caratteri di OTP). Quando si programma il token per il servizio cloud Yubico, la Public Identity Length deve essere di 6 byte, il che fornisce un UID di 12 caratteri. La lunghezza attuale dell'OTP di una YubiKey programmata può essere determinata automaticamente inserendola nel campo di prova.</target>
+      </trans-unit>
+      <trans-unit id="8384046806629419904" datatype="html">
+        <source>The remote token forwards the authentication request to another privacyIDEA server.</source>
+        <target>Il token Remote inoltra la richiesta di autenticazione a un altro server privacyIDEA.</target>
+      </trans-unit>
+      <trans-unit id="527506791750128839" datatype="html">
+        <source>The Yubico Cloud mode forwards the authentication request to the YubiCloud. The Yubikey needs to be registered with the YubiCloud.</source>
+        <target>La modalità Yubico Cloud inoltra la richiesta di autenticazione a YubiCloud. La Yubikey deve essere registrata presso YubiCloud.</target>
+      </trans-unit>
+      <trans-unit id="2206399931329776968" datatype="html">
+        <source>The SMS Token sends an OTP value to the mobile phone of the user.</source>
+        <target>Il token SMS invia un valore OTP al telefono cellulare dell'utente.</target>
+      </trans-unit>
+      <trans-unit id="3456116978392706361" datatype="html">
+        <source>The 4 Eyes token will only authenticate if two or more users use their token in succession. You can define how many tokens are required for a successful authentication.</source>
+        <target>Il token 4 Eyes esegue l'autenticazione solo se due o più utenti usano il proprio token in successione. Puoi definire quanti token sono necessari per un'autenticazione riuscita.</target>
+      </trans-unit>
+      <trans-unit id="8205334020810457115" datatype="html">
+        <source>The Application Specific Password token is a static password, that is bound to certain services.</source>
+        <target>Il token Application Specific Password è una password statica associata a determinati servizi.</target>
+      </trans-unit>
+      <trans-unit id="2819852211224085257" datatype="html">
+        <source>The Certificate Token lets you enroll an x509 certificate with the specified Certificate Authority.</source>
+        <target>Il token Certificate ti consente di emettere un certificato x509 con l'autorità di certificazione specificata.</target>
+      </trans-unit>
+      <trans-unit id="7288739030687501836" datatype="html">
+        <source>The DayPassword token is a time based password token with a larger time window. OTP values of this token can be reused by default.</source>
+        <target>Il token DayPassword è un token a password basato sul tempo con una finestra temporale più ampia. I valori OTP di questo token possono essere riutilizzati per impostazione predefinita.</target>
+      </trans-unit>
+      <trans-unit id="7397566638624945632" datatype="html">
+        <source>The Email Token sends the OTP value to the users email address.</source>
+        <target>Il token Email invia il valore OTP all'indirizzo e-mail dell'utente.</target>
+      </trans-unit>
+      <trans-unit id="40124416364770338" datatype="html">
+        <source>The indexed secret Token is based on a shared secret between privacyIDEA and the user. During authentication, the user is asked for characters at random positions of this known secret.</source>
+        <target>Il token Indexed Secret si basa su un segreto condiviso tra privacyIDEA e l'utente. Durante l'autenticazione vengono richiesti all'utente i caratteri in posizioni casuali di questo segreto noto.</target>
+      </trans-unit>
+      <trans-unit id="7117574318243810355" datatype="html">
+        <source>The Paper token will let you print a list of OTP values. In contrast to the TAN token, the OTP values have to be used in order.</source>
+        <target>Il token Paper ti consente di stampare un elenco di valori OTP. A differenza del token TAN, i valori OTP devono essere usati in ordine.</target>
+      </trans-unit>
+      <trans-unit id="600202539253247298" datatype="html">
+        <source>The PUSH token works with the privacyIDEA Authenticator App. It will send an authentication request to the app, which can be accepted by just tapping a button. Optionally, it can require users to use the configured unlock mechanism (PIN/Biometric) on their smartphone to accept. The smartphone needs to be able to reach privacyIDEA for this token to work.</source>
+        <target>Il token PUSH funziona con l'app privacyIDEA Authenticator. Invia una richiesta di autenticazione all'app, che può essere accettata semplicemente toccando un pulsante. Facoltativamente, può richiedere che gli utenti utilizzino il meccanismo di sblocco configurato (PIN/biometria) sul proprio smartphone per accettare. Lo smartphone deve poter raggiungere privacyIDEA affinché questo token funzioni.</target>
+      </trans-unit>
+      <trans-unit id="6622205130010651145" datatype="html">
+        <source>The Questionnaire token will let you define answers to questions. When authenticating with this type of token, you will be asked a random question and then need to provide the previously defined answer.</source>
+        <target>Il token Questionnaire ti consente di definire le risposte alle domande. Durante l'autenticazione con questo tipo di token, ti verrà posta una domanda casuale e dovrai fornire la risposta definita in precedenza.</target>
+      </trans-unit>
+      <trans-unit id="5084885484619124774" datatype="html">
+        <source>The registration token is a code, that the user can use to authenticate once. Then the token is deleted automatically. This can be useful for setting up users.</source>
+        <target>Il token Registration è un codice che l'utente può utilizzare per autenticarsi una sola volta. Successivamente il token viene eliminato automaticamente. Può essere utile per la configurazione degli utenti.</target>
+      </trans-unit>
+      <trans-unit id="3064487866327029597" datatype="html">
+        <source>The TAN token will let you print a list of OTP values. In contrast to the Paper token, the OTP values can be used in an arbitrary order.</source>
+        <target>Il token TAN ti consente di stampare un elenco di valori OTP. A differenza del token Paper, i valori OTP possono essere usati in ordine arbitrario.</target>
+      </trans-unit>
+      <trans-unit id="4938607091737367687" datatype="html">
+        <source>The TiQR token is a Smartphone App token, which allows easy authentication by just scanning a QR Code during the authentication process.</source>
+        <target>Il token TiQR è un token per app per smartphone che consente un'autenticazione semplice scansionando un codice QR durante il processo di autenticazione.</target>
+      </trans-unit>
+      <trans-unit id="7695163949951296069" datatype="html">
+        <source>The U2F token is a token defined by the Fido Alliance. It is the predecessor to WebAuthn/Passkey, has been superseded by them, and therefore should not be used any more.</source>
+        <target>Il token U2F è un token definito dalla Fido Alliance. È il predecessore di WebAuthn/Passkey, è stato sostituito da questi e pertanto non dovrebbe più essere usato.</target>
+      </trans-unit>
+      <trans-unit id="8593780268461047037" datatype="html">
+        <source>The VASCO token is a proprietary OTP token. You can paste the VASCO token blob in hex format.</source>
+        <target>Il token VASCO è un token OTP proprietario. Puoi incollare il blob del token VASCO in formato esadecimale.</target>
+      </trans-unit>
+      <trans-unit id="7276164817994424208" datatype="html">
+        <source>A WebAuthn token is a phishing-resistant credential that uses public-key cryptography to prove your identity without sharing a secret. The WebAuthn token stores the encrypted key on the server to allow unlimited registrations.</source>
+        <target>Un token WebAuthn è una credenziale resistente al phishing che utilizza la crittografia a chiave pubblica per dimostrare la tua identità senza condividere un segreto. Il token WebAuthn memorizza la chiave cifrata sul server per consentire registrazioni illimitate.</target>
+      </trans-unit>
+      <trans-unit id="1679688806824990842" datatype="html">
+        <source>A passkey is a phishing-resistant credential that uses public-key cryptography to prove your identity without sharing a secret. The private key is stored securely on your authenticator (like a phone or hardware token) and is unlocked for each sign-in using your device&apos;s PIN, fingerprint, or face scan.</source>
+        <target>Una passkey è una credenziale resistente al phishing che utilizza la crittografia a chiave pubblica per dimostrare la tua identità senza condividere un segreto. La chiave privata è memorizzata in modo sicuro sul tuo autenticatore (come un telefono o un token hardware) e viene sbloccata a ogni accesso usando il PIN, l'impronta digitale o il riconoscimento facciale del tuo dispositivo.</target>
+      </trans-unit>
+      <trans-unit id="4834337133856721893" datatype="html">
+        <source>Help translate</source>
+        <target>Aiuta a tradurre</target>
+      </trans-unit>
+      <trans-unit id="1455194643992517806" datatype="html">
+        <source>Help translate this interface on Weblate</source>
+        <target>Aiuta a tradurre questa interfaccia su Weblate</target>
+      </trans-unit>
+      <trans-unit id="8829918656748785902" datatype="html">
+        <source>Get enterprise support</source>
+        <target>Ottieni supporto enterprise</target>
+      </trans-unit>
     </body>
   </file>
 </xliff>

@@ -16657,6 +16657,122 @@
         <source>Stop Search</source>
         <target>Aramayı durdur</target>
       </trans-unit>
+      <trans-unit id="2166204747375209188" datatype="html">
+        <source> By entering an OTP value you can get the serial number of the token. You can also enter additional optional parameters, to narrow down the search for the token. So you can only search within certain token types or in assigned or unassigned tokens. </source>
+        <target>Bir OTP değeri girerek token'in seri numarasını öğrenebilirsiniz. Aramayı daraltmak için ek isteğe bağlı parametreler de girebilirsiniz. Böylece yalnızca belirli token türlerinde ya da atanmış veya atanmamış token'ler arasında arama yapabilirsiniz.</target>
+      </trans-unit>
+      <trans-unit id="6392899775498865074" datatype="html">
+        <source>The HOTP token is an event based token. With a smartphone app like the privacyIDEA Authenticator you can turn your smartphone into an authentication device.</source>
+        <target>HOTP token'i olay tabanlı bir token'dir. privacyIDEA Authenticator gibi bir akıllı telefon uygulamasıyla telefonunuzu bir kimlik doğrulama cihazına dönüştürebilirsiniz.</target>
+      </trans-unit>
+      <trans-unit id="2219912678330864666" datatype="html">
+        <source>The TOTP token is a time based token. With a smartphone app like the privacyIDEA Authenticator you can turn your smartphone into an authentication device.</source>
+        <target>TOTP token'i zaman tabanlı bir token'dir. privacyIDEA Authenticator gibi bir akıllı telefon uygulamasıyla telefonunuzu bir kimlik doğrulama cihazına dönüştürebilirsiniz.</target>
+      </trans-unit>
+      <trans-unit id="1360266651720144685" datatype="html">
+        <source>The Simple Pass Token does not take additional arguments. You only need to specify an OTP PIN.</source>
+        <target>Simple Pass token'i ek argüman almaz. Yalnızca bir OTP PIN belirtmeniz yeterlidir.</target>
+      </trans-unit>
+      <trans-unit id="5955717275094550179" datatype="html">
+        <source>The mOTP token is a time based OTP token for mobile devices. You can have the server generate the secret and scan the QR code.</source>
+        <target>mOTP token'i mobil cihazlar için zaman tabanlı bir OTP token'idir. Gizli anahtarı sunucuya oluşturtabilir ve QR kodunu tarayabilirsiniz.</target>
+      </trans-unit>
+      <trans-unit id="9045310995152847776" datatype="html">
+        <source>The SSH Key Token stores the public SSH Key in the server. This can be used to authenticate to a secure shell.</source>
+        <target>SSH Key token'i ortak SSH anahtarını sunucuda saklar. Bu, güvenli bir kabuğa kimlik doğrulamak için kullanılabilir.</target>
+      </trans-unit>
+      <trans-unit id="1865447960052355160" datatype="html">
+        <source>The Yubikey Token is an USB device that emits an event based One Time Password. You can initialize the Yubikey using the YubiKey personalization tools. The secret hex key and the final OTP length are needed here. For tokens compatible with the Yubico cloud service the OTP length must be 44 (12 characters UID and 32 characters OTP). When programming the token for the Yubico cloud service, the Public Identity Length must be 6 bytes, which will give you a UID with 12 characters. The current OTP length of a programmed YubiKey can automatically be determined by inserting it in the test field.</source>
+        <target>Yubikey token'i, olay tabanlı bir tek kullanımlık parola üreten bir USB cihazıdır. Yubikey'i YubiKey kişiselleştirme araçlarıyla başlatabilirsiniz. Burada gizli onaltılık anahtar ve nihai OTP uzunluğu gereklidir. Yubico bulut hizmetiyle uyumlu token'ler için OTP uzunluğu 44 olmalıdır (12 karakter UID ve 32 karakter OTP). Token'i Yubico bulut hizmeti için programlarken Public Identity Length 6 bayt olmalıdır; bu size 12 karakterlik bir UID verir. Programlanmış bir YubiKey'in mevcut OTP uzunluğu, test alanına takılarak otomatik olarak belirlenebilir.</target>
+      </trans-unit>
+      <trans-unit id="8384046806629419904" datatype="html">
+        <source>The remote token forwards the authentication request to another privacyIDEA server.</source>
+        <target>Remote token'i kimlik doğrulama isteğini başka bir privacyIDEA sunucusuna iletir.</target>
+      </trans-unit>
+      <trans-unit id="527506791750128839" datatype="html">
+        <source>The Yubico Cloud mode forwards the authentication request to the YubiCloud. The Yubikey needs to be registered with the YubiCloud.</source>
+        <target>Yubico Cloud modu kimlik doğrulama isteğini YubiCloud'a iletir. Yubikey'in YubiCloud'a kayıtlı olması gerekir.</target>
+      </trans-unit>
+      <trans-unit id="2206399931329776968" datatype="html">
+        <source>The SMS Token sends an OTP value to the mobile phone of the user.</source>
+        <target>SMS token'i kullanıcının cep telefonuna bir OTP değeri gönderir.</target>
+      </trans-unit>
+      <trans-unit id="3456116978392706361" datatype="html">
+        <source>The 4 Eyes token will only authenticate if two or more users use their token in succession. You can define how many tokens are required for a successful authentication.</source>
+        <target>4 Eyes token'i yalnızca iki veya daha fazla kullanıcı token'lerini art arda kullanırsa kimlik doğrular. Başarılı bir kimlik doğrulama için kaç token gerektiğini tanımlayabilirsiniz.</target>
+      </trans-unit>
+      <trans-unit id="8205334020810457115" datatype="html">
+        <source>The Application Specific Password token is a static password, that is bound to certain services.</source>
+        <target>Application Specific Password token'i, belirli hizmetlere bağlı statik bir paroladır.</target>
+      </trans-unit>
+      <trans-unit id="2819852211224085257" datatype="html">
+        <source>The Certificate Token lets you enroll an x509 certificate with the specified Certificate Authority.</source>
+        <target>Certificate token'i, belirtilen sertifika yetkilisiyle bir x509 sertifikası kaydetmenizi sağlar.</target>
+      </trans-unit>
+      <trans-unit id="7288739030687501836" datatype="html">
+        <source>The DayPassword token is a time based password token with a larger time window. OTP values of this token can be reused by default.</source>
+        <target>DayPassword token'i, daha geniş bir zaman penceresine sahip zaman tabanlı bir parola token'idir. Bu token'in OTP değerleri varsayılan olarak yeniden kullanılabilir.</target>
+      </trans-unit>
+      <trans-unit id="7397566638624945632" datatype="html">
+        <source>The Email Token sends the OTP value to the users email address.</source>
+        <target>Email token'i OTP değerini kullanıcının e-posta adresine gönderir.</target>
+      </trans-unit>
+      <trans-unit id="40124416364770338" datatype="html">
+        <source>The indexed secret Token is based on a shared secret between privacyIDEA and the user. During authentication, the user is asked for characters at random positions of this known secret.</source>
+        <target>Indexed Secret token'i, privacyIDEA ile kullanıcı arasında paylaşılan bir gizli değere dayanır. Kimlik doğrulama sırasında kullanıcıdan bu bilinen gizli değerin rastgele konumlarındaki karakterler istenir.</target>
+      </trans-unit>
+      <trans-unit id="7117574318243810355" datatype="html">
+        <source>The Paper token will let you print a list of OTP values. In contrast to the TAN token, the OTP values have to be used in order.</source>
+        <target>Paper token'i bir OTP değerleri listesi yazdırmanıza olanak tanır. TAN token'inin aksine, OTP değerlerinin sırayla kullanılması gerekir.</target>
+      </trans-unit>
+      <trans-unit id="600202539253247298" datatype="html">
+        <source>The PUSH token works with the privacyIDEA Authenticator App. It will send an authentication request to the app, which can be accepted by just tapping a button. Optionally, it can require users to use the configured unlock mechanism (PIN/Biometric) on their smartphone to accept. The smartphone needs to be able to reach privacyIDEA for this token to work.</source>
+        <target>PUSH token'i privacyIDEA Authenticator uygulamasıyla çalışır. Uygulamaya bir kimlik doğrulama isteği gönderir ve bu istek yalnızca bir düğmeye dokunularak kabul edilebilir. İsteğe bağlı olarak, kullanıcıların kabul etmek için akıllı telefonlarında yapılandırılmış kilit açma mekanizmasını (PIN/biyometri) kullanmasını gerektirebilir. Bu token'in çalışması için akıllı telefonun privacyIDEA'ya erişebilmesi gerekir.</target>
+      </trans-unit>
+      <trans-unit id="6622205130010651145" datatype="html">
+        <source>The Questionnaire token will let you define answers to questions. When authenticating with this type of token, you will be asked a random question and then need to provide the previously defined answer.</source>
+        <target>Questionnaire token'i sorulara verilecek yanıtları tanımlamanıza olanak tanır. Bu tür bir token ile kimlik doğrularken size rastgele bir soru sorulur ve önceden tanımladığınız yanıtı vermeniz gerekir.</target>
+      </trans-unit>
+      <trans-unit id="5084885484619124774" datatype="html">
+        <source>The registration token is a code, that the user can use to authenticate once. Then the token is deleted automatically. This can be useful for setting up users.</source>
+        <target>Registration token'i, kullanıcının bir kez kimlik doğrulamak için kullanabileceği bir koddur. Ardından token otomatik olarak silinir. Bu, kullanıcıları kurarken yararlı olabilir.</target>
+      </trans-unit>
+      <trans-unit id="3064487866327029597" datatype="html">
+        <source>The TAN token will let you print a list of OTP values. In contrast to the Paper token, the OTP values can be used in an arbitrary order.</source>
+        <target>TAN token'i bir OTP değerleri listesi yazdırmanıza olanak tanır. Paper token'inin aksine, OTP değerleri herhangi bir sırayla kullanılabilir.</target>
+      </trans-unit>
+      <trans-unit id="4938607091737367687" datatype="html">
+        <source>The TiQR token is a Smartphone App token, which allows easy authentication by just scanning a QR Code during the authentication process.</source>
+        <target>TiQR token'i, kimlik doğrulama işlemi sırasında yalnızca bir QR kodu taratarak kolay kimlik doğrulamaya olanak tanıyan bir akıllı telefon uygulaması token'idir.</target>
+      </trans-unit>
+      <trans-unit id="7695163949951296069" datatype="html">
+        <source>The U2F token is a token defined by the Fido Alliance. It is the predecessor to WebAuthn/Passkey, has been superseded by them, and therefore should not be used any more.</source>
+        <target>U2F token'i, Fido Alliance tarafından tanımlanan bir token'dir. WebAuthn/Passkey'in öncülüdür, yerini onlara bırakmıştır ve bu nedenle artık kullanılmamalıdır.</target>
+      </trans-unit>
+      <trans-unit id="8593780268461047037" datatype="html">
+        <source>The VASCO token is a proprietary OTP token. You can paste the VASCO token blob in hex format.</source>
+        <target>VASCO token'i, tescilli bir OTP token'idir. VASCO token blob'unu onaltılık biçimde yapıştırabilirsiniz.</target>
+      </trans-unit>
+      <trans-unit id="7276164817994424208" datatype="html">
+        <source>A WebAuthn token is a phishing-resistant credential that uses public-key cryptography to prove your identity without sharing a secret. The WebAuthn token stores the encrypted key on the server to allow unlimited registrations.</source>
+        <target>WebAuthn token'i, kimliğinizi bir gizli bilgi paylaşmadan kanıtlamak için açık anahtarlı şifreleme kullanan, kimlik avına dayanıklı bir kimlik bilgisidir. WebAuthn token'i, sınırsız kayda izin vermek için şifrelenmiş anahtarı sunucuda saklar.</target>
+      </trans-unit>
+      <trans-unit id="1679688806824990842" datatype="html">
+        <source>A passkey is a phishing-resistant credential that uses public-key cryptography to prove your identity without sharing a secret. The private key is stored securely on your authenticator (like a phone or hardware token) and is unlocked for each sign-in using your device&apos;s PIN, fingerprint, or face scan.</source>
+        <target>Passkey, kimliğinizi bir gizli bilgi paylaşmadan kanıtlamak için açık anahtarlı şifreleme kullanan, kimlik avına dayanıklı bir kimlik bilgisidir. Özel anahtar, kimlik doğrulayıcınızda (telefon veya donanım token'i gibi) güvenli bir şekilde saklanır ve her oturum açışta cihazınızın PIN'i, parmak izi veya yüz taraması kullanılarak kilidi açılır.</target>
+      </trans-unit>
+      <trans-unit id="4834337133856721893" datatype="html">
+        <source>Help translate</source>
+        <target>Çeviriye yardım edin</target>
+      </trans-unit>
+      <trans-unit id="1455194643992517806" datatype="html">
+        <source>Help translate this interface on Weblate</source>
+        <target>Bu arayüzü Weblate'te çevirmeye yardımcı olun</target>
+      </trans-unit>
+      <trans-unit id="8829918656748785902" datatype="html">
+        <source>Get enterprise support</source>
+        <target>Kurumsal destek alın</target>
+      </trans-unit>
     </body>
   </file>
 </xliff>

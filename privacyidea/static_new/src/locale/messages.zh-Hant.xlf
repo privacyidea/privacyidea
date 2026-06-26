@@ -16657,6 +16657,122 @@
         <source>Stop Search</source>
         <target>停止搜尋</target>
       </trans-unit>
+      <trans-unit id="2166204747375209188" datatype="html">
+        <source> By entering an OTP value you can get the serial number of the token. You can also enter additional optional parameters, to narrow down the search for the token. So you can only search within certain token types or in assigned or unassigned tokens. </source>
+        <target>輸入 OTP 值即可取得權杖的序號。您也可以輸入其他選用參數，以縮小權杖的搜尋範圍。如此一來，您只能在特定權杖類型，或已指派與未指派的權杖中搜尋。</target>
+      </trans-unit>
+      <trans-unit id="6392899775498865074" datatype="html">
+        <source>The HOTP token is an event based token. With a smartphone app like the privacyIDEA Authenticator you can turn your smartphone into an authentication device.</source>
+        <target>HOTP 權杖是一種以事件為基礎的權杖。透過像 privacyIDEA Authenticator 這樣的智慧型手機應用程式，您可以將手機變成驗證裝置。</target>
+      </trans-unit>
+      <trans-unit id="2219912678330864666" datatype="html">
+        <source>The TOTP token is a time based token. With a smartphone app like the privacyIDEA Authenticator you can turn your smartphone into an authentication device.</source>
+        <target>TOTP 權杖是一種以時間為基礎的權杖。透過像 privacyIDEA Authenticator 這樣的智慧型手機應用程式，您可以將手機變成驗證裝置。</target>
+      </trans-unit>
+      <trans-unit id="1360266651720144685" datatype="html">
+        <source>The Simple Pass Token does not take additional arguments. You only need to specify an OTP PIN.</source>
+        <target>Simple Pass 權杖不需要額外參數。您只需指定一組 OTP PIN 即可。</target>
+      </trans-unit>
+      <trans-unit id="5955717275094550179" datatype="html">
+        <source>The mOTP token is a time based OTP token for mobile devices. You can have the server generate the secret and scan the QR code.</source>
+        <target>mOTP 權杖是供行動裝置使用、以時間為基礎的 OTP 權杖。您可以讓伺服器產生密鑰並掃描 QR 碼。</target>
+      </trans-unit>
+      <trans-unit id="9045310995152847776" datatype="html">
+        <source>The SSH Key Token stores the public SSH Key in the server. This can be used to authenticate to a secure shell.</source>
+        <target>SSH Key 權杖會將公開 SSH 金鑰儲存在伺服器上，可用於向安全殼層 (secure shell) 進行驗證。</target>
+      </trans-unit>
+      <trans-unit id="1865447960052355160" datatype="html">
+        <source>The Yubikey Token is an USB device that emits an event based One Time Password. You can initialize the Yubikey using the YubiKey personalization tools. The secret hex key and the final OTP length are needed here. For tokens compatible with the Yubico cloud service the OTP length must be 44 (12 characters UID and 32 characters OTP). When programming the token for the Yubico cloud service, the Public Identity Length must be 6 bytes, which will give you a UID with 12 characters. The current OTP length of a programmed YubiKey can automatically be determined by inserting it in the test field.</source>
+        <target>Yubikey 權杖是一種 USB 裝置，會發出以事件為基礎的一次性密碼。您可以使用 YubiKey 個人化工具來初始化 Yubikey。此處需要祕密十六進位金鑰與最終的 OTP 長度。對於相容於 Yubico 雲端服務的權杖，OTP 長度必須為 44（12 個字元的 UID 與 32 個字元的 OTP）。為 Yubico 雲端服務設定權杖時，Public Identity Length 必須為 6 個位元組，這會產生 12 個字元的 UID。已設定的 YubiKey 目前的 OTP 長度，可將其插入測試欄位後自動判定。</target>
+      </trans-unit>
+      <trans-unit id="8384046806629419904" datatype="html">
+        <source>The remote token forwards the authentication request to another privacyIDEA server.</source>
+        <target>Remote 權杖會將驗證要求轉送至另一部 privacyIDEA 伺服器。</target>
+      </trans-unit>
+      <trans-unit id="527506791750128839" datatype="html">
+        <source>The Yubico Cloud mode forwards the authentication request to the YubiCloud. The Yubikey needs to be registered with the YubiCloud.</source>
+        <target>Yubico Cloud 模式會將驗證要求轉送至 YubiCloud。Yubikey 必須已在 YubiCloud 註冊。</target>
+      </trans-unit>
+      <trans-unit id="2206399931329776968" datatype="html">
+        <source>The SMS Token sends an OTP value to the mobile phone of the user.</source>
+        <target>SMS 權杖會將 OTP 值傳送到使用者的行動電話。</target>
+      </trans-unit>
+      <trans-unit id="3456116978392706361" datatype="html">
+        <source>The 4 Eyes token will only authenticate if two or more users use their token in succession. You can define how many tokens are required for a successful authentication.</source>
+        <target>4 Eyes 權杖只有在兩位以上的使用者依序使用其權杖時才會通過驗證。您可以設定成功驗證所需的權杖數量。</target>
+      </trans-unit>
+      <trans-unit id="8205334020810457115" datatype="html">
+        <source>The Application Specific Password token is a static password, that is bound to certain services.</source>
+        <target>Application Specific Password 權杖是一組綁定特定服務的靜態密碼。</target>
+      </trans-unit>
+      <trans-unit id="2819852211224085257" datatype="html">
+        <source>The Certificate Token lets you enroll an x509 certificate with the specified Certificate Authority.</source>
+        <target>Certificate 權杖可讓您向指定的憑證授權單位 (CA) 申請 x509 憑證。</target>
+      </trans-unit>
+      <trans-unit id="7288739030687501836" datatype="html">
+        <source>The DayPassword token is a time based password token with a larger time window. OTP values of this token can be reused by default.</source>
+        <target>DayPassword 權杖是一種具有較大時間範圍、以時間為基礎的密碼權杖。此權杖的 OTP 值預設可重複使用。</target>
+      </trans-unit>
+      <trans-unit id="7397566638624945632" datatype="html">
+        <source>The Email Token sends the OTP value to the users email address.</source>
+        <target>Email 權杖會將 OTP 值傳送到使用者的電子郵件地址。</target>
+      </trans-unit>
+      <trans-unit id="40124416364770338" datatype="html">
+        <source>The indexed secret Token is based on a shared secret between privacyIDEA and the user. During authentication, the user is asked for characters at random positions of this known secret.</source>
+        <target>Indexed Secret 權杖以 privacyIDEA 與使用者之間共用的祕密為基礎。驗證時，系統會要求使用者提供此已知祕密中隨機位置的字元。</target>
+      </trans-unit>
+      <trans-unit id="7117574318243810355" datatype="html">
+        <source>The Paper token will let you print a list of OTP values. In contrast to the TAN token, the OTP values have to be used in order.</source>
+        <target>Paper 權杖可讓您列印一份 OTP 值清單。與 TAN 權杖不同，OTP 值必須依序使用。</target>
+      </trans-unit>
+      <trans-unit id="600202539253247298" datatype="html">
+        <source>The PUSH token works with the privacyIDEA Authenticator App. It will send an authentication request to the app, which can be accepted by just tapping a button. Optionally, it can require users to use the configured unlock mechanism (PIN/Biometric) on their smartphone to accept. The smartphone needs to be able to reach privacyIDEA for this token to work.</source>
+        <target>PUSH 權杖搭配 privacyIDEA Authenticator App 運作。它會傳送驗證要求到 App，只需輕觸按鈕即可接受。您可以選擇要求使用者在智慧型手機上使用所設定的解鎖機制（PIN／生物辨識）才能接受。手機必須能夠連線到 privacyIDEA，此權杖才能運作。</target>
+      </trans-unit>
+      <trans-unit id="6622205130010651145" datatype="html">
+        <source>The Questionnaire token will let you define answers to questions. When authenticating with this type of token, you will be asked a random question and then need to provide the previously defined answer.</source>
+        <target>Questionnaire 權杖可讓您為問題設定答案。使用此類型權杖驗證時，系統會隨機提出一個問題，您需提供先前設定的答案。</target>
+      </trans-unit>
+      <trans-unit id="5084885484619124774" datatype="html">
+        <source>The registration token is a code, that the user can use to authenticate once. Then the token is deleted automatically. This can be useful for setting up users.</source>
+        <target>Registration 權杖是一組代碼，使用者可用它驗證一次。之後權杖會自動刪除。這在設定使用者時相當實用。</target>
+      </trans-unit>
+      <trans-unit id="3064487866327029597" datatype="html">
+        <source>The TAN token will let you print a list of OTP values. In contrast to the Paper token, the OTP values can be used in an arbitrary order.</source>
+        <target>TAN 權杖可讓您列印一份 OTP 值清單。與 Paper 權杖不同，OTP 值可以任意順序使用。</target>
+      </trans-unit>
+      <trans-unit id="4938607091737367687" datatype="html">
+        <source>The TiQR token is a Smartphone App token, which allows easy authentication by just scanning a QR Code during the authentication process.</source>
+        <target>TiQR 權杖是一種智慧型手機 App 權杖，只需在驗證過程中掃描 QR 碼即可輕鬆完成驗證。</target>
+      </trans-unit>
+      <trans-unit id="7695163949951296069" datatype="html">
+        <source>The U2F token is a token defined by the Fido Alliance. It is the predecessor to WebAuthn/Passkey, has been superseded by them, and therefore should not be used any more.</source>
+        <target>U2F 權杖是由 Fido Alliance 定義的權杖。它是 WebAuthn／Passkey 的前身，已被其取代，因此不應再使用。</target>
+      </trans-unit>
+      <trans-unit id="8593780268461047037" datatype="html">
+        <source>The VASCO token is a proprietary OTP token. You can paste the VASCO token blob in hex format.</source>
+        <target>VASCO 權杖是一種專屬的 OTP 權杖。您可以將 VASCO 權杖 blob 以十六進位格式貼上。</target>
+      </trans-unit>
+      <trans-unit id="7276164817994424208" datatype="html">
+        <source>A WebAuthn token is a phishing-resistant credential that uses public-key cryptography to prove your identity without sharing a secret. The WebAuthn token stores the encrypted key on the server to allow unlimited registrations.</source>
+        <target>WebAuthn 權杖是一種抗網路釣魚的憑證，使用公開金鑰密碼學在不分享祕密的情況下證明您的身分。WebAuthn 權杖會將加密後的金鑰儲存在伺服器上，以允許無限次數的註冊。</target>
+      </trans-unit>
+      <trans-unit id="1679688806824990842" datatype="html">
+        <source>A passkey is a phishing-resistant credential that uses public-key cryptography to prove your identity without sharing a secret. The private key is stored securely on your authenticator (like a phone or hardware token) and is unlocked for each sign-in using your device&apos;s PIN, fingerprint, or face scan.</source>
+        <target>Passkey 是一種抗網路釣魚的憑證，使用公開金鑰密碼學在不分享祕密的情況下證明您的身分。私密金鑰會安全地儲存在您的驗證器（例如手機或硬體權杖）上，並在每次登入時透過裝置的 PIN、指紋或臉部辨識解鎖。</target>
+      </trans-unit>
+      <trans-unit id="4834337133856721893" datatype="html">
+        <source>Help translate</source>
+        <target>協助翻譯</target>
+      </trans-unit>
+      <trans-unit id="1455194643992517806" datatype="html">
+        <source>Help translate this interface on Weblate</source>
+        <target>在 Weblate 上協助翻譯此介面</target>
+      </trans-unit>
+      <trans-unit id="8829918656748785902" datatype="html">
+        <source>Get enterprise support</source>
+        <target>取得企業支援</target>
+      </trans-unit>
     </body>
   </file>
 </xliff>
