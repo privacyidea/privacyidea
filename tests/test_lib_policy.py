@@ -26,7 +26,7 @@ from privacyidea.lib.policy import (set_policy, delete_policy, delete_policies,
                                     get_action_values_from_options, Match, MatchingError,
                                     get_allowed_custom_attributes, convert_action_dict_to_python_dict,
                                     set_policy_conditions, validate_actions, get_policies,
-                                    import_policy, export_policy)
+                                    import_policy, export_policy, filter_invalid_actions)
 from privacyidea.lib.realm import (set_realm, delete_realm, get_realms, get_ordered_resolvers)
 from privacyidea.lib.resolver import (save_resolver, get_resolver_list,
                                       delete_resolver)
@@ -366,6 +366,24 @@ class PolicyTestCase(MyTestCase):
         self.assertIn("enable", mixedpol["action"], mixedpol)
         self.assertNotIn("this_action_is_gone", mixedpol["action"], mixedpol)
         delete_policy("mixedpol")
+
+    def test_06d_filter_invalid_actions(self):
+        # filter_invalid_actions accepts both a comma-separated string and a dict
+        cleaned, dropped = filter_invalid_actions(SCOPE.ADMIN, "enable, this_action_is_gone")
+        self.assertIn("enable", cleaned)
+        self.assertNotIn("this_action_is_gone", cleaned)
+        self.assertEqual(dropped, ["this_action_is_gone"])
+        cleaned, dropped = filter_invalid_actions(SCOPE.ADMIN, {"disable": True, "gone": True})
+        self.assertEqual(set(cleaned.keys()), {"disable"})
+        self.assertEqual(dropped, ["gone"])
+
+    def test_06e_import_policy_skip_invalid_all_dropped(self):
+        # A policy whose only actions are invalid is skipped (no valid action
+        # remains) without raising when skip_invalid is set.
+        only_invalid = {"name": "alldeadpol", "scope": SCOPE.ADMIN,
+                        "action": {"gone1": True, "gone2": True}}
+        import_policy([only_invalid], skip_invalid=True)
+        self.assertFalse(_check_policy_name("alldeadpol", PolicyClass().match_policies()))
 
     def test_07_client_policies(self):
         delete_policy(name="pol2a")

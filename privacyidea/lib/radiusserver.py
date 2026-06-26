@@ -382,7 +382,8 @@ def import_radiusserver(data, name=None):
     for res_name, res_data in data.items():
         if name and name != res_name:
             continue
-        res_data['secret'] = res_data.pop('password')
+        # export_radiusserver() already provides the RADIUS secret under the
+        # 'secret' key, which is also what add_radius() expects.
         rid = add_radius(res_name, **res_data)
-        log.info(f'Import of smtpserver "{res_name!s}" finished,'
+        log.info(f'Import of radiusserver "{res_name!s}" finished,'
                  f' id: {rid!s}')

@@ -453,6 +453,13 @@ def export_smtpserver(name=None, censor=False):
         clear text.
     """
     res = list_smtpservers(identifier=name)
+    for server in res.values():
+        # list_smtpservers() decrypts 'password' but returns 'private_key_password'
+        # still encrypted. Decrypt it here so that a (non-censored) export can be
+        # re-imported without add_smtpserver() encrypting it a second time.
+        if server.get("private_key_password"):
+            decrypted = decryptPassword(server["private_key_password"])
+            server["private_key_password"] = "" if decrypted == FAILED_TO_DECRYPT_PASSWORD else decrypted
     if censor:
         for server in res.values():
             for secret_key in ("password", "private_key_password"):
