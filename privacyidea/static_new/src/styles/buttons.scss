@@ -508,7 +508,10 @@ $button-low-contrast-variant: linear-gradient(
   // for its width tier clips (overflow: hidden) instead of wrapping to two rows,
   // which would break the fixed 40px height and the row rhythm. The fix for a
   // clipped label is to bump that row to the next width tier, not to wrap.
+  // white-space stops the text node breaking; flex-wrap stops the icon + label
+  // flex items from wrapping onto separate rows.
   white-space: nowrap;
+  flex-wrap: nowrap;
 
   mat-icon.mat-icon.notranslate.material-icons {
     font-size: 20px;
