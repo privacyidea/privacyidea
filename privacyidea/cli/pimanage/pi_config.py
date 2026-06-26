@@ -552,6 +552,13 @@ imp_fmt_dict = {
 }
 
 
+def _accepts_parameter(func, parameter):
+    """Whether the registered importer/exporter function accepts the given
+    keyword parameter. Used to pass optional flags ('skip_invalid', 'censor')
+    only to the functions that support them."""
+    return parameter in inspect.signature(func).parameters
+
+
 @config_cli.command("import")
 @click.option('-i', '--input', "infile", type=click.File('r'),
               default=sys.stdin, show_default=False,
@@ -620,7 +627,7 @@ def config_import(ctx, infile, types, name, skip_invalid):
                 click.echo(f"Importing configuration type '{typ}'.")
                 # only pass 'skip_invalid' to importers that support it
                 kwargs = {"name": name}
-                supports_skip_invalid = "skip_invalid" in inspect.signature(value['func']).parameters
+                supports_skip_invalid = _accepts_parameter(value['func'], "skip_invalid")
                 if supports_skip_invalid:
                     kwargs["skip_invalid"] = skip_invalid
                 try:
@@ -690,7 +697,7 @@ def config_export(output, fmt, types, name, censor):
         func = EXPORT_FUNCTIONS[typ]
         kwargs = {"name": name}
         # only pass 'censor' to exporters that support it (those that hold secrets)
-        if "censor" in inspect.signature(func).parameters:
+        if _accepts_parameter(func, "censor"):
             kwargs["censor"] = censor
         out.update({typ: func(**kwargs)})
 
