@@ -158,16 +158,6 @@ class TestingConfig(Config):
     SECRET_KEY = 'secret'  # nosec B105 # used for testing
     SQLALCHEMY_DATABASE_URI = os.environ.get(ConfigKey.TEST_DATABASE_URL) or \
                               'sqlite:///' + os.path.join(basedir, 'data-test.sqlite')
-    # The test harness runs many simulated requests/CLI calls in a single
-    # process sharing one connection pool. On MariaDB's default REPEATABLE READ
-    # isolation a pooled connection keeps the snapshot of its first read, so a
-    # read issued after another context committed can return stale (empty)
-    # results. In production each request and each pi-manage call runs in its
-    # own process, so this only affects the test harness. Use READ COMMITTED for
-    # MySQL/MariaDB tests to match that real behaviour (sqlite does not accept
-    # this isolation level, and PostgreSQL already defaults to READ COMMITTED).
-    if SQLALCHEMY_DATABASE_URI.startswith(("mysql", "mariadb")):
-        SQLALCHEMY_ENGINE_OPTIONS = {"isolation_level": "READ COMMITTED"}
     # This is used to encrypt the admin passwords
     PI_PEPPER = ""
     # This is only for testing encrypted files
