@@ -21,6 +21,7 @@ jobs:
   build-webui:
     name: npm run build
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
@@ -42,6 +43,7 @@ jobs:
     # PR failures already show up as PR checks.
     if: ${{ failure() && github.event_name == 'schedule' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       issues: write
     steps:

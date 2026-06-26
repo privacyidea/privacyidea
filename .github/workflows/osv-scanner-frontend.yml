@@ -36,6 +36,7 @@ jobs:
   scan:
     name: Scan npm dependencies
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
       security-events: write  # upload SARIF to the Security tab
