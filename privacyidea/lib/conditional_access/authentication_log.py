@@ -227,12 +227,18 @@ def _wildcard_pattern(value: str) -> str:
     return escaped.replace("*", "%")
 
 
-def _match_condition(column: InstrumentedAttribute, value: str | list[str] | None) -> ColumnElement[bool] | None:
+def _match_condition(column: InstrumentedAttribute, value: str | list[str] | None,
+                     case_insensitive: bool = False) -> ColumnElement[bool] | None:
     """
     Build the match condition for one column from a single value or a list of values, or ``None`` for no filter on
-    that field. An entry matches if it equals any plain value, or matches (case-sensitively) any value containing a
-    ``*`` wildcard; ``*`` is the only wildcard (see :func:`_wildcard_pattern`). Plain values are batched into a single
-    ``IN``; only wildcard values cost a ``LIKE`` each, so a list without wildcards stays a single indexed ``IN``.
+    that field. An entry matches if it equals any plain value, or matches any value containing a ``*`` wildcard;
+    ``*`` is the only wildcard (see :func:`_wildcard_pattern`). Plain values are batched into a single ``IN``; only
+    wildcard values cost a ``LIKE`` each, so a list without wildcards stays a single indexed ``IN``.
+
+    Plain values match exactly and case-sensitively, unless *case_insensitive* is set, in which case both sides are
+    lowered. Wildcard values always match case-insensitively (via ``ILIKE``): a portable case-sensitive ``LIKE`` would
+    need DB-specific collation, and the DB-default ``LIKE`` case semantics differ per backend, so case is made
+    explicit here rather than left to the DB.
     """
     if value is None:
         return None
@@ -240,9 +246,12 @@ def _match_condition(column: InstrumentedAttribute, value: str | list[str] | Non
     if not values:
         return None
     exact = [v for v in values if "*" not in v]
-    terms = [column.like(_wildcard_pattern(v), escape="\\") for v in values if "*" in v]
+    terms = [column.ilike(_wildcard_pattern(v), escape="\\") for v in values if "*" in v]
     if exact:
-        terms.append(column.in_(exact))
+        if case_insensitive:
+            terms.append(func.lower(column).in_([v.lower() for v in exact]))
+        else:
+            terms.append(column.in_(exact))
     return or_(*terms) if len(terms) > 1 else terms[0]
 
 
@@ -257,12 +266,16 @@ def _filter_conditions(resolver: str | list[str] | None = None,
                        previous_transaction_id: str | list[str] | None = None,
                        client_label: str | list[str] | None = None,
                        start_timestamp: datetime | None = None,
-                       end_timestamp: datetime | None = None) -> list:
+                       end_timestamp: datetime | None = None,
+                       case_insensitive: bool = False) -> list:
     """
     Build the list of SQLAlchemy ``where`` conditions for the provided filters (``None`` means no filter on that
     field). Each scalar filter accepts a single value or a list of values; an entry matches the field if it equals any
     of the values, or (for a value containing a ``*`` wildcard) matches it with a ``LIKE``. Returned as a list so it
     can be applied to both ``select`` and ``delete`` statements. timestamp filters are inclusive on both ends.
+
+    With *case_insensitive* set, plain (non-wildcard) filter values match case-insensitively; wildcard values always
+    match case-insensitively (see :func:`_match_condition`).
     """
     match_filters: dict[InstrumentedAttribute, str | list[str] | None] = {
         AuthenticationLog.resolver: resolver,
@@ -277,7 +290,7 @@ def _filter_conditions(resolver: str | list[str] | None = None,
         AuthenticationLog.client_label: client_label,
     }
     conditions = [condition for column, value in match_filters.items()
-                  if (condition := _match_condition(column, value)) is not None]
+                  if (condition := _match_condition(column, value, case_insensitive)) is not None]
     if start_timestamp is not None:
         conditions.append(AuthenticationLog.timestamp >= _naive_utc(start_timestamp))
     if end_timestamp is not None:
@@ -344,6 +357,7 @@ def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
                                      start_timestamp: datetime | None = None,
                                      end_timestamp: datetime | None = None,
                                      visibility_scopes: list[AuthenticationLogVisibilityScope] | None = None,
+                                     case_insensitive: bool = False,
                                      page: int = 1,
                                      page_size: int = DEFAULT_PAGE_SIZE,
                                      sort_column: str = "id",
@@ -358,6 +372,8 @@ def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
 
     :param visibility_scopes: restrict the result to entries matching any of these scopes
         (see :func:`_visibility_condition`); ``None`` means no restriction
+    :param case_insensitive: if set, plain (non-wildcard) filter values match case-insensitively; wildcard values
+        always match case-insensitively
     :param page: the page number to return, 1-indexed
     :param page_size: the number of entries per page
     :param sort_column: the column to sort by; one of :data:`SORTABLE_COLUMNS` (falling back to ``id``), always
@@ -368,7 +384,8 @@ def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
     conditions = _filter_conditions(resolver=resolver, uid=uid, realm=realm, username=username, event_type=event_type,
                                     source_ip=source_ip, serial=serial, transaction_id=transaction_id,
                                     previous_transaction_id=previous_transaction_id, client_label=client_label,
-                                    start_timestamp=start_timestamp, end_timestamp=end_timestamp)
+                                    start_timestamp=start_timestamp, end_timestamp=end_timestamp,
+                                    case_insensitive=case_insensitive)
     if visibility_scopes is not None:
         conditions.append(_visibility_condition(visibility_scopes))
     stmt = select(AuthenticationLog).where(*conditions)

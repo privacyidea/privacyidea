@@ -85,7 +85,7 @@ def get_authentication_log():
     ``transaction_id``, ``previous_transaction_id`` and ``client_label`` may be passed as a query parameter to filter
     on it. A value may be a comma-separated list (e.g. ``event_type=MFA_FAIL,PIN_FAIL``), matching entries that equal
     any of the values. A value may contain a ``*`` wildcard (e.g. ``serial=TOTP*``) to match by prefix/pattern instead
-    of exactly.
+    of exactly. Note, using wildcards filtering is always case-insensitive.
 
     :query page: page number, 1-indexed (default 1).
     :query page_size: entries per page (default 15).
@@ -94,8 +94,8 @@ def get_authentication_log():
     :query timelimit: only entries newer than now minus this delta (e.g. ``1d``, ``2h``). Overrides ``start``.
     :query start: only entries at/after this ISO 8601 timestamp.
     :query end: only entries at/before this ISO 8601 timestamp.
-    :query include_own: if set, a scoped admin also sees their own entries (matched by username + realm), in
-        addition to the policy scope (ignored for users, who already see only their own).
+    :query case_insensitive: if set, plain (non-wildcard) filter values match case-insensitively (wildcard values
+        always match case-insensitively).
     :status 200: paginated result in ``result.value`` with ``auth_logs``, ``count``, ``current``, ``prev``, ``next``.
     """
     params = request.all_data
@@ -111,10 +111,9 @@ def get_authentication_log():
     end_timestamp = isoparse(end) if end else None
 
     visibility_scopes = get_authentication_log_visibility_scopes(PolicyAction.AUTHENTICATION_LOG_READ)
-    # A scoped admin may opt in to also see their own entries (username + realm), added to the policy scope as an
-    # extra OR alternative. (A user already sees only their own entries, so include_own is irrelevant for them.)
-    if (g.logged_in_user["role"] == ROLE.ADMIN and visibility_scopes is not None
-            and is_true(get_optional(params, "include_own"))):
+    # A scoped admin always also sees their own entries (username + realm), added to the policy scope as an extra OR
+    # alternative. (A user already sees only their own entries, so this is irrelevant for them.)
+    if g.logged_in_user["role"] == ROLE.ADMIN and visibility_scopes is not None:
         own_realm = g.logged_in_user.get("realm")
         own_username = g.logged_in_user.get("username")
         if own_realm and own_username:
@@ -125,6 +124,7 @@ def get_authentication_log():
         **filters,
         start_timestamp=start_timestamp,
         end_timestamp=end_timestamp,
+        case_insensitive=is_true(get_optional(params, "case_insensitive")),
         visibility_scopes=visibility_scopes,
         page=_positive_int(get_optional(params, "page"), default=1),
         page_size=_positive_int(get_optional(params, "page_size"), default=DEFAULT_PAGE_SIZE),

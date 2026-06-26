@@ -195,6 +195,22 @@ class AuthenticationLogTestCase(MyTestCase):
         results = get_authentication_logs(serial=["HOTP001", "TOTP*"])
         self.assertSetEqual({"TOTP001", "HOTP001"}, {entry.serial for entry in results})
 
+    def test_get_authentication_logs_exact_match_is_case_sensitive_by_default(self):
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 username="Alice")
+
+        self.assertEqual(0, get_authentication_logs_paginate(username="alice").count)
+        self.assertEqual(1, get_authentication_logs_paginate(username="alice", case_insensitive=True).count)
+        self.assertEqual(1, get_authentication_logs_paginate(username="Alice").count)
+
+    def test_get_authentication_logs_wildcard_is_always_case_insensitive(self):
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 serial="TOTP001")
+
+        # A wildcard match ignores case regardless of the case_insensitive flag.
+        self.assertEqual(1, get_authentication_logs_paginate(serial="totp*").count)
+        self.assertEqual(1, get_authentication_logs_paginate(serial="totp*", case_insensitive=True).count)
+
     def test_get_authentication_logs_filter_by_serial(self):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
                                  serial="TOK001")

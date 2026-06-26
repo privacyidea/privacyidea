@@ -1254,6 +1254,15 @@ class AuthenticationLogReadAPITestCase(AuthLogTestCase):
         self.assertEqual(2, value["count"])
         self.assertSetEqual({AuthEventType.LOGIN_SUCCESS}, {entry["event_type"] for entry in value["auth_logs"]})
 
+    def test_filter_case_insensitive(self):
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="1", realm=self.realm1,
+                                 username="Alice")
+        db.session.commit()
+
+        # Exact match is case-sensitive by default, case-insensitive when the flag is set.
+        self.assertEqual(0, self._get({"username": "alice"})["result"]["value"]["count"])
+        self.assertEqual(1, self._get({"username": "alice", "case_insensitive": "1"})["result"]["value"]["count"])
+
     def test_filter_by_client_label(self):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="1", realm=self.realm1,
                                  client_label="vpn")
@@ -1350,8 +1359,9 @@ class AuthenticationLogReadAPITestCase(AuthLogTestCase):
                 delete_policy("authlog_scoped")
                 delete_policy("authlog_all")
 
-    def test_include_own_adds_admins_own_entries(self):
-        # A helpdesk admin in the superuser realm "adminrealm" has a real (username, realm), so include_own works.
+    def test_admins_own_entries_always_included(self):
+        # A helpdesk admin in the superuser realm "adminrealm" has a real (username, realm), so their own entries
+        # are always added to the policy scope.
         set_realm("adminrealm", [{"name": self.resolvername1}])
         with self.app.test_request_context("/auth", method="POST",
                                            data={"username": "selfservice@adminrealm", "password": "test"}):
@@ -1373,10 +1383,8 @@ class AuthenticationLogReadAPITestCase(AuthLogTestCase):
                 self.assertEqual(200, res.status_code, res.json)
                 return {entry["id"] for entry in res.json["result"]["value"]["auth_logs"]}
         try:
-            # Without include_own: only the realm1 entry.
-            self.assertEqual({in_scope}, helpdesk_get({"page_size": 50}))
-            # With include_own: the realm1 entry plus the admin's own adminrealm entry.
-            self.assertEqual({in_scope, own}, helpdesk_get({"page_size": 50, "include_own": "1"}))
+            # The realm1 entry (policy scope) plus the admin's own adminrealm entry are both returned.
+            self.assertEqual({in_scope, own}, helpdesk_get({"page_size": 50}))
         finally:
             delete_policy("authlog_realm")
             delete_realm("adminrealm")
