@@ -130,6 +130,10 @@ def list_containers():
         (case-insensitive, ``*`` wildcard).
     :query type: filter by container type (case-insensitive, ``*``
         wildcard).
+    :query type_list: comma-separated list of container types (e.g.
+        ``type_list=generic,smartphone``). Entries are matched
+        case-insensitively as exact values; wildcards are not honored
+        inside the list. Takes precedence over ``type``.
     :query token_serial: filter to containers that hold a token with
         this serial (case-insensitive, ``*`` wildcard).
     :query template: filter by the name of the template the
@@ -164,7 +168,13 @@ def list_containers():
     param = request.all_data
     user = request.User
     cserial = get_optional(param, "container_serial")
+    # TODO(4.0.0): replace the separate "type" and "type_list" query params
+    #   with a single list-only "types" param. They are kept separate here only
+    #   for consistency with the token API on the 3.x line.
     ctype = get_optional(param, "type")
+    ctype_list = get_optional(param, "type_list")
+    if ctype_list:
+        ctype = _split_csv_or_list(ctype_list)
     token_serial = get_optional(param, "token_serial")
     template = get_optional(param, "template")
     realm = get_optional(param, "container_realm")
