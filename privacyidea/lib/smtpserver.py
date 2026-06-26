@@ -30,7 +30,7 @@ from flask import current_app
 from sqlalchemy import select
 
 from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
-                                    FAILED_TO_DECRYPT_PASSWORD, is_censored)
+                                    FAILED_TO_DECRYPT_PASSWORD, is_censored, CENSORED)
 from privacyidea.lib.log import log_with
 from privacyidea.lib.metrics import inc, observe
 from privacyidea.lib.queue import job, wrap_job, has_job_queue
@@ -445,9 +445,27 @@ def delete_smtpserver(identifier):
 
 
 @register_export('smtpserver')
-def export_smtpserver(name=None):
-    """ Export given or all smtpserver configuration """
-    return list_smtpservers(identifier=name)
+def export_smtpserver(name=None, censor=False):
+    """ Export given or all smtpserver configuration
+
+    :param censor: If True, the password and private key password are replaced
+        with the ``__CENSORED__`` placeholder instead of being returned in
+        clear text.
+    """
+    res = list_smtpservers(identifier=name)
+    for server in res.values():
+        # list_smtpservers() decrypts 'password' but returns 'private_key_password'
+        # still encrypted. Decrypt it here so that a (non-censored) export can be
+        # re-imported without add_smtpserver() encrypting it a second time.
+        if server.get("private_key_password"):
+            decrypted = decryptPassword(server["private_key_password"])
+            server["private_key_password"] = "" if decrypted == FAILED_TO_DECRYPT_PASSWORD else decrypted
+    if censor:
+        for server in res.values():
+            for secret_key in ("password", "private_key_password"):
+                if server.get(secret_key):
+                    server[secret_key] = CENSORED
+    return res
 
 
 @register_import('smtpserver')
