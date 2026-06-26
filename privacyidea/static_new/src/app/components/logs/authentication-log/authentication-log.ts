@@ -41,6 +41,7 @@ import {
 import { RouterLink } from "@angular/router";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import {
   MultiSelectFilterComponent,
@@ -135,6 +136,7 @@ const columnKeysMap: { key: string; label: string; filterable: boolean; sortable
     MatColumnDef,
     MatLabel,
     CopyableComponent,
+    FilterValueButtonComponent,
     RouterLink,
     ScrollToTopDirective,
     ClearableInputComponent,
@@ -283,6 +285,22 @@ export class AuthenticationLog {
       ? currentFilter.addEntry(keyword, values.join(","))
       : currentFilter.removeKey(keyword);
     this.authenticationLogService.authenticationLogFilter.set(newFilter);
+  }
+
+  // Whether a @default cell shows the inline "filter by this value" button. Columns whose header already offers a
+  // value picker don't need it, which is dynamic for the client_label.
+  showInlineCellFilter(columnKey: string): boolean {
+    if (columnKey === "client_label") return false;
+    if (columnKey === "source_ip") return !this.showSourceIpMenu();
+    return true;
+  }
+
+  // Inline "filter by this value" action on a cell: add the value to the column's filter (a no-op if already there).
+  addFilterValue(keyword: string, value: string): void {
+    const current = this.selectedFilterValues(keyword);
+    if (!current.includes(value)) {
+      this.setFilterValues(keyword, [...current, value]);
+    }
   }
 
   // "Enter custom value" from a selection menu: ensure the key is present in the main filter input and focus it, so

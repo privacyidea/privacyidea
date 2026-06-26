@@ -169,6 +169,17 @@ describe("AuthenticationLog", () => {
     expect(service.authenticationLogFilter().getValueOfKey("event_type")).toBe("LOGIN_SUCCESS,MFA_FAIL");
   });
 
+  it("addFilterValue appends a value to the column filter and ignores duplicates", () => {
+    component.addFilterValue("username", "alice");
+    expect(service.authenticationLogFilter().getValueOfKey("username")).toBe("alice");
+
+    component.addFilterValue("username", "bob");
+    expect(service.authenticationLogFilter().getValueOfKey("username")).toBe("alice,bob");
+
+    component.addFilterValue("username", "alice");
+    expect(service.authenticationLogFilter().getValueOfKey("username")).toBe("alice,bob");
+  });
+
   it("setFilterValues removes the key when empty", () => {
     component.setFilterValues("event_type", []);
     expect(service.authenticationLogFilter().hasKey("event_type")).toBe(false);

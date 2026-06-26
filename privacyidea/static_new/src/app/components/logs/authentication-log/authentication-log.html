@@ -143,6 +143,10 @@
                       routerLink="/token">
                       {{ serial }}
                     </a>
+                    <app-filter-value-button
+                      class="margin-left-8"
+                      [value]="serial"
+                      (filterValue)="addFilterValue('serial', '*' + $event + '*')" />
                   </app-copyable>
                 }
               }
@@ -160,6 +164,10 @@
                       tabindex="0">
                       {{ element.username }}
                     </a>
+                    <app-filter-value-button
+                      class="margin-left-8"
+                      [value]="element.username"
+                      (filterValue)="addFilterValue('username', $event)" />
                   </app-copyable>
                 }
               }
@@ -182,6 +190,10 @@
                       aria-label="{{ column.label }} Link">
                       {{ element.resolver }}
                     </a>
+                    <app-filter-value-button
+                      class="margin-left-8"
+                      [value]="element.resolver"
+                      (filterValue)="addFilterValue('resolver', $event)" />
                   </app-copyable>
                 }
               }
@@ -197,6 +209,12 @@
                 @if (element[column.key]) {
                   <app-copyable [copyText]="element[column.key]">
                     <span>{{ element[column.key] }}</span>
+                    @if (showInlineCellFilter(column.key)) {
+                      <app-filter-value-button
+                        class="margin-left-8"
+                        [value]="element[column.key]"
+                        (filterValue)="addFilterValue(column.key, $event)" />
+                    }
                   </app-copyable>
                 }
               }
