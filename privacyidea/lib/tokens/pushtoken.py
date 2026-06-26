@@ -1355,6 +1355,18 @@ class PushTokenClass(TokenClass):
             challenges = get_challenges(serial=self.token.serial, transaction_id=transaction_id)
 
             for challenge in challenges:
+                # An enrollment challenge that has already been answered by the smartphone
+                # (otp_valid is set during the rollout in _handle_enrollment_step2) must finalize
+                # the authentication even if the challenge has meanwhile expired. The user may take
+                # some time to scan the QR code and confirm on the device, but once the smartphone
+                # has registered, the pending /validate/check should still succeed.
+                if challenge.get_session() == ChallengeSession.ENROLLMENT:
+                    _, status = challenge.get_otp_status()
+                    if status is True:
+                        otp_counter = 1
+                        break
+                    continue
+
                 # Check that the challenge is not expired
                 if challenge.is_valid():
                     data = challenge.get_data()

@@ -577,6 +577,102 @@ class PushAPITestCase(MyApiTestCase):
         delete_realm("ldaprealm")
         delete_resolver("catchall")
 
+    @ldap3mock.activate
+    def test_10a_finalize_enroll_push_after_challenge_expired(self):
+        # Regression test: an enrollment challenge that has been answered by the
+        # smartphone (otp_valid set during the rollout) must finalize the
+        # authentication even if the challenge has meanwhile expired. The user may
+        # take longer than the challenge validity to scan the QR and confirm.
+        from .test_api_validate import LDAPDirectory
+        from privacyidea.models import Challenge
+
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        params = {'LDAPURI': 'ldap://localhost',
+                  'LDAPBASE': 'o=test',
+                  'BINDDN': 'cn=manager,ou=example,o=test',
+                  'BINDPW': 'ldaptest',
+                  'LOGINNAMEATTRIBUTE': 'cn',
+                  'LDAPSEARCHFILTER': '(cn=*)',
+                  'USERINFO': '{ "username": "cn",'
+                              '"phone" : "telephoneNumber", '
+                              '"mobile" : "mobile"'
+                              ', "email" : "mail", '
+                              '"surname" : "sn", '
+                              '"givenname" : "givenName" }',
+                  'UIDTYPE': 'DN',
+                  "resolver": "catchall",
+                  "type": "ldapresolver"}
+        r = save_resolver(params)
+        self.assertTrue(r > 0)
+        set_realm("ldaprealm", resolvers=[{'name': "catchall"}])
+        set_default_realm("ldaprealm")
+
+        set_policy("pol_passthru", scope=SCOPE.AUTH, action=PolicyAction.PASSTHRU)
+        set_policy("pol_tokenlabel", scope=SCOPE.ENROLL, action=f"{PolicyAction.TOKENLABEL}=Pushy")
+        set_policy("pol_multienroll", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE}=push")
+        set_policy("pol_push2", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.FIREBASE_CONFIG}={self.firebase_config_name},"
+                          f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL},"
+                          f"{PushAction.SSL_VERIFY}=1,"
+                          f"{PushAction.TTL}={TTL}")
+        r = set_smsgateway(self.firebase_config_name,
+                           'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
+                           "myFB", FB_CONFIG_VALS)
+        self.assertTrue(r > 0)
+
+        # Trigger the enrollment challenge
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "alice", "pass": "alicepw"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            detail = res.json.get("detail")
+            transaction_id = detail.get("transaction_id")
+            serial = detail.get("serial")
+
+        # The smartphone finalizes the rollout, which marks the challenge as answered
+        tok = get_one_token(serial=serial)
+        enrollment_credential = tok.get_tokeninfo("enrollment_credential")
+        with self.app.test_request_context('/ttype/push',
+                                           method='POST',
+                                           data={"enrollment_credential": enrollment_credential,
+                                                 "serial": serial,
+                                                 "pubkey": self.smartphone_public_key_pem_urlsafe,
+                                                 "fbtoken": "firebaseT"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+
+        # The challenge is answered (otp_valid flipped to 1) ...
+        chal = get_challenges(serial=serial, transaction_id=transaction_id)[0]
+        self.assertTrue(chal.get_otp_status()[1])
+        # ... but it has meanwhile expired (user took longer than the challenge validity)
+        db_chal = Challenge.query.filter(Challenge.transaction_id == transaction_id).first()
+        db_chal.expiration = datetime.datetime.utcnow() - datetime.timedelta(seconds=10)
+        db_chal.save()
+        self.assertFalse(db_chal.is_valid())
+
+        # The application finalizes via /validate/check with empty pass: must still succeed
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "alice",
+                                                 "transaction_id": transaction_id,
+                                                 "pass": ""}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("value"), res.json)
+            self.assertEqual(result.get("authentication"), "ACCEPT", res.json)
+
+        # Cleanup
+        delete_policy("pol_passthru")
+        delete_policy("pol_tokenlabel")
+        delete_policy("pol_multienroll")
+        delete_policy("pol_push2")
+        remove_token(serial)
+        delete_realm("ldaprealm")
+        delete_resolver("catchall")
+
     def test_15_push_with_require_presence(self):
         self.setUp_user_realms()
         # Setup PUSH policies
