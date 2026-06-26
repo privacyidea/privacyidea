@@ -22,12 +22,11 @@ from datetime import datetime, timezone
 from dateutil.parser import isoparse
 from flask import Blueprint, request, g
 
-from privacyidea.api.auth import admin_required, user_required
+from privacyidea.api.auth import user_required
 from privacyidea.api.lib.prepolicy import prepolicy, check_base_action
 from privacyidea.api.lib.utils import send_result
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.conditional_access.authentication_log import (get_authentication_logs_paginate,
-                                                                   delete_authentication_logs,
                                                                    AuthenticationLogVisibilityScope,
                                                                    DEFAULT_PAGE_SIZE)
 from privacyidea.lib.log import log_with
@@ -133,42 +132,3 @@ def get_authentication_log():
 
     g.audit_object.log({"success": True})
     return send_result(result.to_dict())
-
-
-@authentication_log_blueprint.route("/", methods=["DELETE"])
-@admin_required
-@prepolicy(check_base_action, request, PolicyAction.AUTHENTICATION_LOG_DELETE)
-@log_with(log)
-def delete_authentication_log():
-    """
-    Delete authentication-log entries matching the given filters and return the number deleted.
-
-    Requires admin authentication and the policy action :ref:`policy_authentication_log_delete`. If that policy is
-    scoped to realms, resolvers and/or users, only entries matching that scope are deleted. At least one filter must
-    be given; an unfiltered request is rejected so the whole log cannot be wiped by accident. To delete entries older
-    than a point in time, pass ``end`` (entries with a timestamp at or before it).
-
-    Each of ``resolver``, ``uid``, ``realm``, ``username``, ``event_type``, ``source_ip``, ``serial``,
-    ``transaction_id``, ``previous_transaction_id`` and ``client_label`` may be passed as a query parameter to filter
-    on it. A value may be a comma-separated list (e.g. ``event_type=MFA_FAIL,PIN_FAIL``), matching entries that equal
-    any of the values. A value may contain a ``*`` wildcard (e.g. ``serial=TOTP*``) to match by prefix/pattern instead
-    of exactly.
-
-    :query start: only entries at/after this ISO 8601 timestamp.
-    :query end: only entries at/before this ISO 8601 timestamp (i.e. "older than").
-    :status 200: ``result.value`` is the number of deleted entries.
-    :status 400: no filter was given.
-    """
-    params = request.all_data
-    filters = {name: _split_csv(get_optional(params, name)) for name in _FILTER_PARAMS}
-    start = get_optional(params, "start")
-    end = get_optional(params, "end")
-
-    count = delete_authentication_logs(
-        **filters,
-        start_timestamp=isoparse(start) if start else None,
-        end_timestamp=isoparse(end) if end else None,
-        visibility_scopes=get_authentication_log_visibility_scopes(PolicyAction.AUTHENTICATION_LOG_DELETE))
-
-    g.audit_object.log({"success": True})
-    return send_result(count)

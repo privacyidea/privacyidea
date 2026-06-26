@@ -225,7 +225,6 @@ class PolicyAction:
     REQUIRE_AUTH_FOR_RESOLVER_DETAILS = "require_auth_for_resolver_details"
     PASSKEY_LOGIN = "passkey_login"
     AUTHENTICATION_LOG_READ = "authentication_log_read"
-    AUTHENTICATION_LOG_DELETE = "authentication_log_delete"
 
 
 class PasskeyLoginButtonOptions:
