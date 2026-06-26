@@ -40,7 +40,7 @@ log = logging.getLogger(__name__)
 authentication_log_blueprint = Blueprint("authentication_log_blueprint", __name__)
 
 # Filter parameters that map 1:1 to a get_authentication_logs_paginate keyword argument.
-_FILTER_PARAMS = ["resolver", "uid", "realm", "username", "event_type", "source_ip", "serial",
+_FILTER_PARAMS = ["resolver", "uid", "realm", "username", "user_role", "event_type", "source_ip", "serial",
                   "transaction_id", "previous_transaction_id", "client_label"]
 
 
@@ -80,7 +80,7 @@ def get_authentication_log():
     scope may read the log; if the policy is scoped to realms, resolvers and/or users, only entries matching that
     scope are returned. A **user** with the action set in the user scope may read only their own entries.
 
-    Each of ``resolver``, ``uid``, ``realm``, ``username``, ``event_type``, ``source_ip``, ``serial``,
+    Each of ``resolver``, ``uid``, ``realm``, ``username``, ``user_role``, ``event_type``, ``source_ip``, ``serial``,
     ``transaction_id``, ``previous_transaction_id`` and ``client_label`` may be passed as a query parameter to filter
     on it. A value may be a comma-separated list (e.g. ``event_type=MFA_FAIL,PIN_FAIL``), matching entries that equal
     any of the values. A value may contain a ``*`` wildcard (e.g. ``serial=TOTP*``) to match by prefix/pattern instead

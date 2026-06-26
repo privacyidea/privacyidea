@@ -22,7 +22,8 @@ import mock
 
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType, AUTH_EVENT_TYPE_KEY
-from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs, log_authentication_event
+from privacyidea.lib.conditional_access.authentication_log import (get_authentication_logs, log_authentication_event,
+                                                                   AuthLogUserRole)
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, PolicyAction, AUTHORIZED
 from privacyidea.lib.realm import set_realm, delete_realm
 from privacyidea.lib.token import init_token, remove_token, get_tokens, get_one_token, revoke_token
@@ -617,11 +618,25 @@ class AuthEndpointAuthLogTestCase(AuthLogTestCase):
                                         user=User(self.testadmin, self.realm1))
 
         self._clear_log()
-        # A successful local-admin login uses User() (empty), so no identity fields are recorded.
+        # A successful internal-admin login uses User() (empty), so no identity fields are recorded; the role is
+        # admin-internal.
         body = self._auth({"username": self.testadmin, "password": self.testadminpw})
         self.assertTrue(body["result"]["value"]["token"], body)
         entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
-        assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS])
+        assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS], user_role=AuthLogUserRole.ADMIN_INTERNAL)
+
+    def test_auth_endpoint_logs_external_admin_role(self):
+        # A user in a superuser realm (adminrealm) is an external (admin-realm) admin, recorded as admin-external.
+        set_realm("adminrealm", [{"name": self.resolvername1}])
+        try:
+            body = self._auth({"username": "selfservice@adminrealm", "password": "test"})
+            self.assertEqual("admin", body["result"]["value"]["role"], body)
+            entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
+            assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS],
+                                            user=User("selfservice", "adminrealm"),
+                                            user_role=AuthLogUserRole.ADMIN_EXTERNAL)
+        finally:
+            delete_realm("adminrealm")
 
     def test_no_token_logs_no_token(self):
         # A resolvable user without a usable token -> NO_TOKEN (set in check_user_pass)
@@ -1253,6 +1268,22 @@ class AuthenticationLogReadAPITestCase(AuthLogTestCase):
         value = self._get({"event_type": "LOGIN*"})["result"]["value"]
         self.assertEqual(2, value["count"])
         self.assertSetEqual({AuthEventType.LOGIN_SUCCESS}, {entry["event_type"] for entry in value["auth_logs"]})
+
+    def test_filter_by_user_role(self):
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="1", realm=self.realm1,
+                                 user_role=AuthLogUserRole.USER)
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="2", realm=self.realm1,
+                                 user_role=AuthLogUserRole.ADMIN_INTERNAL)
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="3", realm=self.realm1,
+                                 user_role=AuthLogUserRole.ADMIN_EXTERNAL)
+        db.session.commit()
+
+        self.assertEqual(1, self._get({"user_role": AuthLogUserRole.USER})["result"]["value"]["count"])
+        # The shared 'admin-' prefix lets one wildcard filter match either admin kind.
+        value = self._get({"user_role": "admin*"})["result"]["value"]
+        self.assertEqual(2, value["count"])
+        self.assertSetEqual({AuthLogUserRole.ADMIN_INTERNAL, AuthLogUserRole.ADMIN_EXTERNAL},
+                            {entry["user_role"] for entry in value["auth_logs"]})
 
     def test_filter_case_insensitive(self):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="1", realm=self.realm1,

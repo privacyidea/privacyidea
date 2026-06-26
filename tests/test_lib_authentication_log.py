@@ -29,6 +29,7 @@ from privacyidea.lib.conditional_access.authentication_log import (
     delete_authentication_logs,
     cleanup_authentication_log,
     AuthenticationLogVisibilityScope,
+    AuthLogUserRole,
 )
 from privacyidea.lib.error import ParameterError
 from .base import MyTestCase
@@ -194,6 +195,20 @@ class AuthenticationLogTestCase(MyTestCase):
         # one exact value (batched into IN) plus one wildcard pattern (LIKE), OR'd together
         results = get_authentication_logs(serial=["HOTP001", "TOTP*"])
         self.assertSetEqual({"TOTP001", "HOTP001"}, {entry.serial for entry in results})
+
+    def test_get_authentication_logs_filter_by_user_role(self):
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 username="alice", user_role=AuthLogUserRole.USER)
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u2", realm="r1",
+                                 username="iadmin", user_role=AuthLogUserRole.ADMIN_INTERNAL)
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u3", realm="r1",
+                                 username="eadmin", user_role=AuthLogUserRole.ADMIN_EXTERNAL)
+
+        self.assertEqual(1, get_authentication_logs_paginate(user_role=AuthLogUserRole.USER).count)
+        self.assertEqual(1, get_authentication_logs_paginate(user_role=AuthLogUserRole.ADMIN_INTERNAL).count)
+        # The shared 'admin-' prefix lets a single wildcard match either admin kind.
+        self.assertEqual({AuthLogUserRole.ADMIN_INTERNAL, AuthLogUserRole.ADMIN_EXTERNAL},
+                         {entry.user_role for entry in get_authentication_logs_paginate(user_role="admin*").auth_logs})
 
     def test_get_authentication_logs_exact_match_is_case_sensitive_by_default(self):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
@@ -431,21 +446,25 @@ class AuthenticationLogDBTestCase(MyTestCase):
             datetime_mock.now.return_value = log_time_utc_naive
             event_id = log_authentication_event(
                 event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="user1", realm="realm1",
-                username="testuser", source_ip="192.168.1.1", client_label="vpn", serial="TOK001",
-                transaction_id="txn-123", previous_transaction_id="txn-prev", other_info={"key": "value"}
+                username="testuser", user_role=AuthLogUserRole.ADMIN_EXTERNAL, source_ip="192.168.1.1",
+                client_label="vpn",
+                serial="TOK001", transaction_id="txn-123", previous_transaction_id="txn-prev",
+                other_info={"key": "value"}
             )
 
         entry = get_authentication_log_event(event_id)
         auth_log_dict = entry.to_dict()
 
-        expected_keys = {"id", "resolver", "uid", "realm", "username", "event_type", "timestamp", "source_ip",
-                         "client_label", "serial", "transaction_id", "previous_transaction_id", "other_info"}
+        expected_keys = {"id", "resolver", "uid", "realm", "username", "user_role", "event_type", "timestamp",
+                         "source_ip", "client_label", "serial", "transaction_id", "previous_transaction_id",
+                         "other_info"}
         self.assertSetEqual(expected_keys, set(auth_log_dict.keys()))
         self.assertEqual(event_id, auth_log_dict["id"])
         self.assertEqual("res1", auth_log_dict["resolver"])
         self.assertEqual("user1", auth_log_dict["uid"])
         self.assertEqual("realm1", auth_log_dict["realm"])
         self.assertEqual("testuser", auth_log_dict["username"])
+        self.assertEqual(AuthLogUserRole.ADMIN_EXTERNAL, auth_log_dict["user_role"])
         self.assertEqual(AuthEventType.LOGIN_SUCCESS, auth_log_dict["event_type"])
         log_time_tz_aware = log_time_utc_naive.replace(tzinfo=timezone.utc)
         self.assertEqual(log_time_tz_aware.isoformat(), auth_log_dict["timestamp"])

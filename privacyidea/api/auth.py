@@ -522,6 +522,8 @@ def get_auth_token():
     # Verify the password
     admin_auth = False
     user_auth = False
+    # record for the auth log if it is an internal or external admin
+    internal_admin = False
 
     if passkey_login_success:
         authtype = "pi"
@@ -551,6 +553,7 @@ def get_auth_token():
         if db_admin_exists(username):
             role = ROLE.ADMIN
             admin_auth = True
+            internal_admin = True
             g.audit_object.log({"success": True, "user": "", "administrator": username, "info": "internal admin"})
             user = User()
         else:
@@ -566,6 +569,7 @@ def get_auth_token():
     elif verify_db_admin(username, password):
         role = ROLE.ADMIN
         admin_auth = True
+        internal_admin = True
         log.info(f"Local admin '{username}' successfully logged in.")
         # This admin is not in the default realm!
         realm = ""
@@ -657,7 +661,8 @@ def get_auth_token():
         auth_event_type = AuthEventType.LOGIN_SUCCESS if (
                     admin_auth or user_auth) else AuthEventType.UNKNOWN_FAIL_REASON
     log_authentication(auth_event_type, request, user=user, serial=serials or details.get("serial"),
-                       transaction_id=get_optional(request.all_data, "transaction_id") or details.get("transaction_id"))
+                       transaction_id=get_optional(request.all_data, "transaction_id") or details.get("transaction_id"),
+                       internal_admin=internal_admin)
 
     # Feed the classified outcome to the lockout engine (after the log row is written so the
     # count includes it). It writes lockout state for the next request and returns any

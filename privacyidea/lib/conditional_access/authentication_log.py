@@ -18,6 +18,7 @@
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from enum import Enum
 
 from sqlalchemy import and_, delete, func, or_, select
 from sqlalchemy.orm import InstrumentedAttribute
@@ -41,6 +42,25 @@ SORTABLE_COLUMNS: dict[str, InstrumentedAttribute] = {
     "serial": AuthenticationLog.serial,
 }
 DEFAULT_PAGE_SIZE = 15
+
+
+class AuthLogUserRole(str, Enum):
+    """
+    Role of the authenticating principal recorded in the authentication log. The two admin values are kept distinct
+    because conditional-access rules may treat them differently: ``admin-external`` admins come from an admin realm
+    (an external identity source) and are the everyday admins, while ``admin-internal`` admins are local database
+    accounts (created via the CLI, used for initial setup and as fallback/recovery) that authenticate only at the
+    ``/auth`` endpoint. Both share the ``admin-`` prefix so a single ``user_role=admin*`` filter matches either.
+
+    ``str`` is used instead of ``StrEnum`` (3.11+) for compatibility with Python 3.10; the ``__str__`` override
+    normalizes ``str()``/f-string output to the value across versions (mirrors :class:`AuthEventType`).
+    """
+    USER = "user"
+    ADMIN_INTERNAL = "admin-internal"
+    ADMIN_EXTERNAL = "admin-external"
+
+    def __str__(self) -> str:
+        return self.value
 
 
 @dataclass
@@ -114,6 +134,7 @@ def log_authentication_event(event_type: AuthEventType,
                              uid: str | None = None,
                              realm: str | None = None,
                              username: str | None = None,
+                             user_role: str | None = None,
                              source_ip: str | None = None,
                              client_label: str | None = None,
                              serial: str | None = None,
@@ -133,6 +154,7 @@ def log_authentication_event(event_type: AuthEventType,
         uid=_truncate("uid", uid),
         realm=_truncate("realm", realm),
         username=_truncate("username", username),
+        user_role=_truncate("user_role", user_role),
         source_ip=_truncate("source_ip", source_ip),
         client_label=_truncate("client_label", client_label),
         serial=_truncate("serial", serial),
@@ -259,6 +281,7 @@ def _filter_conditions(resolver: str | list[str] | None = None,
                        uid: str | list[str] | None = None,
                        realm: str | list[str] | None = None,
                        username: str | list[str] | None = None,
+                       user_role: str | list[str] | None = None,
                        event_type: str | list[str] | None = None,
                        source_ip: str | list[str] | None = None,
                        serial: str | list[str] | None = None,
@@ -282,6 +305,7 @@ def _filter_conditions(resolver: str | list[str] | None = None,
         AuthenticationLog.uid: uid,
         AuthenticationLog.realm: realm,
         AuthenticationLog.username: username,
+        AuthenticationLog.user_role: user_role,
         AuthenticationLog.event_type: event_type,
         AuthenticationLog.source_ip: source_ip,
         AuthenticationLog.serial: serial,
@@ -322,6 +346,7 @@ def get_authentication_logs(resolver: str | list[str] | None = None,
                             uid: str | list[str] | None = None,
                             realm: str | list[str] | None = None,
                             username: str | list[str] | None = None,
+                            user_role: str | list[str] | None = None,
                             event_type: str | list[str] | None = None,
                             source_ip: str | list[str] | None = None,
                             serial: str | list[str] | None = None,
@@ -336,7 +361,8 @@ def get_authentication_logs(resolver: str | list[str] | None = None,
     single value or a list of values; an entry matches the field if it equals any of the listed values, or (for a
     value containing a ``*`` wildcard) matches it with a ``LIKE``. timestamp filters are inclusive on both ends.
     """
-    conditions = _filter_conditions(resolver=resolver, uid=uid, realm=realm, username=username, event_type=event_type,
+    conditions = _filter_conditions(resolver=resolver, uid=uid, realm=realm, username=username, user_role=user_role,
+                                    event_type=event_type,
                                     source_ip=source_ip, serial=serial, transaction_id=transaction_id,
                                     previous_transaction_id=previous_transaction_id, client_label=client_label,
                                     start_timestamp=start_timestamp, end_timestamp=end_timestamp)
@@ -348,6 +374,7 @@ def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
                                      uid: str | list[str] | None = None,
                                      realm: str | list[str] | None = None,
                                      username: str | list[str] | None = None,
+                                     user_role: str | list[str] | None = None,
                                      event_type: str | list[str] | None = None,
                                      source_ip: str | list[str] | None = None,
                                      serial: str | list[str] | None = None,
@@ -365,7 +392,7 @@ def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
     """
     Return a single page of authentication log entries matching the given filters.
 
-    The filter parameters -- ``resolver``, ``uid``, ``realm``, ``username``, ``event_type``, ``source_ip``,
+    The filter parameters -- ``resolver``, ``uid``, ``realm``, ``username``, ``user_role``, ``event_type``, ``source_ip``,
     ``serial``, ``transaction_id``, ``previous_transaction_id``, ``client_label``, ``start_timestamp`` and
     ``end_timestamp`` -- behave
     exactly like :func:`get_authentication_logs`. The remaining parameters control visibility scoping and pagination:
@@ -381,7 +408,8 @@ def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
     :param sort_order: ``asc`` or ``desc``
     :return: an :class:`AuthenticationLogPage` with the page's entries and the pagination metadata
     """
-    conditions = _filter_conditions(resolver=resolver, uid=uid, realm=realm, username=username, event_type=event_type,
+    conditions = _filter_conditions(resolver=resolver, uid=uid, realm=realm, username=username, user_role=user_role,
+                                    event_type=event_type,
                                     source_ip=source_ip, serial=serial, transaction_id=transaction_id,
                                     previous_transaction_id=previous_transaction_id, client_label=client_label,
                                     start_timestamp=start_timestamp, end_timestamp=end_timestamp,
@@ -416,6 +444,7 @@ def delete_authentication_logs(resolver: str | list[str] | None = None,
                                uid: str | list[str] | None = None,
                                realm: str | list[str] | None = None,
                                username: str | list[str] | None = None,
+                               user_role: str | list[str] | None = None,
                                event_type: str | list[str] | None = None,
                                source_ip: str | list[str] | None = None,
                                serial: str | list[str] | None = None,
@@ -429,7 +458,7 @@ def delete_authentication_logs(resolver: str | list[str] | None = None,
     """
     Delete all authentication log entries matching the given filters and return the number deleted.
 
-    The filter parameters -- ``resolver``, ``uid``, ``realm``, ``username``, ``event_type``, ``source_ip``,
+    The filter parameters -- ``resolver``, ``uid``, ``realm``, ``username``, ``user_role``, ``event_type``, ``source_ip``,
     ``serial``, ``transaction_id``, ``previous_transaction_id``, ``client_label``, ``start_timestamp`` and
     ``end_timestamp`` -- behave
     exactly like :func:`get_authentication_logs` (to delete entries older than a point in time, pass
@@ -441,7 +470,8 @@ def delete_authentication_logs(resolver: str | list[str] | None = None,
     :param chunk_size: if given, delete in chunks of this size to avoid long locks on large tables
     :return: the number of deleted entries
     """
-    conditions = _filter_conditions(resolver=resolver, uid=uid, realm=realm, username=username, event_type=event_type,
+    conditions = _filter_conditions(resolver=resolver, uid=uid, realm=realm, username=username, user_role=user_role,
+                                    event_type=event_type,
                                     source_ip=source_ip, serial=serial, transaction_id=transaction_id,
                                     previous_transaction_id=previous_transaction_id, client_label=client_label,
                                     start_timestamp=start_timestamp, end_timestamp=end_timestamp)
