@@ -12,7 +12,7 @@ The migration is idempotent: values that are already in encrypted format
 (contain a colon separating IV:ciphertext hex) are skipped.
 
 Revision ID: a1b2c3d4e5f6
-Revises: c2d3e4f5a6b7
+Revises: d4f5a6b7c8e9
 Create Date: 2026-06-22 00:00:00.000000
 
 """
@@ -24,7 +24,7 @@ import sqlalchemy as sa
 log = logging.getLogger("alembic.runtime.migration")
 
 revision = 'a1b2c3d4e5f6'
-down_revision = 'c2d3e4f5a6b7'
+down_revision = 'd4f5a6b7c8e9'
 branch_labels = None
 depends_on = None
 
