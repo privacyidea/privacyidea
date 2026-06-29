@@ -135,9 +135,13 @@ jobs:
           tests/requirements.txt
 
     - name: Install dependencies
+      # Pass the driver through env rather than expanding ${{ }} straight into
+      # the shell, so the input value can never be interpreted as code.
+      env:
+        DRIVER_PIP: ${{ inputs.driver-pip }}
       run: |
         pip install -r tests/requirements.txt
-        pip install ${{ inputs.driver-pip }}
+        pip install "$DRIVER_PIP"
 
     - name: Determine pytest-xdist worker count
       # Derive the worker count once and reuse it for both the per-worker
