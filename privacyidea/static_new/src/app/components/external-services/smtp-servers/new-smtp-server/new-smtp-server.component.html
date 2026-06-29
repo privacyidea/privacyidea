@@ -228,6 +228,7 @@
                 [showClearButton]="!!smtpModel().certificate">
                 <input
                   [formField]="smtpForm.certificate"
+                  i18n-placeholder
                   matInput
                   placeholder="The path to the certificate file" />
               </app-clearable-input>
@@ -259,6 +260,7 @@
                 [showClearButton]="!!smtpModel().private_key">
                 <input
                   [formField]="smtpForm.private_key"
+                  i18n-placeholder
                   matInput
                   placeholder="The path to the private key file" />
               </app-clearable-input>

@@ -21,7 +21,7 @@ import { MatDialog } from "@angular/material/dialog";
 import { AuthService } from "@services/auth/auth.service";
 import { MockPiResponse } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
-import { MockSubscriptionService } from "@testing/mock-services/mock-subscription-serivce";
+import { MockSubscriptionService } from "@testing/mock-services/mock-subscription-service";
 import { SubscriptionExpiryService } from "./subscription-expiry.service";
 import { Subscription, SubscriptionService } from "./subscription.service";
 

@@ -21,7 +21,7 @@
   (actionTriggered)="onCloseAction()"
   [showCancelButton]="false"
   [actions]="[closeAction]"
-  [title]="'Token ' + data.tokenSerial() + ' is lost?'">
+  [title]="dialogTitle()">
   <div class="lost-content">
     <p i18n>
       If the token is lost, you can enroll a temporary password based token and give the password to the user. The OTP
@@ -34,10 +34,9 @@
         <button
           mat-stroked-button
           class="action-button-primary button-width-l"
-          (click)="lostToken()"
-          i18n>
+          (click)="lostToken()">
           <mat-icon class="question-icon">question_mark</mat-icon>
-          Mark Token as Lost
+          <span i18n>Mark Token as Lost</span>
         </button>
       </div>
     } @else {

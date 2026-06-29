@@ -31,6 +31,8 @@ export class MockEventService implements EventServiceInterface {
 
   eventHandlers = signal<EventHandler[] | undefined>([]);
 
+  getEventHandlers = jest.fn().mockReturnValue(of(MockPiResponse.fromValue<EventHandler[]>([])));
+
   saveEventHandler = jest.fn().mockReturnValue(of(MockPiResponse.fromValue<number>(1)));
 
   enableEvent = jest.fn().mockResolvedValue({});

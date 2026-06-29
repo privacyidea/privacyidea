@@ -40,10 +40,12 @@
       }
     </div>
   }
+  <app-language-switcher></app-language-switcher>
   <app-theme-switcher></app-theme-switcher>
   <button
     (click)="refreshPage()"
     mat-icon-button
+    i18n-matTooltip
     matTooltip="Refresh Resources">
     <mat-icon>refresh</mat-icon>
   </button>
@@ -56,6 +58,7 @@
           : 'surface-highest'
     ]"
     class="session-timer"
+    i18n-matTooltip
     matTooltip="Time until session expires">
     {{ sessionTimerService.remainingTime() | date: sessionTimeFormat() : "UTC" }}
   </div>
@@ -64,6 +67,7 @@
     aria-label="Logout"
     i18n-aria-label
     mat-icon-button
+    i18n-matTooltip
     matTooltip="Logout">
     <mat-icon>logout</mat-icon>
   </button>

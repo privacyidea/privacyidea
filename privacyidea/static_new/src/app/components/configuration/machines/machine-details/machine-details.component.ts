@@ -180,7 +180,7 @@ export class MachineDetailsComponent implements OnInit, OnDestroy {
           data: {
             title: $localize`Detach Token`,
             items: [token.serial],
-            itemType: "token",
+            itemType: $localize`token`,
             confirmAction: { label: $localize`Detach`, value: true, type: "destruct" }
           }
         })

@@ -51,16 +51,16 @@
     @if (authService.actionAllowed("eventhandling_write")) {
       <button
         (click)="onCreateNewEventHandler()"
-        class="action-button-primary button-width-l"
-        i18n
+        class="action-button-primary button-width-xl"
         mat-stroked-button>
         <mat-icon>add</mat-icon>
-        Create New Event Handler
+        <span i18n>Create New Event Handler</span>
       </button>
     }
     <mat-slide-toggle
       (change)="toggleDetailedView()"
       [checked]="detailedView()"
+      i18n
       >Detailed View
     </mat-slide-toggle>
   </div>
@@ -143,13 +143,23 @@
                 }
               }
               @case ("action") {
-                <div [innerHTML]="element.action | highlight: filterString()"></div>
                 @if (detailedView()) {
-                  <ul class="no-indention margin-top-0">
-                    @for (option of Object.entries(element.options); track option[0]) {
-                      <li [innerHTML]="option[0] + ': ' + option[1] | highlight: filterString()"></li>
-                    }
-                  </ul>
+                  <div class="detailed-cell-container">
+                    <div class="break-words">
+                      <span [innerHTML]="element.action | highlight: filterString()"></span>
+                    </div>
+                    <ul class="no-indention margin-top-0">
+                      @for (option of Object.entries(element.options); track option[0]) {
+                        <li [innerHTML]="option[0] + ': ' + option[1] | highlight: filterString()"></li>
+                      }
+                    </ul>
+                  </div>
+                } @else {
+                  <div
+                    class="event-table-cell"
+                    [attr.title]="element.action">
+                    <span [innerHTML]="element.action | highlight: filterString()"></span>
+                  </div>
                 }
               }
               @case ("active") {
@@ -158,13 +168,15 @@
                   [checked]="element.active"
                   [disableRipple]="true"
                   [disabled]="!authService.actionAllowed('eventhandling_write')"
-                  matTooltip="Toggle Active Status"></mat-slide-toggle>
+                  matTooltip="Toggle Active Status"
+                  i18n-matTooltip></mat-slide-toggle>
               }
               @case ("delete") {
                 <button
                   (click)="onDeleteEventHandler(element); $event.stopPropagation()"
                   mat-icon-button
-                  matTooltip="Delete Event Handler">
+                  matTooltip="Delete Event Handler"
+                  i18n-matTooltip>
                   <mat-icon>delete</mat-icon>
                 </button>
               }

@@ -31,7 +31,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
-from privacyidea.lib.crypto import get_rand_digit_str
+from privacyidea.lib.crypto import get_rand_digit_str, encryptPassword, decryptPassword
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import convert_column_to_unicode
 from privacyidea.models import db
@@ -47,7 +47,7 @@ class Challenge(MethodsMixin, db.Model):
     __tablename__ = "challenge"
     id: Mapped[int] = mapped_column(Integer, Sequence("challenge_seq"), primary_key=True, nullable=False)
     transaction_id: Mapped[str] = mapped_column(Unicode(64), nullable=False, index=True)
-    data: Mapped[str | None] = mapped_column(Unicode(512), default='')
+    _data: Mapped[str | None] = mapped_column("data", Unicode(2000), default='')
     challenge: Mapped[str | None] = mapped_column(Text, default='')
     session: Mapped[str | None] = mapped_column(Unicode(512), default='', quote=True, name="session")
     # The token serial number
@@ -56,6 +56,23 @@ class Challenge(MethodsMixin, db.Model):
     expiration: Mapped[datetime | None] = mapped_column(DateTime, index=True)
     received_count: Mapped[int | None] = mapped_column(Integer, default=0)
     otp_valid: Mapped[bool | None] = mapped_column(Boolean, default=False)
+
+    @property
+    def data(self):
+        """Return the decrypted challenge data, or the raw value for legacy data."""
+        raw = self._data
+        if not raw:
+            return raw
+        decrypted = decryptPassword(raw)
+        if decrypted and not decrypted.startswith("FAILED TO DECRYPT"):
+            return decrypted
+        # Legacy unencrypted data or decryption failure - return as-is
+        return raw
+
+    @data.setter
+    def data(self, value):
+        """Allow direct assignment to data (encrypts before storing)."""
+        self.set_data(value)
 
     @log_with(log)
     def __init__(self, serial, transaction_id=None,
@@ -89,26 +106,27 @@ class Challenge(MethodsMixin, db.Model):
 
     def set_data(self, data):
         """
-        set the internal data of the challenge
+        Set the internal data of the challenge.
+        The data is encrypted before being stored in the database since it
+        may contain OTP values.
 
-        :param data: Unicode data
-        :type data: string, length 512
+        :param data: The challenge data (string, dict, or other serializable value)
         """
-        if isinstance(data, str):
-            self.data = data
+        if data is None or data == '':
+            self._data = ''
         elif isinstance(data, dict):
-            self.data = json.dumps(data)
+            self._data = encryptPassword(json.dumps(data))
+        elif isinstance(data, str):
+            self._data = encryptPassword(data)
         else:
-            self.data = convert_column_to_unicode(data)
+            self._data = encryptPassword(convert_column_to_unicode(data))
 
     def get_data(self):
         if not self.data:
             return {}
         try:
             data = json.loads(self.data)
-        except (json.JSONDecodeError, UnicodeDecodeError):
-            # todo the return type should be clear, not string or dict but just dict
-            # todo check for __init__ of this class to see what type of data is used when refactoring
+        except (json.JSONDecodeError, UnicodeDecodeError, ValueError):
             data = self.data
         return data
 

@@ -1,6 +1,16 @@
 # Update Notes
 ## Update from 3.13 to 3.14
 
+* Sensitive configuration values (passwords, secrets) are no longer returned in plaintext by
+  the REST API. Affected endpoints: CA connectors (`GET /caconnector`), machine resolvers
+  (`GET /machineresolver`), RADIUS servers (`GET /radiusserver`), SMS gateways
+  (`GET /smsgateway`), and SMTP servers (`GET /smtpserver`). Secret fields are now replaced
+  with a censored placeholder (`__CENSORED__`) in API responses.
+  **If you have external tools or scripts** that read configuration via these API endpoints and
+  rely on retrieving the actual secret values, they will now receive the placeholder instead.
+  Sending the placeholder back in a PUT/POST request preserves the existing stored value (it is
+  not overwritten). To set a new secret, supply the actual new value.
+
 * A new pre-aggregated `metric_aggregate` table backs the *Resolver Timing* and *Notification Delivery*
   dashboard panels. The schema migration creates the table empty; nothing breaks if you skip the next step,
   but the table grows unbounded over time. After the upgrade, go to *Config → Tasks* and schedule the new
@@ -59,7 +69,6 @@
   use `enrolled` instead. You can find affected event handlers in the WebUI under *Config → Events*
   by reviewing handlers whose conditions reference `rollout_state`.
 
-## Update from 3.13 to 3.14
 * Resolvers within a realm that share the same priority are now sorted **alphabetically by name**.
   Previously, the order was undefined and depended on the database insertion order, which could
   differ between SQLite, PostgreSQL and MariaDB. If you rely on a specific resolver ordering
@@ -69,6 +78,14 @@
 
 * `enrollpin` right enforcement has been made stricter. If you try to enroll a token with a PIN but do not have the
   the right, the enrollment will be denied with a PolicyError.
+
+* Database changes:
+
+  * In the `pidea_audit` table the size of the signature column is increased to support 4096 Bit RSA signatures.
+  * The size of the `id` column in the `pidea_audit` table is enhanced from int to bigint.
+  * The table `smtpserver` gets a new boolean SMIME column.
+  * On existing installations the missing `tokencredentialidhash_seq` is created
+  
 
 ## Update from 3.11 to 3.12
 
