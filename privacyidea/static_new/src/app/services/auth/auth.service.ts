@@ -26,6 +26,7 @@ import { AUTH_DATA_STORAGE_KEY, BEARER_TOKEN_STORAGE_KEY } from "@core/constants
 import { environment } from "@env/environment";
 import { PolicyAction } from "@services/auth/policy-actions";
 import { LocalService, LocalServiceInterface } from "@services/local/local.service";
+import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
 import { tokenTypes } from "@utils/token.utils";
 import { Observable, catchError, tap, throwError } from "rxjs";
 
@@ -256,6 +257,7 @@ export class AuthService implements AuthServiceInterface {
   private readonly dialog = inject(MatDialog);
   private readonly localService: LocalServiceInterface = inject(LocalService);
   private readonly http = inject(HttpClient);
+  private readonly versioningService: VersioningServiceInterface = inject(VersioningService);
 
   // Writable Signals
   readonly jwtData = signal<JwtData | null>(null);
@@ -417,6 +419,12 @@ export class AuthService implements AuthServiceInterface {
             this.jwtData.set(this.decodeJwtPayload(value.token));
             this.localService.saveData(BEARER_TOKEN_STORAGE_KEY, value.token);
             this.localService.saveData(AUTH_DATA_STORAGE_KEY, JSON.stringify(this.persistableAuthData(value)));
+            // Update version after login — the hide_version policy strips the
+            // version from pre-login responses, but the /auth response includes
+            // it because g.logged_in_user is set during authentication.
+            if (response.versionnumber) {
+              this.versioningService.rawVersion.set(response.versionnumber);
+            }
           }
         }),
         catchError((error) => {

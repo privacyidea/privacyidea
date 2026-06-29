@@ -410,6 +410,7 @@ def create_app(config_name="development",
 
     _register_blueprints(app)
 
+
     # Set up Plug-Ins
     db.init_app(app)
 
@@ -457,6 +458,14 @@ def create_app(config_name="development",
         if engine.name == "oracle":
             engine.dialect._json_serializer = lambda obj: json.dumps(obj, ensure_ascii=False)
             engine.dialect._json_deserializer = lambda obj: json.loads(obj)
+
+    # Eagerly establish the Redis connection so a healthy connect logs Redis cache connected (...)" during startup.
+    # A failed connect is not fatal. get_redis() arms the unified retry cooldown (PI_REDIS_RETRY_COOLDOWN seconds)
+    # and a later request re-attempts transparently once the cooldown expires.
+    if app.config.get(ConfigKey.REDIS_URL):
+        with app.app_context():
+            from privacyidea.lib.cache import get_redis
+            get_redis()
 
     log.debug(f"Reading application from the static folder {app.static_folder} "
               f"and the template folder {app.template_folder}")
@@ -545,6 +554,14 @@ def create_docker_app():
             log.debug("Database Connection successful!")
         except Exception as e:
             raise RuntimeError(f"Could not connect to database: {e}")
+
+    # Eagerly establish the Redis connection so a healthy connect logs Redis cache connected (...)" during startup.
+    # A failed connect is not fatal. get_redis() arms the unified retry cooldown (PI_REDIS_RETRY_COOLDOWN seconds)
+    # and a later request re-attempts transparently once the cooldown expires.
+    if app.config.get(ConfigKey.REDIS_URL):
+        with app.app_context():
+            from privacyidea.lib.cache import get_redis
+            get_redis()
 
     _setup_node_configuration(app)
 
