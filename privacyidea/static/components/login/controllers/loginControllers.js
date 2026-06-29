@@ -523,6 +523,12 @@ angular.module("privacyideaApp")
                     } catch (e) { /* private mode etc. - in-memory only */ }
                 };
                 $scope.privacyideaVersionNumber = data.versionnumber;
+                // Also refresh $rootScope: the login page may have blanked it
+                // (hide_version policy), but the authenticated /auth response
+                // carries the real version. The User-Agent interceptor reads it
+                // from $rootScope, so without this every post-login API call
+                // would send a version-less User-Agent for the whole session.
+                $rootScope.privacyideaVersionNumber = data.versionnumber;
                 const lang = gettextCatalog.getCurrentLanguage();
                 if (data.result.value.hasOwnProperty("supportmail")) {
                     $scope.privacyideaSupportLink = data.result.value.supportmail;
