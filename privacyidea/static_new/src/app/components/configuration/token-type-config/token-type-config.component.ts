@@ -54,6 +54,7 @@ import {
   YubikeyConfigComponent
 } from "@components/configuration/token-type-config/token-types/yubikey-config/yubikey-config.component";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
+import { QUESTION_NUMBER_OF_ANSWERS } from "@constants/token.constants";
 import { environment } from "@env/environment";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
@@ -118,7 +119,7 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
 
   formData = linkedSignal<Record<string, string>, Record<string, string>>({
     source: () => this.systemService.systemConfig(),
-    computation: (config) => ({ ...config })
+    computation: (config) => this.reconcileQuestions({ ...config }, true)
   });
 
   onFormDataChange(data: Record<string, string | number | boolean>): void {
@@ -126,24 +127,18 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
     for (const [key, value] of Object.entries(data)) {
       normalized[key] = typeof value === "boolean" ? (value ? "True" : "False") : String(value);
     }
-    this.formData.set(normalized);
+    const prevRequired = parseInt(this.formData()[QUESTION_NUMBER_OF_ANSWERS] ?? "", 10) || 0;
+    const newRequired = parseInt(normalized[QUESTION_NUMBER_OF_ANSWERS] ?? "", 10) || 0;
+    const reconciled = this.reconcileQuestions(normalized, newRequired < prevRequired);
+    const backend = this.systemService.systemConfig() ?? {};
+    Object.keys(backend).forEach((key) => {
+      if (key.startsWith("question.question.") && !(key in reconciled)) {
+        this.pendingDeletes.update((set) => new Set(set).add(key));
+      }
+    });
+    this.formData.set(reconciled);
   }
 
-  nextQuestionIndex = linkedSignal<Record<string, string>, number>({
-    source: () => this.systemService.systemConfig(),
-    computation: (config) => {
-      let max = -1;
-      Object.keys(config).forEach((key) => {
-        if (key.startsWith("question.question.")) {
-          const idx = parseInt(key.substring("question.question.".length));
-          if (!isNaN(idx) && idx > max) {
-            max = idx;
-          }
-        }
-      });
-      return max + 1;
-    }
-  });
   pendingDeletes = linkedSignal<Record<string, string>, Set<string>>({
     source: () => this.systemService.systemConfig(),
     computation: () => new Set<string>()
@@ -189,6 +184,46 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
     return Object.keys(this.formData()).filter((k) => k.startsWith("question.question."));
   }
 
+  get hasEmptyQuestions() {
+    return this.questionKeys.some((k) => !(this.formData()[k] ?? "").trim());
+  }
+
+  private reconcileQuestions(data: Record<string, string>, allowTrim = false): Record<string, string> {
+    const result: Record<string, string> = { ...data };
+    const required = parseInt(result[QUESTION_NUMBER_OF_ANSWERS] ?? "", 10) || 0;
+
+    const questionKeys = Object.keys(result).filter((k) => k.startsWith("question.question."));
+    const emptyKeys = questionKeys.filter((k) => !(result[k] ?? "").trim());
+    const filledCount = questionKeys.length - emptyKeys.length;
+    const targetEmpty = Math.max(0, required - filledCount);
+
+    const removeCount = allowTrim ? Math.max(0, emptyKeys.length - targetEmpty) : 0;
+    for (let i = 0; i < removeCount; i++) {
+      delete result[emptyKeys[i]];
+    }
+
+    let toAdd = targetEmpty - (emptyKeys.length - removeCount);
+    while (toAdd > 0) {
+      result[this.nextQuestionKey(result)] = "";
+      toAdd--;
+    }
+
+    return result;
+  }
+
+  private nextQuestionKey(data: Record<string, string>): string {
+    let max = -1;
+    Object.keys(data).forEach((key) => {
+      if (key.startsWith("question.question.")) {
+        const idx = parseInt(key.substring("question.question.".length), 10);
+        if (!isNaN(idx) && idx > max) {
+          max = idx;
+        }
+      }
+    });
+    return `question.question.${max + 1}`;
+  }
+
   get yubikeyApiIds() {
     return Object.keys(this.formData()).filter((k) => k.startsWith("yubikey.apiid."));
   }
@@ -215,17 +250,8 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
     }
   }
 
-  addQuestion(text: string) {
-    if (!text) {
-      this.notificationService.warning($localize`Please enter a question.`);
-      return;
-    }
-    const index = this.nextQuestionIndex();
-    this.formData.update((f) => ({
-      ...f,
-      [`question.question.${index}`]: text
-    }));
-    this.nextQuestionIndex.update((n) => n + 1);
+  addQuestion() {
+    this.formData.update((f) => ({ ...f, [this.nextQuestionKey(f)]: "" }));
   }
 
   deleteQuestion(key: string) {
@@ -235,7 +261,7 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
     this.formData.update((f) => {
       const next = { ...f };
       delete next[key];
-      return next;
+      return this.reconcileQuestions(next);
     });
 
     // If it existed on the backend, collect it for deletion on save

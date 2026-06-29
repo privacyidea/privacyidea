@@ -38,7 +38,7 @@
       </button>
       <button
         (click)="save()"
-        [disabled]="!authService.actionAllowed('configwrite') || !hasChanges()"
+        [disabled]="!authService.actionAllowed('configwrite') || !hasChanges() || hasEmptyQuestions"
         class="action-button-primary button-width-m"
         mat-stroked-button>
         <mat-icon>save</mat-icon>
@@ -83,7 +83,7 @@
       [expanded]="expandEmail()"></app-email-config>
     <app-questionnaire-config
       (formDataChange)="onFormDataChange($event)"
-      (addQuestionRequest)="addQuestion($event)"
+      (addQuestionRequest)="addQuestion()"
       (deleteRequest)="deleteQuestion($event)"
       [formData]="formData()"
       [questionKeys]="questionKeys"

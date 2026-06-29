@@ -102,15 +102,16 @@ describe("TokenTypeConfigComponent", () => {
     expect(reloadSpy).toHaveBeenCalled();
   });
 
-  it("should add new question to formData and increment nextQuestion without saving", () => {
+  it("should add an empty question to formData without saving", () => {
     const saveSpy = jest.spyOn(component, "save");
-    const initialNext = component.nextQuestionIndex();
-    const newQuestion = "My new question?";
+    const before = component.questionKeys.length;
 
-    component.addQuestion(newQuestion);
+    component.addQuestion();
 
-    expect(component.formData()[`question.question.${initialNext}`]).toBe(newQuestion);
-    expect(component.nextQuestionIndex()).toBe(initialNext + 1);
+    const questionKeys = component.questionKeys;
+    expect(questionKeys.length).toBe(before + 1);
+    const addedKey = questionKeys[questionKeys.length - 1];
+    expect(component.formData()[addedKey]).toBe("");
     expect(saveSpy).not.toHaveBeenCalled();
   });
 
