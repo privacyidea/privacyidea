@@ -866,7 +866,7 @@ def get_user_list(param: dict = None, user: User = None, include_custom_attribut
     param_realm_raw = get_optional(param, "realm")
     # param_realm_raw may be a single string, a comma-separated string of
     # multiple realms, or a list.  Normalise to a list of individual realm
-    # names (or None when unset).
+    # names (or an empty list when unset).
     if isinstance(param_realm_raw, list):
         param_realms = [r.strip() for r in param_realm_raw if r and r.strip()]
     elif isinstance(param_realm_raw, str) and "," in param_realm_raw:
