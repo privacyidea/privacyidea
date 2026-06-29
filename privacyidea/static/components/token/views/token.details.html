@@ -807,5 +807,91 @@
     </div>
 </div>
 
+<!-- ============ Active Challenges ====================== -->
+<!-- Collapsed by default. The toggle stays visible even when there are
+     zero challenges so admins can confirm the absence rather than
+     wondering whether the section was hidden by policy. Same pattern as
+     user.details.html. -->
+<div ng-show="loggedInUser.role === 'admin' && checkRight('getchallenges')"
+     style="margin-top: 1em;">
+    <button class="btn btn-transparent btn-block"
+            ng-click="toggleChallenges()">
+        <span class="glyphicon"
+              ng-class="{'glyphicon-chevron-down': challengesOpen, 'glyphicon-chevron-right': !challengesOpen}">
+        </span>
+        <span translate>Active Challenges</span>
+        <span>({{ challengedata.count }})</span>
+    </button>
+</div>
+<div ng-show="challengesOpen && loggedInUser.role === 'admin' && checkRight('getchallenges')"
+     style="margin-top: 1em;">
+    <div ng-show="challengedata.count === 0"
+         class="alert alert-info">
+        <span translate>No active challenges for this token.</span>
+    </div>
+    <div uib-pagination ng-show="challengedata.count > challengesPerPage"
+         total-items="challengedata.count"
+         ng-model="challengeParams.page"
+         previous-text="{{ 'Previous'|translate }}"
+         next-text="{{ 'Next'|translate }}"
+         last-text="{{ 'Last'|translate }}"
+         first-text="{{ 'First'|translate }}"
+         items-per-page="{{ challengesPerPage }}"
+         max-size="5"
+         boundary-links="true"
+         ng-change="challengePageChanged()"></div>
+    <div class="table-responsive" ng-show="challengedata.count > 0">
+        <table class="table table-bordered table-striped" id="tabletokendetailchallenges">
+            <thead>
+            <tr>
+                <th translate>Timestamp</th>
+                <th translate>Transaction ID</th>
+                <th translate>Expiration</th>
+                <th translate>Received</th>
+                <th translate>OTP valid</th>
+                <th ng-if="checkRight('cancelchallenge')"></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr ng-repeat="challenge in challengedata.challenges">
+                <td>{{ challenge.timestamp }}</td>
+                <td>{{ challenge.transaction_id }}</td>
+                <td>{{ challenge.expiration }}</td>
+                <td>{{ challenge.received_count }}</td>
+                <td>
+                    <span class="label label-success" ng-show="challenge.otp_valid" translate>yes</span>
+                    <span class="label label-default" ng-hide="challenge.otp_valid" translate>no</span>
+                </td>
+                <td ng-if="checkRight('cancelchallenge')">
+                    <button class="btn btn-transparent btn-danger btn-sm"
+                            ng-click="cancelChallenge(challenge.transaction_id, true)"
+                            ng-hide="showCancelChallengeDialog[challenge.transaction_id]"
+                            uib-tooltip="{{ 'Cancel this challenge'|translate }}">
+                        <span class="glyphicon glyphicon-trash"></span>
+                        <span translate>Cancel</span>
+                    </button>
+                    <div ng-show="showCancelChallengeDialog[challenge.transaction_id]
+                                  && cancelChallengeSerials[challenge.transaction_id].length > 1"
+                         class="text-danger small">
+                        <span translate>This also cancels the related challenges on:</span>
+                        {{ cancelChallengeSerials[challenge.transaction_id].join(', ') }}
+                    </div>
+                    <button class="btn btn-danger btn-sm"
+                            ng-click="cancelChallenge(challenge.transaction_id, false)"
+                            ng-show="showCancelChallengeDialog[challenge.transaction_id]">
+                        <span translate>Cancel Challenge</span>
+                    </button>
+                    <button class="btn btn-default btn-sm"
+                            ng-click="showCancelChallengeDialog[challenge.transaction_id]=false"
+                            ng-show="showCancelChallengeDialog[challenge.transaction_id]">
+                        <span translate>Keep</span>
+                    </button>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
 <ng-include src="instanceUrl + '/static/components/token/views/dialog.ask_token_delete.html'">
 </ng-include>

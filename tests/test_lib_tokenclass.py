@@ -10,6 +10,7 @@ from dateutil.tz import tzlocal
 from mock import mock
 from sqlalchemy import select
 
+from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.container import init_container, add_token_to_container
 from privacyidea.lib.crypto import geturandom
@@ -128,12 +129,12 @@ class TokenBaseTestCase(MyTestCase):
         # another token.
         db_token2 = Token(self.serial2, tokentype="spass")
         db_token2.save()
-        token2 = TokenClass(db_token)
+        token2 = TokenClass(db_token2)
         c = token2.create_challenge(transaction_id)
         self.assertEqual(c[2], transaction_id)
 
         # Now there should be two entries with the same transaction_id
-        r = Challenge.query.filter(Challenge.transaction_id == transaction_id).all()
+        r = get_challenges(transaction_id=transaction_id)
         self.assertEqual(len(r), 2)
 
         # set the description
