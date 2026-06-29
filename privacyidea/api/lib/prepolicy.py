@@ -1274,16 +1274,14 @@ def check_base_action(request=None, action=None, anonymous=False):
     (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
 
     # In certain cases we can not resolve the user by the serial!
-    if role == ROLE.ADMIN and action in (PolicyAction.AUDIT, PolicyAction.AUTHENTICATION_LOG_READ,
-                                         PolicyAction.AUTHENTICATION_LOG_DELETE):
+    if role == ROLE.ADMIN and action in (PolicyAction.AUDIT, PolicyAction.AUTHENTICATION_LOG_READ):
         # For an admin, the request "realm"/"user" parameters filter the log and must not drive the policy match;
         # the realm restriction is enforced separately (audit: "allowed_audit_realm" decorator; authentication log:
         # get_authentication_log_visibility_scopes). For a user reading the authentication log, realm/username are
         # the user's own identity (from determine_logged_in_userparams) and are kept so a realm/resolver-scoped
         # user-scope policy matches; the user only ever sees their own entries anyway.
         realm = username = resolver = None
-    elif action in (PolicyAction.AUDIT, PolicyAction.AUTHENTICATION_LOG_READ,
-                    PolicyAction.AUTHENTICATION_LOG_DELETE):
+    elif action in (PolicyAction.AUDIT, PolicyAction.AUTHENTICATION_LOG_READ):
         pass
     else:
         realm = params.get("realm")

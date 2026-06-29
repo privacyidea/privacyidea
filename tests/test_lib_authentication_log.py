@@ -23,14 +23,17 @@ from privacyidea.lib.conditional_access.authentication_event_types import AuthEv
 from privacyidea.lib.conditional_access.authentication_log import (
     log_authentication_event,
     delete_authentication_log_event,
+    reclassify_authentication_log_event,
     get_authentication_log_event,
     get_authentication_logs,
     get_authentication_logs_paginate,
     delete_authentication_logs,
     cleanup_authentication_log,
     AuthenticationLogVisibilityScope,
+    AuthLogUserRole,
 )
 from privacyidea.lib.error import ParameterError
+from privacyidea.models import authentication_log_column_length
 from .base import MyTestCase
 
 
@@ -194,6 +197,38 @@ class AuthenticationLogTestCase(MyTestCase):
         # one exact value (batched into IN) plus one wildcard pattern (LIKE), OR'd together
         results = get_authentication_logs(serial=["HOTP001", "TOTP*"])
         self.assertSetEqual({"TOTP001", "HOTP001"}, {entry.serial for entry in results})
+
+    def test_get_authentication_logs_filter_by_user_role(self):
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 username="alice", user_role=AuthLogUserRole.USER)
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u2", realm="r1",
+                                 username="iadmin", user_role=AuthLogUserRole.ADMIN_INTERNAL)
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u3", realm="r1",
+                                 username="eadmin", user_role=AuthLogUserRole.ADMIN_EXTERNAL)
+
+        self.assertEqual(1, get_authentication_logs_paginate(user_role=AuthLogUserRole.USER).count)
+        self.assertEqual(1, get_authentication_logs_paginate(user_role=AuthLogUserRole.ADMIN_INTERNAL).count)
+        # The shared 'admin-' prefix lets a single wildcard match either admin kind.
+        self.assertEqual({AuthLogUserRole.ADMIN_INTERNAL, AuthLogUserRole.ADMIN_EXTERNAL},
+                         {entry.user_role for entry in get_authentication_logs_paginate(user_role="admin*").auth_logs})
+
+    def test_get_authentication_logs_case_insensitive_flag_enforces_insensitive_match(self):
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 username="Alice")
+
+        # The flag guarantees a differently-cased value matches, regardless of the DB collation. The unflagged
+        # default follows the collation (case-sensitive on SQLite, case-insensitive on a MySQL/MariaDB *_ci
+        # collation), so it is deliberately not asserted here.
+        self.assertEqual(1, get_authentication_logs_paginate(username="alice", case_insensitive=True).count)
+        self.assertEqual(1, get_authentication_logs_paginate(username="Alice").count)
+
+    def test_get_authentication_logs_wildcard_is_always_case_insensitive(self):
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 serial="TOTP001")
+
+        # A wildcard match ignores case regardless of the case_insensitive flag.
+        self.assertEqual(1, get_authentication_logs_paginate(serial="totp*").count)
+        self.assertEqual(1, get_authentication_logs_paginate(serial="totp*", case_insensitive=True).count)
 
     def test_get_authentication_logs_filter_by_serial(self):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
@@ -377,8 +412,6 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertEqual("prior", results[0].resolver)
 
     def test_values_are_truncated_to_column_length(self):
-        from privacyidea.models import authentication_log_column_length
-
         # A value longer than its column is truncated instead of overflowing the column on insert. Cover a
         # size-constrained indexed column (resolver) and the generously-sized free columns (client_label, serial,
         # which hold a raw User-Agent and a comma-joined serial list).
@@ -398,6 +431,82 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertEqual("X" * authentication_log_column_length["previous_transaction_id"],
                          entry.previous_transaction_id)
 
+    def test_overflow_is_preserved_in_other_info(self):
+        # The part of a value that does not fit the column is preserved under other_info["truncated"][column] (as the
+        # cut-off remainder, not the full value) instead of being lost.
+        max_resolver = authentication_log_column_length["resolver"]
+        event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS,
+                                            resolver="R" * max_resolver + "OVERFLOW")
+        entry = get_authentication_log_event(event_id)
+        assert entry is not None
+        self.assertEqual("R" * max_resolver, entry.resolver)
+        self.assertEqual({"truncated": {"resolver": "OVERFLOW"}}, entry.other_info)
+
+    def test_overflow_merges_with_caller_other_info(self):
+        # Overflow is folded into the caller's other_info under "truncated" without clobbering the caller's own keys.
+        max_resolver = authentication_log_column_length["resolver"]
+        event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS,
+                                            resolver="R" * max_resolver + "TAIL",
+                                            other_info={"reason": "policy"})
+        entry = get_authentication_log_event(event_id)
+        assert entry is not None
+        self.assertEqual({"reason": "policy", "truncated": {"resolver": "TAIL"}}, entry.other_info)
+
+    def test_no_overflow_leaves_other_info_untouched(self):
+        # Without truncation, other_info is left exactly as the caller passed it (no empty "truncated" key added).
+        event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1",
+                                            other_info={"reason": "policy"})
+        entry = get_authentication_log_event(event_id)
+        assert entry is not None
+        self.assertEqual({"reason": "policy"}, entry.other_info)
+
+    def test_serial_overflow_splits_on_separator(self):
+        # A comma-joined serial list is cut on a comma boundary so whole serials stay in the column (filterable via a
+        # wildcard) and the dropped serials land in the overflow whole. Build a list whose last serial straddles the
+        # column limit.
+        max_serial = authentication_log_column_length["serial"]
+        head = "S" * (max_serial - 4)  # leaves room for ",AAA" but not the next serial
+        serial = f"{head},AAA,BBBBBBBBBB"
+        event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, serial=serial)
+        entry = get_authentication_log_event(event_id)
+        assert entry is not None
+        self.assertEqual(f"{head},AAA", entry.serial)
+        self.assertEqual({"truncated": {"serial": "BBBBBBBBBB"}}, entry.other_info)
+
+    def test_serial_overflow_falls_back_to_char_split_when_no_separator_fits(self):
+        # A single serial longer than the column has no comma boundary to cut on, so it falls back to a character split
+        # rather than dropping everything.
+        max_serial = authentication_log_column_length["serial"]
+        serial = "S" * (max_serial + 5)
+        event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, serial=serial)
+        entry = get_authentication_log_event(event_id)
+        assert entry is not None
+        self.assertEqual("S" * max_serial, entry.serial)
+        self.assertEqual({"truncated": {"serial": "SSSSS"}}, entry.other_info)
+
+    def test_reclassify_preserves_serial_overflow(self):
+        # Reclassification truncates the same way as the insert and preserves the serial overflow into the entry's
+        # existing other_info.
+        event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, serial="TOK001")
+        max_serial = authentication_log_column_length["serial"]
+        head = "S" * (max_serial - 4)
+        reclassify_authentication_log_event(event_id, AuthEventType.ENROLLMENT_TRIGGERED,
+                                            serial=f"{head},AAA,BBBBBBBBBB")
+        entry = get_authentication_log_event(event_id)
+        assert entry is not None
+        self.assertEqual(f"{head},AAA", entry.serial)
+        self.assertEqual({"truncated": {"serial": "BBBBBBBBBB"}}, entry.other_info)
+
+    def test_reclassify_without_serial_keeps_existing_serial(self):
+        # Reclassifying with the default serial=None means "do not modify": an existing serial must survive, e.g. the
+        # authorized=deny post-policy reclassifies a successful login to NOT_AUTHORIZED without passing a serial.
+        event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, serial="TOK001")
+        reclassify_authentication_log_event(event_id, AuthEventType.NOT_AUTHORIZED)
+        entry = get_authentication_log_event(event_id)
+        assert entry is not None
+        self.assertEqual(AuthEventType.NOT_AUTHORIZED, entry.event_type)
+        self.assertEqual("TOK001", entry.serial)
+
 
 class AuthenticationLogDBTestCase(MyTestCase):
 
@@ -415,21 +524,25 @@ class AuthenticationLogDBTestCase(MyTestCase):
             datetime_mock.now.return_value = log_time_utc_naive
             event_id = log_authentication_event(
                 event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="user1", realm="realm1",
-                username="testuser", source_ip="192.168.1.1", client_label="vpn", serial="TOK001",
-                transaction_id="txn-123", previous_transaction_id="txn-prev", other_info={"key": "value"}
+                username="testuser", user_role=AuthLogUserRole.ADMIN_EXTERNAL, source_ip="192.168.1.1",
+                client_label="vpn",
+                serial="TOK001", transaction_id="txn-123", previous_transaction_id="txn-prev",
+                other_info={"key": "value"}
             )
 
         entry = get_authentication_log_event(event_id)
         auth_log_dict = entry.to_dict()
 
-        expected_keys = {"id", "resolver", "uid", "realm", "username", "event_type", "timestamp", "source_ip",
-                         "client_label", "serial", "transaction_id", "previous_transaction_id", "other_info"}
+        expected_keys = {"id", "resolver", "uid", "realm", "username", "user_role", "event_type", "timestamp",
+                         "source_ip", "client_label", "serial", "transaction_id", "previous_transaction_id",
+                         "other_info"}
         self.assertSetEqual(expected_keys, set(auth_log_dict.keys()))
         self.assertEqual(event_id, auth_log_dict["id"])
         self.assertEqual("res1", auth_log_dict["resolver"])
         self.assertEqual("user1", auth_log_dict["uid"])
         self.assertEqual("realm1", auth_log_dict["realm"])
         self.assertEqual("testuser", auth_log_dict["username"])
+        self.assertEqual(AuthLogUserRole.ADMIN_EXTERNAL, auth_log_dict["user_role"])
         self.assertEqual(AuthEventType.LOGIN_SUCCESS, auth_log_dict["event_type"])
         log_time_tz_aware = log_time_utc_naive.replace(tzinfo=timezone.utc)
         self.assertEqual(log_time_tz_aware.isoformat(), auth_log_dict["timestamp"])

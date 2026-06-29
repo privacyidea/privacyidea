@@ -36,7 +36,7 @@ from flask import jsonify, current_app, Response, Request, g, has_request_contex
 from flask_babel import _
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
-from privacyidea.lib.conditional_access.authentication_log import log_authentication_event
+from privacyidea.lib.conditional_access.authentication_log import log_authentication_event, AuthLogUserRole
 from privacyidea.lib.user import User
 # Re-exported from privacyidea.lib.params for backwards-compatibility with
 # callers that import these names from privacyidea.api.lib.utils.
@@ -232,9 +232,26 @@ def getLowerParams(param):
     return ret
 
 
+def _determine_user_role(user: User | None, internal_admin: bool) -> AuthLogUserRole:
+    """
+    Classify the authenticating principal for the authentication log. A local database admin is only knowable at the
+    caller (``/auth`` via ``verify_db_admin``/``db_admin_exists``) and is signalled by *internal_admin*. Otherwise a
+    user whose realm is a configured ``SUPERUSER_REALM`` is an external (admin-realm) admin; everyone else is a
+    regular user. The superuser realms are only readable inside an app context, so outside one the principal is
+    treated as a regular user (the only events logged outside a request are user token flows, e.g. push_wait).
+    """
+    if internal_admin:
+        return AuthLogUserRole.ADMIN_INTERNAL
+    if user and user.realm and has_request_context():
+        superuser_realms = [realm.lower() for realm in current_app.config.get("SUPERUSER_REALM", [])]
+        if user.realm.lower() in superuser_realms:
+            return AuthLogUserRole.ADMIN_EXTERNAL
+    return AuthLogUserRole.USER
+
+
 def log_authentication(event_type: AuthEventType | None, request: Request | None = None, user: User | None = None,
                        serial: str | None = None, transaction_id: str | None = None,
-                       previous_transaction_id: str | None = None, username: str | None = None) -> int | None:
+                       previous_transaction_id: str | None = None, internal_admin: bool = False) -> int | None:
     """
     Write one authentication_log entry for the current request.
 
@@ -258,6 +275,10 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
     ``source_ip`` (from ``g``) and ``client_label`` (from ``request``) are only read inside a request context, so the
     lib layer can record an event from outside a view (e.g. push_wait). Worst case those two columns are empty; the
     event itself is never lost.
+
+    ``user_role`` records whether the principal is a regular user or an admin (see :class:`AuthLogUserRole`). Pass
+    ``internal_admin=True`` for a local database admin (``/auth`` only); an admin-realm admin is detected from the
+    user's realm, so the caller need not flag it.
     """
     if not event_type:
         log.debug("Not logging authentication event, because no event type is given.")
@@ -288,7 +309,8 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
         resolver=user.resolver if resolved else None,
         uid=user.uid if resolved else None,
         realm=(user.realm or None) if user else None,
-        username=username or ((user.login or None) if user else None),
+        username=(user.login or None) if user else None,
+        user_role=_determine_user_role(user, internal_admin),
         source_ip=source_ip,
         client_label=client_label,
         serial=serial,

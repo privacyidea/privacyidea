@@ -18,6 +18,7 @@
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from enum import Enum
 
 from sqlalchemy import and_, delete, func, or_, select
 from sqlalchemy.orm import InstrumentedAttribute
@@ -41,6 +42,25 @@ SORTABLE_COLUMNS: dict[str, InstrumentedAttribute] = {
     "serial": AuthenticationLog.serial,
 }
 DEFAULT_PAGE_SIZE = 15
+
+
+class AuthLogUserRole(str, Enum):
+    """
+    Role of the authenticating principal recorded in the authentication log. The two admin values are kept distinct
+    because conditional-access rules may treat them differently: ``admin-external`` admins come from an admin realm
+    (an external identity source) and are the everyday admins, while ``admin-internal`` admins are local database
+    accounts (created via the CLI, used for initial setup and as fallback/recovery) that authenticate only at the
+    ``/auth`` endpoint. Both share the ``admin-`` prefix so a single ``user_role=admin*`` filter matches either.
+
+    ``str`` is used instead of ``StrEnum`` (3.11+) for compatibility with Python 3.10; the ``__str__`` override
+    normalizes ``str()``/f-string output to the value across versions (mirrors :class:`AuthEventType`).
+    """
+    USER = "user"
+    ADMIN_INTERNAL = "admin-internal"
+    ADMIN_EXTERNAL = "admin-external"
+
+    def __str__(self) -> str:
+        return self.value
 
 
 @dataclass
@@ -87,24 +107,56 @@ def _naive_utc(value: datetime) -> datetime:
     return value
 
 
-def _truncate(column: str, value) -> str | None:
+@dataclass
+class _TruncatedValue:
+    """
+    Result of truncating one column value: *stored* goes into the column, *overflow* is the part that did not fit and
+    is preserved in the entry's ``other_info`` (see :func:`_store_overflow`) so no information is lost. *overflow* is
+    ``None`` when nothing was cut.
+    """
+    stored: str | None
+    overflow: str | None
+
+
+def _truncate(column: str, value, separator: str | None = None) -> _TruncatedValue:
     """
     Convert *value* to a string and truncate it to the length of the given column of the authentication_log table, so a
-    pathological value (e.g. a very long User-Agent or login name) can never overflow the column on insert.
+    pathological value (e.g. a very long User-Agent or login name) can never overflow the column on insert. The cut-off
+    remainder is returned alongside the stored value rather than discarded.
 
     :param column: the column name, a key of
         :data:`~privacyidea.models.authentication_log.authentication_log_column_length`
     :param value: the value to store, or None
-    :return: the truncated string, or None if *value* is None
+    :param separator: if given, cut on the last separator that fits instead of mid-character, so neither the stored
+        value nor the overflow holds a broken item (used for ``serial``, which may carry a separator-joined list, to
+        keep whole, filterable serials in the column)
+    :return: a :class:`_TruncatedValue` holding the value to store and the overflow (or None if *value* is None)
     """
     if value is None:
-        return None
+        return _TruncatedValue(None, None)
     value = str(value)
     max_length = authentication_log_column_length[column]
-    if len(value) > max_length:
-        log.debug(f"Truncating authentication log column {column!r} to {max_length} characters.")
-        value = value[:max_length]
-    return value
+    if len(value) <= max_length:
+        return _TruncatedValue(value, None)
+    log.debug(f"Truncating authentication log column {column!r} to {max_length} characters.")
+    if separator:
+        cut = value.rfind(separator, 0, max_length + 1)
+        if cut > 0:
+            return _TruncatedValue(value[:cut], value[cut + len(separator):])
+    return _TruncatedValue(value[:max_length], value[max_length:])
+
+
+def _store_overflow(other_info: dict | None, overflow: dict[str, str]) -> dict | None:
+    """
+    Fold any truncation overflow into a copy of *other_info* under the ``truncated`` key so it is preserved without
+    clobbering caller-supplied keys, merging with overflow already recorded there. Returns *other_info* unchanged when
+    nothing overflowed.
+    """
+    if not overflow:
+        return other_info
+    merged = dict(other_info) if other_info else {}
+    merged["truncated"] = {**merged.get("truncated", {}), **overflow}
+    return merged
 
 
 def log_authentication_event(event_type: AuthEventType,
@@ -114,6 +166,7 @@ def log_authentication_event(event_type: AuthEventType,
                              uid: str | None = None,
                              realm: str | None = None,
                              username: str | None = None,
+                             user_role: str | None = None,
                              source_ip: str | None = None,
                              client_label: str | None = None,
                              serial: str | None = None,
@@ -125,20 +178,27 @@ def log_authentication_event(event_type: AuthEventType,
     logged and swallowed: the insert runs inside a SAVEPOINT, so a failure rolls back only the entry while leaving any
     other pending writes of the request untouched, and ``None`` is returned instead of an id.
     """
-    entry = AuthenticationLog(
-        event_type=_truncate("event_type", event_type),
-        transaction_id=_truncate("transaction_id", transaction_id),
-        previous_transaction_id=_truncate("previous_transaction_id", previous_transaction_id),
-        resolver=_truncate("resolver", resolver),
-        uid=_truncate("uid", uid),
-        realm=_truncate("realm", realm),
-        username=_truncate("username", username),
-        source_ip=_truncate("source_ip", source_ip),
-        client_label=_truncate("client_label", client_label),
-        serial=_truncate("serial", serial),
-        other_info=other_info
-    )
-    entry_id = None
+    fields = {
+        "event_type": event_type,
+        "transaction_id": transaction_id,
+        "previous_transaction_id": previous_transaction_id,
+        "resolver": resolver,
+        "uid": uid,
+        "realm": realm,
+        "username": username,
+        "user_role": user_role,
+        "source_ip": source_ip,
+        "client_label": client_label,
+        "serial": serial,
+    }
+    stored: dict[str, str | None] = {}
+    overflow: dict[str, str] = {}
+    for column, value in fields.items():
+        result = _truncate(column, value, separator="," if column == "serial" else None)
+        stored[column] = result.stored
+        if result.overflow is not None:
+            overflow[column] = result.overflow
+    entry = AuthenticationLog(**stored, other_info=_store_overflow(other_info, overflow))
     try:
         with db.session.begin_nested():
             db.session.add(entry)
@@ -189,14 +249,30 @@ def reclassify_authentication_log_event(event_id: int, event_type: AuthEventType
             if entry is None:
                 log.info(f"Cannot reclassify authentication log entry {event_id!r}: not found.")
                 return
-            entry.event_type = _truncate("event_type", event_type)
-            entry.serial = _truncate("serial", serial)
+            overflow: dict[str, str] = {}
+
+            truncated_event_type = _truncate("event_type", event_type)
+            entry.event_type = truncated_event_type.stored
+            if truncated_event_type.overflow is not None:
+                overflow["event_type"] = truncated_event_type.overflow
+
+            if serial is not None:
+                truncated_serial = _truncate("serial", serial, separator=",")
+                entry.serial = truncated_serial.stored
+                if truncated_serial.overflow is not None:
+                    overflow["serial"] = truncated_serial.overflow
+
             if transaction_id:
-                new_txn = _truncate("transaction_id", transaction_id)
-                old_txn = entry.transaction_id
-                if old_txn and new_txn != old_txn:
-                    entry.previous_transaction_id = old_txn
-                entry.transaction_id = new_txn
+                truncated_transaction_id = _truncate("transaction_id", transaction_id)
+                new_transaction_id = truncated_transaction_id.stored
+                if truncated_transaction_id.overflow is not None:
+                    overflow["transaction_id"] = truncated_transaction_id.overflow
+                old_transaction_id = entry.transaction_id
+                if old_transaction_id and new_transaction_id != old_transaction_id:
+                    entry.previous_transaction_id = old_transaction_id
+                entry.transaction_id = new_transaction_id
+
+            entry.other_info = _store_overflow(entry.other_info, overflow)
     except Exception as ex:
         log.info(f"Failed to reclassify the authentication log entry to {event_type}: {ex!r}")
         return
@@ -227,12 +303,22 @@ def _wildcard_pattern(value: str) -> str:
     return escaped.replace("*", "%")
 
 
-def _match_condition(column: InstrumentedAttribute, value: str | list[str] | None) -> ColumnElement[bool] | None:
+def _match_condition(column: InstrumentedAttribute, value: str | list[str] | None,
+                     case_insensitive: bool = False) -> ColumnElement[bool] | None:
     """
     Build the match condition for one column from a single value or a list of values, or ``None`` for no filter on
-    that field. An entry matches if it equals any plain value, or matches (case-sensitively) any value containing a
-    ``*`` wildcard; ``*`` is the only wildcard (see :func:`_wildcard_pattern`). Plain values are batched into a single
-    ``IN``; only wildcard values cost a ``LIKE`` each, so a list without wildcards stays a single indexed ``IN``.
+    that field. An entry matches if it equals any plain value, or matches any value containing a ``*`` wildcard;
+    ``*`` is the only wildcard (see :func:`_wildcard_pattern`). Plain values are batched into a single ``IN``; only
+    wildcard values cost a ``LIKE`` each, so a list without wildcards stays a single indexed ``IN``.
+
+    Plain values are matched with a plain ``IN`` so an index on the column can still be used. The case sensitivity of
+    that match is therefore left to the database collation: it is case-sensitive on SQLite (and on a binary collation)
+    but case-insensitive on a MySQL/MariaDB ``*_ci`` collation. Setting *case_insensitive* lowers both sides to
+    *enforce* case-insensitive matching consistently across backends -- note this defeats the column index (the
+    ``LOWER()`` wrapper prevents an index seek), so it is the slower path. There is deliberately no symmetric
+    "enforce case-sensitive" option: it would need DB-specific collation and is rarely worth the cost. Wildcard
+    values always match case-insensitively (via ``ILIKE``), since the DB-default ``LIKE`` case semantics differ per
+    backend.
     """
     if value is None:
         return None
@@ -240,9 +326,12 @@ def _match_condition(column: InstrumentedAttribute, value: str | list[str] | Non
     if not values:
         return None
     exact = [v for v in values if "*" not in v]
-    terms = [column.like(_wildcard_pattern(v), escape="\\") for v in values if "*" in v]
+    terms = [column.ilike(_wildcard_pattern(v), escape="\\") for v in values if "*" in v]
     if exact:
-        terms.append(column.in_(exact))
+        if case_insensitive:
+            terms.append(func.lower(column).in_([v.lower() for v in exact]))
+        else:
+            terms.append(column.in_(exact))
     return or_(*terms) if len(terms) > 1 else terms[0]
 
 
@@ -250,6 +339,7 @@ def _filter_conditions(resolver: str | list[str] | None = None,
                        uid: str | list[str] | None = None,
                        realm: str | list[str] | None = None,
                        username: str | list[str] | None = None,
+                       user_role: str | list[str] | None = None,
                        event_type: str | list[str] | None = None,
                        source_ip: str | list[str] | None = None,
                        serial: str | list[str] | None = None,
@@ -257,18 +347,23 @@ def _filter_conditions(resolver: str | list[str] | None = None,
                        previous_transaction_id: str | list[str] | None = None,
                        client_label: str | list[str] | None = None,
                        start_timestamp: datetime | None = None,
-                       end_timestamp: datetime | None = None) -> list:
+                       end_timestamp: datetime | None = None,
+                       case_insensitive: bool = False) -> list:
     """
     Build the list of SQLAlchemy ``where`` conditions for the provided filters (``None`` means no filter on that
     field). Each scalar filter accepts a single value or a list of values; an entry matches the field if it equals any
     of the values, or (for a value containing a ``*`` wildcard) matches it with a ``LIKE``. Returned as a list so it
     can be applied to both ``select`` and ``delete`` statements. timestamp filters are inclusive on both ends.
+
+    With *case_insensitive* set, plain (non-wildcard) filter values match case-insensitively; wildcard values always
+    match case-insensitively (see :func:`_match_condition`).
     """
     match_filters: dict[InstrumentedAttribute, str | list[str] | None] = {
         AuthenticationLog.resolver: resolver,
         AuthenticationLog.uid: uid,
         AuthenticationLog.realm: realm,
         AuthenticationLog.username: username,
+        AuthenticationLog.user_role: user_role,
         AuthenticationLog.event_type: event_type,
         AuthenticationLog.source_ip: source_ip,
         AuthenticationLog.serial: serial,
@@ -277,7 +372,7 @@ def _filter_conditions(resolver: str | list[str] | None = None,
         AuthenticationLog.client_label: client_label,
     }
     conditions = [condition for column, value in match_filters.items()
-                  if (condition := _match_condition(column, value)) is not None]
+                  if (condition := _match_condition(column, value, case_insensitive)) is not None]
     if start_timestamp is not None:
         conditions.append(AuthenticationLog.timestamp >= _naive_utc(start_timestamp))
     if end_timestamp is not None:
@@ -309,6 +404,7 @@ def get_authentication_logs(resolver: str | list[str] | None = None,
                             uid: str | list[str] | None = None,
                             realm: str | list[str] | None = None,
                             username: str | list[str] | None = None,
+                            user_role: str | list[str] | None = None,
                             event_type: str | list[str] | None = None,
                             source_ip: str | list[str] | None = None,
                             serial: str | list[str] | None = None,
@@ -323,7 +419,8 @@ def get_authentication_logs(resolver: str | list[str] | None = None,
     single value or a list of values; an entry matches the field if it equals any of the listed values, or (for a
     value containing a ``*`` wildcard) matches it with a ``LIKE``. timestamp filters are inclusive on both ends.
     """
-    conditions = _filter_conditions(resolver=resolver, uid=uid, realm=realm, username=username, event_type=event_type,
+    conditions = _filter_conditions(resolver=resolver, uid=uid, realm=realm, username=username, user_role=user_role,
+                                    event_type=event_type,
                                     source_ip=source_ip, serial=serial, transaction_id=transaction_id,
                                     previous_transaction_id=previous_transaction_id, client_label=client_label,
                                     start_timestamp=start_timestamp, end_timestamp=end_timestamp)
@@ -335,6 +432,7 @@ def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
                                      uid: str | list[str] | None = None,
                                      realm: str | list[str] | None = None,
                                      username: str | list[str] | None = None,
+                                     user_role: str | list[str] | None = None,
                                      event_type: str | list[str] | None = None,
                                      source_ip: str | list[str] | None = None,
                                      serial: str | list[str] | None = None,
@@ -344,6 +442,7 @@ def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
                                      start_timestamp: datetime | None = None,
                                      end_timestamp: datetime | None = None,
                                      visibility_scopes: list[AuthenticationLogVisibilityScope] | None = None,
+                                     case_insensitive: bool = False,
                                      page: int = 1,
                                      page_size: int = DEFAULT_PAGE_SIZE,
                                      sort_column: str = "id",
@@ -351,13 +450,15 @@ def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
     """
     Return a single page of authentication log entries matching the given filters.
 
-    The filter parameters -- ``resolver``, ``uid``, ``realm``, ``username``, ``event_type``, ``source_ip``,
+    The filter parameters -- ``resolver``, ``uid``, ``realm``, ``username``, ``user_role``, ``event_type``, ``source_ip``,
     ``serial``, ``transaction_id``, ``previous_transaction_id``, ``client_label``, ``start_timestamp`` and
     ``end_timestamp`` -- behave
     exactly like :func:`get_authentication_logs`. The remaining parameters control visibility scoping and pagination:
 
     :param visibility_scopes: restrict the result to entries matching any of these scopes
         (see :func:`_visibility_condition`); ``None`` means no restriction
+    :param case_insensitive: if set, plain (non-wildcard) filter values match case-insensitively; wildcard values
+        always match case-insensitively
     :param page: the page number to return, 1-indexed
     :param page_size: the number of entries per page
     :param sort_column: the column to sort by; one of :data:`SORTABLE_COLUMNS` (falling back to ``id``), always
@@ -365,10 +466,12 @@ def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
     :param sort_order: ``asc`` or ``desc``
     :return: an :class:`AuthenticationLogPage` with the page's entries and the pagination metadata
     """
-    conditions = _filter_conditions(resolver=resolver, uid=uid, realm=realm, username=username, event_type=event_type,
+    conditions = _filter_conditions(resolver=resolver, uid=uid, realm=realm, username=username, user_role=user_role,
+                                    event_type=event_type,
                                     source_ip=source_ip, serial=serial, transaction_id=transaction_id,
                                     previous_transaction_id=previous_transaction_id, client_label=client_label,
-                                    start_timestamp=start_timestamp, end_timestamp=end_timestamp)
+                                    start_timestamp=start_timestamp, end_timestamp=end_timestamp,
+                                    case_insensitive=case_insensitive)
     if visibility_scopes is not None:
         conditions.append(_visibility_condition(visibility_scopes))
     stmt = select(AuthenticationLog).where(*conditions)
@@ -399,6 +502,7 @@ def delete_authentication_logs(resolver: str | list[str] | None = None,
                                uid: str | list[str] | None = None,
                                realm: str | list[str] | None = None,
                                username: str | list[str] | None = None,
+                               user_role: str | list[str] | None = None,
                                event_type: str | list[str] | None = None,
                                source_ip: str | list[str] | None = None,
                                serial: str | list[str] | None = None,
@@ -412,7 +516,7 @@ def delete_authentication_logs(resolver: str | list[str] | None = None,
     """
     Delete all authentication log entries matching the given filters and return the number deleted.
 
-    The filter parameters -- ``resolver``, ``uid``, ``realm``, ``username``, ``event_type``, ``source_ip``,
+    The filter parameters -- ``resolver``, ``uid``, ``realm``, ``username``, ``user_role``, ``event_type``, ``source_ip``,
     ``serial``, ``transaction_id``, ``previous_transaction_id``, ``client_label``, ``start_timestamp`` and
     ``end_timestamp`` -- behave
     exactly like :func:`get_authentication_logs` (to delete entries older than a point in time, pass
@@ -424,7 +528,8 @@ def delete_authentication_logs(resolver: str | list[str] | None = None,
     :param chunk_size: if given, delete in chunks of this size to avoid long locks on large tables
     :return: the number of deleted entries
     """
-    conditions = _filter_conditions(resolver=resolver, uid=uid, realm=realm, username=username, event_type=event_type,
+    conditions = _filter_conditions(resolver=resolver, uid=uid, realm=realm, username=username, user_role=user_role,
+                                    event_type=event_type,
                                     source_ip=source_ip, serial=serial, transaction_id=transaction_id,
                                     previous_transaction_id=previous_transaction_id, client_label=client_label,
                                     start_timestamp=start_timestamp, end_timestamp=end_timestamp)
