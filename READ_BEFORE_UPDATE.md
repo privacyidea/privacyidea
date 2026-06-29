@@ -1,6 +1,7 @@
 # Update Notes
 ## Update from 3.13 to 3.14
 
+
 * A new admin policy action `cancelchallenge` has been added. Cancelling an active challenge via
   `DELETE /token/challenges/transaction/<transaction_id>` previously required the `getchallenges`
   right; it now requires the new, write-scoped `cancelchallenge` right. Admins who should only be
@@ -21,6 +22,28 @@
   `GET /token/challenges/`, `GET /token/challenges/<serial>`, and the new
   `GET /token/challenges/user` endpoint. Integrations that indexed responses by `id` need to be
   updated to use `transaction_id`.
+
+* A new `hide_version` policy action (scope `hardening`) lets you suppress the
+  privacyIDEA version (`version` / `versionnumber`) from API responses and the
+  WebUI for unauthenticated requests. Authenticated requests still receive it:
+  an admin or user with a valid token (e.g. the WebUI's `/config` call after
+  login) sees the version as before, so the WebUI keeps showing it.
+
+* When the `hide_version` policy is active, `version`/`versionnumber` are also
+  removed from API responses to unauthenticated callers such as
+  `/validate/check`. This is intentional (defense in depth). Do not rely on the
+  version field to decide whether the server supports an operation — use the
+  relevant capability flags in the response instead.
+
+* Independently of that policy, the health-check endpoints (`/healthz`,
+  `/healthz/livez`, `/healthz/readyz`, `/healthz/startupz`) **no longer return
+  the `version`/`versionnumber` fields at all**. These probes are unauthenticated
+  and the version is not needed for liveness/readiness; evaluating the policy is
+  deliberately avoided here so the checks stay dependency-free and keep answering
+  even when the database is unavailable (policy evaluation reads the cached
+  configuration, whose freshness check still touches the database). If you relied
+  on scraping the privacyIDEA version from a health endpoint, read it from an
+  authenticated endpoint instead.
 
 * Sensitive configuration values (passwords, secrets) are no longer returned in plaintext by
   the REST API. Affected endpoints: CA connectors (`GET /caconnector`), machine resolvers
