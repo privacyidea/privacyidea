@@ -146,18 +146,16 @@
     <div class="actions">
       <button
         (click)="resetWelcome()"
-        i18n
         mat-stroked-button>
         <mat-icon>replay</mat-icon>
-        Read again
+        <span i18n>Read again</span>
       </button>
       <button
         (click)="nextWelcome()"
         class="action-button-secondary"
-        i18n
         mat-stroked-button>
         <mat-icon>keyboard_arrow_right</mat-icon>
-        Dive In!
+        <span i18n>Dive In!</span>
       </button>
     </div>
   }
@@ -191,10 +189,9 @@
       <button
         (click)="nextWelcome()"
         class="action-button-secondary"
-        i18n
         mat-stroked-button>
         <mat-icon>done</mat-icon>
-        Okay
+        <span i18n>Okay</span>
       </button>
     </div>
   }

@@ -94,7 +94,11 @@
             <strong class="force-wrap">{{ condition[1] }}</strong>
             <span class="force-wrap">{{ getComparatorLabel(condition[2]) }}</span>
             <strong class="force-wrap">{{ condition[3] }}</strong>
-            <span class="missing-data-info force-wrap">When Missing: {{ getMissingDataLabel(condition[5]) }}</span>
+            <span
+              class="missing-data-info force-wrap"
+              i18n
+              >When Missing: {{ getMissingDataLabel(condition[5]) }}</span
+            >
           </div>
         </div>
       }

@@ -42,7 +42,8 @@
           [disableRipple]="true"
           [disabled]="!authService.actionAllowed('eventhandling_write')"
           labelPosition="before"
-          matTooltip="Toggle Active Status">
+          matTooltip="Toggle Active Status"
+          i18n-matTooltip>
           @if (editEvent().active) {
             <span i18n>Active</span>
           } @else {

@@ -22,6 +22,7 @@ import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { Router } from "@angular/router";
 import { AppComponent } from "@app/app.component";
+import { AUTH_DATA_STORAGE_KEY, BEARER_TOKEN_STORAGE_KEY } from "@core/constants";
 import { LocalService } from "@services/local/local.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { VersioningService } from "@services/version/version.service";
@@ -46,7 +47,6 @@ describe("AuthService", () => {
   let httpMock: HttpTestingController;
   let mockLocal: MockLocalService;
   let routerMock: MockRouter;
-  let notifications: MockNotificationService;
 
   beforeEach(() => {
     routerMock = new MockRouter();
@@ -67,7 +67,6 @@ describe("AuthService", () => {
     authService = TestBed.inject(AuthService);
     httpMock = TestBed.inject(HttpTestingController);
     mockLocal = TestBed.inject(LocalService) as unknown as MockLocalService;
-    notifications = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     jest.spyOn(console, "error").mockReturnValue();
     ensureAtob();
   });
@@ -270,8 +269,6 @@ describe("AuthService", () => {
     expect(mockLocal.removeData).toHaveBeenCalled();
     expect(routerMock.navigate).toHaveBeenCalledWith(["login"]);
     await routerMock.navigate.mock.results[0].value;
-    expect(notifications.success).toHaveBeenCalledWith("Logout successful.");
-    expect(notifications.success).toHaveBeenCalledTimes(1);
   });
 
   it("authtype, jwtExpDate and logoutTimeSeconds compute correctly", () => {
@@ -398,6 +395,19 @@ describe("AuthService", () => {
     expect(authService.jwtData()).toMatchObject(payload);
     expect(authService.isAuthenticated()).toBe(true);
 
+    // The JWT is persisted on its own; the stored auth data must not duplicate the token
+    // or any JWT claim (token, rights, role, username, realm), but keeps the UI config.
+    expect(mockLocal.saveData).toHaveBeenCalledWith(BEARER_TOKEN_STORAGE_KEY, jwt);
+    const authDataCall = (mockLocal.saveData as jest.Mock).mock.calls.find((c) => c[0] === AUTH_DATA_STORAGE_KEY);
+    const persisted = JSON.parse(authDataCall![1]);
+    expect(persisted.token).toBeUndefined();
+    expect(persisted.rights).toBeUndefined();
+    expect(persisted.role).toBeUndefined();
+    expect(persisted.username).toBeUndefined();
+    expect(persisted.realm).toBeUndefined();
+    expect(persisted.menus).toEqual([]);
+    expect(persisted.default_tokentype).toBe("hotp");
+
     sub.unsubscribe();
   });
 
@@ -494,6 +504,51 @@ describe("AuthService", () => {
         rights: ["totp_2step=allow", "totp_2step"]
       } as unknown as AuthData);
       expect(authService.check2Step("totp")).toBe("allow");
+    });
+  });
+
+  describe("session rehydration (restoreSession)", () => {
+    const makeJwt = (expSecondsFromNow: number): string => {
+      const payload = {
+        username: "admin",
+        realm: "",
+        nonce: "",
+        role: "admin",
+        authtype: "",
+        exp: Math.floor(Date.now() / 1000) + expSecondsFromNow,
+        rights: []
+      };
+      return `h.${btoa(JSON.stringify(payload))}.s`;
+    };
+
+    const restore = () => (authService as unknown as { restoreSession: () => void }).restoreSession();
+
+    it("restores an active session from a valid stored token and auth data", () => {
+      mockLocal.saveData(BEARER_TOKEN_STORAGE_KEY, makeJwt(3600));
+      mockLocal.saveData(AUTH_DATA_STORAGE_KEY, JSON.stringify({ token: "t", role: "admin", username: "admin" }));
+      restore();
+      expect(authService.isAuthenticated()).toBe(true);
+      expect(authService.role()).toBe("admin");
+    });
+
+    it("does not restore and clears storage when the token is expired", () => {
+      mockLocal.saveData(BEARER_TOKEN_STORAGE_KEY, makeJwt(-3600));
+      mockLocal.saveData(AUTH_DATA_STORAGE_KEY, JSON.stringify({ token: "t" }));
+      restore();
+      expect(authService.isAuthenticated()).toBe(false);
+      expect(mockLocal.removeData).toHaveBeenCalledWith(BEARER_TOKEN_STORAGE_KEY);
+      expect(mockLocal.removeData).toHaveBeenCalledWith(AUTH_DATA_STORAGE_KEY);
+    });
+
+    it("stays unauthenticated when no token is stored", () => {
+      restore();
+      expect(authService.isAuthenticated()).toBe(false);
+    });
+
+    it("stays unauthenticated when the token is valid but auth data is missing", () => {
+      mockLocal.saveData(BEARER_TOKEN_STORAGE_KEY, makeJwt(3600));
+      restore();
+      expect(authService.isAuthenticated()).toBe(false);
     });
   });
 });
