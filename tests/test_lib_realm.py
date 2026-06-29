@@ -109,6 +109,11 @@ class ResolverTestCase(MyTestCase):
         container_serial = init_container({"type": "generic", "user": "root", "realm": self.realm1})["container_serial"]
         self.assertRaises(UserError, delete_realm, self.realm1)
         unassign_user(container_serial, User("root", self.realm1))
+        # user of the realm still has custom user attributes
+        user = User("root", self.realm1)
+        user.set_attribute("test_key", "test_value")
+        self.assertRaises(UserError, delete_realm, self.realm1)
+        user.delete_attribute("test_key")
         # Now no user is assigned anymore, deletion is allowed
         delete_realm(self.realm1)
 
