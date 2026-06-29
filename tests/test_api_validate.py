@@ -1674,14 +1674,12 @@ class ValidateAPITestCase(MyApiTestCase):
             detail = res.json.get("detail")
             transaction_id = detail.get("transaction_id")
             multi_challenge = detail.get("multi_challenge")
-            self.assertEqual(multi_challenge[0].get("serial"), "CR2A")
-            self.assertEqual(transaction_id,
-                             multi_challenge[0].get("transaction_id"))
-            self.assertEqual("interactive", multi_challenge[0].get("client_mode"))
-            self.assertEqual(transaction_id,
-                             multi_challenge[1].get("transaction_id"))
-            self.assertEqual(multi_challenge[1].get("serial"), "CR2B")
-            self.assertEqual("interactive", multi_challenge[1].get("client_mode"))
+            self.assertEqual(len(multi_challenge), 2)
+            serials = {c.get("serial") for c in multi_challenge}
+            self.assertEqual(serials, {"CR2A", "CR2B"})
+            for challenge in multi_challenge:
+                self.assertEqual(transaction_id, challenge.get("transaction_id"))
+                self.assertEqual("interactive", challenge.get("client_mode"))
 
         # There are two challenges in the database
         r = get_challenges(transaction_id=transaction_id)
