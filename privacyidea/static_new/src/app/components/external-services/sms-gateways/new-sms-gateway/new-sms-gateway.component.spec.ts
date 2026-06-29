@@ -313,6 +313,24 @@ describe("NewSmsGatewayComponent", () => {
   });
 
   describe("custom options and headers", () => {
+    it("hasChanges should be true when only description changes", () => {
+      expect(component.hasChanges).toBe(false);
+      component.smsModel.update((m) => ({ ...m, description: "updated" }));
+      expect(component.hasChanges).toBe(true);
+    });
+
+    it("hasChanges should be true when new option secret checkbox is toggled", () => {
+      expect(component.hasChanges).toBe(false);
+      component.newOptionSecret.set(true);
+      expect(component.hasChanges).toBe(true);
+    });
+
+    it("hasChanges should be true when new header secret checkbox is toggled", () => {
+      expect(component.hasChanges).toBe(false);
+      component.newHeaderSecret.set(true);
+      expect(component.hasChanges).toBe(true);
+    });
+
     it("addOption should add a new option and reset newOptionKey/newOptionValue", () => {
       component.newOptionKey.set("k1");
       component.newOptionValue.set("v1");
@@ -356,16 +374,34 @@ describe("NewSmsGatewayComponent", () => {
     it("optionRows should return sorted entries", () => {
       component.customOptions = { z: "1", a: "2" };
       expect(component.optionRows).toEqual([
-        { key: "a", value: "2" },
-        { key: "z", value: "1" }
+        { key: "a", value: "2", secret: false },
+        { key: "z", value: "1", secret: false }
+      ]);
+    });
+
+    it("optionRows should reflect the secret flag from optionSecrets", () => {
+      component.customOptions = { a: "1", b: "2" };
+      component.optionSecrets = { a: true };
+      expect(component.optionRows).toEqual([
+        { key: "a", value: "1", secret: true },
+        { key: "b", value: "2", secret: false }
       ]);
     });
 
     it("headerRows should return sorted entries", () => {
       component.customHeaders = { b: "1", a: "2" };
       expect(component.headerRows).toEqual([
-        { key: "a", value: "2" },
-        { key: "b", value: "1" }
+        { key: "a", value: "2", secret: false },
+        { key: "b", value: "1", secret: false }
+      ]);
+    });
+
+    it("headerRows should reflect the secret flag from headerSecrets", () => {
+      component.customHeaders = { a: "1", b: "2" };
+      component.headerSecrets = { b: true };
+      expect(component.headerRows).toEqual([
+        { key: "a", value: "1", secret: false },
+        { key: "b", value: "2", secret: true }
       ]);
     });
 
@@ -381,6 +417,36 @@ describe("NewSmsGatewayComponent", () => {
   });
 
   describe("save with custom options/headers and edit mode", () => {
+    it("save should include a draft option row even if Add was not clicked", async () => {
+      component.smsModel.set({ name: "gw", providermodule: "mod1", description: "d" });
+      component.newOptionKey.set("draftOpt");
+      component.newOptionValue.set("draftVal");
+      component.newOptionSecret.set(true);
+
+      await component.save();
+
+      expect(smsGatewayServiceMock.postSmsGateway).toHaveBeenCalled();
+      const calls = smsGatewayServiceMock.postSmsGateway.mock.calls as unknown as [Record<string, unknown>][];
+      const [payload] = calls[0];
+      expect(payload["option.draftOpt"]).toBe("draftVal");
+      expect(payload["secret.option.draftOpt"]).toBe(1);
+    });
+
+    it("save should include a draft header row even if Add was not clicked", async () => {
+      component.smsModel.set({ name: "gw", providermodule: "mod1", description: "d" });
+      component.newHeaderKey.set("X-Draft");
+      component.newHeaderValue.set("draftVal");
+      component.newHeaderSecret.set(false);
+
+      await component.save();
+
+      expect(smsGatewayServiceMock.postSmsGateway).toHaveBeenCalled();
+      const calls = smsGatewayServiceMock.postSmsGateway.mock.calls as unknown as [Record<string, unknown>][];
+      const [payload] = calls[0];
+      expect(payload["header.X-Draft"]).toBe("draftVal");
+      expect(payload["secret.header.X-Draft"]).toBe(0);
+    });
+
     it("should include option.* and header.* entries in the payload", async () => {
       component.smsModel.set({ name: "gw", providermodule: "mod1", description: "d" });
       component.updateParameter("p1", "v1");
@@ -473,6 +539,162 @@ describe("NewSmsGatewayComponent", () => {
     it("parameterEntries should return empty array when no provider selected", () => {
       component.selectedProvider.set(undefined);
       expect(component.parameterEntries()).toEqual([]);
+    });
+  });
+
+  describe("secret flags", () => {
+    it("addOption should record the secret flag and reset newOptionSecret", () => {
+      component.newOptionKey.set("k1");
+      component.newOptionValue.set("v1");
+      component.newOptionSecret.set(true);
+      component.addOption();
+      expect(component.customOptions).toEqual({ k1: "v1" });
+      expect(component.optionSecrets).toEqual({ k1: true });
+      expect(component.newOptionSecret()).toBe(false);
+    });
+
+    it("addOption should not mark a non-secret option as secret", () => {
+      component.newOptionKey.set("k1");
+      component.newOptionValue.set("v1");
+      component.addOption();
+      expect(component.optionSecrets).toEqual({});
+    });
+
+    it("addHeader should record the secret flag and reset newHeaderSecret", () => {
+      component.newHeaderKey.set("h1");
+      component.newHeaderValue.set("hv1");
+      component.newHeaderSecret.set(true);
+      component.addHeader();
+      expect(component.customHeaders).toEqual({ h1: "hv1" });
+      expect(component.headerSecrets).toEqual({ h1: true });
+      expect(component.newHeaderSecret()).toBe(false);
+    });
+
+    it("deleteOption should also remove the secret flag", () => {
+      component.customOptions = { k1: "v1", k2: "v2" };
+      component.optionSecrets = { k1: true, k2: true };
+      component.deleteOption("k1");
+      expect(component.customOptions).toEqual({ k2: "v2" });
+      expect(component.optionSecrets).toEqual({ k2: true });
+    });
+
+    it("deleteHeader should also remove the secret flag", () => {
+      component.customHeaders = { h1: "hv1", h2: "hv2" };
+      component.headerSecrets = { h1: true, h2: true };
+      component.deleteHeader("h1");
+      expect(component.customHeaders).toEqual({ h2: "hv2" });
+      expect(component.headerSecrets).toEqual({ h2: true });
+    });
+
+    it("toggleOptionSecret should flip the secret flag for a key", () => {
+      expect(component.optionSecrets["k1"]).toBeFalsy();
+      component.toggleOptionSecret("k1");
+      expect(component.optionSecrets["k1"]).toBe(true);
+      component.toggleOptionSecret("k1");
+      expect(component.optionSecrets["k1"]).toBe(false);
+    });
+
+    it("toggleHeaderSecret should flip the secret flag for a key", () => {
+      expect(component.headerSecrets["h1"]).toBeFalsy();
+      component.toggleHeaderSecret("h1");
+      expect(component.headerSecrets["h1"]).toBe(true);
+      component.toggleHeaderSecret("h1");
+      expect(component.headerSecrets["h1"]).toBe(false);
+    });
+
+    it("save should send secret.option.* and secret.header.* flags for marked custom entries", async () => {
+      component.smsModel.set({ name: "gw", providermodule: "mod1", description: "d" });
+      component.updateParameter("p1", "v1");
+      component.customOptions = { secretOpt: "s1", plainOpt: "p1v" };
+      component.optionSecrets = { secretOpt: true };
+      component.customHeaders = { "X-Secret": "h1", "X-Plain": "h2" };
+      component.headerSecrets = { "X-Secret": true };
+
+      await component.save();
+
+      expect(smsGatewayServiceMock.postSmsGateway).toHaveBeenCalled();
+      const calls = smsGatewayServiceMock.postSmsGateway.mock.calls as unknown as [Record<string, unknown>][];
+      const [payload] = calls[0];
+      expect(payload["secret.option.secretOpt"]).toBe(1);
+      expect(payload["secret.option.plainOpt"]).toBe(0);
+      expect(payload["secret.header.X-Secret"]).toBe(1);
+      expect(payload["secret.header.X-Plain"]).toBe(0);
+    });
+
+    it("save should send secret.option.* for provider parameters declared secret", async () => {
+      providersValueSignal(smsGatewayServiceMock).set(
+        MockPiResponse.fromValue({
+          mod1: {
+            parameters: {
+              p1: { description: "d" },
+              pwd: { description: "secret param", secret: true }
+            }
+          }
+        })
+      );
+      component.smsModel.set({ name: "gw", providermodule: "mod1", description: "d" });
+      component.onProviderChange("mod1");
+      component.updateParameter("p1", "v1");
+      component.updateParameter("pwd", "topsecret");
+
+      await component.save();
+
+      expect(smsGatewayServiceMock.postSmsGateway).toHaveBeenCalled();
+      const calls = smsGatewayServiceMock.postSmsGateway.mock.calls as unknown as [Record<string, unknown>][];
+      const [payload] = calls[0];
+      expect(payload["secret.option.pwd"]).toBe(1);
+      expect(payload["secret.option.p1"]).toBeUndefined();
+    });
+
+    it("onProviderChange should restore secret flags from secret_options/secret_headers in edit mode", () => {
+      providersValueSignal(smsGatewayServiceMock).set(
+        MockPiResponse.fromValue({
+          mod1: {
+            parameters: { p1: { description: "d" } }
+          }
+        })
+      );
+      component.isEditMode.set(true);
+      internals(component).data = {
+        id: 7,
+        name: "edit-gw",
+        providermodule: "mod1",
+        options: { p1: "fromData", extraSecret: "__CENSORED__", extraPlain: "v" },
+        headers: { "X-Auth": "__CENSORED__", "X-Plain": "v" },
+        secret_options: ["extraSecret"],
+        secret_headers: ["X-Auth"]
+      };
+      component.smsModel.update((m) => ({ ...m, providermodule: "mod1" }));
+
+      component.onProviderChange("mod1");
+
+      expect(component.optionSecrets).toEqual({ extraSecret: true });
+      expect(component.headerSecrets).toEqual({ "X-Auth": true });
+    });
+
+    it("onProviderChange should not put provider-parameter keys into optionSecrets", () => {
+      providersValueSignal(smsGatewayServiceMock).set(
+        MockPiResponse.fromValue({
+          mod1: {
+            parameters: { p1: { description: "d" } }
+          }
+        })
+      );
+      component.isEditMode.set(true);
+      internals(component).data = {
+        id: 8,
+        name: "edit-gw",
+        providermodule: "mod1",
+        options: { p1: "__CENSORED__" },
+        headers: {},
+        // p1 is a provider parameter; it must be excluded from custom optionSecrets
+        secret_options: ["p1"]
+      };
+      component.smsModel.update((m) => ({ ...m, providermodule: "mod1" }));
+
+      component.onProviderChange("mod1");
+
+      expect(component.optionSecrets).toEqual({});
     });
   });
 });

@@ -114,7 +114,8 @@ class SipgateSMSProvider(ISMSProvider):
                           "description": "The sipgate username."},
                       "PASSWORD": {
                           "required": True,
-                          "description": "The sipgate password."},
+                          "description": "The sipgate password.",
+                          "secret": True},
                       "PROXY": {
                           "description": "An optional proxy URI."
                       },

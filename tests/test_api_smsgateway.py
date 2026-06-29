@@ -395,3 +395,148 @@ class APISmsGatewayTestCase(MyApiTestCase):
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
             self.app.full_dispatch_request()
+
+    def test_09_secret_options_and_headers_in_response(self):
+        """GET response includes secret_options and secret_headers lists
+        so the UI can restore the Secret checkbox state."""
+        param = {
+            "name": "mySecretListGW",
+            "module": "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider",
+            "option.URL": "http://sms.example.com",
+            "option.PASSWORD": "pw123",
+            "option.USERNAME": "user1",
+            "header.Authorization": "Bearer tok",
+            "header.Content-Type": "application/json",
+            # Explicitly mark PASSWORD as secret option, Authorization as secret header
+            "secret.option.PASSWORD": "1",
+            "secret.header.Authorization": "1",
+        }
+        with self.app.test_request_context('/smsgateway',
+                                           data=param,
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+
+        with self.app.test_request_context('/smsgateway/',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            gateways = res.json["result"]["value"]
+            sms_gw = next(gw for gw in gateways if gw["name"] == "mySecretListGW")
+
+            # secret_options/secret_headers lists tell the UI which keys are encrypted
+            self.assertIn("PASSWORD", sms_gw["secret_options"])
+            self.assertNotIn("URL", sms_gw["secret_options"])
+            self.assertNotIn("USERNAME", sms_gw["secret_options"])
+            self.assertIn("Authorization", sms_gw["secret_headers"])
+            self.assertNotIn("Content-Type", sms_gw["secret_headers"])
+
+            # Encrypted values are censored, non-encrypted are plaintext
+            self.assertEqual(sms_gw["options"]["PASSWORD"], CENSORED)
+            self.assertEqual(sms_gw["options"]["URL"], "http://sms.example.com")
+            self.assertEqual(sms_gw["options"]["USERNAME"], "user1")
+            self.assertEqual(sms_gw["headers"]["Authorization"], CENSORED)
+            self.assertEqual(sms_gw["headers"]["Content-Type"], "application/json")
+
+        # Clean up
+        with self.app.test_request_context('/smsgateway/mySecretListGW',
+                                           method='DELETE',
+                                           headers={'Authorization': self.at}):
+            self.app.full_dispatch_request()
+
+    def test_10_per_section_secret_heuristic_fallback(self):
+        """When only secret.header.* is sent (no secret.option.*), the option
+        section falls back to the key-name heuristic and still encrypts PASSWORD."""
+        param = {
+            "name": "myFallbackGW",
+            "module": "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider",
+            "option.URL": "http://sms.example.com",
+            "option.PASSWORD": "fallback_secret",
+            "header.X-Token": "plaintoken",
+            # Only mark header section explicitly — no secret.option.* at all
+            "secret.header.X-Token": "0",  # explicitly NOT secret
+        }
+        with self.app.test_request_context('/smsgateway',
+                                           data=param,
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+
+        with self.app.test_request_context('/smsgateway/',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            gateways = res.json["result"]["value"]
+            sms_gw = next(gw for gw in gateways if gw["name"] == "myFallbackGW")
+
+            # PASSWORD should be encrypted via heuristic (no explicit secret.option.* was sent)
+            self.assertIn("PASSWORD", sms_gw["secret_options"])
+            self.assertEqual(sms_gw["options"]["PASSWORD"], CENSORED)
+            # URL is not sensitive
+            self.assertNotIn("URL", sms_gw["secret_options"])
+            self.assertEqual(sms_gw["options"]["URL"], "http://sms.example.com")
+            # Header was explicitly marked NOT secret, so it's plaintext
+            self.assertNotIn("X-Token", sms_gw["secret_headers"])
+            self.assertEqual(sms_gw["headers"]["X-Token"], "plaintoken")
+
+        # Verify the actual stored password is recoverable
+        from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway
+        gw = get_smsgateway(identifier="myFallbackGW")[0]
+        self.assertEqual(gw.option_dict.get("PASSWORD"), "fallback_secret")
+
+        # Clean up
+        with self.app.test_request_context('/smsgateway/myFallbackGW',
+                                           method='DELETE',
+                                           headers={'Authorization': self.at}):
+            self.app.full_dispatch_request()
+
+    def test_11_unset_secret_option_with_censored_value(self):
+        """Explicitly unsetting secret.option.* must persist even when the value
+        is sent as __CENSORED__ (UI edit without changing the value text)."""
+        create_param = {
+            "name": "myUnsetSecretGW",
+            "module": "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider",
+            "option.URL": "http://sms.example.com",
+            "option.AUTH": "keepme",
+            "secret.option.AUTH": "1",
+        }
+        with self.app.test_request_context('/smsgateway',
+                                           data=create_param,
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+
+        update_param = {
+            "name": "myUnsetSecretGW",
+            "module": "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider",
+            "option.URL": "http://sms.example.com",
+            "option.AUTH": CENSORED,
+            "secret.option.AUTH": "0",
+        }
+        with self.app.test_request_context('/smsgateway',
+                                           data=update_param,
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+
+        with self.app.test_request_context('/smsgateway/',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            gateways = res.json["result"]["value"]
+            sms_gw = next(gw for gw in gateways if gw["name"] == "myUnsetSecretGW")
+            self.assertNotIn("AUTH", sms_gw["secret_options"])
+            self.assertEqual(sms_gw["options"]["AUTH"], "keepme")
+
+        with self.app.test_request_context('/smsgateway/myUnsetSecretGW',
+                                           method='DELETE',
+                                           headers={'Authorization': self.at}):
+            self.app.full_dispatch_request()
+

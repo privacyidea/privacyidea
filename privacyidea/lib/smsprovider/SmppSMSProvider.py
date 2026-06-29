@@ -129,7 +129,8 @@ class SmppSMSProvider(ISMSProvider):
                         "SYSTEM_ID": {
                             "description": _("SMSC Service ID")},
                         "PASSWORD": {
-                            "description": _("Password for authentication on SMSC")},
+                            "description": _("Password for authentication on SMSC"),
+                            "secret": True},
                         "S_ADDR_TON": {
                             "description": _("SOURCE_ADDR_TON Special Flag")},
                         "S_ADDR_NPI": {
