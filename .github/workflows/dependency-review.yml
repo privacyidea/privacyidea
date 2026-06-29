@@ -7,7 +7,11 @@
 # Source repository: https://github.com/actions/dependency-review-action
 
 name: Dependency Review Action
-on: [pull_request]
+on:
+  pull_request:
+    branches:
+      - "master"
+      - "branch-*"
 
 permissions:
   contents: read
@@ -16,6 +20,7 @@ jobs:
   dependency-review:
     name: Review dependencies of PR
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout Repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0

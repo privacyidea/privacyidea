@@ -10,6 +10,7 @@ jobs:
   zizmor:
     name: Run zizmor on GitHub actions
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       security-events: write # allow zizmor to update/create a code scanning alert
     steps:
