@@ -251,7 +251,8 @@ def _determine_user_role(user: User | None, internal_admin: bool) -> AuthLogUser
 
 def log_authentication(event_type: AuthEventType | None, request: Request | None = None, user: User | None = None,
                        serial: str | None = None, transaction_id: str | None = None,
-                       previous_transaction_id: str | None = None, internal_admin: bool = False) -> int | None:
+                       previous_transaction_id: str | None = None, username: str | None = None,
+                       internal_admin: bool = False) -> int | None:
     """
     Write one authentication_log entry for the current request.
 
@@ -309,7 +310,7 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
         resolver=user.resolver if resolved else None,
         uid=user.uid if resolved else None,
         realm=(user.realm or None) if user else None,
-        username=(user.login or None) if user else None,
+        username=username or ((user.login or None) if user else None),
         user_role=_determine_user_role(user, internal_admin),
         source_ip=source_ip,
         client_label=client_label,

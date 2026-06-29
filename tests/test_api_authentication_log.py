@@ -17,26 +17,24 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 """
 Tests for the /authenticationlog/ management API: admin GET (pagination, filtering, realm/resolver-scoped visibility,
-the policy gate), admin DELETE (filtered bulk delete), and user-scope GET. Rows are seeded directly; the recording of
-events during authentication is covered in test_api_authentication_event_logging.py.
+the policy gate) and user-scope GET. Rows are seeded directly; the recording of events during authentication is
+covered in test_api_authentication_event_logging.py.
 """
 import datetime
 
 import mock
 
-from privacyidea.lib.challenge import get_challenges
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, AUTH_EVENT_TYPE_KEY
-from privacyidea.lib.conditional_access.authentication_log import (get_authentication_logs, log_authentication_event,
-                                                                   AuthLogUserRole)
-from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, PolicyAction, AUTHORIZED
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.authentication_log import log_authentication_event, AuthLogUserRole
+from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, PolicyAction
 from privacyidea.lib.realm import set_realm, delete_realm
 from privacyidea.models import db
 from .authlog_utils import AuthLogTestCase
 
 
 class AuthenticationLogApiTestCase(AuthLogTestCase):
-    """The /authenticationlog/ API: admin GET (pagination, filtering, realm/resolver visibility, the policy gate),
-    admin DELETE (filtered bulk delete), and user-scope GET. All share the same blueprint and seed fixtures."""
+    """The /authenticationlog/ API: admin GET (pagination, filtering, realm/resolver visibility, the policy gate)
+    and user-scope GET. All share the same blueprint and seed fixtures."""
 
     OTHER_REALM = "otherrealm"
 
@@ -63,13 +61,6 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
             self.assertEqual(status, res.status_code, res.json)
             return res.json
 
-    def _delete(self, query_string=None, status=200):
-        with self.app.test_request_context("/authenticationlog/", method="DELETE", query_string=query_string or {},
-                                           headers={"Authorization": self.at}):
-            res = self.app.full_dispatch_request()
-            self.assertEqual(status, res.status_code, res.json)
-            return res.json
-
     def _user_get(self, query_string=None, status=200):
         with self.app.test_request_context("/authenticationlog/", method="GET", query_string=query_string or {},
                                            headers={"Authorization": self.at_user}):
@@ -80,10 +71,6 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
     @staticmethod
     def _returned_ids(value):
         return {entry["id"] for entry in value["auth_logs"]}
-
-    @staticmethod
-    def _remaining_ids():
-        return {entry.id for entry in get_authentication_logs()}
 
     # --- admin GET ---
 
