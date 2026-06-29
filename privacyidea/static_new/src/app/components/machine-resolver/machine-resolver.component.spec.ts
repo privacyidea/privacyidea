@@ -98,6 +98,12 @@ describe("MachineResolverComponent", () => {
     expect(component.machineResolversDataSource().filteredData.length).toBe(2);
   });
 
+  it("falls back to an empty data source when no resolvers are loaded", () => {
+    machineResolverServiceMock.machineResolvers.set(undefined as never);
+    fixture.detectChanges();
+    expect(component.machineResolversDataSource().data).toEqual([]);
+  });
+
   it("onNewMachineResolver navigates to the new page", () => {
     component.onNewMachineResolver();
     expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.MACHINE_RESOLVER_NEW);

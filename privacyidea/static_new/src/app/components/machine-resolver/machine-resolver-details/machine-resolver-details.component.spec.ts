@@ -31,7 +31,7 @@ import { MockNotificationService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockMachineResolverService } from "@testing/mock-services/mock-machine-resolver-service";
 import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
-import { BehaviorSubject, of } from "rxjs";
+import { BehaviorSubject, Observable, of } from "rxjs";
 import { MachineResolverDetailsComponent } from "./machine-resolver-details.component";
 
 class LocalMockMatDialog {
@@ -133,6 +133,42 @@ describe("MachineResolverDetailsComponent", () => {
       expect(dialog.open).not.toHaveBeenCalled();
       expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.MACHINE_RESOLVER);
     });
+
+    it("saveMachineResolver proceeds after confirming a test failure", async () => {
+      component.onResolvernameChange("res1");
+      machineResolverServiceMock.postTestMachineResolver.mockRejectedValueOnce(new Error("post-failed"));
+      dialog.result$ = of(true);
+      const saved = await component.saveMachineResolver();
+      expect(saved).toBe(true);
+      expect(dialog.open).toHaveBeenCalled();
+      expect(machineResolverServiceMock.postMachineResolver).toHaveBeenCalled();
+    });
+
+    it("saveMachineResolver aborts when the test-failure dialog is dismissed", async () => {
+      component.onResolvernameChange("res1");
+      machineResolverServiceMock.postTestMachineResolver.mockRejectedValueOnce(new Error("post-failed"));
+      dialog.result$ = of(false);
+      const saved = await component.saveMachineResolver();
+      expect(saved).toBe(false);
+      expect(machineResolverServiceMock.postMachineResolver).not.toHaveBeenCalled();
+    });
+
+    it("saveMachineResolver aborts on a non test-failure error without prompting", async () => {
+      component.onResolvernameChange("res1");
+      machineResolverServiceMock.postTestMachineResolver.mockRejectedValueOnce(new Error("boom"));
+      const saved = await component.saveMachineResolver();
+      expect(saved).toBe(false);
+      expect(dialog.open).not.toHaveBeenCalled();
+      expect(machineResolverServiceMock.postMachineResolver).not.toHaveBeenCalled();
+    });
+
+    it("saveMachineResolver returns false when the update post fails", async () => {
+      component.onResolvernameChange("res1");
+      machineResolverServiceMock.postMachineResolver.mockRejectedValueOnce(new Error("boom"));
+      const saved = await component.saveMachineResolver();
+      expect(saved).toBe(false);
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
+    });
   });
 
   describe("edit mode", () => {
@@ -189,6 +225,37 @@ describe("MachineResolverDetailsComponent", () => {
       expect(component.isEditing()).toBe(false);
       expect(component.isEdited()).toBe(false);
       expect(router.navigateByUrl).not.toHaveBeenCalled();
+    });
+
+    it("onCancel saves and exits edit mode on save-exit", async () => {
+      component.startEditing();
+      component.onNewData({ resolver: "hosts1", type: "hosts", filename: "/changed" } as never);
+      dialog.result$ = of("save-exit");
+      await component.onCancel();
+      expect(machineResolverServiceMock.postMachineResolver).toHaveBeenCalled();
+      expect(component.isEditing()).toBe(false);
+    });
+
+    it("onCancel logs an error when the dialog rejects", async () => {
+      const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+      component.startEditing();
+      component.onNewData({ resolver: "hosts1", type: "hosts", filename: "/changed" } as never);
+      dialog.result$ = new Observable((subscriber) => subscriber.error(new Error("dialog boom")));
+      await component.onCancel();
+      expect(errorSpy).toHaveBeenCalledWith("Error handling unsaved changes dialog:", expect.any(Error));
+      errorSpy.mockRestore();
+    });
+  });
+
+  describe("loading a missing machine resolver", () => {
+    it("notifies and navigates back when the resolver does not exist", async () => {
+      await setup("missing");
+      const notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+      machineResolverServiceMock.machineResolverResource.set({ result: { value: {} } } as never);
+      machineResolverServiceMock.machineResolvers.set([]);
+      fixture.detectChanges();
+      expect(notificationService.error).toHaveBeenCalled();
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.MACHINE_RESOLVER);
     });
   });
 });
