@@ -49,6 +49,7 @@ import { lastValueFrom } from "rxjs";
   selector: "app-machine-resolver-details",
   templateUrl: "./machine-resolver-details.component.html",
   styleUrls: ["./machine-resolver-details.component.scss"],
+  standalone: true,
   imports: [
     MatButtonModule,
     MatFormFieldModule,
@@ -86,8 +87,12 @@ export class MachineResolverDetailsComponent implements OnInit, OnDestroy {
   readonly isEditing = signal(false);
   readonly fieldsEditable = computed(() => !this.isEditMode() || this.isEditing());
 
-  readonly originalMachineResolver = signal<MachineResolver>(deepCopy(MachineResolverDetailsComponent.machineResolverDefault));
-  readonly currentMachineResolver = signal<MachineResolver>(deepCopy(MachineResolverDetailsComponent.machineResolverDefault));
+  readonly originalMachineResolver = signal<MachineResolver>(
+    deepCopy(MachineResolverDetailsComponent.machineResolverDefault)
+  );
+  readonly currentMachineResolver = signal<MachineResolver>(
+    deepCopy(MachineResolverDetailsComponent.machineResolverDefault)
+  );
 
   readonly isEdited = computed(
     () => JSON.stringify(this.currentMachineResolver()) !== JSON.stringify(this.originalMachineResolver())

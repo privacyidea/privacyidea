@@ -42,6 +42,9 @@
             placeholder="Filter by name or type" />
         </app-clearable-input>
       </mat-form-field>
+      <mat-paginator
+        [pageSizeOptions]="tableUtilsService.pageSizeOptions()"
+        showFirstLastButtons />
     </div>
 
     <div class="flex-row gap-8 margin-bottom-16">

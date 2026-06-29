@@ -38,6 +38,7 @@ import {
   MachineResolverService,
   MachineResolverServiceInterface
 } from "@services/machine-resolver/machine-resolver.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { lastValueFrom } from "rxjs";
 
 const columnKeysMap = [
@@ -49,6 +50,7 @@ const columnKeysMap = [
   selector: "app-machine-resolver",
   templateUrl: "./machine-resolver.component.html",
   styleUrls: ["./machine-resolver.component.scss"],
+  standalone: true,
   imports: [
     MatTableModule,
     MatPaginatorModule,
@@ -70,6 +72,7 @@ export class MachineResolverComponent {
 
   readonly machineResolverService: MachineResolverServiceInterface = inject(MachineResolverService);
   readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly router = inject(Router);
 
