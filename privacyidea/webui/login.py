@@ -45,7 +45,7 @@ from privacyidea.lib.policy import PolicyClass, SCOPE, Match, REMOTE_USER
 from privacyidea.lib.queue import has_job_queue
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.subscriptions import subscription_status
-from privacyidea.lib.utils import get_client_ip, get_version_number
+from privacyidea.lib.utils import get_client_ip, get_version_number, get_plugin_info_from_useragent
 
 log = logging.getLogger(__name__)
 
@@ -77,6 +77,11 @@ def before_request():
     g.policy_object = PolicyClass()
     # access_route contains the ip addresses of all clients, hops and proxies.
     g.client_ip = get_client_ip(request, get_from_config(SYSCONF.OVERRIDECLIENT))
+    # Populate the user agent so that policies restricted by user agent (e.g. a
+    # user-agent-scoped hide_version policy) match consistently with the API
+    # blueprints, which set g.user_agent in their before_request handlers.
+    ua_name, _ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
+    g.user_agent = ua_name
     # Resolve the logged-in user from a presented JWT. This lets the
     # hide_version policy still expose the version number to authenticated
     # WebUI requests (e.g. the /config call made after login or on reload),

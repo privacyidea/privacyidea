@@ -738,7 +738,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
                "versionnumber": "3.9",
                "id": 1}
 
-        # --- Without the policy, version fields should remain ---
+        # Without the policy, version fields should remain in the response
         g.logged_in_user = {}
         resp = jsonify(res)
         new_response = hide_version(req, resp)
@@ -746,7 +746,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         self.assertIn("version", jresult)
         self.assertIn("versionnumber", jresult)
 
-        # --- Set the hide_version policy ---
+        # Activate the hide_version policy for the following assertions
         set_policy(name="hide_version_pol",
                    scope=SCOPE.HARDENING,
                    action=PolicyAction.HIDE_VERSION)
@@ -832,9 +832,9 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # Restore g.policy_object for subsequent tests
         g.policy_object = PolicyClass()
 
-        # --- Test: get_from_config raises Exception (lines 267-268) ---
-        # When g.client_ip is missing and get_from_config fails, hide_version
-        # should fall back to override_client=None and still strip version.
+        # When g.client_ip is missing and get_from_config fails while resolving
+        # the override-client setting, hide_version should fall back to
+        # override_client=None and still strip the version rather than erroring.
         from unittest.mock import patch
         g.logged_in_user = {}
         if hasattr(g, 'client_ip'):
@@ -852,10 +852,9 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         self.assertNotIn("version", jresult)
         self.assertNotIn("versionnumber", jresult)
 
-        # --- Test: Match.action_only raises AttributeError (lines 273-275) ---
         # When g.policy_object is set to a non-None value that doesn't support
-        # the expected interface, hide_version should catch AttributeError and
-        # return the response unchanged.
+        # the expected interface, Match.action_only raises AttributeError;
+        # hide_version should catch it and return the response unchanged.
         g.logged_in_user = {}
         g.client_ip = "192.168.0.1"
         g.policy_object = "broken"  # not a real PolicyClass

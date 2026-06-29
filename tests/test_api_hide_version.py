@@ -55,7 +55,7 @@ class HideVersionIntegrationTest(MyApiTestCase):
 
     def _dispatch(self, path, method='GET', data=None, headers=None):
         """Dispatch a request through the full Flask pipeline and return the
-        parsed JSON response."""
+        Flask Response object (call .json on it to inspect the parsed body)."""
         g.pop('logged_in_user', None)
         g.pop('policy_object', None)
         kwargs = {'method': method}
@@ -101,9 +101,6 @@ class HideVersionIntegrationTest(MyApiTestCase):
         else:
             self.assertNotIn("signature", data)
 
-    # ------------------------------------------------------------------
-    # Core behaviour: unauthenticated requests with/without policy
-    # ------------------------------------------------------------------
     def test_unauthenticated_hides_version_with_policy(self):
         """Unauthenticated responses have version stripped when policy is active."""
         self._set_policy()
@@ -121,9 +118,6 @@ class HideVersionIntegrationTest(MyApiTestCase):
                              data={"username": "nonexistent", "password": "wrong"})
         self._assert_version_visible(res.json)
 
-    # ------------------------------------------------------------------
-    # Authenticated users always see version
-    # ------------------------------------------------------------------
     def test_authenticated_shows_version_with_policy(self):
         """Authenticated users see the version even with the policy active."""
         self._set_policy()
@@ -144,9 +138,6 @@ class HideVersionIntegrationTest(MyApiTestCase):
         self.assertEqual(200, res.status_code)
         self._assert_version_visible(res.json)
 
-    # ------------------------------------------------------------------
-    # Signature validity: the original bug (regression guard)
-    # ------------------------------------------------------------------
     def test_signature_valid_after_version_stripping(self):
         """Version stripping must happen *before* signing. If it happened
         after, the signature would not match the delivered body."""
@@ -163,9 +154,6 @@ class HideVersionIntegrationTest(MyApiTestCase):
             "Signature must verify against body with version already stripped"
         )
 
-    # ------------------------------------------------------------------
-    # Multi-endpoint coverage
-    # ------------------------------------------------------------------
     def test_multiple_endpoints_hide_version(self):
         """Various unauthenticated endpoints all strip version fields."""
         self._set_policy()
@@ -182,9 +170,6 @@ class HideVersionIntegrationTest(MyApiTestCase):
                 res = self._dispatch(path, method=method, data=data)
                 self._assert_version_hidden(res.json, signed=signed)
 
-    # ------------------------------------------------------------------
-    # /config endpoint: nested privacyideaVersionNumber
-    # ------------------------------------------------------------------
     def test_config_hides_nested_version_number(self):
         """/config strips privacyideaVersionNumber from result.value."""
         self._set_policy()

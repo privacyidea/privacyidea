@@ -267,6 +267,10 @@ def hide_version(request, response):
             except Exception:
                 override_client = None
             g.client_ip = get_client_ip(request, override_client)
+        if not g.get("user_agent"):
+            from privacyidea.lib.utils import get_plugin_info_from_useragent
+            ua_name, _ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
+            g.user_agent = ua_name
         try:
             policy = Match.action_only(g, scope=SCOPE.HARDENING, action=PolicyAction.HIDE_VERSION).policies(
                 write_to_audit_log=False)
