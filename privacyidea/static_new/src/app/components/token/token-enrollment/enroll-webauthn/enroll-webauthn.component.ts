@@ -64,7 +64,7 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
 
   buildEnrollmentArgs(basicEnrollmentData: TokenEnrollmentData): EnrollmentArgs<WebAuthnEnrollmentData> | null {
     if (!navigator.credentials?.create) {
-      const errorMsg = "WebAuthn is not supported by this browser.";
+      const errorMsg = $localize`WebAuthn is not supported by this browser.`;
       this.notificationService.error(errorMsg);
       return null;
     }
@@ -86,12 +86,12 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
   ): Promise<EnrollmentResponse | null> {
     if (!enrollmentResponse?.detail) {
       this.notificationService.error(
-        "Failed to initiate WebAuthn registration: Invalid server response or missing details."
+        $localize`Failed to initiate WebAuthn registration: Invalid server response or missing details.`
       );
       return null;
     } else if (!enrollmentResponse?.detail?.["webAuthnRegisterRequest"]) {
       this.notificationService.error(
-        "Failed to initiate WebAuthn registration: Missing WebAuthn registration request data."
+        $localize`Failed to initiate WebAuthn registration: Missing WebAuthn registration request data.`
       );
       return null;
     } else if (enrollmentData.type !== "webauthn") {
@@ -123,7 +123,7 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
     const request = enrollmentResponse.detail?.webAuthnRegisterRequest;
 
     if (!request) {
-      this.notificationService.warning("Invalid WebAuthn registration request data.");
+      this.notificationService.warning($localize`Invalid WebAuthn registration request data.`);
       return null;
     }
 
@@ -160,7 +160,7 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
     } catch (browserOrCredentialError) {
       const message =
         browserOrCredentialError instanceof Error ? browserOrCredentialError.message : String(browserOrCredentialError);
-      this.notificationService.error(`WebAuthn credential creation failed: ${message || "Unknown error"}`);
+      this.notificationService.error($localize`WebAuthn credential creation failed: ${message || "Unknown error"}`);
       publicKeyCred = null;
     } finally {
       this.closeStepOneDialog();
@@ -205,7 +205,7 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
     const { webauthnEnrollmentData, webauthnEnrollmentResponse } = args;
 
     if (!webauthnEnrollmentResponse || !webauthnEnrollmentResponse.detail) {
-      this.notificationService.warning("Enrollment response or its detail is missing for finalization.");
+      this.notificationService.warning($localize`Enrollment response or its detail is missing for finalization.`);
       return null;
     }
 
@@ -214,7 +214,7 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
 
     if (!webAuthnRegisterRequest || !webAuthnRegisterRequest.transaction_id || !detail.serial) {
       this.notificationService.warning(
-        "Invalid transaction ID or serial number in enrollment detail for finalization."
+        $localize`Invalid transaction ID or serial number in enrollment detail for finalization.`
       );
       return null;
     }
@@ -252,7 +252,7 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
       return { ...response };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      const errMsg = `WebAuthn finalization failed: ${message || error}`;
+      const errMsg = $localize`WebAuthn finalization failed: ${message || error}`;
       this.notificationService.error(errMsg);
       return null;
     }

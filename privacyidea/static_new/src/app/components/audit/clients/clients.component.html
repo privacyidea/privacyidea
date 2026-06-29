@@ -19,9 +19,11 @@
 <div
   appScrollToTop
   class="clients-layout">
-  <h3>Known Clients</h3>
+  <h3 i18n>Known Clients</h3>
 
-  <div class="margin-bottom-16">
+  <div
+    class="margin-bottom-16"
+    i18n>
     This is a list of clients that have used the <i>/validate/check</i> endpoint for authentication.
   </div>
 
@@ -46,6 +48,7 @@
     [dataSource]="clientDataSource()"
     class="clients-table"
     aria-label="Client Data Table"
+    i18n-aria-label
     mat-table
     matSort>
     @for (column of columnKeysMap; let colIdx = $index; track column) {
@@ -80,7 +83,8 @@
                       [routerLink]="[ROUTE_PATHS.AUDIT]"
                       class="ml-4 small-icon-button"
                       mat-icon-button
-                      matTooltip="Show in audit log">
+                      matTooltip="Show in audit log"
+                      i18n-matTooltip>
                       <mat-icon>receipt_long</mat-icon>
                     </button>
                   }

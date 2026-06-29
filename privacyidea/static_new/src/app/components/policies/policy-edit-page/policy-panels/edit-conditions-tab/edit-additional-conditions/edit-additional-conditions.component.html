@@ -90,7 +90,7 @@
     <div class="new-condition-form">
       <div class="form-row">
         <mat-form-field appearance="outline">
-          <mat-label>Section</mat-label>
+          <mat-label i18n>Section</mat-label>
           <mat-select
             [value]="conditionSection()"
             (selectionChange)="conditionSection.set($event.value)">
@@ -101,7 +101,7 @@
         </mat-form-field>
 
         <mat-form-field appearance="outline">
-          <mat-label>If Data Missing</mat-label>
+          <mat-label i18n>If Data Missing</mat-label>
           <mat-select
             [value]="conditionHandleMissingData()"
             (selectionChange)="conditionHandleMissingData.set($event.value)">
@@ -113,7 +113,7 @@
       </div>
       <div class="form-row">
         <mat-form-field appearance="outline">
-          <mat-label>Key</mat-label>
+          <mat-label i18n>Key</mat-label>
           @if (availableKeys().length > 0) {
             <input
               type="text"
@@ -138,7 +138,7 @@
         </mat-form-field>
 
         <mat-form-field appearance="outline">
-          <mat-label>Comparator</mat-label>
+          <mat-label i18n>Comparator</mat-label>
           <mat-select
             [value]="conditionComparator()"
             (selectionChange)="conditionComparator.set($event.value)">
