@@ -24,6 +24,7 @@ from privacyidea.lib.policydecorators import (libpolicy,
                                               auth_cache,
                                               reset_all_user_tokens, force_challenge_response)
 from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.user import User
 from privacyidea.lib.utils import (is_true, create_tag_dict,
                                    redacted_phone_number, redacted_email)
 from privacyidea.models import (db, Challenge)
@@ -36,7 +37,9 @@ log = logging.getLogger(__name__)
 
 
 @log_with(log)
-def check_realm_pass(realm, passw, options=None, include_types=None, exclude_types=None):
+def check_realm_pass(realm: str, passw: str, options: dict | None = None,
+                     include_types: list | str | None = None,
+                     exclude_types: list | str | None = None) -> tuple[bool, dict]:
     """
     This function checks, if the given passw matches any token in the given
     realm. This can be used for the 4-eyes token.
@@ -88,7 +91,7 @@ def check_realm_pass(realm, passw, options=None, include_types=None, exclude_typ
 
 @log_with(log, hide_args=[1])
 @libpolicy(auth_lastauth)
-def check_serial_pass(serial, passw, options=None):
+def check_serial_pass(serial: str, passw: str, options: dict | None = None) -> tuple[bool, dict]:
     """
     This function checks the otp for a given serial
 
@@ -116,7 +119,7 @@ def check_serial_pass(serial, passw, options=None):
 
 
 @log_with(log)
-def check_otp(serial, otpval):
+def check_otp(serial: str, otpval: str) -> tuple[bool, dict]:
     """
     This function checks the OTP for a given serial number
 
@@ -142,7 +145,7 @@ def check_otp(serial, otpval):
 @libpolicy(auth_user_passthru)
 @libpolicy(force_challenge_response)
 @log_with(log, hide_kwargs=["passw"])
-def check_user_pass(user, passw, options=None):
+def check_user_pass(user: User, passw: str, options: dict | None = None) -> tuple[bool, dict]:
     """
     This function checks the otp for a given user.
     It is called by the API /validate/check
@@ -175,7 +178,8 @@ def check_user_pass(user, passw, options=None):
     return res, reply_dict
 
 
-def create_challenges_from_tokens(token_list, reply_dict, options=None):
+def create_challenges_from_tokens(token_list: list[TokenClass], reply_dict: dict,
+                                  options: dict | None = None) -> None:
     """
     Get a list of active tokens and create challenges for these tokens.
     The reply_dict is modified accordingly. The transaction_id and
@@ -252,7 +256,7 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
                                      reply_dict.get("multi_challenge", [])]
 
 
-def weigh_token_type(token_obj):
+def weigh_token_type(token_obj: TokenClass) -> int:
     """
     This method returns a weight of a token type, which is used
     to sort the tokentype list. Other weighing functions can be implemented.
@@ -273,7 +277,8 @@ def weigh_token_type(token_obj):
 @libpolicy(reset_all_user_tokens)
 @libpolicy(generic_challenge_response_reset_pin)
 @libpolicy(generic_challenge_response_resync)
-def check_token_list(token_object_list, passw, user=None, options=None, allow_reset_all_tokens=False):
+def check_token_list(token_object_list: list[TokenClass], passw: str, user: User | None = None,
+                     options: dict | None = None, allow_reset_all_tokens: bool = False) -> tuple[bool, dict]:
     """
     Takes a list of token objects and tries to find the matching token for the given passw. It also tests
     * if the token is active or
@@ -574,7 +579,8 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
     return res, reply_dict
 
 
-def challenge_text_replace(message, user, token_obj, additional_tags: dict = None):
+def challenge_text_replace(message: str, user: User | None, token_obj: TokenClass,
+                           additional_tags: dict | None = None) -> str:
     # TODO this function should be a token function since most of the info is from that token anyway, optionally pass
     # TODO environment stuff into that function
     serial = token_obj.token.serial if token_obj.token.serial else None

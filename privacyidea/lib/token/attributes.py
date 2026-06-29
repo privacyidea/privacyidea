@@ -3,6 +3,7 @@
 """Mutating a single token's attributes, info, PIN, counters and state."""
 
 import logging
+from typing import Any, TYPE_CHECKING
 
 from sqlalchemy.sql.expression import delete
 
@@ -17,13 +18,18 @@ from privacyidea.models import (db, TokenOwner)
 
 from privacyidea.lib.token.query import get_one_token, get_tokens_from_serial_or_user
 
+if TYPE_CHECKING:
+    from privacyidea.lib.tokenclass import TokenClass
+    from privacyidea.lib.user import User
+
 
 log = logging.getLogger(__name__)
 
 
 
 @log_with(log)
-def set_realms(serial, realms=None, add=False, allowed_realms: list = None):
+def set_realms(serial: str, realms: list | None = None, add: bool = False,
+               allowed_realms: list | None = None) -> None:
     """
     Set all realms of a token. This sets the realms new. I.e. it does not add
     realms. So realms that are not contained in the list will not be assigned
@@ -71,7 +77,7 @@ def set_realms(serial, realms=None, add=False, allowed_realms: list = None):
 
 
 @log_with(log)
-def set_defaults(serial):
+def set_defaults(serial: str) -> None:
     """
     Set the default values for the token with the given serial number (exact)
 
@@ -89,7 +95,8 @@ def set_defaults(serial):
 
 
 @log_with(log)
-def assign_token(serial, user, pin=None, encrypt_pin=False, error_message=None):
+def assign_token(serial: str, user: "User", pin: str | None = None, encrypt_pin: bool = False,
+                 error_message: str | None = None) -> bool:
     """
     Assign token to a user.
     If the PIN is given, the PIN is reset.
@@ -134,7 +141,7 @@ def assign_token(serial, user, pin=None, encrypt_pin=False, error_message=None):
 
 @log_with(log)
 @check_user_or_serial
-def unassign_token(serial, user=None):
+def unassign_token(serial: str | None, user: "User | None" = None) -> int:
     """
     unassign the user from the token, or all tokens of a user
 
@@ -163,7 +170,8 @@ def unassign_token(serial, user=None):
 
 
 @log_with(log)
-def resync_token(serial, otp1, otp2, options=None, user=None):
+def resync_token(serial: str, otp1: str, otp2: str, options: dict | None = None,
+                 user: "User | None" = None) -> bool:
     """
     Resynchronize the token of the given serial number and user by searching the
     otp1 and otp2 in the future otp values.
@@ -194,7 +202,7 @@ def resync_token(serial, otp1, otp2, options=None, user=None):
 
 @log_with(log)
 @check_user_or_serial
-def reset_token(serial, user=None):
+def reset_token(serial: str | None, user: "User | None" = None) -> int:
     """
     Reset the failcounter of a single token, or of all tokens of one user.
 
@@ -214,7 +222,7 @@ def reset_token(serial, user=None):
 
 @log_with(log)
 @check_user_or_serial
-def set_pin(serial, pin, user=None, encrypt_pin=False):
+def set_pin(serial: str | None, pin: str, user: "User | None" = None, encrypt_pin: bool = False) -> int:
     """
     Set the token PIN of the token. This is the static part that can be used
     to authenticate.
@@ -247,7 +255,7 @@ def set_pin(serial, pin, user=None, encrypt_pin=False):
 
 
 @log_with(log)
-def set_pin_user(serial, user_pin, user=None):
+def set_pin_user(serial: str, user_pin: str, user: "User | None" = None) -> int:
     """
     This sets the user pin of a token. This just stores the information of
     the user pin for (e.g. an eTokenNG, Smartcard) in the database
@@ -271,7 +279,7 @@ def set_pin_user(serial, user_pin, user=None):
 
 
 @log_with(log)
-def set_pin_so(serial, so_pin, user=None):
+def set_pin_so(serial: str, so_pin: str, user: "User | None" = None) -> int:
     """
     Set the SO PIN of a smartcard. The SO Pin can be used to reset the
     PIN of a smartcard. The SO PIN is stored in the database, so that it
@@ -297,7 +305,7 @@ def set_pin_so(serial, so_pin, user=None):
 
 @log_with(log)
 @check_user_or_serial
-def revoke_token(serial, user=None):
+def revoke_token(serial: str | None, user: "User | None" = None) -> int:
     """
     Revoke a token, or all tokens of a single user.
 
@@ -319,7 +327,7 @@ def revoke_token(serial, user=None):
 
 @log_with(log)
 @check_user_or_serial
-def enable_token(serial, enable=True, user=None):
+def enable_token(serial: str | None, enable: bool = True, user: "User | None" = None) -> int:
     """
     Enable or disable a token, or all tokens of a single user.
     This can be checked with is_token_active.
@@ -349,7 +357,7 @@ def enable_token(serial, enable=True, user=None):
     return count
 
 
-def is_token_active(serial):
+def is_token_active(serial: str) -> bool:
     """
     Return True if the token is active, otherwise false
     Raise ResourceError if the token could not be found.
@@ -365,7 +373,7 @@ def is_token_active(serial):
 
 @log_with(log)
 @check_user_or_serial
-def set_otplen(serial, otplen=6, user=None):
+def set_otplen(serial: str | None, otplen: int = 6, user: "User | None" = None) -> int:
     """
     Set the otp length of the token defined by serial or for all tokens of
     the user.
@@ -391,7 +399,7 @@ def set_otplen(serial, otplen=6, user=None):
 
 @log_with(log)
 @check_user_or_serial
-def set_hashlib(serial, hashlib="sha1", user=None):
+def set_hashlib(serial: str | None, hashlib: str = "sha1", user: "User | None" = None) -> int:
     """
     Set the hashlib in the tokeninfo.
     Can be something like sha1, sha256...
@@ -416,7 +424,8 @@ def set_hashlib(serial, hashlib="sha1", user=None):
 
 @log_with(log)
 @check_user_or_serial
-def set_count_auth(serial, count, user=None, max=False, success=False):
+def set_count_auth(serial: str | None, count: int, user: "User | None" = None, max: bool = False,
+                   success: bool = False) -> int:
     """
     The auth counters are stored in the token info database field.
     There are different counters that can be set::
@@ -461,7 +470,7 @@ def set_count_auth(serial, count, user=None, max=False, success=False):
 
 @log_with(log)
 @check_user_or_serial
-def get_tokeninfo(serial, info):
+def get_tokeninfo(serial: str, info: str) -> str | None:
     """
     get a token info field in the database.
 
@@ -477,7 +486,8 @@ def get_tokeninfo(serial, info):
 
 @log_with(log)
 @check_user_or_serial
-def add_tokeninfo(serial, info, value=None, value_type=None, user=None):
+def add_tokeninfo(serial: str, info: str, value: Any = None, value_type: str | None = None,
+                  user: "User | None" = None) -> int:
     """
     Sets a token info field in the database. The info is a dict for each
     token of key/value pairs.
@@ -505,7 +515,7 @@ def add_tokeninfo(serial, info, value=None, value_type=None, user=None):
 
 @log_with(log)
 @check_user_or_serial
-def delete_tokeninfo(serial, key, user=None):
+def delete_tokeninfo(serial: str, key: str, user: "User | None" = None) -> int:
     """
     Delete a specific token info field in the database.
 
@@ -528,7 +538,7 @@ def delete_tokeninfo(serial, key, user=None):
 
 @log_with(log)
 @check_user_or_serial
-def set_validity_period_start(serial, user, start):
+def set_validity_period_start(serial: str | None, user: "User | None", start: str) -> int:
     """
     Set the validity period for the given token.
 
@@ -546,7 +556,7 @@ def set_validity_period_start(serial, user, start):
 
 @log_with(log)
 @check_user_or_serial
-def set_validity_period_end(serial, user, end):
+def set_validity_period_end(serial: str | None, user: "User | None", end: str) -> int:
     """
     Set the validity period for the given token.
 
@@ -564,7 +574,7 @@ def set_validity_period_end(serial, user, end):
 
 @log_with(log)
 @check_user_or_serial
-def set_sync_window(serial, syncwindow=1000, user=None):
+def set_sync_window(serial: str | None, syncwindow: int = 1000, user: "User | None" = None) -> int:
     """
     The sync window is the window that is used during resync of a token.
     Such many OTP values are calculated ahead, to find the matching otp value
@@ -590,7 +600,7 @@ def set_sync_window(serial, syncwindow=1000, user=None):
 
 @log_with(log)
 @check_user_or_serial
-def set_count_window(serial, countwindow=10, user=None):
+def set_count_window(serial: str | None, countwindow: int = 10, user: "User | None" = None) -> int:
     """
     The count window is used during authentication to find the matching OTP
     value. This sets the count window per token.
@@ -615,7 +625,8 @@ def set_count_window(serial, countwindow=10, user=None):
 
 @log_with(log)
 @check_user_or_serial
-def set_description(serial, description, user=None, token=None):
+def set_description(serial: str | None, description: str, user: "User | None" = None,
+                    token: "TokenClass | None" = None) -> bool:
     """
     Set the description of a token
 
@@ -638,7 +649,7 @@ def set_description(serial, description, user=None, token=None):
 
 @log_with(log)
 @check_user_or_serial
-def set_failcounter(serial, counter, user=None):
+def set_failcounter(serial: str | None, counter: int, user: "User | None" = None) -> int:
     """
     Set the fail counter of a  token.
 
@@ -658,7 +669,7 @@ def set_failcounter(serial, counter, user=None):
 
 @log_with(log)
 @check_user_or_serial
-def set_max_failcount(serial, maxfail, user=None):
+def set_max_failcount(serial: str | None, maxfail: int, user: "User | None" = None) -> int:
     """
     Set the maximum fail counts of tokens. This is the maximum number a
     failed authentication is allowed.

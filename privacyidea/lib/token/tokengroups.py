@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 
 
-def set_tokengroups(serial, tokengroups=None, add=False):
+def set_tokengroups(serial: str, tokengroups: list[str] | None = None, add: bool = False) -> None:
     """
     Set a list of tokengroups for one token
 
@@ -32,7 +32,7 @@ def set_tokengroups(serial, tokengroups=None, add=False):
     tokenobject.set_tokengroups(tokengroups, add=add)
 
 
-def assign_tokengroup(serial, tokengroup=None, tokengroup_id=None):
+def assign_tokengroup(serial: str, tokengroup: str | None = None, tokengroup_id: int | None = None) -> bool:
     """
     Assign a new tokengroup to a token
 
@@ -48,7 +48,7 @@ def assign_tokengroup(serial, tokengroup=None, tokengroup_id=None):
         raise ResourceNotFoundError(_("The tokengroup does not exist."))
 
 
-def unassign_tokengroup(serial, tokengroup=None, tokengroup_id=None):
+def unassign_tokengroup(serial: str, tokengroup: str | None = None, tokengroup_id: int | None = None) -> bool:
     """
     Removes a tokengroup from a token
 
@@ -64,7 +64,7 @@ def unassign_tokengroup(serial, tokengroup=None, tokengroup_id=None):
         raise ResourceNotFoundError(_("The tokengroup does not exist."))
 
 
-def list_tokengroups(tokengroup=None):
+def list_tokengroups(tokengroup: str | None = None) -> list[TokenTokengroup]:
     """
     Return a list of tokens that are assigned to a certain tokengroup
     If no tokengroup is specified, all groups/tokens are returned.

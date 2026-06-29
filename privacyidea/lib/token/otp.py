@@ -2,12 +2,14 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 """OTP value retrieval and reverse lookup of tokens by OTP."""
 
+import datetime
 import logging
 
 
 from privacyidea.lib import _
 from privacyidea.lib.error import (TokenAdminError)
 from privacyidea.lib.log import log_with
+from privacyidea.lib.tokenclass import TokenClass
 
 from privacyidea.lib.token.query import get_one_token
 
@@ -17,7 +19,7 @@ log = logging.getLogger(__name__)
 
 
 @log_with(log)
-def get_otp(serial, current_time=None):
+def get_otp(serial: str, current_time: datetime.datetime | None = None) -> tuple:
     """
     This function returns the current OTP value for a given Token.
     The tokentype needs to support this function.
@@ -35,7 +37,8 @@ def get_otp(serial, current_time=None):
 
 
 @log_with(log)
-def get_multi_otp(serial, count=0, epoch_start=0, epoch_end=0, current_time=None, timestamp=None):
+def get_multi_otp(serial: str, count: int = 0, epoch_start: int = 0, epoch_end: int = 0,
+                  current_time: datetime.datetime | None = None, timestamp: int | None = None) -> dict:
     """
     This function returns a list of OTP values for the given Token.
     Please note, that the tokentype needs to support this function.
@@ -75,7 +78,7 @@ def get_multi_otp(serial, count=0, epoch_start=0, epoch_end=0, current_time=None
 
 
 @log_with(log)
-def get_token_by_otp(token_list, otp="", window=10):
+def get_token_by_otp(token_list: list[TokenClass], otp: str = "", window: int = 10) -> TokenClass | None:
     """
     Search the token in the token_list, that creates the given OTP value.
 
@@ -112,7 +115,7 @@ def get_token_by_otp(token_list, otp="", window=10):
 
 
 @log_with(log)
-def get_serial_by_otp(token_list, otp="", window=10):
+def get_serial_by_otp(token_list: list[TokenClass], otp: str = "", window: int = 10) -> str | None:
     """
     Returns the serial for a given OTP value
     The token_list would be created by get_tokens()

@@ -4,6 +4,8 @@
 
 import logging
 import traceback
+from collections.abc import Iterator
+from typing import Any
 
 from flask_sqlalchemy.session import Session
 from sqlalchemy import and_, func, or_, select
@@ -19,6 +21,7 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_object
 from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.user import User
 from privacyidea.models import (db, Token, Realm, TokenRealm, TokenInfo, TokenOwner, TokenContainer,
                                 TokenContainerToken)
 from privacyidea.models.utils import clob_to_varchar
@@ -29,7 +32,7 @@ log = logging.getLogger(__name__)
 
 
 @log_with(log)
-def create_tokenclass_object(db_token):
+def create_tokenclass_object(db_token: Token) -> TokenClass | None:
     """
     (was createTokenClassObject)
     create a token class object from a given type
@@ -57,11 +60,15 @@ def create_tokenclass_object(db_token):
     return token_object
 
 
-def _create_token_query(tokentype=None, token_type_list=None, realm=None, assigned=None, user=None,
-                        serial_exact=None, serial_wildcard=None, serial_list=None, active=None, resolver=None,
-                        rollout_state=None, description=None, revoked=None,
-                        locked=None, userid=None, tokeninfo=None, maxfail=None, allowed_realms=None,
-                        container_serial=None, all_nodes=False) -> Select:
+def _create_token_query(tokentype: str | None = None, token_type_list: list[str] | None = None,
+                        realm: str | None = None, assigned: bool | None = None, user: User | None = None,
+                        serial_exact: str | None = None, serial_wildcard: str | None = None,
+                        serial_list: list[str] | None = None, active: bool | None = None,
+                        resolver: str | None = None, rollout_state: str | None = None,
+                        description: str | None = None, revoked: bool | None = None,
+                        locked: bool | None = None, userid: str | None = None, tokeninfo: dict | None = None,
+                        maxfail: bool | None = None, allowed_realms: list[str] | None = None,
+                        container_serial: str | None = None, all_nodes: bool = False) -> Select:
     session = db.session
     session.expire_all()
 
@@ -299,9 +306,13 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
     return sql_query
 
 
-def get_tokens_paginated_generator(tokentype=None, realm=None, assigned=None, user=None,
-                                   serial_wildcard=None, active=None, resolver=None, rollout_state=None,
-                                   revoked=None, locked=None, tokeninfo=None, maxfail=None, psize=1000):
+def get_tokens_paginated_generator(tokentype: str | None = None, realm: str | None = None,
+                                   assigned: bool | None = None, user: User | None = None,
+                                   serial_wildcard: str | None = None, active: bool | None = None,
+                                   resolver: str | None = None, rollout_state: str | None = None,
+                                   revoked: bool | None = None, locked: bool | None = None,
+                                   tokeninfo: dict | None = None, maxfail: bool | None = None,
+                                   psize: int = 1000) -> Iterator[list[TokenClass]]:
     """
     Fetch chunks of ``psize`` tokens that match the filter criteria from the database and generate
     lists of token objects.
@@ -344,7 +355,9 @@ def get_tokens_paginated_generator(tokentype=None, realm=None, assigned=None, us
             break
 
 
-def convert_token_objects_to_dicts(tokens, user, user_role="user", allowed_realms=None, hidden_token_info=None):
+def convert_token_objects_to_dicts(tokens: list[TokenClass], user: User | None, user_role: str = "user",
+                                   allowed_realms: list[str] | None = None,
+                                   hidden_token_info: list[str] | None = None) -> list[dict]:
     """
     Convert a list of token objects to a list of dictionaries.
     Additionally, checks whether the requesting user is allowed to see the token information.
@@ -411,10 +424,13 @@ def convert_token_objects_to_dicts(tokens, user, user_role="user", allowed_realm
 
 @log_with(log)
 # @cache.memoize(10)
-def get_tokens(tokentype=None, token_type_list=None, realm=None, assigned=None, user=None,
-               serial=None, serial_wildcard=None, active=None, resolver=None, rollout_state=None,
-               count=False, revoked=None, locked=None, tokeninfo=None,
-               maxfail=None, all_nodes=False):
+def get_tokens(tokentype: str | None = None, token_type_list: list[str] | None = None, realm: str | None = None,
+               assigned: bool | None = None, user: User | None = None,
+               serial: str | None = None, serial_wildcard: str | None = None, active: bool | None = None,
+               resolver: str | None = None, rollout_state: str | None = None,
+               count: bool = False, revoked: bool | None = None, locked: bool | None = None,
+               tokeninfo: dict | None = None,
+               maxfail: bool | None = None, all_nodes: bool = False) -> list[TokenClass] | int:
     """
     (was getTokensOfType)
     This function returns a list of token objects of a
@@ -505,11 +521,15 @@ def get_tokens(tokentype=None, token_type_list=None, realm=None, assigned=None, 
 
 
 @log_with(log)
-def get_tokens_paginate(tokentype=None, token_type_list=None, realm=None, assigned=None, user=None,
-                        serial=None, active=None, resolver=None, rollout_state=None,
-                        sortby=Token.serial, sortdir="asc", psize=15,
-                        page=1, description=None, userid=None, allowed_realms=None,
-                        tokeninfo=None, hidden_tokeninfo=None, container_serial=None):
+def get_tokens_paginate(tokentype: str | None = None, token_type_list: list[str] | None = None,
+                        realm: str | None = None, assigned: bool | None = None, user: User | None = None,
+                        serial: str | None = None, active: bool | None = None, resolver: str | None = None,
+                        rollout_state: str | None = None,
+                        sortby: Any = Token.serial, sortdir: str = "asc", psize: int = 15,
+                        page: int = 1, description: str | None = None, userid: str | None = None,
+                        allowed_realms: list[str] | None = None,
+                        tokeninfo: dict | None = None, hidden_tokeninfo: list[str] | None = None,
+                        container_serial: str | None = None) -> dict:
     """
     This function is used to retrieve a token list, that can be displayed in
     the Web UI. It supports pagination.
@@ -641,7 +661,7 @@ def get_tokens_paginate(tokentype=None, token_type_list=None, realm=None, assign
     return ret
 
 
-def get_one_token(*args, silent_fail=False, **kwargs):
+def get_one_token(*args: Any, silent_fail: bool = False, **kwargs: Any) -> TokenClass | None:
     """
     Fetch exactly one token according to the given filter arguments, which are passed to
     ``get_tokens``. Raise ``ResourceNotFoundError`` if no token was found. Raise
@@ -665,7 +685,7 @@ def get_one_token(*args, silent_fail=False, **kwargs):
         return result[0]
 
 
-def get_tokens_from_serial_or_user(serial, user, **kwargs):
+def get_tokens_from_serial_or_user(serial: str | None, user: User | None, **kwargs: Any) -> list[TokenClass]:
     """
     Fetch tokens, either by (exact) serial, or all tokens of a single user.
     In case a serial number is given, check that exactly one token is returned
@@ -685,7 +705,7 @@ def get_tokens_from_serial_or_user(serial, user, **kwargs):
 
 
 @log_with(log)
-def get_token_type(serial):
+def get_token_type(serial: str) -> str:
     """
     Returns the tokentype of a given serial number. If the token does
     not exist or can not be determined, an empty string is returned.
@@ -704,7 +724,7 @@ def get_token_type(serial):
 
 
 @log_with(log)
-def check_serial(serial):
+def check_serial(serial: str) -> tuple[bool, str]:
     """
     This checks, if the given serial number can be used for a new token.
     it returns a tuple (result, new_serial)
@@ -733,7 +753,7 @@ def check_serial(serial):
 
 
 @log_with(log)
-def get_num_tokens_in_realm(realm, active=True):
+def get_num_tokens_in_realm(realm: str, active: bool = True) -> int:
     """
     This returns the number of tokens in one realm.
 
@@ -748,7 +768,7 @@ def get_num_tokens_in_realm(realm, active=True):
 
 
 @log_with(log)
-def get_realms_of_token(serial, only_first_realm=False):
+def get_realms_of_token(serial: str, only_first_realm: bool = False) -> list[str] | str | None:
     """
     This function returns a list of the realms of a token
 
@@ -783,7 +803,7 @@ def get_realms_of_token(serial, only_first_realm=False):
 
 
 @log_with(log)
-def token_exist(serial):
+def token_exist(serial: str) -> bool:
     """
     returns true if the token with the exact given serial number exists
 
@@ -797,7 +817,7 @@ def token_exist(serial):
 
 
 @log_with(log)
-def get_token_owner(serial):
+def get_token_owner(serial: str) -> User | None:
     """
     returns the user object, to which the token is assigned.
     the token is identified and retrieved by its serial number
@@ -818,7 +838,7 @@ def get_token_owner(serial):
 
 
 @log_with(log)
-def is_token_owner(serial, user):
+def is_token_owner(serial: str, user: User) -> bool:
     """
     Check if the given user is the owner of the token with the given serial
     number
@@ -838,7 +858,7 @@ def is_token_owner(serial, user):
 
 
 @log_with(log)
-def get_tokens_in_resolver(resolver):
+def get_tokens_in_resolver(resolver: str) -> list[TokenClass]:
     """
     Return a list of the token objects, that contain this very resolver
 
@@ -853,7 +873,7 @@ def get_tokens_in_resolver(resolver):
 
 
 @log_with(log)
-def get_tokenclass_info(tokentype, section=None):
+def get_tokenclass_info(tokentype: str, section: str | None = None) -> dict:
     """
     return the config definition of a dynamic token
 

@@ -84,12 +84,12 @@ def gen_serial(tokentype: str, prefix: str = None) -> str:
         prefix = get_token_prefix(tokentype.lower(), tokentype.upper())
 
     if random_serial:
-        def _gen_serial(_tokennum) -> str:
+        def _gen_serial(_tokennum: int) -> str:
             digit_part = random.randrange(10000)  # nosec B311
             b32_part = "".join([random.choice(B32_ALPHABET) for _ in range(serial_len - 4)])  # nosec B311
             return f"{prefix}{digit_part:04}{b32_part}"
     else:
-        def _gen_serial(_tokennum):
+        def _gen_serial(_tokennum: int) -> str:
             h_serial = ''
             num_str = f'{_tokennum:04d}'
             h_len = serial_len - len(num_str)
@@ -120,7 +120,7 @@ def gen_serial(tokentype: str, prefix: str = None) -> str:
 
 
 @log_with(log)
-def import_token(serial, token_dict, tokenrealms=None):
+def import_token(serial: str, token_dict: dict, tokenrealms: list | None = None) -> TokenClass:
     """
     This function is used during the import of a PSKC file.
 
@@ -295,7 +295,7 @@ def init_token(param: dict, user: User = None, tokenrealms: list[str] = None, to
 
 @log_with(log)
 @check_user_or_serial
-def remove_token(serial=None, user=None):
+def remove_token(serial: str | None = None, user: User | None = None) -> int:
     """
     remove the token that matches the serial number or
     all tokens of the given user and also remove the realm associations and
@@ -320,7 +320,7 @@ def remove_token(serial=None, user=None):
 
 @log_with(log)
 @check_copy_serials
-def copy_token_pin(serial_from, serial_to):
+def copy_token_pin(serial_from: str, serial_to: str) -> bool:
     """
     This function copies the token PIN from one token to the other token.
     This can be used for workflows like lost token.
@@ -344,7 +344,7 @@ def copy_token_pin(serial_from, serial_to):
 
 
 @check_copy_serials
-def copy_token_user(serial_from, serial_to):
+def copy_token_user(serial_from: str, serial_to: str) -> bool:
     """
     This function copies the user from one token to the other token.
     In fact the user_id, resolver and resolver type are transferred.
@@ -373,7 +373,7 @@ def copy_token_user(serial_from, serial_to):
 
 
 @check_copy_serials
-def copy_token_realms(serial_from, serial_to):
+def copy_token_realms(serial_from: str, serial_to: str) -> None:
     """
     Copy the realms of one token to the other token
 
@@ -389,8 +389,9 @@ def copy_token_realms(serial_from, serial_to):
 
 @log_with(log)
 @libpolicy(config_lost_token)
-def lost_token(serial, new_serial=None, password=None,
-               validity=10, contents="8", pw_len=16, options=None):
+def lost_token(serial: str, new_serial: str | None = None, password: str | None = None,
+               validity: int = 10, contents: str = "8", pw_len: int = 16,
+               options: dict | None = None) -> dict:
     """
     This is the workflow to handle a lost token.
     The token <serial> is lost and will be disabled. A new token of type

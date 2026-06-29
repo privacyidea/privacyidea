@@ -3,6 +3,7 @@
 """Policy definitions and enrollment-URL helpers."""
 
 import logging
+from typing import Any
 
 from flask import Request
 
@@ -20,7 +21,7 @@ log = logging.getLogger(__name__)
 
 
 
-def get_dynamic_policy_definitions(scope: str = None) -> dict:
+def get_dynamic_policy_definitions(scope: str | None = None) -> dict:
     """
     This returns the dynamic policy definitions that come with the new loaded
     token classes.
@@ -110,7 +111,7 @@ def get_dynamic_policy_definitions(scope: str = None) -> dict:
     return pol
 
 
-def regenerate_enroll_url(serial: str, request: Request, g) -> str | None:
+def regenerate_enroll_url(serial: str, request: Request, g: Any) -> str | None:
     """
     Returns the enroll URL for a token with the given serial number that is already enrolled.
     Loads the configurations from the policies.
