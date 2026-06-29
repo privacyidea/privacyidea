@@ -19,9 +19,11 @@
 import { NgClass } from "@angular/common";
 import { Component, computed, ElementRef, inject, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
+import { MatDividerModule } from "@angular/material/divider";
 import { MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
+import { MatMenuModule } from "@angular/material/menu";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { MatPaginator, PageEvent } from "@angular/material/paginator";
 import {
@@ -99,6 +101,21 @@ const SEVERITY_BY_EVENT_TYPE: Record<string, EventSeverity> = Object.fromEntries
 // realm/resolver/user links point to admin-only pages.
 const USER_SCOPED_COLUMN_KEYS = ["username", "realm", "resolver", "uid"];
 
+// Badge shown behind the username for the two admin roles (mirrors AuthLogUserRole). Regular users are the silent
+// default and get no badge, so the role gets surfaced without an own column that would be "user" on almost every row.
+const USER_ROLE_BADGES: Record<string, { label: string; tooltip: string; class: string }> = {
+  "admin-internal": {
+    label: $localize`internal admin`,
+    tooltip: $localize`Local database administrator.`,
+    class: "role-badge-admin-internal"
+  },
+  "admin-external": {
+    label: $localize`external admin`,
+    tooltip: $localize`Administrator from an admin realm.`,
+    class: "role-badge-admin-external"
+  }
+};
+
 // `sortable` mirrors SORTABLE_COLUMNS in privacyidea/lib/conditional_access/authentication_log.py. Every column is
 // sortable except `other_info`, which is a JSON column the backend cannot order on meaningfully.
 const columnKeysMap: { key: string; label: string; filterable: boolean; sortable: boolean }[] = [
@@ -157,7 +174,9 @@ const FILTER_TOOLTIPS: Record<string, string> = {
     MultiSelectFilterComponent,
     MatIcon,
     MatButtonModule,
+    MatDividerModule,
     MatIconModule,
+    MatMenuModule,
     MatTooltipModule
   ],
   templateUrl: "./authentication-log.html",
@@ -174,6 +193,13 @@ export class AuthenticationLog {
     label: preset.displayName,
     value: preset.identifier
   }));
+  // user_role has no table column (it is "user" on almost every row); it is filtered via the "More Filter" menu.
+  // Values mirror AuthLogUserRole; the backend matches a comma-separated selection as "any of".
+  readonly userRoleOptions: readonly MultiSelectFilterOption[] = [
+    { label: $localize`User`, value: "user" },
+    { label: $localize`Internal Admin`, value: "admin-internal" },
+    { label: $localize`External Admin`, value: "admin-external" }
+  ];
   protected readonly authenticationLogService: AuthenticationLogServiceInterface = inject(AuthenticationLogService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
@@ -301,6 +327,22 @@ export class AuthenticationLog {
     this.authenticationLogService.authenticationLogFilter.set(newFilter);
   }
 
+  // --- "More Filter" menu: user_role is a multi-select with no table column, stored in the shared filter as CSV. ---
+
+  isRoleSelected(value: string): boolean {
+    return this.selectedFilterValues("user_role").includes(value);
+  }
+
+  toggleRoleFilter(value: string): void {
+    const current = this.selectedFilterValues("user_role");
+    const next = current.includes(value) ? current.filter((entry) => entry !== value) : [...current, value];
+    this.setFilterValues("user_role", next);
+  }
+
+  clearRoleFilter(): void {
+    this.setFilterValues("user_role", []);
+  }
+
   // Whether a @default cell shows the inline "filter by this value" button. Columns whose header already offers a
   // value picker don't need it, which is dynamic for the client_label.
   showInlineCellFilter(columnKey: string): boolean {
@@ -341,6 +383,11 @@ export class AuthenticationLog {
 
   formatInfo(value: AuthenticationLogEntry["other_info"]): string {
     return value ? JSON.stringify(value) : "";
+  }
+
+  // Badge for an admin principal, or null for a regular user / unknown value so the template renders nothing.
+  userRoleBadge(value: string | null | undefined): { label: string; tooltip: string; class: string } | null {
+    return (value && USER_ROLE_BADGES[value]) || null;
   }
 
   // The serial column may hold several comma-separated serials; render each as its own token link.

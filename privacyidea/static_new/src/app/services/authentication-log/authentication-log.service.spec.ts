@@ -77,6 +77,11 @@ describe("AuthenticationLogService", () => {
     });
   });
 
+  it("forwards the advanced user_role filter (no column, reached via the more-filters control)", () => {
+    service.authenticationLogFilter.set(new FilterValue({ value: "user_role: admin-internal,admin-external" }));
+    expect(service.filterParams()).toEqual({ user_role: "admin-internal,admin-external" });
+  });
+
   it("resets pageIndex to 1 (first page) when the filter changes", () => {
     service.pageIndex.set(4);
     service.authenticationLogFilter.set(new FilterValue({ value: "username: bob" }));

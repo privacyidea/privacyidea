@@ -20,25 +20,65 @@
   appScrollToTop
   class="authentication-log-table-container">
   <div class="filter-paginator-container">
-    <mat-form-field
-      subscriptSizing="dynamic"
-      class="authentication-log-table-filter">
-      <mat-label i18n>Filter Authentication Log ...</mat-label>
-      <app-clearable-input
-        (clearButtonClick)="authenticationLogService.clearFilter()"
-        [showClearButton]="authenticationLogService.authenticationLogFilter().isNotEmpty">
-        <input
-          #filterHTMLInputElement
-          (input)="authenticationLogService.handleFilterInput($event)"
-          [value]="authenticationLogService.authenticationLogFilter().value"
-          aria-label="Filter Input"
-          i18n-aria-label
-          i18n-placeholder
-          matInput
-          placeholder="Example query: 'username: alice event_type: LOGIN_SUCCESS'" />
-      </app-clearable-input>
-      <mat-hint i18n>The search is case-insensitive. Use * as a wildcard.</mat-hint>
-    </mat-form-field>
+    <div class="filter-with-actions">
+      <mat-form-field
+        subscriptSizing="dynamic"
+        class="authentication-log-table-filter">
+        <mat-label i18n>Filter Authentication Log ...</mat-label>
+        <app-clearable-input
+          (clearButtonClick)="authenticationLogService.clearFilter()"
+          [showClearButton]="authenticationLogService.authenticationLogFilter().isNotEmpty">
+          <input
+            #filterHTMLInputElement
+            (input)="authenticationLogService.handleFilterInput($event)"
+            [value]="authenticationLogService.authenticationLogFilter().value"
+            aria-label="Filter Input"
+            i18n-aria-label
+            i18n-placeholder
+            matInput
+            placeholder="Example query: 'username: alice event_type: LOGIN_SUCCESS'" />
+        </app-clearable-input>
+        <mat-hint i18n>The search is case-insensitive. Use * as a wildcard.</mat-hint>
+      </mat-form-field>
+      <!-- Filters without their own table column live behind a "More Filter" menu next to the input. -->
+      @if (!authService.isSelfServiceUser()) {
+        <button
+          class="more-filters-button"
+          [matMenuTriggerFor]="moreFiltersMenu"
+          i18n
+          mat-stroked-button>
+          <mat-icon>filter_list</mat-icon>
+          More Filter
+        </button>
+        <mat-menu #moreFiltersMenu="matMenu">
+          <button
+            mat-menu-item
+            [matMenuTriggerFor]="userRoleMenu">
+            <span i18n>User Role</span>
+          </button>
+        </mat-menu>
+        <mat-menu
+          #userRoleMenu="matMenu"
+          class="filter-select-menu">
+          <button
+            (click)="clearRoleFilter()"
+            mat-menu-item>
+            <mat-icon>filter_alt_off</mat-icon>
+            <span i18n>Clear Filter</span>
+          </button>
+          <mat-divider />
+          <!-- stopPropagation keeps the menu open so several roles can be toggled in one go. -->
+          @for (option of userRoleOptions; track option.value) {
+            <button
+              (click)="$event.stopPropagation(); toggleRoleFilter(option.value)"
+              mat-menu-item>
+              <mat-icon>{{ isRoleSelected(option.value) ? "check_box" : "check_box_outline_blank" }}</mat-icon>
+              <span>{{ option.label }}</span>
+            </button>
+          }
+        </mat-menu>
+      }
+    </div>
     <mat-paginator
       (page)="onPageEvent($event)"
       [length]="totalLength()"
@@ -172,6 +212,14 @@
                       [value]="element.username"
                       (filterValue)="addFilterValue('username', $event)" />
                   </app-copyable>
+                  @let roleBadge = userRoleBadge(element.user_role);
+                  @if (roleBadge) {
+                    <span
+                      class="role-badge {{ roleBadge.class }}"
+                      [matTooltip]="roleBadge.tooltip">
+                      {{ roleBadge.label }}
+                    </span>
+                  }
                 }
               }
               @case ("realm") {

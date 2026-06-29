@@ -159,6 +159,77 @@ describe("AuthenticationLog", () => {
     expect(component.getEventTypeClass("SOMETHING_NEW")).toBe("");
   });
 
+  it("exposes the three user-role filter options", () => {
+    expect(component.userRoleOptions).toEqual([
+      { label: "User", value: "user" },
+      { label: "Internal admin", value: "admin-internal" },
+      { label: "External admin", value: "admin-external" }
+    ]);
+  });
+
+  it("shows the More Filter button for an admin and hides it in self-service", () => {
+    expect(fixture.nativeElement.querySelector(".more-filters-button")).not.toBeNull();
+    authService.role.set("user");
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector(".more-filters-button")).toBeNull();
+  });
+
+  it("toggleRoleFilter adds and removes a role, stored as a CSV user_role filter", () => {
+    component.toggleRoleFilter("admin-internal");
+    expect(service.authenticationLogFilter().getValueOfKey("user_role")).toBe("admin-internal");
+    component.toggleRoleFilter("admin-external");
+    expect(service.authenticationLogFilter().getValueOfKey("user_role")).toBe("admin-internal,admin-external");
+    // Toggling an active role again removes just that one.
+    component.toggleRoleFilter("admin-internal");
+    expect(service.authenticationLogFilter().getValueOfKey("user_role")).toBe("admin-external");
+  });
+
+  it("isRoleSelected reflects the current user_role selection", () => {
+    expect(component.isRoleSelected("admin-internal")).toBe(false);
+    component.toggleRoleFilter("admin-internal");
+    expect(component.isRoleSelected("admin-internal")).toBe(true);
+    expect(component.isRoleSelected("user")).toBe(false);
+  });
+
+  it("clearRoleFilter removes the role filter entirely", () => {
+    component.toggleRoleFilter("admin-internal");
+    component.clearRoleFilter();
+    expect(service.authenticationLogFilter().hasKey("user_role")).toBe(false);
+  });
+
+  it("userRoleBadge flags only admins; regular users and unknown values get no badge", () => {
+    expect(component.userRoleBadge("admin-internal")).toEqual(
+      expect.objectContaining({ label: "internal admin", class: "role-badge-admin-internal" })
+    );
+    expect(component.userRoleBadge("admin-external")).toEqual(
+      expect.objectContaining({ label: "external admin", class: "role-badge-admin-external" })
+    );
+    expect(component.userRoleBadge("user")).toBeNull();
+    expect(component.userRoleBadge(null)).toBeNull();
+    expect(component.userRoleBadge(undefined)).toBeNull();
+    expect(component.userRoleBadge("")).toBeNull();
+  });
+
+  it("renders an admin role badge behind the username but none for a regular user", () => {
+    service.authenticationLogResource.set(
+      MockPiResponse.fromValue({
+        auth_logs: [
+          { id: 1, event_type: "LOGIN_SUCCESS", timestamp: "2026-06-22T10:00:00+00:00", username: "alice", user_role: "user" },
+          { id: 2, event_type: "LOGIN_SUCCESS", timestamp: "2026-06-22T10:01:00+00:00", username: "bob", user_role: "admin-internal" }
+        ],
+        count: 2,
+        current: 1,
+        prev: null,
+        next: null
+      })
+    );
+    fixture.detectChanges();
+    const badges = fixture.nativeElement.querySelectorAll(".role-badge");
+    expect(badges.length).toBe(1);
+    expect(badges[0].textContent.trim()).toBe("internal admin");
+    expect(badges[0].classList).toContain("role-badge-admin-internal");
+  });
+
   it("formatInfo serializes other_info and tolerates null", () => {
     expect(component.formatInfo({ a: 1 })).toBe('{"a":1}');
     expect(component.formatInfo(null)).toBe("");

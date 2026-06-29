@@ -34,6 +34,7 @@ export interface AuthenticationLogEntry {
   uid?: string | null;
   realm?: string | null;
   username?: string | null;
+  user_role?: string | null;
   event_type: string;
   timestamp: string;
   source_ip?: string | null;
@@ -74,7 +75,8 @@ const apiFilter = [
   "client_label"
 ];
 
-const advancedApiFilter: string[] = [];
+// Filters not tied to a table column, reached via the "more filters" control instead of a column header.
+const advancedApiFilter: string[] = ["user_role"];
 
 export interface AuthenticationLogServiceInterface {
   apiFilter: string[];

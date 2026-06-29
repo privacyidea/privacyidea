@@ -15,6 +15,39 @@
   overflow-y: auto;
 }
 
+.filter-with-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 7 1;
+  min-width: 300px;
+}
+
+.more-filters-button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.role-badge {
+  display: inline-block;
+  padding: 0 6px;
+  border-radius: var(--border-radius);
+  font-size: 0.75rem;
+  line-height: 1.6;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.role-badge-admin-internal {
+  background-color: var(--mat-sys-primary-container);
+  color: var(--mat-sys-on-primary-container);
+}
+
+.role-badge-admin-external {
+  background-color: var(--mat-sys-surface-container-highest);
+  color: var(--mat-sys-on-surface-variant);
+}
+
 // Reveal the inline cell actions (filter + copy) only while the row is hovered or holds focus, to keep dense rows
 // calm. Both buttons live in child components and expose a `--*-button-opacity` hook; custom properties inherit
 // across the encapsulation boundary, so we drive their visibility from the row without reaching into them.
