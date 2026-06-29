@@ -19,7 +19,7 @@
 import { NgClass } from "@angular/common";
 import { Component, computed, ElementRef, inject, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
-import { MatFormField, MatLabel } from "@angular/material/form-field";
+import { MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatTooltipModule } from "@angular/material/tooltip";
@@ -134,6 +134,7 @@ const FILTER_TOOLTIPS: Record<string, string> = {
   imports: [
     MatCell,
     MatFormField,
+    MatHint,
     MatInput,
     MatPaginator,
     MatHeaderCellDef,

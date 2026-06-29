@@ -37,6 +37,7 @@
           matInput
           placeholder="Example query: 'username: alice event_type: LOGIN_SUCCESS'" />
       </app-clearable-input>
+      <mat-hint i18n>The search is case-insensitive. Use * as a wildcard.</mat-hint>
     </mat-form-field>
     <mat-paginator
       (page)="onPageEvent($event)"
