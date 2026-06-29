@@ -313,6 +313,24 @@ describe("NewSmsGatewayComponent", () => {
   });
 
   describe("custom options and headers", () => {
+    it("hasChanges should be true when only description changes", () => {
+      expect(component.hasChanges).toBe(false);
+      component.smsModel.update((m) => ({ ...m, description: "updated" }));
+      expect(component.hasChanges).toBe(true);
+    });
+
+    it("hasChanges should be true when new option secret checkbox is toggled", () => {
+      expect(component.hasChanges).toBe(false);
+      component.newOptionSecret.set(true);
+      expect(component.hasChanges).toBe(true);
+    });
+
+    it("hasChanges should be true when new header secret checkbox is toggled", () => {
+      expect(component.hasChanges).toBe(false);
+      component.newHeaderSecret.set(true);
+      expect(component.hasChanges).toBe(true);
+    });
+
     it("addOption should add a new option and reset newOptionKey/newOptionValue", () => {
       component.newOptionKey.set("k1");
       component.newOptionValue.set("v1");
@@ -399,6 +417,36 @@ describe("NewSmsGatewayComponent", () => {
   });
 
   describe("save with custom options/headers and edit mode", () => {
+    it("save should include a draft option row even if Add was not clicked", async () => {
+      component.smsModel.set({ name: "gw", providermodule: "mod1", description: "d" });
+      component.newOptionKey.set("draftOpt");
+      component.newOptionValue.set("draftVal");
+      component.newOptionSecret.set(true);
+
+      await component.save();
+
+      expect(smsGatewayServiceMock.postSmsGateway).toHaveBeenCalled();
+      const calls = smsGatewayServiceMock.postSmsGateway.mock.calls as unknown as [Record<string, unknown>][];
+      const [payload] = calls[0];
+      expect(payload["option.draftOpt"]).toBe("draftVal");
+      expect(payload["secret.option.draftOpt"]).toBe(1);
+    });
+
+    it("save should include a draft header row even if Add was not clicked", async () => {
+      component.smsModel.set({ name: "gw", providermodule: "mod1", description: "d" });
+      component.newHeaderKey.set("X-Draft");
+      component.newHeaderValue.set("draftVal");
+      component.newHeaderSecret.set(false);
+
+      await component.save();
+
+      expect(smsGatewayServiceMock.postSmsGateway).toHaveBeenCalled();
+      const calls = smsGatewayServiceMock.postSmsGateway.mock.calls as unknown as [Record<string, unknown>][];
+      const [payload] = calls[0];
+      expect(payload["header.X-Draft"]).toBe("draftVal");
+      expect(payload["secret.header.X-Draft"]).toBe(0);
+    });
+
     it("should include option.* and header.* entries in the payload", async () => {
       component.smsModel.set({ name: "gw", providermodule: "mod1", description: "d" });
       component.updateParameter("p1", "v1");
@@ -564,11 +612,13 @@ describe("NewSmsGatewayComponent", () => {
 
       await component.save();
 
-      const payload = smsGatewayServiceMock.postSmsGateway.mock.calls[0][0];
+      expect(smsGatewayServiceMock.postSmsGateway).toHaveBeenCalled();
+      const calls = smsGatewayServiceMock.postSmsGateway.mock.calls as unknown as [Record<string, unknown>][];
+      const [payload] = calls[0];
       expect(payload["secret.option.secretOpt"]).toBe(1);
-      expect(payload["secret.option.plainOpt"]).toBeUndefined();
+      expect(payload["secret.option.plainOpt"]).toBe(0);
       expect(payload["secret.header.X-Secret"]).toBe(1);
-      expect(payload["secret.header.X-Plain"]).toBeUndefined();
+      expect(payload["secret.header.X-Plain"]).toBe(0);
     });
 
     it("save should send secret.option.* for provider parameters declared secret", async () => {
@@ -589,7 +639,9 @@ describe("NewSmsGatewayComponent", () => {
 
       await component.save();
 
-      const payload = smsGatewayServiceMock.postSmsGateway.mock.calls[0][0];
+      expect(smsGatewayServiceMock.postSmsGateway).toHaveBeenCalled();
+      const calls = smsGatewayServiceMock.postSmsGateway.mock.calls as unknown as [Record<string, unknown>][];
+      const [payload] = calls[0];
       expect(payload["secret.option.pwd"]).toBe(1);
       expect(payload["secret.option.p1"]).toBeUndefined();
     });

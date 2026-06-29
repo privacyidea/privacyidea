@@ -38,7 +38,7 @@ import time
 from sqlalchemy import select, update
 
 from privacyidea.lib import lazy_gettext
-from privacyidea.lib.crypto import is_censored, encryptPassword
+from privacyidea.lib.crypto import is_censored, encryptPassword, decryptPassword
 from privacyidea.lib.error import ConfigAdminError
 from privacyidea.lib.metrics import inc, observe
 from privacyidea.lib.utils import fetch_one_resource, get_module_class
@@ -253,13 +253,37 @@ def set_smsgateway(identifier, providermodule=None, description=None,
     sections = {"option": options, "header": headers}
     for option_type, key_values in sections.items():
         for key in key_values:
-            # Skip updating if the value is CENSORED (keep existing value)
-            if is_censored(key_values[key]):
+            value = key_values[key]
+            explicit_secrets = secret_sets[option_type]
+            # If the user keeps a censored value, we can still apply an explicit
+            # secret checkbox change by toggling encryption state in-place.
+            if is_censored(value):
+                if explicit_secrets is None:
+                    continue
+                existing_row = sms_gateway.options.filter_by(Key=key, Type=option_type).first()
+                if not existing_row:
+                    continue
+                should_be_secret = key in explicit_secrets
+                if should_be_secret == bool(existing_row.Encrypted):
+                    continue
+                if should_be_secret:
+                    current_value = existing_row.Value or ""
+                    existing_row.Value = encryptPassword(current_value) if current_value else ""
+                    existing_row.Encrypted = True
+                    continue
+
+                current_value = existing_row.Value or ""
+                if current_value:
+                    decrypted = decryptPassword(current_value)
+                    if not decrypted or decrypted.startswith("FAILED TO DECRYPT"):
+                        # Keep encrypted data untouched if decryption fails.
+                        continue
+                    current_value = decrypted
+                existing_row.Value = current_value
+                existing_row.Encrypted = False
                 continue
             # Determine if this value is secret: use explicit set if provided,
             # otherwise fall back to the key-name heuristic.
-            value = key_values[key]
-            explicit_secrets = secret_sets[option_type]
             if explicit_secrets is not None:
                 is_secret = key in explicit_secrets
             else:

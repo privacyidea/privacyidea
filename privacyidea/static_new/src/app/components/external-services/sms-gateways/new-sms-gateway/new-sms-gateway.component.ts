@@ -96,6 +96,10 @@ export class NewSmsGatewayComponent implements OnDestroy {
   isEditMode = signal(false);
 
   smsModel = signal<SmsFormModel>({ ...EMPTY_SMS_FORM });
+  private initialSmsModel = signal<SmsFormModel>({ ...EMPTY_SMS_FORM });
+  private initialParametersModel = signal<Record<string, string>>({});
+  private initialCustomOptions: Record<string, string> = {};
+  private initialCustomHeaders: Record<string, string> = {};
 
   smsForm = form(this.smsModel, (f) => {
     required(f.name);
@@ -133,6 +137,8 @@ export class NewSmsGatewayComponent implements OnDestroy {
   customHeaders: Record<string, string> = {};
   optionSecrets: Record<string, boolean> = {};
   headerSecrets: Record<string, boolean> = {};
+  private initialOptionSecrets: Record<string, boolean> = {};
+  private initialHeaderSecrets: Record<string, boolean> = {};
 
   newOptionKey = signal("");
   newOptionValue = signal("");
@@ -196,11 +202,24 @@ export class NewSmsGatewayComponent implements OnDestroy {
   }
 
   private initForm(): void {
-    this.smsModel.set({
+    const initialModel = {
       name: this.data?.name || "",
       providermodule: this.data?.providermodule || "",
       description: this.data?.description || ""
-    });
+    };
+    this.smsModel.set(initialModel);
+    this.initialSmsModel.set({ ...initialModel });
+    this.initialParametersModel.set({});
+    this.initialCustomOptions = {};
+    this.initialCustomHeaders = {};
+    this.initialOptionSecrets = {};
+    this.initialHeaderSecrets = {};
+    this.newOptionKey.set("");
+    this.newOptionValue.set("");
+    this.newOptionSecret.set(false);
+    this.newHeaderKey.set("");
+    this.newHeaderValue.set("");
+    this.newHeaderSecret.set(false);
     this.smsForm().reset();
   }
 
@@ -218,11 +237,29 @@ export class NewSmsGatewayComponent implements OnDestroy {
 
   get hasChanges(): boolean {
     return (
-      this.smsForm().dirty() ||
       this.parametersDirty() ||
-      Object.keys(this.customOptions).length > 0 ||
-      Object.keys(this.customHeaders).length > 0
+      !this.recordsEqual(this.smsModel(), this.initialSmsModel()) ||
+      !this.recordsEqual(this.parametersModel(), this.initialParametersModel()) ||
+      !this.recordsEqual(this.customOptions, this.initialCustomOptions) ||
+      !this.recordsEqual(this.customHeaders, this.initialCustomHeaders) ||
+      !this.recordsEqual(this.optionSecrets, this.initialOptionSecrets) ||
+      !this.recordsEqual(this.headerSecrets, this.initialHeaderSecrets) ||
+      !!this.newOptionKey() ||
+      !!this.newOptionValue() ||
+      this.newOptionSecret() ||
+      !!this.newHeaderKey() ||
+      !!this.newHeaderValue() ||
+      this.newHeaderSecret()
     );
+  }
+
+  private recordsEqual<T extends object>(a: T, b: T): boolean {
+    const aKeys = Object.keys(a) as (keyof T)[];
+    const bKeys = Object.keys(b) as (keyof T)[];
+    if (aKeys.length !== bKeys.length) {
+      return false;
+    }
+    return aKeys.every((key) => a[key] === b[key]);
   }
 
   providerEntries(): { key: string; value: SmsProvider }[] {
@@ -295,6 +332,12 @@ export class NewSmsGatewayComponent implements OnDestroy {
         nextHeaderSecrets[key] = true;
       }
       this.headerSecrets = nextHeaderSecrets;
+
+      this.initialParametersModel.set({ ...newParams });
+      this.initialCustomOptions = { ...nextCustomOptions };
+      this.initialCustomHeaders = { ...this.customHeaders };
+      this.initialOptionSecrets = { ...nextOptionSecrets };
+      this.initialHeaderSecrets = { ...nextHeaderSecrets };
     }
   }
 
@@ -306,6 +349,44 @@ export class NewSmsGatewayComponent implements OnDestroy {
     if (!this.smsForm().valid() || !this.parametersValid()) {
       return false;
     }
+
+    // Persist draft footer rows on Save as well, so users do not have to click Add first.
+    if (this.newOptionKey()) {
+      const key = this.newOptionKey();
+      this.customOptions = {
+        ...this.customOptions,
+        [key]: this.newOptionValue()
+      };
+      if (this.newOptionSecret()) {
+        this.optionSecrets = { ...this.optionSecrets, [key]: true };
+      } else {
+        const nextOptionSecrets = { ...this.optionSecrets };
+        delete nextOptionSecrets[key];
+        this.optionSecrets = nextOptionSecrets;
+      }
+      this.newOptionKey.set("");
+      this.newOptionValue.set("");
+      this.newOptionSecret.set(false);
+    }
+
+    if (this.newHeaderKey()) {
+      const key = this.newHeaderKey();
+      this.customHeaders = {
+        ...this.customHeaders,
+        [key]: this.newHeaderValue()
+      };
+      if (this.newHeaderSecret()) {
+        this.headerSecrets = { ...this.headerSecrets, [key]: true };
+      } else {
+        const nextHeaderSecrets = { ...this.headerSecrets };
+        delete nextHeaderSecrets[key];
+        this.headerSecrets = nextHeaderSecrets;
+      }
+      this.newHeaderKey.set("");
+      this.newHeaderValue.set("");
+      this.newHeaderSecret.set(false);
+    }
+
     const formValue = this.smsModel();
     const paramValue = this.parametersModel();
 
@@ -330,16 +411,12 @@ export class NewSmsGatewayComponent implements OnDestroy {
 
     Object.entries(this.customOptions).forEach(([key, value]) => {
       payload[`option.${key}`] = value;
-      if (this.optionSecrets[key]) {
-        payload[`secret.option.${key}`] = 1;
-      }
+      payload[`secret.option.${key}`] = this.optionSecrets[key] ? 1 : 0;
     });
 
     Object.entries(this.customHeaders).forEach(([key, value]) => {
       payload[`header.${key}`] = value;
-      if (this.headerSecrets[key]) {
-        payload[`secret.header.${key}`] = 1;
-      }
+      payload[`secret.header.${key}`] = this.headerSecrets[key] ? 1 : 0;
     });
 
     try {

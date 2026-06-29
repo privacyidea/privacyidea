@@ -493,3 +493,50 @@ class APISmsGatewayTestCase(MyApiTestCase):
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
             self.app.full_dispatch_request()
+
+    def test_11_unset_secret_option_with_censored_value(self):
+        """Explicitly unsetting secret.option.* must persist even when the value
+        is sent as __CENSORED__ (UI edit without changing the value text)."""
+        create_param = {
+            "name": "myUnsetSecretGW",
+            "module": "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider",
+            "option.URL": "http://sms.example.com",
+            "option.AUTH": "keepme",
+            "secret.option.AUTH": "1",
+        }
+        with self.app.test_request_context('/smsgateway',
+                                           data=create_param,
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+
+        update_param = {
+            "name": "myUnsetSecretGW",
+            "module": "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider",
+            "option.URL": "http://sms.example.com",
+            "option.AUTH": CENSORED,
+            "secret.option.AUTH": "0",
+        }
+        with self.app.test_request_context('/smsgateway',
+                                           data=update_param,
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+
+        with self.app.test_request_context('/smsgateway/',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            gateways = res.json["result"]["value"]
+            sms_gw = next(gw for gw in gateways if gw["name"] == "myUnsetSecretGW")
+            self.assertNotIn("AUTH", sms_gw["secret_options"])
+            self.assertEqual(sms_gw["options"]["AUTH"], "keepme")
+
+        with self.app.test_request_context('/smsgateway/myUnsetSecretGW',
+                                           method='DELETE',
+                                           headers={'Authorization': self.at}):
+            self.app.full_dispatch_request()
+
