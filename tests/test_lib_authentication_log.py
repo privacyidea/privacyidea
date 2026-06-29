@@ -212,11 +212,13 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertEqual({AuthLogUserRole.ADMIN_INTERNAL, AuthLogUserRole.ADMIN_EXTERNAL},
                          {entry.user_role for entry in get_authentication_logs_paginate(user_role="admin*").auth_logs})
 
-    def test_get_authentication_logs_exact_match_is_case_sensitive_by_default(self):
+    def test_get_authentication_logs_case_insensitive_flag_enforces_insensitive_match(self):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
                                  username="Alice")
 
-        self.assertEqual(0, get_authentication_logs_paginate(username="alice").count)
+        # The flag guarantees a differently-cased value matches, regardless of the DB collation. The unflagged
+        # default follows the collation (case-sensitive on SQLite, case-insensitive on a MySQL/MariaDB *_ci
+        # collation), so it is deliberately not asserted here.
         self.assertEqual(1, get_authentication_logs_paginate(username="alice", case_insensitive=True).count)
         self.assertEqual(1, get_authentication_logs_paginate(username="Alice").count)
 

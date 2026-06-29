@@ -311,10 +311,14 @@ def _match_condition(column: InstrumentedAttribute, value: str | list[str] | Non
     ``*`` is the only wildcard (see :func:`_wildcard_pattern`). Plain values are batched into a single ``IN``; only
     wildcard values cost a ``LIKE`` each, so a list without wildcards stays a single indexed ``IN``.
 
-    Plain values match exactly and case-sensitively, unless *case_insensitive* is set, in which case both sides are
-    lowered. Wildcard values always match case-insensitively (via ``ILIKE``): a portable case-sensitive ``LIKE`` would
-    need DB-specific collation, and the DB-default ``LIKE`` case semantics differ per backend, so case is made
-    explicit here rather than left to the DB.
+    Plain values are matched with a plain ``IN`` so an index on the column can still be used. The case sensitivity of
+    that match is therefore left to the database collation: it is case-sensitive on SQLite (and on a binary collation)
+    but case-insensitive on a MySQL/MariaDB ``*_ci`` collation. Setting *case_insensitive* lowers both sides to
+    *enforce* case-insensitive matching consistently across backends -- note this defeats the column index (the
+    ``LOWER()`` wrapper prevents an index seek), so it is the slower path. There is deliberately no symmetric
+    "enforce case-sensitive" option: it would need DB-specific collation and is rarely worth the cost. Wildcard
+    values always match case-insensitively (via ``ILIKE``), since the DB-default ``LIKE`` case semantics differ per
+    backend.
     """
     if value is None:
         return None

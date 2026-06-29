@@ -1293,9 +1293,11 @@ class AuthenticationLogReadAPITestCase(AuthLogTestCase):
                                  username="Alice")
         db.session.commit()
 
-        # Exact match is case-sensitive by default, case-insensitive when the flag is set.
-        self.assertEqual(0, self._get({"username": "alice"})["result"]["value"]["count"])
+        # The flag enforces a case-insensitive match regardless of the DB collation. The unflagged default follows
+        # the collation (case-sensitive on SQLite, case-insensitive on a MySQL/MariaDB *_ci collation), so it is not
+        # asserted here.
         self.assertEqual(1, self._get({"username": "alice", "case_insensitive": "1"})["result"]["value"]["count"])
+        self.assertEqual(1, self._get({"username": "Alice"})["result"]["value"]["count"])
 
     def test_filter_by_client_label(self):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="1", realm=self.realm1,

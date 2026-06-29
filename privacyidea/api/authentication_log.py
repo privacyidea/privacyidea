@@ -94,7 +94,9 @@ def get_authentication_log():
     :query start: only entries at/after this ISO 8601 timestamp.
     :query end: only entries at/before this ISO 8601 timestamp.
     :query case_insensitive: if set, plain (non-wildcard) filter values match case-insensitively (wildcard values
-        always match case-insensitively).
+        always match case-insensitively). This flag only *enforces* case-insensitive matching for a consistent
+        behaviour across databases; without it, plain values match according to the database's collation, so the
+        search may still be case-insensitive (e.g. on a MySQL/MariaDB ``*_ci`` collation) rather than case-sensitive.
     :status 200: paginated result in ``result.value`` with ``auth_logs``, ``count``, ``current``, ``prev``, ``next``.
     """
     params = request.all_data
