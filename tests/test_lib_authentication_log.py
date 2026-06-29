@@ -23,6 +23,7 @@ from privacyidea.lib.conditional_access.authentication_error_codes import AuthEv
 from privacyidea.lib.conditional_access.authentication_log import (
     log_authentication_event,
     delete_authentication_log_event,
+    reclassify_authentication_log_event,
     get_authentication_log_event,
     get_authentication_logs,
     get_authentication_logs_paginate,
@@ -32,6 +33,7 @@ from privacyidea.lib.conditional_access.authentication_log import (
     AuthLogUserRole,
 )
 from privacyidea.lib.error import ParameterError
+from privacyidea.models import authentication_log_column_length
 from .base import MyTestCase
 
 
@@ -408,8 +410,6 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertEqual("prior", results[0].resolver)
 
     def test_values_are_truncated_to_column_length(self):
-        from privacyidea.models import authentication_log_column_length
-
         # A value longer than its column is truncated instead of overflowing the column on insert. Cover a
         # size-constrained indexed column (resolver) and the generously-sized free columns (client_label, serial,
         # which hold a raw User-Agent and a comma-joined serial list).
@@ -428,6 +428,72 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertEqual("X" * authentication_log_column_length["serial"], entry.serial)
         self.assertEqual("X" * authentication_log_column_length["previous_transaction_id"],
                          entry.previous_transaction_id)
+
+    def test_overflow_is_preserved_in_other_info(self):
+        # The part of a value that does not fit the column is preserved under other_info["truncated"][column] (as the
+        # cut-off remainder, not the full value) instead of being lost.
+        max_resolver = authentication_log_column_length["resolver"]
+        event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS,
+                                            resolver="R" * max_resolver + "OVERFLOW")
+        entry = get_authentication_log_event(event_id)
+        assert entry is not None
+        self.assertEqual("R" * max_resolver, entry.resolver)
+        self.assertEqual({"truncated": {"resolver": "OVERFLOW"}}, entry.other_info)
+
+    def test_overflow_merges_with_caller_other_info(self):
+        # Overflow is folded into the caller's other_info under "truncated" without clobbering the caller's own keys.
+        max_resolver = authentication_log_column_length["resolver"]
+        event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS,
+                                            resolver="R" * max_resolver + "TAIL",
+                                            other_info={"reason": "policy"})
+        entry = get_authentication_log_event(event_id)
+        assert entry is not None
+        self.assertEqual({"reason": "policy", "truncated": {"resolver": "TAIL"}}, entry.other_info)
+
+    def test_no_overflow_leaves_other_info_untouched(self):
+        # Without truncation, other_info is left exactly as the caller passed it (no empty "truncated" key added).
+        event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1",
+                                            other_info={"reason": "policy"})
+        entry = get_authentication_log_event(event_id)
+        assert entry is not None
+        self.assertEqual({"reason": "policy"}, entry.other_info)
+
+    def test_serial_overflow_splits_on_separator(self):
+        # A comma-joined serial list is cut on a comma boundary so whole serials stay in the column (filterable via a
+        # wildcard) and the dropped serials land in the overflow whole. Build a list whose last serial straddles the
+        # column limit.
+        max_serial = authentication_log_column_length["serial"]
+        head = "S" * (max_serial - 4)  # leaves room for ",AAA" but not the next serial
+        serial = f"{head},AAA,BBBBBBBBBB"
+        event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, serial=serial)
+        entry = get_authentication_log_event(event_id)
+        assert entry is not None
+        self.assertEqual(f"{head},AAA", entry.serial)
+        self.assertEqual({"truncated": {"serial": "BBBBBBBBBB"}}, entry.other_info)
+
+    def test_serial_overflow_falls_back_to_char_split_when_no_separator_fits(self):
+        # A single serial longer than the column has no comma boundary to cut on, so it falls back to a character split
+        # rather than dropping everything.
+        max_serial = authentication_log_column_length["serial"]
+        serial = "S" * (max_serial + 5)
+        event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, serial=serial)
+        entry = get_authentication_log_event(event_id)
+        assert entry is not None
+        self.assertEqual("S" * max_serial, entry.serial)
+        self.assertEqual({"truncated": {"serial": "SSSSS"}}, entry.other_info)
+
+    def test_reclassify_preserves_serial_overflow(self):
+        # Reclassification truncates the same way as the insert and preserves the serial overflow into the entry's
+        # existing other_info.
+        event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, serial="TOK001")
+        max_serial = authentication_log_column_length["serial"]
+        head = "S" * (max_serial - 4)
+        reclassify_authentication_log_event(event_id, AuthEventType.ENROLLMENT_TRIGGERED,
+                                            serial=f"{head},AAA,BBBBBBBBBB")
+        entry = get_authentication_log_event(event_id)
+        assert entry is not None
+        self.assertEqual(f"{head},AAA", entry.serial)
+        self.assertEqual({"truncated": {"serial": "BBBBBBBBBB"}}, entry.other_info)
 
 
 class AuthenticationLogDBTestCase(MyTestCase):

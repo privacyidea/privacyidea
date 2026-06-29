@@ -107,24 +107,56 @@ def _naive_utc(value: datetime) -> datetime:
     return value
 
 
-def _truncate(column: str, value) -> str | None:
+@dataclass
+class _TruncatedValue:
+    """
+    Result of truncating one column value: *stored* goes into the column, *overflow* is the part that did not fit and
+    is preserved in the entry's ``other_info`` (see :func:`_store_overflow`) so no information is lost. *overflow* is
+    ``None`` when nothing was cut.
+    """
+    stored: str | None
+    overflow: str | None
+
+
+def _truncate(column: str, value, separator: str | None = None) -> _TruncatedValue:
     """
     Convert *value* to a string and truncate it to the length of the given column of the authentication_log table, so a
-    pathological value (e.g. a very long User-Agent or login name) can never overflow the column on insert.
+    pathological value (e.g. a very long User-Agent or login name) can never overflow the column on insert. The cut-off
+    remainder is returned alongside the stored value rather than discarded.
 
     :param column: the column name, a key of
         :data:`~privacyidea.models.authentication_log.authentication_log_column_length`
     :param value: the value to store, or None
-    :return: the truncated string, or None if *value* is None
+    :param separator: if given, cut on the last separator that fits instead of mid-character, so neither the stored
+        value nor the overflow holds a broken item (used for ``serial``, which may carry a separator-joined list, to
+        keep whole, filterable serials in the column)
+    :return: a :class:`_TruncatedValue` holding the value to store and the overflow (or None if *value* is None)
     """
     if value is None:
-        return None
+        return _TruncatedValue(None, None)
     value = str(value)
     max_length = authentication_log_column_length[column]
-    if len(value) > max_length:
-        log.debug(f"Truncating authentication log column {column!r} to {max_length} characters.")
-        value = value[:max_length]
-    return value
+    if len(value) <= max_length:
+        return _TruncatedValue(value, None)
+    log.debug(f"Truncating authentication log column {column!r} to {max_length} characters.")
+    if separator:
+        cut = value.rfind(separator, 0, max_length + 1)
+        if cut > 0:
+            return _TruncatedValue(value[:cut], value[cut + len(separator):])
+    return _TruncatedValue(value[:max_length], value[max_length:])
+
+
+def _store_overflow(other_info: dict | None, overflow: dict[str, str]) -> dict | None:
+    """
+    Fold any truncation overflow into a copy of *other_info* under the ``truncated`` key so it is preserved without
+    clobbering caller-supplied keys, merging with overflow already recorded there. Returns *other_info* unchanged when
+    nothing overflowed.
+    """
+    if not overflow:
+        return other_info
+    merged = dict(other_info) if other_info else {}
+    merged["truncated"] = {**merged.get("truncated", {}), **overflow}
+    return merged
 
 
 def log_authentication_event(event_type: AuthEventType,
@@ -146,21 +178,27 @@ def log_authentication_event(event_type: AuthEventType,
     logged and swallowed: the insert runs inside a SAVEPOINT, so a failure rolls back only the entry while leaving any
     other pending writes of the request untouched, and ``None`` is returned instead of an id.
     """
-    entry = AuthenticationLog(
-        event_type=_truncate("event_type", event_type),
-        transaction_id=_truncate("transaction_id", transaction_id),
-        previous_transaction_id=_truncate("previous_transaction_id", previous_transaction_id),
-        resolver=_truncate("resolver", resolver),
-        uid=_truncate("uid", uid),
-        realm=_truncate("realm", realm),
-        username=_truncate("username", username),
-        user_role=_truncate("user_role", user_role),
-        source_ip=_truncate("source_ip", source_ip),
-        client_label=_truncate("client_label", client_label),
-        serial=_truncate("serial", serial),
-        other_info=other_info
-    )
-    entry_id = None
+    fields = {
+        "event_type": event_type,
+        "transaction_id": transaction_id,
+        "previous_transaction_id": previous_transaction_id,
+        "resolver": resolver,
+        "uid": uid,
+        "realm": realm,
+        "username": username,
+        "user_role": user_role,
+        "source_ip": source_ip,
+        "client_label": client_label,
+        "serial": serial,
+    }
+    stored: dict[str, str | None] = {}
+    overflow: dict[str, str] = {}
+    for column, value in fields.items():
+        result = _truncate(column, value, separator="," if column == "serial" else None)
+        stored[column] = result.stored
+        if result.overflow is not None:
+            overflow[column] = result.overflow
+    entry = AuthenticationLog(**stored, other_info=_store_overflow(other_info, overflow))
     try:
         with db.session.begin_nested():
             db.session.add(entry)
@@ -211,14 +249,25 @@ def reclassify_authentication_log_event(event_id: int, event_type: AuthEventType
             if entry is None:
                 log.info(f"Cannot reclassify authentication log entry {event_id!r}: not found.")
                 return
-            entry.event_type = _truncate("event_type", event_type)
-            entry.serial = _truncate("serial", serial)
+            overflow: dict[str, str] = {}
+            truncated_event_type = _truncate("event_type", event_type)
+            entry.event_type = truncated_event_type.stored
+            if truncated_event_type.overflow is not None:
+                overflow["event_type"] = truncated_event_type.overflow
+            truncated_serial = _truncate("serial", serial, separator=",")
+            entry.serial = truncated_serial.stored
+            if truncated_serial.overflow is not None:
+                overflow["serial"] = truncated_serial.overflow
             if transaction_id:
-                new_txn = _truncate("transaction_id", transaction_id)
-                old_txn = entry.transaction_id
-                if old_txn and new_txn != old_txn:
-                    entry.previous_transaction_id = old_txn
-                entry.transaction_id = new_txn
+                truncated_transaction_id = _truncate("transaction_id", transaction_id)
+                new_transaction_id = truncated_transaction_id.stored
+                if truncated_transaction_id.overflow is not None:
+                    overflow["transaction_id"] = truncated_transaction_id.overflow
+                old_transaction_id = entry.transaction_id
+                if old_transaction_id and new_transaction_id != old_transaction_id:
+                    entry.previous_transaction_id = old_transaction_id
+                entry.transaction_id = new_transaction_id
+            entry.other_info = _store_overflow(entry.other_info, overflow)
     except Exception as ex:
         log.info(f"Failed to reclassify the authentication log entry to {event_type}: {ex!r}")
         return
