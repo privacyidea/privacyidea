@@ -99,7 +99,7 @@ export class SmtpServersComponent {
           title: $localize`Delete SMTP Server`,
           items: [server.identifier],
           itemType: "smtp-server",
-          confirmAction: { label: "Delete", value: true, type: "destruct" }
+          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()

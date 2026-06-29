@@ -72,6 +72,14 @@ body {
   --half-global-gap: calc(var(--global-gap) / 2);
   --quarter-global-gap: calc(var(--global-gap) / 4);
 
+  // Standardized input/field widths. Used by the .input-width-* helper classes
+  // and referenced in layout width calculations so they stay in sync.
+  --input-width-s: 180px;
+  --input-width-m: 240px;
+  --input-width-l: 300px;
+  --input-width-xl: 616px;
+  --input-width-xxl: 932px;
+
   --light: #f3f3f3;
 
   --green-brand-base: hsl(72, 100%, 32%);

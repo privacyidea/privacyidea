@@ -47,6 +47,14 @@
           <mat-hint i18n>Press enter to apply the filter</mat-hint>
         }
       </mat-form-field>
+      <button
+        [matMenuTriggerFor]="advancedFilterMenu"
+        class="filter-button"
+        i18n-matTooltip
+        mat-icon-button
+        matTooltip="More Filter">
+        <mat-icon>filter_list</mat-icon>
+      </button>
       <mat-paginator
         (page)="onPageEvent($event)"
         [length]="totalLength()"
@@ -323,4 +331,15 @@
       </button>
     }
   </ng-template>
+</mat-menu>
+
+<mat-menu #advancedFilterMenu="matMenu">
+  @for (keyword of advancedApiFilter; track keyword) {
+    <button
+      (click)="onKeywordClick(keyword)"
+      mat-menu-item>
+      <mat-icon class="margin-right-16">{{ getFilterIconName(keyword) }}</mat-icon>
+      {{ keyword }}
+    </button>
+  }
 </mat-menu>

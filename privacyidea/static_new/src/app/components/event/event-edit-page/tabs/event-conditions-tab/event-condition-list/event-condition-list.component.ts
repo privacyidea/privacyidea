@@ -30,16 +30,28 @@ import {
   ViewChildren
 } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
-import { MatError, MatFormField } from "@angular/material/form-field";
+import { MatError, MatFormField, MatSuffix } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { MatTooltip } from "@angular/material/tooltip";
+import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 import { EventConditionMultiValue, EventService } from "@services/event/event.service";
 
 @Component({
   selector: "app-event-condition-list",
-  imports: [MatFormField, MatIcon, MatIconButton, MatInput, MatOption, MatSelect, MatTooltip, MatError],
+  imports: [
+    MatFormField,
+    MatIcon,
+    MatIconButton,
+    MatInput,
+    MatOption,
+    MatSelect,
+    MatTooltip,
+    MatError,
+    MatSuffix,
+    ClearButtonComponent
+  ],
   templateUrl: "./event-condition-list.component.html",
   styleUrl: "./event-condition-list.component.scss"
 })
@@ -133,6 +145,13 @@ export class EventConditionListComponent {
         value = value.join(",");
       }
       this.newConditionValue.emit({ conditionName, conditionValue: value });
+    }
+  }
+
+  clearConditionValue(conditionName: string) {
+    this.editConditions.update((conditions) => ({ ...conditions, [conditionName]: "" }));
+    if (this.emitOnConditionValueChange()) {
+      this.newConditionValue.emit({ conditionName, conditionValue: "" });
     }
   }
 

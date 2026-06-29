@@ -12,6 +12,9 @@ Verifies that:
 - Multiple API endpoints are covered.
 """
 import json
+import os.path
+from contextlib import contextmanager
+from unittest.mock import patch
 
 from flask import current_app, g, request
 
@@ -35,6 +38,30 @@ class HideVersionIntegrationTest(MyApiTestCase):
         with open(pub_key_path, "rb") as f:
             public_key = f.read()
         self.sign_object = Sign(private_key=None, public_key=public_key)
+
+    @contextmanager
+    def _force_legacy_ui(self):
+        """Force the ``/`` route down its legacy-AngularJS fallback.
+
+        When a new-UI (Angular) build is present, ``/`` redirects to
+        ``/app/v2/`` instead of rendering the server-side login template. The
+        version number is injected into (and blanked out of) that legacy
+        template, so these tests pretend no build exists to deterministically
+        exercise that path regardless of whether a local build is checked out.
+
+        Only the new-UI build paths are reported as missing; every other
+        ``os.path.isfile`` call (e.g. Jinja loading the legacy template) is
+        delegated to the real implementation.
+        """
+        real_isfile = os.path.isfile
+
+        def fake_isfile(path):
+            if "privacyidea-webui" in str(path):
+                return False
+            return real_isfile(path)
+
+        with patch("privacyidea.webui.login.os.path.isfile", side_effect=fake_isfile):
+            yield
 
     def _set_policy(self):
         """Activate the hide_version policy and invalidate config cache."""
@@ -265,7 +292,8 @@ class HideVersionIntegrationTest(MyApiTestCase):
         self._set_policy()
         self.addCleanup(self._clear_policy)
 
-        res = self._dispatch('/')
+        with self._force_legacy_ui():
+            res = self._dispatch('/')
         self.assertEqual(200, res.status_code)
         body = res.data.decode("utf-8")
         self.assertNotIn(get_version_number(), body)
@@ -275,7 +303,8 @@ class HideVersionIntegrationTest(MyApiTestCase):
         """Without the policy, the login HTML page renders the version number."""
         self._clear_policy()
 
-        res = self._dispatch('/')
+        with self._force_legacy_ui():
+            res = self._dispatch('/')
         self.assertEqual(200, res.status_code)
         body = res.data.decode("utf-8")
         self.assertIn(get_version_number(), body)
@@ -286,7 +315,8 @@ class HideVersionIntegrationTest(MyApiTestCase):
         self._set_policy()
         self.addCleanup(self._clear_policy)
 
-        res = self._dispatch('/', headers={"Authorization": self.at})
+        with self._force_legacy_ui():
+            res = self._dispatch('/', headers={"Authorization": self.at})
         self.assertEqual(200, res.status_code)
         body = res.data.decode("utf-8")
         self.assertIn(get_version_number(), body)
