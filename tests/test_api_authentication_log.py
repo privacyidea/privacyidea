@@ -532,7 +532,10 @@ class ValidateCheckAuthLogTestCase(AuthLogTestCase):
         finally:
             delete_policy("authlog_deny")
         entries = assert_authentication_log([AuthEventType.NOT_AUTHORIZED])
-        assert_authentication_log_entry(entries[AuthEventType.NOT_AUTHORIZED], user=self.user)
+        # authorized=deny runs in the AUTHZ scope, after authentication has already succeeded: the token genuinely
+        # authenticated, so its serial is retained on the reclassified NOT_AUTHORIZED entry.
+        assert_authentication_log_entry(entries[AuthEventType.NOT_AUTHORIZED], user=self.user,
+                                        serials={self.serial})
 
 
 class MultiTokenAuthLogTestCase(AuthLogTestCase):
