@@ -250,14 +250,18 @@ def reclassify_authentication_log_event(event_id: int, event_type: AuthEventType
                 log.info(f"Cannot reclassify authentication log entry {event_id!r}: not found.")
                 return
             overflow: dict[str, str] = {}
+
             truncated_event_type = _truncate("event_type", event_type)
             entry.event_type = truncated_event_type.stored
             if truncated_event_type.overflow is not None:
                 overflow["event_type"] = truncated_event_type.overflow
-            truncated_serial = _truncate("serial", serial, separator=",")
-            entry.serial = truncated_serial.stored
-            if truncated_serial.overflow is not None:
-                overflow["serial"] = truncated_serial.overflow
+
+            if serial is not None:
+                truncated_serial = _truncate("serial", serial, separator=",")
+                entry.serial = truncated_serial.stored
+                if truncated_serial.overflow is not None:
+                    overflow["serial"] = truncated_serial.overflow
+
             if transaction_id:
                 truncated_transaction_id = _truncate("transaction_id", transaction_id)
                 new_transaction_id = truncated_transaction_id.stored
@@ -267,6 +271,7 @@ def reclassify_authentication_log_event(event_id: int, event_type: AuthEventType
                 if old_transaction_id and new_transaction_id != old_transaction_id:
                     entry.previous_transaction_id = old_transaction_id
                 entry.transaction_id = new_transaction_id
+
             entry.other_info = _store_overflow(entry.other_info, overflow)
     except Exception as ex:
         log.info(f"Failed to reclassify the authentication log entry to {event_type}: {ex!r}")

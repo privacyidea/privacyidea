@@ -495,6 +495,16 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertEqual(f"{head},AAA", entry.serial)
         self.assertEqual({"truncated": {"serial": "BBBBBBBBBB"}}, entry.other_info)
 
+    def test_reclassify_without_serial_keeps_existing_serial(self):
+        # Reclassifying with the default serial=None means "do not modify": an existing serial must survive, e.g. the
+        # authorized=deny post-policy reclassifies a successful login to NOT_AUTHORIZED without passing a serial.
+        event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, serial="TOK001")
+        reclassify_authentication_log_event(event_id, AuthEventType.NOT_AUTHORIZED)
+        entry = get_authentication_log_event(event_id)
+        assert entry is not None
+        self.assertEqual(AuthEventType.NOT_AUTHORIZED, entry.event_type)
+        self.assertEqual("TOK001", entry.serial)
+
 
 class AuthenticationLogDBTestCase(MyTestCase):
 
