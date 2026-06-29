@@ -79,10 +79,10 @@ export class ContainerDetailsTokenActionsComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: "Unassign User from All Tokens",
+          title: $localize`Unassign User from All Tokens`,
           items: tokenSerials,
           itemType: "token",
-          confirmAction: { label: "Unassign", value: true, type: "destruct" }
+          confirmAction: { label: $localize`Unassign`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -147,9 +147,9 @@ export class ContainerDetailsTokenActionsComponent {
         component: SimpleConfirmationDialogComponent,
         data: {
           items: serialList.split(","),
-          title: "Remove Token",
+          title: $localize`Remove Token`,
           itemType: "token",
-          confirmAction: { label: "Remove", value: true, type: "destruct" }
+          confirmAction: { label: $localize`Remove`, value: true, type: "destruct" }
         }
       })
       .afterClosed()

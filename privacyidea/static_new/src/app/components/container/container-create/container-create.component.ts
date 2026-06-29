@@ -249,7 +249,7 @@ export class ContainerCreateComponent implements OnInit, OnDestroy {
       next: (response) => {
         const containerSerial = response.result?.value?.container_serial;
         if (!containerSerial) {
-          this.notificationService.error("Container creation failed. No container serial returned.");
+          this.notificationService.error($localize`Container creation failed. No container serial returned.`);
           return;
         }
         this.pendingChangesService.clearAllRegistrations();

@@ -155,7 +155,9 @@ class TestingConfig(Config):
     TESTING = True
     # This is used to encrypt the auth token
     SUPERUSER_REALM = ['adminrealm']
-    SECRET_KEY = 'secret'  # nosec B105 # used for testing
+    # At least 32 bytes so signing the auth JWT does not raise pyjwt's
+    # InsecureKeyLengthWarning on every test that authenticates.
+    SECRET_KEY = 'secret-key-for-testing-only-0123456789'  # nosec B105 # used for testing
     SQLALCHEMY_DATABASE_URI = os.environ.get(ConfigKey.TEST_DATABASE_URL) or \
                               'sqlite:///' + os.path.join(basedir, 'data-test.sqlite')
     # This is used to encrypt the admin passwords

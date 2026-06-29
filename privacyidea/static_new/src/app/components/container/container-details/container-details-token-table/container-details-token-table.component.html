@@ -184,10 +184,13 @@
         <th
           *matHeaderCellDef
           aria-label="Actions Column Header"
-          i18n
           i18n-aria-label
           mat-header-cell>
-          <div class="flex just-center">Actions</div>
+          <div
+            class="flex just-center"
+            i18n>
+            Actions
+          </div>
         </th>
         <td
           *matCellDef="let element"

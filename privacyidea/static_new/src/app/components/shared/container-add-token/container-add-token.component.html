@@ -54,7 +54,7 @@
           placeholder="Example query: 'type: hotp serial: 123'" />
       </app-clearable-input>
       @if (showOnlyTokenInContainer()) {
-        <mat-hint> Adding a token removes it from its previous container</mat-hint>
+        <mat-hint i18n> Adding a token removes it from its previous container</mat-hint>
       }
       <mat-autocomplete #tokenAuto="matAutocomplete">
         @for (option of tokenOptions(); track option) {

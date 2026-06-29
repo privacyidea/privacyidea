@@ -22,7 +22,7 @@
   <mat-form-field
     class="input-width-l"
     subscriptSizing="dynamic">
-    <mat-label>Select Realm</mat-label>
+    <mat-label i18n>Select Realm</mat-label>
     <mat-select
       [value]="userService.selectedUserRealm()"
       (selectionChange)="userService.selectedUserRealm.set($event.value)">

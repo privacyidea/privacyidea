@@ -74,9 +74,9 @@
               <mat-error i18n>Name is <strong>required</strong></mat-error>
             }
             @if (smsForm.name().errors().some(e => e.kind === 'pattern')) {
-              <mat-error i18n
-                >Name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores and
-                hyphens are allowed.
+              <mat-error
+                i18n>Name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores
+                     and hyphens are allowed.
               </mat-error>
             }
           </mat-form-field>
@@ -231,6 +231,22 @@
               </td>
             </ng-container>
 
+            <ng-container matColumnDef="secret">
+              <th
+                *matHeaderCellDef
+                i18n
+                mat-header-cell>
+                Secret
+              </th>
+              <td
+                *matCellDef="let row"
+                mat-cell>
+                <mat-checkbox
+                  (change)="toggleOptionSecret(row.key)"
+                  [checked]="row.secret"></mat-checkbox>
+              </td>
+            </ng-container>
+
             <tr
               *matHeaderRowDef="optionDisplayedColumns"
               mat-header-row></tr>
@@ -278,6 +294,18 @@
               </td>
             </ng-container>
 
+            <ng-container matColumnDef="footerSecret">
+              <td
+                *matFooterCellDef
+                mat-footer-cell>
+                <mat-checkbox
+                  (change)="newOptionSecret.set(!newOptionSecret())"
+                  [checked]="newOptionSecret()"
+                  aria-label="Secret"
+                  i18n-aria-label></mat-checkbox>
+              </td>
+            </ng-container>
+
             <ng-container matColumnDef="footerActions">
               <td
                 *matFooterCellDef
@@ -305,7 +333,7 @@
       @if (selectedProvider()?.headers_allowed) {
         <h3 i18n>Headers</h3>
 
-        <div class="table-wrapper">
+        <div class="table-wrapper margin-bottom-16">
           <table
             [dataSource]="headerRows"
             class="width-100 mat-elevation-z0 sms-kv-table"
@@ -358,6 +386,22 @@
               </td>
             </ng-container>
 
+            <ng-container matColumnDef="secret">
+              <th
+                *matHeaderCellDef
+                i18n
+                mat-header-cell>
+                Secret
+              </th>
+              <td
+                *matCellDef="let row"
+                mat-cell>
+                <mat-checkbox
+                  (change)="toggleHeaderSecret(row.key)"
+                  [checked]="row.secret"></mat-checkbox>
+              </td>
+            </ng-container>
+
             <tr
               *matHeaderRowDef="headerDisplayedColumns"
               mat-header-row></tr>
@@ -402,6 +446,18 @@
                       matInput />
                   </app-clearable-input>
                 </mat-form-field>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="footerSecret">
+              <td
+                *matFooterCellDef
+                mat-footer-cell>
+                <mat-checkbox
+                  (change)="newHeaderSecret.set(!newHeaderSecret())"
+                  [checked]="newHeaderSecret()"
+                  aria-label="Secret"
+                  i18n-aria-label></mat-checkbox>
               </td>
             </ng-container>
 
