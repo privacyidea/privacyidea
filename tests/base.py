@@ -19,6 +19,38 @@ PWFILE = "tests/testdata/passwords"
 PWFILE2 = "tests/testdata/passwd"
 
 
+def force_expire_challenges(transaction_id):
+    """Force every challenge with ``transaction_id`` to be expired, on
+    whichever backend stores it, for tests that exercise the
+    expired-challenge rejection path.
+
+    A raw ``Challenge.query...update()`` only reaches the SQL backend and is a
+    no-op when the challenge lives in Redis. Going through the challenge object
+    doesn't help either: ``ChallengeDTO.save()`` deliberately refuses to write
+    an already-expired challenge, so for the cache backend the stored hash
+    field is rewritten directly (the key is still within its TTL, but
+    ``is_valid()`` now returns False, which is what the rejection path checks).
+    """
+    from datetime import timedelta
+    from privacyidea.models.utils import utc_now
+    from privacyidea.lib.challenge import get_challenges
+    from privacyidea.lib.cache import redis_feature_enabled
+
+    past = utc_now() - timedelta(minutes=5)
+    challenges = get_challenges(transaction_id=transaction_id)
+    for challenge in challenges:
+        challenge.expiration = past
+    if redis_feature_enabled("challenges"):
+        from privacyidea.lib.cache.redis import get_redis, _TXN_KEY
+        redis_client = get_redis()
+        for challenge in challenges:
+            redis_client.hset(_TXN_KEY.format(challenge.transaction_id),
+                              challenge.serial, challenge.to_payload())
+    else:
+        from privacyidea.models import db
+        db.session.commit()
+
+
 class FakeFlaskG(object):
     policy_object = None
     logged_in_user = {}

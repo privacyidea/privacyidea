@@ -71,6 +71,10 @@ class ConfigKey:
     DB_NAME = "PI_DB_NAME"
     DB_EXTRA_PARAMS = "PI_DB_EXTRA_PARAMS"
 
+    REDIS_URL = "PI_REDIS_URL"
+    REDIS_CACHE_CHALLENGES = "PI_REDIS_CACHE_CHALLENGES"
+    REDIS_RETRY_COOLDOWN = "PI_REDIS_RETRY_COOLDOWN"
+
     AUDIT_SQL_URI = "PI_AUDIT_SQL_URI"
     AUDIT_SQL_OPTIONS = "PI_AUDIT_SQL_OPTIONS"
     AUDIT_POOL_SIZE = "PI_AUDIT_POOL_SIZE"
@@ -147,6 +151,7 @@ class DevelopmentConfig(Config):
     SECRET_KEY = os.environ.get(ConfigKey.SECRET_KEY) or 't0p s3cr3t'
     SQLALCHEMY_DATABASE_URI = os.environ.get(ConfigKey.DEV_DATABASE_URL) or \
                               'sqlite:///' + os.path.join(basedir, 'data-dev.sqlite')
+    PI_REDIS_URL = os.environ.get(ConfigKey.REDIS_URL)
     PI_LOGLEVEL = logging.DEBUG
     PI_TRANSLATION_WARNING = "[Missing]"
 
@@ -160,6 +165,12 @@ class TestingConfig(Config):
     SECRET_KEY = 'secret-key-for-testing-only-0123456789'  # nosec B105 # used for testing
     SQLALCHEMY_DATABASE_URI = os.environ.get(ConfigKey.TEST_DATABASE_URL) or \
                               'sqlite:///' + os.path.join(basedir, 'data-test.sqlite')
+    # Optional real-Redis challenge backend, driven by env so the dedicated
+    # CI job can run the whole suite against Redis while the default run stays
+    # DB-only (PI_REDIS_URL unset -> the cache feature is off).
+    PI_REDIS_URL = os.environ.get(ConfigKey.REDIS_URL)
+    PI_REDIS_CACHE_CHALLENGES = (os.environ.get(ConfigKey.REDIS_CACHE_CHALLENGES, "false").lower()
+                                 in ("true", "1", "yes", "on"))
     # This is used to encrypt the admin passwords
     PI_PEPPER = ""
     # This is only for testing encrypted files
@@ -222,6 +233,9 @@ class ProductionConfig(Config):
     PI_AUDIT_KEY_PUBLIC = os.path.join(basedir, "public.pem")
     PI_LOGLEVEL = logging.INFO
     SUPERUSER_REALM = ['superuser']
+    # Optional Redis cache. Production also accepts the URL via env so secret
+    # rotation doesn't require editing pi.cfg.
+    PI_REDIS_URL = os.environ.get(ConfigKey.REDIS_URL)
 
 
 docker_secrets_dir = Path("/run/secrets/")
@@ -284,6 +298,11 @@ class DockerConfig:
     if audit_key_private := _get_secrets_paths_from_environment("audit_key_private",
                                                                 ConfigKey.AUDIT_KEY_PRIVATE):
         PI_AUDIT_KEY_PRIVATE = audit_key_private
+
+    # Optional Redis cache - supports direct URL or file-based secret
+    # Set PI_REDIS_URL=redis://host:6379/0  or  PI_REDIS_URL_FILE=/run/secrets/redis_url
+    if redis_url := _get_secrets_from_environment(ConfigKey.REDIS_URL):
+        PI_REDIS_URL = redis_url
 
     PI_AUDIT_MODULE = "privacyidea.lib.auditmodules.sqlaudit"
     PI_AUDIT_SQL_TRUNCATE = True
