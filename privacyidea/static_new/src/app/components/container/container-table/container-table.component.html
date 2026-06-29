@@ -51,242 +51,247 @@
         showFirstLastButtons />
     </div>
     <app-container-table-actions />
-    <table
-      [dataSource]="containerDataSource()"
-      aria-label="Container Data Table"
-      class="container-table"
-      i18n-aria-label
-      mat-table
-      multiTemplateDataRows>
-      @for (column of columnsKeyMap; track column) {
-        <ng-container [matColumnDef]="column.key">
-          @if (column.key === "select") {
-            <th
-              *matHeaderCellDef
-              class="table-checkbox"
-              mat-header-cell>
-              <mat-checkbox
-                (change)="$event ? toggleAllRows() : null"
-                [checked]="isAllSelected()"
-                [disabled]="total() === 0"
-                [indeterminate]="containerSelection().length > 0 && !isAllSelected()"></mat-checkbox>
-            </th>
-          } @else {
-            <th
-              *matHeaderCellDef
-              attr.aria-label="{{ column.label }} Header"
-              mat-header-cell>
-              <div class="flex ali-center">
-                {{ column.label }}
-                <div class="margin-left-16 flex">
-                  @if (
-                    apiFilterKeyMap[column.key] && containerService.apiFilter.includes(apiFilterKeyMap[column.key])
-                  ) {
-                    @if (apiFilterKeyMap[column.key] === "type") {
-                      <button
-                        [matMenuTriggerData]="{ keyword: apiFilterKeyMap[column.key] }"
-                        [matMenuTriggerFor]="typeMenu"
-                        class="filter-button"
-                        i18n-matTooltip
-                        mat-icon-button
-                        matTooltip="Filter by type"
-                        type="button">
-                        <mat-icon class="keyword-button-icon margin-left-0"> filter_list</mat-icon>
-                      </button>
-                    } @else if (apiFilterKeyMap[column.key] === "state") {
-                      <button
-                        [matMenuTriggerData]="{ keyword: apiFilterKeyMap[column.key] }"
-                        [matMenuTriggerFor]="statesMenu"
-                        class="filter-button"
-                        i18n-matTooltip
-                        mat-icon-button
-                        matTooltip="Filter by state"
-                        type="button">
-                        <mat-icon class="keyword-button-icon margin-left-0">filter_list</mat-icon>
-                      </button>
-                    } @else {
-                      <button
-                        (click)="onKeywordClick(apiFilterKeyMap[column.key])"
-                        class="filter-button"
-                        i18n-matTooltip
-                        mat-icon-button
-                        matTooltip="Toggle filter"
-                        type="button">
-                        <mat-icon class="keyword-button-icon margin-left-0">
-                          {{ getFilterIconName(apiFilterKeyMap[column.key]) }}
-                        </mat-icon>
-                      </button>
+    <div class="table-scroll-region">
+      <table
+        [dataSource]="containerDataSource()"
+        aria-label="Container Data Table"
+        class="container-table"
+        i18n-aria-label
+        mat-table
+        multiTemplateDataRows>
+        @for (column of columnsKeyMap; track column) {
+          <ng-container [matColumnDef]="column.key">
+            @if (column.key === "select") {
+              <th
+                *matHeaderCellDef
+                class="table-checkbox"
+                mat-header-cell>
+                <mat-checkbox
+                  (change)="$event ? toggleAllRows() : null"
+                  [checked]="isAllSelected()"
+                  [disabled]="total() === 0"
+                  [indeterminate]="containerSelection().length > 0 && !isAllSelected()"></mat-checkbox>
+              </th>
+            } @else {
+              <th
+                *matHeaderCellDef
+                attr.aria-label="{{ column.label }} Header"
+                mat-header-cell>
+                <div class="flex ali-center">
+                  {{ column.label }}
+                  <div class="margin-left-16 flex">
+                    @if (
+                      apiFilterKeyMap[column.key] && containerService.apiFilter.includes(apiFilterKeyMap[column.key])
+                    ) {
+                      @if (apiFilterKeyMap[column.key] === "type") {
+                        <button
+                          [matMenuTriggerData]="{ keyword: apiFilterKeyMap[column.key] }"
+                          [matMenuTriggerFor]="typeMenu"
+                          class="filter-button"
+                          i18n-matTooltip
+                          mat-icon-button
+                          matTooltip="Filter by type"
+                          type="button">
+                          <mat-icon class="keyword-button-icon margin-left-0"> filter_list</mat-icon>
+                        </button>
+                      } @else if (apiFilterKeyMap[column.key] === "state") {
+                        <button
+                          [matMenuTriggerData]="{ keyword: apiFilterKeyMap[column.key] }"
+                          [matMenuTriggerFor]="statesMenu"
+                          class="filter-button"
+                          i18n-matTooltip
+                          mat-icon-button
+                          matTooltip="Filter by state"
+                          type="button">
+                          <mat-icon class="keyword-button-icon margin-left-0">filter_list</mat-icon>
+                        </button>
+                      } @else {
+                        <button
+                          (click)="onKeywordClick(apiFilterKeyMap[column.key])"
+                          class="filter-button"
+                          i18n-matTooltip
+                          mat-icon-button
+                          matTooltip="Toggle filter"
+                          type="button">
+                          <mat-icon class="keyword-button-icon margin-left-0">
+                            {{ getFilterIconName(apiFilterKeyMap[column.key]) }}
+                          </mat-icon>
+                        </button>
+                      }
                     }
-                  }
-                  <button
-                    (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
-                    class="sort-button"
-                    i18n-matTooltip
-                    mat-icon-button
-                    matTooltip="Sort by column"
-                    type="button">
-                    <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
-                  </button>
-                </div>
-              </div>
-            </th>
-          }
-          <td
-            *matCellDef="let element; let row"
-            [ngClass]="{
-              'max-width-300': column.key === 'description',
-              'table-checkbox': column.key === 'select'
-            }"
-            attr.aria-label="{{ column.label }} Cell"
-            mat-cell>
-            <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
-              @switch (column.key) {
-                @case ("select") {
-                  <mat-checkbox
-                    (change)="$event ? toggleRow(row) : null"
-                    (click)="$event.stopPropagation()"
-                    [checked]="containerSelection().includes(row)"
-                    [disabled]="total() === 0"></mat-checkbox>
-                }
-                @case ("serial") {
-                  <app-copyable [copyText]="element.serial">
-                    <a
-                      (click)="contentService.navigateContainerDetails(element.serial)"
-                      (keydown.enter)="contentService.navigateContainerDetails(element.serial)"
-                      (keydown.space)="$event.preventDefault(); contentService.navigateContainerDetails(element.serial)"
-                      attr.aria-label="{{ column.label }} Link"
-                      role="button"
-                      tabindex="0">
-                      {{ element[column.key] }}
-                    </a>
-                  </app-copyable>
-                }
-                @case ("realms") {
-                  <div [ngClass]="{ 'realm-list': (element[column.key]?.length || 0) > 1 }">
-                    @for (realm of element[column.key]; track realm; let idx = $index) {
-                      <div>
-                        <span attr.aria-label="{{ column.label }} Link">
-                          {{ realm }}
-                        </span>
-                        <br class="realm-break" />
-                      </div>
-                    }
+                    <button
+                      (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
+                      class="sort-button"
+                      i18n-matTooltip
+                      mat-icon-button
+                      matTooltip="Sort by column"
+                      type="button">
+                      <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
+                    </button>
                   </div>
-                }
-                @case ("states") {
-                  @if (element[column.key]?.length) {
-                    <div
-                      (click)="handleStateClick(element); $event.stopPropagation()"
-                      (keydown.enter)="handleStateClick(element); $event.stopPropagation()"
-                      (keydown.space)="$event.preventDefault(); handleStateClick(element); $event.stopPropagation()"
-                      class="flex-row gap-8 flex-wrap cursor-pointer"
-                      role="button"
-                      tabindex="0">
-                      @for (state of element[column.key]; track state) {
-                        <span
-                          [ngClass]="
-                            tableUtilsService.getSpanClassForState(state, state === 'active' || state === 'disabled')
-                          ">
-                          {{ tableUtilsService.getDisplayTextForState(state) }}
-                        </span>
+                </div>
+              </th>
+            }
+            <td
+              *matCellDef="let element; let row"
+              [ngClass]="{
+                'max-width-300': column.key === 'description',
+                'table-checkbox': column.key === 'select'
+              }"
+              attr.aria-label="{{ column.label }} Cell"
+              mat-cell>
+              <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
+                @switch (column.key) {
+                  @case ("select") {
+                    <mat-checkbox
+                      (change)="$event ? toggleRow(row) : null"
+                      (click)="$event.stopPropagation()"
+                      [checked]="containerSelection().includes(row)"
+                      [disabled]="total() === 0"></mat-checkbox>
+                  }
+                  @case ("serial") {
+                    <app-copyable [copyText]="element.serial">
+                      <a
+                        (click)="contentService.navigateContainerDetails(element.serial)"
+                        (keydown.enter)="contentService.navigateContainerDetails(element.serial)"
+                        (keydown.space)="
+                          $event.preventDefault(); contentService.navigateContainerDetails(element.serial)
+                        "
+                        attr.aria-label="{{ column.label }} Link"
+                        role="button"
+                        tabindex="0">
+                        {{ element[column.key] }}
+                      </a>
+                    </app-copyable>
+                  }
+                  @case ("realms") {
+                    <div [ngClass]="{ 'realm-list': (element[column.key]?.length || 0) > 1 }">
+                      @for (realm of element[column.key]; track realm; let idx = $index) {
+                        <div>
+                          <span attr.aria-label="{{ column.label }} Link">
+                            {{ realm }}
+                          </span>
+                          <br class="realm-break" />
+                        </div>
                       }
                     </div>
                   }
-                }
-                @case ("user_name") {
-                  <app-copyable [copyText]="element[column.key]">
-                    <a
-                      (click)="contentService.userSelected(element[column.key], element['user_realm'])"
-                      (keydown.enter)="contentService.userSelected(element[column.key], element['user_realm'])"
-                      (keydown.space)="
-                        $event.preventDefault(); contentService.userSelected(element[column.key], element['user_realm'])
-                      "
-                      attr.aria-label="{{ column.label }} Link"
-                      role="button"
-                      tabindex="0">
-                      {{ element[column.key] }}
-                    </a>
-                  </app-copyable>
-                }
-                @default {
-                  @if (tableUtilsService.isLink(column.key)) {
-                    <a
-                      attr.aria-label="{{ column.label }} Link"
-                      href="#">
-                      {{ element[column.key] }}
-                    </a>
-                  } @else {
-                    {{ element[column.key] }}
-                  }
-                }
-              }
-            </div>
-          </td>
-        </ng-container>
-      }
-      <ng-container matColumnDef="expandedDetail">
-        <td
-          *matCellDef="let element"
-          [attr.colspan]="columnKeys.length"
-          mat-cell>
-          @if (expandedElement === element) {
-            <div
-              animate.enter="detail-expand-enter"
-              animate.leave="detail-expand-leave"
-              class="expanded-detail">
-              <div class="expanded-detail-content">
-                <div class="expanded-token-list">
-                  @for (token of element.tokens; track token) {
-                    <div class="token-item flex-row flex-nowrap ali-center">
-                      <a
-                        (click)="contentService.tokenSelected(token.serial)"
-                        (keydown.enter)="contentService.tokenSelected(token.serial)"
-                        (keydown.space)="$event.preventDefault(); contentService.tokenSelected(token.serial)"
+                  @case ("states") {
+                    @if (element[column.key]?.length) {
+                      <div
+                        (click)="handleStateClick(element); $event.stopPropagation()"
+                        (keydown.enter)="handleStateClick(element); $event.stopPropagation()"
+                        (keydown.space)="$event.preventDefault(); handleStateClick(element); $event.stopPropagation()"
+                        class="flex-row gap-8 flex-wrap cursor-pointer"
                         role="button"
                         tabindex="0">
-                        {{ token.serial }}
+                        @for (state of element[column.key]; track state) {
+                          <span
+                            [ngClass]="
+                              tableUtilsService.getSpanClassForState(state, state === 'active' || state === 'disabled')
+                            ">
+                            {{ tableUtilsService.getDisplayTextForState(state) }}
+                          </span>
+                        }
+                      </div>
+                    }
+                  }
+                  @case ("user_name") {
+                    <app-copyable [copyText]="element[column.key]">
+                      <a
+                        (click)="contentService.userSelected(element[column.key], element['user_realm'])"
+                        (keydown.enter)="contentService.userSelected(element[column.key], element['user_realm'])"
+                        (keydown.space)="
+                          $event.preventDefault();
+                          contentService.userSelected(element[column.key], element['user_realm'])
+                        "
+                        attr.aria-label="{{ column.label }} Link"
+                        role="button"
+                        tabindex="0">
+                        {{ element[column.key] }}
                       </a>
-                      <app-copy-button [copyText]="token.serial"></app-copy-button>
-                      [{{ token.tokentype }}]
-                    </div>
+                    </app-copyable>
                   }
-                  @if (element.tokens?.length === 0) {
-                    <div
-                      class="flex ali-center"
-                      i18n>
-                      Container has no tokens.
-                    </div>
+                  @default {
+                    @if (tableUtilsService.isLink(column.key)) {
+                      <a
+                        attr.aria-label="{{ column.label }} Link"
+                        href="#">
+                        {{ element[column.key] }}
+                      </a>
+                    } @else {
+                      {{ element[column.key] }}
+                    }
                   }
+                }
+              </div>
+            </td>
+          </ng-container>
+        }
+        <ng-container matColumnDef="expandedDetail">
+          <td
+            *matCellDef="let element"
+            [attr.colspan]="columnKeys.length"
+            mat-cell>
+            @if (expandedElement === element) {
+              <div
+                animate.enter="detail-expand-enter"
+                animate.leave="detail-expand-leave"
+                class="expanded-detail">
+                <div class="expanded-detail-content">
+                  <div class="expanded-token-list">
+                    @for (token of element.tokens; track token) {
+                      <div class="token-item flex-row flex-nowrap ali-center">
+                        <a
+                          (click)="contentService.tokenSelected(token.serial)"
+                          (keydown.enter)="contentService.tokenSelected(token.serial)"
+                          (keydown.space)="$event.preventDefault(); contentService.tokenSelected(token.serial)"
+                          role="button"
+                          tabindex="0">
+                          {{ token.serial }}
+                        </a>
+                        <app-copy-button [copyText]="token.serial"></app-copy-button>
+                        [{{ token.tokentype }}]
+                      </div>
+                    }
+                    @if (element.tokens?.length === 0) {
+                      <div
+                        class="flex ali-center"
+                        i18n>
+                        Container has no tokens.
+                      </div>
+                    }
+                  </div>
                 </div>
               </div>
-            </div>
-          }
-        </td>
-      </ng-container>
+            }
+          </td>
+        </ng-container>
 
-      <tr
-        *matHeaderRowDef="columnKeys"
-        mat-header-row></tr>
+        <tr
+          *matHeaderRowDef="columnKeys; sticky: true"
+          mat-header-row></tr>
 
-      <tr
-        (click)="expandedElement = expandedElement === row ? null : row"
-        *matRowDef="let row; columns: columnKeys"
-        class="example-element-row"
-        mat-row></tr>
+        <tr
+          (click)="expandedElement = expandedElement === row ? null : row"
+          *matRowDef="let row; columns: columnKeys"
+          class="example-element-row"
+          mat-row></tr>
 
-      <tr
-        *matRowDef="let row; columns: ['expandedDetail']"
-        class="example-detail-row"
-        mat-row></tr>
+        <tr
+          *matRowDef="let row; columns: ['expandedDetail']"
+          class="example-detail-row"
+          mat-row></tr>
 
-      <tr *matNoDataRow>
-        <td
-          [attr.colspan]="columnKeys.length"
-          i18n>
-          No data matching the filter.
-        </td>
-      </tr>
-    </table>
+        <tr *matNoDataRow>
+          <td
+            [attr.colspan]="columnKeys.length"
+            i18n>
+            No data matching the filter.
+          </td>
+        </tr>
+      </table>
+    </div>
   } @else {
     <div i18n>You do not have the permission to view the container list.</div>
   }

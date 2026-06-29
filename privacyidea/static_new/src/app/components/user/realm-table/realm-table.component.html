@@ -44,7 +44,7 @@
       </mat-form-field>
     </div>
 
-    <div class="audit-table-overflow">
+    <div class="table-scroll-region">
       <table
         [dataSource]="realmsDataSource()"
         aria-label="Realm Data Table"
@@ -353,7 +353,7 @@
         }
 
         <tr
-          *matHeaderRowDef="columnKeys"
+          *matHeaderRowDef="columnKeys; sticky: true"
           aria-label="Header Row"
           mat-header-row></tr>
 
