@@ -107,7 +107,6 @@
                   [name]="'conditionInput_' + conditionName"
                   [required]="inputRequired()"
                   [value]="editConditions()[conditionName]"
-                  class="font-size-16"
                   matInput
                   placeholder="Enter a Number ..."
                   i18n-placeholder
@@ -122,12 +121,16 @@
                   [name]="'conditionInput_' + conditionName"
                   [required]="inputRequired()"
                   [value]="editConditions()[conditionName] || ''"
-                  class="font-size-16"
                   matInput
                   placeholder="Enter value ..."
                   i18n-placeholder
                   type="text" />
               }
+            }
+            @if (editConditions()[conditionName]) {
+              <app-clear-button
+                matSuffix
+                (clearButtonClick)="clearConditionValue(conditionName)"></app-clear-button>
             }
             <mat-error i18n> Enter a value or remove the condition. </mat-error>
           </mat-form-field>

@@ -17,78 +17,82 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="policy-action-item">
-  <button
-    mat-icon-button
-    class="delete-icon-button"
-    aria-label="Remove action"
-    i18n-aria-label
-    (click)="handleRemoveAction(); $event.stopPropagation()">
-    <mat-icon>delete</mat-icon>
-  </button>
-
-  <span class="detail-label">{{ action().name }}</span>
-
-  <div class="detail-input">
-    @if (!isBooleanAction()) {
-      @if (actionDetail()?.value; as actionValues) {
-        @if (actionDetail()?.multiple) {
-          <app-multi-select-only
-            class="flex-2"
-            subscriptSizing="dynamic"
-            i18n-placeholder
-            placeholder="Select options..."
-            [items]="actionValues"
-            [selectedItems]="selectedItems()"
-            (selectionChange)="handleUpdateAction($event)">
-          </app-multi-select-only>
-        } @else if (actionValues.length === 0) {
-          <p i18n>No values available.</p>
-        } @else if (actionValues.length <= 3) {
-          <app-selector-buttons
-            class="flex-1"
-            [values]="actionValues"
-            [initialValue]="action().value"
-            (selected)="handleUpdateAction($event)" />
-        } @else {
-          <mat-form-field
-            appearance="fill"
-            class="flex-1"
-            subscriptSizing="dynamic">
-            <mat-select
-              [value]="isNumber(action().value) ? +action().value : action().value"
-              (selectionChange)="handleUpdateAction($event.value)">
-              @for (option of actionValues; track option) {
-                <mat-option [value]="option">{{ option }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
-        }
-      } @else {
-        @switch (actionDetail()?.type) {
-          @case ("str") {
-            <input
-              type="text"
-              class="action-value-input flex-2"
-              [value]="action().value"
-              (input)="handleUpdateAction($any($any($event.target).value))" />
-          }
-          @case ("int") {
-            <input
-              type="number"
-              class="action-value-input flex-2"
-              [value]="action().value"
-              (input)="handleUpdateAction($any(+$any($event.target).value))" />
-          }
-          @case ("text") {
-            <textarea
-              class="action-value-textarea flex-2"
-              [value]="action().value"
-              (input)="handleUpdateAction($any($any($event.target).value))"></textarea>
-          }
-        }
-      }
+  <div class="detail-text">
+    <span class="detail-label">{{ action().name }}</span>
+    @if (actionDetail()?.desc) {
+      <span class="detail-description">{{ actionDetail()?.desc }}</span>
     }
   </div>
 
-  <span class="detail-description">{{ actionDetail()?.desc }}</span>
+  <div class="detail-input">
+    <div class="detail-value">
+      @if (!isBooleanAction()) {
+        @if (actionDetail()?.value; as actionValues) {
+          @if (actionDetail()?.multiple) {
+            <app-multi-select-only
+              class="flex-2"
+              subscriptSizing="dynamic"
+              i18n-placeholder
+              placeholder="Select options..."
+              [items]="actionValues"
+              [selectedItems]="selectedItems()"
+              (selectionChange)="handleUpdateAction($event)">
+            </app-multi-select-only>
+          } @else if (actionValues.length === 0) {
+            <p i18n>No values available.</p>
+          } @else if (actionValues.length <= 3) {
+            <app-selector-buttons
+              class="flex-1"
+              [values]="actionValues"
+              [initialValue]="action().value"
+              (selected)="handleUpdateAction($event)" />
+          } @else {
+            <mat-form-field
+              appearance="fill"
+              class="flex-1"
+              subscriptSizing="dynamic">
+              <mat-select
+                [value]="isNumber(action().value) ? +action().value : action().value"
+                (selectionChange)="handleUpdateAction($event.value)">
+                @for (option of actionValues; track option) {
+                  <mat-option [value]="option">{{ option }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          }
+        } @else {
+          @switch (actionDetail()?.type) {
+            @case ("str") {
+              <input
+                type="text"
+                class="action-value-input flex-2"
+                [value]="action().value"
+                (input)="handleUpdateAction($any($any($event.target).value))" />
+            }
+            @case ("int") {
+              <input
+                type="number"
+                class="action-value-input flex-2"
+                [value]="action().value"
+                (input)="handleUpdateAction($any(+$any($event.target).value))" />
+            }
+            @case ("text") {
+              <textarea
+                class="action-value-textarea flex-2"
+                [value]="action().value"
+                (input)="handleUpdateAction($any($any($event.target).value))"></textarea>
+            }
+          }
+        }
+      }
+    </div>
+    <button
+      mat-icon-button
+      class="delete-icon-button"
+      aria-label="Remove action"
+      i18n-aria-label
+      (click)="handleRemoveAction(); $event.stopPropagation()">
+      <mat-icon>delete</mat-icon>
+    </button>
+  </div>
 </div>
