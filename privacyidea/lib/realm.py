@@ -198,10 +198,10 @@ def delete_realm(realm_name: str):
                     "Realm can not be deleted, because a user of this realm is still assigned to a container.")
 
     # Check if there are custom user attributes for users in this realm
-    from privacyidea.models import CustomUserAttribute
+    from ..models import CustomUserAttribute
     realm_obj = fetch_one_resource(Realm, name=realm_name)
-    stmt = select(CustomUserAttribute).filter_by(realm_id=realm_obj.id)
-    if db.session.scalars(stmt).first():
+    stmt = select(CustomUserAttribute.id).where(CustomUserAttribute.realm_id == realm_obj.id).limit(1)
+    if db.session.execute(stmt).first():
         raise UserError(
             "Realm can not be deleted, because a user of this realm still has custom user attributes.")
 
