@@ -761,6 +761,12 @@ class TokenContainerManagementTestCase(MyTestCase):
         for container in container_data["containers"]:
             self.assertIn(container.type, ["smartphone", "yubikey"])
 
+        # Backward compatibility: list passed via ctype is treated as ctype_exact
+        container_data = get_all_containers(ctype=["smartphone", "yubikey"], pagesize=15)
+        self.assertEqual(4, container_data["count"])
+        for container in container_data["containers"]:
+            self.assertIn(container.type, ["smartphone", "yubikey"])
+
         # List filter is case-insensitive per entry
         container_data = get_all_containers(ctype_exact=["Smartphone", "Generic"], pagesize=15)
         self.assertEqual(4, container_data["count"])
