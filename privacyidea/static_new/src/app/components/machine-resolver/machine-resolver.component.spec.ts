@@ -25,8 +25,10 @@ import { provideRouter, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService } from "@services/auth/auth.service";
 import { MachineResolver, MachineResolverService } from "@services/machine-resolver/machine-resolver.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockMachineResolverService } from "@testing/mock-services/mock-machine-resolver-service";
+import { MockTableUtilsService } from "@testing/mock-services/mock-table-utils-service";
 import { of } from "rxjs";
 import { MachineResolverComponent } from "./machine-resolver.component";
 
@@ -54,6 +56,7 @@ describe("MachineResolverComponent", () => {
         provideHttpClientTesting(),
         { provide: MachineResolverService, useClass: MockMachineResolverService },
         { provide: AuthService, useClass: MockAuthService },
+        { provide: TableUtilsService, useClass: MockTableUtilsService },
         { provide: MatDialog, useValue: dialog },
         provideRouter([])
       ]
