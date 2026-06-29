@@ -31,6 +31,7 @@ from privacyidea.lib.lifecycle import call_finalizers
 from privacyidea.lib.resolver import (save_resolver, delete_resolver,
                                       get_resolver_list)
 from privacyidea.models import db, Challenge, AuthenticationLog
+from privacyidea.models.lockout_policy import BlockList, UserLockoutState
 from privacyidea.models.utils import utc_now
 from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
 from .base import CliTestCase
@@ -739,3 +740,81 @@ class PIManageAuthLogTestCase(CliTestCase):
         res = runner.invoke(pi_manage, ["authlog", "cleanup"])
         self.assertNotEqual(res.exit_code, 0, res.output)
         self.assertIn("--age", res.output, res)
+
+
+class PIManageConditionalAccessTestCase(CliTestCase):
+    """
+    Tests for ``pi-manage conditionalaccess`` — the escape hatch for clearing
+    locked users and blocked IPs from the command line.
+    """
+
+    def tearDown(self):
+        BlockList.query.delete()
+        UserLockoutState.query.delete()
+        db.session.commit()
+        super().tearDown()
+
+    def test_01_help_lists_subcommands(self):
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["conditionalaccess"])
+        self.assertIn("list-blocks", res.output, res)
+        self.assertIn("unblock-ip", res.output, res)
+        self.assertIn("list-locks", res.output, res)
+        self.assertIn("unlock-user", res.output, res)
+
+    def test_02_list_and_unblock_ip(self):
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["conditionalaccess", "list-blocks"])
+        self.assertIn("No blocked IPs.", res.output, res)
+
+        db.session.add(BlockList(ip="203.0.113.7", is_blocked=True,
+                                 block_expires_at=utc_now() + dt.timedelta(seconds=600),
+                                 reason="brute force"))
+        db.session.commit()
+
+        res = runner.invoke(pi_manage, ["conditionalaccess", "list-blocks"])
+        self.assertIn("203.0.113.7", res.output, res)
+        self.assertIn("brute force", res.output, res)
+
+        res = runner.invoke(pi_manage, ["conditionalaccess", "unblock-ip", "203.0.113.7"])
+        self.assertIn("Removed the block for IP 203.0.113.7.", res.output, res)
+        self.assertIsNone(BlockList.query.filter_by(ip="203.0.113.7").first())
+
+    def test_03_unblock_missing_ip(self):
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["conditionalaccess", "unblock-ip", "203.0.113.9"])
+        self.assertEqual(res.exit_code, 0, res.output)
+        self.assertIn("No block found for IP 203.0.113.9.", res.output, res)
+
+    def test_04_list_and_unlock_by_id(self):
+        runner = self.app.test_cli_runner()
+        db.session.add(UserLockoutState(resolver="reso1", uid="42", realm="realm1", is_locked=True,
+                                        lock_expires_at=utc_now() + dt.timedelta(seconds=600)))
+        db.session.commit()
+
+        res = runner.invoke(pi_manage, ["conditionalaccess", "list-locks"])
+        self.assertIn("uid=42", res.output, res)
+        self.assertIn("realm=realm1", res.output, res)
+
+        res = runner.invoke(pi_manage, ["conditionalaccess", "unlock-by-id",
+                                        "--resolver", "reso1", "--uid", "42", "--realm", "realm1"])
+        self.assertIn("Unlocked", res.output, res)
+        self.assertIsNone(UserLockoutState.query.filter_by(resolver="reso1", uid="42",
+                                                           realm="realm1").first())
+
+    def test_05_clear_blocks(self):
+        runner = self.app.test_cli_runner()
+        for ip in ("203.0.113.7", "203.0.113.8"):
+            db.session.add(BlockList(ip=ip, is_blocked=True,
+                                     block_expires_at=utc_now() + dt.timedelta(seconds=600)))
+        db.session.commit()
+
+        res = runner.invoke(pi_manage, ["conditionalaccess", "clear-blocks", "--yes"])
+        self.assertIn("Removed 2 IP block(s).", res.output, res)
+        self.assertEqual(0, BlockList.query.count())
+
+    def test_06_unlock_user_unresolvable(self):
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["conditionalaccess", "unlock-user", "ghost", "--realm", "nope"])
+        self.assertEqual(res.exit_code, 0, res.output)
+        self.assertIn("could not be resolved", res.output, res)

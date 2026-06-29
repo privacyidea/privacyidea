@@ -138,12 +138,10 @@ from privacyidea.lib.user import log_used_user, User, split_user
 from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent, AUTH_RESPONSE
 from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
 from .lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
-from .lib.utils import get_required, map_error_to_code, send_error, send_result, log_authentication
+from .lib.utils import (get_required, map_error_to_code, send_error, send_result, log_authentication,
+                        conditional_access_precheck, conditional_access_posteval)
 from ..lib.conditional_access.authentication_error_codes import AuthEventType, AUTH_EVENT_TYPE_KEY
-from ..lib.conditional_access.engine import (is_user_locked, is_ip_blocked, evaluate_lockout_policies,
-                                              evaluate_access_decision, AccessDecision)
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
-from ..models import db
 from ..lib.fido2.challenge import create_fido2_challenge, verify_fido2_challenge
 from ..lib.fido2.policy_action import FIDO2PolicyAction
 from ..lib.fido2.util import get_fido2_token_by_credential_id, get_fido2_token_by_transaction_id
@@ -305,6 +303,32 @@ def offlinerefill():
                 user_object=request.User if hasattr(request, "User") else None).any():
             return send_error("Failed offline token refill", error_code=Error.VALIDATE), map_error_to_code(e)
         raise
+
+
+def _conditional_access_identity():
+    """
+    Resolve the identity the /validate/check conditional-access pre-check must gate
+    on. ``before_request`` builds ``request.User`` from the ``user`` parameter only,
+    so a username-less passkey request (identified by ``credential_id``) or a
+    serial-only request arrives with an empty user — and the user-lock / DENY checks
+    would be silently skipped, letting a locked user authenticate by credential id or
+    serial. Resolve the token owner in that case so the lock is enforced before any
+    token work runs. Falls back to the (empty) request user when no owner can be
+    resolved, so the IP-block check still applies.
+    """
+    if request.User:
+        return request.User
+    credential_id = get_optional_one_of(request.all_data, ["credential_id", "credentialid"])
+    serial = get_optional(request.all_data, "serial")
+    token = None
+    try:
+        if serial:
+            token = get_one_token(serial=serial, silent_fail=True)
+        elif credential_id:
+            token = get_fido2_token_by_credential_id(credential_id)
+    except Exception as ex:
+        log.debug(f"Conditional-access pre-check could not resolve a token owner: {ex!r}")
+    return token.user if (token and token.user) else request.User
 
 
 @validate_blueprint.route('/check', methods=['POST', 'GET'])
@@ -475,8 +499,10 @@ def check():
     """
     # Conditional-access pre-check: reject a locked user, a blocked source IP, or a
     # policy DENY decision before any token logic (generic failure response, reason
-    # recorded only in the audit log; see the helper for details).
-    rejection = _conditional_access_precheck(request.User)
+    # recorded only in the audit log; see the helper for details). The identity is
+    # resolved up front (see _conditional_access_identity) so a username-less passkey
+    # (credential_id) or serial-only request is gated on the real token owner.
+    rejection = conditional_access_precheck(_conditional_access_identity())
     if rejection is not None:
         return rejection
 
@@ -517,44 +543,8 @@ def check():
         # Write the single authentication-log row for this request, then let the
         # conditional-access engine react to the classified outcome.
         _log_authentication_event(context)
-        _evaluate_lockout_policies(context)
+        conditional_access_posteval(context["user"], context[AUTH_EVENT_TYPE_KEY])
     return response
-
-
-def _conditional_access_precheck(user) -> Response | None:
-    """
-    Reject a /validate request pre-auth (before any token logic and before the
-    failcounter / max_auth checks) when conditional-access policies forbid it.
-    Returns a generic failure ``Response`` to be returned to the client, or
-    ``None`` to continue with the normal flow.
-
-    The rejection is deliberately generic and leaks no reason: unlike the WebUI
-    login, the machine-facing /validate response never reveals that the user is
-    locked, the source IP is blocked, or a policy denied access — the real reason
-    is recorded only in the audit log.
-
-    A currently-locked user is rejected first, then a source IP blocked by a
-    BLOCK_IP action. The pre-auth conditional-access DENY decision is evaluated
-    last, after the lock/block pre-checks (so an ALLOW cannot override them); a
-    DENY rejects this single request without persisting state, while
-    ALLOW / CONTINUE fall through.
-    """
-    if is_user_locked(user):
-        log.info(f"Rejecting authentication for locked user {user!r}.")
-        g.audit_object.log({"success": False,
-                            "info": "Rejected: account is temporarily locked"})
-        return send_result(False, rid=2, details={})
-    if is_ip_blocked(g.client_ip):
-        log.info(f"Rejecting authentication from blocked IP {g.client_ip!r}.")
-        g.audit_object.log({"success": False,
-                            "info": "Rejected: source IP is blocked"})
-        return send_result(False, rid=2, details={})
-    if evaluate_access_decision(user, g.client_ip) == AccessDecision.DENY:
-        log.info(f"Denying authentication for {user!r} by conditional-access policy.")
-        g.audit_object.log({"success": False,
-                            "info": "Rejected: denied by conditional-access policy"})
-        return send_result(False, rid=2, details={})
-    return None
 
 
 def _handle_enrollment_cancellation(data: dict) -> Response:
@@ -860,37 +850,6 @@ def _log_authentication_event(context):
     )
 
 
-def _evaluate_lockout_policies(context):
-    """
-    Run the conditional-access policy engine for this request's
-    classified outcome.
-
-    Called from check()'s finally, after the authentication-log row is written,
-    so a failure count over the log includes the just-written event. This only
-    produces side effects that the NEXT inbound request consults (it writes
-    lockout state); it must never alter or break the response that already
-    completed, so every error is swallowed. It deliberately returns nothing — a
-    ``return`` inside the finally would mask an in-flight exception.
-    """
-    try:
-        # The engine commits its own writes (and rolls them back on failure), so
-        # this caller must NOT wrap them in a transaction. Wrapping in
-        # db.session.begin_nested() and then committing breaks under SQLAlchemy 2.x:
-        # the engine's inner commit closes the transaction, so leaving the savepoint
-        # context raises InvalidRequestError ("Can't operate on closed transaction
-        # inside context manager") — which this finally would silently swallow.
-        evaluate_lockout_policies(context["user"], context[AUTH_EVENT_TYPE_KEY], source_ip=g.client_ip)
-    except Exception as ex:
-        log.warning(f"Conditional-access policy evaluation failed: {ex!r}")
-        # A failure may leave the session in an aborted state; clear it so request
-        # teardown can proceed cleanly. Guard the rollback so this finally-context
-        # helper never raises (it must never break the already-completed response).
-        try:
-            db.session.rollback()
-        except Exception:
-            pass
-
-
 @validate_blueprint.route('/triggerchallenge', methods=['POST', 'GET'])
 @admin_required
 @postpolicy(is_authorized, request=request)
@@ -1022,6 +981,13 @@ def trigger_challenge():
 
     """
     user = request.User
+    # Conditional-access pre-check: do not trigger a challenge for a locked user,
+    # from a blocked source IP, or when a DENY policy applies (generic failure,
+    # reason recorded only in the audit log).
+    rejection = conditional_access_precheck(user)
+    if rejection is not None:
+        return rejection
+
     serial = get_optional(request.all_data, "serial")
     token_type = get_optional(request.all_data, "type")
     details = {"messages": [], "transaction_ids": []}
@@ -1039,12 +1005,16 @@ def trigger_challenge():
     create_challenges_from_tokens(challenge_response_token, details, options)
     triggered_challenges = len(details.get("multi_challenge"))
 
+    event_type = AuthEventType.CHALLENGE_TRIGGERED if triggered_challenges else AuthEventType.NO_TOKEN
     log_authentication(
-        AuthEventType.CHALLENGE_TRIGGERED if triggered_challenges else AuthEventType.NO_TOKEN,
+        event_type,
         user=user,
         serial=details.get("serial"),
         transaction_id=details.get("transaction_id"),
     )
+    # Let the conditional-access engine react to the classified outcome (e.g. a
+    # policy tracking NO_TOKEN); side effects only, never breaks this response.
+    conditional_access_posteval(user, event_type)
 
     challenge_serials = [challenge_info["serial"] for challenge_info in details["multi_challenge"]]
     r = send_result(triggered_challenges, rid=2, details=details)
@@ -1117,6 +1087,7 @@ def poll_transaction(transaction_id=None):
     # * If there are no answered valid challenges, we log all token serials of challenges matching
     #   the transaction ID and the corresponding token owner
     # * If there are any answered valid challenges, we log their token serials and the corresponding user
+    user = User()
     if log_challenges:
         g.audit_object.log({
             "serial": ",".join(challenge.serial for challenge in log_challenges),
@@ -1144,6 +1115,15 @@ def poll_transaction(transaction_id=None):
                 "resolver": user.resolver,
                 "realm": user.realm,
             })
+
+    # Conditional-access pre-check: reject the poll of a locked user (the token
+    # owner resolved above), a blocked source IP, or a DENY decision with a generic
+    # failure. The poll outcome is deliberately NOT written to the authentication
+    # log or fed to the engine here — the smartphone's answer was already logged at
+    # /ttype/push, so polling only gates, it does not accumulate or react.
+    rejection = conditional_access_precheck(user)
+    if rejection is not None:
+        return rejection
 
     # In any case, we log the transaction ID
     g.audit_object.log({

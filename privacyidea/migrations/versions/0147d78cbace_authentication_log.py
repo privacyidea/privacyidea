@@ -1,7 +1,7 @@
 """v3.14: Add authentication log table
 
 Revision ID: 0147d78cbace
-Revises: 7d4e9b2c1a3f
+Revises: d4f5a6b7c8e9
 Create Date: 2026-06-01 08:37:51.884173
 
 """
@@ -18,7 +18,7 @@ from privacyidea.models.utils import BigIntegerType
 
 # revision identifiers, used by Alembic.
 revision = '0147d78cbace'
-down_revision = 'c2d3e4f5a6b7'
+down_revision = 'd4f5a6b7c8e9'
 branch_labels = None
 depends_on = None
 

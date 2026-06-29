@@ -33,11 +33,13 @@ from privacyidea.lib.conditional_access.engine import (
     evaluate_lockout_policies,
     is_user_locked,
     is_ip_blocked,
+    is_ip_never_block,
     get_ip_block,
     _lock_duration_seconds,
     _safe_format,
     _resolve_admin_recipients,
 )
+from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_config, SYSCONF
 from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
 from privacyidea.lib.user import User
 from privacyidea.models import Admin, db
@@ -507,6 +509,64 @@ class LockoutEngineTestCase(MyTestCase):
         # Unknown action types are logged and skipped, not raised.
         evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
         self.assertIsNone(self._state())
+
+    # --- never-block allowlist ------------------------------------------------
+
+    def test_loopback_is_never_block_by_default(self):
+        self.assertTrue(is_ip_never_block("127.0.0.1"))
+        self.assertTrue(is_ip_never_block("127.5.6.7"))
+        self.assertTrue(is_ip_never_block("::1"))
+
+    def test_normal_ip_is_not_never_block(self):
+        self.assertFalse(is_ip_never_block("203.0.113.7"))
+
+    def test_empty_or_unparseable_ip_is_never_block(self):
+        # Fail safe: never block an address the engine cannot positively identify.
+        self.assertTrue(is_ip_never_block(None))
+        self.assertTrue(is_ip_never_block(""))
+        self.assertTrue(is_ip_never_block("not-an-ip"))
+
+    def test_configured_cidr_is_never_block(self):
+        set_privacyidea_config(SYSCONF.CONDITIONAL_ACCESS_NEVER_BLOCK, "203.0.113.0/24, 198.51.100.5")
+        try:
+            self.assertTrue(is_ip_never_block("203.0.113.7"))
+            self.assertTrue(is_ip_never_block("198.51.100.5"))
+            self.assertFalse(is_ip_never_block("198.51.100.6"))
+            # The built-in loopback default still applies alongside the config.
+            self.assertTrue(is_ip_never_block("127.0.0.1"))
+        finally:
+            delete_privacyidea_config(SYSCONF.CONDITIONAL_ACCESS_NEVER_BLOCK)
+
+    def test_invalid_config_entry_ignored(self):
+        set_privacyidea_config(SYSCONF.CONDITIONAL_ACCESS_NEVER_BLOCK, "garbage, 203.0.113.0/24")
+        try:
+            self.assertTrue(is_ip_never_block("203.0.113.7"))
+            self.assertFalse(is_ip_never_block("198.51.100.5"))
+        finally:
+            delete_privacyidea_config(SYSCONF.CONDITIONAL_ACCESS_NEVER_BLOCK)
+
+    def test_block_ip_action_skips_never_block_ip(self):
+        # A BLOCK_IP action must never write a block for a never-block IP (loopback).
+        self._make_policy(name="blockloop", counter_type=AuthEventType.PASSWORD_FAIL,
+                          stages=((3, 1, LockoutAction.BLOCK_IP, 900),))
+        self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
+        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip="127.0.0.1")
+        self.assertEqual(0, db.session.query(BlockList).count())
+        self.assertFalse(is_ip_blocked("127.0.0.1"))
+
+    def test_allowlisted_ip_block_row_is_not_enforced(self):
+        # Even with an existing block row, an allowlisted IP reads as not blocked, so
+        # adding an IP to the allowlist immediately lifts a stale or mistaken block.
+        db.session.add(BlockList(ip="203.0.113.7", is_blocked=True,
+                                 block_expires_at=utc_now() + timedelta(seconds=900)))
+        db.session.commit()
+        self.assertTrue(is_ip_blocked("203.0.113.7"))
+        set_privacyidea_config(SYSCONF.CONDITIONAL_ACCESS_NEVER_BLOCK, "203.0.113.0/24")
+        try:
+            self.assertFalse(is_ip_blocked("203.0.113.7"))
+            self.assertIsNone(get_ip_block("203.0.113.7"))
+        finally:
+            delete_privacyidea_config(SYSCONF.CONDITIONAL_ACCESS_NEVER_BLOCK)
 
     # --- BLOCK_IP action ------------------------------------------------------
 

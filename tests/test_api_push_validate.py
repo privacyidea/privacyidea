@@ -17,8 +17,11 @@ from testfixtures import LogCapture
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs
+from privacyidea.lib.conditional_access.engine import is_user_locked, LockoutAction
 from privacyidea.models import db
 from privacyidea.models.authentication_log import AuthenticationLog
+from privacyidea.models.lockout_policy import (LockoutPolicy, LockoutPolicyStage, LockoutStageAction,
+                                               LockoutPolicyCounterType, UserLockoutState)
 from .authlog_utils import assert_authentication_log, assert_authentication_log_entry
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
@@ -958,10 +961,11 @@ class PushAPITestCase(MyApiTestCase):
             self.assertEqual(expected_message, detail["message"])
 
         # The smartphone confirming code-to-phone re-triggers (to display the code) -> the
-        # latest /ttype/push row is CHALLENGE_TRIGGERED, carrying the serial but no user.
+        # latest /ttype/push row is CHALLENGE_TRIGGERED, carrying the serial and the token
+        # owner (resolved from the serial so the conditional-access engine can count it).
         confirm_log = max(get_authentication_logs(serial=self.serial_push), key=lambda row: row.id)
         self.assertEqual(AuthEventType.CHALLENGE_TRIGGERED, confirm_log.event_type)
-        self.assertIsNone(confirm_log.uid)
+        self.assertEqual(User("selfservice", self.realm1).uid, confirm_log.uid)
 
         # Verify challenge data was updated
         challenge = get_challenges(serial=self.serial_push, transaction_id=transaction_id)[0]
@@ -1319,8 +1323,10 @@ class PushAPITestCase(MyApiTestCase):
 
         Entries written at /ttype/push carry no transaction_id (the smartphone
         request does not send one), so the log is cleared per scenario and the
-        whole ordered event list is asserted. The smartphone response also
-        carries no user, hence those rows record only the serial.
+        whole ordered event list is asserted. The smartphone response carries no
+        user param, but the token owner is resolved from the serial so the
+        conditional-access engine can attribute the answer; those rows therefore
+        record both the serial and the owner.
         """
         self.setUp_user_realms()
         user = User("selfservice", self.realm1)
@@ -1386,9 +1392,9 @@ class PushAPITestCase(MyApiTestCase):
         assert_authentication_log_entry(auth_entries[AuthEventType.CHALLENGE_TRIGGERED],
                                         user=user, serial=self.serial_push)
         # CHALLENGE_ANSWERED_OK occurs twice, so assert each occurrence by position:
-        # .all[1] is the smartphone confirm at /ttype/push (serial only, no user),
-        # .all[2] is the client collecting the result at /validate/check (carries the user).
-        assert_authentication_log_entry(auth_entries.all[1], serial=self.serial_push)
+        # .all[1] is the smartphone confirm at /ttype/push (serial + owner resolved from
+        # the serial), .all[2] is the client collecting the result at /validate/check.
+        assert_authentication_log_entry(auth_entries.all[1], user=user, serial=self.serial_push)
         assert_authentication_log_entry(auth_entries.all[2], user=user, serial=self.serial_push)
 
         # Decline: the phone declines -> CHALLENGE_DECLINED at /ttype/push.
@@ -1397,7 +1403,8 @@ class PushAPITestCase(MyApiTestCase):
         sign_and_post(f"{nonce}|{self.serial_push}|decline", extra_data={"decline": "1"})
         auth_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
                                                   AuthEventType.CHALLENGE_DECLINED])
-        assert_authentication_log_entry(auth_entries[AuthEventType.CHALLENGE_DECLINED], serial=self.serial_push)
+        assert_authentication_log_entry(auth_entries[AuthEventType.CHALLENGE_DECLINED],
+                                        user=user, serial=self.serial_push)
 
         # Bad signature: verification fails -> CHALLENGE_ANSWERED_FAIL at /ttype/push.
         clear_log()
@@ -1405,10 +1412,82 @@ class PushAPITestCase(MyApiTestCase):
         sign_and_post(f"wrong|{self.serial_push}")
         auth_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
                                                   AuthEventType.CHALLENGE_ANSWERED_FAIL])
-        assert_authentication_log_entry(auth_entries[AuthEventType.CHALLENGE_ANSWERED_FAIL], serial=self.serial_push)
+        assert_authentication_log_entry(auth_entries[AuthEventType.CHALLENGE_ANSWERED_FAIL],
+                                        user=user, serial=self.serial_push)
 
         remove_token(self.serial_push)
         delete_policy("push_config")
+
+    def test_18d_push_answer_failures_lock_owner(self):
+        """End-to-end conditional access at /ttype/push: a burst of bad push
+        signatures (CHALLENGE_ANSWERED_FAIL) feeds the engine via the post-eval
+        seam — attributed to the resolved token owner — and locks that owner once
+        the policy threshold is crossed."""
+        self.setUp_user_realms()
+        user = User("selfservice", self.realm1)
+        set_policy("push_config", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
+                          f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+
+        with self.app.test_request_context('/token/init', method='POST',
+                                           data={"type": "push", "pin": "push_pin",
+                                                 "user": "selfservice", "realm": self.realm1,
+                                                 "serial": self.serial_push, "genkey": 1},
+                                           headers={'Authorization': self.at}):
+            result = self.app.full_dispatch_request()
+            enrollment_credential = result.json.get("detail").get("enrollment_credential")
+        with self.app.test_request_context('/ttype/push', method='POST',
+                                           data={"enrollment_credential": enrollment_credential,
+                                                 "serial": self.serial_push,
+                                                 "pubkey": self.smartphone_public_key_pem_urlsafe,
+                                                 "fbtoken": "firebaseT"}):
+            self.assertEqual(200, self.app.full_dispatch_request().status_code)
+
+        def clear_ca():
+            for model in (UserLockoutState, LockoutStageAction, LockoutPolicyStage,
+                          LockoutPolicyCounterType, LockoutPolicy, AuthenticationLog):
+                db.session.query(model).delete()
+            db.session.commit()
+
+        def trigger_and_send_bad_signature():
+            with self.app.test_request_context('/validate/check', method='POST',
+                                               data={"user": "selfservice", "pass": "push_pin"}):
+                self.app.full_dispatch_request()
+            # Sign the wrong message: a well-formed signature that cannot verify
+            # against the expected nonce|serial -> CHALLENGE_ANSWERED_FAIL.
+            signature = self.smartphone_private_key.sign(f"wrong|{self.serial_push}".encode("utf8"),
+                                                         padding.PKCS1v15(), hashes.SHA256())
+            with self.app.test_request_context('/ttype/push', method='POST',
+                                               data={"serial": self.serial_push,
+                                                     "signature": b32encode(signature)}):
+                self.assertEqual(200, self.app.full_dispatch_request().status_code)
+
+        # A LOCK_USER policy: 2 CHALLENGE_ANSWERED_FAIL within the window -> lock.
+        clear_ca()
+        policy = LockoutPolicy(name="ca_push_lock",
+                               counter_types_to_track=[str(AuthEventType.CHALLENGE_ANSWERED_FAIL)],
+                               time_window_seconds=3600, enabled=True, priority=1)
+        db.session.add(policy)
+        db.session.commit()
+        stage = LockoutPolicyStage(policy_id=policy.id, failure_threshold=2, priority=1)
+        db.session.add(stage)
+        db.session.commit()
+        db.session.add(LockoutStageAction(stage_id=stage.id, action_type=str(LockoutAction.LOCK_USER),
+                                          action_value=600))
+        db.session.commit()
+
+        try:
+            self.assertFalse(is_user_locked(user))
+            # First failure: below threshold, no lock yet.
+            trigger_and_send_bad_signature()
+            self.assertFalse(is_user_locked(user))
+            # Second failure crosses the threshold -> the owner is locked.
+            trigger_and_send_bad_signature()
+            self.assertTrue(is_user_locked(user))
+        finally:
+            clear_ca()
+            remove_token(self.serial_push)
+            delete_policy("push_config")
 
     def test_19_push_code_to_phone_with_require_presence(self):
         """
