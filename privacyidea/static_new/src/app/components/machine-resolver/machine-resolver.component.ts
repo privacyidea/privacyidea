@@ -42,8 +42,8 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
 import { lastValueFrom } from "rxjs";
 
 const columnKeysMap = [
-  { key: "resolvername", label: "Name" },
-  { key: "type", label: "Type" }
+  { key: "resolvername", label: $localize`Name` },
+  { key: "type", label: $localize`Type` }
 ];
 
 @Component({
