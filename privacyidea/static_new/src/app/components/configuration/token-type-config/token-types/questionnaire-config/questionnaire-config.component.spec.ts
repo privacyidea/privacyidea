@@ -60,27 +60,10 @@ describe("QuestionnaireConfigComponent", () => {
     expect(component.formData()[QUESTION_NUMBER_OF_ANSWERS]).toEqual(7);
   });
 
-  it("should emit addQuestionRequest when addQuestion is called with text", () => {
+  it("should emit addQuestionRequest when addQuestion is called", () => {
     jest.spyOn(component.addQuestionRequest, "emit");
-    const questionText = "What is your favorite color?";
-    component.newQuestionText.set(questionText);
     component.addQuestion();
-    expect(component.addQuestionRequest.emit).toHaveBeenCalledWith(questionText);
-  });
-
-  it("should clear newQuestionText after adding a question", () => {
-    const questionText = "What is your pet's name?";
-    component.newQuestionText.set(questionText);
-    expect(component.newQuestionText()).toBe(questionText);
-    component.addQuestion();
-    expect(component.newQuestionText()).toBe("");
-  });
-
-  it("should not emit addQuestionRequest when addQuestion is called with empty text", () => {
-    jest.spyOn(component.addQuestionRequest, "emit");
-    component.newQuestionText.set("");
-    component.addQuestion();
-    expect(component.addQuestionRequest.emit).not.toHaveBeenCalled();
+    expect(component.addQuestionRequest.emit).toHaveBeenCalled();
   });
 
   it("should emit deleteRequest when deleteEntry is called", () => {

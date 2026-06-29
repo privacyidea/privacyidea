@@ -32,68 +32,28 @@
     <div class="flex-row gap-16 ali-center">
       <mat-form-field
         appearance="fill"
-        class="input-width-s">
+        class="input-width-m">
         <mat-label i18n>Number of Answers</mat-label>
         <input
           #numAnswersInput
           [value]="formData()[QUESTION_NUMBER_OF_ANSWERS]"
-          (input)="updateFormData(QUESTION_NUMBER_OF_ANSWERS, $any($event.target).value)"
+          (input)="updateFormData(QUESTION_NUMBER_OF_ANSWERS, $event.target.value)"
+          (keydown)="blockNonNumeric($event)"
           matInput
-          placeholder="5"
           required
           type="number" />
         @if (numAnswersInput.validity.valueMissing) {
           <mat-error i18n>Number of Answers is <strong>required</strong></mat-error>
         }
+        <mat-hint i18n>Answers required to enroll a token.</mat-hint>
       </mat-form-field>
-
-      <span
-        class="checkbox-hint"
-        i18n
-        >This is the number of answers a user needs to define to enroll a token.</span
-      >
     </div>
 
-    <h4 i18n>Questionnaire</h4>
-    <p i18n>These are the possible questions, a user may define answers to.</p>
-
-    <table class="table">
-      <thead>
-        <tr>
-          <th i18n>Question</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (key of questionKeys(); track key) {
-          <tr>
-            <td>
-              {{ formData()[key] }}
-              <mat-divider class="margin-top-4" />
-            </td>
-            <td>
-              <button
-                (click)="deleteEntry(key)"
-                color="warn"
-                mat-icon-button>
-                <mat-icon>delete</mat-icon>
-              </button>
-            </td>
-          </tr>
-        }
-      </tbody>
-    </table>
-    <div class="flex-row ali-center margin-top-16">
-      <mat-form-field
-        appearance="fill"
-        class="input-width-xl">
-        <mat-label i18n>Question</mat-label>
-        <input
-          [value]="newQuestionText()"
-          (input)="newQuestionText.set($any($event.target).value)"
-          matInput
-          placeholder="Enter new question here" />
-      </mat-form-field>
+    <div class="flex-row gap-16 ali-center just-space-between">
+      <div class="flex-column gap-8">
+        <h4 i18n>Questionnaire</h4>
+        <p i18n>These are the possible questions, a user may define answers to.</p>
+      </div>
       <button
         (click)="addQuestion()"
         class="action-button-secondary button-width-m"
@@ -101,6 +61,34 @@
         <mat-icon>add</mat-icon>
         <span i18n>Add new question</span>
       </button>
+    </div>
+
+    <div class="questionnaire-grid">
+      @for (key of questionKeys(); track key) {
+        <div class="flex-row flex-nowrap gap-16 ali-center">
+          <mat-form-field
+            appearance="fill"
+            class="input-width-l"
+            subscriptSizing="dynamic">
+            <mat-label i18n>Question</mat-label>
+            <input
+              #questionInput
+              [value]="formData()[key]"
+              (input)="updateFormData(key, $event.target.value)"
+              matInput
+              required />
+            @if (questionInput.validity.valueMissing) {
+              <mat-error i18n>Question must not be empty.</mat-error>
+            }
+          </mat-form-field>
+          <button
+            (click)="deleteEntry(key)"
+            color="warn"
+            mat-icon-button>
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
+      }
     </div>
   </div>
 </mat-expansion-panel>
