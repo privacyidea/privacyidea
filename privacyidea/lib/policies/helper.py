@@ -172,7 +172,7 @@ def get_authentication_log_visibility_scopes(
     adminrealm, adminuser and policy conditions need no handling here: ``Match.admin(...).policies()`` already
     returns only the policies applicable to the current admin and request.
 
-    :param action: the action whose scoping to read (``authentication_log_read`` or ``authentication_log_delete``)
+    :param action: the action whose scoping to read (``authentication_log_read``)
     :return: a list of :class:`AuthenticationLogVisibilityScope`, or ``None`` for unrestricted access
     """
     from privacyidea.lib.auth import ROLE

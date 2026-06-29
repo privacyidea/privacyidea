@@ -24,7 +24,6 @@ import {
   AuthenticationLogPage,
   AuthenticationLogServiceInterface
 } from "@services/authentication-log/authentication-log.service";
-import { of } from "rxjs";
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 
 export class MockAuthenticationLogService implements AuthenticationLogServiceInterface {
@@ -37,9 +36,7 @@ export class MockAuthenticationLogService implements AuthenticationLogServiceInt
   sort = signal<Sort>({ active: "timestamp", direction: "desc" });
   start = signal<string | null>(null);
   end = signal<string | null>(null);
-  includeOwn = signal(false);
   canRead = computed(() => true);
-  canDelete = computed(() => true);
   authenticationLogResource = new MockHttpResourceRef<PiResponse<AuthenticationLogPage> | undefined>(
     MockPiResponse.fromValue<AuthenticationLogPage>({
       auth_logs: [],
@@ -57,5 +54,4 @@ export class MockAuthenticationLogService implements AuthenticationLogServiceInt
     const inputElement = $event.target as HTMLInputElement;
     this.authenticationLogFilter.set(new FilterValue({ value: inputElement.value }));
   });
-  deleteOlderThan = jest.fn().mockReturnValue(of(MockPiResponse.fromValue<number>(0)));
 }

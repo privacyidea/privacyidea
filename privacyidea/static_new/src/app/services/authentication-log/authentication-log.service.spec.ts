@@ -37,7 +37,6 @@ describe("AuthenticationLogService", () => {
   let service: AuthenticationLogService;
   let authService: MockAuthService;
   let content: MockContentService;
-  let notification: MockNotificationService;
   let httpMock: HttpTestingController;
 
   beforeEach(() => {
@@ -54,7 +53,6 @@ describe("AuthenticationLogService", () => {
     });
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
     content = TestBed.inject(ContentService) as unknown as MockContentService;
-    notification = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     httpMock = TestBed.inject(HttpTestingController);
     jest.spyOn(authService, "getHeaders").mockReturnValue(new HttpHeaders());
     jest.spyOn(authService, "actionAllowed").mockReturnValue(true);
@@ -119,6 +117,7 @@ describe("AuthenticationLogService", () => {
     expect(req.request.params.get("page_size")).toBe("15");
     expect(req.request.params.get("sort_column")).toBe("timestamp");
     expect(req.request.params.get("sort_order")).toBe("desc");
+    expect(req.request.params.get("case_insensitive")).toBe("true");
     expect(req.request.params.get("serial")).toBe("PISP0001");
 
     req.flush(emptyPage());
@@ -138,17 +137,15 @@ describe("AuthenticationLogService", () => {
     TestBed.tick();
   });
 
-  it("includes start/end and include_own only when set", async () => {
+  it("includes start/end only when set", async () => {
     service.start.set("2026-01-01T00:00:00+00:00");
     service.end.set("2026-06-01T00:00:00+00:00");
-    service.includeOwn.set(true);
     service.authenticationLogResource.reload();
     TestBed.tick();
 
     const req = httpMock.expectOne((r) => r.url.includes("/authenticationlog/"));
     expect(req.request.params.get("start")).toBe("2026-01-01T00:00:00+00:00");
     expect(req.request.params.get("end")).toBe("2026-06-01T00:00:00+00:00");
-    expect(req.request.params.get("include_own")).toBe("1");
     req.flush(emptyPage());
     await Promise.resolve();
     TestBed.tick();
@@ -166,57 +163,5 @@ describe("AuthenticationLogService", () => {
     service.authenticationLogResource.reload();
     TestBed.tick();
     httpMock.expectNone((r) => r.url.includes("/authenticationlog/"));
-  });
-
-  it("deleteOlderThan sends a DELETE with an end cutoff", () => {
-    const before = Date.now() - 30 * 24 * 60 * 60 * 1000;
-
-    service.deleteOlderThan(30).subscribe((response) => {
-      expect(response.result?.value).toBe(5);
-    });
-
-    // Consume the resource's initial GET so only the DELETE remains to assert on.
-    TestBed.tick();
-    httpMock.match((r) => r.method === "GET").forEach((r) => r.flush(emptyPage()));
-
-    const req = httpMock.expectOne((r) => r.method === "DELETE" && r.url.includes("/authenticationlog/"));
-    const cutoff = Date.parse(req.request.params.get("end")!);
-    expect(cutoff).toBeGreaterThanOrEqual(before - 1000);
-    expect(cutoff).toBeLessThanOrEqual(Date.now());
-    req.flush(MockPiResponse.fromValue(5));
-  });
-
-  it("deleteOlderThan refuses and notifies without the delete right", () => {
-    (authService.actionAllowed as jest.Mock).mockReturnValue(false);
-
-    let errored = false;
-    service.deleteOlderThan(30).subscribe({ error: () => (errored = true) });
-
-    expect(errored).toBe(true);
-    expect(notification.error).toHaveBeenCalled();
-    httpMock.expectNone((r) => r.method === "DELETE");
-  });
-
-  it("deleteOlderThan(0) deletes the whole log (cutoff at now)", () => {
-    jest.spyOn(authService, "getHeaders").mockReturnValue(new HttpHeaders());
-    service.deleteOlderThan(0).subscribe();
-
-    TestBed.tick();
-    httpMock.match((r) => r.method === "GET").forEach((r) => r.flush(emptyPage()));
-
-    const req = httpMock.expectOne((r) => r.method === "DELETE");
-    const cutoff = Date.parse(req.request.params.get("end")!);
-    expect(cutoff).toBeLessThanOrEqual(Date.now());
-    expect(cutoff).toBeGreaterThan(Date.now() - 5000);
-    req.flush(MockPiResponse.fromValue(42));
-  });
-
-  it("deleteOlderThan rejects a non-finite day count without issuing a request", () => {
-    let errored = false;
-    service.deleteOlderThan(Number.NaN).subscribe({ error: () => (errored = true) });
-
-    expect(errored).toBe(true);
-    expect(notification.error).toHaveBeenCalled();
-    httpMock.expectNone((r) => r.method === "DELETE");
   });
 });

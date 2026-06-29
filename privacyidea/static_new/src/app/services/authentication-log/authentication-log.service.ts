@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { HttpClient, HttpParams, HttpResourceRef, httpResource } from "@angular/common/http";
+import { HttpResourceRef, httpResource } from "@angular/common/http";
 import { Injectable, WritableSignal, computed, effect, inject, linkedSignal, signal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
 import { PiResponse } from "@app/app.component";
@@ -27,7 +27,6 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { StringUtils } from "@utils/string.utils";
-import { Observable, catchError, throwError } from "rxjs";
 
 export interface AuthenticationLogEntry {
   id: number;
@@ -87,16 +86,12 @@ export interface AuthenticationLogServiceInterface {
   sort: WritableSignal<Sort>;
   start: WritableSignal<string | null>;
   end: WritableSignal<string | null>;
-  includeOwn: WritableSignal<boolean>;
   canRead: () => boolean;
-  canDelete: () => boolean;
   authenticationLogResource: HttpResourceRef<PiResponse<AuthenticationLogPage> | undefined>;
 
   clearFilter(): void;
 
   handleFilterInput($event: Event): void;
-
-  deleteOlderThan(days: number): Observable<PiResponse<number>>;
 }
 
 @Injectable()
@@ -104,7 +99,6 @@ export class AuthenticationLogService implements AuthenticationLogServiceInterfa
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
-  private readonly http = inject(HttpClient);
 
   private authenticationLogBaseUrl = environment.proxyUrl + "/authenticationlog/";
   readonly apiFilter = apiFilter;
@@ -136,11 +130,9 @@ export class AuthenticationLogService implements AuthenticationLogServiceInterfa
   pageSize = signal(DEFAULT_PAGE_SIZE);
   start = signal<string | null>(null);
   end = signal<string | null>(null);
-  includeOwn = signal(false);
   sort = signal({ active: "timestamp", direction: "desc" } as Sort);
 
   canRead = computed(() => this.authService.actionAllowed("authentication_log_read"));
-  canDelete = computed(() => this.authService.actionAllowed("authentication_log_delete"));
 
   pageIndex = linkedSignal({
     // Keyed on the effective params (filterParams), not the raw filter text, so a value-less key edit does not
@@ -170,9 +162,10 @@ export class AuthenticationLogService implements AuthenticationLogServiceInterfa
         page_size: this.pageSize(),
         sort_column: this.sort().active,
         sort_order: this.sort().direction || "desc",
+        // The WebUI filter is always case-insensitive.
+        case_insensitive: true,
         ...(this.start() ? { start: this.start()! } : {}),
         ...(this.end() ? { end: this.end()! } : {}),
-        ...(this.includeOwn() ? { include_own: "1" } : {}),
         ...this.filterParams()
       }
     };
@@ -185,34 +178,5 @@ export class AuthenticationLogService implements AuthenticationLogServiceInterfa
   handleFilterInput($event: Event): void {
     const input = $event.target as HTMLInputElement;
     this.authenticationLogFilter.set(this.authenticationLogFilter().copyWith({ value: input.value }));
-  }
-
-  // Cleanup: delete every entry older than *days* days, i.e. with a timestamp at or before that cutoff. Passing 0 is
-  // a deliberate "delete the whole log"; a non-finite or negative value is rejected to guard against an empty/NaN input.
-  deleteOlderThan(days: number): Observable<PiResponse<number>> {
-    if (!this.canDelete()) {
-      const message = $localize`You are not allowed to delete authentication log entries.`;
-      this.notificationService.error(message);
-      return throwError(() => new Error(message));
-    }
-    if (!Number.isFinite(days) || days < 0) {
-      const message = $localize`Invalid number of days for the authentication log cleanup.`;
-      this.notificationService.error(message);
-      return throwError(() => new Error(message));
-    }
-    const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
-    const params = new HttpParams().set("end", cutoff);
-    return this.http
-      .delete<PiResponse<number>>(this.authenticationLogBaseUrl, {
-        headers: this.authService.getHeaders(),
-        params
-      })
-      .pipe(
-        catchError((error) => {
-          const message = error.error?.result?.error?.message || "";
-          this.notificationService.error($localize`Failed to delete authentication log entries. ${message}`);
-          return throwError(() => error);
-        })
-      );
   }
 }
