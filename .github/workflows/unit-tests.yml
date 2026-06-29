@@ -76,6 +76,9 @@ jobs:
     needs: versions
     name: 'Python ${{ matrix.python-version }}'
     permissions:
+      # Job-level permissions replace the workflow-level block, so contents:read
+      # must be restated here for actions/checkout.
+      contents: read
       checks: write # allow the python tests to mark an action run as failed
     runs-on: ubuntu-latest
     timeout-minutes: 30
