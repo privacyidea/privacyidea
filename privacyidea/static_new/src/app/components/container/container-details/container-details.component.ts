@@ -75,18 +75,18 @@ import { TokenDetails, TokenService, TokenServiceInterface } from "@services/tok
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 
 export const containerDetailsKeyMap = [
-  { key: "type", label: "Type" },
-  { key: "states", label: "Status" },
-  { key: "description", label: "Description" },
-  { key: "realms", label: "Realms" },
-  { key: "template", label: "Template" }
+  { key: "type", label: $localize`Type` },
+  { key: "states", label: $localize`Status` },
+  { key: "description", label: $localize`Description` },
+  { key: "realms", label: $localize`Realms` },
+  { key: "template", label: $localize`Template` }
 ];
 
 const containerUserDetailsKeyMap = [
-  { key: "user_realm", label: "User Realm" },
-  { key: "user_name", label: "User" },
-  { key: "user_resolver", label: "Resolver" },
-  { key: "user_id", label: "User ID" }
+  { key: "user_realm", label: $localize`User Realm` },
+  { key: "user_name", label: $localize`User` },
+  { key: "user_resolver", label: $localize`Resolver` },
+  { key: "user_id", label: $localize`User ID` }
 ];
 
 interface TokenOption {
@@ -439,7 +439,7 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
 
   saveStates(): boolean {
     if (this.selectedStates().length === 0) {
-      this.notificationService.error("At least one state must be selected.");
+      this.notificationService.error($localize`At least one state must be selected.`);
       return false;
     }
     this.containerService.setStates(this.containerSerial(), this.selectedStates()).subscribe({

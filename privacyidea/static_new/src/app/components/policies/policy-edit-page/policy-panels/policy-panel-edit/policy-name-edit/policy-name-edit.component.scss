@@ -1,8 +1,18 @@
-@use "inputs";
+// Width is decided by the caller via an .input-width-* class on the host
+// element (e.g. <app-policy-name-edit class="input-width-l">), so the field
+// stays context-free and reusable. The host fills that width; the form field
+// fills the host.
+:host {
+  display: block;
+}
 
 .action-name-container {
   display: flex;
   flex-direction: column;
   gap: var(--half-global-gap);
   min-width: 0;
+}
+
+mat-form-field {
+  width: 100%;
 }

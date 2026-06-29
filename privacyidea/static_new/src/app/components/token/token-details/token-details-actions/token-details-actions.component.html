@@ -49,10 +49,9 @@
           <button
             (click)="testPasskey.emit()"
             class="action-button-secondary button-width-l"
-            i18n
             mat-stroked-button>
             <mat-icon>key</mat-icon>
-            Test Passkey
+            <span i18n>Test Passkey</span>
           </button>
           @if (passkeyTestResult(); as result) {
             <p
