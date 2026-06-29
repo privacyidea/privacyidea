@@ -20,7 +20,6 @@ import { Component, HostListener, inject } from "@angular/core";
 import { RouterOutlet } from "@angular/router";
 import { WelcomeDialogService } from "@services/welcome/welcome-dialog.service";
 import { AuthService, AuthServiceInterface } from "./services/auth/auth.service";
-import { NotificationService, NotificationServiceInterface } from "./services/notification/notification.service";
 import { SessionTimerService, SessionTimerServiceInterface } from "./services/session-timer/session-timer.service";
 
 export interface PiResponse<Value, Detail = unknown> {
@@ -108,16 +107,16 @@ export function challengesTriggered<Value, Detail = unknown>(response: PiRespons
 })
 export class AppComponent {
   private readonly authService: AuthServiceInterface = inject(AuthService);
-  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly sessionTimerService: SessionTimerServiceInterface = inject(SessionTimerService);
 
   title = "privacyidea-webui";
   lastSessionReset = 0;
 
   constructor() {
+    // A session restored on bootstrap (e.g. after a language-switch reload) must arm the
+    // session timer here, because initialTimerStart() otherwise only runs on interactive login.
     if (this.authService.isAuthenticated()) {
-      console.warn("User is already logged in.");
-      this.notificationService.warning("User is already logged in.");
+      this.sessionTimerService.initialTimerStart();
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const _welcomeInit = inject(WelcomeDialogService);

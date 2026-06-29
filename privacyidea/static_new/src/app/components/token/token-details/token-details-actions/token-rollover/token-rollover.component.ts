@@ -96,13 +96,13 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
 
   async rolloverToken() {
     if (!this.token()) {
-      this.notificationService.warning("No token selected for rollover.");
+      this.notificationService.warning($localize`No token selected for rollover.`);
       return;
     }
 
     const strategy = this.enrollSwitch()?.currentStrategy();
     if (!strategy) {
-      this.notificationService.warning("Rollover action is not available for the selected token type.");
+      this.notificationService.warning($localize`Rollover action is not available for the selected token type.`);
       return;
     }
 
@@ -121,7 +121,7 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
 
     enrollPromise.catch((error) => {
       const message = error.error?.result?.error?.message || "";
-      this.notificationService.error(`Failed to enroll token: ${message || error.message || error}`);
+      this.notificationService.error($localize`Failed to enroll token: ${message || error.message || error}`);
     });
     let enrollmentResponse: EnrollmentResponse | null = await enrollPromise;
 
@@ -203,7 +203,7 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
 
   protected openLastStepDialog(response: EnrollmentResponse | null): void {
     if (!response) {
-      this.notificationService.warning("No rollover response available.");
+      this.notificationService.warning($localize`No rollover response available.`);
       return;
     }
 
