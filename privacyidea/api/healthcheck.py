@@ -71,10 +71,13 @@ def after_healthz_request(response):
     response.headers['Cache-Control'] = 'no-cache'
     if response.is_json:
         content = response.json
-        removed = content.pop("version", None) is not None
-        removed = content.pop("versionnumber", None) is not None or removed
-        if removed:
-            response.set_data(json.dumps(content))
+        # Only operate on a top-level JSON object; a non-dict body (list/scalar)
+        # must be a no-op, not an AttributeError raised out of after_request.
+        if isinstance(content, dict):
+            removed = content.pop("version", None) is not None
+            removed = content.pop("versionnumber", None) is not None or removed
+            if removed:
+                response.set_data(json.dumps(content))
     return response
 
 

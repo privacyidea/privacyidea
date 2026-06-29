@@ -271,11 +271,19 @@ def hide_version(request, response):
             from privacyidea.lib.utils import get_plugin_info_from_useragent
             ua_name, _ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
             g.user_agent = ua_name
+        # Skip the policy evaluation entirely when no hardening policy is
+        # configured. This keeps high-volume anonymous endpoints such as
+        # /validate/check fast while the feature is disabled, instead of running
+        # a full policy match on every response. Any failure here (the policy/DB
+        # backend being unavailable, or g.policy_object not being a usable
+        # PolicyClass) degrades to a no-op rather than raising a 500 out of
+        # after_request.
         try:
+            if not g.policy_object.list_policies(scope=SCOPE.HARDENING, active=True):
+                return response
             policy = Match.action_only(g, scope=SCOPE.HARDENING, action=PolicyAction.HIDE_VERSION).policies(
                 write_to_audit_log=False)
-        except AttributeError:
-            # g.policy_object might not be set in some edge cases
+        except Exception:
             return response
         if policy:
             content = response.json
