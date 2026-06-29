@@ -344,9 +344,10 @@ export class UserService implements UserServiceInterface {
     }
   });
 
+  private hasTokenSelection = computed(() => this.tokenService.tokenSelection().length > 0);
+
   usersResource = httpResource<PiResponse<UserData[]>>(() => {
     const selectedUserRealm = this.selectedUserRealm();
-    const tokenSelection = this.tokenService.tokenSelection();
     // Do not load users if the action is not allowed.
     if (!this.authService.actionAllowed("userlist")) {
       return undefined;
@@ -368,7 +369,7 @@ export class UserService implements UserServiceInterface {
       return undefined;
     }
     // On the tokens route we require at least one selected token before loading users.
-    if (this.contentService.onTokens() && tokenSelection.length === 0) {
+    if (this.contentService.onTokens() && !this.hasTokenSelection()) {
       return undefined;
     }
 
