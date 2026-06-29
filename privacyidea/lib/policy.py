@@ -1941,12 +1941,6 @@ def get_static_policy_definitions(scope=None):
                                                              "policy is scoped to realms, resolvers or users, the "
                                                              "admin only sees entries matching that scope."),
                                                    "group": GROUP.SYSTEM},
-            PolicyAction.AUTHENTICATION_LOG_DELETE: {'type': 'bool',
-                                                     "desc": _("Admin is allowed to delete entries from the "
-                                                               "authentication log. If the policy is scoped to "
-                                                               "realms, resolvers or users, the admin may only delete "
-                                                               "entries matching that scope."),
-                                                     "group": GROUP.SYSTEM},
             PolicyAction.AUDIT_AGE: {'type': 'str',
                                      "desc": _("The admin will only see audit "
                                                "entries of the last 10d, 3m or 2y."),

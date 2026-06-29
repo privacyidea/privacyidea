@@ -24,7 +24,7 @@ from collections import Counter
 
 from flask import Response
 
-from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs
+from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs, AuthLogUserRole
 from privacyidea.lib.policy import set_policy, SCOPE, PolicyAction
 from privacyidea.lib.token import init_token, remove_token, get_tokens
 from privacyidea.lib.user import User
@@ -135,7 +135,7 @@ def assert_authentication_log_entry(entry: AuthenticationLog, user: User = None,
                                     serials: set[str] = None,
                                     client_label: str = None, other_info: dict = None,
                                     transaction_id: str = None, previous_transaction_id: str = None,
-                                    source_ip: str = None):
+                                    source_ip: str = None, user_role: AuthLogUserRole = AuthLogUserRole.USER):
     """
     Assert a single authentication-log entry carries the expected attributes.
 
@@ -156,6 +156,7 @@ def assert_authentication_log_entry(entry: AuthenticationLog, user: User = None,
     :param transaction_id: the entry must carry this transaction_id (default None: no transaction_id)
     :param previous_transaction_id: the entry must carry this previous_transaction_id (default None: none)
     :param source_ip: the entry must carry this source_ip (default None: no source_ip)
+    :param user_role: the entry must carry this user_role (default ``"user"``, the role of a regular user)
     """
     expected_resolver = (user.resolver or None) if user is not None else None
     expected_uid = (user.uid or None) if user is not None else None
@@ -163,6 +164,7 @@ def assert_authentication_log_entry(entry: AuthenticationLog, user: User = None,
     expected_username = (user.login or None) if user is not None else None
     assert (entry.resolver, entry.uid, entry.realm) == (expected_resolver, expected_uid, expected_realm)
     assert entry.username == expected_username
+    assert entry.user_role == user_role
     assert entry.client_label == client_label
     assert entry.other_info == other_info
     assert entry.transaction_id == transaction_id

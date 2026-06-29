@@ -30,8 +30,9 @@ from flask import Response
 
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, AUTH_EVENT_TYPE_KEY
-from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs
+from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs, AuthLogUserRole
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, PolicyAction, AUTHORIZED
+from privacyidea.lib.realm import set_realm, delete_realm
 from privacyidea.lib.token import init_token, remove_token, get_one_token, revoke_token
 from privacyidea.lib.user import User
 from privacyidea.models.utils import utc_now
@@ -734,7 +735,10 @@ class ValidateCheckAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
         finally:
             delete_policy("authlog_deny")
         entries = assert_authentication_log([AuthEventType.NOT_AUTHORIZED])
-        assert_authentication_log_entry(entries[AuthEventType.NOT_AUTHORIZED], user=self.user)
+        # authorized=deny runs in the AUTHZ scope, after authentication has already succeeded: the token genuinely
+        # authenticated, so its serial is retained on the reclassified NOT_AUTHORIZED entry.
+        assert_authentication_log_entry(entries[AuthEventType.NOT_AUTHORIZED], user=self.user,
+                                        serials={self.serial})
 
 
 class AuthEndpointAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
@@ -787,10 +791,26 @@ class AuthEndpointAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
                                         user=User(self.testadmin, self.realm1))
 
     def test_logs_local_admin_username(self):
+        # A successful internal-admin login records the admin's login name as the username and the admin-internal role;
+        # it has no User object, so no resolver/uid/realm identity fields are recorded.
         response = self._auth({"username": self.testadmin, "password": self.testadminpw}, status=200)
         self.assertTrue(response.json["result"]["value"]["token"], response.json)
         entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
-        assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS], user=User(self.testadmin))
+        assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS], user=User(self.testadmin),
+                                        user_role=AuthLogUserRole.ADMIN_INTERNAL)
+
+    def test_auth_endpoint_logs_external_admin_role(self):
+        # A user in a superuser realm (adminrealm) is an external (admin-realm) admin, recorded as admin-external.
+        set_realm("adminrealm", [{"name": self.resolvername1}])
+        try:
+            body = self._auth({"username": "selfservice@adminrealm", "password": "test"}, status=200)
+            self.assertEqual("admin", body.json["result"]["value"]["role"], body.json)
+            entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
+            assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS],
+                                            user=User("selfservice", "adminrealm"),
+                                            user_role=AuthLogUserRole.ADMIN_EXTERNAL)
+        finally:
+            delete_realm("adminrealm")
 
     def test_revoked_token_logs_no_usable_token(self):
         # All of the user's tokens are revoked: check_user_pass raises TOKEN_LOCKED before it can classify the

@@ -17,15 +17,15 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 """
 Tests for the /authenticationlog/ management API: admin GET (pagination, filtering, realm/resolver-scoped visibility,
-the policy gate), admin DELETE (filtered bulk delete), and user-scope GET. Rows are seeded directly; the recording of
-events during authentication is covered in test_api_authentication_event_logging.py.
+the policy gate) and user-scope GET. Rows are seeded directly; the recording of events during authentication is
+covered in test_api_authentication_event_logging.py.
 """
 import datetime
 
 import mock
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
-from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs, log_authentication_event
+from privacyidea.lib.conditional_access.authentication_log import log_authentication_event, AuthLogUserRole
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, PolicyAction
 from privacyidea.lib.realm import set_realm, delete_realm
 from privacyidea.models import db
@@ -33,8 +33,8 @@ from .authlog_utils import AuthLogTestCase
 
 
 class AuthenticationLogApiTestCase(AuthLogTestCase):
-    """The /authenticationlog/ API: admin GET (pagination, filtering, realm/resolver visibility, the policy gate),
-    admin DELETE (filtered bulk delete), and user-scope GET. All share the same blueprint and seed fixtures."""
+    """The /authenticationlog/ API: admin GET (pagination, filtering, realm/resolver visibility, the policy gate)
+    and user-scope GET. All share the same blueprint and seed fixtures."""
 
     OTHER_REALM = "otherrealm"
 
@@ -61,13 +61,6 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
             self.assertEqual(status, res.status_code, res.json)
             return res.json
 
-    def _delete(self, query_string=None, status=200):
-        with self.app.test_request_context("/authenticationlog/", method="DELETE", query_string=query_string or {},
-                                           headers={"Authorization": self.at}):
-            res = self.app.full_dispatch_request()
-            self.assertEqual(status, res.status_code, res.json)
-            return res.json
-
     def _user_get(self, query_string=None, status=200):
         with self.app.test_request_context("/authenticationlog/", method="GET", query_string=query_string or {},
                                            headers={"Authorization": self.at_user}):
@@ -78,10 +71,6 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
     @staticmethod
     def _returned_ids(value):
         return {entry["id"] for entry in value["auth_logs"]}
-
-    @staticmethod
-    def _remaining_ids():
-        return {entry.id for entry in get_authentication_logs()}
 
     # --- admin GET ---
 
@@ -146,6 +135,33 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
         value = self._get({"event_type": "LOGIN*"})["result"]["value"]
         self.assertEqual(2, value["count"])
         self.assertSetEqual({AuthEventType.LOGIN_SUCCESS}, {entry["event_type"] for entry in value["auth_logs"]})
+
+    def test_filter_by_user_role(self):
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="1", realm=self.realm1,
+                                 user_role=AuthLogUserRole.USER)
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="2", realm=self.realm1,
+                                 user_role=AuthLogUserRole.ADMIN_INTERNAL)
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="3", realm=self.realm1,
+                                 user_role=AuthLogUserRole.ADMIN_EXTERNAL)
+        db.session.commit()
+
+        self.assertEqual(1, self._get({"user_role": AuthLogUserRole.USER})["result"]["value"]["count"])
+        # The shared 'admin-' prefix lets one wildcard filter match either admin kind.
+        value = self._get({"user_role": "admin*"})["result"]["value"]
+        self.assertEqual(2, value["count"])
+        self.assertSetEqual({AuthLogUserRole.ADMIN_INTERNAL, AuthLogUserRole.ADMIN_EXTERNAL},
+                            {entry["user_role"] for entry in value["auth_logs"]})
+
+    def test_filter_case_insensitive(self):
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="1", realm=self.realm1,
+                                 username="Alice")
+        db.session.commit()
+
+        # The flag enforces a case-insensitive match regardless of the DB collation. The unflagged default follows
+        # the collation (case-sensitive on SQLite, case-insensitive on a MySQL/MariaDB *_ci collation), so it is not
+        # asserted here.
+        self.assertEqual(1, self._get({"username": "alice", "case_insensitive": "1"})["result"]["value"]["count"])
+        self.assertEqual(1, self._get({"username": "Alice"})["result"]["value"]["count"])
 
     def test_filter_by_client_label(self):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="1", realm=self.realm1,
@@ -243,8 +259,9 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
                 delete_policy("authlog_scoped")
                 delete_policy("authlog_all")
 
-    def test_include_own_adds_admins_own_entries(self):
-        # A helpdesk admin in the superuser realm "adminrealm" has a real (username, realm), so include_own works.
+    def test_admins_own_entries_always_included(self):
+        # A helpdesk admin in the superuser realm "adminrealm" has a real (username, realm), so their own entries
+        # are always added to the policy scope.
         set_realm("adminrealm", [{"name": self.resolvername1}])
         with self.app.test_request_context("/auth", method="POST",
                                            data={"username": "selfservice@adminrealm", "password": "test"}):
@@ -267,92 +284,12 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
                 return {entry["id"] for entry in res.json["result"]["value"]["auth_logs"]}
 
         try:
-            # Without include_own: only the realm1 entry.
-            self.assertEqual({in_scope}, helpdesk_get({"page_size": 50}))
-            # With include_own: the realm1 entry plus the admin's own adminrealm entry.
-            self.assertEqual({in_scope, own}, helpdesk_get({"page_size": 50, "include_own": "1"}))
+            # The realm1 entry (policy scope) plus the admin's own adminrealm entry are both returned.
+            self.assertEqual({in_scope, own}, helpdesk_get({"page_size": 50}))
         finally:
             delete_policy("authlog_realm")
             delete_realm("adminrealm")
 
-
-    # --- admin DELETE ---
-
-    def test_delete_requires_admin(self):
-        with self.app.test_request_context("/authenticationlog/", method="DELETE",
-                                           query_string={"event_type": AuthEventType.MFA_FAIL}):
-            res = self.app.full_dispatch_request()
-            self.assertEqual(401, res.status_code, res.json)
-
-    def test_delete_without_filter_is_rejected(self):
-        self._seed()
-        self._delete(status=400)
-        self.assertEqual(3, len(get_authentication_logs()))
-
-    def test_delete_by_filter(self):
-        ids = self._seed()
-        body = self._delete({"event_type": AuthEventType.MFA_FAIL})
-        self.assertEqual(1, body["result"]["value"])
-        # Exactly the MFA_FAIL row is gone; the two LOGIN_SUCCESS rows remain.
-        self.assertEqual({ids["realm1_login"], ids["other_login"]}, self._remaining_ids())
-
-    def test_delete_by_event_type_csv_list(self):
-        self._seed()
-        body = self._delete({"event_type": f"{AuthEventType.MFA_FAIL},{AuthEventType.LOGIN_SUCCESS}"})
-        self.assertEqual(3, body["result"]["value"])
-        self.assertSetEqual(set(), self._remaining_ids())
-
-    def test_delete_older_than_end(self):
-        self._seed()
-        past = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=1)).isoformat()
-        future = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=1)).isoformat()
-        # Nothing is older than a minute ago
-        self.assertEqual(0, self._delete({"end": past})["result"]["value"])
-        self.assertEqual(3, len(get_authentication_logs()))
-        # Everything is older than a minute from now
-        self.assertEqual(3, self._delete({"end": future})["result"]["value"])
-        self.assertEqual(0, len(get_authentication_logs()))
-
-    def test_delete_policy_gate_denies(self):
-        # Admin policies exist but none grant authentication_log_delete -> denied and nothing is deleted.
-        self._seed()
-        set_policy("authlog_other", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE)
-        try:
-            self._delete({"event_type": AuthEventType.MFA_FAIL}, status=403)
-        finally:
-            delete_policy("authlog_other")
-        self.assertEqual(3, len(get_authentication_logs()))
-
-    def test_delete_realm_restriction(self):
-        ids = self._seed()
-        set_policy("authlog_delete_realm", scope=SCOPE.ADMIN,
-                   action=PolicyAction.AUTHENTICATION_LOG_DELETE, realm=self.realm1)
-        try:
-            # Deleting all LOGIN_SUCCESS only affects realm1; the realm1 MFA_FAIL and the other realm's row survive.
-            count = self._delete({"event_type": AuthEventType.LOGIN_SUCCESS})["result"]["value"]
-            self.assertEqual(1, count)
-            self.assertEqual({ids["realm1_fail"], ids["other_login"]}, self._remaining_ids())
-        finally:
-            delete_policy("authlog_delete_realm")
-
-    def test_delete_resolver_restriction(self):
-        log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver=self.resolvername1, uid="1",
-                                 realm=self.realm1)  # in scope -> deleted
-        other = log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="otherresolver", uid="2",
-                                         realm=self.realm1)
-        db.session.commit()
-        set_policy("authlog_delete_resolver", scope=SCOPE.ADMIN,
-                   action=PolicyAction.AUTHENTICATION_LOG_DELETE, resolver=self.resolvername1)
-        try:
-            # Deleting all MFA_FAIL only removes the scoped resolver's row; the other resolver's row survives.
-            count = self._delete({"event_type": AuthEventType.MFA_FAIL})["result"]["value"]
-            self.assertEqual(1, count)
-            self.assertEqual({other}, self._remaining_ids())
-        finally:
-            delete_policy("authlog_delete_resolver")
-
-
-    # --- user-scope GET (a normal user sees only their own entries) ---
 
     def test_user_sees_only_own_entries(self):
         # Log in the self-service user "selfservice" in realm1 (-> self.at_user); that login writes its own auth-log

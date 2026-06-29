@@ -125,7 +125,6 @@
     "container_template_create": true,
     "container_template_delete": true,
     "container_template_list": true,
-    "authentication_log_read": true,
-    "authentication_log_delete": true
+    "authentication_log_read": true
   }
 }
