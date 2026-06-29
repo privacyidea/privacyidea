@@ -16,10 +16,12 @@
 * Independently of that policy, the health-check endpoints (`/healthz`,
   `/healthz/livez`, `/healthz/readyz`, `/healthz/startupz`) **no longer return
   the `version`/`versionnumber` fields at all**. These probes are unauthenticated
-  and the version is not needed for liveness/readiness; gating it on the policy
-  would require a database read on a path that must keep answering while the DB
-  is down. If you relied on scraping the privacyIDEA version from a health
-  endpoint, read it from an authenticated endpoint instead.
+  and the version is not needed for liveness/readiness; evaluating the policy is
+  deliberately avoided here so the checks stay dependency-free and keep answering
+  even when the database is unavailable (policy evaluation reads the cached
+  configuration, whose freshness check still touches the database). If you relied
+  on scraping the privacyIDEA version from a health endpoint, read it from an
+  authenticated endpoint instead.
 
 * A new pre-aggregated `metric_aggregate` table backs the *Resolver Timing* and *Notification Delivery*
   dashboard panels. The schema migration creates the table empty; nothing breaks if you skip the next step,

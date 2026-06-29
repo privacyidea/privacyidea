@@ -39,6 +39,7 @@ from flask import Blueprint, current_app, g, request
 
 from privacyidea.api.auth import check_auth_token
 from privacyidea.api.lib.utils import send_result
+from privacyidea.api.lib.postpolicy import strip_version_from_response
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.crypto import get_hsm
 from privacyidea.lib.error import AuthError, Error
@@ -46,7 +47,6 @@ from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_ob
 from privacyidea.lib.policy import Match, SCOPE, PolicyAction, PolicyClass
 from privacyidea.lib.resolver import get_resolver_list, get_resolver_class
 from privacyidea.lib.utils import get_client_ip
-import json
 import logging
 import time
 
@@ -69,15 +69,7 @@ def after_healthz_request(response):
     never need it, regardless of the hide_version policy.
     """
     response.headers['Cache-Control'] = 'no-cache'
-    if response.is_json:
-        content = response.json
-        # Only operate on a top-level JSON object; a non-dict body (list/scalar)
-        # must be a no-op, not an AttributeError raised out of after_request.
-        if isinstance(content, dict):
-            removed = content.pop("version", None) is not None
-            removed = content.pop("versionnumber", None) is not None or removed
-            if removed:
-                response.set_data(json.dumps(content))
+    strip_version_from_response(response)
     return response
 
 

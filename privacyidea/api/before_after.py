@@ -32,7 +32,8 @@ import copy
 
 from flask_babel import _
 
-from .lib.utils import (get_all_params, get_optional, map_error_to_code, send_error, verify_auth_token)
+from .lib.utils import (get_all_params, get_optional, map_error_to_code, send_error, verify_auth_token,
+                        get_auth_token_from_request, logged_in_user_from_token)
 from .container import container_blueprint
 from ..lib.container import find_container_for_token, find_container_by_serial
 from ..lib.framework import get_app_config_value
@@ -227,16 +228,12 @@ def before_container_request():
     is_auth_free = request.path in auth_token_free_endpoints
 
     # Get auth token
-    auth_token = request.headers.get('PI-Authorization')
-    if not auth_token:
-        auth_token = request.headers.get('Authorization')
+    auth_token = get_auth_token_from_request()
 
     # Verify auth token for all non-auth-token-free endpoints anyway
     if not is_auth_free:
         r = verify_auth_token(auth_token, ["user", "admin"])
-        g.logged_in_user = {"username": r.get("username"),
-                            "realm": r.get("realm"),
-                            "role": r.get("role")}
+        g.logged_in_user = logged_in_user_from_token(r)
         resolve_logged_in_user()
     else:
         if auth_token:

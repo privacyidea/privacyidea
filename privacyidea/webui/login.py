@@ -36,7 +36,8 @@ from flask import (Blueprint, render_template, request,
 
 from privacyidea.api.lib.prepolicy import is_remote_user_allowed
 from privacyidea.api.lib.postpolicy import hide_version
-from privacyidea.api.lib.utils import send_html, send_result, verify_auth_token
+from privacyidea.api.lib.utils import (send_html, send_result, verify_auth_token,
+                                       get_auth_token_from_request, logged_in_user_from_token)
 from privacyidea.lib.config import get_from_config, SYSCONF, get_privacyidea_node
 from privacyidea.lib.error import HSMException
 from privacyidea.lib.framework import get_app_config_value
@@ -121,13 +122,11 @@ def before_request():
     # WebUI requests (e.g. the /config call made after login or on reload),
     # while it stays hidden for the anonymous login page.
     g.logged_in_user = {}
-    auth_token = request.headers.get("PI-Authorization") or request.headers.get("Authorization")
+    auth_token = get_auth_token_from_request()
     if auth_token:
         try:
             user = verify_auth_token(auth_token, ["user", "admin"])
-            g.logged_in_user = {"username": user.get("username"),
-                                "realm": user.get("realm"),
-                                "role": user.get("role")}
+            g.logged_in_user = logged_in_user_from_token(user)
         except Exception as error:
             log.debug(f"No valid auth token presented to the login blueprint: {error}")
 

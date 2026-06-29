@@ -233,6 +233,37 @@ def sign_response(request, response):
     return resp
 
 
+def strip_version_from_response(response, strip_nested=False):
+    """
+    Remove the version information from a JSON response in place.
+
+    Always removes the top-level ``version`` and ``versionnumber`` fields. When
+    ``strip_nested`` is set, also removes ``privacyideaVersionNumber`` from the
+    nested ``result.value`` (used by the /config endpoint). A non-JSON body or a
+    non-dict top-level body is a no-op, so this never raises a 500 out of an
+    after_request handler. The (potentially large) body is only re-serialized
+    when something was actually removed.
+
+    :param response: the response object to rewrite
+    :param strip_nested: also strip the nested privacyideaVersionNumber
+    :return: True if any field was removed
+    """
+    if not response.is_json:
+        return False
+    content = response.json
+    if not isinstance(content, dict):
+        return False
+    removed = content.pop("version", None) is not None
+    removed = content.pop("versionnumber", None) is not None or removed
+    if strip_nested:
+        result = content.get("result")
+        if isinstance(result, dict) and isinstance(result.get("value"), dict):
+            removed = result["value"].pop("privacyideaVersionNumber", None) is not None or removed
+    if removed:
+        response.set_data(json.dumps(content))
+    return removed
+
+
 def hide_version(request, response):
     """
     This policy function is used as a postrequest decorator.
@@ -286,20 +317,7 @@ def hide_version(request, response):
         except Exception:
             return response
         if policy:
-            content = response.json
-            # Guard the envelope shape: only operate on a top-level JSON object
-            # with a dict result/value. A non-dict body (list/scalar) or a null
-            # result must be a no-op, not a 500 raised out of after_request.
-            if isinstance(content, dict):
-                removed = content.pop("version", None) is not None
-                removed = content.pop("versionnumber", None) is not None or removed
-                # Also strip version from the nested result value (e.g. /config endpoint)
-                result = content.get("result")
-                if isinstance(result, dict) and isinstance(result.get("value"), dict):
-                    removed = result["value"].pop("privacyideaVersionNumber", None) is not None or removed
-                # Only re-serialize the (potentially large) body if we actually removed something
-                if removed:
-                    response.set_data(json.dumps(content))
+            strip_version_from_response(response, strip_nested=True)
     return response
 
 
