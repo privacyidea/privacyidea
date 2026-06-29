@@ -91,7 +91,8 @@ from privacyidea.api.lib.prepolicy import (is_remote_user_allowed, prepolicy,
                                            fido2_auth, increase_failcounter_on_challenge,
                                            disabled_token_types, auth_timelimit, load_challenge_text)
 from privacyidea.api.lib.utils import (send_result, get_all_params, INTERNAL_OPTION_KEYS,
-                                       verify_auth_token, get_optional, get_required)
+                                       verify_auth_token, get_optional, get_required,
+                                       get_auth_token_from_request, logged_in_user_from_token)
 from privacyidea.lib.utils import (get_client_ip, hexlify_and_unicode, to_unicode, get_plugin_info_from_useragent,
                                    AUTH_RESPONSE)
 from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_object, get_privacyidea_node
@@ -582,11 +583,9 @@ def check_auth_token(required_role=None):
         e.g. ``["admin"]`` or ``["user", "admin"]``. ``None`` means
         either role is acceptable.
     """
-    auth_token = request.headers.get('PI-Authorization')
-    if not auth_token:
-        auth_token = request.headers.get('Authorization')
+    auth_token = get_auth_token_from_request()
     r = verify_auth_token(auth_token, required_role)
-    g.logged_in_user = {"username": r.get("username"), "realm": r.get("realm"), "role": r.get("role")}
+    g.logged_in_user = logged_in_user_from_token(r)
 
 
 @jwtauth.route('/rights', methods=['GET'])
