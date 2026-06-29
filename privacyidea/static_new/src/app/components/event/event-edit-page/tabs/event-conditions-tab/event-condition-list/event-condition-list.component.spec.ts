@@ -17,8 +17,9 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { OutputEmitterRef } from "@angular/core";
+import { ElementRef, OutputEmitterRef, QueryList } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatSelect } from "@angular/material/select";
 
 import { EventService } from "@services/event/event.service";
 import { MockEventService } from "@testing/mock-services/mock-event-service";
@@ -120,5 +121,40 @@ describe("EventConditionListComponent", () => {
       condC: ["1", "2", "3"],
       condD: ["option1", "option2"]
     });
+  });
+
+  it("clearConditionValue should reset the value and emit when emitOnConditionValueChange is true", () => {
+    const emitSpy = jest.fn();
+    fixture.componentRef.setInput("emitOnConditionValueChange", true);
+    component.newConditionValue = { emit: emitSpy } as unknown as OutputEmitterRef<ConditionEvent>;
+    component.clearConditionValue("condA");
+    expect(component.editConditions()["condA"]).toBe("");
+    expect(emitSpy).toHaveBeenCalledWith({ conditionName: "condA", conditionValue: "" });
+  });
+
+  it("clearConditionValue should reset the value without emitting when emitOnConditionValueChange is false", () => {
+    const emitSpy = jest.fn();
+    fixture.componentRef.setInput("emitOnConditionValueChange", false);
+    component.newConditionValue = { emit: emitSpy } as unknown as OutputEmitterRef<ConditionEvent>;
+    component.clearConditionValue("condB");
+    expect(component.editConditions()["condB"]).toBe("");
+    expect(emitSpy).not.toHaveBeenCalled();
+  });
+
+  it("should focus the matching input when focusConditionName is set", () => {
+    jest.useFakeTimers();
+    const focusSpy = jest.fn();
+    const matchingInput = new ElementRef({ name: "conditionInput_condA", focus: focusSpy });
+    const otherInput = new ElementRef({ name: "conditionInput_condB", focus: jest.fn() });
+    component.selectedConditionInput = {
+      toArray: () => [otherInput, matchingInput]
+    } as unknown as QueryList<ElementRef | MatSelect>;
+
+    fixture.componentRef.setInput("focusConditionName", "condA");
+    fixture.detectChanges();
+    jest.runAllTimers();
+
+    expect(focusSpy).toHaveBeenCalled();
+    jest.useRealTimers();
   });
 });

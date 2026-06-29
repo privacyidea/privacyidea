@@ -29,6 +29,7 @@ from sqlalchemy import select, delete, update
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError
 from privacyidea.lib.framework import get_app_config
 from privacyidea.lib.task.eventcounter import EventCounterTask
+from privacyidea.lib.task.metricscleanup import MetricsCleanupTask
 from privacyidea.lib.task.simplestats import SimpleStatsTask
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.utils import fetch_one_resource
@@ -38,7 +39,7 @@ from privacyidea.models.utils import utc_now
 
 log = logging.getLogger(__name__)
 
-TASK_CLASSES = [EventCounterTask, SimpleStatsTask]
+TASK_CLASSES = [EventCounterTask, MetricsCleanupTask, SimpleStatsTask]
 #: TASK_MODULES maps task module identifiers to subclasses of BaseTask
 TASK_MODULES = dict((cls.identifier, cls) for cls in TASK_CLASSES)
 

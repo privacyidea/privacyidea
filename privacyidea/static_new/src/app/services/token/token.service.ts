@@ -31,7 +31,7 @@ import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/con
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { environment } from "@env/environment";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
-import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { ContentService, ContentServiceInterface, DetailsUser } from "@services/content/content.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
@@ -114,6 +114,8 @@ export interface Tokens {
   page?: number;
   tokens: TokenDetails[];
 }
+
+export type TokenCount = Pick<Tokens, "count">;
 
 export interface TokenInfo {
   CA?: string;
@@ -245,8 +247,7 @@ export interface TokenServiceInterface {
   tokenDetailResourceValue: Signal<Tokens | undefined>;
   tokenTypesResource: HttpResourceRef<PiResponse<Record<string, string>> | undefined>;
   userTokenResource: HttpResourceRef<PiResponse<Tokens> | undefined>;
-  detailsUsername: WritableSignal<string>;
-  userRealm: WritableSignal<string>;
+  detailsUser: WritableSignal<DetailsUser>;
   tokenTypeOptions: Signal<TokenType[]>;
   pageSize: WritableSignal<number>;
   tokenIsActive: WritableSignal<boolean>;
@@ -317,6 +318,8 @@ export interface TokenServiceInterface {
 
   getTokenDetails(tokenSerial: string): Observable<PiResponse<Tokens>>;
 
+  getTokenCount(params: Record<string, string | number>): Observable<PiResponse<TokenCount>>;
+
   enrollToken<T extends TokenEnrollmentData, R extends EnrollmentResponse>(args: {
     data: T;
     mapper: TokenApiPayloadMapper<T>;
@@ -365,9 +368,8 @@ export class TokenService implements TokenServiceInterface {
   readonly hiddenApiFilter = hiddenApiFilter;
   readonly apiFilterKeyMap = apiFilterKeyMap;
   readonly maxDescriptionLength = 80;
-  readonly userRealm = signal("");
+  readonly detailsUser = this.contentService.detailsUser;
   readonly tokenSerial = this.contentService.tokenSerial;
-  readonly detailsUsername = this.contentService.detailsUsername;
   readonly stopPolling$ = new Subject<void>();
   readonly eventPageSize = signal(10);
 
@@ -533,7 +535,7 @@ export class TokenService implements TokenServiceInterface {
       url: this.tokenBaseUrl,
       method: "GET",
       headers: this.authService.getHeaders(),
-      params: { user: this.detailsUsername(), realm: this.userRealm() }
+      params: { user: this.detailsUser().username, realm: this.detailsUser().realm }
     };
   });
 
@@ -1037,6 +1039,13 @@ export class TokenService implements TokenServiceInterface {
     const params = new HttpParams().set("serial", tokenSerial);
     return this.http.get<PiResponse<Tokens>>(this.tokenBaseUrl, {
       headers,
+      params
+    });
+  }
+
+  getTokenCount(params: Record<string, string | number>): Observable<PiResponse<TokenCount>> {
+    return this.http.get<PiResponse<TokenCount>>(this.tokenBaseUrl, {
+      headers: this.authService.getHeaders(),
       params
     });
   }

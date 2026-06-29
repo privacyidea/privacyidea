@@ -25,6 +25,7 @@ import {
   ScopedPolicyActions
 } from "@services/policies/policies.service";
 import { MockHttpResourceRef, MockPiResponse } from "@testing/mock-services";
+import { of } from "rxjs";
 
 export class MockPolicyService implements PolicyServiceInterface {
   getEmptyPolicy = jest.fn().mockReturnValue({
@@ -62,8 +63,9 @@ export class MockPolicyService implements PolicyServiceInterface {
   copyPolicy = jest.fn().mockResolvedValue(MockPiResponse.fromValue({}));
   createPolicy = jest.fn().mockResolvedValue(MockPiResponse.fromValue({}));
   deletePolicy = jest.fn().mockResolvedValue(MockPiResponse.fromValue(1));
-  enablePolicy = jest.fn().mockResolvedValue(MockPiResponse.fromValue({}));
-  disablePolicy = jest.fn().mockResolvedValue(MockPiResponse.fromValue({}));
+  enablePolicy = jest.fn().mockResolvedValue(MockPiResponse.fromValue(1));
+  disablePolicy = jest.fn().mockResolvedValue(MockPiResponse.fromValue(1));
+  getPolicies = jest.fn(() => of(MockPiResponse.fromValue<PolicyDetail[]>([])));
   isScopeChangeable = jest.fn().mockReturnValue(true);
   getActionNamesOf = jest.fn().mockReturnValue([]);
   getActionsOf = jest.fn().mockReturnValue({});

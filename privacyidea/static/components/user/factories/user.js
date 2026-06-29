@@ -31,7 +31,7 @@ myApp.factory("UserFactory", [
     var canceller = $q.defer();
 
     return {
-      getUsers: function (params, callback) {
+      getUsers: function (params, callback, errorCallback) {
         // We only need ONE getUsers call at once.
         // If another getUsers call is running, we cancel it.
         canceller.resolve();
@@ -47,7 +47,10 @@ myApp.factory("UserFactory", [
               callback(response.data);
             },
             function (error) {
-              AuthFactory.authError(error.data);
+              if (errorCallback) errorCallback(error);
+              // Don't surface auth errors for cancelled in-flight requests.
+              if (error && error.status !== -1)
+                AuthFactory.authError(error.data);
             },
           );
       },

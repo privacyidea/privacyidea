@@ -48,6 +48,7 @@ from privacyidea.lib.lifecycle import register_finalizer
 from privacyidea.lib.utils import (is_true, censor_connect_string,
                                    convert_column_to_unicode)
 from privacyidea.lib.error import ParameterError, ResolverError
+from privacyidea.lib.metrics import track_resolver_op
 
 # TODO passlib has to be replaced before the next release, this is just a workaround that can not stay
 # passlib 1.7.4 compatibility with modern bcrypt. Two breaking changes:
@@ -246,6 +247,7 @@ class IdResolver (UserIdResolver):
 
         return conditions
 
+    @track_resolver_op("check_pass")
     def checkPass(self, uid, password):
         """
         This function checks the password for a given uid.
@@ -279,6 +281,7 @@ class IdResolver (UserIdResolver):
 
         return res
 
+    @track_resolver_op("get_user_info")
     def get_user_info(self, user_id: int or str, attributes: list[str] = None) -> dict:
         """
         This function returns all user info for a given userid/object.
@@ -327,6 +330,7 @@ class IdResolver (UserIdResolver):
         # otherwise we cast the column to string (in case of postgres UUIDs)
         return cast(column, String).like(userId)
 
+    @track_resolver_op("get_username")
     def getUsername(self, userId):
         """
         Returns the username/loginname for a given userid
@@ -339,6 +343,7 @@ class IdResolver (UserIdResolver):
         info = self.get_user_info(userId)
         return info.get('username', "")
 
+    @track_resolver_op("get_user_id")
     def getUserId(self, LoginName):
         """
         resolve the loginname to the userid.
@@ -408,6 +413,7 @@ class IdResolver (UserIdResolver):
 
         return user
 
+    @track_resolver_op("get_user_list")
     def getUserList(self, search_dict: dict = None, attributes: list[str] = None) -> list[dict]:
         """
         :param search_dict: A dictionary with search parameters
@@ -675,6 +681,7 @@ class IdResolver (UserIdResolver):
 
         return num, desc
 
+    @track_resolver_op("add_user")
     def add_user(self, attributes: dict=None):
         """
         Add a new user to the SQL database.
@@ -717,6 +724,7 @@ class IdResolver (UserIdResolver):
                 columns[self.map[fieldname]] = attributes[fieldname]
         return columns
 
+    @track_resolver_op("delete_user")
     def delete_user(self, uid):
         """
         Delete a user from the SQL database.
@@ -741,6 +749,7 @@ class IdResolver (UserIdResolver):
             res = False
         return res
 
+    @track_resolver_op("update_user")
     def update_user(self, uid, attributes=None):
         """
         Update an existing user.
