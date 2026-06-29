@@ -5,7 +5,7 @@
 from privacyidea.lib.token import (init_token,
                                    check_token_list, remove_token)
 from privacyidea.lib.user import (User)
-from privacyidea.models import (Challenge)
+from privacyidea.lib.challenge import get_challenges
 from .base import MyTestCase
 
 PWFILE = "tests/testdata/passwords"
@@ -45,8 +45,11 @@ class TokenOutOfBandTestCase(MyTestCase):
         r = token1.get_failcount()
         self.assertEqual(r, 0)
 
-        # Now set the challenge to be answered and recheck:
-        Challenge.query.filter(Challenge.transaction_id == transaction_id).update({"otp_valid": True})
+        # Now set the challenge to be answered and recheck (backend-agnostic:
+        # set_otp_status + save reach both the DB and the Redis cache):
+        answered_challenge = get_challenges(transaction_id=transaction_id)[0]
+        answered_challenge.set_otp_status(True)
+        answered_challenge.save()
         r, r_dict = check_token_list([token1], "", user=user, options={"transaction_id": transaction_id})
         self.assertTrue(r, r_dict)
         self.assertEqual(r_dict.get("message"), "Found matching challenge", r_dict)

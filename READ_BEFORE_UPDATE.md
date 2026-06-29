@@ -1,6 +1,28 @@
 # Update Notes
 ## Update from 3.13 to 3.14
 
+
+* A new admin policy action `cancelchallenge` has been added. Cancelling an active challenge via
+  `DELETE /token/challenges/transaction/<transaction_id>` previously required the `getchallenges`
+  right; it now requires the new, write-scoped `cancelchallenge` right. Admins who should only be
+  able to *inspect* open challenges will lose the ability to cancel them after the upgrade unless
+  you explicitly grant the new action. Review your admin policies that reference `getchallenges`
+  and decide whether each admin should also get `cancelchallenge`.
+
+* The optional Redis challenge cache (`PI_REDIS_CACHE_CHALLENGES`) is new in this release. If you
+  enable it, be aware that authentications that are mid-flight at the moment of any subsequent
+  upgrade may need to be restarted by the user - same expectation we already set for the SQL
+  schema upgrade. See the "Redis cache" section of the documentation for the full
+  payload-compatibility policy.
+
+* **HTTP API change** - `GET /token/challenges/...` no longer returns the `id` field for each
+  challenge. The integer ID was the SQL primary key, never a stable cross-deployment identifier,
+  and it was incompatible with the new Redis-backed challenges which have no SQL row. Use
+  `transaction_id` (already present, identical across both backends) instead. The change affects
+  `GET /token/challenges/`, `GET /token/challenges/<serial>`, and the new
+  `GET /token/challenges/user` endpoint. Integrations that indexed responses by `id` need to be
+  updated to use `transaction_id`.
+
 * A new `hide_version` policy action (scope `hardening`) lets you suppress the
   privacyIDEA version (`version` / `versionnumber`) from API responses and the
   WebUI for unauthenticated requests. Authenticated requests still receive it:
@@ -35,9 +57,9 @@
 
 * A new pre-aggregated `metric_aggregate` table backs the *Resolver Timing* and *Notification Delivery*
   dashboard panels. The schema migration creates the table empty; nothing breaks if you skip the next step,
-  but the table grows unbounded over time. After the upgrade, go to *Config → Tasks* and schedule the new
+  but the table grows unbounded over time. After the upgrade, go to *Config -> Tasks* and schedule the new
   **MetricsCleanup** periodic task (option `older_than_hours`, default `24`; daily cadence recommended). If you
-  prefer not to record metrics at all, set `PI_NO_INTERNAL_METRICS = True` in `pi.cfg` — the dashboard panels
+  prefer not to record metrics at all, set `PI_NO_INTERNAL_METRICS = True` in `pi.cfg` - the dashboard panels
   will show no data and the table stays empty.
   The dashboard panels read the last hour by default, so anything older than ~24 h is dead weight.
 
@@ -88,7 +110,7 @@
 
   **Event handlers** that use the `rollout_state` condition with an empty string (`""`) to mean
   "fully enrolled" will silently stop matching after the migration. Update any such conditions to
-  use `enrolled` instead. You can find affected event handlers in the WebUI under *Config → Events*
+  use `enrolled` instead. You can find affected event handlers in the WebUI under *Config -> Events*
   by reviewing handlers whose conditions reference `rollout_state`.
 
 * Resolvers within a realm that share the same priority are now sorted **alphabetically by name**.
