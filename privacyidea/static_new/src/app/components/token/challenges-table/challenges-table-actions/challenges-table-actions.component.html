@@ -22,24 +22,23 @@
   <button
     data-overflow-pinned
     (click)="onDeleteExpiredChallenges()"
-    class="action-button-delete-primary button-width-m"
-    i18n
+    class="action-button-delete-primary button-width-l"
     mat-stroked-button>
     <mat-icon>delete_sweep</mat-icon>
-    Delete Expired
+    <span i18n>Delete Expired</span>
   </button>
 
   @if (advancedApiFilter.length > 0) {
     <button
       data-overflow-pinned
       [matMenuTriggerFor]="advancedFilterMenu"
-      class="action-button-primary button-width-m"
+      class="action-button-primary button-width-l"
       i18n-matTooltip
       mat-stroked-button
       matTooltip="More Filter"
       type="submit">
       <mat-icon> filter_list</mat-icon>
-      More Filter
+      <span i18n>More Filter</span>
     </button>
     <mat-menu #advancedFilterMenu="matMenu">
       @for (keyword of advancedApiFilter; track keyword) {

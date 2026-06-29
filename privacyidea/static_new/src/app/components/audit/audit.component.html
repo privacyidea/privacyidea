@@ -52,10 +52,9 @@
         (click)="auditService.downloadCSV()"
         [disabled]="auditService.isDownloading()"
         class="action-button-primary button-width-m"
-        i18n
         mat-stroked-button>
         <mat-icon>download</mat-icon>
-        Download
+        <span i18n>Download</span>
       </button>
     }
   </div>
