@@ -59,7 +59,6 @@
   use `enrolled` instead. You can find affected event handlers in the WebUI under *Config → Events*
   by reviewing handlers whose conditions reference `rollout_state`.
 
-## Update from 3.13 to 3.14
 * Resolvers within a realm that share the same priority are now sorted **alphabetically by name**.
   Previously, the order was undefined and depended on the database insertion order, which could
   differ between SQLite, PostgreSQL and MariaDB. If you rely on a specific resolver ordering
@@ -69,6 +68,14 @@
 
 * `enrollpin` right enforcement has been made stricter. If you try to enroll a token with a PIN but do not have the
   the right, the enrollment will be denied with a PolicyError.
+
+* Database changes:
+
+  * In the `pidea_audit` table the size of the signature column is increased to support 4096 Bit RSA signatures.
+  * The size of the `id` column in the `pidea_audit` table is enhanced from int to bigint.
+  * The table `smtpserver` gets a new boolean SMIME column.
+  * On existing installations the missing `tokencredentialidhash_seq` is created
+  
 
 ## Update from 3.11 to 3.12
 

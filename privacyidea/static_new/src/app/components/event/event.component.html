@@ -143,13 +143,23 @@
                 }
               }
               @case ("action") {
-                <div [innerHTML]="element.action | highlight: filterString()"></div>
                 @if (detailedView()) {
-                  <ul class="no-indention margin-top-0">
-                    @for (option of Object.entries(element.options); track option[0]) {
-                      <li [innerHTML]="option[0] + ': ' + option[1] | highlight: filterString()"></li>
-                    }
-                  </ul>
+                  <div class="detailed-cell-container">
+                    <div class="break-words">
+                      <span [innerHTML]="element.action | highlight: filterString()"></span>
+                    </div>
+                    <ul class="no-indention margin-top-0">
+                      @for (option of Object.entries(element.options); track option[0]) {
+                        <li [innerHTML]="option[0] + ': ' + option[1] | highlight: filterString()"></li>
+                      }
+                    </ul>
+                  </div>
+                } @else {
+                  <div
+                    class="event-table-cell"
+                    [attr.title]="element.action">
+                    <span [innerHTML]="element.action | highlight: filterString()"></span>
+                  </div>
                 }
               }
               @case ("active") {
