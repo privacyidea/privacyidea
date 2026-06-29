@@ -265,7 +265,8 @@ class HttpSMSProvider(ISMSProvider):
                       },
                       "PASSWORD": {
                           "description": _("Password in case of basic "
-                                           "authentication.")
+                                           "authentication."),
+                          "secret": True
                       },
                       "CHECK_SSL": {
                           "required": True,
