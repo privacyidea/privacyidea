@@ -675,6 +675,13 @@ class APIContainer(APIContainerTest):
         for container in result["result"]["value"]["containers"]:
             self.assertEqual(container["type"], "generic")
 
+        # Filter for type wildcard
+        result = self.request_assert_success('/container/',
+                                             {"type": "gen*", "pagesize": 15},
+                                             self.at, 'GET')
+        for container in result["result"]["value"]["containers"]:
+            self.assertEqual(container["type"], "generic")
+
         # Filter for assigned containers
         result = self.request_assert_success('/container/',
                                              {"assigned": True, "pagesize": 15},
@@ -776,19 +783,6 @@ class APIContainer(APIContainerTest):
             return {c["serial"] for c in containers}, {c["type"] for c in containers}
 
         try:
-            # The scalar ``type`` param still works (regression check)
-            serials, types = serials_and_types({"type": "smartphone"})
-            self.assertIn(smartphone_serial, serials)
-            self.assertNotIn(generic_serial, serials)
-            self.assertNotIn(yubikey_serial, serials)
-            self.assertTrue(types.issubset({"smartphone"}))
-
-            # ... including its ``*`` wildcard
-            serials, types = serials_and_types({"type": "smart*"})
-            self.assertIn(smartphone_serial, serials)
-            self.assertNotIn(generic_serial, serials)
-            self.assertTrue(types.issubset({"smartphone"}))
-
             # type_list: comma-separated list returns containers matching any listed type
             serials, types = serials_and_types({"type_list": "smartphone,yubikey"})
             self.assertIn(smartphone_serial, serials)
@@ -825,14 +819,31 @@ class APIContainer(APIContainerTest):
 
             # Unknown types in a list are ignored, known ones still match
             serials, types = serials_and_types({"type_list": "smartphone,nope"})
+            self.assertEqual(types, {"smartphone"})
+        finally:
+            delete_container_by_serial(smartphone_serial)
+            delete_container_by_serial(generic_serial)
+            delete_container_by_serial(yubikey_serial)
+
+    def test_21c_get_all_containers_filter_by_type_wildcard(self):
+        # Arrange: verify scalar type wildcard filtering independent of type_list.
+        smartphone_serial = init_container({"type": "smartphone"})["container_serial"]
+        generic_serial = init_container({"type": "generic"})["container_serial"]
+
+        try:
+            result = self.request_assert_success('/container/',
+                                                 {"type": "smart*", "pagesize": 100},
+                                                 self.at, 'GET')
+            containers = result["result"]["value"]["containers"]
+            serials = {c["serial"] for c in containers}
+            types = {c["type"] for c in containers}
+
             self.assertIn(smartphone_serial, serials)
-            self.assertNotIn(yubikey_serial, serials)
             self.assertNotIn(generic_serial, serials)
             self.assertTrue(types.issubset({"smartphone"}))
         finally:
             delete_container_by_serial(smartphone_serial)
             delete_container_by_serial(generic_serial)
-            delete_container_by_serial(yubikey_serial)
 
     def test_22_get_all_containers_paginate_invalid_params(self):
         init_container({"type": "generic", "description": "test container"})
@@ -892,3 +903,6 @@ class APIContainer(APIContainerTest):
         result = self.request_assert_success('/container/', {}, self.at, 'GET')
         container = [x for x in result["result"]["value"]["containers"] if x["serial"] == container_serial][0]
         self.assertEqual(container["users"][0]["user_name"], "**resolver error**", result["result"])
+
+
+

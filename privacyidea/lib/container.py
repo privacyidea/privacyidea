@@ -168,7 +168,8 @@ def find_container_by_serial(serial: str) -> TokenContainerClass:
     return create_container_from_db_object(db_container)
 
 
-def _create_container_query(user: User = None, serial: str = None, ctype: str | list[str] = None,
+def _create_container_query(user: User = None, serial: str = None, ctype: str = None,
+                            ctype_exact: list[str] = None,
                             token_serial: str = None,
                             realm: str = None, allowed_realms: list[str] = None, template: str = None,
                             description: str = None, assigned: bool = None, resolver: str = None, info: dict = None,
@@ -179,9 +180,9 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str | 
 
     :param user: container owner, optional
     :param serial: container serial (case-insensitive and allows '*' as wildcard), optional
-    :param ctype: container type filter, optional. May be either a string (case-insensitive, allows '*' as wildcard)
-        or a list of strings (case-insensitive, exact match; matches any type in the list). An empty list returns
-        no matches.
+    :param ctype: container type filter (case-insensitive and allows '*' as wildcard), optional
+    :param ctype_exact: exact container type filter list (case-insensitive; matches any type in the list), optional.
+        An empty list returns no matches.
     :param token_serial: serial of a token which is assigned to the container (case-insensitive and allows '*' as
         wildcard), optional
     :param realm: realm name to filter by (case-insensitive and allows '*' as wildcard), optional
@@ -223,8 +224,13 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str | 
         else:
             stmt = stmt.where(func.upper(TokenContainer.serial) == serial.upper())
 
-    if isinstance(ctype, list):
-        type_values = [str(t).strip() for t in ctype if t and str(t).strip()]
+    # Backward compatibility: callers may still pass list values through ``ctype``.
+    if ctype_exact is None and isinstance(ctype, list):
+        ctype_exact = ctype
+        ctype = None
+
+    if isinstance(ctype_exact, list):
+        type_values = [str(t).strip() for t in ctype_exact if t and str(t).strip()]
         if not type_values:
             # Caller asked for an empty subset of types — return no rows.
             stmt = stmt.where(false())
@@ -354,7 +360,8 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str | 
     return stmt
 
 
-def get_all_containers(user: User = None, serial: str = None, ctype: str | list[str] = None,
+def get_all_containers(user: User = None, serial: str = None, ctype: str = None,
+                       ctype_exact: list[str] = None,
                        token_serial: str = None,
                        realm: str = None, allowed_realms: list[str] = None, sortby: str = 'serial',
                        sortdir: str = 'asc', template: str = None, description: str = None, assigned: bool = None,
@@ -370,9 +377,9 @@ def get_all_containers(user: User = None, serial: str = None, ctype: str | list[
 
     :param user: container owner, optional
     :param serial: container serial (case-insensitive and allows '*' as wildcard), optional
-    :param ctype: container type filter, optional. May be either a string (case-insensitive, allows '*' as wildcard)
-        or a list of strings (case-insensitive, exact match; matches any type in the list). An empty list returns
-        no matches.
+    :param ctype: container type filter (case-insensitive and allows '*' as wildcard), optional
+    :param ctype_exact: exact container type filter list (case-insensitive; matches any type in the list), optional.
+        An empty list returns no matches.
     :param token_serial: serial of a token which is assigned to the container (case-insensitive and allows '*'
         as wildcard), optional
     :param realm: name of the realm the container is assigned to (case-insensitive and allows '*' as wildcard), optional
@@ -398,7 +405,8 @@ def get_all_containers(user: User = None, serial: str = None, ctype: str | list[
     :returns: A dictionary with a list of containers at the key 'containers' and optionally pagination entries ('prev',
               'next', 'current', 'count')
     """
-    sql_query: Select = _create_container_query(user=user, serial=serial, ctype=ctype, token_serial=token_serial,
+    sql_query: Select = _create_container_query(user=user, serial=serial, ctype=ctype, ctype_exact=ctype_exact,
+                                         token_serial=token_serial,
                                         realm=realm, allowed_realms=allowed_realms, template=template,
                                         description=description,
                                         assigned=assigned, resolver=resolver, info=info,

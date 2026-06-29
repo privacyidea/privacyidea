@@ -172,9 +172,10 @@ def list_containers():
     #   with a single list-only "types" param. They are kept separate here only
     #   for consistency with the token API on the 3.x line.
     ctype = get_optional(param, "type")
+    ctype_exact = None
     ctype_list = get_optional(param, "type_list")
     if ctype_list:
-        ctype = _split_csv_or_list(ctype_list)
+        ctype_exact = _split_csv_or_list(ctype_list)
     token_serial = get_optional(param, "token_serial")
     template = get_optional(param, "template")
     realm = get_optional(param, "container_realm")
@@ -204,7 +205,8 @@ def list_containers():
     if info_key or info_value:
         info = {info_key or "*": info_value or "*"}
 
-    result = get_all_containers(user=user, serial=cserial, ctype=ctype, token_serial=token_serial,
+    result = get_all_containers(user=user, serial=cserial, ctype=ctype, ctype_exact=ctype_exact,
+                                token_serial=token_serial,
                                 realm=realm, allowed_realms=allowed_container_realms, template=template,
                                 description=description, resolver=resolver, assigned=assigned, info=info,
                                 last_auth_delta=last_auth_delta, last_sync_delta=last_sync_delta, state=state,
