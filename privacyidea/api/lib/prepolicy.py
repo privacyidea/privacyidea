@@ -326,7 +326,7 @@ def realmadmin(request=None, action=None):
                         if r not in seen:
                             seen.add(r)
                             unique_realms.append(r)
-                    if len(unique_realms) == 1:
+                    if len(unique_realms) == 1 or action != PolicyAction.USERLIST:
                         request.all_data["realm"] = unique_realms[0]
                     else:
                         request.all_data["realm"] = unique_realms
