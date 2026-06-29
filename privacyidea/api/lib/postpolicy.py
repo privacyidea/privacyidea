@@ -1216,6 +1216,15 @@ def is_authorized(request, response):
                 reclassify_authentication_log_event(event_id, AuthEventType.NOT_AUTHORIZED)
             else:
                 log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=request.User)
+            # check()'s finally already ran the lockout engine on the pre-authz outcome (e.g. LOGIN_SUCCESS), so the
+            # denial above was never seen by it. Re-evaluate with the corrected NOT_AUTHORIZED outcome so a policy
+            # tracking it counts this attempt. Deferred import avoids a bootstrap circular import; guarded so a
+            # failure here can never break the (already-decided) deny response.
+            try:
+                from privacyidea.lib.conditional_access.engine import evaluate_lockout_policies
+                evaluate_lockout_policies(request.User, AuthEventType.NOT_AUTHORIZED, source_ip=g.client_ip)
+            except Exception as ex:
+                log.warning(f"Lockout re-evaluation after authorization denial failed: {ex!r}")
             raise ValidateError("User is not authorized to authenticate under these conditions.")
 
     return response
