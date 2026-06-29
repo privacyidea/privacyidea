@@ -116,7 +116,11 @@ export class MachineResolverDetailsComponent implements OnInit, OnDestroy {
 
     effect(() => {
       const name = this.selectedName();
-      if (!name || this._loadedName === name) {
+      if (!name) {
+        this._loadedName = null;
+        return;
+      }
+      if (this.isEditing()) {
         return;
       }
       const resource = this.machineResolverService.machineResolverResource;
