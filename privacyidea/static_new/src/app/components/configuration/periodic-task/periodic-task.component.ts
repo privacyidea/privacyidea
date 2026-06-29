@@ -204,7 +204,7 @@ export class PeriodicTaskComponent implements OnInit {
       if (task.id == null) continue;
       try {
         await firstValueFrom(this.periodicTaskService.deletePeriodicTask(task.id));
-        this.notificationService.success("Successfully deleted periodic task.");
+        this.notificationService.success($localize`Successfully deleted periodic task.`);
       } catch {
         // error notification already surfaced by deletePeriodicTask
       }

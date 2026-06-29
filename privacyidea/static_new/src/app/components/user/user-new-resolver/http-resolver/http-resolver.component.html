@@ -304,6 +304,7 @@
               <button
                 (click)="removeMappingRow(i)"
                 aria-label="Remove mapping"
+                i18n-aria-label
                 color="warn"
                 mat-icon-button
                 type="button">
@@ -602,7 +603,7 @@
 
               <app-http-config
                 [(model)]="configAuthModel"
-                [title]="'Authorization'" />
+                title="Authorization" i18n-title />
             }
           </div>
         </mat-expansion-panel>
@@ -618,7 +619,7 @@
                 [description]="'Configure the endpoint to authenticate the user with its username/userid and password.'"
                 [endpointHint]="checkUserPasswordHint()"
                 [(model)]="configUserAuthModel"
-                [title]="'Check User Password'" />
+                title="Check User Password" i18n-title />
             </div>
           </mat-expansion-panel>
         }
@@ -633,7 +634,7 @@
               [description]="'Configure the endpoint to retrieve a list of users from the user store. The above defined attributes are added to the request as search parameters if they are available in the request.'"
               [endpointHint]="'Possible tags: {userid} {username} {password} {givenname}'"
               [(model)]="configGetUserListModel"
-              [title]="'User List'" />
+              title="User List" i18n-title />
           </div>
         </mat-expansion-panel>
 
@@ -647,7 +648,7 @@
               [description]="'Configure the endpoint to retrieve a single user for the UID. For example, privacyIDEA only stores the UID of the token owner. To resolve the complete user, this endpoint is used.'"
               [endpointHint]="'Possible tags: {userid}'"
               [(model)]="configGetUserByIdModel"
-              [title]="'Get User by ID'" />
+              title="Get User by ID" i18n-title />
           </div>
         </mat-expansion-panel>
 
@@ -661,7 +662,7 @@
               [description]="'Configure the endpoint to retrieve a single user for the username. For example, when a user tries to authenticate against privacyIDEA, only the username is provided. To resolve the complete user and evaluate if the user exists, this endpoint is used.'"
               [endpointHint]="'Possible tags: {username}'"
               [(model)]="configGetUserByNameModel"
-              [title]="'Get User by Name'" />
+              title="Get User by Name" i18n-title />
           </div>
         </mat-expansion-panel>
 
@@ -676,7 +677,7 @@
                 [description]="'Configure the endpoint to create a new user in the user store. The above defined attributes can be set in the UI and will be added to the request body. Additionally, you can define a password which must be specified in the request mapping using the tag &quot;{password}&quot;.'"
                 [endpointHint]="'Possible tags: {username} {userid} {surname} {givenname} {email} {mobile} {phone} {password}'"
                 [(model)]="configCreateUserModel"
-                [title]="'Create User'" />
+                title="Create User" i18n-title />
             </div>
           </mat-expansion-panel>
 
@@ -690,7 +691,7 @@
                 [description]="'Configure the endpoint to edit an existing user in the user store. The above defined attributes can be set in the UI and will be added to the request body. Additionally, you can define custom request parameters in the request mapping.'"
                 [endpointHint]="'Possible tags: {username} {userid} {surname} {givenname} {email} {mobile} {phone} {password}'"
                 [(model)]="configEditUserModel"
-                [title]="'Edit User'" />
+                title="Edit User" i18n-title />
             </div>
           </mat-expansion-panel>
 
@@ -704,7 +705,7 @@
                 [description]="'Configure the endpoint to delete an existing user from the user store.'"
                 [endpointHint]="'Possible tags: {userid}'"
                 [(model)]="configDeleteUserModel"
-                [title]="'Delete User'" />
+                title="Delete User" i18n-title />
             </div>
           </mat-expansion-panel>
         }

@@ -71,7 +71,7 @@ export class TokenSshMachineAssignDialogComponent extends AbstractDialogComponen
   private userService: UserServiceInterface = inject(UserService);
 
   assignAction: DialogAction<string> = {
-    label: "Assign",
+    label: $localize`Assign`,
     value: "assign",
     type: "confirm",
     primary: true

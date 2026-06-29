@@ -44,16 +44,16 @@ import { TokenTableActionsComponent } from "./token-table-actions/token-table-ac
 
 const columnKeysMap = [
   { key: "select", label: "" },
-  { key: "serial", label: "Serial" },
-  { key: "tokentype", label: "Type" },
-  { key: "active", label: "Active" },
-  { key: "description", label: "Description" },
-  { key: "failcount", label: "Fail Counter" },
-  { key: "rollout_state", label: "Rollout State" },
-  { key: "username", label: "User" },
-  { key: "user_realm", label: "User Realm" },
-  { key: "realms", label: "Token Realm" },
-  { key: "container_serial", label: "Container" }
+  { key: "serial", label: $localize`Serial` },
+  { key: "tokentype", label: $localize`Type` },
+  { key: "active", label: $localize`Active` },
+  { key: "description", label: $localize`Description` },
+  { key: "failcount", label: $localize`Fail Counter` },
+  { key: "rollout_state", label: $localize`Rollout State` },
+  { key: "username", label: $localize`User` },
+  { key: "user_realm", label: $localize`User Realm` },
+  { key: "realms", label: $localize`Token Realm` },
+  { key: "container_serial", label: $localize`Container` }
 ];
 
 @Component({
