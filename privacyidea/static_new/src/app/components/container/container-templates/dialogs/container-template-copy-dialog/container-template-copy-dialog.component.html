@@ -40,7 +40,8 @@
         (input)="editName($any($event.target).value)"
         [errorStateMatcher]="nameErrorMatcher"
         (keydown.enter)="canSave() && onAction('copy')"
-        aria-label="New Template Name" />
+        aria-label="New Template Name"
+        i18n-aria-label />
 
       @if (nameConflict()) {
         <mat-error i18n>A template with this name already exists.</mat-error>

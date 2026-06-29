@@ -28,14 +28,16 @@
             <button
               (click)="disableShowDescription(conditionName)"
               mat-icon-button
-              matTooltip="Hide Description">
+              matTooltip="Hide Description"
+              i18n-matTooltip>
               <mat-icon>info</mat-icon>
             </button>
           } @else {
             <button
               (click)="enableShowDescription(conditionName)"
               mat-icon-button
-              matTooltip="Show Description">
+              matTooltip="Show Description"
+              i18n-matTooltip>
               <mat-icon>info_outline</mat-icon>
             </button>
           }
@@ -62,7 +64,7 @@
                 #selectedConditionInput
                 (selectionChange)="onConditionValueChange(conditionName, $event.value)"
                 [multiple]="true"
-                [placeholder]="'Select values ...'"
+                placeholder="Select values ..." i18n-placeholder
                 [required]="inputRequired()"
                 [value]="multiValueConditions()[conditionName] || []">
                 @for (option of availableConditionValues()[conditionName]; track option) {
@@ -82,7 +84,8 @@
                 (selectionChange)="onConditionValueChange(conditionName, $event.value)"
                 [required]="inputRequired()"
                 [value]="editConditions()[conditionName]"
-                placeholder="Select one option ...">
+                placeholder="Select one option ..."
+                i18n-placeholder>
                 @for (option of availableConditionValues()[conditionName]; track option) {
                   <mat-option [value]="option">{{ option }}</mat-option>
                 }
@@ -106,6 +109,7 @@
                   [value]="editConditions()[conditionName]"
                   matInput
                   placeholder="Enter a Number ..."
+                  i18n-placeholder
                   type="number" />
               }
               @default {
@@ -119,6 +123,7 @@
                   [value]="editConditions()[conditionName] || ''"
                   matInput
                   placeholder="Enter value ..."
+                  i18n-placeholder
                   type="text" />
               }
             }
