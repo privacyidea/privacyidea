@@ -14,6 +14,7 @@ jobs:
   greeting:
     name: Greet the creator of a new PR/issue
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       issues: write  # for actions/first-interaction to comment on first issue
       pull-requests: write  # for actions/first-interaction to comment on first PR
