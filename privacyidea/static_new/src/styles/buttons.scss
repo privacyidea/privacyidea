@@ -89,6 +89,7 @@ $button-low-contrast-variant: linear-gradient(
   @extend %linkish-btn;
   color: var(--mat-sys-on-primary);
   background: var(--mat-sys-primary);
+  margin-top: 48px;
 
   @include hover-or-active(var(--background-blue-inset), var(--box-shadow-blue-inset), true);
 }
