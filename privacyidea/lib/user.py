@@ -863,7 +863,18 @@ def get_user_list(param: dict = None, user: User = None, include_custom_attribut
 
     # determine which scope we want to show
     param_resolver = get_optional(param, "resolver")
-    param_realm = get_optional(param, "realm")
+    param_realm_raw = get_optional(param, "realm")
+    # param_realm_raw may be a single string, a comma-separated string of
+    # multiple realms, or a list.  Normalise to a list of individual realm
+    # names (or None when unset).
+    if isinstance(param_realm_raw, list):
+        param_realms = [r.strip() for r in param_realm_raw if r and r.strip()]
+    elif isinstance(param_realm_raw, str) and "," in param_realm_raw:
+        param_realms = [r.strip() for r in param_realm_raw.split(",") if r.strip()]
+    elif param_realm_raw:
+        param_realms = [param_realm_raw]
+    else:
+        param_realms = []
     user_resolver = None
     user_realm = None
     # list of realms to iterate through
@@ -873,13 +884,13 @@ def get_user_list(param: dict = None, user: User = None, include_custom_attribut
         user_realm = user.realm
 
     # Determine the realms to iterate through. Dedupe while preserving order in case param_realm == user_realm.
-    if param_realm:
-        realm_iteration.append(param_realm)
+    for r in param_realms:
+        realm_iteration.append(r)
     if user_realm:
         realm_iteration.append(user_realm)
     realm_iteration = list(dict.fromkeys(realm_iteration))
 
-    if not (param_resolver or user_resolver or param_realm or user_realm):
+    if not (param_resolver or user_resolver or param_realms or user_realm):
         # if no realm or resolver was specified, we search the resolvers in all realms
         log.debug("Seldom event: Calling get_user_list with absolutely no information on realms or resolvers!")
         all_realms = get_realms()
