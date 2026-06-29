@@ -11,6 +11,7 @@ jobs:
       pull-requests: write # to allow codespell to comment on the PR
     name: reviewdog / codespell
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:

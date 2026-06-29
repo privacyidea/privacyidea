@@ -92,11 +92,12 @@
           [value]="newQuestionText()"
           (input)="newQuestionText.set($any($event.target).value)"
           matInput
+          i18n-placeholder
           placeholder="Enter new question here" />
       </mat-form-field>
       <button
         (click)="addQuestion()"
-        class="action-button-secondary button-width-m"
+        class="action-button-secondary button-width-l"
         mat-stroked-button>
         <mat-icon>add</mat-icon>
         <span i18n>Add new question</span>

@@ -246,6 +246,7 @@ class SCOPE:
     REGISTER = "register"
     CONTAINER = "container"
     TOKEN = "token"
+    HARDENING = "hardening"
 
     @classmethod
     def get_all_scopes(cls) -> list[str]:
@@ -253,7 +254,7 @@ class SCOPE:
         Return all valid scopes as a list
         """
         valid_scopes = [cls.AUTHZ, cls.ADMIN, cls.AUTH, cls.AUDIT, cls.USER, cls.ENROLL, cls.WEBUI, cls.REGISTER,
-                        cls.CONTAINER, cls.TOKEN]
+                        cls.CONTAINER, cls.TOKEN, cls.HARDENING]
         return valid_scopes
 
 
@@ -3132,6 +3133,16 @@ def get_static_policy_definitions(scope=None):
             PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE_FOR_OFFLINE_REFILL: {
                 'type': 'bool',
                 'desc': _('Enable to return an unspecific error message for failed offline token refills.')
+            }
+        },
+        SCOPE.HARDENING: {
+            PolicyAction.HIDE_VERSION: {
+                'type': 'bool',
+                'desc': _('If enabled, the version number will only be shown after login. '
+                          'This can help to harden the system by not exposing version information. '
+                          'Note: This policy is evaluated without user/realm/resolver/time conditions '
+                          '(client IP and user agent matching still apply).'),
+                'group': GROUP.SYSTEM,
             }
         }
 

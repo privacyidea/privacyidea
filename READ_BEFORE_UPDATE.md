@@ -1,6 +1,38 @@
 # Update Notes
 ## Update from 3.13 to 3.14
 
+* A new `hide_version` policy action (scope `hardening`) lets you suppress the
+  privacyIDEA version (`version` / `versionnumber`) from API responses and the
+  WebUI for unauthenticated requests. Authenticated requests still receive it:
+  an admin or user with a valid token (e.g. the WebUI's `/config` call after
+  login) sees the version as before, so the WebUI keeps showing it.
+
+* When the `hide_version` policy is active, `version`/`versionnumber` are also
+  removed from API responses to unauthenticated callers such as
+  `/validate/check`. This is intentional (defense in depth). Do not rely on the
+  version field to decide whether the server supports an operation — use the
+  relevant capability flags in the response instead.
+
+* Independently of that policy, the health-check endpoints (`/healthz`,
+  `/healthz/livez`, `/healthz/readyz`, `/healthz/startupz`) **no longer return
+  the `version`/`versionnumber` fields at all**. These probes are unauthenticated
+  and the version is not needed for liveness/readiness; evaluating the policy is
+  deliberately avoided here so the checks stay dependency-free and keep answering
+  even when the database is unavailable (policy evaluation reads the cached
+  configuration, whose freshness check still touches the database). If you relied
+  on scraping the privacyIDEA version from a health endpoint, read it from an
+  authenticated endpoint instead.
+
+* Sensitive configuration values (passwords, secrets) are no longer returned in plaintext by
+  the REST API. Affected endpoints: CA connectors (`GET /caconnector`), machine resolvers
+  (`GET /machineresolver`), RADIUS servers (`GET /radiusserver`), SMS gateways
+  (`GET /smsgateway`), and SMTP servers (`GET /smtpserver`). Secret fields are now replaced
+  with a censored placeholder (`__CENSORED__`) in API responses.
+  **If you have external tools or scripts** that read configuration via these API endpoints and
+  rely on retrieving the actual secret values, they will now receive the placeholder instead.
+  Sending the placeholder back in a PUT/POST request preserves the existing stored value (it is
+  not overwritten). To set a new secret, supply the actual new value.
+
 * A new pre-aggregated `metric_aggregate` table backs the *Resolver Timing* and *Notification Delivery*
   dashboard panels. The schema migration creates the table empty; nothing breaks if you skip the next step,
   but the table grows unbounded over time. After the upgrade, go to *Config → Tasks* and schedule the new

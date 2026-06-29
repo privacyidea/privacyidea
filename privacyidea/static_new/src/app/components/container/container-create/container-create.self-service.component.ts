@@ -54,12 +54,12 @@ export class ContainerCreateSelfServiceComponent extends ContainerCreateComponen
   protected override authService: AuthServiceInterface = inject(AuthService);
 
   override selectedUserRealm = linkedSignal(() => {
-    const realm = this.authService.authData()?.realm ?? "";
+    const realm = this.authService.realm();
     assert(realm != "", "User must have a realm to create a container in self-service");
     return realm;
   });
   override selectedUser = computed(() => {
-    const userName = this.authService.authData()?.username ?? "";
+    const userName = this.authService.username();
     assert(userName != "", "User must be authenticated to create a container in self-service");
     return userName;
   });

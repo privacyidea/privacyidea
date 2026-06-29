@@ -63,11 +63,11 @@ export class TokenFindSerialComponent {
   tokenCount = signal<string>("");
   serialSubscription: Subscription | null = null;
   assignmentStates = [
-    { key: "assigned", info: "The token is assigned to a user" },
-    { key: "unassigned", info: "The token is not assigned to a user" },
+    { key: "assigned", info: $localize`The token is assigned to a user` },
+    { key: "unassigned", info: $localize`The token is not assigned to a user` },
     {
       key: "don't care",
-      info: "It does not matter, if the token is assigned or not"
+      info: $localize`It does not matter, if the token is assigned or not`
     }
   ];
   tokenWithOTP = ["hotp", "totp", "spass", "motp", "sshkey", "yubikey", "remote", "yubico", "radius", "sms"];
