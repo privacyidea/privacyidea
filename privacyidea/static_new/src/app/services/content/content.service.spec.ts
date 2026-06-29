@@ -176,12 +176,11 @@ describe("ContentService", () => {
   });
 
   describe("machineResolverSelected()", () => {
-    it("navigates to machine resolver details and stores the resolver name", () => {
+    it("navigates to machine resolver details", () => {
       emitNav("/tokens");
       service.machineResolverSelected("hosts 1");
 
       expect(mockRouter.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.MACHINE_RESOLVER_DETAILS + "hosts%201");
-      expect(service.machineResolver()).toBe("hosts 1");
     });
   });
 });

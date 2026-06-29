@@ -34,7 +34,6 @@ export interface ContentServiceInterface {
   previousUrl: Signal<string>;
   tokenSerial: WritableSignal<string>;
   containerSerial: WritableSignal<string>;
-  machineResolver: WritableSignal<string>;
 
   onLogin: Signal<boolean>;
   onAudit: Signal<boolean>;
@@ -112,7 +111,6 @@ export class ContentService implements ContentServiceInterface {
       return "";
     }
   });
-  machineResolver = signal("");
   onLogin = computed(() => this.routeUrl() === ROUTE_PATHS.LOGIN);
   onAudit = computed(() => this.routeUrl() === ROUTE_PATHS.AUDIT);
   onClients = computed(() => this.routeUrl() === ROUTE_PATHS.CLIENTS);
@@ -243,6 +241,5 @@ export class ContentService implements ContentServiceInterface {
 
   machineResolverSelected(resolverName: string): void {
     this.router.navigateByUrl(ROUTE_PATHS.MACHINE_RESOLVER_DETAILS + encodeURIComponent(resolverName));
-    this.machineResolver.set(resolverName);
   }
 }

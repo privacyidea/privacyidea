@@ -35,7 +35,7 @@ import { BehaviorSubject, Observable, of } from "rxjs";
 import { MachineResolverDetailsComponent } from "./machine-resolver-details.component";
 
 class LocalMockMatDialog {
-  result$ = of("save-exit");
+  result$: Observable<string | boolean> = of("save-exit");
   open = jest.fn().mockReturnValue({
     afterClosed: () => this.result$
   });
@@ -237,7 +237,7 @@ describe("MachineResolverDetailsComponent", () => {
     });
 
     it("onCancel logs an error when the dialog rejects", async () => {
-      const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+      const errorSpy = jest.spyOn(console, "error").mockImplementation(() => undefined);
       component.startEditing();
       component.onNewData({ resolver: "hosts1", type: "hosts", filename: "/changed" } as never);
       dialog.result$ = new Observable((subscriber) => subscriber.error(new Error("dialog boom")));
