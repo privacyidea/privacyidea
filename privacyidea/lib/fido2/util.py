@@ -3,11 +3,12 @@ import hashlib
 from sqlalchemy import select
 from webauthn import base64url_to_bytes
 
+from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.token import create_tokenclass_object, log, get_tokens
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.user import User
-from privacyidea.models import TokenInfo, Token, Challenge, TokenCredentialIdHash, db
+from privacyidea.models import TokenInfo, Token, TokenCredentialIdHash, db
 
 
 def get_fido2_token_by_credential_id(credential_id: str) -> TokenClass | None:
@@ -53,8 +54,7 @@ def get_fido2_token_by_transaction_id(transaction_id: str, credential_id: str) -
     :param credential_id: The credential_id as returned by an authenticator
     :return: The token object or None
     """
-    stmt = select(Challenge).where(Challenge.transaction_id == transaction_id)
-    challenges = db.session.scalars(stmt).all()
+    challenges = get_challenges(transaction_id=transaction_id)
     if not challenges:
         log.info(f"No challenges with transaction_id {transaction_id} not found.")
         return None
