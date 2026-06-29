@@ -28,12 +28,16 @@ Other html code is dynamically loaded via angularJS and located in
 """
 __author__ = "Cornelius Kölbel <cornelius@privacyidea.org>"
 
+import logging
 import os
+
 from flask import (Blueprint, render_template, request,
                    current_app, g, send_from_directory, redirect, abort, Response)
 
 from privacyidea.api.lib.prepolicy import is_remote_user_allowed
-from privacyidea.api.lib.utils import send_html, send_result
+from privacyidea.api.lib.postpolicy import hide_version
+from privacyidea.api.lib.utils import (send_html, send_result, verify_auth_token,
+                                       get_auth_token_from_request, logged_in_user_from_token)
 from privacyidea.lib.config import get_from_config, SYSCONF, get_privacyidea_node
 from privacyidea.lib.error import HSMException
 from privacyidea.lib.framework import get_app_config_value
@@ -43,7 +47,9 @@ from privacyidea.lib.policy import PolicyClass, SCOPE, Match, REMOTE_USER
 from privacyidea.lib.queue import has_job_queue
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.subscriptions import subscription_status
-from privacyidea.lib.utils import get_client_ip, get_version_number
+from privacyidea.lib.utils import get_client_ip, get_version_number, get_plugin_info_from_useragent
+
+log = logging.getLogger(__name__)
 
 DEFAULT_THEME = "/static/contrib/css/bootstrap-theme.css"
 # note: the empty comment in the following line allows to include it in the docs
@@ -106,6 +112,39 @@ def before_request():
     g.policy_object = PolicyClass()
     # access_route contains the ip addresses of all clients, hops and proxies.
     g.client_ip = get_client_ip(request, get_from_config(SYSCONF.OVERRIDECLIENT))
+    # Populate the user agent so that policies restricted by user agent (e.g. a
+    # user-agent-scoped hide_version policy) match consistently with the API
+    # blueprints, which set g.user_agent in their before_request handlers.
+    ua_name, _ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
+    g.user_agent = ua_name
+    # Resolve the logged-in user from a presented JWT. This lets the
+    # hide_version policy still expose the version number to authenticated
+    # WebUI requests (e.g. the /config call made after login or on reload),
+    # while it stays hidden for the anonymous login page.
+    g.logged_in_user = {}
+    auth_token = get_auth_token_from_request()
+    if auth_token:
+        try:
+            user = verify_auth_token(auth_token, ["user", "admin"])
+            g.logged_in_user = logged_in_user_from_token(user)
+        except Exception as error:
+            log.debug(f"No valid auth token presented to the login blueprint: {error}")
+
+
+@login_blueprint.after_request
+def after_request(response):
+    """
+    Lightweight after_request for the WebUI login blueprint.
+
+    Unlike the shared after_request in before_after.py this does NOT sign the
+    response: the login page and the /config endpoint are anonymous and were
+    never signed, so there is no reason to load the audit private key on every
+    page view. We only set cache-control headers and apply the optional
+    version stripping.
+    """
+    response.headers['Cache-Control'] = 'no-cache'
+    response = hide_version(request, response)
+    return response
 
 
 def get_render_context():
@@ -219,6 +258,15 @@ def get_render_context():
     passkey_login = list(passkey_login_policy)[0] if len(
         passkey_login_policy) else PasskeyLoginButtonOptions.SHOW
 
+    # The version number is injected into the rendered login HTML, which the
+    # hide_version postpolicy cannot strip (it only rewrites JSON responses).
+    # Blank it here for the anonymous login page when the hide_version policy
+    # is active. Authenticated requests (valid JWT) still receive it.
+    hide_version_active = Match.action_only(g, scope=SCOPE.HARDENING,
+                                            action=PolicyAction.HIDE_VERSION).policies(write_to_audit_log=False)
+    show_version = bool(getattr(g, "logged_in_user", None)) or not hide_version_active
+    version_number = get_version_number() if show_version else ""
+
     render_context: dict = {
         'instance': instance,
         'backendUrl': backend_url,
@@ -242,7 +290,7 @@ def get_render_context():
         'logo': logo,
         'page_title': page_title,
         'otp_pin_set_random_user': otp_pin_set_random_user,
-        'privacyideaVersionNumber': get_version_number(),
+        'privacyideaVersionNumber': version_number,
         'passkey_login': passkey_login,
     }
     return render_context
@@ -313,3 +361,4 @@ def get_ui_config():
     logo = current_app.config.get("PI_LOGO", "")
     render_context['logo'] = logo
     return send_result(render_context)
+

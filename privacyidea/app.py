@@ -410,6 +410,7 @@ def create_app(config_name="development",
 
     _register_blueprints(app)
 
+
     # Set up Plug-Ins
     db.init_app(app)
 
