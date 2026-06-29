@@ -3,7 +3,15 @@
 
 * A new `hide_version` policy action (scope `hardening`) lets you suppress the
   privacyIDEA version (`version` / `versionnumber`) from API responses and the
-  WebUI for unauthenticated requests. Authenticated users still see it.
+  WebUI for unauthenticated requests. Authenticated requests still receive it:
+  an admin or user with a valid token (e.g. the WebUI's `/config` call after
+  login) sees the version as before, so the WebUI keeps showing it.
+
+* When the `hide_version` policy is active, `version`/`versionnumber` are also
+  removed from API responses to unauthenticated callers such as
+  `/validate/check`. This is intentional (defense in depth). Do not rely on the
+  version field to decide whether the server supports an operation — use the
+  relevant capability flags in the response instead.
 
 * Independently of that policy, the health-check endpoints (`/healthz`,
   `/healthz/livez`, `/healthz/readyz`, `/healthz/startupz`) **no longer return
