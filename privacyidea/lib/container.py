@@ -224,10 +224,6 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
         else:
             stmt = stmt.where(func.upper(TokenContainer.serial) == serial.upper())
 
-    # Backward compatibility: callers may still pass list values through ``ctype``.
-    if ctype_exact is None and isinstance(ctype, list):
-        ctype_exact = ctype
-        ctype = None
 
     if isinstance(ctype_exact, list):
         type_values = [str(t).strip() for t in ctype_exact if t and str(t).strip()]
