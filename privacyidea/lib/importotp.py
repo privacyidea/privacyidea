@@ -65,7 +65,8 @@ from privacyidea.lib.utils import (modhex_decode, modhex_encode,
 from privacyidea.lib.config import get_token_class
 from privacyidea.lib.log import log_with
 from privacyidea.lib.crypto import (aes_decrypt_b64, aes_encrypt_b64, geturandom)
-from bs4 import BeautifulSoup
+import warnings
+from bs4 import BeautifulSoup, XMLParsedAsHTMLWarning
 import traceback
 from passlib.crypto.digest import pbkdf2_hmac
 import gnupg
@@ -473,7 +474,13 @@ def parsePSKCdata(xml_data,
 
     not_imported_serials = []
     tokens = {}
-    xml = strip_prefix_from_soup(BeautifulSoup(xml_data, "lxml"))
+    with warnings.catch_warnings():
+        # PSKC is XML, but we parse it with BeautifulSoup's lenient HTML parser
+        # on purpose so the tags can be accessed case-insensitively after the
+        # namespace prefixes are stripped. Silence BeautifulSoup's heuristic
+        # XMLParsedAsHTMLWarning, which only flags that intentional choice.
+        warnings.simplefilter("ignore", XMLParsedAsHTMLWarning)
+        xml = strip_prefix_from_soup(BeautifulSoup(xml_data, "lxml"))
 
     if not xml.keycontainer:
         raise TokenImportException("No KeyContainer found in PSKC data. Could not "
