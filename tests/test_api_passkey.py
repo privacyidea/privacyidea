@@ -1307,12 +1307,13 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertEqual(AUTH_RESPONSE.REJECT, result["authentication"])
             self.assertFalse(result["value"])
 
-        # A disabled token is logged as NO_TOKEN (no usable token for the request)
-        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.NO_TOKEN],
+        # The user owns this passkey but it is disabled -> NO_USABLE_TOKEN (consistent with check_token_list;
+        # NO_TOKEN is reserved for a user who has no token at all).
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.NO_USABLE_TOKEN],
                                                  transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED],
                                         transaction_id=transaction_id)
-        assert_authentication_log_entry(auth_log_entries[AuthEventType.NO_TOKEN], user=self.user,
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.NO_USABLE_TOKEN], user=self.user,
                                         transaction_id=transaction_id)
 
         remove_token(serial)
@@ -1355,12 +1356,12 @@ class PasskeyAPITest(PasskeyAPITestBase):
             result = j["result"]
             self.assertEqual(AUTH_RESPONSE.REJECT, result["authentication"])
             self.assertFalse(result["value"])
-        # A disabled token on /auth is logged as NO_TOKEN
-        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.NO_TOKEN],
+        # A disabled token on /auth is an owned-but-unusable token -> NO_USABLE_TOKEN (not NO_TOKEN).
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.NO_USABLE_TOKEN],
                                                  transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED],
                                         transaction_id=transaction_id)
-        assert_authentication_log_entry(auth_log_entries[AuthEventType.NO_TOKEN], user=self.user,
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.NO_USABLE_TOKEN], user=self.user,
                                         transaction_id=transaction_id)
 
         remove_token(serial)

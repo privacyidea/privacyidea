@@ -20,7 +20,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
 
-from sqlalchemy import and_, delete, func, or_, select
+from sqlalchemy import and_, delete, false, func, or_, select
 from sqlalchemy.orm import InstrumentedAttribute
 from sqlalchemy.sql import ColumnElement
 
@@ -380,23 +380,39 @@ def _filter_conditions(resolver: str | list[str] | None = None,
     return conditions
 
 
+def _ci_in(column: InstrumentedAttribute, values: list[str]) -> ColumnElement[bool]:
+    """
+    Case-insensitive ``IN``: match *column* against *values* with both sides lower-cased. The visibility scope is a
+    security boundary (which entries a principal may see), so it must match consistently regardless of the database
+    collation -- a case-sensitive backend (e.g. SQLite) would otherwise hide a user's own entries when the policy /
+    identity casing differs from the stored ``user.login`` casing.
+    """
+    return func.lower(column).in_([value.lower() for value in values])
+
+
 def _visibility_condition(scopes: list[AuthenticationLogVisibilityScope]) -> ColumnElement[bool]:
     """
     Build a single ``where`` condition restricting the visible entries to the given scopes: an entry must match all
     dimensions a scope sets (AND), and is included if it matches any one scope (OR). An entry matches a dimension via
-    ``IN`` on the corresponding column, so entries with a NULL value in a restricted dimension are excluded.
+    a case-insensitive ``IN`` on the corresponding column, so entries with a NULL value in a restricted dimension are
+    excluded.
+
+    An empty scope list (or scopes that set no dimension at all) restricts to *nothing*: it returns ``false()`` rather
+    than an empty ``or_()``, so the visibility boundary fails closed instead of degrading to "no restriction".
     """
     scope_conditions = []
     for scope in scopes:
         dimensions = []
         if scope.realms:
-            dimensions.append(AuthenticationLog.realm.in_(scope.realms))
+            dimensions.append(_ci_in(AuthenticationLog.realm, scope.realms))
         if scope.resolvers:
-            dimensions.append(AuthenticationLog.resolver.in_(scope.resolvers))
+            dimensions.append(_ci_in(AuthenticationLog.resolver, scope.resolvers))
         if scope.usernames:
-            dimensions.append(AuthenticationLog.username.in_(scope.usernames))
+            dimensions.append(_ci_in(AuthenticationLog.username, scope.usernames))
         if dimensions:
             scope_conditions.append(and_(*dimensions))
+    if not scope_conditions:
+        return false()
     return or_(*scope_conditions)
 
 
