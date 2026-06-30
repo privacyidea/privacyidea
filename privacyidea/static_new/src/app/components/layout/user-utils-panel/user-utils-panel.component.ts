@@ -72,6 +72,8 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
 import { from } from "rxjs";
 
+const PROFILE_TEXT_BREAKPOINT = 1701;
+
 @Component({
   selector: "app-user-utils-panel",
   imports: [MatIcon, MatIconButton, MatTooltip, LanguageSwitcherComponent, ThemeSwitcherComponent, NgClass, DatePipe],
@@ -112,11 +114,11 @@ export class UserUtilsPanelComponent {
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly router = inject(Router);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
-  isLargeScreen = signal(window.innerWidth > 1630);
+  isLargeScreen = signal(window.innerWidth > PROFILE_TEXT_BREAKPOINT);
 
   @HostListener("window:resize")
   onResize() {
-    this.isLargeScreen.set(window.innerWidth > 1630);
+    this.isLargeScreen.set(window.innerWidth > PROFILE_TEXT_BREAKPOINT);
   }
 
   profileText = computed(() => {

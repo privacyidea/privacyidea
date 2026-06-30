@@ -69,6 +69,7 @@
           @if (panel.expanded) {
             <button
               mat-icon-button
+              color="primary"
               [disabled]="!canSaveMachineResolver() || !isEdited()"
               (click)="$event.stopPropagation(); saveMachineResolver(panel)">
               <mat-icon>save</mat-icon>
