@@ -16,7 +16,7 @@
 # SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 
@@ -80,11 +80,16 @@ class AuthenticationLogVisibilityScope:
 
     *username_case_insensitive* mirrors the originating policy's ``user_case_insensitive`` option and forces a
     case-insensitive match on the ``usernames`` dimension only; realm and resolver always match case-sensitively.
+
+    *user_roles* restricts to entries of those :class:`AuthLogUserRole` values. It is not derived from policy scoping
+    (policies do not scope by role); it is used to express a principal's own entries -- a local/internal admin has no
+    realm, so their own entries are matched by username plus ``user_role=admin-internal`` instead of by realm.
     """
     realms: list[str]
     resolvers: list[str]
     usernames: list[str]
     username_case_insensitive: bool = False
+    user_roles: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -423,6 +428,8 @@ def _visibility_condition(scopes: list[AuthenticationLogVisibilityScope]) -> Col
                                                                               for name in scope.usernames]))
             else:
                 dimensions.append(AuthenticationLog.username.in_(scope.usernames))
+        if scope.user_roles:
+            dimensions.append(AuthenticationLog.user_role.in_([str(role) for role in scope.user_roles]))
         if dimensions:
             scope_conditions.append(and_(*dimensions))
     if not scope_conditions:

@@ -28,6 +28,7 @@ from privacyidea.api.lib.utils import send_result
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.conditional_access.authentication_log import (get_authentication_logs_paginate,
                                                                    AuthenticationLogVisibilityScope,
+                                                                   AuthLogUserRole,
                                                                    DEFAULT_PAGE_SIZE)
 from privacyidea.lib.log import log_with
 from privacyidea.lib.params import get_optional
@@ -110,12 +111,18 @@ def get_authentication_log():
     end_timestamp = isoparse(end) if end else None
 
     visibility_scopes = get_authentication_log_visibility_scopes(PolicyAction.AUTHENTICATION_LOG_READ)
-    # A scoped admin always also sees their own entries (username + realm), added to the policy scope as an extra OR
-    # alternative. (A user already sees only their own entries, so this is irrelevant for them.)
+    # A scoped admin always also sees their own entries, added to the policy scope as an extra OR alternative.
+    # (A user already sees only their own entries, so this is irrelevant for them.)
     if g.logged_in_user["role"] == ROLE.ADMIN and visibility_scopes is not None:
         own_realm = g.logged_in_user.get("realm")
         own_username = g.logged_in_user.get("username")
-        if own_realm and own_username:
+        if own_username and not own_realm:
+            # no realm -> local admin
+            visibility_scopes = visibility_scopes + [
+                AuthenticationLogVisibilityScope(realms=[], resolvers=[], usernames=[own_username],
+                                                 user_roles=[str(AuthLogUserRole.ADMIN_INTERNAL)])]
+        elif own_username and own_realm:
+            # username + realm -> external admin
             visibility_scopes = visibility_scopes + [
                 AuthenticationLogVisibilityScope(realms=[own_realm], resolvers=[], usernames=[own_username])]
 

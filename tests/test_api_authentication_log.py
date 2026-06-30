@@ -28,6 +28,7 @@ from privacyidea.lib.conditional_access.authentication_event_types import AuthEv
 from privacyidea.lib.conditional_access.authentication_log import log_authentication_event, AuthLogUserRole
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, PolicyAction
 from privacyidea.lib.realm import set_realm, delete_realm
+from privacyidea.lib.resolver import save_resolver, delete_resolver
 from privacyidea.models import db
 from .authlog_utils import AuthLogTestCase
 
@@ -71,6 +72,23 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
     @staticmethod
     def _returned_ids(value):
         return {entry["id"] for entry in value["auth_logs"]}
+
+    def _login_helpdesk(self):
+        # Log in a helpdesk admin from the superuser realm "adminrealm" (so they have a real realm + username), and
+        # clear the auth event its login produced so tests work on controlled entries only. Returns the JWT.
+        set_realm("adminrealm", [{"name": self.resolvername1}])
+        with self.app.test_request_context("/auth", method="POST",
+                                           data={"username": "selfservice@adminrealm", "password": "test"}):
+            token = self.app.full_dispatch_request().json["result"]["value"]["token"]
+        self._clear_log()
+        return token
+
+    def _helpdesk_ids(self, token, query_string):
+        with self.app.test_request_context("/authenticationlog/", method="GET", query_string=query_string,
+                                           headers={"Authorization": token}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            return {entry["id"] for entry in res.json["result"]["value"]["auth_logs"]}
 
     # --- admin GET ---
 
@@ -298,37 +316,77 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
                 delete_policy("authlog_scoped")
                 delete_policy("authlog_all")
 
-    def test_admins_own_entries_always_included(self):
-        # A helpdesk admin in the superuser realm "adminrealm" has a real (username, realm), so their own entries
-        # are always added to the policy scope.
-        set_realm("adminrealm", [{"name": self.resolvername1}])
-        with self.app.test_request_context("/auth", method="POST",
-                                           data={"username": "selfservice@adminrealm", "password": "test"}):
-            helpdesk_token = self.app.full_dispatch_request().json["result"]["value"]["token"]
-        # The login above logged its own auth event; clear so the test works on controlled entries only.
-        self._clear_log()
-        # One in-scope (realm1) entry and the admin's own entry (username=selfservice, realm=adminrealm).
+    def test_realm_scoped_admin_always_sees_own_entries(self):
+        # A realm-scoped helpdesk admin sees their own entry even though it is in a different realm (adminrealm). The
+        # own-scope matches by realm + username (resolver is intentionally not part of the match).
+        helpdesk_token = self._login_helpdesk()
         in_scope = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1,
                                             uid="1", realm=self.realm1)
         own = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1, uid="2",
                                        realm="adminrealm", username="selfservice")
         db.session.commit()
         set_policy("authlog_realm", scope=SCOPE.ADMIN, action=PolicyAction.AUTHENTICATION_LOG_READ, realm=self.realm1)
-
-        def helpdesk_get(query_string):
-            with self.app.test_request_context("/authenticationlog/", method="GET", query_string=query_string,
-                                               headers={"Authorization": helpdesk_token}):
-                res = self.app.full_dispatch_request()
-                self.assertEqual(200, res.status_code, res.json)
-                return {entry["id"] for entry in res.json["result"]["value"]["auth_logs"]}
-
         try:
-            # The realm1 entry (policy scope) plus the admin's own adminrealm entry are both returned.
-            self.assertEqual({in_scope, own}, helpdesk_get({"page_size": 50}))
+            self.assertEqual({in_scope, own}, self._helpdesk_ids(helpdesk_token, {"page_size": 50}))
         finally:
             delete_policy("authlog_realm")
             delete_realm("adminrealm")
 
+    def test_resolver_scoped_admin_always_sees_own_entries(self):
+        # The helpdesk admin resolves via resolvername1 (adminrealm uses it).
+        # Granted read access scoped to a *different* resolver, their own entries fall outside that
+        # scope and are only included via the own-entries scope.
+        save_resolver({"resolver": "otherresolver", "type": "passwdresolver", "fileName": "tests/testdata/passwords"})
+        helpdesk_token = self._login_helpdesk()
+        in_scope = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="otherresolver",
+                                            uid="1", realm=self.realm1)
+        own = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1, uid="2",
+                                       realm="adminrealm", username="selfservice")
+        db.session.commit()
+        set_policy("authlog_resolver", scope=SCOPE.ADMIN, action=PolicyAction.AUTHENTICATION_LOG_READ,
+                   resolver="otherresolver")
+        try:
+            self.assertSetEqual({in_scope, own}, self._helpdesk_ids(helpdesk_token, {"page_size": 50}))
+        finally:
+            delete_policy("authlog_resolver")
+            delete_realm("adminrealm")
+            delete_resolver("otherresolver")
+
+    def test_user_scoped_admin_always_sees_own_entries(self):
+        # A user-scoped helpdesk admin sees their own entry even though its username differs from the scoped user,
+        # so it is only included via the own-entries scope.
+        helpdesk_token = self._login_helpdesk()
+        in_scope = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1,
+                                            uid="1", realm=self.realm1, username="someuser")
+        own = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1, uid="2",
+                                       realm="adminrealm", username="selfservice")
+        db.session.commit()
+        set_policy("authlog_user", scope=SCOPE.ADMIN, action=PolicyAction.AUTHENTICATION_LOG_READ, user="someuser")
+        try:
+            self.assertSetEqual({in_scope, own}, self._helpdesk_ids(helpdesk_token, {"page_size": 50}))
+        finally:
+            delete_policy("authlog_user")
+            delete_realm("adminrealm")
+
+    def test_local_admin_always_sees_own_entries(self):
+        # A restricted local (DB) admin has no realm; their own /auth events are recorded with realm/resolver NULL and
+        # user_role=admin-internal, so they are matched by username + role, not by realm..
+        in_scope = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1,
+                                            uid="1", realm=self.realm1)
+        own = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, username=self.testadmin,
+                                       user_role=AuthLogUserRole.ADMIN_INTERNAL)
+        # A same-named regular user's entry must NOT leak in via the own-scope (matched by role, not username alone).
+        other = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1, uid="3",
+                                         realm=self.OTHER_REALM, username=self.testadmin,
+                                         user_role=AuthLogUserRole.USER)
+        db.session.commit()
+        set_policy("authlog_realm", scope=SCOPE.ADMIN, action=PolicyAction.AUTHENTICATION_LOG_READ, realm=self.realm1)
+        try:
+            ids = self._returned_ids(self._get({"page_size": 50})["result"]["value"])
+            self.assertSetEqual({in_scope, own}, ids)
+            self.assertNotIn(other, ids)
+        finally:
+            delete_policy("authlog_realm")
 
     def test_user_sees_only_own_entries(self):
         # Log in the self-service user "selfservice" in realm1 (-> self.at_user); that login writes its own auth-log

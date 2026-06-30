@@ -682,6 +682,19 @@ class AuthenticationLogPaginateTestCase(MyTestCase):
         restricted = get_authentication_logs_paginate(visibility_scopes=[scope])
         self.assertEqual(2, restricted.count)
 
+    def test_visibility_scope_user_roles_dimension(self):
+        # The user_roles dimension is AND-ed with the others; it lets a local admin's own entries be matched by
+        # username + admin-internal, so a same-named user entry is excluded.
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, username="testadmin",
+                                 user_role=AuthLogUserRole.ADMIN_INTERNAL)
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, realm="realm1", username="testadmin",
+                                 user_role=AuthLogUserRole.USER)
+        scope = AuthenticationLogVisibilityScope(realms=[], resolvers=[], usernames=["testadmin"],
+                                                 user_roles=[str(AuthLogUserRole.ADMIN_INTERNAL)])
+        restricted = get_authentication_logs_paginate(visibility_scopes=[scope])
+        self.assertEqual(1, restricted.count)
+        self.assertEqual(str(AuthLogUserRole.ADMIN_INTERNAL), restricted.auth_logs[0].user_role)
+
     def test_to_dict_shape_and_iso_timestamp(self):
         self._create(1)
         page_dict = get_authentication_logs_paginate().to_dict()
