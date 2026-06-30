@@ -26,8 +26,8 @@ $description-width: 18rem;
   background-color: var(--table-color);
 }
 
-// Striped key/value Material table used inside the token and container detail cards.
-// Shared so both components render identical rows (the rules used to be copy-pasted).
+// Striped key/value Material table used inside the token and container detail
+// cards, so both render identical rows.
 @mixin details-key-value-table {
   width: 100%;
 
@@ -55,8 +55,8 @@ $description-width: 18rem;
 }
 
 // Shared flex layout for the detail-card grids in token-details and
-// container-details. Replaces the masonry directive: equal-ish columns ~28rem
-// wide that wrap to fewer per row as the width shrinks.
+// container-details: equal-ish columns ~28rem wide that wrap to fewer per row
+// as the width shrinks.
 @mixin details-cards-flex {
   display: flex;
   flex-direction: row;
@@ -72,10 +72,9 @@ $description-width: 18rem;
 }
 
 // Standardized description card (token-details + container-details): sized to
-// hold an input-width-xl (616px) description field plus the inline edit buttons.
-// The field is a multi-line textarea, so longer text wraps to more rows rather
-// than widening the card; on narrow viewports the card shrinks and the text
-// simply wraps to more rows.
+// hold an input-width-xl (616px) field plus the inline edit buttons. The field
+// is a multi-line textarea, so longer text wraps to more rows instead of
+// widening the card.
 @mixin details-description-card {
   align-self: flex-start;
   flex: 0 1 calc(var(--input-width-xl) + 7rem);
