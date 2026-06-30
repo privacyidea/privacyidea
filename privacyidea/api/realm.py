@@ -429,7 +429,7 @@ def delete_realm_api(realm=None):
     :reqheader PI-Authorization: authentication token.
     :status 200: database id of the deleted realm in ``result.value``.
     :status 400: a token or container in this realm still has a user
-        assigned.
+        assigned, or a user in this realm still has custom user attributes.
     :status 404: no realm with the given name exists.
 
     **Example request**:

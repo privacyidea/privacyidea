@@ -34,7 +34,7 @@ from privacyidea.lib.caconnector import (get_caconnector_list,
                                          save_caconnector)
 from privacyidea.lib.caconnectors.localca import ATTR
 from privacyidea.lib.crypto import create_hsm_object
-from privacyidea.lib.error import ResourceNotFoundError
+from privacyidea.lib.error import ResourceNotFoundError, UserError
 from privacyidea.lib.event import EventConfiguration, enable_event, delete_event
 from privacyidea.lib.policy import (PolicyClass, enable_policy, delete_policy,
                                     set_policy)
@@ -184,7 +184,7 @@ def realm_delete(realm):
     """
     try:
         delete_realm(realm)
-    except ResourceNotFoundError as e:
+    except (ResourceNotFoundError, UserError) as e:
         click.secho(f"Could not delete realm '{realm}': {e!r}", fg="red")
     else:
         click.secho(f"Realm '{realm}' successfully deleted.", fg="green")

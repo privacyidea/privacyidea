@@ -112,8 +112,10 @@ class ResolverTestCase(MyTestCase):
         # user of the realm still has custom user attributes
         user = User("root", self.realm1)
         user.set_attribute("test_key", "test_value")
-        self.assertRaises(UserError, delete_realm, self.realm1)
-        user.delete_attribute("test_key")
+        try:
+            self.assertRaises(UserError, delete_realm, self.realm1)
+        finally:
+            user.delete_attribute("test_key")
         # Now no user is assigned anymore, deletion is allowed
         delete_realm(self.realm1)
 
