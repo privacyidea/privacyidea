@@ -1,11 +1,11 @@
+@use "table";
+
 :host {
   display: contents;
 }
 
 .details-card--description {
-  width: 340px;
-  min-height: 256.5px;
-  align-self: flex-start;
+  @include table.details-description-card;
 
   .value-row {
     display: flex;
@@ -28,12 +28,4 @@
     justify-content: flex-end;
   }
 
-  .description-text {
-    overflow-wrap: anywhere;
-  }
-
-  .description-field {
-    width: 100%;
-    max-width: 700px;
-  }
 }

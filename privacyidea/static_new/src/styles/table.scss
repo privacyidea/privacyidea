@@ -71,6 +71,28 @@ $description-width: 18rem;
   }
 }
 
+// Standardized description card (token-details + container-details): sized to
+// hold an input-width-xl (616px) description field plus the inline edit buttons.
+// The field is a multi-line textarea, so longer text wraps to more rows rather
+// than widening the card; on narrow viewports the card shrinks and the text
+// simply wraps to more rows.
+@mixin details-description-card {
+  align-self: flex-start;
+  flex: 0 1 calc(var(--input-width-xl) + 7rem);
+  min-height: 160.5px;
+
+  // Long unbroken values (e.g. "WWWW…") must wrap, not overflow the card.
+  // Mirror the fill form-field's background and text padding so the displayed
+  // characters sit in the same position as when editing the input.
+  .description-text {
+    display: block;
+    overflow-wrap: anywhere;
+    padding: 20px 16px;
+    background: var(--mat-sys-surface-container);
+    border-radius: var(--border-radius);
+  }
+}
+
 @mixin base-table-structure(
   $table-class: ".table",
   $filter-class: ".table-filter",

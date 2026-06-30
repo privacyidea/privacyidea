@@ -47,7 +47,7 @@
             <div class="value-content">
               @if (desc.isEditing()) {
                 <mat-form-field
-                  class="description-field"
+                  class="input-width-xl"
                   subscriptSizing="dynamic">
                   <textarea
                     [value]="desc.value"
@@ -55,7 +55,7 @@
                     i18n-placeholder
                     matInput
                     placeholder="Enter description"
-                    rows="7"></textarea>
+                    rows="3"></textarea>
                 </mat-form-field>
               } @else {
                 <span class="description-text">{{ desc.value || "—" }}</span>

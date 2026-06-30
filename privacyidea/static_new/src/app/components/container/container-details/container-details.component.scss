@@ -92,16 +92,11 @@
 }
 
 .details-card--description {
-  align-self: flex-start;
-  height: 237px;
+  @include table.details-description-card;
 
   .value-edit {
     min-width: 80px;
     justify-content: flex-end;
-  }
-
-  .description-field {
-    width: 100%;
   }
 }
 

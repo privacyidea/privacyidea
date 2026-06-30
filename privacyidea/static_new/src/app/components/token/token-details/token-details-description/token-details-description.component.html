@@ -26,9 +26,8 @@
       @if (element().isEditing()) {
         @if (selfService()) {
           <mat-form-field
-            class="input-width-m description height-136"
+            class="input-width-xl description height-136"
             subscriptSizing="dynamic">
-            <mat-label i18n>Description</mat-label>
             <textarea
               [value]="element().value"
               (input)="element().value = $any($event.target).value"
@@ -36,23 +35,22 @@
               i18n-placeholder
               matInput
               placeholder="Enter description"
-              rows="4"></textarea>
+              rows="3"></textarea>
             <mat-hint align="end"
               >{{ element().value.length || 0 }} / {{ tokenService.maxDescriptionLength }}
             </mat-hint>
           </mat-form-field>
         } @else {
           <mat-form-field
-            class="description-field"
+            class="input-width-xl description"
             subscriptSizing="dynamic">
-            <mat-label i18n>Description</mat-label>
             <textarea
               [value]="element().value"
               (input)="element().value = $any($event.target).value"
               maxlength="80"
               appAutofocus
               matInput
-              rows="7"></textarea>
+              rows="3"></textarea>
             <mat-hint align="end"
               >{{ element().value.length || 0 }} / {{ tokenService.maxDescriptionLength }}
             </mat-hint>
