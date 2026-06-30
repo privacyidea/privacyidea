@@ -70,10 +70,14 @@ class AuthenticationLogVisibilityScope:
     match all dimensions a policy sets (logical AND); across several scopes (from several policies) an entry is
     visible if it matches any one of them (logical OR) -- see :func:`get_authentication_logs_paginate`. Empty lists
     mean "no restriction on that dimension".
+
+    *username_case_insensitive* mirrors the originating policy's ``user_case_insensitive`` option and applies to the
+    ``usernames`` dimension only (see :func:`_visibility_condition`); realm and resolver are always matched exactly.
     """
     realms: list[str]
     resolvers: list[str]
     usernames: list[str]
+    username_case_insensitive: bool = False
 
 
 @dataclass
@@ -380,22 +384,24 @@ def _filter_conditions(resolver: str | list[str] | None = None,
     return conditions
 
 
-def _ci_in(column: InstrumentedAttribute, values: list[str]) -> ColumnElement[bool]:
-    """
-    Case-insensitive ``IN``: match *column* against *values* with both sides lower-cased. The visibility scope is a
-    security boundary (which entries a principal may see), so it must match consistently regardless of the database
-    collation -- a case-sensitive backend (e.g. SQLite) would otherwise hide a user's own entries when the policy /
-    identity casing differs from the stored ``user.login`` casing.
-    """
-    return func.lower(column).in_([value.lower() for value in values])
-
-
 def _visibility_condition(scopes: list[AuthenticationLogVisibilityScope]) -> ColumnElement[bool]:
     """
     Build a single ``where`` condition restricting the visible entries to the given scopes: an entry must match all
-    dimensions a scope sets (AND), and is included if it matches any one scope (OR). An entry matches a dimension via
-    a case-insensitive ``IN`` on the corresponding column, so entries with a NULL value in a restricted dimension are
-    excluded.
+    dimensions a scope sets (AND), and is included if it matches any one scope (OR). Entries with a NULL value in a
+    restricted dimension are excluded.
+
+    The visibility scope is an authorization boundary (which entries a principal may see), so it matches **exactly**
+    rather than relying on the database collation: matching case-insensitively would be fail-open (an admin scoped to
+    resolver ``res`` or user ``alice`` would also see a distinct ``Res`` / ``Alice``), and for a security boundary a
+    case mismatch must hide entries, not reveal extra ones.
+
+    Per dimension:
+
+    * **realm** -- exact ``IN``. Realm names come from the configuration and are consistent (always lowercase).
+    * **resolver** -- exact ``IN``; resolver names come from the configuration and are consistent.
+    * **username** -- exact ``IN`` by default. Only when the originating policy set ``user_case_insensitive``
+      (carried on the scope) is it matched case-insensitively via ``LOWER()`` -- and only this dimension, mirroring
+      how that policy option is applied elsewhere.
 
     An empty scope list (or scopes that set no dimension at all) restricts to *nothing*: it returns ``false()`` rather
     than an empty ``or_()``, so the visibility boundary fails closed instead of degrading to "no restriction".
@@ -404,11 +410,15 @@ def _visibility_condition(scopes: list[AuthenticationLogVisibilityScope]) -> Col
     for scope in scopes:
         dimensions = []
         if scope.realms:
-            dimensions.append(_ci_in(AuthenticationLog.realm, scope.realms))
+            dimensions.append(AuthenticationLog.realm.in_(scope.realms))
         if scope.resolvers:
-            dimensions.append(_ci_in(AuthenticationLog.resolver, scope.resolvers))
+            dimensions.append(AuthenticationLog.resolver.in_(scope.resolvers))
         if scope.usernames:
-            dimensions.append(_ci_in(AuthenticationLog.username, scope.usernames))
+            if scope.username_case_insensitive:
+                dimensions.append(func.lower(AuthenticationLog.username).in_([name.lower()
+                                                                              for name in scope.usernames]))
+            else:
+                dimensions.append(AuthenticationLog.username.in_(scope.usernames))
         if dimensions:
             scope_conditions.append(and_(*dimensions))
     if not scope_conditions:

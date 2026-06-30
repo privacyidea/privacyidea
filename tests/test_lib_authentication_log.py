@@ -644,6 +644,42 @@ class AuthenticationLogPaginateTestCase(MyTestCase):
         restricted = get_authentication_logs_paginate(visibility_scopes=scopes)
         self.assertEqual(2, restricted.count)
 
+    def test_visibility_scope_resolver_matches_exactly(self):
+        # The visibility scope is an authorization boundary: a resolver scope must not leak a case-variant resolver.
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="realm1")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="RES1", uid="u2", realm="realm1")
+        scope = AuthenticationLogVisibilityScope(realms=[], resolvers=["res1"], usernames=[])
+        restricted = get_authentication_logs_paginate(visibility_scopes=[scope])
+        self.assertEqual(1, restricted.count)
+        self.assertEqual("res1", restricted.auth_logs[0].resolver)
+
+    def test_visibility_scope_username_matches_exactly_by_default(self):
+        # Without the policy's user_case_insensitive option, an admin scoped to "alice" must not see "Alice".
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", realm="realm1", username="alice")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", realm="realm1", username="Alice")
+        scope = AuthenticationLogVisibilityScope(realms=[], resolvers=[], usernames=["alice"])
+        restricted = get_authentication_logs_paginate(visibility_scopes=[scope])
+        self.assertEqual(1, restricted.count)
+        self.assertEqual("alice", restricted.auth_logs[0].username)
+
+    def test_visibility_scope_username_case_insensitive_when_policy_set(self):
+        # With user_case_insensitive carried on the scope, the username dimension matches case-insensitively.
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", realm="realm1", username="alice")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", realm="realm1", username="Alice")
+        scope = AuthenticationLogVisibilityScope(realms=[], resolvers=[], usernames=["alice"],
+                                                 username_case_insensitive=True)
+        restricted = get_authentication_logs_paginate(visibility_scopes=[scope])
+        self.assertEqual(2, restricted.count)
+
+    def test_visibility_scope_realm_matches_exactly(self):
+        # Realm matches exactly; both sides are always lower case (realms are lower-cased at creation and set_policy
+        # validates a policy realm against the existing lower-cased realms), so a mixed-case realm cannot occur.
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="realm1")
+        scope = AuthenticationLogVisibilityScope(realms=["Realm1"], resolvers=[], usernames=[])
+        self.assertEqual(0, get_authentication_logs_paginate(visibility_scopes=[scope]).count)
+        scope = AuthenticationLogVisibilityScope(realms=["realm1"], resolvers=[], usernames=[])
+        self.assertEqual(1, get_authentication_logs_paginate(visibility_scopes=[scope]).count)
+
     def test_to_dict_shape_and_iso_timestamp(self):
         self._create(1)
         page_dict = get_authentication_logs_paginate().to_dict()
