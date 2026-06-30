@@ -46,7 +46,7 @@
       [pageSize]="auditService.pageSize()"
       showFirstLastButtons />
   </div>
-  <div class="table-scroll-region">
+  <div class="table-scroll-region" appScrollEdges>
     <table
       [dataSource]="auditDataSource()"
       aria-label="Audit Data Table"

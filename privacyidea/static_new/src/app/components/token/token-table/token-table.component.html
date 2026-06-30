@@ -66,7 +66,7 @@
     <div class="margin-bottom-16">
       <app-token-table-actions />
     </div>
-    <div class="table-scroll-region">
+    <div class="table-scroll-region" appScrollEdges>
       <table
         [dataSource]="tokenDataSource()"
         aria-label="Token Data Table"

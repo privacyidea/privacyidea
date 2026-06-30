@@ -38,7 +38,7 @@
       [pageSize]="pageSize()"
       showFirstLastButtons />
   </div>
-  <div class="table-scroll-region">
+  <div class="table-scroll-region" appScrollEdges>
     <table
       [dataSource]="tokenDataSource()"
       aria-label="Token Data Table"

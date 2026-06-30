@@ -46,7 +46,7 @@
       [pageSize]="pageSize()"
       showFirstLastButtons />
   </div>
-  <div class="table-scroll-region">
+  <div class="table-scroll-region" appScrollEdges>
     <table
       [dataSource]="containerDataSource()"
       aria-label="Container Data Table"

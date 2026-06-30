@@ -10,7 +10,7 @@
   }
 
   &:has(.admin-layout) {
-    --max-height: calc(100vh - 192px - var(--global-padding) * 2);
+    --max-height: calc(100vh - 160px - var(--global-padding) * 2);
     --max-width: calc(100vw - 2 * var(--double-global-padding) - 2 * var(--global-padding));
   }
 }

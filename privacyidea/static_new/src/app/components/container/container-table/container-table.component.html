@@ -51,7 +51,7 @@
         showFirstLastButtons />
     </div>
     <app-container-table-actions />
-    <div class="table-scroll-region">
+    <div class="table-scroll-region" appScrollEdges>
       <table
         [dataSource]="containerDataSource()"
         aria-label="Container Data Table"
