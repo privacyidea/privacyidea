@@ -255,7 +255,7 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         with self.assertRaises(EnrollmentError) as ex:
             registration_response["clientDataJSON"] = self.registration_client_data.replace("a", "b")
             token.update(registration_response)
-        self.assertIn("Invalid JSON structure", ex.exception.message)
+        self.assertIn("clientDataJSON was malformed", ex.exception.message)
 
     def test_05_init_exceptions(self):
         # Also test setting a description in the first step

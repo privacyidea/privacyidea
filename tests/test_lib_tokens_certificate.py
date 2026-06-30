@@ -386,9 +386,9 @@ class CertificateTokenTestCase(MyTestCase):
         # At each testrun, the certificate might get another serial number!
         x509obj = x509.load_pem_x509_certificate(certificate.encode())
         self.assertEqual("{0!r}".format(x509obj.issuer),
-                         "<Name(C=DE,ST=Hessen,O=privacyidea,CN=CA001)>")
+                         "<Name(CN=CA001,O=privacyidea,ST=Hessen,C=DE)>")
         self.assertEqual("{0!r}".format(x509obj.subject),
-                         "<Name(C=DE,ST=Hessen,O=privacyidea,CN=requester.localdomain)>")
+                         "<Name(CN=requester.localdomain,O=privacyidea,ST=Hessen,C=DE)>")
 
         # Test, if the certificate is also completely stored in the tokeninfo
         # and if we can retrieve it from the tokeninfo
@@ -431,7 +431,7 @@ class CertificateTokenTestCase(MyTestCase):
         # At each testrun, the certificate might get another serial number!
         x509obj = x509.load_pem_x509_certificate(certificate.encode())
         self.assertEqual("{0!r}".format(x509obj.issuer),
-                         "<Name(C=DE,ST=Hessen,O=privacyidea,CN=CA001)>")
+                         "<Name(CN=CA001,O=privacyidea,ST=Hessen,C=DE)>")
         self.assertEqual("{0!r}".format(x509obj.subject),
                          "<Name(CN=cn=cornelius)>")
 
@@ -476,7 +476,7 @@ class CertificateTokenTestCase(MyTestCase):
         # At each testrun, the certificate might get another serial number!
         x509obj = x509.load_pem_x509_certificate(certificate.encode())
         self.assertEqual(f"{x509obj.issuer!r}",
-                         "<Name(C=DE,ST=Hessen,O=privacyidea,CN=CA001)>")
+                         "<Name(CN=CA001,O=privacyidea,ST=Hessen,C=DE)>")
         # No Email Address in the subject!
         self.assertEqual(f"{x509obj.subject!r}",
                          "<Name(CN=cornelius)>")
@@ -509,8 +509,8 @@ class CertificateTokenTestCase(MyTestCase):
         x509obj = x509.load_pem_x509_certificate(certificate.encode())
         # cryptography uses the dotted notation for the email address component
         self.assertEqual(f"{x509obj.subject!r}",
-                         f"<Name(OU=realm1,CN=cornelius,"
-                         f"{x509.oid.NameOID.EMAIL_ADDRESS.dotted_string}=user@localhost.localdomain)>")
+                         f"<Name({x509.oid.NameOID.EMAIL_ADDRESS.dotted_string}=user@localhost.localdomain,"
+                         f"CN=cornelius,OU=realm1)>")
         remove_token(self.serial3)
 
         # Check that we can use the PIN as password for the PKCS12 container
