@@ -61,15 +61,15 @@ import { ResolverService } from "@services/resolver/resolver.service";
 import { UserTableActionsComponent } from "./user-table-actions/user-table-actions.component";
 
 const columnKeysMap = [
-  { key: "username", label: "Username" },
-  { key: "userid", label: "User ID" },
-  { key: "givenname", label: "Given Name" },
-  { key: "surname", label: "Surname" },
-  { key: "email", label: "Email" },
-  { key: "phone", label: "Phone" },
-  { key: "mobile", label: "Mobile" },
-  { key: "description", label: "Description" },
-  { key: "resolver", label: "Resolver" }
+  { key: "username", label: $localize`Username` },
+  { key: "userid", label: $localize`User ID` },
+  { key: "givenname", label: $localize`Given Name` },
+  { key: "surname", label: $localize`Surname` },
+  { key: "email", label: $localize`Email` },
+  { key: "phone", label: $localize`Phone` },
+  { key: "mobile", label: $localize`Mobile` },
+  { key: "description", label: $localize`Description` },
+  { key: "resolver", label: $localize`Resolver` }
 ];
 
 @Component({
@@ -159,7 +159,7 @@ export class UserTableComponent {
     if (!s.direction) return data;
     const dir = s.direction === "asc" ? 1 : -1;
     const key = s.active as keyof UserData;
-    return data.sort((a: any, b: any) => {
+    return data.sort((a: UserData, b: UserData) => {
       const va = (a?.[key] ?? "").toString().toLowerCase();
       const vb = (b?.[key] ?? "").toString().toLowerCase();
       if (va < vb) return -1 * dir;
@@ -190,10 +190,10 @@ export class UserTableComponent {
   }
 
   onClickUsername(user: UserData): void {
-    this.userService.detailsUsername.set(user.username);
+    this.userService.detailsUser.set({ username: user.username, realm: this.userService.selectedUserRealm() });
   }
 
-  onClickResolver(resolverName: unknown): void {
+  onClickResolver(resolverName: string): void {
     const resolver = this.resolverService.resolvers().find((r) => r.resolvername === resolverName);
     if (resolver) {
       this.dialog.open(UserNewResolverComponent, {

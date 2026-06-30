@@ -16,30 +16,17 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
 <div class="well">
-    <div class="row">  <!-- upper row -->
-        <div class="col-lg-12" ui-view class="slide panel">
-            <translate>Viewing the RSS feeds for the last {{ rss_age }} days.</translate>
-           <span ng-repeat="(source, feed) in rss">
-               <h1>{{ source }}</h1>
-               <span ng-repeat="item in feed">
-                   <h3>{{ item.title }}</h3>
-                   <p>{{ item.pub_date}}</p>
-                   <p><a href="{{ item.link }}" target="news_window"><translate>Read more in new window...</translate></a></p>
-                   <uib-accordion close-others="false">
-                         <div uib-accordion-group
-                                 class="panel-default">
-                                <uib-accordion-heading>
-                                    <div translate>Summary</div>
-                                </uib-accordion-heading>
-                                <!-- <p>{{ item.summary  }}</p> -->
-                                <!-- do we want to display the HTML in safe way? -->
-                                <p ng-bind-html="item.summary"></p>
-                         </div>
-                   </uib-accordion>
-               </span>
-            </span>
-           </div>
-       </div>
+    <p class="text-muted small" translate>
+        Viewing the RSS feeds for the last {{ rss_age }} days.
+    </p>
+    <div ng-repeat="(source, feed) in rss">
+        <h3>{{ source }}</h3>
+        <div class="panel panel-default" ng-repeat="item in feed">
+            <div class="panel-heading">
+                <strong>{{ item.title }}</strong>
+                <small class="text-muted pull-right">{{ item.pub_date | date:'medium' }}</small>
+            </div>
+            <div class="panel-body" ng-bind-html="item.summary"></div>
+        </div>
+    </div>
 </div>
-
-

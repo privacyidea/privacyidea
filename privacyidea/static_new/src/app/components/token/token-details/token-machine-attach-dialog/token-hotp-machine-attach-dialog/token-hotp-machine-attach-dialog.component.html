@@ -19,10 +19,11 @@
 
 <app-dialog-wrapper
   title="Attach Offline Machine"
-  (onAction)="onAction($event)"
+  i18n-title
+  (actionTriggered)="onAction($event)"
   [actions]="[assignAction]"
   [showCancelButton]="true"
-  (close)="close()">
+  (wrapperClose)="close()">
   <!-- number input field for countForm and roundsForm -->
   <mat-form-field
     appearance="fill"

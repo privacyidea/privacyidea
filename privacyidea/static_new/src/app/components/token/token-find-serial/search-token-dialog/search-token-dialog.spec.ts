@@ -24,7 +24,7 @@ import { SearchTokenDialogComponent } from "./search-token-dialog";
 describe("SearchTokenDialogComponent", () => {
   let component: SearchTokenDialogComponent;
   let fixture: ComponentFixture<SearchTokenDialogComponent>;
-  let mockDialogRef: MockMatDialogRef<SearchTokenDialogComponent, any>;
+  let mockDialogRef: MockMatDialogRef<SearchTokenDialogComponent, boolean>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -36,7 +36,7 @@ describe("SearchTokenDialogComponent", () => {
     }).compileComponents();
 
     fixture = TestBed.createComponent(SearchTokenDialogComponent);
-    mockDialogRef = TestBed.inject(MatDialogRef) as unknown as MockMatDialogRef<SearchTokenDialogComponent, any>;
+    mockDialogRef = TestBed.inject(MatDialogRef) as unknown as MockMatDialogRef<SearchTokenDialogComponent, boolean>;
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

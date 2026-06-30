@@ -23,7 +23,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { AuthService } from "@services/auth/auth.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { RealmService } from "@services/realm/realm.service";
-import { Tokens, TokenService } from "@services/token/token.service";
+import { Tokens, TokenService, TokenTypeKey } from "@services/token/token.service";
 import { UserService } from "@services/user/user.service";
 import {
   MockContentService,
@@ -39,7 +39,7 @@ import { TokenDetailsUserComponent } from "./token-details-user.component";
 import { TokenDetailsUserSelfServiceComponent } from "./token-details-user.self-service.component";
 import { ContentService } from "@services/content/content.service";
 
-function makeTokenDetailResponse(tokentype: any): MockPiResponse<Tokens> {
+function makeTokenDetailResponse(tokentype: TokenTypeKey): MockPiResponse<Tokens> {
   return {
     id: 0,
     jsonrpc: "2.0",
@@ -137,6 +137,19 @@ describe("TokenDetailsUserComponent", () => {
 
   it("creates", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("derives userRealm from the user_realm row for the user link", () => {
+    component.userData.set([
+      { keyMap: { key: "username" }, value: "alice", isEditing: signal(false) },
+      { keyMap: { key: "user_realm" }, value: "themis", isEditing: signal(false) }
+    ]);
+    expect((component as unknown as { userRealm: () => string }).userRealm()).toBe("themis");
+  });
+
+  it("falls back to an empty userRealm when no user_realm row is present", () => {
+    component.userData.set([{ keyMap: { key: "username" }, value: "alice", isEditing: signal(false) }]);
+    expect((component as unknown as { userRealm: () => string }).userRealm()).toBe("");
   });
 
   it("creates self service", () => {

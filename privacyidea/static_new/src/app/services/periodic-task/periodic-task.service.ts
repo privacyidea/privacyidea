@@ -57,17 +57,17 @@ export const EMPTY_PERIODIC_TASK: PeriodicTask = {
 };
 
 export const TASK_KEY_MAPPING: Record<string, string> = {
-  id: "ID",
-  name: "Name",
-  active: "Active",
-  interval: "Interval",
-  nodes: "Nodes",
-  taskmodule: "Task Module",
-  retry_if_failed: "Retry If Failed",
-  last_update: "Last Update",
-  ordering: "Ordering",
-  options: "Options",
-  last_runs: "Last Runs"
+  id: $localize`ID`,
+  name: $localize`Name`,
+  active: $localize`Active`,
+  interval: $localize`Interval`,
+  nodes: $localize`Nodes`,
+  taskmodule: $localize`Task Module`,
+  retry_if_failed: $localize`Retry If Failed`,
+  last_update: $localize`Last Update`,
+  ordering: $localize`Ordering`,
+  options: $localize`Options`,
+  last_runs: $localize`Last Runs`
 };
 
 export interface PeriodicTaskOption {
@@ -88,8 +88,8 @@ export const EMPTY_PERIODIC_TASK_OPTION: PeriodicTaskOption = {
 export type PeriodicTaskModule = "SimpleStats" | "EventCounter";
 export const PERIODIC_TASK_MODULES: PeriodicTaskModule[] = ["SimpleStats", "EventCounter"];
 export const PERIODIC_TASK_MODULE_MAPPING: Record<PeriodicTaskModule, string> = {
-  SimpleStats: "Simple Statistics",
-  EventCounter: "Event Counter"
+  SimpleStats: $localize`Simple Statistics`,
+  EventCounter: $localize`Event Counter`
 };
 
 export interface PeriodicTaskServiceInterface {
@@ -109,8 +109,8 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
-  private readonly http: HttpClient = inject(HttpClient);
   private readonly notificationService = inject(NotificationService);
+  private readonly http = inject(HttpClient);
 
   private periodicTaskBaseUrl = environment.proxyUrl + "/periodictask/";
 
@@ -129,10 +129,7 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
   }
 
   periodicTasksResource = httpResource<PiResponse<PeriodicTask[]>>(() => {
-    if (
-      !this.contentService.onConfigurationPeriodicTasks() ||
-      !this.authService.actionAllowed("periodictask_read")
-    ) {
+    if (!this.contentService.onConfigurationPeriodicTasks() || !this.authService.actionAllowed("periodictask_read")) {
       return undefined;
     }
     return {
@@ -156,20 +153,26 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
   enablePeriodicTask(taskId: number) {
     const headers = this.authService.getHeaders();
     return lastValueFrom(
-      this.http.post<PiResponse<number, never>>(this.periodicTaskBaseUrl + "enable/" + encodeURIComponent(taskId), {}, { headers: headers }).pipe(
-        catchError(() => {
-          this.periodicTasksResource.reload();
-          this.notificationService.error("Failed to enable periodic task!");
-          return of(undefined);
-        })
-      )
+      this.http
+        .post<
+          PiResponse<number, never>
+        >(this.periodicTaskBaseUrl + "enable/" + encodeURIComponent(taskId), {}, { headers: headers })
+        .pipe(
+          catchError(() => {
+            this.periodicTasksResource.reload();
+            this.notificationService.error("Failed to enable periodic task!");
+            return of(undefined);
+          })
+        )
     );
   }
 
   disablePeriodicTask(taskId: number) {
     const headers = this.authService.getHeaders();
     const response$ = this.http
-      .post<PiResponse<number, never>>(this.periodicTaskBaseUrl + "disable/" + encodeURIComponent(taskId), {}, { headers: headers })
+      .post<
+        PiResponse<number, never>
+      >(this.periodicTaskBaseUrl + "disable/" + encodeURIComponent(taskId), {}, { headers: headers })
       .pipe(
         catchError(() => {
           this.periodicTasksResource.reload();

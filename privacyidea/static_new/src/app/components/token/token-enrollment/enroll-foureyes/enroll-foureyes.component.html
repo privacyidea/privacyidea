@@ -18,8 +18,7 @@
 -->
 <div class="flex-column">
   <div class="flex-row gap-16">
-    <mat-form-field
-      class="input-width-s">
+    <mat-form-field class="input-width-s">
       <mat-label i18n>Separator</mat-label>
       <input
         [formField]="separatorForm"
@@ -29,15 +28,15 @@
         placeholder="|" />
       <mat-error i18n>Separator is <strong>required</strong></mat-error>
     </mat-form-field>
-    <span class="margin-top-16"> The separator that is used to separate the passwords of the different tokens. </span>
+    <span class="margin-top-16" i18n> The separator that is used to separate the passwords of the different tokens. </span>
   </div>
   <h4 i18n>Required Realms</h4>
-  <span class="required-realms-hint">
- Here you can select how many tokens of which realm are required to perform a successful authentication.
- </span>
+  <span class="required-realms-hint" i18n>
+    Here you can select how many tokens of which realm are required to perform a successful authentication.
+  </span>
   <div class="flex-row gap-16">
     <mat-form-field class="input-width-l">
-      <mat-label>Select Realms</mat-label>
+      <mat-label i18n>Select Realms</mat-label>
       <mat-select
         [value]="requiredTokensOfRealms()"
         (selectionChange)="requiredTokensOfRealms.set($event.value)"
@@ -54,6 +53,7 @@
               [value]="getTokenCount(realm)"
               (change)="setTokenCount(realm, +$event.target['value'])"
               class="required-realms-input"
+              i18n-placeholder
               max="9"
               min="1"
               placeholder="Tokens"

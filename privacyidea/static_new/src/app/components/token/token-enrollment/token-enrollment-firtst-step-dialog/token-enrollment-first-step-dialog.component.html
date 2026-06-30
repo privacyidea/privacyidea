@@ -17,11 +17,14 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <app-dialog-wrapper
-  (close)="close()"
+  (wrapperClose)="close()"
   [showCancelButton]="true"
+  i18n-title
   title="Take action on your authenticator">
   <mat-dialog-content>
-    @if (data.enrollmentResponse.detail["webAuthnRegisterRequest"] || data.enrollmentResponse.detail.passkey_registration) {
+    @if (
+      data.enrollmentResponse.detail["webAuthnRegisterRequest"] || data.enrollmentResponse.detail.passkey_registration
+    ) {
       <p
         class="max-width-600"
         i18n>
@@ -48,7 +51,7 @@
           i18n-alt
           src="{{ data.enrollmentResponse.detail.pushurl.img }}"
           width="300px" />
-        <p class="max-width-600">
+        <p class="max-width-600" i18n>
           Your token with serial number {{ data.enrollmentResponse.detail.serial }} is not completely enrolled, yet.
           Please scan the QR code with the privacyIDEA Authenticator App or click
           <a href="{{ data.enrollmentResponse.detail.pushurl.value }}">this link</a>

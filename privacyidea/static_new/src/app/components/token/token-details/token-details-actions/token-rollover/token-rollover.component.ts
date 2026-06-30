@@ -56,9 +56,9 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly userService: UserServiceInterface = inject(UserService);
 
-  token: WritableSignal<any> = signal(null);
+  token: WritableSignal<TokenEnrollmentData | null> = signal(null);
   title = computed(() => $localize`Rollover Token` + " " + (this.token()?.serial || ""));
-  serial = signal(null);
+  serial = signal<string | null | undefined>(null);
   enrolledDialogData: WritableSignal<TokenEnrollmentDialogData | null> = signal(null);
 
   dialogActions = signal<DialogAction<boolean>[]>([
@@ -82,8 +82,8 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
       return;
     }
     this.token.set(mapperObject.fromTokenDetailsToEnrollmentData(this.data.token));
-    this.tokenService.selectedTokenType.set({ key: this.token().type, name: "", text: "", info: "" });
-    this.serial.set(this.token().serial);
+    this.tokenService.selectedTokenType.set({ key: this.token()!.type, name: "", text: "", info: "" });
+    this.serial.set(this.token()!.serial);
   }
 
   private _toPromise<T>(observable: Observable<T> | Promise<T>): Promise<T> {
@@ -96,13 +96,13 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
 
   async rolloverToken() {
     if (!this.token()) {
-      this.notificationService.warning("No token selected for rollover.");
+      this.notificationService.warning($localize`No token selected for rollover.`);
       return;
     }
 
     const strategy = this.enrollSwitch()?.currentStrategy();
     if (!strategy) {
-      this.notificationService.warning("Rollover action is not available for the selected token type.");
+      this.notificationService.warning($localize`Rollover action is not available for the selected token type.`);
       return;
     }
 
@@ -117,11 +117,11 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
     if (!enrollmentArgs) return;
     const enrollResponse = this.tokenService.enrollToken(enrollmentArgs);
 
-    let enrollPromise = this._toPromise(enrollResponse);
+    const enrollPromise = this._toPromise(enrollResponse);
 
     enrollPromise.catch((error) => {
       const message = error.error?.result?.error?.message || "";
-      this.notificationService.error(`Failed to enroll token: ${message || error.message || error}`);
+      this.notificationService.error($localize`Failed to enroll token: ${message || error.message || error}`);
     });
     let enrollmentResponse: EnrollmentResponse | null = await enrollPromise;
 
@@ -203,7 +203,7 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
 
   protected openLastStepDialog(response: EnrollmentResponse | null): void {
     if (!response) {
-      this.notificationService.warning("No rollover response available.");
+      this.notificationService.warning($localize`No rollover response available.`);
       return;
     }
 
@@ -217,7 +217,7 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
       data: this.enrolledDialogData()
     });
 
-    dialogRef.afterClosed().subscribe((result) => {
+    dialogRef.afterClosed().subscribe(() => {
       this.tokenService.tokenDetailResource.reload();
     });
   }

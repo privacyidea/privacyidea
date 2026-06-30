@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject, Input, WritableSignal } from "@angular/core";
+import { Component, inject, model } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
@@ -40,18 +40,18 @@ export class SetPinActionComponent {
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
-  @Input() setPinValue!: WritableSignal<string>;
-  @Input() repeatPinValue!: WritableSignal<string>;
+  setPinValue = model.required<string>();
+  repeatPinValue = model.required<string>();
 
   setPin() {
     if (this.setPinValue() !== this.repeatPinValue()) {
       console.error("PINs do not match.");
-      this.notificationService.warning("PINs do not match.");
+      this.notificationService.warning($localize`PINs do not match.`);
       return;
     }
     this.tokenService.setPin(this.tokenService.tokenSerial(), this.setPinValue()).subscribe({
       next: () => {
-        this.notificationService.success("PIN set successfully.");
+        this.notificationService.success($localize`PIN set successfully.`);
         this.setPinValue.set("");
         this.repeatPinValue.set("");
       }
@@ -62,8 +62,8 @@ export class SetPinActionComponent {
     this.tokenService.setRandomPin(this.tokenService.tokenSerial()).subscribe({
       next: (result) => {
         const dialogData: MessageDialogData = {
-          title: "PIN Set Successfully",
-          texts: ["Randomly generated PIN:", result.detail.pin]
+          title: $localize`PIN Set Successfully`,
+          texts: [$localize`Randomly generated PIN:`, result.detail.pin]
         };
         this.dialogService.openDialog({ component: MessageDialogComponent, data: dialogData });
       }

@@ -20,6 +20,7 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideRouter, Router } from "@angular/router";
+import { Observer } from "rxjs";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { DialogService } from "@services/dialog/dialog.service";
 import { NotificationService } from "@services/notification/notification.service";
@@ -138,7 +139,7 @@ describe("UserCreateComponent", () => {
     component.username.set("testuser");
     component.resolver.set("testresolver");
     mockUserService.createUser.mockReturnValue({
-      subscribe: ({ next }: any) => next(true)
+      subscribe: ({ next }: Partial<Observer<boolean>>) => next!(true)
     });
     fixture.detectChanges();
     await component.onSave();
@@ -152,7 +153,7 @@ describe("UserCreateComponent", () => {
     component.username.set("testuser");
     component.resolver.set("testresolver");
     mockUserService.createUser.mockReturnValue({
-      subscribe: ({ next }: any) => next(true)
+      subscribe: ({ next }: Partial<Observer<boolean>>) => next!(true)
     });
     fixture.detectChanges();
     const router = TestBed.inject(Router);
@@ -253,7 +254,7 @@ describe("UserCreateComponent", () => {
     component.username.set("testuser");
     component.resolver.set("testresolver");
     mockUserService.createUser.mockReturnValue({
-      subscribe: ({ next }: any) => next(false)
+      subscribe: ({ next }: Partial<Observer<boolean>>) => next!(false)
     });
     fixture.detectChanges();
     const result = await component.onSave();
@@ -264,7 +265,7 @@ describe("UserCreateComponent", () => {
     component.username.set("testuser");
     component.resolver.set("testresolver");
     mockUserService.createUser.mockReturnValue({
-      subscribe: ({ error }: any) => error(new Error("network error"))
+      subscribe: ({ error }: Partial<Observer<boolean>>) => error!(new Error("network error"))
     });
     fixture.detectChanges();
     const result = await component.onSave();

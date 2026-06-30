@@ -77,15 +77,15 @@ export class EventComponent {
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
 
   columnKeysMap: Record<string, string> = {
-    ordering: "Ordering",
-    name: "Name",
-    handlermodule: "Handler Module",
-    position: "Position",
-    event: "Events",
-    action: "Action",
-    conditions: "Conditions",
-    active: "Active",
-    delete: "Delete"
+    ordering: $localize`Ordering`,
+    name: $localize`Name`,
+    handlermodule: $localize`Handler Module`,
+    position: $localize`Position`,
+    event: $localize`Events`,
+    action: $localize`Action`,
+    conditions: $localize`Conditions`,
+    active: $localize`Active`,
+    delete: $localize`Delete`
   };
   columnKeys = computed(() => {
     let keys = Object.keys(this.columnKeysMap);
@@ -174,10 +174,10 @@ export class EventComponent {
     return false;
   }
 
-  formatConditions(conditions: any): string {
+  formatConditions(conditions: unknown): string {
     if (!conditions || typeof conditions !== "object") return "";
-    return Object.entries(conditions)
-      .map(([key, value]) => `${key}: ${value}`)
+    return Object.entries(conditions as Record<string, unknown>)
+      .map(([key, value]) => `${key}: ${String(value)}`)
       .join(", ");
   }
 
@@ -185,7 +185,7 @@ export class EventComponent {
     if (!s.direction) return data;
     const dir = s.direction === "asc" ? 1 : -1;
     const key = s.active as keyof EventHandler;
-    return data.sort((a: any, b: any) => {
+    return data.sort((a: EventHandler, b: EventHandler) => {
       const va = (a?.[key] ?? "").toString().toLowerCase();
       const vb = (b?.[key] ?? "").toString().toLowerCase();
       if (va < vb) return -1 * dir;

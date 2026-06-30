@@ -46,6 +46,6 @@ export function parseBooleanValue(initialValue: string | number | boolean): bool
   return false;
 }
 
-export function isChecked(val: any): boolean {
+export function isChecked(val: string | number | boolean | null | undefined): boolean {
   return val === "True" || val === true || val === "1" || val === 1;
 }

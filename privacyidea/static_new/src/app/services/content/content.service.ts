@@ -22,8 +22,13 @@ import { NavigationEnd, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { filter, map, pairwise, startWith } from "rxjs";
 
+export interface DetailsUser {
+  username: string;
+  realm: string;
+}
+
 export interface ContentServiceInterface {
-  detailsUsername: WritableSignal<string>;
+  detailsUser: WritableSignal<DetailsUser>;
   router: Router;
   routeUrl: Signal<string>;
   previousUrl: Signal<string>;
@@ -39,6 +44,7 @@ export interface ContentServiceInterface {
   onPolicies: Signal<boolean>;
   onTokenDetails: Signal<boolean>;
   onUserDetails: Signal<boolean>;
+  onUserDetailsSelfService: Signal<boolean>;
   onUserRealms: Signal<boolean>;
   onTokensEnrollment: Signal<boolean>;
   onTokenEnrollmentLikely: Signal<boolean>;
@@ -83,7 +89,7 @@ export interface ContentServiceInterface {
 
 @Injectable()
 export class ContentService implements ContentServiceInterface {
-  detailsUsername = signal("");
+  detailsUser = signal<DetailsUser>({ username: "", realm: "" });
   router = inject(Router);
   private readonly _urlPair = toSignal(
     this.router.events.pipe(
@@ -227,7 +233,7 @@ export class ContentService implements ContentServiceInterface {
     this.router.navigateByUrl(
       ROUTE_PATHS.USERS_DETAILS + "/" + encodeURIComponent(username) + `?realm=${encodeURIComponent(realm ?? "")}`
     );
-    this.detailsUsername.set(username);
+    this.detailsUser.set({ username, realm: realm ?? "" });
   }
 
   machineResolverSelected(resolverName: string): void {

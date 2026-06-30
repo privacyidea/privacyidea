@@ -22,14 +22,23 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ActivatedRoute } from "@angular/router";
+import { ContainerDetailsInfoComponent } from "@components/container/container-details/container-details-info/container-details-info.component";
 import { ContainerDetailsComponent } from "@components/container/container-details/container-details.component";
 import { ContainerDetailsSelfServiceComponent } from "@components/container/container-details/container-details.self-service.component";
+import { EditableElement } from "@components/shared/edit-buttons/edit-buttons.component";
 import { TokenDetailsComponent } from "@components/token/token-details/token-details.component";
 import { AuditService } from "@services/audit/audit.service";
 import { AuthService } from "@services/auth/auth.service";
-import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
+import {
+  ContainerDetailData,
+  ContainerService,
+  ContainerServiceInterface
+} from "@services/container/container.service";
+import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { RealmService } from "@services/realm/realm.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { TokenService } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { ValidateService } from "@services/validate/validate.service";
@@ -45,9 +54,6 @@ import {
 } from "@testing/mock-services";
 import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
 import { of } from "rxjs";
-import { TableUtilsService } from "@services/table-utils/table-utils.service";
-import { RealmService } from "@services/realm/realm.service";
-import { ContentService } from "@services/content/content.service";
 
 class MockValidateService {
   testToken = jest.fn().mockReturnValue(of(null));
@@ -140,11 +146,11 @@ describe("ContainerDetailsComponent", () => {
   });
 
   it("toggles realm edit and saves via setContainerRealm()", () => {
-    jest.spyOn(containerService, "setContainerRealm").mockReturnValue(of({}));
+    jest.spyOn(containerService, "setContainerRealm").mockReturnValue(of({}) as never);
 
     component.containerDetailData.set([
       {
-        keyMap: { label: "Realms", key: "realms" },
+        keyMap: { key: "realms", label: "Realms" },
         value: ["realm1"],
         isEditing: signal(false)
       }
@@ -162,11 +168,11 @@ describe("ContainerDetailsComponent", () => {
   });
 
   it("edits description and calls setContainerDescription()", () => {
-    jest.spyOn(containerService, "setContainerDescription").mockReturnValue(of({}));
+    jest.spyOn(containerService, "setContainerDescription").mockReturnValue(of({}) as never);
 
     component.containerDetailData.set([
       {
-        keyMap: { label: "Description", key: "description" },
+        keyMap: { key: "description", label: "Description" },
         value: "Old description",
         isEditing: signal(false)
       }
@@ -178,7 +184,7 @@ describe("ContainerDetailsComponent", () => {
 
     component.containerDetailData.set([
       {
-        keyMap: { label: "Description", key: "description" },
+        keyMap: { key: "description", label: "Description" },
         value: "New description from UI",
         isEditing: signal(false)
       }
@@ -190,11 +196,11 @@ describe("ContainerDetailsComponent", () => {
   });
 
   it("enters user edit mode, saves, and exits", () => {
-    jest.spyOn(containerService, "assignUser").mockReturnValue(of({}));
+    jest.spyOn(containerService, "assignUser").mockReturnValue(of({}) as never);
 
     component.userData.set([
       {
-        keyMap: { label: "User Name", key: "user_name" },
+        keyMap: { key: "user_name", label: "User Name" },
         value: "",
         isEditing: signal(false)
       }
@@ -224,7 +230,7 @@ describe("ContainerDetailsComponent", () => {
     component.selectedRealms.set(["realm1"]);
     component.containerDetailData.set([
       {
-        keyMap: { label: "Realms", key: "realms" },
+        keyMap: { key: "realms", label: "Realms" },
         value: "irrelevant",
         isEditing: signal(false)
       }
@@ -262,7 +268,7 @@ describe("ContainerDetailsComponent", () => {
   it("cancelContainerEdit for user_name toggles isEditingUser", () => {
     component.userData.set([
       {
-        keyMap: { label: "User Name", key: "user_name" },
+        keyMap: { key: "user_name", label: "User Name" },
         value: "alice",
         isEditing: signal(true)
       }
@@ -277,10 +283,10 @@ describe("ContainerDetailsComponent", () => {
   });
 
   it("cancelContainerEdit for states defaults to [] when containerDetails has no states", () => {
-    component.containerDetails.set(undefined as any);
+    component.containerDetails.set(undefined as unknown as ContainerDetailData);
     component.containerDetailData.set([
       {
-        keyMap: { label: "Status", key: "states" },
+        keyMap: { key: "states", label: "Status" },
         value: ["active"],
         isEditing: signal(true)
       }
@@ -297,7 +303,7 @@ describe("ContainerDetailsComponent", () => {
   it("selectedStates linkedSignal defaults to [] when containerDetails has no states", () => {
     component.containerDetails.set({
       serial: "Mock serial",
-      states: undefined as any,
+      states: undefined as unknown as string[],
       realms: [],
       tokens: [],
       type: "generic",
@@ -329,12 +335,12 @@ describe("ContainerDetailsComponent", () => {
   });
 
   it("saveContainerEdit for states calls setStates with selectedStates", () => {
-    jest.spyOn(containerService, "setStates").mockReturnValue(of({}));
+    jest.spyOn(containerService, "setStates").mockReturnValue(of({}) as never);
     component.selectedStates.set(["active", "lost"]);
 
     component.containerDetailData.set([
       {
-        keyMap: { label: "Status", key: "states" },
+        keyMap: { key: "states", label: "Status" },
         value: ["active"],
         isEditing: signal(true)
       }
@@ -348,7 +354,7 @@ describe("ContainerDetailsComponent", () => {
 
   describe("#saveStates", () => {
     it("returns false, shows an error, and does not call setStates when no state is selected", () => {
-      const setStatesSpy = jest.spyOn(containerService, "setStates").mockReturnValue(of({}));
+      const setStatesSpy = jest.spyOn(containerService, "setStates").mockReturnValue(of({}) as never);
       const notificationService = TestBed.inject(NotificationService);
       component.selectedStates.set([]);
 
@@ -360,7 +366,7 @@ describe("ContainerDetailsComponent", () => {
     });
 
     it("returns true and calls setStates when at least one state is selected", () => {
-      const setStatesSpy = jest.spyOn(containerService, "setStates").mockReturnValue(of({}));
+      const setStatesSpy = jest.spyOn(containerService, "setStates").mockReturnValue(of({}) as never);
       component.selectedStates.set(["active"]);
 
       const result = component.saveStates();
@@ -371,13 +377,13 @@ describe("ContainerDetailsComponent", () => {
   });
 
   it("saveContainerEdit for states keeps edit mode open when saveStates fails (empty selection)", () => {
-    const setStatesSpy = jest.spyOn(containerService, "setStates").mockReturnValue(of({}));
+    const setStatesSpy = jest.spyOn(containerService, "setStates").mockReturnValue(of({}) as never);
     const notificationService = TestBed.inject(NotificationService);
     component.selectedStates.set([]);
 
     component.containerDetailData.set([
       {
-        keyMap: { label: "Status", key: "states" },
+        keyMap: { key: "states", label: "Status" },
         value: [],
         isEditing: signal(true)
       }
@@ -401,7 +407,7 @@ describe("ContainerDetailsComponent", () => {
     });
     component.containerDetailData.set([
       {
-        keyMap: { label: "Status", key: "states" },
+        keyMap: { key: "states", label: "Status" },
         value: ["active"],
         isEditing: signal(true)
       }
@@ -415,16 +421,16 @@ describe("ContainerDetailsComponent", () => {
   });
 
   it("unassignUser triggers service and refresh", () => {
-    jest.spyOn(containerService, "unassignUser").mockReturnValue(of({}));
+    jest.spyOn(containerService, "unassignUser").mockReturnValue(of({}) as never);
 
     component.userData.set([
       {
-        keyMap: { label: "User Name", key: "user_name" },
+        keyMap: { key: "user_name", label: "User Name" },
         value: "bob",
         isEditing: signal(false)
       },
       {
-        keyMap: { label: "User Realm", key: "user_realm" },
+        keyMap: { key: "user_realm", label: "User Realm" },
         value: "realmUser",
         isEditing: signal(false)
       }
@@ -433,6 +439,19 @@ describe("ContainerDetailsComponent", () => {
     component.unassignUser();
 
     expect(containerService.unassignUser).toHaveBeenCalledWith("Mock serial", "bob", "realmUser");
+  });
+
+  it("userRealm reflects the assigned user's realm for the user link", () => {
+    component.containerDetails.set({
+      serial: "Mock serial",
+      states: [],
+      realms: [],
+      tokens: [],
+      type: "generic",
+      users: [{ user_realm: "themis", user_name: "alice", user_resolver: "res", user_id: "1" }]
+    } as unknown as ContainerDetailData);
+
+    expect(component.userRealm()).toBe("themis");
   });
 
   describe("pending changes", () => {
@@ -463,18 +482,21 @@ describe("ContainerDetailsComponent", () => {
     });
 
     it("saveAllInlineEdits saves every row with isEditing()=true", async () => {
-      const editingRow = {
-        keyMap: { key: "description", label: "Description" },
+      const editingRow: EditableElement<string> = {
+        keyMap: { key: "description" },
         value: "new",
         isEditing: signal(true)
-      } as any;
-      const idleRow = {
-        keyMap: { key: "type", label: "Type" },
+      };
+      const idleRow: EditableElement<string> = {
+        keyMap: { key: "type" },
         value: "generic",
         isEditing: signal(false)
-      } as any;
-      (component as any).containerDetailData = () => [editingRow, idleRow];
-      const saveSpy = jest.spyOn(component, "saveContainerEdit").mockImplementation(() => {});
+      };
+      (component as unknown as { containerDetailData: () => EditableElement[] }).containerDetailData = () => [
+        editingRow,
+        idleRow
+      ];
+      const saveSpy = jest.spyOn(component, "saveContainerEdit").mockReturnValue();
 
       const result = await component.saveAllInlineEdits();
 
@@ -484,9 +506,9 @@ describe("ContainerDetailsComponent", () => {
     });
 
     it("saveAllInlineEdits calls saveUser when isEditingUser", async () => {
-      (component as any).containerDetailData = () => [];
+      (component as unknown as { containerDetailData: () => EditableElement[] }).containerDetailData = () => [];
       component.isEditingUser.set(true);
-      const userSaveSpy = jest.spyOn(component, "saveUser").mockImplementation(() => {});
+      const userSaveSpy = jest.spyOn(component, "saveUser").mockReturnValue();
 
       await component.saveAllInlineEdits();
 
@@ -494,16 +516,16 @@ describe("ContainerDetailsComponent", () => {
     });
 
     it("saveAllInlineEdits delegates info save to infoChild when isEditingInfo and info exists", async () => {
-      (component as any).containerDetailData = () => [];
-      const infoEl = {
-        keyMap: { key: "info", label: "Information" },
+      (component as unknown as { containerDetailData: () => EditableElement[] }).containerDetailData = () => [];
+      const infoEl: EditableElement<Record<string, string>> = {
+        keyMap: { key: "info", label: "Info" } as { key: string },
         value: { foo: "bar" },
         isEditing: signal(true)
-      } as any;
-      (component as any).infoData = () => [infoEl];
+      };
+      (component as unknown as { infoData: () => EditableElement[] }).infoData = () => [infoEl];
       component.isEditingInfo.set(true);
       const infoSaveSpy = jest.fn();
-      component.infoChild = { saveInfo: infoSaveSpy } as any;
+      component.infoChild = { saveInfo: infoSaveSpy } as unknown as ContainerDetailsInfoComponent;
 
       await component.saveAllInlineEdits();
 
@@ -516,13 +538,13 @@ describe("ContainerDetailsComponent", () => {
     });
 
     it("saveAllInlineEdits is a no-op when nothing is in edit mode", async () => {
-      (component as any).containerDetailData = () => [];
-      (component as any).infoData = () => [];
+      (component as unknown as { containerDetailData: () => EditableElement[] }).containerDetailData = () => [];
+      (component as unknown as { infoData: () => EditableElement[] }).infoData = () => [];
       component.isEditingUser.set(false);
       component.isEditingInfo.set(false);
-      const editSpy = jest.spyOn(component, "saveContainerEdit").mockImplementation(() => {});
-      const userSpy = jest.spyOn(component, "saveUser").mockImplementation(() => {});
-      component.infoChild = { saveInfo: jest.fn() } as any;
+      const editSpy = jest.spyOn(component, "saveContainerEdit").mockReturnValue();
+      const userSpy = jest.spyOn(component, "saveUser").mockReturnValue();
+      component.infoChild = { saveInfo: jest.fn() } as unknown as ContainerDetailsInfoComponent;
 
       const result = await component.saveAllInlineEdits();
 
@@ -533,11 +555,11 @@ describe("ContainerDetailsComponent", () => {
     });
 
     it("saveAllInlineEdits clears isEditingInfo when info element is missing", async () => {
-      (component as any).containerDetailData = () => [];
-      (component as any).infoData = () => [];
+      (component as unknown as { containerDetailData: () => EditableElement[] }).containerDetailData = () => [];
+      (component as unknown as { infoData: () => EditableElement[] }).infoData = () => [];
       component.isEditingInfo.set(true);
       const infoSaveSpy = jest.fn();
-      component.infoChild = { saveInfo: infoSaveSpy } as any;
+      component.infoChild = { saveInfo: infoSaveSpy } as unknown as ContainerDetailsInfoComponent;
 
       await component.saveAllInlineEdits();
 

@@ -143,17 +143,17 @@ class HttpSMSProvider(ISMSProvider):
             params = None
             if json_data:
                 json_param = parameter
-                log.debug(f"passing JSON data: {json_param!s}")
+                log.debug("passing JSON data (content hidden for security)")
             else:
                 data = parameter
 
         log_dict = {'params': params,
                     'headers': headers,
                     'method': method,
-                    'basic_auth': basic_auth,
+                    'basic_auth': bool(basic_auth),
                     'url': url,
                     'data': data,
-                    'json_param': json_param}
+                    'json_param': bool(json_param)}
         log.debug("issuing request with parameters {params} (data: {data}, "
                   "json: {json_param}), headers {headers}, method {method} and"
                   "authentication {basic_auth} "
@@ -265,7 +265,8 @@ class HttpSMSProvider(ISMSProvider):
                       },
                       "PASSWORD": {
                           "description": _("Password in case of basic "
-                                           "authentication.")
+                                           "authentication."),
+                          "secret": True
                       },
                       "CHECK_SSL": {
                           "required": True,

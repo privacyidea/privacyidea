@@ -38,7 +38,7 @@ import {
 } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
-import { TokenService } from "@services/token/token.service";
+import { TokenService, Tokens } from "@services/token/token.service";
 import { UserService } from "@services/user/user.service";
 import {
   MockAuthService,
@@ -406,6 +406,41 @@ describe("ContainerService", () => {
     containerService.containerFilter.set(new FilterValue({ value: "type: generic description: foo: bar" }));
     const filterParams = containerService.filterParams();
     expect(filterParams).toEqual({ type: "generic" });
+  });
+
+  it("filterParams maps a single type to the scalar `type` param", () => {
+    containerService.containerFilter.set(new FilterValue({ value: "type: smartphone" }));
+    expect(containerService.filterParams()).toEqual({ type: "smartphone" });
+  });
+
+  it("filterParams preserves `*` wildcards on a single type", () => {
+    containerService.containerFilter.set(new FilterValue({ value: "type: smart*" }));
+    expect(containerService.filterParams()).toEqual({ type: "smart*" });
+  });
+
+  it("filterParams maps multiple comma-separated types to `type_list`", () => {
+    containerService.containerFilter.set(new FilterValue({ value: "type: smartphone,yubikey" }));
+    expect(containerService.filterParams()).toEqual({ type_list: "smartphone,yubikey" });
+  });
+
+  it("filterParams trims whitespace and de-duplicates the type list", () => {
+    containerService.containerFilter.set(new FilterValue({ value: "type: ' smartphone , yubikey , smartphone '" }));
+    expect(containerService.filterParams()).toEqual({ type_list: "smartphone,yubikey" });
+  });
+
+  it("filterParams accepts `types` as a synonym for `type` (single)", () => {
+    containerService.containerFilter.set(new FilterValue({ value: "types: generic" }));
+    expect(containerService.filterParams()).toEqual({ type: "generic" });
+  });
+
+  it("filterParams accepts `types` as a synonym for `type` (multiple)", () => {
+    containerService.containerFilter.set(new FilterValue({ value: "types: smartphone,yubikey" }));
+    expect(containerService.filterParams()).toEqual({ type_list: "smartphone,yubikey" });
+  });
+
+  it("filterParams merges `type` and `types` values into a single type_list", () => {
+    containerService.containerFilter.set(new FilterValue({ value: "type: smartphone types: yubikey" }));
+    expect(containerService.filterParams()).toEqual({ type_list: "smartphone,yubikey" });
   });
 
   it("pageSize falls back to 10 for invalid eventPageSize", () => {
@@ -846,7 +881,7 @@ describe("ContainerService", () => {
       mockableService.containerTypeOptions = containerTypeOptionsSignal;
       mockableService.compatibleWithSelectedTokenType = compatibleWithSelectedTokenTypeSignal;
 
-      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list" as any] });
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list"] });
       contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_ENROLLMENT);
     });
 
@@ -854,17 +889,18 @@ describe("ContainerService", () => {
       expect(containerService["compatibleTypes"]()).toEqual(["typeA", "typeB"]);
     });
 
-    it("should filter containersForTokenType by compatibleTypes and return serials", async () => {
+    it("sends the full list of compatible types as a comma-separated `type` param and returns the serials the backend returned", async () => {
       TestBed.tick();
 
-      const req = httpMock.expectOne((r) => r.url === "/container/" && r.params.get("no_token") === "1");
+      const req = httpMock.expectOne(
+        (r) => r.url === "/container/" && r.params.get("no_token") === "1" && r.params.get("type") === "typeA,typeB"
+      );
       expect(req.request.method).toBe("GET");
       req.flush(
         MockPiResponse.fromValue({
           containers: [
             { serial: "c1", type: "typeA", realms: [], states: [], tokens: [], users: [] },
-            { serial: "c2", type: "typeB", realms: [], states: [], tokens: [], users: [] },
-            { serial: "c3", type: "typeC", realms: [], states: [], tokens: [], users: [] }
+            { serial: "c2", type: "typeB", realms: [], states: [], tokens: [], users: [] }
           ]
         })
       );
@@ -906,47 +942,81 @@ describe("ContainerService", () => {
 
       expect(containerService.containersForTokenType()).toEqual([]);
     });
+
+    it("does not fire the request when no container type is compatible with the selected token type", () => {
+      compatibleWithSelectedTokenTypeSignal.set("unknown-token-type");
+      TestBed.tick();
+
+      httpMock.expectNone((r) => r.url === "/container/" && r.params.get("no_token") === "1");
+      expect(containerService.containersForTokenType()).toEqual([]);
+    });
   });
 
   describe("serialFilterParam", () => {
     it("returns empty object for null serial", () => {
       containerService.selectedContainerSerial.set(null);
-      expect((containerService as any)["serialFilterParam"]()).toEqual({});
+      expect(
+        (containerService as unknown as { serialFilterParam: () => Record<string, string> }).serialFilterParam()
+      ).toEqual({});
     });
 
     it("returns empty object for empty string", () => {
       containerService.selectedContainerSerial.set("");
-      expect((containerService as any)["serialFilterParam"]()).toEqual({});
+      expect(
+        (containerService as unknown as { serialFilterParam: () => Record<string, string> }).serialFilterParam()
+      ).toEqual({});
     });
 
     it("returns empty object for whitespace-only string", () => {
       containerService.selectedContainerSerial.set("  ");
-      expect((containerService as any)["serialFilterParam"]()).toEqual({});
+      expect(
+        (containerService as unknown as { serialFilterParam: () => Record<string, string> }).serialFilterParam()
+      ).toEqual({});
     });
 
     it("wraps valid serial with wildcards", () => {
       containerService.selectedContainerSerial.set("CONT1");
-      expect((containerService as any)["serialFilterParam"]()).toEqual({ container_serial: "*CONT1*" });
+      expect(
+        (containerService as unknown as { serialFilterParam: () => Record<string, string> }).serialFilterParam()
+      ).toEqual({ container_serial: "*CONT1*" });
     });
 
     it("trims whitespace before wrapping", () => {
       containerService.selectedContainerSerial.set("  CONT1  ");
-      expect((containerService as any)["serialFilterParam"]()).toEqual({ container_serial: "*CONT1*" });
+      expect(
+        (containerService as unknown as { serialFilterParam: () => Record<string, string> }).serialFilterParam()
+      ).toEqual({ container_serial: "*CONT1*" });
     });
   });
 
   describe("containersForTokenTypeResource loading conditions", () => {
+    let mockableService: {
+      containerTypeOptions: WritableSignal<ContainerType[]>;
+      compatibleWithSelectedTokenType: WritableSignal<string>;
+    };
+
     beforeEach(() => {
-      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list" as any] });
+      mockableService = containerService as unknown as {
+        containerTypeOptions: WritableSignal<ContainerType[]>;
+        compatibleWithSelectedTokenType: WritableSignal<string>;
+      };
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list"] });
+      // Make sure compatibleTypes() is non-empty so the resource fires by default —
+      // individual tests can override these signals as needed.
+      mockableService.containerTypeOptions = signal([
+        { containerType: "smartphone", description: "", token_types: ["push"] },
+        { containerType: "generic", description: "", token_types: ["push", "hotp"] }
+      ]);
+      mockableService.compatibleWithSelectedTokenType = signal("push");
     });
 
     it("does not load on containers list route", () => {
       contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS);
       TestBed.tick();
       httpMock.expectNone((r) => r.url === "/container/" && r.params.get("no_token") === "1");
-      httpMock.match((r) => r.url === "/container/").forEach((r) =>
-        r.flush(MockPiResponse.fromValue({ containers: [], count: 0 }))
-      );
+      httpMock
+        .match((r) => r.url === "/container/")
+        .forEach((r) => r.flush(MockPiResponse.fromValue({ containers: [], count: 0 })));
     });
 
     it("loads on enrollment route with no_token param", async () => {
@@ -961,7 +1031,7 @@ describe("ContainerService", () => {
       jest.spyOn(tokenServiceMock.tokenDetailResource, "hasValue").mockReturnValue(true);
       jest.spyOn(tokenServiceMock.tokenDetailResource, "value").mockReturnValue({
         result: { value: { tokens: [{ container_serial: "" }] } }
-      } as any);
+      } as unknown as PiResponse<Tokens>);
       contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_DETAILS + "SERIAL1");
       TestBed.tick();
       const req = httpMock.expectOne((r) => r.url === "/container/" && r.params.get("no_token") === "1");
@@ -973,7 +1043,7 @@ describe("ContainerService", () => {
       jest.spyOn(tokenServiceMock.tokenDetailResource, "hasValue").mockReturnValue(true);
       jest.spyOn(tokenServiceMock.tokenDetailResource, "value").mockReturnValue({
         result: { value: { tokens: [{ container_serial: "CONT-EXISTING" }] } }
-      } as any);
+      } as unknown as PiResponse<Tokens>);
       contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_DETAILS + "SERIAL1");
       TestBed.tick();
       httpMock.expectNone((r) => r.url === "/container/" && r.params.get("no_token") === "1");
@@ -986,11 +1056,11 @@ describe("ContainerService", () => {
       httpMock.expectNone((r) => r.url === "/container/" && r.params.get("no_token") === "1");
     });
 
-    it("applies type filter when a unique compatible type exists", async () => {
-      (containerService as any).containerTypeOptions = signal([
+    it("sends a single compatible type as the `type` param", async () => {
+      mockableService.containerTypeOptions = signal([
         { containerType: "smartphone", description: "", token_types: ["push"] }
       ]);
-      (containerService as any).compatibleWithSelectedTokenType = signal("push");
+      mockableService.compatibleWithSelectedTokenType = signal("push");
       contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_ENROLLMENT);
       TestBed.tick();
       const req = httpMock.expectOne(
@@ -999,27 +1069,35 @@ describe("ContainerService", () => {
       req.flush(MockPiResponse.fromValue({ containers: [], count: 0 }));
     });
 
-    it("does not apply type filter when multiple compatible types exist", async () => {
-      (containerService as any).containerTypeOptions = signal([
+    it("sends multiple compatible types as a comma-separated `type` param", async () => {
+      mockableService.containerTypeOptions = signal([
         { containerType: "smartphone", description: "", token_types: ["push"] },
         { containerType: "generic", description: "", token_types: ["push"] }
       ]);
-      (containerService as any).compatibleWithSelectedTokenType = signal("push");
+      mockableService.compatibleWithSelectedTokenType = signal("push");
       contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_ENROLLMENT);
       TestBed.tick();
       const req = httpMock.expectOne(
-        (r) => r.url === "/container/" && r.params.get("no_token") === "1" && !r.params.has("type")
+        (r) => r.url === "/container/" && r.params.get("no_token") === "1" && r.params.get("type") === "smartphone,generic"
       );
       req.flush(MockPiResponse.fromValue({ containers: [], count: 0 }));
+    });
+
+    it("does not fire the request when no compatible container type exists", () => {
+      mockableService.containerTypeOptions = signal([
+        { containerType: "smartphone", description: "", token_types: ["push"] }
+      ]);
+      mockableService.compatibleWithSelectedTokenType = signal("certificate");
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_ENROLLMENT);
+      TestBed.tick();
+      httpMock.expectNone((r) => r.url === "/container/" && r.params.get("no_token") === "1");
     });
 
     it("includes serial filter when selectedContainerSerial is set", async () => {
       containerService.selectedContainerSerial.set("CONT1");
       contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_ENROLLMENT);
       TestBed.tick();
-      const req = httpMock.expectOne(
-        (r) => r.url === "/container/" && r.params.get("container_serial") === "*CONT1*"
-      );
+      const req = httpMock.expectOne((r) => r.url === "/container/" && r.params.get("container_serial") === "*CONT1*");
       req.flush(MockPiResponse.fromValue({ containers: [], count: 0 }));
     });
 
@@ -1028,7 +1106,7 @@ describe("ContainerService", () => {
         jest.spyOn(tokenServiceMock.tokenDetailResource, "hasValue").mockReturnValue(true);
         jest.spyOn(tokenServiceMock.tokenDetailResource, "value").mockReturnValue({
           result: { value: { tokens: [{ container_serial: "", username: "alice", user_realm: "realm1" }] } }
-        } as any);
+        } as unknown as PiResponse<Tokens>);
         contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_DETAILS + "SERIAL1");
       });
 
@@ -1060,7 +1138,7 @@ describe("ContainerService", () => {
       it("omits user and realm when filter is on but token has no username", () => {
         jest.spyOn(tokenServiceMock.tokenDetailResource, "value").mockReturnValue({
           result: { value: { tokens: [{ container_serial: "", username: "", user_realm: "realm1" }] } }
-        } as any);
+        } as unknown as PiResponse<Tokens>);
         containerService.filterContainersByTokenOwner.set(true);
         TestBed.tick();
         const httpRequest = httpMock.expectOne(
@@ -1077,9 +1155,9 @@ describe("ContainerService", () => {
         containerService.filterContainersByTokenOwner.set(true);
         contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_ENROLLMENT);
         expect(containerService.filterContainersByTokenOwner()).toBe(false);
-        httpMock.match((request) => request.url === "/container/").forEach((pendingRequest) =>
-          pendingRequest.flush(MockPiResponse.fromValue({ containers: [], count: 0 }))
-        );
+        httpMock
+          .match((request) => request.url === "/container/")
+          .forEach((pendingRequest) => pendingRequest.flush(MockPiResponse.fromValue({ containers: [], count: 0 })));
       });
     });
   });
@@ -1088,14 +1166,14 @@ describe("ContainerService", () => {
     let userServiceMock: MockUserService;
 
     const flushPending = () =>
-      httpMock.match((request) => request.url === "/container/").forEach((pendingRequest) =>
-        pendingRequest.flush(MockPiResponse.fromValue({ containers: [], count: 0 }))
-      );
+      httpMock
+        .match((request) => request.url === "/container/")
+        .forEach((pendingRequest) => pendingRequest.flush(MockPiResponse.fromValue({ containers: [], count: 0 })));
 
     beforeEach(() => {
-      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list" as any] });
-      userServiceMock = TestBed.inject(UserService) as any;
-      userServiceMock.detailsUsername.set("alice");
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list"] });
+      userServiceMock = TestBed.inject(UserService) as unknown as MockUserService;
+      userServiceMock.detailsUser.set({ username: "alice", realm: "realm1" });
       userServiceMock.selectedUserRealm.set("realm1");
     });
 

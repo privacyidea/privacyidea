@@ -1,13 +1,20 @@
-<div class="alert alert-warning" role="alert"
-     ng-show="backend_log_level === 10" translate>
-    privacyIDEA is running in DEBUG mode. You can change the debug level in
-    pi.cfg.
+<div class="alert alert-warning alert-dismissible" role="alert"
+     ng-show="backend_log_level === 10 && !debugBannerDismissed">
+    <button type="button" class="close" aria-label="Close"
+            style="opacity: 0.9; font-size: 24px; color: inherit;"
+            ng-click="dismissDebugBanner()">
+        <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+    </button>
+    <span translate>privacyIDEA is running in DEBUG mode. You can change the debug level in pi.cfg.</span>
 </div>
-<div class="alert alert-danger" role="alert"
-     ng-show="backend_log_level < 10" translate>
-    privacyIDEA is running in DEBUG mode with PASSWORDS being written to the
-    log file. You can change the debug level in
-    pi.cfg. Afterwards be sure to remove the logfile!
+<div class="alert alert-danger alert-dismissible" role="alert"
+     ng-show="backend_log_level < 10 && !debugBannerDismissed">
+    <button type="button" class="close" aria-label="Close"
+            style="opacity: 0.9; font-size: 24px; color: inherit;"
+            ng-click="dismissDebugBanner()">
+        <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+    </button>
+    <span translate>privacyIDEA is running in DEBUG mode with PASSWORDS being written to the log file. You can change the debug level in pi.cfg. Afterwards be sure to remove the logfile!</span>
 </div>
 <div class="navbar navbar-default">
     <div class="container">

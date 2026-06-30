@@ -16,42 +16,19 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { HttpResourceRef } from "@angular/common/http";
-import { computed, signal } from "@angular/core";
+import { signal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
 import {
   RadiusServer,
   RadiusServers,
   RadiusServerServiceInterface
 } from "@services/radius-server/radius-server.service";
+import { MockHttpResourceRef } from "./mock-utils";
 
 export class MockRadiusService implements RadiusServerServiceInterface {
-  radiusServerResource: HttpResourceRef<PiResponse<RadiusServers> | undefined> = {
-    value: signal(undefined),
-    status: signal(0) as any,
-    error: signal(null),
-    isLoading: signal(false),
-    reload: jest.fn(),
-    headers: signal(undefined),
-    statusCode: signal(undefined),
-    progress: signal(undefined),
-    hasValue: function (): this is HttpResourceRef<Exclude<PiResponse<RadiusServers> | undefined, undefined>> {
-      return this.value() !== undefined;
-    },
-    destroy: function (): void {}
-  } as any;
-
-  radiusServers = computed<RadiusServer[]>(() => []);
-
-  postRadiusServer = jest.fn(async (_server: RadiusServer): Promise<void> => {
-    return Promise.resolve();
-  });
-
-  testRadiusServer = jest.fn(async (_params: any): Promise<boolean> => {
-    return Promise.resolve(true);
-  });
-
-  deleteRadiusServer = jest.fn(async (_identifier: string): Promise<void> => {
-    return Promise.resolve();
-  });
+  radiusServerResource = new MockHttpResourceRef<PiResponse<RadiusServers> | undefined>(undefined);
+  radiusServers = signal<RadiusServer[]>([]);
+  postRadiusServer = jest.fn(async (): Promise<void> => Promise.resolve());
+  testRadiusServer = jest.fn(async (): Promise<boolean> => Promise.resolve(true));
+  deleteRadiusServer = jest.fn(async (): Promise<void> => Promise.resolve());
 }

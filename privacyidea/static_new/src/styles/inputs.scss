@@ -133,27 +133,27 @@ $input-focus-outline: theme.$focus-outline;
 
 .input-width-s {
   width: 100%;
-  max-width: 180px;
+  max-width: var(--input-width-s);
 }
 
 .input-width-m {
   width: 100%;
-  max-width: 240px;
+  max-width: var(--input-width-m);
 }
 
 .input-width-l {
   width: 100%;
-  max-width: 300px;
+  max-width: var(--input-width-l);
 }
 
 .input-width-xl {
   width: 100%;
-  max-width: 616px;
+  max-width: var(--input-width-xl);
 }
 
 .input-width-xxl {
   width: 100%;
-  max-width: 932px;
+  max-width: var(--input-width-xxl);
 }
 
 mat-form-field.height-52 {

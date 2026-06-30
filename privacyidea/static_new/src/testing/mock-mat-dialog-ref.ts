@@ -23,13 +23,13 @@ import { Subject } from "rxjs";
 
 type PublicPart<T> = { [K in keyof T]: T[K] };
 
-export class MockMatDialogRef<T, R = any> implements PublicPart<MatDialogRef<T, R>> {
+export class MockMatDialogRef<T, R = unknown> implements PublicPart<MatDialogRef<T, R>> {
   // --- Properties ---
   _containerInstance: MatDialogContainer = {} as MatDialogContainer;
   componentInstance: T = {} as T;
   readonly componentRef: ComponentRef<T> | null = null;
   disableClose: boolean | undefined = undefined;
-  id: string = "mock-dialog-ref";
+  id = "mock-dialog-ref";
 
   // --- Internal Subjects for Event Control ---
   private _backdropClick$ = new Subject<MouseEvent>();

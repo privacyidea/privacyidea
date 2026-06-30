@@ -17,78 +17,74 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { HttpResourceRef } from "@angular/common/http";
-import { computed, linkedSignal, signal, Signal, WritableSignal } from "@angular/core";
+import { signal, WritableSignal } from "@angular/core";
+import { PiResponse } from "@app/app.component";
 import { CaConnectors } from "@services/ca-connector/ca-connector.service";
-import { NodeInfo, SystemServiceInterface } from "@services/system/system.service";
+import {
+  NodeInfo,
+  SystemConfigInit,
+  SystemConfigResponse,
+  SystemServiceInterface
+} from "@services/system/system.service";
 import { Observable, of } from "rxjs";
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 
 export class MockSystemService implements SystemServiceInterface {
-  systemConfigResource: HttpResourceRef<any>;
-  radiusServerResource: HttpResourceRef<any>;
-  nodesResource: HttpResourceRef<any>;
-  systemConfig: WritableSignal<any>;
-  systemConfigInit: Signal<any>;
-  nodes: Signal<NodeInfo[]>;
+  systemConfigResource: HttpResourceRef<SystemConfigResponse | undefined>;
+  radiusServerResource: HttpResourceRef<PiResponse<string[]> | undefined>;
+  nodesResource: HttpResourceRef<PiResponse<NodeInfo[]> | undefined>;
+  systemConfig: WritableSignal<Record<string, string>>;
+  systemConfigInit: WritableSignal<SystemConfigInit>;
+  nodes: WritableSignal<NodeInfo[]>;
 
   constructor() {
-    const mockConfig = {
-      splitAtSign: true,
-      IncFailCountOnFalsePin: false,
-      no_auth_counter: true,
-      PrependPin: false,
-      AutoResync: true,
-      UiLoginDisplayHelpButton: false,
-      UiLoginDisplayRealmBox: true,
+    const mockConfig: Record<string, string> = {
+      splitAtSign: "True",
+      IncFailCountOnFalsePin: "False",
+      no_auth_counter: "True",
+      PrependPin: "False",
+      ReturnSamlAttributes: "True",
+      ReturnSamlAttributesOnFail: "False",
+      AutoResync: "True",
+      UiLoginDisplayHelpButton: "False",
+      UiLoginDisplayRealmBox: "True",
       someOtherConfig: "test_value"
     };
 
-    const mockInit = {
+    const mockInit: SystemConfigInit = {
       hashlibs: ["sha1", "sha256", "sha512"],
       totpSteps: [30, 60],
       smsProviders: ["provider1", "provider2"]
     };
 
-    this.systemConfigResource = new MockHttpResourceRef(MockPiResponse.fromValue(mockConfig, {}, mockInit));
-    this.radiusServerResource = new MockHttpResourceRef(MockPiResponse.fromValue([]));
-    this.nodesResource = new MockHttpResourceRef(
-      MockPiResponse.fromValue<NodeInfo[]>([
-        { name: "Node 1", uuid: "node-1" },
-        { name: "Node 2", uuid: "node-2" }
-      ])
-    );
-    this.systemConfig = linkedSignal(() => {
-      return this.systemConfigResource.value()?.result?.value ?? {};
-    });
-    this.systemConfigInit = computed(() => {
-      return this.systemConfigResource.value()?.result?.init ?? {};
-    });
-    this.nodes = computed<NodeInfo[]>(() => {
-      return this.nodesResource.value()?.result?.value ?? [];
-    });
-  }
-  radiusServers = signal([]);
+    const mockNodes: NodeInfo[] = [
+      { name: "Node 1", uuid: "node-1" },
+      { name: "Node 2", uuid: "node-2" }
+    ];
 
-  caConnectorResource?: HttpResourceRef<any> | undefined;
-  caConnectors?: WritableSignal<CaConnectors> | undefined;
+    this.systemConfigResource = new MockHttpResourceRef(
+      MockPiResponse.fromValue<Record<string, string>, unknown, SystemConfigInit>(mockConfig, {}, mockInit)
+    ) as unknown as HttpResourceRef<SystemConfigResponse | undefined>;
+    this.radiusServerResource = new MockHttpResourceRef<PiResponse<string[]> | undefined>(
+      MockPiResponse.fromValue<string[]>([])
+    );
+    this.nodesResource = new MockHttpResourceRef<PiResponse<NodeInfo[]> | undefined>(
+      MockPiResponse.fromValue<NodeInfo[]>(mockNodes)
+    );
+    this.systemConfig = signal<Record<string, string>>(mockConfig);
+    this.systemConfigInit = signal<SystemConfigInit>(mockInit);
+    this.nodes = signal<NodeInfo[]>(mockNodes);
+  }
+  radiusServers = signal<string[]>([]);
+
+  caConnectorResource?: HttpResourceRef<PiResponse<CaConnectors> | undefined>;
+  caConnectors?: WritableSignal<CaConnectors>;
 
   getDocumentation(): Observable<string> {
     throw new Error("Method not implemented.");
   }
 
-  saveSystemConfig(config: any) {
-    return of(MockPiResponse.fromValue({ status: true }));
-  }
-
-  deleteSystemConfig(key: string) {
-    return of(MockPiResponse.fromValue({ status: true }));
-  }
-
-  deleteUserCache() {
-    return of(MockPiResponse.fromValue({ status: true }));
-  }
-
-  loadSmtpIdentifiers() {
-    return of(MockPiResponse.fromValue({ smtp1: "smtp1", smtp2: "smtp2" }));
-  }
+  saveSystemConfig = jest.fn(() => of(MockPiResponse.fromValue<Record<string, "insert" | "update">>({})));
+  deleteSystemConfig = jest.fn(() => of(MockPiResponse.fromValue(true)));
+  deleteUserCache = jest.fn(() => of(MockPiResponse.fromValue({ status: true, deleted: 0 })));
 }

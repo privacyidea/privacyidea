@@ -32,11 +32,11 @@ import { HOTP_HASHLIB, HOTP_OTP_LENGTH } from "@constants/token.constants";
   styleUrl: "./hotp-config.component.scss"
 })
 export class HotpConfigComponent {
-  formData = input.required<Record<string, any>>();
+  formData = input.required<Record<string, string>>();
   hashLibs = input.required<string[]>();
-  formDataChange = output<Record<string, any>>();
+  formDataChange = output<Record<string, string>>();
 
-  updateFormData(fieldName: string, value: any): void {
+  updateFormData(fieldName: string, value: string): void {
     const newValue = { ...this.formData(), [fieldName]: value };
     this.formDataChange.emit(newValue);
   }

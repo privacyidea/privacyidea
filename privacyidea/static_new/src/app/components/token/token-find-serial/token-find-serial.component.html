@@ -30,14 +30,11 @@
     class="margin-left-16 margin-bottom-16"
     i18n>
     By entering an OTP value you can get the serial number of the token.
-    <br />
     You can also enter additional optional parameters, to narrow down the search for the token.
-    <br />
     So you can only search within certain token types or in assigned or unassigned tokens.
   </p>
   <div class="flex-row gap-16 ali-center margin-left-16">
-    <mat-form-field
-      class="input-width-l">
+    <mat-form-field class="input-width-l">
       <mat-label i18n>OTP Value</mat-label>
       <input
         #otpValueInput
@@ -55,18 +52,23 @@
     <button
       (click)="onClickRunSearch()"
       [disabled]="otpValue() === ''"
-      class="action-button-primary button-width-m margin-bottom-16"
-      i18n
+      class="action-button-primary button-width-l margin-bottom-16"
       mat-stroked-button>
       <mat-icon>{{ currentStep() !== "searching" ? "play_arrow" : "stop" }}</mat-icon>
-      {{ currentStep() !== "searching" ? "Run" : "Stop" }}
-      <span>Search</span>
+      <span
+        i18n
+        [hidden]="currentStep() === 'searching'"
+        >Run Search</span
+      >
+      <span
+        i18n
+        [hidden]="currentStep() !== 'searching'"
+        >Stop Search</span
+      >
     </button>
   </div>
   <div class="margin-left-16">
-    <h4 i18n>
-      Search Configuration
-    </h4>
+    <h4 i18n>Search Configuration</h4>
     <div class="flex-row gap-16">
       <mat-form-field class="input-width-l">
         <mat-label i18n>Token Type</mat-label>
@@ -76,7 +78,7 @@
           i18n-placeholder
           placeholder="Select token type">
           @for (type of tokenTypesWithOTP(); track type) {
-            <mat-option [value]="type['key']">{{ type["info"].split(':')[0] }}</mat-option>
+            <mat-option [value]="type['key']">{{ type["info"].split(":")[0] }}</mat-option>
           }
         </mat-select>
       </mat-form-field>

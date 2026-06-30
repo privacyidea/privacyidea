@@ -21,7 +21,7 @@
   [title]="data.title || 'Information'"
   [icon]="data.icon"
   [showCancelButton]="true"
-  (close)="close()">
+  (wrapperClose)="close()">
   <mat-dialog-content>
     <div class="text-center">
       @for (text of data.texts; track text) {

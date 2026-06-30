@@ -22,7 +22,11 @@
   aria-label="Create Container"
   class="container-create-container"
   i18n-aria-label>
-  <h3 class="margin-8">Create a New Container</h3>
+  <h3
+    class="margin-8"
+    i18n>
+    Create a New Container
+  </h3>
   <div
     class="sticky-header"
     [appStickyHeader]="scrollContainer">
@@ -50,11 +54,11 @@
           class="action-button-primary button-width-m"
           mat-stroked-button>
           <mat-icon>create_new_folder</mat-icon>
-          Create Container
+          <span i18n>Create Container</span>
         </button>
         <button
           (click)="reopenEnrollmentDialog()"
-          [matTooltip]="'Reopen enrollment dialog'"
+          matTooltip="Reopen enrollment dialog" i18n-matTooltip
           [ngClass]="{ hidden: !registerResponse() }"
           mat-icon-button
           type="button">
@@ -69,14 +73,20 @@
       [containerService]="containerService"
       [tokenService]="tokenService"
       [authService]="authService"
-      [description]="description"
-      [selectedTemplate]="selectedTemplate"
-      [templateOptions]="templateOptions"
-      [availableTokenTypes]="availableTokenTypes"
-      [generateQRCode]="generateQRCode"
-      [passphrasePrompt]="passphrasePrompt"
-      [passphraseResponse]="passphraseResponse"
-      [userStorePassphrase]="userStorePassphrase"
+      [description]="description()"
+      (descriptionChange)="description.set($event)"
+      [selectedTemplate]="selectedTemplate()"
+      (selectedTemplateChange)="selectedTemplate.set($event)"
+      [templateOptions]="templateOptions()"
+      [availableTokenTypes]="availableTokenTypes()"
+      [generateQRCode]="generateQRCode()"
+      (generateQRCodeChange)="generateQRCode.set($event)"
+      [passphrasePrompt]="passphrasePrompt()"
+      (passphrasePromptChange)="passphrasePrompt.set($event)"
+      [passphraseResponse]="passphraseResponse()"
+      (passphraseResponseChange)="passphraseResponse.set($event)"
+      [userStorePassphrase]="userStorePassphrase()"
+      (userStorePassphraseChange)="userStorePassphrase.set($event)"
       [showRegistration]="containerService.selectedContainerType()?.containerType === 'smartphone'"
       [containerHasOwner]="isUserSelected()"
       [templateFieldClass]="'input-width-l'"

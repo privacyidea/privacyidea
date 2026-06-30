@@ -49,10 +49,9 @@
     <button
       (click)="onCreateNewServer()"
       class="action-button-primary button-width-l"
-      i18n
       mat-stroked-button>
       <mat-icon>add</mat-icon>
-      Create RADIUS Server
+      <span i18n>Create RADIUS Server</span>
     </button>
   </div>
   <table
@@ -60,20 +59,23 @@
     class="radius-servers-table"
     mat-table
     matSort>
-
     <ng-container matColumnDef="identifier">
       <th
         *matHeaderCellDef
         i18n
         mat-header-cell
-        mat-sort-header> Identifier
+        mat-sort-header>
+        Identifier
       </th>
       <td
         *matCellDef="let server"
         mat-cell>
         <app-copyable [copyText]="server.identifier">
           <a
+            role="button"
+            tabindex="0"
             (click)="onEditServer(server)"
+            (keydown.enter)="onEditServer(server)"
             class="flex ali-center">
             {{ server.identifier }}
           </a>
@@ -86,11 +88,13 @@
         *matHeaderCellDef
         i18n
         mat-header-cell
-        mat-sort-header> IP/FQDN
+        mat-sort-header>
+        IP/FQDN
       </th>
       <td
         *matCellDef="let server"
-        mat-cell> {{ server.server }}:{{ server.port }}
+        mat-cell>
+        {{ server.server }}:{{ server.port }}
       </td>
     </ng-container>
 
@@ -99,11 +103,13 @@
         *matHeaderCellDef
         i18n
         mat-header-cell
-        mat-sort-header> Dictionary
+        mat-sort-header>
+        Dictionary
       </th>
       <td
         *matCellDef="let server"
-        mat-cell> {{ server.dictionary }}
+        mat-cell>
+        {{ server.dictionary }}
       </td>
     </ng-container>
 
@@ -112,11 +118,13 @@
         *matHeaderCellDef
         i18n
         mat-header-cell
-        mat-sort-header> Description
+        mat-sort-header>
+        Description
       </th>
       <td
         *matCellDef="let server"
-        mat-cell> {{ server.description }}
+        mat-cell>
+        {{ server.description }}
       </td>
     </ng-container>
 
@@ -124,7 +132,8 @@
       <th
         *matHeaderCellDef
         i18n
-        mat-header-cell> Actions
+        mat-header-cell>
+        Actions
       </th>
       <td
         *matCellDef="let server"
@@ -146,7 +155,7 @@
       *matHeaderRowDef="displayedColumns"
       mat-header-row></tr>
     <tr
-      *matRowDef="let row; columns: displayedColumns;"
+      *matRowDef="let row; columns: displayedColumns"
       mat-row></tr>
 
     <tr
@@ -155,7 +164,8 @@
       <td
         class="mat-cell"
         colspan="5"
-        i18n>No RADIUS servers found.
+        i18n>
+        No RADIUS servers found.
       </td>
     </tr>
   </table>

@@ -26,14 +26,26 @@ export class WelcomeDialogService {
   private readonly dialog = inject(MatDialog);
   private readonly auth: AuthServiceInterface = inject(AuthService);
   readonly opened = signal<boolean>(false);
+  // Whether the welcome decision has already been made for the current authenticated session.
+  // Seeded from the bootstrap auth state so a session restored on a reload (e.g. a language
+  // switch) is not treated as a fresh login and does not re-open the dialog.
+  private welcomeHandled = false;
 
   constructor() {
+    this.welcomeHandled = this.auth.isAuthenticated();
     effect(() => {
       const isAuth = this.auth.isAuthenticated();
-      const hideWelcome = this.auth.hideWelcome();
-      const subStatus = this.auth.subscriptionStatus();
-
-      if (isAuth && !hideWelcome) {
+      if (!isAuth) {
+        // Logged out: allow the dialog again on the next interactive login.
+        this.welcomeHandled = false;
+        this.opened.set(false);
+        return;
+      }
+      if (this.welcomeHandled) {
+        return;
+      }
+      this.welcomeHandled = true;
+      if (!this.auth.hideWelcome()) {
         this.opened.set(true);
         this.dialog.open(WelcomeDialogComponent, {
           disableClose: true,

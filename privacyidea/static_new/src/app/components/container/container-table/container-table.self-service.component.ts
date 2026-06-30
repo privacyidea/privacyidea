@@ -74,11 +74,11 @@ export class ContainerTableSelfServiceComponent extends ContainerTableComponent 
   }
 
   readonly columnKeysMapSelfService = [
-    { key: "serial", label: "Serial" },
-    { key: "type", label: "Type" },
-    { key: "states", label: "Status" },
-    { key: "description", label: "Description" },
-    { key: "delete", label: "Delete" }
+    { key: "serial", label: $localize`Serial` },
+    { key: "type", label: $localize`Type` },
+    { key: "states", label: $localize`Status` },
+    { key: "description", label: $localize`Description` },
+    { key: "delete", label: $localize`Delete` }
   ];
   readonly columnKeysSelfService: string[] = this.columnKeysMapSelfService.map(
     (column: { key: string; label: string }) => column.key
@@ -93,10 +93,10 @@ export class ContainerTableSelfServiceComponent extends ContainerTableComponent 
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: "Delete Container",
+          title: $localize`Delete Container`,
           items: [serial],
           itemType: "container",
-          confirmAction: { label: "Delete", value: true, type: "destruct" }
+          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()

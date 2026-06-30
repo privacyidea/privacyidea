@@ -23,7 +23,7 @@ import { Component } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { AuthService } from "@services/auth/auth.service";
-import { MachineResolverService } from "@services/machine-resolver/machine-resolver.service";
+import { MachineResolver, MachineResolverService } from "@services/machine-resolver/machine-resolver.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockMachineResolverService } from "@testing/mock-services/mock-machine-resolver-service";
@@ -87,7 +87,7 @@ describe("MachineResolverComponent", () => {
   it("should show MockMachineResolverPanelNewComponent one time", () => {
     authServiceMock.actionAllowed.mockReturnValue(true);
     const compiled = fixture.nativeElement as HTMLElement;
-    machineResolverServiceMock.machineResolvers.set([{}, {}] as any);
+    machineResolverServiceMock.machineResolvers.set([{}, {}] as unknown as MachineResolver[]);
     fixture.detectChanges();
     const newPanels = compiled.querySelectorAll("app-machine-resolver-panel-new");
     const editPanels = compiled.querySelectorAll("app-machine-resolver-panel-edit");
@@ -110,7 +110,7 @@ describe("MachineResolverComponent", () => {
     it("when there is 1 machineResolver", () => {
       authServiceMock.actionAllowed.mockReturnValue(true);
       const compiled = fixture.nativeElement as HTMLElement;
-      machineResolverServiceMock.machineResolvers.set([{}] as any);
+      machineResolverServiceMock.machineResolvers.set([{}] as unknown as MachineResolver[]);
       fixture.detectChanges();
       const editPanels = compiled.querySelectorAll("app-machine-resolver-panel-edit");
 
@@ -120,7 +120,7 @@ describe("MachineResolverComponent", () => {
     it("when there are 3 machineResolvers", () => {
       authServiceMock.actionAllowed.mockReturnValue(true);
       const compiled = fixture.nativeElement as HTMLElement;
-      machineResolverServiceMock.machineResolvers.set([{}, {}, {}] as any);
+      machineResolverServiceMock.machineResolvers.set([{}, {}, {}] as unknown as MachineResolver[]);
       fixture.detectChanges();
       const editPanels = compiled.querySelectorAll("app-machine-resolver-panel-edit");
 

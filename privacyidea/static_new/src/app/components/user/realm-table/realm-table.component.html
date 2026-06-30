@@ -133,7 +133,7 @@
                             <div class="resolver-priority-list">
                               @for (r of getEditNodeResolvers(group.id); track r.name) {
                                 <div class="resolver-priority-item">
-                                  <span class="priority-label">{{ r.name }} Priority:</span>
+                                  <span class="priority-label">{{ r.name }}</span>
                                   <input
                                     (click)="$event.stopPropagation()"
                                     (keydown)="$event.stopPropagation()"
@@ -172,9 +172,11 @@
                                 <li class="resolver-item">
                                   <a
                                     (click)="onClickResolver(res.name); $event.preventDefault()"
+                                    (keydown.enter)="onClickResolver(res.name); $event.preventDefault()"
                                     attr.aria-label="{{ column.label }} Link"
                                     class="resolver-name"
-                                    role="button">
+                                    role="button"
+                                    tabindex="0">
                                     {{ res.name }}
                                   </a>
                                   @if (res.priority !== null && res.priority !== undefined) {
@@ -198,6 +200,7 @@
                           (click)="saveEditedRealm(element)"
                           [disabled]="!canSaveEditedRealm(element)"
                           aria-label="Save realm"
+                          i18n-aria-label
                           color="primary"
                           mat-icon-button
                           type="button">
@@ -206,6 +209,7 @@
                         <button
                           (click)="cancelEditRealm()"
                           aria-label="Cancel edit"
+                          i18n-aria-label
                           class="red"
                           mat-icon-button
                           type="button">
@@ -217,8 +221,10 @@
                         <button
                           (click)="startEditRealm(element)"
                           aria-label="Edit realm"
+                          i18n-aria-label
                           mat-icon-button
                           matTooltip="Edit realm"
+                          i18n-matTooltip
                           type="button">
                           <mat-icon>edit</mat-icon>
                         </button>
@@ -227,9 +233,11 @@
                         <button
                           (click)="onDeleteRealm(element)"
                           aria-label="Delete realm"
+                          i18n-aria-label
                           color="warn"
                           mat-icon-button
                           matTooltip="Delete realm"
+                          i18n-matTooltip
                           type="button">
                           <mat-icon>delete</mat-icon>
                         </button>
@@ -293,7 +301,13 @@
                             <div class="resolver-priority-item">
                               <span class="priority-label">{{ r.name }}</span>
                               <input
-                                (input)="setNewRealmResolverPriority(group.id, r.name, $event.target['value'])"
+                                (input)="
+                                  setNewRealmResolverPriority({
+                                    nodeId: group.id,
+                                    resolverName: r.name,
+                                    priority: $any($event.target).value
+                                  })
+                                "
                                 [value]="r.priority"
                                 class="resolver-priority-input"
                                 max="999"
@@ -311,7 +325,7 @@
                     <button
                       (click)="onCreateRealm()"
                       [disabled]="!canSubmitNewRealm()"
-                      class="action-button-primary button-width-s"
+                      class="action-button-primary button-width-m"
                       mat-stroked-button
                       type="button">
                       <mat-icon>add</mat-icon>
@@ -320,9 +334,10 @@
                     <button
                       (click)="resetCreateForm()"
                       [disabled]="isCreatingRealm()"
-                      class="action-button-secondary button-width-s"
+                      class="action-button-secondary button-width-m"
                       mat-stroked-button
                       matTooltip="Reset form"
+                      i18n-matTooltip
                       type="button">
                       <mat-icon>redo</mat-icon>
                       <span i18n>Reset</span>
@@ -359,7 +374,9 @@
           mat-no-data-row>
           <td
             [attr.colspan]="columnKeys.length"
-            aria-label="No Data Cell">
+            aria-label="No Data Cell"
+            i18n-aria-label
+            i18n>
             No data matching the filter.
           </td>
         </tr>

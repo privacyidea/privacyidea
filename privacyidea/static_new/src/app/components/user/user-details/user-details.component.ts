@@ -342,7 +342,7 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
         this.tokenService
           .assignUser({
             tokenSerial: option["serial"],
-            username: this.userService.detailsUsername(),
+            username: this.userService.detailsUser().username,
             realm: this.userService.selectedUserRealm(),
             pin: pin
           })
@@ -365,7 +365,7 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
   }
 
   showUserAuditLog() {
-    this.auditService.auditFilter.set(new FilterValue({ value: `user: ${this.userService.detailsUsername()}` }));
+    this.auditService.auditFilter.set(new FilterValue({ value: `user: ${this.userService.detailsUser().username}` }));
   }
 
   editMode = signal(false);
@@ -418,10 +418,10 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: "Delete User",
+          title: $localize`Delete User`,
           items: [this.userData().username],
           itemType: "user",
-          confirmAction: { label: "Delete", value: true, type: "destruct" }
+          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()

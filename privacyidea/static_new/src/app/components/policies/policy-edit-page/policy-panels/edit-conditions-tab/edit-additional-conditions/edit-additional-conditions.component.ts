@@ -97,7 +97,7 @@ export class EditAdditionalConditionsComponent {
     "templates"
   ];
 
-  readonly policyService: PolicyService = inject(PolicyService);
+  readonly policyService = inject(PolicyService);
   readonly dialogService: DialogServiceInterface = inject(DialogService);
 
   // Inputs/Outputs

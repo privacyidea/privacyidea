@@ -16,17 +16,28 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { WritableSignal } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
 import { Router } from "@angular/router";
 import { AuthService } from "@services/auth/auth.service";
-import { NotificationService } from "@services/notification/notification.service";
-import { MockNotificationService } from "@testing/mock-services";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { MockNotificationService, MockRouter } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { SessionTimerService } from "./session-timer.service";
 
+interface SessionTimerInternals {
+  startTime: WritableSignal<number>;
+  loginTime: WritableSignal<number>;
+  currentTime: WritableSignal<number>;
+  notificationService: NotificationServiceInterface;
+  logoutTimeMs: () => number | null;
+  jwtLogoutTimeMs: () => number | null;
+}
+
 describe("SessionTimerService", () => {
   let service: SessionTimerService;
-  let router: { navigate: jest.Mock };
+  let internals: SessionTimerInternals;
+  let router: MockRouter;
   let authService: MockAuthService;
   let notify: MockNotificationService;
 
@@ -34,19 +45,19 @@ describe("SessionTimerService", () => {
     jest.useFakeTimers();
     jest.setSystemTime(Date.parse("2025-01-01T00:00:00.000Z"));
 
-    router = { navigate: jest.fn() };
-
     TestBed.configureTestingModule({
       providers: [
-        SessionTimerService,
-        { provide: Router, useValue: router },
+        { provide: Router, useClass: MockRouter },
         { provide: AuthService, useClass: MockAuthService },
-        { provide: NotificationService, useClass: MockNotificationService }
+        { provide: NotificationService, useClass: MockNotificationService },
+        SessionTimerService
       ]
     });
 
+    router = TestBed.inject(Router) as unknown as MockRouter;
     notify = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     service = TestBed.inject(SessionTimerService);
+    internals = service as unknown as SessionTimerInternals;
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
   });
 
@@ -69,24 +80,24 @@ describe("SessionTimerService", () => {
   it("remainingTime uses jwt time if logout time is not set", () => {
     authService.logoutTimeS.set(null);
     authService.jwtLogoutTimeS.set(30);
-    (service as any).startTime.set(Date.now());
-    (service as any).currentTime.set(Date.now());
+    internals.startTime.set(Date.now());
+    internals.currentTime.set(Date.now());
     expect(service.remainingTime()).toEqual(30_000);
   });
 
   it("remainingTime uses logout time if jwt time is not set", () => {
     authService.logoutTimeS.set(20);
     authService.jwtLogoutTimeS.set(null);
-    (service as any).startTime.set(Date.now());
-    (service as any).currentTime.set(Date.now());
+    internals.startTime.set(Date.now());
+    internals.currentTime.set(Date.now());
     expect(service.remainingTime()).toEqual(20_000);
   });
 
   it("remainingTime allows 0 values", () => {
     authService.logoutTimeS.set(0);
     authService.jwtLogoutTimeS.set(null);
-    (service as any).startTime.set(Date.now());
-    (service as any).currentTime.set(Date.now());
+    internals.startTime.set(Date.now());
+    internals.currentTime.set(Date.now());
     expect(service.remainingTime()).toEqual(0);
 
     authService.logoutTimeS.set(null);
@@ -101,19 +112,19 @@ describe("SessionTimerService", () => {
   it("remainingTime uses shortest time if both are given", () => {
     authService.logoutTimeS.set(20);
     authService.jwtLogoutTimeS.set(30);
-    (service as any).startTime.set(Date.now());
-    (service as any).currentTime.set(Date.now());
+    internals.startTime.set(Date.now());
+    internals.currentTime.set(Date.now());
     expect(service.remainingTime()).toEqual(20_000);
 
     authService.logoutTimeS.set(40);
     authService.jwtLogoutTimeS.set(30);
-    (service as any).startTime.set(Date.now());
-    (service as any).currentTime.set(Date.now());
+    internals.startTime.set(Date.now());
+    internals.currentTime.set(Date.now());
     expect(service.remainingTime()).toEqual(30_000);
   });
 
   it("startTimer warns when logout time is not defined and does not schedule timeout", () => {
-    const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+    const warnSpy = jest.spyOn(console, "warn").mockReturnValue();
     authService.logoutTimeS.set(null);
     authService.jwtLogoutTimeS.set(null);
     service.startTimer();
@@ -125,7 +136,7 @@ describe("SessionTimerService", () => {
 
   it("startTimer schedules timeout and triggers logout on expiry", () => {
     authService.logoutTimeS.set(2);
-    const clearIntervalSpy = jest.spyOn(global, "clearInterval");
+    const clearIntervalSpy = jest.spyOn(globalThis, "clearInterval");
 
     service.startRefreshingRemainingTime();
     service.startTimer();
@@ -169,11 +180,11 @@ describe("SessionTimerService", () => {
     authService.logoutTimeS.set(31);
     service.startTimer();
 
-    const snackSpy = jest.spyOn((service as any).notificationService, "warning");
+    const snackSpy = jest.spyOn(internals.notificationService, "warning");
 
     const t = Date.now();
-    (service as any).startTime.set(t);
-    (service as any).currentTime.set(t + 500);
+    internals.startTime.set(t);
+    internals.currentTime.set(t + 500);
 
     await Promise.resolve();
     jest.runOnlyPendingTimers();
@@ -191,7 +202,7 @@ describe("SessionTimerService", () => {
 
     jest.advanceTimersByTime(2000);
     service.startTimer();
-    (service as any).currentTime.set(Date.now());
+    internals.currentTime.set(Date.now());
 
     const resetValue = service.remainingTime()!;
     expect(resetValue).toBeGreaterThanOrEqual(4900);
@@ -200,68 +211,68 @@ describe("SessionTimerService", () => {
 
   it("logoutTimeMs clamps negative values to zero", () => {
     authService.logoutTimeS.set(-10);
-    (service as any).startTime.set(Date.now());
-    (service as any).currentTime.set(Date.now());
-    expect((service as any).logoutTimeMs()).toBe(0);
+    internals.startTime.set(Date.now());
+    internals.currentTime.set(Date.now());
+    expect(internals.logoutTimeMs()).toBe(0);
   });
 
   it("logoutTimeMs allows 0 value", () => {
     authService.logoutTimeS.set(0);
-    (service as any).startTime.set(Date.now());
-    (service as any).currentTime.set(Date.now());
-    expect((service as any).logoutTimeMs()).toBe(0);
+    internals.startTime.set(Date.now());
+    internals.currentTime.set(Date.now());
+    expect(internals.logoutTimeMs()).toBe(0);
   });
 
   it("logoutTimeMs returns correct value for positive input", () => {
     authService.logoutTimeS.set(100);
-    (service as any).startTime.set(Date.now());
-    (service as any).currentTime.set(Date.now());
-    expect((service as any).logoutTimeMs()).toBe(100_000);
+    internals.startTime.set(Date.now());
+    internals.currentTime.set(Date.now());
+    expect(internals.logoutTimeMs()).toBe(100_000);
   });
 
   it("logoutTimeMs returns null for null input", () => {
     authService.logoutTimeS.set(null);
-    expect((service as any).logoutTimeMs()).toBeNull();
+    expect(internals.logoutTimeMs()).toBeNull();
   });
 
   it("jwtLogoutTimeMs clamps negative values to zero", () => {
     authService.jwtLogoutTimeS.set(-10);
-    (service as any).loginTime.set(Date.now());
-    (service as any).currentTime.set(Date.now());
-    expect((service as any).jwtLogoutTimeMs()).toBe(0);
+    internals.loginTime.set(Date.now());
+    internals.currentTime.set(Date.now());
+    expect(internals.jwtLogoutTimeMs()).toBe(0);
   });
 
   it("jwtLogoutTimeMs allows 0", () => {
     authService.jwtLogoutTimeS.set(0);
-    (service as any).loginTime.set(Date.now());
-    (service as any).currentTime.set(Date.now());
-    expect((service as any).jwtLogoutTimeMs()).toBe(0);
+    internals.loginTime.set(Date.now());
+    internals.currentTime.set(Date.now());
+    expect(internals.jwtLogoutTimeMs()).toBe(0);
   });
 
   it("jwtLogoutTimeMs returns correct value for positive input", () => {
     authService.jwtLogoutTimeS.set(100);
-    (service as any).loginTime.set(Date.now());
-    (service as any).currentTime.set(Date.now());
-    expect((service as any).jwtLogoutTimeMs()).toBe(100_000);
+    internals.loginTime.set(Date.now());
+    internals.currentTime.set(Date.now());
+    expect(internals.jwtLogoutTimeMs()).toBe(100_000);
   });
 
   it("jwtLogoutTimeMs returns null for null input", () => {
     authService.jwtLogoutTimeS.set(null);
-    expect((service as any).jwtLogoutTimeMs()).toBeNull();
+    expect(internals.jwtLogoutTimeMs()).toBeNull();
   });
 
   it("initiallyStartTimer sets loginTime, strats time refreshing and starts timer", () => {
     const startTimerSpy = jest.spyOn(service, "startTimer");
     const startRefreshingSpy = jest.spyOn(service, "startRefreshingRemainingTime");
 
-    (service as any).startTime.set(Date.now() - 5000);
-    (service as any).loginTime.set(Date.now() - 5000);
-    (service as any).currentTime.set(Date.now() - 5000);
+    internals.startTime.set(Date.now() - 5000);
+    internals.loginTime.set(Date.now() - 5000);
+    internals.currentTime.set(Date.now() - 5000);
 
     service.initialTimerStart();
 
-    expect((service as any).loginTime()).toBeGreaterThanOrEqual(Date.now() - 500);
-    expect((service as any).startTime()).toBeGreaterThanOrEqual(Date.now() - 500);
+    expect(internals.loginTime()).toBeGreaterThanOrEqual(Date.now() - 500);
+    expect(internals.startTime()).toBeGreaterThanOrEqual(Date.now() - 500);
     expect(startRefreshingSpy).toHaveBeenCalled();
     expect(startTimerSpy).toHaveBeenCalled();
   });

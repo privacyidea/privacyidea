@@ -19,11 +19,10 @@
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, effect, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
-import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { ContentService, ContentServiceInterface, DetailsUser } from "@services/content/content.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
-import { Router } from "@angular/router";
 import { PiResponse } from "@app/app.component";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { FilterValue } from "@core/models/filter_value/filter_value";
@@ -63,6 +62,11 @@ export interface EditUserData {
   [key: string]: unknown; // Allow additional custom properties
 }
 
+export type UserPayload = Omit<EditUserData, "username"> & {
+  user: string;
+  resolver: string;
+};
+
 export interface UserAttributePolicy {
   delete: string[];
   set: Record<string, string[]>;
@@ -100,22 +104,15 @@ export interface UserServiceInterface {
   apiFilterOptions: string[];
   advancedApiFilterOptions: string[];
 
-  detailsUsername: WritableSignal<string>;
+  detailsUser: WritableSignal<DetailsUser>;
 
-  setUserAttribute(key: string, value: string): Observable<PiResponse<number, unknown>>;
-
-  deleteUserAttribute(key: string): Observable<PiResponse<any, unknown>>;
-
+  setUserAttribute(key: string, value: string): Observable<PiResponse<number> | undefined>;
+  deleteUserAttribute(key: string): Observable<PiResponse<number> | undefined>;
   createUser(resolver: string, userData: EditUserData): Observable<boolean>;
-
   editUser(resolver: string, userData: EditUserData): Observable<boolean>;
-
   deleteUser(resolver: string, username: string): Observable<boolean>;
-
   resetFilter(): void;
-
   handleFilterInput($event: Event): void;
-
   displayUser(user: UserData | string): string;
 }
 
@@ -127,7 +124,6 @@ export class UserService implements UserServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly notificationService = inject(NotificationService);
   private readonly http = inject(HttpClient);
-  private readonly router = inject(Router);
 
   constructor() {
     effect(() => {
@@ -189,7 +185,7 @@ export class UserService implements UserServiceInterface {
       url: this.baseUrl + "editable_attributes/",
       method: "GET",
       headers: this.authService.getHeaders(),
-      params: { user: this.detailsUsername(), realm: this.selectedUserRealm() }
+      params: { user: this.detailsUser().username, realm: this.selectedUserRealm() }
     };
   });
 
@@ -225,11 +221,11 @@ export class UserService implements UserServiceInterface {
       url: this.baseUrl + "attribute",
       method: "GET",
       headers: this.authService.getHeaders(),
-      params: { user: this.detailsUsername(), realm: this.selectedUserRealm() }
+      params: { user: this.detailsUser().username, realm: this.selectedUserRealm() }
     };
   });
 
-  detailsUsername = this.contentService.detailsUsername;
+  detailsUser = this.contentService.detailsUser;
 
   apiUserFilter = signal(new FilterValue());
 
@@ -247,7 +243,7 @@ export class UserService implements UserServiceInterface {
   selectedUserRealm: WritableSignal<string> = linkedSignal({
     source: () => ({
       routeUrl: this.contentService.routeUrl(),
-      currentUrl: this.router.url,
+      detailsUserRealm: this.contentService.detailsUser().realm,
       defaultRealm: this.realmService.defaultRealm(),
       realmOptions: this.realmService.realmOptions(),
       selectedTokenType: this.tokenService.selectedTokenType(),
@@ -255,15 +251,10 @@ export class UserService implements UserServiceInterface {
       authRealm: this.authService.realm()
     }),
     computation: (source, previous): string => {
-      // On user details set realm from the URL query param if present
+      // On user details the realm of the opened user is the source of truth
       if (this.contentService.onUserDetails()) {
-        const qIndex = source.currentUrl.indexOf("?");
-        if (qIndex !== -1) {
-          const params = new URLSearchParams(source.currentUrl.substring(qIndex + 1));
-          const realm = params.get("realm") ?? "";
-          if (realm) {
-            return realm;
-          }
+        if (source.detailsUserRealm) {
+          return source.detailsUserRealm;
         }
         if (previous?.value) {
           return previous.value;
@@ -309,7 +300,7 @@ export class UserService implements UserServiceInterface {
       method: "GET",
       headers: this.authService.getHeaders(),
       params: {
-        ...(this.detailsUsername() && { user: this.detailsUsername() }),
+        ...(this.detailsUser().username && { user: this.detailsUser().username }),
         ...(this.selectedUserRealm() && { realm: this.selectedUserRealm() })
       }
     };
@@ -320,7 +311,7 @@ export class UserService implements UserServiceInterface {
       userRes: this.userResource.hasValue() ? this.userResource.value() : undefined,
       isLoading: this.userResource.isLoading(),
       error: this.userResource.error(),
-      detailsUsername: this.detailsUsername()
+      detailsUsername: this.detailsUser().username
     }),
     computation: (source, previous) => {
       const emptyDetails: UserData = {
@@ -446,7 +437,7 @@ export class UserService implements UserServiceInterface {
   allUsernames = computed<string[]>(() => this.users().map((user) => user.username));
 
   selectionFilteredUsers = computed<UserData[]>(() => {
-    let userFilter = this.selectionFilter();
+    const userFilter = this.selectionFilter();
     if (typeof userFilter !== "string" || userFilter.trim() === "") {
       return this.users();
     }
@@ -475,7 +466,7 @@ export class UserService implements UserServiceInterface {
 
   setUserAttribute(key: string, value: string) {
     const params: Record<string, string> = {
-      user: this.detailsUsername(),
+      user: this.detailsUser().username,
       realm: this.selectedUserRealm(),
       key,
       value
@@ -490,35 +481,30 @@ export class UserService implements UserServiceInterface {
           console.error("Failed to set user attribute.", error);
           const message = error.error?.result?.error?.message || "";
           this.notificationService.error($localize`Failed to set user attribute. ` + message);
-          return of(undefined as any);
+          return of(undefined);
         })
       );
   }
 
   deleteUserAttribute(key: string) {
-    const username = this.detailsUsername();
+    const username = this.detailsUser().username;
     const realm = this.selectedUserRealm();
     const url =
       this.baseUrl +
       `attribute/${encodeURIComponent(key)}/${encodeURIComponent(username)}/${encodeURIComponent(realm)}`;
-    return this.http.delete<PiResponse<any>>(url, { headers: this.authService.getHeaders() }).pipe(
+    return this.http.delete<PiResponse<number>>(url, { headers: this.authService.getHeaders() }).pipe(
       catchError((error) => {
         console.error("Failed to delete user attribute.", error);
         const message = error.error?.result?.error?.message || "";
         this.notificationService.error($localize`Failed to delete user attribute. ` + message);
-        return of(undefined as any);
+        return of(undefined);
       })
     );
   }
 
   createUser(resolver: string, userData: EditUserData) {
-    const payload = { ...userData };
-    // Rename username to user
-    if (payload["username"]) {
-      payload["user"] = payload["username"];
-      delete (payload as any)["username"];
-    }
-    payload["resolver"] = resolver;
+    const { username, ...rest } = userData;
+    const payload: UserPayload = { ...rest, user: username, resolver };
     return this.http
       .post<PiResponse<number>>(this.baseUrl, payload, {
         headers: this.authService.getHeaders()
@@ -535,13 +521,8 @@ export class UserService implements UserServiceInterface {
   }
 
   editUser(resolver: string, userData: EditUserData) {
-    const payload = { ...userData };
-    // Rename username to user
-    if (payload["username"]) {
-      payload["user"] = payload["username"];
-      delete (payload as any)["username"];
-    }
-    payload["resolver"] = resolver;
+    const { username, ...rest } = userData;
+    const payload: UserPayload = { ...rest, user: username, resolver };
     return this.http.put<PiResponse<number>>(this.baseUrl, payload, { headers: this.authService.getHeaders() }).pipe(
       map((response) => response.result?.status || false),
       catchError((error) => {
@@ -555,7 +536,7 @@ export class UserService implements UserServiceInterface {
 
   deleteUser(resolver: string, username: string): Observable<boolean> {
     const url = this.baseUrl + encodeURIComponent(resolver) + "/" + encodeURIComponent(username);
-    return this.http.delete<PiResponse<any>>(url, { headers: this.authService.getHeaders() }).pipe(
+    return this.http.delete<PiResponse<number>>(url, { headers: this.authService.getHeaders() }).pipe(
       map((response) => response.result?.status || false),
       catchError((error) => {
         console.warn("Failed to delete user", error);

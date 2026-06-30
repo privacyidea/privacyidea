@@ -16,12 +16,11 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, HostListener, inject, OnInit } from "@angular/core";
+import { Component, HostListener, inject } from "@angular/core";
 import { RouterOutlet } from "@angular/router";
+import { WelcomeDialogService } from "@services/welcome/welcome-dialog.service";
 import { AuthService, AuthServiceInterface } from "./services/auth/auth.service";
-import { NotificationService, NotificationServiceInterface } from "./services/notification/notification.service";
 import { SessionTimerService, SessionTimerServiceInterface } from "./services/session-timer/session-timer.service";
-import { WelcomeDialogService } from "./services/welcome/welcome-dialog.service";
 
 export interface PiResponse<Value, Detail = unknown> {
   id: number;
@@ -106,26 +105,24 @@ export function challengesTriggered<Value, Detail = unknown>(response: PiRespons
   templateUrl: "./app.component.html",
   styleUrl: "./app.component.scss"
 })
-export class AppComponent implements OnInit {
+export class AppComponent {
   private readonly authService: AuthServiceInterface = inject(AuthService);
-  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly sessionTimerService: SessionTimerServiceInterface = inject(SessionTimerService);
 
   title = "privacyidea-webui";
   lastSessionReset = 0;
 
   constructor() {
+    // A session restored on bootstrap (e.g. after a language-switch reload) must arm the
+    // session timer here, because initialTimerStart() otherwise only runs on interactive login.
     if (this.authService.isAuthenticated()) {
-      console.warn("User is already logged in.");
-      this.notificationService.warning("User is already logged in.");
+      this.sessionTimerService.initialTimerStart();
     }
-
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const _welcomeInit = inject(WelcomeDialogService);
     /** Uncomment to enable subscription expiry dialog
      * const _subscriptionExpiryInit = inject(SubscriptionExpiryService); **/
   }
-
-  ngOnInit(): void {}
 
   @HostListener("document:click")
   @HostListener("document:keydown")

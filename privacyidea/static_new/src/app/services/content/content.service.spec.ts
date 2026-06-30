@@ -29,7 +29,7 @@ describe("ContentService", () => {
   let events$: Subject<NavigationEnd>;
   let mockRouter: {
     url: string;
-    events: any;
+    events: Subject<NavigationEnd>;
     navigateByUrl: jest.Mock<Promise<boolean>, [string]>;
   };
 
@@ -42,7 +42,7 @@ describe("ContentService", () => {
     events$ = new Subject<NavigationEnd>();
     mockRouter = {
       url: "/start",
-      events: events$.asObservable(),
+      events: events$,
       navigateByUrl: jest.fn(async (url: string) => {
         emitNav(url);
         return true;
@@ -141,6 +141,25 @@ describe("ContentService", () => {
       expect(service.tokenSerial()).toBe("SER1");
       expect(service.routeUrl()).toBe(ROUTE_PATHS.TOKENS_DETAILS + "SER1");
       expect(service.previousUrl()).toBe("/containers");
+    });
+  });
+
+  describe("userSelected()", () => {
+    it("navigates to user details and stores username and realm", () => {
+      emitNav("/tokens");
+      service.userSelected("alice", "themis");
+
+      expect(mockRouter.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.USERS_DETAILS + "/alice?realm=themis");
+      expect(service.detailsUser().username).toBe("alice");
+      expect(service.detailsUser().realm).toBe("themis");
+    });
+
+    it("stores an empty realm when none is provided", () => {
+      emitNav("/tokens");
+      service.userSelected("alice", undefined as unknown as string);
+
+      expect(mockRouter.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.USERS_DETAILS + "/alice?realm=");
+      expect(service.detailsUser().realm).toBe("");
     });
   });
 

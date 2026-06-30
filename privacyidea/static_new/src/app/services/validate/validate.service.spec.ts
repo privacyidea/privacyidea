@@ -20,13 +20,20 @@ import { HttpClient, HttpHeaders, provideHttpClient } from "@angular/common/http
 import { TestBed } from "@angular/core/testing";
 import { of, throwError } from "rxjs";
 
+import { PiResponse } from "@app/app.component";
 import { AuthResponse, AuthService } from "@services/auth/auth.service";
 import { Base64Service } from "@services/base64/base64.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { MockBase64Service, MockLocalService, MockNotificationService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
-import { ValidateCheckResponse, ValidateService } from "./validate.service";
+import { PasskeyCheckParams, ValidateCheckResponse, ValidateService, WebAuthnSignRequest } from "./validate.service";
 
+interface PasskeyShim {
+  isConditionalMediationAvailable?: jest.Mock | (() => Promise<boolean>);
+}
+interface WindowWithPasskey extends Omit<Window, "PublicKeyCredential"> {
+  PublicKeyCredential?: PasskeyShim;
+}
 describe("ValidateService", () => {
   let validateService: ValidateService;
   let http: HttpClient;
@@ -55,7 +62,7 @@ describe("ValidateService", () => {
     http = TestBed.inject(HttpClient);
     postSpy = jest.spyOn(http, "post");
 
-    consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    consoleErrorSpy = jest.spyOn(console, "error").mockReturnValue();
 
     notif = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     b64 = TestBed.inject(Base64Service) as unknown as MockBase64Service;
@@ -90,14 +97,12 @@ describe("ValidateService", () => {
 
   describe("authenticatePasskey", () => {
     it("should error and notify when WebAuthn is unsupported", async () => {
-      let restore: () => void;
-      if ("PublicKeyCredential" in window) {
-        const spy = jest.spyOn(window as any, "PublicKeyCredential", "get").mockReturnValue(undefined);
-        restore = () => spy.mockRestore();
-      } else {
-        (window as any).PublicKeyCredential = undefined;
-        restore = () => delete (window as any).PublicKeyCredential;
-      }
+      const win = window as WindowWithPasskey;
+      const original = win.PublicKeyCredential;
+      win.PublicKeyCredential = undefined;
+      const restore = () => {
+        win.PublicKeyCredential = original;
+      };
 
       validateService.authenticatePasskey().subscribe({
         next: () => fail("expected error"),
@@ -121,10 +126,11 @@ describe("ValidateService", () => {
         }
       });
 
-      const pkc: any = (window as any).PublicKeyCredential ?? {};
+      const win = window as WindowWithPasskey;
+      const pkc: PasskeyShim = win.PublicKeyCredential ?? {};
       pkc.isConditionalMediationAvailable = jest.fn().mockResolvedValue(true);
-      if (!(window as any).PublicKeyCredential) {
-        (window as any).PublicKeyCredential = pkc;
+      if (!win.PublicKeyCredential) {
+        win.PublicKeyCredential = pkc;
       }
 
       Object.defineProperty(navigator, "credentials", {
@@ -141,12 +147,12 @@ describe("ValidateService", () => {
           }
         }
       };
-      let capturedCheckBody: any;
+      let capturedCheckBody: PasskeyCheckParams | undefined;
 
       postSpy
         .mockImplementationOnce(() => of(initResp))
-        .mockImplementationOnce((url, body) => {
-          capturedCheckBody = body;
+        .mockImplementationOnce((_url, body) => {
+          capturedCheckBody = body as PasskeyCheckParams;
           return of({ success: true });
         });
 
@@ -201,10 +207,11 @@ describe("ValidateService", () => {
     });
 
     describe("authenticatePasskey (more branches)", () => {
-      const setupWebAuthn = (credGetImpl: () => Promise<any> | Promise<never>) => {
-        const pkc: any = (window as any).PublicKeyCredential ?? {};
+      const setupWebAuthn = (credGetImpl: () => Promise<unknown>) => {
+        const win = window as WindowWithPasskey;
+        const pkc: PasskeyShim = win.PublicKeyCredential ?? {};
         pkc.isConditionalMediationAvailable = jest.fn().mockResolvedValue(true);
-        (window as any).PublicKeyCredential = pkc;
+        win.PublicKeyCredential = pkc;
 
         Object.defineProperty(navigator, "credentials", {
           value: { get: jest.fn().mockImplementation(credGetImpl) },
@@ -237,7 +244,7 @@ describe("ValidateService", () => {
           })
         );
 
-        let caught: any;
+        let caught: Error | undefined;
         await new Promise<void>((resolve) => {
           validateService.authenticatePasskey().subscribe({
             next: () => resolve(),
@@ -248,7 +255,7 @@ describe("ValidateService", () => {
           });
         });
 
-        expect(caught.message).toBe("user dismissed");
+        expect(caught?.message).toBe("user dismissed");
         expect(notif.error).toHaveBeenCalledWith("user dismissed");
       });
 
@@ -262,9 +269,10 @@ describe("ValidateService", () => {
             userHandle: new ArrayBuffer(1)
           }
         });
-        const pkc: any = (window as any).PublicKeyCredential ?? {};
+        const win = window as WindowWithPasskey;
+        const pkc: PasskeyShim = win.PublicKeyCredential ?? {};
         pkc.isConditionalMediationAvailable = jest.fn().mockResolvedValue(true);
-        (window as any).PublicKeyCredential = pkc;
+        win.PublicKeyCredential = pkc;
 
         Object.defineProperty(navigator, "credentials", {
           value: { get: credGet },
@@ -275,9 +283,11 @@ describe("ValidateService", () => {
           of({ detail: { passkey: { challenge: "x", rpId: "r", transaction_id: "t" } } })
         );
 
-        const authSpy = jest.spyOn(auth as any, "authenticate").mockReturnValue(of({ success: true }));
+        const authSpy = jest
+          .spyOn(auth, "authenticate")
+          .mockReturnValue(of({ success: true } as unknown as AuthResponse));
 
-        let final: any;
+        let final: AuthResponse | undefined;
         await new Promise<void>((resolve) => {
           validateService.authenticatePasskey({ isTest: false }).subscribe((r) => {
             final = r;
@@ -302,25 +312,23 @@ describe("ValidateService", () => {
         timeout: 60000
       };
 
-      const setWebAuthn = (getImpl: () => Promise<any>) => {
-        (window as any).PublicKeyCredential = (window as any).PublicKeyCredential ?? {};
+      const setWebAuthn = (getImpl: () => Promise<unknown>) => {
+        const win = window as WindowWithPasskey;
+        win.PublicKeyCredential = win.PublicKeyCredential ?? {};
         Object.defineProperty(navigator, "credentials", {
           value: { get: jest.fn().mockImplementation(getImpl) },
           configurable: true
         });
-
-        (b64 as any).webAuthnBase64DecToArr = jest.fn(() => new Uint8Array([1, 2, 3]));
-        (b64 as any).webAuthnBase64EncArr = jest.fn(() => "enc");
-        (b64 as any).utf8ArrToStr = jest.fn(() => "user");
       };
 
       it("errors early on invalid signRequest (try/catch path)", (done) => {
-        (window as any).PublicKeyCredential = (window as any).PublicKeyCredential ?? {};
+        const win = window as WindowWithPasskey;
+        win.PublicKeyCredential = win.PublicKeyCredential ?? {};
         const bad = { ...okSignRequest, allowCredentials: undefined };
 
         validateService
           .authenticateWebAuthn({
-            signRequest: bad as any,
+            signRequest: bad as unknown as WebAuthnSignRequest,
             transaction_id: "T",
             username: "u",
             isTest: true
@@ -348,17 +356,17 @@ describe("ValidateService", () => {
           })
         );
 
-        let captured: any;
+        let captured: Record<string, unknown> | undefined;
         postSpy.mockImplementationOnce((url, body) => {
-          captured = body;
+          captured = body as Record<string, unknown>;
           return of({ success: true });
         });
 
-        let final: any;
+        let final: AuthResponse | undefined;
         await new Promise<void>((resolve) => {
           validateService
             .authenticateWebAuthn({
-              signRequest: okSignRequest as any,
+              signRequest: okSignRequest as unknown as WebAuthnSignRequest,
               transaction_id: "T-1",
               username: "alice",
               isTest: true
@@ -380,9 +388,9 @@ describe("ValidateService", () => {
           signature: "enc",
           userHandle: "user"
         });
-        expect((b64 as any).webAuthnBase64DecToArr).toHaveBeenCalled();
-        expect((b64 as any).webAuthnBase64EncArr).toHaveBeenCalledTimes(3);
-        expect((b64 as any).utf8ArrToStr).toHaveBeenCalled();
+        expect(b64.webAuthnBase64DecToArr).toHaveBeenCalled();
+        expect(b64.webAuthnBase64EncArr).toHaveBeenCalledTimes(3);
+        expect(b64.utf8ArrToStr).toHaveBeenCalled();
         expect(final).toEqual({ success: true });
       });
 
@@ -399,16 +407,18 @@ describe("ValidateService", () => {
           })
         );
 
-        const authSpy = jest.spyOn(auth as any, "authenticate").mockReturnValue(of({ ok: 1 }));
+        const authSpy = jest
+          .spyOn(auth, "authenticate")
+          .mockReturnValue(of({ ok: 1 } as unknown as AuthResponse));
         postSpy.mockImplementation(() => {
           throw new Error("should not POST in this branch");
         });
 
-        let final: any;
+        let final: AuthResponse | undefined;
         await new Promise<void>((resolve) => {
           validateService
             .authenticateWebAuthn({
-              signRequest: okSignRequest as any,
+              signRequest: okSignRequest as unknown as WebAuthnSignRequest,
               transaction_id: "T-2",
               username: "bob",
               isTest: false
@@ -426,11 +436,11 @@ describe("ValidateService", () => {
       it("handles navigator.credentials.get rejection (catchError path)", async () => {
         setWebAuthn(() => Promise.reject({ error: { result: { error: { message: "nope" } } } }));
 
-        let caught: any;
+        let caught: Error | undefined;
         await new Promise<void>((resolve) => {
           validateService
             .authenticateWebAuthn({
-              signRequest: okSignRequest as any,
+              signRequest: okSignRequest as unknown as WebAuthnSignRequest,
               transaction_id: "T-3",
               username: "eve",
               isTest: true
@@ -444,16 +454,16 @@ describe("ValidateService", () => {
             });
         });
 
-        expect(caught.message).toBe("nope");
+        expect(caught?.message).toBe("nope");
         expect(notif.error).toHaveBeenCalledWith("nope");
       });
 
       it("unsupported WebAuthn shows snack and throws", (done) => {
-        (window as any).PublicKeyCredential = undefined;
+        (window as WindowWithPasskey).PublicKeyCredential = undefined;
 
         validateService
           .authenticateWebAuthn({
-            signRequest: okSignRequest as any,
+            signRequest: okSignRequest as unknown as WebAuthnSignRequest,
             transaction_id: "T-4",
             username: "mallory",
             isTest: true
@@ -473,7 +483,9 @@ describe("ValidateService", () => {
       it("returns true only when authentication=ACCEPT and value=true", (done) => {
         const httpGet = jest.spyOn(TestBed.inject(HttpClient), "get");
 
-        httpGet.mockReturnValueOnce(of({ result: { authentication: "ACCEPT", value: true } } as any));
+        httpGet.mockReturnValueOnce(
+          of({ result: { authentication: "ACCEPT", value: true } } as unknown as PiResponse<boolean>)
+        );
 
         validateService.pollTransaction("tid").subscribe((res) => {
           expect(res).toBe(true);
@@ -484,7 +496,9 @@ describe("ValidateService", () => {
       it("returns false for other combinations", (done) => {
         const httpGet = jest.spyOn(TestBed.inject(HttpClient), "get");
 
-        httpGet.mockReturnValueOnce(of({ result: { authentication: "ACCEPT", value: false } } as any));
+        httpGet.mockReturnValueOnce(
+          of({ result: { authentication: "ACCEPT", value: false } } as unknown as PiResponse<boolean>)
+        );
 
         validateService.pollTransaction("tid").subscribe((res) => {
           expect(res).toBe(false);

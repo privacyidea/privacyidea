@@ -16,8 +16,7 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<section
-  class="user-container responsive-pad-0-1310 details-card">
+<section class="user-container responsive-pad-0-1310 details-card">
   <h4
     class="details-card-title"
     i18n>
@@ -45,68 +44,71 @@
         mat-cell>
         <div class="value-row">
           <div class="value-content">
-        @switch (element.keyMap.key) {
-          @case ("username") {
-            @if (isEditingUser()) {
-              <mat-form-field
-                class="input-width-m height-52"
-                subscriptSizing="dynamic">
-                <mat-label i18n>Enter User</mat-label>
-                <app-clearable-input
-                  (clearButtonClick)="userService.selectionFilter.set('')"
-                  [showClearButton]="userService.selectionFilter() !== ''">
-                  <input
-                    [value]="userService.selectionFilter()"
-                    (input)="userService.selectionFilter.set($any($event.target).value)"
-                    [matAutocomplete]="userAuto"
-                    appAutofocus
-                    matInput />
-                </app-clearable-input>
-                <mat-autocomplete
-                  #userAuto="matAutocomplete"
-                  (optionSelected)="userService.selectionFilter.set($event.option.value)">
-                  @for (option of userService.selectionFilteredUsernames(); track option) {
-                    <mat-option [value]="option">{{ option }}</mat-option>
-                  }
-                </mat-autocomplete>
-              </mat-form-field>
-            } @else {
-              <app-copyable [copyText]="element.value">
-                <a
-                  (click)="contentService.userSelected(element.value, element['user_realm'])"
-                  i18n-aria-label="{{ element.keyMap.label }} Link">
-                  {{ element.value }}
-                </a>
-              </app-copyable>
+            @switch (element.keyMap.key) {
+              @case ("username") {
+                @if (isEditingUser()) {
+                  <mat-form-field
+                    class="input-width-m height-52"
+                    subscriptSizing="dynamic">
+                    <mat-label i18n>Enter User</mat-label>
+                    <app-clearable-input
+                      (clearButtonClick)="userService.selectionFilter.set('')"
+                      [showClearButton]="userService.selectionFilter() !== ''">
+                      <input
+                        [value]="userService.selectionFilter()"
+                        (input)="userService.selectionFilter.set($any($event.target).value)"
+                        [matAutocomplete]="userAuto"
+                        appAutofocus
+                        matInput />
+                    </app-clearable-input>
+                    <mat-autocomplete
+                      #userAuto="matAutocomplete"
+                      (optionSelected)="userService.selectionFilter.set($event.option.value)">
+                      @for (option of userService.selectionFilteredUsernames(); track option) {
+                        <mat-option [value]="option">{{ option }}</mat-option>
+                      }
+                    </mat-autocomplete>
+                  </mat-form-field>
+                } @else {
+                  <app-copyable [copyText]="element.value">
+                    <a
+                      (click)="contentService.userSelected(element.value, userRealm())"
+                      (keydown.enter)="contentService.userSelected(element.value, userRealm())"
+                      (keydown.space)="$event.preventDefault(); contentService.userSelected(element.value, userRealm())"
+                      i18n-aria-label="{{ element.keyMap.label }} Link"
+                      role="button"
+                      tabindex="0">
+                      {{ element.value }}
+                    </a>
+                  </app-copyable>
+                }
+              }
+              @case ("user_realm") {
+                @if (isEditingUser()) {
+                  <mat-form-field
+                    class="input-width-m height-52"
+                    subscriptSizing="dynamic">
+                    <mat-label i18n>Select Realm of User</mat-label>
+                    <mat-select
+                      [value]="userService.selectedUserRealm()"
+                      (selectionChange)="userService.selectedUserRealm.set($event.value)">
+                      @for (option of realmService.realmOptions(); track option) {
+                        <mat-option value="{{ option }}">{{ option }}</mat-option>
+                      }
+                    </mat-select>
+                  </mat-form-field>
+                } @else {
+                  <app-copyable [copyText]="element.value">
+                    <span i18n-aria-label="{{ element.keyMap.label }} Link">
+                      {{ element.value }}
+                    </span>
+                  </app-copyable>
+                }
+              }
+              @default {
+                {{ element.value }}
+              }
             }
-          }
-          @case ("user_realm") {
-            @if (isEditingUser()) {
-              <mat-form-field
-                class="input-width-m height-52"
-                subscriptSizing="dynamic">
-                <mat-label i18n>Select Realm of User</mat-label>
-                <mat-select
-                  [value]="userService.selectedUserRealm()"
-                  (selectionChange)="userService.selectedUserRealm.set($event.value)">
-                  @for (option of realmService.realmOptions(); track option) {
-                    <mat-option value="{{ option }}">{{ option }}</mat-option>
-                  }
-                </mat-select>
-              </mat-form-field>
-            } @else {
-              <app-copyable [copyText]="element.value">
-                <span
-                  i18n-aria-label="{{ element.keyMap.label }} Link">
-                  {{ element.value }}
-                </span>
-              </app-copyable>
-            }
-          }
-          @default {
-            {{ element.value }}
-          }
-        }
           </div>
           <div class="value-edit">
             @switch (element.keyMap.key) {
@@ -125,10 +127,10 @@
                       <app-edit-buttons
                         [cancelEdit]="cancelUserEdit.bind(this)"
                         [element]="element"
-                        [isEditingInfo]="isEditingInfo"
-                        [isEditingUser]="isEditingUser"
+                        [isEditingInfo]="isEditingInfo()"
+                        [isEditingUser]="isEditingUser()"
                         [saveEdit]="saveUser.bind(this)"
-                        [shouldHideEdit]="isAnyEditingOrRevoked"
+                        [shouldHideEdit]="isAnyEditingOrRevoked()"
                         [toggleEdit]="toggleUserEdit.bind(this)"></app-edit-buttons>
                     } @else {
                       <button

@@ -19,11 +19,12 @@
 
 import { Component, ElementRef, input, linkedSignal, output, viewChildren, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
+import { MatTooltipModule } from "@angular/material/tooltip";
 
 @Component({
   selector: "app-selector-buttons",
   standalone: true,
-  imports: [MatButtonModule],
+  imports: [MatButtonModule, MatTooltipModule],
   templateUrl: "./selector-buttons.component.html",
   styleUrl: "./selector-buttons.component.scss"
 })
@@ -36,7 +37,7 @@ export class SelectorButtonsComponent<T> {
   readonly disabled = input<boolean>(false);
 
   // Outputs
-  readonly onSelect = output<T | undefined>();
+  readonly selected = output<T | undefined>();
 
   // Component State
   selectedValue: WritableSignal<T | undefined> = linkedSignal({
@@ -55,12 +56,17 @@ export class SelectorButtonsComponent<T> {
     if (this.selectedValue() === value) {
       if (this.allowDeselect()) {
         this.selectedValue.set(undefined);
-        this.onSelect.emit(undefined);
+        this.selected.emit(undefined);
       }
       return;
     }
     this.selectedValue.set(value);
-    this.onSelect.emit(value);
+    this.selected.emit(value);
+  }
+
+  /** True when the label is truncated by the ellipsis (so a tooltip is useful). */
+  isOverflowing(element: HTMLElement): boolean {
+    return element.scrollWidth > element.clientWidth;
   }
 
   public focusFirst(): void {

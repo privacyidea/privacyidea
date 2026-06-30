@@ -22,15 +22,18 @@ import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
-import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import {
+  PendingChangesService,
+  PendingChangesServiceInterface
+} from "@services/pending-changes/pending-changes.service";
 
 @Directive()
-export abstract class PendingChangesDialogComponent<D = any, R = any>
+export abstract class PendingChangesDialogComponent<D, R>
   extends AbstractDialogComponent<D, R>
   implements OnInit, OnDestroy
 {
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
-  protected readonly pendingChangesService: PendingChangesService = inject(PendingChangesService);
+  protected readonly pendingChangesService: PendingChangesServiceInterface = inject(PendingChangesService);
   private readonly destroyRef = inject(DestroyRef);
 
   abstract canSave: Signal<boolean>;
@@ -86,7 +89,7 @@ export abstract class PendingChangesDialogComponent<D = any, R = any>
     }
   }
 
-  override close(dialogResult?: R | undefined): void {
+  override close(): void {
     this.handleCloseAttempt();
   }
 }

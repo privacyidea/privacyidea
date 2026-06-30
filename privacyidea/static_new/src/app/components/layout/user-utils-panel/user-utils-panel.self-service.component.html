@@ -19,11 +19,13 @@
 
 <div class="utils-group-self-service utils">
   @if (!wizard()) {
+    <app-language-switcher></app-language-switcher>
     <app-theme-switcher></app-theme-switcher>
     <button
       (click)="refreshPage()"
       class="refresh-btn"
       mat-icon-button
+      i18n-matTooltip
       matTooltip="Refresh Resources">
       <mat-icon>refresh</mat-icon>
     </button>
@@ -34,13 +36,20 @@
     class="logout-btn"
     i18n-aria-label
     mat-icon-button
+    i18n-matTooltip
     matTooltip="Logout">
     <mat-icon>logout</mat-icon>
   </button>
   <div
-    [ngClass]="[sessionTimerService.remainingTime()! < 31000 ? 'red-light' :
-      sessionTimerService.remainingTime()! < 60000 ? 'yellow-light' : 'surface-highest']"
+    [ngClass]="[
+      sessionTimerService.remainingTime()! < 31000
+        ? 'red-light'
+        : sessionTimerService.remainingTime()! < 60000
+          ? 'yellow-light'
+          : 'surface-highest'
+    ]"
     class="session-timer padding-8"
+    i18n-matTooltip
     matTooltip="Time until session expires">
     {{ sessionTimerService.remainingTime() | date: sessionTimeFormat() : "UTC" }}
   </div>

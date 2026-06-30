@@ -25,29 +25,28 @@ export class StringUtils {
       result = result.replace(regex, value);
     });
     return result;
-  };
+  }
 
   static validFilterValue(value: string): boolean {
     // A valid filter value is not empty and not just asterisks
     return !/^\**$/.test(value.trim());
   }
 
-  static splitOnce(str: string, delimiter: string): {head: string, tail: string} {
+  static splitOnce(str: string, delimiter: string): { head: string; tail: string } {
     /*
-    * Splits the string at the first occurrence of the delimiter.
-    * */
+     * Splits the string at the first occurrence of the delimiter.
+     * */
     const index = str.indexOf(delimiter);
 
     // If the delimiter is not found, return the original string and an empty string
     if (index === -1) {
-      return {head: str, tail: ""};
+      return { head: str, tail: "" };
     }
 
     // Split the string at the first occurrence of the delimiter
     const beforeDelimiter = str.slice(0, index);
     const afterDelimiter = str.slice(index + delimiter.length);
 
-    return {head: beforeDelimiter, tail: afterDelimiter};
+    return { head: beforeDelimiter, tail: afterDelimiter };
   }
 }
-

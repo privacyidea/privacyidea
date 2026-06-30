@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { TitleCasePipe } from "@angular/common";
 import {
   ChangeDetectionStrategy,
   Component,
@@ -26,31 +25,26 @@ import {
   input,
   linkedSignal,
   output,
-  signal
+  signal,
+  WritableSignal
 } from "@angular/core";
-import { MatCardModule } from "@angular/material/card";
-import { MatFormField } from "@angular/material/form-field";
-import { MatIcon } from "@angular/material/icon";
-import { MatInput, MatLabel } from "@angular/material/input";
-import { MatTab, MatTabGroup, MatTabLabel } from "@angular/material/tabs";
+import { FormsModule } from "@angular/forms";
+import { MatButtonModule } from "@angular/material/button";
+import { MatExpansionModule } from "@angular/material/expansion";
+import { EventConditionListComponent } from "@components/event/event-edit-page/tabs/event-conditions-tab/event-condition-list/event-condition-list.component";
+import { SelectorButtonsComponent } from "@components/policies/policy-edit-page/policy-panels/edit-action-tab/selector-buttons/selector-buttons.component";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { EventService } from "@services/event/event.service";
-import { EventConditionListComponent } from "./event-condition-list/event-condition-list.component";
 
 @Component({
   selector: "app-event-conditions-tab",
   imports: [
     ClearableInputComponent,
-    MatFormField,
-    MatInput,
-    MatLabel,
-    TitleCasePipe,
-    MatTabGroup,
-    MatTab,
-    MatTabLabel,
+    FormsModule,
     EventConditionListComponent,
-    MatCardModule,
-    MatIcon
+    MatExpansionModule,
+    MatButtonModule,
+    SelectorButtonsComponent
   ],
   templateUrl: "./event-conditions-tab.component.html",
   styleUrl: "./event-conditions-tab.component.scss",
@@ -58,12 +52,11 @@ import { EventConditionListComponent } from "./event-condition-list/event-condit
 })
 export class EventConditionsTabComponent {
   protected readonly eventService = inject(EventService);
-  conditions = input.required<Record<string, any>>();
-  newConditions = output<Record<string, any>>();
+  conditions = input.required<Record<string, string>>();
+  newConditions = output<Record<string, string>>();
 
   selectedConditions = linkedSignal(() => this.conditions());
-  conditionsToBeAdded: Record<string, any> = {};
-  selectedGroupIndex = 0;
+  conditionsToBeAdded = signal<Record<string, string>>({});
   protected readonly Object = Object;
 
   addToolTip = $localize`Add Condition`;
@@ -74,23 +67,39 @@ export class EventConditionsTabComponent {
 
   availableGroups = computed(() => Object.keys(this.eventService.moduleConditionsByGroup()));
 
+  availableNonEmptyGroups = computed(() =>
+    this.availableGroups().filter((g) => Object.keys(this.remainingConditionsByGroup()[g] || {}).length > 0)
+  );
+
+  selectedGroup: WritableSignal<string> = linkedSignal({
+    source: () => this.availableNonEmptyGroups(),
+    computation: (groups, previous) => {
+      const prev = previous?.value;
+      if (prev && groups.includes(prev)) return prev;
+      return groups[0] ?? "";
+    }
+  });
+
+  remainingConditionsInSelectedGroup = computed(() => this.remainingConditionsByGroup()[this.selectedGroup()] ?? {});
+
   remainingConditionsByGroup = linkedSignal({
     source: () => ({
       available: this.eventService.moduleConditionsByGroup(),
       selected: this.selectedConditions(),
-      search: this.searchTerm()
+      search: this.searchTerm(),
+      toBeAdded: this.conditionsToBeAdded()
     }),
-    computation: ({ available, selected, search }) => {
+    computation: ({ available, selected, search, toBeAdded }) => {
       // TODO: Can we simplify this logic?
       // let remaining = deepCopy(available);
-      let remaining: Record<string, any> = {};
+      const remaining: Record<string, Record<string, string>> = {};
       for (const [groupName, condition] of Object.entries(available)) {
         remaining[groupName] = {};
         for (const conditionName of Object.keys(condition)) {
           if (conditionName in selected || !conditionName.toLowerCase().includes(search.toLowerCase())) {
             // delete remaining[groupName][conditionName];
           } else {
-            remaining[groupName][conditionName] = this.conditionsToBeAdded[conditionName] || "";
+            remaining[groupName][conditionName] = toBeAdded[conditionName] || "";
           }
         }
       }
@@ -98,17 +107,19 @@ export class EventConditionsTabComponent {
     }
   });
 
-  onConditionValueToBeAddedChange(conditionName: string, value: any) {
-    this.conditionsToBeAdded[conditionName] = value;
+  onConditionValueToBeAddedChange(conditionName: string, value: string | string[]) {
+    const normalizedValue = Array.isArray(value) ? value.join(",") : value;
+    this.conditionsToBeAdded.update((current) => ({ ...current, [conditionName]: normalizedValue }));
   }
 
-  onConditionValueChange(conditionName: string, value: any) {
+  onConditionValueChange(conditionName: string, value: string | string[]) {
+    const normalizedValue = Array.isArray(value) ? value.join(",") : value;
     this.selectedConditions.set({
       ...this.selectedConditions(),
-      [conditionName]: value
+      [conditionName]: normalizedValue
     });
     this.newConditions.emit(this.selectedConditions());
-    if (value === "") {
+    if (normalizedValue === "") {
       // notify selected condition list to focus the new empty input
       this.addedCondition.set(conditionName);
     }

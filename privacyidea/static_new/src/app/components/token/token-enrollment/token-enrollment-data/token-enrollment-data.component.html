@@ -35,15 +35,15 @@
       <button
         (click)="regenerateQRCode()"
         class="action-button-primary button-width-l"
-        mat-stroked-button
-        i18n>
+        mat-stroked-button>
         <mat-icon>autorenew</mat-icon>
         {{ regenerateButtonText() }}
       </button>
     }
     @if (enrolledData()?.["password"]) {
       <p i18n>
-        Your Password: <strong>{{ enrolledData()?.["password"] }}</strong>.
+        Your Password: <strong>{{ enrolledData()?.["password"] }}</strong
+        >.
       </p>
     }
     @if (enrolledData()?.otpkey?.value && !enrolledData()?.["otps"] && showQRCode()) {
@@ -55,10 +55,10 @@
       <app-tiqr-enroll-url [url]="enrolledData()?.['tiqrenroll']?.value ?? ''" />
     }
     @if (tokenType() === "registration") {
-      <app-registration-code [registrationCode]="enrolledData()?.['registrationcode']" />
+      <app-registration-code [registrationCode]="enrolledData()?.['registrationcode'] ?? ''" />
     }
     @if (enrolledData()?.["otps"]) {
-      <app-otp-values [otpValues]="enrolledData()?.['otps']" />
+      <app-otp-values [otpValues]="enrolledData()?.['otps'] ?? []" />
     }
   </div>
 </div>

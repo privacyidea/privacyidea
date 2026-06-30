@@ -16,13 +16,38 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { PiResponse } from "@app/app.component";
-import { of } from "rxjs";
-import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 
-export class MockSubscriptionService {
-  reload = jest.fn();
-  deleteSubscription = jest.fn(() => of(MockPiResponse.fromValue(true)));
-  uploadSubscriptionFile = jest.fn(() => of(MockPiResponse.fromValue({})));
-  subscriptionsResource = new MockHttpResourceRef<PiResponse<Record<string, any>>>(MockPiResponse.fromValue({}));
+@use "../widget";
+
+:host {
+  @include widget.host;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  overflow: auto;
+}
+
+.policies-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  td {
+    padding: calc(var(--global-padding) / 4) calc(var(--global-padding) / 2);
+    vertical-align: top;
+  }
+
+  td:nth-child(2) {
+    text-align: center;
+    font-weight: 600;
+  }
+
+  td[colspan] {
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+}
+
+.separator {
+  margin: 0 calc(var(--global-gap) / 4);
+  opacity: 0.5;
 }

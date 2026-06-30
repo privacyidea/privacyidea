@@ -49,6 +49,7 @@ from passlib.hash import ldap_salted_sha1
 from privacyidea.lib import _
 from privacyidea.lib.error import PrivacyIDEAError, ResolverError, ParameterError
 from privacyidea.lib.framework import get_app_local_store, get_app_config_value
+from privacyidea.lib.metrics import track_resolver_op
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import (is_true, to_bytes, to_unicode,
                                    convert_column_to_unicode)
@@ -314,12 +315,20 @@ class IdResolver(UserIdResolver):
         ldap3.set_config_parameter("POOLING_LOOP_TIMEOUT", pooling_loop_timeout)
 
     @log_with(log, hide_args=[2])
+    @track_resolver_op("check_pass")
     def checkPass(self, uid, password):
         """
         This function checks the password for a given uid.
         - returns true in case of success or false if the password does not match
 
         """
+        # An empty password must never authenticate. A simple LDAP bind with an empty
+        # password is an "unauthenticated bind" that some directories answer with success;
+        # reject it here so the result never depends on the directory's behaviour (and an
+        # empty secret is never valid on the Kerberos/NTLM paths either).
+        if not password:
+            log.info(f"Rejecting empty password for {uid!r} (would be an unauthenticated bind).")
+            return False
         if self.authtype == AUTHTYPE.SASL_KERBEROS:
             try:
                 import gssapi
@@ -522,6 +531,12 @@ class IdResolver(UserIdResolver):
         else:
             # get the DN for the Object
             search_userid = self._trim_user_id(user_id)
+            # RFC4515-escape the user id before it goes into the filter so metacharacters
+            # cannot inject additional filter clauses. objectGUID is exempt: _trim_user_id
+            # parses it as a UUID and renders it as the backslash-escaped byte form the
+            # filter expects, which must not be escaped again.
+            if self.uidtype != "objectGUID":
+                search_userid = self._escape_filter_value(search_userid)
             search_filter = f"(&{self.searchfilter}({self.uidtype}={search_userid}))"
             result = self._search(search_base=self.basedn, search_filter=search_filter,
                                   attributes=list(self.userinfo.values()))
@@ -611,6 +626,10 @@ class IdResolver(UserIdResolver):
 
         return tls_context
 
+    # @track_resolver_op must wrap @cache so cache hits are counted too
+    # (otherwise LDAP undercounts vs. uncached resolver types). Hits show as
+    # near-zero latency, which is the operator signal we want.
+    @track_resolver_op("get_user_info")
     @cache
     def get_user_info(self, user_id: int or str, attributes: list[str] = None) -> dict:
         """
@@ -629,6 +648,9 @@ class IdResolver(UserIdResolver):
             search_base = user_id
         else:
             search_uid = to_unicode(self._trim_user_id(user_id))
+            # RFC4515-escape the user id (see _getDN); objectGUID is already byte-escaped.
+            if self.uidtype != "objectGUID":
+                search_uid = self._escape_filter_value(search_uid)
             search_filter = f"(&{self.searchfilter}({self.uidtype}={search_uid}))"
             search_base = self.basedn
 
@@ -677,7 +699,9 @@ class IdResolver(UserIdResolver):
         search_filter = search_filter.replace("{base_dn}", self.basedn)
         for key, value in user_info.items():
             if isinstance(value, str):
-                search_filter = search_filter.replace(f"{{{key}}}", value)
+                # Escape the attribute value: it is substituted into the configured group
+                # filter and must not be able to inject filter clauses of its own.
+                search_filter = search_filter.replace(f"{{{key}}}", self._escape_filter_value(value))
         log.debug(f"Searching for groups with filter: {search_filter}")
 
         try:
@@ -731,6 +755,7 @@ class IdResolver(UserIdResolver):
 
         return user_info
 
+    @track_resolver_op("get_username")
     def getUsername(self, user_id):
         """
         Returns the username/loginname for a given user_id
@@ -743,6 +768,7 @@ class IdResolver(UserIdResolver):
         info = self.get_user_info(user_id, attributes=["username"])
         return info.get('username', "")
 
+    @track_resolver_op("get_user_id")
     @cache
     def getUserId(self, login_name):
         """
@@ -822,6 +848,7 @@ class IdResolver(UserIdResolver):
         search_filter += ")"
         return search_filter
 
+    @track_resolver_op("get_user_list")
     def getUserList(self, search_dict: dict = None, attributes: list[str] = None) -> list[dict]:
         """
         :param search_dict: A dictionary with search parameters
@@ -857,7 +884,6 @@ class IdResolver(UserIdResolver):
                                                                             paged_size=100,
                                                                             size_limit=self.sizelimit,
                                                                             generator=True)
-            log.debug(f"LDAP paged search operation took {self.connection.usage.elapsed_time}")
         except Exception as e:
             log.error(f"Error performing paged search: {e}")
             raise ResolverError(f"Error performing paged search: {e}")
@@ -882,6 +908,11 @@ class IdResolver(UserIdResolver):
         except Exception as ex:  # pragma: no cover
             log.error(f"Error during LDAP paged search: {ex}")
             raise ResolverError(f"Error during LDAP paged search: {ex}")
+        # Record only after the generator is fully consumed - paged_search()
+        # with generator=True does not perform the actual LDAP traffic until
+        # the iterator is walked, so capturing usage.elapsed_time earlier
+        # would only reflect the preceding bind.
+        log.debug(f"LDAP paged search operation took {self.connection.usage.elapsed_time}")
 
         return user_list
 
@@ -1293,6 +1324,7 @@ class IdResolver(UserIdResolver):
 
         return success, message
 
+    @track_resolver_op("add_user")
     def add_user(self, attributes: dict = None) -> str:
         """
         Add a new user to the LDAP directory.
@@ -1335,6 +1367,7 @@ class IdResolver(UserIdResolver):
 
         return self.getUserId(attributes.get("username"))
 
+    @track_resolver_op("delete_user")
     def delete_user(self, uid):
         """
         Delete a user from the LDAP Directory.
@@ -1407,6 +1440,7 @@ class IdResolver(UserIdResolver):
 
         return modify_changes
 
+    @track_resolver_op("update_user")
     def update_user(self, uid, attributes=None):
         """
         Update an existing user.

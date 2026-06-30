@@ -20,8 +20,8 @@
   <mat-checkbox
     [checked]="userStorePassphrase()"
     (change)="userStorePassphrase.set($event.checked); onUserStorePassphraseChange()"
-    [disabled]="!containerHasOwner">
-    <span>Validate the passphrase against the user store.</span>
+    [disabled]="!containerHasOwner()">
+    <span i18n>Validate the passphrase against the user store.</span>
   </mat-checkbox>
   <mat-form-field class="input-width-xl">
     <mat-label i18n>Passphrase Prompt</mat-label>
@@ -45,18 +45,17 @@
       (input)="passphraseResponse.set($any($event.target).value)"
       [disabled]="userStorePassphrase()"
       [type]="showPassphrase ? 'text' : 'password'"
-      matInput>
+      matInput />
     <button
       (click)="toggleShowPassphrase()"
-      [attr.aria-label]="'Toggle passphrase visibility'"
+      aria-label="Toggle passphrase visibility" i18n-aria-label
       [disabled]="userStorePassphrase()"
       mat-icon-button
       matSuffix
       type="button">
-      <mat-icon>{{ showPassphrase ? 'visibility_off' : 'visibility' }}</mat-icon>
+      <mat-icon>{{ showPassphrase ? "visibility_off" : "visibility" }}</mat-icon>
     </button>
-    <mat-hint
-      i18n>
+    <mat-hint i18n>
       This is the correct answer to the passphrase prompt the user has to enter to successfully register the container.
     </mat-hint>
   </mat-form-field>
@@ -67,15 +66,15 @@
       (input)="repeatPassphraseResponse.set($any($event.target).value)"
       [disabled]="userStorePassphrase()"
       [type]="showRepeatPassphrase ? 'text' : 'password'"
-      matInput>
+      matInput />
     <button
       (click)="showRepeatPassphrase = !showRepeatPassphrase"
-      [attr.aria-label]="'Toggle passphrase visibility'"
+      aria-label="Toggle passphrase visibility" i18n-aria-label
       [disabled]="userStorePassphrase()"
       mat-icon-button
       matSuffix
       type="button">
-      <mat-icon>{{ showRepeatPassphrase ? 'visibility_off' : 'visibility' }}</mat-icon>
+      <mat-icon>{{ showRepeatPassphrase ? "visibility_off" : "visibility" }}</mat-icon>
     </button>
     @if (passphraseMismatch) {
       <mat-hint

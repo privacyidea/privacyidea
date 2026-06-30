@@ -29,25 +29,22 @@ import { MockEventService } from "@testing/mock-services/mock-event-service";
 import { BehaviorSubject } from "rxjs";
 import { EventEditPageComponent } from "./event-edit-page.component";
 
-global.IntersectionObserver = class IntersectionObserver {
-  constructor() {}
-  disconnect() {}
-  observe() {}
-  unobserve() {}
-  takeRecords() {
-    return [];
-  }
-} as any;
+globalThis.IntersectionObserver = class IntersectionObserver {
+  disconnect = jest.fn();
+  observe = jest.fn();
+  unobserve = jest.fn();
+  takeRecords = (): IntersectionObserverEntry[] => [];
+} as unknown as typeof IntersectionObserver;
 
 const mockEventHandler: EventHandler = {
-  id: "1",
+  id: 1,
   name: "TestHandler",
   handlermodule: "mockModule",
   active: true,
   event: ["eventA", "eventB"],
   action: "actionB",
   options: { opt3: "true" },
-  conditions: { condA: true },
+  conditions: { condA: "true" },
   position: "post",
   ordering: 0
 };
@@ -62,7 +59,7 @@ describe("EventEditPageComponent — edit mode", () => {
   let paramMap$: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
 
   beforeEach(async () => {
-    paramMap$ = new BehaviorSubject(convertToParamMap({ id: mockEventHandler.id }));
+    paramMap$ = new BehaviorSubject(convertToParamMap({ id: String(mockEventHandler.id) }));
 
     await TestBed.configureTestingModule({
       imports: [EventEditPageComponent],
@@ -76,7 +73,7 @@ describe("EventEditPageComponent — edit mode", () => {
           provide: ActivatedRoute,
           useValue: {
             paramMap: paramMap$.asObservable(),
-            snapshot: { paramMap: convertToParamMap({ id: mockEventHandler.id }) }
+            snapshot: { paramMap: convertToParamMap({ id: String(mockEventHandler.id) }) }
           }
         }
       ]
@@ -127,7 +124,7 @@ describe("EventEditPageComponent — edit mode", () => {
   });
 
   it("should set new conditions using setNewConditions", () => {
-    const newConditions = { condX: true, condY: false };
+    const newConditions = { condX: "true", condY: "false" };
     component.setNewConditions(newConditions);
     expect(component.editEvent().conditions).toEqual(newConditions);
   });
@@ -151,16 +148,25 @@ describe("EventEditPageComponent — edit mode", () => {
   });
 
   it("validConditionsDefinition should be true if all conditions have a value defined", () => {
-    component.editEvent.set({ ...component.editEvent(), conditions: { cond1: "1", cond2: false } });
+    component.editEvent.set({
+      ...component.editEvent(),
+      conditions: { cond1: "1", cond2: false } as unknown as Record<string, string>
+    });
     expect(component.validConditionsDefinition()).toBe(true);
   });
 
   it("validConditionsDefinition should be false if at least one condition has no value", () => {
-    component.editEvent.set({ ...component.editEvent(), conditions: { cond1: "1", cond2: null } });
+    component.editEvent.set({
+      ...component.editEvent(),
+      conditions: { cond1: "1", cond2: null } as unknown as Record<string, string>
+    });
     expect(component.validConditionsDefinition()).toBe(false);
     component.editEvent.set({ ...component.editEvent(), conditions: { cond1: "1", cond2: "" } });
     expect(component.validConditionsDefinition()).toBe(false);
-    component.editEvent.set({ ...component.editEvent(), conditions: { cond1: "1", cond2: undefined } });
+    component.editEvent.set({
+      ...component.editEvent(),
+      conditions: { cond1: "1", cond2: undefined } as unknown as Record<string, string>
+    });
     expect(component.validConditionsDefinition()).toBe(false);
   });
 
@@ -246,7 +252,10 @@ describe("EventEditPageComponent — edit mode", () => {
   });
 
   it("canSave should be false if the conditions are invalid", () => {
-    component.editEvent.set({ ...component.editEvent(), conditions: { cond1: null } });
+    component.editEvent.set({
+      ...component.editEvent(),
+      conditions: { cond1: null } as unknown as Record<string, string>
+    });
     expect(component.sectionValidity()["events"]).toBe(true);
     expect(component.sectionValidity()["action"]).toBe(true);
     expect(component.sectionValidity()["name"]).toBe(true);
@@ -289,7 +298,7 @@ describe("EventEditPageComponent — edit mode", () => {
       event: ["eventA", "eventB"],
       action: "actionB",
       "option.opt3": "true",
-      conditions: { condA: true },
+      conditions: { condA: "true" },
       position: "post",
       ordering: 0
     };
@@ -371,7 +380,7 @@ describe("EventEditPageComponent — create new mode", () => {
     component.setNewAction("actionB");
     component.setNewOptions({ opt3: "true" });
     component.setNewEvents(["eventA", "eventB"]);
-    component.setNewConditions({ condA: true });
+    component.setNewConditions({ condA: "true" });
     component.updateEventHandler("name", "TestHandler");
     component.updateEventHandler("position", "pre");
 
@@ -386,7 +395,7 @@ describe("EventEditPageComponent — create new mode", () => {
       event: ["eventA", "eventB"],
       action: "actionB",
       "option.opt3": "true",
-      conditions: { condA: true },
+      conditions: { condA: "true" },
       position: "pre",
       ordering: 0
     };

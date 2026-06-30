@@ -20,26 +20,25 @@
 import { CommonModule, NgClass } from "@angular/common";
 import {
   Component,
+  OnDestroy,
+  OnInit,
+  ViewChild,
+  WritableSignal,
   computed,
   effect,
   inject,
   linkedSignal,
   signal,
-  untracked,
-  ViewChild,
-  WritableSignal
+  untracked
 } from "@angular/core";
 import { MatButton, MatIconButton } from "@angular/material/button";
+import { MatOption } from "@angular/material/core";
 import { MatIcon } from "@angular/material/icon";
-import { MatFormField } from "@angular/material/input";
-import { MatOption, MatSelect } from "@angular/material/select";
+import { MatFormField, MatSelect } from "@angular/material/select";
 import { MatTooltip } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
 import { PiResponse } from "@app/app.component";
 import { ROUTE_PATHS } from "@app/route_paths";
-import { ContainerCreateFormComponent } from "@components/shared/container-create-form/container-create-form.component";
-import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
-import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import {
   ContainerCreatedDialogComponent,
   ContainerCreationDialogData
@@ -53,6 +52,9 @@ import {
   ContainerTokensEnrolledDialogData
 } from "@components/container/container-create/container-tokens-enrolled-dialog/container-tokens-enrolled-dialog.component";
 import { ContainerRegistrationConfigComponent } from "@components/container/container-registration/container-registration-config/container-registration-config.component";
+import { ContainerCreateFormComponent } from "@components/shared/container-create-form/container-create-form.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { UserAssignmentComponent } from "@components/token/user-assignment/user-assignment.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerTemplateService } from "@services/container-template/container-template.service";
@@ -91,10 +93,10 @@ import { firstValueFrom } from "rxjs";
   templateUrl: "./container-create.component.html",
   styleUrl: "./container-create.component.scss"
 })
-export class ContainerCreateComponent {
+export class ContainerCreateComponent implements OnInit, OnDestroy {
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
-  protected readonly containerTemplateService: ContainerTemplateService = inject(ContainerTemplateService);
+  protected readonly containerTemplateService = inject(ContainerTemplateService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
@@ -143,7 +145,6 @@ export class ContainerCreateComponent {
   userStorePassphrase = signal(false);
 
   registerResponse = signal<PiResponse<ContainerRegisterData> | null>(null);
-  pollResponse = signal<any>(null);
   public dialogData = signal<ContainerCreationDialogData | null>(null);
 
   constructor() {
@@ -247,7 +248,7 @@ export class ContainerCreateComponent {
       next: (response) => {
         const containerSerial = response.result?.value?.container_serial;
         if (!containerSerial) {
-          this.notificationService.error("Container creation failed. No container serial returned.");
+          this.notificationService.error($localize`Container creation failed. No container serial returned.`);
           return;
         }
         this.pendingChangesService.clearAllRegistrations();
@@ -273,7 +274,7 @@ export class ContainerCreateComponent {
     this.router.navigateByUrl(ROUTE_PATHS.CONTAINERS_DETAILS + serial);
   }
 
-  protected registerContainer(serial: string, regenerate: boolean = false) {
+  protected registerContainer(serial: string, regenerate = false) {
     this.containerService
       .registerContainer({
         container_serial: serial,

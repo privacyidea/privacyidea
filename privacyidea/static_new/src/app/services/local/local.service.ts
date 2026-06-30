@@ -41,7 +41,7 @@ export class LocalService implements LocalServiceInterface {
   }
 
   public getData(key: string) {
-    let data = localStorage.getItem(key) || "";
+    const data = localStorage.getItem(key) || "";
     return this.decrypt(data);
   }
 

@@ -60,7 +60,7 @@ export class EnrollSshkeyComponent extends EnrollTokenBase<SshkeyEnrollmentData>
     validate(f, (ctx) => {
       const value = ctx.value();
       if (value && !SSH_KEY_PATTERN.test(value)) {
-        return [{ kind: "invalidSshKey" as any }];
+        return [{ kind: "invalidSshKey" }];
       }
       return [];
     });

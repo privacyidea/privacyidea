@@ -28,14 +28,16 @@
             <button
               (click)="disableShowDescription(conditionName)"
               mat-icon-button
-              matTooltip="Hide Description">
+              matTooltip="Hide Description"
+              i18n-matTooltip>
               <mat-icon>info</mat-icon>
             </button>
           } @else {
             <button
               (click)="enableShowDescription(conditionName)"
               mat-icon-button
-              matTooltip="Show Description">
+              matTooltip="Show Description"
+              i18n-matTooltip>
               <mat-icon>info_outline</mat-icon>
             </button>
           }
@@ -62,16 +64,14 @@
                 #selectedConditionInput
                 (selectionChange)="onConditionValueChange(conditionName, $event.value)"
                 [multiple]="true"
-                [placeholder]="'Select values ...'"
+                placeholder="Select values ..." i18n-placeholder
                 [required]="inputRequired()"
                 [value]="multiValueConditions()[conditionName] || []">
                 @for (option of availableConditionValues()[conditionName]; track option) {
                   <mat-option [value]="option">{{ option }}</mat-option>
                 }
               </mat-select>
-              <mat-error i18n>
-                Select at least one value or remove the condition.
-              </mat-error>
+              <mat-error i18n> Select at least one value or remove the condition. </mat-error>
             </mat-form-field>
           } @else {
             <!-- Needs to be a separate selection as multiple state can not be changed during runtime -->
@@ -84,14 +84,13 @@
                 (selectionChange)="onConditionValueChange(conditionName, $event.value)"
                 [required]="inputRequired()"
                 [value]="editConditions()[conditionName]"
-                placeholder="Select one option ...">
+                placeholder="Select one option ..."
+                i18n-placeholder>
                 @for (option of availableConditionValues()[conditionName]; track option) {
                   <mat-option [value]="option">{{ option }}</mat-option>
                 }
               </mat-select>
-              <mat-error i18n>
-                Select a value or remove the condition.
-              </mat-error>
+              <mat-error i18n> Select a value or remove the condition. </mat-error>
             </mat-form-field>
           }
         } @else {
@@ -103,14 +102,14 @@
               @case ("int") {
                 <input
                   #selectedConditionInput
-                  (input)="onConditionValueChange(conditionName, +$event['target']['value'])"
+                  (input)="onConditionValueChange(conditionName, $event['target']['value'])"
                   (keydown.enter)="onActionButtonClicked(conditionName)"
                   [name]="'conditionInput_' + conditionName"
                   [required]="inputRequired()"
                   [value]="editConditions()[conditionName]"
-                  class="font-size-16"
                   matInput
                   placeholder="Enter a Number ..."
+                  i18n-placeholder
                   type="number" />
               }
               @default {
@@ -122,15 +121,18 @@
                   [name]="'conditionInput_' + conditionName"
                   [required]="inputRequired()"
                   [value]="editConditions()[conditionName] || ''"
-                  class="font-size-16"
                   matInput
                   placeholder="Enter value ..."
+                  i18n-placeholder
                   type="text" />
               }
             }
-            <mat-error i18n>
-              Enter a value or remove the condition.
-            </mat-error>
+            @if (editConditions()[conditionName]) {
+              <app-clear-button
+                matSuffix
+                (clearButtonClick)="clearConditionValue(conditionName)"></app-clear-button>
+            }
+            <mat-error i18n> Enter a value or remove the condition. </mat-error>
           </mat-form-field>
         }
         <button
@@ -144,4 +146,3 @@
     </div>
   }
 </div>
-

@@ -21,14 +21,14 @@
 <mat-toolbar class="primary-toolbar">
   <div class="toolbar-brand">
     <a
-      [routerLink]="[ROUTE_PATHS.TOKENS]"
+      [routerLink]="[landingPage()]"
       class="brand-link">
       @if (customLogo()) {
         <img
           alt="logo"
           class="toolbar-logo toolbar-logo-custom"
           height="48"
-          ngSrc="{{customLogo()}}"
+          ngSrc="{{ customLogo() }}"
           ngSrcset="1x"
           width="48" />
       } @else {
@@ -49,7 +49,6 @@
           width="575" />
       }
     </a>
-
   </div>
 
   <nav
@@ -61,7 +60,7 @@
         [attr.data-section]="item.section"
         [class.active]="activeSection() === item.section">
         <a
-          [ngClass]="{'nav-active': activeSection() === item.section}"
+          [ngClass]="{ 'nav-active': activeSection() === item.section }"
           [routerLink]="[item.route]"
           class="nav-button">
           <mat-icon [ngClass]="item.iconClass || ''">{{ item.icon }}</mat-icon>
@@ -76,7 +75,7 @@
         <button
           class="nav-button more-button"
           [matMenuTriggerFor]="overflowMenu"
-          [ngClass]="{'nav-active': isOverflowSectionActive()}">
+          [ngClass]="{ 'nav-active': isOverflowSectionActive() }">
           <mat-icon>more_horiz</mat-icon>
           <span i18n>More</span>
         </button>
@@ -86,7 +85,7 @@
           <button
             mat-menu-item
             [routerLink]="[item.route]"
-            [ngClass]="{'overflow-item-active': activeSection() === item.section}">
+            [ngClass]="{ 'overflow-item-active': activeSection() === item.section }">
             <mat-icon [ngClass]="item.iconClass || ''">{{ item.icon }}</mat-icon>
             <span>{{ item.label }}</span>
           </button>
@@ -104,13 +103,17 @@
 <ng-template #footerText>
   @if (!customLogo()) {
     <div class="flex-column footer-text">
-      <div class="footer-text-height"> An open-source project
+      <div
+        class="footer-text-height"
+        i18n>
+        An open-source project
         <a
           href="https://netknights.it/"
           target="_blank">maintained by NetKnights
         </a>
       </div>
-      <div> in collaboration with
+      <div i18n>
+        in collaboration with
         <a
           href="https://github.com/privacyidea/privacyidea"
           target="_blank">community contributors
@@ -122,6 +125,8 @@
         mat-icon-button
         (click)="openExternalLink('https://netknights.it/')"
         aria-label="NetKnights"
+        i18n-aria-label
+        i18n-matTooltip
         matTooltip="Maintained by NetKnights">
         <mat-icon class="mdi--netknights"></mat-icon>
       </button>
@@ -129,6 +134,8 @@
         mat-icon-button
         (click)="openExternalLink('https://github.com/privacyidea/privacyidea')"
         aria-label="GitHub"
+        i18n-aria-label
+        i18n-matTooltip
         matTooltip="Community contributors on GitHub">
         <mat-icon class="mdi--github"></mat-icon>
       </button>
@@ -141,7 +148,10 @@
   <button
     type="button"
     (click)="openSupport()"
-    aria-label="Support"
+    aria-label="Get enterprise support"
+    i18n-aria-label
+    matTooltip="Get enterprise support"
+    i18n-matTooltip
     class="nav-button support-color docs-button-full">
     <mat-icon>support_agent</mat-icon>
     <span i18n>Support</span>
@@ -149,8 +159,10 @@
   <button
     mat-icon-button
     (click)="openSupport()"
-    aria-label="Support"
-    matTooltip="Support"
+    aria-label="Get enterprise support"
+    i18n-aria-label
+    matTooltip="Get enterprise support"
+    i18n-matTooltip
     class="support-color docs-button-icon">
     <mat-icon>support_agent</mat-icon>
   </button>
@@ -158,6 +170,7 @@
     type="button"
     (click)="documentationService.openDocumentation(contentService.routeUrl())"
     aria-label="Documentation"
+    i18n-aria-label
     class="nav-button docs-button-full">
     <mat-icon>info_outline</mat-icon>
     <span i18n>Documentation</span>
@@ -166,17 +179,26 @@
     mat-icon-button
     (click)="documentationService.openDocumentation(contentService.routeUrl())"
     aria-label="Documentation"
+    i18n-aria-label
     matTooltip="Documentation"
+    i18n-matTooltip
     class="docs-button-icon">
     <mat-icon>info_outline</mat-icon>
+  </button>
+  <button
+    mat-icon-button
+    (click)="openExternalLink('https://hosted.weblate.org/projects/privacyidea/privacyidea-webui-next/')"
+    aria-label="Help translate"
+    i18n-aria-label
+    matTooltip="Help translate this interface on Weblate"
+    i18n-matTooltip>
+    <mat-icon>translate</mat-icon>
   </button>
   <span class="version-text">
     <span class="version-prefix">
       {{ versionPrefix() }}
     </span>
-    {{
-      this.versioningService.version()
-    }}
+    {{ this.versioningService.version() }}
   </span>
   <span
     class="beta-badge margin-right-16"
@@ -184,7 +206,46 @@
   </span>
 </ng-template>
 
-@if (activeSection() === 'token') {
+@if (activeSection() === "dashboard") {
+  <mat-toolbar
+    class="secondary-toolbar"
+    appOverflowNav>
+    <ng-container *ngTemplateOutlet="footerText"></ng-container>
+    <div class="flex gap-8 margin-left-4">
+      @if (dashboardLayoutService.editMode()) {
+        <button
+          mat-stroked-button
+          type="button"
+          class="action-button-primary button-width-s"
+          (click)="saveDashboard()">
+          <mat-icon>save</mat-icon>
+          <span i18n>Save</span>
+        </button>
+        <button
+          mat-stroked-button
+          type="button"
+          class="action-button-delete-secondary button-width-s"
+          (click)="cancelDashboard()">
+          <mat-icon>cancel</mat-icon>
+          <span i18n>Cancel</span>
+        </button>
+        <app-widget-palette />
+      } @else {
+        <button
+          mat-stroked-button
+          type="button"
+          class="action-button-primary button-width-m"
+          (click)="enterDashboardEdit()">
+          <mat-icon>edit</mat-icon>
+          <span i18n>Edit Dashboard</span>
+        </button>
+      }
+    </div>
+    <ng-container *ngTemplateOutlet="supportDocs"></ng-container>
+  </mat-toolbar>
+}
+
+@if (activeSection() === "token") {
   <mat-toolbar
     class="secondary-toolbar"
     appOverflowNav>
@@ -196,8 +257,7 @@
       <span i18n>Overview</span>
     </a>
     @if (contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
-      <a
-        class="sub-nav-active">
+      <a class="sub-nav-active">
         <mat-icon>privacy_tip</mat-icon>
         <span i18n>Details</span>
       </a>
@@ -244,7 +304,7 @@
   </mat-toolbar>
 }
 
-@if (activeSection() === 'container') {
+@if (activeSection() === "container") {
   <mat-toolbar
     class="secondary-toolbar"
     appOverflowNav>
@@ -256,8 +316,7 @@
       <span i18n>Overview</span>
     </a>
     @if (contentService.routeUrl().startsWith(ROUTE_PATHS.CONTAINERS_DETAILS)) {
-      <a
-        class="sub-nav-active">
+      <a class="sub-nav-active">
         <mat-icon>source</mat-icon>
         <span i18n>Details</span>
       </a>
@@ -279,15 +338,13 @@
       </a>
     }
     @if (contentService.routeUrl().startsWith(ROUTE_PATHS.CONTAINERS_TEMPLATES_DETAILS)) {
-      <a
-        class="sub-nav-active">
+      <a class="sub-nav-active">
         <mat-icon>plagiarism</mat-icon>
         <span i18n>Template Details</span>
       </a>
     }
     @if (contentService.routeUrl() === ROUTE_PATHS.CONTAINERS_TEMPLATES_CREATE) {
-      <a
-        class="sub-nav-active">
+      <a class="sub-nav-active">
         <mat-icon>note_add</mat-icon>
         <span i18n>Create Template</span>
       </a>
@@ -296,7 +353,7 @@
   </mat-toolbar>
 }
 
-@if (activeSection() === 'users') {
+@if (activeSection() === "users") {
   <mat-toolbar
     class="secondary-toolbar"
     appOverflowNav>
@@ -356,7 +413,7 @@
   </mat-toolbar>
 }
 
-@if (activeSection() === 'policies') {
+@if (activeSection() === "policies") {
   <mat-toolbar
     class="secondary-toolbar"
     appOverflowNav>
@@ -389,7 +446,7 @@
   </mat-toolbar>
 }
 
-@if (activeSection() === 'subscription') {
+@if (activeSection() === "subscription") {
   <mat-toolbar
     class="secondary-toolbar"
     appOverflowNav>
@@ -404,7 +461,7 @@
   </mat-toolbar>
 }
 
-@if (activeSection() === 'audit') {
+@if (activeSection() === "audit") {
   <mat-toolbar
     class="secondary-toolbar"
     appOverflowNav>
@@ -429,12 +486,12 @@
   </mat-toolbar>
 }
 
-@if (activeSection() === 'config') {
+@if (activeSection() === "config") {
   <mat-toolbar
     class="secondary-toolbar"
     appOverflowNav>
     <ng-container *ngTemplateOutlet="footerText"></ng-container>
-    @if (authService.actionAllowed('configread')) {
+    @if (authService.actionAllowed("configread")) {
       <a
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CONFIGURATION_SYSTEM ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.CONFIGURATION_SYSTEM]">
@@ -536,7 +593,7 @@
   </mat-toolbar>
 }
 
-@if (activeSection() === 'external_services') {
+@if (activeSection() === "external_services") {
   <mat-toolbar
     class="secondary-toolbar"
     appOverflowNav>
@@ -754,4 +811,3 @@
     <ng-container *ngTemplateOutlet="supportDocs"></ng-container>
   </mat-toolbar>
 }
-

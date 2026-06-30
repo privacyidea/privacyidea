@@ -49,10 +49,9 @@
     <button
       (click)="onCreateNewTokengroup()"
       class="action-button-primary button-width-l"
-      i18n
       mat-stroked-button>
       <mat-icon>add</mat-icon>
-      Create Token Group
+      <span i18n>Create Token Group</span>
     </button>
   </div>
   <table
@@ -60,13 +59,13 @@
     class="tokengroups-table"
     mat-table
     matSort>
-
     <ng-container matColumnDef="id">
       <th
         *matHeaderCellDef
         i18n
         mat-header-cell
-        mat-sort-header> Id
+        mat-sort-header>
+        Id
       </th>
       <td
         *matCellDef="let group"
@@ -80,14 +79,18 @@
         *matHeaderCellDef
         i18n
         mat-header-cell
-        mat-sort-header> Name
+        mat-sort-header>
+        Name
       </th>
       <td
         *matCellDef="let group"
         mat-cell>
         <app-copyable [copyText]="group.groupname">
           <a
+            role="button"
+            tabindex="0"
             (click)="onEditTokengroup(group)"
+            (keydown.enter)="onEditTokengroup(group)"
             class="flex ali-center">
             {{ group.groupname }}
           </a>
@@ -100,11 +103,13 @@
         *matHeaderCellDef
         i18n
         mat-header-cell
-        mat-sort-header> Description
+        mat-sort-header>
+        Description
       </th>
       <td
         *matCellDef="let group"
-        mat-cell> {{ group.description }}
+        mat-cell>
+        {{ group.description }}
       </td>
     </ng-container>
 
@@ -112,7 +117,8 @@
       <th
         *matHeaderCellDef
         i18n
-        mat-header-cell> Actions
+        mat-header-cell>
+        Actions
       </th>
       <td
         *matCellDef="let group"
@@ -134,7 +140,7 @@
       *matHeaderRowDef="displayedColumns"
       mat-header-row></tr>
     <tr
-      *matRowDef="let row; columns: displayedColumns;"
+      *matRowDef="let row; columns: displayedColumns"
       mat-row></tr>
 
     <tr
@@ -143,7 +149,8 @@
       <td
         class="mat-cell"
         colspan="4"
-        i18n>No tokengroups found.
+        i18n>
+        No tokengroups found.
       </td>
     </tr>
   </table>

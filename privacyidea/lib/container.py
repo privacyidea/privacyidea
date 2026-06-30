@@ -26,7 +26,7 @@ from datetime import timezone, datetime
 from collections.abc import Generator
 
 from flask import g
-from sqlalchemy import func, select, and_
+from sqlalchemy import func, select, and_, false
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql import Select
 
@@ -168,7 +168,9 @@ def find_container_by_serial(serial: str) -> TokenContainerClass:
     return create_container_from_db_object(db_container)
 
 
-def _create_container_query(user: User = None, serial: str = None, ctype: str = None, token_serial: str = None,
+def _create_container_query(user: User = None, serial: str = None, ctype: str = None,
+                            ctype_exact: list[str] = None,
+                            token_serial: str = None,
                             realm: str = None, allowed_realms: list[str] = None, template: str = None,
                             description: str = None, assigned: bool = None, resolver: str = None, info: dict = None,
                             last_auth_delta: str = None, last_sync_delta: str = None, state: str = None,
@@ -178,7 +180,9 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
 
     :param user: container owner, optional
     :param serial: container serial (case-insensitive and allows '*' as wildcard), optional
-    :param ctype: container type (case-insensitive and allows '*' as wildcard), optional
+    :param ctype: container type filter (case-insensitive and allows '*' as wildcard), optional
+    :param ctype_exact: exact container type filter list (case-insensitive; matches any type in the list), optional.
+        An empty list returns no matches.
     :param token_serial: serial of a token which is assigned to the container (case-insensitive and allows '*' as
         wildcard), optional
     :param realm: realm name to filter by (case-insensitive and allows '*' as wildcard), optional
@@ -220,7 +224,15 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
         else:
             stmt = stmt.where(func.upper(TokenContainer.serial) == serial.upper())
 
-    if ctype and ctype.strip("*"):
+
+    if isinstance(ctype_exact, list):
+        type_values = [str(t).strip() for t in ctype_exact if t and str(t).strip()]
+        if not type_values:
+            # Caller asked for an empty subset of types — return no rows.
+            stmt = stmt.where(false())
+        else:
+            stmt = stmt.where(func.lower(TokenContainer.type).in_([t.lower() for t in type_values]))
+    elif ctype and ctype.strip("*"):
         if "*" in ctype:
             stmt = stmt.where(TokenContainer.type.ilike(ctype.replace("*", "%")))
         else:
@@ -344,7 +356,9 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
     return stmt
 
 
-def get_all_containers(user: User = None, serial: str = None, ctype: str = None, token_serial: str = None,
+def get_all_containers(user: User = None, serial: str = None, ctype: str = None,
+                       ctype_exact: list[str] = None,
+                       token_serial: str = None,
                        realm: str = None, allowed_realms: list[str] = None, sortby: str = 'serial',
                        sortdir: str = 'asc', template: str = None, description: str = None, assigned: bool = None,
                        resolver: str = None, info: dict = None, last_auth_delta: str = None,
@@ -359,7 +373,9 @@ def get_all_containers(user: User = None, serial: str = None, ctype: str = None,
 
     :param user: container owner, optional
     :param serial: container serial (case-insensitive and allows '*' as wildcard), optional
-    :param ctype: container type (case-insensitive and allows '*' as wildcard), optional
+    :param ctype: container type filter (case-insensitive and allows '*' as wildcard), optional
+    :param ctype_exact: exact container type filter list (case-insensitive; matches any type in the list), optional.
+        An empty list returns no matches.
     :param token_serial: serial of a token which is assigned to the container (case-insensitive and allows '*'
         as wildcard), optional
     :param realm: name of the realm the container is assigned to (case-insensitive and allows '*' as wildcard), optional
@@ -385,7 +401,8 @@ def get_all_containers(user: User = None, serial: str = None, ctype: str = None,
     :returns: A dictionary with a list of containers at the key 'containers' and optionally pagination entries ('prev',
               'next', 'current', 'count')
     """
-    sql_query: Select = _create_container_query(user=user, serial=serial, ctype=ctype, token_serial=token_serial,
+    sql_query: Select = _create_container_query(user=user, serial=serial, ctype=ctype, ctype_exact=ctype_exact,
+                                         token_serial=token_serial,
                                         realm=realm, allowed_realms=allowed_realms, template=template,
                                         description=description,
                                         assigned=assigned, resolver=resolver, info=info,
@@ -1289,6 +1306,14 @@ def finalize_registration(container_serial: str, params: dict) -> dict:
     container = find_container_by_serial(container_serial)
     container_info = container.get_container_info_dict()
     registration_state = container.registration_state
+
+    # A finalize must never overwrite the client key of a container that already holds one.
+    # It is only legitimate for an in-progress registration (CLIENT_WAIT) or an authenticated
+    # rollover (ROLLOVER, from register/initialize?rollover=1, which proves possession of the
+    # existing key). When the container is already REGISTERED / ROLLOVER_COMPLETED, reject it.
+    if registration_state in (RegistrationState.REGISTERED, RegistrationState.ROLLOVER_COMPLETED):
+        raise ContainerError("Cannot finalize registration: the container is already registered. "
+                             "Re-register it via the rollover flow.")
 
     # Update params with registration url
     if registration_state == RegistrationState.ROLLOVER:

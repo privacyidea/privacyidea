@@ -35,16 +35,16 @@ export class TestOtpPinActionComponent {
   private readonly validateService: ValidateServiceInterface = inject(ValidateService);
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
-  hide: boolean = true;
+  hide = true;
   otpOrPinToTest = signal("");
 
   testToken() {
     this.validateService.testToken(this.tokenService.tokenSerial(), this.otpOrPinToTest()).subscribe({
       next: (response) => {
         if (response.result?.authentication === "ACCEPT") {
-          this.notificationService.success("OTP or Pin tested with token was accepted.");
+          this.notificationService.success($localize`OTP or Pin tested with token was accepted.`);
         } else {
-          this.notificationService.warning("OTP or Pin tested with token was rejected.");
+          this.notificationService.warning($localize`OTP or Pin tested with token was rejected.`);
         }
         this.tokenService.tokenDetailResource.reload();
       }

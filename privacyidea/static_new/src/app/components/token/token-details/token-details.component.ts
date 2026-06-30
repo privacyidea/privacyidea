@@ -91,33 +91,33 @@ export const USER_TIMESTAMP_INFO_KEYS = ["assignment_date"] as const;
 type TokenDetailGroup = "identity" | "counters" | "assignment";
 
 export const tokenDetailsKeyMap: { key: string; label: string; group: TokenDetailGroup }[] = [
-  { key: "tokentype", label: "Type", group: "identity" },
-  { key: "active", label: "Status", group: "identity" },
-  { key: "rollout_state", label: "Rollout State", group: "identity" },
-  { key: "failcount", label: "Fail Count", group: "identity" },
-  { key: "creation_date", label: "Created", group: "identity" },
-  { key: "last_auth", label: "Last Authentication", group: "identity" },
-  { key: "maxfail", label: "Max Count", group: "counters" },
-  { key: "otplen", label: "OTP Length", group: "counters" },
-  { key: "count_window", label: "Count Window", group: "counters" },
-  { key: "sync_window", label: "Sync Window", group: "counters" },
-  { key: "count", label: "Count", group: "counters" },
-  { key: "description", label: "Description", group: "assignment" },
-  { key: "realms", label: "Token Realms", group: "assignment" },
-  { key: "tokengroup", label: "Token Groups", group: "assignment" },
-  { key: "container_serial", label: "Container Serial", group: "assignment" }
+  { key: "tokentype", label: $localize`Type`, group: "identity" },
+  { key: "active", label: $localize`Status`, group: "identity" },
+  { key: "rollout_state", label: $localize`Rollout State`, group: "identity" },
+  { key: "failcount", label: $localize`Fail Count`, group: "identity" },
+  { key: "creation_date", label: $localize`Created`, group: "identity" },
+  { key: "last_auth", label: $localize`Last Authentication`, group: "identity" },
+  { key: "maxfail", label: $localize`Max Count`, group: "counters" },
+  { key: "otplen", label: $localize`OTP Length`, group: "counters" },
+  { key: "count_window", label: $localize`Count Window`, group: "counters" },
+  { key: "sync_window", label: $localize`Sync Window`, group: "counters" },
+  { key: "count", label: $localize`Count`, group: "counters" },
+  { key: "description", label: $localize`Description`, group: "assignment" },
+  { key: "realms", label: $localize`Token Realms`, group: "assignment" },
+  { key: "tokengroup", label: $localize`Token Groups`, group: "assignment" },
+  { key: "container_serial", label: $localize`Container Serial`, group: "assignment" }
 ];
 
 export const tokenDetailGroups: { id: TokenDetailGroup; label: string }[] = [
-  { id: "identity", label: "Status" },
-  { id: "counters", label: "Counters" },
-  { id: "assignment", label: "Assignments" }
+  { id: "identity", label: $localize`Status` },
+  { id: "counters", label: $localize`Counters` },
+  { id: "assignment", label: $localize`Assignments` }
 ];
 
-function formatTokenTimestamp(value: unknown): string | undefined {
-  if (value === undefined || value === null || value === "") return undefined;
-  const date = new Date(String(value));
-  if (Number.isNaN(date.getTime())) return String(value);
+function formatTokenTimestamp(value: string | undefined): string | undefined {
+  if (value === undefined || value === "") return undefined;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
   return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
@@ -132,14 +132,14 @@ export const tokenDetailsRightsMap = [
 ];
 
 export const userDetailsKeyMap = [
-  { key: "username", label: "User" },
-  { key: "user_realm", label: "Realm" },
-  { key: "assignment_date", label: "Last Assigned" },
-  { key: "resolver", label: "Resolver" },
-  { key: "user_id", label: "User ID" }
+  { key: "username", label: $localize`User` },
+  { key: "user_realm", label: $localize`Realm` },
+  { key: "assignment_date", label: $localize`Last Assigned` },
+  { key: "resolver", label: $localize`Resolver` },
+  { key: "user_id", label: $localize`User ID` }
 ];
 
-export const infoDetailsKeyMap = [{ key: "info", label: "Information" }];
+export const infoDetailsKeyMap = [{ key: "info", label: $localize`Information` }];
 
 @Component({
   imports: [
@@ -264,10 +264,9 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
       return tokenDetailsKeyMap
         .map((detail) => {
           const fromInfo = (TIMESTAMP_INFO_KEYS as readonly string[]).includes(detail.key);
-          const raw = fromInfo
-            ? details.info?.[detail.key]
+          const value = fromInfo
+            ? formatTokenTimestamp(details.info?.[detail.key])
             : details[detail.key as keyof TokenDetails];
-          const value = fromInfo ? formatTokenTimestamp(raw) : raw;
           return {
             keyMap: detail,
             value,
@@ -309,10 +308,9 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
       return userDetailsKeyMap
         .map((detail) => {
           const fromInfo = (USER_TIMESTAMP_INFO_KEYS as readonly string[]).includes(detail.key);
-          const raw = fromInfo
-            ? details.info?.[detail.key]
+          const value = fromInfo
+            ? formatTokenTimestamp(details.info?.[detail.key])
             : details[detail.key as keyof TokenDetails];
-          const value = fromInfo ? formatTokenTimestamp(raw) : raw;
           return {
             keyMap: detail,
             value,
@@ -449,10 +447,10 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: "Delete Token",
+          title: $localize`Delete Token`,
           items: [this.tokenSerial()],
           itemType: "token",
-          confirmAction: { label: "Delete", value: true, type: "destruct" }
+          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -475,10 +473,10 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: "Revoke Token",
+          title: $localize`Revoke Token`,
           items: [this.tokenSerial()],
           itemType: "token",
-          confirmAction: { label: "Revoke", value: true, type: "destruct" }
+          confirmAction: { label: $localize`Revoke`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -510,10 +508,10 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
       .subscribe({
         next: async (checkResponse) => {
           if (!checkResponse.result?.value) {
-            this.passkeyTestResult.set({ kind: "warning", message: "No user found." });
+            this.passkeyTestResult.set({ kind: "warning", message: $localize`No user found.` });
             return;
           }
-          const username = checkResponse.detail?.username ?? "Unknown User";
+          const username = checkResponse.detail?.username ?? $localize`Unknown User`;
           const authenticatedSerial = checkResponse.detail?.serial;
           const isAdmin = this.authService.role() === "admin";
           let mismatch = false;
@@ -525,7 +523,7 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
             const matchedSerial = authenticatedSerial ?? "";
             this.passkeyTestResult.set({
               kind: "warning",
-              message: "You authenticated with a different passkey than the one shown on this page.",
+              message: $localize`You authenticated with a different passkey than the one shown on this page.`,
               mismatch: { serial: matchedSerial, username }
             });
             if (matchedSerial) {
@@ -545,7 +543,7 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
           } else {
             this.passkeyTestResult.set({
               kind: "success",
-              message: "Authentication successful. You would have been logged in as: " + username
+              message: $localize`Authentication successful. You would have been logged in as: ` + username
             });
           }
         }
@@ -565,7 +563,7 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
     const data: SshMachineAssignDialogData = {
       tokenSerial: this.tokenSerial(),
       tokenType: this.tokenType(),
-      tokenDetails: this.tokenService.getTokenDetails(this.tokenSerial())
+      tokenDetails: this.tokenDetails()
     };
     this.dialogService
       .openDialog({ component: TokenSshMachineAssignDialogComponent, data: data })

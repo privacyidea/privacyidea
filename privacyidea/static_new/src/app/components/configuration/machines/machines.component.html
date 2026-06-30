@@ -54,13 +54,13 @@
       class="machines-table"
       mat-table
       matSort>
-
       <ng-container matColumnDef="hostname">
         <th
           *matHeaderCellDef
           i18n
           mat-header-cell
-          mat-sort-header> Hostname
+          mat-sort-header>
+          Hostname
         </th>
         <td
           *matCellDef="let machine"
@@ -84,7 +84,8 @@
           *matHeaderCellDef
           i18n
           mat-header-cell
-          mat-sort-header> IP Address
+          mat-sort-header>
+          IP Address
         </th>
         <td
           *matCellDef="let machine"
@@ -100,11 +101,13 @@
           *matHeaderCellDef
           i18n
           mat-header-cell
-          mat-sort-header> ID
+          mat-sort-header>
+          ID
         </th>
         <td
           *matCellDef="let machine"
-          mat-cell> {{ machine.id }}
+          mat-cell>
+          {{ machine.id }}
         </td>
       </ng-container>
 
@@ -113,7 +116,8 @@
           *matHeaderCellDef
           i18n
           mat-header-cell
-          mat-sort-header> Machine Resolver
+          mat-sort-header>
+          Machine Resolver
         </th>
         <td
           *matCellDef="let machine"
@@ -128,7 +132,7 @@
         *matHeaderRowDef="displayedColumns"
         mat-header-row></tr>
       <tr
-        *matRowDef="let row; columns: displayedColumns;"
+        *matRowDef="let row; columns: displayedColumns"
         mat-row></tr>
 
       <tr
@@ -137,7 +141,8 @@
         <td
           class="mat-cell"
           colspan="5"
-          i18n>No machines found.
+          i18n>
+          No machines found.
         </td>
       </tr>
     </table>

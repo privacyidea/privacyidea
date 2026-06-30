@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { Type } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
 import { SelectorButtonsComponent } from "./selector-buttons.component";
@@ -30,7 +31,9 @@ describe("SelectorButtonsComponent", () => {
       imports: [SelectorButtonsComponent]
     }).compileComponents();
 
-    fixture = TestBed.createComponent<SelectorButtonsComponent<string>>(SelectorButtonsComponent as any);
+    fixture = TestBed.createComponent<SelectorButtonsComponent<string>>(
+      SelectorButtonsComponent as unknown as Type<SelectorButtonsComponent<string>>
+    );
     component = fixture.componentInstance;
 
     fixture.componentRef.setInput("values", ["A", "B", "C"]);
@@ -59,5 +62,66 @@ describe("SelectorButtonsComponent", () => {
   it("should properly apply 'last-button' class to the correct element", () => {
     const buttons = fixture.debugElement.queryAll(By.css(".button-item"));
     expect(buttons[2].nativeElement.classList).toContain("last-button");
+  });
+
+  it("selectValue should do nothing when disabled", () => {
+    const emitSpy = jest.fn();
+    component.selected.subscribe(emitSpy);
+    fixture.componentRef.setInput("disabled", true);
+    fixture.detectChanges();
+
+    component.selectValue("B");
+
+    expect(component.selectedValue()).toBe("A");
+    expect(emitSpy).not.toHaveBeenCalled();
+  });
+
+  it("selectValue should select a new value and emit it", () => {
+    const emitSpy = jest.fn();
+    component.selected.subscribe(emitSpy);
+
+    component.selectValue("B");
+
+    expect(component.selectedValue()).toBe("B");
+    expect(emitSpy).toHaveBeenCalledWith("B");
+  });
+
+  it("selectValue should keep selection when reselecting and deselect is not allowed", () => {
+    const emitSpy = jest.fn();
+    component.selected.subscribe(emitSpy);
+
+    component.selectValue("A");
+
+    expect(component.selectedValue()).toBe("A");
+    expect(emitSpy).not.toHaveBeenCalled();
+  });
+
+  it("selectValue should deselect when reselecting and deselect is allowed", () => {
+    const emitSpy = jest.fn();
+    component.selected.subscribe(emitSpy);
+    fixture.componentRef.setInput("allowDeselect", true);
+    fixture.detectChanges();
+
+    component.selectValue("A");
+
+    expect(component.selectedValue()).toBeUndefined();
+    expect(emitSpy).toHaveBeenCalledWith(undefined);
+  });
+
+  it("isOverflowing should be true only when scrollWidth exceeds clientWidth", () => {
+    const overflowing = { scrollWidth: 120, clientWidth: 80 } as HTMLElement;
+    const fitting = { scrollWidth: 80, clientWidth: 80 } as HTMLElement;
+
+    expect(component.isOverflowing(overflowing)).toBe(true);
+    expect(component.isOverflowing(fitting)).toBe(false);
+  });
+
+  it("focusFirst should focus the first rendered button", () => {
+    const firstButton = component.buttons()[0].nativeElement;
+    const focusSpy = jest.spyOn(firstButton, "focus");
+
+    component.focusFirst();
+
+    expect(focusSpy).toHaveBeenCalled();
   });
 });

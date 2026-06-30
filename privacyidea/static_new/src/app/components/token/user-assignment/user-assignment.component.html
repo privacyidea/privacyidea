@@ -23,9 +23,8 @@
   <input
     style="display: none"
     type="password" />
-  <mat-form-field
-    class="input-width-l">
-    <mat-label>Select Realm of User</mat-label>
+  <mat-form-field class="input-width-l">
+    <mat-label i18n>Select Realm of User</mat-label>
     <mat-select
       (selectionChange)="onSelectedRealmChange($event.value)"
       [value]="userService.selectedUserRealm()"
@@ -38,9 +37,8 @@
       <mat-error i18n>User Realm is <strong>required</strong></mat-error>
     }
   </mat-form-field>
-  <mat-form-field
-    class="input-width-l">
-    <mat-label>Enter User</mat-label>
+  <mat-form-field class="input-width-l">
+    <mat-label i18n>Enter User</mat-label>
     <app-clearable-input
       (clearButtonClick)="clearUser()"
       [showClearButton]="userFilter() !== ''">
@@ -57,14 +55,18 @@
       [displayWith]="displayUser"
       (optionSelected)="onUserSelected($event.option.value)">
       @for (user of userService.selectionFilteredUsers(); track user) {
-        <mat-option class="type-option" [value]="user">{{ user.username }}</mat-option>
+        <mat-option
+          class="type-option"
+          [value]="user"
+          >{{ user.username }}</mat-option
+        >
       }
     </mat-autocomplete>
     @if (!userService.selectedUserRealm() && !onlyAddToRealm()) {
-      <mat-hint> Select a realm first to enable user selection.</mat-hint>
+      <mat-hint i18n> Select a realm first to enable user selection.</mat-hint>
     }
     @if (required() && !userService.selectedUser()) {
-      <mat-error>User is <strong>required</strong></mat-error>
+      <mat-error i18n>User is <strong>required</strong></mat-error>
     }
   </mat-form-field>
   @if (showOnlyAddToRealm()) {
@@ -72,7 +74,8 @@
       <mat-checkbox
         [checked]="onlyAddToRealm()"
         [disabled]="!!userFilter()"
-        (change)="onlyAddToRealmChange($event.checked)">
+        (change)="onlyAddToRealmChange($event.checked)"
+        i18n>
         Only add to the realm (no user assignment)
       </mat-checkbox>
     </div>

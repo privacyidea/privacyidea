@@ -39,23 +39,23 @@
     <div class="flex-row gap-16">
       @if (!this.authService.checkForceServerGenerateOTPKey("totp")) {
         <mat-form-field class="input-width-l">
-          <mat-label>OTP Key</mat-label>
+          <mat-label i18n>OTP Key</mat-label>
           <input
             [formField]="otpKeyForm"
+            i18n-placeholder
             matInput
             placeholder="Enter OTP key" />
           @if (otpKeyForm().errors().some(e => e.kind === 'required') && otpKeyForm().touched()) {
-            <mat-error>OTP key is <strong>required</strong></mat-error>
+            <mat-error i18n>OTP key is <strong>required</strong></mat-error>
           }
           @if (otpKeyForm().errors().some(e => e.kind === 'minlength') && otpKeyForm().touched()) {
-            <mat-error>OTP key must be at least 16 characters</mat-error>
+            <mat-error i18n>OTP key must be at least 16 characters</mat-error>
           }
         </mat-form-field>
       }
 
-      <mat-form-field
-        class="input-width-l">
-        <mat-label>OTP length</mat-label>
+      <mat-form-field class="input-width-l">
+        <mat-label i18n>OTP length</mat-label>
         <mat-select
           [value]="otpLength()"
           [disabled]="otpLengthForm().disabled()"
@@ -66,12 +66,11 @@
           }
         </mat-select>
         <mat-error i18n>OTP length is <strong>required</strong></mat-error>
-        <mat-hint>Some Authenticator Apps only support an OTP length of 6.</mat-hint>
+        <mat-hint i18n>Some Authenticator Apps only support an OTP length of 6.</mat-hint>
       </mat-form-field>
 
-      <mat-form-field
-        class="input-width-l">
-        <mat-label>Hash algorithm</mat-label>
+      <mat-form-field class="input-width-l">
+        <mat-label i18n>Hash algorithm</mat-label>
         <mat-select
           [value]="hashAlgorithm()"
           [disabled]="hashAlgorithmForm().disabled()"
@@ -82,13 +81,12 @@
           }
         </mat-select>
         <mat-error i18n>Hash algorithm is <strong>required</strong></mat-error>
-        <mat-hint>Some Authenticator Apps only support the SHA1 algorithm.</mat-hint>
+        <mat-hint i18n>Some Authenticator Apps only support the SHA1 algorithm.</mat-hint>
       </mat-form-field>
     </div>
     <div class="flex-row gap-16">
-      <mat-form-field
-        class="input-width-l margin-top-16">
-        <mat-label>Timestep</mat-label>
+      <mat-form-field class="input-width-l margin-top-16">
+        <mat-label i18n>Timestep</mat-label>
         <mat-select
           [value]="timeStep()"
           [disabled]="timeStepForm().disabled()"

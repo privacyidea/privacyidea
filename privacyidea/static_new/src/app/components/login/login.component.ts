@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { HttpErrorResponse } from "@angular/common/http";
 import { NgOptimizedImage } from "@angular/common";
 import {
   AfterViewInit,
@@ -37,19 +38,21 @@ import { MatFormField, MatInput, MatLabel, MatSuffix } from "@angular/material/i
 import { MatOption, MatSelect } from "@angular/material/select";
 import { Router } from "@angular/router";
 import { challengesTriggered, isAuthenticationSuccessful } from "@app/app.component";
-import { ROUTE_PATHS } from "@app/route_paths";
+import { resolveLandingPath } from "@app/guards/auth.guard";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 import { environment } from "@env/environment";
-import { AuthResponse, AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { AuthResponse, AuthService, AuthServiceInterface, PasswordLoginParams } from "@services/auth/auth.service";
 import { ConfigService } from "@services/config/config.service";
-import { LocalService, LocalServiceInterface } from "@services/local/local.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { SessionTimerService, SessionTimerServiceInterface } from "@services/session-timer/session-timer.service";
-import { ValidateService, ValidateServiceInterface } from "@services/validate/validate.service";
+import { ValidateService, ValidateServiceInterface, WebAuthnSignRequest } from "@services/validate/validate.service";
 import { catchError, EMPTY, filter, Subscription, switchMap, take, timeout, timer } from "rxjs";
 
 const PUSH_POLLING_INTERVAL_MS = 500;
 const PUSH_POLLING_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+// A "-" entry in the realmdropdown policy is the privacyIDEA "no realm" sentinel:
+// it is offered as a selectable option but must not be sent as a realm parameter.
+const NO_REALM_SENTINEL = "-";
 
 @Component({
   selector: "app-login",
@@ -72,8 +75,7 @@ const PUSH_POLLING_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 })
 export class LoginComponent implements OnDestroy, AfterViewInit {
   private readonly authService: AuthServiceInterface = inject(AuthService);
-  private readonly router: Router = inject(Router);
-  private readonly localService: LocalServiceInterface = inject(LocalService);
+  private readonly router = inject(Router);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly sessionTimerService: SessionTimerServiceInterface = inject(SessionTimerService);
   private readonly validateService: ValidateServiceInterface = inject(ValidateService);
@@ -87,15 +89,21 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
   hidePassword = signal<boolean>(true);
   otp = signal<string>("");
 
-  usernameField = form(this.username, (f) => { required(f); });
-  passwordField = form(this.password, (f) => { required(f); });
-  otpField = form(this.otp, (f) => { required(f); });
+  usernameField = form(this.username, (f) => {
+    required(f);
+  });
+  passwordField = form(this.password, (f) => {
+    required(f);
+  });
+  otpField = form(this.otp, (f) => {
+    required(f);
+  });
   authMessage = signal<string[]>([]); // messages returned from the auth endpoint
   errorMessage = signal<string>("");
 
   showOtpField = signal<boolean>(false);
   pushTriggered = signal<boolean>(false);
-  webAuthnTriggered = signal<any | null>(null);
+  webAuthnTriggered = signal<WebAuthnSignRequest | null>(null);
 
   isLoginButtonDisabled = computed(() => {
     if (this.showOtpField()) {
@@ -146,13 +154,7 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
   node = computed(() => this.configService.config()?.show_node);
 
   constructor() {
-    if (this.authService.isAuthenticated()) {
-      console.warn("User is already logged in.");
-      this.notificationService.warning("User is already logged in.");
-    } else {
-      this.showOtpField.set(false);
-    }
-
+    // Authenticated users are redirected away from the login route by loginGuard.
     effect(() => {
       if (this.showOtpField()) {
         // Use a timeout to ensure the element is rendered before trying to focus it.
@@ -166,8 +168,8 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
     const isChallengeResponse = this.showOtpField();
     const password = isChallengeResponse ? this.otp() : this.password();
 
-    let params: any = { username, password };
-    if (this.realm()) {
+    const params: PasswordLoginParams = { username, password };
+    if (this.realm() && this.realm() !== NO_REALM_SENTINEL) {
       params.realm = this.realm();
     }
 
@@ -191,7 +193,7 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
       this.notificationService.warning($localize`Remote user not available. Remote Login not possible.`);
       return;
     }
-    const params: any = { username: this.remoteUser() };
+    const params = { username: this.remoteUser() };
     this.authService.authenticate(params).subscribe({
       next: (response) => this.evaluateResponse(response, "password"),
       error: (err) => this.handleError(err, "password")
@@ -213,21 +215,19 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
       })
       .subscribe({
         next: (response: AuthResponse) => this.evaluateResponse(response, "webauthn"),
-        error: (err: any) => this.handleError(err, "webauthn")
+        error: (err: HttpErrorResponse) => this.handleError(err, "webauthn")
       });
   }
 
   passkeyLogin(): void {
     this.validateService.authenticatePasskey().subscribe({
       next: (response) => this.evaluateResponse(response, "passkey"),
-      error: (err: any) => this.handleError(err, "passkey")
+      error: (err: HttpErrorResponse) => this.handleError(err, "passkey")
     });
   }
 
   logout(): void {
     this.authService.logout();
-    this.localService.removeData("bearer_token");
-    this.router.navigate(["login"]).then(() => this.notificationService.success("Logout successful."));
   }
 
   resetLogin(): void {
@@ -302,20 +302,9 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
   private evaluateResponse(response: AuthResponse, context: "password" | "passkey" | "webauthn"): void {
     if (isAuthenticationSuccessful(response)) {
       // Successful auth -> log in
-      this.localService.saveData("bearer_token", response.result.value.token);
       this.showOtpField.set(false);
       this.sessionTimerService.initialTimerStart();
-      if (this.authService.tokenWizard()) {
-        this.router.navigateByUrl(ROUTE_PATHS.TOKENS_WIZARD).then();
-      } else if (this.authService.containerWizard().enabled) {
-        this.router.navigateByUrl(ROUTE_PATHS.CONTAINERS_WIZARD).then();
-      } else if (this.authService.role() === "user" || this.authService.anyTokenActionAllowed()) {
-        this.router.navigateByUrl(ROUTE_PATHS.TOKENS).then();
-      } else if (this.authService.anyContainerActionAllowed()) {
-        this.router.navigateByUrl(ROUTE_PATHS.CONTAINERS).then();
-      } else {
-        this.router.navigateByUrl(ROUTE_PATHS.TOKENS).then();
-      }
+      this.router.navigateByUrl(resolveLandingPath(this.authService)).then();
     } else if (challengesTriggered(response)) {
       // Setup depending on what kind of challenges were triggered
       if (response.detail.multi_challenge?.length) {
@@ -363,7 +352,7 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
     }
   }
 
-  private handleError(err: any, context: "password" | "passkey" | "webauthn"): void {
+  private handleError(err: HttpErrorResponse, context: "password" | "passkey" | "webauthn"): void {
     const defaultMessages = {
       password: "Authentication failed.",
       passkey: "Error during Passkey login",

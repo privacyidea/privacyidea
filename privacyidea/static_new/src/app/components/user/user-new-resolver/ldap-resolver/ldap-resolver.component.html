@@ -289,7 +289,11 @@
         i18n>
         Per-Process Server Pool
       </mat-checkbox>
-      <span class="hint">This setting activates an LDAP server pool which persists between requests.</span>
+      <span
+        class="hint"
+        i18n
+        >This setting activates an LDAP server pool which persists between requests.</span
+      >
     </div>
 
     <div class="flex-column">
@@ -299,7 +303,11 @@
         i18n>
         Edit User Store
       </mat-checkbox>
-      <span class="hint">The user data in this database can be modified from within privacyIDEA.</span>
+      <span
+        class="hint"
+        i18n
+        >The user data in this database can be modified from within privacyIDEA.</span
+      >
     </div>
 
     @if (model().EDITABLE) {
@@ -365,7 +373,9 @@
               matInput
               placeholder="sAMAccountName" />
           </app-clearable-input>
-          @if (ldapForm.LOGINNAMEATTRIBUTE().errors().some(e => e.kind === 'required') && ldapForm.LOGINNAMEATTRIBUTE().touched()) {
+          @if (
+            ldapForm.LOGINNAMEATTRIBUTE().errors().some(e => e.kind === 'required') && ldapForm.LOGINNAMEATTRIBUTE().touched()
+          ) {
             <mat-error i18n>
               Loginname attribute is
               <strong>required</strong>
@@ -397,7 +407,9 @@
             matInput
             placeholder="(sAMAccountName=*)(objectClass=person)" />
         </app-clearable-input>
-        @if (ldapForm.LDAPSEARCHFILTER().errors().some(e => e.kind === 'required') && ldapForm.LDAPSEARCHFILTER().touched()) {
+        @if (
+          ldapForm.LDAPSEARCHFILTER().errors().some(e => e.kind === 'required') && ldapForm.LDAPSEARCHFILTER().touched()
+        ) {
           <mat-error i18n>
             Search filter is
             <strong>required</strong>
@@ -460,7 +472,7 @@
 
         <mat-form-field class="input-width-xl margin-bottom-16">
           <mat-label i18n>Search Filter for User Groups</mat-label>
-          <mat-hint>Possible tags: {{ "{" }}base_dn{{ "}" }}, {{ "{" }}username{{ "}" }}</mat-hint>
+          <mat-hint i18n>Possible tags: {{ "{" }}base_dn{{ "}" }}, {{ "{" }}username{{ "}" }}</mat-hint>
           <app-clearable-input
             (clearButtonClick)="model.update(m => ({ ...m, group_search_filter: '' }))"
             [showClearButton]="!!model().group_search_filter">
@@ -475,7 +487,7 @@
         <div class="flex-row gap-16 margin-bottom-32">
           <mat-form-field class="input-width-l">
             <mat-label i18n>Group Name Attribute</mat-label>
-            <mat-hint>Group attribute defining the group's name, which should be stored in the user info.</mat-hint>
+            <mat-hint i18n>Group attribute defining the group's name, which should be stored in the user info.</mat-hint>
             <app-clearable-input
               (clearButtonClick)="model.update(m => ({ ...m, group_name_attribute: '' }))"
               [showClearButton]="!!model().group_name_attribute">
@@ -488,7 +500,7 @@
 
           <mat-form-field class="input-width-l">
             <mat-label i18n>User Info Key</mat-label>
-            <mat-hint>The key to store the groups in the user info (attribute mapping key).</mat-hint>
+            <mat-hint i18n>The key to store the groups in the user info (attribute mapping key).</mat-hint>
             <app-clearable-input
               (clearButtonClick)="model.update(m => ({ ...m, group_attribute_mapping_key: '' }))"
               [showClearButton]="!!model().group_attribute_mapping_key">

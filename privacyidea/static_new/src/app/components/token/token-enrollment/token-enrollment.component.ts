@@ -76,7 +76,8 @@ import {
   EnrollTokenArguments,
   TokenEnrollmentDialogData,
   TokenService,
-  TokenServiceInterface
+  TokenServiceInterface,
+  TokenType
 } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
@@ -178,11 +179,11 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
 
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   timezoneOptions = TIMEZONE_OFFSETS;
-  enrollResponse: WritableSignal<EnrollmentResponse | null> = linkedSignal({
+  enrollResponse = linkedSignal<TokenType, EnrollmentResponse | null>({
     source: this.tokenService.selectedTokenType,
     computation: () => null
   });
-  tokenTypeDescription: WritableSignal<any> = linkedSignal({
+  tokenTypeDescription = linkedSignal({
     source: this.tokenService.tokenTypeOptions,
     computation: (tokenTypes) => {
       return tokenTypes.find((type) => type.key === this.tokenService.selectedTokenType().key)?.text;
@@ -193,7 +194,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
   userAssignmentComponent!: UserAssignmentComponent;
   protected readonly enrollSwitch = viewChild(EnrollTokenTypeSwitchComponent);
 
-  enrolledDialogData: WritableSignal<TokenEnrollmentDialogData | null> = signal(null);
+  enrolledDialogData = signal<TokenEnrollmentDialogData | null>(null);
 
   descriptionRequired = computed(() => {
     const selectedTokenType = this.tokenService.selectedTokenType();
@@ -250,7 +251,8 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.pendingChangesService.registerHasChanges(
-      () => this.isDirty() || this.descriptionForm().dirty() || this.setPinForm().dirty() || this.repeatPinForm().dirty()
+      () =>
+        this.isDirty() || this.descriptionForm().dirty() || this.setPinForm().dirty() || this.repeatPinForm().dirty()
     );
     this.pendingChangesService.registerValidChanges(
       () =>
@@ -308,7 +310,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     const currentTokenType = this.tokenService.selectedTokenType();
     let everythingIsValid = true;
     if (!currentTokenType) {
-      this.notificationService.warning("Please select a token type.");
+      this.notificationService.warning($localize`Please select a token type.`);
       return false;
     }
 
@@ -324,13 +326,13 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     }
 
     if (!everythingIsValid) {
-      this.notificationService.warning("Please fill in all required fields or correct invalid entries.");
+      this.notificationService.warning($localize`Please fill in all required fields or correct invalid entries.`);
       return false;
     }
 
     const strategy: EnrollTokenBase | undefined = this.enrollSwitch()?.currentStrategy();
     if (!strategy) {
-      this.notificationService.warning("Enrollment action is not available for the selected token type.");
+      this.notificationService.warning($localize`Enrollment action is not available for the selected token type.`);
       return false;
     }
 
@@ -372,7 +374,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
 
     enrollPromise.catch((error) => {
       const message = error.error?.result?.error?.message || "";
-      this.notificationService.error(`Failed to enroll token: ${message || error.message || error}`);
+      this.notificationService.error($localize`Failed to enroll token: ${message || error.message || error}`);
     });
     let enrollmentResponse: EnrollmentResponse | null = await enrollPromise;
 
@@ -458,7 +460,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
 
   protected openLastStepDialog(response: EnrollmentResponse | null): void {
     if (!response) {
-      this.notificationService.warning("No enrollment response available.");
+      this.notificationService.warning($localize`No enrollment response available.`);
       return;
     }
 
@@ -482,7 +484,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     }
 
     if (this.isUserRequired() && !this.userService.selectedUser() && !this.enrolledDialogData()?.rollover) {
-      this.notificationService.warning("User is required for this token type, but no user was provided.");
+      this.notificationService.warning($localize`User is required for this token type, but no user was provided.`);
       return;
     }
 

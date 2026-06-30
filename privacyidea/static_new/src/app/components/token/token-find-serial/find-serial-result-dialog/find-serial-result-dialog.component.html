@@ -19,18 +19,24 @@
 
 <app-dialog-wrapper
   title="Search for Token"
+  i18n-title
   [actions]="[action]"
-  (close)="close()"
-  (onAction)="onAction($event)">
+  (wrapperClose)="close()"
+  (actionTriggered)="onAction($event)">
   @if (data.foundSerial) {
     <div class="alert alert-success">
       <span i18n>
         The Serial number for the OTP value {{ data.otpValue }} is
         <a
           class="link"
+          role="button"
+          tabindex="0"
           attr.aria-label="{{ data.foundSerial }} Link"
-          (click)="onClickSerial()">
-          {{ data.foundSerial }}.</a>
+          (click)="onClickSerial()"
+          (keydown.enter)="onClickSerial()"
+          (keydown.space)="$event.preventDefault(); onClickSerial()">
+          {{ data.foundSerial }}.</a
+        >
       </span>
     </div>
   } @else {

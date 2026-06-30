@@ -16,10 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { HttpClient } from "@angular/common/http";
+import { HttpClient, HttpHeaders } from "@angular/common/http";
 import { inject, Injectable, signal, WritableSignal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
+import { BEARER_TOKEN_STORAGE_KEY } from "@core/constants";
 import { environment } from "@env/environment";
+import { LocalService, LocalServiceInterface } from "@services/local/local.service";
 import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
 import { of } from "rxjs";
 import { catchError } from "rxjs/operators";
@@ -49,7 +51,8 @@ export interface ConfigServiceInterface {
 @Injectable({ providedIn: "root" })
 export class ConfigService implements ConfigServiceInterface {
   private readonly versioningService: VersioningServiceInterface = inject(VersioningService);
-  http: HttpClient = inject(HttpClient);
+  private readonly localService: LocalServiceInterface = inject(LocalService);
+  private readonly http = inject(HttpClient);
   config = signal({
     remote_user: "",
     force_remote_user: false,
@@ -68,8 +71,15 @@ export class ConfigService implements ConfigServiceInterface {
   });
 
   loadConfig() {
+    // loadConfig() runs at app bootstrap, before authData is populated, so read
+    // the stored bearer token directly. Sending it lets the backend recognize an
+    // authenticated reload and keep returning the version even when the
+    // hide_version policy is active; an anonymous first load sends an empty
+    // header and correctly receives the hidden (blanked) version.
+    const token = this.localService.getData(BEARER_TOKEN_STORAGE_KEY);
+    const headers = token ? new HttpHeaders({ "PI-Authorization": token }) : undefined;
     this.http
-      .get<PiResponse<Record<any, any>>>(environment.proxyUrl + "/config")
+      .get<PiResponse<AppConfig>>(`${environment.proxyUrl}/config`, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to load config:", error);
@@ -82,12 +92,20 @@ export class ConfigService implements ConfigServiceInterface {
             time: 0,
             version: "",
             versionnumber: ""
-          } as PiResponse<Record<any, any>>);
+          });
         })
       )
       .subscribe((data) => {
-        this.config.set(data.result?.value as AppConfig);
-        this.versioningService.rawVersion.set(data.versionnumber);
+        const configValue = data.result?.value;
+
+        if (data.result?.status && configValue) {
+          this.config.set(configValue);
+        } else {
+          console.error("Failed to load config: Invalid response", data);
+          return;
+        }
+
+        this.versioningService.rawVersion.set(data.versionnumber ?? "");
       });
   }
 }

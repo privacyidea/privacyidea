@@ -57,38 +57,39 @@ import { TokenEnrollmentLastStepDialogComponent } from "./token-enrollment-last-
   styleUrl: "./token-enrollment-last-step-dialog.component.scss"
 })
 export class TokenEnrollmentLastStepDialogWizardComponent extends TokenEnrollmentLastStepDialogComponent {
-  protected readonly actions = computed(() => {
-    const actions: DialogAction<"create_container" | "logout">[] = [];
-    if (this.authService.containerWizard().enabled) {
-      actions.push({
-        type: "auxiliary",
-        label: "Create Container",
-        value: "create_container",
-        className: "button-width-m"
-      });
-    }
-    actions.push({
-      type: "auxiliary",
-      label: "Logout",
-      value: "logout",
-      primary: true
-    });
-    return actions;
-  });
-
   protected override readonly Object = Object;
-  private readonly http: HttpClient = inject(HttpClient);
-  private readonly sanitizer: DomSanitizer = inject(DomSanitizer);
+  private readonly http = inject(HttpClient);
+  private readonly sanitizer = inject(DomSanitizer);
+  private readonly router = inject(Router);
   protected override readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected override readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
-  protected readonly router: Router = inject(Router);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   tagData: Signal<Record<string, string>> = computed(() => ({
     serial: this.serial,
     qrCode: this.qrCode,
     url: this.url
   }));
+
+  protected readonly actions = computed(() => {
+    const actions: DialogAction<"create_container" | "logout">[] = [];
+    if (this.authService.containerWizard().enabled) {
+      actions.push({
+        type: "auxiliary",
+        label: $localize`Create Container`,
+        value: "create_container",
+        className: "button-width-m"
+      });
+    }
+    actions.push({
+      type: "auxiliary",
+      label: $localize`Logout`,
+      value: "logout",
+      primary: true
+    });
+    return actions;
+  });
+
   // TODO: Get custom path from pi.cfg
   customizationPath = "/static/public/customize/";
   readonly postTopHtml$ = this.http

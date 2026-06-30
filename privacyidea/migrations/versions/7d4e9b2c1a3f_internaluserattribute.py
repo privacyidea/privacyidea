@@ -1,4 +1,4 @@
-"""Add internaluserattribute table and migrate internal entries out of customuserattribute
+"""v3.14: Add internaluserattribute table and migrate internal entries out of customuserattribute
 
 Revision ID: 7d4e9b2c1a3f
 Revises: b1a2c3d4e5f6
@@ -10,12 +10,15 @@ from datetime import datetime, timezone
 
 import sqlalchemy as sa
 from alembic import op
-from sqlalchemy import text
+from sqlalchemy import text, Sequence
 from sqlalchemy.exc import OperationalError, ProgrammingError
+from sqlalchemy.schema import CreateSequence
+
+from privacyidea.models.db import build_restart_sequence_sql
 
 # revision identifiers, used by Alembic.
 revision = '7d4e9b2c1a3f'
-down_revision = 'b1a2c3d4e5f6'
+down_revision = '3cafe2771cdd'
 branch_labels = None
 depends_on = None
 
@@ -61,8 +64,14 @@ def upgrade():
     # The model declares Sequence('internaluserattribute_seq'), so SQLAlchemy
     # emits SELECT nextval(...) on every ORM insert. Create the sequence on
     # any backend that supports CREATE SEQUENCE (Postgres + MariaDB 10.3+).
+    # Build it through SQLAlchemy's CreateSequence construct rather than a raw
+    # "CREATE SEQUENCE" string: CreateSequence is rewritten by the
+    # increment_by_zero @compiles hook in privacyidea.models.db, which appends
+    # INCREMENT BY 0 on MariaDB so a Galera cluster accepts the cached sequence.
+    # A raw string bypasses the hook and fails with "CACHE without INCREMENT BY
+    # 0 in Galera cluster".
     if bind.dialect.supports_sequences:
-        op.execute("CREATE SEQUENCE IF NOT EXISTS internaluserattribute_seq")
+        op.execute(CreateSequence(Sequence("internaluserattribute_seq"), if_not_exists=True))
 
     try:
         if is_postgres:
@@ -104,7 +113,12 @@ def upgrade():
         max_id = bind.execute(
             text("SELECT COALESCE(MAX(id), 0) FROM internaluserattribute")
         ).scalar() or 0
-        op.execute(f"ALTER SEQUENCE internaluserattribute_seq RESTART WITH {max_id + 1}")
+        # No SQLAlchemy DDL construct exists for ALTER SEQUENCE ... RESTART, so a
+        # raw string would only be correct on one backend. build_restart_sequence_sql
+        # emits each dialect's accepted syntax and, crucially, appends INCREMENT BY 0
+        # on MariaDB — a Galera cluster otherwise rejects RESTART on a cached sequence
+        # with "CACHE without INCREMENT BY 0 in Galera cluster".
+        op.execute(build_restart_sequence_sql("internaluserattribute_seq", max_id + 1, bind.dialect.name))
 
     _run_data_migration(op.get_bind())
 

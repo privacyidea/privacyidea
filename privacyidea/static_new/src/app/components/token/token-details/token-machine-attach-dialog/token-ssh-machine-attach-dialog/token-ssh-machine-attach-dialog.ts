@@ -22,6 +22,7 @@ import { MatOptionModule } from "@angular/material/core";
 import { MatDialogModule } from "@angular/material/dialog";
 import { ApplicationService, ApplicationServiceInterface } from "@services/application/application.service";
 import { Machine, MachineService, MachineServiceInterface } from "@services/machine/machine.service";
+import { TokenDetails } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
@@ -30,19 +31,20 @@ import { MatSelectModule } from "@angular/material/select";
 
 import { MatButtonModule } from "@angular/material/button";
 import { MatInputModule } from "@angular/material/input";
+import { PiResponse } from "@app/app.component";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { DialogAction } from "@models/dialog";
 import { Observable } from "rxjs";
 
-export type SshMachineAssignDialogData = {
+export interface SshMachineAssignDialogData {
   tokenSerial: string;
-  tokenDetails: Record<string, any>;
+  tokenDetails: TokenDetails;
   tokenType: string;
-};
+}
 
 @Component({
-  selector: "token-ssh-machine-attach-dialog",
+  selector: "app-token-ssh-machine-attach-dialog",
   styleUrls: ["./token-ssh-machine-attach-dialog.component.scss"],
   templateUrl: "./token-ssh-machine-attach-dialog.component.html",
   standalone: true,
@@ -61,7 +63,7 @@ export type SshMachineAssignDialogData = {
 })
 export class TokenSshMachineAssignDialogComponent extends AbstractDialogComponent<
   SshMachineAssignDialogData,
-  Observable<any> | null
+  Observable<PiResponse<number>> | null
 > {
   /// Data for the dialog ///
   private applicationService: ApplicationServiceInterface = inject(ApplicationService);
@@ -69,7 +71,7 @@ export class TokenSshMachineAssignDialogComponent extends AbstractDialogComponen
   private userService: UserServiceInterface = inject(UserService);
 
   assignAction: DialogAction<string> = {
-    label: "Assign",
+    label: $localize`Assign`,
     value: "assign",
     type: "confirm",
     primary: true
@@ -85,7 +87,7 @@ export class TokenSshMachineAssignDialogComponent extends AbstractDialogComponen
   availableApplications = linkedSignal({
     source: this.applicationService.applications,
     computation: (source) => {
-      var availableApps = [];
+      const availableApps = [];
       if (source.ssh.options.sshkey.service_id.value.length > 0) {
         availableApps.push("ssh");
       }
@@ -106,7 +108,7 @@ export class TokenSshMachineAssignDialogComponent extends AbstractDialogComponen
     computation: () => this.userService.users().map((user) => user.username)
   });
 
-  machineFilter: WritableSignal<string> = signal("");
+  machineFilter = signal("");
   filteredMachines = computed(() => {
     const filterString = this.machineFilter().trim().toLowerCase();
     if (!filterString) return this.machineService.machines();
@@ -115,7 +117,7 @@ export class TokenSshMachineAssignDialogComponent extends AbstractDialogComponen
       ?.filter((machine) => this.getFullMachineName(machine).toLowerCase().includes(filterString));
   });
 
-  userFilter: WritableSignal<string> = signal("");
+  userFilter = signal("");
   filteredUsers = computed(() => {
     const filterString = this.userFilter().trim().toLowerCase();
     if (!filterString) {
@@ -129,11 +131,11 @@ export class TokenSshMachineAssignDialogComponent extends AbstractDialogComponen
   selectedMachineForm = form(this.selectedMachineValue, (f) => {
     validate(f, (ctx) => {
       const value = ctx.value();
-      if (!value) return [{ kind: "required" as any }];
-      if (typeof value === "string") return [{ kind: "required" as any }];
+      if (!value) return [{ kind: "required" }];
+      if (typeof value === "string") return [{ kind: "required" }];
       const machine = value as Machine;
       if (!machine.id || !machine.hostname || !machine.ip || !machine.resolver_name) {
-        return [{ kind: "invalidMachine" as any }];
+        return [{ kind: "invalidMachine" }];
       }
       return [];
     });
@@ -149,10 +151,8 @@ export class TokenSshMachineAssignDialogComponent extends AbstractDialogComponen
     required(f);
   });
 
-  isFormValid = computed(() =>
-    this.selectedMachineForm().valid() &&
-    this.selectedServiceIdForm().valid() &&
-    this.selectedUserForm().valid()
+  isFormValid = computed(
+    () => this.selectedMachineForm().valid() && this.selectedServiceIdForm().valid() && this.selectedUserForm().valid()
   );
 
   constructor() {
@@ -202,7 +202,7 @@ export class TokenSshMachineAssignDialogComponent extends AbstractDialogComponen
       resolver: machine!.resolver_name
     });
     request.subscribe({
-      next: (_) => {
+      next: () => {
         this.machineService.machinesResource.reload();
         this.machineService.tokenApplicationResource.reload();
       },

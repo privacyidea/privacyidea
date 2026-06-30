@@ -51,10 +51,10 @@ import { StringUtils } from "@utils/string.utils";
 import { filter } from "rxjs";
 
 const columnKeysMap: { key: keyof ClientData; label: string }[] = [
-  { key: "application", label: "Application" },
-  { key: "hostname", label: "Hostname" },
-  { key: "ip", label: "IP Address" },
-  { key: "lastseen", label: "Last Authentication Attempt" }
+  { key: "application", label: $localize`Application` },
+  { key: "hostname", label: $localize`Hostname` },
+  { key: "ip", label: $localize`IP Address` },
+  { key: "lastseen", label: $localize`Last Authentication Attempt` }
 ];
 
 export interface ClientTableRow {
@@ -160,7 +160,7 @@ export class ClientsComponent {
           if (property === "lastseen") {
             return item.lastseen ? item.lastseen.getTime() : 0;
           }
-          return (item as any)[property];
+          return item[property as keyof FlattenedClientRow] as string | number;
         };
         return dataSource;
       }
@@ -180,7 +180,7 @@ export class ClientsComponent {
     this.clientDataSource().filter = this.filterValue.toLowerCase();
   }
 
-  protected showInAuditLog(column: string, value: string) {
+  showInAuditLog(column: string, value: string) {
     if (column === "application") {
       const userAgent = this._split_user_agent(value);
       this.auditService.auditFilter.set(

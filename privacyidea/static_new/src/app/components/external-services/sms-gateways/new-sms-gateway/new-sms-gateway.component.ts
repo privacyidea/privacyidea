@@ -16,10 +16,11 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+
 import { CommonModule } from "@angular/common";
-import { Component, computed, effect, inject, input, OnDestroy, signal, untracked } from "@angular/core";
+import { Component, OnDestroy, computed, effect, inject, input, signal, untracked } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { disabled, form, FormField, pattern, required } from "@angular/forms/signals";
+import { FormField, disabled, form, pattern, required } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatOptionModule } from "@angular/material/core";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -27,6 +28,7 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 import { MatTableModule } from "@angular/material/table";
+import { MatCheckboxModule } from "@angular/material/checkbox";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
@@ -36,12 +38,18 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import {
   SmsGateway,
+  SmsGatewayPayload,
   SmsGatewayService,
   SmsGatewayServiceInterface,
-  SmsProvider
+  SmsProvider,
+  SmsProviderParameter
 } from "@services/sms-gateway/sms-gateway.service";
 
-type KeyValueRow = { key: string; value: string };
+interface KeyValueRow {
+  key: string;
+  value: string;
+  secret: boolean;
+}
 
 interface SmsFormModel {
   name: string;
@@ -67,6 +75,7 @@ const EMPTY_SMS_FORM: SmsFormModel = {
     MatSelectModule,
     MatOptionModule,
     MatTableModule,
+    MatCheckboxModule,
     ClearableInputComponent,
     CommonModule,
     StickyHeaderDirective
@@ -87,6 +96,10 @@ export class NewSmsGatewayComponent implements OnDestroy {
   isEditMode = signal(false);
 
   smsModel = signal<SmsFormModel>({ ...EMPTY_SMS_FORM });
+  private initialSmsModel = signal<SmsFormModel>({ ...EMPTY_SMS_FORM });
+  private initialParametersModel = signal<Record<string, string>>({});
+  private initialCustomOptions: Record<string, string> = {};
+  private initialCustomHeaders: Record<string, string> = {};
 
   smsForm = form(this.smsModel, (f) => {
     required(f.name);
@@ -122,17 +135,23 @@ export class NewSmsGatewayComponent implements OnDestroy {
 
   customOptions: Record<string, string> = {};
   customHeaders: Record<string, string> = {};
+  optionSecrets: Record<string, boolean> = {};
+  headerSecrets: Record<string, boolean> = {};
+  private initialOptionSecrets: Record<string, boolean> = {};
+  private initialHeaderSecrets: Record<string, boolean> = {};
 
   newOptionKey = signal("");
   newOptionValue = signal("");
+  newOptionSecret = signal(false);
   newHeaderKey = signal("");
   newHeaderValue = signal("");
+  newHeaderSecret = signal(false);
 
-  optionDisplayedColumns: string[] = ["key", "value", "actions"];
-  optionFooterColumns: string[] = ["footerKey", "footerValue", "footerActions"];
+  optionDisplayedColumns: string[] = ["key", "value", "secret", "actions"];
+  optionFooterColumns: string[] = ["footerKey", "footerValue", "footerSecret", "footerActions"];
 
-  headerDisplayedColumns: string[] = ["key", "value", "actions"];
-  headerFooterColumns: string[] = ["footerKey", "footerValue", "footerActions"];
+  headerDisplayedColumns: string[] = ["key", "value", "secret", "actions"];
+  headerFooterColumns: string[] = ["footerKey", "footerValue", "footerSecret", "footerActions"];
 
   providers = computed<Record<string, SmsProvider>>(() => {
     if (!this.smsGatewayService.smsProvidersResource.hasValue()) return {};
@@ -183,41 +202,72 @@ export class NewSmsGatewayComponent implements OnDestroy {
   }
 
   private initForm(): void {
-    this.smsModel.set({
+    const initialModel = {
       name: this.data?.name || "",
       providermodule: this.data?.providermodule || "",
       description: this.data?.description || ""
-    });
+    };
+    this.smsModel.set(initialModel);
+    this.initialSmsModel.set({ ...initialModel });
+    this.initialParametersModel.set({});
+    this.initialCustomOptions = {};
+    this.initialCustomHeaders = {};
+    this.initialOptionSecrets = {};
+    this.initialHeaderSecrets = {};
+    this.newOptionKey.set("");
+    this.newOptionValue.set("");
+    this.newOptionSecret.set(false);
+    this.newHeaderKey.set("");
+    this.newHeaderValue.set("");
+    this.newHeaderSecret.set(false);
     this.smsForm().reset();
   }
 
   get optionRows(): KeyValueRow[] {
     return Object.entries(this.customOptions)
-      .map(([key, value]) => ({ key, value }))
+      .map(([key, value]) => ({ key, value, secret: !!this.optionSecrets[key] }))
       .sort((a, b) => a.key.localeCompare(b.key));
   }
 
   get headerRows(): KeyValueRow[] {
     return Object.entries(this.customHeaders)
-      .map(([key, value]) => ({ key, value }))
+      .map(([key, value]) => ({ key, value, secret: !!this.headerSecrets[key] }))
       .sort((a, b) => a.key.localeCompare(b.key));
   }
 
   get hasChanges(): boolean {
     return (
-      this.smsForm().dirty() ||
       this.parametersDirty() ||
-      Object.keys(this.customOptions).length > 0 ||
-      Object.keys(this.customHeaders).length > 0
+      !this.recordsEqual(this.smsModel(), this.initialSmsModel()) ||
+      !this.recordsEqual(this.parametersModel(), this.initialParametersModel()) ||
+      !this.recordsEqual(this.customOptions, this.initialCustomOptions) ||
+      !this.recordsEqual(this.customHeaders, this.initialCustomHeaders) ||
+      !this.recordsEqual(this.optionSecrets, this.initialOptionSecrets) ||
+      !this.recordsEqual(this.headerSecrets, this.initialHeaderSecrets) ||
+      !!this.newOptionKey() ||
+      !!this.newOptionValue() ||
+      this.newOptionSecret() ||
+      !!this.newHeaderKey() ||
+      !!this.newHeaderValue() ||
+      this.newHeaderSecret()
     );
   }
 
-  providerEntries(): Array<{ key: string; value: SmsProvider }> {
+  private recordsEqual<T extends object>(a: T, b: T): boolean {
+    const aKeys = Object.keys(a) as (keyof T)[];
+    const bKeys = Object.keys(b) as (keyof T)[];
+    if (aKeys.length !== bKeys.length) {
+      return false;
+    }
+    return aKeys.every((key) => a[key] === b[key]);
+  }
+
+  providerEntries(): { key: string; value: SmsProvider }[] {
     const providersObj = this.providers() ?? {};
     return Object.entries(providersObj).map(([key, value]) => ({ key, value }));
   }
 
-  parameterEntries(): Array<{ key: string; value: any }> {
+  parameterEntries(): { key: string; value: SmsProviderParameter }[] {
     const paramsObj = this.selectedProvider()?.parameters ?? {};
     return Object.entries(paramsObj).map(([key, value]) => ({ key, value }));
   }
@@ -238,7 +288,7 @@ export class NewSmsGatewayComponent implements OnDestroy {
 
     if (provider && provider.parameters) {
       Object.entries(provider.parameters).forEach(([name, param]) => {
-        if ((param as any).required) {
+        if (param.required) {
           newRequired.add(name);
         }
 
@@ -267,6 +317,27 @@ export class NewSmsGatewayComponent implements OnDestroy {
       this.customOptions = nextCustomOptions;
 
       this.customHeaders = { ...(this.data.headers || {}) };
+
+      // Restore the secret checkbox state from the API response
+      const nextOptionSecrets: Record<string, boolean> = {};
+      for (const key of this.data.secret_options || []) {
+        if (!paramKeys.includes(key)) {
+          nextOptionSecrets[key] = true;
+        }
+      }
+      this.optionSecrets = nextOptionSecrets;
+
+      const nextHeaderSecrets: Record<string, boolean> = {};
+      for (const key of this.data.secret_headers || []) {
+        nextHeaderSecrets[key] = true;
+      }
+      this.headerSecrets = nextHeaderSecrets;
+
+      this.initialParametersModel.set({ ...newParams });
+      this.initialCustomOptions = { ...nextCustomOptions };
+      this.initialCustomHeaders = { ...this.customHeaders };
+      this.initialOptionSecrets = { ...nextOptionSecrets };
+      this.initialHeaderSecrets = { ...nextHeaderSecrets };
     }
   }
 
@@ -278,29 +349,74 @@ export class NewSmsGatewayComponent implements OnDestroy {
     if (!this.smsForm().valid() || !this.parametersValid()) {
       return false;
     }
+
+    // Persist draft footer rows on Save as well, so users do not have to click Add first.
+    if (this.newOptionKey()) {
+      const key = this.newOptionKey();
+      this.customOptions = {
+        ...this.customOptions,
+        [key]: this.newOptionValue()
+      };
+      if (this.newOptionSecret()) {
+        this.optionSecrets = { ...this.optionSecrets, [key]: true };
+      } else {
+        const nextOptionSecrets = { ...this.optionSecrets };
+        delete nextOptionSecrets[key];
+        this.optionSecrets = nextOptionSecrets;
+      }
+      this.newOptionKey.set("");
+      this.newOptionValue.set("");
+      this.newOptionSecret.set(false);
+    }
+
+    if (this.newHeaderKey()) {
+      const key = this.newHeaderKey();
+      this.customHeaders = {
+        ...this.customHeaders,
+        [key]: this.newHeaderValue()
+      };
+      if (this.newHeaderSecret()) {
+        this.headerSecrets = { ...this.headerSecrets, [key]: true };
+      } else {
+        const nextHeaderSecrets = { ...this.headerSecrets };
+        delete nextHeaderSecrets[key];
+        this.headerSecrets = nextHeaderSecrets;
+      }
+      this.newHeaderKey.set("");
+      this.newHeaderValue.set("");
+      this.newHeaderSecret.set(false);
+    }
+
     const formValue = this.smsModel();
     const paramValue = this.parametersModel();
 
-    const payload: any = {
+    const payload: SmsGatewayPayload = {
       name: formValue.name,
       description: formValue.description,
       module: formValue.providermodule
     };
 
     if (this.isEditMode()) {
-      payload.id = this.data?.id;
+      payload["id"] = this.data?.id;
     }
 
     Object.entries(paramValue).forEach(([key, value]) => {
       payload[`option.${key}`] = value;
+      // If the provider declares this parameter as secret, send the flag
+      const paramDef = this.selectedProvider()?.parameters?.[key];
+      if (paramDef?.secret) {
+        payload[`secret.option.${key}`] = 1;
+      }
     });
 
     Object.entries(this.customOptions).forEach(([key, value]) => {
       payload[`option.${key}`] = value;
+      payload[`secret.option.${key}`] = this.optionSecrets[key] ? 1 : 0;
     });
 
     Object.entries(this.customHeaders).forEach(([key, value]) => {
       payload[`header.${key}`] = value;
+      payload[`secret.header.${key}`] = this.headerSecrets[key] ? 1 : 0;
     });
 
     try {
@@ -308,7 +424,7 @@ export class NewSmsGatewayComponent implements OnDestroy {
       this.pendingChangesService.clearAllRegistrations();
       this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SMS);
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }
@@ -348,15 +464,23 @@ export class NewSmsGatewayComponent implements OnDestroy {
         ...this.customOptions,
         [this.newOptionKey()]: this.newOptionValue()
       };
+      if (this.newOptionSecret()) {
+        this.optionSecrets = { ...this.optionSecrets, [this.newOptionKey()]: true };
+      }
 
       this.newOptionKey.set("");
       this.newOptionValue.set("");
+      this.newOptionSecret.set(false);
     }
   }
 
   deleteOption(key: string): void {
-    const { [key]: _, ...rest } = this.customOptions;
+    const rest = { ...this.customOptions };
+    delete rest[key];
     this.customOptions = rest;
+    const restSecrets = { ...this.optionSecrets };
+    delete restSecrets[key];
+    this.optionSecrets = restSecrets;
   }
 
   addHeader(): void {
@@ -365,15 +489,31 @@ export class NewSmsGatewayComponent implements OnDestroy {
         ...this.customHeaders,
         [this.newHeaderKey()]: this.newHeaderValue()
       };
+      if (this.newHeaderSecret()) {
+        this.headerSecrets = { ...this.headerSecrets, [this.newHeaderKey()]: true };
+      }
 
       this.newHeaderKey.set("");
       this.newHeaderValue.set("");
+      this.newHeaderSecret.set(false);
     }
   }
 
   deleteHeader(key: string): void {
-    const { [key]: _, ...rest } = this.customHeaders;
+    const rest = { ...this.customHeaders };
+    delete rest[key];
     this.customHeaders = rest;
+    const restSecrets = { ...this.headerSecrets };
+    delete restSecrets[key];
+    this.headerSecrets = restSecrets;
+  }
+
+  toggleOptionSecret(key: string): void {
+    this.optionSecrets = { ...this.optionSecrets, [key]: !this.optionSecrets[key] };
+  }
+
+  toggleHeaderSecret(key: string): void {
+    this.headerSecrets = { ...this.headerSecrets, [key]: !this.headerSecrets[key] };
   }
 
   protected readonly input = input;

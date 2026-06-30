@@ -43,7 +43,10 @@ import { MatCell, MatColumnDef, MatTableDataSource, MatTableModule } from "@angu
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ContainerDetailsActionsComponent } from "@components/container/container-details/container-details-actions/container-details-actions.component";
-import { ContainerDetailsInfoComponent } from "@components/container/container-details/container-details-info/container-details-info.component";
+import {
+  ContainerDetailsInfoComponent,
+  ContainerInfoDetail
+} from "@components/container/container-details/container-details-info/container-details-info.component";
 import { ContainerDetailsTokenActionsComponent } from "@components/container/container-details/container-details-token-actions/container-details-token-actions.component";
 import { ContainerDetailsTokenTableComponent } from "@components/container/container-details/container-details-token-table/container-details-token-table.component";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
@@ -72,18 +75,18 @@ import { TokenDetails, TokenService, TokenServiceInterface } from "@services/tok
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 
 export const containerDetailsKeyMap = [
-  { key: "type", label: "Type" },
-  { key: "states", label: "Status" },
-  { key: "description", label: "Description" },
-  { key: "realms", label: "Realms" },
-  { key: "template", label: "Template" }
+  { key: "type", label: $localize`Type` },
+  { key: "states", label: $localize`Status` },
+  { key: "description", label: $localize`Description` },
+  { key: "realms", label: $localize`Realms` },
+  { key: "template", label: $localize`Template` }
 ];
 
 const containerUserDetailsKeyMap = [
-  { key: "user_realm", label: "User Realm" },
-  { key: "user_name", label: "User" },
-  { key: "user_resolver", label: "Resolver" },
-  { key: "user_id", label: "User ID" }
+  { key: "user_realm", label: $localize`User Realm` },
+  { key: "user_name", label: $localize`User` },
+  { key: "user_resolver", label: $localize`Resolver` },
+  { key: "user_id", label: $localize`User ID` }
 ];
 
 interface TokenOption {
@@ -436,7 +439,7 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
 
   saveStates(): boolean {
     if (this.selectedStates().length === 0) {
-      this.notificationService.error("At least one state must be selected.");
+      this.notificationService.error($localize`At least one state must be selected.`);
       return false;
     }
     this.containerService.setStates(this.containerSerial(), this.selectedStates()).subscribe({
@@ -457,7 +460,7 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
 
   saveDescription() {
     const description = this.containerDetailData().find((detail) => detail.keyMap.key === "description")?.value;
-    this.containerService.setContainerDescription(this.containerSerial(), description).subscribe({
+    this.containerService.setContainerDescription(this.containerSerial(), typeof description === "string" ? description : "").subscribe({
       next: () => {
         this.containerDetailResource.reload();
       }
@@ -484,7 +487,7 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
     if (this.isEditingInfo()) {
       const infoElement = this.infoData().find((d) => d.keyMap.key === "info");
       if (infoElement) {
-        this.infoChild?.saveInfo(infoElement);
+        this.infoChild?.saveInfo(infoElement as unknown as ContainerInfoDetail<Record<string, string>>);
       } else {
         this.isEditingInfo.set(false);
       }

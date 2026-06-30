@@ -35,10 +35,10 @@ export interface ToggleActiveDialogData {
     <app-dialog-wrapper
       title="(De)activate Selected Tokens"
       i18n-title
-      (close)="close()"
+      (wrapperClose)="close()"
       [actions]="actions"
       [showCancelButton]="true"
-      (onAction)="onAction($event)">
+      (actionTriggered)="onAction($event)">
       <div class="margin-right-16">
         <p i18n>The following tokens will be toggled:</p>
         <ul>
@@ -63,5 +63,3 @@ export class ToggleActiveDialogComponent extends AbstractDialogComponent<ToggleA
     this.close(value);
   }
 }
-
-

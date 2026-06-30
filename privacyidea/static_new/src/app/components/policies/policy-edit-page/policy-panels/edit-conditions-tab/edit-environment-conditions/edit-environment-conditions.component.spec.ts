@@ -384,11 +384,7 @@ describe("EditEnvironmentConditionsComponent", () => {
 
     it("clears the autocomplete filter so all known clients show again", () => {
       clientsMock.setClients({
-        App: [
-          { ip: "10.0.0.1" },
-          { ip: "10.0.0.2" },
-          { ip: "192.168.1.1" }
-        ]
+        App: [{ ip: "10.0.0.1" }, { ip: "10.0.0.2" }, { ip: "192.168.1.1" }]
       });
       component.clientSignal.set(component.buildClientSelection("10.0.0.1"));
       expect(component.clientSearchTerm()).toBe("");

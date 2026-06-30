@@ -19,17 +19,15 @@
 <div
   appScrollToTop
   class="clients-layout">
+  <h3 i18n>Known Clients</h3>
 
-  <h3>
-    Known Clients
-  </h3>
-
-  <div class="margin-bottom-16">
+  <div
+    class="margin-bottom-16"
+    i18n>
     This is a list of clients that have used the <i>/validate/check</i> endpoint for authentication.
   </div>
 
-  <mat-form-field
-    class="width-100">
+  <mat-form-field class="width-100">
     <mat-label i18n>Filter Clients ...</mat-label>
     <app-clearable-input
       (clearButtonClick)="clearFilter()"
@@ -50,13 +48,14 @@
     [dataSource]="clientDataSource()"
     class="clients-table"
     aria-label="Client Data Table"
+    i18n-aria-label
     mat-table
     matSort>
     @for (column of columnKeysMap; let colIdx = $index; track column) {
       <ng-container [matColumnDef]="column.key">
         <th
           *matHeaderCellDef
-          [ngClass]="{'col-even': colIdx % 2 === 0, 'col-odd': colIdx % 2 !== 0}"
+          [ngClass]="{ 'col-even': colIdx % 2 === 0, 'col-odd': colIdx % 2 !== 0 }"
           attr.aria-label="{{ column.label }} Header"
           mat-header-cell
           mat-sort-header>
@@ -69,12 +68,14 @@
               [ngClass]="colIdx % 2 === 0 ? 'col-even' : 'col-odd'"
               mat-cell>
               <div class="data-table-cell">
-                @if (column.key === 'lastseen') {
-                  <!-- Format lastseen as date/time -->{{ client.lastseen ? (client.lastseen | date:'yyyy-MM-dd HH:mm:ss z':'UTC') : '' }}
+                @if (column.key === "lastseen") {
+                  <!-- Format lastseen as date/time -->{{
+                    client.lastseen ? (client.lastseen | date: "yyyy-MM-dd HH:mm:ss z" : "UTC") : ""
+                  }}
                 } @else {
                   {{ client[column.key] }}
                 }
-                @if (['ip', 'application'].includes(column.key)) {
+                @if (["ip", "application"].includes(column.key)) {
                   <app-copy-button [copyText]="client[column.key]" />
                   @if (authService.actionAllowed("auditlog")) {
                     <button
@@ -82,7 +83,8 @@
                       [routerLink]="[ROUTE_PATHS.AUDIT]"
                       class="ml-4 small-icon-button"
                       mat-icon-button
-                      matTooltip="Show in audit log">
+                      matTooltip="Show in audit log"
+                      i18n-matTooltip>
                       <mat-icon>receipt_long</mat-icon>
                     </button>
                   }
@@ -97,7 +99,7 @@
       *matHeaderRowDef="columnKeys"
       mat-header-row></tr>
     <tr
-      *matRowDef="let row; columns: columnKeys;"
+      *matRowDef="let row; columns: columnKeys"
       mat-row></tr>
 
     <tr

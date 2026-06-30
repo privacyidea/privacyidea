@@ -485,8 +485,9 @@ $button-low-contrast-variant: linear-gradient(
   padding: var(--half-global-padding) var(--global-padding);
   border: 1px solid var(--mat-sys-outline);
   background-color: var(--mat-sys-surface);
-  transition: background-color 0.2s ease-in-out,
-  color 0.2s ease-in-out;
+  transition:
+    background-color 0.2s ease-in-out,
+    color 0.2s ease-in-out;
 }
 
 .mat-mdc-outlined-button .mat-icon {
@@ -498,10 +499,19 @@ $button-low-contrast-variant: linear-gradient(
   border-radius: var(--border-radius);
   border-style: solid;
   border-width: 1px;
-  transition: background-color 0.2s ease-in-out,
-  color 0.2s ease-in-out;
+  transition:
+    background-color 0.2s ease-in-out,
+    color 0.2s ease-in-out;
   justify-content: center;
   overflow: hidden;
+  // Keep action-button labels on a single line. A translation that is too long
+  // for its width tier clips (overflow: hidden) instead of wrapping to two rows,
+  // which would break the fixed 40px height and the row rhythm. The fix for a
+  // clipped label is to bump that row to the next width tier, not to wrap.
+  // white-space stops the text node breaking; flex-wrap stops the icon + label
+  // flex items from wrapping onto separate rows.
+  white-space: nowrap;
+  flex-wrap: nowrap;
 
   mat-icon.mat-icon.notranslate.material-icons {
     font-size: 20px;
@@ -569,9 +579,9 @@ $button-low-contrast-variant: linear-gradient(
 
 .action-button-primary {
   @include action-button(
-      var(--mat-sys-primary),
-      var(--mat-sys-surface-container-lowest),
-      var(--mat-sys-primary-base-active),
+    var(--mat-sys-primary),
+    var(--mat-sys-surface-container-lowest),
+    var(--mat-sys-primary-base-active),
     $border: false,
     $primary: true
   );
@@ -587,18 +597,18 @@ $button-low-contrast-variant: linear-gradient(
 
 .action-button-secondary {
   @include action-button(
-      var(--mat-sys-surface-container-lowest),
-      var(--mat-sys-primary),
-      var(--sky-blue),
+    var(--mat-sys-surface-container-lowest),
+    var(--mat-sys-primary),
+    var(--sky-blue),
     $ripple-mdc: var(--sky-bg)
   );
 }
 
 .action-button-delete-primary {
   @include action-button(
-      var(--red-base),
-      var(--mat-sys-surface-container-lowest),
-      var(--red-light),
+    var(--red-base),
+    var(--mat-sys-surface-container-lowest),
+    var(--red-light),
     $ripple: var(--red-light-active),
     $ripple-mdc: var(--rose-bg),
     $layer: var(--rose-bg),
@@ -609,9 +619,9 @@ $button-low-contrast-variant: linear-gradient(
 
 .action-button-delete-secondary {
   @include action-button(
-      var(--mat-sys-surface-container-lowest),
-      var(--red-base),
-      var(--rose-bg),
+    var(--mat-sys-surface-container-lowest),
+    var(--red-base),
+    var(--rose-bg),
     $ripple: var(--rose-ripple),
     $ripple-mdc: var(--rose-bg),
     $layer: var(--rose-bg)
@@ -765,4 +775,9 @@ mat-icon {
 .button-width-l {
   width: 240px;
   min-width: 240px;
+}
+
+.button-width-xl {
+  width: 340px;
+  min-width: 340px;
 }

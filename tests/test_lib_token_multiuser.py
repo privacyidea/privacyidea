@@ -230,7 +230,7 @@ class TestMultipleUserToken(MyTestCase):
                     'privacyidea.lib.user', 'INFO',
                     'User <cornelius.resolver1@realm1> failed to authenticate.'),
                 (
-                    'privacyidea.lib.token',
+                    'privacyidea.lib.token.auth',
                     'INFO',
                     'Skipping authentication try for token s1 because policy '
                     'force_challenge_response is set.'),

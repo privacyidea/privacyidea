@@ -19,7 +19,6 @@
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { Router, provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
@@ -28,45 +27,48 @@ import { CaConnectorService } from "@services/ca-connector/ca-connector.service"
 import { DialogService } from "@services/dialog/dialog.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
-import { MockAuthService, MockDialogService, MockTableUtilsService } from "@testing/mock-services";
+import {
+  MockAuthService,
+  MockCaConnectorService,
+  MockDialogService,
+  MockTableUtilsService
+} from "@testing/mock-services";
 import { Subject } from "rxjs";
 import { CaConnectorsComponent } from "./ca-connectors.component";
 
 describe("CaConnectorsComponent", () => {
   let component: CaConnectorsComponent;
   let fixture: ComponentFixture<CaConnectorsComponent>;
-  let caConnectorServiceMock: any;
+  let caConnectorServiceMock: MockCaConnectorService;
   let dialogServiceMock: MockDialogService;
   let confirmClosed: Subject<boolean>;
   let router: Router;
 
   beforeEach(async () => {
-    caConnectorServiceMock = {
-      caConnectors: signal([
-        { connectorname: "conn1", type: "local" },
-        { connectorname: "conn2", type: "microsoft" }
-      ]),
-      deleteCaConnector: jest.fn()
-    };
-
     await TestBed.configureTestingModule({
       imports: [CaConnectorsComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
-        { provide: CaConnectorService, useValue: caConnectorServiceMock },
+        { provide: CaConnectorService, useClass: MockCaConnectorService },
         { provide: AuthService, useClass: MockAuthService },
         { provide: DialogService, useClass: MockDialogService },
         { provide: TableUtilsService, useClass: MockTableUtilsService }
       ]
     }).compileComponents();
 
+    caConnectorServiceMock = TestBed.inject(CaConnectorService) as unknown as MockCaConnectorService;
+    caConnectorServiceMock.caConnectors.set([
+      { connectorname: "conn1", type: "local", data: {} },
+      { connectorname: "conn2", type: "microsoft", data: {} }
+    ]);
+
     fixture = TestBed.createComponent(CaConnectorsComponent);
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
     router = TestBed.inject(Router);
     confirmClosed = new Subject();
-    let dialogRefMock = new MockMatDialogRef();
+    const dialogRefMock = new MockMatDialogRef();
     dialogRefMock.afterClosed.mockReturnValue(confirmClosed);
     dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
     component = fixture.componentInstance;

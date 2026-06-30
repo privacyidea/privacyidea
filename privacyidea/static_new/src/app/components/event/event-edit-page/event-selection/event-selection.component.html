@@ -16,62 +16,85 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<form>
-  <mat-form-field
-    class="input-width-xl height-unset"
-    floatLabel="always">
-    <mat-label>Events</mat-label>
-    <mat-chip-grid
-      #chipGrid
-      [appErrorState]="showError()"
-      aria-label="Event selection">
-      @for (event of selectedEvents(); track $index) {
-        <mat-chip-row (removed)="removeEvent(event)">
-          {{ event }}
-          <button
-            matChipRemove
-            [attr.aria-label]="'remove ' + event">
-            <mat-icon>cancel</mat-icon>
-          </button>
-        </mat-chip-row>
-      }
-    </mat-chip-grid>
-    <input
-      matInput
-      placeholder="New Event..."
-      [value]="searchTerm()"
-      (input)="onSearchInputChanges($event)"
-      (blur)="markTouched()"
-      [matChipInputFor]="chipGrid"
-      [matAutocomplete]="auto"
-      [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
-      (matChipInputTokenEnd)="addEvent($event.value)"
-      #autocompleteTrigger="matAutocompleteTrigger"
-      matAutocompleteTrigger
-      (focus)="autocompleteTrigger.openPanel()" />
-    @if (searchTerm() !== "") {
-      <app-clear-button
-        class="suffix-bottom"
-        matSuffix
-        [toolTipText]="toolTipClearSearch"
-        (clearButtonClick)="clearSearchTerm()"></app-clear-button>
-    }
-    <mat-autocomplete
-      #auto="matAutocomplete"
-      (optionSelected)="selected($event)">
-      @for (event of remainingEvents(); track event) {
-        <mat-option [value]="event">
-          {{ event }}
-        </mat-option>
-      }
-    </mat-autocomplete>
-    <mat-hint i18n>
-      Events that should trigger this event handler.
-    </mat-hint>
-    @if (showError()) {
-      <mat-error i18n>
-        At least one event must be <strong>selected</strong>.
-      </mat-error>
-    }
-  </mat-form-field>
-</form>
+<div class="event-selection-container">
+  <div class="selected-events-container">
+    <mat-expansion-panel [expanded]="true">
+      <mat-expansion-panel-header>
+        <mat-panel-title i18n>Selected Events</mat-panel-title>
+      </mat-expansion-panel-header>
+
+      <div class="panel-content">
+        @if (selectedEvents().length > 0) {
+          <mat-chip-set
+            aria-label="Selected events"
+            i18n-aria-label>
+            @for (event of selectedEvents(); track $index) {
+              <mat-chip (removed)="removeEvent(event)">
+                {{ event }}
+                <button
+                  matChipRemove
+                  [attr.aria-label]="'remove ' + event">
+                  <mat-icon>cancel</mat-icon>
+                </button>
+              </mat-chip>
+            }
+          </mat-chip-set>
+        } @else {
+          <p
+            class="selected-events-empty"
+            i18n>
+            At least one event must be selected.
+          </p>
+        }
+      </div>
+    </mat-expansion-panel>
+  </div>
+
+  <div class="add-events-container">
+    <mat-expansion-panel [expanded]="true">
+      <mat-expansion-panel-header>
+        <mat-panel-title i18n>Add Events</mat-panel-title>
+      </mat-expansion-panel-header>
+
+      <div class="panel-content">
+        <app-clearable-input
+          (clearButtonClick)="searchTerm.set('')"
+          [showClearButton]="searchTerm() !== ''">
+          <input
+            clearableInput
+            type="text"
+            placeholder="Search events..."
+            i18n-placeholder
+            [ngModel]="searchTerm()"
+            (ngModelChange)="searchTerm.set($event)"
+            class="search-input" />
+        </app-clearable-input>
+
+        @if (remainingEvents().length > 0) {
+          <div class="event-items">
+            @for (event of remainingEvents(); track event) {
+              <div
+                class="event-item"
+                tabindex="0"
+                role="button"
+                (click)="addEvent(event)"
+                (keydown.enter)="addEvent(event)"
+                (keydown.space)="$event.preventDefault(); addEvent(event)">
+                <span class="event-name">{{ event }}</span>
+                <button
+                  mat-icon-button
+                  tabindex="-1"
+                  aria-hidden="true"
+                  (click)="$event.stopPropagation(); addEvent(event)">
+                  <mat-icon>add</mat-icon>
+                </button>
+              </div>
+            }
+          </div>
+        } @else {
+          <p i18n>No events available.</p>
+        }
+      </div>
+    </mat-expansion-panel>
+  </div>
+</div>

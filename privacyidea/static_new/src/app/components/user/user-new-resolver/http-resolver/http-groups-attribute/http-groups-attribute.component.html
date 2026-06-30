@@ -20,7 +20,7 @@
 <div class="flex-column margin-top-16">
   <div class="flex-row gap-16 margin-bottom-32">
     <div class="flex just-center ali-center toggle-width">
-      Enable:
+      <span i18n>Enable:</span>
       <mat-slide-toggle
         class="margin-left-8"
         [checked]="model().active"
@@ -39,7 +39,7 @@
     </mat-form-field>
 
     <mat-form-field class="input-width-l">
-      @if (resolverType === "entraidresolver") {
+      @if (resolverType() === "entraidresolver") {
         <mat-label i18n>Group Identifier</mat-label>
       } @else {
         <mat-label i18n>User Store Attribute</mat-label>
@@ -49,7 +49,7 @@
         (input)="model.update(m => ({ ...m, user_groups_attribute: $any($event.target).value }))"
         [disabled]="!model().active"
         matInput />
-      @if (resolverType === "entraidresolver") {
+      @if (resolverType() === "entraidresolver") {
         <mat-hint i18n>Group identifier from EntraID mapped to the users group list.</mat-hint>
       } @else {
         <mat-hint i18n>Key of the group's name in the user store response.</mat-hint>
@@ -57,7 +57,7 @@
     </mat-form-field>
   </div>
 
-  @if (resolverType !== "entraidresolver") {
+  @if (resolverType() !== "entraidresolver") {
     <div class="flex-row gap-16 margin-bottom-16">
       <mat-form-field class="input-width-s">
         <mat-label i18n>Method</mat-label>
@@ -84,7 +84,7 @@
         <mat-hint>
           <span i18n>Endpoint to receive the groups of a specific user. Possible tags:</span>
           <code>&#123;userid&#125;</code>
-          @if (resolverType === "keycloakresolver") {
+          @if (resolverType() === "keycloakresolver") {
             <code>&#123;realm&#125;</code>
           }
         </mat-hint>
@@ -93,7 +93,7 @@
   }
 </div>
 
-@if (resolverType === "entraidresolver") {
+@if (resolverType() === "entraidresolver") {
   <div
     class="hint margin-top-16 margin-bottom-16"
     i18n>

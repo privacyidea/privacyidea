@@ -17,8 +17,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatDialogRef } from "@angular/material/dialog";
 import { MatSnackBarModule } from "@angular/material/snack-bar";
 import { By } from "@angular/platform-browser";
+import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { AuthService } from "@services/auth/auth.service";
 import { DialogService } from "@services/dialog/dialog.service";
@@ -26,7 +28,7 @@ import { NotificationService } from "@services/notification/notification.service
 import { SubscriptionService } from "@services/subscription/subscription.service";
 import { MockDialogService, MockNotificationService, MockPiResponse } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
-import { MockSubscriptionService } from "@testing/mock-services/mock-subscription-serivce";
+import { MockSubscriptionService } from "@testing/mock-services/mock-subscription-service";
 import { of } from "rxjs";
 import { SubscriptionComponent } from "./subscription.component";
 
@@ -155,7 +157,7 @@ describe("SubscriptionComponent", () => {
     subscriptionService.deleteSubscription.mockReturnValue(of(MockPiResponse.fromValue(true)));
     dialogService.openDialog.mockReturnValue({
       afterClosed: () => of(true)
-    } as any);
+    } as unknown as MatDialogRef<AbstractDialogComponent<unknown, boolean>, boolean>);
 
     component.deleteSubscription("app1");
 
@@ -177,7 +179,7 @@ describe("SubscriptionComponent", () => {
     fixture.detectChanges();
     dialogService.openDialog.mockReturnValue({
       afterClosed: () => of(false)
-    } as any);
+    } as unknown as MatDialogRef<AbstractDialogComponent<unknown, boolean>, boolean>);
 
     component.deleteSubscription("app1");
 

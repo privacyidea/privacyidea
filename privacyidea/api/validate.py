@@ -113,7 +113,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            webauthntoken_request, check_application_tokentype,
                                            increase_failcounter_on_challenge, get_first_policy_value, fido2_enroll,
                                            disabled_token_types, load_challenge_text)
-from privacyidea.api.lib.utils import get_all_params, get_optional_one_of, get_optional
+from privacyidea.api.lib.utils import get_all_params, get_optional_one_of, get_optional, INTERNAL_OPTION_KEYS
 from privacyidea.api.recover import recover_blueprint
 from privacyidea.api.register import register_blueprint
 from privacyidea.lib.applications.offline import MachineApplication
@@ -128,6 +128,7 @@ from privacyidea.lib.event import event
 from privacyidea.lib.machine import list_machine_tokens, get_auth_items, attach_token
 from privacyidea.lib.policy import Match
 from privacyidea.lib.policy import PolicyClass, SCOPE
+from privacyidea.lib.policydecorators import reset_all_user_tokens_active, reset_token_failcounters
 from privacyidea.lib.subscriptions import CheckSubscription
 from privacyidea.lib.token import (check_user_pass, check_serial_pass,
                                    check_otp, create_challenges_from_tokens, get_one_token)
@@ -481,7 +482,8 @@ def check():
         "response_params": {},
         "serial_list": [],
         "is_container_challenge": False,
-        "options": request.all_data.copy()
+        # Build the token options from the request, but strip the internal keys
+        "options": {k: v for k, v in request.all_data.items() if k not in INTERNAL_OPTION_KEYS}
     }
     # Add standard context to options and the user object again, because options is passed down to every function
     context["options"].update({"g": g, "clientip": g.client_ip})
@@ -622,6 +624,13 @@ def _handle_fido2_auth(context: dict, credential_id: str):
             "serial": token.get_serial()
         })
         context["serial_list"].append(token.get_serial())
+
+        # FIDO2/passkey authentication does not pass through check_token_list,
+        # so the reset_all_user_tokens policy is applied here explicitly. This
+        # must only happen for actual authentication, not for enrollment via
+        # multichallenge (attestation_object present), which also ends up here.
+        if not attestation_object and reset_all_user_tokens_active(g, user):
+            reset_token_failcounters(get_tokens(user=user))
     else:
         context["details"]["message"] = _("Authentication failed.")
 
@@ -875,9 +884,8 @@ def trigger_challenge():
     token_type = get_optional(request.all_data, "type")
     details = {"messages": [], "transaction_ids": []}
 
-    # Add all params to the options
-    options: dict = {}
-    options.update(request.all_data)
+    # Add request params to the options, minus the internal token-engine state keys
+    options: dict = {k: v for k, v in request.all_data.items() if k not in INTERNAL_OPTION_KEYS}
     options.update({"g": g, "clientip": g.client_ip, "user": user})
 
     tokens = get_tokens(serial=serial, user=user, active=True, revoked=False, locked=False, tokentype=token_type)

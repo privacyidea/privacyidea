@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Signal, signal, WritableSignal } from "@angular/core";
+import { Signal, signal } from "@angular/core";
 import {
   PolicyActionDetail,
   PolicyActionGroups,
@@ -25,6 +25,7 @@ import {
   ScopedPolicyActions
 } from "@services/policies/policies.service";
 import { MockHttpResourceRef, MockPiResponse } from "@testing/mock-services";
+import { of } from "rxjs";
 
 export class MockPolicyService implements PolicyServiceInterface {
   getEmptyPolicy = jest.fn().mockReturnValue({
@@ -49,21 +50,22 @@ export class MockPolicyService implements PolicyServiceInterface {
   });
   isEditMode: Signal<boolean> = signal(false);
   policyActions: Signal<ScopedPolicyActions> = signal({});
-  allPolicyActionsFlat: Signal<{ [actionName: string]: PolicyActionDetail }> = signal({});
+  allPolicyActionsFlat: Signal<Record<string, PolicyActionDetail>> = signal({});
   allPolicyScopes: Signal<string[]> = signal([]);
   policyActionsByGroup: Signal<PolicyActionGroups> = signal({});
   filteredPolicyActionGroups = jest.fn().mockReturnValue({});
   getActionDetail = jest.fn().mockReturnValue(null);
   getGroupOfAction = jest.fn().mockReturnValue(null);
   getScopeOfAction = jest.fn().mockReturnValue(null);
-  allPolicies: WritableSignal<PolicyDetail[]> = signal([]);
+  allPolicies = signal<PolicyDetail[]>([]);
   canSavePolicy = jest.fn().mockReturnValue(true);
   getDetailsOfAction = jest.fn().mockReturnValue(null);
   copyPolicy = jest.fn().mockResolvedValue(MockPiResponse.fromValue({}));
   createPolicy = jest.fn().mockResolvedValue(MockPiResponse.fromValue({}));
   deletePolicy = jest.fn().mockResolvedValue(MockPiResponse.fromValue(1));
-  enablePolicy = jest.fn().mockResolvedValue(MockPiResponse.fromValue({}));
-  disablePolicy = jest.fn().mockResolvedValue(MockPiResponse.fromValue({}));
+  enablePolicy = jest.fn().mockResolvedValue(MockPiResponse.fromValue(1));
+  disablePolicy = jest.fn().mockResolvedValue(MockPiResponse.fromValue(1));
+  getPolicies = jest.fn(() => of(MockPiResponse.fromValue<PolicyDetail[]>([])));
   isScopeChangeable = jest.fn().mockReturnValue(true);
   getActionNamesOf = jest.fn().mockReturnValue([]);
   getActionsOf = jest.fn().mockReturnValue({});

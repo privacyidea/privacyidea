@@ -17,11 +17,11 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <app-dialog-wrapper
-  [title]="'Assign Selected Token to User'"
+  title="Assign Selected Token to User" i18n-title
   [showCancelButton]="true"
   [actions]="actions()"
-  (onAction)="onAction($event)"
-  (close)="onCancel()">
+  (actionTriggered)="onAction($event)"
+  (wrapperClose)="onCancel()">
   @if (selectionContainsAssignedToken()) {
     <p
       class="inline-warning"
@@ -32,8 +32,7 @@
     </p>
   }
   <div class="selected-user-attach-container">
-    <mat-form-field
-      class="input-width-l">
+    <mat-form-field class="input-width-l">
       <mat-label i18n>Select Realm of User</mat-label>
       <mat-select
         (selectionChange)="onRealmChange($event.value)"
@@ -47,8 +46,7 @@
         <mat-error i18n>User Realm is <strong>required</strong></mat-error>
       }
     </mat-form-field>
-    <mat-form-field
-      class="input-width-l">
+    <mat-form-field class="input-width-l">
       <mat-label i18n>Enter User</mat-label>
       <app-clearable-input
         (clearButtonClick)="onUserFilterInput('')"
@@ -93,7 +91,7 @@
           matInput />
         <button
           (click)="togglePinVisibility()"
-          [attr.aria-label]="'Show PIN'"
+          aria-label="Show PIN" i18n-aria-label
           [attr.aria-pressed]="!hidePin()"
           mat-icon-button
           matSuffix
@@ -113,7 +111,7 @@
           matInput />
         <button
           (click)="togglePinVisibility()"
-          [attr.aria-label]="'Show PIN Repeat'"
+          aria-label="Show PIN Repeat" i18n-aria-label
           [attr.aria-pressed]="!hidePin()"
           mat-icon-button
           matSuffix

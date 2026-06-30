@@ -63,6 +63,8 @@
           <div class="name-actions-container">
             <a
               (click)="onEditResolver(element)"
+              (keydown.enter)="onEditResolver(element)"
+              role="button"
               tabindex="0">
               {{ element.resolvername }}
             </a>
@@ -71,8 +73,10 @@
                 <button
                   (click)="onEditResolver(element)"
                   aria-label="Edit resolver"
+                  i18n-aria-label
                   mat-icon-button
                   matTooltip="Edit resolver"
+                  i18n-matTooltip
                   type="button">
                   <mat-icon>edit</mat-icon>
                 </button>
@@ -81,9 +85,11 @@
                 <button
                   (click)="onDeleteResolver(element)"
                   aria-label="Delete resolver"
+                  i18n-aria-label
                   color="warn"
                   mat-icon-button
                   matTooltip="Delete resolver"
+                  i18n-matTooltip
                   type="button">
                   <mat-icon>delete</mat-icon>
                 </button>
@@ -120,7 +126,9 @@
         mat-no-data-row>
         <td
           [attr.colspan]="columnKeys.length"
-          aria-label="No Data Cell">
+          aria-label="No Data Cell"
+          i18n-aria-label
+          i18n>
           No data matching the filter.
         </td>
       </tr>

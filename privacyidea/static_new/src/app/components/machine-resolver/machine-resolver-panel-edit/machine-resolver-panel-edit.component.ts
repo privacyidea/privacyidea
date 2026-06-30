@@ -152,10 +152,10 @@ export class MachineResolverPanelEditComponent {
             .openDialog({
               component: SimpleConfirmationDialogComponent,
               data: {
-                title: "Save machineResolver despite test failure?",
+                title: $localize`Save machine resolver despite test failure?`,
                 items: [],
                 itemType: "machineResolver",
-                confirmAction: { label: "Save", value: true, type: "confirm" }
+                confirmAction: { label: $localize`Save`, value: true, type: "confirm" }
               }
             })
             .afterClosed()
@@ -167,7 +167,7 @@ export class MachineResolverPanelEditComponent {
     }
     try {
       await this.machineResolverService.postMachineResolver(current);
-    } catch (error) {
+    } catch {
       return false;
     }
     this.isEditMode.set(false);
@@ -179,10 +179,10 @@ export class MachineResolverPanelEditComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: "Delete machine resolver",
-          items: [this.currentMachineResolver().resolvername || "Unnamed Machine Resolver"],
+          title: $localize`Delete machine resolver`,
+          items: [this.currentMachineResolver().resolvername || $localize`Unnamed Machine Resolver`],
           itemType: "machine resolver",
-          confirmAction: { label: "Delete", value: true, type: "destruct" }
+          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -191,7 +191,7 @@ export class MachineResolverPanelEditComponent {
           if (result) {
             try {
               await this.machineResolverService.deleteMachineResolver(this.currentMachineResolver().resolvername);
-            } catch (error) {
+            } catch {
               return;
             }
           }

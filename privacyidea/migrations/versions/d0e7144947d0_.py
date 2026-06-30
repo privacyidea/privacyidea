@@ -28,24 +28,49 @@ def upgrade():
         raise
 
     try:
+        bind = op.get_bind()
+        insp = sa.inspect(bind.engine)
+        # Look up the actual unique-constraint name covering (resolver_id, realm_id).
+        # On a canonical privacyIDEA install this is 'rrix_2', but a database
+        # that was imported cross-dialect (e.g. pgloader from postgres into
+        # MariaDB) may carry the constraint under an auto-generated name.
+        target_cols = {'resolver_id', 'realm_id'}
+        uq_name = next(
+            (uq['name'] for uq in insp.get_unique_constraints('resolverrealm')
+             if set(uq['column_names']) == target_cols and uq['name']),
+            'rrix_2',
+        )
         # unfortunately, MariaDB does not support removing a constraint with
         # foreign keys, so we have to remove the foreign keys before.
         if migration_context.dialect.name in ['mysql', 'mariadb']:
-            bind = op.get_bind()
-            insp = sa.inspect(bind.engine)
             fks = insp.get_foreign_keys('resolverrealm')
             for ref_table in ['resolver', 'realm']:
                 fk_name = next((fk['name'] for fk in fks if fk['referred_table'] == ref_table), None)
                 if fk_name:
                     op.drop_constraint(fk_name, 'resolverrealm', type_='foreignkey')
+        # Oracle creates a backing index for the unique constraint that shares
+        # the constraint's name, and drops it automatically when the constraint
+        # is dropped. Only an index whose name diverges from the constraint
+        # (e.g. an independent index adopted via `USING INDEX <other_name>`, or
+        # one left behind by a cross-dialect import) survives the constraint
+        # drop and must be removed explicitly — dropping the auto-created index
+        # would fail with ORA-01418 because it is already gone.
+        oracle_idx_name = None
+        if migration_context.dialect.name == 'oracle':
+            found_idx = next(
+                (idx['name'] for idx in insp.get_indexes('resolverrealm')
+                 if set(idx['column_names']) == target_cols and idx['name']),
+                None,
+            )
+            if found_idx and found_idx != uq_name:
+                oracle_idx_name = found_idx
         # drop the unique constraint
         # for SQLAlchemy we need a batch operation
         with op.batch_alter_table('resolverrealm') as batch_op:
-            batch_op.drop_constraint('rrix_2', type_='unique')
-            # Oracle creates an additional index with the same name as the unique constraint.
-            #  These indices have the same name and are not deleted automatically.
-            if migration_context.dialect.name == 'oracle':
-                batch_op.drop_index("rrix_2")
+            batch_op.drop_constraint(uq_name, type_='unique')
+            # The backing index is not auto-dropped on Oracle.
+            if oracle_idx_name:
+                batch_op.drop_index(oracle_idx_name)
 
             if migration_context.dialect.name in ['mysql', 'mariadb']:
                 # we have to re-create the foreign key constraints
@@ -67,20 +92,44 @@ def upgrade():
 def downgrade():
     migration_context = op.get_context()
     try:
+        bind = op.get_bind()
+        insp = sa.inspect(bind.engine)
+        # Look up the actual unique-constraint name covering the three-column
+        # tuple the upgrade re-created. Tolerates cross-imported databases
+        # where the constraint may live under a non-canonical name.
+        target_cols = {'resolver_id', 'realm_id', 'node_uuid'}
+        uq_name = next(
+            (uq['name'] for uq in insp.get_unique_constraints('resolverrealm')
+             if set(uq['column_names']) == target_cols and uq['name']),
+            'rrix_2',
+        )
         # we need to drop the foreign key constraints first on MySQL/MariaDB
         if migration_context.dialect.name in ['mysql', 'mariadb']:
-            bind = op.get_bind()
-            insp = sa.inspect(bind.engine)
             fks = insp.get_foreign_keys('resolverrealm')
             for ref_table in ['resolver', 'realm']:
                 fk_name = next((fk['name'] for fk in fks if fk['referred_table'] == ref_table), None)
                 if fk_name:
                     op.drop_constraint(fk_name, 'resolverrealm', type_='foreignkey')
+        # Resolve the Oracle backing index by column set (see upgrade() for why).
+        # Only a divergently-named, independent index survives the constraint
+        # drop and must be removed explicitly; the auto-created same-name index
+        # is dropped with the constraint.
+        oracle_idx_name = None
+        if migration_context.dialect.name == 'oracle':
+            found_idx = next(
+                (idx['name'] for idx in insp.get_indexes('resolverrealm')
+                 if set(idx['column_names']) == target_cols and idx['name']),
+                None,
+            )
+            if found_idx and found_idx != uq_name:
+                oracle_idx_name = found_idx
         # now we can drop the unique constraint
         with op.batch_alter_table('resolverrealm') as batch_op:
-            if migration_context.dialect.name == 'oracle':
-                batch_op.drop_index("rrix_2")
-            batch_op.drop_constraint('rrix_2', type_='unique')
+            batch_op.drop_constraint(uq_name, type_='unique')
+            # The backing index is not auto-dropped on Oracle; drop it after
+            # the constraint, otherwise Oracle rejects with ORA-02429.
+            if oracle_idx_name:
+                batch_op.drop_index(oracle_idx_name)
             if migration_context.dialect.name in ['mysql', 'mariadb']:
                 # we have to re-create the foreign key constraints
                 for ref_table in ['resolver', 'realm']:

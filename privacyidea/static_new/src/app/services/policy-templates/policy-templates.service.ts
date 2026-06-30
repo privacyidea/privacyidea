@@ -67,9 +67,9 @@ const LEGACY_POLICY_TEMPLATE_URL = "/static/policy-templates/";
   providedIn: "root"
 })
 export class PolicyTemplatesService implements PolicyTemplatesServiceInterface {
-  private readonly http: HttpClient = inject(HttpClient);
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  private readonly http = inject(HttpClient);
 
   private readonly _index = signal<PolicyTemplateIndex>(EMPTY_INDEX);
   readonly policyTemplatesIndex: Signal<PolicyTemplateIndex> = this._index.asReadonly();

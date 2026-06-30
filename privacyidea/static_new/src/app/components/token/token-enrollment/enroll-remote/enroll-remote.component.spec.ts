@@ -24,7 +24,7 @@ import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-p
 import { RemoteServer } from "@services/privacyidea-server/privacyidea-server.service";
 import { EnrollRemoteComponent } from "./enroll-remote.component";
 import { PrivacyideaServerService } from "@services/privacyidea-server/privacyidea-server.service";
-import { MockPrivacyideaServerService, MockTokenService} from "@testing/mock-services";
+import { MockPrivacyideaServerService, MockTokenService } from "@testing/mock-services";
 import { TokenService } from "@services/token/token.service";
 
 describe("EnrollRemoteComponent", () => {
@@ -33,18 +33,20 @@ describe("EnrollRemoteComponent", () => {
 
   const basicOptions: TokenEnrollmentData = {
     type: "remote"
-  } as any;
+  } as TokenEnrollmentData;
 
   const mockRemoteServer: RemoteServer = {
     identifier: "remote-1",
     name: "remote-1",
     url: "https://test.example"
-  } as any;
+  } as Partial<RemoteServer> as RemoteServer;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EnrollRemoteComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting(),
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: PrivacyideaServerService, useClass: MockPrivacyideaServerService },
         { provide: TokenService, useClass: MockTokenService }
       ]

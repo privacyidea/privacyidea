@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { AfterViewInit, Directive, ElementRef, Input, OnDestroy } from "@angular/core";
+import { AfterViewInit, Directive, ElementRef, inject, input, OnDestroy } from "@angular/core";
 
 @Directive({
   selector: "[appScrollAdjuster]",
@@ -26,9 +26,9 @@ import { AfterViewInit, Directive, ElementRef, Input, OnDestroy } from "@angular
 export class ScrollAdjusterDirective implements AfterViewInit, OnDestroy {
   private resizeObserver!: ResizeObserver;
   private mutationObserver!: MutationObserver;
-  @Input() scrollItemSelector: string = ".scroll-item"; // Default selector, can be overridden
+  scrollItemSelector = input(".scroll-item"); // Default selector, can be overridden
 
-  constructor(private el: ElementRef<HTMLElement>) {}
+  private el = inject(ElementRef<HTMLElement>);
 
   ngAfterViewInit(): void {
     const container = this.el.nativeElement;
@@ -65,7 +65,7 @@ export class ScrollAdjusterDirective implements AfterViewInit, OnDestroy {
 
   private adjustPadding(): void {
     const container = this.el.nativeElement;
-    const items = container.querySelectorAll(this.scrollItemSelector);
+    const items = container.querySelectorAll(this.scrollItemSelector());
     if (!items || items.length === 0) {
       container.style.paddingTop = "0px";
       container.style.paddingBottom = "0px";

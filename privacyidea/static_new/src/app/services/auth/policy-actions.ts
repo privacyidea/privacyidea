@@ -259,4 +259,4 @@ export type PolicyAction =
   | "enrollVASCO"
   | "enrollWEBAUTHN"
   | "enrollYUBICO"
-  | "enrollYUBIKEY"
+  | "enrollYUBIKEY";

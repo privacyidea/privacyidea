@@ -42,12 +42,12 @@ export class TokenDetailsMachineComponent {
 
   machineData = computed<TokenApplications>(() => this.machineService.tokenApplications() || []);
 
-  visibleEntries(machine: TokenApplication): Array<[string, string]> {
-    const out: Array<[string, string]> = [];
+  visibleEntries(machine: TokenApplication): [string, string][] {
+    const out: [string, string][] = [];
     for (const [key, value] of Object.entries(machine)) {
       if (TokenDetailsMachineComponent.hiddenKeys.has(key)) continue;
       if (key === "options" && value && typeof value === "object") {
-        for (const [optKey, optValue] of Object.entries(value as Record<string, unknown>)) {
+        for (const [optKey, optValue] of Object.entries(value as Record<string, string>)) {
           if (optValue !== null && optValue !== undefined && optValue !== "") {
             out.push([optKey, String(optValue)]);
           }

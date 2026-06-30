@@ -8,6 +8,11 @@
      max-size="5"
      boundary-links="true" ng-change="pageChanged()"></div>
 
+<div class="alert alert-info" ng-if="usersLoading" role="status">
+    <span class="glyphicon glyphicon-hourglass" aria-hidden="true"></span>
+    <span translate>Loading users...</span>
+</div>
+
 <div class="table-responsive">
     <table class="table table-bordered table-striped table-capitalize-header" id="tableuserlist">
         <thead>

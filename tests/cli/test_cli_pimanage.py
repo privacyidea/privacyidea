@@ -345,6 +345,88 @@ class PIManageBackupTestCase(CliTestCase):
             cp.read(defaults_file)
             self.assertEqual(cp["client"]["password"], "ab%25cd")
 
+    def test_08_backup_create_aborts_on_dump_failure(self):
+        """
+        A failed mysqldump must NOT be packaged as a successful backup. The
+        command must exit non-zero and write no backup file. This guards against
+        the silent-failure mode where a non-zero mysqldump exit (e.g. a MariaDB
+        Galera cluster rejecting LOCK TABLE on sequences) was ignored and a
+        partial/empty dump got tar'd up and reported as "Backup written".
+        """
+        import unittest.mock as mock
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp = pathlib.Path(tmp_dir)
+            backup_dir = tmp / "backup"
+            config_dir = tmp / "config"
+            config_dir.mkdir()
+            enc_file = tmp / "enckey"
+            enc_file.write_bytes(b"x" * 96)
+
+            def failing_run(cmd, **kwargs):
+                # Simulate mysqldump writing a partial dump and then exiting
+                # non-zero, so the cleanup that removes the partial file runs.
+                if "-r" in cmd:
+                    pathlib.Path(cmd[cmd.index("-r") + 1]).write_text("-- partial\n")
+                result = mock.MagicMock()
+                result.returncode = 1
+                return result
+
+            runner = self.app.test_cli_runner()
+            with mock.patch.dict(self.app.config, {
+                    "SQLALCHEMY_DATABASE_URI": "mysql+pymysql://u:p@localhost/pi_test",
+                    "PI_ENCFILE": str(enc_file)}):
+                with mock.patch("privacyidea.cli.pimanage.backup.subprocess.run",
+                                side_effect=failing_run):
+                    result = runner.invoke(pi_manage, [
+                        "backup", "create",
+                        "-d", str(backup_dir),
+                        "-c", str(config_dir)])
+
+            self.assertNotEqual(result.exit_code, 0, result.output)
+            self.assertIn("Database dump failed", result.output, result.output)
+            written = list(backup_dir.glob("*.tgz")) if backup_dir.exists() else []
+            self.assertEqual(written, [],
+                             f"a backup file was written despite the dump failing: {written}")
+            # The partial dump must be cleaned up, not left behind.
+            leftover = list(backup_dir.glob("*.sql")) if backup_dir.exists() else []
+            self.assertEqual(leftover, [],
+                             f"a partial dump file was left behind: {leftover}")
+
+    def test_09_backup_restore_aborts_on_mysql_failure(self):
+        """
+        A failed `mysql` restore must exit non-zero and keep the extracted dump
+        file for inspection/retry instead of deleting it and reporting success.
+        """
+        import unittest.mock as mock
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp = pathlib.Path(tmp_dir)
+            live_pi_cfg = tmp / "pi.cfg"
+            backup_uri = "mysql+pymysql://u:p@localhost/pi_test"
+            # The fake tar extraction (re)creates this dump alongside pi.cfg.
+            sqlfile = tmp / "dbdump-20240101-1200.sql"
+
+            def failing_mysql(cmd, **kwargs):
+                # The only subprocess in the mysql restore path is `mysql`; make
+                # it fail so the abort-and-keep-dump branch runs.
+                result = mock.MagicMock()
+                result.returncode = 1
+                return result
+
+            runner = self.app.test_cli_runner()
+            with mock.patch("privacyidea.cli.pimanage.backup.tarfile.open",
+                            side_effect=self._make_fake_tarfile(live_pi_cfg, backup_uri)):
+                with mock.patch("privacyidea.cli.pimanage.backup.subprocess.run",
+                                side_effect=failing_mysql):
+                    result = runner.invoke(pi_manage, [
+                        "backup", "restore", "ignored.tgz"])
+
+            self.assertNotEqual(result.exit_code, 0, result.output)
+            self.assertIn("Database restore failed", result.output, result.output)
+            # The dump must be kept for inspection, not unlinked.
+            self.assertTrue(sqlfile.exists(),
+                            "dump file was deleted despite the restore failing")
 
 class PIManageRealmTestCase(CliTestCase):
     def test_01_pimanage_realm_help(self):
@@ -373,6 +455,29 @@ class PIManageRealmTestCase(CliTestCase):
         self.assertIn("Realm 'realm1' successfully deleted.", result.output, result)
         result = runner.invoke(pi_manage, ["config", "realm", "delete", "realm2"])
         self.assertIn("Realm 'realm2' successfully deleted.", result.output, result)
+        delete_resolver("resolver1")
+
+    def test_03_pimanage_realm_delete_custom_attributes(self):
+        from privacyidea.lib.user import User
+        from privacyidea.models import CustomUserAttribute
+        save_resolver({"resolver": "resolver1",
+                       "type": "passwdresolver",
+                       "fileName": PWFILE})
+        runner = self.app.test_cli_runner()
+        runner.invoke(pi_manage, ["config", "realm", "create", "realm1", "resolver1"])
+        User("cornelius", "realm1").set_attribute("department", "sales")
+
+        # Declining the confirmation leaves the realm in place.
+        result = runner.invoke(pi_manage, ["config", "realm", "delete", "realm1"], input="n\n")
+        self.assertIn("custom user attributes", result.output, result.output)
+        self.assertIn("department", result.output, result.output)
+        self.assertEqual(1, CustomUserAttribute.query.filter_by(Key="department").count())
+
+        # The flag deletes the realm and its custom attributes together.
+        result = runner.invoke(pi_manage,
+                               ["config", "realm", "delete", "realm1", "--delete-custom-attributes"])
+        self.assertIn("Realm 'realm1' successfully deleted.", result.output, result.output)
+        self.assertEqual(0, CustomUserAttribute.query.filter_by(Key="department").count())
         delete_resolver("resolver1")
 
 

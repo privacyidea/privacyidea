@@ -13,7 +13,7 @@ down_revision = 'dceb6cd3c41e'
 from alembic import op
 import sqlalchemy as sa
 
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy import orm
 from sqlalchemy.schema import Sequence
 from privacyidea.lib.policy import SCOPE

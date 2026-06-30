@@ -71,7 +71,7 @@ export class MachineDetailsComponent implements OnInit, OnDestroy {
   private readonly applicationService: ApplicationServiceInterface = inject(ApplicationService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
-  private readonly route: ActivatedRoute = inject(ActivatedRoute);
+  private readonly route = inject(ActivatedRoute);
   private readonly pendingChangesService = inject(PendingChangesService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
@@ -88,7 +88,7 @@ export class MachineDetailsComponent implements OnInit, OnDestroy {
   applicationOptions: string[] = [];
   applicationsDef = this.applicationService.applications;
   editingIds = new Set<number>();
-  editedOptions: { [id: number]: Record<string, any> } = {};
+  editedOptions: Record<number, Record<string, string>> = {};
 
   constructor() {
     this.routeMachineId = this.route.snapshot.paramMap.get("id");
@@ -180,7 +180,7 @@ export class MachineDetailsComponent implements OnInit, OnDestroy {
           data: {
             title: $localize`Detach Token`,
             items: [token.serial],
-            itemType: "token",
+            itemType: $localize`token`,
             confirmAction: { label: $localize`Detach`, value: true, type: "destruct" }
           }
         })
