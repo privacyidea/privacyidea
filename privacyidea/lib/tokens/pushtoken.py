@@ -64,7 +64,7 @@ from privacyidea.lib.policy import (SCOPE, GROUP, Match,
                                     get_action_values_from_options,
                                     comma_escape_text)
 from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway, create_sms_instance
-from privacyidea.lib.token import get_one_token, init_token
+from privacyidea.lib.token import get_one_token, init_token, create_challenge
 from privacyidea.lib.tokenclass import (TokenClass, AuthenticationMode, ClientMode,
                                         ChallengeSession)
 from privacyidea.lib.tokenrolloutstate import RolloutState
@@ -74,7 +74,7 @@ from privacyidea.lib.tokens.push_types import (PushMode, PushPresenceOptions,
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import create_img, b32encode_and_unicode
 from privacyidea.lib.utils import prepare_result, to_bytes, is_true, create_tag_dict
-from privacyidea.models import Challenge, Token, db
+from privacyidea.models import Token, db
 
 log = logging.getLogger(__name__)
 
@@ -712,6 +712,11 @@ class PushTokenClass(TokenClass):
             if (challenges and challenges[0].is_valid()
                     and challenges[0].get_session() == ChallengeSession.ENROLLMENT):
                 challenges[0].set_otp_status(True)
+                # Explicit save commits the DB-backed Challenge - the DTO
+                # auto-saves itself, but Challenge.set_otp_status is just
+                # an in-memory mutation. Without this commit, a later
+                # exception in the same request would roll back the
+                # answered state for DB-only deployments.
                 challenges[0].save()
         except ResourceNotFoundError:
             raise ResourceNotFoundError("No token with this serial number in the rollout state 'clientwait'.")
@@ -797,6 +802,10 @@ class PushTokenClass(TokenClass):
                                 DEFAULT_MOBILE_TEXT_CODE_TO_PHONE)
                         else:
                             challenge.set_otp_status(True)
+                    # Explicit save commits the DB-backed Challenge - the
+                    # DTO auto-saves itself, but Challenge.set_* mutators
+                    # are in-memory only. Without this commit, the verify
+                    # state would not persist on DB-only deployments.
                     challenge.save()
                 except InvalidSignature as _e:
                     pass
@@ -1215,13 +1224,12 @@ class PushTokenClass(TokenClass):
                 validity = int(get_from_config(lookup_for, validity))
 
                 # Create the challenge in the database
-                db_challenge = Challenge(self.token.serial,
-                                         transaction_id=transactionid,
-                                         challenge=challenge,
-                                         data=data,
-                                         session=options.get("session"),
-                                         validitytime=validity)
-                db_challenge.save()
+                db_challenge = create_challenge(self.token.serial,
+                                               transaction_id=transactionid,
+                                               challenge=challenge,
+                                               data=data,
+                                               session=options.get("session"),
+                                               validitytime=validity)
                 self.challenge_janitor()
                 transactionid = db_challenge.transaction_id
 
@@ -1313,7 +1321,7 @@ class PushTokenClass(TokenClass):
             # Step 2 of code_to_phone: the user submits the display_code shown after
             # the smartphone confirmed. Delegate entirely to check_challenge_response,
             # which enforces transaction_id binding and increments the failcount on
-            # wrong codes — avoiding both the unbounded-challenge-scan and the missing
+            # wrong codes - avoiding both the unbounded-challenge-scan and the missing
             # failcount increment that a hand-rolled loop here would have.
             otp_counter = self.check_challenge_response(passw=passw, options=options)
             if otp_counter >= 0:
