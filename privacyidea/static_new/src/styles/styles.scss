@@ -162,9 +162,7 @@ body {
   border-radius: var(--border-radius);
   box-shadow: var(--elevation-5);
   background-color: var(--table-color);
-  // subtract double global padding to preserve margin around the component
-  // subtract single global padding which is the defined padding above to correctly get the displayed width of the component
-  max-width: calc(100vw - 2 * var(--double-global-padding) - 2 * var(--global-padding));
+  max-width: var(--max-width);
   max-height: var(--max-height);
   overflow: auto;
 }

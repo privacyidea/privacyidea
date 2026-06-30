@@ -625,8 +625,9 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
                     AuthFactory.authError(error.data)
                 });
             },
-            delRealm: function (name, callback) {
+            delRealm: function (name, params, callback, errorCallback) {
                 $http.delete(realmUrl + "/" + name, {
+                    params: params || {},
                     headers: {
                         'PI-Authorization': AuthFactory.getAuthToken(),
                         'Content-Type': 'application/json'
@@ -634,7 +635,11 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
                 }).then(function (response) {
                     callback(response.data)
                 }, function (error) {
-                    AuthFactory.authError(error.data)
+                    if (errorCallback) {
+                        errorCallback(error.data)
+                    } else {
+                        AuthFactory.authError(error.data)
+                    }
                 });
             },
             setDefaultRealm: function (name, callback) {

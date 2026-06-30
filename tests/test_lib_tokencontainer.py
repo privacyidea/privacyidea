@@ -755,6 +755,35 @@ class TokenContainerManagementTestCase(MyTestCase):
         container_data = get_all_containers(ctype="random_type")
         self.assertEqual(0, len(container_data["containers"]))
 
+        # Filter for a list of types — any listed type matches
+        container_data = get_all_containers(ctype_exact=["smartphone", "yubikey"], pagesize=15)
+        self.assertEqual(4, container_data["count"])
+        for container in container_data["containers"]:
+            self.assertIn(container.type, ["smartphone", "yubikey"])
+
+
+        # List filter is case-insensitive per entry
+        container_data = get_all_containers(ctype_exact=["Smartphone", "Generic"], pagesize=15)
+        self.assertEqual(4, container_data["count"])
+        for container in container_data["containers"]:
+            self.assertIn(container.type, ["smartphone", "generic"])
+
+        # Single-entry list behaves like the scalar form
+        container_data = get_all_containers(ctype_exact=["generic"], pagesize=15)
+        self.assertEqual(2, container_data["count"])
+        for container in container_data["containers"]:
+            self.assertEqual("generic", container.type)
+
+        # Unknown entries in the list are simply not matched
+        container_data = get_all_containers(ctype_exact=["generic", "random_type"], pagesize=15)
+        self.assertEqual(2, container_data["count"])
+        for container in container_data["containers"]:
+            self.assertEqual("generic", container.type)
+
+        # Empty list returns no rows (caller explicitly requested an empty subset)
+        container_data = get_all_containers(ctype_exact=[], pagesize=15)
+        self.assertEqual(0, container_data["count"])
+
         # ---- token serial ----
         # Add token
         tokens = []

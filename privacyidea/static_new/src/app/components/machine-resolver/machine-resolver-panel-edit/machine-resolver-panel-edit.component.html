@@ -41,13 +41,14 @@
             @if (isEditMode()) {
               <button
                 mat-icon-button
+                color="primary"
                 [disabled]="!canSaveMachineResolver() || !isEdited()"
                 (click)="$event.stopPropagation(); saveMachineResolver()">
                 <mat-icon>save</mat-icon>
               </button>
               <button
                 mat-icon-button
-                class="action-button"
+                class="red"
                 (click)="$event.stopPropagation(); cancelEditMode()">
                 <mat-icon>cancel</mat-icon>
               </button>
