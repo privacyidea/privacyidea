@@ -49,7 +49,7 @@ from privacyidea.lib.config import (get_token_class, get_from_config,
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.event import EventConfiguration, event
 from privacyidea.lib.policy import PolicyClass, PolicyAction, SCOPE, Match
-from privacyidea.lib.tokens.pushtoken import PUSH_AUTH_EVENT
+from privacyidea.lib.tokens.pushtoken import PUSH_AUTH_EVENT, PUSH_AUTH_TRANSACTION_ID
 from privacyidea.lib.user import get_user_from_param
 from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent
 from ..lib.framework import get_app_config_value
@@ -161,7 +161,8 @@ def token(ttype=None):
     # Log push authentication
     push_auth_event = getattr(g, PUSH_AUTH_EVENT, None)
     if push_auth_event:
-        log_authentication(push_auth_event, user=user, serial=serial)
+        log_authentication(push_auth_event, request, user=user, serial=serial,
+                           transaction_id=getattr(g, PUSH_AUTH_TRANSACTION_ID, None))
 
     if res[0] == "json":
         return jsonify(res[1])

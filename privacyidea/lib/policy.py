@@ -1936,6 +1936,11 @@ def get_static_policy_definitions(scope=None):
                                  "desc": _("Admin is allowed to view the Audit log."),
                                  "group": GROUP.SYSTEM,
                                  'mainmenu': [MAIN_MENU.AUDIT]},
+            PolicyAction.AUTHENTICATION_LOG_READ: {'type': 'bool',
+                                                   "desc": _("Admin is allowed to read the authentication log. If the "
+                                                             "policy is scoped to realms, resolvers or users, the "
+                                                             "admin only sees entries matching that scope."),
+                                                   "group": GROUP.SYSTEM},
             PolicyAction.AUDIT_AGE: {'type': 'str',
                                      "desc": _("The admin will only see audit "
                                                "entries of the last 10d, 3m or 2y."),
@@ -2208,6 +2213,10 @@ def get_static_policy_definitions(scope=None):
                           " using the token serial number."),
                 'mainmenu': [MAIN_MENU.TOKENS],
                 'group': GROUP.TOKEN},
+            PolicyAction.AUTHENTICATION_LOG_READ: {
+                'type': 'bool',
+                'desc': _("The user is allowed to read their own entries from the authentication log."),
+                'group': GROUP.SYSTEM},
             PolicyAction.DISABLE: {'type': 'bool',
                                    'desc': _('The user is allowed to disable his own tokens.'),
                                    'mainmenu': [MAIN_MENU.TOKENS],
