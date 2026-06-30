@@ -36,10 +36,7 @@
         [containerType]="containerType()"></app-container-details-actions>
     </div>
     <div
-      class="details-grid"
-      appMasonry
-      [columns]="3"
-      [columnWidthRem]="28">
+      class="details-grid">
       @if (descriptionRow(); as desc) {
         <app-details-card
           class="details-card--description"

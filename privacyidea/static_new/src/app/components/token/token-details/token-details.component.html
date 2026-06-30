@@ -149,10 +149,7 @@
   </div>
 
   <div
-    class="details-grid margin-bottom-16"
-    appMasonry
-    [columns]="3"
-    [columnWidthRem]="28">
+    class="details-grid margin-bottom-16">
     <app-token-details-status
       [tokenDetails]="tokenDetails()"
       [isAnyEditingOrRevoked]="isAnyEditingOrRevoked()" />
@@ -164,7 +161,7 @@
     }
 
     <app-token-details-user
-      class="details-card-user"
+      class="details-card--user"
       [isAnyEditingOrRevoked]="isAnyEditingOrRevoked"
       [isEditingInfo]="isEditingInfo"
       [isEditingUser]="isEditingUser"
@@ -177,11 +174,11 @@
       [isAnyEditingOrRevoked]="isAnyEditingOrRevoked()" />
 
     @if (tokenType() === "sshkey" || tokenType() === "hotp") {
-      <app-token-details-machine class="details-card-machine" />
+      <app-token-details-machine class="details-card--machine" />
     }
 
     <app-token-details-actions
-      class="details-card-actions"
+      class="details-card--actions"
       [repeatPinValue]="repeatPinValue"
       [setPinValue]="setPinValue"
       [tokenType]="tokenType"

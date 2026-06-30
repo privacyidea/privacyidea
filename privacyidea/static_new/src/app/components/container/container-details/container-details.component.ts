@@ -52,7 +52,6 @@ import { DetailsEditRegistry } from "@components/shared/details-shared/details-e
 import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
 import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
-import { MasonryDirective } from "@components/shared/directives/masonry/masonry.directive";
 import { EditButtonsComponent, EditableElement } from "@components/shared/edit-buttons/edit-buttons.component";
 import { infoDetailsKeyMap } from "@components/token/token-details/token-details.constants";
 import { FilterValue } from "@core/models/filter_value/filter_value";
@@ -118,7 +117,6 @@ interface TokenOption {
     ContainerDetailsTokenTableComponent,
     ContainerDetailsActionsComponent,
     ScrollToTopDirective,
-    MasonryDirective,
     DetailsHeaderComponent,
     DetailsCardComponent,
     DetailFieldComponent,

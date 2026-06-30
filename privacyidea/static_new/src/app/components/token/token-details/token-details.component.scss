@@ -30,27 +30,11 @@
   .details-table,
   .user-details-table,
   .info-table {
-    width: 100%;
-
-    td:nth-child(even),
-    th:nth-child(even) {
-      background: transparent;
-    }
-
-    tr.mat-mdc-row:nth-child(odd) td {
-      background: var(--mat-sys-surface-variant);
-    }
+    @include table.details-key-value-table;
   }
 
   .details-table {
-    table-layout: fixed;
-
-    td:nth-child(1) {
-      width: 35%;
-    }
-    td:nth-child(2) {
-      width: 65%;
-    }
+    @include table.details-key-value-columns;
   }
 
 }
@@ -93,20 +77,21 @@
 }
 
 .details-grid {
-  position: relative;
+  @include table.details-cards-flex;
   margin-top: 8px;
-  // The masonry directive sets this grid's height in px and positions its cards
-  // absolutely. As a child of the fixed-height, scrollable .details-container
-  // flex column it must not be flex-shrunk, otherwise the box collapses below the
-  // measured height and the bottom cards spill past the container's padding.
-  flex: 0 0 auto;
-  min-width: 0;
-  box-sizing: border-box;
+
+  // app-token-details-machine is display:contents and renders 0..N machine
+  // panels; size those unwrapped panels like the sibling cards.
+  > .details-card--machine > * {
+    flex: 1 1 28rem;
+    min-width: 0;
+    box-sizing: border-box;
+  }
 }
 
-.details-card-machine { display: contents; }
+.details-card--machine { display: contents; }
 
-.details-card-user {
+.details-card--user {
   display: block;
   min-width: 0;
   align-self: flex-start;
@@ -133,7 +118,5 @@
 }
 
 .details-info-area {
-  align-self: flex-start;
-  width: fit-content;
   max-width: 100%;
 }

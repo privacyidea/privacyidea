@@ -26,6 +26,51 @@ $description-width: 18rem;
   background-color: var(--table-color);
 }
 
+// Striped key/value Material table used inside the token and container detail cards.
+// Shared so both components render identical rows (the rules used to be copy-pasted).
+@mixin details-key-value-table {
+  width: 100%;
+
+  td:nth-child(even),
+  th:nth-child(even) {
+    background: transparent;
+  }
+
+  tr.mat-mdc-row:nth-child(odd) td {
+    background: var(--mat-sys-surface-variant);
+  }
+}
+
+// Fixed 35% / 65% key/value column layout for the tables above.
+@mixin details-key-value-columns {
+  table-layout: fixed;
+
+  td:nth-child(1) {
+    width: 35%;
+  }
+
+  td:nth-child(2) {
+    width: 65%;
+  }
+}
+
+// Shared flex layout for the detail-card grids in token-details and
+// container-details. Replaces the masonry directive: equal-ish columns ~28rem
+// wide that wrap to fewer per row as the width shrinks.
+@mixin details-cards-flex {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--global-gap);
+
+  > * {
+    flex: 1 1 28rem;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+}
+
 @mixin base-table-structure(
   $table-class: ".table",
   $filter-class: ".table-filter",

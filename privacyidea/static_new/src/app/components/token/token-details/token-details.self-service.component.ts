@@ -19,7 +19,6 @@
 import { Component } from "@angular/core";
 import { DetailsEditRegistry } from "@components/shared/details-shared/details-edit-registry.service";
 import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
-import { MasonryDirective } from "@components/shared/directives/masonry/masonry.directive";
 import { TokenDetailsMachineComponent } from "@components/token/token-details/token-details-machine/token-details-machine.component";
 import { TokenDetailsActionsComponent } from "./token-details-actions/token-details-actions.component";
 import { TokenDetailsAssignmentsComponent } from "./token-details-assignments/token-details-assignments.component";
@@ -42,8 +41,7 @@ import { TokenDetailsComponent } from "./token-details.component";
     TokenDetailsAssignmentsComponent,
     TokenDetailsDescriptionComponent,
     TokenDetailsMachineComponent,
-    DetailsHeaderComponent,
-    MasonryDirective
+    DetailsHeaderComponent
   ],
   providers: [DetailsEditRegistry],
   templateUrl: "./token-details.self-service.component.html",

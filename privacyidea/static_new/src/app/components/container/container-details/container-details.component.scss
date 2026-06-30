@@ -20,25 +20,8 @@
   }
 
   .details-grid .details-table {
-    width: 100%;
-    table-layout: fixed;
-
-    td:nth-child(even),
-    th:nth-child(even) {
-      background: transparent;
-    }
-
-    tr.mat-mdc-row:nth-child(odd) td {
-      background: var(--mat-sys-surface-variant);
-    }
-
-    td:nth-child(1) {
-      width: 35%;
-    }
-
-    td:nth-child(2) {
-      width: 65%;
-    }
+    @include table.details-key-value-table;
+    @include table.details-key-value-columns;
   }
 
   .value-row {
@@ -99,26 +82,13 @@
 }
 
 .details-grid {
-  position: relative;
+  @include table.details-cards-flex;
   margin-top: var(--half-global-padding);
 }
 
 .token-cards-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--global-gap);
-  align-items: flex-start;
+  @include table.details-cards-flex;
   margin-top: var(--global-padding);
-
-  // Deterministic order (DOM order = visual order): add-token, token table, info.
-  // Equal flexible columns that wrap to fewer per row as width shrinks (matching
-  // the masonry's 28rem min column), so add-token stays left of / above the token
-  // table and the container info stays right of / below it.
-  > app-details-card {
-    flex: 1 1 28rem;
-    min-width: 0;
-    box-sizing: border-box;
-  }
 }
 
 .details-card--description {
