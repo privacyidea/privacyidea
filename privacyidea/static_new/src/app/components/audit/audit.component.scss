@@ -4,4 +4,7 @@
 .audit-table-container {
   @include styles.main-component-style;
   @include table.base-table-structure(".audit-table", ".audit-table-filter", ".table-scroll-container");
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }

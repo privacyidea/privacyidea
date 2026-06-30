@@ -34,7 +34,7 @@ from privacyidea.lib.caconnector import (get_caconnector_list,
                                          save_caconnector)
 from privacyidea.lib.caconnectors.localca import ATTR
 from privacyidea.lib.crypto import create_hsm_object
-from privacyidea.lib.error import ResourceNotFoundError
+from privacyidea.lib.error import Error, ResourceNotFoundError, UserError
 from privacyidea.lib.event import EventConfiguration, enable_event, delete_event
 from privacyidea.lib.policy import (PolicyClass, enable_policy, delete_policy,
                                     set_policy)
@@ -178,12 +178,22 @@ def realm_create(name, resolvers):
 
 @realm_cli.command("delete")
 @click.argument("realm", type=str)
-def realm_delete(realm):
+@click.option("--delete-custom-attributes", is_flag=True, default=False,
+              help="Also delete the realm's custom user attributes instead of refusing the deletion.")
+def realm_delete(realm, delete_custom_attributes):
     """
     Delete the given REALM
     """
     try:
-        delete_realm(realm)
+        delete_realm(realm, delete_custom_attributes=delete_custom_attributes)
+    except UserError as e:
+        # The realm still has custom user attributes. Offer to delete them too.
+        if e.id == Error.REALM_DELETE_CUSTOM_ATTRIBUTES and click.confirm(e.message):
+            delete_realm(realm, delete_custom_attributes=True)
+        else:
+            click.secho(f"Could not delete realm '{realm}': {e!r}", fg="red")
+            return
+        click.secho(f"Realm '{realm}' successfully deleted.", fg="green")
     except ResourceNotFoundError as e:
         click.secho(f"Could not delete realm '{realm}': {e!r}", fg="red")
     else:

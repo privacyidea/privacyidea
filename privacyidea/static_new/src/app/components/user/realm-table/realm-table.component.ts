@@ -61,6 +61,7 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
@@ -118,7 +119,8 @@ const columnKeysMap = [
     MatTable,
     MatTooltip,
     NgClass,
-    ScrollToTopDirective
+    ScrollToTopDirective,
+    ScrollEdgesDirective
   ],
   templateUrl: "./realm-table.component.html",
   styleUrl: "./realm-table.component.scss"

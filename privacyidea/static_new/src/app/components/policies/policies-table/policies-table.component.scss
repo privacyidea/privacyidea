@@ -1,11 +1,6 @@
 @use "styles";
 @use "table";
 
-:host {
-  flex: 1;
-  align-self: stretch;
-}
-
 .policy-name-input {
   background-color: transparent;
   border: none;

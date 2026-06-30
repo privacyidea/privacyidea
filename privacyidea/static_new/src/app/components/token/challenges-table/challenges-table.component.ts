@@ -27,6 +27,7 @@ import { MatPaginator, MatPaginatorModule, PageEvent } from "@angular/material/p
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
@@ -63,7 +64,8 @@ const columnKeysMap = [
     CopyableComponent,
     ScrollToTopDirective,
     ClearableInputComponent,
-    ChallengesTableActionsComponent
+    ChallengesTableActionsComponent,
+    ScrollEdgesDirective
   ],
   templateUrl: "./challenges-table.component.html",
   styleUrls: ["./challenges-table.component.scss"]
