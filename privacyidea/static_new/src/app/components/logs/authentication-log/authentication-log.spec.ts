@@ -162,8 +162,8 @@ describe("AuthenticationLog", () => {
   it("exposes the three user-role filter options", () => {
     expect(component.userRoleOptions).toEqual([
       { label: "User", value: "user" },
-      { label: "Internal admin", value: "admin-internal" },
-      { label: "External admin", value: "admin-external" }
+      { label: "Internal Admin", value: "admin-internal" },
+      { label: "External Admin", value: "admin-external" }
     ]);
   });
 
@@ -214,8 +214,20 @@ describe("AuthenticationLog", () => {
     service.authenticationLogResource.set(
       MockPiResponse.fromValue({
         auth_logs: [
-          { id: 1, event_type: "LOGIN_SUCCESS", timestamp: "2026-06-22T10:00:00+00:00", username: "alice", user_role: "user" },
-          { id: 2, event_type: "LOGIN_SUCCESS", timestamp: "2026-06-22T10:01:00+00:00", username: "bob", user_role: "admin-internal" }
+          {
+            id: 1,
+            event_type: "LOGIN_SUCCESS",
+            timestamp: "2026-06-22T10:00:00+00:00",
+            username: "alice",
+            user_role: "user"
+          },
+          {
+            id: 2,
+            event_type: "LOGIN_SUCCESS",
+            timestamp: "2026-06-22T10:01:00+00:00",
+            username: "bob",
+            user_role: "admin-internal"
+          }
         ],
         count: 2,
         current: 1,
