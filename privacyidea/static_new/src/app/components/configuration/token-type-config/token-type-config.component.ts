@@ -334,9 +334,31 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
   }
 
   async savePromise(): Promise<boolean> {
-    const deletes = Array.from(this.pendingDeletes());
-    const deleteCalls = deletes.map((key) => this.systemService.deleteSystemConfig(key));
-    const saveCall = this.systemService.saveSystemConfig(this.formData());
+    // Empty question slots are UI scaffolding for the user to fill in; they must
+    // never be persisted. Strip them from the payload, and make sure any backend
+    // question that is now empty or removed gets deleted rather than written back
+    // as an empty string (which would resurrect a deleted question or save a blank
+    // one when saving bypasses the disabled button, e.g. via the unsaved-changes guard).
+    const payload: Record<string, string> = {};
+    for (const [key, value] of Object.entries(this.formData())) {
+      if (key.startsWith("question.question.") && !(value ?? "").trim()) {
+        continue;
+      }
+      payload[key] = value;
+    }
+
+    const backend = this.systemService.systemConfig() ?? {};
+    const deletes = new Set(this.pendingDeletes());
+    Object.keys(backend).forEach((key) => {
+      if (key.startsWith("question.question.") && !(key in payload)) {
+        deletes.add(key);
+      }
+    });
+    // Never delete a key we are about to (re)save.
+    Object.keys(payload).forEach((key) => deletes.delete(key));
+
+    const deleteCalls = Array.from(deletes).map((key) => this.systemService.deleteSystemConfig(key));
+    const saveCall = this.systemService.saveSystemConfig(payload);
 
     try {
       if (deleteCalls.length > 0) {
