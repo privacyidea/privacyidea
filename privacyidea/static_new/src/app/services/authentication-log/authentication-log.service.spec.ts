@@ -65,6 +65,11 @@ describe("AuthenticationLogService", () => {
     httpMock.verify();
   });
 
+  // The event-types resource loads under the same gate as the log page, so flush it where a test only asserts the
+  // page request (keeps httpMock.verify() clean).
+  const flushEventTypes = () =>
+    httpMock.match((r) => r.url.endsWith("/eventtypes")).forEach((r) => r.flush(MockPiResponse.fromValue([])));
+
   it("filterParams keeps known keys verbatim and drops unknown/empty ones", () => {
     expect(service.filterParams()).toEqual({});
 
@@ -116,7 +121,7 @@ describe("AuthenticationLogService", () => {
     service.authenticationLogResource.reload();
     TestBed.tick();
 
-    const req = httpMock.expectOne((r) => r.url.includes("/authenticationlog/"));
+    const req = httpMock.expectOne((r) => r.url.endsWith("/authenticationlog/"));
     expect(req.request.method).toBe("GET");
     expect(req.request.params.get("page")).toBe("1");
     expect(req.request.params.get("page_size")).toBe("15");
@@ -126,6 +131,7 @@ describe("AuthenticationLogService", () => {
     expect(req.request.params.get("serial")).toBe("PISP0001");
 
     req.flush(emptyPage());
+    flushEventTypes();
     await Promise.resolve();
     TestBed.tick();
   });
@@ -135,9 +141,10 @@ describe("AuthenticationLogService", () => {
     service.authenticationLogResource.reload();
     TestBed.tick();
 
-    const req = httpMock.expectOne((r) => r.url.includes("/authenticationlog/"));
+    const req = httpMock.expectOne((r) => r.url.endsWith("/authenticationlog/"));
     expect(req.request.params.get("page")).toBe("3");
     req.flush(emptyPage());
+    flushEventTypes();
     await Promise.resolve();
     TestBed.tick();
   });
@@ -148,10 +155,11 @@ describe("AuthenticationLogService", () => {
     service.authenticationLogResource.reload();
     TestBed.tick();
 
-    const req = httpMock.expectOne((r) => r.url.includes("/authenticationlog/"));
+    const req = httpMock.expectOne((r) => r.url.endsWith("/authenticationlog/"));
     expect(req.request.params.get("start")).toBe("2026-01-01T00:00:00+00:00");
     expect(req.request.params.get("end")).toBe("2026-06-01T00:00:00+00:00");
     req.flush(emptyPage());
+    flushEventTypes();
     await Promise.resolve();
     TestBed.tick();
   });

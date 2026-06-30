@@ -274,10 +274,14 @@ describe("AuthenticationLog", () => {
     expect(component.selectedFilterValues("event_type")).toEqual([]);
   });
 
-  it("exposes the full set of event-type options", () => {
-    expect(component.eventTypeOptions).toContain("LOGIN_SUCCESS");
-    expect(component.eventTypeOptions).toContain("UNKNOWN_FAIL_REASON");
-    expect(component.eventTypeOptions.length).toBe(17);
+  it("derives event-type filter options from the service event types (not a hardcoded list)", () => {
+    // Options mirror the backend-provided event types exposed by the service.
+    expect(component.eventTypeOptions()).toEqual(service.eventTypes().map((entry) => entry.name));
+    expect(component.eventTypeOptions()).toContain("LOGIN_SUCCESS");
+
+    // Reflects updates to the service list.
+    service.eventTypes.set([{ name: "ONLY_ONE", outcome: "success" }]);
+    expect(component.eventTypeOptions()).toEqual(["ONLY_ONE"]);
   });
 
   it("exposes client-label options mapping friendly name -> identifier", () => {

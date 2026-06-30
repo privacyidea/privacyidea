@@ -21,6 +21,7 @@ import { Sort } from "@angular/material/sort";
 import { PiResponse } from "@app/app.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import {
+  AuthenticationLogEventType,
   AuthenticationLogPage,
   AuthenticationLogServiceInterface
 } from "@services/authentication-log/authentication-log.service";
@@ -45,6 +46,20 @@ export class MockAuthenticationLogService implements AuthenticationLogServiceInt
       prev: null,
       next: null
     })
+  );
+  // A representative subset spanning all three outcomes; tests may override via eventTypes.set(...).
+  eventTypes = signal<AuthenticationLogEventType[]>([
+    { name: "LOGIN_SUCCESS", outcome: "success" },
+    { name: "CHALLENGE_TRIGGERED", outcome: "pending" },
+    { name: "PASSWORD_FAIL", outcome: "failure" },
+    { name: "NO_TOKEN", outcome: "failure" },
+    { name: "NO_USABLE_TOKEN", outcome: "failure" },
+    { name: "USER_UNKNOWN", outcome: "failure" },
+    { name: "NOT_AUTHORIZED", outcome: "failure" },
+    { name: "UNKNOWN_FAIL_REASON", outcome: "failure" }
+  ]);
+  eventTypesResource = new MockHttpResourceRef<PiResponse<AuthenticationLogEventType[]> | undefined>(
+    MockPiResponse.fromValue<AuthenticationLogEventType[]>([])
   );
 
   clearFilter = jest.fn().mockImplementation(() => {

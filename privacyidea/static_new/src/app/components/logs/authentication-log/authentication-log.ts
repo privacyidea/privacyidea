@@ -61,41 +61,14 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 
-type EventSeverity = "success" | "failure" | "neutral";
-
-// CSS highlight class per event severity (defined in styles/table.scss).
-const SEVERITY_CLASS: Record<EventSeverity, string> = {
+// CSS highlight class per event outcome (defined in styles/table.scss). Outcome values mirror AuthEventOutcome in
+// privacyidea/lib/conditional_access/authentication_event_types.py. The event-type list and each type's outcome come
+// from the backend (GET /authenticationlog/eventtypes); the WebUI only maps an outcome to its color here.
+const OUTCOME_CLASS: Record<string, string> = {
   success: "highlight-true",
   failure: "highlight-false",
-  neutral: "highlight-warning"
+  pending: "highlight-warning"
 };
-
-// All authentication-log event types with their outcome severity, mirroring AuthEventType in
-// privacyidea/lib/conditional_access/authentication_event_types.py. Severity drives both the predefined filter
-// options and the row coloring, so add new backend event types here (a missing one is simply not offered/colored).
-const AUTH_EVENT_TYPES: readonly { value: string; severity: EventSeverity }[] = [
-  { value: "LOGIN_SUCCESS", severity: "success" },
-  { value: "CHALLENGE_TRIGGERED", severity: "neutral" },
-  { value: "CHALLENGE_CONTINUED", severity: "neutral" },
-  { value: "CHALLENGE_ANSWERED_OUT_OF_BAND", severity: "neutral" },
-  { value: "CHALLENGE_ANSWERED_FAIL", severity: "failure" },
-  { value: "CHALLENGE_DECLINED", severity: "failure" },
-  { value: "ENROLLMENT_TRIGGERED", severity: "neutral" },
-  { value: "ENROLLMENT_CANCELED_FAIL", severity: "failure" },
-  { value: "NOT_AUTHORIZED", severity: "failure" },
-  { value: "PASSWORD_FAIL", severity: "failure" },
-  { value: "PIN_FAIL", severity: "failure" },
-  { value: "TOKEN_ONLY_FAIL", severity: "failure" },
-  { value: "MFA_FAIL", severity: "failure" },
-  { value: "USER_UNKNOWN", severity: "failure" },
-  { value: "NO_TOKEN", severity: "failure" },
-  { value: "NO_USABLE_TOKEN", severity: "failure" },
-  { value: "UNKNOWN_FAIL_REASON", severity: "failure" }
-];
-
-const SEVERITY_BY_EVENT_TYPE: Record<string, EventSeverity> = Object.fromEntries(
-  AUTH_EVENT_TYPES.map((entry) => [entry.value, entry.severity])
-);
 
 // User-identifying columns hidden in self-service: every row is the logged-in user (redundant), and their
 // realm/resolver/user links point to admin-only pages.
@@ -184,7 +157,6 @@ const FILTER_TOOLTIPS: Record<string, string> = {
 })
 export class AuthenticationLog {
   readonly columnKeysMap = columnKeysMap;
-  readonly eventTypeOptions: readonly string[] = AUTH_EVENT_TYPES.map((entry) => entry.value);
   // Cells whose content can grow tall (stacked serials, long JSON) get a capped, scrollable cell.
   readonly scrollableColumnKeys = ["serial", "other_info"];
   // Client filter: show the friendly user-agent name, filter by its identifier prefix (a trailing "*" is applied by
@@ -207,6 +179,13 @@ export class AuthenticationLog {
   protected readonly clientsService: ClientsServiceInterface = inject(ClientsService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   sort = this.authenticationLogService.sort;
+
+  readonly eventTypeOptions = computed<string[]>(() =>
+    this.authenticationLogService.eventTypes().map((entry) => entry.name)
+  );
+  private readonly outcomeByEventType = computed<Map<string, string>>(
+    () => new Map(this.authenticationLogService.eventTypes().map((entry) => [entry.name, entry.outcome]))
+  );
 
   // Columns to render: a self-service user only ever sees their own entries, so the user-identifying columns are
   // hidden (redundant, and their realm/resolver/user links target admin-only pages).
@@ -375,10 +354,10 @@ export class AuthenticationLog {
     setTimeout(() => this.filterInput?.nativeElement.focus());
   }
 
-  // Color a row by its event's outcome severity (success/failure/neutral); unknown/empty values stay unstyled.
+  // Color a row by its event's outcome (success/failure/pending); unknown/empty/not-yet-loaded values stay unstyled.
   getEventTypeClass(value: string): string {
-    const severity = SEVERITY_BY_EVENT_TYPE[value];
-    return severity ? SEVERITY_CLASS[severity] : "";
+    const outcome = this.outcomeByEventType().get(value);
+    return outcome ? (OUTCOME_CLASS[outcome] ?? "") : "";
   }
 
   formatInfo(value: AuthenticationLogEntry["other_info"]): string {

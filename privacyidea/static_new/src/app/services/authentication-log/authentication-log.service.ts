@@ -53,6 +53,13 @@ export interface AuthenticationLogPage {
   next: number | null;
 }
 
+// One defined authentication-log event type with its outcome class. The authoritative list comes from the backend.
+// `outcome` is an AuthEventOutcome value: "success" | "failure" | "pending".
+export interface AuthenticationLogEventType {
+  name: string;
+  outcome: string;
+}
+
 const DEFAULT_PAGE_SIZE = 15;
 
 // Shallow value-equality for the flat string->string filter params record.
@@ -90,6 +97,8 @@ export interface AuthenticationLogServiceInterface {
   end: WritableSignal<string | null>;
   canRead: () => boolean;
   authenticationLogResource: HttpResourceRef<PiResponse<AuthenticationLogPage> | undefined>;
+  eventTypesResource: HttpResourceRef<PiResponse<AuthenticationLogEventType[]> | undefined>;
+  eventTypes: () => AuthenticationLogEventType[];
 
   clearFilter(): void;
 
@@ -172,6 +181,21 @@ export class AuthenticationLogService implements AuthenticationLogServiceInterfa
       }
     };
   });
+
+  // The defined event types (with outcome) come from the backend so the WebUI does not duplicate the list. Gated like
+  // the log itself (route + read right). eventTypes() defaults to [] until loaded / when not allowed.
+  eventTypesResource = httpResource<PiResponse<AuthenticationLogEventType[]>>(() => {
+    if (!this.contentService.onAuthenticationLog() || !this.canRead()) {
+      return undefined;
+    }
+    return {
+      url: this.authenticationLogBaseUrl + "eventtypes",
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
+  });
+
+  eventTypes = computed<AuthenticationLogEventType[]>(() => this.eventTypesResource.value()?.result?.value ?? []);
 
   clearFilter(): void {
     this.authenticationLogFilter.set(this.authenticationLogFilter().copyWith({ value: "" }));

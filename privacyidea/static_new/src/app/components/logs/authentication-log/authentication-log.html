@@ -109,7 +109,7 @@
                   @if (column.key === "event_type") {
                     <app-multi-select-filter
                       [label]="column.label"
-                      [options]="eventTypeOptions"
+                      [options]="eventTypeOptions()"
                       [selected]="selectedFilterValues('event_type')"
                       (selectionChange)="setFilterValues('event_type', $event)" />
                   } @else if (column.key === "realm") {

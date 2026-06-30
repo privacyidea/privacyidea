@@ -201,6 +201,42 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
         finally:
             delete_policy("authlog_other")
 
+    # --- event types ---
+
+    def _get_event_types(self, token, status=200):
+        with self.app.test_request_context("/authenticationlog/eventtypes", method="GET",
+                                           headers={"Authorization": token}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(status, res.status_code, res.json)
+            return res.json
+
+    def test_event_types_lists_all_defined_types_for_admin(self):
+        value = self._get_event_types(self.at)["result"]["value"]
+        # The endpoint is the authoritative AuthEventType list (name + outcome), in definition order.
+        self.assertListEqual([str(event_type) for event_type in AuthEventType], [entry["name"] for entry in value])
+        by_name = {entry["name"]: entry["outcome"] for entry in value}
+        self.assertEqual("success", by_name["LOGIN_SUCCESS"])
+        self.assertEqual("failure", by_name["USER_UNKNOWN"])
+        self.assertEqual("pending", by_name["CHALLENGE_TRIGGERED"])
+
+    def test_event_types_accessible_to_user(self):
+        self.authenticate_selfservice_user()
+        set_policy("authlog_user", scope=SCOPE.USER, action=PolicyAction.AUTHENTICATION_LOG_READ)
+        try:
+            value = self._get_event_types(self.at_user)["result"]["value"]
+            self.assertListEqual([str(event_type) for event_type in AuthEventType], [entry["name"] for entry in value])
+        finally:
+            delete_policy("authlog_user")
+
+    def test_event_types_denied_without_action(self):
+        # The same policy gate as the log read endpoint: admin policies exist but none grant the action -> denied.
+        set_policy("authlog_other", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE)
+        try:
+            body = self._get_event_types(self.at, status=403)
+            self.assertFalse(body["result"]["status"], body)
+        finally:
+            delete_policy("authlog_other")
+
     def test_realm_scoped_policy_restricts_visible_entries(self):
         ids = self._seed(include_no_realm=True)
         # case-sensitive matching: same name capitalized should not match
