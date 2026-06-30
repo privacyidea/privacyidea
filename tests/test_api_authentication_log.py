@@ -1293,9 +1293,9 @@ class AuthenticationLogReadAPITestCase(AuthLogTestCase):
                                  username="Alice")
         db.session.commit()
 
-        # The flag enforces a case-insensitive match regardless of the DB collation. The unflagged default follows
-        # the collation (case-sensitive on SQLite, case-insensitive on a MySQL/MariaDB *_ci collation), so it is not
-        # asserted here.
+        # The log's string columns use a case-sensitive collation, so the unflagged default is case-sensitive on every
+        # backend: "alice" does not match the stored "Alice" without the flag, and does with it.
+        self.assertEqual(0, self._get({"username": "alice"})["result"]["value"]["count"])
         self.assertEqual(1, self._get({"username": "alice", "case_insensitive": "1"})["result"]["value"]["count"])
         self.assertEqual(1, self._get({"username": "Alice"})["result"]["value"]["count"])
 
@@ -1350,9 +1350,10 @@ class AuthenticationLogReadAPITestCase(AuthLogTestCase):
         finally:
             delete_policy("authlog_resolver")
 
-    def test_user_scoped_policy_matches_username_exactly_by_default(self):
+    def test_user_scoped_policy_matches_username_case_sensitively_by_default(self):
         # A user-scoped policy is an authorization boundary: without user_case_insensitive it matches the username
-        # exactly, so a differently-cased entry (e.g. "Alice") is hidden from an admin scoped to "alice".
+        # case-sensitively, so a differently-cased entry ("Alice") is hidden from an admin scoped to "alice". The
+        # username column is case-sensitive-collated, so this holds on every backend (not only on SQLite/Postgres).
         in_scope = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1,
                                             uid="1", realm=self.realm1, username="alice")
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1, uid="2",
@@ -1366,8 +1367,9 @@ class AuthenticationLogReadAPITestCase(AuthLogTestCase):
             delete_policy("authlog_user")
 
     def test_user_scoped_policy_case_insensitive_when_policy_set(self):
-        # With user_case_insensitive on the policy, the username dimension matches case-insensitively, so the admin
-        # scoped to "alice" also sees the "Alice" entry. This exercises the policy -> scope -> query wiring.
+        # With user_case_insensitive on the policy, the username dimension is forced case-insensitive (LOWER on both
+        # sides), so the admin scoped to "alice" also sees the "Alice" entry. This exercises the policy -> scope ->
+        # query wiring.
         alice = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1,
                                          uid="1", realm=self.realm1, username="alice")
         alice_upper = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1,
