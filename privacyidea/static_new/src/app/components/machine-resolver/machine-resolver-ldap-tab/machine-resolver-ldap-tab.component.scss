@@ -6,8 +6,8 @@
 }
 
 .ldap-config-container {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, var(--input-width-l));
   gap: var(--global-gap);
 
   --mat-form-field-filled-disabled-label-text-color: var(--mat-sys-on-surface-variant);
@@ -19,31 +19,12 @@
   }
 }
 
-.row-container {
-  display: flex;
-  width: 100%;
-  flex-wrap: wrap;
-  gap: var(--global-gap);
-  align-items: flex-start;
-}
-
-.row-container > app-inline-edit-field {
-  min-width: 0;
-}
-
-.row-container > app-inline-edit-field.inline {
-  flex: 0 0 auto;
-  align-self: flex-start;
-  min-width: var(--input-width-l);
+.span-2 {
+  grid-column: span 2;
 }
 
 .checkbox-container {
-  flex: 0 0 auto;
   display: flex;
   align-items: center;
   min-height: var(--mat-form-field-container-height, 56px);
-}
-
-.full-width {
-  width: 100%;
 }

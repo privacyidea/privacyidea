@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, input, linkedSignal, OnInit, output, signal } from "@angular/core";
+import { Component, computed, input, linkedSignal, OnInit, output } from "@angular/core";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
@@ -26,28 +26,19 @@ import { LdapMachineResolverData, MachineResolverData } from "@services/machine-
 
 import { MatButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
-import { InlineEditFieldComponent } from "@components/machine-resolver/inline-edit-field/inline-edit-field.component";
 
 @Component({
   selector: "app-machine-resolver-ldap-tab",
   templateUrl: "./machine-resolver-ldap-tab.component.html",
   styleUrls: ["./machine-resolver-ldap-tab.component.scss"],
-  imports: [
-    MatFormFieldModule,
-    MatInputModule,
-    MatSelectModule,
-    MatCheckboxModule,
-    MatButton,
-    MatIcon,
-    InlineEditFieldComponent
-  ],
+  imports: [MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule, MatButton, MatIcon],
   standalone: true
 })
 export class MachineResolverLdapTabComponent implements OnInit {
   readonly isCreateMode = input<boolean>(false);
   readonly canEdit = input<boolean>(false);
-  readonly canSave = input<boolean>(false);
   readonly machineResolverData = input.required<MachineResolverData>();
+  readonly fieldsEnabled = computed(() => this.isCreateMode() || this.canEdit());
   readonly hostsData = linkedSignal<LdapMachineResolverData>(() => {
     let data = this.machineResolverData() as LdapMachineResolverData;
     data = { ...data, type: "ldap", TIMEOUT: data.TIMEOUT ?? "5" };
@@ -55,40 +46,9 @@ export class MachineResolverLdapTabComponent implements OnInit {
   });
   readonly newData = output<MachineResolverData>();
   readonly newValidator = output<(data: MachineResolverData) => boolean>();
-  readonly saveField = output<void>();
-  readonly editingChange = output<boolean>();
-
-  readonly editingKey = signal<string | null>(null);
-  private snapshot: MachineResolverData | null = null;
 
   ngOnInit(): void {
     this.newValidator.emit(this.isValid.bind(this));
-  }
-
-  fieldEnabled(key: string): boolean {
-    return this.isCreateMode() || this.editingKey() === key;
-  }
-
-  startEdit(key: string): void {
-    this.snapshot = this.machineResolverData();
-    this.editingKey.set(key);
-    this.editingChange.emit(true);
-  }
-
-  saveEdit(): void {
-    this.snapshot = null;
-    this.editingKey.set(null);
-    this.editingChange.emit(false);
-    this.saveField.emit();
-  }
-
-  cancelEdit(): void {
-    if (this.snapshot) {
-      this.newData.emit(this.snapshot);
-    }
-    this.snapshot = null;
-    this.editingKey.set(null);
-    this.editingChange.emit(false);
   }
 
   updateData(

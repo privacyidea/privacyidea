@@ -1,6 +1,6 @@
 :host {
-  position: relative;
-  display: block;
+  display: flex;
+  align-items: flex-start;
   width: 100%;
 }
 
@@ -10,13 +10,17 @@
   width: auto;
 }
 
+.field-content {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
 .field-actions {
-  position: absolute;
-  top: 0;
-  right: 0;
+  flex: 0 0 auto;
   height: var(--mat-form-field-container-height, 56px);
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 0;
   opacity: 0;
   transition: opacity 120ms ease;
@@ -24,7 +28,6 @@
 }
 
 :host(.inline) .field-actions {
-  position: static;
   height: auto;
 }
 
@@ -32,4 +35,9 @@
 .field-actions.is-editing {
   opacity: 1;
   pointer-events: auto;
+}
+
+:host(:hover) ::ng-deep .mat-mdc-select-arrow-wrapper,
+:host(.editing) ::ng-deep .mat-mdc-select-arrow-wrapper {
+  visibility: hidden;
 }

@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, effect, inject, OnDestroy, OnInit, signal } from "@angular/core";
+import { Component, computed, effect, inject, OnDestroy, OnInit, signal, untracked } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -29,6 +29,7 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { MachineResolverHostsTabComponent } from "@components/machine-resolver/machine-resolver-hosts-tab/machine-resolver-hosts-tab.component";
 import { MachineResolverLdapTabComponent } from "@components/machine-resolver/machine-resolver-ldap-tab/machine-resolver-ldap-tab.component";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
@@ -57,6 +58,7 @@ import { lastValueFrom } from "rxjs";
     MatInputModule,
     MatSelectModule,
     ClearableInputComponent,
+    CopyButtonComponent,
     ScrollToTopDirective,
     MachineResolverHostsTabComponent,
     MachineResolverLdapTabComponent
@@ -84,8 +86,9 @@ export class MachineResolverDetailsComponent implements OnInit, OnDestroy {
 
   readonly selectedName = signal<string>("");
   readonly isEditMode = computed(() => this.selectedName() !== "");
-  readonly isEditing = signal(false);
-  readonly fieldsEditable = computed(() => !this.isEditMode() || this.isEditing());
+
+  readonly canEditTab = computed(() => this.isEditMode() && this.authService.actionAllowed("mresolverwrite"));
+  readonly canMakeChanges = computed(() => !this.isEditMode() || this.canEditTab());
 
   readonly originalMachineResolver = signal<MachineResolver>(
     deepCopy(MachineResolverDetailsComponent.machineResolverDefault)
@@ -93,9 +96,6 @@ export class MachineResolverDetailsComponent implements OnInit, OnDestroy {
   readonly currentMachineResolver = signal<MachineResolver>(
     deepCopy(MachineResolverDetailsComponent.machineResolverDefault)
   );
-
-  readonly canEditTab = computed(() => this.isEditMode() && this.authService.actionAllowed("mresolverwrite"));
-  readonly tabCanSave = computed(() => this.canSaveMachineResolver() && this.isEdited());
 
   readonly isEdited = computed(
     () => JSON.stringify(this.currentMachineResolver()) !== JSON.stringify(this.originalMachineResolver())
@@ -123,7 +123,7 @@ export class MachineResolverDetailsComponent implements OnInit, OnDestroy {
         this._loadedName = null;
         return;
       }
-      if (this.isEditing()) {
+      if (untracked(() => this.isEdited())) {
         return;
       }
       const resource = this.machineResolverService.machineResolverResource;
@@ -135,7 +135,6 @@ export class MachineResolverDetailsComponent implements OnInit, OnDestroy {
       if (resolver) {
         this.originalMachineResolver.set(deepCopy(resolver));
         this.currentMachineResolver.set(deepCopy(resolver));
-        this.isEditing.set(false);
         this._loadedName = name;
       } else {
         this.notificationService.error($localize`Machine resolver "${name}" not found.`);
@@ -152,10 +151,6 @@ export class MachineResolverDetailsComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.pendingChangesService.clearAllRegistrations();
-  }
-
-  startEditing(): void {
-    this.isEditing.set(true);
   }
 
   onResolvernameChange(newName: string) {
@@ -214,11 +209,7 @@ export class MachineResolverDetailsComponent implements OnInit, OnDestroy {
       return false;
     }
     this.originalMachineResolver.set(deepCopy(current));
-    if (this.isEditMode()) {
-      this.isEditing.set(false);
-    } else {
-      this.navigateBack();
-    }
+    this.navigateBack();
     return true;
   }
 
@@ -252,12 +243,7 @@ export class MachineResolverDetailsComponent implements OnInit, OnDestroy {
   }
 
   private exitEditOrNavigate(): void {
-    if (this.isEditMode()) {
-      this.currentMachineResolver.set(deepCopy(this.originalMachineResolver()));
-      this.isEditing.set(false);
-    } else {
-      this.navigateBack();
-    }
+    this.navigateBack();
   }
 
   private navigateBack(): void {

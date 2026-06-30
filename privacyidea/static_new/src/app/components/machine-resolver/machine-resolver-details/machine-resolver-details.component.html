@@ -23,22 +23,19 @@
   <div
     appScrollToTop
     class="machine-resolver-details-container">
-    @if (!isEditMode()) {
-      <h3
-        class="margin-8"
-        i18n>
-        Create Machine Resolver
-      </h3>
-    } @else {
-      <h3
-        class="margin-8"
-        i18n>
-        Machine Resolver {{ currentMachineResolver().resolvername }} ({{ currentMachineResolver().type }})
-      </h3>
-    }
+    <h3 class="margin-8 flex-row flex-nowrap ali-center">
+      @if (!isEditMode()) {
+        <span i18n>Create Machine Resolver</span>
+      } @else {
+        <span i18n>Edit Machine Resolver</span>
+        <span>:&nbsp;</span>
+        <span class="blue-base">{{ currentMachineResolver().resolvername }}</span>
+        <app-copy-button [copyText]="currentMachineResolver().resolvername"></app-copy-button>
+      }
+    </h3>
 
     <div class="machine-resolver-details-body margin-left-16">
-      @if (!isEditMode()) {
+      @if (canMakeChanges()) {
         <div class="machine-resolver-details-controls">
           <button
             (click)="onCancel()"
@@ -105,23 +102,17 @@
             class="input-width-xl"
             [isCreateMode]="!isEditMode()"
             [canEdit]="canEditTab()"
-            [canSave]="tabCanSave()"
             [machineResolverData]="currentMachineResolver().data"
             (newData)="onNewData($event)"
-            (newValidator)="onNewValidator($event)"
-            (saveField)="saveMachineResolver()"
-            (editingChange)="isEditing.set($event)" />
+            (newValidator)="onNewValidator($event)" />
         }
         @case ("ldap") {
           <app-machine-resolver-ldap-tab
             [isCreateMode]="!isEditMode()"
             [canEdit]="canEditTab()"
-            [canSave]="tabCanSave()"
             [machineResolverData]="currentMachineResolver().data"
             (newData)="onNewData($event)"
-            (newValidator)="onNewValidator($event)"
-            (saveField)="saveMachineResolver()"
-            (editingChange)="isEditing.set($event)" />
+            (newValidator)="onNewValidator($event)" />
         }
         @default {
           <p i18n>Unknown machine resolver type: {{ currentMachineResolver().type }}</p>

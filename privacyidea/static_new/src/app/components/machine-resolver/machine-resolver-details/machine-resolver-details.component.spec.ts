@@ -185,18 +185,10 @@ describe("MachineResolverDetailsComponent", () => {
       fixture.detectChanges();
     });
 
-    it("loads the selected machine resolver read-only", () => {
+    it("loads the selected machine resolver", () => {
       expect(component.isEditMode()).toBe(true);
       expect(component.currentMachineResolver().resolvername).toBe("hosts1");
       expect(component.isEdited()).toBe(false);
-      expect(component.isEditing()).toBe(false);
-      expect(component.fieldsEditable()).toBe(false);
-    });
-
-    it("startEditing makes the fields editable", () => {
-      component.startEditing();
-      expect(component.isEditing()).toBe(true);
-      expect(component.fieldsEditable()).toBe(true);
     });
 
     it("gates the edit toggle behind the mresolverwrite right", () => {
@@ -206,39 +198,32 @@ describe("MachineResolverDetailsComponent", () => {
       expect(component.authService.actionAllowed("mresolverwrite")).toBe(true);
     });
 
-    it("posts an update and stays on the details page on save", async () => {
-      component.startEditing();
+    it("posts an update and navigates back on save", async () => {
       component.onNewData({ resolver: "hosts1", type: "hosts", filename: "/etc/hosts" } as never);
       const saved = await component.saveMachineResolver();
       expect(saved).toBe(true);
       expect(machineResolverServiceMock.postMachineResolver).toHaveBeenCalled();
-      expect(router.navigateByUrl).not.toHaveBeenCalled();
-      expect(component.isEditing()).toBe(false);
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.MACHINE_RESOLVER);
     });
 
-    it("onCancel discards changes and exits edit mode without navigating", async () => {
-      component.startEditing();
+    it("onCancel discards changes and navigates back", async () => {
       component.onNewData({ resolver: "hosts1", type: "hosts", filename: "/changed" } as never);
       expect(component.isEdited()).toBe(true);
       dialog.result$ = of("discard");
       await component.onCancel();
-      expect(component.isEditing()).toBe(false);
-      expect(component.isEdited()).toBe(false);
-      expect(router.navigateByUrl).not.toHaveBeenCalled();
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.MACHINE_RESOLVER);
     });
 
-    it("onCancel saves and exits edit mode on save-exit", async () => {
-      component.startEditing();
+    it("onCancel saves and navigates back on save-exit", async () => {
       component.onNewData({ resolver: "hosts1", type: "hosts", filename: "/changed" } as never);
       dialog.result$ = of("save-exit");
       await component.onCancel();
       expect(machineResolverServiceMock.postMachineResolver).toHaveBeenCalled();
-      expect(component.isEditing()).toBe(false);
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.MACHINE_RESOLVER);
     });
 
     it("onCancel logs an error when the dialog rejects", async () => {
       const errorSpy = jest.spyOn(console, "error").mockImplementation(() => undefined);
-      component.startEditing();
       component.onNewData({ resolver: "hosts1", type: "hosts", filename: "/changed" } as never);
       dialog.result$ = new Observable((subscriber) => subscriber.error(new Error("dialog boom")));
       await component.onCancel();
