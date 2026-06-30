@@ -216,7 +216,7 @@ def delete_realm(realm_name: str, delete_custom_attributes: bool = False):
         keys = ", ".join(sorted(custom_attribute_keys))
         raise UserError(
             f"Realm '{realm_name}' contains custom user attributes ({keys}). "
-            f"Delete the realm and all its custom user attributes?",
+            f"Deleting the realm will also delete these custom user attributes.",
             id=Error.REALM_DELETE_CUSTOM_ATTRIBUTES)
 
     # Check if there is a default realm
