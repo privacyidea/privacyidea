@@ -469,8 +469,7 @@ class PrePolicyPinTestCase(PrePolicyHelperMixin, MyApiTestCase):
         remove_token("PINBYSERIAL")
         delete_realm("home")
 
-    @log_capture(level=logging.INFO)
-    def test_09c_random_pin_contents_uses_param_user(self, capture):
+    def test_09c_random_pin_contents_uses_param_user(self):
         # init_random_pin must resolve the OTPPINCONTENTS policy with the same
         # user as the OTPPINRANDOM lookup (the enrollment user from the request
         # params), not request.User. When request.User is empty but the params
@@ -487,13 +486,15 @@ class PrePolicyPinTestCase(PrePolicyHelperMixin, MyApiTestCase):
         req = Request(env)
 
         # Enrollment generates a random PIN of length 12 (SCOPE.ENROLL) whose
-        # contents must include a digit (OTPPINCONTENTS "n", SCOPE.ADMIN,
-        # realm-scoped).
+        # contents must include a special character (OTPPINCONTENTS "s",
+        # SCOPE.ADMIN, realm-scoped). "s" is a deterministic discriminator: the
+        # fallback generate_password() charset is alphanumeric only, so a special
+        # character can only appear when the contents policy was actually applied.
         set_policy(name="pol_rand", scope=SCOPE.ENROLL,
                    action="{0!s}={1!s}".format(PolicyAction.OTPPINRANDOM, "12"),
                    realm="home")
         set_policy(name="pol_contents", scope=SCOPE.ADMIN,
-                   action="{0!s}={1!s}".format(PolicyAction.OTPPINCONTENTS, "n"),
+                   action="{0!s}={1!s}".format(PolicyAction.OTPPINCONTENTS, "s"),
                    realm="home")
         g.policy_object = PolicyClass()
 
@@ -503,15 +504,14 @@ class PrePolicyPinTestCase(PrePolicyHelperMixin, MyApiTestCase):
         req.User = User()
         self.assertTrue(init_random_pin(req))
 
-        # A PIN of the configured length was generated, and the realm-scoped
-        # contents policy was resolved via the param user (not the empty
-        # request.User): the "matching the contents policy" log only fires when
-        # the OTPPINCONTENTS lookup found the policy. Without the fix the lookup
-        # uses the empty request.User, misses the realm-scoped policy, and this
-        # log line is absent.
-        self.assertEqual(12, len(req.all_data["pin"]), req.all_data["pin"])
-        capture.check_present(("privacyidea.api.lib.prepolicy", "INFO",
-                               "Creating random OTP PIN with length 12 matching the contents policy n"))
+        # The realm-scoped contents policy was resolved via the param user (not
+        # the empty request.User), so the generated PIN has the configured length
+        # and contains a special character. Without the fix the lookup uses the
+        # empty request.User, misses the realm-scoped policy, and the PIN falls
+        # back to the alphanumeric-only generator (no special character).
+        pin = req.all_data["pin"]
+        self.assertEqual(12, len(pin), pin)
+        self.assertTrue(any(not c.isalnum() for c in pin), pin)
 
         delete_policy("pol_rand")
         delete_policy("pol_contents")
