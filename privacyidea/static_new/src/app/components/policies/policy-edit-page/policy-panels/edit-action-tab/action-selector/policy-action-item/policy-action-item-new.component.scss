@@ -1,5 +1,4 @@
 @use "styles";
-@use "buttons";
 @use "@angular/material";
 
 .policy-action-item {
@@ -17,9 +16,15 @@
   width: 100%;
 }
 
+.detail-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .detail-label {
-  flex: 0 0 25%;
-  max-width: 25%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -28,61 +33,32 @@
 }
 
 .detail-description {
-  flex: 1 1 auto;
-  padding: 8px 0;
   font-weight: normal;
-  font-size: 1rem;
+  font-size: 0.75rem;
+  color: var(--mat-sys-on-surface-variant);
 }
 
 .detail-input {
-  flex: 0 0 20%;
-  max-width: 20%;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
 
-  .flex-1 {
-    flex: 1;
-    min-width: 0;
-  }
+  .flex-1,
   .flex-2 {
-    flex: 2;
+    flex: 1;
     min-width: 0;
   }
 }
 
-.add-action-button {
-  appearance: none;
-  background-color: var(--mat-sys-surface-variant);
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: var(--border-radius);
-  color: var(--mat-sys-on-surface-variant);
-  width: 44px;
-  height: 40px;
-  flex: 0 0 44px;
+// Fixed-width value slot. Always reserved (even when empty) so the description
+// never runs into the value/button area, and so all action buttons align.
+.detail-value {
+  flex: 0 0 var(--input-width-m);
   display: flex;
   align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  padding: 0;
-  margin: 0;
-
-  mat-icon {
-    font-size: 24px;
-    width: 24px;
-    height: 24px;
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  &:focus-visible {
-    outline: buttons.$button-focus-outline;
-    outline-offset: 1px;
-  }
+  justify-content: flex-end;
 }
 
 .action-value-input,
@@ -94,7 +70,7 @@
   box-sizing: border-box;
   color: var(--mat-sys-on-surface);
   font-family: inherit;
-  width: unset;
+  width: 100%;
 }
 
 .action-value-textarea {

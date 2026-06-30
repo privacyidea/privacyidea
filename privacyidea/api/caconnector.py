@@ -27,6 +27,7 @@ All endpoints require admin authentication. Read access is gated by the
 admin policy action :ref:`caconnectorread`, write access by
 :ref:`caconnectorwrite`, and deletion by :ref:`caconnectordelete`.
 """
+
 from flask import (Blueprint, request)
 from .lib.utils import (send_result)
 from ..lib.log import log_with
@@ -41,7 +42,6 @@ from ..lib.policies.actions import PolicyAction
 
 log = logging.getLogger(__name__)
 
-
 caconnector_blueprint = Blueprint('caconnector_blueprint', __name__)
 
 
@@ -53,8 +53,11 @@ def get_caconnector_api(name=None):
     """
     Return CA connectors known to this server. If ``name`` is given as a
     path component, only the matching connector is returned; otherwise all
-    connectors are listed. Each entry includes the full configuration of
-    the connector, including any secrets stored alongside it.
+    connectors are listed. Each entry includes the connector configuration,
+    but password-type values are not returned in clear text: they are replaced
+    by the placeholder ``__CENSORED__``. When updating a connector, submit
+    ``__CENSORED__`` for such a value to keep its stored secret unchanged, or an
+    empty string to clear it.
 
     Requires admin authentication and the policy action :ref:`caconnectorread`.
 
@@ -63,7 +66,8 @@ def get_caconnector_api(name=None):
     """
     g.audit_object.log({"detail": f"{name!s}"})
     res = get_caconnector_list(filter_caconnector_name=name,
-                               return_config=True)  # the endpoint is only accessed by admins
+                               return_config=True,
+                               censor=True)
     g.audit_object.log({"success": True})
     return send_result(res)
 

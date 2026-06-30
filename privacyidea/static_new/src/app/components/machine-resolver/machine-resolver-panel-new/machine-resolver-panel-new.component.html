@@ -29,6 +29,7 @@
             <input
               type="text"
               class="machine-resolver-name-input"
+              i18n-placeholder
               placeholder="Name"
               [value]="newMachineResolver().resolvername"
               (input)="onResolvernameChange($event.target['value'])"
@@ -68,6 +69,7 @@
           @if (panel.expanded) {
             <button
               mat-icon-button
+              color="primary"
               [disabled]="!canSaveMachineResolver() || !isEdited()"
               (click)="$event.stopPropagation(); saveMachineResolver(panel)">
               <mat-icon>save</mat-icon>

@@ -4,9 +4,6 @@
 name: Build WebUI
 on:
   pull_request:
-    branches:
-      - 'master'
-      - 'branch-*'
     paths:
       - 'privacyidea/static_new/**'
   schedule:
@@ -24,8 +21,9 @@ jobs:
   build-webui:
     name: npm run build
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
       - name: Set up Node.js for building the new WebUI
@@ -38,3 +36,27 @@ jobs:
         run: npm ci
       - name: Build the new WebUI
         run: npm run build
+
+  notify-failure:
+    needs: build-webui
+    # Surface nightly build breakage as a GitHub issue. Scheduled runs only —
+    # PR failures already show up as PR checks.
+    if: ${{ failure() && github.event_name == 'schedule' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read # for actions/checkout to reach the local composite action
+      issues: write
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/notify-nightly-failure
+        with:
+          title: Nightly WebUI build failed on master
+          body: |
+            The nightly WebUI build (npm run build) failed on master.
+
+            Commit: ${{ github.sha }}
+            Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          token: ${{ secrets.GITHUB_TOKEN }}

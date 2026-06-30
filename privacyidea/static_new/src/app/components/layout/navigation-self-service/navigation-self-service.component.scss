@@ -7,13 +7,15 @@
   align-items: start;
   gap: var(--global-padding);
   padding: calc(2 * var(--global-padding));
-  max-height: var(--total-layout-height);
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-width: thin;
   box-sizing: border-box;
   height: 100vh;
   background: var(--mat-sys-surface-container-high);
+  box-shadow: inset -3px 0px 5px -1px var(--dashboard-shadow-color),
+  inset -5px 0px 8px 0px var(--dashboard-shadow-color),
+  inset -1px 0px 14px 0px var(--dashboard-shadow-color);
 }
 
 .user-details-container {

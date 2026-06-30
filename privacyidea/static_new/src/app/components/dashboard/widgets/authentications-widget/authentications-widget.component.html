@@ -1,0 +1,62 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+<app-widget-state [state]="state()">
+  <p
+    class="auth-subtitle"
+    i18n>
+    Authentications in the last 24 hours
+  </p>
+  <div class="auth-table-scroll">
+    <table class="auth-table">
+      <tbody>
+        <tr>
+          <td i18n>Success</td>
+          <td>{{ counts().success }}</td>
+        </tr>
+        <tr>
+          <td i18n>Failures</td>
+          <td>{{ counts().fail }}</td>
+        </tr>
+        <tr>
+          <td i18n>Users / Tokens with Failures</td>
+          <td class="auth-failed-cell">
+            @for (userobj of counts().users; track userobj.user + userobj.realm; let first = $first) {
+              @if (!first) {
+                <span class="auth-separator">|</span>
+              }
+              <a
+                (click)="contentService.userSelected(userobj.user, userobj.realm)"
+                (keydown.enter)="contentService.userSelected(userobj.user, userobj.realm)"
+                role="button"
+                tabindex="0">{{ userobj.user }}&#64;{{ userobj.realm }}[{{ userobj.fails }}]</a>
+            }
+            @for (serial of counts().serials; track serial) {
+              <a
+                (click)="contentService.tokenSelected(serial)"
+                (keydown.enter)="contentService.tokenSelected(serial)"
+                role="button"
+                tabindex="0">{{ serial }}</a>
+            }
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</app-widget-state>

@@ -225,6 +225,76 @@ angular.module("privacyideaApp").controller("userDetailsController", [
       }
     };
 
+    // Aggregate open challenges across every token the user owns.
+    // Cheap when Redis caching is on (per-serial Redis lookups),
+    // small fan-out in the DB-only path because users typically
+    // have few tokens. Wired to a collapsed accordion so the
+    // request only fires when the admin actually opens it.
+    $scope.userChallenges = { challenges: [], count: 0 };
+    $scope.userChallengesLoaded = false;
+    $scope.userChallengesError = false;
+    $scope.getUserChallenges = function () {
+      $scope.userChallengesError = false;
+      TokenFactory.getChallengesForUser(
+        function (data) {
+          $scope.userChallenges = data.result.value;
+          $scope.userChallengesLoaded = true;
+        },
+        { user: $scope.username, realm: $scope.realmname },
+        function () {
+          // Mark the fetch as completed (with error) so the
+          // accordion doesn't auto-refire the request every
+          // time the user toggles it during a backend outage.
+          $scope.userChallengesLoaded = true;
+          $scope.userChallengesError = true;
+        },
+      );
+    };
+    // Plain button + show/hide div. Replaces an earlier
+    // uib-accordion attempt whose is-open two-way binding silently
+    // didn't write back to this scope in this codebase's
+    // angular-ui-bootstrap version - the visual toggle worked but
+    // the controller flag stayed undefined, so no fetch ever fired.
+    $scope.userChallengesOpen = false;
+    $scope.toggleUserChallenges = function () {
+      $scope.userChallengesOpen = !$scope.userChallengesOpen;
+      if ($scope.userChallengesOpen && !$scope.userChallengesLoaded) {
+        $scope.getUserChallenges();
+      }
+    };
+
+    // Two-click cancel: first click asks for confirmation, second
+    // click actually issues the DELETE. Mirrors the same flow on
+    // the token-details page (tokenDetailController.cancelChallenge).
+    $scope.showCancelChallengeDialog = {};
+    // Serials a cancel will affect, keyed by transaction id. A single
+    // transaction can span several tokens (they share the id), and the
+    // cancel deletes the whole transaction. Fetched on confirm so the admin
+    // sees every affected token, including any not shown in this table.
+    $scope.cancelChallengeSerials = {};
+    $scope.cancelChallenge = function (transactionId, ask) {
+      if (ask) {
+        TokenFactory.getChallengesByTransaction(function (data) {
+          var serials = [];
+          angular.forEach(data.result.value.challenges, function (challenge) {
+            if (challenge.serial && serials.indexOf(challenge.serial) === -1) {
+              serials.push(challenge.serial);
+            }
+          });
+          $scope.cancelChallengeSerials[transactionId] = serials;
+        }, transactionId);
+        $scope.showCancelChallengeDialog[transactionId] = true;
+        return;
+      }
+      $scope.showCancelChallengeDialog[transactionId] = false;
+      TokenFactory.cancelChallenge(function () {
+        // Re-fetch the user's challenges so the cancelled
+        // transaction drops out of the table and the count
+        // updates in the toggle button.
+        $scope.getUserChallenges();
+      }, transactionId);
+    };
+
     // Change the pagination
     $scope.tokenPageChanged = function () {
       //debug: console.log('Page changed to: ' + $scope.params.page);
@@ -465,6 +535,12 @@ angular.module("privacyideaApp").controller("userDetailsController", [
       $scope._getUserToken();
       $scope.getCustomAttributes();
       $scope.getUserContainer();
+      // The challenge section is lazy-loaded on first expand. Only refresh
+      // it here once it has actually been loaded, so the visible count/table
+      // stays current without forcing a fetch the admin never asked for.
+      if ($scope.userChallengesLoaded) {
+        $scope.getUserChallenges();
+      }
     });
 
     // Container
@@ -581,6 +657,7 @@ angular.module("privacyideaApp").controller("userController", [
       $location.path("/user/list");
     }
 
+    $scope.usersLoading = false;
     $scope._getUsers = function (live_search) {
       if (
         !$rootScope.search_on_enter ||
@@ -604,14 +681,24 @@ angular.module("privacyideaApp").controller("userController", [
         params.attributes =
           "username,givenname,surname,email,phone,mobile,description,userid,editable,resolver";
         params.include_custom_attributes = false;
-        UserFactory.getUsers(params, function (data) {
-          //debug: console.log("success");
-          // The backend returns the complete list of users; pagination is done client-side.
-          $scope._allUsers = data.result.value;
-          $scope.userCount = $scope._allUsers.length;
-          $scope._applyPageSlice();
-          //debug: console.log($scope.userlist);
-        });
+        $scope.usersLoading = true;
+        UserFactory.getUsers(
+          params,
+          function (data) {
+            // The backend returns the complete list of users; pagination is done client-side.
+            $scope._allUsers = data.result.value || [];
+            $scope.userCount = $scope._allUsers.length;
+            $scope._applyPageSlice();
+            $scope.usersLoading = false;
+          },
+          function (error) {
+            // Cancelled in-flight requests come through here too
+            // (status -1); a follow-up call will re-set the flag.
+            if (error && error.status !== -1) {
+              $scope.usersLoading = false;
+            }
+          },
+        );
       }
     };
 
@@ -651,6 +738,11 @@ angular.module("privacyideaApp").controller("userController", [
 
     $scope.changeRealm = function () {
       $scope.params = { page: 1 };
+      // Clear stale entries so the user immediately sees that the
+      // previous realm's data is gone while the new search runs.
+      $scope.userlist = [];
+      $scope._allUsers = [];
+      $scope.userCount = 0;
       $scope._getUsers();
     };
 

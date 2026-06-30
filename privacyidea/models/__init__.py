@@ -48,6 +48,7 @@ from .eventcounter import EventCounter
 from .machine import (MachineResolver, MachineResolverConfig, MachineToken,
                       MachineTokenOptions, get_machineresolver_id,
                       get_machinetoken_ids)
+from .metric_aggregate import MetricAggregate
 from .monitoringstats import MonitoringStats
 from .periodictask import PeriodicTask, PeriodicTaskOption, PeriodicTaskLastRun
 from .policy import Policy, PolicyDescription, PolicyCondition
@@ -64,6 +65,7 @@ from .tokencontainer import (TokenContainer, TokenContainerInfo,
                              TokenContainerStates, TokenContainerTemplate,
                              TokenContainerToken)
 from .tokengroup import Tokengroup, TokenTokengroup
+from .usersetting import UserSetting
 
 # We don't use "import *" but to avoid the unused import warning we define this
 __all__ = ["db", "Audit", "audit_column_length", "AuthCache", "UserCache",
@@ -73,7 +75,7 @@ __all__ = ["db", "Audit", "audit_column_length", "AuthCache", "UserCache",
            "EventHandler", "EventHandlerOption", "EventHandlerCondition", "EventCounter",
            "MachineResolver", "MachineResolverConfig", "MachineToken",
            "MachineTokenOptions", "get_machineresolver_id", "get_machinetoken_ids",
-           "MonitoringStats",
+           "MetricAggregate", "MonitoringStats",
            "PeriodicTask", "PeriodicTaskOption", "PeriodicTaskLastRun",
            "Policy", "PolicyDescription", "PolicyCondition",
            "Realm", "ResolverRealm", "Resolver", "ResolverConfig",
@@ -86,4 +88,4 @@ __all__ = ["db", "Audit", "audit_column_length", "AuthCache", "UserCache",
            "TokenContainerRealm", "TokenContainerOwner",
            "TokenContainerStates", "TokenContainerTemplate",
            "TokenContainerToken",
-           "Tokengroup", "TokenTokengroup"]
+           "Tokengroup", "TokenTokengroup", "UserSetting"]

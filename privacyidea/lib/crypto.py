@@ -92,8 +92,38 @@ DEFAULT_HASH_ALGO_LIST = ['argon2', 'pbkdf2_sha512']
 DEFAULT_HASH_ALGO_PARAMS = {'argon2__rounds': ROUNDS}
 
 FAILED_TO_DECRYPT_PASSWORD = "FAILED TO DECRYPT PASSWORD!"  # nosec B105 # placeholder in case of error
+CENSORED = "__CENSORED__"  # nosec B105 # placeholder for censored secrets in API responses
 
 log = logging.getLogger(__name__)
+
+
+def is_censored(value) -> bool:
+    """Return True if ``value`` is the :data:`CENSORED` placeholder a client echoed
+    back for a secret it never received in clear text.
+
+    Use this on the *save* path to decide whether to keep the existing stored
+    value instead of overwriting it. Centralising the check (instead of
+    ``value == CENSORED`` scattered across modules) keeps it consistent and
+    type-safe (a non-string value can never accidentally match).
+    """
+    return isinstance(value, str) and value == CENSORED
+
+
+def censor_dict(data: dict, secret_keys) -> dict:
+    """Return a shallow copy of ``data`` with every key in ``secret_keys`` that is
+    present replaced by :data:`CENSORED`.
+
+    Use this on the *read*/serialisation path to keep secrets out of API
+    responses. ``data`` is never mutated, so it is safe to call on cached config
+    objects. ``secret_keys`` is any iterable of key names that hold secrets.
+    """
+    if not data:
+        return data
+    censored = dict(data)
+    for key in secret_keys:
+        if key in censored:
+            censored[key] = CENSORED
+    return censored
 
 
 @dataclass

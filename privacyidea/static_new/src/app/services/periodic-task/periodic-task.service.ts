@@ -57,17 +57,17 @@ export const EMPTY_PERIODIC_TASK: PeriodicTask = {
 };
 
 export const TASK_KEY_MAPPING: Record<string, string> = {
-  id: "ID",
-  name: "Name",
-  active: "Active",
-  interval: "Interval",
-  nodes: "Nodes",
-  taskmodule: "Task Module",
-  retry_if_failed: "Retry If Failed",
-  last_update: "Last Update",
-  ordering: "Ordering",
-  options: "Options",
-  last_runs: "Last Runs"
+  id: $localize`ID`,
+  name: $localize`Name`,
+  active: $localize`Active`,
+  interval: $localize`Interval`,
+  nodes: $localize`Nodes`,
+  taskmodule: $localize`Task Module`,
+  retry_if_failed: $localize`Retry If Failed`,
+  last_update: $localize`Last Update`,
+  ordering: $localize`Ordering`,
+  options: $localize`Options`,
+  last_runs: $localize`Last Runs`
 };
 
 export interface PeriodicTaskOption {
@@ -88,8 +88,8 @@ export const EMPTY_PERIODIC_TASK_OPTION: PeriodicTaskOption = {
 export type PeriodicTaskModule = "SimpleStats" | "EventCounter";
 export const PERIODIC_TASK_MODULES: PeriodicTaskModule[] = ["SimpleStats", "EventCounter"];
 export const PERIODIC_TASK_MODULE_MAPPING: Record<PeriodicTaskModule, string> = {
-  SimpleStats: "Simple Statistics",
-  EventCounter: "Event Counter"
+  SimpleStats: $localize`Simple Statistics`,
+  EventCounter: $localize`Event Counter`
 };
 
 export interface PeriodicTaskServiceInterface {

@@ -35,21 +35,42 @@ authenticated administrator. Because the ``/healthz`` endpoints expose
 information about this server without authentication, they should be reachable
 only from a trusted network and not exposed to untrusted clients.
 """
-from flask import Blueprint, current_app, g
+from flask import Blueprint, current_app, g, request
 
 from privacyidea.api.auth import check_auth_token
 from privacyidea.api.lib.utils import send_result
+from privacyidea.api.lib.postpolicy import strip_version_from_response
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.crypto import get_hsm
 from privacyidea.lib.error import AuthError, Error
-from privacyidea.lib.policy import Match, SCOPE, PolicyAction
+from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_object
+from privacyidea.lib.policy import Match, SCOPE, PolicyAction, PolicyClass
 from privacyidea.lib.resolver import get_resolver_list, get_resolver_class
+from privacyidea.lib.utils import get_client_ip
 import logging
 import time
 
 log = logging.getLogger(__name__)
 
 healthz_blueprint = Blueprint('healthz_blueprint', __name__)
+
+
+@healthz_blueprint.after_request
+def after_healthz_request(response):
+    """Lightweight after_request for health endpoints.
+
+    Unlike the shared after_request in before_after.py this does NOT sign the
+    response (no private-key I/O, no crypto) and does NOT evaluate policies.
+    Health probes are anonymous, high-frequency, and must stay as cheap as
+    possible - in particular livez/readyz must keep answering while the
+    database is unavailable, so we never trigger a policy (DB) read here.
+
+    The version number is therefore stripped unconditionally: health probes
+    never need it, regardless of the hide_version policy.
+    """
+    response.headers['Cache-Control'] = 'no-cache'
+    strip_version_from_response(response)
+    return response
 
 
 @healthz_blueprint.route('/', methods=['GET'])
@@ -324,8 +345,27 @@ def resolversz():
     # So names are always admin-only (the secure default, no policy needed); the
     # policy only re-adds the 401 for a present-but-unusable token, while a
     # header-less probe stays anonymous (status only) either way.
-    require_auth = Match.action_only(g, scope=SCOPE.AUTHZ,
-                                     action=PolicyAction.REQUIRE_AUTH_FOR_RESOLVER_DETAILS).any()
+    #
+    # The /healthz probes have no before_request hook, so build the minimal
+    # context the policy match needs here — and only here. The other probes
+    # (livez/readyz/startupz) deliberately stay independent of the DB/config
+    # subsystem so they keep answering even while the database is unavailable.
+    # Building this context reads the config/policies from the DB, so guard it the
+    # same way as the resolver probe below: on a DB/config failure answer with the
+    # 503 status response rather than letting an unhandled exception become a 500.
+    try:
+        ensure_no_config_object()
+        g.policy_object = PolicyClass()
+        g.client_ip = get_client_ip(request, get_from_config(SYSCONF.OVERRIDECLIENT))
+        # write_to_audit_log=False: this lightweight context has no audit object,
+        # and we do not want frequent probes writing to the audit log anyway.
+        require_auth = Match.action_only(g, scope=SCOPE.AUTHZ,
+                                         action=PolicyAction.REQUIRE_AUTH_FOR_RESOLVER_DETAILS).any(
+            write_to_audit_log=False)
+    except Exception as e:
+        log.debug(f"Exception building policy context in /resolversz endpoint: {e}")
+        return send_result({"status": "error"}), 503
+
     authenticated = False
     try:
         check_auth_token(required_role=[ROLE.ADMIN])

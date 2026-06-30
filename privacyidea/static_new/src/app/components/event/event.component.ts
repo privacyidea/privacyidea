@@ -77,15 +77,15 @@ export class EventComponent {
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
 
   columnKeysMap: Record<string, string> = {
-    ordering: "Ordering",
-    name: "Name",
-    handlermodule: "Handler Module",
-    position: "Position",
-    event: "Events",
-    action: "Action",
-    conditions: "Conditions",
-    active: "Active",
-    delete: "Delete"
+    ordering: $localize`Ordering`,
+    name: $localize`Name`,
+    handlermodule: $localize`Handler Module`,
+    position: $localize`Position`,
+    event: $localize`Events`,
+    action: $localize`Action`,
+    conditions: $localize`Conditions`,
+    active: $localize`Active`,
+    delete: $localize`Delete`
   };
   columnKeys = computed(() => {
     let keys = Object.keys(this.columnKeysMap);

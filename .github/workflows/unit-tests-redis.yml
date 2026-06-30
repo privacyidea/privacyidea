@@ -1,0 +1,181 @@
+# SPDX-FileCopyrightText: (C) 2014 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: CC0-1.0
+#
+# Runs the full unit test suite against MariaDB with a live Redis as the real
+# challenge backend (PI_REDIS_URL + PI_REDIS_CACHE_CHALLENGES). This is the only
+# job that exercises the Redis storage path end-to-end: every challenge created
+# anywhere in the suite goes through Redis, so any DB/Redis behavioural
+# divergence surfaces here. A single Python version is enough - the Redis path
+# is independent of the Python version, so a per-version matrix would only add
+# redundant runs. The DB-only matrix lives in the MariaDB/Postgres workflows.
+# Migration tests are excluded - they have their own dedicated workflow. Backup
+# round-trip tests are excluded too: they dump the database via mysqldump and
+# exercise nothing on the Redis path, so they add no signal here (the DB-only
+# MariaDB job already covers them).
+
+name: Unit Tests Redis
+
+on:
+  pull_request:
+    paths:
+      - 'privacyidea/**.py'
+      - 'tests/**'
+      - 'pyproject.toml'
+      - 'requirements.txt'
+      - 'tools/**'
+      - '.github/workflows/unit-tests-redis.yml'
+      - '.github/python-versions.env'
+  schedule:
+    # Nightly at 02:00 UTC, alongside the other unit-test workflows.
+    - cron: '0 2 * * *'
+
+permissions:
+  contents: read
+
+# Cancel any in-progress run for the same PR when a new commit is pushed.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  versions:
+    name: Load Python versions
+    runs-on: ubuntu-latest
+    outputs:
+      min: ${{ steps.load.outputs.min }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - id: load
+        run: |
+          set -a; source .github/python-versions.env; set +a
+          echo "min=$MIN" >> "$GITHUB_OUTPUT"
+
+  test:
+    needs: versions
+    name: 'Redis backend (Python ${{ needs.versions.outputs.min }})'
+    permissions:
+      checks: write # allow the python tests to mark an action run as failed
+    runs-on: ubuntu-latest
+
+    services:
+      mariadb:
+        image: mariadb:11
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: privacyidea_test
+          MARIADB_USER: privacyidea
+          MARIADB_PASSWORD: privacyidea
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        persist-credentials: false
+
+    - name: Set up Python ${{ needs.versions.outputs.min }}
+      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+      with:
+        python-version: ${{ needs.versions.outputs.min }}
+        cache: 'pip'
+        cache-dependency-path: |
+          requirements.txt
+          tests/requirements.txt
+
+    - name: Install dependencies
+      run: |
+        pip install -r tests/requirements.txt
+        pip install PyMySQL
+
+    - name: Pre-create per-worker databases
+      # pytest-xdist workers append a _gw<N> suffix to TEST_DATABASE_URL and use
+      # the matching Redis logical DB index (see tests/conftest.py).
+      # db.create_all() creates tables inside an existing database — the
+      # databases themselves must be pre-created. Eight covers typical GH
+      # runners (2-4 cores) with room to spare.
+      run: |
+        for i in $(seq 0 7); do
+          mysql -h 127.0.0.1 -u root -proot -e \
+            "CREATE DATABASE privacyidea_test_gw$i; \
+             GRANT ALL ON privacyidea_test_gw$i.* TO 'privacyidea'@'%';"
+        done
+
+    - name: Test with pytest
+      id: pytest_run
+      env:
+        TEST_DATABASE_URL: "mysql+pymysql://privacyidea:privacyidea@127.0.0.1:3306/privacyidea_test"
+        # Real challenge backend: the app stores challenges in Redis for the
+        # whole suite. TEST_REDIS_URL additionally enables the white-box cache
+        # tests (TTL/EXPIRE NX-GT/hash structure/cooldown).
+        PI_REDIS_URL: "redis://127.0.0.1:6379/0"
+        PI_REDIS_CACHE_CHALLENGES: "true"
+        TEST_REDIS_URL: "redis://127.0.0.1:6379/0"
+        PYTHONWARNINGS: "once::DeprecationWarning"
+      run: |
+        pip freeze
+        # Cap workers at 16: each xdist worker gets its own Redis logical DB
+        # (tests/conftest.py) and Redis has only 16 (0-15). conftest fails fast
+        # above that, so don't let a larger runner spawn more than 16 workers.
+        WORKERS=$(nproc)
+        if [ "$WORKERS" -gt 16 ]; then WORKERS=16; fi
+        # --dist=loadfile keeps all tests in one file on one worker, preserving
+        # the intra-file ordering the unittest-style suite currently relies on.
+        # Collect coverage: this job is the ONLY one that exercises the Redis
+        # cache path (lib/cache/redis.py and the cache branches), so its report
+        # must reach Codecov - otherwise that code shows as uncovered, since the
+        # MariaDB upload runs DB-only. Codecov merges both reports per commit.
+        python -b -m pytest -v -n "$WORKERS" --dist=loadfile --cov=privacyidea --cov-report=xml -m "not migration and not backup" tests/
+
+    - name: Codecov upload
+      if: ${{ steps.pytest_run.outcome == 'success' }}
+      uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
+      with:
+        files: ./coverage.xml
+        # Upload under the same `backend` flag as the MariaDB job. The `backend`
+        # status/component in codecov.yml is scoped to that flag, and Codecov
+        # unions multiple `backend` uploads per commit - so this run's coverage
+        # of the Redis cache path is merged into the backend total instead of
+        # being a separate flag that the backend status would ignore.
+        flags: backend
+        token: ${{ secrets.CODECOV_TOKEN }}
+
+  notify-failure:
+    needs: test
+    # Surface nightly breakage as a GitHub issue. Scheduled runs only — PR
+    # failures already show up as PR checks.
+    if: ${{ failure() && github.event_name == 'schedule' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read # for actions/checkout to reach the local composite action
+      issues: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/notify-nightly-failure
+        with:
+          title: Nightly Redis backend unit tests failed on master
+          body: |
+            The nightly Redis backend unit-test run failed on master.
+
+            Commit: ${{ github.sha }}
+            Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          token: ${{ secrets.GITHUB_TOKEN }}

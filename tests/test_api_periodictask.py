@@ -47,7 +47,8 @@ class APIPeriodicTasksTestCase(MyApiTestCase):
         self.assertEqual(data['result']['value'], [])
 
         # need authorization
-        fake_auth_token = jwt.encode({"role": "admin"}, key="313233343536", algorithm="HS256")
+        fake_auth_token = jwt.encode({"role": "admin"}, key="wrong-key-not-the-server-secret-0123456789",
+                                     algorithm="HS256")
         status_code, data = self.simulate_request('/periodictask/', method='GET',
                                                   headers={'Authorization': fake_auth_token})
         self.assertEqual(status_code, 401)

@@ -4,7 +4,9 @@
 # flags and components so one does not dilute the other when aggregated.
 #
 # Flags are set by the uploading workflows:
-#   - backend:  .github/workflows/unit-tests-{postgres,mariadb}.yml
+#   - backend:  .github/workflows/unit-tests-mariadb.yml (DB path) and
+#               .github/workflows/unit-tests-redis.yml (Redis cache path);
+#               Codecov unions both uploads into the backend flag.
 #   - frontend: .github/workflows/webui-test.yml
 
 coverage:
@@ -64,3 +66,11 @@ component_management:
 comment:
   layout: "header, diff, flags, components, files"
   require_changes: false
+
+# Migration scripts are one-shot, version-pinned artifacts with many
+# dialect-specific branches (MariaDB/Postgres/Oracle). The coverage suite is run
+# with `-m "not migration"`, so their bodies are never executed in the uploaded
+# report and would otherwise count as pure misses. They are still exercised by
+# the migration test suite (test_migrations.py, test_sequence_ddl.py).
+ignore:
+  - "privacyidea/migrations/**"

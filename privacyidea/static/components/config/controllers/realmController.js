@@ -99,7 +99,8 @@ myApp.controller("realmController", ["$scope", "$location", "$rootScope", "$stat
     }]);
 
 myApp.controller("realmListController", ["$scope", "$location", "$rootScope", "$state", "$stateParams", "ConfigFactory",
-    function ($scope, $location, $rootScope, $state, $stateParams, ConfigFactory) {
+    "AuthFactory",
+    function ($scope, $location, $rootScope, $state, $stateParams, ConfigFactory, AuthFactory) {
 
         $scope.selectedNode = {"name": "All"};
         $scope.newRealmParams = {"realmName": "", "node": "All"};
@@ -152,10 +153,26 @@ myApp.controller("realmListController", ["$scope", "$location", "$rootScope", "$
             });
         };
 
-        $scope.delRealm = function (name) {
-            ConfigFactory.delRealm(name, function (data) {
+        // Per-realm message shown inline when a delete is blocked by custom user
+        // attributes (error 908); the "Delete realm and attributes" button then
+        // retries with deleteCustomAttributes=true.
+        $scope.realmDeleteAttrMessage = {};
+        $scope.delRealm = function (name, deleteCustomAttributes) {
+            const params = deleteCustomAttributes ? {delete_custom_attributes: 1} : {};
+            ConfigFactory.delRealm(name, params, function (data) {
                 $scope.set_result = data.result.value;
+                $scope.realmDeleteAttrMessage[name] = "";
                 $scope.getRealms();
+            }, function (errorData) {
+                const error = errorData && errorData.result && errorData.result.error;
+                // 908: the realm still has custom user attributes. Reveal the
+                // inline confirmation (the message names the keys) instead of
+                // surfacing a generic error.
+                if (error && error.code === 908) {
+                    $scope.realmDeleteAttrMessage[name] = error.message;
+                } else {
+                    AuthFactory.authError(errorData);
+                }
             });
         };
 
