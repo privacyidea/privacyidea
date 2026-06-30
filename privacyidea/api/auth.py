@@ -83,7 +83,8 @@ from privacyidea.api.lib.utils import (send_result, get_all_params, INTERNAL_OPT
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.auth import (check_webui_user, ROLE, verify_db_admin,
                                   db_admin_exists)
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, AUTH_EVENT_TYPE_KEY
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
+                                                                           LOG_TRANSACTION_ID_KEY)
 from privacyidea.lib.conditional_access.engine import (get_user_lockout, get_ip_block,
                                                        evaluate_lockout_policies,
                                                        evaluate_access_decision, AccessDecision,
@@ -426,6 +427,8 @@ def get_auth_token():
     # A token can deliberately suppress its terminal event (push_wait timeout)
     terminal_event_suppressed = False
     serials = None
+    # Log-only transaction_id (push_wait success): correlates the terminal row without being exposed in the response.
+    log_transaction_id = None
     # Passkey login
     credential_id = get_optional(request.all_data, "credential_id")
     passkey_login_enabled = get_app_config_value("WEBUI_PASSKEY_LOGIN_ENABLED", True)
@@ -447,7 +450,8 @@ def get_auth_token():
                                 "authentication": AUTH_RESPONSE.REJECT,
                                 "serial": token.get_serial(),
                                 "token_type": token.get_type()})
-            log_authentication(AuthEventType.NO_TOKEN, request, user=token.user, transaction_id=transaction_id)
+            # The user owns this passkey but it is disabled -> NO_USABLE_TOKEN
+            log_authentication(AuthEventType.NO_USABLE_TOKEN, request, user=token.user, transaction_id=transaction_id)
             return send_result(False, rid=2, details={"message": "Token is disabled"})
 
         if not token.user:
@@ -631,6 +635,9 @@ def get_auth_token():
             # terminal event (push_wait timeout); absent means nothing classified the request.
             terminal_event_suppressed = AUTH_EVENT_TYPE_KEY in details and details[AUTH_EVENT_TYPE_KEY] is None
             auth_event_type = details.pop(AUTH_EVENT_TYPE_KEY, None)
+            # Pop the log-only transaction_id (push_wait success) so it is never returned to the client, mirroring
+            # /validate/check. It stands in for the challenge transaction_id the response does not carry.
+            log_transaction_id = details.pop(LOG_TRANSACTION_ID_KEY, None)
             if 'multi_challenge' in details:
                 serials = ",".join([challenge_info["serial"] for challenge_info in details["multi_challenge"]])
                 token_types = ",".join([challenge_info["type"] for challenge_info in details["multi_challenge"]
@@ -676,7 +683,8 @@ def get_auth_token():
         auth_event_type = AuthEventType.LOGIN_SUCCESS if (
                 admin_auth or user_auth) else AuthEventType.UNKNOWN_FAIL_REASON
     log_authentication(auth_event_type, request, user=user, serial=serials or details.get("serial"),
-                       transaction_id=get_optional(request.all_data, "transaction_id") or details.get("transaction_id"),
+                       transaction_id=(get_optional(request.all_data, "transaction_id")
+                                       or details.get("transaction_id") or log_transaction_id),
                        previous_transaction_id=_previous_transaction_id(details), username=login_name,
                        internal_admin=internal_admin)
 

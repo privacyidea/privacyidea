@@ -20,7 +20,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
 
-from sqlalchemy import and_, delete, func, or_, select
+from sqlalchemy import and_, delete, false, func, or_, select
 from sqlalchemy.orm import InstrumentedAttribute
 from sqlalchemy.sql import ColumnElement
 
@@ -70,10 +70,14 @@ class AuthenticationLogVisibilityScope:
     match all dimensions a policy sets (logical AND); across several scopes (from several policies) an entry is
     visible if it matches any one of them (logical OR) -- see :func:`get_authentication_logs_paginate`. Empty lists
     mean "no restriction on that dimension".
+
+    *username_case_insensitive* mirrors the originating policy's ``user_case_insensitive`` option and forces a
+    case-insensitive match on the ``usernames`` dimension only; realm and resolver always match case-sensitively.
     """
     realms: list[str]
     resolvers: list[str]
     usernames: list[str]
+    username_case_insensitive: bool = False
 
 
 @dataclass
@@ -311,14 +315,11 @@ def _match_condition(column: InstrumentedAttribute, value: str | list[str] | Non
     ``*`` is the only wildcard (see :func:`_wildcard_pattern`). Plain values are batched into a single ``IN``; only
     wildcard values cost a ``LIKE`` each, so a list without wildcards stays a single indexed ``IN``.
 
-    Plain values are matched with a plain ``IN`` so an index on the column can still be used. The case sensitivity of
-    that match is therefore left to the database collation: it is case-sensitive on SQLite (and on a binary collation)
-    but case-insensitive on a MySQL/MariaDB ``*_ci`` collation. Setting *case_insensitive* lowers both sides to
-    *enforce* case-insensitive matching consistently across backends -- note this defeats the column index (the
-    ``LOWER()`` wrapper prevents an index seek), so it is the slower path. There is deliberately no symmetric
-    "enforce case-sensitive" option: it would need DB-specific collation and is rarely worth the cost. Wildcard
-    values always match case-insensitively (via ``ILIKE``), since the DB-default ``LIKE`` case semantics differ per
-    backend.
+    Plain values are matched with a plain ``IN`` so an index on the column can still be used. The match is
+    **case-sensitive on every backend**. Setting *case_insensitive* lowers both sides to match case-insensitively
+    instead -- note this defeats the column index (the ``LOWER()`` wrapper prevents an index seek), so it is the slower
+    path. Wildcard values always match case-insensitively (via ``ILIKE``), since the DB-default ``LIKE`` case semantics
+    differ per backend.
     """
     if value is None:
         return None
@@ -383,8 +384,24 @@ def _filter_conditions(resolver: str | list[str] | None = None,
 def _visibility_condition(scopes: list[AuthenticationLogVisibilityScope]) -> ColumnElement[bool]:
     """
     Build a single ``where`` condition restricting the visible entries to the given scopes: an entry must match all
-    dimensions a scope sets (AND), and is included if it matches any one scope (OR). An entry matches a dimension via
-    ``IN`` on the corresponding column, so entries with a NULL value in a restricted dimension are excluded.
+    dimensions a scope sets (AND), and is included if it matches any one scope (OR). Entries with a NULL value in a
+    restricted dimension are excluded.
+
+    The visibility scope is an authorization boundary (which entries a principal may see). Each dimension matches by
+    equality via a plain ``IN`` (which keeps the column index). The boundary columns (realm, resolver, username) are
+    pinned to a **case-sensitive collation** at the schema level
+    (:func:`~privacyidea.models.authentication_log._case_sensitive_unicode`: ``utf8mb4_bin`` on MySQL/MariaDB; SQLite,
+    PostgreSQL and Oracle compare case-sensitively by default), so the match is case-sensitive on every backend rather
+    than depending on the server-default collation. This fails closed: an admin scoped to resolver ``res`` or user
+    ``alice`` never sees a distinct ``Res`` / ``Alice``.
+
+    The one exception is the **username** dimension when the originating policy set ``user_case_insensitive`` (carried
+    on the scope): it is then matched case-insensitively via ``LOWER()`` on both sides -- only this dimension, mirroring
+    how that policy option is applied during policy matching. realm and resolver are always case-sensitive (realm is
+    additionally always stored lower case, so its casing never varies in practice).
+
+    An empty scope list (or scopes that set no dimension at all) restricts to *nothing*: it returns ``false()`` rather
+    than an empty ``or_()``, so the visibility boundary fails closed instead of degrading to "no restriction".
     """
     scope_conditions = []
     for scope in scopes:
@@ -394,9 +411,15 @@ def _visibility_condition(scopes: list[AuthenticationLogVisibilityScope]) -> Col
         if scope.resolvers:
             dimensions.append(AuthenticationLog.resolver.in_(scope.resolvers))
         if scope.usernames:
-            dimensions.append(AuthenticationLog.username.in_(scope.usernames))
+            if scope.username_case_insensitive:
+                dimensions.append(func.lower(AuthenticationLog.username).in_([name.lower()
+                                                                              for name in scope.usernames]))
+            else:
+                dimensions.append(AuthenticationLog.username.in_(scope.usernames))
         if dimensions:
             scope_conditions.append(and_(*dimensions))
+    if not scope_conditions:
+        return false()
     return or_(*scope_conditions)
 
 
