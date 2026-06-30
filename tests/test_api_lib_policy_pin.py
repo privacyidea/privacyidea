@@ -465,6 +465,15 @@ class PrePolicyPinTestCase(PrePolicyHelperMixin, MyApiTestCase):
         req.User = User()
         self.assertTrue(check_otp_pin(req))
 
+        # An explicitly supplied user is honored over the token owner: naming a
+        # user in a realm without a strict PIN policy uses that user's policies,
+        # so the weak PIN is accepted. The owner's home-realm policy is only used
+        # as a fallback when no user is supplied (empty request.User).
+        req.all_data = {"serial": "PINBYSERIAL", "pin": "12",
+                        "user": "cornelius", "realm": self.realm1}
+        req.User = User("cornelius", self.realm1)
+        self.assertTrue(check_otp_pin(req))
+
         delete_policy("pol1")
         remove_token("PINBYSERIAL")
         delete_realm("home")

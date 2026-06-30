@@ -351,12 +351,13 @@ def check_otp_pin(request=None, action=None):
             if tokensobject_list[0].using_pin is False:
                 return True
             tokentype = tokensobject_list[0].token.tokentype
-            # Match the PIN policies against the token owner. An admin acting on an existing token
-            # by serial without a user parameter would otherwise carry an empty request.User, which
-            # only matches policies without a user/realm and would silently skip a user- or
-            # realm-scoped PIN policy that applies to the token owner.
+            # When no user was supplied in the request (e.g. an admin acting on an existing token
+            # by serial), request.User is empty and only matches policies without a user/realm,
+            # silently skipping a user- or realm-scoped PIN policy that applies to the token owner.
+            # Fall back to the token owner in that case. If the request did carry a user, that
+            # explicit user is honored.
             token_owner = tokensobject_list[0].user
-            if token_owner:
+            if token_owner and not request.User:
                 pin_user = token_owner
     # the default tokentype is still HOTP
     tokentype = tokentype or "hotp"
