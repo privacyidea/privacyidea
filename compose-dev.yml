@@ -57,6 +57,19 @@ services:
       timeout: 5s
       retries: 10
 
+  redis:
+    # Cache URI: redis://127.0.0.1:6379/0
+    image: redis:7-alpine
+    container_name: pi-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      start_period: 5s
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   oracle-test:
     # DB URI: oracle+oracledb://privacyidea:privacyidea@127.0.0.1:1521/?service_name=XEPDB1
     # gvenzl/oracle-xe is a no-login Oracle XE image on Docker Hub. XE 21c (< 23c)

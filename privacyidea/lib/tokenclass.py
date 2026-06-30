@@ -104,7 +104,7 @@ from .log import log_with
 from .policies.actions import PolicyAction
 from .policydecorators import libpolicy, auth_otppin, challenge_response_allowed
 from .user import (User)
-from ..models import (TokenOwner, TokenTokengroup, Challenge, cleanup_challenges, TokenInfo, db, TokenRealm, Realm,
+from ..models import (TokenOwner, TokenTokengroup, cleanup_challenges, TokenInfo, db, TokenRealm, Realm,
                       Tokengroup, TokenCredentialIdHash)
 
 DATE_FORMAT = '%Y-%m-%dT%H:%M%z'
@@ -746,8 +746,27 @@ class TokenClass:
         delete_stmt_token_realm = delete(TokenRealm).where(TokenRealm.token_id == self.token.id)
         db.session.execute(delete_stmt_token_realm)
 
-        delete_stmt_challenge = delete(Challenge).where(Challenge.serial == self.token.serial)
-        db.session.execute(delete_stmt_challenge)
+        # Routed through delete_challenges() so Redis-cached challenges
+        # for this serial are invalidated alongside any DB rows; otherwise
+        # transaction IDs would keep resolving until their TTL expires.
+        # commit=False keeps the SQL DELETE inside this method's outer
+        # transaction so token + challenge removal stays atomic on the DB
+        # side (Redis eviction has no transaction concept and runs up-front).
+        #
+        # Caveat: if the outer transaction aborts after this point, the SQL
+        # challenge rows are restored but the Redis entries are already gone.
+        # Two cases:
+        # * DB-only challenges (cache off, or fallback writes): the SQL row
+        #   comes back on rollback, the next read finds it via the normal
+        #   cache-miss -> DB-fallback path. No observable loss.
+        # * Redis-only challenges (cache on, the steady state): there is no
+        #   SQL twin to restore. In-flight authentications for those
+        #   transaction IDs immediately fail with "challenge not found" and
+        #   the user has to start the MFA flow over.
+        # Token deletes rarely roll back in practice, but the asymmetry is
+        # real - do not rely on cross-store transactional semantics.
+        from privacyidea.lib.challenge import delete_challenges
+        delete_challenges(serial=self.token.serial, commit=False)
 
         if self.get_tokentype().lower() in ["webauthn", "passkey"]:
             delete_stmt_token_credential = delete(TokenCredentialIdHash).where(
@@ -1835,14 +1854,14 @@ class TokenClass:
         lookup_for = tokentype.capitalize() + 'ChallengeValidityTime'
         validity = int(get_from_config(lookup_for, validity))
 
-        # Create the challenge in the database
-        db_challenge = Challenge(self.token.serial,
-                                 transaction_id=transactionid,
-                                 challenge=options.get("challenge"),
-                                 data=data,
-                                 session=options.get("session"),
-                                 validitytime=validity)
-        db_challenge.save()
+        # Create the challenge (Redis if available, DB fallback)
+        from privacyidea.lib.token import create_challenge as _create_challenge
+        db_challenge = _create_challenge(self.token.serial,
+                                         transaction_id=transactionid,
+                                         challenge=options.get("challenge"),
+                                         data=data,
+                                         session=options.get("session"),
+                                         validitytime=validity)
         self.challenge_janitor()
         return True, message, db_challenge.transaction_id, reply_dict
 

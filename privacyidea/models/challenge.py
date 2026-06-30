@@ -168,8 +168,13 @@ class Challenge(MethodsMixin, db.Model):
         :type timestamp: bool
         :return: dict of vars
         """
+        # The SQL primary key is intentionally not part of the public
+        # challenge representation. transaction_id is the identity field
+        # callers should use. .id is a storage-layer artifact, and exposing
+        # it would let consumers diverge between the SQL backend (real int)
+        # and the Redis cache backend (no PK at all - ChallengeDTO doesn't
+        # expose .id).
         descr = {
-            'id': self.id,
             'transaction_id': self.transaction_id,
             'challenge': self.challenge,
             'serial': self.serial,
