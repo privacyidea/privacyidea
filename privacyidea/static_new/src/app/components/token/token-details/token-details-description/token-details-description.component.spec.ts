@@ -59,7 +59,7 @@ describe("TokenDetailsDescriptionComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("renders the admin description editor with 7 rows", () => {
+  it("renders the admin description editor with 3 rows", () => {
     const el = element();
     el.isEditing.set(true);
     fixture.componentRef.setInput("element", el);
@@ -67,10 +67,10 @@ describe("TokenDetailsDescriptionComponent", () => {
 
     const textarea = fixture.nativeElement.querySelector(".details-card--description textarea");
     expect(textarea).toBeTruthy();
-    expect(textarea.getAttribute("rows")).toBe("7");
+    expect(textarea.getAttribute("rows")).toBe("3");
   });
 
-  it("renders the self-service description editor with 4 rows", () => {
+  it("renders the self-service description editor with 3 rows", () => {
     const el = element();
     el.isEditing.set(true);
     fixture.componentRef.setInput("element", el);
@@ -78,6 +78,6 @@ describe("TokenDetailsDescriptionComponent", () => {
     fixture.detectChanges();
 
     const textarea = fixture.nativeElement.querySelector(".details-card--description textarea");
-    expect(textarea.getAttribute("rows")).toBe("4");
+    expect(textarea.getAttribute("rows")).toBe("3");
   });
 });

@@ -322,6 +322,8 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
   });
   isAnyEditing = computed(() => {
     return (
+      // Block editing until the container details have loaded for the first time.
+      !this.containerDetailResource.hasValue() ||
       this.containerDetailData().some((element) => element.isEditing()) ||
       this.isEditingUser() ||
       this.isEditingInfo() ||

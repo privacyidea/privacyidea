@@ -263,6 +263,8 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
   userRealm = "";
   isAnyEditingOrRevoked = computed(() => {
     return (
+      // Block editing until the token details have loaded for the first time.
+      !this.tokenDetailResource.hasValue() ||
       this.tokenDetailData().some((element) => element.isEditing()) ||
       this.editRegistry.anyEditing() ||
       this.isEditingUser() ||

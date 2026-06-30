@@ -399,6 +399,8 @@ th:nth-child(even) {
 .details-field-list {
   display: flex;
   flex-direction: column;
+  // Match the Material table cell size used by the user card (.mat-mdc-row).
+  font-size: 14px;
 
   > * {
     display: grid;
@@ -422,8 +424,6 @@ th:nth-child(even) {
     align-items: center;
     padding: 0 12px;
     min-width: 0;
-    font-weight: 500;
-    color: var(--mat-sys-on-surface-variant);
     border-right: 1px solid var(--mat-sys-outline-variant);
   }
 

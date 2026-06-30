@@ -91,6 +91,12 @@
 
 .details-card--machine { display: contents; }
 
+// Size to the action sections instead of growing to fill the column, so the
+// next card follows after just the grid gap with no trailing whitespace.
+.details-card--actions {
+  flex: 0 0 auto;
+}
+
 .details-card--user {
   display: block;
   min-width: 0;

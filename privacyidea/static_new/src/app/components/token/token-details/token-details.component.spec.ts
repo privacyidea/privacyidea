@@ -133,7 +133,7 @@ describe("TokenDetailsComponent", () => {
     expect(header.textContent).toContain("Mock serial");
   });
 
-  it("renders the description editor as a textarea with 7 rows", () => {
+  it("renders the description editor as a textarea with 3 rows", () => {
     component.tokenDetailData.set([
       {
         keyMap: { key: "description", label: "Description", group: "assignment" },
@@ -145,7 +145,7 @@ describe("TokenDetailsComponent", () => {
 
     const textarea = fixture.nativeElement.querySelector(".details-card--description textarea");
     expect(textarea).toBeTruthy();
-    expect(textarea.getAttribute("rows")).toBe("7");
+    expect(textarea.getAttribute("rows")).toBe("3");
   });
 
   it("resetFailCount calls service and reloads", () => {
