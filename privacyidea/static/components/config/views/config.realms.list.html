@@ -67,17 +67,31 @@
             </td>
             <td>
                 <span ng-hide="editRealm">
-                <button class="btn btn-primary"
-                        ng-show="checkRight('resolverwrite')"
-                        ng-click="startEdit(realmName, realm)"
-                        translate>Edit
-                </button>
-                <button class="btn btn-danger"
-                        ng-show="checkRight('resolverdelete')"
-                        ng-click="delRealm(realmName)">
+                <span ng-hide="realmDeleteAttrMessage[realmName]">
+                    <button class="btn btn-primary"
+                            ng-show="checkRight('resolverwrite')"
+                            ng-click="startEdit(realmName, realm)"
+                            translate>Edit
+                    </button>
+                    <button class="btn btn-danger"
+                            ng-show="checkRight('resolverdelete')"
+                            ng-click="delRealm(realmName)">
+                            <span class="glyphicon glyphicon-trash"></span>
+                            <span translate>Delete</span>
+                    </button>
+                </span>
+                <span ng-show="realmDeleteAttrMessage[realmName]">
+                    <span class="text-danger">{{ realmDeleteAttrMessage[realmName] }}</span><br>
+                    <button class="btn btn-danger"
+                            ng-click="delRealm(realmName, true)">
                         <span class="glyphicon glyphicon-trash"></span>
-                        <span translate>Delete</span>
-                </button>
+                        <span translate>Delete realm and attributes</span>
+                    </button>
+                    <button class="btn btn-default"
+                            ng-click="realmDeleteAttrMessage[realmName] = ''"
+                            translate>Cancel
+                    </button>
+                </span>
                 </span>
                 <span ng-show="editRealm == realmName">
                     <button class="btn btn-primary"

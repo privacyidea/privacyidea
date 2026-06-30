@@ -587,6 +587,41 @@ class APIConfigTestCase(MyApiTestCase):
             # The resolver was deleted = 1
             self.assertEqual(result["value"], res_id, result)
 
+    def test_09a_delete_realm_with_custom_attributes(self):
+        from privacyidea.lib.user import User
+        from privacyidea.models import CustomUserAttribute
+        self.setUp_user_realms()
+        # A user in the realm has a custom user attribute
+        user = User("cornelius", self.realm1)
+        user.set_attribute("department", "sales")
+
+        # Without delete_custom_attributes the deletion is refused with code 908,
+        # and the message names the attribute key.
+        with self.app.test_request_context(f'/realm/{self.realm1!s}',
+                                           method='DELETE',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 400, res)
+            error = res.json.get("result").get("error")
+            self.assertEqual(error.get("code"), 908, error)
+            self.assertIn("department", error.get("message"), error)
+
+        # The realm is still there and the attribute untouched.
+        self.assertIn(self.realm1, get_realms())
+        self.assertEqual({"department": "sales"}, User("cornelius", self.realm1).attributes)
+
+        # With delete_custom_attributes the realm and its custom attributes go together.
+        with self.app.test_request_context(f'/realm/{self.realm1!s}',
+                                           method='DELETE',
+                                           query_string="delete_custom_attributes=1",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            self.assertTrue(res.json.get("result").get("status"), res.json)
+
+        self.assertNotIn(self.realm1, get_realms())
+        self.assertEqual(0, CustomUserAttribute.query.filter_by(Key="department").count())
+
     def test_10_default_realm(self):
         resolvername = "defresolver"
         realmname = "defrealm"
