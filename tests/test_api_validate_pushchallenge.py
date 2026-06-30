@@ -8,7 +8,7 @@ from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from passlib.hash import argon2
 
-from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
 from privacyidea.lib.token import (remove_token)
 from privacyidea.lib.tokens.pushtoken import PushAction, strip_pem_headers

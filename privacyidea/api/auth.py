@@ -83,7 +83,7 @@ from privacyidea.api.lib.utils import (send_result, get_all_params, INTERNAL_OPT
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.auth import (check_webui_user, ROLE, verify_db_admin,
                                   db_admin_exists)
-from privacyidea.lib.conditional_access.authentication_error_codes import (AuthEventType, AUTH_EVENT_TYPE_KEY,
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
                                                                            LOG_TRANSACTION_ID_KEY)
 from privacyidea.lib.conditional_access.engine import (get_user_lockout, get_ip_block,
                                                        evaluate_lockout_policies,
@@ -293,6 +293,17 @@ def _conditional_access_precheck(user: User) -> None:
         g.audit_object.log({"info": "Rejected: denied by conditional-access policy"})
         raise AuthError(_("Authentication failure. Access has been denied by a conditional-access policy."),
                         id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
+
+
+def _previous_transaction_id(details: dict) -> str | None:
+    """
+    The answered-challenge transaction_id to link from this login's authentication-log row, when answering one
+    challenge immediately created a fresh one (CHALLENGE_CONTINUED); otherwise None. Mirrors /validate/check: the
+    newly-created challenge transaction_id lives in *details*, the answered one in the request, and they differ.
+    """
+    request_txn = get_optional(request.all_data, "transaction_id")
+    details_txn = details.get("transaction_id")
+    return request_txn if (details_txn and request_txn and details_txn != request_txn) else None
 
 
 @jwtauth.route('', methods=['POST'])
@@ -631,7 +642,10 @@ def get_auth_token():
                 serials = ",".join([challenge_info["serial"] for challenge_info in details["multi_challenge"]])
                 token_types = ",".join([challenge_info["type"] for challenge_info in details["multi_challenge"]
                                         if challenge_info.get("type")])
-                auth_event_type = AuthEventType.CHALLENGE_TRIGGERED
+                # The lib distinguishes an initial challenge (CHALLENGE_TRIGGERED) from a continuation that answered
+                # one challenge and created the next (CHALLENGE_CONTINUED). Keep the latter; only default to TRIGGERED.
+                if auth_event_type != AuthEventType.CHALLENGE_CONTINUED:
+                    auth_event_type = AuthEventType.CHALLENGE_TRIGGERED
             else:
                 serials = details.get('serial')
                 token_types = details.get('type')
@@ -655,7 +669,8 @@ def get_auth_token():
             if not user_auth and "multi_challenge" in details and len(details["multi_challenge"]) > 0:
                 # Do not return user data in case of a challenge request.
                 log_authentication(auth_event_type, request, user=user, serial=serials,
-                                   transaction_id=details.get("transaction_id"))
+                                   transaction_id=details.get("transaction_id"),
+                                   previous_transaction_id=_previous_transaction_id(details))
                 return send_result(False, rid=2, details=details)
 
     # Authentication log
@@ -666,10 +681,11 @@ def get_auth_token():
         # /validate/check. A deliberately suppressed terminal event (push_wait) keeps auth_event_type None, so
         # log_authentication below is a no-op and no row is added over the one the token already wrote.
         auth_event_type = AuthEventType.LOGIN_SUCCESS if (
-                    admin_auth or user_auth) else AuthEventType.UNKNOWN_FAIL_REASON
+                admin_auth or user_auth) else AuthEventType.UNKNOWN_FAIL_REASON
     log_authentication(auth_event_type, request, user=user, serial=serials or details.get("serial"),
                        transaction_id=(get_optional(request.all_data, "transaction_id")
                                        or details.get("transaction_id") or log_transaction_id),
+                       previous_transaction_id=_previous_transaction_id(details), username=login_name,
                        internal_admin=internal_admin)
 
     # Feed the classified outcome to the lockout engine (after the log row is written so the

@@ -22,7 +22,7 @@ from unittest.mock import patch
 from webauthn.helpers.structs import AttestationConveyancePreference
 
 from privacyidea.config import TestingConfig
-from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.framework import get_app_config_value
