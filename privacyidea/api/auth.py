@@ -439,8 +439,7 @@ def get_auth_token():
                                 "authentication": AUTH_RESPONSE.REJECT,
                                 "serial": token.get_serial(),
                                 "token_type": token.get_type()})
-            # The user owns this passkey but it is disabled -> NO_USABLE_TOKEN, consistent with check_token_list's
-            # classification of an owned-but-unusable token (not NO_TOKEN, which means the user has no token at all).
+            # The user owns this passkey but it is disabled -> NO_USABLE_TOKEN
             log_authentication(AuthEventType.NO_USABLE_TOKEN, request, user=token.user, transaction_id=transaction_id)
             return send_result(False, rid=2, details={"message": "Token is disabled"})
 

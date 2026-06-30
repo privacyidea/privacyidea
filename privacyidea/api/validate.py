@@ -700,8 +700,7 @@ def _handle_fido2_auth(context: dict, credential_id: str):
                 "serial": token.get_serial(),
                 "token_type": context["details"].get("type")
             })
-            # Owned-but-unusable token (disabled) -> NO_USABLE_TOKEN, consistent with check_token_list and the
-            # passkey path in /auth. NO_TOKEN is reserved for a user who has no token at all (see line ~639).
+            # Owned-but-unusable token (disabled) -> NO_USABLE_TOKEN
             context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NO_USABLE_TOKEN
             return
 
