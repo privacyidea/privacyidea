@@ -46,6 +46,7 @@ import { MatInput } from "@angular/material/input";
 import { RouterLink } from "@angular/router";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 
@@ -137,7 +138,8 @@ const columnKeysMap = [
     ClearableInputComponent,
     MatIcon,
     MatButtonModule,
-    MatIconModule
+    MatIconModule,
+    ScrollEdgesDirective
   ],
   templateUrl: "./audit.component.html",
   styleUrl: "./audit.component.scss"

@@ -24,14 +24,22 @@
     [matTooltipDisabled]="isLargeScreen()">
     <mat-icon>account_circle</mat-icon>
   </span>
-  <div class="profile-text-wrapper">
-    <span class="profile-text">
-      {{ profileText() }}
-    </span>
-    @if (localNode()) {
-      <i class="node-text"> {{ localNode() }} </i>
-    }
-  </div>
+  @if (isLargeScreen()) {
+    <div class="profile-text-wrapper">
+      <span class="profile-text">
+        {{ profileText() }}
+      </span>
+      @if (localNode()) {
+        <i
+          #nodeEl
+          class="node-text"
+          [matTooltip]="localNode()!"
+          [matTooltipDisabled]="nodeEl.scrollWidth <= nodeEl.clientWidth">
+          {{ localNode() }}
+        </i>
+      }
+    </div>
+  }
   <app-language-switcher></app-language-switcher>
   <app-theme-switcher></app-theme-switcher>
   <button

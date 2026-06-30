@@ -44,7 +44,7 @@
       </mat-form-field>
     </div>
 
-    <div class="audit-table-overflow">
+    <div class="table-scroll-region" appScrollEdges>
       <table
         [dataSource]="realmsDataSource()"
         aria-label="Realm Data Table"
@@ -204,7 +204,7 @@
                           color="primary"
                           mat-icon-button
                           type="button">
-                          <mat-icon>save_as</mat-icon>
+                          <mat-icon>save</mat-icon>
                         </button>
                         <button
                           (click)="cancelEditRealm()"
@@ -353,7 +353,7 @@
         }
 
         <tr
-          *matHeaderRowDef="columnKeys"
+          *matHeaderRowDef="columnKeys; sticky: true"
           aria-label="Header Row"
           mat-header-row></tr>
 

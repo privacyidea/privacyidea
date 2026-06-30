@@ -36,7 +36,7 @@ import { SelectedUserAssignDialogComponent } from "./selected-user-attach-dialog
 import { ToggleActiveAction, ToggleActiveDialogComponent } from "./toggle-active-dialog/toggle-active-dialog.component";
 
 import { MatMenuModule } from "@angular/material/menu";
-import { Router, RouterLink } from "@angular/router";
+import { Router } from "@angular/router";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { DocumentationService, DocumentationServiceInterface } from "@services/documentation/documentation.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
@@ -44,7 +44,7 @@ import { OverflowNavDirective } from "../../../shared/directives/overflow-nav/ov
 
 @Component({
   selector: "app-token-table-actions",
-  imports: [MatButtonModule, MatIcon, RouterLink, MatMenuModule, MatTooltipModule, OverflowNavDirective],
+  imports: [MatButtonModule, MatIcon, MatMenuModule, MatTooltipModule, OverflowNavDirective],
   templateUrl: "./token-table-actions.component.html",
   styleUrl: "./token-table-actions.component.scss"
 })
