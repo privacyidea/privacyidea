@@ -214,13 +214,16 @@ class AuthenticationLogTestCase(MyTestCase):
 
     def test_get_authentication_logs_case_insensitive_flag_enforces_insensitive_match(self):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
-                                 username="Alice")
+                                 username="Alice", serial="TOK1")
 
-        # The flag guarantees a differently-cased value matches, regardless of the DB collation. The unflagged
-        # default follows the collation (case-sensitive on SQLite, case-insensitive on a MySQL/MariaDB *_ci
-        # collation), so it is deliberately not asserted here.
+        # All string columns use a case-sensitive collation, so the unflagged default is case-sensitive on every
+        # backend: a differently-cased value does not match without the flag, and matches with it. This holds for a
+        # non-boundary column (serial) too, confirming the behaviour is uniform across columns.
+        self.assertEqual(0, get_authentication_logs_paginate(username="alice").count)
         self.assertEqual(1, get_authentication_logs_paginate(username="alice", case_insensitive=True).count)
         self.assertEqual(1, get_authentication_logs_paginate(username="Alice").count)
+        self.assertEqual(0, get_authentication_logs_paginate(serial="tok1").count)
+        self.assertEqual(1, get_authentication_logs_paginate(serial="tok1", case_insensitive=True).count)
 
     def test_get_authentication_logs_wildcard_is_always_case_insensitive(self):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
@@ -642,6 +645,41 @@ class AuthenticationLogPaginateTestCase(MyTestCase):
         scopes = [AuthenticationLogVisibilityScope(realms=["realm1"], resolvers=[], usernames=[]),
                   AuthenticationLogVisibilityScope(realms=[], resolvers=["res2"], usernames=[])]
         restricted = get_authentication_logs_paginate(visibility_scopes=scopes)
+        self.assertEqual(2, restricted.count)
+
+    def test_visibility_scope_resolver_matches_case_sensitively(self):
+        # The boundary columns are pinned to a case-sensitive collation (utf8mb4_bin on MySQL/MariaDB; SQLite, Postgres
+        # and Oracle are case-sensitive by default), so a resolver scope never leaks a case-variant resolver on any
+        # backend -- the boundary fails closed.
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="realm1")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="RES1", uid="u2", realm="realm1")
+        scope = AuthenticationLogVisibilityScope(realms=[], resolvers=["res1"], usernames=[])
+        restricted = get_authentication_logs_paginate(visibility_scopes=[scope])
+        self.assertEqual(1, restricted.count)
+        self.assertEqual("res1", restricted.auth_logs[0].resolver)
+
+    def test_visibility_scope_username_matches_case_sensitively_by_default(self):
+        # Without the policy's user_case_insensitive option, an admin scoped to "alice" must not see "Alice" -- and the
+        # case-sensitive collation makes this hold on every backend, not just on a case-sensitive DB collation.
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", realm="realm1",
+                                 username="alice")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", realm="realm1",
+                                 username="Alice")
+        scope = AuthenticationLogVisibilityScope(realms=[], resolvers=[], usernames=["alice"])
+        restricted = get_authentication_logs_paginate(visibility_scopes=[scope])
+        self.assertEqual(1, restricted.count)
+        self.assertEqual("alice", restricted.auth_logs[0].username)
+
+    def test_visibility_scope_username_case_insensitive_when_policy_set(self):
+        # With user_case_insensitive carried on the scope, the username dimension is forced case-insensitive via
+        # LOWER() on both sides, so the admin scoped to "alice" also sees the "Alice" entry.
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", realm="realm1",
+                                 username="alice")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", realm="realm1",
+                                 username="Alice")
+        scope = AuthenticationLogVisibilityScope(realms=[], resolvers=[], usernames=["alice"],
+                                                 username_case_insensitive=True)
+        restricted = get_authentication_logs_paginate(visibility_scopes=[scope])
         self.assertEqual(2, restricted.count)
 
     def test_to_dict_shape_and_iso_timestamp(self):

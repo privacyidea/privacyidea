@@ -700,7 +700,8 @@ def _handle_fido2_auth(context: dict, credential_id: str):
                 "serial": token.get_serial(),
                 "token_type": context["details"].get("type")
             })
-            context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NO_TOKEN
+            # Owned-but-unusable token (disabled) -> NO_USABLE_TOKEN
+            context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NO_USABLE_TOKEN
             return
 
         try:
@@ -804,16 +805,16 @@ def _handle_standard_auth(context: dict):
                 context[AUTH_EVENT_TYPE_KEY] = AuthEventType.USER_UNKNOWN
             raise
 
-        if AUTH_EVENT_TYPE_KEY not in details:
-            # The key being absent means nothing classified this request. A token that deliberately suppressed its
-            # terminal event (push_wait timeout) instead leaves the key present with value None, which we must keep so
-            # no terminal row is logged on top of the CHALLENGE_TRIGGERED the token already wrote.
-            if success:
-                # A policy decorator (passthru, passonnouser, authcache, accept-no-token) can
-                # accept the login without the token layer classifying it -> LOGIN_SUCCESS.
-                details[AUTH_EVENT_TYPE_KEY] = AuthEventType.LOGIN_SUCCESS
-            else:
-                details[AUTH_EVENT_TYPE_KEY] = AuthEventType.UNKNOWN_FAIL_REASON
+    if AUTH_EVENT_TYPE_KEY not in details:
+        # The key being absent means nothing classified this request. A token that deliberately suppressed its
+        # terminal event (push_wait timeout) instead leaves the key present with value None, which we must keep so
+        # no terminal row is logged on top of the CHALLENGE_TRIGGERED the token already wrote.
+        if success:
+            # A successful container challenge (handled above) or a policy decorator (passthru, passonnouser,
+            # authcache, accept-no-token) can accept the login without the token layer classifying it -> LOGIN_SUCCESS.
+            details[AUTH_EVENT_TYPE_KEY] = AuthEventType.LOGIN_SUCCESS
+        else:
+            details[AUTH_EVENT_TYPE_KEY] = AuthEventType.UNKNOWN_FAIL_REASON
 
     context["result"] = success
     context["details"] = details

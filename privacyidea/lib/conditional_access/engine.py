@@ -126,7 +126,7 @@ def _resolved(user: "User") -> bool:
 
 def _types_label(types: "list[str]") -> str:
     """Render a policy's tracked counter types for log messages, e.g.
-    ``PASSWORD_FAIL, OTP_FAIL`` (or ``(none)`` for an empty list)."""
+    ``PASSWORD_FAIL, TOKEN_ONLY_FAIL`` (or ``(none)`` for an empty list)."""
     return ", ".join(types) if types else "(none)"
 
 
@@ -140,7 +140,7 @@ def count_user_events(resolver: str, uid: str, realm: str,
 
     *event_types* may be a single :class:`AuthEventType` value or a list of
     them; events matching **any** of the listed types are counted together (one
-    combined count), so a policy tracking ``[PASSWORD_FAIL, OTP_FAIL]`` trips on
+    combined count), so a policy tracking ``[PASSWORD_FAIL, TOKEN_ONLY_FAIL]`` trips on
     the total of both rather than on either in isolation.
 
     The ``WHERE`` column order matches the composite index

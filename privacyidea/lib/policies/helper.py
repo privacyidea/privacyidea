@@ -190,5 +190,7 @@ def get_authentication_log_visibility_scopes(
         if not (realms or resolvers or usernames):
             # An applicable policy with no target scope grants access to all entries.
             return None
-        scopes.append(AuthenticationLogVisibilityScope(realms=realms, resolvers=resolvers, usernames=usernames))
+        scopes.append(AuthenticationLogVisibilityScope(
+            realms=realms, resolvers=resolvers, usernames=usernames,
+            username_case_insensitive=bool(policy.get("user_case_insensitive"))))
     return scopes or None
