@@ -115,10 +115,10 @@
       <div class="clear-user-agents-container">
         <button
           mat-stroked-button
-          class="action-button-1"
-          (click)="clearUserAgents()"
-          i18n>
-          Clear User Agents
+          class="action-button-secondary button-width-m"
+          (click)="clearUserAgents()">
+          <mat-icon>clear_all</mat-icon>
+          <span i18n>Clear User Agents</span>
         </button>
       </div>
     }
@@ -127,7 +127,7 @@
   <div class="user-agent-input-container">
     <mat-form-field
       appearance="outline"
-      class="user-agent-select">
+      class="input-width-m">
       <mat-label i18n>User Agent</mat-label>
       <mat-select
         #uaSelect

@@ -13,7 +13,7 @@
 .user-agent-list-wrapper {
   align-items: flex-end;
   display: flex;
-  gap: 12px;
+  gap: var(--half-global-gap);
   width: 100%;
 }
 
@@ -21,7 +21,7 @@
   display: flex;
   flex-grow: 1;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--quarter-global-gap);
   padding-bottom: var(--half-global-padding);
   scrollbar-width: thin;
 }
@@ -37,16 +37,12 @@
   display: flex;
 }
 
-.user-agent-select {
-  width: 200px;
-}
-
 .remove-user-agent-btn {
   align-items: center;
   display: flex;
   height: 18px;
   justify-content: center;
-  margin-left: 4px;
+  margin-left: var(--quarter-global-padding);
   padding: 0;
   width: 18px;
 }
@@ -66,7 +62,7 @@
 .select-search-header {
   background-color: var(--mat-sys-surface-container);
   border-bottom: 1px solid var(--mat-sys-outline-variant);
-  padding: 10px 16px;
+  padding: var(--half-global-padding) var(--global-padding);
   position: sticky;
   top: 0;
   z-index: 10;

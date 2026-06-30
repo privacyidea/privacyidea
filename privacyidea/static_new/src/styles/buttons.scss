@@ -481,6 +481,7 @@ $button-low-contrast-variant: linear-gradient(
 }
 
 .mat-mdc-outlined-button {
+  --mat-button-outlined-container-shape: var(--border-radius);
   border-radius: var(--border-radius);
   padding: var(--half-global-padding) var(--global-padding);
   border: 1px solid var(--mat-sys-outline);
