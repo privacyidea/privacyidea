@@ -40,7 +40,7 @@ import logging
 from sqlalchemy import delete, select
 
 from privacyidea.lib.config import get_config_object
-from privacyidea.lib.error import DatabaseError, UserError
+from privacyidea.lib.error import DatabaseError, Error, UserError
 from privacyidea.lib.utils import sanity_name_check, fetch_one_resource, is_true
 from privacyidea.lib.utils.export import (register_import, register_export)
 from .framework import get_app_config_value
@@ -174,13 +174,21 @@ def get_default_realm():
 
 
 @log_with(log)
-def delete_realm(realm_name: str):
+def delete_realm(realm_name: str, delete_custom_attributes: bool = False):
     """
     Delete the realm from the database table with the given name.
     If a user from this realm is assigned to a token or container a UserError is raised.
     If, after deleting this realm, there is only one realm left, the remaining realm is set the default realm.
 
+    Custom user attributes are bound to a realm, so deleting the realm would orphan
+    them. If any exist and ``delete_custom_attributes`` is False, a UserError
+    (id :attr:`Error.REALM_DELETE_CUSTOM_ATTRIBUTES`) naming the attribute keys is
+    raised so the caller can ask for confirmation. With ``delete_custom_attributes``
+    True the attributes are deleted along with the realm.
+
     :param realm_name: the to be deleted realm
+    :param delete_custom_attributes: also delete the realm's custom user attributes
+        instead of refusing the deletion
     """
     # Check if there are still users assigned to tokens or containers
     from .container import get_all_containers
@@ -197,13 +205,19 @@ def delete_realm(realm_name: str):
                 raise UserError(
                     "Realm can not be deleted, because a user of this realm is still assigned to a container.")
 
-    # Check if there are custom user attributes for users in this realm
     from ..models import CustomUserAttribute
     realm_obj = fetch_one_resource(Realm, name=realm_name)
-    stmt = select(CustomUserAttribute.id).where(CustomUserAttribute.realm_id == realm_obj.id).limit(1)
-    if db.session.execute(stmt).first():
+    # Custom user attributes reference the realm. Refuse the deletion unless the
+    # caller explicitly opted in to removing them, naming the affected keys so a
+    # WebUI/CLI can ask for confirmation.
+    stmt = select(CustomUserAttribute.Key).where(CustomUserAttribute.realm_id == realm_obj.id).distinct()
+    custom_attribute_keys = db.session.scalars(stmt).all()
+    if custom_attribute_keys and not delete_custom_attributes:
+        keys = ", ".join(sorted(custom_attribute_keys))
         raise UserError(
-            "Realm can not be deleted, because a user of this realm still has custom user attributes.")
+            f"Realm '{realm_name}' contains custom user attributes ({keys}). "
+            f"Delete the realm and all its custom user attributes?",
+            id=Error.REALM_DELETE_CUSTOM_ATTRIBUTES)
 
     # Check if there is a default realm
     def_realm = get_default_realm()
@@ -217,6 +231,9 @@ def delete_realm(realm_name: str):
     db.session.execute(stmt)
     stmt = delete(ResolverRealm).where(ResolverRealm.realm_id == realm.id)
     db.session.execute(stmt)
+    if delete_custom_attributes:
+        stmt = delete(CustomUserAttribute).where(CustomUserAttribute.realm_id == realm.id)
+        db.session.execute(stmt)
 
     # Delete realm
     db.session.delete(realm)

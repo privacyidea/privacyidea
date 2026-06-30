@@ -1,5 +1,6 @@
-myApp.controller("realmController", ["$scope", "$location", "$rootScope", "$state", "ConfigFactory", "gettextCatalog",
-    function ($scope, $location, $rootScope, $state, ConfigFactory, gettextCatalog) {
+myApp.controller("realmController", ["$scope", "$location", "$rootScope", "$state", "$window", "ConfigFactory",
+    "AuthFactory", "gettextCatalog",
+    function ($scope, $location, $rootScope, $state, $window, ConfigFactory, AuthFactory, gettextCatalog) {
         // redirect to the list view
         if ($location.path() === "/config/realms") {
             $location.path("/config/realms/list");
@@ -152,10 +153,22 @@ myApp.controller("realmListController", ["$scope", "$location", "$rootScope", "$
             });
         };
 
-        $scope.delRealm = function (name) {
-            ConfigFactory.delRealm(name, function (data) {
+        $scope.delRealm = function (name, deleteCustomAttributes) {
+            const params = deleteCustomAttributes ? {delete_custom_attributes: 1} : {};
+            ConfigFactory.delRealm(name, params, function (data) {
                 $scope.set_result = data.result.value;
                 $scope.getRealms();
+            }, function (errorData) {
+                const error = errorData && errorData.result && errorData.result.error;
+                // 908: the realm still has custom user attributes. The message
+                // names the keys; ask whether to delete them along with the realm.
+                if (error && error.code === 908) {
+                    if ($window.confirm(error.message)) {
+                        $scope.delRealm(name, true);
+                    }
+                } else {
+                    AuthFactory.authError(errorData);
+                }
             });
         };
 

@@ -17,7 +17,7 @@ from privacyidea.lib.resolver import (save_resolver,
                                       delete_resolver)
 from privacyidea.lib.token import init_token, unassign_token
 from privacyidea.lib.user import User
-from privacyidea.models import NodeName, db
+from privacyidea.models import CustomUserAttribute, NodeName, db
 from .base import MyTestCase
 
 
@@ -109,15 +109,15 @@ class ResolverTestCase(MyTestCase):
         container_serial = init_container({"type": "generic", "user": "root", "realm": self.realm1})["container_serial"]
         self.assertRaises(UserError, delete_realm, self.realm1)
         unassign_user(container_serial, User("root", self.realm1))
-        # user of the realm still has custom user attributes
+        # user of the realm still has custom user attributes: deletion is refused
+        # unless we opt in to removing them
         user = User("root", self.realm1)
         user.set_attribute("test_key", "test_value")
-        try:
-            self.assertRaises(UserError, delete_realm, self.realm1)
-        finally:
-            user.delete_attribute("test_key")
-        # Now no user is assigned anymore, deletion is allowed
-        delete_realm(self.realm1)
+        self.assertRaises(UserError, delete_realm, self.realm1)
+        # Deleting with delete_custom_attributes removes the realm and its custom
+        # user attributes together
+        delete_realm(self.realm1, delete_custom_attributes=True)
+        self.assertEqual(0, CustomUserAttribute.query.filter_by(Key="test_key").count())
 
         # check that the token and container realm are also deleted
         self.assertEqual(0, len(token.get_realms()), token.get_realms())
