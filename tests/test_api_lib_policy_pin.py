@@ -429,6 +429,94 @@ class PrePolicyPinTestCase(PrePolicyHelperMixin, MyApiTestCase):
         delete_policy("pol1")
         delete_realm("home")
 
+    def test_09b_pin_policies_admin_by_serial(self):
+        # An admin acting on an existing token by serial without a user parameter must still have
+        # the realm-scoped PIN policy of the token owner enforced. The owner is derived from the
+        # serial, so the empty request.User does not silently skip the realm-scoped policy.
+        create_realm("home", [{'name': self.resolvername1}])
+        g.logged_in_user = {"username": "super",
+                            "realm": "",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST', headers={})
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+
+        # A token owned by cornelius in realm "home"
+        init_token({"type": "hotp", "serial": "PINBYSERIAL"}, user=User("cornelius", "home"))
+
+        # Realm-scoped admin PIN policy that requires a complex PIN
+        set_policy(name="pol1",
+                   scope=SCOPE.ADMIN,
+                   action="{0!s}={1!s},{2!s}={3!s}".format(PolicyAction.OTPPINMINLEN, "4",
+                                                           PolicyAction.OTPPINCONTENTS, "cn"),
+                   realm="home")
+        g.policy_object = PolicyClass()
+
+        # Admin sends only the serial and a weak PIN, with no user parameter -> empty request.User
+        req.all_data = {"serial": "PINBYSERIAL", "pin": "12"}
+        req.User = User()
+        # The realm-scoped policy is matched against the token owner -> weak PIN is rejected
+        self.assertRaises(PolicyError, check_otp_pin, req)
+
+        # A PIN that complies with the owner's realm policy is accepted
+        req.all_data = {"serial": "PINBYSERIAL", "pin": "abc123"}
+        req.User = User()
+        self.assertTrue(check_otp_pin(req))
+
+        delete_policy("pol1")
+        remove_token("PINBYSERIAL")
+        delete_realm("home")
+
+    @log_capture(level=logging.INFO)
+    def test_09c_random_pin_contents_uses_param_user(self, capture):
+        # init_random_pin must resolve the OTPPINCONTENTS policy with the same
+        # user as the OTPPINRANDOM lookup (the enrollment user from the request
+        # params), not request.User. When request.User is empty but the params
+        # carry the user (e.g. a realm injected by realmadmin), the user-scoped
+        # contents policy must still apply to the generated PIN.
+        create_realm("home", [{'name': self.resolvername1}])
+        g.logged_in_user = {"username": "super",
+                            "realm": "",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST', headers={})
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+
+        # Enrollment generates a random PIN of length 12 (SCOPE.ENROLL) whose
+        # contents must include a digit (OTPPINCONTENTS "n", SCOPE.ADMIN,
+        # realm-scoped).
+        set_policy(name="pol_rand", scope=SCOPE.ENROLL,
+                   action="{0!s}={1!s}".format(PolicyAction.OTPPINRANDOM, "12"),
+                   realm="home")
+        set_policy(name="pol_contents", scope=SCOPE.ADMIN,
+                   action="{0!s}={1!s}".format(PolicyAction.OTPPINCONTENTS, "n"),
+                   realm="home")
+        g.policy_object = PolicyClass()
+
+        # Admin enrolls for cornelius@home: the user is in the params, but
+        # request.User is empty (the divergence the fix addresses).
+        req.all_data = {"type": "hotp", "user": "cornelius", "realm": "home"}
+        req.User = User()
+        self.assertTrue(init_random_pin(req))
+
+        # A PIN of the configured length was generated, and the realm-scoped
+        # contents policy was resolved via the param user (not the empty
+        # request.User): the "matching the contents policy" log only fires when
+        # the OTPPINCONTENTS lookup found the policy. Without the fix the lookup
+        # uses the empty request.User, misses the realm-scoped policy, and this
+        # log line is absent.
+        self.assertEqual(12, len(req.all_data["pin"]), req.all_data["pin"])
+        capture.check_present(("privacyidea.api.lib.prepolicy", "INFO",
+                               "Creating random OTP PIN with length 12 matching the contents policy n"))
+
+        delete_policy("pol_rand")
+        delete_policy("pol_contents")
+        delete_realm("home")
+
     def test_01b_token_specific_pin_policy(self):
         create_realm("home", [{'name': self.resolvername1}])
         g.logged_in_user = {"username": "super",
