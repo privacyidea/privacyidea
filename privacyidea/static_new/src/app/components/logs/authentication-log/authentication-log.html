@@ -43,12 +43,14 @@
       <!-- Filters without their own table column live behind a "More Filter" menu next to the input. -->
       @if (!authService.isSelfServiceUser()) {
         <button
-          class="more-filters-button"
           [matMenuTriggerFor]="moreFiltersMenu"
-          i18n
-          mat-stroked-button>
+          aria-label="More Filter"
+          class="margin-bottom-16"
+          i18n-aria-label
+          i18n-matTooltip
+          mat-icon-button
+          matTooltip="More Filter">
           <mat-icon>filter_list</mat-icon>
-          More Filter
         </button>
         <mat-menu #moreFiltersMenu="matMenu">
           <button

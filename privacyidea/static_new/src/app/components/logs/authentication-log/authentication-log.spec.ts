@@ -168,10 +168,10 @@ describe("AuthenticationLog", () => {
   });
 
   it("shows the More Filter button for an admin and hides it in self-service", () => {
-    expect(fixture.nativeElement.querySelector(".more-filters-button")).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('button[aria-label="More Filter"]')).not.toBeNull();
     authService.role.set("user");
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector(".more-filters-button")).toBeNull();
+    expect(fixture.nativeElement.querySelector('button[aria-label="More Filter"]')).toBeNull();
   });
 
   it("toggleRoleFilter adds and removes a role, stored as a CSV user_role filter", () => {
