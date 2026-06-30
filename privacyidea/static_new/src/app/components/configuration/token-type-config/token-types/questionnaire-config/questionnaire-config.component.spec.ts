@@ -85,4 +85,48 @@ describe("QuestionnaireConfigComponent", () => {
     fixture.detectChanges();
     expect(component.questionKeys().length).toBe(0);
   });
+
+  describe("blockNonNumeric", () => {
+    function keyEvent(key: string, modifiers: Partial<KeyboardEvent> = {}): KeyboardEvent {
+      return {
+        key,
+        ctrlKey: false,
+        metaKey: false,
+        preventDefault: jest.fn(),
+        ...modifiers
+      } as unknown as KeyboardEvent;
+    }
+
+    it("allows digit keys", () => {
+      const event = keyEvent("5");
+      component.blockNonNumeric(event);
+      expect(event.preventDefault).not.toHaveBeenCalled();
+    });
+
+    it("blocks non-digit printable keys", () => {
+      for (const key of ["a", "-", ".", "e"]) {
+        const event = keyEvent(key);
+        component.blockNonNumeric(event);
+        expect(event.preventDefault).toHaveBeenCalled();
+      }
+    });
+
+    it("allows multi-character (control) keys like Backspace and Enter", () => {
+      for (const key of ["Backspace", "Enter", "ArrowLeft", "Tab"]) {
+        const event = keyEvent(key);
+        component.blockNonNumeric(event);
+        expect(event.preventDefault).not.toHaveBeenCalled();
+      }
+    });
+
+    it("allows keyboard shortcuts with ctrl or meta held", () => {
+      const ctrlEvent = keyEvent("a", { ctrlKey: true });
+      component.blockNonNumeric(ctrlEvent);
+      expect(ctrlEvent.preventDefault).not.toHaveBeenCalled();
+
+      const metaEvent = keyEvent("v", { metaKey: true });
+      component.blockNonNumeric(metaEvent);
+      expect(metaEvent.preventDefault).not.toHaveBeenCalled();
+    });
+  });
 });
