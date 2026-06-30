@@ -157,7 +157,7 @@ mails. Allowed values match ``smtplib.SMTP.set_debuglevel``: ``0`` (default,
 off), ``1`` (protocol trace) or ``2`` (protocol trace with timestamps). The
 output is written by ``smtplib`` directly to ``stderr`` and therefore ends
 up wherever the WSGI server (Apache, uWSGI, gunicorn, systemd journal, ...)
-captures stderr — typically the webserver's error log.
+captures stderr - typically the webserver's error log.
 
 .. warning:: With ``PI_MAIL_DEBUG_LEVEL`` enabled the stderr stream will
    contain the full SMTP wire trace, including the ``AUTH`` line (SMTP
@@ -259,6 +259,45 @@ you configure pooling. It uses the settings from the above mentioned
 
 .. note:: A SQL database is probably not the best database to store time series.
    Other monitoring modules will follow.
+
+
+.. _picfg_metrics_health:
+
+Metrics and certificate health
+------------------------------
+
+These parameters control the internal metrics and the certificate-health
+information shown on the :ref:`dashboard`.
+
+``PI_NO_INTERNAL_METRICS`` (default ``False``). privacyIDEA records
+pre-aggregated timing and delivery metrics into the ``metric_aggregate`` table,
+which back the *Resolver Timing* and *Notification Delivery* dashboard panels.
+Set this to ``True`` to disable recording entirely; the panels then show no
+data and the table stays empty. Reads remain available and the
+``MetricsCleanup`` task (see :ref:`taskmodule_metricscleanup`) keeps working.
+
+``PI_CERT_CHECK_CACHE_SECONDS`` (default ``3600``) sets how long the results of
+the certificate-health checks are cached. The cache is also invalidated
+automatically whenever a resolver is saved or deleted.
+
+The certificate-health panel inspects the TLS certificates of your configured
+LDAP and Keycloak resolvers automatically. To additionally report on the
+privacyIDEA server certificate, set one or both of the following (both off by
+default, both admin-controlled and never derived from request data):
+
+``PI_SERVER_CERT_FILE`` - absolute path to a PEM (or DER) certificate file that
+the privacyIDEA process can read::
+
+    PI_SERVER_CERT_FILE = "/etc/letsencrypt/live/auth.example.com/fullchain.pem"
+
+``PI_HEALTH_CERT_PROBES`` - a list of ``{"host": "...", "port": int}`` endpoints
+that privacyIDEA opens a TLS connection to in order to read the served
+certificate::
+
+    PI_HEALTH_CERT_PROBES = [{"host": "127.0.0.1", "port": 443}]
+
+See :ref:`dashboard` for the full description of the panels these parameters
+feed.
 
 
 privacyIDEA Nodes
@@ -386,7 +425,7 @@ added to the ``PI_ENABLE_TOKEN_TYPE_ENROLLMENT`` list in ``pi.cfg``::
    As of v3.14 no token types are in this state. Types that are *fully*
    removed (e.g. ``u2f`` in v3.14) are migrated by the schema update to
    ``tokentype='deprecated'`` and handled via ``pi-tokenjanitor deprecated``
-   — see the developer note ``dev/token-deprecation-strategy.md``.
+   - see the developer note ``dev/token-deprecation-strategy.md``.
 
 .. _picfg_email_validators:
 
@@ -424,3 +463,172 @@ You can do this using the following config values::
 
 In this example the file ``mystatic/templates/myindex.html`` would be loaded
 as the initial single page application.
+
+
+.. _redis_cache:
+
+Redis cache
+-----------
+
+.. index:: Redis, cache, HA, high availability
+
+privacyIDEA can offload selected short-lived state to Redis instead of the SQL
+database. The current use-case is challenge data for challenge-response token
+flows in HA setups, where multiple privacyIDEA nodes would otherwise have to
+round-trip every challenge through a clustered database (e.g. Galera with
+ProxySQL). More workloads (metrics, ...) may opt into Redis later; each one ships
+behind its own feature flag and stays off by default.
+
+.. note::
+
+   Redis **7 or later** is required. The challenge cache relies on the
+   ``EXPIRE ... NX`` and ``EXPIRE ... GT`` options to keep per-token TTLs
+   consistent across concurrent writes; these were introduced in Redis 7.
+   The version is checked when the connection is established: an older server
+   is refused up front, and the worker falls back to DB-only operation (and
+   keeps retrying the connection) rather than failing later on the first write.
+
+Configuration is two-stage:
+
+1. Point privacyIDEA at a Redis instance with ``PI_REDIS_URL``.
+2. Enable the per-workload flag(s) for the data you want to cache.
+
+::
+
+    # Connection (no caching is enabled by setting this alone)
+    PI_REDIS_URL = "redis://localhost:6379/0"
+
+    # Per-feature opt-in
+    PI_REDIS_CACHE_CHALLENGES = True
+
+    # Optional: how long (seconds) to wait before retrying Redis after a
+    # failed op. Default 30. Raise it if your environment sees flaky Redis,
+    # lower it for tighter recovery.
+    # PI_REDIS_RETRY_COOLDOWN = 30
+
+When ``PI_REDIS_CACHE_CHALLENGES`` is enabled, challenges are written to Redis
+only and the SQL ``INSERT`` is skipped. Redis' TTL handles expiry - challenges
+are ephemeral by nature. If a Redis operation fails at runtime the worker
+enters a brief cooldown (``PI_REDIS_RETRY_COOLDOWN`` seconds, default 30)
+during which it short-circuits to DB-only without paying a connect timeout
+on every request, then automatically retries once the cooldown expires. If
+the retry succeeds the cache is back online with no operator intervention;
+if it fails the cooldown restarts. ``create_challenge`` always falls back
+to the database when Redis isn't writable, so a challenge is never silently
+lost.
+
+If ``PI_REDIS_URL`` is not set, every cache call degrades to a no-op and
+privacyIDEA behaves exactly as a database-only deployment.
+
+In a Docker deployment, the URL can be loaded from a secret file via
+``PI_REDIS_URL_FILE`` (e.g. ``/run/secrets/redis_url``) instead of being passed
+in the environment.
+
+.. _redis_cache_security:
+
+Security
+~~~~~~~~
+
+The Redis connection is configured entirely through ``PI_REDIS_URL`` - the URL
+scheme, credentials and TLS parameters it carries are the whole security
+surface. privacyIDEA does **not** enforce transport encryption or
+authentication, so the points below are the operator's responsibility.
+
+**Transport encryption (TLS).** Use the ``rediss://`` scheme to connect over
+TLS::
+
+    PI_REDIS_URL = "rediss://redis.internal:6379/0"
+
+TLS options are taken from the URL query string (passed through to the
+underlying client), for example a custom CA or client certificate for mutual
+TLS::
+
+    PI_REDIS_URL = "rediss://redis.internal:6379/0?ssl_cert_reqs=required&ssl_ca_certs=/etc/ssl/redis-ca.pem"
+
+When relying on TLS, set ``ssl_cert_reqs=required`` explicitly so the server
+certificate is verified.
+
+**Authentication.** Credentials are embedded in the URL, either as a password
+or as a Redis ACL user and password::
+
+    PI_REDIS_URL = "redis://default:s3cr3t@redis.internal:6379/0"
+    PI_REDIS_URL = "rediss://pi-cache-user:s3cr3t@redis.internal:6379/0"
+
+To keep the password out of the process environment, load the whole URL from a
+secret file with ``PI_REDIS_URL_FILE`` (see above). Credentials embedded in the
+URL are redacted from the privacyIDEA log (only ``***@host`` is ever written),
+so they do not leak into log files on connect or on error.
+
+**Data sensitivity.** When challenge caching is enabled, challenge data is
+stored in Redis as plaintext - exactly the same content, and the same lack of
+encryption, as the SQL ``challenge`` table it replaces. Redis therefore needs
+the **same protection level as your database**: restrict it to a private
+network, require authentication, prefer ``rediss://``, and use at-rest
+encryption (encrypted volume, or a managed Redis with encryption) if your
+threat model requires it. Do not expose the Redis instance on a public
+interface. The exposure window is small (entries carry the challenge validity
+TTL, typically a few minutes), but the data is no less sensitive than a
+challenge row in the database.
+
+.. _redis_cache_upgrades:
+
+Upgrades and payload compatibility
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+privacyIDEA does not support rolling upgrades on the SQL side (the schema
+migration step expects a single writer), so the Redis cache does not need to
+clear a higher bar. The policy below applies whenever the cache is enabled.
+
+**Within a single key prefix** (today: ``pi:challenge:``), the payload may grow
+over time. Older workers ignore unknown fields; newer workers read older
+entries via ``dict.get(field, default)``. No operator action is needed for
+this kind of change.
+
+**Breaking payload changes** are handled by bumping the version in the key
+prefix (``pi:challenge:v2:txn:...``) rather than by mutating the payload in
+place. The old keys are simply no longer read; they age out via TTL within
+one challenge-validity window. The visible effect:
+
+* Authentications that were already in flight at the moment of the upgrade
+  may need to be restarted by the user (their cached challenge lives under
+  the old prefix, the new code only writes/reads the new one). This is the
+  same expectation we set for any privacyIDEA upgrade - see
+  :ref:`upgrade`.
+* No operational ``FLUSHDB`` is required. Disk usage on the Redis instance
+  is bounded by the longest configured challenge validity time, after which
+  all stale-prefix keys have expired.
+
+**Self-healing safety net.** If a worker encounters a payload it cannot
+deserialize for any reason (corruption, a fork's incompatible change, a
+hand-edited key), the read is treated as a cache miss and the deserialisation
+failure is logged at debug. For Redis-only storage like challenges, the
+user-visible outcome is "challenge not found, please try again." The cache
+itself never crashes the worker.
+
+Future cache types may follow a different policy. Classic cache-aside
+objects backed by a database row of record (e.g. cached user attributes)
+will be free to mutate their payload at will, since any deserialisation
+failure falls through to the database and re-caches. Each new cacheable
+workload will document its own compatibility policy alongside its feature
+flag.
+
+.. _user_settings:
+
+User Settings
+-------------
+
+The Web UI can store per-user settings (UI preferences) on the server via the
+``/user/settings`` endpoint. These settings are not interpreted by the backend;
+they are only stored and served back to the Web UI of the logged-in user.
+
+The set of accepted setting keys can be extended without a code change::
+
+    PI_USER_SETTINGS_ALLOWED_KEYS = ["my_custom_key", "another_key"]
+
+The value is a list of additional allowed keys (a comma-separated string is also
+accepted when set via an environment variable).
+
+.. note:: Key enforcement is not active yet. Currently any key is accepted (only
+   the document structure and a size limit are enforced) so the Web UI can evolve
+   its settings freely. ``PI_USER_SETTINGS_ALLOWED_KEYS`` will take effect once
+   key enforcement is enabled.

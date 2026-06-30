@@ -78,6 +78,7 @@ privacyIDEA comes with the following task modules:
 
    simplestats
    eventcounter
+   metricscleanup
 
 
 .. _privacyidea_cron:

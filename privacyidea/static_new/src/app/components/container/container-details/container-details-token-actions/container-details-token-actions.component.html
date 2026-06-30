@@ -18,28 +18,30 @@
 -->
 @if (authService.oneActionAllowed(["assign", "unassign", "enable", "disable", "container_remove_token", "delete"])) {
   <div class="actions-otp-container">
-    <h4 class="margin-8">Token Actions</h4>
+    <h4
+      class="margin-8"
+      i18n>
+      Token Actions
+    </h4>
     <div class="flex-column ali-center gap-8">
       @if (authService.actionAllowed("assign")) {
         <button
           (click)="assignToAllToken()"
           [disabled]="!isAssignableToAllToken()"
-          class="action-button-secondary button-width-m"
-          i18n
+          class="action-button-secondary button-width-l"
           mat-stroked-button>
           <mat-icon>playlist_add</mat-icon>
-          Assign All
+          <span i18n>Assign All</span>
         </button>
       }
       @if (authService.actionAllowed("unassign")) {
         <button
           (click)="unassignFromAllToken()"
           [disabled]="!isUnassignableFromAllToken()"
-          class="action-button-delete-secondary button-width-m"
-          i18n
+          class="action-button-delete-secondary button-width-l"
           mat-stroked-button>
           <mat-icon>playlist_remove</mat-icon>
-          Unassign All
+          <span i18n>Unassign All</span>
         </button>
       }
     </div>
@@ -52,22 +54,20 @@
         <button
           (click)="toggleAll('activate')"
           [disabled]="!anyDisabledTokens()"
-          class="action-button-secondary button-width-m"
-          i18n
+          class="action-button-secondary button-width-l"
           mat-stroked-button>
           <mat-icon>playlist_play</mat-icon>
-          Activate All
+          <span i18n>Activate All</span>
         </button>
       }
       @if (authService.actionAllowed("disable")) {
         <button
           (click)="toggleAll('deactivate')"
           [disabled]="!anyActiveTokens()"
-          class="action-button-delete-secondary button-width-m"
-          i18n
+          class="action-button-delete-secondary button-width-l"
           mat-stroked-button>
           <mat-icon class="mdi--list-lock" />
-          Deactivate All
+          <span i18n>Deactivate All</span>
         </button>
       }
     </div>
@@ -83,22 +83,20 @@
         <button
           (click)="removeAll()"
           [disabled]="tokenData().data.length === 0"
-          class="action-button-delete-secondary button-width-m"
-          i18n
+          class="action-button-delete-secondary button-width-l"
           mat-stroked-button>
           <mat-icon> playlist_remove</mat-icon>
-          Remove All
+          <span i18n>Remove All</span>
         </button>
       }
       @if (authService.actionAllowed("delete")) {
         <button
           (click)="deleteAllTokens()"
           [disabled]="tokenData().data.length === 0"
-          class="action-button-delete-secondary button-width-m"
-          i18n
+          class="action-button-delete-secondary button-width-l"
           mat-stroked-button>
           <mat-icon> delete_sweep</mat-icon>
-          Delete All
+          <span i18n>Delete All</span>
         </button>
       }
     </div>

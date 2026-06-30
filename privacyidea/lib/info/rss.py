@@ -22,6 +22,7 @@ This module reads news from the given RSS feeds
 
 import feedparser
 import logging
+import time
 from datetime import datetime, timezone, timedelta
 from dateutil.parser import parse
 
@@ -31,8 +32,21 @@ RSS_FEEDS = {"Community News": "https://community.privacyidea.org/c/news.rss",
 
 log = logging.getLogger(__name__)
 
-RSS_NEWS = {}
 FETCH_DAYS = 180
+
+# In-memory TTL cache for parsed feed responses. Per-worker; see notes/redis.md
+# for the planned Redis-backed alternative.
+_CACHE_TTL_SECONDS = 900  # 15 minutes
+_CACHE: dict[tuple, tuple[float, dict]] = {}
+
+
+def _cache_key(rss_feeds: dict, channel, days: int) -> tuple:
+    return (tuple(sorted(rss_feeds.items())), channel, days)
+
+
+def invalidate_news_cache() -> None:
+    """Drop all cached feed responses. Intended for tests and manual refresh."""
+    _CACHE.clear()
 
 
 def get_news(rss_feeds: dict[str, str] = None, channel: str = None, days: int = FETCH_DAYS) -> dict:
@@ -60,8 +74,14 @@ def get_news(rss_feeds: dict[str, str] = None, channel: str = None, days: int = 
     rss_feeds = rss_feeds or RSS_FEEDS
     if channel:
         rss_feeds = {channel: rss_feeds[channel]}
-    rss_news = {}
 
+    key = _cache_key(rss_feeds, channel, days)
+    cached = _CACHE.get(key)
+    now = time.monotonic()
+    if cached and now - cached[0] < _CACHE_TTL_SECONDS:
+        return cached[1]
+
+    rss_news = {}
     for k, v in rss_feeds.items():
         try:
             d = feedparser.parse(v)
@@ -69,4 +89,5 @@ def get_news(rss_feeds: dict[str, str] = None, channel: str = None, days: int = 
         except Exception as e:
             log.error(f"Error parsing {k}: {e}")
 
+    _CACHE[key] = (now, rss_news)
     return rss_news

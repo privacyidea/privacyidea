@@ -23,12 +23,12 @@
   class="details-container"
   i18n-aria-label>
   <div class="details-header">
-    <ng-container i18n>
-      <h3>Details for User:</h3>
-      <app-copyable [copyText]="userService.detailsUsername()">
-        <h3 class="username-header">{{ userService.detailsUsername() }}</h3>
+    <ng-container>
+      <h3 i18n>Details for User:</h3>
+      <app-copyable [copyText]="userService.detailsUser().username">
+        <h3 class="username-header">{{ userService.detailsUser().username }}</h3>
       </app-copyable>
-      <h3>in Realm</h3>
+      <h3 i18n>in Realm</h3>
       <app-copyable [copyText]="userService.selectedUserRealm()">
         <h3 class="margin-0">{{ userService.selectedUserRealm() }}</h3>
       </app-copyable>
@@ -37,7 +37,8 @@
       (click)="showUserAuditLog()"
       [routerLink]="[ROUTE_PATHS.AUDIT]"
       mat-icon-button
-      matTooltip="Show audit log of user">
+      matTooltip="Show audit log of user"
+      i18n-matTooltip>
       <mat-icon>receipt_long</mat-icon>
     </button>
   </div>
@@ -199,7 +200,6 @@
         [disabled]="!canAddAttribute()"
         class="ml-8 margin-bottom-16"
         color="primary"
-        i18n
         mat-icon-button>
         <mat-icon>save</mat-icon>
       </button>

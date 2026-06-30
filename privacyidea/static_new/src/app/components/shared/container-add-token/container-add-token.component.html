@@ -18,7 +18,7 @@
 -->
 @if (authService().actionAllowed("container_add_token")) {
   <div class="flex-column width-100">
-    <h4 class="margin-left-16 margin-bottom-0">Add Token</h4>
+    <h4 class="margin-left-16 margin-bottom-0" i18n>Add Token</h4>
     <div class="flex-row filter-paginator-container">
       <section>
         <mat-checkbox
@@ -50,7 +50,7 @@
           placeholder="Example query: 'type: hotp serial: 123'" />
       </app-clearable-input>
       @if (!showOnlyTokenNotInContainer()) {
-        <mat-hint> Adding a token removes it from its previous container</mat-hint>
+        <mat-hint i18n> Adding a token removes it from its previous container</mat-hint>
       }
       <mat-autocomplete #tokenAuto="matAutocomplete">
         @for (option of tokenOptions(); track option) {

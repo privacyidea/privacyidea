@@ -61,15 +61,15 @@ import { ResolverService } from "@services/resolver/resolver.service";
 import { UserTableActionsComponent } from "./user-table-actions/user-table-actions.component";
 
 const columnKeysMap = [
-  { key: "username", label: "Username" },
-  { key: "userid", label: "User ID" },
-  { key: "givenname", label: "Given Name" },
-  { key: "surname", label: "Surname" },
-  { key: "email", label: "Email" },
-  { key: "phone", label: "Phone" },
-  { key: "mobile", label: "Mobile" },
-  { key: "description", label: "Description" },
-  { key: "resolver", label: "Resolver" }
+  { key: "username", label: $localize`Username` },
+  { key: "userid", label: $localize`User ID` },
+  { key: "givenname", label: $localize`Given Name` },
+  { key: "surname", label: $localize`Surname` },
+  { key: "email", label: $localize`Email` },
+  { key: "phone", label: $localize`Phone` },
+  { key: "mobile", label: $localize`Mobile` },
+  { key: "description", label: $localize`Description` },
+  { key: "resolver", label: $localize`Resolver` }
 ];
 
 @Component({
@@ -190,7 +190,7 @@ export class UserTableComponent {
   }
 
   onClickUsername(user: UserData): void {
-    this.userService.detailsUsername.set(user.username);
+    this.userService.detailsUser.set({ username: user.username, realm: this.userService.selectedUserRealm() });
   }
 
   onClickResolver(resolverName: string): void {

@@ -18,11 +18,9 @@
   justify-content: center;
   margin: 0;
   min-width: 0;
-  overflow-wrap: anywhere;
-  padding: var(--half-global-padding) var(--global-padding);
+  overflow: hidden;
+  padding: var(--half-global-padding) var(--quarter-global-padding);
   text-align: center;
-  white-space: normal;
-  word-break: break-word;
 
   &:first-child {
     border-bottom-left-radius: var(--border-radius);
@@ -56,6 +54,14 @@
 
 .button-item + .button-item {
   border-left: none;
+}
+
+.button-label {
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .selected-button {

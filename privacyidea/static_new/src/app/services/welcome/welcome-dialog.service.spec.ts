@@ -39,30 +39,28 @@ describe("WelcomeDialogService", () => {
     authMock = TestBed.inject(AuthService) as unknown as MockAuthService;
   });
 
-  it("opens dialog when authenticated and not explicitly hidden by status===3", () => {
-    authMock.isAuthenticated.set(true);
-    authMock.authData.set({
-      ...MockAuthService.MOCK_AUTH_DATA,
-      hide_welcome: false,
-      subscription_status: 2
-    });
+  it("opens dialog on an interactive login (auth transitions to true after init)", () => {
+    authMock.isAuthenticated.set(false);
     const service = TestBed.inject(WelcomeDialogService);
+
+    authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, hide_welcome: false });
+    authMock.isAuthenticated.set(true);
     TestBed.tick();
 
     expect(service.opened()).toBe(true);
+    expect(dialogMock.open).toHaveBeenCalled();
   });
 
-  it("does NOT open when hideWelcome is true and subscriptionStatus===3", () => {
-    authMock.isAuthenticated.set(true);
-    authMock.authData.set({
-      ...MockAuthService.MOCK_AUTH_DATA,
-      hide_welcome: true,
-      subscription_status: 3
-    });
+  it("does NOT open on login when hideWelcome is true", () => {
+    authMock.isAuthenticated.set(false);
     const service = TestBed.inject(WelcomeDialogService);
+
+    authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, hide_welcome: true });
+    authMock.isAuthenticated.set(true);
     TestBed.tick();
 
     expect(service.opened()).toBe(false);
+    expect(dialogMock.open).not.toHaveBeenCalled();
   });
 
   it("does NOT open when not authenticated", () => {
@@ -71,5 +69,16 @@ describe("WelcomeDialogService", () => {
     TestBed.tick();
 
     expect(service.opened()).toBe(false);
+  });
+
+  it("does NOT re-open for a session already authenticated at startup (restored on reload)", () => {
+    // Authenticated before the service is constructed = a restored session, not a fresh login.
+    authMock.isAuthenticated.set(true);
+    authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, hide_welcome: false });
+    const service = TestBed.inject(WelcomeDialogService);
+    TestBed.tick();
+
+    expect(service.opened()).toBe(false);
+    expect(dialogMock.open).not.toHaveBeenCalled();
   });
 });

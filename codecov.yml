@@ -4,7 +4,9 @@
 # flags and components so one does not dilute the other when aggregated.
 #
 # Flags are set by the uploading workflows:
-#   - backend:  .github/workflows/unit-tests-{postgres,mariadb}.yml
+#   - backend:  .github/workflows/unit-tests-mariadb.yml (DB path) and
+#               .github/workflows/unit-tests-redis.yml (Redis cache path);
+#               Codecov unions both uploads into the backend flag.
 #   - frontend: .github/workflows/webui-test.yml
 
 coverage:

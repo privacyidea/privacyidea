@@ -52,6 +52,8 @@ myApp.controller("smsgatewayDetailsController", ["$scope", "$stateParams", "$sta
         $scope.gateway_id = $stateParams.gateway_id;
         $scope.opts = {};
         $scope.headers = {};
+        $scope.optSecrets = {};
+        $scope.headerSecrets = {};
 
         $scope.getSMSGateway = function () {
             if ($scope.gateway_id) {
@@ -74,6 +76,18 @@ myApp.controller("smsgatewayDetailsController", ["$scope", "$stateParams", "$sta
                         });
                     // fill all parameters (headers)
                     $scope.headers = $scope.form.headers;
+
+                    // Restore the secret checkbox state from the API response
+                    $scope.optSecrets = {};
+                    angular.forEach($scope.form.secret_options || [], function (key) {
+                        if (option_array.indexOf(key) === -1) {
+                            $scope.optSecrets[key] = true;
+                        }
+                    });
+                    $scope.headerSecrets = {};
+                    angular.forEach($scope.form.secret_headers || [], function (key) {
+                        $scope.headerSecrets[key] = true;
+                    });
                 });
             }
         };
@@ -96,16 +110,31 @@ myApp.controller("smsgatewayDetailsController", ["$scope", "$stateParams", "$sta
                 $scope.form.id = $scope.gateway_id;
             }
 
+            // Set secret flags for provider parameters declared as secret
+            let providerParams = $scope.smsproviders[$scope.form.module] ?
+                $scope.smsproviders[$scope.form.module].parameters : {};
+            for (let paramname in providerParams) {
+                if (providerParams.hasOwnProperty(paramname) && providerParams[paramname].secret) {
+                    $scope.form["secret.option." + paramname] = true;
+                }
+            }
+
             // transform the event options to form parameters
             for (let option in $scope.opts) {
                 if ($scope.opts.hasOwnProperty(option)) {
                     $scope.form["option." + option] = $scope.opts[option];
+                    if ($scope.optSecrets[option]) {
+                        $scope.form["secret.option." + option] = true;
+                    }
                 }
             }
             // transform the event headers to form parameters
             for (let header in $scope.headers) {
                 if ($scope.headers.hasOwnProperty(header)) {
                     $scope.form["header." + header] = $scope.headers[header];
+                    if ($scope.headerSecrets[header]) {
+                        $scope.form["secret.header." + header] = true;
+                    }
                 }
             }
 
@@ -121,22 +150,32 @@ myApp.controller("smsgatewayDetailsController", ["$scope", "$stateParams", "$sta
 
         $scope.deleteOption = function (optionName) {
             delete $scope.opts[optionName];
+            delete $scope.optSecrets[optionName];
         };
 
         $scope.addOption = function () {
             $scope.opts[$scope.newoption] = $scope.newvalue;
+            if ($scope.newoptionsecret) {
+                $scope.optSecrets[$scope.newoption] = true;
+            }
             $scope.newoption = "";
             $scope.newvalue = "";
+            $scope.newoptionsecret = false;
         };
 
         $scope.deleteHeader = function (headerName) {
             delete $scope.headers[headerName];
+            delete $scope.headerSecrets[headerName];
         };
 
         $scope.addHeader = function () {
             $scope.headers[$scope.newheader] = $scope.newheadervalue;
+            if ($scope.newheadersecret) {
+                $scope.headerSecrets[$scope.newheader] = true;
+            }
             $scope.newheader = "";
             $scope.newheadervalue = "";
+            $scope.newheadersecret = false;
         };
 
         $scope.deselectGateway = function () {
@@ -144,6 +183,8 @@ myApp.controller("smsgatewayDetailsController", ["$scope", "$stateParams", "$sta
             $scope.gateway_id = null;
             $scope.opts = {};
             $scope.headers = {};
+            $scope.optSecrets = {};
+            $scope.headerSecrets = {};
         };
 
         // listen to the reload broadcast

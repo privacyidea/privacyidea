@@ -194,7 +194,7 @@
                     <mat-form-field
                       class="input-width-m height-52"
                       subscriptSizing="dynamic">
-                      <mat-label>Enter User</mat-label>
+                      <mat-label i18n>Enter User</mat-label>
                       <app-clearable-input
                         (clearButtonClick)="userService.selectionFilter.set('')"
                         [showClearButton]="userService.selectionFilter() !== ''">
@@ -216,11 +216,9 @@
                   } @else {
                     <app-copyable [copyText]="element.value">
                       <a
-                        (click)="contentService.userSelected(element.value, element['user_realm'])"
-                        (keydown.enter)="contentService.userSelected(element.value, element['user_realm'])"
-                        (keydown.space)="
-                          $event.preventDefault(); contentService.userSelected(element.value, element['user_realm'])
-                        "
+                        (click)="contentService.userSelected(element.value, userRealm())"
+                        (keydown.enter)="contentService.userSelected(element.value, userRealm())"
+                        (keydown.space)="$event.preventDefault(); contentService.userSelected(element.value, userRealm())"
                         i18n-aria-label="{{ element.keyMap.label }} Link"
                         role="button"
                         tabindex="0">

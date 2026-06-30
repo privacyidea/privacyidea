@@ -20,8 +20,9 @@
   #scrollContainer
   appScrollToTop
   aria-label="Token Enrollment"
-  class="token-enrollment-container">
-  <h3 class="margin-8">Enroll a New Token</h3>
+  class="token-enrollment-container"
+  i18n-aria-label>
+  <h3 class="margin-8" i18n>Enroll a New Token</h3>
   <form (submit)="$event.preventDefault(); enrollToken()">
     <app-token-enrollment-type-selector
       [canReopenDialog]="canReopenEnrollmentDialog()"
@@ -39,6 +40,7 @@
         <mat-label i18n>Description</mat-label>
         <textarea
           [formField]="descriptionForm"
+          i18n-placeholder
           matInput
           placeholder="Enter description"
           rows="3"></textarea>

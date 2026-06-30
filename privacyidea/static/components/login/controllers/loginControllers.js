@@ -159,6 +159,26 @@ angular.module("privacyideaApp")
                     };
                 });
 
+            // Auth guard: pages other than the login/recovery/register flows
+            // require an active JWT. Without one, controllers that gate
+            // everything behind checkRight() render a blank shell instead of
+            // surfacing the missing-auth state, so we redirect explicitly.
+            // States that must remain reachable without a JWT:
+            // - login / initial_login: where the JWT is obtained
+            // - recovery / reset: password recovery flow
+            // - register: self-registration
+            // - response / pinchange: mid-login challenge response / forced PIN change
+            // - offline: offline-mode landing page
+            const PUBLIC_STATES = ['login', 'initial_login', 'recovery', 'reset',
+                                   'register', 'response', 'pinchange', 'offline'];
+            $transitions.onBefore({}, function (transition) {
+                const target = transition.to().name;
+                if (PUBLIC_STATES.indexOf(target) !== -1) return;
+                if (!AuthFactory.getAuthToken()) {
+                    return transition.router.stateService.target('login');
+                }
+            });
+
             // When transitioning to the login state (e.g. after a 4305 JWT expiry redirect),
             // reset the login form so the realm dropdown is populated with the correct values.
             $transitions.onSuccess({to: 'login'}, function () {
@@ -488,7 +508,27 @@ angular.module("privacyideaApp")
                 }
                 $scope.backend_log_level = data.result.value.log_level;
                 $scope.backend_debug_passwords = data.result.value.debug_passwords;
+                // Debug-banner dismissal: per-session, sessionStorage clears
+                // when the tab closes so the reminder comes back next time.
+                try {
+                    $scope.debugBannerDismissed =
+                        sessionStorage.getItem("piDebugBannerDismissed") === "1";
+                } catch (e) {
+                    $scope.debugBannerDismissed = false;
+                }
+                $scope.dismissDebugBanner = function () {
+                    $scope.debugBannerDismissed = true;
+                    try {
+                        sessionStorage.setItem("piDebugBannerDismissed", "1");
+                    } catch (e) { /* private mode etc. - in-memory only */ }
+                };
                 $scope.privacyideaVersionNumber = data.versionnumber;
+                // Also refresh $rootScope: the login page may have blanked it
+                // (hide_version policy), but the authenticated /auth response
+                // carries the real version. The User-Agent interceptor reads it
+                // from $rootScope, so without this every post-login API call
+                // would send a version-less User-Agent for the whole session.
+                $rootScope.privacyideaVersionNumber = data.versionnumber;
                 const lang = gettextCatalog.getCurrentLanguage();
                 if (data.result.value.hasOwnProperty("supportmail")) {
                     $scope.privacyideaSupportLink = data.result.value.supportmail;

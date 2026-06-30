@@ -17,6 +17,29 @@ services:
       timeout: 5s
       retries: 10
 
+  openldap-test:
+    # ldap://127.0.0.1:1389 / ldaps://127.0.0.1:1636 (self-signed cert, auto-generated)
+    # Bind DN: cn=admin,dc=example,dc=org   Password: admin
+    # Base DN: dc=example,dc=org
+    # 100 seeded users (uid=user001..user100, password Test1234!) under ou=people
+    # 3 groups under ou=groups: admins (5), developers (40), all-users (100)
+    # Note: osixia is unmaintained but works; LDIFs are loaded on first run only,
+    # use `docker compose down -v` to re-seed after editing users.ldif.
+    image: osixia/openldap:1.5.0
+    container_name: pi-openldap-test
+    command: ["--copy-service", "--loglevel", "info"]
+    environment:
+      LDAP_ORGANISATION: "privacyIDEA Dev"
+      LDAP_DOMAIN: "example.org"
+      LDAP_ADMIN_PASSWORD: admin
+      LDAP_TLS: "true"
+      LDAP_TLS_VERIFY_CLIENT: "never"
+    volumes:
+      - ./deploy/dev/ldap/users.ldif:/container/service/slapd/assets/config/bootstrap/ldif/custom/01-users.ldif:ro
+    ports:
+      - "1389:389"
+      - "1636:636"
+
   postgres-test:
     # DB URI: postgresql+psycopg2://privacyidea:privacyidea@127.0.0.1:5432/privacyidea_test
     image: postgres:17
@@ -29,6 +52,19 @@ services:
       - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U privacyidea -d privacyidea_test"]
+      start_period: 5s
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    # Cache URI: redis://127.0.0.1:6379/0
+    image: redis:7-alpine
+    container_name: pi-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
       start_period: 5s
       interval: 5s
       timeout: 5s

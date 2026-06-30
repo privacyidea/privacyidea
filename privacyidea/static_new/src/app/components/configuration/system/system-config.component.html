@@ -33,19 +33,19 @@
         <div class="save-buttons">
           <button
             (click)="openDocumentationDialog()"
-            class="action-button-secondary button-width-l"
+            class="action-button-secondary button-width-xl"
             mat-stroked-button>
-            <mat-icon>document_scanner</mat-icon>
-            <span i18n>Get Documentation</span>
+            <mat-icon>summarize</mat-icon>
+            <span i18n>Generate System Documentation</span>
           </button>
           @if (hasConfigWritePermission()) {
             <button
               [disabled]="!authService.actionAllowed('configwrite')"
-              class="action-button-primary button-width-l"
+              class="action-button-primary button-width-m"
               mat-stroked-button
               (click)="saveSystemConfig()">
               <mat-icon>save</mat-icon>
-              <span i18n>Save System Config</span>
+              <span i18n>Save</span>
             </button>
           }
         </div>
@@ -54,7 +54,8 @@
       <div class="form-group margin-bottom-16">
         <mat-checkbox
           [checked]="params().splitAtSign"
-          (change)="updateParam('splitAtSign', $event.checked)">
+          (change)="updateParam('splitAtSign', $event.checked)"
+          i18n>
           Use &#64; sign to split the username and the realm
         </mat-checkbox>
       </div>
@@ -63,7 +64,8 @@
         <div class="form-group">
           <mat-checkbox
             [checked]="params().IncFailCountOnFalsePin"
-            (change)="updateParam('IncFailCountOnFalsePin', $event.checked)">
+            (change)="updateParam('IncFailCountOnFalsePin', $event.checked)"
+            i18n>
             Increase the failcounter
             <br />
             if the wrong PIN was entered
@@ -84,7 +86,8 @@
       <div class="form-group margin-bottom-16">
         <mat-checkbox
           [checked]="params().no_auth_counter"
-          (change)="updateParam('no_auth_counter', $event.checked)">
+          (change)="updateParam('no_auth_counter', $event.checked)"
+          i18n>
           Do not use an authentication counter per token
         </mat-checkbox>
       </div>
@@ -92,7 +95,8 @@
       <div class="form-group margin-bottom-16">
         <mat-checkbox
           [checked]="params().PrependPin"
-          (change)="updateParam('PrependPin', $event.checked)">
+          (change)="updateParam('PrependPin', $event.checked)"
+          i18n>
           Prepend the PIN in front of the OTP value. Otherwise it will be post pended
         </mat-checkbox>
       </div>
@@ -101,7 +105,8 @@
         <div class="form-group">
           <mat-checkbox
             [checked]="params().AutoResync"
-            (change)="updateParam('AutoResync', $event.checked)">
+            (change)="updateParam('AutoResync', $event.checked)"
+            i18n>
             Automatic resync during authentication
           </mat-checkbox>
         </div>
@@ -132,11 +137,10 @@
 
           <button
             (click)="deleteUserCache()"
-            class="action-button-delete-secondary button-width-m margin-bottom-16 margin-left-auto"
-            i18n
+            class="action-button-delete-secondary button-width-l margin-bottom-16 margin-left-auto"
             mat-stroked-button>
             <mat-icon>delete</mat-icon>
-            Delete User Cache
+            <span i18n>Delete User Cache</span>
           </button>
         </div>
 
