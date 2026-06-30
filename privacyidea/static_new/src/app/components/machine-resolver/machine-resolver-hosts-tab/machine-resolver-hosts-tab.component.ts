@@ -17,30 +17,63 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, input, linkedSignal, output, ViewEncapsulation, OnInit } from "@angular/core";
+import { Component, input, linkedSignal, OnInit, output, signal } from "@angular/core";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
+import { InlineEditFieldComponent } from "@components/machine-resolver/inline-edit-field/inline-edit-field.component";
 import { HostsMachineResolverData, MachineResolverData } from "@services/machine-resolver/machine-resolver.service";
 
 @Component({
   selector: "app-machine-resolver-hosts-tab",
   templateUrl: "./machine-resolver-hosts-tab.component.html",
   styleUrls: ["./machine-resolver-hosts-tab.component.scss"],
-  imports: [MatFormFieldModule, MatInputModule],
-  standalone: true,
-  encapsulation: ViewEncapsulation.ShadowDom
+  imports: [MatFormFieldModule, MatInputModule, InlineEditFieldComponent],
+  standalone: true
 })
 export class MachineResolverHostsTabComponent implements OnInit {
-  readonly isEditMode = input.required<boolean>();
+  readonly isCreateMode = input<boolean>(false);
+  readonly canEdit = input<boolean>(false);
+  readonly canSave = input<boolean>(false);
   readonly machineResolverData = input.required<MachineResolverData>();
   readonly hostsData = linkedSignal<HostsMachineResolverData>(
     () => this.machineResolverData() as HostsMachineResolverData
   );
   readonly newData = output<MachineResolverData>();
   readonly newValidator = output<(data: MachineResolverData) => boolean>();
+  readonly saveField = output<void>();
+  readonly editingChange = output<boolean>();
+
+  readonly editingKey = signal<string | null>(null);
+  private snapshot: MachineResolverData | null = null;
 
   ngOnInit(): void {
     this.newValidator.emit(this.isValid.bind(this));
+  }
+
+  fieldEnabled(key: string): boolean {
+    return this.isCreateMode() || this.editingKey() === key;
+  }
+
+  startEdit(key: string): void {
+    this.snapshot = this.machineResolverData();
+    this.editingKey.set(key);
+    this.editingChange.emit(true);
+  }
+
+  saveEdit(): void {
+    this.snapshot = null;
+    this.editingKey.set(null);
+    this.editingChange.emit(false);
+    this.saveField.emit();
+  }
+
+  cancelEdit(): void {
+    if (this.snapshot) {
+      this.newData.emit(this.snapshot);
+    }
+    this.snapshot = null;
+    this.editingKey.set(null);
+    this.editingChange.emit(false);
   }
 
   updateData(

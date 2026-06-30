@@ -17,181 +17,320 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="ldap-config-container">
-  <div class="ldap-config-section">
-    <div class="row-container">
-      <mat-form-field>
+  <div class="row-container">
+    <app-inline-edit-field
+      class="input-width-xl"
+      [editing]="editingKey() === 'LDAPURI'"
+      [showPencil]="canEdit() && editingKey() === null"
+      [canSave]="canSave()"
+      (edit)="startEdit('LDAPURI')"
+      (save)="saveEdit()"
+      (cancelEdit)="cancelEdit()">
+      <mat-form-field
+        class="full-width"
+        subscriptSizing="dynamic">
         <mat-label i18n="@@ldapUri">Server URI</mat-label>
         <input
           matInput
           placeholder="ldap://privacyidea.server1, ldap://privacyidea.server2"
-          [disabled]="!isEditMode()"
+          [disabled]="!fieldEnabled('LDAPURI')"
           [value]="hostsData().LDAPURI ?? ''"
           (input)="updateData({ LDAPURI: $event.target['value'] })" />
       </mat-form-field>
-    </div>
-    <div class="row-container">
+    </app-inline-edit-field>
+  </div>
+
+  <div class="row-container">
+    <app-inline-edit-field
+      class="inline"
+      [editing]="editingKey() === 'TLS_VERIFY'"
+      [showPencil]="canEdit() && editingKey() === null"
+      [canSave]="canSave()"
+      (edit)="startEdit('TLS_VERIFY')"
+      (save)="saveEdit()"
+      (cancelEdit)="cancelEdit()">
       <div class="checkbox-container">
         <mat-checkbox
-          matInput
-          [disabled]="!isEditMode()"
+          [disabled]="!fieldEnabled('TLS_VERIFY')"
           [checked]="hostsData().TLS_VERIFY"
           (change)="updateTlsVerify($event.checked)"
           i18n="@@tlsVerify">
           TLS Verify
         </mat-checkbox>
       </div>
-      @if (hostsData().TLS_VERIFY) {
-        <mat-form-field>
-          <mat-label i18n="@@tlsCaFile">TLS CA File</mat-label>
-          <input
-            matInput
-            placeholder="/etc/privacyidea/ldap-ca.crt"
-            [disabled]="!isEditMode()"
-            [value]="hostsData().TLS_CA_FILE ?? ''"
-            (input)="updateData({ TLS_CA_FILE: $event.target['value'] })" />
-          <mat-hint i18n="@@tlsCaFileHint">
-            Path to a CA certificate file to verify the LDAP server's TLS certificate.
-          </mat-hint>
-        </mat-form-field>
-      } @else {
-        <div></div>
-      }
-    </div>
-    <div class="row-container">
-      <mat-form-field>
+    </app-inline-edit-field>
+    <app-inline-edit-field
+      class="input-width-l"
+      [editing]="editingKey() === 'TLS_CA_FILE'"
+      [showPencil]="canEdit() && editingKey() === null && !!hostsData().TLS_VERIFY"
+      [canSave]="canSave()"
+      (edit)="startEdit('TLS_CA_FILE')"
+      (save)="saveEdit()"
+      (cancelEdit)="cancelEdit()">
+      <mat-form-field class="full-width">
+        <mat-label i18n="@@tlsCaFile">TLS CA File</mat-label>
+        <input
+          matInput
+          placeholder="/etc/privacyidea/ldap-ca.crt"
+          [disabled]="!fieldEnabled('TLS_CA_FILE') || !hostsData().TLS_VERIFY"
+          [value]="hostsData().TLS_CA_FILE ?? ''"
+          (input)="updateData({ TLS_CA_FILE: $event.target['value'] })" />
+        <mat-hint i18n="@@tlsCaFileHint">
+          Path to a CA certificate file to verify the LDAP server's TLS certificate.
+        </mat-hint>
+      </mat-form-field>
+    </app-inline-edit-field>
+  </div>
+
+  <div class="row-container">
+    <app-inline-edit-field
+      class="input-width-l"
+      [editing]="editingKey() === 'LDAPBASE'"
+      [showPencil]="canEdit() && editingKey() === null"
+      [canSave]="canSave()"
+      (edit)="startEdit('LDAPBASE')"
+      (save)="saveEdit()"
+      (cancelEdit)="cancelEdit()">
+      <mat-form-field
+        class="full-width"
+        subscriptSizing="dynamic">
         <mat-label i18n="@@ldapBase">Base DN</mat-label>
         <input
           matInput
           placeholder="ou=users,dc=domain,dc=tld"
-          [disabled]="!isEditMode()"
+          [disabled]="!fieldEnabled('LDAPBASE')"
           [value]="hostsData().LDAPBASE ?? ''"
           (input)="updateData({ LDAPBASE: $event.target['value'] })" />
       </mat-form-field>
-      <mat-form-field>
+    </app-inline-edit-field>
+    <app-inline-edit-field
+      class="input-width-l"
+      [editing]="editingKey() === 'BINDDN'"
+      [showPencil]="canEdit() && editingKey() === null"
+      [canSave]="canSave()"
+      (edit)="startEdit('BINDDN')"
+      (save)="saveEdit()"
+      (cancelEdit)="cancelEdit()">
+      <mat-form-field
+        class="full-width"
+        subscriptSizing="dynamic">
         <mat-label i18n="@@bindDn">Bind DN</mat-label>
         <input
           matInput
           placeholder="cn=admin,ou=users,dc=domain,dc=tld"
-          [disabled]="!isEditMode()"
+          [disabled]="!fieldEnabled('BINDDN')"
           [value]="hostsData().BINDDN ?? ''"
           (input)="updateData({ BINDDN: $event.target['value'] })" />
       </mat-form-field>
-    </div>
+    </app-inline-edit-field>
+  </div>
 
-    <div class="row-container">
-      <mat-form-field>
+  <div class="row-container">
+    <app-inline-edit-field
+      class="input-width-l"
+      [editing]="editingKey() === 'BINDPW'"
+      [showPencil]="canEdit() && editingKey() === null"
+      [canSave]="canSave()"
+      (edit)="startEdit('BINDPW')"
+      (save)="saveEdit()"
+      (cancelEdit)="cancelEdit()">
+      <mat-form-field
+        class="full-width"
+        subscriptSizing="dynamic">
         <mat-label i18n="@@bindPw">Bind Password</mat-label>
         <input
           type="password"
           matInput
           placeholder="topsecret"
-          [disabled]="!isEditMode()"
+          [disabled]="!fieldEnabled('BINDPW')"
           [value]="hostsData().BINDPW ?? ''"
           (input)="updateData({ BINDPW: $event.target['value'] })" />
       </mat-form-field>
-
-      <mat-form-field>
+    </app-inline-edit-field>
+    <app-inline-edit-field
+      class="input-width-l"
+      [editing]="editingKey() === 'AUTHTYPE'"
+      [showPencil]="canEdit() && editingKey() === null"
+      [canSave]="canSave()"
+      (edit)="startEdit('AUTHTYPE')"
+      (save)="saveEdit()"
+      (cancelEdit)="cancelEdit()">
+      <mat-form-field
+        class="full-width"
+        subscriptSizing="dynamic">
         <mat-label i18n="@@authType">Bind Type</mat-label>
         <mat-select
-          matInput
-          [disabled]="!isEditMode()"
+          [disabled]="!fieldEnabled('AUTHTYPE')"
           [value]="hostsData().AUTHTYPE"
           (selectionChange)="updateData({ AUTHTYPE: $event.value })">
           <mat-option value="Simple">simple</mat-option>
           <mat-option value="SASL Digest-MD5">SASL Digest-MD5</mat-option>
         </mat-select>
       </mat-form-field>
-    </div>
+    </app-inline-edit-field>
+  </div>
 
-    <div class="row-container">
-      <mat-form-field>
+  <div class="row-container">
+    <app-inline-edit-field
+      class="input-width-s"
+      [editing]="editingKey() === 'TIMEOUT'"
+      [showPencil]="canEdit() && editingKey() === null"
+      [canSave]="canSave()"
+      (edit)="startEdit('TIMEOUT')"
+      (save)="saveEdit()"
+      (cancelEdit)="cancelEdit()">
+      <mat-form-field
+        class="full-width"
+        subscriptSizing="dynamic">
         <mat-label i18n="@@timeout">Timeout</mat-label>
         <input
           type="number"
           matInput
           placeholder="5"
-          [disabled]="!isEditMode()"
+          [disabled]="!fieldEnabled('TIMEOUT')"
           [value]="hostsData().TIMEOUT ?? ''"
           (input)="updateData({ TIMEOUT: $event.target['value'] })" />
       </mat-form-field>
-
-      <mat-form-field>
+    </app-inline-edit-field>
+    <app-inline-edit-field
+      class="input-width-s"
+      [editing]="editingKey() === 'SIZELIMIT'"
+      [showPencil]="canEdit() && editingKey() === null"
+      [canSave]="canSave()"
+      (edit)="startEdit('SIZELIMIT')"
+      (save)="saveEdit()"
+      (cancelEdit)="cancelEdit()">
+      <mat-form-field
+        class="full-width"
+        subscriptSizing="dynamic">
         <mat-label i18n="@@sizeLimit">Size Limit</mat-label>
         <input
           type="number"
           matInput
           placeholder="500"
-          [disabled]="!isEditMode()"
+          [disabled]="!fieldEnabled('SIZELIMIT')"
           [value]="hostsData().SIZELIMIT ?? ''"
           (input)="updateData({ SIZELIMIT: $event.target['value'] })" />
       </mat-form-field>
-    </div>
+    </app-inline-edit-field>
   </div>
 
-  <div class="ldap-config-section">
-    <div class="row-container">
-      @if (isEditMode()) {
-        <button
-          mat-stroked-button
-          class="button-margin action-button-secondary button-width-l"
-          (click)="preassignActiveDirectoryAttributes()"
-          i18n="@@preassignADAttributesButton">
-          Pre-assign Active Directory Attributes
-        </button>
-      }
+  <div class="row-container">
+    <app-inline-edit-field
+      class="inline"
+      [editing]="editingKey() === 'NOREFERRALS'"
+      [showPencil]="canEdit() && editingKey() === null"
+      [canSave]="canSave()"
+      (edit)="startEdit('NOREFERRALS')"
+      (save)="saveEdit()"
+      (cancelEdit)="cancelEdit()">
       <div class="checkbox-container">
         <mat-checkbox
-          [disabled]="!isEditMode()"
+          [disabled]="!fieldEnabled('NOREFERRALS')"
           [checked]="hostsData().NOREFERRALS === 'True'"
           (change)="onClickNoReferrals($event.checked)"
           i18n="@@noReferrals">
           <p>Referrals are not tracked (anonymously)</p>
         </mat-checkbox>
       </div>
-    </div>
+    </app-inline-edit-field>
+    @if (
+      isCreateMode() ||
+      editingKey() === "IDATTRIBUTE" ||
+      editingKey() === "SEARCHFILTER" ||
+      editingKey() === "HOSTNAMEATTRIBUTE"
+    ) {
+      <button
+        (click)="preassignActiveDirectoryAttributes()"
+        class="action-button-secondary"
+        mat-stroked-button
+        type="button">
+        <mat-icon>auto_fix_high</mat-icon>
+        <span i18n="@@preassignADAttributesButton">Pre-assign Active Directory Attributes</span>
+      </button>
+    }
+  </div>
 
-    <div class="row-container">
-      <mat-form-field>
+  <div class="row-container">
+    <app-inline-edit-field
+      class="input-width-l"
+      [editing]="editingKey() === 'IDATTRIBUTE'"
+      [showPencil]="canEdit() && editingKey() === null"
+      [canSave]="canSave()"
+      (edit)="startEdit('IDATTRIBUTE')"
+      (save)="saveEdit()"
+      (cancelEdit)="cancelEdit()">
+      <mat-form-field class="full-width">
         <mat-label i18n="@@idAttribute">ID Attribute</mat-label>
         <input
           matInput
           placeholder="DN"
-          [disabled]="!isEditMode()"
+          [disabled]="!fieldEnabled('IDATTRIBUTE')"
           [value]="hostsData().IDATTRIBUTE ?? ''"
           (input)="updateData({ IDATTRIBUTE: $event.target['value'] })" />
-        <mat-hint i18n="@@idAttributeHint"> An attribute or DN to identify the machine </mat-hint>
+        <mat-hint i18n="@@idAttributeHint">An attribute or DN to identify the machine</mat-hint>
       </mat-form-field>
-
-      <mat-form-field>
+    </app-inline-edit-field>
+    <app-inline-edit-field
+      class="input-width-l"
+      [editing]="editingKey() === 'SEARCHFILTER'"
+      [showPencil]="canEdit() && editingKey() === null"
+      [canSave]="canSave()"
+      (edit)="startEdit('SEARCHFILTER')"
+      (save)="saveEdit()"
+      (cancelEdit)="cancelEdit()">
+      <mat-form-field
+        class="full-width"
+        subscriptSizing="dynamic">
         <mat-label i18n="@@searchFilter">Search Filter</mat-label>
         <input
           matInput
           placeholder="(objectClass=computer)"
-          [disabled]="!isEditMode()"
+          [disabled]="!fieldEnabled('SEARCHFILTER')"
           [value]="hostsData().SEARCHFILTER ?? ''"
           (input)="updateData({ SEARCHFILTER: $event.target['value'] })" />
       </mat-form-field>
-    </div>
+    </app-inline-edit-field>
+  </div>
 
-    <div class="row-container">
-      <mat-form-field>
+  <div class="row-container">
+    <app-inline-edit-field
+      class="input-width-l"
+      [editing]="editingKey() === 'HOSTNAMEATTRIBUTE'"
+      [showPencil]="canEdit() && editingKey() === null"
+      [canSave]="canSave()"
+      (edit)="startEdit('HOSTNAMEATTRIBUTE')"
+      (save)="saveEdit()"
+      (cancelEdit)="cancelEdit()">
+      <mat-form-field
+        class="full-width"
+        subscriptSizing="dynamic">
         <mat-label i18n="@@hostnameAttribute">Hostname Attribute</mat-label>
         <input
           matInput
           placeholder="dNSHostName"
-          [disabled]="!isEditMode()"
+          [disabled]="!fieldEnabled('HOSTNAMEATTRIBUTE')"
           [value]="hostsData().HOSTNAMEATTRIBUTE ?? ''"
           (input)="updateData({ HOSTNAMEATTRIBUTE: $event.target['value'] })" />
       </mat-form-field>
-      <mat-form-field>
+    </app-inline-edit-field>
+    <app-inline-edit-field
+      class="input-width-l"
+      [editing]="editingKey() === 'IPATTRIBUTE'"
+      [showPencil]="canEdit() && editingKey() === null"
+      [canSave]="canSave()"
+      (edit)="startEdit('IPATTRIBUTE')"
+      (save)="saveEdit()"
+      (cancelEdit)="cancelEdit()">
+      <mat-form-field class="full-width">
         <mat-label i18n="@@ipAttribute">IP Attribute</mat-label>
         <input
           matInput
-          [disabled]="!isEditMode()"
+          [disabled]="!fieldEnabled('IPATTRIBUTE')"
           [value]="hostsData().IPATTRIBUTE ?? ''"
           (input)="updateData({ IPATTRIBUTE: $event.target['value'] })" />
-        <mat-hint i18n="@@ipAttributeHint">An attribute that contains the IP address of the machine. </mat-hint>
+        <mat-hint i18n="@@ipAttributeHint">An attribute that contains the IP address of the machine.</mat-hint>
       </mat-form-field>
-    </div>
+    </app-inline-edit-field>
   </div>
 </div>

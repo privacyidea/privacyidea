@@ -16,12 +16,23 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<mat-form-field class="full-width">
-  <mat-label i18n="@@resolverFilename">Resolver Filename</mat-label>
-  <input
-    matInput
-    [disabled]="!isEditMode()"
-    placeholder="/etc/hosts"
-    [value]="hostsData().filename ?? ''"
-    (input)="updateData({ filename: $event.target['value'] })" />
-</mat-form-field>
+<app-inline-edit-field
+  class="input-width-xl"
+  [editing]="editingKey() === 'filename'"
+  [showPencil]="canEdit() && editingKey() === null"
+  [canSave]="canSave()"
+  (edit)="startEdit('filename')"
+  (save)="saveEdit()"
+  (cancelEdit)="cancelEdit()">
+  <mat-form-field
+    class="full-width"
+    subscriptSizing="dynamic">
+    <mat-label i18n="@@resolverFilename">Resolver Filename</mat-label>
+    <input
+      matInput
+      [disabled]="!fieldEnabled('filename')"
+      placeholder="/etc/hosts"
+      [value]="hostsData().filename ?? ''"
+      (input)="updateData({ filename: $event.target['value'] })" />
+  </mat-form-field>
+</app-inline-edit-field>

@@ -94,6 +94,9 @@ export class MachineResolverDetailsComponent implements OnInit, OnDestroy {
     deepCopy(MachineResolverDetailsComponent.machineResolverDefault)
   );
 
+  readonly canEditTab = computed(() => this.isEditMode() && this.authService.actionAllowed("mresolverwrite"));
+  readonly tabCanSave = computed(() => this.canSaveMachineResolver() && this.isEdited());
+
   readonly isEdited = computed(
     () => JSON.stringify(this.currentMachineResolver()) !== JSON.stringify(this.originalMachineResolver())
   );

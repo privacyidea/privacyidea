@@ -1,53 +1,49 @@
 @use "styles";
 @use "table";
 
-.row-container {
-  display: flex;
-  width: 100%;
-  flex-wrap: wrap;
-  gap: var(--global-gap);
-}
-
-.row-container > * {
-  flex: 1;
-  min-width: 0;
-}
-
-.row-container .checkbox-container {
-  flex: 0 0 auto;
-  align-self: center;
-  margin-top: 10px;
-}
-
-.row-container mat-form-field {
-  margin-bottom: 0;
+:host {
+  display: block;
 }
 
 .ldap-config-container {
-  gap: var(--global-gap);
   display: flex;
   flex-direction: column;
+  gap: var(--global-gap);
+
+  --mat-form-field-filled-disabled-label-text-color: var(--mat-sys-on-surface-variant);
+  --mat-checkbox-disabled-label-color: var(--mat-sys-on-surface);
 
   .mat-mdc-select-disabled,
   *:disabled {
     color: var(--mat-sys-on-surface) !important;
   }
-
-  .mat-mdc-checkbox.mat-mdc-checkbox-disabled label,
-  .mdc-text-field--filled.mdc-text-field--disabled .mdc-floating-label {
-    color: var(--mat-sys-on-surface-variant) !important;
-  }
 }
 
-.ldap-config-section {
-  padding: 20px;
-  border-radius: var(--border-radius);
-  background-color: var(--mat-sys-surface-container);
+.row-container {
+  display: flex;
+  width: 100%;
+  flex-wrap: wrap;
   gap: var(--global-gap);
-  display: contents;
-  flex-direction: column;
+  align-items: flex-start;
 }
 
-.button-margin {
-  margin: var(--half-global-padding);
+.row-container > app-inline-edit-field {
+  min-width: 0;
+}
+
+.row-container > app-inline-edit-field.inline {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  min-width: var(--input-width-l);
+}
+
+.checkbox-container {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  min-height: var(--mat-form-field-container-height, 56px);
+}
+
+.full-width {
+  width: 100%;
 }

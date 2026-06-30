@@ -32,7 +32,7 @@ describe("MachineResolverLdapTabComponent", () => {
 
     fixture = TestBed.createComponent(MachineResolverLdapTabComponent);
     component = fixture.componentInstance;
-    fixture.componentRef.setInput("isEditMode", false);
+    fixture.componentRef.setInput("isCreateMode", true);
     fixture.componentRef.setInput("machineResolverData", { type: "ldap", resolver: "test" } as LdapMachineResolverData);
 
     fixture.detectChanges();

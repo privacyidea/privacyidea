@@ -1,0 +1,35 @@
+:host {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+
+:host(.inline) {
+  display: inline-flex;
+  align-items: center;
+  width: auto;
+}
+
+.field-actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: var(--mat-form-field-container-height, 56px);
+  display: flex;
+  align-items: center;
+  gap: 0;
+  opacity: 0;
+  transition: opacity 120ms ease;
+  pointer-events: none;
+}
+
+:host(.inline) .field-actions {
+  position: static;
+  height: auto;
+}
+
+:host(:hover) .field-actions,
+.field-actions.is-editing {
+  opacity: 1;
+  pointer-events: auto;
+}
