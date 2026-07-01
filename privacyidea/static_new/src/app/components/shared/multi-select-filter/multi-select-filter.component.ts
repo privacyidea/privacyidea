@@ -16,18 +16,16 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, input, output } from "@angular/core";
+import { Component, input, output } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
-import { MatDividerModule } from "@angular/material/divider";
 import { MatIcon } from "@angular/material/icon";
 import { MatMenuModule } from "@angular/material/menu";
 import { MatTooltipModule } from "@angular/material/tooltip";
 
-/** A selectable option: `label` is shown, `value` is what goes into the filter. */
-export interface MultiSelectFilterOption {
-  label: string;
-  value: string;
-}
+import { MultiSelectMenuComponent } from "./multi-select-menu/multi-select-menu.component";
+import { MultiSelectFilterOption } from "./multi-select-filter-option";
+
+export type { MultiSelectFilterOption };
 
 /**
  * A reusable table-header filter control: a filter icon that opens a menu of checkbox-style options for selecting
@@ -43,7 +41,7 @@ export interface MultiSelectFilterOption {
 @Component({
   selector: "app-multi-select-filter",
   standalone: true,
-  imports: [MatButtonModule, MatIcon, MatMenuModule, MatDividerModule, MatTooltipModule],
+  imports: [MatButtonModule, MatIcon, MatMenuModule, MatTooltipModule, MultiSelectMenuComponent],
   templateUrl: "./multi-select-filter.component.html",
   styleUrl: "./multi-select-filter.component.scss"
 })
@@ -55,32 +53,4 @@ export class MultiSelectFilterComponent {
   readonly allowCustom = input<boolean>(false);
   readonly selectionChange = output<string[]>();
   readonly addCustom = output<void>();
-
-  readonly normalizedOptions = computed<MultiSelectFilterOption[]>(() =>
-    this.options().map((option) => (typeof option === "string" ? { label: option, value: option } : option))
-  );
-
-  // The value as stored in the filter for a given option (value plus the configured suffix, e.g. a trailing "*").
-  private storedValue(option: MultiSelectFilterOption): string {
-    return option.value + this.valueSuffix();
-  }
-
-  isSelected(option: MultiSelectFilterOption): boolean {
-    return this.selected().includes(this.storedValue(option));
-  }
-
-  toggle(option: MultiSelectFilterOption): void {
-    const value = this.storedValue(option);
-    const current = this.selected();
-    const next = current.includes(value) ? current.filter((entry) => entry !== value) : [...current, value];
-    this.selectionChange.emit(next);
-  }
-
-  clear(): void {
-    this.selectionChange.emit([]);
-  }
-
-  onAddCustom(): void {
-    this.addCustom.emit();
-  }
 }

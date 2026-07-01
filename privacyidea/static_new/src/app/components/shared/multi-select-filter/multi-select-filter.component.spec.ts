@@ -23,72 +23,19 @@ import { MultiSelectFilterComponent } from "./multi-select-filter.component";
 describe("MultiSelectFilterComponent", () => {
   let component: MultiSelectFilterComponent;
   let fixture: ComponentFixture<MultiSelectFilterComponent>;
-  let emitted: string[][];
 
   beforeEach(async () => {
     TestBed.resetTestingModule();
     await TestBed.configureTestingModule({ imports: [MultiSelectFilterComponent] }).compileComponents();
     fixture = TestBed.createComponent(MultiSelectFilterComponent);
     component = fixture.componentInstance;
-    fixture.componentRef.setInput("options", ["LOGIN_SUCCESS", "MFA_FAIL", "PIN_FAIL"]);
+    fixture.componentRef.setInput("options", ["LOGIN_SUCCESS", "MFA_FAIL"]);
     fixture.componentRef.setInput("selected", []);
-    emitted = [];
-    component.selectionChange.subscribe((value) => emitted.push(value));
     fixture.detectChanges();
   });
 
-  it("creates", () => {
+  it("creates and renders a trigger button", () => {
     expect(component).toBeTruthy();
-  });
-
-  it("normalizes plain string options to label/value pairs", () => {
-    expect(component.normalizedOptions()).toEqual([
-      { label: "LOGIN_SUCCESS", value: "LOGIN_SUCCESS" },
-      { label: "MFA_FAIL", value: "MFA_FAIL" },
-      { label: "PIN_FAIL", value: "PIN_FAIL" }
-    ]);
-  });
-
-  it("isSelected reflects the selected input", () => {
-    fixture.componentRef.setInput("selected", ["MFA_FAIL"]);
-    expect(component.isSelected({ label: "MFA_FAIL", value: "MFA_FAIL" })).toBe(true);
-    expect(component.isSelected({ label: "LOGIN_SUCCESS", value: "LOGIN_SUCCESS" })).toBe(false);
-  });
-
-  it("toggle adds a value not yet selected", () => {
-    fixture.componentRef.setInput("selected", ["LOGIN_SUCCESS"]);
-    component.toggle({ label: "MFA_FAIL", value: "MFA_FAIL" });
-    expect(emitted).toEqual([["LOGIN_SUCCESS", "MFA_FAIL"]]);
-  });
-
-  it("toggle removes an already-selected value", () => {
-    fixture.componentRef.setInput("selected", ["LOGIN_SUCCESS", "MFA_FAIL"]);
-    component.toggle({ label: "LOGIN_SUCCESS", value: "LOGIN_SUCCESS" });
-    expect(emitted).toEqual([["MFA_FAIL"]]);
-  });
-
-  it("clear emits an empty selection", () => {
-    fixture.componentRef.setInput("selected", ["LOGIN_SUCCESS", "MFA_FAIL"]);
-    component.clear();
-    expect(emitted).toEqual([[]]);
-  });
-
-  it("applies valueSuffix and matches it against the selected values (display stays the raw label)", () => {
-    fixture.componentRef.setInput("options", [{ label: "Keycloak", value: "privacyIDEA-Keycloak" }]);
-    fixture.componentRef.setInput("valueSuffix", "*");
-    const option = { label: "Keycloak", value: "privacyIDEA-Keycloak" };
-
-    component.toggle(option);
-    expect(emitted).toEqual([["privacyIDEA-Keycloak*"]]);
-
-    fixture.componentRef.setInput("selected", ["privacyIDEA-Keycloak*"]);
-    expect(component.isSelected(option)).toBe(true);
-  });
-
-  it("onAddCustom emits the addCustom event", () => {
-    let fired = false;
-    component.addCustom.subscribe(() => (fired = true));
-    component.onAddCustom();
-    expect(fired).toBe(true);
+    expect(fixture.nativeElement.querySelector("button[mat-icon-button]")).toBeTruthy();
   });
 });

@@ -45,10 +45,9 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
-import {
-  MultiSelectFilterComponent,
-  MultiSelectFilterOption
-} from "@components/shared/multi-select-filter/multi-select-filter.component";
+import { MultiSelectFilterComponent } from "@components/shared/multi-select-filter/multi-select-filter.component";
+import { MultiSelectFilterOption } from "@components/shared/multi-select-filter/multi-select-filter-option";
+import { MultiSelectMenuComponent } from "@components/shared/multi-select-filter/multi-select-menu/multi-select-menu.component";
 import { USER_AGENT_PRESETS } from "@core/constants/user-agents";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ClientsService, ClientsServiceInterface } from "@services/clients/clients.service";
@@ -145,6 +144,7 @@ const FILTER_TOOLTIPS: Record<string, string> = {
     ScrollToTopDirective,
     ClearableInputComponent,
     MultiSelectFilterComponent,
+    MultiSelectMenuComponent,
     MatIcon,
     MatButtonModule,
     MatDividerModule,
@@ -304,22 +304,6 @@ export class AuthenticationLog {
       ? currentFilter.addEntry(keyword, values.join(","))
       : currentFilter.removeKey(keyword);
     this.authenticationLogService.authenticationLogFilter.set(newFilter);
-  }
-
-  // --- "More Filter" menu: user_role is a multi-select with no table column, stored in the shared filter as CSV. ---
-
-  isRoleSelected(value: string): boolean {
-    return this.selectedFilterValues("user_role").includes(value);
-  }
-
-  toggleRoleFilter(value: string): void {
-    const current = this.selectedFilterValues("user_role");
-    const next = current.includes(value) ? current.filter((entry) => entry !== value) : [...current, value];
-    this.setFilterValues("user_role", next);
-  }
-
-  clearRoleFilter(): void {
-    this.setFilterValues("user_role", []);
   }
 
   // Whether a @default cell shows the inline "filter by this value" button. Columns whose header already offers a

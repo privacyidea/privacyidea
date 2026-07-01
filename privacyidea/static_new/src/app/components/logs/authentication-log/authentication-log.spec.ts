@@ -174,29 +174,6 @@ describe("AuthenticationLog", () => {
     expect(fixture.nativeElement.querySelector('button[aria-label="More Filter"]')).toBeNull();
   });
 
-  it("toggleRoleFilter adds and removes a role, stored as a CSV user_role filter", () => {
-    component.toggleRoleFilter("admin-internal");
-    expect(service.authenticationLogFilter().getValueOfKey("user_role")).toBe("admin-internal");
-    component.toggleRoleFilter("admin-external");
-    expect(service.authenticationLogFilter().getValueOfKey("user_role")).toBe("admin-internal,admin-external");
-    // Toggling an active role again removes just that one.
-    component.toggleRoleFilter("admin-internal");
-    expect(service.authenticationLogFilter().getValueOfKey("user_role")).toBe("admin-external");
-  });
-
-  it("isRoleSelected reflects the current user_role selection", () => {
-    expect(component.isRoleSelected("admin-internal")).toBe(false);
-    component.toggleRoleFilter("admin-internal");
-    expect(component.isRoleSelected("admin-internal")).toBe(true);
-    expect(component.isRoleSelected("user")).toBe(false);
-  });
-
-  it("clearRoleFilter removes the role filter entirely", () => {
-    component.toggleRoleFilter("admin-internal");
-    component.clearRoleFilter();
-    expect(service.authenticationLogFilter().hasKey("user_role")).toBe(false);
-  });
-
   it("userRoleBadge flags only admins; regular users and unknown values get no badge", () => {
     expect(component.userRoleBadge("admin-internal")).toEqual(
       expect.objectContaining({ label: "internal admin", class: "role-badge-admin-internal" })

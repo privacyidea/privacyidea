@@ -55,30 +55,16 @@
         <mat-menu #moreFiltersMenu="matMenu">
           <button
             mat-menu-item
-            [matMenuTriggerFor]="userRoleMenu">
+            [matMenuTriggerFor]="userRoleMenu.matMenu">
             <span i18n>User Role</span>
           </button>
         </mat-menu>
-        <mat-menu
-          #userRoleMenu="matMenu"
-          class="filter-select-menu">
-          <button
-            (click)="clearRoleFilter()"
-            mat-menu-item>
-            <mat-icon>filter_alt_off</mat-icon>
-            <span i18n>Clear Filter</span>
-          </button>
-          <mat-divider />
-          <!-- stopPropagation keeps the menu open so several roles can be toggled in one go. -->
-          @for (option of userRoleOptions; track option.value) {
-            <button
-              (click)="$event.stopPropagation(); toggleRoleFilter(option.value)"
-              mat-menu-item>
-              <mat-icon>{{ isRoleSelected(option.value) ? "check_box" : "check_box_outline_blank" }}</mat-icon>
-              <span>{{ option.label }}</span>
-            </button>
-          }
-        </mat-menu>
+        <app-multi-select-menu
+          #userRoleMenu
+          [options]="userRoleOptions"
+          [selected]="selectedFilterValues('user_role')"
+          (selectionChange)="setFilterValues('user_role', $event)" />
+
       }
     </div>
     <mat-paginator
