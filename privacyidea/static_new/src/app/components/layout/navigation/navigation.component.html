@@ -529,6 +529,28 @@
         <span i18n>Machine Resolver</span>
       </a>
     }
+    @if (contentService.routeUrl().startsWith(ROUTE_PATHS.MACHINE_RESOLVER_DETAILS)) {
+      <a
+        class="sub-nav-active"
+        data-overflow-child>
+        <span class="icon-badge">
+          <mat-icon>lan</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-gear">settings</mat-icon>
+        </span>
+        <span i18n>Machine Resolver Details</span>
+      </a>
+    }
+    @if (contentService.routeUrl() === ROUTE_PATHS.MACHINE_RESOLVER_NEW) {
+      <a
+        class="sub-nav-active"
+        data-overflow-child>
+        <span class="icon-badge">
+          <mat-icon>lan</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-add">add</mat-icon>
+        </span>
+        <span i18n>Create Machine Resolver</span>
+      </a>
+    }
     @if (authService.actionAllowed("eventhandling_read")) {
       <a
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EVENTS ? 'sub-nav-active' : ''"
