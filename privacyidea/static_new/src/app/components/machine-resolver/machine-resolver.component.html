@@ -1,5 +1,5 @@
 <!--
- (c) NetKnights GmbH 2025,  https://netknights.it
+ (c) NetKnights GmbH 2026,  https://netknights.it
 
  This code is free software; you can redistribute it and/or
  modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,17 +17,117 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
+  aria-label="Machine Resolvers Layout"
   class="machine-resolver-layout"
-  aria-label="MachineResolver Layout">
-  <h2 i18n>Machine Resolver</h2>
-  <mat-accordion class="machine-resolver-list-layout">
-    @if (authService.actionAllowed("mresolverwrite")) {
-      <app-machine-resolver-panel-new />
-    }
-    @if (authService.actionAllowed("mresolverread")) {
-      @for (machineResolver of machineResolverService.machineResolvers(); track machineResolver.resolvername) {
-        <app-machine-resolver-panel-edit [originalMachineResolver]="machineResolver"> </app-machine-resolver-panel-edit>
+  i18n-aria-label>
+  <div
+    appScrollToTop
+    class="machine-resolver-table-container">
+    <div class="filter-paginator-container input-width-xl">
+      <mat-form-field
+        subscriptSizing="dynamic"
+        class="table-filter">
+        <mat-label i18n>Filter Machine Resolvers...</mat-label>
+        <app-clearable-input
+          (clearButtonClick)="resetFilter()"
+          [showClearButton]="filterString().length > 0">
+          <input
+            #filterHTMLInputElement
+            (input)="onFilterInput(filterHTMLInputElement.value)"
+            [value]="filterString()"
+            aria-label="Filter Input"
+            i18n-aria-label
+            i18n-placeholder
+            matInput
+            placeholder="Filter by name or type" />
+        </app-clearable-input>
+      </mat-form-field>
+    </div>
+
+    <div class="flex-row gap-8 margin-bottom-16">
+      @if (authService.actionAllowed("mresolverwrite")) {
+        <button
+          (click)="onNewMachineResolver()"
+          class="action-button-primary button-width-l"
+          mat-stroked-button>
+          <mat-icon>add</mat-icon>
+          <span i18n>New Machine Resolver</span>
+        </button>
       }
-    }
-  </mat-accordion>
+    </div>
+
+    <table
+      [dataSource]="machineResolversDataSource()"
+      aria-label="Machine Resolvers Table"
+      class="machine-resolver-table"
+      mat-table
+      matSort>
+      <ng-container matColumnDef="resolvername">
+        <th
+          *matHeaderCellDef
+          mat-header-cell
+          mat-sort-header>
+          <span i18n>Name</span>
+        </th>
+        <td
+          *matCellDef="let element"
+          mat-cell>
+          <div class="name-actions-container">
+            <a [routerLink]="[ROUTE_PATHS.MACHINE_RESOLVER_DETAILS, element.resolvername]">
+              {{ element.resolvername }}
+            </a>
+            <div class="actions-buttons">
+              @if (authService.actionAllowed("mresolverdelete")) {
+                <button
+                  (click)="onDeleteMachineResolver(element)"
+                  aria-label="Delete machine resolver"
+                  i18n-aria-label
+                  color="warn"
+                  mat-icon-button
+                  matTooltip="Delete machine resolver"
+                  i18n-matTooltip
+                  type="button">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              }
+            </div>
+          </div>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="type">
+        <th
+          *matHeaderCellDef
+          mat-header-cell
+          mat-sort-header>
+          <span i18n>Type</span>
+        </th>
+        <td
+          *matCellDef="let element"
+          mat-cell>
+          {{ element.type }}
+        </td>
+      </ng-container>
+
+      <tr
+        *matHeaderRowDef="columnKeys"
+        mat-header-row></tr>
+
+      <tr
+        *matRowDef="let row; columns: columnKeys"
+        mat-row></tr>
+
+      <tr
+        *matNoDataRow
+        mat-no-data-row>
+        <td
+          [attr.colspan]="columnKeys.length"
+          aria-label="No Data Cell"
+          i18n-aria-label
+          i18n>
+          No data matching the filter.
+        </td>
+      </tr>
+    </table>
+  </div>
 </div>
