@@ -18,7 +18,8 @@
  **/
 import { NgClass } from "@angular/common";
 import { AfterViewInit, Component, effect, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
-import { MatIconButton } from "@angular/material/button";
+import { MatButton, MatIconButton } from "@angular/material/button";
+import { MatCheckbox } from "@angular/material/checkbox";
 import { MatIcon } from "@angular/material/icon";
 import { Sort } from "@angular/material/sort";
 import {
@@ -43,13 +44,16 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
+import { forkJoin } from "rxjs";
 
 @Component({
   selector: "app-user-details-token-table",
   imports: [
     CopyableComponent,
+    MatButton,
     MatCell,
     MatCellDef,
+    MatCheckbox,
     MatColumnDef,
     MatHeaderCell,
     MatHeaderRow,
@@ -85,19 +89,17 @@ export class UserDetailsTokenTableComponent implements AfterViewInit {
   readonly columnKeys = [...this.tableUtilsService.getColumnKeys(this.columnsKeyMap)];
 
   get displayedColumns(): string[] {
-    const columns: string[] = this.columnsKeyMap.map((column) => column.key);
-    if (this.authService.actionAllowed("unassign")) {
-      columns.push("remove");
-    }
-    if (this.authService.actionAllowed("delete")) {
-      columns.push("delete");
-    }
-    return columns;
+    return ["select", ...this.columnsKeyMap.map((column) => column.key)];
   }
 
   dataSource = new MatTableDataSource<ContainerDetailToken>([]);
   sort = signal({ active: "serial", direction: "asc" } as Sort);
   apiFilter = this.tokenService.apiFilter;
+  selection: WritableSignal<ContainerDetailToken[]> = linkedSignal({
+    source: () =>
+      this.tokenService.userTokenResource.hasValue() ? this.tokenService.userTokenResource.value() : undefined,
+    computation: () => []
+  });
   userTokenData: WritableSignal<MatTableDataSource<TokenDetails>> = linkedSignal({
     source: () =>
       this.tokenService.userTokenResource.hasValue() ? this.tokenService.userTokenResource.value() : undefined,
@@ -131,37 +133,50 @@ export class UserDetailsTokenTableComponent implements AfterViewInit {
     (this.dataSource as unknown as { _sort: WritableSignal<Sort> })._sort = this.sort;
   }
 
-  toggleActive(token: TokenDetails): void {
-    this.tokenService.toggleActive(token.serial, token.active).subscribe({
-      next: () => {
-        this.tokenService.userTokenResource.reload();
-      }
-    });
+  isAllSelected(): boolean {
+    return this.selection().length === this.dataSource.data.length && this.dataSource.data.length > 0;
   }
 
-  resetFailCount(element: TokenDetails): void {
-    if (!element.revoked && !element.locked && this.authService.actionAllowed("reset")) {
-      this.tokenService.resetFailCount(element.serial).subscribe({
-        next: () => {
-          this.tokenService.userTokenResource.reload();
-        }
-      });
+  toggleAllRows(): void {
+    if (this.isAllSelected()) {
+      this.selection.set([]);
+    } else {
+      this.selection.set([...this.dataSource.data]);
     }
   }
 
-  unassignToken(element: TokenDetails): void {
-    this.tokenService.unassignUser(element.serial).subscribe({
-      next: () => {
-        this.tokenService.userTokenResource.reload();
-      }
+  toggleRow(row: ContainerDetailToken): void {
+    const current = this.selection();
+    if (current.includes(row)) {
+      this.selection.set(current.filter((r) => r !== row));
+    } else {
+      this.selection.set([...current, row]);
+    }
+  }
+
+  deleteSelected(): void {
+    const serials = this.selection().map((r) => r.serial);
+    this.tokenService.bulkDeleteWithConfirmDialog(serials, () => this.tokenService.userTokenResource.reload());
+  }
+
+  unassignSelected(): void {
+    const serials = this.selection().map((r) => r.serial);
+    forkJoin(serials.map((s) => this.tokenService.unassignUser(s))).subscribe({
+      next: () => this.tokenService.userTokenResource.reload()
     });
   }
 
-  deleteToken(element: TokenDetails): void {
-    this.tokenService.deleteToken(element.serial).subscribe({
-      next: () => {
-        this.tokenService.userTokenResource.reload();
-      }
+  toggleActiveSelected(): void {
+    const rows = this.selection();
+    forkJoin(rows.map((r) => this.tokenService.toggleActive(r.serial, r.active))).subscribe({
+      next: () => this.tokenService.userTokenResource.reload()
+    });
+  }
+
+  resetFailcountSelected(): void {
+    const serials = this.selection().map((r) => r.serial);
+    forkJoin(serials.map((s) => this.tokenService.resetFailCount(s))).subscribe({
+      next: () => this.tokenService.userTokenResource.reload()
     });
   }
 }

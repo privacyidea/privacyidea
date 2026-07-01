@@ -78,26 +78,9 @@ describe("UserDetailsTokenTableComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("has the expected data columns plus action columns when rights are granted", () => {
-    const auth = TestBed.inject(AuthService) as unknown as MockAuthService;
-    (auth.actionAllowed as jest.Mock).mockReturnValue(true);
+  it("has the select column prepended to the data columns", () => {
     expect(component.displayedColumns).toEqual([
-      "serial",
-      "tokentype",
-      "active",
-      "description",
-      "failcount",
-      "maxfail",
-      "container_serial",
-      "remove",
-      "delete"
-    ]);
-  });
-
-  it("omits action columns when rights are not granted", () => {
-    const auth = TestBed.inject(AuthService) as unknown as MockAuthService;
-    (auth.actionAllowed as jest.Mock).mockReturnValue(false);
-    expect(component.displayedColumns).toEqual([
+      "select",
       "serial",
       "tokentype",
       "active",
@@ -187,49 +170,82 @@ describe("UserDetailsTokenTableComponent", () => {
     expect(component.dataSource.data.map((t: ContainerDetailToken) => t.serial)).toEqual(["KEEP-ME"]);
   });
 
-  it("toggleActive calls service and triggers user reload", () => {
-    const token: Partial<TokenDetails> = {
-      serial: "S-123",
-      active: true
-    };
+  it("toggleRow adds and removes a row from the selection", () => {
+    const rowA = { serial: "A" } as unknown as ContainerDetailToken;
+    const rowB = { serial: "B" } as unknown as ContainerDetailToken;
 
-    component.toggleActive(token as TokenDetails);
+    component.toggleRow(rowA);
+    expect(component.selection()).toEqual([rowA]);
 
-    expect(tokenServiceMock.toggleActive).toHaveBeenCalledWith("S-123", true);
+    component.toggleRow(rowB);
+    expect(component.selection()).toEqual([rowA, rowB]);
+
+    component.toggleRow(rowA);
+    expect(component.selection()).toEqual([rowB]);
+  });
+
+  it("toggleAllRows selects all rows and clears when all are selected", () => {
+    const rowA = { serial: "A" } as unknown as ContainerDetailToken;
+    const rowB = { serial: "B" } as unknown as ContainerDetailToken;
+    component.dataSource.data = [rowA, rowB];
+
+    expect(component.isAllSelected()).toBe(false);
+
+    component.toggleAllRows();
+    expect(component.selection()).toEqual([rowA, rowB]);
+    expect(component.isAllSelected()).toBe(true);
+
+    component.toggleAllRows();
+    expect(component.selection()).toEqual([]);
+    expect(component.isAllSelected()).toBe(false);
+  });
+
+  it("deleteSelected calls bulkDeleteWithConfirmDialog with the selected serials", () => {
+    const rowA = { serial: "A" } as unknown as ContainerDetailToken;
+    const rowB = { serial: "B" } as unknown as ContainerDetailToken;
+    component.selection.set([rowA, rowB]);
+
+    component.deleteSelected();
+
+    expect(tokenServiceMock.bulkDeleteWithConfirmDialog).toHaveBeenCalledWith(["A", "B"], expect.any(Function));
+    const afterDelete = (tokenServiceMock.bulkDeleteWithConfirmDialog as jest.Mock).mock.calls[0][1];
+    afterDelete();
     expect(tokenServiceMock.userTokenResource.reload).toHaveBeenCalledTimes(1);
   });
 
-  it("resetFailCount calls service only when allowed", () => {
-    const auth = TestBed.inject(AuthService) as unknown as MockAuthService;
-    auth.actionAllowed = jest.fn().mockReturnValue(true);
+  it("unassignSelected unassigns each selected token and reloads", () => {
+    const rowA = { serial: "A" } as unknown as ContainerDetailToken;
+    const rowB = { serial: "B" } as unknown as ContainerDetailToken;
+    component.selection.set([rowA, rowB]);
 
-    const token: Partial<TokenDetails> = {
-      serial: "X",
-      revoked: false,
-      locked: false
-    };
+    component.unassignSelected();
 
-    component.resetFailCount(token as TokenDetails);
-
-    expect(tokenServiceMock.resetFailCount).toHaveBeenCalledWith("X");
+    expect(tokenServiceMock.unassignUser).toHaveBeenCalledWith("A");
+    expect(tokenServiceMock.unassignUser).toHaveBeenCalledWith("B");
     expect(tokenServiceMock.userTokenResource.reload).toHaveBeenCalledTimes(1);
   });
 
-  it("unassignToken unassigns from user and triggers user reload", () => {
-    const token: Partial<TokenDetails> = { serial: "U-1" };
+  it("toggleActiveSelected toggles each selected token and reloads", () => {
+    const rowA = { serial: "A", active: true } as unknown as ContainerDetailToken;
+    const rowB = { serial: "B", active: false } as unknown as ContainerDetailToken;
+    component.selection.set([rowA, rowB]);
 
-    component.unassignToken(token as TokenDetails);
+    component.toggleActiveSelected();
 
-    expect(tokenServiceMock.unassignUser).toHaveBeenCalledWith("U-1");
+    expect(tokenServiceMock.toggleActive).toHaveBeenCalledWith("A", true);
+    expect(tokenServiceMock.toggleActive).toHaveBeenCalledWith("B", false);
     expect(tokenServiceMock.userTokenResource.reload).toHaveBeenCalledTimes(1);
   });
 
-  it("deleteToken deletes the token and triggers user reload", () => {
-    const token: Partial<TokenDetails> = { serial: "D-1" };
+  it("resetFailcountSelected resets each selected token and reloads", () => {
+    const rowA = { serial: "A" } as unknown as ContainerDetailToken;
+    const rowB = { serial: "B" } as unknown as ContainerDetailToken;
+    component.selection.set([rowA, rowB]);
 
-    component.deleteToken(token as TokenDetails);
+    component.resetFailcountSelected();
 
-    expect(tokenServiceMock.deleteToken).toHaveBeenCalledWith("D-1");
+    expect(tokenServiceMock.resetFailCount).toHaveBeenCalledWith("A");
+    expect(tokenServiceMock.resetFailCount).toHaveBeenCalledWith("B");
     expect(tokenServiceMock.userTokenResource.reload).toHaveBeenCalledTimes(1);
   });
 });

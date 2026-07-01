@@ -18,7 +18,8 @@
  **/
 import { NgClass } from "@angular/common";
 import { Component, effect, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
-import { MatIconButton } from "@angular/material/button";
+import { MatButton, MatIconButton } from "@angular/material/button";
+import { MatCheckbox } from "@angular/material/checkbox";
 import { MatIcon } from "@angular/material/icon";
 import { Sort } from "@angular/material/sort";
 import {
@@ -37,6 +38,7 @@ import {
 } from "@angular/material/table";
 import { MatTooltip } from "@angular/material/tooltip";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
   ContainerDetailData,
@@ -44,8 +46,10 @@ import {
   ContainerServiceInterface
 } from "@services/container/container.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
+import { forkJoin } from "rxjs";
 
 @Component({
   selector: "app-user-details-container-table",
@@ -65,7 +69,9 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
     MatHeaderRow,
     MatRow,
     MatIcon,
-    MatIconButton
+    MatIconButton,
+    MatButton,
+    MatCheckbox
   ],
   templateUrl: "./user-details-container-table.component.html",
   styleUrl: "./user-details-container-table.component.scss"
@@ -76,19 +82,13 @@ export class UserDetailsContainerTableComponent {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly userService: UserServiceInterface = inject(UserService);
+  private readonly dialogService: DialogServiceInterface = inject(DialogService);
 
   readonly columnsKeyMap = this.tableUtilsService.pickColumns("serial", "type", "states", "description", "realms");
   readonly columnKeys = [...this.tableUtilsService.getColumnKeys(this.columnsKeyMap)];
 
   get displayedColumns(): string[] {
-    const columns: string[] = this.columnsKeyMap.map((c) => c.key);
-    if (this.authService.actionAllowed("container_unassign_user")) {
-      columns.push("remove");
-    }
-    if (this.authService.actionAllowed("container_delete")) {
-      columns.push("delete");
-    }
-    return columns;
+    return ["select", ...this.columnsKeyMap.map((c) => c.key)];
   }
 
   dataSource = new MatTableDataSource<ContainerDetailData>([]);
@@ -110,6 +110,14 @@ export class UserDetailsContainerTableComponent {
     }
   });
 
+  selection: WritableSignal<ContainerDetailData[]> = linkedSignal({
+    source: () =>
+      this.containerService.userContainersResource.hasValue()
+        ? this.containerService.userContainersResource.value()
+        : undefined,
+    computation: () => []
+  });
+
   constructor() {
     (this.dataSource as unknown as { _sort: WritableSignal<Sort> })._sort = this.sort;
 
@@ -124,23 +132,67 @@ export class UserDetailsContainerTableComponent {
     });
   }
 
-  handleStateClick(element: ContainerDetailData) {
-    this.containerService.toggleActive(element.serial, element.states).subscribe({
+  isAllSelected() {
+    return this.selection().length === this.dataSource.data.length && this.dataSource.data.length > 0;
+  }
+
+  toggleAllRows() {
+    if (this.isAllSelected()) {
+      this.selection.set([]);
+    } else {
+      this.selection.set([...this.dataSource.data]);
+    }
+  }
+
+  toggleRow(row: ContainerDetailData) {
+    const current = this.selection();
+    if (current.includes(row)) {
+      this.selection.set(current.filter((r) => r !== row));
+    } else {
+      this.selection.set([...current, row]);
+    }
+  }
+
+  deleteSelected() {
+    const selected = this.selection();
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
+        data: {
+          title: $localize`Delete Containers`,
+          items: selected.map((container) => container.serial),
+          itemType: "container",
+          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
+        }
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (result) {
+            forkJoin(selected.map((container) => this.containerService.deleteContainer(container.serial))).subscribe({
+              next: () => this.containerService.userContainersResource.reload()
+            });
+          }
+        }
+      });
+  }
+
+  unassignSelected() {
+    const selected = this.selection();
+    const username = this.userService.detailsUser().username;
+    const realm = this.userService.selectedUserRealm();
+    forkJoin(
+      selected.map((container) => this.containerService.unassignUser(container.serial, username, realm))
+    ).subscribe({
       next: () => this.containerService.userContainersResource.reload()
     });
   }
 
-  unassignUser(element: ContainerDetailData) {
-    const assignedUser = element.users?.[0];
-    const username = assignedUser?.user_name ?? element.user_name ?? "";
-    const userRealm = assignedUser?.user_realm ?? element.user_realm ?? "";
-    this.containerService.unassignUser(element.serial, username, userRealm).subscribe({
-      next: () => this.containerService.userContainersResource.reload()
-    });
-  }
-
-  deleteContainer(element: ContainerDetailData) {
-    this.containerService.deleteContainer(element.serial).subscribe({
+  toggleActiveSelected() {
+    const selected = this.selection();
+    forkJoin(
+      selected.map((container) => this.containerService.toggleActive(container.serial, container.states))
+    ).subscribe({
       next: () => this.containerService.userContainersResource.reload()
     });
   }

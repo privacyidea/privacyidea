@@ -25,6 +25,7 @@ import { PiResponse } from "@app/app.component";
 import { AuthService } from "@services/auth/auth.service";
 import { ContainerDetailData, ContainerDetails, ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
+import { DialogService } from "@services/dialog/dialog.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { UserService } from "@services/user/user.service";
 import {
@@ -38,6 +39,7 @@ import {
   MockTableUtilsService,
   MockUserService
 } from "@testing/mock-services";
+import { of } from "rxjs";
 import { UserDetailsContainerTableComponent } from "./user-details-container-table.component";
 
 describe("UserDetailsContainerTableComponent", () => {
@@ -46,6 +48,7 @@ describe("UserDetailsContainerTableComponent", () => {
 
   let containerServiceMock: MockContainerService;
   let authServiceMock: MockAuthService;
+  let userServiceMock: MockUserService;
 
   beforeEach(async () => {
     TestBed.resetTestingModule();
@@ -70,6 +73,7 @@ describe("UserDetailsContainerTableComponent", () => {
 
     containerServiceMock = TestBed.inject(ContainerService) as unknown as MockContainerService;
     authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+    userServiceMock = TestBed.inject(UserService) as unknown as MockUserService;
     (authServiceMock.actionAllowed as jest.Mock).mockReturnValue(true);
 
     component = fixture.componentInstance;
@@ -82,21 +86,8 @@ describe("UserDetailsContainerTableComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("has the expected data columns plus action columns when rights are granted", () => {
-    expect(component.displayedColumns).toEqual([
-      "serial",
-      "type",
-      "states",
-      "description",
-      "realms",
-      "remove",
-      "delete"
-    ]);
-  });
-
-  it("omits action columns when rights are not granted", () => {
-    (authServiceMock.actionAllowed as jest.Mock).mockReturnValue(false);
-    expect(component.displayedColumns).toEqual(["serial", "type", "states", "description", "realms"]);
+  it("has the select column first followed by the data columns", () => {
+    expect(component.displayedColumns).toEqual(["select", "serial", "type", "states", "description", "realms"]);
   });
 
   it("wires sort onto the dataSource", () => {
@@ -142,38 +133,100 @@ describe("UserDetailsContainerTableComponent", () => {
     });
   });
 
-  it("handleStateClick calls toggleActive and reloads", () => {
-    const element = { serial: "C-123", states: ["active"] } as unknown as ContainerDetailData;
-    component.handleStateClick(element);
-    expect(containerServiceMock.toggleActive).toHaveBeenCalledWith("C-123", ["active"]);
+  describe("selection", () => {
+    const rows: ContainerDetailData[] = [
+      { serial: "C-1", states: [] } as unknown as ContainerDetailData,
+      { serial: "C-2", states: [] } as unknown as ContainerDetailData
+    ];
+
+    beforeEach(() => {
+      component.dataSource.data = rows;
+    });
+
+    it("toggleAllRows selects and deselects every row", () => {
+      component.toggleAllRows();
+      expect(component.selection()).toEqual(rows);
+      expect(component.isAllSelected()).toBe(true);
+
+      component.toggleAllRows();
+      expect(component.selection()).toEqual([]);
+      expect(component.isAllSelected()).toBe(false);
+    });
+
+    it("toggleRow adds and removes a single row", () => {
+      component.toggleRow(rows[0]);
+      expect(component.selection()).toEqual([rows[0]]);
+
+      component.toggleRow(rows[0]);
+      expect(component.selection()).toEqual([]);
+    });
+
+    it("isAllSelected is false when the table is empty", () => {
+      component.dataSource.data = [];
+      component.selection.set([]);
+      expect(component.isAllSelected()).toBe(false);
+    });
+  });
+
+  describe("deleteSelected", () => {
+    const selected: ContainerDetailData[] = [
+      { serial: "C-1", states: [] } as unknown as ContainerDetailData,
+      { serial: "C-2", states: [] } as unknown as ContainerDetailData
+    ];
+
+    function mockDialogResult(result: unknown): void {
+      jest
+        .spyOn((component as unknown as { dialogService: DialogService }).dialogService, "openDialog")
+        .mockReturnValue({ afterClosed: () => of(result) } as ReturnType<DialogService["openDialog"]>);
+    }
+
+    it("deletes every selected container and reloads when confirmed", () => {
+      component.selection.set(selected);
+      mockDialogResult(true);
+
+      component.deleteSelected();
+
+      expect(containerServiceMock.deleteContainer).toHaveBeenCalledWith("C-1");
+      expect(containerServiceMock.deleteContainer).toHaveBeenCalledWith("C-2");
+      expect(containerServiceMock.userContainersResource.reload).toHaveBeenCalledTimes(1);
+    });
+
+    it("does nothing when the confirmation is dismissed", () => {
+      component.selection.set(selected);
+      mockDialogResult(false);
+
+      component.deleteSelected();
+
+      expect(containerServiceMock.deleteContainer).not.toHaveBeenCalled();
+      expect(containerServiceMock.userContainersResource.reload).not.toHaveBeenCalled();
+    });
+  });
+
+  it("unassignSelected unassigns each container for the current user and reloads", () => {
+    userServiceMock.detailsUser.set({ username: "alice", realm: "r1" });
+    userServiceMock.selectedUserRealm.set("r1");
+    component.selection.set([
+      { serial: "C-1", states: [] } as unknown as ContainerDetailData,
+      { serial: "C-2", states: [] } as unknown as ContainerDetailData
+    ]);
+
+    component.unassignSelected();
+
+    expect(containerServiceMock.unassignUser).toHaveBeenCalledWith("C-1", "alice", "r1");
+    expect(containerServiceMock.unassignUser).toHaveBeenCalledWith("C-2", "alice", "r1");
     expect(containerServiceMock.userContainersResource.reload).toHaveBeenCalledTimes(1);
   });
 
-  it("unassignUser unassigns the assigned user and reloads", () => {
-    const element = {
-      serial: "C-456",
-      users: [{ user_name: "alice", user_realm: "r1" }]
-    } as unknown as ContainerDetailData;
-    component.unassignUser(element);
-    expect(containerServiceMock.unassignUser).toHaveBeenCalledWith("C-456", "alice", "r1");
-    expect(containerServiceMock.userContainersResource.reload).toHaveBeenCalledTimes(1);
-  });
+  it("toggleActiveSelected toggles each container and reloads", () => {
+    component.selection.set([
+      { serial: "C-1", states: ["active"] } as unknown as ContainerDetailData,
+      { serial: "C-2", states: ["disabled"] } as unknown as ContainerDetailData
+    ]);
 
-  it("unassignUser falls back to top-level user fields", () => {
-    const element = {
-      serial: "C-789",
-      users: [],
-      user_name: "bob",
-      user_realm: "r2"
-    } as unknown as ContainerDetailData;
-    component.unassignUser(element);
-    expect(containerServiceMock.unassignUser).toHaveBeenCalledWith("C-789", "bob", "r2");
-  });
+    component.toggleActiveSelected();
 
-  it("deleteContainer deletes the container and reloads", () => {
-    const element = { serial: "C-999" } as unknown as ContainerDetailData;
-    component.deleteContainer(element);
-    expect(containerServiceMock.deleteContainer).toHaveBeenCalledWith("C-999");
+    expect(containerServiceMock.toggleActive).toHaveBeenCalledWith("C-1", ["active"]);
+    expect(containerServiceMock.toggleActive).toHaveBeenCalledWith("C-2", ["disabled"]);
     expect(containerServiceMock.userContainersResource.reload).toHaveBeenCalledTimes(1);
   });
 });

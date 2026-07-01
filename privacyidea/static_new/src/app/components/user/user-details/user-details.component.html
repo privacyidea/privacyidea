@@ -236,15 +236,13 @@
 
   <app-user-details-token-table>
     @if (authService.tokenEnrollmentAllowed()) {
-      <div class="flex gap-8 margin-bottom-16">
-        <button
-          (click)="enrollNewToken()"
-          class="action-button-primary button-width-m"
-          mat-stroked-button>
-          <mat-icon>add_moderator</mat-icon>
-          <span i18n>Enroll new token</span>
-        </button>
-      </div>
+      <button
+        (click)="enrollNewToken()"
+        class="action-button-primary button-width-m"
+        mat-stroked-button>
+        <mat-icon>add_moderator</mat-icon>
+        <span i18n>Enroll new token</span>
+      </button>
     }
   </app-user-details-token-table>
 
@@ -293,15 +291,13 @@
 
   <app-user-details-container-table>
     @if (authService.actionAllowed("container_create")) {
-      <div class="flex gap-8 margin-bottom-16">
-        <button
-          (click)="createNewContainer()"
-          class="action-button-primary button-width-m"
-          mat-stroked-button>
-          <mat-icon>create_new_folder</mat-icon>
-          <span i18n>Create new container</span>
-        </button>
-      </div>
+      <button
+        (click)="createNewContainer()"
+        class="action-button-primary button-width-m"
+        mat-stroked-button>
+        <mat-icon>create_new_folder</mat-icon>
+        <span i18n>Create new container</span>
+      </button>
     }
   </app-user-details-container-table>
 </div>
