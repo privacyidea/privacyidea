@@ -37,11 +37,14 @@ jobs:
       - name: Detect WebUI manifest changes
         id: changed
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_REF: ${{ github.base_ref }}
         run: |
-          git fetch --no-tags --quiet origin "$BASE_SHA"
-          if git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- \
+          # Fetch the base branch ref (fetching a bare commit SHA is not
+          # universally supported) and diff against the merge-base so we see
+          # exactly what this PR changed, independent of how far base advanced.
+          git fetch --no-tags --quiet origin "$BASE_REF"
+          base=$(git merge-base "origin/$BASE_REF" HEAD)
+          if git diff --name-only "$base" HEAD -- \
                privacyidea/static_new/package.json \
                privacyidea/static_new/package-lock.json | grep -q .; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
@@ -63,7 +66,10 @@ jobs:
         # --package-lock-only preserves already-satisfying pins and only touches
         # the lockfile when package.json requires something it does not satisfy,
         # so an in-sync lockfile produces no diff.
-        run: npm install --package-lock-only
+        # --ignore-scripts avoids running lifecycle scripts from transitive
+        # deps (only lockfile resolution is needed here); --no-audit/--no-fund
+        # cut network calls and noise.
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
         working-directory: ./privacyidea/static_new
       - name: Fail on lockfile drift
         if: steps.changed.outputs.changed == 'true'
