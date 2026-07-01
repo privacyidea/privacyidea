@@ -73,20 +73,37 @@ const OUTCOME_CLASS: Record<string, string> = {
 // realm/resolver/user links point to admin-only pages.
 const USER_SCOPED_COLUMN_KEYS = ["username", "realm", "resolver", "uid"];
 
-// Badge shown behind the username for the two admin roles (mirrors AuthLogUserRole). Regular users are the silent
-// default and get no badge, so the role gets surfaced without an own column that would be "user" on almost every row.
-const USER_ROLE_BADGES: Record<string, { label: string; tooltip: string; class: string }> = {
-  "admin-internal": {
-    label: $localize`internal admin`,
-    tooltip: $localize`Local database administrator.`,
-    class: "role-badge-admin-internal"
+// Single source for all user roles: filter-menu label, and badge metadata for admin roles.
+// Regular users get no badge (they are the default and appear on almost every row).
+const ROLE_CONFIG: readonly {
+  value: string;
+  filterLabel: string;
+  badge?: { label: string; tooltip: string; class: string };
+}[] = [
+  { value: "user", filterLabel: $localize`User` },
+  {
+    value: "admin-internal",
+    filterLabel: $localize`Internal Admin`,
+    badge: {
+      label: $localize`internal admin`,
+      tooltip: $localize`Local database administrator.`,
+      class: "role-badge-admin-internal"
+    }
   },
-  "admin-external": {
-    label: $localize`external admin`,
-    tooltip: $localize`Administrator from an admin realm.`,
-    class: "role-badge-admin-external"
+  {
+    value: "admin-external",
+    filterLabel: $localize`External Admin`,
+    badge: {
+      label: $localize`external admin`,
+      tooltip: $localize`Administrator from an admin realm.`,
+      class: "role-badge-admin-external"
+    }
   }
-};
+];
+
+const USER_ROLE_BADGES: Record<string, { label: string; tooltip: string; class: string }> = Object.fromEntries(
+  ROLE_CONFIG.filter((role) => role.badge).map((r) => [r.value, r.badge!])
+);
 
 // `sortable` mirrors SORTABLE_COLUMNS in privacyidea/lib/conditional_access/authentication_log.py. Every column is
 // sortable except `other_info`, which is a JSON column the backend cannot order on meaningfully.
@@ -166,12 +183,10 @@ export class AuthenticationLog {
     value: preset.identifier
   }));
   // user_role has no table column (it is "user" on almost every row); it is filtered via the "More Filter" menu.
-  // Values mirror AuthLogUserRole; the backend matches a comma-separated selection as "any of".
-  readonly userRoleOptions: readonly MultiSelectFilterOption[] = [
-    { label: $localize`User`, value: "user" },
-    { label: $localize`Internal Admin`, value: "admin-internal" },
-    { label: $localize`External Admin`, value: "admin-external" }
-  ];
+  readonly userRoleOptions: readonly MultiSelectFilterOption[] = ROLE_CONFIG.map((role) => ({
+    label: role.filterLabel,
+    value: role.value
+  }));
   protected readonly authenticationLogService: AuthenticationLogServiceInterface = inject(AuthenticationLogService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
