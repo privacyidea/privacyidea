@@ -118,6 +118,7 @@
   }
 }
 
-.details-info-area {
-  max-width: 100%;
+// Scoped under .details-grid so this beats the grid's `> *` flex rule.
+.details-grid > .details-info-area {
+  @include table.card-width(m);
 }

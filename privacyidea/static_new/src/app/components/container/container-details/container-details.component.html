@@ -155,7 +155,9 @@
       <app-details-card
         class="details-info-area"
         title="Information"
-        i18n-title>
+        i18n-title
+        [collapsible]="true"
+        [collapseLocked]="isEditingInfo()">
         <app-container-details-info
           [detailData]="containerDetailData()"
           [infoData]="infoData()"

@@ -1,27 +1,4 @@
 @use "styles";
 @use "table";
 
-.width-192 {
-  width: 192px;
-}
-
-.info-container {
-  flex-direction: column;
-}
-
-.info-container .info-table th,
-.info-container .info-table td {
-  border: none;
-  background: transparent;
-}
-
-.info-container .info-table {
-  width: 100%;
-}
-
-.info-container .info-table td:nth-child(2) {
-  width: 1%;
-  min-width: 0;
-  white-space: nowrap;
-  padding: 0 var(--half-global-padding);
-}
+@include table.details-info-grid;
