@@ -785,6 +785,6 @@ mat-icon {
 }
 
 .button-width-xl {
-  width: 340px;
-  min-width: 340px;
+  width: var(--button-width-xl);
+  min-width: var(--button-width-xl);
 }

@@ -42,7 +42,7 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: calc(var(--input-width-l) - var(--input-width-m) - var(--button-width-xs));
+  gap: max(0px, calc(var(--input-width-l) - var(--input-width-m) - var(--button-width-xs)));
 }
 
 // Fixed-width value slot. Always reserved (even when empty) so the description
