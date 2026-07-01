@@ -56,13 +56,17 @@ body {
   // content off the bottom). Both are overridden for self-service in
   // `body.self-service-layout` below (side drawer, no top toolbar → less chrome).
   //
-  // General components (forms, details, enrollment, …): admin chrome ~120px
-  // (toolbar + content padding), calibrated from the measured 88vh @100%.
+  // General components (short forms, config landings, …): admin chrome ~120px
+  // (toolbar + content padding), the mixin default.
   --content-max-height: min(88vh, calc(100vh - 120px));
-  // Table list pages additionally carry an internal filter row + paginator, so
-  // their scroll region needs more headroom — heavier chrome (~190px, measured
-  // 81vh @100% → ~62vh @200%). The 9 table components opt into this explicitly.
+  // Table list pages carry an internal filter row + paginator, so their scroll
+  // region needs more headroom — heavier chrome (~190px, measured 81vh @100% →
+  // ~62vh @200%). The 9 table components opt into this explicitly.
   --table-max-height: min(81vh, calc(100vh - 190px));
+  // Detail & edit pages (token/container/user details, enrollment, policy and
+  // other edit/new forms): tall content, same 190px admin chrome as the tables.
+  // 81vh at ~100% zoom, shrinking to ≈62vh at 200%. SS override below (flat 88vh).
+  --detail-max-height: min(86vh, calc(100vh - 190px));
 
   // Standardized detail-card widths, applied via the card-width() mixin.
   --card-width-s: 400px;
@@ -212,6 +216,9 @@ body.self-service-layout {
   // can't hold across zoom (measured drop ~6vh > what a fixed vh base gives), so
   // the fixed-px offset reproduces both zooms; the calc() guards high zoom.
   --table-max-height: min(94vh, calc(100vh - 2 * var(--global-padding) - 30px));
+  // Detail & edit pages: little chrome in self-service, so a flat 88vh fits at
+  // every zoom (matches the enrollment page Henrik tuned).
+  --detail-max-height: 88vh;
 }
 
 .shadow {

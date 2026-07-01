@@ -68,11 +68,6 @@ $border-color: var(--mat-sys-outline-variant);
   .user-editable-row {
     width: auto;
     min-width: 0;
-
-    mat-form-field {
-      width: 100%;
-      max-width: 100%;
-    }
   }
 
   .user-pin-container-padding {
