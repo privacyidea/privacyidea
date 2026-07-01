@@ -38,7 +38,6 @@ import {
   MachineResolverService,
   MachineResolverServiceInterface
 } from "@services/machine-resolver/machine-resolver.service";
-import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { lastValueFrom } from "rxjs";
 
 const columnKeysMap = [
@@ -72,7 +71,6 @@ export class MachineResolverComponent {
 
   readonly machineResolverService: MachineResolverServiceInterface = inject(MachineResolverService);
   readonly authService: AuthServiceInterface = inject(AuthService);
-  protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly router = inject(Router);
 
