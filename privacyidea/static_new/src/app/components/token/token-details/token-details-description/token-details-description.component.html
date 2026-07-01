@@ -1,0 +1,76 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<app-details-card
+  class="details-card--description"
+  [class.is-editing]="element().isEditing()"
+  title="Description"
+  i18n-title>
+  <div class="value-row">
+    <div class="value-content">
+      @if (element().isEditing()) {
+        @if (selfService()) {
+          <mat-form-field
+            class="input-width-xl description height-136"
+            subscriptSizing="dynamic">
+            <textarea
+              [value]="element().value"
+              (input)="element().value = $any($event.target).value"
+              maxlength="80"
+              i18n-placeholder
+              matInput
+              placeholder="Enter description"
+              rows="3"></textarea>
+            <mat-hint align="end"
+              >{{ element().value.length || 0 }} / {{ tokenService.maxDescriptionLength }}
+            </mat-hint>
+          </mat-form-field>
+        } @else {
+          <mat-form-field
+            class="input-width-xl description"
+            subscriptSizing="dynamic">
+            <textarea
+              [value]="element().value"
+              (input)="element().value = $any($event.target).value"
+              maxlength="80"
+              appAutofocus
+              matInput
+              rows="3"></textarea>
+            <mat-hint align="end"
+              >{{ element().value.length || 0 }} / {{ tokenService.maxDescriptionLength }}
+            </mat-hint>
+          </mat-form-field>
+        }
+      } @else {
+        <span class="description-text">{{ element().value || "—" }}</span>
+      }
+    </div>
+    <div class="value-edit">
+      @if (editable()) {
+        <app-edit-buttons
+          [cancelEdit]="cancelEdit()"
+          [element]="element()"
+          [isEditingInfo]="isEditingInfo()"
+          [isEditingUser]="isEditingUser()"
+          [saveEdit]="saveEdit()"
+          [shouldHideEdit]="isAnyEditingOrRevoked()"
+          [toggleEdit]="toggleEdit()"></app-edit-buttons>
+      }
+    </div>
+  </div>
+</app-details-card>

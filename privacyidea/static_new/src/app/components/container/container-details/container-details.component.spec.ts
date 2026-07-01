@@ -24,16 +24,11 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ActivatedRoute } from "@angular/router";
 import { ContainerDetailsInfoComponent } from "@components/container/container-details/container-details-info/container-details-info.component";
 import { ContainerDetailsComponent } from "@components/container/container-details/container-details.component";
-import { ContainerDetailsSelfServiceComponent } from "@components/container/container-details/container-details.self-service.component";
 import { EditableElement } from "@components/shared/edit-buttons/edit-buttons.component";
 import { TokenDetailsComponent } from "@components/token/token-details/token-details.component";
 import { AuditService } from "@services/audit/audit.service";
 import { AuthService } from "@services/auth/auth.service";
-import {
-  ContainerDetailData,
-  ContainerService,
-  ContainerServiceInterface
-} from "@services/container/container.service";
+import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
@@ -127,11 +122,6 @@ describe("ContainerDetailsComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("creates the self service component", () => {
-    const selfFixture = TestBed.createComponent(ContainerDetailsSelfServiceComponent);
-    expect(selfFixture.componentInstance).toBeTruthy();
-  });
-
   it("addTokenToContainer calls service with correct params", () => {
     component.containerSerial = signal("container1");
 
@@ -145,34 +135,12 @@ describe("ContainerDetailsComponent", () => {
     expect(containerService.addTokenToContainer).toHaveBeenCalledWith("container1", "Mock Serial");
   });
 
-  it("toggles realm edit and saves via setContainerRealm()", () => {
-    jest.spyOn(containerService, "setContainerRealm").mockReturnValue(of({}) as never);
-
-    component.containerDetailData.set([
-      {
-        keyMap: { key: "realms", label: "Realms" },
-        value: ["realm1"],
-        isEditing: signal(false)
-      }
-    ]);
-    const element = component.containerDetailData()[0];
-
-    component.toggleContainerEdit(element);
-    expect(element.isEditing()).toBe(true);
-
-    component.selectedRealms.set(["realm1", "realm2"]);
-    component.saveContainerEdit(element);
-
-    expect(containerService.setContainerRealm).toHaveBeenCalledWith("Mock serial", ["realm1", "realm2"]);
-    expect(element.isEditing()).toBe(false);
-  });
-
   it("edits description and calls setContainerDescription()", () => {
     jest.spyOn(containerService, "setContainerDescription").mockReturnValue(of({}) as never);
 
     component.containerDetailData.set([
       {
-        keyMap: { key: "description", label: "Description" },
+        keyMap: { key: "description", label: "Description", group: "container" },
         value: "Old description",
         isEditing: signal(false)
       }
@@ -184,7 +152,7 @@ describe("ContainerDetailsComponent", () => {
 
     component.containerDetailData.set([
       {
-        keyMap: { key: "description", label: "Description" },
+        keyMap: { key: "description", label: "Description", group: "container" },
         value: "New description from UI",
         isEditing: signal(false)
       }
@@ -224,21 +192,6 @@ describe("ContainerDetailsComponent", () => {
       userRealm: "realmUser"
     });
     expect(component.isEditingUser()).toBe(false);
-  });
-
-  it("canceling a realms edit clears selection", () => {
-    component.selectedRealms.set(["realm1"]);
-    component.containerDetailData.set([
-      {
-        keyMap: { key: "realms", label: "Realms" },
-        value: "irrelevant",
-        isEditing: signal(false)
-      }
-    ]);
-    const element = component.containerDetailData()[0];
-    component.cancelContainerEdit(element);
-
-    expect(component.selectedRealms()).toEqual([]);
   });
 
   it("isEditableElement returns true for states when action is allowed", () => {
@@ -282,24 +235,6 @@ describe("ContainerDetailsComponent", () => {
     expect(element.isEditing()).toBe(false);
   });
 
-  it("cancelContainerEdit for states defaults to [] when containerDetails has no states", () => {
-    component.containerDetails.set(undefined as unknown as ContainerDetailData);
-    component.containerDetailData.set([
-      {
-        keyMap: { key: "states", label: "Status" },
-        value: ["active"],
-        isEditing: signal(true)
-      }
-    ]);
-    component.selectedStates.set(["disabled"]);
-    const element = component.containerDetailData()[0];
-
-    component.cancelContainerEdit(element);
-
-    expect(component.selectedStates()).toEqual([]);
-    expect(element.isEditing()).toBe(false);
-  });
-
   it("selectedStates linkedSignal defaults to [] when containerDetails has no states", () => {
     component.containerDetails.set({
       serial: "Mock serial",
@@ -310,114 +245,6 @@ describe("ContainerDetailsComponent", () => {
       users: []
     });
     expect(component.selectedStates()).toEqual([]);
-  });
-
-  describe("#onStatesChange", () => {
-    it("keeps other states when a non-conflicting state is added", () => {
-      component.selectedStates.set(["active"]);
-      component.onStatesChange(["active", "lost"]);
-      expect(component.selectedStates()).toEqual(["active", "lost"]);
-    });
-
-    it("removes disabled when active is added", () => {
-      component.selectedStates.set(["disabled"]);
-      component.onStatesChange(["disabled", "active"]);
-      expect(component.selectedStates()).not.toContain("disabled");
-      expect(component.selectedStates()).toContain("active");
-    });
-
-    it("removes active when disabled is added", () => {
-      component.selectedStates.set(["active"]);
-      component.onStatesChange(["active", "disabled"]);
-      expect(component.selectedStates()).not.toContain("active");
-      expect(component.selectedStates()).toContain("disabled");
-    });
-  });
-
-  it("saveContainerEdit for states calls setStates with selectedStates", () => {
-    jest.spyOn(containerService, "setStates").mockReturnValue(of({}) as never);
-    component.selectedStates.set(["active", "lost"]);
-
-    component.containerDetailData.set([
-      {
-        keyMap: { key: "states", label: "Status" },
-        value: ["active"],
-        isEditing: signal(true)
-      }
-    ]);
-    const element = component.containerDetailData()[0];
-    component.saveContainerEdit(element);
-
-    expect(containerService.setStates).toHaveBeenCalledWith("Mock serial", ["active", "lost"]);
-    expect(element.isEditing()).toBe(false);
-  });
-
-  describe("#saveStates", () => {
-    it("returns false, shows an error, and does not call setStates when no state is selected", () => {
-      const setStatesSpy = jest.spyOn(containerService, "setStates").mockReturnValue(of({}) as never);
-      const notificationService = TestBed.inject(NotificationService);
-      component.selectedStates.set([]);
-
-      const result = component.saveStates();
-
-      expect(result).toBe(false);
-      expect(notificationService.error).toHaveBeenCalledWith("At least one state must be selected.");
-      expect(setStatesSpy).not.toHaveBeenCalled();
-    });
-
-    it("returns true and calls setStates when at least one state is selected", () => {
-      const setStatesSpy = jest.spyOn(containerService, "setStates").mockReturnValue(of({}) as never);
-      component.selectedStates.set(["active"]);
-
-      const result = component.saveStates();
-
-      expect(result).toBe(true);
-      expect(setStatesSpy).toHaveBeenCalledWith("Mock serial", ["active"]);
-    });
-  });
-
-  it("saveContainerEdit for states keeps edit mode open when saveStates fails (empty selection)", () => {
-    const setStatesSpy = jest.spyOn(containerService, "setStates").mockReturnValue(of({}) as never);
-    const notificationService = TestBed.inject(NotificationService);
-    component.selectedStates.set([]);
-
-    component.containerDetailData.set([
-      {
-        keyMap: { key: "states", label: "Status" },
-        value: [],
-        isEditing: signal(true)
-      }
-    ]);
-    const element = component.containerDetailData()[0];
-    component.saveContainerEdit(element);
-
-    expect(setStatesSpy).not.toHaveBeenCalled();
-    expect(notificationService.error).toHaveBeenCalledWith("At least one state must be selected.");
-    expect(element.isEditing()).toBe(true);
-  });
-
-  it("cancelContainerEdit for states resets selectedStates to the original states from containerDetails", () => {
-    component.containerDetails.set({
-      serial: "Mock serial",
-      states: ["active"],
-      realms: [],
-      tokens: [],
-      type: "generic",
-      users: []
-    });
-    component.containerDetailData.set([
-      {
-        keyMap: { key: "states", label: "Status" },
-        value: ["active"],
-        isEditing: signal(true)
-      }
-    ]);
-    component.selectedStates.set(["disabled", "lost"]);
-    const element = component.containerDetailData()[0];
-    component.cancelContainerEdit(element);
-
-    expect(component.selectedStates()).toEqual(["active"]);
-    expect(element.isEditing()).toBe(false);
   });
 
   it("unassignUser triggers service and refresh", () => {

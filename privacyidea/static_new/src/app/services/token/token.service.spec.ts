@@ -355,6 +355,70 @@ describe("TokenService", () => {
     });
   });
 
+  describe("showOnlyTokenInContainer -> token container filter", () => {
+    const containerRoute = ROUTE_PATHS.CONTAINERS_DETAILS + "/CONT0001";
+    const hasContainerFilter = () => tokenService.tokenFilter().hiddenFilterMap.has("container_serial");
+
+    it("defaults to false on the container details route (shows only tokens not in a container)", () => {
+      contentServiceMock.routeUrl.set(containerRoute);
+      TestBed.tick();
+
+      expect(tokenService.showOnlyTokenInContainer()).toBe(false);
+      expect(hasContainerFilter()).toBe(true);
+    });
+
+    it("drops the container_serial filter when enabled (also shows tokens already in a container)", () => {
+      contentServiceMock.routeUrl.set(containerRoute);
+      TestBed.tick();
+      // Read once so the toggle below exercises the update branch, not re-init.
+      expect(hasContainerFilter()).toBe(true);
+
+      tokenService.showOnlyTokenInContainer.set(true);
+      TestBed.tick();
+
+      expect(hasContainerFilter()).toBe(false);
+    });
+
+    it("re-adds the container_serial filter when disabled again", () => {
+      contentServiceMock.routeUrl.set(containerRoute);
+      TestBed.tick();
+      expect(hasContainerFilter()).toBe(true);
+
+      tokenService.showOnlyTokenInContainer.set(true);
+      TestBed.tick();
+      expect(hasContainerFilter()).toBe(false);
+
+      tokenService.showOnlyTokenInContainer.set(false);
+      TestBed.tick();
+      expect(hasContainerFilter()).toBe(true);
+    });
+
+    it("resets to false (free tokens) when navigating to another container", () => {
+      contentServiceMock.routeUrl.set(containerRoute);
+      TestBed.tick();
+      tokenService.showOnlyTokenInContainer.set(true);
+      TestBed.tick();
+      expect(tokenService.showOnlyTokenInContainer()).toBe(true);
+
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS_DETAILS + "/CONT0002");
+      TestBed.tick();
+
+      expect(tokenService.showOnlyTokenInContainer()).toBe(false);
+      expect(hasContainerFilter()).toBe(true);
+    });
+
+    it("does not apply the container_serial filter away from the container details route", () => {
+      contentServiceMock.routeUrl.set(containerRoute);
+      TestBed.tick();
+      expect(hasContainerFilter()).toBe(true);
+
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS);
+      TestBed.tick();
+
+      expect(hasContainerFilter()).toBe(false);
+    });
+  });
+
   describe("revokeToken()", () => {
     it("posts /revoke and propagates result", (done) => {
       const backend = MockPiResponse.fromValue(true);
