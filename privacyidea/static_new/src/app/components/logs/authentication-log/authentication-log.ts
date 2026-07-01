@@ -263,10 +263,8 @@ export class AuthenticationLog {
       return previous?.value ?? new MatTableDataSource(this.emptyResource());
     }
   });
-  private readonly basePageSizeOptions = this.tableUtilsService.pageSizeOptions();
-  // Pure derivation: the base options plus the active page size (if custom), deduped and sorted.
   pageSizeOptions = computed(() =>
-    [...new Set([...this.basePageSizeOptions, this.authenticationLogService.pageSize()])].sort((a, b) => a - b)
+    [...new Set([...this.tableUtilsService.pageSizeOptions(), this.authenticationLogService.pageSize()])].sort((a, b) => a - b)
   );
   noDataText = computed(() =>
     Object.keys(this.authenticationLogService.filterParams()).length > 0
