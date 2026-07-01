@@ -18,8 +18,10 @@
 -->
 @if (hasAnyAction) {
   @if (token()?.rollout_state === "verify") {
-    <app-verify-enrollment></app-verify-enrollment>
-    <mat-divider class="margin-top-8 margin-bottom-8" />
+    <div class="actions-verify-row">
+      <app-verify-enrollment></app-verify-enrollment>
+      <mat-divider class="margin-top-8 margin-bottom-8" />
+    </div>
   }
 
   <div class="actions-sections-row">

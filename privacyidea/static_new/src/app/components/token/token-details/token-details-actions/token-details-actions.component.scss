@@ -1,8 +1,15 @@
 @use "styles";
 @use "table";
 
+// Unwrap into the parent details grid so each action section flows as its own
+// grid item (like the other detail cards), with only the grid gap between them.
 :host {
-  display: block;
+  display: contents;
+}
+
+// The verify-enrollment prompt stays a single full-width row above the sections.
+.actions-verify-row {
+  flex: 0 0 100%;
 }
 
 .actions-status-row {
@@ -17,14 +24,10 @@
   background: var(--mat-sys-surface-container-low);
 }
 
+// display:contents so the sections below become direct participants of the
+// parent details grid rather than a nested flex row.
 .actions-sections-row {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: var(--global-gap);
-  align-items: flex-start;
-  // Hug the panels so there is no trailing whitespace to their right.
-  width: fit-content;
+  display: contents;
 }
 
 .actions-section {

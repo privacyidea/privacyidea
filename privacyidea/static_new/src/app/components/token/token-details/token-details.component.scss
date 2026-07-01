@@ -91,16 +91,8 @@
 
 .details-card--machine { display: contents; }
 
-// Hug the action sections (no growing to fill the column) so there is no
-// trailing whitespace to the right of the panels.
-.details-card--actions {
-  flex: 0 0 auto;
-  width: max-content;
-  max-width: 100%;
-}
-
 .details-card--user {
-  @include table.card-width(l);
+  @include table.card-width(m);
   display: block;
   align-self: flex-start;
   box-sizing: border-box;
