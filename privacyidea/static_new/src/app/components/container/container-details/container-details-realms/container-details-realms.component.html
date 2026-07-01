@@ -26,7 +26,7 @@
     <div class="value-content">
       @if (isEditing()) {
         <mat-form-field
-          class="input-width-m height-77"
+          class="input-width-m height-52"
           subscriptSizing="dynamic">
           <mat-label i18n>Select Realms</mat-label>
           <mat-select
@@ -48,9 +48,7 @@
           </mat-select>
         </mat-form-field>
       } @else {
-        <div
-          [ngClass]="{ 'height-77': realms().length > 2 }"
-          class="details-scrollable-container">
+        <div class="details-scrollable-container realms-display">
           @for (realm of realms(); track realm) {
             <mat-list-item class="height-auto pad-0">
               <app-copyable [copyText]="realm">

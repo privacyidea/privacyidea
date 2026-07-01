@@ -37,7 +37,7 @@
     }
     <dl class="info-grid">
       @for (key of visibleInfoKeys(info); track key) {
-        <dt class="info-key">{{ key }}</dt>
+        <dt class="info-key">{{ key }}:</dt>
         <dd class="info-value">
           @if (isEditingInfo()) {
             <div class="info-edit-row">
@@ -66,7 +66,7 @@
       <mat-divider class="margin-8" />
       <div class="info-add-row">
         <mat-form-field
-          class="input-width-m"
+          class="input-width-s"
           subscriptSizing="dynamic">
           <input
             [(ngModel)]="newInfo().key"
@@ -76,7 +76,7 @@
         </mat-form-field>
         <span class="margin-right-16 flex ali-center">:</span>
         <mat-form-field
-          class="input-width-m"
+          class="input-width-xl"
           subscriptSizing="dynamic">
           <textarea
             [(ngModel)]="newInfo().value"

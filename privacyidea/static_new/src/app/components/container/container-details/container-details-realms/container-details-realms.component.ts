@@ -16,7 +16,6 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { NgClass } from "@angular/common";
 import { Component, computed, inject, input, OnDestroy, OnInit, signal } from "@angular/core";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatListItem } from "@angular/material/list";
@@ -33,7 +32,6 @@ import { RealmService, RealmServiceInterface } from "@services/realm/realm.servi
   selector: "app-container-details-realms",
   standalone: true,
   imports: [
-    NgClass,
     MatFormFieldModule,
     MatSelectModule,
     MatListItem,

@@ -1,2 +1,8 @@
 @use "styles";
 @use "table";
+
+// Fix the realms list at the standard row height; scroll for more realms.
+.realms-display {
+  max-height: 52px;
+  overflow-y: auto;
+}

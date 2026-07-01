@@ -97,7 +97,7 @@ $description-width: 18rem;
     grid-template-columns: minmax(140px, max-content) 1fr;
     column-gap: 16px;
     row-gap: 4px;
-    margin: 0;
+    margin: 0 0 0 16px;
     padding: 0;
     width: 100%;
 
@@ -113,6 +113,14 @@ $description-width: 18rem;
       overflow-wrap: anywhere;
       text-align: left;
       min-width: 0;
+
+      // Display value sits on a subtle fill, matching the description card text.
+      > span {
+        display: block;
+        padding: 8px 16px;
+        background: var(--mat-sys-surface-container);
+        border-radius: var(--border-radius);
+      }
     }
   }
 

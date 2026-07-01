@@ -131,26 +131,28 @@
         [host]="this"
         [userData]="userData()" />
 
-      <app-details-card class="details-card--add-token">
-        <app-container-add-token
-          [authService]="authService"
-          [(showOnlyTokenInContainer)]="showOnlyTokenInContainer"
-          [total]="total()"
-          [pageIndex]="pageIndex()"
-          [pageSize]="pageSize()"
-          [filterValue]="tokenService.tokenFilter().filterString"
-          [filterIsNotEmpty]="tokenService.tokenFilter().isNotEmpty"
-          [tokenOptions]="tokenDataSource().data"
-          (pageEvent)="onPageEvent($event)"
-          (filterInput)="tokenService.handleFilterInput($event)"
-          (clearFilter)="tokenService.clearFilter()"
-          (addToken)="addTokenToContainer($event)">
-        </app-container-add-token>
-      </app-details-card>
+      <div class="token-pair">
+        <app-details-card class="details-card--add-token">
+          <app-container-add-token
+            [authService]="authService"
+            [(showOnlyTokenInContainer)]="showOnlyTokenInContainer"
+            [total]="total()"
+            [pageIndex]="pageIndex()"
+            [pageSize]="pageSize()"
+            [filterValue]="tokenService.tokenFilter().filterString"
+            [filterIsNotEmpty]="tokenService.tokenFilter().isNotEmpty"
+            [tokenOptions]="tokenDataSource().data"
+            (pageEvent)="onPageEvent($event)"
+            (filterInput)="tokenService.handleFilterInput($event)"
+            (clearFilter)="tokenService.clearFilter()"
+            (addToken)="addTokenToContainer($event)">
+          </app-container-add-token>
+        </app-details-card>
 
-      <app-details-card class="details-card--tokens">
-        <app-container-details-token-table [containerTokenData]="containerTokenData()" />
-      </app-details-card>
+        <app-details-card class="details-card--tokens">
+          <app-container-details-token-table [containerTokenData]="containerTokenData()" />
+        </app-details-card>
+      </div>
 
       <app-details-card
         class="details-info-area"

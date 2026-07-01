@@ -117,7 +117,7 @@
                     mat-icon-button>
                     <mat-icon>person_remove</mat-icon>
                   </button>
-                } @else {
+                } @else if (host().isEditingUser()) {
                   <app-edit-buttons
                     [cancelEdit]="host().cancelContainerEdit.bind(host())"
                     [element]="element"
@@ -126,6 +126,13 @@
                     [saveEdit]="host().saveContainerEdit.bind(host())"
                     [shouldHideEdit]="host().isAnyEditing()"
                     [toggleEdit]="host().toggleContainerEdit.bind(host())"></app-edit-buttons>
+                } @else {
+                  <button
+                    (click)="host().toggleContainerEdit(element)"
+                    i18n-aria-label="Assign User"
+                    mat-icon-button>
+                    <mat-icon>person_add</mat-icon>
+                  </button>
                 }
               }
             }
