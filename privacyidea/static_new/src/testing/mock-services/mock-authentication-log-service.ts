@@ -31,7 +31,7 @@ export class MockAuthenticationLogService implements AuthenticationLogServiceInt
   apiFilter = ["username", "event_type", "serial"];
   advancedApiFilter: string[] = [];
   authenticationLogFilter = signal(new FilterValue());
-  filterParams = computed<Record<string, string>>(() => ({}));
+  filterParams = signal<Record<string, string>>({});
   pageSize = signal(15);
   pageIndex = signal(1);
   sort = signal<Sort>({ active: "timestamp", direction: "desc" });

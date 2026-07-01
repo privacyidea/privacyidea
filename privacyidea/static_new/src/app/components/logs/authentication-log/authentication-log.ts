@@ -254,7 +254,7 @@ export class AuthenticationLog {
     [...new Set([...this.basePageSizeOptions, this.authenticationLogService.pageSize()])].sort((a, b) => a - b)
   );
   noDataText = computed(() =>
-    this.authenticationLogService.filterParams()
+    Object.keys(this.authenticationLogService.filterParams()).length > 0
       ? $localize`No authentication log entries matching the filter.`
       : $localize`No authentication log entries.`
   );
