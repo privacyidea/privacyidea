@@ -15,9 +15,7 @@
   flex-direction: column;
   width: 100%;
   box-sizing: border-box;
-  --fill-height: calc(var(--max-height) + 2 * var(--global-padding));
-  height: var(--fill-height);
-  max-height: var(--fill-height);
+  height: 100%;
 
   .mat-mdc-select-value-text {
     font-size: 14px;
