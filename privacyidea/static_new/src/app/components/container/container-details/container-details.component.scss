@@ -86,11 +86,6 @@
   margin-top: var(--half-global-padding);
 }
 
-.token-cards-row {
-  @include table.details-cards-flex;
-  margin-top: var(--global-padding);
-}
-
 .details-card--description {
   @include table.details-description-card;
 
@@ -100,6 +95,13 @@
   }
 }
 
-.details-info-area {
-  max-width: 100%;
+// Scoped under .details-grid so this beats the grid's `> *` flex rule.
+.details-grid > .details-info-area {
+  @include table.card-width(l);
+}
+
+// Scoped under .details-grid so this beats the grid's `> *` flex rule (which,
+// after view-encapsulation attributes, is more specific than a lone class).
+.details-grid > .details-card--user {
+  @include table.card-width(m);
 }

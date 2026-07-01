@@ -91,7 +91,9 @@
 
 .details-card--machine { display: contents; }
 
-.details-card--user {
+// Scoped under .details-grid so this beats the grid's `> *` flex rule (which,
+// after view-encapsulation attributes, is more specific than a lone class).
+.details-grid > .details-card--user {
   @include table.card-width(m);
   display: block;
   align-self: flex-start;

@@ -76,9 +76,10 @@ $description-width: 18rem;
 // is a multi-line textarea, so longer text wraps to more rows instead of
 // widening the card.
 // Standardized detail-card width tiers (s/m/l), analogous to .input-width-*.
-// The card grows to fill its grid column but never exceeds its tier.
+// The card is fixed at its tier width — it neither grows nor shrinks with the
+// row/zoom.
 @mixin card-width($size) {
-  flex: 1 1 var(--card-width-#{$size});
+  flex: 0 0 var(--card-width-#{$size});
   min-width: 0;
   max-width: var(--card-width-#{$size});
 }

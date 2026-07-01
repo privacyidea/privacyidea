@@ -9,19 +9,6 @@
   flex-direction: column;
 }
 
-.info-container .info-title {
-  margin: 0 0 var(--quarter-global-padding);
-  padding: 0;
-  background: transparent;
-  border: none;
-  align-items: flex-start;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--mat-sys-on-surface-variant);
-}
-
 .info-container .info-table th,
 .info-container .info-table td {
   border: none;

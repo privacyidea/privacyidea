@@ -127,12 +127,10 @@
       </app-details-card>
 
       <app-container-details-user
+        class="details-card--user"
         [host]="this"
         [userData]="userData()" />
 
-    </div>
-
-    <div class="token-cards-row">
       <app-details-card class="details-card--add-token">
         <app-container-add-token
           [authService]="authService"
@@ -154,7 +152,10 @@
         <app-container-details-token-table [containerTokenData]="containerTokenData()" />
       </app-details-card>
 
-      <app-details-card class="details-info-area">
+      <app-details-card
+        class="details-info-area"
+        title="Information"
+        i18n-title>
         <app-container-details-info
           [detailData]="containerDetailData()"
           [infoData]="infoData()"

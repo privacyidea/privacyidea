@@ -9,6 +9,12 @@
 .details-table {
   width: 100%;
   table-layout: fixed;
+  border-collapse: collapse;
+
+  th,
+  td {
+    border: 1px solid var(--mat-sys-outline-variant);
+  }
 
   td:nth-child(even),
   th:nth-child(even) {
