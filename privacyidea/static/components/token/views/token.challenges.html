@@ -1,13 +1,27 @@
+<div class="alert alert-warning" ng-show="challengedata.redis_cache_enabled">
+    <strong translate>Redis challenge cache is enabled.</strong>
+    <span translate>Active challenges are stored in Redis and cannot be listed in aggregate
+        here. To inspect challenges for a specific token, open the token detail page or the
+        user details page and use the Active Challenges section.</span>
+    <span translate>Any challenges listed below are stored in the database, not in Redis.</span>
+</div>
+
 <div class="form-group">
     <p><translate>Total Challenges:</translate>
         {{ challengedata.count }}
     </p>
     <button type="button"
             ng-click="deleteExpiredChallenges()"
+            ng-disabled="challengedata.count === 0"
             class="btn btn-transparent btn-danger"
             translate>
         Delete Expired Challenges
     </button>
+</div>
+
+<div class="alert alert-info"
+     ng-show="challengedata.count === 0 && !challengedata.redis_cache_enabled">
+    <strong translate>No challenges to display.</strong>
 </div>
 
 <div uib-pagination ng-show="challengedata.count > 15"
@@ -20,7 +34,8 @@
      max-size="5"
      boundary-links="true" ng-change="challengePageChanged()"></div>
 
-<div class="table-responsive">
+<div class="table-responsive"
+     ng-hide="challengedata.count === 0 && challengedata.redis_cache_enabled">
     <table class="table table-bordered table-striped" id="tabletokenchallenges">
         <thead>
         <tr>

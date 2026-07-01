@@ -22,14 +22,18 @@ import { NavigationEnd, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { filter, map, pairwise, startWith } from "rxjs";
 
+export interface DetailsUser {
+  username: string;
+  realm: string;
+}
+
 export interface ContentServiceInterface {
-  detailsUsername: WritableSignal<string>;
+  detailsUser: WritableSignal<DetailsUser>;
   router: Router;
   routeUrl: Signal<string>;
   previousUrl: Signal<string>;
   tokenSerial: WritableSignal<string>;
   containerSerial: WritableSignal<string>;
-  machineResolver: WritableSignal<string>;
 
   onLogin: Signal<boolean>;
   onAudit: Signal<boolean>;
@@ -84,7 +88,7 @@ export interface ContentServiceInterface {
 
 @Injectable()
 export class ContentService implements ContentServiceInterface {
-  detailsUsername = signal("");
+  detailsUser = signal<DetailsUser>({ username: "", realm: "" });
   router = inject(Router);
   private readonly _urlPair = toSignal(
     this.router.events.pipe(
@@ -107,7 +111,6 @@ export class ContentService implements ContentServiceInterface {
       return "";
     }
   });
-  machineResolver = signal("");
   onLogin = computed(() => this.routeUrl() === ROUTE_PATHS.LOGIN);
   onAudit = computed(() => this.routeUrl() === ROUTE_PATHS.AUDIT);
   onClients = computed(() => this.routeUrl() === ROUTE_PATHS.CLIENTS);
@@ -212,7 +215,12 @@ export class ContentService implements ContentServiceInterface {
       this.routeUrl().startsWith(ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS_DETAILS)
   );
   onSubscription = computed(() => this.routeUrl() === ROUTE_PATHS.SUBSCRIPTION);
-  onMachineResolver = computed(() => this.routeUrl() === ROUTE_PATHS.MACHINE_RESOLVER);
+  onMachineResolver = computed(
+    () =>
+      this.routeUrl() === ROUTE_PATHS.MACHINE_RESOLVER ||
+      this.routeUrl() === ROUTE_PATHS.MACHINE_RESOLVER_NEW ||
+      this.routeUrl().startsWith(ROUTE_PATHS.MACHINE_RESOLVER_DETAILS)
+  );
 
   tokenSelected(serial: string): void {
     this.router.navigateByUrl(ROUTE_PATHS.TOKENS_DETAILS + encodeURIComponent(serial));
@@ -228,11 +236,10 @@ export class ContentService implements ContentServiceInterface {
     this.router.navigateByUrl(
       ROUTE_PATHS.USERS_DETAILS + "/" + encodeURIComponent(username) + `?realm=${encodeURIComponent(realm ?? "")}`
     );
-    this.detailsUsername.set(username);
+    this.detailsUser.set({ username, realm: realm ?? "" });
   }
 
   machineResolverSelected(resolverName: string): void {
-    this.router.navigateByUrl(ROUTE_PATHS.MACHINE_RESOLVER);
-    this.machineResolver.set(resolverName);
+    this.router.navigateByUrl(ROUTE_PATHS.MACHINE_RESOLVER_DETAILS + encodeURIComponent(resolverName));
   }
 }

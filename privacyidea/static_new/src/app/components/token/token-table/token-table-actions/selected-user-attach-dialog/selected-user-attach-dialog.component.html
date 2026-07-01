@@ -17,7 +17,7 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <app-dialog-wrapper
-  [title]="'Assign Selected Token to User'"
+  title="Assign Selected Token to User" i18n-title
   [showCancelButton]="true"
   [actions]="actions()"
   (actionTriggered)="onAction($event)"
@@ -91,7 +91,7 @@
           matInput />
         <button
           (click)="togglePinVisibility()"
-          [attr.aria-label]="'Show PIN'"
+          aria-label="Show PIN" i18n-aria-label
           [attr.aria-pressed]="!hidePin()"
           mat-icon-button
           matSuffix
@@ -111,7 +111,7 @@
           matInput />
         <button
           (click)="togglePinVisibility()"
-          [attr.aria-label]="'Show PIN Repeat'"
+          aria-label="Show PIN Repeat" i18n-aria-label
           [attr.aria-pressed]="!hidePin()"
           mat-icon-button
           matSuffix

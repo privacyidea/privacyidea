@@ -27,6 +27,7 @@ import { MatPaginator, MatPaginatorModule, PageEvent } from "@angular/material/p
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
@@ -42,11 +43,11 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
 import { ChallengesTableActionsComponent } from "./challenges-table-actions/challenges-table-actions.component";
 
 const columnKeysMap = [
-  { key: "timestamp", label: "Timestamp" },
-  { key: "serial", label: "Serial" },
-  { key: "transaction_id", label: "Transaction ID" },
-  { key: "expiration", label: "Expiration" },
-  { key: "otp_received", label: "Received" }
+  { key: "timestamp", label: $localize`Timestamp` },
+  { key: "serial", label: $localize`Serial` },
+  { key: "transaction_id", label: $localize`Transaction ID` },
+  { key: "expiration", label: $localize`Expiration` },
+  { key: "otp_received", label: $localize`Received` }
 ];
 
 @Component({
@@ -63,7 +64,8 @@ const columnKeysMap = [
     CopyableComponent,
     ScrollToTopDirective,
     ClearableInputComponent,
-    ChallengesTableActionsComponent
+    ChallengesTableActionsComponent,
+    ScrollEdgesDirective
   ],
   templateUrl: "./challenges-table.component.html",
   styleUrls: ["./challenges-table.component.scss"]

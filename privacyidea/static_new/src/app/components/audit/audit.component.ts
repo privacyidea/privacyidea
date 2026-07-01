@@ -46,6 +46,7 @@ import { MatInput } from "@angular/material/input";
 import { RouterLink } from "@angular/router";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 
@@ -83,32 +84,32 @@ const cellRenderTypeByKey: Record<string, AuditCellRenderType> = {
 };
 
 const columnKeysMap = [
-  { key: "number", label: "Number" },
-  { key: "action", label: "Action" },
-  { key: "success", label: "Success" },
-  { key: "authentication", label: "Authentication" },
-  { key: "serial", label: "Serial" },
-  { key: "container_serial", label: "Container Serial" },
-  { key: "startdate", label: "Start Date" },
-  { key: "duration", label: "Duration" },
-  { key: "token_type", label: "Token Type" },
-  { key: "user", label: "User" },
-  { key: "realm", label: "Realm" },
-  { key: "administrator", label: "Administrator" },
-  { key: "action_detail", label: "Action Detail" },
-  { key: "info", label: "Info" },
-  { key: "policies", label: "Policies" },
-  { key: "client", label: "Client" },
-  { key: "user_agent", label: "User Agent" },
-  { key: "user_agent_version", label: "User Agent Version" },
-  { key: "privacyidea_server", label: "PrivacyIDEA Server" },
-  { key: "log_level", label: "Log Level" },
-  { key: "clearance_level", label: "Clearance Level" },
-  { key: "sig_check", label: "Signature Check" },
-  { key: "missing_line", label: "Missing Line" },
-  { key: "resolver", label: "Resolver" },
-  { key: "thread_id", label: "Thread ID" },
-  { key: "container_type", label: "Container Type" }
+  { key: "number", label: $localize`Number` },
+  { key: "action", label: $localize`Action` },
+  { key: "success", label: $localize`Success` },
+  { key: "authentication", label: $localize`Authentication` },
+  { key: "serial", label: $localize`Serial` },
+  { key: "container_serial", label: $localize`Container Serial` },
+  { key: "startdate", label: $localize`Start Date` },
+  { key: "duration", label: $localize`Duration` },
+  { key: "token_type", label: $localize`Token Type` },
+  { key: "user", label: $localize`User` },
+  { key: "realm", label: $localize`Realm` },
+  { key: "administrator", label: $localize`Administrator` },
+  { key: "action_detail", label: $localize`Action Detail` },
+  { key: "info", label: $localize`Info` },
+  { key: "policies", label: $localize`Policies` },
+  { key: "client", label: $localize`Client` },
+  { key: "user_agent", label: $localize`User Agent` },
+  { key: "user_agent_version", label: $localize`User Agent Version` },
+  { key: "privacyidea_server", label: $localize`PrivacyIDEA Server` },
+  { key: "log_level", label: $localize`Log Level` },
+  { key: "clearance_level", label: $localize`Clearance Level` },
+  { key: "sig_check", label: $localize`Signature Check` },
+  { key: "missing_line", label: $localize`Missing Line` },
+  { key: "resolver", label: $localize`Resolver` },
+  { key: "thread_id", label: $localize`Thread ID` },
+  { key: "container_type", label: $localize`Container Type` }
 ];
 
 @Component({
@@ -137,7 +138,8 @@ const columnKeysMap = [
     ClearableInputComponent,
     MatIcon,
     MatButtonModule,
-    MatIconModule
+    MatIconModule,
+    ScrollEdgesDirective
   ],
   templateUrl: "./audit.component.html",
   styleUrl: "./audit.component.scss"

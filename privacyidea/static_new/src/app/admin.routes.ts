@@ -17,9 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { inject } from "@angular/core";
 import { Routes } from "@angular/router";
+import { dashboardGuard } from "@app/guards/dashboard.guard";
 import { pendingChangesGuard } from "@app/guards/pending-changes.guard";
+import { AuthService } from "@services/auth/auth.service";
 import { AuditComponent } from "@components/audit/audit.component";
+import { DashboardComponent } from "@components/dashboard/dashboard.component";
 import { ClientsComponent } from "@components/audit/clients/clients.component";
 import { MachineDetailsComponent } from "@components/configuration/machines/machine-details/machine-details.component";
 import { MachinesComponent } from "@components/configuration/machines/machines.component";
@@ -44,6 +48,7 @@ import { NewSmtpServerComponent } from "@components/external-services/smtp-serve
 import { SmtpServersComponent } from "@components/external-services/smtp-servers/smtp-servers.component";
 import { NewTokengroupComponent } from "@components/external-services/tokengroups/new-tokengroup/new-tokengroup.component";
 import { TokengroupsComponent } from "@components/external-services/tokengroups/tokengroups.component";
+import { MachineResolverDetailsComponent } from "@components/machine-resolver/machine-resolver-details/machine-resolver-details.component";
 import { MachineResolverComponent } from "@components/machine-resolver/machine-resolver.component";
 import { PolicyEditPageComponent } from "@components/policies/policy-edit-page/policy-edit-page.component";
 import { PoliciesTableComponent } from "@components/policies/policies-table/policies-table.component";
@@ -67,6 +72,17 @@ import { UserResolversComponent } from "@components/user/user-resolver/user-reso
 import { UserTableComponent } from "@components/user/user-table/user-table.component";
 
 export const routes: Routes = [
+  {
+    path: "",
+    pathMatch: "full",
+    redirectTo: () => (inject(AuthService).adminDashboard() ? "dashboard" : "tokens")
+  },
+  {
+    path: "dashboard",
+    component: DashboardComponent,
+    canActivate: [dashboardGuard],
+    canDeactivate: [pendingChangesGuard]
+  },
   {
     path: "tokens",
     children: [
@@ -131,7 +147,14 @@ export const routes: Routes = [
     path: "configuration",
     children: [
       // { path: "", component: SystemComponent },
-      { path: "machine_resolver", component: MachineResolverComponent, canDeactivate: [pendingChangesGuard] },
+      {
+        path: "machine_resolver",
+        children: [
+          { path: "", component: MachineResolverComponent },
+          { path: "new", component: MachineResolverDetailsComponent, canDeactivate: [pendingChangesGuard] },
+          { path: "details/:name", component: MachineResolverDetailsComponent, canDeactivate: [pendingChangesGuard] }
+        ]
+      },
       {
         path: "machines",
         children: [

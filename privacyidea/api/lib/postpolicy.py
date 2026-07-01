@@ -59,7 +59,8 @@ from flask_babel import _, lazy_gettext
 from privacyidea.api.lib.utils import get_all_params
 from privacyidea.config import ConfigKey
 from privacyidea.lib.auth import ROLE
-from privacyidea.lib.config import get_multichallenge_enrollable_types, get_token_class, get_privacyidea_node
+from privacyidea.lib.config import (get_multichallenge_enrollable_types, get_token_class, get_privacyidea_node,
+                                    get_from_config, SYSCONF)
 from privacyidea.lib.crypto import Sign
 from privacyidea.lib.error import PolicyError, ValidateError
 from privacyidea.lib.info.rss import FETCH_DAYS
@@ -230,6 +231,94 @@ def sign_response(request, response):
     else:
         resp = response_object
     return resp
+
+
+def strip_version_from_response(response, strip_nested=False):
+    """
+    Remove the version information from a JSON response in place.
+
+    Always removes the top-level ``version`` and ``versionnumber`` fields. When
+    ``strip_nested`` is set, also removes ``privacyideaVersionNumber`` from the
+    nested ``result.value`` (used by the /config endpoint). A non-JSON body or a
+    non-dict top-level body is a no-op, so this never raises a 500 out of an
+    after_request handler. The (potentially large) body is only re-serialized
+    when something was actually removed.
+
+    :param response: the response object to rewrite
+    :param strip_nested: also strip the nested privacyideaVersionNumber
+    :return: True if any field was removed
+    """
+    if not response.is_json:
+        return False
+    content = response.json
+    if not isinstance(content, dict):
+        return False
+    removed = content.pop("version", None) is not None
+    removed = content.pop("versionnumber", None) is not None or removed
+    if strip_nested:
+        result = content.get("result")
+        if isinstance(result, dict) and isinstance(result.get("value"), dict):
+            removed = result["value"].pop("privacyideaVersionNumber", None) is not None or removed
+    if removed:
+        response.set_data(json.dumps(content))
+    return removed
+
+
+def hide_version(request, response):
+    """
+    This policy function is used as a postrequest decorator.
+    If the policy action HIDE_VERSION is set in the HARDENING scope,
+    the version and versionnumber fields are removed from JSON responses
+    for unauthenticated requests (before login). Authenticated users
+    will still see the version number.
+
+    :param request: The request object
+    :param response: The response object
+    :return: The (maybe modified) response
+    """
+    # Only hide the version for unauthenticated requests
+    logged_in_user = getattr(g, "logged_in_user", None)
+    if logged_in_user:
+        return response
+
+    if response.is_json:
+        # Ensure g.policy_object and g.client_ip are available even when
+        # before_request failed early (e.g. due to AuthError before the
+        # policy object was created).
+        if not hasattr(g, "policy_object"):
+            try:
+                from privacyidea.lib.policy import PolicyClass
+                g.policy_object = PolicyClass()
+            except Exception:  # pragma: no cover
+                return response  # pragma: no cover
+        if not hasattr(g, "client_ip") or not g.client_ip:
+            from privacyidea.lib.utils import get_client_ip
+            try:
+                override_client = get_from_config(SYSCONF.OVERRIDECLIENT)
+            except Exception:
+                override_client = None
+            g.client_ip = get_client_ip(request, override_client)
+        if not g.get("user_agent"):
+            from privacyidea.lib.utils import get_plugin_info_from_useragent
+            ua_name, _ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
+            g.user_agent = ua_name
+        # Skip the policy evaluation entirely when no hardening policy is
+        # configured. This keeps high-volume anonymous endpoints such as
+        # /validate/check fast while the feature is disabled, instead of running
+        # a full policy match on every response. Any failure here (the policy/DB
+        # backend being unavailable, or g.policy_object not being a usable
+        # PolicyClass) degrades to a no-op rather than raising a 500 out of
+        # after_request.
+        try:
+            if not g.policy_object.list_policies(scope=SCOPE.HARDENING, active=True):
+                return response
+            policy = Match.action_only(g, scope=SCOPE.HARDENING, action=PolicyAction.HIDE_VERSION).policies(
+                write_to_audit_log=False)
+        except Exception:
+            return response
+        if policy:
+            strip_version_from_response(response, strip_nested=True)
+    return response
 
 
 def check_tokentype(request, response):

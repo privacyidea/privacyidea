@@ -15,9 +15,15 @@
   box-sizing: border-box;
 }
 
+.detail-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .detail-label {
-  flex: 0 0 25%;
-  max-width: 25%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -26,18 +32,32 @@
 }
 
 .detail-description {
-  flex: 1 1 auto;
-  padding: 8px 0;
   font-weight: normal;
-  font-size: 1rem;
+  font-size: 0.75rem;
+  color: var(--mat-sys-on-surface-variant);
 }
 
 .detail-input {
-  flex: 0 0 300px;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
+
+  .flex-1,
+  .flex-2 {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+// Fixed-width value slot. Always reserved (even when empty) so the description
+// never runs into the value/button area, and so all action buttons align.
+.detail-value {
+  flex: 0 0 var(--input-width-m);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
 }
 
 .delete-icon-button {

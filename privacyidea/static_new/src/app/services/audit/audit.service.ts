@@ -29,7 +29,7 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { StringUtils } from "@utils/string.utils";
-import { Subscription, finalize } from "rxjs";
+import { Observable, Subscription, finalize } from "rxjs";
 
 export interface Audit {
   auditcolumns: string[];
@@ -135,6 +135,8 @@ export interface AuditServiceInterface {
   handleFilterInput($event: Event): void;
 
   downloadCSV(): void;
+
+  fetchAuditPage(params: Record<string, string | number>): Observable<PiResponse<Audit>>;
 }
 
 @Injectable()
@@ -206,6 +208,13 @@ export class AuditService implements AuditServiceInterface {
   handleFilterInput($event: Event): void {
     const input = $event.target as HTMLInputElement;
     this.auditFilter.set(this.auditFilter().copyWith({ value: input.value }));
+  }
+
+  fetchAuditPage(params: Record<string, string | number>): Observable<PiResponse<Audit>> {
+    return this.http.get<PiResponse<Audit>>(this.auditBaseUrl, {
+      headers: this.authService.getHeaders(),
+      params
+    });
   }
 
   downloadCSV(): void {

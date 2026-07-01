@@ -1,9 +1,13 @@
 # SPDX-FileCopyrightText: (C) 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: CC0-1.0
 #
-# Runs the full unit test suite against PostgreSQL for all supported Python
-# versions. Migration tests are excluded — they have their own dedicated
-# workflow (migration-tests.yml).
+# Runs the full unit test suite against PostgreSQL for the oldest and newest
+# supported Python versions — enough to catch PostgreSQL dialect issues without
+# duplicating the full MariaDB matrix. Migration tests are excluded — they have
+# their own dedicated workflow (migration-tests.yml).
+#
+# The actual test steps live in the reusable unit-tests.yml workflow, shared
+# with the MariaDB run.
 
 name: Unit Tests PostgreSQL
 
@@ -16,6 +20,7 @@ on:
       - 'requirements.txt'
       - 'tools/**'
       - '.github/workflows/unit-tests-postgres.yml'
+      - '.github/workflows/unit-tests.yml'
       - '.github/python-versions.env'
 
 permissions:
@@ -27,89 +32,13 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  versions:
-    name: Load Python versions
-    runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.load.outputs.matrix }}
-    steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-        with:
-          persist-credentials: false
-      - id: load
-        # Run on oldest and latest supported versions only — enough to catch
-        # PostgreSQL dialect issues without duplicating the full MariaDB matrix.
-        run: |
-          set -a; source .github/python-versions.env; set +a
-          echo "matrix=[\"$MIN\",\"$MAX\"]" >> "$GITHUB_OUTPUT"
-
-  test:
-    needs: versions
-    name: 'Python ${{ matrix.python-version }}'
+  unit-tests:
+    name: PostgreSQL
     permissions:
+      contents: read
       checks: write
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ${{ fromJSON(needs.versions.outputs.matrix) }}
-
-    services:
-      postgres:
-        image: postgres:17
-        env:
-          POSTGRES_DB: privacyidea_test
-          POSTGRES_USER: privacyidea
-          POSTGRES_PASSWORD: privacyidea
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd="pg_isready -U privacyidea"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=10
-
-    steps:
-    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-      with:
-        persist-credentials: false
-
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
-      with:
-        python-version: ${{ matrix.python-version }}
-        cache: 'pip'
-        cache-dependency-path: |
-          requirements.txt
-          tests/requirements.txt
-
-    - name: Install dependencies
-      run: |
-        pip install -r tests/requirements.txt
-        pip install psycopg2-binary
-
-    - name: Pre-create per-worker databases
-      # pytest-xdist workers append a _gw<N> suffix to TEST_DATABASE_URL (see
-      # tests/conftest.py). db.create_all() creates tables inside an existing
-      # database — the databases themselves must be pre-created. Eight covers
-      # typical GH runners (2-4 cores) with room to spare.
-      env:
-        PGPASSWORD: privacyidea
-      run: |
-        for i in $(seq 0 7); do
-          psql -h 127.0.0.1 -U privacyidea -d privacyidea_test \
-            -c "CREATE DATABASE privacyidea_test_gw$i OWNER privacyidea;"
-        done
-
-    - name: Test with pytest
-      id: pytest_run
-      env:
-        TEST_DATABASE_URL: "postgresql+psycopg2://privacyidea:privacyidea@127.0.0.1:5432/privacyidea_test"
-        PYTHONWARNINGS: "once::DeprecationWarning"
-        PYTHON_VERSION: ${{ matrix.python-version }}
-      run: |
-        pip freeze
-        # --dist=loadfile keeps all tests in one file on one worker, preserving
-        # the intra-file ordering the unittest-style suite currently relies on.
-        python -b -m pytest -v -n auto --dist=loadfile -m "not migration" tests/
-
+    uses: ./.github/workflows/unit-tests.yml
+    with:
+      db-kind: postgres
+      driver-pip: psycopg2-binary
+      test-database-url: "postgresql+psycopg2://privacyidea:privacyidea@127.0.0.1:5432/privacyidea_test"

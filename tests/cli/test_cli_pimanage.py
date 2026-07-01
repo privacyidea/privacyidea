@@ -457,6 +457,29 @@ class PIManageRealmTestCase(CliTestCase):
         self.assertIn("Realm 'realm2' successfully deleted.", result.output, result)
         delete_resolver("resolver1")
 
+    def test_03_pimanage_realm_delete_custom_attributes(self):
+        from privacyidea.lib.user import User
+        from privacyidea.models import CustomUserAttribute
+        save_resolver({"resolver": "resolver1",
+                       "type": "passwdresolver",
+                       "fileName": PWFILE})
+        runner = self.app.test_cli_runner()
+        runner.invoke(pi_manage, ["config", "realm", "create", "realm1", "resolver1"])
+        User("cornelius", "realm1").set_attribute("department", "sales")
+
+        # Declining the confirmation leaves the realm in place.
+        result = runner.invoke(pi_manage, ["config", "realm", "delete", "realm1"], input="n\n")
+        self.assertIn("custom user attributes", result.output, result.output)
+        self.assertIn("department", result.output, result.output)
+        self.assertEqual(1, CustomUserAttribute.query.filter_by(Key="department").count())
+
+        # The flag deletes the realm and its custom attributes together.
+        result = runner.invoke(pi_manage,
+                               ["config", "realm", "delete", "realm1", "--delete-custom-attributes"])
+        self.assertIn("Realm 'realm1' successfully deleted.", result.output, result.output)
+        self.assertEqual(0, CustomUserAttribute.query.filter_by(Key="department").count())
+        delete_resolver("resolver1")
+
 
 class PIManageBaseTestCase(CliTestCase):
     def test_01_pimanage_help(self):

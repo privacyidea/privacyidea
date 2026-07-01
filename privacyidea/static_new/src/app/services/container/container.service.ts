@@ -39,6 +39,10 @@ import { catchError, forkJoin, lastValueFrom, Observable, of, Subject, throwErro
 const apiFilter = ["container_serial", "type", "description", "container_realm", "state"];
 const advancedApiFilter = ["token_serial", "template", "assigned"];
 
+// Filter keywords, a single value maps to the `type` query param, multiple to `type_list`.
+// TODO(4.0.0): send a single list-only `types` param once the backend drops the type/type_list split.
+const CONTAINER_TYPE_FILTER_KEYS = new Set<string>(["type", "types"]);
+
 export function toWildcardParam(
   key: string,
   value: string | null | undefined,
@@ -315,11 +319,26 @@ export class ContainerService implements ContainerServiceInterface {
     const allowed = [...this.apiFilter, ...this.advancedApiFilter];
     const plainKeys = new Set(["user", "type", "state", "assigned"]);
 
-    const entries = Array.from(this.containerFilter().filterMap.entries())
-      .filter(([key]) => allowed.includes(key))
+    const filterMap = this.containerFilter().filterMap;
+
+    const entries = Array.from(filterMap.entries())
+      .filter(([key]) => allowed.includes(key) && !CONTAINER_TYPE_FILTER_KEYS.has(key))
       .flatMap(([key, value]) => Object.entries(toWildcardParam(key, value?.toString(), plainKeys)));
 
-    return Object.fromEntries(entries) as Record<string, string>;
+    const params = Object.fromEntries(entries) as Record<string, string>;
+
+    const types = Array.from(CONTAINER_TYPE_FILTER_KEYS)
+      .flatMap((key) => (filterMap.get(key) ?? "").split(","))
+      .map((value) => value.trim())
+      .filter((value) => StringUtils.validFilterValue(value));
+    const uniqueTypes = Array.from(new Set(types));
+    if (uniqueTypes.length === 1) {
+      params["type"] = uniqueTypes[0];
+    } else if (uniqueTypes.length > 1) {
+      params["type_list"] = uniqueTypes.join(",");
+    }
+
+    return params;
   });
 
   pageSize = linkedSignal({
@@ -334,16 +353,6 @@ export class ContainerService implements ContainerServiceInterface {
       routeUrl: this.contentService.routeUrl()
     }),
     computation: () => 0
-  });
-
-  private readonly uniqueCompatibleType = computed<string | null>(() => {
-    const compatibleTokenType = this.compatibleWithSelectedTokenType();
-    if (!compatibleTokenType) return null;
-
-    const types = this.containerTypeOptions();
-    const compatible = types.filter((containerType) => (containerType.token_types ?? []).includes(compatibleTokenType));
-
-    return compatible.length === 1 ? String(compatible[0].containerType) : null;
   });
 
   private readonly compatibleTypes = computed<string[]>(() => {
@@ -417,7 +426,7 @@ export class ContainerService implements ContainerServiceInterface {
     return this.containerRequest({
       no_token: 1,
       ...this.filterParams(),
-      ...(this.userService.detailsUsername() && { user: this.userService.detailsUsername() }),
+      ...(this.userService.detailsUser().username && { user: this.userService.detailsUser().username }),
       ...(this.userService.selectedUserRealm() && { realm: this.userService.selectedUserRealm() })
     });
   });
@@ -440,9 +449,17 @@ export class ContainerService implements ContainerServiceInterface {
       }
     }
 
+    // Without compatible container types there is nothing to ask the backend for —
+    // either no token type is selected yet or no container supports it.
+    const compatibleTypes = this.compatibleTypes();
+    if (compatibleTypes.length === 0) {
+      return undefined;
+    }
+
     const token = this.tokenService.tokenDetailResource.value()?.result?.value?.tokens?.[0];
     const params: Record<string, string | number | boolean> = {
       no_token: 1,
+      type: compatibleTypes.join(","),
       ...this.serialFilterParam(),
       ...(this.filterContainersByTokenOwner() && token?.username && { user: token.username }),
       ...(this.filterContainersByTokenOwner() &&
@@ -451,11 +468,6 @@ export class ContainerService implements ContainerServiceInterface {
           realm: token.user_realm
         })
     };
-
-    const compatibleType = this.uniqueCompatibleType();
-    if (compatibleType) {
-      params["type"] = compatibleType;
-    }
 
     return this.paginatedContainerRequest(params);
   });
@@ -469,11 +481,7 @@ export class ContainerService implements ContainerServiceInterface {
     computation: (source, previous): string[] => {
       if (source.error) return [];
       if (!source.value) return source.isLoading ? (previous?.value ?? []) : [];
-      return (
-        source.value.result?.value?.containers
-          .filter((container) => this.compatibleTypes().includes(container.type))
-          .map((container) => container.serial) ?? []
-      );
+      return source.value.result?.value?.containers.map((container) => container.serial) ?? [];
     }
   });
 

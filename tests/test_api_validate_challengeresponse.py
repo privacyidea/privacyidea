@@ -58,7 +58,7 @@ from privacyidea.lib.utils import to_unicode
 from privacyidea.models import (Token, Policy, Challenge, AuthCache, db, TokenOwner, Realm, CustomUserAttribute,
                                 NodeName)
 from . import smtpmock, ldap3mock, radiusmock
-from .base import MyApiTestCase
+from .base import MyApiTestCase, force_expire_challenges
 from .test_lib_tokencontainer import MockSmartphone
 
 from .api_validate_common import LDAPDirectory, OTPs, HOSTSFILE, DICT_FILE, setup_sms_gateway
@@ -529,8 +529,9 @@ class AChallengeResponse(MyApiTestCase):
             self.assertEqual(200, res.status_code, res)
             self.assertFalse(res.json["result"]["value"], res.json)
 
-        chal_rows = Challenge.query.filter_by(serial=self.serial_email,
-                                              transaction_id=transaction_id).all()
+        # Backend-agnostic: get_challenges sees both DB rows and Redis-cached
+        # challenges, unlike a raw Challenge.query which misses the cache.
+        chal_rows = get_challenges(serial=self.serial_email, transaction_id=transaction_id)
         self.assertEqual(1, len(chal_rows), "tid must still exist after a wrong OTP")
         self.assertEqual(1, chal_rows[0].received_count)
         self.assertFalse(chal_rows[0].otp_valid)
@@ -752,10 +753,9 @@ class AChallengeResponse(MyApiTestCase):
             self.assertEqual("CHALLENGE", res.json["result"]["authentication"])
             transaction_id = res.json["detail"]["transaction_id"]
 
-        # Expire the challenge: set expiration into the past.
-        Challenge.query.filter_by(serial="hotpexp", transaction_id=transaction_id).update(
-            {"expiration": datetime.datetime.now(tz=timezone.utc) - datetime.timedelta(minutes=5)})
-        db.session.commit()
+        # Expire the challenge: set expiration into the past (backend-agnostic;
+        # a raw Challenge.query update would miss the Redis-cached challenge).
+        force_expire_challenges(transaction_id)
 
         with self.app.test_request_context('/validate/check', method='POST',
                                            data={"user": "cornelius",
@@ -1050,9 +1050,11 @@ class AChallengeResponse(MyApiTestCase):
         self.assertEqual("", entry["serial"])
         self.assertFalse(entry["success"])
 
-        # Mark one challenge as answered
-        Challenge.query.filter_by(serial="tok1", transaction_id=transaction_id).update({"otp_valid": True})
-        db.session.commit()
+        # Mark one challenge as answered (backend-agnostic: set_otp_status +
+        # save reach both the DB and the Redis cache)
+        answered_challenge = get_challenges(serial="tok1", transaction_id=transaction_id)[0]
+        answered_challenge.set_otp_status(True)
+        answered_challenge.save()
 
         # polling the transaction returns true, because the challenge has been answered
         with self.app.test_request_context("/validate/polltransaction", method="GET",
@@ -1261,8 +1263,7 @@ class AChallengeResponse(MyApiTestCase):
 
         self.assertEqual(1, get_one_token(serial=serial).token.failcount)
         self.assertEqual(1,
-                         Challenge.query.filter_by(serial=serial,
-                                                   transaction_id=transaction_id).count(),
+                         len(get_challenges(serial=serial, transaction_id=transaction_id)),
                          "tid must still exist after a wrong intermediate answer")
 
         # Correct character on the SAME tid: progresses to the next step.
@@ -1389,8 +1390,7 @@ class AChallengeResponse(MyApiTestCase):
 
         self.assertEqual(1, get_one_token(serial=serial).token.failcount)
         self.assertEqual(1,
-                         Challenge.query.filter_by(serial=serial,
-                                                   transaction_id=transaction_id).count(),
+                         len(get_challenges(serial=serial, transaction_id=transaction_id)),
                          "tid must still exist after a wrong intermediate answer")
 
         # Correct answer on the SAME tid: progresses to the next question.
