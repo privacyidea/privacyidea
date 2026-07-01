@@ -295,11 +295,13 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
   }
 
   enrollNewToken() {
+    this.userService.selectedUserRealm.set(this.userService.detailsUser().realm);
     this.userService.selectionFilter.set(this.userService.detailsUser().username);
     this.router.navigateByUrl(ROUTE_PATHS.TOKENS_ENROLLMENT).then();
   }
 
   createNewContainer() {
+    this.userService.selectedUserRealm.set(this.userService.detailsUser().realm);
     this.userService.selectionFilter.set(this.userService.detailsUser().username);
     this.router.navigateByUrl(ROUTE_PATHS.CONTAINERS_CREATE).then();
   }
