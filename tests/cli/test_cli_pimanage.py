@@ -32,7 +32,7 @@ from privacyidea.lib.resolver import (save_resolver, delete_resolver,
                                       get_resolver_list)
 from privacyidea.models import db, Challenge, AuthenticationLog
 from privacyidea.models.utils import utc_now
-from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from .base import CliTestCase
 from ..base import PWFILE
 

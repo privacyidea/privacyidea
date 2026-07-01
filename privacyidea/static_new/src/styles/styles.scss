@@ -752,6 +752,12 @@ body.self-service-layout {
   max-height: 400px;
 }
 
+// Panel class set by the shared app-multi-select-filter component. Its options can be long, so let the menu grow to
+// fit instead of truncating at the default 280px.
+.filter-select-menu.mat-mdc-menu-panel {
+  max-width: none;
+}
+
 mat-chip.mat-mdc-chip {
   &.clickable-chip {
     .mdc-evolution-chip__action--presentational {

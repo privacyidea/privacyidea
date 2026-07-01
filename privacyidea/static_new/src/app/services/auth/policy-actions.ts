@@ -25,6 +25,7 @@ export type PolicyAction =
   | "auditlog_age"
   | "auditlog_download"
   | "audit_page_size"
+  | "authentication_log_read"
   | "fetch_authentication_items"
   | "auth_max_success"
   | "auth_max_fail"

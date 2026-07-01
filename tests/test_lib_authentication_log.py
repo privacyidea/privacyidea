@@ -19,7 +19,7 @@ from datetime import datetime, timezone, timedelta
 
 import mock
 
-from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import (
     log_authentication_event,
     delete_authentication_log_event,
@@ -681,6 +681,19 @@ class AuthenticationLogPaginateTestCase(MyTestCase):
                                                  username_case_insensitive=True)
         restricted = get_authentication_logs_paginate(visibility_scopes=[scope])
         self.assertEqual(2, restricted.count)
+
+    def test_visibility_scope_user_roles_dimension(self):
+        # The user_roles dimension is AND-ed with the others; it lets a local admin's own entries be matched by
+        # username + admin-internal, so a same-named user entry is excluded.
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, username="testadmin",
+                                 user_role=AuthLogUserRole.ADMIN_INTERNAL)
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, realm="realm1", username="testadmin",
+                                 user_role=AuthLogUserRole.USER)
+        scope = AuthenticationLogVisibilityScope(realms=[], resolvers=[], usernames=["testadmin"],
+                                                 user_roles=[str(AuthLogUserRole.ADMIN_INTERNAL)])
+        restricted = get_authentication_logs_paginate(visibility_scopes=[scope])
+        self.assertEqual(1, restricted.count)
+        self.assertEqual(str(AuthLogUserRole.ADMIN_INTERNAL), restricted.auth_logs[0].user_role)
 
     def test_to_dict_shape_and_iso_timestamp(self):
         self._create(1)

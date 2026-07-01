@@ -16,7 +16,7 @@
 # SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 
@@ -25,21 +25,28 @@ from sqlalchemy.orm import InstrumentedAttribute
 from sqlalchemy.sql import ColumnElement
 
 from privacyidea.models import AuthenticationLog, authentication_log_column_length, db
-from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.sqlutils import delete_matching_rows
 
 log = logging.getLogger(__name__)
 
 # Columns that may be used to sort a paginated authentication-log query, keyed by the name accepted from the API.
+# Every scalar column is sortable; ``other_info`` is excluded because it is a JSON column whose ordering is not
+# meaningful and not portable across databases.
 SORTABLE_COLUMNS: dict[str, InstrumentedAttribute] = {
     "id": AuthenticationLog.id,
     "timestamp": AuthenticationLog.timestamp,
     "event_type": AuthenticationLog.event_type,
+    "resolver": AuthenticationLog.resolver,
+    "uid": AuthenticationLog.uid,
     "realm": AuthenticationLog.realm,
     "username": AuthenticationLog.username,
     "source_ip": AuthenticationLog.source_ip,
+    "client_label": AuthenticationLog.client_label,
     "serial": AuthenticationLog.serial,
+    "transaction_id": AuthenticationLog.transaction_id,
+    "previous_transaction_id": AuthenticationLog.previous_transaction_id,
 }
 DEFAULT_PAGE_SIZE = 15
 
@@ -73,11 +80,16 @@ class AuthenticationLogVisibilityScope:
 
     *username_case_insensitive* mirrors the originating policy's ``user_case_insensitive`` option and forces a
     case-insensitive match on the ``usernames`` dimension only; realm and resolver always match case-sensitively.
+
+    *user_roles* restricts to entries of those :class:`AuthLogUserRole` values. It is not derived from policy scoping
+    (policies do not scope by role); it is used to express a principal's own entries -- a local/internal admin has no
+    realm, so their own entries are matched by username plus ``user_role=admin-internal`` instead of by realm.
     """
     realms: list[str]
     resolvers: list[str]
     usernames: list[str]
     username_case_insensitive: bool = False
+    user_roles: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -416,6 +428,8 @@ def _visibility_condition(scopes: list[AuthenticationLogVisibilityScope]) -> Col
                                                                               for name in scope.usernames]))
             else:
                 dimensions.append(AuthenticationLog.username.in_(scope.usernames))
+        if scope.user_roles:
+            dimensions.append(AuthenticationLog.user_role.in_([str(role) for role in scope.user_roles]))
         if dimensions:
             scope_conditions.append(and_(*dimensions))
     if not scope_conditions:

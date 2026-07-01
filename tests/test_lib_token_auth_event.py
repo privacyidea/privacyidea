@@ -16,9 +16,11 @@
 # SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-from privacyidea.lib.conditional_access.authentication_error_codes import (AuthEventType, AUTH_EVENT_TYPE_KEY,
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
                                                                            REQUEST_EVENT_PRECEDENCE,
-                                                                           reduce_request_events)
+                                                                           reduce_request_events,
+                                                                           AuthEventOutcome, EVENT_TYPE_OUTCOME,
+                                                                           outcome_of)
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (set_policy, SCOPE, delete_policy)
 from privacyidea.lib.token import (get_tokens, init_token,
@@ -188,3 +190,24 @@ class RequestEventPrecedenceTestCase(MyTestCase):
                          reduce_request_events(["NOT_A_REAL_EVENT", AuthEventType.PIN_FAIL, AuthEventType.MFA_FAIL]))
         # Only unknown events -> nothing classifiable.
         self.assertIsNone(reduce_request_events(["NOT_A_REAL_EVENT"]))
+
+
+class EventTypeOutcomeTestCase(MyTestCase):
+    """Unit tests for the AuthEventType -> AuthEventOutcome classification."""
+
+    def test_01_outcome_covers_every_event_type(self):
+        # Every AuthEventType must be classified, so a new one cannot be added without an outcome.
+        self.assertSetEqual(set(AuthEventType), set(EVENT_TYPE_OUTCOME),
+                            "Add the missing AuthEventType to EVENT_TYPE_OUTCOME (or remove a stale entry).")
+
+    def test_02_outcome_of_returns_expected_class(self):
+        self.assertEqual(AuthEventOutcome.SUCCESS, outcome_of(AuthEventType.LOGIN_SUCCESS))
+        self.assertEqual(AuthEventOutcome.PENDING, outcome_of(AuthEventType.CHALLENGE_TRIGGERED))
+        self.assertEqual(AuthEventOutcome.PENDING, outcome_of(AuthEventType.ENROLLMENT_TRIGGERED))
+        self.assertEqual(AuthEventOutcome.FAILURE, outcome_of(AuthEventType.MFA_FAIL))
+        self.assertEqual(AuthEventOutcome.FAILURE, outcome_of(AuthEventType.USER_UNKNOWN))
+
+    def test_03_exactly_one_success_event(self):
+        # A sanity check on the taxonomy: LOGIN_SUCCESS is the only success outcome.
+        success = [event for event, outcome in EVENT_TYPE_OUTCOME.items() if outcome == AuthEventOutcome.SUCCESS]
+        self.assertEqual([AuthEventType.LOGIN_SUCCESS], success)

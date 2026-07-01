@@ -140,7 +140,7 @@ from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent,
 from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
 from .lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
 from .lib.utils import get_required, map_error_to_code, send_error, send_result, log_authentication
-from ..lib.conditional_access.authentication_error_codes import (AuthEventType, AUTH_EVENT_TYPE_KEY,
+from ..lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
                                                                  LOG_TRANSACTION_ID_KEY)
 from ..lib.conditional_access.engine import (is_user_locked, is_ip_blocked, evaluate_lockout_policies,
                                               evaluate_access_decision, AccessDecision)

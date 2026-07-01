@@ -118,7 +118,7 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
     { icon: "supervised_user_circle", label: $localize`Users`, route: ROUTE_PATHS.USERS, section: "users" },
     { icon: "gavel", label: $localize`Policies`, route: ROUTE_PATHS.POLICIES, section: "policies" },
     { icon: "event_repeat", label: $localize`Subscription`, route: ROUTE_PATHS.SUBSCRIPTION, section: "subscription" },
-    { icon: "receipt_long", label: $localize`Audit`, route: ROUTE_PATHS.AUDIT, section: "audit" },
+    { icon: "receipt_long", label: $localize`Logs`, route: ROUTE_PATHS.LOGS, section: "logs" },
     {
       icon: "hub",
       label: $localize`External Services`,
@@ -153,7 +153,7 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
     if (url.startsWith(ROUTE_PATHS.USERS)) return "users";
     if (url.startsWith(ROUTE_PATHS.POLICIES)) return "policies";
     if (url.startsWith(ROUTE_PATHS.SUBSCRIPTION)) return "subscription";
-    if (url.startsWith(ROUTE_PATHS.AUDIT)) return "audit";
+    if (url.startsWith(ROUTE_PATHS.LOGS)) return "logs";
     if (url.startsWith(ROUTE_PATHS.EXTERNAL_SERVICES)) return "external_services";
     if (url.startsWith(ROUTE_PATHS.CONFIGURATION) || url.startsWith(ROUTE_PATHS.EVENTS)) return "config";
     if (url.startsWith(ROUTE_PATHS.TOKENS)) return "token";
@@ -250,8 +250,8 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
           return this.authService.actionAllowed("policyread");
         case "subscription":
           return this.authService.actionAllowed("managesubscription");
-        case "audit":
-          return this.authService.actionAllowed("auditlog");
+        case "logs":
+          return this.authService.oneActionAllowed(["auditlog", "authentication_log_read", "clienttype"]);
         case "external_services":
           return this.authService.oneActionAllowed([
             "smtpserver_read",

@@ -1,0 +1,289 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div
+  appScrollToTop
+  class="authentication-log-table-container">
+  <div class="filter-paginator-container">
+    <div class="filter-with-actions">
+      <mat-form-field
+        subscriptSizing="dynamic"
+        class="authentication-log-table-filter">
+        <mat-label i18n>Filter Authentication Log ...</mat-label>
+        <app-clearable-input
+          (clearButtonClick)="authenticationLogService.clearFilter()"
+          [showClearButton]="authenticationLogService.authenticationLogFilter().isNotEmpty">
+          <input
+            #filterHTMLInputElement
+            (input)="authenticationLogService.handleFilterInput($event)"
+            [value]="authenticationLogService.authenticationLogFilter().value"
+            aria-label="Filter Input"
+            i18n-aria-label
+            i18n-placeholder
+            matInput
+            placeholder="Example query: 'username: alice event_type: LOGIN_SUCCESS'" />
+        </app-clearable-input>
+        <mat-hint i18n>The search is case-insensitive. Use * as a wildcard.</mat-hint>
+      </mat-form-field>
+      <!-- Filters without their own table column live behind a "More Filter" menu next to the input. -->
+      @if (!authService.isSelfServiceUser()) {
+        <button
+          [matMenuTriggerFor]="moreFiltersMenu"
+          aria-label="More Filter"
+          class="margin-bottom-16"
+          i18n-aria-label
+          i18n-matTooltip
+          mat-icon-button
+          matTooltip="More Filter">
+          <mat-icon>filter_list</mat-icon>
+        </button>
+        <mat-menu #moreFiltersMenu="matMenu">
+          <button
+            mat-menu-item
+            [matMenuTriggerFor]="userRoleMenu.matMenu">
+            <span i18n>User Role</span>
+          </button>
+        </mat-menu>
+        <app-multi-select-menu
+          #userRoleMenu
+          [options]="userRoleOptions"
+          [selected]="selectedFilterValues('user_role')"
+          (selectionChange)="setFilterValues('user_role', $event)" />
+
+      }
+    </div>
+    <mat-paginator
+      (page)="onPageEvent($event)"
+      [length]="totalLength()"
+      [pageIndex]="authenticationLogService.pageIndex() - 1"
+      [pageSizeOptions]="pageSizeOptions()"
+      [pageSize]="authenticationLogService.pageSize()"
+      showFirstLastButtons />
+  </div>
+  <table
+    [dataSource]="dataSource()"
+    aria-label="Authentication Log Data Table"
+    class="authentication-log-table"
+    i18n-aria-label
+    mat-table>
+    @for (column of visibleColumns(); track column.key) {
+      <ng-container [matColumnDef]="column.key">
+        <th
+          *matHeaderCellDef
+          aria-label="{{ column.label }} Header"
+          mat-header-cell>
+          <div class="flex ali-center">
+            {{ column.label }}
+            @if (column.filterable || column.sortable) {
+              <div class="margin-left-16 flex ali-center">
+                @if (column.filterable) {
+                  @if (column.key === "event_type") {
+                    <app-multi-select-filter
+                      [label]="column.label"
+                      [options]="eventTypeOptions()"
+                      [selected]="selectedFilterValues('event_type')"
+                      (selectionChange)="setFilterValues('event_type', $event)" />
+                  } @else if (column.key === "realm") {
+                    <app-multi-select-filter
+                      [label]="column.label"
+                      [options]="realmService.realmOptions()"
+                      [selected]="selectedFilterValues('realm')"
+                      (selectionChange)="setFilterValues('realm', $event)" />
+                  } @else if (column.key === "client_label") {
+                    <app-multi-select-filter
+                      [label]="column.label"
+                      [options]="clientLabelOptions"
+                      [valueSuffix]="'*'"
+                      [allowCustom]="true"
+                      [selected]="selectedFilterValues('client_label')"
+                      (selectionChange)="setFilterValues('client_label', $event)"
+                      (addCustom)="onAddCustomFilter('client_label')" />
+                  } @else if (column.key === "source_ip" && showSourceIpMenu()) {
+                    <app-multi-select-filter
+                      [label]="column.label"
+                      [options]="sourceIpOptions()"
+                      [allowCustom]="true"
+                      [selected]="selectedFilterValues('source_ip')"
+                      (selectionChange)="setFilterValues('source_ip', $event)"
+                      (addCustom)="onAddCustomFilter('source_ip')" />
+                  } @else {
+                    <button
+                      (click)="onKeywordClick(column.key)"
+                      class="filter-button"
+                      mat-icon-button>
+                      <mat-icon class="keyword-button-icon margin-left-0">
+                        {{ getFilterIconName(column.key) }}
+                      </mat-icon>
+                    </button>
+                  }
+                }
+                @if (column.sortable) {
+                  <button
+                    (click)="onSortClick(column.key)"
+                    class="sort-button"
+                    i18n-matTooltip
+                    mat-icon-button
+                    matTooltip="Sort by {{ column.label }}"
+                    type="button">
+                    <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        </th>
+        <td
+          *matCellDef="let element"
+          aria-label="{{ column.label }} Cell"
+          mat-cell>
+          <div [class.cell-scroll]="scrollableColumnKeys.includes(column.key)">
+            @switch (column.key) {
+              @case ("timestamp") {
+                <span>
+                  {{ element[column.key] ? element[column.key].split(".")[0].replace("T", " ") : "" }}
+                </span>
+              }
+              @case ("event_type") {
+                <span [ngClass]="getEventTypeClass(element[column.key])">
+                  {{ element[column.key] }}
+                </span>
+              }
+              @case ("serial") {
+                @for (serial of splitSerials(element.serial); track serial) {
+                  <app-copyable [copyText]="serial">
+                    <a
+                      (click)="contentService.tokenSelected(serial)"
+                      aria-label="{{ column.label }} Link"
+                      routerLink="/token">
+                      {{ serial }}
+                    </a>
+                    <app-filter-value-button
+                      class="margin-left-8"
+                      [label]="filterTooltip('serial')"
+                      [value]="serial"
+                      (filterValue)="addFilterValue('serial', '*' + $event + '*')" />
+                  </app-copyable>
+                }
+              }
+              @case ("username") {
+                @if (element.username) {
+                  <app-copyable [copyText]="element.username">
+                    <a
+                      (click)="contentService.userSelected(element.username, element.realm)"
+                      (keydown.enter)="contentService.userSelected(element.username, element.realm)"
+                      (keydown.space)="
+                        $event.preventDefault(); contentService.userSelected(element.username, element.realm)
+                      "
+                      aria-label="{{ column.label }} Link"
+                      role="button"
+                      tabindex="0">
+                      {{ element.username }}
+                    </a>
+                    <app-filter-value-button
+                      class="margin-left-8"
+                      [label]="filterTooltip('username')"
+                      [value]="element.username"
+                      (filterValue)="addFilterValue('username', $event)" />
+                  </app-copyable>
+                  @let roleBadge = userRoleBadge(element.user_role);
+                  @if (roleBadge) {
+                    <span
+                      class="role-badge {{ roleBadge.class }}"
+                      [matTooltip]="roleBadge.tooltip">
+                      {{ roleBadge.label }}
+                    </span>
+                  }
+                }
+              }
+              @case ("realm") {
+                @if (element.realm) {
+                  <app-copyable [copyText]="element.realm">
+                    <a
+                      aria-label="{{ column.label }} Link"
+                      routerLink="/users/realms">
+                      {{ element.realm }}
+                    </a>
+                  </app-copyable>
+                }
+              }
+              @case ("resolver") {
+                @if (element.resolver) {
+                  <app-copyable [copyText]="element.resolver">
+                    <a
+                      [routerLink]="['/users/resolvers/details', element.resolver]"
+                      aria-label="{{ column.label }} Link">
+                      {{ element.resolver }}
+                    </a>
+                    <app-filter-value-button
+                      class="margin-left-8"
+                      [label]="filterTooltip('resolver')"
+                      [value]="element.resolver"
+                      (filterValue)="addFilterValue('resolver', $event)" />
+                  </app-copyable>
+                }
+              }
+              @case ("other_info") {
+                @let info = formatInfo(element.other_info);
+                @if (info) {
+                  <app-copyable [copyText]="info">
+                    <span>{{ info }}</span>
+                  </app-copyable>
+                }
+              }
+              @default {
+                @if (element[column.key]) {
+                  <app-copyable [copyText]="element[column.key]">
+                    <span>{{ element[column.key] }}</span>
+                    @if (showInlineCellFilter(column.key)) {
+                      <app-filter-value-button
+                        class="margin-left-8"
+                        [label]="filterTooltip(column.key)"
+                        [value]="element[column.key]"
+                        (filterValue)="addFilterValue(column.key, $event)" />
+                    }
+                  </app-copyable>
+                }
+              }
+            }
+          </div>
+        </td>
+      </ng-container>
+    }
+    <tr
+      *matHeaderRowDef="visibleColumnKeys()"
+      aria-label="Header Row"
+      i18n-aria-label
+      mat-header-row></tr>
+    <tr
+      *matRowDef="let row; columns: visibleColumnKeys()"
+      aria-label="Data Row"
+      i18n-aria-label
+      mat-row></tr>
+    <tr
+      *matNoDataRow
+      aria-label="No Data Row"
+      i18n-aria-label>
+      <td
+        [attr.colspan]="visibleColumnKeys().length"
+        aria-label="No Data Cell"
+        i18n-aria-label>
+        {{ noDataText() }}
+      </td>
+    </tr>
+  </table>
+</div>
