@@ -159,15 +159,15 @@
 
       <div class="form-actions">
         <button
-          mat-button
+          mat-stroked-button
+          class="action-button-secondary button-width-m"
           (click)="cancelEdit()"
           i18n>
           Cancel
         </button>
         <button
           mat-stroked-button
-          class="action-button-1"
-          color="primary"
+          class="action-button-primary button-width-m"
           (click)="saveCondition()">
           @if (editIndex() !== null) {
             <span i18n>Update Condition</span>
@@ -181,9 +181,8 @@
     <div class="add-condition-button-container">
       <button
         mat-stroked-button
-        class="action-button-1"
-        (click)="showAddConditionForm.set(true)"
-        color="primary">
+        class="action-button-secondary button-width-l"
+        (click)="showAddConditionForm.set(true)">
         <mat-icon>add</mat-icon> <span i18n>Create New Condition</span>
       </button>
     </div>

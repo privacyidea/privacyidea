@@ -481,6 +481,7 @@ $button-low-contrast-variant: linear-gradient(
 }
 
 .mat-mdc-outlined-button {
+  --mat-button-outlined-container-shape: var(--border-radius);
   border-radius: var(--border-radius);
   padding: var(--half-global-padding) var(--global-padding);
   border: 1px solid var(--mat-sys-outline);
@@ -763,22 +764,27 @@ mat-icon {
   align-items: center !important;
 }
 
+.button-width-xs {
+  width: var(--button-width-xs);
+  min-width: var(--button-width-xs);
+}
+
 .button-width-s {
-  width: 120px;
-  min-width: 120px;
+  width: var(--button-width-s);
+  min-width: var(--button-width-s);
 }
 
 .button-width-m {
-  width: 180px;
-  min-width: 180px;
+  width: var(--button-width-m);
+  min-width: var(--button-width-m);
 }
 
 .button-width-l {
-  width: 240px;
-  min-width: 240px;
+  width: var(--button-width-l);
+  min-width: var(--button-width-l);
 }
 
 .button-width-xl {
-  width: 340px;
-  min-width: 340px;
+  width: var(--button-width-xl);
+  min-width: var(--button-width-xl);
 }
