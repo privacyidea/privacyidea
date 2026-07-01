@@ -17,22 +17,9 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass } from "@angular/common";
-import {
-  AfterViewInit,
-  Component,
-  effect,
-  ElementRef,
-  inject,
-  linkedSignal,
-  signal,
-  ViewChild,
-  WritableSignal
-} from "@angular/core";
+import { AfterViewInit, Component, effect, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
-import { MatFormField } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
-import { MatInput, MatLabel } from "@angular/material/input";
-import { MatPaginator } from "@angular/material/paginator";
 import { Sort } from "@angular/material/sort";
 import {
   MatCell,
@@ -64,15 +51,11 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
     MatCell,
     MatCellDef,
     MatColumnDef,
-    MatFormField,
     MatHeaderCell,
     MatHeaderRow,
     MatHeaderRowDef,
     MatIcon,
     MatIconButton,
-    MatInput,
-    MatLabel,
-    MatPaginator,
     MatRow,
     MatRowDef,
     MatTable,
@@ -100,25 +83,31 @@ export class UserDetailsTokenTableComponent implements AfterViewInit {
     "container_serial"
   );
   readonly columnKeys = [...this.tableUtilsService.getColumnKeys(this.columnsKeyMap)];
-  displayedColumns: string[] = [...this.columnsKeyMap.map((column) => column.key)];
+
+  get displayedColumns(): string[] {
+    const columns: string[] = this.columnsKeyMap.map((column) => column.key);
+    if (this.authService.actionAllowed("unassign")) {
+      columns.push("remove");
+    }
+    if (this.authService.actionAllowed("delete")) {
+      columns.push("delete");
+    }
+    return columns;
+  }
+
   dataSource = new MatTableDataSource<ContainerDetailToken>([]);
-  filterValue = "";
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
   sort = signal({ active: "serial", direction: "asc" } as Sort);
   apiFilter = this.tokenService.apiFilter;
-  @ViewChild("filterInput", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
-  userTokenData: WritableSignal<MatTableDataSource<TokenDetails, MatPaginator>> = linkedSignal({
+  userTokenData: WritableSignal<MatTableDataSource<TokenDetails>> = linkedSignal({
     source: () =>
       this.tokenService.userTokenResource.hasValue() ? this.tokenService.userTokenResource.value() : undefined,
     computation: (userTokenResource, previous) => {
       if (!userTokenResource) {
-        return previous?.value ?? new MatTableDataSource<TokenDetails, MatPaginator>([]);
+        return previous?.value ?? new MatTableDataSource<TokenDetails>([]);
       }
-      return new MatTableDataSource<TokenDetails, MatPaginator>(userTokenResource.result?.value?.tokens ?? []);
+      return new MatTableDataSource<TokenDetails>(userTokenResource.result?.value?.tokens ?? []);
     }
   });
-  pageSize = 10;
-  pageSizeOptions = this.tableUtilsService.pageSizeOptions;
 
   constructor() {
     effect(() => {
@@ -139,34 +128,7 @@ export class UserDetailsTokenTableComponent implements AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    this.dataSource.paginator = this.paginator;
     (this.dataSource as unknown as { _sort: WritableSignal<Sort> })._sort = this.sort;
-    this.dataSource.filterPredicate = (row: ContainerDetailToken, filter: string) => {
-      const haystack = [
-        row.serial,
-        row.tokentype,
-        String(row.active),
-        row.description ?? "",
-        String(row.failcount ?? ""),
-        String(row.maxfail ?? ""),
-        row.container_serial ?? ""
-      ]
-        .join(" ")
-        .toLowerCase();
-      return haystack.includes(filter);
-    };
-  }
-
-  handleFilterInput($event: Event): void {
-    const raw = ($event.target as HTMLInputElement).value ?? "";
-    const trimmed = raw.trim();
-    this.filterValue = trimmed;
-    const normalised = trimmed.toLowerCase();
-    this.dataSource.filter = normalised;
-
-    if (this.userTokenData) {
-      this.userTokenData().filter = normalised;
-    }
   }
 
   toggleActive(token: TokenDetails): void {
@@ -185,5 +147,21 @@ export class UserDetailsTokenTableComponent implements AfterViewInit {
         }
       });
     }
+  }
+
+  unassignToken(element: TokenDetails): void {
+    this.tokenService.unassignUser(element.serial).subscribe({
+      next: () => {
+        this.tokenService.userTokenResource.reload();
+      }
+    });
+  }
+
+  deleteToken(element: TokenDetails): void {
+    this.tokenService.deleteToken(element.serial).subscribe({
+      next: () => {
+        this.tokenService.userTokenResource.reload();
+      }
+    });
   }
 }

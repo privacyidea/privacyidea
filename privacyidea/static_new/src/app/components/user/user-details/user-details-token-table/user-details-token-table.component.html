@@ -26,26 +26,7 @@
       <h4 class="username-header">&nbsp;{{ userService.detailsUser().username }}</h4>
       <h4>:</h4>
     </div>
-    <div class="flex-row filter-paginator-container">
-      <mat-form-field
-        subscriptSizing="dynamic"
-        class="user-details-token-table-filter">
-        <mat-label i18n>Filter Tokens...</mat-label>
-        <input
-          #filterInput
-          (keyup)="handleFilterInput($event)"
-          aria-label="Filter Input"
-          i18n-aria-label
-          i18n-placeholder
-          matInput
-          placeholder="Filter across all columns." />
-      </mat-form-field>
-      <mat-paginator
-        [pageSizeOptions]="pageSizeOptions()"
-        [pageSize]="pageSize"
-        class="flex-just-start"
-        showFirstLastButtons />
-    </div>
+    <ng-content></ng-content>
     <div class="responsive-flex-row-1580">
       <table
         [dataSource]="dataSource"
@@ -148,7 +129,7 @@
             </td>
           </ng-container>
         }
-        @if (authService.actionAllowed("container_remove_token")) {
+        @if (authService.actionAllowed("unassign")) {
           <ng-container matColumnDef="remove">
             <th
               *matHeaderCellDef
@@ -165,10 +146,10 @@
               mat-cell>
               <div class="flex just-center">
                 <button
-                  (click)="tokenService.unassignUser(element.serial)"
+                  (click)="unassignToken(element)"
                   i18n-matTooltip
                   mat-icon-button
-                  matTooltip="Remove Token from Container">
+                  matTooltip="Unassign Token from User">
                   <mat-icon>highlight_remove</mat-icon>
                 </button>
               </div>
@@ -192,7 +173,7 @@
               mat-cell>
               <div class="flex just-center">
                 <button
-                  (click)="tokenService.deleteToken(element.serial)"
+                  (click)="deleteToken(element)"
                   i18n-matTooltip
                   mat-icon-button
                   matTooltip="Delete Token">
@@ -221,7 +202,7 @@
             aria-label="No Data Cell"
             i18n
             i18n-aria-label>
-            No data matching the filter.
+            No tokens found.
           </td>
         </tr>
       </table>

@@ -45,6 +45,7 @@ describe("UserDetailsContainerTableComponent", () => {
   let component: UserDetailsContainerTableComponent;
 
   let containerServiceMock: MockContainerService;
+  let authServiceMock: MockAuthService;
 
   beforeEach(async () => {
     TestBed.resetTestingModule();
@@ -68,6 +69,8 @@ describe("UserDetailsContainerTableComponent", () => {
     fixture = TestBed.createComponent(UserDetailsContainerTableComponent);
 
     containerServiceMock = TestBed.inject(ContainerService) as unknown as MockContainerService;
+    authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+    (authServiceMock.actionAllowed as jest.Mock).mockReturnValue(true);
 
     component = fixture.componentInstance;
     fixture.detectChanges();
@@ -79,48 +82,25 @@ describe("UserDetailsContainerTableComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("has the expected displayed columns", () => {
+  it("has the expected data columns plus action columns when rights are granted", () => {
+    expect(component.displayedColumns).toEqual([
+      "serial",
+      "type",
+      "states",
+      "description",
+      "realms",
+      "remove",
+      "delete"
+    ]);
+  });
+
+  it("omits action columns when rights are not granted", () => {
+    (authServiceMock.actionAllowed as jest.Mock).mockReturnValue(false);
     expect(component.displayedColumns).toEqual(["serial", "type", "states", "description", "realms"]);
   });
 
-  it("exposes pageSizeOptions from TableUtilsService", () => {
-    expect(component.pageSizeOptions()).toEqual([5, 10, 25, 50]);
-  });
-
-  it("wires paginator and sort in ngAfterViewInit", () => {
-    expect(component.dataSource.paginator).toBe(component.paginator);
+  it("wires sort onto the dataSource", () => {
     expect(component.dataSource.sort).toBe(component.sort);
-  });
-
-  it("filterPredicate matches on combined fields", () => {
-    const row = {
-      serial: "SER-001",
-      type: "Box",
-      description: "My demo container",
-      states: ["active"],
-      realms: ["r1", "r2"],
-      tokens: [],
-      users: [{ user_name: "alice", user_realm: "r1" }]
-    } as unknown as ContainerDetailData;
-
-    const pred = component.dataSource.filterPredicate!;
-    expect(pred(row, "active")).toBe(true);
-    expect(pred(row, "r2")).toBe(true);
-    expect(pred(row, "demo")).toBe(true);
-    expect(pred(row, "nope")).toBe(false);
-  });
-
-  it("handleFilterInput normalises and applies to dataSource.filter", () => {
-    const ev = { target: { value: "  MixedCase Text  " } } as unknown as Event;
-    component.handleFilterInput(ev);
-
-    expect(component.filterValue).toBe("mixedcase text");
-    expect(component.dataSource.filter).toBe("mixedcase text");
-  });
-
-  it("onPageSizeChange updates pageSize", () => {
-    component.onPageSizeChange(25);
-    expect(component.pageSize).toBe(25);
   });
 
   describe("userContainers signal", () => {
@@ -166,6 +146,34 @@ describe("UserDetailsContainerTableComponent", () => {
     const element = { serial: "C-123", states: ["active"] } as unknown as ContainerDetailData;
     component.handleStateClick(element);
     expect(containerServiceMock.toggleActive).toHaveBeenCalledWith("C-123", ["active"]);
+    expect(containerServiceMock.userContainersResource.reload).toHaveBeenCalledTimes(1);
+  });
+
+  it("unassignUser unassigns the assigned user and reloads", () => {
+    const element = {
+      serial: "C-456",
+      users: [{ user_name: "alice", user_realm: "r1" }]
+    } as unknown as ContainerDetailData;
+    component.unassignUser(element);
+    expect(containerServiceMock.unassignUser).toHaveBeenCalledWith("C-456", "alice", "r1");
+    expect(containerServiceMock.userContainersResource.reload).toHaveBeenCalledTimes(1);
+  });
+
+  it("unassignUser falls back to top-level user fields", () => {
+    const element = {
+      serial: "C-789",
+      users: [],
+      user_name: "bob",
+      user_realm: "r2"
+    } as unknown as ContainerDetailData;
+    component.unassignUser(element);
+    expect(containerServiceMock.unassignUser).toHaveBeenCalledWith("C-789", "bob", "r2");
+  });
+
+  it("deleteContainer deletes the container and reloads", () => {
+    const element = { serial: "C-999" } as unknown as ContainerDetailData;
+    component.deleteContainer(element);
+    expect(containerServiceMock.deleteContainer).toHaveBeenCalledWith("C-999");
     expect(containerServiceMock.userContainersResource.reload).toHaveBeenCalledTimes(1);
   });
 });

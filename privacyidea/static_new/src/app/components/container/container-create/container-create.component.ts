@@ -183,7 +183,7 @@ export class ContainerCreateComponent implements OnInit, OnDestroy {
     const createData: ContainerCreateData = {
       type: containerType,
       description: this.description(),
-      user: this.userService.selectionUsernameFilter()
+      user: this.userService.selectedUser()?.username ?? ""
     };
     if (createData.user || this.userAssignmentComponent?.onlyAddToRealm()) {
       createData.realm = this.selectedUserRealm();
@@ -231,7 +231,7 @@ export class ContainerCreateComponent implements OnInit, OnDestroy {
     const createData: ContainerCreateData = {
       type: containerType,
       description: this.description(),
-      user: this.userService.selectionUsernameFilter()
+      user: this.userService.selectedUser()?.username ?? ""
     };
 
     if (createData.user || this.userAssignmentComponent?.onlyAddToRealm()) {

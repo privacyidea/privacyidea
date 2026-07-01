@@ -16,24 +16,27 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { BreakpointObserver } from "@angular/cdk/layout";
-import { Component, computed, inject, signal, Signal } from "@angular/core";
-import { toSignal } from "@angular/core/rxjs-interop";
+import { Component, computed, inject, signal } from "@angular/core";
+import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
+import { Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
-import { map } from "rxjs";
 
 @Component({
   selector: "app-user-details-self-service",
   standalone: true,
-  imports: [ScrollToTopDirective, MatIcon],
+  imports: [ScrollToTopDirective, MatIcon, MatButtonModule],
   templateUrl: "./user-details.self-service.component.html",
   styleUrl: "./user-details.component.scss"
 })
 export class UserDetailsSelfServiceComponent {
+  protected readonly ROUTE_PATHS = ROUTE_PATHS;
   protected readonly userService: UserServiceInterface = inject(UserService);
-  private breakpointObserver = inject(BreakpointObserver);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly router = inject(Router);
 
   expandedKeys = signal<Set<string>>(new Set<string>());
 
@@ -50,15 +53,6 @@ export class UserDetailsSelfServiceComponent {
     }
     this.expandedKeys.set(next);
   }
-
-  private isSmall = toSignal(this.breakpointObserver.observe("(max-width: 1000px)").pipe(map((r) => r.matches)));
-  private isMedium = toSignal(this.breakpointObserver.observe("(max-width: 1240px)").pipe(map((r) => r.matches)));
-
-  colCount = computed(() => {
-    if (this.isSmall()) return 1;
-    if (this.isMedium()) return 2;
-    return 3;
-  });
 
   readonly labels: Record<string, string> = {
     username: $localize`Username`,
@@ -114,14 +108,15 @@ export class UserDetailsSelfServiceComponent {
     return result;
   });
 
-  detailsColumns: Signal<{ key: string; label: string; value: unknown }[][]> = computed(() => {
-    const entries = this.detailsEntries();
-    const colCount = this.colCount();
-    const perCol = Math.ceil(entries.length / colCount);
-    return Array.from({ length: colCount }, (_, i) => entries.slice(i * perCol, (i + 1) * perCol));
-  });
-
   protected readonly Array = Array;
+
+  enrollNewToken() {
+    this.router.navigateByUrl(ROUTE_PATHS.TOKENS_ENROLLMENT).then();
+  }
+
+  createNewContainer() {
+    this.router.navigateByUrl(ROUTE_PATHS.CONTAINERS_CREATE).then();
+  }
 
   private normalizeValue(value: unknown): unknown {
     if (value === null || value === undefined) return "-";

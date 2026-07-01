@@ -300,6 +300,7 @@ export class UserService implements UserServiceInterface {
       method: "GET",
       headers: this.authService.getHeaders(),
       params: {
+        include_custom_attributes: false,
         ...(this.detailsUser().username && { user: this.detailsUser().username }),
         ...(this.selectedUserRealm() && { realm: this.selectedUserRealm() })
       }

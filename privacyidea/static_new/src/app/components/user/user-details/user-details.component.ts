@@ -16,29 +16,23 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { BreakpointObserver } from "@angular/cdk/layout";
 import { NgClass } from "@angular/common";
 import {
   Component,
   computed,
   effect,
-  ElementRef,
   inject,
   linkedSignal,
   OnDestroy,
   OnInit,
   Renderer2,
-  Signal,
   signal,
-  ViewChild,
   WritableSignal
 } from "@angular/core";
-import { toSignal } from "@angular/core/rxjs-interop";
 import { MatAutocomplete, MatAutocompleteTrigger, MatOption } from "@angular/material/autocomplete";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
-import { MatPaginator, PageEvent } from "@angular/material/paginator";
 import { MatSelectModule } from "@angular/material/select";
 import { MatTableDataSource } from "@angular/material/table";
 import { MatTooltip } from "@angular/material/tooltip";
@@ -59,10 +53,9 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
-import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { EditUserData, UserService, UserServiceInterface } from "@services/user/user.service";
-import { filter, firstValueFrom, map } from "rxjs";
+import { filter, firstValueFrom } from "rxjs";
 import { UserDetailsContainerTableComponent } from "./user-details-container-table/user-details-container-table.component";
 import { UserDetailsPinDialogComponent } from "./user-details-pin-dialog/user-details-pin-dialog.component";
 import { UserDetailsTokenTableComponent } from "./user-details-token-table/user-details-token-table.component";
@@ -84,7 +77,6 @@ import { StickyHeaderDirective } from "@components/shared/directives/sticky-head
     MatOption,
     MatFormField,
     NgClass,
-    MatPaginator,
     UserDetailsContainerTableComponent,
     MatSelectModule,
     MatTooltip,
@@ -103,26 +95,10 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
   private readonly auditService: AuditServiceInterface = inject(AuditService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
-  protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   private router = inject(Router);
-  private breakpointObserver = inject(BreakpointObserver);
   private readonly pendingChangesService = inject(PendingChangesService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly renderer = inject(Renderer2);
-
-  private isSmall = toSignal(this.breakpointObserver.observe("(max-width: 1000px)").pipe(map((r) => r.matches)));
-  private isMedium = toSignal(this.breakpointObserver.observe("(max-width: 1240px)").pipe(map((r) => r.matches)));
-
-  colCount = computed(() => {
-    if (this.isSmall()) return 1;
-    if (this.isMedium()) return 2;
-    return 3;
-  });
-
-  customColCount = computed(() => {
-    if (this.isSmall()) return 1;
-    return 2;
-  });
 
   readonly labels: Record<string, string> = {
     username: $localize`Username`,
@@ -136,32 +112,9 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
     resolver: $localize`Resolver`
   };
   readonly excludedKeys = new Set(["editable"]);
-  customAttributeKeys: Signal<Set<string>> = computed(() => {
-    const attributeKeys = this.userService.userAttributesList().map((attribute) => attribute.key);
-    return new Set(attributeKeys);
-  });
 
   userData = this.userService.user;
   tokenResource = this.tokenService.tokenResource;
-  pageIndex = this.tokenService.pageIndex;
-  pageSize = this.tokenService.pageSize;
-  pageSizeOptions = this.tableUtilsService.pageSizeOptions;
-
-  total: WritableSignal<number> = linkedSignal({
-    source: this.tokenService.tokenResourceValue,
-    computation: (tokenResourceValue, previous) => {
-      if (tokenResourceValue) {
-        return tokenResourceValue.count;
-      }
-      return previous?.value ?? 0;
-    }
-  });
-
-  @ViewChild("filterHTMLInputElement")
-  filterHTMLInputElement!: ElementRef<HTMLInputElement>;
-
-  @ViewChild("tokenAutoTrigger", { read: MatAutocompleteTrigger })
-  tokenAutoTrigger!: MatAutocompleteTrigger;
 
   tokenDataSource: WritableSignal<MatTableDataSource<TokenDetails>> = linkedSignal({
     source: this.tokenService.tokenResourceValue,
@@ -216,27 +169,13 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
 
   detailsEntries = computed(() =>
     Object.entries(this.userData() ?? {})
-      .filter(([key]) => !this.excludedKeys.has(key) && !this.customAttributeKeys().has(key))
+      .filter(([key]) => !this.excludedKeys.has(key))
       .map(([key, value]) => ({
         key,
         label: this.labels[key] ?? key,
         value: value ?? "-"
       }))
   );
-
-  detailsColumns = computed(() => {
-    const entries = this.detailsEntries();
-    const colCount = this.colCount();
-    const perCol = Math.ceil(entries.length / colCount);
-    return Array.from({ length: colCount }, (_, i) => entries.slice(i * perCol, (i + 1) * perCol));
-  });
-
-  customAttributeColumns = computed(() => {
-    const attributes = this.userService.userAttributesList();
-    const colCount = this.customColCount();
-    const perCol = Math.ceil(attributes.length / colCount);
-    return Array.from({ length: colCount }, (_, i) => attributes.slice(i * perCol, (i + 1) * perCol));
-  });
 
   ngOnInit(): void {
     this.pendingChangesService.registerHasChanges(
@@ -355,13 +294,14 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
       });
   }
 
-  onPageEvent(event: PageEvent) {
-    this.tokenService.eventPageSize.set(event.pageSize);
-    this.pageIndex.set(event.pageIndex);
-    setTimeout(() => {
-      this.filterHTMLInputElement.nativeElement.focus();
-      this.tokenAutoTrigger.openPanel();
-    }, 0);
+  enrollNewToken() {
+    this.userService.selectionFilter.set(this.userService.detailsUser().username);
+    this.router.navigateByUrl(ROUTE_PATHS.TOKENS_ENROLLMENT).then();
+  }
+
+  createNewContainer() {
+    this.userService.selectionFilter.set(this.userService.detailsUser().username);
+    this.router.navigateByUrl(ROUTE_PATHS.CONTAINERS_CREATE).then();
   }
 
   showUserAuditLog() {

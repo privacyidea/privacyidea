@@ -25,43 +25,60 @@
     <h3 i18n>Your Details</h3>
   </div>
 
-  <div class="user-details">
-    @for (col of detailsColumns(); track $index) {
-      <div class="user-details-column">
-        @for (item of col; track item.key) {
-          <div class="flex-row label-value-row gap-16">
-            <div class="label">{{ item.label }}:</div>
-            @if (Array.isArray(item.value) && item.value.length > 1) {
-              <div class="value">
-                <ul class="value-list">
-                  @if (isExpanded(item.key)) {
-                    @for (val of item.value; track val) {
-                      <li>{{ val }}</li>
-                    }
-                  } @else {
-                    <li>{{ item.value[0] }}</li>
-                  }
-                </ul>
-                <button
-                  (click)="toggleExpanded(item.key)"
-                  [attr.aria-expanded]="isExpanded(item.key)"
-                  class="value-toggle"
-                  type="button">
-                  @if (isExpanded(item.key)) {
-                    <mat-icon>expand_less</mat-icon>
-                    <span i18n>Show less</span>
-                  } @else {
-                    <mat-icon>expand_more</mat-icon>
-                    <span i18n>Show {{ item.value.length - 1 }} more</span>
-                  }
-                </button>
-              </div>
-            } @else {
-              <div class="value">{{ item.value }}</div>
-            }
-          </div>
-        }
-      </div>
+  <div class="user-info-panel">
+    <dl class="info-grid">
+      @for (item of detailsEntries(); track item.key) {
+        <dt class="info-key">{{ item.label }}</dt>
+        <dd class="info-value">
+          @if (Array.isArray(item.value) && item.value.length > 1) {
+            <ul class="value-list">
+              @if (isExpanded(item.key)) {
+                @for (val of item.value; track val) {
+                  <li>{{ val }}</li>
+                }
+              } @else {
+                <li>{{ item.value[0] }}</li>
+              }
+            </ul>
+            <button
+              (click)="toggleExpanded(item.key)"
+              [attr.aria-expanded]="isExpanded(item.key)"
+              class="value-toggle"
+              type="button">
+              @if (isExpanded(item.key)) {
+                <mat-icon>expand_less</mat-icon>
+                <span i18n>Show less</span>
+              } @else {
+                <mat-icon>expand_more</mat-icon>
+                <span i18n>Show {{ item.value.length - 1 }} more</span>
+              }
+            </button>
+          } @else {
+            <span>{{ item.value }}</span>
+          }
+        </dd>
+      }
+    </dl>
+  </div>
+
+  <div class="flex gap-8 margin-top-16">
+    @if (authService.tokenEnrollmentAllowed()) {
+      <button
+        (click)="enrollNewToken()"
+        class="action-button-primary button-width-m"
+        mat-stroked-button>
+        <mat-icon>add_moderator</mat-icon>
+        <span i18n>Enroll new token</span>
+      </button>
+    }
+    @if (authService.actionAllowed("container_create")) {
+      <button
+        (click)="createNewContainer()"
+        class="action-button-primary button-width-m"
+        mat-stroked-button>
+        <mat-icon>create_new_folder</mat-icon>
+        <span i18n>Create new container</span>
+      </button>
     }
   </div>
 </div>

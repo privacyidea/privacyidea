@@ -78,7 +78,25 @@ describe("UserDetailsTokenTableComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("has the expected displayed columns", () => {
+  it("has the expected data columns plus action columns when rights are granted", () => {
+    const auth = TestBed.inject(AuthService) as unknown as MockAuthService;
+    (auth.actionAllowed as jest.Mock).mockReturnValue(true);
+    expect(component.displayedColumns).toEqual([
+      "serial",
+      "tokentype",
+      "active",
+      "description",
+      "failcount",
+      "maxfail",
+      "container_serial",
+      "remove",
+      "delete"
+    ]);
+  });
+
+  it("omits action columns when rights are not granted", () => {
+    const auth = TestBed.inject(AuthService) as unknown as MockAuthService;
+    (auth.actionAllowed as jest.Mock).mockReturnValue(false);
     expect(component.displayedColumns).toEqual([
       "serial",
       "tokentype",
@@ -90,12 +108,7 @@ describe("UserDetailsTokenTableComponent", () => {
     ]);
   });
 
-  it("exposes pageSizeOptions from TableUtilsService (signal)", () => {
-    expect(component.pageSizeOptions()).toEqual([5, 10, 25, 50]);
-  });
-
-  it("wires paginator and sort in ngAfterViewInit", () => {
-    expect(component.dataSource.paginator).toBe(component.paginator);
+  it("wires sort in ngAfterViewInit", () => {
     expect(component.dataSource.sort).toBe(component.sort);
   });
 
@@ -174,15 +187,6 @@ describe("UserDetailsTokenTableComponent", () => {
     expect(component.dataSource.data.map((t: ContainerDetailToken) => t.serial)).toEqual(["KEEP-ME"]);
   });
 
-  it("handleFilterInput normalises and applies to dataSource and userTokenData", () => {
-    const ev = { target: { value: "  MixedCase Text  " } } as unknown as Event;
-    component.handleFilterInput(ev);
-
-    expect(component.filterValue).toBe("MixedCase Text");
-    expect(component.dataSource.filter).toBe("mixedcase text");
-    expect(component.userTokenData().filter).toBe("mixedcase text");
-  });
-
   it("toggleActive calls service and triggers user reload", () => {
     const token: Partial<TokenDetails> = {
       serial: "S-123",
@@ -208,6 +212,24 @@ describe("UserDetailsTokenTableComponent", () => {
     component.resetFailCount(token as TokenDetails);
 
     expect(tokenServiceMock.resetFailCount).toHaveBeenCalledWith("X");
+    expect(tokenServiceMock.userTokenResource.reload).toHaveBeenCalledTimes(1);
+  });
+
+  it("unassignToken unassigns from user and triggers user reload", () => {
+    const token: Partial<TokenDetails> = { serial: "U-1" };
+
+    component.unassignToken(token as TokenDetails);
+
+    expect(tokenServiceMock.unassignUser).toHaveBeenCalledWith("U-1");
+    expect(tokenServiceMock.userTokenResource.reload).toHaveBeenCalledTimes(1);
+  });
+
+  it("deleteToken deletes the token and triggers user reload", () => {
+    const token: Partial<TokenDetails> = { serial: "D-1" };
+
+    component.deleteToken(token as TokenDetails);
+
+    expect(tokenServiceMock.deleteToken).toHaveBeenCalledWith("D-1");
     expect(tokenServiceMock.userTokenResource.reload).toHaveBeenCalledTimes(1);
   });
 });

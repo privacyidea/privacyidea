@@ -26,11 +26,11 @@
     <ng-container>
       <h3 i18n>Details for User:</h3>
       <app-copyable [copyText]="userService.detailsUser().username">
-        <h3 class="username-header">{{ userService.detailsUser().username }}</h3>
+        <h3 class="username-header">&nbsp;{{ userService.detailsUser().username }}</h3>
       </app-copyable>
-      <h3 i18n>in Realm</h3>
+      <h3 i18n>&nbsp;in Realm</h3>
       <app-copyable [copyText]="userService.selectedUserRealm()">
-        <h3 class="margin-0">{{ userService.selectedUserRealm() }}</h3>
+        <h3 class="margin-0">&nbsp;{{ userService.selectedUserRealm() }}</h3>
       </app-copyable>
     </ng-container>
     <button
@@ -84,19 +84,24 @@
     </div>
   }
 
-  @if (editMode()) {
-    <app-user-details-edit
-      [resolver]="userData().resolver"
-      [initialUserData]="userData()"
-      (updateData)="onUpdateEditedUser($event)"></app-user-details-edit>
-  } @else {
-    <div class="user-details">
-      @for (col of detailsColumns(); track $index) {
-        <div class="user-details-column">
-          @for (item of col; track item.key) {
-            <div class="label">{{ item.label }}:</div>
-            @if (Array.isArray(item.value) && item.value.length > 1) {
-              <div class="value">
+  <div class="details-panels-row">
+    @if (editMode()) {
+      <app-user-details-edit
+        [resolver]="userData().resolver"
+        [initialUserData]="userData()"
+        (updateData)="onUpdateEditedUser($event)"></app-user-details-edit>
+    } @else {
+      <div class="user-info-panel">
+        <h4
+          class="panel-title"
+          i18n>
+          Attributes:
+        </h4>
+        <dl class="info-grid">
+          @for (item of detailsEntries(); track item.key) {
+            <dt class="info-key">{{ item.label }}</dt>
+            <dd class="info-value">
+              @if (Array.isArray(item.value) && item.value.length > 1) {
                 <ul class="value-list">
                   @if (isExpanded(item.key)) {
                     @for (val of item.value; track val) {
@@ -119,119 +124,129 @@
                     <span i18n>Show {{ item.value.length - 1 }} more</span>
                   }
                 </button>
-              </div>
-            } @else {
-              <div class="value">{{ item.value }}</div>
-            }
-          }
-        </div>
-      }
-    </div>
-  }
-
-  <div class="flex-column">
-    <div class="details-header">
-      <h4 i18n>Custom Attributes:</h4>
-    </div>
-    <div class="add-attr-row">
-      <mat-form-field class="input-width-l">
-        <mat-label i18n>Attribute Key</mat-label>
-        <div class="flex-row">
-          @if (keyMode() === "select") {
-            <mat-select
-              [value]="selectedKey()"
-              (selectionChange)="selectedKey.set($event.value)">
-              @for (k of keyOptions(); track k) {
-                <mat-option [value]="k">{{ k }}</mat-option>
-              }
-              @if (hasWildcardKey()) {
-                <mat-option
-                  (onSelectionChange)="switchToCustomKey()"
-                  [value]="'__CUSTOM__'">
-                  <i i18n>Custom…</i>
-                </mat-option>
-              }
-            </mat-select>
-          } @else {
-            <input
-              [value]="addKeyInput()"
-              (input)="addKeyInput.set($event.target['value'])"
-              i18n-placeholder
-              matInput
-              placeholder="Enter key" />
-            @if (keyOptions().length > 0) {
-              <button
-                (click)="switchToSelectKey()"
-                aria-label="Back to key select"
-                class="ml-4 mt--8 return-button"
-                i18n-aria-label="Back to key select"
-                mat-icon-button
-                type="button">
-                <mat-icon>arrow_left</mat-icon>
-              </button>
-            }
-          }
-        </div>
-      </mat-form-field>
-
-      <mat-form-field class="input-width-l">
-        <mat-label i18n>Attribute Value</mat-label>
-
-        @if (isValueInput()) {
-          <input
-            [value]="addValueInput()"
-            (input)="addValueInput.set($event.target['value'])"
-            i18n-placeholder
-            matInput
-            placeholder="Enter value" />
-        } @else {
-          <mat-select
-            [value]="selectedValue()"
-            (selectionChange)="selectedValue.set($event.value)">
-            @for (v of valueOptions(); track v) {
-              <mat-option [value]="v">{{ v }}</mat-option>
-            }
-          </mat-select>
-        }
-      </mat-form-field>
-
-      <button
-        (click)="addCustomAttribute()"
-        [disabled]="!canAddAttribute()"
-        class="ml-8 margin-bottom-16"
-        color="primary"
-        mat-icon-button>
-        <mat-icon>save</mat-icon>
-      </button>
-    </div>
-
-    @if (userService.userAttributesList().length > 0) {
-      <div class="custom-user-details mt-12">
-        @for (col of customAttributeColumns(); track $index) {
-          <div class="custom-user-details-column">
-            @for (attr of col; track attr.key) {
-              <div class="label">{{ attr.key }}:</div>
-              <div class="value">{{ attr.value || "-" }}</div>
-              @if (deletableAttributes().includes(attr.key) || deletableAttributes().includes("*")) {
-                <button
-                  (click)="deleteCustomAttribute(attr.key)"
-                  aria-label="Delete custom attribute"
-                  class="ml-4 small-icon-button"
-                  i18n-aria-label="Delete custom attribute"
-                  mat-icon-button>
-                  <mat-icon>delete</mat-icon>
-                </button>
               } @else {
-                <div class="small-icon-button"></div>
+                <span>{{ item.value }}</span>
+              }
+            </dd>
+          }
+        </dl>
+      </div>
+    }
+
+    <div class="user-info-panel custom-attr-panel">
+      <h4
+        class="panel-title"
+        i18n>
+        Custom Attributes:
+      </h4>
+      <div class="add-attr-row">
+        <mat-form-field class="input-width-l">
+          <mat-label i18n>Attribute Key</mat-label>
+          <div class="flex-row">
+            @if (keyMode() === "select") {
+              <mat-select
+                [value]="selectedKey()"
+                (selectionChange)="selectedKey.set($event.value)">
+                @for (k of keyOptions(); track k) {
+                  <mat-option [value]="k">{{ k }}</mat-option>
+                }
+                @if (hasWildcardKey()) {
+                  <mat-option
+                    (onSelectionChange)="switchToCustomKey()"
+                    [value]="'__CUSTOM__'">
+                    <i i18n>Custom…</i>
+                  </mat-option>
+                }
+              </mat-select>
+            } @else {
+              <input
+                [value]="addKeyInput()"
+                (input)="addKeyInput.set($event.target['value'])"
+                i18n-placeholder
+                matInput
+                placeholder="Enter key" />
+              @if (keyOptions().length > 0) {
+                <button
+                  (click)="switchToSelectKey()"
+                  aria-label="Back to key select"
+                  class="ml-4 mt--8 return-button"
+                  i18n-aria-label="Back to key select"
+                  mat-icon-button
+                  type="button">
+                  <mat-icon>arrow_left</mat-icon>
+                </button>
               }
             }
           </div>
-        }
+        </mat-form-field>
+
+        <mat-form-field class="input-width-l">
+          <mat-label i18n>Attribute Value</mat-label>
+
+          @if (isValueInput()) {
+            <input
+              [value]="addValueInput()"
+              (input)="addValueInput.set($event.target['value'])"
+              i18n-placeholder
+              matInput
+              placeholder="Enter value" />
+          } @else {
+            <mat-select
+              [value]="selectedValue()"
+              (selectionChange)="selectedValue.set($event.value)">
+              @for (v of valueOptions(); track v) {
+                <mat-option [value]="v">{{ v }}</mat-option>
+              }
+            </mat-select>
+          }
+        </mat-form-field>
+
+        <button
+          (click)="addCustomAttribute()"
+          [disabled]="!canAddAttribute()"
+          class="ml-8 margin-bottom-16"
+          color="primary"
+          mat-icon-button>
+          <mat-icon>save</mat-icon>
+        </button>
       </div>
-    }
+
+      @if (userService.userAttributesList().length > 0) {
+        <dl class="info-grid custom-attr-grid">
+          @for (attr of userService.userAttributesList(); track attr.key) {
+            <dt class="info-key">{{ attr.key }}:</dt>
+            <dd class="info-value">{{ attr.value || "-" }}</dd>
+            @if (deletableAttributes().includes(attr.key) || deletableAttributes().includes("*")) {
+              <button
+                (click)="deleteCustomAttribute(attr.key)"
+                aria-label="Delete custom attribute"
+                class="custom-attr-delete"
+                i18n-aria-label="Delete custom attribute"
+                mat-icon-button>
+                <mat-icon>delete</mat-icon>
+              </button>
+            } @else {
+              <span></span>
+            }
+          }
+        </dl>
+      }
+    </div>
   </div>
 
-  <app-user-details-token-table />
+  <app-user-details-token-table>
+    @if (authService.tokenEnrollmentAllowed()) {
+      <div class="flex gap-8 margin-bottom-16">
+        <button
+          (click)="enrollNewToken()"
+          class="action-button-primary button-width-m"
+          mat-stroked-button>
+          <mat-icon>add_moderator</mat-icon>
+          <span i18n>Enroll new token</span>
+        </button>
+      </div>
+    }
+  </app-user-details-token-table>
 
   <div class="flex-row filter-paginator-container margin-top-16">
     <mat-form-field
@@ -274,14 +289,19 @@
         }
       </mat-autocomplete>
     </mat-form-field>
-    <mat-paginator
-      (page)="onPageEvent($event)"
-      [length]="total()"
-      [pageSizeOptions]="pageSizeOptions()"
-      [pageIndex]="pageIndex()"
-      [pageSize]="pageSize()"
-      showFirstLastButtons />
   </div>
 
-  <app-user-details-container-table />
+  <app-user-details-container-table>
+    @if (authService.actionAllowed("container_create")) {
+      <div class="flex gap-8 margin-bottom-16">
+        <button
+          (click)="createNewContainer()"
+          class="action-button-primary button-width-m"
+          mat-stroked-button>
+          <mat-icon>create_new_folder</mat-icon>
+          <span i18n>Create new container</span>
+        </button>
+      </div>
+    }
+  </app-user-details-container-table>
 </div>

@@ -17,21 +17,9 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass } from "@angular/common";
-import {
-  AfterViewInit,
-  Component,
-  effect,
-  ElementRef,
-  inject,
-  linkedSignal,
-  signal,
-  ViewChild,
-  WritableSignal
-} from "@angular/core";
+import { Component, effect, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
-import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
-import { MatPaginator } from "@angular/material/paginator";
 import { Sort } from "@angular/material/sort";
 import {
   MatCell,
@@ -48,7 +36,6 @@ import {
   MatTableDataSource
 } from "@angular/material/table";
 import { MatTooltip } from "@angular/material/tooltip";
-import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
@@ -64,14 +51,9 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
   selector: "app-user-details-container-table",
   imports: [
     CopyableComponent,
-    ClearableInputComponent,
     MatHeaderRowDef,
     MatRowDef,
     MatNoDataRow,
-    MatFormField,
-    MatLabel,
-    MatInput,
-    MatPaginator,
     MatTable,
     MatHeaderCellDef,
     MatColumnDef,
@@ -82,15 +64,13 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
     MatTooltip,
     MatHeaderRow,
     MatRow,
-    MatFormField,
-    MatLabel,
     MatIcon,
     MatIconButton
   ],
   templateUrl: "./user-details-container-table.component.html",
   styleUrl: "./user-details-container-table.component.scss"
 })
-export class UserDetailsContainerTableComponent implements AfterViewInit {
+export class UserDetailsContainerTableComponent {
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
@@ -99,17 +79,20 @@ export class UserDetailsContainerTableComponent implements AfterViewInit {
 
   readonly columnsKeyMap = this.tableUtilsService.pickColumns("serial", "type", "states", "description", "realms");
   readonly columnKeys = [...this.tableUtilsService.getColumnKeys(this.columnsKeyMap)];
-  displayedColumns: string[] = this.columnsKeyMap.map((c) => c.key);
+
+  get displayedColumns(): string[] {
+    const columns: string[] = this.columnsKeyMap.map((c) => c.key);
+    if (this.authService.actionAllowed("container_unassign_user")) {
+      columns.push("remove");
+    }
+    if (this.authService.actionAllowed("container_delete")) {
+      columns.push("delete");
+    }
+    return columns;
+  }
 
   dataSource = new MatTableDataSource<ContainerDetailData>([]);
-  filterValue = "";
   sort = signal({ active: "serial", direction: "asc" } as Sort);
-
-  pageSize = 10;
-  pageSizeOptions = this.tableUtilsService.pageSizeOptions;
-
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
-  @ViewChild("filterInput", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
 
   userContainers: WritableSignal<ContainerDetailData[]> = linkedSignal({
     source: () => ({
@@ -128,6 +111,8 @@ export class UserDetailsContainerTableComponent implements AfterViewInit {
   });
 
   constructor() {
+    (this.dataSource as unknown as { _sort: WritableSignal<Sort> })._sort = this.sort;
+
     effect(() => {
       const base = this.userContainers();
       this.dataSource.data = this.clientsideSortContainerData(base, this.sort());
@@ -139,34 +124,23 @@ export class UserDetailsContainerTableComponent implements AfterViewInit {
     });
   }
 
-  ngAfterViewInit(): void {
-    this.dataSource.paginator = this.paginator;
-    (this.dataSource as unknown as { _sort: WritableSignal<Sort> })._sort = this.sort;
-
-    this.dataSource.filterPredicate = (row: ContainerDetailData, filter: string) => {
-      const currentState = (row.states?.[0] ?? "").toString();
-      const realmsJoined = (row.realms ?? []).join(" ");
-      const haystack = [row.serial, row.type, row.description ?? "", currentState, realmsJoined]
-        .join(" ")
-        .toLowerCase();
-
-      return haystack.includes(filter);
-    };
-  }
-
-  handleFilterInput($event: Event): void {
-    const raw = ($event.target as HTMLInputElement).value ?? "";
-    const normalised = raw.trim().toLowerCase();
-    this.filterValue = normalised;
-    this.dataSource.filter = normalised;
-  }
-
-  onPageSizeChange(size: number) {
-    this.pageSize = size;
-  }
-
   handleStateClick(element: ContainerDetailData) {
     this.containerService.toggleActive(element.serial, element.states).subscribe({
+      next: () => this.containerService.userContainersResource.reload()
+    });
+  }
+
+  unassignUser(element: ContainerDetailData) {
+    const assignedUser = element.users?.[0];
+    const username = assignedUser?.user_name ?? element.user_name ?? "";
+    const userRealm = assignedUser?.user_realm ?? element.user_realm ?? "";
+    this.containerService.unassignUser(element.serial, username, userRealm).subscribe({
+      next: () => this.containerService.userContainersResource.reload()
+    });
+  }
+
+  deleteContainer(element: ContainerDetailData) {
+    this.containerService.deleteContainer(element.serial).subscribe({
       next: () => this.containerService.userContainersResource.reload()
     });
   }
