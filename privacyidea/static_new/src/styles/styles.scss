@@ -48,8 +48,10 @@ body {
   --light-distance: -4px;
   --shadow-distance: 2px;
 
-  --details-card-min-width: 400px;
-  --details-card-max-width: 585px;
+  // Standardized detail-card widths, applied via the card-width() mixin.
+  --card-width-s: 400px;
+  --card-width-m: 585px;
+  --card-width-l: 728px;
 
   // Pre-baked Material elevation shadows (0..24) as CSS variables.
   // Generated at build time so that elevation can be re-skinned at runtime

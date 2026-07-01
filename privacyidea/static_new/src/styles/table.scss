@@ -75,9 +75,17 @@ $description-width: 18rem;
 // hold an input-width-xl (616px) field plus the inline edit buttons. The field
 // is a multi-line textarea, so longer text wraps to more rows instead of
 // widening the card.
+// Standardized detail-card width tiers (s/m/l), analogous to .input-width-*.
+// The card grows to fill its grid column but never exceeds its tier.
+@mixin card-width($size) {
+  flex: 1 1 var(--card-width-#{$size});
+  min-width: 0;
+  max-width: var(--card-width-#{$size});
+}
+
 @mixin details-description-card {
   align-self: flex-start;
-  flex: 0 1 calc(var(--input-width-xl) + 7rem);
+  flex: 0 1 var(--card-width-l);
   min-height: 160.5px;
 
   // Long unbroken values (e.g. "WWWW…") must wrap, not overflow the card.
@@ -456,11 +464,6 @@ th:nth-child(even) {
 
 .details-card-title {
   margin: 0 0 4px;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--mat-sys-on-surface-variant);
 }
 
 .details-cards-column {

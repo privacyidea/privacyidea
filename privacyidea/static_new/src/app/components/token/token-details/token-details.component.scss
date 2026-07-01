@@ -91,18 +91,19 @@
 
 .details-card--machine { display: contents; }
 
-// Size to the action sections instead of growing to fill the column, so the
-// next card follows after just the grid gap with no trailing whitespace.
+// Hug the action sections (no growing to fill the column) so there is no
+// trailing whitespace to the right of the panels.
 .details-card--actions {
   flex: 0 0 auto;
+  width: max-content;
+  max-width: 100%;
 }
 
 .details-card--user {
+  @include table.card-width(l);
   display: block;
-  min-width: 0;
   align-self: flex-start;
   box-sizing: border-box;
-  max-width: var(--details-card-max-width);
 }
 
 .action-button-warn-secondary {

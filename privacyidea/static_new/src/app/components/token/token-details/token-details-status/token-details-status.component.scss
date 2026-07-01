@@ -4,6 +4,10 @@
   display: contents;
 }
 
+.details-card--identity {
+  @include table.card-width(s);
+}
+
 .status-toggle {
   padding: 0;
   margin: 0;

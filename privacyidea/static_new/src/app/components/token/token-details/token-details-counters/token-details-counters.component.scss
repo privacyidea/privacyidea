@@ -5,9 +5,8 @@
 }
 
 .details-card--counters {
-  // Pin to the wide (edit) width so the card keeps a constant width when toggling
-  // edit mode instead of growing for the wider input fields.
-  width: var(--details-card-max-width);
-  max-width: 100%;
+  // Width is column-driven (not content-driven), so it stays constant when
+  // toggling edit mode instead of growing for the wider input fields.
+  @include table.card-width(m);
   box-sizing: border-box;
 }

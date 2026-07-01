@@ -23,6 +23,8 @@
   flex-wrap: wrap;
   gap: var(--global-gap);
   align-items: flex-start;
+  // Hug the panels so there is no trailing whitespace to their right.
+  width: fit-content;
 }
 
 .actions-section {
