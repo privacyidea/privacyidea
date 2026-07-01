@@ -122,20 +122,13 @@ describe("AuthenticationLog", () => {
     expect(service.authenticationLogFilter().hasKey("client_label")).toBe(true);
   });
 
-  it("onSortClick cycles a column through ascending -> descending -> cleared (default)", () => {
+  it("onSortClick delegates to tableUtilsService with the timestamp fallback", () => {
     component.onSortClick("event_type");
-    expect(service.sort()).toEqual({ active: "event_type", direction: "asc" });
-
-    component.onSortClick("event_type");
-    expect(service.sort()).toEqual({ active: "event_type", direction: "desc" });
-
-    // Third click clears to the default order with a neutral (empty) direction.
-    component.onSortClick("event_type");
-    expect(service.sort()).toEqual({ active: "timestamp", direction: "" });
-
-    // Switching to another column starts ascending again.
-    component.onSortClick("username");
-    expect(service.sort()).toEqual({ active: "username", direction: "asc" });
+    expect(tableUtils.onSortButtonClick).toHaveBeenCalledWith(
+      "event_type",
+      service.sort,
+      { active: "timestamp", direction: "" }
+    );
   });
 
   it("getFilterIconName reflects whether the keyword is active", () => {

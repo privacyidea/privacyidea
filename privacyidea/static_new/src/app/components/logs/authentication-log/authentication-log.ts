@@ -292,17 +292,9 @@ export class AuthenticationLog {
     return this.authenticationLogService.authenticationLogFilter().hasKey(keyword) ? "filter_alt_off" : "filter_alt";
   }
 
-  // Three-state sort cycle per column: ascending -> descending -> cleared. Clearing falls back to the default order
-  // (timestamp desc); the empty direction makes every column show the neutral sort icon.
+  // Three-state sort cycle; clearing falls back to timestamp desc with a neutral direction so no column shows active.
   onSortClick(columnKey: string): void {
-    const current = this.sort();
-    if (current.active !== columnKey || !current.direction) {
-      this.sort.set({ active: columnKey, direction: "asc" });
-    } else if (current.direction === "asc") {
-      this.sort.set({ active: columnKey, direction: "desc" });
-    } else {
-      this.sort.set({ active: "timestamp", direction: "" });
-    }
+    this.tableUtilsService.onSortButtonClick(columnKey, this.sort, { active: "timestamp", direction: "" });
   }
 
   // Predefined-value filters (event_type, realm) hold one or more comma-separated values the API splits as CSV.

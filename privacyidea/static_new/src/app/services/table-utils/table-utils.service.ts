@@ -127,7 +127,7 @@ export interface TableUtilsServiceInterface {
 
   getSortIcon(columnKey: string, sort: Sort): string;
 
-  onSortButtonClick(key: string, sort: WritableSignal<Sort>): void;
+  onSortButtonClick(key: string, sort: WritableSignal<Sort>, fallback?: Sort): void;
 
   clientsideSortTokenData(data: ContainerDetailToken[], s: Sort): ContainerDetailToken[];
 }
@@ -406,7 +406,7 @@ export class TableUtilsService implements TableUtilsServiceInterface {
     return sort.direction === "asc" ? "keyboard_arrow_upward" : "keyboard_arrow_downward";
   }
 
-  onSortButtonClick(columnKey: string, sort: WritableSignal<Sort>): void {
+  onSortButtonClick(columnKey: string, sort: WritableSignal<Sort>, fallback: Sort = { active: "serial", direction: "asc" }): void {
     const current = sort();
     let direction: Sort["direction"] = "asc";
 
@@ -418,11 +418,7 @@ export class TableUtilsService implements TableUtilsServiceInterface {
       }
     }
 
-    if (direction === "") {
-      sort.set({ active: "serial", direction: "asc" });
-    } else {
-      sort.set({ active: columnKey, direction });
-    }
+    sort.set(direction === "" ? fallback : { active: columnKey, direction });
   }
 
   clientsideSortTokenData(data: ContainerDetailToken[], s: Sort) {
