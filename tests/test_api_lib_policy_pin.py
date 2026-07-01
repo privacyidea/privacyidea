@@ -508,16 +508,14 @@ class PrePolicyPinTestCase(PrePolicyHelperMixin, MyApiTestCase):
         g.policy_object = PolicyClass()
 
         # Admin enrolls for cornelius@home: the user is in the params, but
-        # request.User is empty (the divergence the fix addresses).
+        # request.User is empty.
         req.all_data = {"type": "hotp", "user": "cornelius", "realm": "home"}
         req.User = User()
         self.assertTrue(init_random_pin(req))
 
         # The realm-scoped contents policy was resolved via the param user (not
         # the empty request.User), so the generated PIN has the configured length
-        # and contains a special character. Without the fix the lookup uses the
-        # empty request.User, misses the realm-scoped policy, and the PIN falls
-        # back to the alphanumeric-only generator (no special character).
+        # and contains a special character.
         pin = req.all_data["pin"]
         self.assertEqual(12, len(pin), pin)
         self.assertTrue(any(not c.isalnum() for c in pin), pin)
