@@ -33,20 +33,11 @@
 }
 
 .detail-input {
-  flex: 0 0 20%;
-  max-width: 20%;
+  flex: 0 0 300px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
-
-  .flex-1 {
-    flex: 1;
-    min-width: 0;
-  }
-  .flex-2 {
-    flex: 2;
-    min-width: 0;
-  }
+  gap: 8px;
 }
 
 .delete-icon-button {

@@ -35,21 +35,11 @@
 }
 
 .detail-input {
-  flex: 0 0 20%;
-  max-width: 20%;
+  flex: 0 0 300px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
-
-  .flex-1 {
-    flex: 1;
-    min-width: 0;
-  }
-  .flex-2 {
-    flex: 2;
-    min-width: 0;
-  }
+  gap: 20px;
 }
 
 .add-action-button {
@@ -58,9 +48,7 @@
   border: 1px solid var(--mat-sys-outline-variant);
   border-radius: var(--border-radius);
   color: var(--mat-sys-on-surface-variant);
-  width: 44px;
   height: 40px;
-  flex: 0 0 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -94,7 +82,6 @@
   box-sizing: border-box;
   color: var(--mat-sys-on-surface);
   font-family: inherit;
-  width: unset;
 }
 
 .action-value-textarea {

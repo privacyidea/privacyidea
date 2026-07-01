@@ -33,7 +33,7 @@
       @if (actionDetail()?.value; as actionValues) {
         @if (actionDetail()?.multiple) {
           <app-multi-select-only
-            class="flex-2"
+            class="input-width-l"
             subscriptSizing="dynamic"
             placeholder="Select options..."
             [items]="actionValues"
@@ -44,14 +44,14 @@
           <p i18n>No values available.</p>
         } @else if (actionValues.length <= 3) {
           <app-selector-buttons
-            class="flex-1"
+            class="input-width-l"
             [values]="actionValues"
             [initialValue]="action().value"
             (selected)="handleUpdateAction($event)" />
         } @else {
           <mat-form-field
             appearance="fill"
-            class="flex-1"
+            class="input-width-l"
             subscriptSizing="dynamic">
             <mat-select
               [value]="isNumber(action().value) ? +action().value : action().value"
@@ -67,20 +67,20 @@
           @case ("str") {
             <input
               type="text"
-              class="action-value-input flex-2"
+              class="action-value-input input-width-l"
               [value]="action().value"
               (input)="handleUpdateAction($any($any($event.target).value))" />
           }
           @case ("int") {
             <input
               type="number"
-              class="action-value-input flex-2"
+              class="action-value-input input-width-l"
               [value]="action().value"
               (input)="handleUpdateAction($any(+$any($event.target).value))" />
           }
           @case ("text") {
             <textarea
-              class="action-value-textarea flex-2"
+              class="action-value-textarea input-width-l"
               [value]="action().value"
               (input)="handleUpdateAction($any($any($event.target).value))"></textarea>
           }

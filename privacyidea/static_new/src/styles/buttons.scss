@@ -755,6 +755,11 @@ mat-icon {
   align-items: center !important;
 }
 
+.button-width-xs {
+  width: $button-height;
+  min-width: $button-height;
+}
+
 .button-width-s {
   width: 120px;
   min-width: 120px;
