@@ -85,6 +85,21 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
       this.notificationService.handleResourceError(this.templateTokenTypesResource.error(), "template token types");
     });
   }
+
+  // --- Private Methods ---
+  private _performDeleteRequest(name: string) {
+    return this.http
+      .delete<PiResponse<boolean>>(`${environment.proxyUrl}/container/template/${encodeURIComponent(name)}`, {
+        headers: this.authService.getHeaders()
+      })
+      .pipe(
+        catchError((error) => {
+          console.warn("Failed to delete template:", error);
+          return throwError(() => error);
+        })
+      );
+  }
+
   readonly templatesResource = httpResource<PiResponse<{ templates: ContainerTemplate[] }>>(() => {
     if (!this.authService.actionAllowed("container_template_list")) return undefined;
     if (!this.contentService.onContainersCreate() && !this.contentService.onContainersTemplates()) {
@@ -224,17 +239,5 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
     }
   }
 
-  // --- Private Methods ---
-  private _performDeleteRequest(name: string) {
-    return this.http
-      .delete<PiResponse<boolean>>(`${environment.proxyUrl}/container/template/${encodeURIComponent(name)}`, {
-        headers: this.authService.getHeaders()
-      })
-      .pipe(
-        catchError((error) => {
-          console.warn("Failed to delete template:", error);
-          return throwError(() => error);
-        })
-      );
-  }
+
 }

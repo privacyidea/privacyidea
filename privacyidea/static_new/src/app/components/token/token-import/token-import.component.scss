@@ -3,6 +3,7 @@
 
 .token-import-container {
   @include styles.main-component-style;
+  max-height: var(--table-max-height);
   width: 56rem;
   display: grid;
 }

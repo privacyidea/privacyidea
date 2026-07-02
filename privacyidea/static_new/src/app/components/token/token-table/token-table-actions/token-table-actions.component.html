@@ -17,8 +17,7 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
-  appOverflowNav
-  class="flex-row gap-8">
+  appOverflowNav class="flex-row gap-8">
   @if (authService.oneActionAllowed(["delete", "assign", "unassign", "enable", "disable", "reset"])) {
     @if (authService.actionAllowed("delete")) {
       <button

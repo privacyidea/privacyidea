@@ -14,6 +14,7 @@
 
 .policies-table-layout {
   @include styles.main-component-style;
+  max-height: var(--table-max-height);
   @include table.base-table-structure(".policies-table", ".policies-table-filter", ".table-scroll-container");
 
   & {

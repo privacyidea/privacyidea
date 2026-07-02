@@ -16,7 +16,16 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, ElementRef, inject, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
+import {
+  Component,
+  computed,
+  effect,
+  ElementRef,
+  inject,
+  linkedSignal,
+  ViewChild,
+  WritableSignal
+} from "@angular/core";
 import { MatDividerModule } from "@angular/material/divider";
 import { MatMenuModule } from "@angular/material/menu";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
@@ -37,8 +46,8 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
-import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { TokenTableActionsComponent } from "./token-table-actions/token-table-actions.component";
@@ -116,12 +125,10 @@ export class TokenTableComponent {
       }
     });
   }
-
   protected readonly filterInputValue = linkedSignal({
     source: () => this.tokenService.tokenFilter().filterString,
     computation: (v) => v
   });
-
   protected readonly showFilterHint = computed(() => {
     const current = this.filterInputValue().trim().toLowerCase();
     const applied = this.tokenService.tokenFilter().filterString.trim().toLowerCase();
@@ -133,7 +140,6 @@ export class TokenTableComponent {
     }
     return false;
   });
-
   emptyResource = linkedSignal({
     source: this.pageSize,
     computation: (pageSize: number) =>

@@ -259,7 +259,7 @@ export interface TokenServiceInterface {
   eventPageSize: WritableSignal<number>;
   tokenSerial: WritableSignal<string>;
   selectedTokenType: WritableSignal<TokenType>;
-  showOnlyTokenNotInContainer: WritableSignal<boolean>;
+  showOnlyTokenInContainer: WritableSignal<boolean>;
   tokenFilter: WritableSignal<FilterValue>;
   presetFilter: WritableSignal<FilterValue | null>;
   tokenDetailResource: HttpResourceRef<PiResponse<Tokens> | undefined>;
@@ -369,8 +369,12 @@ export class TokenService implements TokenServiceInterface {
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly realmService: RealmServiceInterface = inject(RealmService);
   private readonly http = inject(HttpClient);
-
+  readonly hiddenApiFilter = hiddenApiFilter;
+  readonly apiFilterKeyMap = apiFilterKeyMap;
+  readonly stopPolling$ = new Subject<void>();
   readonly tokenBaseUrl = environment.proxyUrl + "/token/";
+  readonly eventPageSize = signal(10);
+  readonly tokenSerial = this.contentService.tokenSerial;
   private readonly _filterParams = computed<Record<string, string>>(() => {
     const allowed = [...this.apiFilter, ...this.advancedApiFilter, ...this.hiddenApiFilter, "infokey", "infovalue"];
     const plainKeys = new Set(["user", "infokey", "infovalue", "active", "assigned", "container_serial", "realm"]);
@@ -383,26 +387,6 @@ export class TokenService implements TokenServiceInterface {
       .filter(([key, v]) => (key === "container_serial" ? true : StringUtils.validFilterValue(v)))
       .map(([key, v]) => [key, plainKeys.has(key) ? v : `*${v}*`] as const);
     return Object.fromEntries(entries) as Record<string, string>;
-  });
-  readonly hiddenApiFilter = hiddenApiFilter;
-  readonly apiFilterKeyMap = apiFilterKeyMap;
-  readonly maxDescriptionLength = 80;
-  readonly detailsUser = this.contentService.detailsUser;
-  readonly tokenSerial = this.contentService.tokenSerial;
-  readonly stopPolling$ = new Subject<void>();
-  readonly eventPageSize = signal(10);
-
-  tokenSerialResource = httpResource<PiResponse<Tokens>>(() => {
-    const filter = this.selectedToken();
-    if (!filter || filter.length < 1) {
-      return undefined;
-    }
-    return {
-      url: this.tokenBaseUrl,
-      method: "GET",
-      headers: this.authService.getHeaders(),
-      params: { serial: `*${filter}*` }
-    };
   });
 
   constructor() {
@@ -422,6 +406,26 @@ export class TokenService implements TokenServiceInterface {
     });
   }
 
+  readonly maxDescriptionLength = 80;
+
+
+  readonly detailsUser = this.contentService.detailsUser;
+
+
+  tokenSerialResource = httpResource<PiResponse<Tokens>>(() => {
+    const filter = this.selectedToken();
+    if (!filter || filter.length < 1) {
+      return undefined;
+    }
+    return {
+      url: this.tokenBaseUrl,
+      method: "GET",
+      headers: this.authService.getHeaders(),
+      params: { serial: `*${filter}*` }
+    };
+  });
+
+
   selectedTokenType = linkedSignal({
     source: () => ({
       tokenTypeOptions: this.tokenTypeOptions(),
@@ -433,18 +437,19 @@ export class TokenService implements TokenServiceInterface {
       ({ key: "hotp", info: "", text: "" } as TokenType)
   });
 
-  showOnlyTokenNotInContainer = linkedSignal({
+  showOnlyTokenInContainer = linkedSignal({
     source: this.contentService.routeUrl,
     computation: () => {
-      // Initially show tokens not in a container on the container details route.
-      return this.contentService.onContainersDetails();
+      // Initially hide tokens that are already in a container (i.e. show only
+      // free tokens) on the container details route.
+      return !this.contentService.onContainersDetails();
     }
   });
 
   presetFilter: WritableSignal<FilterValue | null> = signal<FilterValue | null>(null);
   tokenFilter: WritableSignal<FilterValue> = linkedSignal({
     source: () => ({
-      showOnlyTokenNotInContainer: this.showOnlyTokenNotInContainer(),
+      showOnlyTokenInContainer: this.showOnlyTokenInContainer(),
       routeUrl: this.contentService.routeUrl()
     }),
     computation: (source, previous) => {
@@ -456,9 +461,9 @@ export class TokenService implements TokenServiceInterface {
       if (!previous || source.routeUrl !== previous.source.routeUrl) {
         let filterValue = new FilterValue({
           hiddenValue: this.contentService.onContainersDetails()
-            ? source.showOnlyTokenNotInContainer
-              ? "container_serial:"
-              : " "
+            ? source.showOnlyTokenInContainer
+              ? " "
+              : "container_serial:"
             : ""
         });
 
@@ -471,9 +476,9 @@ export class TokenService implements TokenServiceInterface {
       let filterValue = previous.value;
 
       if (this.contentService.onContainersDetails()) {
-        filterValue = source.showOnlyTokenNotInContainer
-          ? filterValue.addHiddenKey("container_serial")
-          : filterValue.removeHiddenKey("container_serial");
+        filterValue = source.showOnlyTokenInContainer
+          ? filterValue.removeHiddenKey("container_serial")
+          : filterValue.addHiddenKey("container_serial");
       } else {
         filterValue = filterValue.removeHiddenKey("container_serial");
       }

@@ -73,7 +73,9 @@ export class ScrollToTopDirective implements OnDestroy {
     this.renderer.setStyle(this.button, "display", "none");
     this.renderer.setStyle(this.button, "margin-right", "64px");
 
-    // Align the button to the right side of its grid cell
+    // Keep it pinned to the right regardless of whether the host lays its
+    // children out with flexbox (align-self) or grid (justify-self).
+    this.renderer.setStyle(this.button, "align-self", "flex-end");
     this.renderer.setStyle(this.button, "justify-self", "end");
 
     this.clickListenerDispose = this.renderer.listen(this.button, "click", () => {

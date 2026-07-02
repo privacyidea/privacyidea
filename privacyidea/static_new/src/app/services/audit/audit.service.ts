@@ -17,8 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { HttpClient, HttpParams, HttpResourceRef, httpResource } from "@angular/common/http";
-import { Injectable, WritableSignal, computed, effect, inject, linkedSignal, signal } from "@angular/core";
+import { HttpClient, HttpParams, httpResource, HttpResourceRef } from "@angular/common/http";
+import { computed, effect, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
 import { PiResponse } from "@app/app.component";
 import { AuditDownloadDialogComponent } from "@components/audit/audit-download-dialog/audit-download-dialog.component";
@@ -29,7 +29,7 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { StringUtils } from "@utils/string.utils";
-import { Observable, Subscription, finalize } from "rxjs";
+import { finalize, Observable, Subscription } from "rxjs";
 
 export interface Audit {
   auditcolumns: string[];
@@ -146,16 +146,9 @@ export class AuditService implements AuditServiceInterface {
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly http = inject(HttpClient);
-
-  private auditBaseUrl = environment.proxyUrl + "/audit/";
   readonly apiFilterKeyMap = apiFilterKeyMap;
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
-  constructor() {
-    effect(() => {
-      this.notificationService.handleResourceError(this.auditResource.error(), "audit data");
-    });
-  }
   auditFilter = signal(new FilterValue());
   filterParams = computed<Record<string, string>>(() => {
     const allowed = [...this.apiFilter, ...this.advancedApiFilter];
@@ -180,7 +173,7 @@ export class AuditService implements AuditServiceInterface {
     }),
     computation: () => 1
   });
-  private downloadSubscription?: Subscription;
+  private auditBaseUrl = environment.proxyUrl + "/audit/";
   auditResource = httpResource<PiResponse<Audit>>(() => {
     // Only load audit logs on the audit route.
     if (!this.contentService.onAudit()) {
@@ -201,6 +194,12 @@ export class AuditService implements AuditServiceInterface {
   sort = signal({ active: "serial", direction: "asc" } as Sort);
   isDownloading = signal(false);
 
+  constructor() {
+    effect(() => {
+      this.notificationService.handleResourceError(this.auditResource.error(), "audit data");
+    });
+  }
+
   clearFilter(): void {
     this.auditFilter.set(this.auditFilter().copyWith({ value: "" }));
   }
@@ -208,13 +207,6 @@ export class AuditService implements AuditServiceInterface {
   handleFilterInput($event: Event): void {
     const input = $event.target as HTMLInputElement;
     this.auditFilter.set(this.auditFilter().copyWith({ value: input.value }));
-  }
-
-  fetchAuditPage(params: Record<string, string | number>): Observable<PiResponse<Audit>> {
-    return this.http.get<PiResponse<Audit>>(this.auditBaseUrl, {
-      headers: this.authService.getHeaders(),
-      params
-    });
   }
 
   downloadCSV(): void {
@@ -234,6 +226,14 @@ export class AuditService implements AuditServiceInterface {
       });
   }
 
+  fetchAuditPage(params: Record<string, string | number>): Observable<PiResponse<Audit>> {
+    return this.http.get<PiResponse<Audit>>(this.auditBaseUrl, {
+      headers: this.authService.getHeaders(),
+      params
+    });
+  }
+
+  private downloadSubscription?: Subscription;
   private executeDownload(): void {
     this.isDownloading.set(true);
     const params = new HttpParams({ fromObject: this.filterParams() });

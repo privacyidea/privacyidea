@@ -57,12 +57,6 @@ export class UserAssignmentComponent {
 
   readonly userInputDisabled = computed(() => !this.userService.selectedUserRealm() || this.onlyAddToRealm());
 
-  readonly displayUser = (value: UserData | string | null): string => {
-    if (!value) return "";
-    if (typeof value === "string") return value;
-    return value.username;
-  };
-
   constructor() {
     effect(() => {
       const users = this.userService.selectionFilteredUsers();
@@ -72,6 +66,12 @@ export class UserAssignmentComponent {
       }
     });
   }
+
+  readonly displayUser = (value: UserData | string | null): string => {
+    if (!value) return "";
+    if (typeof value === "string") return value;
+    return value.username;
+  };
 
   onlyAddToRealmChange(checked: boolean) {
     this.onlyAddToRealm.set(checked);

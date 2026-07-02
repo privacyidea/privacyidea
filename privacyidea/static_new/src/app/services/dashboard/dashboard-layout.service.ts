@@ -65,15 +65,11 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
   private readonly persistence: DashboardPersistenceServiceInterface = inject(DashboardPersistenceService);
   private readonly registry: WidgetRegistryServiceInterface = inject(WidgetRegistryService);
   private readonly auth: AuthServiceInterface = inject(AuthService);
-
-  public readonly editMode = signal(false);
   public readonly widgets: WritableSignal<WidgetInstance[]> = signal(
     this.reconcilePinned(this.persistence.load() ?? this.defaultWidgets())
   );
-
+  public readonly editMode = signal(false);
   public readonly insertRow: WritableSignal<number> = signal(0);
-
-  private snapshot: WidgetInstance[] | null = null;
 
   public beginEdit(): void {
     this.snapshot = this.widgets().map((widget) => ({ ...widget }));
@@ -165,6 +161,8 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
     this.widgets.set(this.reconcilePinned(this.defaultWidgets()));
     this.persistIfLive();
   }
+
+  private snapshot: WidgetInstance[] | null = null;
 
   private persistIfLive(): void {
     if (!this.editMode()) {

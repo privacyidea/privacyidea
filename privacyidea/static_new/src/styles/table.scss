@@ -26,6 +26,138 @@ $description-width: 18rem;
   background-color: var(--table-color);
 }
 
+// Striped key/value Material table used inside the token and container detail
+// cards, so both render identical rows.
+@mixin details-key-value-table {
+  width: 100%;
+
+  td:nth-child(even),
+  th:nth-child(even) {
+    background: transparent;
+  }
+
+  tr.mat-mdc-row:nth-child(odd) td {
+    background: var(--mat-sys-surface-variant);
+  }
+}
+
+// Fixed 35% / 65% key/value column layout for the tables above.
+@mixin details-key-value-columns {
+  table-layout: fixed;
+
+  td:nth-child(1) {
+    width: 35%;
+  }
+
+  td:nth-child(2) {
+    width: 65%;
+  }
+}
+
+// Shared flex layout for the detail-card grids in token-details and
+// container-details: equal-ish columns ~28rem wide that wrap to fewer per row
+// as the width shrinks.
+@mixin details-cards-flex {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--global-gap);
+
+  > * {
+    flex: 1 1 28rem;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+}
+
+// Standardized description card (token-details + container-details): sized to
+// hold an input-width-xl (616px) field plus the inline edit buttons. The field
+// is a multi-line textarea, so longer text wraps to more rows instead of
+// widening the card.
+// Standardized detail-card width tiers (s/m/l), analogous to .input-width-*.
+// The card is fixed at its tier width — it neither grows nor shrinks with the
+// row/zoom.
+@mixin card-width($size) {
+  flex: 0 0 var(--card-width-#{$size});
+  min-width: 0;
+  max-width: var(--card-width-#{$size});
+}
+
+// Shared key/value layout for the token & container "Information" cards.
+@mixin details-info-grid {
+  .info-actions-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 4px;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: minmax(140px, max-content) 1fr;
+    column-gap: 16px;
+    row-gap: 4px;
+    margin: 0 0 0 16px;
+    padding: 0;
+    width: 100%;
+
+    // Key uses the same font as everything else and is vertically centered.
+    .info-key {
+      align-self: center;
+      text-align: left;
+    }
+
+    .info-value {
+      margin: 0;
+      align-self: center;
+      overflow-wrap: anywhere;
+      text-align: left;
+      min-width: 0;
+
+      // Display value sits on a subtle fill, matching the description card text.
+      > span {
+        display: block;
+        padding: 8px 16px;
+        background: var(--mat-sys-surface-container);
+        border-radius: var(--border-radius);
+      }
+    }
+  }
+
+  .info-edit-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .info-edit-field {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+  }
+
+  .info-add-row {
+    display: flex;
+    flex-direction: row;
+  }
+}
+
+@mixin details-description-card {
+  align-self: flex-start;
+  flex: 0 1 var(--card-width-l);
+  min-height: 160.5px;
+
+  // Long unbroken values (e.g. "WWWW…") must wrap, not overflow the card.
+  // Mirror the fill form-field's background and text padding so the displayed
+  // characters sit in the same position as when editing the input.
+  .description-text {
+    display: block;
+    overflow-wrap: anywhere;
+    padding: 20px 16px;
+    background: var(--mat-sys-surface-container);
+    border-radius: var(--border-radius);
+  }
+}
+
 @mixin base-table-structure(
   $table-class: ".table",
   $filter-class: ".table-filter",
@@ -330,13 +462,66 @@ th:nth-child(even) {
   padding: 8px 12px 12px;
 }
 
+.details-field-list {
+  display: flex;
+  flex-direction: column;
+  // Match the Material table cell size used by the user card (.mat-mdc-row).
+  font-size: 14px;
+
+  > * {
+    display: grid;
+    grid-template-columns: 35% 65%;
+    align-items: stretch;
+    min-height: 52px;
+    border: 1px solid var(--mat-sys-outline-variant);
+    border-top-width: 0;
+  }
+
+  > :first-child {
+    border-top-width: 1px;
+  }
+
+  > :nth-child(odd) {
+    background: var(--mat-sys-surface-variant);
+  }
+
+  .detail-field-key {
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    min-width: 0;
+    border-right: 1px solid var(--mat-sys-outline-variant);
+  }
+
+  .detail-field-value {
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    min-width: 0;
+  }
+
+  .value-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .value-content {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .value-edit {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+  }
+}
+
 .details-card-title {
   margin: 0 0 4px;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--mat-sys-on-surface-variant);
 }
 
 .details-cards-column {

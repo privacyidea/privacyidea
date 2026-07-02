@@ -78,6 +78,7 @@ interface ResolverWithPriority {
   name: string;
   priority: number | null;
 }
+
 type NodeResolversMap = Record<string, ResolverWithPriority[]>;
 
 const ALL_NODES_VALUE = "__all_nodes__";
@@ -138,14 +139,11 @@ export class RealmTableComponent implements OnDestroy, OnInit {
   private readonly _notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly router = inject(Router);
   private readonly pendingChangesService = inject(PendingChangesService);
-
-  // View Children
-  @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
-
   // Table Config
   protected readonly columnKeysMap = columnKeysMap;
   readonly columnKeys: string[] = this.columnKeysMap.map((column) => column.key);
-
+  // View Children
+  @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
   // Table State Signals
   selectedNode = signal<string>(ALL_NODES_VALUE);
   filterString = signal<string>("");
@@ -590,6 +588,10 @@ export class RealmTableComponent implements OnDestroy, OnInit {
     this.router.navigateByUrl(ROUTE_PATHS.USERS_RESOLVERS_DETAILS + resolverName);
   }
 
+  ngOnDestroy(): void {
+    this.pendingChangesService.clearAllRegistrations();
+  }
+
   // --- Private Helpers ---
   private _clientsideSortRealmData(data: RealmRow[], s: Sort): RealmRow[] {
     if (!s.direction) return data;
@@ -613,9 +615,5 @@ export class RealmTableComponent implements OnDestroy, OnInit {
       if (va > vb) return 1 * dir;
       return 0;
     });
-  }
-
-  ngOnDestroy(): void {
-    this.pendingChangesService.clearAllRegistrations();
   }
 }

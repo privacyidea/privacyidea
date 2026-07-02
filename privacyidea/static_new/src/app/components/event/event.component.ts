@@ -75,7 +75,9 @@ export class EventComponent {
   protected readonly EMPTY_EVENT = EMPTY_EVENT;
   private readonly router = inject(Router);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
-
+  protected readonly Object = Object;
+  protected readonly of = of;
+  protected readonly Array = Array;
   columnKeysMap: Record<string, string> = {
     ordering: $localize`Ordering`,
     name: $localize`Name`,
@@ -94,15 +96,12 @@ export class EventComponent {
     }
     return keys;
   });
-
   detailedView = signal(false);
-
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
   paginator = viewChild(MatPaginator);
   sort = signal({ active: "", direction: "" } as Sort);
   filterString = signal<string>("");
-
   totalLength: WritableSignal<number> = linkedSignal({
     source: this.eventService.eventHandlers,
     computation: (eventResource, previous) => {
@@ -112,7 +111,6 @@ export class EventComponent {
       return previous?.value ?? 0;
     }
   });
-
   eventHandlerDataSource: WritableSignal<MatTableDataSource<EventHandler>> = linkedSignal({
     source: () => ({
       eventHandlers: this.eventService.eventHandlers(),
@@ -144,54 +142,11 @@ export class EventComponent {
     }
   });
 
-  private filterMatchesEvents(data: EventHandler, filter: string): boolean {
-    // checks if the filter string matches any of the events in the event handler
-    for (const event of data.event) {
-      if (event.toLowerCase().includes(filter)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  private filterMatchesConditions(data: EventHandler, filter: string): boolean {
-    // checks if the filter string matches any of the events in the event handler
-    for (const condition of Object.entries(data.conditions)) {
-      if ((condition[0] + ": " + condition[1]).toLowerCase().includes(filter)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  private filterMatchesActionOptions(data: EventHandler, filter: string): boolean {
-    // checks if the filter string matches any of the events in the event handler
-    for (const option of Object.entries(data.options || {})) {
-      if ((option[0] + ": " + option[1]).toLowerCase().includes(filter)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
   formatConditions(conditions: unknown): string {
     if (!conditions || typeof conditions !== "object") return "";
     return Object.entries(conditions as Record<string, unknown>)
       .map(([key, value]) => `${key}: ${String(value)}`)
       .join(", ");
-  }
-
-  private clientsideSortEventData(data: EventHandler[], s: Sort): EventHandler[] {
-    if (!s.direction) return data;
-    const dir = s.direction === "asc" ? 1 : -1;
-    const key = s.active as keyof EventHandler;
-    return data.sort((a: EventHandler, b: EventHandler) => {
-      const va = (a?.[key] ?? "").toString().toLowerCase();
-      const vb = (b?.[key] ?? "").toString().toLowerCase();
-      if (va < vb) return -1 * dir;
-      if (va > vb) return 1 * dir;
-      return 0;
-    });
   }
 
   onFilterInput(value: string): void {
@@ -234,7 +189,46 @@ export class EventComponent {
     }
   }
 
-  protected readonly Object = Object;
-  protected readonly of = of;
-  protected readonly Array = Array;
+  private filterMatchesEvents(data: EventHandler, filter: string): boolean {
+    // checks if the filter string matches any of the events in the event handler
+    for (const event of data.event) {
+      if (event.toLowerCase().includes(filter)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private filterMatchesConditions(data: EventHandler, filter: string): boolean {
+    // checks if the filter string matches any of the events in the event handler
+    for (const condition of Object.entries(data.conditions)) {
+      if ((condition[0] + ": " + condition[1]).toLowerCase().includes(filter)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private filterMatchesActionOptions(data: EventHandler, filter: string): boolean {
+    // checks if the filter string matches any of the events in the event handler
+    for (const option of Object.entries(data.options || {})) {
+      if ((option[0] + ": " + option[1]).toLowerCase().includes(filter)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private clientsideSortEventData(data: EventHandler[], s: Sort): EventHandler[] {
+    if (!s.direction) return data;
+    const dir = s.direction === "asc" ? 1 : -1;
+    const key = s.active as keyof EventHandler;
+    return data.sort((a: EventHandler, b: EventHandler) => {
+      const va = (a?.[key] ?? "").toString().toLowerCase();
+      const vb = (b?.[key] ?? "").toString().toLowerCase();
+      if (va < vb) return -1 * dir;
+      if (va > vb) return 1 * dir;
+      return 0;
+    });
+  }
 }

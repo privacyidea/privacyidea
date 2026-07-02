@@ -23,7 +23,13 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
-import { AuthData, AuthDetail, AuthService, MultiChallenge, WebAuthnSignRequestData } from "@services/auth/auth.service";
+import {
+  AuthData,
+  AuthDetail,
+  AuthService,
+  MultiChallenge,
+  WebAuthnSignRequestData
+} from "@services/auth/auth.service";
 import { ConfigService } from "@services/config/config.service";
 import { LocalService } from "@services/local/local.service";
 import { NotificationService } from "@services/notification/notification.service";

@@ -85,6 +85,17 @@ describe("RadiusServerService", () => {
     expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to save RADIUS server. Something went wrong");
   });
 
+  it("should show error notification with empty message when post error body has no message", async () => {
+    const server: Partial<RadiusServer> = { identifier: "test", server: "1.2.3.4", secret: "secret" };
+    const promise = service.postRadiusServer(server as RadiusServer);
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/radiusserver/test`);
+    req.flush(null, { status: 500, statusText: "Internal Server Error" });
+
+    await expect(promise).rejects.toThrow();
+    expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to save RADIUS server. ");
+  });
+
   it("should delete RADIUS server", async () => {
     const promise = service.deleteRadiusServer("test");
 
@@ -107,6 +118,16 @@ describe("RadiusServerService", () => {
 
     await expect(promise).rejects.toThrow();
     expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to delete RADIUS server. Something went wrong");
+  });
+
+  it("should show error notification with empty message when delete error body has no message", async () => {
+    const promise = service.deleteRadiusServer("test");
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/radiusserver/test`);
+    req.flush(null, { status: 500, statusText: "Internal Server Error" });
+
+    await expect(promise).rejects.toThrow();
+    expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to delete RADIUS server. ");
   });
 
   it("should test RADIUS server", async () => {
@@ -171,6 +192,37 @@ describe("RadiusServerService", () => {
     );
   });
 
+  it("should show error notification with empty message when test error body has no message", async () => {
+    const params: RadiusServer = {
+      identifier: "test",
+      server: "1.2.3.4",
+      port: 1812,
+      timeout: 5,
+      retries: 3,
+      secret: "secret"
+    };
+    const promise = service.testRadiusServer(params);
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/radiusserver/test_request`);
+    req.flush(null, { status: 500, statusText: "Internal Server Error" });
+
+    const result = await promise;
+    expect(result).toBe(false);
+    expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to send RADIUS test request. ");
+  });
+
+  it("should encode special characters in identifier for post", async () => {
+    const server: Partial<RadiusServer> = { identifier: "test/server", server: "1.2.3.4", secret: "secret" };
+    const promise = service.postRadiusServer(server as RadiusServer);
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/radiusserver/test%2Fserver`);
+    expect(req.request.method).toBe("POST");
+    req.flush(MockPiResponse.fromValue(true));
+
+    await promise;
+    expect(notificationServiceMock.success).toHaveBeenCalled();
+  });
+
   describe("radiusServers", () => {
     it("should default to empty array if resource is empty", () => {
       expect(service.radiusServers()).toEqual([]);
@@ -204,6 +256,22 @@ describe("RadiusServerService", () => {
         status: 403,
         statusText: "Permission denied"
       });
+      await Promise.resolve();
+
+      expect(service.radiusServers()).toEqual([]);
+    });
+
+    it("should return empty array when resource has no value and is not loading", () => {
+      // onExternalRadius is false by default, so resource won't fire
+      expect(service.radiusServers()).toEqual([]);
+    });
+
+    it("should handle response with undefined result value gracefully", async () => {
+      contentServiceMock.onExternalRadius = signal(true);
+      TestBed.tick();
+
+      const req = httpMock.expectOne(`${environment.proxyUrl}/radiusserver/`);
+      req.flush({ result: { status: true, value: null } });
       await Promise.resolve();
 
       expect(service.radiusServers()).toEqual([]);

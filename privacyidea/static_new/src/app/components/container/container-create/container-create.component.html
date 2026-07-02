@@ -93,16 +93,14 @@
       (validInputChange)="onValidInputChange($event)"
       (clearTemplate)="clearTemplateSelection()"
       (templateChange)="onTemplateChange($event)">
-      <h4
-        userAssignment
-        i18n>
-        Assign the Container to a User
-      </h4>
-      <div
-        userAssignment
-        class="flex-row gap-16">
-        <app-user-assignment [showOnlyAddToRealm]="true"></app-user-assignment>
-      </div>
+      @if (showUserAssignment()) {
+        <ng-container userAssignment>
+          <h4 i18n>Assign the Container to a User</h4>
+          <div class="flex-row gap-16">
+            <app-user-assignment [showOnlyAddToRealm]="true"></app-user-assignment>
+          </div>
+        </ng-container>
+      }
     </app-container-create-form>
   </div>
 </div>

@@ -3,6 +3,7 @@
 
 .find-token-serial {
   @include styles.main-component-style;
+  max-height: var(--table-max-height);
   display: grid;
 }
 
