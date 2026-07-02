@@ -505,6 +505,14 @@ $button-low-contrast-variant: linear-gradient(
     color 0.2s ease-in-out;
   justify-content: center;
   overflow: hidden;
+  // Keep action-button labels on a single line. A translation that is too long
+  // for its width tier clips (overflow: hidden) instead of wrapping to two rows,
+  // which would break the fixed 40px height and the row rhythm. The fix for a
+  // clipped label is to bump that row to the next width tier, not to wrap.
+  // white-space stops the text node breaking; flex-wrap stops the icon + label
+  // flex items from wrapping onto separate rows.
+  white-space: nowrap;
+  flex-wrap: nowrap;
 
   mat-icon.mat-icon.notranslate.material-icons {
     font-size: 20px;
@@ -627,6 +635,7 @@ $button-low-contrast-variant: linear-gradient(
   height: 24px;
   width: 24px;
   padding: 0;
+  margin-left: 8px;
 
   span.mat-mdc-button-touch-target {
     width: 24px !important;
@@ -768,4 +777,9 @@ mat-icon {
 .button-width-l {
   width: 240px;
   min-width: 240px;
+}
+
+.button-width-xl {
+  width: 340px;
+  min-width: 340px;
 }

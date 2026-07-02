@@ -23,89 +23,96 @@
   (click)="selectActionByName.emit(selectableAction().actionName)"
   (keydown.enter)="selectActionByName.emit(selectableAction().actionName)"
   (keydown.space)="$event.preventDefault(); selectActionByName.emit(selectableAction().actionName)">
-  <span
-    class="detail-label"
-    [matTooltip]="selectableAction().actionName">
-    {{ selectableAction().label }}
-  </span>
+  <div class="detail-text">
+    <span
+      class="detail-label"
+      [matTooltip]="selectableAction().actionName">
+      {{ selectableAction().label }}
+    </span>
+    @if (selectableAction().detail.desc) {
+      <span class="detail-description">{{ selectableAction().detail.desc }}</span>
+    }
+  </div>
 
   <div class="detail-input">
-    @if (selectableAction().detail.value; as actionValues) {
-      @if (selectableAction().detail.multiple) {
-        <app-multi-select-only
-          class="flex-2"
-          subscriptSizing="dynamic"
-          placeholder="Select options..."
-          [items]="actionValues"
-          [selectedItems]="selectedItems()"
-          (selectionChange)="updateSelectedActionValue($event)">
-        </app-multi-select-only>
-      } @else {
-        @if (actionValues.length === 0) {
-          <p i18n>No values available.</p>
-        } @else if (actionValues.length <= 3) {
-          <app-selector-buttons
-            #selectorComponent
-            class="flex-1"
-            [initialValue]="currentAction().value"
-            [values]="actionValues"
-            (selected)="addAction($event)" />
+    <div class="detail-value">
+      @if (selectableAction().detail.value; as actionValues) {
+        @if (selectableAction().detail.multiple) {
+          <app-multi-select-only
+            class="flex-2"
+            subscriptSizing="dynamic"
+            i18n-placeholder
+            placeholder="Select options..."
+            [items]="actionValues"
+            [selectedItems]="selectedItems()"
+            (selectionChange)="updateSelectedActionValue($event)">
+          </app-multi-select-only>
         } @else {
-          <mat-form-field
-            appearance="fill"
-            class="flex-1"
-            subscriptSizing="dynamic">
-            <mat-select
-              #selectElement
+          @if (actionValues.length === 0) {
+            <p i18n>No values available.</p>
+          } @else if (actionValues.length <= 3) {
+            <app-selector-buttons
+              #selectorComponent
+              class="flex-1"
+              [initialValue]="currentAction().value"
+              [values]="actionValues"
+              (selected)="updateSelectedActionValue($event ?? '')" />
+          } @else {
+            <mat-form-field
+              appearance="fill"
+              class="flex-1"
+              subscriptSizing="dynamic">
+              <mat-select
+                #selectElement
+                [value]="currentAction().value"
+                (selectionChange)="updateSelectedActionValue($event.value)">
+                @for (option of actionValues; track option) {
+                  <mat-option [value]="option">{{ option }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          }
+        }
+      } @else {
+        @switch (selectableAction().detail.type) {
+          @case ("str") {
+            <input
+              #inputElement
+              type="text"
+              class="action-value-input flex-2"
               [value]="currentAction().value"
-              (selectionChange)="addAction($event.value)">
-              @for (option of actionValues; track option) {
-                <mat-option [value]="option">{{ option }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
+              (input)="updateSelectedActionValue($any($event.target).value)"
+              (keydown.enter)="onEnter()" />
+          }
+          @case ("int") {
+            <input
+              #inputElement
+              type="number"
+              class="action-value-input flex-2"
+              [value]="currentAction().value"
+              (input)="updateSelectedActionValue(+$any($event.target).value)"
+              (keydown.enter)="onEnter()" />
+          }
+          @case ("text") {
+            <textarea
+              #inputElement
+              class="action-value-textarea flex-2"
+              [value]="currentAction().value"
+              (input)="updateSelectedActionValue($any($event.target).value)"></textarea>
+          }
         }
       }
-    } @else {
-      @switch (selectableAction().detail.type) {
-        @case ("str") {
-          <input
-            #inputElement
-            type="text"
-            class="action-value-input flex-2"
-            [value]="currentAction().value"
-            (input)="updateSelectedActionValue($any($event.target).value)"
-            (keydown.enter)="onEnter()" />
-        }
-        @case ("int") {
-          <input
-            #inputElement
-            type="number"
-            class="action-value-input flex-2"
-            [value]="currentAction().value"
-            (input)="updateSelectedActionValue(+$any($event.target).value)"
-            (keydown.enter)="onEnter()" />
-        }
-        @case ("text") {
-          <textarea
-            #inputElement
-            class="action-value-textarea flex-2"
-            [value]="currentAction().value"
-            (input)="updateSelectedActionValue($any($event.target).value)"></textarea>
-        }
-      }
-    }
+    </div>
 
-    @if (selectableAction().detail.multiple || !selectableAction().detail.value) {
+    @let detailValue = selectableAction().detail.value;
+    @if (!detailValue || detailValue.length > 0) {
       <button
         #buttonElement
-        class="add-action-button flex-1"
+        mat-icon-button
         [disabled]="!inputIsValid()"
         (click)="$event.stopPropagation(); addAction()">
         <mat-icon>add</mat-icon>
       </button>
     }
   </div>
-
-  <span class="detail-description">{{ selectableAction().detail.desc }}</span>
 </div>

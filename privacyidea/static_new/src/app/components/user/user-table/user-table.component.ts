@@ -55,21 +55,22 @@ import { MatTooltipModule } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { UserNewResolverComponent } from "@components/user/user-new-resolver/user-new-resolver.component";
 import { ResolverService } from "@services/resolver/resolver.service";
 import { UserTableActionsComponent } from "./user-table-actions/user-table-actions.component";
 
 const columnKeysMap = [
-  { key: "username", label: "Username" },
-  { key: "userid", label: "User ID" },
-  { key: "givenname", label: "Given Name" },
-  { key: "surname", label: "Surname" },
-  { key: "email", label: "Email" },
-  { key: "phone", label: "Phone" },
-  { key: "mobile", label: "Mobile" },
-  { key: "description", label: "Description" },
-  { key: "resolver", label: "Resolver" }
+  { key: "username", label: $localize`Username` },
+  { key: "userid", label: $localize`User ID` },
+  { key: "givenname", label: $localize`Given Name` },
+  { key: "surname", label: $localize`Surname` },
+  { key: "email", label: $localize`Email` },
+  { key: "phone", label: $localize`Phone` },
+  { key: "mobile", label: $localize`Mobile` },
+  { key: "description", label: $localize`Description` },
+  { key: "resolver", label: $localize`Resolver` }
 ];
 
 @Component({
@@ -98,7 +99,8 @@ const columnKeysMap = [
     RouterLink,
     MatIcon,
     MatIconButton,
-    MatTooltipModule
+    MatTooltipModule,
+    ScrollEdgesDirective
   ],
   templateUrl: "./user-table.component.html",
   styleUrl: "./user-table.component.scss"

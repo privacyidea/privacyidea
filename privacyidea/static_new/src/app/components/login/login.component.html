@@ -128,7 +128,7 @@
 
         @if (realms().length > 0) {
           <mat-form-field>
-            <mat-label>Realm</mat-label>
+            <mat-label i18n>Realm</mat-label>
             <mat-select
               (selectionChange)="realm.set($event.value)"
               [value]="realm()">

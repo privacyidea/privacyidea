@@ -2,10 +2,16 @@
 @use "table";
 
 .layout {
-  --max-height: calc(100vh - 64px - var(--global-padding) * 2);
+  &:has(.self-service-layout) {
+    --max-height: calc(100vh - 64px - var(--global-padding) * 2);
+    --max-width: calc(
+      100vw - var(--drawer-width-self-service) - 2 * var(--double-global-padding) - 2 * var(--global-padding)
+    );
+  }
 
-  &.with-secondary-toolbar {
-    --max-height: calc(100vh - 176px - var(--global-padding) * 2);
+  &:has(.admin-layout) {
+    --max-height: calc(100vh - 160px - var(--global-padding) * 2);
+    --max-width: calc(100vw - 2 * var(--double-global-padding) - 2 * var(--global-padding));
   }
 }
 
@@ -63,8 +69,9 @@
 .selfservice-content-container {
   display: grid;
   justify-items: center;
-  align-content: center;
-  overflow-x: auto;
-  height: calc(var(--main-height) - var(--global-padding) * 2);
+  align-content: start;
+  height: 100vh;
+  box-sizing: border-box;
+  overflow: hidden;
   padding: calc(2 * var(--global-padding));
 }

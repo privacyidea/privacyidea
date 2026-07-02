@@ -31,7 +31,6 @@ from privacyidea.lib.policy import check_pin, SCOPE
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import pass_hash, verify_pass_hash
-from privacyidea.models import Challenge
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib import _
 from privacyidea.lib.tokenclass import ClientMode
@@ -49,11 +48,11 @@ def _create_challenge(token_obj, challenge_type, message, challenge_data=None):
     validity = int(get_from_config('DefaultChallengeValidityTime', 120))
     if challenge_type == CHALLENGE_TYPE.PIN_RESET:
         validity = int(get_from_config('PinResetChallengeValidityTime', validity))
-    db_challenge = Challenge(token_obj.token.serial,
-                             challenge=challenge_type,
-                             data=challenge_data,
-                             validitytime=validity)
-    db_challenge.save()
+    from privacyidea.lib.token import create_challenge
+    db_challenge = create_challenge(serial=token_obj.token.serial,
+                                    challenge=challenge_type,
+                                    data=challenge_data,
+                                    validitytime=validity)
     token_obj.challenge_janitor()
     reply_dict = {}
     reply_dict["multi_challenge"] = [{"transaction_id": db_challenge.transaction_id,

@@ -32,7 +32,7 @@ from copy import copy
 from urllib.parse import unquote
 
 import jwt
-from flask import jsonify, current_app, Response, Request, g, has_request_context
+from flask import jsonify, current_app, Response, Request, request, g, has_request_context
 from flask_babel import _
 
 from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
@@ -462,6 +462,30 @@ def verify_auth_token(auth_token, required_role=None):
                           "role ({required_role}) to access this resource!").format(required_role=required_role),
                         id=Error.AUTHENTICATE_MISSING_RIGHT)
     return r
+
+
+def get_auth_token_from_request():
+    """
+    Return the auth token presented on the current request, looking at the
+    ``PI-Authorization`` header first and falling back to ``Authorization``.
+
+    :return: the token string, or None if neither header is set
+    """
+    return request.headers.get("PI-Authorization") or request.headers.get("Authorization")
+
+
+def logged_in_user_from_token(token_payload):
+    """
+    Build the standard ``g.logged_in_user`` dict from a verified/decoded auth
+    token payload.
+
+    :param token_payload: the dict returned by ``verify_auth_token`` (or a
+        decoded JWT) carrying ``username``, ``realm`` and ``role``
+    :return: dict with ``username``, ``realm`` and ``role``
+    """
+    return {"username": token_payload.get("username"),
+            "realm": token_payload.get("realm"),
+            "role": token_payload.get("role")}
 
 
 def is_fqdn(x):

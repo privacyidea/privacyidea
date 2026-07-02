@@ -76,14 +76,14 @@ export class TokenEnrollmentLastStepDialogWizardComponent extends TokenEnrollmen
     if (this.authService.containerWizard().enabled) {
       actions.push({
         type: "auxiliary",
-        label: "Create Container",
+        label: $localize`Create Container`,
         value: "create_container",
         className: "button-width-m"
       });
     }
     actions.push({
       type: "auxiliary",
-      label: "Logout",
+      label: $localize`Logout`,
       value: "logout",
       primary: true
     });

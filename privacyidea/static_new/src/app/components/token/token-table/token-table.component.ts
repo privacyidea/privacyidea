@@ -37,6 +37,7 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -44,16 +45,16 @@ import { TokenTableActionsComponent } from "./token-table-actions/token-table-ac
 
 const columnKeysMap = [
   { key: "select", label: "" },
-  { key: "serial", label: "Serial" },
-  { key: "tokentype", label: "Type" },
-  { key: "active", label: "Active" },
-  { key: "description", label: "Description" },
-  { key: "failcount", label: "Fail Counter" },
-  { key: "rollout_state", label: "Rollout State" },
-  { key: "username", label: "User" },
-  { key: "user_realm", label: "User Realm" },
-  { key: "realms", label: "Token Realm" },
-  { key: "container_serial", label: "Container" }
+  { key: "serial", label: $localize`Serial` },
+  { key: "tokentype", label: $localize`Type` },
+  { key: "active", label: $localize`Active` },
+  { key: "description", label: $localize`Description` },
+  { key: "failcount", label: $localize`Fail Counter` },
+  { key: "rollout_state", label: $localize`Rollout State` },
+  { key: "username", label: $localize`User` },
+  { key: "user_realm", label: $localize`User Realm` },
+  { key: "realms", label: $localize`Token Realm` },
+  { key: "container_serial", label: $localize`Container` }
 ];
 
 @Component({
@@ -75,7 +76,8 @@ const columnKeysMap = [
     MatIconButton,
     MatMenuModule,
     MatDividerModule,
-    MatTooltipModule
+    MatTooltipModule,
+    ScrollEdgesDirective
   ],
   templateUrl: "./token-table.component.html",
   styleUrl: "./token-table.component.scss"

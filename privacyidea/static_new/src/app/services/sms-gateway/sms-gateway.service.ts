@@ -29,6 +29,7 @@ export interface SmsProviderParameter {
   values?: string[];
   required?: boolean;
   type?: string;
+  secret?: boolean;
   description: string;
 }
 
@@ -47,6 +48,8 @@ export interface SmsGateway {
   providermodule: string;
   options: Record<string, string>;
   headers: Record<string, string>;
+  secret_options?: string[];
+  secret_headers?: string[];
 }
 
 export interface SmsGatewayPayload {
@@ -54,8 +57,8 @@ export interface SmsGatewayPayload {
   module: string;
   description?: string;
   id?: number;
-  [key: `option.${string}`]: string | number | undefined;
-  [key: `header.${string}`]: string | number | undefined;
+
+  [key: string]: string | number | undefined;
 }
 
 export interface SmsGatewayServiceInterface {

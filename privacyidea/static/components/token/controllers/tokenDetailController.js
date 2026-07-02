@@ -240,6 +240,9 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
                 }
                 if ($scope.loggedInUser.role === "admin") {
                     $scope.changeApplication();
+                    if (AuthFactory.checkRight("getchallenges")) {
+                        $scope.getChallenges();
+                    }
                 }
                 if ($scope.token.container_serial || $scope.token.container_serial !== "") {
                     $scope.tokenIsInContainer = true;
@@ -552,6 +555,66 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
             $scope.pageChanged = function () {
                 //debug: console.log('Page changed to: ' + $scope.params.page);
                 $scope.getMachines();
+            };
+
+            // Active challenges for this token. Queried by exact serial so the
+            // Redis cache fast-path (when enabled) hits — wildcards would
+            // bypass it. Empty most of the time since challenges live 2–5 min.
+            $scope.challengesPerPage = 15;
+            $scope.challengeParams = {page: 1};
+            // Collapsed by default. The challenges section is a
+            // troubleshooting aid, and it stays hidden entirely when the
+            // count is zero - see user.details.html for the same pattern.
+            $scope.challengesOpen = false;
+            $scope.toggleChallenges = function () {
+                $scope.challengesOpen = !$scope.challengesOpen;
+            };
+
+            $scope.getChallenges = function () {
+                TokenFactory.getChallenges(function (data) {
+                    $scope.challengedata = data.result.value;
+                }, $scope.tokenSerial, {
+                    page: $scope.challengeParams.page,
+                    pagesize: $scope.challengesPerPage,
+                    sortby: "timestamp",
+                    sortdir: "desc"
+                });
+            };
+
+            $scope.challengePageChanged = function () {
+                $scope.getChallenges();
+            };
+
+            // Two-step confirm: ask=true flips the row into the confirm
+            // state (mirrors how deleteToken works on the user-detail page);
+            // ask=false performs the actual cancellation. Cancel itself is
+            // destructive — the user retries the auth and a new challenge
+            // is issued — so we want a deliberate second click before doing it.
+            $scope.showCancelChallengeDialog = {};
+            // Serials a cancel will affect, keyed by transaction id. A single
+            // transaction can span several tokens (they share the id), and the
+            // cancel deletes the whole transaction - not just this token's row,
+            // which is the only one visible here. Fetched on confirm so the
+            // admin sees the full blast radius before committing.
+            $scope.cancelChallengeSerials = {};
+            $scope.cancelChallenge = function (transactionId, ask) {
+                if (ask) {
+                    TokenFactory.getChallengesByTransaction(function (data) {
+                        var serials = [];
+                        angular.forEach(data.result.value.challenges, function (challenge) {
+                            if (challenge.serial && serials.indexOf(challenge.serial) === -1) {
+                                serials.push(challenge.serial);
+                            }
+                        });
+                        $scope.cancelChallengeSerials[transactionId] = serials;
+                    }, transactionId);
+                    $scope.showCancelChallengeDialog[transactionId] = true;
+                    return;
+                }
+                $scope.showCancelChallengeDialog[transactionId] = false;
+                TokenFactory.cancelChallenge(function () {
+                    $scope.getChallenges();
+                }, transactionId);
             };
 
             $scope.changeApplication = function () {

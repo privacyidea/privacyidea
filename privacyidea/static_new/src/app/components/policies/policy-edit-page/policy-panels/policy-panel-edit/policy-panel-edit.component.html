@@ -21,14 +21,17 @@
   <div class="policy-metadata-group">
     <div class="name-priority-row">
       <app-policy-name-edit
+        class="input-width-l"
         [policyName]="editedPolicy().name"
         (policyNameChange)="addPolicyEdit({ name: $event })" />
       <app-policy-priority-edit
+        class="input-width-s"
         [priority]="editedPolicy().priority"
         (priorityChange)="addPolicyEdit({ priority: $event })" />
     </div>
 
     <app-policy-description-edit
+      class="input-width-xxl"
       [description]="editedPolicy().description ?? ''"
       (descriptionChange)="addPolicyEdit({ description: $event })" />
   </div>

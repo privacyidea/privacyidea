@@ -76,6 +76,34 @@ $description-width: 18rem;
     }
   }
 
+  .table-scroll-region {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+
+    // Pull the sticky header up by 1px so no content peeks above it while scrolling.
+    .mat-mdc-header-cell {
+      top: -1px !important;
+    }
+
+    // Divider shown only when content is hidden in that direction
+    // (classes toggled by appScrollEdges).
+    &.scrolled-from-top {
+      border-top: 1px solid var(--mat-sys-outline-variant);
+
+      // Separate the pinned (sticky) header row from the content scrolling beneath it.
+      // A border-bottom is not painted on a position:sticky cell under
+      // border-collapse:collapse (Material tables), so use a box-shadow instead.
+      .mat-mdc-header-cell {
+        box-shadow: 0 1px 0 0 var(--mat-sys-outline-variant);
+      }
+    }
+
+    &.more-below {
+      border-bottom: 1px solid var(--mat-sys-outline-variant);
+    }
+  }
+
   .realm-list {
     margin-top: $realm-list-margin-top;
   }
@@ -129,7 +157,6 @@ th:nth-child(even) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
   margin-bottom: 16px;
   flex-wrap: wrap;
 

@@ -19,6 +19,7 @@
 <app-dialog-wrapper
   (wrapperClose)="close()"
   [showCancelButton]="true"
+  i18n-title
   title="Take action on your authenticator">
   <mat-dialog-content>
     @if (
@@ -50,7 +51,7 @@
           i18n-alt
           src="{{ data.enrollmentResponse.detail.pushurl.img }}"
           width="300px" />
-        <p class="max-width-600">
+        <p class="max-width-600" i18n>
           Your token with serial number {{ data.enrollmentResponse.detail.serial }} is not completely enrolled, yet.
           Please scan the QR code with the privacyIDEA Authenticator App or click
           <a href="{{ data.enrollmentResponse.detail.pushurl.value }}">this link</a>

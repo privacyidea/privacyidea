@@ -5,7 +5,9 @@ implementation is contained webui/login.py
 """
 import pathlib
 import re
+import unittest.mock as mock
 
+from flask import Response
 from flask_babel import refresh
 
 from privacyidea.app import create_app
@@ -124,6 +126,45 @@ class LoginUITestCase(MyTestCase):
             self.assertTrue(res.status_code == 200, res)
             self.assertTrue(b"https://privacyidea.org/" in res.data)
 
+    def test_08_script_root_slash(self):
+        """Covers instance='' branch when SCRIPT_NAME is '/'."""
+        with self.app.test_request_context('/', method='GET',
+                                           environ_base={'SCRIPT_NAME': '/'}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 200)
+
+    def test_09_realm_dropdown_attribute_error(self):
+        """Covers AttributeError fallback when realm_dropdown has no action values."""
+        def patched_action_only(*_args, **kwargs):
+            m = mock.MagicMock()
+            if kwargs.get("action") == PolicyAction.REALMDROPDOWN:
+                m.policies.return_value = [{"name": "realmdrop"}]
+                m.action_values.side_effect = AttributeError
+            else:
+                m.policies.return_value = []
+                m.action_values.return_value = []
+            return m
+
+        def patched_generic(*_args, **_kwargs):
+            m = mock.MagicMock()
+            m.any.return_value = False
+            return m
+
+        with mock.patch("privacyidea.webui.login.Match.action_only", side_effect=patched_action_only), \
+             mock.patch("privacyidea.webui.login.Match.generic", side_effect=patched_generic):
+            with self.app.test_request_context('/', method='GET'):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 200)
+
+    def test_10_hsm_exception(self):
+        """Covers HSMException handler: renders with hsm_ready=False."""
+        from privacyidea.lib.error import HSMException
+        with mock.patch("privacyidea.webui.login.is_remote_user_allowed",
+                        side_effect=HSMException("HSM not ready")):
+            with self.app.test_request_context('/', method='GET'):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 200)
+
 
 class LanguageTestCase(MyApiTestCase):
 
@@ -211,3 +252,335 @@ class ConfigTestCase(MyApiTestCase):
             self.assertEqual("templates/baseline.html", config["customization_baseline_file"])
             self.assertEqual("Please log in", config["login_text"])
             self.assertEqual("hide", config["passkey_login"])
+
+    def test_03_get_ui_config_deactivated(self):
+        """When PI_UI_DEACTIVATED, get_render_context returns {} (only logo is appended by endpoint)."""
+        self.app.config['PI_UI_DEACTIVATED'] = True
+        with self.app.test_request_context("/config", method="GET"):
+            res = self.app.full_dispatch_request()
+        self.app.config['PI_UI_DEACTIVATED'] = False
+        self.assertEqual(res.status_code, 200)
+        self.assertNotIn("instance", res.json["result"]["value"])
+
+
+class NewUIRoutingTestCase(MyTestCase):
+    """Tests for the new Angular i18n routing logic."""
+
+    _mock_response = Response(b"<html>index</html>", mimetype="text/html")
+
+    def test_root_redirects_to_locale_when_build_exists(self):
+        """GET / with German Accept-Language redirects to /app/v2/de/ when build exists."""
+        with mock.patch("privacyidea.webui.login.os.path.isfile", return_value=True):
+            with self.app.test_request_context("/", method="GET", headers={"Accept-Language": "de"}):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 302)
+        self.assertIn("/app/v2/de/", res.location)
+
+    def test_root_does_not_redirect_when_build_missing(self):
+        """GET / with German Accept-Language falls back to old UI when no build."""
+        with mock.patch("privacyidea.webui.login.os.path.isfile", return_value=False), \
+             mock.patch("privacyidea.webui.login.render_template", return_value="<html></html>"):
+            with self.app.test_request_context("/", method="GET", headers={"Accept-Language": "de"}):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.mimetype, "text/html")
+
+    def test_root_redirects_to_app_v2_for_english(self):
+        """GET / with English redirects to /app/v2/ when build exists."""
+        with mock.patch("privacyidea.webui.login.os.path.isfile", return_value=True):
+            with self.app.test_request_context("/", method="GET", headers={"Accept-Language": "en"}):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 302)
+        self.assertIn("/app/v2/", res.location)
+
+    def test_root_falls_back_to_old_ui_when_no_build(self):
+        """GET / falls back to old Jinja2 UI when no Angular build exists."""
+        with mock.patch("privacyidea.webui.login.os.path.isfile", return_value=False), \
+             mock.patch("privacyidea.webui.login.render_template", return_value="<html></html>"):
+            with self.app.test_request_context("/", method="GET"):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.mimetype, "text/html")
+
+    def test_locale_route_serves_index(self):
+        """GET /app/v2/de/ serves the German index.html."""
+        with mock.patch("privacyidea.webui.login._serve_locale", return_value=self._mock_response):
+            with self.app.test_request_context("/app/v2/de/", method="GET"):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 200)
+
+    def test_locale_route_with_subpath_serves_index(self):
+        """GET /app/v2/de/tokens serves the German index.html (SPA fallback)."""
+        with mock.patch("privacyidea.webui.login._serve_locale", return_value=self._mock_response):
+            with self.app.test_request_context("/app/v2/de/tokens", method="GET"):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 200)
+
+    def test_english_spa_fallback_serves_index(self):
+        """GET /app/v2/some-route/ serves English index.html via 404 fallback."""
+        with mock.patch("privacyidea.webui.login._serve_locale", return_value=self._mock_response):
+            with self.app.test_request_context("/app/v2/tokens/", method="GET",
+                                               headers={"Accept": "text/html,*/*"}):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 200)
+
+    def test_locale_route_without_trailing_slash_redirects(self):
+        """GET /app/v2/de (no trailing slash) redirects to /app/v2/de/."""
+        with self.app.test_request_context("/app/v2/de", method="GET"):
+            res = self.app.full_dispatch_request()
+        self.assertIn(res.status_code, [301, 302, 308])
+        self.assertIn("/app/v2/de/", res.location)
+
+    def test_canonicalization_redirect_preserves_query_string(self):
+        """GET /app/v2/DE/?next=/tokens preserves query string in redirect to /app/v2/de/."""
+        with self.app.test_request_context("/app/v2/DE/?next=/tokens", method="GET"):
+            res = self.app.full_dispatch_request()
+        self.assertIn(res.status_code, [301, 302, 308])
+        self.assertIn("/app/v2/de/", res.location)
+        self.assertIn("next=/tokens", res.location)
+
+    def test_unknown_locale_falls_back_to_english(self):
+        """GET /app/v2/invalid/ falls back to English when locale not in list."""
+        def serve_side_effect(locale):
+            return self._mock_response if locale == "en" else None
+
+        with mock.patch("privacyidea.webui.login._serve_locale", side_effect=serve_side_effect):
+            with self.app.test_request_context("/app/v2/invalid/", method="GET",
+                                               headers={"Accept": "text/html,*/*"}):
+                res = self.app.full_dispatch_request()
+        self.assertIn(res.status_code, [200, 302])
+
+    def test_non_locale_segment_uses_accept_language(self):
+        """GET /app/v2/<app-route> resolves the SPA shell via the preferred locale
+        (here Accept-Language: de) instead of always defaulting to English."""
+        served = []
+
+        def serve_side_effect(locale):
+            served.append(locale)
+            return self._mock_response
+
+        with mock.patch("privacyidea.webui.login._serve_locale", side_effect=serve_side_effect):
+            with self.app.test_request_context("/app/v2/login", method="GET",
+                                               headers={"Accept": "text/html,*/*",
+                                                        "Accept-Language": "de"}):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(served[0], "de")
+
+    def test_non_locale_segment_cookie_wins_over_accept_language(self):
+        """The pi_ui_locale cookie (set by the language switcher) takes precedence
+        over Accept-Language when resolving a non-locale segment."""
+        served = []
+
+        def serve_side_effect(locale):
+            served.append(locale)
+            return self._mock_response
+
+        with mock.patch("privacyidea.webui.login._serve_locale", side_effect=serve_side_effect):
+            with self.app.test_request_context("/app/v2/login", method="GET",
+                                               headers={"Accept": "text/html,*/*",
+                                                        "Accept-Language": "fr",
+                                                        "Cookie": "pi_ui_locale=de"}):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(served[0], "de")
+
+    def test_zh_hant_underscore_mapper_uses_hyphen_directory(self):
+        """_serve_locale maps zh_Hant (ICU) to zh-Hant (BCP 47) build directory."""
+        with mock.patch("privacyidea.webui.login.os.path.isfile") as mock_isfile:
+            mock_isfile.return_value = False
+            with self.app.test_request_context("/"):
+                from privacyidea.webui.login import _serve_locale
+                _serve_locale("zh_Hant")
+                checked_path = mock_isfile.call_args[0][0]
+                self.assertIn("zh-Hant", checked_path)
+                self.assertNotIn("zh_Hant", checked_path)
+
+    def test_zh_hant_hyphen_accepted_by_serve_locale(self):
+        """_serve_locale also accepts zh-Hant (BCP 47 URL form) and serves zh-Hant build."""
+        with mock.patch("privacyidea.webui.login.os.path.isfile") as mock_isfile:
+            mock_isfile.return_value = False
+            with self.app.test_request_context("/"):
+                from privacyidea.webui.login import _serve_locale
+                _serve_locale("zh-Hant")
+                # returns None (no build found) but did NOT reject due to whitelist
+                checked_path = mock_isfile.call_args[0][0]
+                self.assertIn("zh-Hant", checked_path)
+
+    # --- app.py fallback handler coverage ---
+
+    def test_fallback_app_v2_serves_spa_for_browser(self):
+        """404 on /app/v2/unknown-route/ serves English SPA for browser requests."""
+        with mock.patch("privacyidea.webui.login._serve_locale", return_value=self._mock_response):
+            with self.app.test_request_context("/app/v2/unknown-route/", method="GET",
+                                               headers={"Accept": "text/html,*/*"}):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 200)
+
+    def test_fallback_app_v2_returns_404_for_api_client(self):
+        """404 on /app/v2/unknown-route/ returns JSON 404 for API clients."""
+        with mock.patch("privacyidea.webui.login._serve_locale", return_value=self._mock_response):
+            with self.app.test_request_context("/app/v2/unknown-route/", method="GET",
+                                               headers={"Accept": "application/json"}):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 404)
+
+    def test_fallback_app_v2_redirects_to_root_when_no_build(self):
+        """404 on /app/v2/ with no Angular build redirects to /."""
+        with mock.patch("privacyidea.webui.login._serve_locale", return_value=None):
+            with self.app.test_request_context("/app/v2/unknown-route/", method="GET",
+                                               headers={"Accept": "text/html,*/*"}):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 302)
+        self.assertIn("/", res.location)
+
+    def test_fallback_general_serves_spa_for_browser(self):
+        """404 on arbitrary path serves English SPA for browser requests."""
+        with mock.patch("privacyidea.webui.login._serve_locale", return_value=self._mock_response):
+            with self.app.test_request_context("/some-unknown-path", method="GET",
+                                               headers={"Accept": "text/html,*/*"}):
+                res = self.app.full_dispatch_request()
+        self.assertIn(res.status_code, [200, 302])
+
+    def test_fallback_general_returns_404_for_api_client(self):
+        """404 on arbitrary path returns JSON 404 for API clients."""
+        with mock.patch("privacyidea.webui.login._serve_locale", return_value=self._mock_response):
+            with self.app.test_request_context("/some-unknown-path", method="GET",
+                                               headers={"Accept": "application/json"}):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 404)
+
+    def test_fallback_general_redirects_to_root_when_no_build(self):
+        """404 on arbitrary path with no Angular build redirects to /."""
+        with mock.patch("privacyidea.webui.login._serve_locale", return_value=None):
+            with self.app.test_request_context("/some-unknown-path", method="GET",
+                                               headers={"Accept": "text/html,*/*"}):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 302)
+        self.assertIn("/", res.location)
+
+    def test_fallback_general_extracts_locale_prefix(self):
+        """404 on /<locale>/path (browser) extracts the locale prefix and serves that build.
+
+        The other general-branch tests use a path with no locale prefix, so they only
+        exercise the ``else "en"`` default. This drives the ``locale_prefix_match.group(1)``
+        extraction with a real locale.
+        """
+        served_locales = []
+
+        def record_locale(locale):
+            served_locales.append(locale)
+            return self._mock_response
+
+        with mock.patch("privacyidea.webui.login._serve_locale", side_effect=record_locale):
+            with self.app.test_request_context("/de/some-page", method="GET",
+                                               headers={"Accept": "text/html,*/*"}):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(served_locales[0], "de")
+
+    def test_fallback_general_extracts_locale_at_path_end(self):
+        """404 on /<locale> (no subpath, browser) matches the ``$`` anchor and extracts the locale."""
+        served_locales = []
+
+        def record_locale(locale):
+            served_locales.append(locale)
+            return self._mock_response
+
+        with mock.patch("privacyidea.webui.login._serve_locale", side_effect=record_locale):
+            with self.app.test_request_context("/fr", method="GET",
+                                               headers={"Accept": "text/html,*/*"}):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(served_locales[0], "fr")
+
+    def test_locale_route_unknown_locale_api_client_aborts_404(self):
+        """GET /app/v2/invalid with Accept: application/json aborts 404 without an English fallback."""
+        with self.app.test_request_context("/app/v2/invalid", method="GET",
+                                           headers={"Accept": "application/json"}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 404)
+
+    def test_locale_route_unknown_locale_browser_no_en_build_redirects_to_root(self):
+        """GET /app/v2/invalid (browser) with no English build ends at a redirect to /.
+
+        The blueprint aborts 404 (``_serve_locale("en") or abort(404)``), which the app's
+        404 errorhandler re-handles: for a browser with no build it redirects to /.
+        """
+        with mock.patch("privacyidea.webui.login._serve_locale", return_value=None):
+            with self.app.test_request_context("/app/v2/invalid", method="GET",
+                                               headers={"Accept": "text/html,*/*"}):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 302)
+        self.assertIn("/", res.location)
+
+    def test_serve_locale_returns_none_for_unknown_locale(self):
+        """_serve_locale returns None for a locale not in the allowed list."""
+        with self.app.test_request_context("/"):
+            from privacyidea.webui.login import _serve_locale
+            result = _serve_locale("totally-unknown-xyz")
+        self.assertIsNone(result)
+
+    def test_serve_locale_serves_index_when_file_exists(self):
+        """_serve_locale returns a response when index.html exists."""
+        with mock.patch("privacyidea.webui.login.os.path.isfile", return_value=True):
+            with mock.patch("privacyidea.webui.login.send_from_directory",
+                            return_value=self._mock_response):
+                with self.app.test_request_context("/"):
+                    from privacyidea.webui.login import _serve_locale
+                    result = _serve_locale("de")
+        self.assertIsNotNone(result)
+
+    # --- Path traversal / injection security tests ---
+
+    def test_path_traversal_in_locale_route_no_file_served(self):
+        """GET /app/v2/../../etc/ must never serve a file outside the static folder.
+        Werkzeug normalizes the path to /etc/ before routing, so we get a redirect
+        rather than a 404 — both are safe, neither reads a file."""
+        with self.app.test_request_context("/app/v2/../../etc/", method="GET",
+                                           headers={"Accept": "text/html,*/*"}):
+            res = self.app.full_dispatch_request()
+        self.assertNotEqual(res.status_code, 200)
+
+    def test_path_traversal_url_encoded_no_file_served(self):
+        """URL-encoded traversal %2e%2e%2f must not bypass the whitelist.
+        The path is normalized/rejected — no real file content is returned."""
+        with self.app.test_request_context("/app/v2/%2e%2e%2fetc/", method="GET",
+                                           headers={"Accept": "text/html,*/*"}):
+            res = self.app.full_dispatch_request()
+        self.assertNotEqual(res.status_code, 200)
+
+    def test_serve_locale_path_traversal_rejected(self):
+        """_serve_locale rejects locales that contain path traversal sequences."""
+        with self.app.test_request_context("/"):
+            from privacyidea.webui.login import _serve_locale
+            self.assertIsNone(_serve_locale("../../etc/passwd"))
+            self.assertIsNone(_serve_locale("../de"))
+            self.assertIsNone(_serve_locale("de/../../etc"))
+
+    def test_serve_locale_home_directory_rejected(self):
+        """_serve_locale rejects attempts to access the home directory via ~ notation."""
+        with self.app.test_request_context("/"):
+            from privacyidea.webui.login import _serve_locale
+            self.assertIsNone(_serve_locale("~"))
+            self.assertIsNone(_serve_locale("~/"))
+            self.assertIsNone(_serve_locale("~root"))
+            self.assertIsNone(_serve_locale("~/.ssh/id_rsa"))
+
+    def test_home_directory_route_no_file_served(self):
+        """GET /app/v2/~/ and variants must never serve home directory content."""
+        for path in ["/app/v2/~/", "/app/v2/~root/"]:
+            with self.app.test_request_context(path, method="GET",
+                                               headers={"Accept": "text/html,*/*"}):
+                res = self.app.full_dispatch_request()
+            self.assertNotEqual(res.status_code, 200, f"Path {path!r} must not return 200")
+
+    def test_serve_locale_only_allows_whitelisted_locales(self):
+        """_serve_locale never constructs a path for any locale not in PI_PREFERRED_LANGUAGE."""
+        with mock.patch("privacyidea.webui.login.os.path.isfile") as mock_isfile:
+            mock_isfile.return_value = False
+            with self.app.test_request_context("/"):
+                from privacyidea.webui.login import _serve_locale
+                for bad_locale in ["unknown", "de/../fr", "DE", "EN", "zh_hant"]:
+                    result = _serve_locale(bad_locale)
+                    self.assertIsNone(result, f"Expected None for locale {bad_locale!r}")

@@ -101,6 +101,16 @@ from privacyidea.lib.policies.helper import get_jwt_validity
 from privacyidea.lib.policy import PolicyClass, REMOTE_USER
 from privacyidea.lib.policydecorators import reset_all_user_tokens_active, reset_token_failcounters
 from privacyidea.lib.realm import get_default_realm, realm_is_defined
+from privacyidea.api.lib.postpolicy import (postpolicy, add_user_detail_to_response, check_tokentype,
+                                            check_tokeninfo, check_serial, no_detail_on_success,
+                                            get_webui_settings, hide_specific_error_message)
+from privacyidea.api.lib.prepolicy import (is_remote_user_allowed, prepolicy,
+                                           pushtoken_disable_wait, webauthntoken_authz, webauthntoken_request,
+                                           fido2_auth, increase_failcounter_on_challenge,
+                                           disabled_token_types, auth_timelimit, load_challenge_text)
+from privacyidea.api.lib.utils import (send_result, get_all_params, INTERNAL_OPTION_KEYS,
+                                       verify_auth_token, get_optional, get_required,
+                                       get_auth_token_from_request, logged_in_user_from_token)
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.user import User, split_user, log_used_user
 from privacyidea.lib.utils import (get_client_ip, hexlify_and_unicode, to_unicode, get_plugin_info_from_useragent,
@@ -803,11 +813,9 @@ def check_auth_token(required_role=None):
         e.g. ``["admin"]`` or ``["user", "admin"]``. ``None`` means
         either role is acceptable.
     """
-    auth_token = request.headers.get('PI-Authorization')
-    if not auth_token:
-        auth_token = request.headers.get('Authorization')
+    auth_token = get_auth_token_from_request()
     r = verify_auth_token(auth_token, required_role)
-    g.logged_in_user = {"username": r.get("username"), "realm": r.get("realm"), "role": r.get("role")}
+    g.logged_in_user = logged_in_user_from_token(r)
 
 
 @jwtauth.route('/rights', methods=['GET'])

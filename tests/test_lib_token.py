@@ -1067,11 +1067,11 @@ class TokenTestCase(MyTestCase):
         # We create a challenge by first sending the PIN of the HOTP token
         # then we answer the challenge by sending the OTP.
 
-        num1 = Challenge.query.filter(Challenge.serial == "hotptoken").count()
+        num1 = len(get_challenges(serial="hotptoken"))
         # The correct PIN will create a challenge
         r, reply = check_serial_pass("hotptoken", "hotppin")
         self.assertTrue(r is False, r)
-        num2 = Challenge.query.filter(Challenge.serial == "hotptoken").count()
+        num2 = len(get_challenges(serial="hotptoken"))
         # check that the challenge is created
         self.assertTrue(num1 + 1 == num2, (num1, num2))
         self.assertIsInstance(reply, dict, reply)
@@ -1308,9 +1308,12 @@ class TokenTestCase(MyTestCase):
         tokendata = get_tokens_paginate(sortby="id", page=1, psize=100)
         tokens = tokendata.get("tokens")
 
+        # Assert ascending id order without assuming absolute id values: token
+        # ids are a non-resetting sequence, so under parallel test execution
+        # other tests on this worker's DB may have consumed the lower ids and
+        # the lowest surviving id need not be 1.
         ids = [token.get("id") for token in tokens]
-        self.assertEqual(sorted(ids), ids, ids)
-        self.assertGreaterEqual(tokens[-1].get("id"), len(tokens), tokens[-1])
+        self.assertEqual(ids, sorted(ids), ids)
 
         # unknown sort key results in sorting by serial
         tokendata = get_tokens_paginate(sortby="unknown", page=1, psize=100)
@@ -1565,8 +1568,7 @@ class TokenTestCase(MyTestCase):
         self.assertEqual("interactive", multi_challenge[1].get("client_mode"))
 
         # There are two challenges in the database
-        r = Challenge.query.filter(Challenge.transaction_id ==
-                                   transaction_id).all()
+        r = get_challenges(transaction_id=transaction_id)
         self.assertEqual(len(r), 2)
 
         # Check the second response to the challenge, the second step in
@@ -1579,7 +1581,7 @@ class TokenTestCase(MyTestCase):
         self.assertEqual(r_dict.get("serial"), "CR2B")
         # All challenges of the transaction_id have been deleted on
         # successful authentication
-        r = Challenge.query.filter(Challenge.transaction_id == transaction_id).all()
+        r = get_challenges(transaction_id=transaction_id)
         self.assertEqual(len(r), 0)
 
         remove_token("CR2A")

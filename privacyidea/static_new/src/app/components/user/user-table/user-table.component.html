@@ -49,103 +49,107 @@
         showFirstLastButtons></mat-paginator>
     </div>
     <app-user-table-actions />
-    <table
-      [dataSource]="usersDataSource()"
-      aria-label="User Data Table"
-      class="token-table"
-      mat-table>
-      @for (column of columnKeysMap; track column) {
-        <ng-container [matColumnDef]="column.key">
-          <th
-            *matHeaderCellDef
-            attr.aria-label="{{ column.label }} Header"
-            mat-header-cell>
-            <div class="flex ali-center">
-              {{ column.label }}
-              <div class="margin-left-16 flex">
-                @if (apiFilter.includes(column.key)) {
+    <div class="table-scroll-region" appScrollEdges>
+      <table
+        [dataSource]="usersDataSource()"
+        aria-label="User Data Table"
+        class="token-table"
+        mat-table>
+        @for (column of columnKeysMap; track column) {
+          <ng-container [matColumnDef]="column.key">
+            <th
+              *matHeaderCellDef
+              attr.aria-label="{{ column.label }} Header"
+              mat-header-cell>
+              <div class="flex ali-center">
+                {{ column.label }}
+                <div class="margin-left-16 flex">
+                  @if (apiFilter.includes(column.key)) {
+                    <button
+                      (click)="onFilterClick(column.key)"
+                      class="filter-button"
+                      i18n-matTooltip
+                      mat-icon-button
+                      matTooltip="Filter by {{ column.label }}"
+                      type="button">
+                      <mat-icon class="keyword-button-icon margin-left-0">
+                        {{ getFilterIconName(column.key) }}
+                      </mat-icon>
+                    </button>
+                  }
                   <button
-                    (click)="onFilterClick(column.key)"
-                    class="filter-button"
+                    (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
+                    class="sort-button"
                     i18n-matTooltip
                     mat-icon-button
-                    matTooltip="Filter by {{ column.label }}"
+                    matTooltip="Sort by {{ column.label }}"
                     type="button">
-                    <mat-icon class="keyword-button-icon margin-left-0">
-                      {{ getFilterIconName(column.key) }}
-                    </mat-icon>
+                    <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
                   </button>
-                }
-                <button
-                  (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
-                  class="sort-button"
-                  i18n-matTooltip
-                  mat-icon-button
-                  matTooltip="Sort by {{ column.label }}"
-                  type="button">
-                  <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
-                </button>
+                </div>
               </div>
-            </div>
-          </th>
+            </th>
+            <td
+              *matCellDef="let element; let row"
+              [ngClass]="{
+                'table-checkbox': column.key === 'select'
+              }"
+              attr.aria-label="{{ column.label }} Cell"
+              mat-cell>
+              <div>
+                @switch (column.key) {
+                  @case ("username") {
+                    <app-copyable [copyText]="element[column.key]">
+                      <a
+                        (click)="onClickUsername(element)"
+                        attr.aria-label="{{ column.label }} Link"
+                        routerLink="/users/details/{{ element.username }}">
+                        {{ element[column.key] }}
+                      </a>
+                    </app-copyable>
+                  }
+                  @case ("resolver") {
+                    <app-copyable [copyText]="element[column.key]">
+                      <a
+                        (click)="onClickResolver(element[column.key]); $event.preventDefault()"
+                        (keydown.enter)="onClickResolver(element[column.key]); $event.preventDefault()"
+                        attr.aria-label="{{ column.label }} Link"
+                        role="button"
+                        tabindex="0">
+                        {{ element[column.key] }}
+                      </a>
+                    </app-copyable>
+                  }
+                  @default {
+                    <span>
+                      {{ element[column.key] }}
+                    </span>
+                  }
+                }
+              </div>
+            </td>
+          </ng-container>
+        }
+        <tr
+          *matHeaderRowDef="columnKeys; sticky: true"
+          aria-label="Header Row"
+          mat-header-row></tr>
+        <tr
+          *matRowDef="let row; columns: columnKeys"
+          aria-label="Data Row"
+          mat-row></tr>
+        <tr
+          *matNoDataRow
+          aria-label="No Data Row">
           <td
-            *matCellDef="let element; let row"
-            [ngClass]="{
-              'table-checkbox': column.key === 'select'
-            }"
-            attr.aria-label="{{ column.label }} Cell"
-            mat-cell>
-            <div>
-              @switch (column.key) {
-                @case ("username") {
-                  <app-copyable [copyText]="element[column.key]">
-                    <a
-                      (click)="onClickUsername(element)"
-                      attr.aria-label="{{ column.label }} Link"
-                      routerLink="/users/details/{{ element.username }}">
-                      {{ element[column.key] }}
-                    </a>
-                  </app-copyable>
-                }
-                @case ("resolver") {
-                  <app-copyable [copyText]="element[column.key]">
-                    <a
-                      (click)="onClickResolver(element[column.key]); $event.preventDefault()"
-                      (keydown.enter)="onClickResolver(element[column.key]); $event.preventDefault()"
-                      attr.aria-label="{{ column.label }} Link"
-                      role="button"
-                      tabindex="0">
-                      {{ element[column.key] }}
-                    </a>
-                  </app-copyable>
-                }
-                @default {
-                  <span>
-                    {{ element[column.key] }}
-                  </span>
-                }
-              }
-            </div>
+            [attr.colspan]="columnKeys.length"
+            aria-label="No Data Cell"
+            i18n-aria-label
+            i18n>
+            No data matching the filter.
           </td>
-        </ng-container>
-      }
-      <tr
-        *matHeaderRowDef="columnKeys"
-        aria-label="Header Row"
-        mat-header-row></tr>
-      <tr
-        *matRowDef="let row; columns: columnKeys"
-        aria-label="Data Row"
-        mat-row></tr>
-      <tr
-        *matNoDataRow
-        aria-label="No Data Row">
-        <td
-          [attr.colspan]="columnKeys.length"
-          aria-label="No Data Cell">
-          No data matching the filter.
-        </td>
-      </tr>
-    </table>
+        </tr>
+      </table>
+    </div>
   </div>
 </div>
