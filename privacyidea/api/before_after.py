@@ -58,6 +58,7 @@ from .realm import defaultrealm_blueprint
 from .user import user_blueprint
 from .audit import audit_blueprint
 from .authentication_log import authentication_log_blueprint
+from .conditional_access import conditional_access_blueprint
 from .machineresolver import machineresolver_blueprint
 from .machine import machine_blueprint
 from .application import application_blueprint
@@ -202,6 +203,7 @@ def before_userendpoint_request():
 @monitoring_blueprint.before_request
 @tokengroup_blueprint.before_request
 @serviceid_blueprint.before_request
+@conditional_access_blueprint.before_request
 @admin_required
 def before_admin_request():
     before_request()
@@ -447,6 +449,7 @@ def before_request():
 @token_blueprint.after_request
 @audit_blueprint.after_request
 @authentication_log_blueprint.after_request
+@conditional_access_blueprint.after_request
 @application_blueprint.after_request
 @machine_blueprint.after_request
 @machineresolver_blueprint.after_request
