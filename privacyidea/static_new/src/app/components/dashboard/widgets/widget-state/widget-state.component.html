@@ -20,15 +20,6 @@
 @switch (state()) {
   @case ("ready") {
     <ng-content />
-    @if (loading()) {
-      <div class="widget-state-busy">
-        <mat-progress-spinner
-          mode="indeterminate"
-          [diameter]="20"
-          aria-label="Loading more widget data"
-          i18n-aria-label />
-      </div>
-    }
   }
   @case ("loading") {
     <div class="widget-state-status">

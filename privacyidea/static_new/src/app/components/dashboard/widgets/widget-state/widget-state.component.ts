@@ -29,5 +29,4 @@ import { WidgetState } from "@models/dashboard";
 })
 export class WidgetStateComponent {
   readonly state = input.required<WidgetState>();
-  readonly loading = input(false);
 }
