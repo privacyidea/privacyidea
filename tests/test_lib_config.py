@@ -300,3 +300,17 @@ class ConfigTestCase(MyTestCase):
         validate_email = get_email_validators().get("privacyidea.lib.utils.emailvalidation")
         self.assertTrue(validate_email("valid@email.com"))
         self.assertFalse(validate_email("invalid@email.k"))
+
+    def test_12_export_import_censor_password(self):
+        from privacyidea.lib.config import (export_config, import_config,
+                                            set_privacyidea_config, get_from_config,
+                                            delete_privacyidea_config)
+        from privacyidea.lib.crypto import CENSORED
+        set_privacyidea_config("ExpSecret", "topsecret", typ="password")
+        # a censored export replaces the value of password-type entries
+        censored = export_config(censor=True)
+        self.assertEqual(censored["ExpSecret"]["Value"], CENSORED)
+        # importing a censored entry keeps the stored secret unchanged (skip)
+        import_config({"ExpSecret": {"Value": CENSORED, "Type": "password"}})
+        self.assertEqual(get_from_config("ExpSecret"), "topsecret")
+        delete_privacyidea_config("ExpSecret")
