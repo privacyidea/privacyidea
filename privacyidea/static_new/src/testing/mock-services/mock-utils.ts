@@ -31,6 +31,10 @@ export function makeResource<T>(initial: T) {
 export class MockHttpResourceRef<T> implements HttpResourceRef<T> {
   value: WritableSignal<T>;
 
+  constructor(initial: T) {
+    this.value = signal(initial) as WritableSignal<T>;
+  }
+
   set(value: T): void {
     this.value.set(value);
   }
@@ -74,9 +78,6 @@ export class MockHttpResourceRef<T> implements HttpResourceRef<T> {
   isLoading: Signal<boolean> = signal(false);
   reload = jest.fn().mockReturnValue(true);
 
-  constructor(initial: T) {
-    this.value = signal(initial) as WritableSignal<T>;
-  }
 }
 
 export class MockBase64Service {

@@ -35,7 +35,7 @@ import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { MockContentService, MockPiResponse, MockRealmService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
-import { BulkResult, TokenGroups, TokenService, Tokens } from "./token.service";
+import { BulkResult, TokenGroups, Tokens, TokenService } from "./token.service";
 
 class MockNotificationService {
   success = jest.fn();
@@ -352,6 +352,70 @@ describe("TokenService", () => {
       expect(req.request.params.has("description")).toBe(false);
       expect(req.request.params.has("rollout_state")).toBe(false);
       req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+  });
+
+  describe("showOnlyTokenInContainer -> token container filter", () => {
+    const containerRoute = ROUTE_PATHS.CONTAINERS_DETAILS + "/CONT0001";
+    const hasContainerFilter = () => tokenService.tokenFilter().hiddenFilterMap.has("container_serial");
+
+    it("defaults to false on the container details route (shows only tokens not in a container)", () => {
+      contentServiceMock.routeUrl.set(containerRoute);
+      TestBed.tick();
+
+      expect(tokenService.showOnlyTokenInContainer()).toBe(false);
+      expect(hasContainerFilter()).toBe(true);
+    });
+
+    it("drops the container_serial filter when enabled (also shows tokens already in a container)", () => {
+      contentServiceMock.routeUrl.set(containerRoute);
+      TestBed.tick();
+      // Read once so the toggle below exercises the update branch, not re-init.
+      expect(hasContainerFilter()).toBe(true);
+
+      tokenService.showOnlyTokenInContainer.set(true);
+      TestBed.tick();
+
+      expect(hasContainerFilter()).toBe(false);
+    });
+
+    it("re-adds the container_serial filter when disabled again", () => {
+      contentServiceMock.routeUrl.set(containerRoute);
+      TestBed.tick();
+      expect(hasContainerFilter()).toBe(true);
+
+      tokenService.showOnlyTokenInContainer.set(true);
+      TestBed.tick();
+      expect(hasContainerFilter()).toBe(false);
+
+      tokenService.showOnlyTokenInContainer.set(false);
+      TestBed.tick();
+      expect(hasContainerFilter()).toBe(true);
+    });
+
+    it("resets to false (free tokens) when navigating to another container", () => {
+      contentServiceMock.routeUrl.set(containerRoute);
+      TestBed.tick();
+      tokenService.showOnlyTokenInContainer.set(true);
+      TestBed.tick();
+      expect(tokenService.showOnlyTokenInContainer()).toBe(true);
+
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS_DETAILS + "/CONT0002");
+      TestBed.tick();
+
+      expect(tokenService.showOnlyTokenInContainer()).toBe(false);
+      expect(hasContainerFilter()).toBe(true);
+    });
+
+    it("does not apply the container_serial filter away from the container details route", () => {
+      contentServiceMock.routeUrl.set(containerRoute);
+      TestBed.tick();
+      expect(hasContainerFilter()).toBe(true);
+
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS);
+      TestBed.tick();
+
+      expect(hasContainerFilter()).toBe(false);
     });
   });
 

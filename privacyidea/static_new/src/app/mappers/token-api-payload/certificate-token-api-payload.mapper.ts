@@ -44,8 +44,7 @@ export interface CertificateEnrollmentPayload extends TokenEnrollmentPayload {
 @Injectable({ providedIn: "root" })
 export class CertificateApiPayloadMapper
   extends BaseApiPayloadMapper
-  implements TokenApiPayloadMapper<CertificateEnrollmentData>
-{
+  implements TokenApiPayloadMapper<CertificateEnrollmentData> {
   override toApiPayload(data: CertificateEnrollmentData): CertificateEnrollmentPayload {
     const payload: CertificateEnrollmentPayload = {
       ...super.toApiPayload(data),

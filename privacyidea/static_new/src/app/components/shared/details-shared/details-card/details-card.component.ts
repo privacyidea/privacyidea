@@ -1,0 +1,44 @@
+/**
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+import { Component, input, signal } from "@angular/core";
+import { MatIcon } from "@angular/material/icon";
+
+@Component({
+  selector: "app-details-card",
+  standalone: true,
+  imports: [MatIcon],
+  templateUrl: "./details-card.component.html",
+  styleUrl: "./details-card.component.scss"
+})
+export class DetailsCardComponent {
+  private static nextId = 0;
+
+  readonly title = input<string>("");
+  readonly collapsible = input(false);
+  readonly collapseLocked = input(false);
+  readonly expanded = signal(false);
+  protected readonly bodyId = `details-card-body-${DetailsCardComponent.nextId++}`;
+
+  protected toggleExpanded(): void {
+    if (this.collapseLocked()) {
+      return;
+    }
+    this.expanded.set(!this.expanded());
+  }
+}

@@ -180,7 +180,7 @@ describe("ResolverService", () => {
   describe("userAttributes signal", () => {
     it("should return attribute keys for ldapresolver  with stringified mapping", async () => {
       const mockResolvers = {
-        "ldap/1": { data: { USERINFO: '{ "surname": "sn", "givenname": "givenName" }' }, type: "ldapresolver" }
+        "ldap/1": { data: { USERINFO: "{ \"surname\": \"sn\", \"givenname\": \"givenName\" }" }, type: "ldapresolver" }
       };
       resolverService.selectedResolverName.set("ldap/1");
       const mockResponse = MockPiResponse.fromValue(mockResolvers);

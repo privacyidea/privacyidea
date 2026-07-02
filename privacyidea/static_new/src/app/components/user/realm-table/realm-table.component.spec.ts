@@ -26,7 +26,7 @@ import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
-import { Realm, RealmRow, RealmService, Realms } from "@services/realm/realm.service";
+import { Realm, RealmRow, Realms, RealmService } from "@services/realm/realm.service";
 import { Resolver, ResolverService } from "@services/resolver/resolver.service";
 import { SystemService } from "@services/system/system.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
@@ -472,7 +472,7 @@ describe("RealmTableComponent", () => {
     expect(callNode[1]).toBe("node-1");
     expect(callNode[2]).toEqual([{ name: "res3", priority: 7 }]);
 
-    expect(notificationService.success).toHaveBeenCalledWith('Realm "realmA" updated.');
+    expect(notificationService.success).toHaveBeenCalledWith("Realm \"realmA\" updated.");
     expect(component.editingRealmName()).toBeNull();
     expect(component.isSavingEditedRealm()).toBe(false);
     expect(realmService.realmResource.reload).toHaveBeenCalled();
@@ -491,7 +491,7 @@ describe("RealmTableComponent", () => {
 
     expect(dialog.open).toHaveBeenCalled();
     expect(realmService.deleteRealm).toHaveBeenCalledWith("realmA");
-    expect(notificationService.success).toHaveBeenCalledWith('Realm "realmA" deleted.');
+    expect(notificationService.success).toHaveBeenCalledWith("Realm \"realmA\" deleted.");
     expect(realmService.realmResource.reload).toHaveBeenCalled();
   });
 
@@ -516,7 +516,7 @@ describe("RealmTableComponent", () => {
     component.onSetDefaultRealm(row);
 
     expect(realmService.setDefaultRealm).toHaveBeenCalledWith("realmA");
-    expect(notificationService.success).toHaveBeenCalledWith('Realm "realmA" set as default.');
+    expect(notificationService.success).toHaveBeenCalledWith("Realm \"realmA\" set as default.");
     expect(realmService.realmResource.reload).toHaveBeenCalled();
     expect(realmService.defaultRealmResource.reload).toHaveBeenCalled();
   });

@@ -37,8 +37,7 @@ export interface RegistrationEnrollmentPayload extends TokenEnrollmentPayload {
 @Injectable({ providedIn: "root" })
 export class RegistrationApiPayloadMapper
   extends BaseApiPayloadMapper
-  implements TokenApiPayloadMapper<RegistrationEnrollmentData>
-{
+  implements TokenApiPayloadMapper<RegistrationEnrollmentData> {
   override toApiPayload(data: RegistrationEnrollmentData): RegistrationEnrollmentPayload {
     // No type-specific fields in switch statement for 'registration'
     const payload: RegistrationEnrollmentPayload = super.toApiPayload(data);

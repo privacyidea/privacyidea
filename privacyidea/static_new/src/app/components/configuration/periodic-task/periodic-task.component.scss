@@ -4,6 +4,7 @@
 .periodic-task-layout {
   @include styles.main-component-style;
   @include table.base-table-structure(".periodic-task-table", ".periodic-task-table-filter", ".table-scroll-container");
+  max-height: var(--table-max-height);
 }
 
 .actions-container {

@@ -19,6 +19,7 @@
 import { Component, computed, inject } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
+import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import {
   MachineService,
@@ -30,7 +31,7 @@ import {
 @Component({
   selector: "app-token-details-machine",
   standalone: true,
-  imports: [MatIconButton, MatIcon],
+  imports: [MatIconButton, MatIcon, DetailsCardComponent],
   templateUrl: "./token-details-machine.component.html",
   styleUrl: "./token-details-machine.component.scss"
 })

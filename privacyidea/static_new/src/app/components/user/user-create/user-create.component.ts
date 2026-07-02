@@ -88,7 +88,21 @@ export class UserCreateComponent implements OnInit, OnDestroy {
   });
 
   canSave = computed(() => this.usernameForm().valid() && this.resolverForm().valid());
+  editedUserData: WritableSignal<EditUserData> = linkedSignal(() => ({ username: "" }));
+  editUserDataIsEmpty = computed(() =>
+    Object.values(this.editedUserData()).every((value) => value === "" || value === undefined)
+  );
   isDirty = computed(() => this.usernameForm().dirty() || this.resolverForm().dirty() || !this.editUserDataIsEmpty());
+  correspondingRealms: Signal<string[]> = computed(() => {
+    const realms = this.realmService.realms();
+    const result: string[] = [];
+    for (const [realmName, realmObj] of Object.entries(realms)) {
+      if (realmObj.resolver.some((r) => r.name === this.resolver())) {
+        result.push(realmName);
+      }
+    }
+    return result;
+  });
 
   constructor() {
     const realm = this.realm();
@@ -108,23 +122,6 @@ export class UserCreateComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.pendingChangesService.clearAllRegistrations();
   }
-
-  editedUserData: WritableSignal<EditUserData> = linkedSignal(() => ({ username: "" }));
-
-  editUserDataIsEmpty = computed(() =>
-    Object.values(this.editedUserData()).every((value) => value === "" || value === undefined)
-  );
-
-  correspondingRealms: Signal<string[]> = computed(() => {
-    const realms = this.realmService.realms();
-    const result: string[] = [];
-    for (const [realmName, realmObj] of Object.entries(realms)) {
-      if (realmObj.resolver.some((r) => r.name === this.resolver())) {
-        result.push(realmName);
-      }
-    }
-    return result;
-  });
 
   async onSave(): Promise<boolean> {
     if (!this.canSave()) {

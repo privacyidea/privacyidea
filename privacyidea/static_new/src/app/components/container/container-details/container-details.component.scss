@@ -1,27 +1,134 @@
 @use "styles";
 @use "table";
 
-$gap-small: 8px;
+:host {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+  width: 100%;
+}
 
 .details-container {
   @include styles.main-component-style;
-  display: grid;
+  // Shared detail/edit-page cap. See --detail-max-height in styles.scss.
+  max-height: var(--detail-max-height);
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  box-sizing: border-box;
+
+  :host-context(body.self-service-layout) & {
+    max-height: none;
+  }
 
   .mat-mdc-select-value-text {
     font-size: 14px;
   }
+
+  .details-grid .details-table {
+    @include table.details-key-value-table;
+    @include table.details-key-value-columns;
+  }
+
+  .value-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .value-content {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .value-edit {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+  }
 }
 
-.detail-table-wrapper {
+.container-actions-bar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   display: flex;
-  gap: 20px;
-  width: auto;
-  max-width: fit-content;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--global-gap);
+  padding: var(--half-global-padding) 0;
+  background: var(--mat-sys-surface-container-lowest);
+
+  ::ng-deep .actions-otp-container {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--half-global-gap);
+
+    > h4 {
+      display: none;
+    }
+
+    .flex-column {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--half-global-gap);
+    }
+
+    mat-divider {
+      display: none;
+    }
+  }
 }
 
-.details-section {
-  width: auto;
-  max-width: fit-content;
-  table-layout: auto;
-  border-collapse: collapse;
+.details-grid {
+  @include table.details-cards-flex;
+  margin-top: var(--half-global-padding);
+}
+
+.details-card--description {
+  @include table.details-description-card;
+
+  .value-edit {
+    min-width: 80px;
+    justify-content: flex-end;
+  }
+}
+
+// Scoped under .details-grid so this beats the grid's `> *` flex rule.
+.details-grid > .details-info-area {
+  @include table.card-width(m);
+}
+
+// Scoped under .details-grid so this beats the grid's `> *` flex rule (which,
+// after view-encapsulation attributes, is more specific than a lone class).
+.details-grid > .details-card--user {
+  @include table.card-width(m);
+}
+
+// Add-token + token-table are a fixed-width pair kept together in one grid item,
+// so they always share a row and wrap to the next row together when they don't
+// fit. `flex: 0 0 auto` (with no shrink) keeps the pair at its two cards' width.
+.details-grid > .token-pair {
+  display: flex;
+  gap: var(--global-gap);
+  // Explicit combined width (not `auto`) so flex-wrap treats the pair as one
+  // fixed-width unit: it drops to the next row when it can't fit beside another
+  // card, and fits on a row alone without overflow.
+  flex: 0 0 calc(var(--card-width-s) + var(--card-width-l) + var(--global-gap));
+}
+
+.token-pair > .details-card--add-token {
+  @include table.card-width(s);
+  height: 232px;
+}
+
+.token-pair > .details-card--tokens {
+  @include table.card-width(l);
 }

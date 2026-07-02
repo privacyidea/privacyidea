@@ -75,6 +75,7 @@ export interface ContainerDetails {
   count?: number;
   containers: ContainerDetailData[];
 }
+
 type ContainerRegistrationState = "registered" | "client_wait";
 
 export interface ContainerDetailData {
@@ -270,24 +271,45 @@ export class ContainerService implements ContainerServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly userService: UserServiceInterface = inject(UserService);
   private readonly http = inject(HttpClient);
-
-  containerBaseUrl = environment.proxyUrl + "/container/";
-  containerTemplateBaseUrl = environment.proxyUrl + "/container/template/";
   private readonly pollingTrigger = signal<number>(0);
   private readonly isRolloverPolling = signal(false);
   readonly compatibleWithSelectedTokenType: WritableSignal<string | null> = linkedSignal({
     source: this.tokenService.selectedTokenType,
     computation: (tokenType) => tokenType?.key ?? null
   });
+  filterContainersByTokenOwner: WritableSignal<boolean> = linkedSignal({
+    source: this.contentService.routeUrl,
+    computation: () => false
+  });
   readonly isPollingActive = signal(false);
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
   stopPolling$ = new Subject<void>();
+  containerBaseUrl = environment.proxyUrl + "/container/";
   readonly eventPageSize = signal(10);
 
   states = signal<string[]>([]);
   containerSerial = this.contentService.containerSerial;
-  containerDetail = computed(() => {
+  private readonly compatibleTypes = computed<string[]>(() => {
+    const compatibleTokenType = this.compatibleWithSelectedTokenType();
+    if (!compatibleTokenType) return [];
+    const types = this.containerTypeOptions();
+    return types
+      .filter((containerType) => (containerType.token_types ?? []).includes(compatibleTokenType))
+      .map((containerType) => String(containerType.containerType));
+  });
+  private readonly serialFilterParam = computed(() =>
+    toWildcardParam("container_serial", this.selectedContainerSerial(), new Set())
+  );
+  private readonly tokenInContainer = computed<boolean>(() => {
+    let assigned = "";
+    if (this.tokenService.tokenDetailResource.hasValue()) {
+      const tokenDetailsRes = this.tokenService.tokenDetailResource.value();
+      assigned = tokenDetailsRes?.result?.value?.tokens?.[0]?.container_serial ?? "";
+    }
+    return String(assigned).trim() !== "";
+  });
+  private pollingTimeoutId: ReturnType<typeof setTimeout> | undefined;  containerDetail = computed(() => {
     const details = this.containerDetails();
     const serial = this.containerSerial();
     if (!details || !serial) {
@@ -295,25 +317,90 @@ export class ContainerService implements ContainerServiceInterface {
     }
     return details.containers.find((container) => container.serial === serial) ?? null;
   });
+  containerTemplateBaseUrl = environment.proxyUrl + "/container/template/";
 
-  selectedContainerSerial: WritableSignal<string | null> = linkedSignal({
+  constructor() {
+    effect(() => {
+      this.notificationService.handleResourceError(this.containerDetailsResource.error(), "container details");
+    });
+    effect(() => {
+      if (this.containerResource.error()) {
+        const error = this.containerResource.error() as HttpErrorResponse;
+        this.notificationService.error(error.message);
+      }
+    });
+
+    effect(() => {
+      clearTimeout(this.pollingTimeoutId);
+      this.pollingTrigger();
+      const serial = this.containerSerial();
+      const active = this.isPollingActive();
+
+      const onAllowedRoute = this.contentService.onContainersCreate() || this.contentService.onContainersDetails();
+
+      if (!active || !serial || !this.containerDetailsResource.hasValue() || !onAllowedRoute) {
+        return;
+      }
+
+      const resourceValue = this.containerDetailsResource.value();
+      if (!resourceValue?.result?.value) {
+        return;
+      }
+
+      const containerData = resourceValue.result.value.containers[0];
+      const registrationState = containerData?.info?.registration_state;
+
+      if (registrationState !== "registered") {
+        this.pollingTimeoutId = setTimeout(() => {
+          this.pollingTrigger.update((count) => count + 1);
+        }, 2000);
+      } else {
+        const isRollover = this.isRolloverPolling();
+        if (isRollover) {
+          this.notificationService.success("Container rollover completed successfully.");
+        } else if (!this.contentService.onContainersCreate()) {
+          this.notificationService.success("Container registered successfully.");
+        }
+        this.isPollingActive.set(false);
+        this.isRolloverPolling.set(false);
+      }
+    });
+  }
+
+  private containerRequest(params: Record<string, string | number | boolean>) {
+    return {
+      url: this.containerBaseUrl,
+      method: "GET" as const,
+      headers: this.authService.getHeaders(),
+      params: { sortby: this.sort().active, sortdir: this.sort().direction, ...params }
+    };
+  }
+
+  private paginatedContainerRequest(params: Record<string, string | number | boolean>) {
+    return this.containerRequest({
+      page: this.pageIndex() + 1,
+      pagesize: this.pageSize(),
+      ...params
+    });
+  }  selectedContainerSerial: WritableSignal<string | null> = linkedSignal({
     source: () => this.contentService.onTokensEnrollment(),
     computation: (onTokensEnrollment, previous) => {
       return onTokensEnrollment ? (previous?.value ?? "") : "";
     }
   });
 
+
+
+
+
   sort = signal<Sort>({ active: "serial", direction: "asc" });
 
-  filterContainersByTokenOwner: WritableSignal<boolean> = linkedSignal({
-    source: this.contentService.routeUrl,
-    computation: () => false
-  });
 
   containerFilter: WritableSignal<FilterValue> = linkedSignal({
     source: this.contentService.routeUrl,
     computation: () => new FilterValue()
   });
+
 
   filterParams = computed<Record<string, string>>(() => {
     const allowed = [...this.apiFilter, ...this.advancedApiFilter];
@@ -341,10 +428,12 @@ export class ContainerService implements ContainerServiceInterface {
     return params;
   });
 
+
   pageSize = linkedSignal({
     source: () => ({ filter: this.containerFilter(), size: this.eventPageSize() }),
     computation: ({ size }): number => (size > 0 ? size : 10)
   });
+
 
   pageIndex = linkedSignal({
     source: () => ({
@@ -355,44 +444,6 @@ export class ContainerService implements ContainerServiceInterface {
     computation: () => 0
   });
 
-  private readonly compatibleTypes = computed<string[]>(() => {
-    const compatibleTokenType = this.compatibleWithSelectedTokenType();
-    if (!compatibleTokenType) return [];
-    const types = this.containerTypeOptions();
-    return types
-      .filter((containerType) => (containerType.token_types ?? []).includes(compatibleTokenType))
-      .map((containerType) => String(containerType.containerType));
-  });
-
-  private readonly serialFilterParam = computed(() =>
-    toWildcardParam("container_serial", this.selectedContainerSerial(), new Set())
-  );
-
-  private readonly tokenInContainer = computed<boolean>(() => {
-    let assigned = "";
-    if (this.tokenService.tokenDetailResource.hasValue()) {
-      const tokenDetailsRes = this.tokenService.tokenDetailResource.value();
-      assigned = tokenDetailsRes?.result?.value?.tokens?.[0]?.container_serial ?? "";
-    }
-    return String(assigned).trim() !== "";
-  });
-
-  private containerRequest(params: Record<string, string | number | boolean>) {
-    return {
-      url: this.containerBaseUrl,
-      method: "GET" as const,
-      headers: this.authService.getHeaders(),
-      params: { sortby: this.sort().active, sortdir: this.sort().direction, ...params }
-    };
-  }
-
-  private paginatedContainerRequest(params: Record<string, string | number | boolean>) {
-    return this.containerRequest({
-      page: this.pageIndex() + 1,
-      pagesize: this.pageSize(),
-      ...params
-    });
-  }
 
   containerResource = httpResource<PiResponse<ContainerDetails>>(() => {
     // Do not load containers if the action is not allowed.
@@ -701,7 +752,10 @@ export class ContainerService implements ContainerServiceInterface {
     return this.http
       .post<
         PiResponse<boolean>
-      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/unassign`, { user: username, realm: userRealm }, { headers })
+      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/unassign`, {
+        user: username,
+        realm: userRealm
+      }, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to unassign user.", error);
@@ -717,7 +771,10 @@ export class ContainerService implements ContainerServiceInterface {
     return this.http
       .post<
         PiResponse<boolean>
-      >(`${this.containerBaseUrl}${encodeURIComponent(args.containerSerial)}/assign`, { user: args.username, realm: args.userRealm }, { headers })
+      >(`${this.containerBaseUrl}${encodeURIComponent(args.containerSerial)}/assign`, {
+        user: args.username,
+        realm: args.userRealm
+      }, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to assign user.", error);
@@ -974,55 +1031,6 @@ export class ContainerService implements ContainerServiceInterface {
     this.pollingTrigger.update((count) => count + 1);
   }
 
-  private pollingTimeoutId: ReturnType<typeof setTimeout> | undefined;
-
-  constructor() {
-    effect(() => {
-      this.notificationService.handleResourceError(this.containerDetailsResource.error(), "container details");
-    });
-    effect(() => {
-      if (this.containerResource.error()) {
-        const error = this.containerResource.error() as HttpErrorResponse;
-        this.notificationService.error(error.message);
-      }
-    });
-
-    effect(() => {
-      clearTimeout(this.pollingTimeoutId);
-      this.pollingTrigger();
-      const serial = this.containerSerial();
-      const active = this.isPollingActive();
-
-      const onAllowedRoute = this.contentService.onContainersCreate() || this.contentService.onContainersDetails();
-
-      if (!active || !serial || !this.containerDetailsResource.hasValue() || !onAllowedRoute) {
-        return;
-      }
-
-      const resourceValue = this.containerDetailsResource.value();
-      if (!resourceValue?.result?.value) {
-        return;
-      }
-
-      const containerData = resourceValue.result.value.containers[0];
-      const registrationState = containerData?.info?.registration_state;
-
-      if (registrationState !== "registered") {
-        this.pollingTimeoutId = setTimeout(() => {
-          this.pollingTrigger.update((count) => count + 1);
-        }, 2000);
-      } else {
-        const isRollover = this.isRolloverPolling();
-        if (isRollover) {
-          this.notificationService.success("Container rollover completed successfully.");
-        } else if (!this.contentService.onContainersCreate()) {
-          this.notificationService.success("Container registered successfully.");
-        }
-        this.isPollingActive.set(false);
-        this.isRolloverPolling.set(false);
-      }
-    });
-  }
 
   async compareWithTemplate() {
     const serial = this.containerSerial();
