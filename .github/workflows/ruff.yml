@@ -6,9 +6,10 @@ name: Ruff
 on:
   pull_request:
     paths:
+      # Keep in sync with the paths linted by the "Run Ruff" step below.
       - 'privacyidea/**.py'
-      - 'tests/**.py'
-      - 'tools/**.py'
+      # Re-run when the Ruff config (rules, excludes) changes.
+      - 'pyproject.toml'
       - '.github/workflows/ruff.yml'
 permissions: {}
 
