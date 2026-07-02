@@ -17,6 +17,10 @@
   width: 100%;
   box-sizing: border-box;
 
+  :host-context(body.self-service-layout) & {
+    max-height: none;
+  }
+
   .mat-mdc-select-value-text {
     font-size: 14px;
   }

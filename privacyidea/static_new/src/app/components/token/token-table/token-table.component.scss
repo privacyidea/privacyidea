@@ -9,6 +9,11 @@
   overflow: hidden;
   height: var(--table-max-height);
 
+  :host-context(body.self-service-layout) & {
+    height: auto;
+    max-height: var(--table-max-height);
+  }
+
   .realm-break {
     margin-top: 3px;
   }

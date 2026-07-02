@@ -199,9 +199,13 @@ body {
 // that fill via `height: 100%` (e.g. token-details, dashboard) can stretch to
 // the bottom. Note main-component-style no longer relies on this — it caps via
 // the viewport-relative --content-max-height directly.
-.admin-content > *:not(router-outlet),
-.selfservice-content-container > *:not(router-outlet) {
+.admin-content > *:not(router-outlet) {
   height: 100%;
+  min-height: 0;
+  min-width: 0;
+}
+
+.selfservice-content-container > *:not(router-outlet) {
   min-height: 0;
   min-width: 0;
 }
