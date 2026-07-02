@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: (C) 2026 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: CC0-1.0
 """
 enckey canary: verifies the encryption key hasn't been silently swapped.
 

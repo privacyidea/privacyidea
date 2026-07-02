@@ -1,4 +1,6 @@
 #!/bin/sh
+# SPDX-FileCopyrightText: (C) 2026 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: CC0-1.0
 set -eu
 
 # The application config (DockerConfig, selected by PI_CONFIG_NAME=docker) reads

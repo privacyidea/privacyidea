@@ -137,8 +137,32 @@ services:
       pi-init:
         condition: service_completed_successfully
 
-# Secrets are read from files in ./secrets/. Generate them before the first
-# "docker compose up" — see README.Docker.md.
+  # Optional TLS-terminating reverse proxy. Not started by default; enable with:
+  #   docker compose --profile tls up -d
+  # Set PI_SITE_ADDRESS in .env to the public hostname — Caddy then obtains and
+  # renews a Let's Encrypt certificate automatically (needs public DNS + ports
+  # 80/443 reachable). For an internal host without public DNS, add "tls internal"
+  # to the Caddyfile. When fronting with Caddy you can drop the pi "ports:" mapping
+  # above so the app is only reachable through TLS.
+  caddy:
+    image: caddy:2
+    profiles: ["tls"]
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      PI_SITE_ADDRESS: ${PI_SITE_ADDRESS:-localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      pi:
+        condition: service_healthy
+
+# Secrets are read from files in ./secrets/. Run "make init" (or the commands in
+# secrets/README.md) to generate them before the first "docker compose up".
 secrets:
   enckey:
     # head -c 96 /dev/urandom > secrets/enckey
@@ -161,3 +185,5 @@ secrets:
 
 volumes:
   db-data:
+  caddy-data:
+  caddy-config:

@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: (C) 2026 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: CC0-1.0
 # Restore the privacyIDEA database from a backup archive.
 # Run from anywhere — the script resolves paths relative to deploy/docker/.
 #

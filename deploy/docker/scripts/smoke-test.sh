@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: (C) 2026 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: CC0-1.0
 # Smoke-test a running single-node privacyIDEA stack.
 #
 # Assumes the stack from ../compose.yaml is already up (pi-init has completed and

@@ -17,7 +17,19 @@ except this README.
 | `mariadb_root_password`    | MariaDB root password (used by `scripts/backup.sh` / `restore.sh`). |
 | `bootstrap_admin_password` | Password for the initial admin account created by `pi-init`. |
 
-## Generate all at once
+## Generating the secrets
+
+The easiest way is from `deploy/docker/`:
+
+```bash
+make init          # or: ./scripts/init-secrets.sh
+```
+
+It creates any missing files with the correct format and permissions, leaves
+existing ones untouched, and prints the generated admin password once. The rest
+of this section documents the equivalent manual steps.
+
+## Generate all at once (manual)
 
 ```bash
 cd deploy/docker/secrets
