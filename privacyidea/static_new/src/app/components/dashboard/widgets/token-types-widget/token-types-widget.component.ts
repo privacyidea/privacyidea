@@ -136,6 +136,7 @@ export class TokenTypesWidgetComponent extends DashboardWidget implements OnInit
     }
 
     const typeByKey = new Map(tokenTypes.map((type) => [type.key, type]));
+    const initialCounts = cached ?? [];
 
     this.typeCountsRef.set(
       this.store.load("dashboard:tokens:by_type", () =>
@@ -149,7 +150,12 @@ export class TokenTypesWidgetComponent extends DashboardWidget implements OnInit
               }))
             )
           )
-        ).pipe(scan((accumulated: TokenTypeCount[], entry) => [...accumulated, entry], []))
+        ).pipe(
+          scan((accumulated: TokenTypeCount[], entry) => {
+            const withoutCurrent = accumulated.filter((item) => item.key !== entry.key);
+            return [...withoutCurrent, entry];
+          }, initialCounts)
+        )
       )
     );
   }

@@ -22,10 +22,10 @@ import { provideRouter } from "@angular/router";
 import { DashboardWidget, WidgetInstance } from "@models/dashboard";
 import { AuthService } from "@services/auth/auth.service";
 import { DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
-import { TokenCountParams, TokenService } from "@services/token/token.service";
+import { TokenCountParams, TokenService, TokenTypeKey } from "@services/token/token.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockTokenService } from "@testing/mock-services/mock-token-service";
-import { of } from "rxjs";
+import { of, Subject } from "rxjs";
 import { TokenTypesWidgetComponent } from "./token-types-widget.component";
 
 function makeCountResponse(count: number) {
@@ -118,7 +118,7 @@ describe("TokenTypesWidgetComponent", () => {
 
     const reentryTypes = tokenMock.getTokenCount.mock.calls
       .map(([params]) => (params as TokenCountParams | undefined)?.type)
-      .filter((type): type is string => Boolean(type));
+      .filter((type): type is TokenTypeKey => type !== undefined);
 
     expect(reentryTypes.length).toBe(2);
     expect(reentryTypes).toEqual(expect.arrayContaining(["hotp", "totp"]));
@@ -133,11 +133,58 @@ describe("TokenTypesWidgetComponent", () => {
 
     const refreshedTypes = tokenMock.getTokenCount.mock.calls
       .map(([params]) => (params as TokenCountParams | undefined)?.type)
-      .filter((type): type is string => Boolean(type));
+      .filter((type): type is TokenTypeKey => type !== undefined);
 
     expect(refreshedTypes).toContain("hotp");
     expect(refreshedTypes).toContain("totp");
     expect(refreshedTypes).toContain("push");
+  });
+
+  it("should keep existing type counts visible while partial reload updates are arriving", () => {
+    const store = TestBed.inject(DashboardDataStore);
+    store.invalidate("dashboard:tokens:by_type");
+
+    const initialCounts: Partial<Record<string, number>> = { hotp: 13, push: 2, spass: 1 };
+    tokenMock.getTokenCount.mockImplementation((params: TokenCountParams = {}) =>
+      of(makeCountResponse(params.type ? (initialCounts[params.type] ?? 0) : 0))
+    );
+
+    const fixture1 = TestBed.createComponent(TokenTypesWidgetComponent);
+    fixture1.componentRef.setInput("instance", instance);
+    fixture1.detectChanges();
+
+    const pendingPush = new Subject<ReturnType<typeof makeCountResponse>>();
+    const pendingSpass = new Subject<ReturnType<typeof makeCountResponse>>();
+    tokenMock.getTokenCount.mockImplementation((params: TokenCountParams = {}) => {
+      if (params.type === "hotp") {
+        return of(makeCountResponse(12));
+      }
+      if (params.type === "push") {
+        return pendingPush;
+      }
+      if (params.type === "spass") {
+        return pendingSpass;
+      }
+      return of(makeCountResponse(0));
+    });
+
+    const fixture2 = TestBed.createComponent(TokenTypesWidgetComponent);
+    fixture2.componentRef.setInput("instance", instance);
+    fixture2.detectChanges();
+
+    const component2 = fixture2.componentInstance;
+    expect(component2.typeCounts()).toEqual([
+      { key: "hotp", name: "HOTP", count: 12 },
+      { key: "push", name: "PUSH", count: 2 },
+      { key: "spass", name: "SPass", count: 1 }
+    ]);
+
+    pendingPush.next(makeCountResponse(2));
+    pendingPush.complete();
+    pendingSpass.next(makeCountResponse(1));
+    pendingSpass.complete();
+    fixture2.destroy();
+    fixture1.destroy();
   });
 
   it("should show an empty hint when no token type has tokens", () => {
