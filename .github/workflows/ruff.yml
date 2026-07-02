@@ -9,6 +9,7 @@ on:
       - 'privacyidea/**.py'
       - 'tests/**.py'
       - 'tools/**.py'
+      - '.github/workflows/ruff.yml'
 permissions: {}
 
 jobs:
