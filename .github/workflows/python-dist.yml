@@ -88,13 +88,13 @@ jobs:
         path: dist/*
     - name: Create GitHub pre-release
       id: gh_pre_release
-      uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
+      uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b # v3.0.1
       if: contains(github.ref_name, 'dev')
       with:
         files: dist/*
         prerelease: True
     - name: Create GitHub release draft
-      uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
+      uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b # v3.0.1
       if: steps.gh_pre_release.conclusion == 'skipped'
       with:
         files: dist/*
