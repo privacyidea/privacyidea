@@ -76,9 +76,6 @@ export class TokenEnrollmentLastStepDialogComponent extends AbstractDialogCompon
     return !NO_QR_CODE_TOKEN_TYPES.includes(this.data.tokenType);
   }
 
-  showQRCode(): boolean {
-    return !NO_QR_CODE_TOKEN_TYPES.includes(this.data.tokenType);
-  }
 
   onSwitchRoute() {
     this.dialogRef.close();

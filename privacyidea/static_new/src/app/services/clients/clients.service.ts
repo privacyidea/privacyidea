@@ -76,10 +76,5 @@ export class ClientsService implements ClientsServiceInterface {
     }
   }
 
-  requestClientsForAutocomplete(): void {
-    if (!this.autocompleteRequested()) {
-      this.autocompleteRequested.set(true);
-    }
-  }
 
 }

@@ -108,9 +108,6 @@ export class ContainerDetailsActionsComponent implements OnDestroy {
     this.containerService.stopPolling();
   }
 
-  ngOnDestroy(): void {
-    this.containerService.stopPolling();
-  }
 
   enrollTokenInContainer() {
     this.containerService.selectedContainerSerial.set(this.containerSerial());
