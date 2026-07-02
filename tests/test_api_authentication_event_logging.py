@@ -28,14 +28,12 @@ from typing import TYPE_CHECKING
 
 from flask import Response
 
-from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, AUTH_EVENT_TYPE_KEY
 from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs, AuthLogUserRole
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, PolicyAction, AUTHORIZED
 from privacyidea.lib.realm import set_realm, delete_realm
 from privacyidea.lib.token import init_token, remove_token, get_one_token, revoke_token
 from privacyidea.lib.user import User
-from privacyidea.models.utils import utc_now
 from .authlog_utils import AuthLogTestCase, assert_authentication_log, assert_authentication_log_entry
 
 
@@ -250,9 +248,7 @@ class _AuthLogContractTests(_ContractHost):
         self._enable_challenge_response()
         try:
             transaction_id = self._trigger_challenge()
-            for challenge in get_challenges(transaction_id=transaction_id):
-                challenge.expiration = utc_now() - datetime.timedelta(minutes=10)
-                challenge.save()
+            self._expire_challenges(transaction_id)
             self._assert_failed(self._authenticate("755224", transaction_id=transaction_id))
         finally:
             delete_policy("authlog_cr")

@@ -55,8 +55,7 @@ export interface PasskeyFinalizationPayload extends TokenEnrollmentPayload {
 @Injectable({ providedIn: "root" })
 export class PasskeyApiPayloadMapper
   extends BaseApiPayloadMapper
-  implements TokenApiPayloadMapper<PasskeyEnrollmentData>
-{
+  implements TokenApiPayloadMapper<PasskeyEnrollmentData> {
   override toApiPayload(data: PasskeyEnrollmentData): TokenEnrollmentPayload {
     const payload: TokenEnrollmentPayload = super.toApiPayload(data);
 

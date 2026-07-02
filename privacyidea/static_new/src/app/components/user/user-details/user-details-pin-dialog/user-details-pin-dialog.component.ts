@@ -42,7 +42,7 @@ export class UserDetailsPinDialogComponent extends AbstractDialogComponent<void,
   dialogActions = computed((): DialogAction<string>[] => {
     return [
       {
-        label: "Confirm",
+        label: $localize`Confirm`,
         value: "confirm",
         type: "confirm",
         disabled: !this.pinsMatch(),

@@ -24,13 +24,20 @@ export interface ActionDocumentation {
   info: string[];
   notes: string[];
 }
+
 export interface DocumentationServiceInterface {
   openDocumentation(page: string): Promise<void>;
+
   getVersionUrl(pageUrl: string): string;
+
   getFallbackUrl(pageUrl: string): string;
+
   checkFullUrl(url: string): Promise<boolean>;
+
   checkPageUrl(pageUrl: string): Promise<string | false>;
+
   openDocumentationPage(page: string): Promise<boolean>;
+
   /**
    * Based on the selected policy action and its scope,
    * fetches the corresponding documentation HTML page and extracts
@@ -40,19 +47,12 @@ export interface DocumentationServiceInterface {
    */
   getPolicyActionDocumentation(scope: string, actionName: string): Promise<ActionDocumentation | null>;
 }
+
 @Injectable()
 export class DocumentationService implements DocumentationServiceInterface {
   private readonly _versioningService = inject(VersioningService);
   private _baseUrl = "https://privacyidea.readthedocs.io/en/"; //TODO translation
-  getVersionUrl(pageUrl: string): string {
-    pageUrl = pageUrl.replace(/^\/+/, ""); // Remove leading slashes
-    const version = this._versioningService.version();
-    return `${this._baseUrl}v${version}/${pageUrl}`;
-  }
-  getFallbackUrl(pageUrl: string): string {
-    pageUrl = pageUrl.replace(/^\/+/, ""); // Remove leading slashes
-    return `${this._baseUrl}stable/${pageUrl}`;
-  }
+
   openDocumentation(page: string) {
     let pageUrl;
     if (page.startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
@@ -110,6 +110,18 @@ export class DocumentationService implements DocumentationServiceInterface {
     });
     return promise;
   }
+
+  getVersionUrl(pageUrl: string): string {
+    pageUrl = pageUrl.replace(/^\/+/, ""); // Remove leading slashes
+    const version = this._versioningService.version();
+    return `${this._baseUrl}v${version}/${pageUrl}`;
+  }
+
+  getFallbackUrl(pageUrl: string): string {
+    pageUrl = pageUrl.replace(/^\/+/, ""); // Remove leading slashes
+    return `${this._baseUrl}stable/${pageUrl}`;
+  }
+
   /**
    * * @param url The full URL to check (including base URL and page URL)
    * * Checks if the documentation page exists by fetching and parsing the HTML content.
@@ -127,6 +139,7 @@ export class DocumentationService implements DocumentationServiceInterface {
       return false;
     }
   }
+
   /**
    *
    * @param pageUrl The page URL to check (relative to the documentation base URL)
@@ -153,6 +166,7 @@ export class DocumentationService implements DocumentationServiceInterface {
       }
     });
   }
+
   async openDocumentationPage(page: string): Promise<boolean> {
     // First check the page and when found open it
     return new Promise(() => {
@@ -173,17 +187,7 @@ export class DocumentationService implements DocumentationServiceInterface {
       });
     });
   }
-  private async _getValidDocUrl(pageUrl: string): Promise<string | null> {
-    const versionUrl = this.getVersionUrl(pageUrl);
-    if (await this.checkFullUrl(versionUrl)) {
-      return versionUrl;
-    }
-    const fallbackUrl = this.getFallbackUrl(pageUrl);
-    if (await this.checkFullUrl(fallbackUrl)) {
-      return fallbackUrl;
-    }
-    return null;
-  }
+
   async getPolicyActionDocumentation(scope: string, actionName: string): Promise<ActionDocumentation | null> {
     if (!scope || !actionName) {
       return null;
@@ -233,5 +237,17 @@ export class DocumentationService implements DocumentationServiceInterface {
       console.error("Error fetching or parsing policy action documentation:", error);
       return null;
     }
+  }
+
+  private async _getValidDocUrl(pageUrl: string): Promise<string | null> {
+    const versionUrl = this.getVersionUrl(pageUrl);
+    if (await this.checkFullUrl(versionUrl)) {
+      return versionUrl;
+    }
+    const fallbackUrl = this.getFallbackUrl(pageUrl);
+    if (await this.checkFullUrl(fallbackUrl)) {
+      return fallbackUrl;
+    }
+    return null;
   }
 }

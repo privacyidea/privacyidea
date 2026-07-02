@@ -57,15 +57,7 @@ export class SubscriptionService {
   private readonly http = inject(HttpClient);
 
   private baseUrl = environment.proxyUrl + "/subscriptions";
-
-  constructor() {
-    effect(() => {
-      this.notificationService.handleResourceError(this.subscriptionsResource.error(), "subscriptions");
-    });
-  }
-
   private reloadTrigger = signal(0);
-
   subscriptionsResource = httpResource<PiResponse<Record<string, Subscription>>>(() => {
     this.reloadTrigger();
     if (!this.contentService.onSubscription()) {
@@ -77,6 +69,12 @@ export class SubscriptionService {
       headers: this.authService.getHeaders()
     };
   });
+
+  constructor() {
+    effect(() => {
+      this.notificationService.handleResourceError(this.subscriptionsResource.error(), "subscriptions");
+    });
+  }
 
   reload(): void {
     this.reloadTrigger.update((v) => v + 1);

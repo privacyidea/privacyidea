@@ -24,7 +24,9 @@
   <input
     class="hidden-input"
     type="password" />
-  <mat-form-field class="input-width-m" subscriptSizing="dynamic">
+  <mat-form-field
+    class="input-width-m"
+    subscriptSizing="dynamic">
     <mat-label i18n>PIN and/or OTP</mat-label>
     <input
       [value]="otpOrPinToTest()"
@@ -47,17 +49,15 @@
   <button
     (click)="testToken()"
     class="action-button-secondary button-width-l"
-    i18n
     mat-stroked-button>
     <mat-icon>help_outline</mat-icon>
-    Test Token
+    <span i18n>Test Token</span>
   </button>
   <button
     (click)="verifyOTPValue()"
     class="action-button-secondary button-width-l"
-    i18n
     mat-stroked-button>
     <mat-icon>help_outline</mat-icon>
-    Verify OTP Value
+    <span i18n>Verify OTP Value</span>
   </button>
 </div>

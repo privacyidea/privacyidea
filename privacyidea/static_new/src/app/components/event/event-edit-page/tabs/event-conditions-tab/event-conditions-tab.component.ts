@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { TitleCasePipe } from "@angular/common";
 import {
   ChangeDetectionStrategy,
   Component,
@@ -26,31 +25,26 @@ import {
   input,
   linkedSignal,
   output,
-  signal
+  signal,
+  WritableSignal
 } from "@angular/core";
-import { MatCardModule } from "@angular/material/card";
-import { MatFormField } from "@angular/material/form-field";
-import { MatIcon } from "@angular/material/icon";
-import { MatInput, MatLabel } from "@angular/material/input";
-import { MatTab, MatTabGroup, MatTabLabel } from "@angular/material/tabs";
+import { FormsModule } from "@angular/forms";
+import { MatButtonModule } from "@angular/material/button";
+import { MatExpansionModule } from "@angular/material/expansion";
+import { EventConditionListComponent } from "@components/event/event-edit-page/tabs/event-conditions-tab/event-condition-list/event-condition-list.component";
+import { SelectorButtonsComponent } from "@components/policies/policy-edit-page/policy-panels/edit-action-tab/selector-buttons/selector-buttons.component";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { EventService } from "@services/event/event.service";
-import { EventConditionListComponent } from "./event-condition-list/event-condition-list.component";
 
 @Component({
   selector: "app-event-conditions-tab",
   imports: [
     ClearableInputComponent,
-    MatFormField,
-    MatInput,
-    MatLabel,
-    TitleCasePipe,
-    MatTabGroup,
-    MatTab,
-    MatTabLabel,
+    FormsModule,
     EventConditionListComponent,
-    MatCardModule,
-    MatIcon
+    MatExpansionModule,
+    MatButtonModule,
+    SelectorButtonsComponent
   ],
   templateUrl: "./event-conditions-tab.component.html",
   styleUrl: "./event-conditions-tab.component.scss",
@@ -58,14 +52,11 @@ import { EventConditionListComponent } from "./event-condition-list/event-condit
 })
 export class EventConditionsTabComponent {
   protected readonly eventService = inject(EventService);
+  protected readonly Object = Object;
   conditions = input.required<Record<string, string>>();
   newConditions = output<Record<string, string>>();
-
   selectedConditions = linkedSignal(() => this.conditions());
-  conditionsToBeAdded: Record<string, string> = {};
-  selectedGroupIndex = 0;
-  protected readonly Object = Object;
-
+  conditionsToBeAdded = signal<Record<string, string>>({});
   addToolTip = $localize`Add Condition`;
   removeToolTip = $localize`Remove Condition`;
 
@@ -73,14 +64,14 @@ export class EventConditionsTabComponent {
   searchTerm = signal("");
 
   availableGroups = computed(() => Object.keys(this.eventService.moduleConditionsByGroup()));
-
   remainingConditionsByGroup = linkedSignal({
     source: () => ({
       available: this.eventService.moduleConditionsByGroup(),
       selected: this.selectedConditions(),
-      search: this.searchTerm()
+      search: this.searchTerm(),
+      toBeAdded: this.conditionsToBeAdded()
     }),
-    computation: ({ available, selected, search }) => {
+    computation: ({ available, selected, search, toBeAdded }) => {
       // TODO: Can we simplify this logic?
       // let remaining = deepCopy(available);
       const remaining: Record<string, Record<string, string>> = {};
@@ -90,26 +81,39 @@ export class EventConditionsTabComponent {
           if (conditionName in selected || !conditionName.toLowerCase().includes(search.toLowerCase())) {
             // delete remaining[groupName][conditionName];
           } else {
-            remaining[groupName][conditionName] = this.conditionsToBeAdded[conditionName] || "";
+            remaining[groupName][conditionName] = toBeAdded[conditionName] || "";
           }
         }
       }
       return remaining;
     }
   });
+  availableNonEmptyGroups = computed(() =>
+    this.availableGroups().filter((g) => Object.keys(this.remainingConditionsByGroup()[g] || {}).length > 0)
+  );
+  selectedGroup: WritableSignal<string> = linkedSignal({
+    source: () => this.availableNonEmptyGroups(),
+    computation: (groups, previous) => {
+      const prev = previous?.value;
+      if (prev && groups.includes(prev)) return prev;
+      return groups[0] ?? "";
+    }
+  });
+  remainingConditionsInSelectedGroup = computed(() => this.remainingConditionsByGroup()[this.selectedGroup()] ?? {});
 
   onConditionValueToBeAddedChange(conditionName: string, value: string | string[]) {
-    this.conditionsToBeAdded[conditionName] = Array.isArray(value) ? value.join(",") : value;
+    const normalizedValue = Array.isArray(value) ? value.join(",") : value;
+    this.conditionsToBeAdded.update((current) => ({ ...current, [conditionName]: normalizedValue }));
   }
 
   onConditionValueChange(conditionName: string, value: string | string[]) {
-    const stringValue = Array.isArray(value) ? value.join(",") : value;
+    const normalizedValue = Array.isArray(value) ? value.join(",") : value;
     this.selectedConditions.set({
       ...this.selectedConditions(),
-      [conditionName]: stringValue
+      [conditionName]: normalizedValue
     });
     this.newConditions.emit(this.selectedConditions());
-    if (stringValue === "") {
+    if (normalizedValue === "") {
       // notify selected condition list to focus the new empty input
       this.addedCondition.set(conditionName);
     }

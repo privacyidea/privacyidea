@@ -31,9 +31,11 @@ import { PasskeyCheckParams, ValidateCheckResponse, ValidateService, WebAuthnSig
 interface PasskeyShim {
   isConditionalMediationAvailable?: jest.Mock | (() => Promise<boolean>);
 }
+
 interface WindowWithPasskey extends Omit<Window, "PublicKeyCredential"> {
   PublicKeyCredential?: PasskeyShim;
 }
+
 describe("ValidateService", () => {
   let validateService: ValidateService;
   let http: HttpClient;

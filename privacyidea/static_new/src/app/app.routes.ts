@@ -20,7 +20,7 @@ import { NgModule } from "@angular/core";
 import { RouterModule, Routes } from "@angular/router";
 import { LayoutComponent } from "./components/layout/layout.component";
 import { LoginComponent } from "./components/login/login.component";
-import { adminMatch, AuthGuard, selfServiceMatch } from "./guards/auth.guard";
+import { adminMatch, AuthGuard, loginGuard, selfServiceMatch } from "./guards/auth.guard";
 import { ApplicationService } from "@services/application/application.service";
 import { AuditService } from "@services/audit/audit.service";
 import { AuthenticationLogService } from "@services/authentication-log/authentication-log.service";
@@ -55,7 +55,7 @@ import { UiPolicyService } from "@services/ui-policy/ui-policy.service";
 import { UserService } from "@services/user/user.service";
 
 export const routes: Routes = [
-  { path: "login", component: LoginComponent },
+  { path: "login", component: LoginComponent, canActivate: [loginGuard] },
   { path: "", redirectTo: "login", pathMatch: "full" },
   {
     path: "",

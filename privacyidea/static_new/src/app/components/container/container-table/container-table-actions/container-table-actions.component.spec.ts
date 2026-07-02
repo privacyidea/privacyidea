@@ -35,6 +35,7 @@ import {
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { ContentService } from "@services/content/content.service";
 import { DocumentationService } from "@services/documentation/documentation.service";
+import { DialogService } from "@services/dialog/dialog.service";
 
 describe("ContainerTableActionsComponent", () => {
   let component: ContainerTableActionsComponent;
@@ -68,6 +69,42 @@ describe("ContainerTableActionsComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  describe("deleteSelectedContainer", () => {
+    function mockDialogResult(result: unknown): void {
+      jest
+        .spyOn((component as unknown as { dialogService: DialogService }).dialogService, "openDialog")
+        .mockReturnValue({ afterClosed: () => of(result) } as ReturnType<DialogService["openDialog"]>);
+    }
+
+    it("deletes every selected container, clears the selection and reloads when confirmed", () => {
+      const reloadSpy = jest.spyOn(containerService.containerResource, "reload");
+      containerService.containerSelection.set([
+        { serial: "CONT-1" },
+        { serial: "CONT-2" }
+      ] as ReturnType<typeof containerService.containerSelection>);
+      mockDialogResult(true);
+
+      component.deleteSelectedContainer();
+
+      expect(containerService.deleteContainer).toHaveBeenCalledWith("CONT-1");
+      expect(containerService.deleteContainer).toHaveBeenCalledWith("CONT-2");
+      expect(containerService.containerSelection()).toEqual([]);
+      expect(reloadSpy).toHaveBeenCalled();
+    });
+
+    it("does nothing when the confirmation is dismissed", () => {
+      containerService.containerSelection.set([
+        { serial: "CONT-1" }
+      ] as ReturnType<typeof containerService.containerSelection>);
+      mockDialogResult(false);
+
+      component.deleteSelectedContainer();
+
+      expect(containerService.deleteContainer).not.toHaveBeenCalled();
+      expect(containerService.containerSelection().length).toBe(1);
+    });
   });
 
   describe("getFilterIconName", () => {

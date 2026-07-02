@@ -11,30 +11,21 @@ jobs:
   trigger-gitlab:
     name: Trigger internal GitLab pipeline on branch-* tag
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     environment: gitlab
 
     steps:
       - name: Check out repo
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0
           persist-credentials: false
 
       - name: Determine if tag is on a branch-* branch
         id: check
-        env:
-          GITHUB_SHA: ${{ github.sha }}
-        run: |
-          branches=$(git branch -r --contains "$GITHUB_SHA" | sed 's|^[ *]*origin/||' | grep -E '^branch-' || true)
-          if [ -z "$branches" ]; then
-            echo "Tag commit is not on any branch-* branch; skipping."
-            echo "match=false" >> "$GITHUB_OUTPUT"
-          else
-            source_branch=$(echo "$branches" | head -n1)
-            echo "Tag commit is on: $source_branch"
-            echo "match=true" >> "$GITHUB_OUTPUT"
-            echo "source_branch=$source_branch" >> "$GITHUB_OUTPUT"
-          fi
+        uses: ./.github/actions/tag-source-branch
+        with:
+          sha: ${{ github.sha }}
 
       - name: On Tag Trigger Pipeline
         if: steps.check.outputs.match == 'true'
@@ -42,7 +33,7 @@ jobs:
           GITLAB_TRIGGER_URL: https://lucan.netknights.it/api/v4/projects/7/trigger/pipeline
           GITLAB_TRIGGER_TOKEN: ${{ secrets.GITLAB_TRIGGER_TOKEN_BRANCH }}
           GITHUB_TAG: ${{ github.ref_name }}
-          GITHUB_BRANCH: ${{ steps.check.outputs.source_branch }}
+          GITHUB_BRANCH: ${{ steps.check.outputs.source-branch }}
           GITHUB_SHA: ${{ github.sha }}
           GITHUB_REPO_URL: git@github.com:${{ github.repository }}.git
         run: |

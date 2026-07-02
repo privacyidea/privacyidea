@@ -24,7 +24,7 @@ import { MatDialog } from "@angular/material/dialog";
 import { AuthService } from "@services/auth/auth.service";
 import { MachineService } from "@services/machine/machine.service";
 import { NotificationService } from "@services/notification/notification.service";
-import { TokenService } from "@services/token/token.service";
+import { TokenDetails, TokenService } from "@services/token/token.service";
 import { ValidateService } from "@services/validate/validate.service";
 import {
     MockLocalService,
@@ -85,5 +85,63 @@ describe("TokenDetailsActionsComponent", () => {
     component.testPasskey.subscribe(spy);
     component.testPasskey.emit();
     expect(spy).toHaveBeenCalled();
+  });
+
+  describe("hasAnyAction", () => {
+    it("returns true for a non-webauthn/non-passkey token type", () => {
+      component.tokenType = signal("hotp");
+      expect(component["hasAnyAction"]).toBe(true);
+    });
+
+    it("returns true for totp token type", () => {
+      component.tokenType = signal("totp");
+      expect(component["hasAnyAction"]).toBe(true);
+    });
+
+    it("returns true when token type is passkey", () => {
+      component.tokenType = signal("passkey");
+      expect(component["hasAnyAction"]).toBe(true);
+    });
+
+    it("returns true when rollout_state is verify", () => {
+      component.tokenType = signal("webauthn");
+      fixture.componentRef.setInput("token", { rollout_state: "verify" } as TokenDetails);
+      expect(component["hasAnyAction"]).toBe(true);
+    });
+
+    it("returns true for webauthn when setpin action is allowed", () => {
+      component.tokenType = signal("webauthn");
+      fixture.componentRef.setInput("token", { rollout_state: "" } as TokenDetails);
+      const authService = TestBed.inject(AuthService);
+      jest.spyOn(authService, "actionAllowed").mockReturnValue(true);
+      expect(component["hasAnyAction"]).toBe(true);
+    });
+
+    it("returns true for webauthn when setrandompin/otp_pin_set_random actions are allowed", () => {
+      component.tokenType = signal("webauthn");
+      fixture.componentRef.setInput("token", { rollout_state: "" } as TokenDetails);
+      const authService = TestBed.inject(AuthService);
+      jest.spyOn(authService, "actionAllowed").mockReturnValue(false);
+      jest.spyOn(authService, "actionsAllowed").mockReturnValue(true);
+      expect(component["hasAnyAction"]).toBe(true);
+    });
+
+    it("returns false for webauthn when no actions are allowed and not in verify state", () => {
+      component.tokenType = signal("webauthn");
+      fixture.componentRef.setInput("token", { rollout_state: "" } as TokenDetails);
+      const authService = TestBed.inject(AuthService);
+      jest.spyOn(authService, "actionAllowed").mockReturnValue(false);
+      jest.spyOn(authService, "actionsAllowed").mockReturnValue(false);
+      expect(component["hasAnyAction"]).toBe(false);
+    });
+
+    it("returns false for webauthn with no token and no actions allowed", () => {
+      component.tokenType = signal("webauthn");
+      fixture.componentRef.setInput("token", undefined);
+      const authService = TestBed.inject(AuthService);
+      jest.spyOn(authService, "actionAllowed").mockReturnValue(false);
+      jest.spyOn(authService, "actionsAllowed").mockReturnValue(false);
+      expect(component["hasAnyAction"]).toBe(false);
+    });
   });
 });

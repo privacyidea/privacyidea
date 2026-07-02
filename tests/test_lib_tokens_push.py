@@ -527,7 +527,7 @@ class PushTokenTestCase(MyTestCase):
                               content_type="application/json")
 
                 # In two seconds we need to run an update on the challenge table.
-                Timer(2, self._mark_challenge_as_accepted).start()
+                Timer(2, self._mark_challenge_as_accepted, args=[token.token.serial]).start()
 
                 # Clear session before recreating a new challenge to avoid conflicts
                 db.session.expunge_all()
@@ -583,10 +583,12 @@ class PushTokenTestCase(MyTestCase):
         delete_policy('push_config')
         remove_token(serial=serial)
 
-    def _mark_challenge_as_accepted(self):
-        # We simply mark all challenges as successfully answered!
+    def _mark_challenge_as_accepted(self, serial):
+        # Mark the token's challenges as successfully answered. Query by serial
+        # (not unfiltered get_challenges(), which can't be served from the cache
+        # in aggregate) so this works whether challenges live in the DB or Redis.
         with self.app.test_request_context():
-            challenges = get_challenges()
+            challenges = get_challenges(serial=serial)
             for challenge in challenges:
                 challenge.set_otp_status(True)
                 challenge.save()

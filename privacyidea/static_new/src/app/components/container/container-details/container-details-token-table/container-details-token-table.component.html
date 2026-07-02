@@ -21,11 +21,17 @@
   class="container-details-token-table-layout"
   i18n-aria-label>
   <div class="flex-column">
-    <h3
-      class="margin-8"
-      i18n>
-      Tokens in Container
-    </h3>
+    <div class="flex-row ali-center gap-8">
+      <h4
+        class="details-card-title"
+        i18n>
+        Tokens in Container
+      </h4>
+      <app-container-details-token-actions
+        [containerSerial]="containerSerial()"
+        [user]="assignedUser()"
+        [tokenData]="containerTokenData()" />
+    </div>
     <div class="flex-row filter-paginator-container ali-center">
       @if (dataSource().data.length > 1) {
         <mat-form-field
@@ -67,6 +73,7 @@
           <th
             *matHeaderCellDef
             attr.aria-label="{{ column.label }} Header"
+            i18n-attr.aria-label
             mat-header-cell>
             <div class="flex ali-center">
               {{ column.label }}
@@ -84,6 +91,7 @@
           <td
             *matCellDef="let element"
             attr.aria-label="{{ column.label }} Cell"
+            i18n-attr.aria-label
             mat-cell>
             <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
               @switch (column.key) {
@@ -97,6 +105,7 @@
                         (click)="contentService.tokenSelected(element.token.serial)"
                         (keydown.enter)="contentService.tokenSelected(element.token.serial)"
                         attr.aria-label="{{ column.label }} Link"
+                        i18n-attr.aria-label
                         class="cursor-pointer"
                         role="button"
                         tabindex="0">
@@ -130,6 +139,7 @@
                             contentService.userSelected(element.token[column.key], element.token['user_realm'])
                           "
                           attr.aria-label="{{ column.label }} Link"
+                          i18n-attr.aria-label
                           class="cursor-pointer"
                           role="button"
                           tabindex="0">
@@ -153,6 +163,7 @@
                     @if (tableUtilsService.isLink(column.key)) {
                       <a
                         attr.aria-label="{{ column.label }} Link"
+                        i18n-attr.aria-label
                         href="#">
                         {{ element.token[column.key] }}
                       </a>
@@ -173,10 +184,13 @@
         <th
           *matHeaderCellDef
           aria-label="Actions Column Header"
-          i18n
           i18n-aria-label
           mat-header-cell>
-          <div class="flex just-center">Actions</div>
+          <div
+            class="flex just-center"
+            i18n>
+            Actions
+          </div>
         </th>
         <td
           *matCellDef="let element"

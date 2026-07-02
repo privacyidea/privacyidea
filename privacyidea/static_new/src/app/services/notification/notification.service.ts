@@ -35,8 +35,11 @@ export interface NotificationServiceInterface {
   startTime: number;
 
   success(message: string, options?: { duration?: number }): void;
+
   error(message: string, options?: { duration?: number }): void;
+
   warning(message: string, options?: { duration?: number }): void;
+
   handleResourceError(error: Error | undefined, subject: string): void;
 }
 
@@ -45,10 +48,9 @@ export interface NotificationServiceInterface {
 })
 export class NotificationService implements NotificationServiceInterface {
   private readonly snackBar = inject(MatSnackBar);
-  private _totalDuration = 5000;
-
   private readonly _debounceMs = 200;
   private readonly _maxBatchedDuration = 15000;
+  private _totalDuration = 5000;
   private _queue: QueuedNotification[] = [];
   private _flushTimer: ReturnType<typeof setTimeout> | undefined;
 

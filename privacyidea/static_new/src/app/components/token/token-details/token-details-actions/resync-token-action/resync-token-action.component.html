@@ -18,14 +18,18 @@
 -->
 <ng-content select="[panelTitle]"></ng-content>
 <div class="actions-pin-input">
-  <mat-form-field class="input-width-m" subscriptSizing="dynamic">
+  <mat-form-field
+    class="input-width-m"
+    subscriptSizing="dynamic">
     <mat-label i18n>Current OTP</mat-label>
     <input
-      [value]="fristOTPValue()"
-      (input)="fristOTPValue.set($any($event.target).value)"
+      [value]="firstOTPValue()"
+      (input)="firstOTPValue.set($any($event.target).value)"
       matInput />
   </mat-form-field>
-  <mat-form-field class="input-width-m" subscriptSizing="dynamic">
+  <mat-form-field
+    class="input-width-m"
+    subscriptSizing="dynamic">
     <mat-label i18n>Next OTP</mat-label>
     <input
       [value]="secondOTPValue()"
@@ -37,9 +41,8 @@
   <button
     (click)="resyncOTPToken()"
     class="action-button-secondary button-width-l"
-    i18n
     mat-stroked-button>
     <mat-icon>sync</mat-icon>
-    Resync Token
+    <span i18n>Resync Token</span>
   </button>
 </div>

@@ -20,15 +20,21 @@ Shared test support for the conditional-access authentication log: the :class:`A
 ``assert_authentication_log*`` helpers, used across the authentication-log test modules. Registered for pytest
 assert-rewriting in tests/conftest.py so the plain ``assert`` statements still produce rich failure diffs.
 """
+import datetime
+import json
 from collections import Counter
 
 from flask import Response
 
+from privacyidea.lib.cache import redis_feature_enabled
+from privacyidea.lib.cache.redis import redis_client_for_feature, _TXN_KEY
+from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs, AuthLogUserRole
 from privacyidea.lib.policy import set_policy, SCOPE, PolicyAction
 from privacyidea.lib.token import init_token, remove_token, get_tokens
 from privacyidea.lib.user import User
 from privacyidea.models import AuthenticationLog, db
+from privacyidea.models.utils import utc_now
 from .base import MyApiTestCase
 
 
@@ -67,6 +73,24 @@ class AuthLogTestCase(MyApiTestCase):
     @staticmethod
     def _enable_challenge_response() -> None:
         set_policy("authlog_cr", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
+
+    @staticmethod
+    def _expire_challenges(transaction_id: str) -> None:
+        """Make every challenge of a transaction expired-but-present, so the next answer is rejected as an expired
+        challenge on both backends. A DB update is a no-op under Redis (and _update_challenge_in_cache refuses to
+        persist an already-expired challenge), so rewrite the cached payload directly, keeping the key alive."""
+        past = utc_now() - datetime.timedelta(minutes=10)
+        if redis_feature_enabled("challenges"):
+            client = redis_client_for_feature("challenges")
+            key = _TXN_KEY.format(transaction_id)
+            for serial, payload in client.hgetall(key).items():
+                data = json.loads(payload)
+                data["expiration"] = past.isoformat()
+                client.hset(key, serial, json.dumps(data))
+        else:
+            for challenge in get_challenges(transaction_id=transaction_id):
+                challenge.expiration = past
+                challenge.save()
 
     def _add_second_token(self, pin: str) -> None:
         # A second HOTP token for the same user, sharing the first token's OTP key.

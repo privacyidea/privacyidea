@@ -88,6 +88,15 @@ Usually you will need to upgrade/migrate the database:
 
 Now you need to restart your webserver for the new code to take effect.
 
+.. note::
+
+   If you have enabled the optional :ref:`redis_cache`, authentications that
+   were already in flight at the moment of the restart may need to be
+   started over by the user. The Redis cache is opt-in and does not affect
+   the schema upgrade itself; see :ref:`redis_cache_upgrades` for the
+   payload-compatibility policy and what to expect when a release changes
+   the on-the-wire format.
+
 .. _upgrade_packaged:
 
 Upgrading a packaged installation

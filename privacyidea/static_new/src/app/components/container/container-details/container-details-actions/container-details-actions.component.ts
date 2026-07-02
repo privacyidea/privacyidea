@@ -96,10 +96,6 @@ export class ContainerDetailsActionsComponent implements OnDestroy {
     );
   });
 
-  ngOnDestroy(): void {
-    this.containerService.stopPolling();
-  }
-
   constructor() {
     effect(() => {
       if (!this.containerService.isPollingActive()) {
@@ -107,6 +103,11 @@ export class ContainerDetailsActionsComponent implements OnDestroy {
       }
     });
   }
+
+  ngOnDestroy(): void {
+    this.containerService.stopPolling();
+  }
+
 
   enrollTokenInContainer() {
     this.containerService.selectedContainerSerial.set(this.containerSerial());
@@ -194,9 +195,9 @@ export class ContainerDetailsActionsComponent implements OnDestroy {
       .unregister(this.containerSerial())
       .subscribe((unregisterResponse: PiResponse<ContainerUnregisterData>) => {
         if (unregisterResponse?.result?.value?.success) {
-          this.notificationService.success("Container unregistered successfully.");
+          this.notificationService.success($localize`Container unregistered successfully.`);
         } else {
-          this.notificationService.error("Failed to unregister container.");
+          this.notificationService.error($localize`Failed to unregister container.`);
         }
         this.containerService.containerDetailsResource.reload();
       });

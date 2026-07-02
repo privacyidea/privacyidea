@@ -61,6 +61,7 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
@@ -77,16 +78,17 @@ interface ResolverWithPriority {
   name: string;
   priority: number | null;
 }
+
 type NodeResolversMap = Record<string, ResolverWithPriority[]>;
 
 const ALL_NODES_VALUE = "__all_nodes__";
 const NO_NODE_ID = "";
 
 const columnKeysMap = [
-  { key: "name", label: "Realm" },
-  { key: "isDefault", label: "Default" },
-  { key: "resolvers", label: "Resolvers" },
-  { key: "actions", label: "Actions" }
+  { key: "name", label: $localize`Realm` },
+  { key: "isDefault", label: $localize`Default` },
+  { key: "resolvers", label: $localize`Resolvers` },
+  { key: "actions", label: $localize`Actions` }
 ];
 
 @Component({
@@ -118,7 +120,8 @@ const columnKeysMap = [
     MatTable,
     MatTooltip,
     NgClass,
-    ScrollToTopDirective
+    ScrollToTopDirective,
+    ScrollEdgesDirective
   ],
   templateUrl: "./realm-table.component.html",
   styleUrl: "./realm-table.component.scss"
@@ -136,14 +139,11 @@ export class RealmTableComponent implements OnDestroy, OnInit {
   private readonly _notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly router = inject(Router);
   private readonly pendingChangesService = inject(PendingChangesService);
-
-  // View Children
-  @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
-
   // Table Config
   protected readonly columnKeysMap = columnKeysMap;
   readonly columnKeys: string[] = this.columnKeysMap.map((column) => column.key);
-
+  // View Children
+  @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
   // Table State Signals
   selectedNode = signal<string>(ALL_NODES_VALUE);
   filterString = signal<string>("");
@@ -588,6 +588,10 @@ export class RealmTableComponent implements OnDestroy, OnInit {
     this.router.navigateByUrl(ROUTE_PATHS.USERS_RESOLVERS_DETAILS + resolverName);
   }
 
+  ngOnDestroy(): void {
+    this.pendingChangesService.clearAllRegistrations();
+  }
+
   // --- Private Helpers ---
   private _clientsideSortRealmData(data: RealmRow[], s: Sort): RealmRow[] {
     if (!s.direction) return data;
@@ -611,9 +615,5 @@ export class RealmTableComponent implements OnDestroy, OnInit {
       if (va > vb) return 1 * dir;
       return 0;
     });
-  }
-
-  ngOnDestroy(): void {
-    this.pendingChangesService.clearAllRegistrations();
   }
 }

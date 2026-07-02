@@ -58,26 +58,25 @@ export class TokenImportComponent implements OnDestroy, OnInit {
   private readonly pendingChangesService = inject(PendingChangesService);
   protected readonly Object = Object;
   fileTypes: Record<string, string> = {
-    "OATH CSV": "CSV File for OATH Tokens",
-    "Yubikey CSV": "CSV File for Yubikey Tokens",
-    pskc: "PSKC File",
-    "aladdin-xml": "XML File from Aladdin or SafeNet"
+    "OATH CSV": $localize`CSV File for OATH Tokens`,
+    "Yubikey CSV": $localize`CSV File for Yubikey Tokens`,
+    pskc: $localize`PSKC File`,
+    "aladdin-xml": $localize`XML File from Aladdin or SafeNet`
   };
   fileType = signal<string>("OATH CSV");
   fileName = signal("");
   file = signal<string | File>("");
   preSharedKey = signal("");
+  readonly preSharedKeyValid = computed(() => [0, 32].includes(this.preSharedKey().length));
+  readonly formValid = computed(() => !!this.file() && this.preSharedKeyValid());
   pskPassword = signal("");
   pskValidationOptions: Record<string, string> = {
-    no_check: "Do not verify the authenticity",
-    check_fail_soft: "Skip tokens that can not be verified",
-    check_fail_hard: "Abort operation on unverifiable token"
+    no_check: $localize`Do not verify the authenticity`,
+    check_fail_soft: $localize`Skip tokens that can not be verified`,
+    check_fail_hard: $localize`Abort operation on unverifiable token`
   };
   pskValidation = signal("check_fail_hard");
   selectedRealms = signal<string[]>(this.realmService.defaultRealm() ? [this.realmService.defaultRealm()!] : []);
-
-  readonly preSharedKeyValid = computed(() => [0, 32].includes(this.preSharedKey().length));
-  readonly formValid = computed(() => !!this.file() && this.preSharedKeyValid());
 
   ngOnInit(): void {
     this.pendingChangesService.registerHasChanges(
@@ -127,7 +126,7 @@ export class TokenImportComponent implements OnDestroy, OnInit {
           const success = result.result?.value?.n_imported || 0;
           const failed = result.result?.value?.n_not_imported || 0;
           const total = success + failed;
-          this.notificationService.success(success + "/" + total + " tokens imported successfully.");
+          this.notificationService.success($localize`${success}/${total} tokens imported successfully.`);
         },
         error: () => {
           // error handled in the token service

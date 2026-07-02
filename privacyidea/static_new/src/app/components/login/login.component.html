@@ -17,9 +17,7 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
-  aria-label="Login Container"
-  class="login-container"
-  i18n-aria-label>
+  aria-label="Login Container" class="login-container" i18n-aria-label>
   <div class="login-scroll">
     @if (customLogo()) {
       <img
@@ -61,16 +59,14 @@
     @if (useRemoteLogin()) {
       <div class="login-form">
         <h3
-          class="margin-bottom-16 text-center"
-          i18n>
+          class="margin-bottom-16 text-center" i18n>
           Login as {{ remoteUser() }}
         </h3>
 
         <p
-          class="margin-top-0 margin-bottom-32"
-          i18n>
-          You are authenticated by the web server as user <strong>{{ remoteUser() }}</strong
-          >. You may log in as this user to privacyIDEA without any further credentials.
+          class="margin-top-0 margin-bottom-32" i18n>
+          You are authenticated by the web server as user <strong>{{ remoteUser() }}</strong>. You may log in as this
+          user to privacyIDEA without any further credentials.
         </p>
 
         <button
@@ -128,46 +124,35 @@
 
         @if (realms().length > 0) {
           <mat-form-field>
-            <mat-label>Realm</mat-label>
+            <mat-label i18n>Realm</mat-label>
             <mat-select
-              (selectionChange)="realm.set($event.value)"
-              [value]="realm()">
+              (selectionChange)="realm.set($event.value)" [value]="realm()">
               @for (realmOption of realms(); track realmOption) {
                 <mat-option [value]="realmOption">{{ realmOption }}</mat-option>
               }
             </mat-select>
             @if (realm() !== "") {
               <app-clear-button
-                (clearButtonClick)="clearRealmSelection($event)"
-                matSuffix></app-clear-button>
+                (clearButtonClick)="clearRealmSelection($event)" matSuffix></app-clear-button>
             }
           </mat-form-field>
         }
 
         @if (!showOtpField()) {
           <mat-form-field
-            appearance="outline"
-            subscriptSizing="dynamic">
+            appearance="outline" subscriptSizing="dynamic">
             <mat-label i18n="Login username label">Username</mat-label>
             <input
-              #usernameInput
-              [formField]="usernameField"
-              id="username"
-              matInput
-              type="text" />
+              #usernameInput [formField]="usernameField" id="username" matInput type="text" />
           </mat-form-field>
         }
 
         @if (!showOtpField()) {
           <mat-form-field
-            appearance="outline"
-            subscriptSizing="dynamic">
+            appearance="outline" subscriptSizing="dynamic">
             <mat-label i18n="Login password label">Password</mat-label>
             <input
-              [formField]="passwordField"
-              id="password"
-              matInput
-              [type]="hidePassword() ? 'password' : 'text'" />
+              [formField]="passwordField" [type]="hidePassword() ? 'password' : 'text'" id="password" matInput />
             <button
               (click)="hidePassword.set(!hidePassword())"
               [aria-label]="hidePassword() ? 'Show password' : 'Hide password'"
@@ -184,12 +169,7 @@
           <mat-form-field appearance="outline">
             <mat-label i18n="Login OTP label">One-Time-Password</mat-label>
             <input
-              #otpInput
-              [formField]="otpField"
-              autocomplete="one-time-code"
-              id="otp"
-              matInput
-              type="text" />
+              #otpInput [formField]="otpField" autocomplete="one-time-code" id="otp" matInput type="text" />
           </mat-form-field>
         }
 

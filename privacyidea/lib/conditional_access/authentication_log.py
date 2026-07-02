@@ -487,8 +487,8 @@ def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
     """
     Return a single page of authentication log entries matching the given filters.
 
-    The filter parameters -- ``resolver``, ``uid``, ``realm``, ``username``, ``user_role``, ``event_type``, ``source_ip``,
-    ``serial``, ``transaction_id``, ``previous_transaction_id``, ``client_label``, ``start_time`` and
+    The filter parameters -- ``resolver``, ``uid``, ``realm``, ``username``, ``user_role``, ``event_type``,
+    ``source_ip``, ``serial``, ``transaction_id``, ``previous_transaction_id``, ``client_label``, ``start_time`` and
     ``end_time`` -- behave
     exactly like :func:`get_authentication_logs`. The remaining parameters control visibility scoping and pagination:
 
@@ -553,11 +553,10 @@ def delete_authentication_logs(resolver: str | list[str] | None = None,
     """
     Delete all authentication log entries matching the given filters and return the number deleted.
 
-    The filter parameters -- ``resolver``, ``uid``, ``realm``, ``username``, ``user_role``, ``event_type``, ``source_ip``,
-    ``serial``, ``transaction_id``, ``previous_transaction_id``, ``client_label``, ``start_time`` and
-    ``end_time`` -- behave
-    exactly like :func:`get_authentication_logs` (to delete entries older than a point in time, pass
-    ``end_time``). The caller must pass at least one filter: with no filter this would delete the entire log,
+    The filter parameters -- ``resolver``, ``uid``, ``realm``, ``username``, ``user_role``, ``event_type``,
+    ``source_ip``, ``serial``, ``transaction_id``, ``previous_transaction_id``, ``client_label``, ``start_time`` and
+    ``end_time`` -- behave exactly like :func:`get_authentication_logs` (to delete entries older than a point in time,
+    pass ``end_time``). The caller must pass at least one filter: with no filter this would delete the entire log,
     which this function refuses.
 
     :param visibility_scopes: restrict the deletion to entries matching any of these scopes

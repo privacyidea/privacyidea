@@ -125,7 +125,7 @@ describe("TableUtilsService", () => {
     ["username", false],
     ["realms", false],
     ["unknown", false]
-  ])('isLink("%s") → %s', (key, expected) => {
+  ])("isLink(\"%s\") → %s", (key, expected) => {
     expect(service.isLink(key)).toBe(expected);
   });
 
@@ -173,11 +173,11 @@ describe("TableUtilsService", () => {
       expect(service.getClassForColumn("failcount", { failcount: 5, maxfail: 5 })).toBe("highlight-false-clickable");
     });
 
-    it('returns "" when failcount is empty string', () => {
+    it("returns \"\" when failcount is empty string", () => {
       expect(service.getClassForColumn("failcount", { failcount: "", maxfail: 5 })).toBe("");
     });
 
-    it('returns "" when active is undefined', () => {
+    it("returns \"\" when active is undefined", () => {
       expect(service.getClassForColumn("active", { active: undefined })).toBe("");
     });
   });
@@ -193,7 +193,7 @@ describe("TableUtilsService", () => {
       expect(service.getTooltipForColumn("failcount", { revoked: true })).toBe("Revoked");
     });
 
-    it('returns empty string when active = ""', () => {
+    it("returns empty string when active = \"\"", () => {
       expect(service.getTooltipForColumn("active", { active: "" })).toBe("");
     });
 
@@ -210,7 +210,7 @@ describe("TableUtilsService", () => {
       [{ active: true, locked: true }, "locked"],
       [{ active: false, revoked: true }, "revoked"],
       [{ active: "" }, ""]
-    ])('maps element → "%s"', (element, expected) => {
+    ])("maps element → \"%s\"", (element, expected) => {
       expect(service.getDisplayText("active", element)).toBe(expected);
     });
 
@@ -244,7 +244,7 @@ describe("TableUtilsService", () => {
     ["count_window", "details-value"],
     ["sync_window", "details-value"],
     ["other", ""]
-  ])('getDivClassForKey("%s") → "%s"', (key, expected) => {
+  ])("getDivClassForKey(\"%s\") → \"%s\"", (key, expected) => {
     expect(service.getDivClassForKey(key)).toBe(expected);
   });
 
@@ -254,11 +254,11 @@ describe("TableUtilsService", () => {
     ["realms", "table-scroll-container"],
     ["description", "table-scroll-container"],
     ["xyz", "flex-center-vertical"]
-  ])('getClassForColumnKey("%s") → "%s"', (col, expected) => {
+  ])("getClassForColumnKey(\"%s\") → \"%s\"", (col, expected) => {
     expect(service.getClassForColumnKey(col)).toBe(expected);
   });
 
-  it('getChildClassForColumnKey returns "scroll-item" only for scroll containers', () => {
+  it("getChildClassForColumnKey returns \"scroll-item\" only for scroll containers", () => {
     expect(service.getChildClassForColumnKey("realms")).toBe("scroll-item");
     expect(service.getChildClassForColumnKey("active")).toBe("");
   });
@@ -278,7 +278,7 @@ describe("TableUtilsService", () => {
     ["realms", "height-78"],
     ["tokengroup", "height-78"],
     ["id", "height-53"]
-  ])('getTdClassForKey("%s") includes %s', (key, expectedPart) => {
+  ])("getTdClassForKey(\"%s\") includes %s", (key, expectedPart) => {
     expect(service.getTdClassForKey(key)).toContain(expectedPart);
   });
 
@@ -293,7 +293,7 @@ describe("TableUtilsService", () => {
     ["damaged", true, "highlight-false-clickable"],
     ["lost", true, "highlight-false-clickable"],
     ["other", true, ""]
-  ])('getSpanClassForState("%s", %s) → %s', (state, clickable, expected) => {
+  ])("getSpanClassForState(\"%s\", %s) → %s", (state, clickable, expected) => {
     expect(service.getSpanClassForState(state, clickable)).toBe(expected);
   });
 
@@ -301,7 +301,7 @@ describe("TableUtilsService", () => {
     ["active", "active"],
     ["disabled", "deactivated"],
     ["mystery", "mystery"]
-  ])('getDisplayTextForState("%s") → %s', (state, expected) => {
+  ])("getDisplayTextForState(\"%s\") → %s", (state, expected) => {
     expect(service.getDisplayTextForState(state)).toBe(expected);
   });
 

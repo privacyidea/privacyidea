@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: (C) 2026 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: CC0-1.0
+#
+# Determines whether the tagged commit also sits on a `branch-*` maintenance
+# branch, and if so which one. Used by the GitLab-trigger workflows to route a
+# tag to the right internal pipeline: a tag on a branch-* branch is a
+# maintenance release, a tag only on master is a mainline release.
+#
+# actions/checkout only fetches the triggering tag ref, so the branch-*
+# remote-tracking refs are fetched explicitly here before `git branch -r
+# --contains` can see them. The caller must check out with fetch-depth: 0 so
+# the commit's history is reachable.
+name: Detect tag source branch
+description: Report whether the tagged commit is on a branch-* branch, and which one.
+
+inputs:
+  sha:
+    description: The tagged commit SHA to test (usually github.sha).
+    required: true
+
+outputs:
+  match:
+    description: '"true" if the commit is on a branch-* branch, "false" otherwise.'
+    value: ${{ steps.check.outputs.match }}
+  source-branch:
+    description: The matched branch-* branch name (empty when match is false).
+    value: ${{ steps.check.outputs.source_branch }}
+
+runs:
+  using: composite
+  steps:
+    - name: Fetch branch-* heads
+      shell: bash
+      run: git fetch --no-tags origin '+refs/heads/branch-*:refs/remotes/origin/branch-*'
+
+    - name: Determine if the tag is on a branch-* branch
+      id: check
+      shell: bash
+      env:
+        TAG_SHA: ${{ inputs.sha }}
+      run: |
+        branches=$(git branch -r --contains "$TAG_SHA" | sed 's|^[ *]*origin/||' | grep -E '^branch-' || true)
+        if [ -z "$branches" ]; then
+          echo "Tag commit is not on any branch-* branch."
+          echo "match=false" >> "$GITHUB_OUTPUT"
+        else
+          source_branch=$(echo "$branches" | head -n1)
+          echo "Tag commit is on: $source_branch"
+          echo "match=true" >> "$GITHUB_OUTPUT"
+          echo "source_branch=$source_branch" >> "$GITHUB_OUTPUT"
+        fi

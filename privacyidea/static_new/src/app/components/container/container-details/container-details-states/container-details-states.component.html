@@ -1,0 +1,67 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div
+  class="detail-field-key"
+  i18n>
+  Status
+</div>
+<div class="detail-field-value">
+  <div class="value-row">
+    <div class="value-content">
+      @if (isEditing()) {
+        <mat-form-field
+          class="input-width-m height-52"
+          subscriptSizing="dynamic">
+          <mat-label i18n>Select States</mat-label>
+          <mat-select
+            [value]="selectedStates()"
+            (selectionChange)="onStatesChange($event.value)"
+            appAutofocus
+            multiple>
+            @for (option of containerStateOptions; track option.value) {
+              <mat-option [value]="option.value">{{ option.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      } @else {
+        <div class="flex-row gap-8 flex-wrap">
+          @for (state of states(); track state) {
+            <span
+              [ngClass]="[tableUtilsService.getSpanClassForState(state, false)]"
+              class="font-14">
+              {{ tableUtilsService.getDisplayTextForState(state) }}
+            </span>
+          }
+        </div>
+      }
+    </div>
+    <div class="value-edit">
+      @if (editable()) {
+        <app-edit-buttons
+          [element]="editButtonsElement"
+          [toggleEdit]="toggle"
+          [saveEdit]="commit"
+          [cancelEdit]="cancel"
+          [shouldHideEdit]="blockEditing()"
+          [isEditingUser]="false"
+          [isEditingInfo]="false"></app-edit-buttons>
+      }
+    </div>
+  </div>
+</div>

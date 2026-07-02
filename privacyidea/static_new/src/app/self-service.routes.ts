@@ -23,7 +23,7 @@ import { AuditSelfServiceComponent } from "./components/logs/audit/audit.self-se
 import { AssignTokenSelfServiceComponent } from "./components/token/assign-token-self-service/assign-token-self-service.component";
 import { ContainerCreateSelfServiceComponent } from "./components/container/container-create/container-create.self-service.component";
 import { ContainerCreateWizardComponent } from "./components/container/container-create/container-create.wizard.component";
-import { ContainerDetailsSelfServiceComponent } from "./components/container/container-details/container-details.self-service.component";
+import { ContainerDetailsComponent } from "./components/container/container-details/container-details.component";
 import { ContainerTableSelfServiceComponent } from "./components/container/container-table/container-table.self-service.component";
 import { TokenDetailsSelfServiceComponent } from "./components/token/token-details/token-details.self-service.component";
 import { TokenEnrollmentSelfServiceComponent } from "./components/token/token-enrollment/token-enrollment.self-service.component";
@@ -56,7 +56,7 @@ export const routes: Routes = [
       { path: "create", component: ContainerCreateSelfServiceComponent, canDeactivate: [pendingChangesGuard] },
       {
         path: "details/:serial",
-        component: ContainerDetailsSelfServiceComponent
+        component: ContainerDetailsComponent
       },
       { path: "wizard", component: ContainerCreateWizardComponent, canDeactivate: [pendingChangesGuard] }
     ]

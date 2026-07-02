@@ -127,7 +127,7 @@ export class FilterValue {
    */
   public setFromMap(map: Map<string, string>): void {
     const needsQuoting = (v: string) => /[\s"':]/.test(v);
-    const quoteAndEscape = (v: string) => `"${v.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`; // double-quote strategy
+    const quoteAndEscape = (v: string) => `"${v.replace(/\\/g, "\\\\").replace(/"/g, "\\\"")}"`; // double-quote strategy
 
     const entries: string[] = [];
     map.forEach((value, key) => {
@@ -185,7 +185,7 @@ function parseToMap(text: string): Map<string, string> {
     const key = m[1];
     const valRaw =
       m[2] != null
-        ? m[2].replace(/\\"/g, '"').replace(/\\\\/g, "\\")
+        ? m[2].replace(/\\"/g, "\"").replace(/\\\\/g, "\\")
         : m[3] != null
           ? m[3].replace(/\\'/g, "'").replace(/\\\\/g, "\\")
           : (m[4] ?? "").trim();

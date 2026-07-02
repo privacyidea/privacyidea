@@ -20,6 +20,7 @@ import { Component, computed, inject, input } from "@angular/core";
 import { MatButton } from "@angular/material/button";
 import { MatDivider } from "@angular/material/divider";
 import { MatIcon } from "@angular/material/icon";
+import { MatMenuModule } from "@angular/material/menu";
 import { MatTableDataSource } from "@angular/material/table";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -34,7 +35,7 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
 @Component({
   selector: "app-container-details-token-actions",
   templateUrl: "./container-details-token-actions.component.html",
-  imports: [MatIcon, MatButton, MatDivider],
+  imports: [MatIcon, MatButton, MatDivider, MatMenuModule],
   styleUrl: "./container-details-token-actions.component.scss"
 })
 export class ContainerDetailsTokenActionsComponent {
@@ -78,10 +79,10 @@ export class ContainerDetailsTokenActionsComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: "Unassign User from All Tokens",
+          title: $localize`Unassign User from All Tokens`,
           items: tokenSerials,
           itemType: "token",
-          confirmAction: { label: "Unassign", value: true, type: "destruct" }
+          confirmAction: { label: $localize`Unassign`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -146,9 +147,9 @@ export class ContainerDetailsTokenActionsComponent {
         component: SimpleConfirmationDialogComponent,
         data: {
           items: serialList.split(","),
-          title: "Remove Token",
+          title: $localize`Remove Token`,
           itemType: "token",
-          confirmAction: { label: "Remove", value: true, type: "destruct" }
+          confirmAction: { label: $localize`Remove`, value: true, type: "destruct" }
         }
       })
       .afterClosed()

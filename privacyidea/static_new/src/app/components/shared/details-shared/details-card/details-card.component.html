@@ -1,0 +1,47 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+@if (collapsible()) {
+  <button
+    type="button"
+    class="details-card-toggle"
+    (click)="toggleExpanded()"
+    [disabled]="collapseLocked()"
+    [attr.aria-expanded]="expanded()"
+    [attr.aria-controls]="bodyId">
+    <h4 class="details-card-title">{{ title() }}</h4>
+    <mat-icon
+      class="details-card-chevron"
+      [class.details-card-chevron--expanded]="expanded()"
+      >expand_more</mat-icon
+    >
+  </button>
+} @else if (title()) {
+  <h4 class="details-card-title">{{ title() }}</h4>
+}
+<div
+  [id]="bodyId"
+  class="details-card-body"
+  [class.details-card-body--collapsible]="collapsible()"
+  [class.details-card-body--collapsed]="collapsible() && !expanded()"
+  [attr.inert]="collapsible() && !expanded() ? '' : null"
+  [attr.aria-hidden]="collapsible() && !expanded() ? 'true' : null">
+  <div class="details-card-body-inner">
+    <ng-content />
+  </div>
+</div>

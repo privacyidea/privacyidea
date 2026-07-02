@@ -4,6 +4,7 @@
 .tokengroups-container {
   @include styles.main-component-style;
   @include table.base-table-structure(".tokengroups-table", ".tokengroups-table-filter", ".table-scroll-container");
+  max-height: var(--table-max-height);
 }
 
 .actions-container {
