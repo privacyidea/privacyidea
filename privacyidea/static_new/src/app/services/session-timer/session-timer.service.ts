@@ -38,7 +38,11 @@ export class SessionTimerService implements SessionTimerServiceInterface {
   private readonly router = inject(Router);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
-
+  private timer: ReturnType<typeof setTimeout> | undefined;
+  private intervalId: ReturnType<typeof setInterval> | undefined;
+  private startTime = signal(Date.now());
+  private loginTime = signal(Date.now());
+  private currentTime = signal(Date.now());
   private readonly logoutTimeMs = computed(() => {
     // Logout time which can be refreshed by user activity
     let logoutTime = this.authService.logoutTimeS();
@@ -51,7 +55,6 @@ export class SessionTimerService implements SessionTimerServiceInterface {
     }
     return Math.max(0, logoutTime);
   });
-
   private readonly jwtLogoutTimeMs = computed(() => {
     // Logout time based on JWT token expiration, cannot be refreshed by user activity
     let jwtLogoutTime = this.authService.jwtLogoutTimeS();
@@ -64,18 +67,21 @@ export class SessionTimerService implements SessionTimerServiceInterface {
     }
     return Math.max(0, jwtLogoutTime);
   });
-
-  private timer: ReturnType<typeof setTimeout> | undefined;
-  private intervalId: ReturnType<typeof setInterval> | undefined;
-  private startTime = signal(Date.now());
-  private loginTime = signal(Date.now());
-  private currentTime = signal(Date.now());
   remainingTime = computed(() => {
     if (this.jwtLogoutTimeMs() == null && this.logoutTimeMs() == null) return;
     if (this.logoutTimeMs() == null) return this.jwtLogoutTimeMs() ?? undefined;
     if (this.jwtLogoutTimeMs() == null) return this.logoutTimeMs() ?? undefined;
     return Math.min(this.jwtLogoutTimeMs() ?? 0, this.logoutTimeMs() ?? 0);
   });
+
+  constructor() {
+    effect(() => {
+      const remainingTime = this.remainingTime();
+      if (remainingTime && remainingTime > 30_000 && remainingTime < 31_000) {
+        this.notificationService.warning("Session will expire in 30 seconds.");
+      }
+    });
+  }
 
   initialTimerStart(): void {
     this.loginTime.set(Date.now());
@@ -110,15 +116,6 @@ export class SessionTimerService implements SessionTimerServiceInterface {
     this.intervalId = setInterval(() => {
       this.currentTime.set(Date.now());
     }, 1000);
-  }
-
-  constructor() {
-    effect(() => {
-      const remainingTime = this.remainingTime();
-      if (remainingTime && remainingTime > 30_000 && remainingTime < 31_000) {
-        this.notificationService.warning("Session will expire in 30 seconds.");
-      }
-    });
   }
 
   private handleSessionTimeout(): void {

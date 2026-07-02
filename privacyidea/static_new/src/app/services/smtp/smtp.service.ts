@@ -64,13 +64,6 @@ export class SmtpService implements SmtpServiceInterface {
   private readonly http = inject(HttpClient);
 
   readonly smtpServerBaseUrl = environment.proxyUrl + "/smtpserver/";
-
-  constructor() {
-    effect(() => {
-      this.notificationService.handleResourceError(this.smtpServerResource.error(), "SMTP servers");
-    });
-  }
-
   readonly smtpServerResource = httpResource<PiResponse<SmtpServers>>(() => {
     if (
       !this.contentService.onExternalSmtp() &&
@@ -85,7 +78,6 @@ export class SmtpService implements SmtpServiceInterface {
       headers: this.authService.getHeaders()
     };
   });
-
   readonly smtpServers = computed<SmtpServer[]>(() => {
     if (!this.smtpServerResource.hasValue()) return [];
     const res = this.smtpServerResource.value();
@@ -98,6 +90,12 @@ export class SmtpService implements SmtpServiceInterface {
     }
     return [];
   });
+
+  constructor() {
+    effect(() => {
+      this.notificationService.handleResourceError(this.smtpServerResource.error(), "SMTP servers");
+    });
+  }
 
   async postSmtpServer(server: SmtpServer): Promise<void> {
     const url = `${this.smtpServerBaseUrl}${encodeURIComponent(server.identifier)}`;
@@ -148,4 +146,6 @@ export class SmtpService implements SmtpServiceInterface {
       throw new Error("delete-failed", { cause: error });
     }
   }
+
 }
+

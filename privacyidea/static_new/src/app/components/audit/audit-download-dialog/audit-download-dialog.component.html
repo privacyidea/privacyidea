@@ -1,10 +1,10 @@
 <app-dialog-wrapper
-  title="Download Audit Log"
-  i18n-title="@@DialogTitleDownloadAuditLog"
+  (actionTriggered)="onAction($event)"
+  (wrapperClose)="close()"
   [actions]="[action]"
   [showCancelButton]="true"
-  (wrapperClose)="close()"
-  (actionTriggered)="onAction($event)">
+  i18n-title="@@DialogTitleDownloadAuditLog"
+  title="Download Audit Log">
   <div>
     <p i18n>The download can take a long time but it will continue in the background if the page is changed.</p>
   </div>

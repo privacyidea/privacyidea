@@ -17,10 +17,7 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <app-details-card
-  title="Information"
-  i18n-title
-  [collapsible]="true"
-  [collapseLocked]="isEditingInfo()">
+  [collapseLocked]="isEditingInfo()" [collapsible]="true" i18n-title title="Information">
   @if (infoData()[0]; as element) {
     @let info = asInfoMap(element.value);
     @if (authService.actionAllowed("settokeninfo")) {
@@ -42,17 +39,12 @@
           @if (isEditingInfo()) {
             <div class="info-edit-row">
               <mat-form-field
-                class="info-edit-field input-width-l"
-                subscriptSizing="dynamic">
+                class="info-edit-field input-width-l" subscriptSizing="dynamic">
                 <textarea
-                  [(ngModel)]="info[key]"
-                  matInput
-                  rows="1"></textarea>
+                  [(ngModel)]="info[key]" matInput rows="1"></textarea>
               </mat-form-field>
               <button
-                (click)="deleteInfo(key)"
-                i18n-aria-label="Delete Information"
-                mat-icon-button>
+                (click)="deleteInfo(key)" i18n-aria-label="Delete Information" mat-icon-button>
                 <mat-icon>delete_outlined</mat-icon>
               </button>
             </div>
@@ -66,24 +58,15 @@
       <mat-divider class="margin-8" />
       <div class="info-add-row">
         <mat-form-field
-          class="input-width-s"
-          subscriptSizing="dynamic">
+          class="input-width-s" subscriptSizing="dynamic">
           <input
-            [(ngModel)]="newInfo().key"
-            i18n-placeholder
-            matInput
-            placeholder="Add new key" />
+            [(ngModel)]="newInfo().key" i18n-placeholder matInput placeholder="Add new key" />
         </mat-form-field>
         <span class="margin-right-16 flex ali-center">:</span>
         <mat-form-field
-          class="input-width-xl"
-          subscriptSizing="dynamic">
+          class="input-width-xl" subscriptSizing="dynamic">
           <textarea
-            [(ngModel)]="newInfo().value"
-            i18n-placeholder
-            matInput
-            placeholder="Add new info"
-            rows="1"></textarea>
+            [(ngModel)]="newInfo().value" i18n-placeholder matInput placeholder="Add new info" rows="1"></textarea>
         </mat-form-field>
       </div>
     }

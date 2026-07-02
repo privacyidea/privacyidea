@@ -74,9 +74,6 @@ export class PolicyTemplatesService implements PolicyTemplatesServiceInterface {
   private readonly _index = signal<PolicyTemplateIndex>(EMPTY_INDEX);
   readonly policyTemplatesIndex: Signal<PolicyTemplateIndex> = this._index.asReadonly();
 
-  private templateCache = new Map<string, Observable<PolicyTemplate | undefined>>();
-  private lastBaseUrl: string | null = null;
-
   constructor() {
     effect(() => {
       const baseUrl = this.resolveBaseUrl(this.authService.policyTemplateUrl());
@@ -105,6 +102,8 @@ export class PolicyTemplatesService implements PolicyTemplatesServiceInterface {
     return request;
   }
 
+  private templateCache = new Map<string, Observable<PolicyTemplate | undefined>>();
+  private lastBaseUrl: string | null = null;
   private fetchIndex(baseUrl: string): void {
     this.http
       .get<PolicyTemplateIndex>(`${baseUrl}index.json`)

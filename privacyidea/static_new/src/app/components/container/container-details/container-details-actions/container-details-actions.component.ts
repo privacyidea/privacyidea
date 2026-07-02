@@ -96,16 +96,20 @@ export class ContainerDetailsActionsComponent implements OnDestroy {
     );
   });
 
-  ngOnDestroy(): void {
-    this.containerService.stopPolling();
-  }
-
   constructor() {
     effect(() => {
       if (!this.containerService.isPollingActive()) {
         this.dialogService.closeAllDialogs();
       }
     });
+  }
+
+  ngOnDestroy(): void {
+    this.containerService.stopPolling();
+  }
+
+  ngOnDestroy(): void {
+    this.containerService.stopPolling();
   }
 
   enrollTokenInContainer() {

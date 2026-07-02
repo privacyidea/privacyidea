@@ -17,20 +17,14 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
-  #scrollContainer
-  appScrollToTop
-  aria-label="Token Table"
-  class="token-table-layout"
-  i18n-aria-label>
+  #scrollContainer appScrollToTop aria-label="Token Table" class="token-table-layout" i18n-aria-label>
   @if (authService.actionAllowed("tokenlist")) {
     <div class="filter-paginator-container">
       <mat-form-field
-        subscriptSizing="dynamic"
-        class="token-table-filter">
+        class="token-table-filter" subscriptSizing="dynamic">
         <mat-label i18n>Filter Tokens...</mat-label>
         <app-clearable-input
-          (clearButtonClick)="tokenService.clearFilter()"
-          [showClearButton]="tokenService.tokenFilter().isNotEmpty">
+          (clearButtonClick)="tokenService.clearFilter()" [showClearButton]="tokenService.tokenFilter().isNotEmpty">
           <input
             #filterHTMLInputElement
             (input)="onFilterInput($event)"
@@ -66,20 +60,15 @@
     <div class="margin-bottom-16">
       <app-token-table-actions />
     </div>
-    <div class="table-scroll-region" appScrollEdges>
+    <div
+      appScrollEdges class="table-scroll-region">
       <table
-        [dataSource]="tokenDataSource()"
-        aria-label="Token Data Table"
-        class="token-table"
-        i18n-aria-label
-        mat-table>
+        [dataSource]="tokenDataSource()" aria-label="Token Data Table" class="token-table" i18n-aria-label mat-table>
         @for (column of columnKeysMap; track column) {
           <ng-container [matColumnDef]="column.key">
             @if (column.key === "select") {
               <th
-                *matHeaderCellDef
-                class="table-checkbox"
-                mat-header-cell>
+                *matHeaderCellDef class="table-checkbox" mat-header-cell>
                 <mat-checkbox
                   (change)="$event ? toggleAllRows() : null"
                   [checked]="isAllSelected()"
@@ -88,32 +77,30 @@
               </th>
             } @else {
               <th
-                *matHeaderCellDef
-                attr.aria-label="{{ column.label }} Header"
-                mat-header-cell>
+                *matHeaderCellDef attr.aria-label="{{ column.label }} Header" mat-header-cell>
                 <div class="flex ali-center">
                   {{ column.label }}
                   <div class="margin-left-16 flex">
                     @if (apiFilterKeyMap[column.key] && tokenService.apiFilter.includes(apiFilterKeyMap[column.key])) {
                       @if (apiFilterKeyMap[column.key] === "realm" || apiFilterKeyMap[column.key] === "tokenrealm") {
                         <button
-                          [matMenuTriggerFor]="realmMenu"
                           [matMenuTriggerData]="{ keyword: apiFilterKeyMap[column.key] }"
+                          [matMenuTriggerFor]="realmMenu"
                           class="filter-button"
                           i18n-matTooltip
                           mat-icon-button
                           matTooltip="Filter by {{ column.label }}">
-                          <mat-icon class="keyword-button-icon margin-left-0"> filter_list </mat-icon>
+                          <mat-icon class="keyword-button-icon margin-left-0"> filter_list</mat-icon>
                         </button>
                       } @else if (apiFilterKeyMap[column.key] === "type") {
                         <button
-                          [matMenuTriggerFor]="typeMenu"
                           [matMenuTriggerData]="{ keyword: apiFilterKeyMap[column.key] }"
+                          [matMenuTriggerFor]="typeMenu"
                           class="filter-button"
                           i18n-matTooltip
                           mat-icon-button
                           matTooltip="Filter by {{ column.label }}">
-                          <mat-icon class="keyword-button-icon margin-left-0"> filter_list </mat-icon>
+                          <mat-icon class="keyword-button-icon margin-left-0"> filter_list</mat-icon>
                         </button>
                       } @else {
                         <button
@@ -142,15 +129,11 @@
               </th>
             }
             <td
-              *matCellDef="let tokenDetails"
-              class="max-width-300"
-              [ngClass]="{
+              *matCellDef="let tokenDetails" [ngClass]="{
                 'table-checkbox': column.key === 'select',
                 'width-300': column.key === 'description',
                 'container_serial-width': column.key === 'container_serial'
-              }"
-              attr.aria-label="{{ column.label }} Cell"
-              mat-cell>
+              }" attr.aria-label="{{ column.label }} Cell" class="max-width-300" mat-cell>
               <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {
                   @case ("select") {
@@ -248,8 +231,7 @@
                   @default {
                     @if (tableUtilsService.isLink(column.key)) {
                       <a
-                        attr.aria-label="{{ column.label }} Link"
-                        href="#">
+                        attr.aria-label="{{ column.label }} Link" href="#">
                         {{ tokenDetails[column.key] }}
                       </a>
                     } @else {
@@ -264,26 +246,15 @@
           </ng-container>
         }
         <tr
-          *matHeaderRowDef="columnKeys; sticky: true"
-          aria-label="Header Row"
-          i18n-aria-label
-          mat-header-row></tr>
+          *matHeaderRowDef="columnKeys; sticky: true" aria-label="Header Row" i18n-aria-label mat-header-row></tr>
 
         <tr
-          *matRowDef="let row; columns: columnKeys"
-          aria-label="Data Row"
-          i18n-aria-label
-          mat-row></tr>
+          *matRowDef="let row; columns: columnKeys" aria-label="Data Row" i18n-aria-label mat-row></tr>
 
         <tr
-          *matNoDataRow
-          aria-label="No Data Row"
-          i18n-aria-label>
+          *matNoDataRow aria-label="No Data Row" i18n-aria-label>
           <td
-            [attr.colspan]="columnKeys.length"
-            aria-label="No Data Cell"
-            i18n
-            i18n-aria-label>
+            [attr.colspan]="columnKeys.length" aria-label="No Data Cell" i18n i18n-aria-label>
             No data matching the filter.
           </td>
         </tr>
@@ -296,19 +267,16 @@
 
 <mat-menu #realmMenu="matMenu">
   <ng-template
-    let-keyword="keyword"
-    matMenuContent>
+    let-keyword="keyword" matMenuContent>
     <button
-      (click)="onItemSelected(keyword, '')"
-      mat-menu-item>
+      (click)="onItemSelected(keyword, '')" mat-menu-item>
       <mat-icon>filter_alt_off</mat-icon>
       <span i18n>Clear Filter</span>
     </button>
     <mat-divider />
     @for (realm of realmService.realmOptions(); track realm) {
       <button
-        (click)="onItemSelected(keyword, realm)"
-        mat-menu-item>
+        (click)="onItemSelected(keyword, realm)" mat-menu-item>
         {{ realm }}
       </button>
     }
@@ -317,19 +285,16 @@
 
 <mat-menu #typeMenu="matMenu">
   <ng-template
-    let-keyword="keyword"
-    matMenuContent>
+    let-keyword="keyword" matMenuContent>
     <button
-      (click)="onItemSelected(keyword, '')"
-      mat-menu-item>
+      (click)="onItemSelected(keyword, '')" mat-menu-item>
       <mat-icon>filter_alt_off</mat-icon>
       <span i18n>Clear Filter</span>
     </button>
     <mat-divider />
     @for (typeOption of tokenService.tokenTypeOptions(); track typeOption.key) {
       <button
-        (click)="onItemSelected(keyword, typeOption.key)"
-        mat-menu-item>
+        (click)="onItemSelected(keyword, typeOption.key)" mat-menu-item>
         {{ typeOption.key }}
       </button>
     }
@@ -339,8 +304,7 @@
 <mat-menu #advancedFilterMenu="matMenu">
   @for (keyword of advancedApiFilter; track keyword) {
     <button
-      (click)="onKeywordClick(keyword)"
-      mat-menu-item>
+      (click)="onKeywordClick(keyword)" mat-menu-item>
       <mat-icon class="margin-right-16">{{ getFilterIconName(keyword) }}</mat-icon>
       {{ keyword }}
     </button>

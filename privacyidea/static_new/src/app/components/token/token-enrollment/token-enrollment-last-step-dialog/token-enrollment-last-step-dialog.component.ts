@@ -65,15 +65,19 @@ export class TokenEnrollmentLastStepDialogComponent extends AbstractDialogCompon
     this.rollover ? $localize`Token Successfully Rolled Over` : $localize`Token Successfully Enrolled`
   );
 
-  showQRCode(): boolean {
-    return !NO_QR_CODE_TOKEN_TYPES.includes(this.data.tokenType);
-  }
-
   constructor() {
     super();
     this.dialogRef.afterClosed().subscribe(() => {
       this.tokenService.stopPolling();
     });
+  }
+
+  showQRCode(): boolean {
+    return !NO_QR_CODE_TOKEN_TYPES.includes(this.data.tokenType);
+  }
+
+  showQRCode(): boolean {
+    return !NO_QR_CODE_TOKEN_TYPES.includes(this.data.tokenType);
   }
 
   onSwitchRoute() {

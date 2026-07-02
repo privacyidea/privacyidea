@@ -35,7 +35,7 @@ import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { MockContentService, MockPiResponse, MockRealmService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
-import { BulkResult, TokenGroups, TokenService, Tokens } from "./token.service";
+import { BulkResult, TokenGroups, Tokens, TokenService } from "./token.service";
 
 class MockNotificationService {
   success = jest.fn();

@@ -36,6 +36,7 @@ export type ClientsDict = Record<string, ClientData[]>;
 
 export interface ClientsServiceInterface {
   clientsResource: HttpResourceRef<PiResponse<ClientsDict> | undefined>;
+
   requestClientsForAutocomplete(): void;
 }
 
@@ -48,13 +49,6 @@ export class ClientsService implements ClientsServiceInterface {
   private clientsBaseUrl = environment.proxyUrl + "/client/";
 
   private autocompleteRequested = signal(false);
-
-  constructor() {
-    effect(() => {
-      this.notificationService.handleResourceError(this.clientsResource.error(), "clients");
-    });
-  }
-
   clientsResource = httpResource<PiResponse<ClientsDict>>(() => {
     if (!this.authService.actionAllowed("clienttype")) {
       return undefined;
@@ -70,9 +64,22 @@ export class ClientsService implements ClientsServiceInterface {
     };
   });
 
+  constructor() {
+    effect(() => {
+      this.notificationService.handleResourceError(this.clientsResource.error(), "clients");
+    });
+  }
+
   requestClientsForAutocomplete(): void {
     if (!this.autocompleteRequested()) {
       this.autocompleteRequested.set(true);
     }
   }
+
+  requestClientsForAutocomplete(): void {
+    if (!this.autocompleteRequested()) {
+      this.autocompleteRequested.set(true);
+    }
+  }
+
 }

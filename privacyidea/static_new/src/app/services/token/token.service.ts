@@ -350,8 +350,12 @@ export class TokenService implements TokenServiceInterface {
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly realmService: RealmServiceInterface = inject(RealmService);
   private readonly http = inject(HttpClient);
-
+  readonly hiddenApiFilter = hiddenApiFilter;
+  readonly apiFilterKeyMap = apiFilterKeyMap;
+  readonly stopPolling$ = new Subject<void>();
   readonly tokenBaseUrl = environment.proxyUrl + "/token/";
+  readonly eventPageSize = signal(10);
+  readonly tokenSerial = this.contentService.tokenSerial;
   private readonly _filterParams = computed<Record<string, string>>(() => {
     const allowed = [...this.apiFilter, ...this.advancedApiFilter, ...this.hiddenApiFilter, "infokey", "infovalue"];
     const plainKeys = new Set(["user", "infokey", "infovalue", "active", "assigned", "container_serial", "realm"]);
@@ -364,26 +368,6 @@ export class TokenService implements TokenServiceInterface {
       .filter(([key, v]) => (key === "container_serial" ? true : StringUtils.validFilterValue(v)))
       .map(([key, v]) => [key, plainKeys.has(key) ? v : `*${v}*`] as const);
     return Object.fromEntries(entries) as Record<string, string>;
-  });
-  readonly hiddenApiFilter = hiddenApiFilter;
-  readonly apiFilterKeyMap = apiFilterKeyMap;
-  readonly maxDescriptionLength = 80;
-  readonly detailsUser = this.contentService.detailsUser;
-  readonly tokenSerial = this.contentService.tokenSerial;
-  readonly stopPolling$ = new Subject<void>();
-  readonly eventPageSize = signal(10);
-
-  tokenSerialResource = httpResource<PiResponse<Tokens>>(() => {
-    const filter = this.selectedToken();
-    if (!filter || filter.length < 1) {
-      return undefined;
-    }
-    return {
-      url: this.tokenBaseUrl,
-      method: "GET",
-      headers: this.authService.getHeaders(),
-      params: { serial: `*${filter}*` }
-    };
   });
 
   constructor() {
@@ -402,6 +386,26 @@ export class TokenService implements TokenServiceInterface {
       }
     });
   }
+
+  readonly maxDescriptionLength = 80;
+
+
+  readonly detailsUser = this.contentService.detailsUser;
+
+
+  tokenSerialResource = httpResource<PiResponse<Tokens>>(() => {
+    const filter = this.selectedToken();
+    if (!filter || filter.length < 1) {
+      return undefined;
+    }
+    return {
+      url: this.tokenBaseUrl,
+      method: "GET",
+      headers: this.authService.getHeaders(),
+      params: { serial: `*${filter}*` }
+    };
+  });
+
 
   selectedTokenType = linkedSignal({
     source: () => ({

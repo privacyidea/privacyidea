@@ -73,8 +73,7 @@ export interface WebAuthnFinalizePayload extends TokenEnrollmentPayload {
 @Injectable({ providedIn: "root" })
 export class WebAuthnApiPayloadMapper
   extends BaseApiPayloadMapper
-  implements TokenApiPayloadMapper<WebAuthnEnrollmentData>
-{
+  implements TokenApiPayloadMapper<WebAuthnEnrollmentData> {
   override toApiPayload(data: WebAuthnEnrollmentData): WebAuthnEnrollmentPayload {
     const payload: WebAuthnEnrollmentPayload = {
       ...super.toApiPayload(data),

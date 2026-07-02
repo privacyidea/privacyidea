@@ -49,18 +49,6 @@ import { TIMESTAMP_INFO_KEYS } from "../token-details.constants";
 export class TokenDetailsInfoComponent {
   protected readonly Object = Object;
   protected readonly hiddenInfoKeys: readonly string[] = TIMESTAMP_INFO_KEYS;
-
-  visibleInfoKeys(value: Record<string, string>): string[] {
-    return Object.keys(value).filter((k) => !this.hiddenInfoKeys.includes(k));
-  }
-
-  asInfoMap(value: unknown): Record<string, string> {
-    return (value ?? {}) as Record<string, string>;
-  }
-
-  asInfoElement(element: EditableElement): EditableElement<Record<string, string>> {
-    return element as EditableElement<Record<string, string>>;
-  }
   private tokenService: TokenServiceInterface = inject(TokenService);
   tokenSerial = this.tokenService.tokenSerial;
   @Input() infoData!: WritableSignal<EditableElement[]>;
@@ -75,6 +63,18 @@ export class TokenDetailsInfoComponent {
     }
   });
   protected authService: AuthServiceInterface = inject(AuthService);
+
+  visibleInfoKeys(value: Record<string, string>): string[] {
+    return Object.keys(value).filter((k) => !this.hiddenInfoKeys.includes(k));
+  }
+
+  asInfoMap(value: unknown): Record<string, string> {
+    return (value ?? {}) as Record<string, string>;
+  }
+
+  asInfoElement(element: EditableElement): EditableElement<Record<string, string>> {
+    return element as EditableElement<Record<string, string>>;
+  }
 
   toggleInfoEdit(): void {
     if (this.isEditingInfo()) {

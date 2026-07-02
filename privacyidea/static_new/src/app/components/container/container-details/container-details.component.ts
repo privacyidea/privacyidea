@@ -214,6 +214,28 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
   protected readonly registrationStateDisplay = computed(() =>
     this.str(this.containerDetails()?.info?.registration_state)
   );
+  constructor() {
+    this.previousPageSize = this.tokenService.pageSize();
+    this.tokenService.pageSize.set(5);
+
+    effect(() => {
+      this.showOnlyTokenInContainer();
+      // do not focus while in-container tokens are shown, to keep the hint visible
+      if (this.filterHTMLInputElement && !this.showOnlyTokenInContainer()) {
+        this.filterHTMLInputElement.nativeElement.focus();
+      }
+    });
+    effect(() => {
+      if (!this.containerDetailResource.hasValue()) return;
+      const res = this.containerDetailResource.value();
+      if (res && res?.result?.value?.containers.length === 0) {
+        setTimeout(() => {
+          this.router.navigateByUrl(ROUTE_PATHS.CONTAINERS);
+        });
+      }
+    });
+  }
+
   protected str(value: unknown): string {
     return value === null || value === undefined ? "" : String(value);
   }
@@ -334,29 +356,6 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
   filterHTMLInputElement!: ElementRef<HTMLInputElement>;
   @ViewChild("tokenAutoTrigger", { read: MatAutocompleteTrigger })
   tokenAutoTrigger!: MatAutocompleteTrigger;
-
-  constructor() {
-    this.previousPageSize = this.tokenService.pageSize();
-    this.tokenService.pageSize.set(5);
-
-    effect(() => {
-      this.showOnlyTokenInContainer();
-      // do not focus while in-container tokens are shown, to keep the hint visible
-      if (this.filterHTMLInputElement && !this.showOnlyTokenInContainer()) {
-        this.filterHTMLInputElement.nativeElement.focus();
-      }
-    });
-    effect(() => {
-      if (!this.containerDetailResource.hasValue()) return;
-      const res = this.containerDetailResource.value();
-      if (res && res?.result?.value?.containers.length === 0) {
-        setTimeout(() => {
-          this.router.navigateByUrl(ROUTE_PATHS.CONTAINERS);
-        });
-      }
-    });
-  }
-
   isEditableElement(key: string) {
     if (key === "description" && this.authService.actionAllowed("container_description")) {
       return true;

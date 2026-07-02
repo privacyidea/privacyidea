@@ -107,19 +107,14 @@ interface FlattenedClientRow {
   ]
 })
 export class ClientsComponent {
+  readonly columnKeysMap = columnKeysMap;
+  readonly columnKeys = columnKeysMap.map((c) => c.key);
+  protected readonly ROUTE_PATHS = ROUTE_PATHS;
+  protected readonly filter = filter;
   clientService: ClientsServiceInterface = inject(ClientsService);
   authService = inject(AuthService);
   auditService = inject(AuditService);
-
-  readonly columnKeysMap = columnKeysMap;
-  readonly columnKeys = columnKeysMap.map((c) => c.key);
-
   activeSortColumn = signal<string | null>(null);
-
-  onSortChange(event: { active: string }) {
-    this.activeSortColumn.set(event.active || null);
-  }
-
   @ViewChild(MatSort) sort!: MatSort;
 
   constructor() {
@@ -170,6 +165,11 @@ export class ClientsComponent {
 
   filterValue = "";
 
+
+  onSortChange(event: { active: string }) {
+    this.activeSortColumn.set(event.active || null);
+  }
+
   clearFilter(): void {
     this.filterValue = "";
     this.clientDataSource().filter = "";
@@ -191,6 +191,14 @@ export class ClientsComponent {
     }
   }
 
+  useApplicationRowSpan(columnKey: string): boolean {
+    return (
+      columnKey === "application" &&
+      (!this.activeSortColumn() || this.activeSortColumn() === "application") &&
+      !this.filterValue
+    );
+  }
+
   private _split_user_agent(application: string): { userAgent: string; version: string; comment: string } {
     const applicationSplit = StringUtils.splitOnce(application, "/");
     const userAgent = applicationSplit.head;
@@ -200,15 +208,4 @@ export class ClientsComponent {
 
     return { userAgent: userAgent, version: version, comment: comment };
   }
-
-  useApplicationRowSpan(columnKey: string): boolean {
-    return (
-      columnKey === "application" &&
-      (!this.activeSortColumn() || this.activeSortColumn() === "application") &&
-      !this.filterValue
-    );
-  }
-
-  protected readonly ROUTE_PATHS = ROUTE_PATHS;
-  protected readonly filter = filter;
 }
