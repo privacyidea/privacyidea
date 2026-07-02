@@ -85,7 +85,7 @@ export const containerDetailsKeyMap: { key: string; label: string; group: Contai
 
 const CONTAINER_TIMESTAMP_KEYS = ["last_authentication", "last_synchronization"];
 
-function formatContainerTimestamp(value: string | undefined): string | undefined {
+export function formatContainerTimestamp(value: string | undefined): string | undefined {
   if (value === undefined || value === "") return undefined;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;

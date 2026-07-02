@@ -23,12 +23,19 @@ import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ActivatedRoute } from "@angular/router";
 import { ContainerDetailsInfoComponent } from "@components/container/container-details/container-details-info/container-details-info.component";
-import { ContainerDetailsComponent } from "@components/container/container-details/container-details.component";
+import {
+  ContainerDetailsComponent,
+  formatContainerTimestamp
+} from "@components/container/container-details/container-details.component";
 import { EditableElement } from "@components/shared/edit-buttons/edit-buttons.component";
 import { TokenDetailsComponent } from "@components/token/token-details/token-details.component";
 import { AuditService } from "@services/audit/audit.service";
 import { AuthService } from "@services/auth/auth.service";
-import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
+import {
+  ContainerDetailData,
+  ContainerService,
+  ContainerServiceInterface
+} from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
@@ -395,3 +402,31 @@ describe("ContainerDetailsComponent", () => {
     });
   });
 });
+
+describe("formatContainerTimestamp", () => {
+  it("returns undefined for undefined input", () => {
+    expect(formatContainerTimestamp(undefined)).toBeUndefined();
+  });
+
+  it("returns undefined for empty string input", () => {
+    expect(formatContainerTimestamp("")).toBeUndefined();
+  });
+
+  it("returns the original string for an invalid date", () => {
+    expect(formatContainerTimestamp("not-a-date")).toBe("not-a-date");
+  });
+
+  it("formats a valid ISO date string", () => {
+    const result = formatContainerTimestamp("2025-03-15T10:30:00Z");
+    expect(result).toBeDefined();
+    // The exact format depends on the locale, but it should contain the year
+    expect(result).toContain("2025");
+  });
+
+  it("formats a valid date-only string", () => {
+    const result = formatContainerTimestamp("2024-12-25");
+    expect(result).toBeDefined();
+    expect(result).toContain("2024");
+  });
+});
+
