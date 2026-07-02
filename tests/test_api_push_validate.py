@@ -15,7 +15,7 @@ from sqlalchemy.orm.exc import StaleDataError
 from testfixtures import LogCapture
 
 from privacyidea.lib.cache import ChallengeDTO
-from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.challenge import get_challenges, delete_challenges
 from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
@@ -1440,8 +1440,9 @@ class PushAPITestCase(MyApiTestCase):
 
         def clear_log_and_challenges():
             db.session.query(AuthenticationLog).delete()
-            db.session.query(Challenge).delete()
             db.session.commit()
+            # delete_challenges in Redis as well as in the db
+            delete_challenges(serial=self.serial_push)
 
         def trigger_and_poll():
             with self.app.test_request_context('/validate/check', method='POST',
