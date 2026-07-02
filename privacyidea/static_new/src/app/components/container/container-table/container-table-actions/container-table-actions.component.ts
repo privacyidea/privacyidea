@@ -22,7 +22,6 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatMenuModule, MatMenuTrigger } from "@angular/material/menu";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { OverflowNavDirective } from "../../../shared/directives/overflow-nav/overflow-nav.directive";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
@@ -38,7 +37,7 @@ import { forkJoin } from "rxjs";
 
 @Component({
   selector: "app-container-table-actions",
-  imports: [MatButtonModule, MatIcon, RouterLink, MatMenuModule, MatTooltipModule, OverflowNavDirective],
+  imports: [MatButtonModule, MatIcon, MatMenuModule, MatTooltipModule, OverflowNavDirective],
   templateUrl: "./container-table-actions.component.html",
   styleUrl: "./container-table-actions.component.scss"
 })
@@ -53,10 +52,10 @@ export class ContainerTableActionsComponent {
   protected readonly authService = inject(AuthService);
   protected readonly notificationService = inject(NotificationService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
-  containerSelection = this.containerService.containerSelection;
-  selectedContainer = this.containerService.selectedContainerSerial;
   readonly advancedApiFilter = this.containerService.advancedApiFilter;
   readonly advancedFilterTrigger = viewChild<MatMenuTrigger>("advancedFilterTrigger");
+  containerSelection = this.containerService.containerSelection;
+  selectedContainer = this.containerService.selectedContainerSerial;
 
   deleteSelectedContainer(): void {
     const selectedContainers = this.containerSelection();
@@ -64,10 +63,10 @@ export class ContainerTableActionsComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: "Delete All Containers",
+          title: $localize`Delete All Containers`,
           items: selectedContainers.map((container) => container.serial),
           itemType: "container",
-          confirmAction: { label: "Delete", value: true, type: "destruct" }
+          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -93,20 +92,6 @@ export class ContainerTableActionsComponent {
       });
   }
 
-  private toggleFilter(filterKeyword: string): void {
-    const newValue =
-      filterKeyword === "assigned"
-        ? this.tableUtilsService.toggleBooleanInFilter({
-            keyword: filterKeyword,
-            currentValue: this.containerService.containerFilter()
-          })
-        : this.tableUtilsService.toggleKeywordInFilter({
-            keyword: filterKeyword,
-            currentValue: this.containerService.containerFilter()
-          });
-    this.containerService.containerFilter.set(newValue);
-  }
-
   getFilterIconName(keyword: string): string {
     if (keyword === "assigned") {
       const value = this.containerService.containerFilter()?.getValueOfKey(keyword)?.toLowerCase();
@@ -129,5 +114,19 @@ export class ContainerTableActionsComponent {
       const elementById = this.document.getElementById("container-filter-input") as HTMLInputElement | null;
       elementById?.focus();
     });
+  }
+
+  private toggleFilter(filterKeyword: string): void {
+    const newValue =
+      filterKeyword === "assigned"
+        ? this.tableUtilsService.toggleBooleanInFilter({
+          keyword: filterKeyword,
+          currentValue: this.containerService.containerFilter()
+        })
+        : this.tableUtilsService.toggleKeywordInFilter({
+          keyword: filterKeyword,
+          currentValue: this.containerService.containerFilter()
+        });
+    this.containerService.containerFilter.set(newValue);
   }
 }

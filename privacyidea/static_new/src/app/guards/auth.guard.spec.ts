@@ -19,11 +19,21 @@
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { TestBed } from "@angular/core/testing";
-import { CanMatchFn, Route, Router, UrlSegment } from "@angular/router";
-import { AuthService } from "@services/auth/auth.service";
+import {
+  ActivatedRouteSnapshot,
+  CanMatchFn,
+  provideRouter,
+  Route,
+  Router,
+  RouterStateSnapshot,
+  UrlSegment,
+  UrlTree
+} from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { MockAuthService, MockLocalService, MockNotificationService, MockRouter } from "@testing/mock-services";
-import { adminMatch, AuthGuard, selfServiceMatch } from "./auth.guard";
+import { adminMatch, AuthGuard, loginGuard, resolveLandingPath, selfServiceMatch } from "./auth.guard";
 
 const flushPromises = () => new Promise((r) => setTimeout(r, 0));
 
@@ -49,7 +59,7 @@ describe("AuthGuard — CanMatch helpers", () => {
     authMock = TestBed.inject(AuthService) as unknown as MockAuthService;
   });
 
-  it('adminMatch returns true only for role "admin"', () => {
+  it("adminMatch returns true only for role \"admin\"", () => {
     authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, role: "admin" });
     expect(runMatch(adminMatch)).toBe(true);
 
@@ -57,7 +67,7 @@ describe("AuthGuard — CanMatch helpers", () => {
     expect(runMatch(adminMatch)).toBe(false);
   });
 
-  it('selfServiceMatch returns true only for role "user"', () => {
+  it("selfServiceMatch returns true only for role \"user\"", () => {
     authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, role: "user" });
     expect(runMatch(selfServiceMatch)).toBe(true);
 
@@ -154,5 +164,70 @@ describe("AuthGuard class", () => {
     await flushPromises();
 
     expect(notificationService.warning).not.toHaveBeenCalled();
+  });
+});
+
+describe("resolveLandingPath", () => {
+  let authMock: MockAuthService;
+
+  beforeEach(() => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [{ provide: AuthService, useClass: MockAuthService }]
+    });
+    authMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+  });
+
+  const landingPath = () => resolveLandingPath(authMock as unknown as AuthServiceInterface);
+
+  it("sends a self-service user with the token wizard enabled to the token wizard", () => {
+    authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, role: "user", token_wizard: true });
+    expect(landingPath()).toBe(ROUTE_PATHS.TOKENS_WIZARD);
+  });
+
+  it("falls back to the tokens page for a regular admin", () => {
+    authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, role: "admin", token_wizard: false });
+    expect(landingPath()).toBe(ROUTE_PATHS.TOKENS);
+  });
+
+  it("does NOT send a non-self-service user to a wizard route even when a wizard is enabled", () => {
+    // Wizard routes exist only for self-service; routing an admin there would loop via '**'.
+    authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, role: "admin", token_wizard: true });
+    expect(landingPath()).toBe(ROUTE_PATHS.TOKENS);
+  });
+});
+
+describe("loginGuard", () => {
+  const runGuard = () =>
+    TestBed.runInInjectionContext(() => loginGuard({} as ActivatedRouteSnapshot, {} as RouterStateSnapshot));
+  let authMock: MockAuthService;
+
+  beforeEach(() => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
+        { provide: AuthService, useClass: MockAuthService },
+        MockLocalService,
+        MockNotificationService
+      ]
+    });
+    authMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+  });
+
+  it("allows the login route when not authenticated", () => {
+    authMock.isAuthenticated.set(false);
+    expect(runGuard()).toBe(true);
+  });
+
+  it("redirects authenticated users to their landing page", () => {
+    authMock.isAuthenticated.set(true);
+    authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, role: "admin" });
+
+    const result = runGuard();
+    expect(result).toBeInstanceOf(UrlTree);
+    expect(TestBed.inject(Router).serializeUrl(result as UrlTree)).toBe(ROUTE_PATHS.TOKENS);
   });
 });

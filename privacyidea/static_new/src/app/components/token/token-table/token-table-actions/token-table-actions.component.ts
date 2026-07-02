@@ -36,7 +36,7 @@ import { SelectedUserAssignDialogComponent } from "./selected-user-attach-dialog
 import { ToggleActiveAction, ToggleActiveDialogComponent } from "./toggle-active-dialog/toggle-active-dialog.component";
 
 import { MatMenuModule } from "@angular/material/menu";
-import { Router, RouterLink } from "@angular/router";
+import { Router } from "@angular/router";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { DocumentationService, DocumentationServiceInterface } from "@services/documentation/documentation.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
@@ -44,7 +44,7 @@ import { OverflowNavDirective } from "../../../shared/directives/overflow-nav/ov
 
 @Component({
   selector: "app-token-table-actions",
-  imports: [MatButtonModule, MatIcon, RouterLink, MatMenuModule, MatTooltipModule, OverflowNavDirective],
+  imports: [MatButtonModule, MatIcon, MatMenuModule, MatTooltipModule, OverflowNavDirective],
   templateUrl: "./token-table-actions.component.html",
   styleUrl: "./token-table-actions.component.scss"
 })
@@ -80,10 +80,10 @@ export class TokenTableActionsComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: "Revoke Token",
+          title: $localize`Revoke Token`,
           items: [this.tokenSerial()],
-          itemType: "token",
-          confirmAction: { label: "Revoke", value: true, type: "destruct" }
+          itemType: $localize`token`,
+          confirmAction: { label: $localize`Revoke`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -108,10 +108,10 @@ export class TokenTableActionsComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: "Delete Token",
+          title: $localize`Delete Token`,
           items: [this.tokenSerial()],
-          itemType: "token",
-          confirmAction: { label: "Delete", value: true, type: "destruct" }
+          itemType: $localize`token`,
+          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -200,10 +200,10 @@ export class TokenTableActionsComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: "Reset Failcounter for Selected Tokens",
+          title: $localize`Reset Failcounter for Selected Tokens`,
           items: selectedTokens.map((token) => token.serial),
-          itemType: "token",
-          confirmAction: { label: "Reset", value: true, type: "confirm" }
+          itemType: $localize`token`,
+          confirmAction: { label: $localize`Reset`, value: true, type: "confirm" }
         }
       })
       .afterClosed()
@@ -278,10 +278,10 @@ export class TokenTableActionsComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: "Unassign Selected Tokens",
+          title: $localize`Unassign Selected Tokens`,
           items: selectedTokens.map((token) => token.serial),
-          itemType: "token",
-          confirmAction: { label: "Unassign", value: true, type: "destruct" }
+          itemType: $localize`token`,
+          confirmAction: { label: $localize`Unassign`, value: true, type: "destruct" }
         }
       })
       .afterClosed()

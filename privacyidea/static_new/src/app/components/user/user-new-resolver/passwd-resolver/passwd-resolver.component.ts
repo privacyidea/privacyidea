@@ -43,10 +43,6 @@ export class PasswdResolverComponent {
     required(f.fileName);
   });
 
-  isValid = () => this.passwdForm().valid();
-  isDirty = () => this.passwdForm().dirty();
-  getValue = () => this.model();
-
   constructor() {
     effect(() => {
       const initial = this.data()?.fileName || this.data()?.filename;
@@ -56,4 +52,10 @@ export class PasswdResolverComponent {
       }
     });
   }
+
+  isValid = () => this.passwdForm().valid();
+  isDirty = () => this.passwdForm().dirty();
+  getValue = () => this.model();
+
+
 }

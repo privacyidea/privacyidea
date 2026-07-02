@@ -1,0 +1,81 @@
+# SPDX-FileCopyrightText: (C) 2026 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: CC0-1.0
+#
+# Guards against package.json / package-lock.json drift in the new WebUI.
+# `npm ci` in the build jobs runs against the pull_request merge ref, whose
+# generated lockfile can differ from what actually lands on the branch, so a
+# desynced lockfile can pass CI and only surface later (e.g. in the release
+# build). This job re-resolves the lockfile from the committed PR head and
+# fails if it is not already in sync.
+name: WebUI lockfile sync
+on:
+  pull_request:
+    branches:
+      - 'master'
+      - 'branch-*'
+
+permissions:
+  contents: read
+
+jobs:
+  npm-lock-drift:
+    # No `paths:` filter: this job always runs so it can safely be marked a
+    # required status check. A path-filtered required check never reports on
+    # PRs that don't touch those paths and blocks the merge indefinitely.
+    # The manifest-change detection below short-circuits the expensive steps.
+    name: npm lockfile drift check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # Check out the PR's own head commit, NOT the pull_request merge ref, so
+      # we validate the files that will actually be committed to the branch.
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Detect WebUI manifest changes
+        id: changed
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          # Fetch the base branch ref (fetching a bare commit SHA is not
+          # universally supported) and diff against the merge-base so we see
+          # exactly what this PR changed, independent of how far base advanced.
+          git fetch --no-tags --quiet origin "$BASE_REF"
+          base=$(git merge-base "origin/$BASE_REF" HEAD)
+          if git diff --name-only "$base" HEAD -- \
+               privacyidea/static_new/package.json \
+               privacyidea/static_new/package-lock.json | grep -q .; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No changes to package.json or package-lock.json; nothing to verify."
+          fi
+      - name: Set up Node.js
+        if: steps.changed.outputs.changed == 'true'
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          # Pin to the same major line as the release build (python-dist.yml)
+          # so the drift check resolves the lockfile identically to what ships.
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: privacyidea/static_new/package-lock.json
+      - name: Re-resolve lockfile from package.json
+        if: steps.changed.outputs.changed == 'true'
+        # --package-lock-only preserves already-satisfying pins and only touches
+        # the lockfile when package.json requires something it does not satisfy,
+        # so an in-sync lockfile produces no diff.
+        # --ignore-scripts avoids running lifecycle scripts from transitive
+        # deps (only lockfile resolution is needed here); --no-audit/--no-fund
+        # cut network calls and noise.
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+        working-directory: ./privacyidea/static_new
+      - name: Fail on lockfile drift
+        if: steps.changed.outputs.changed == 'true'
+        run: |
+          if ! git diff --exit-code privacyidea/static_new/package-lock.json; then
+            echo "::error::package.json and package-lock.json are out of sync."
+            echo "Run 'npm install' in privacyidea/static_new and commit the updated package-lock.json."
+            exit 1
+          fi

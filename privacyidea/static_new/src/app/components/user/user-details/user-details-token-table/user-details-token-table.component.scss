@@ -3,9 +3,9 @@
 
 .user-details-token-table-layout {
   @include table.base-table-structure(
-    ".user-details-token-table",
-    ".user-details-token-table-filter",
-    ".table-scroll-container"
+          ".user-details-token-table",
+          ".user-details-token-table-filter",
+          ".table-scroll-container"
   );
 
   .user-details-action-row {

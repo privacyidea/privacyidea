@@ -1,0 +1,98 @@
+/**
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+:host {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  box-sizing: border-box;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: var(--border-radius);
+  background: var(--mat-sys-surface-container-lowest);
+  padding: var(--half-global-padding);
+
+  ::ng-deep app-edit-buttons {
+    opacity: 0;
+    transition: opacity 120ms ease;
+    pointer-events: none;
+  }
+
+  &:hover ::ng-deep app-edit-buttons,
+  &.is-editing ::ng-deep app-edit-buttons,
+  ::ng-deep td.padding-0 app-edit-buttons,
+  ::ng-deep .detail-field--editing app-edit-buttons {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+.details-card-title {
+  margin: 0 0 var(--quarter-global-padding);
+}
+
+.details-card-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+
+  .details-card-title {
+    margin: 0;
+  }
+
+  &:disabled {
+    cursor: default;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--mat-sys-primary);
+    outline-offset: 2px;
+    border-radius: var(--border-radius);
+  }
+}
+
+.details-card-chevron {
+  transition: transform 200ms ease;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.details-card-chevron--expanded {
+  transform: rotate(180deg);
+}
+
+.details-card-body--collapsible {
+  display: grid;
+  grid-template-rows: 1fr;
+  margin-top: var(--quarter-global-padding);
+  transition: grid-template-rows 225ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  > .details-card-body-inner {
+    overflow: hidden;
+    min-height: 0;
+  }
+}
+
+.details-card-body--collapsed {
+  grid-template-rows: 0fr;
+}

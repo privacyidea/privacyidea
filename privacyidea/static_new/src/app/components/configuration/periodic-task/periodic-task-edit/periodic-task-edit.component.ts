@@ -133,6 +133,41 @@ export class PeriodicTaskEditComponent implements OnDestroy {
     return Object.fromEntries(Object.entries(options).filter(([, opt]) => opt.required));
   });
 
+  constructor() {
+    this.pendingChangesService.registerHasChanges(() => this.hasChanges());
+    this.pendingChangesService.registerSave(() => this.save());
+    this.pendingChangesService.registerValidChanges(() => this.canSave());
+
+    this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
+      const name = params.get("name");
+      if (name) {
+        this.isNewTask.set(false);
+        this.editName = name;
+        const found = this.findTaskByName(name);
+        if (found) {
+          this.loadTask(found);
+        }
+      } else {
+        this.isNewTask.set(true);
+        this.editName = null;
+        this.loadTask({ ...EMPTY_PERIODIC_TASK });
+      }
+    });
+
+    // Re-bind once the resource arrives (deep-link case).
+    effect(() => {
+      const resource = this.periodicTaskService.periodicTasksResource;
+      if (resource.hasValue && !resource.hasValue()) return;
+      if (this.isNewTask() || !this.editName) return;
+      const found = this.findTaskByName(this.editName);
+      if (found && untracked(() => !this.hasChanges())) {
+        this.loadTask(found);
+      }
+    });
+
+    this.periodicTaskService.fetchAllModuleOptions();
+  }
+
   fieldHasError(field: { errors(): { kind: string }[]; dirty(): boolean; touched(): boolean }, kind: string): boolean {
     return field.errors().some((e) => e.kind === kind) && (field.dirty() || field.touched());
   }
@@ -178,42 +213,6 @@ export class PeriodicTaskEditComponent implements OnDestroy {
     }
     return true;
   });
-
-  constructor() {
-    this.pendingChangesService.registerHasChanges(() => this.hasChanges());
-    this.pendingChangesService.registerSave(() => this.save());
-    this.pendingChangesService.registerValidChanges(() => this.canSave());
-
-    this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
-      const name = params.get("name");
-      if (name) {
-        this.isNewTask.set(false);
-        this.editName = name;
-        const found = this.findTaskByName(name);
-        if (found) {
-          this.loadTask(found);
-        }
-      } else {
-        this.isNewTask.set(true);
-        this.editName = null;
-        this.loadTask({ ...EMPTY_PERIODIC_TASK });
-      }
-    });
-
-    // Re-bind once the resource arrives (deep-link case).
-    effect(() => {
-      const resource = this.periodicTaskService.periodicTasksResource;
-      if (resource.hasValue && !resource.hasValue()) return;
-      if (this.isNewTask() || !this.editName) return;
-      const found = this.findTaskByName(this.editName);
-      if (found && untracked(() => !this.hasChanges())) {
-        this.loadTask(found);
-      }
-    });
-
-    this.periodicTaskService.fetchAllModuleOptions();
-  }
-
   ngOnDestroy(): void {
     this.pendingChangesService.clearAllRegistrations();
   }

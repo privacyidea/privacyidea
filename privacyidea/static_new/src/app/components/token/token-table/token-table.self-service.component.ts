@@ -29,6 +29,7 @@ import { MatTableModule } from "@angular/material/table";
 import { MatTooltip } from "@angular/material/tooltip";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
@@ -49,7 +50,8 @@ import { TokenTableComponent } from "./token-table.component";
     MatIcon,
     MatTooltip,
     ScrollToTopDirective,
-    StickyHeaderDirective
+    StickyHeaderDirective,
+    ScrollEdgesDirective
   ],
   templateUrl: "./token-table.self-service.component.html",
   styleUrl: "./token-table.component.scss"
@@ -59,15 +61,15 @@ export class TokenTableSelfServiceComponent extends TokenTableComponent {
   private dialog = inject(MatDialog);
   columnKeysMapSelfService = computed(() => {
     const columnKeys = [
-      { key: "serial", label: "Serial" },
-      { key: "tokentype", label: "Type" },
-      { key: "description", label: "Description" },
-      { key: "container_serial", label: "Container" },
-      { key: "active", label: "Active" },
-      { key: "failcount", label: "Fail Counter" }
+      { key: "serial", label: $localize`Serial` },
+      { key: "tokentype", label: $localize`Type` },
+      { key: "description", label: $localize`Description` },
+      { key: "container_serial", label: $localize`Container` },
+      { key: "active", label: $localize`Active` },
+      { key: "failcount", label: $localize`Fail Counter` }
     ];
-    if (this.authService.actionAllowed("revoke")) columnKeys.push({ key: "revoke", label: "Revoke" });
-    if (this.authService.actionAllowed("delete")) columnKeys.push({ key: "delete", label: "Delete" });
+    if (this.authService.actionAllowed("revoke")) columnKeys.push({ key: "revoke", label: $localize`Revoke` });
+    if (this.authService.actionAllowed("delete")) columnKeys.push({ key: "delete", label: $localize`Delete` });
 
     return columnKeys;
   });
@@ -80,10 +82,10 @@ export class TokenTableSelfServiceComponent extends TokenTableComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: "Revoke Token",
+          title: $localize`Revoke Token`,
           items: [serial],
-          itemType: "token",
-          confirmAction: { label: "Revoke", value: true, type: "destruct" }
+          itemType: $localize`token`,
+          confirmAction: { label: $localize`Revoke`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -105,10 +107,10 @@ export class TokenTableSelfServiceComponent extends TokenTableComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: "Delete Token",
+          title: $localize`Delete Token`,
           items: [serial],
-          itemType: "token",
-          confirmAction: { label: "Delete", value: true, type: "destruct" }
+          itemType: $localize`token`,
+          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()

@@ -145,14 +145,14 @@ export class SystemConfigComponent implements OnInit, OnDestroy {
     this.systemService.saveSystemConfig(body).subscribe({
       next: (response) => {
         if (response.result?.status) {
-          this.notificationService.success("System configuration saved successfully.");
+          this.notificationService.success($localize`System configuration saved successfully.`);
         } else {
-          this.notificationService.error("Failed to save system configuration.");
+          this.notificationService.error($localize`Failed to save system configuration.`);
         }
       },
       error: (error) => {
         console.error("Error saving system configuration:", error);
-        this.notificationService.error("Error saving system configuration.");
+        this.notificationService.error($localize`Error saving system configuration.`);
       }
     });
   }
@@ -162,15 +162,15 @@ export class SystemConfigComponent implements OnInit, OnDestroy {
       this.systemService.saveSystemConfig({ ...this.params() }).subscribe({
         next: (response) => {
           if (response.result?.status) {
-            this.notificationService.success("System configuration saved successfully.");
+            this.notificationService.success($localize`System configuration saved successfully.`);
             resolve(true);
           } else {
-            this.notificationService.error("Failed to save system configuration.");
+            this.notificationService.error($localize`Failed to save system configuration.`);
             resolve(false);
           }
         },
         error: () => {
-          this.notificationService.error("Error saving system configuration.");
+          this.notificationService.error($localize`Error saving system configuration.`);
           resolve(false);
         }
       });
@@ -181,14 +181,14 @@ export class SystemConfigComponent implements OnInit, OnDestroy {
     this.systemService.deleteUserCache().subscribe({
       next: (response) => {
         if (response.result?.status) {
-          this.notificationService.success("User cache deleted successfully.");
+          this.notificationService.success($localize`User cache deleted successfully.`);
         } else {
-          this.notificationService.error("Failed to delete user cache.");
+          this.notificationService.error($localize`Failed to delete user cache.`);
         }
       },
       error: (error) => {
         console.error("Error deleting user cache:", error);
-        this.notificationService.error("Error deleting user cache.");
+        this.notificationService.error($localize`Error deleting user cache.`);
       }
     });
   }
@@ -208,7 +208,7 @@ export class SystemConfigComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         console.error("Error loading system documentation:", error);
-        this.notificationService.error("Error loading system documentation.");
+        this.notificationService.error($localize`Error loading system documentation.`);
       }
     });
   }

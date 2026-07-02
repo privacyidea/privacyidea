@@ -50,7 +50,7 @@ import { TokenDetails } from "@services/token/token.service";
 })
 export class ContainerAddTokenComponent {
   authService = input.required<AuthServiceInterface>();
-  showOnlyTokenNotInContainer = model.required<boolean>();
+  showOnlyTokenInContainer = model.required<boolean>();
   total = input.required<number>();
   pageIndex = input.required<number>();
   pageSize = input.required<number>();

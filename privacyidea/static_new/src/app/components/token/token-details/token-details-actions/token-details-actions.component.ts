@@ -61,4 +61,17 @@ export class TokenDetailsActionsComponent {
   token = input<TokenDetails>();
   testPasskey = output<void>();
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
+
+  protected get hasAnyAction(): boolean {
+    const type = this.tokenType?.();
+    const isVerify = this.token()?.rollout_state === "verify";
+    const nonWebauthn = type !== "passkey" && type !== "webauthn";
+    return (
+      isVerify ||
+      type === "passkey" ||
+      nonWebauthn ||
+      this.authService.actionAllowed("setpin") ||
+      this.authService.actionsAllowed(["setrandompin", "otp_pin_set_random"])
+    );
+  }
 }

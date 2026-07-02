@@ -39,7 +39,9 @@ export class DialogWrapperComponent<R = unknown> implements OnInit {
   title = input.required<string>();
   icon = input<string>();
   showCancelButton = input<boolean>(false);
-  cancelButtonLabel = input<string>("Cancel");
+  // Empty by default so the template falls back to the translated <div i18n>Cancel</div>.
+  // A hardcoded "Cancel" here would bypass i18n and always render in English.
+  cancelButtonLabel = input<string>("");
   cancelButtonPrimary = input<boolean>(false);
   handleCloseExternally = input<boolean>(false);
   actions = input<DialogAction<R>[]>([]);

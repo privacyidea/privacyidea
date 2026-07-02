@@ -82,10 +82,18 @@
                        ng-required="param.required && !param.values
                        && param.type !== 'text'"
                        ng-model="form['option.'+paramname]"
-                       ng-show="!param.values && param.type !=='text'">
+                       ng-show="!param.values && param.type !=='text' && !param.secret">
+                <input class="form-control" type="password"
+                       ng-required="param.required && !param.values
+                       && param.type !== 'text'"
+                       ng-model="form['option.'+paramname]"
+                       ng-show="!param.values && param.type !=='text' && param.secret">
                 <p class="help help-block">
                     {{ param.description }}
                 </p>
+            </td>
+            <td ng-if="param.secret">
+                <span class="label label-warning" translate>Secret</span>
             </td>
         </tr>
     </table>
@@ -102,6 +110,13 @@
                 {{ option }}
             </td>
             <td>
+                <label>
+                    <input type="checkbox"
+                           ng-model="optSecrets[optionname]">
+                    <translate>Secret</translate>
+                </label>
+            </td>
+            <td>
                 <button ng-click="deleteOption(optionname)"
                 class="btn btn-danger">Delete</button>
             </td>
@@ -115,6 +130,13 @@
             <td>
                 <input class="form-control"
                        ng-model="newvalue">
+            </td>
+            <td>
+                <label>
+                    <input type="checkbox"
+                           ng-model="newoptionsecret">
+                    <translate>Secret</translate>
+                </label>
             </td>
             <td>
                 <button ng-click="addOption()"
@@ -137,6 +159,13 @@
                 {{ header }}
             </td>
             <td>
+                <label>
+                    <input type="checkbox"
+                           ng-model="headerSecrets[headername]">
+                    <translate>Secret</translate>
+                </label>
+            </td>
+            <td>
                 <button ng-click="deleteHeader(headername)"
                 class="btn btn-danger">Delete</button>
             </td>
@@ -150,6 +179,13 @@
             <td>
                 <input class="form-control"
                        ng-model="newheadervalue">
+            </td>
+            <td>
+                <label>
+                    <input type="checkbox"
+                           ng-model="newheadersecret">
+                    <translate>Secret</translate>
+                </label>
             </td>
             <td>
                 <button ng-click="addHeader()"
