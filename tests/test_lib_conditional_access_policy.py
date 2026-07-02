@@ -107,6 +107,12 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         self.assertRaises(ParameterError, create_lockout_policy, "P", 600, ["PIN_FAIL"],
                           [{"failure_threshold": 5, "bogus": 1}])  # unknown stage key
         self.assertRaises(ParameterError, create_lockout_policy, "P", 600, ["PIN_FAIL"],
+                          [5])  # stage is not a dict
+        self.assertRaises(ParameterError, create_lockout_policy, "P", 600, ["PIN_FAIL"],
+                          [{"failure_threshold": 5, "actions": "notalist"}])  # actions not a list
+        self.assertRaises(ParameterError, create_lockout_policy, "P", 600, ["PIN_FAIL"],
+                          [{"failure_threshold": 5, "actions": [42]}])  # action not a dict
+        self.assertRaises(ParameterError, create_lockout_policy, "P", 600, ["PIN_FAIL"],
                           [_stage(actions=[{"action_type": "NOT_AN_ACTION"}])])
         self.assertRaises(ParameterError, create_lockout_policy, "P", 600, ["PIN_FAIL"],
                           [_stage(actions=[{"action_type": "LOCK_USER", "bogus": 1}])])
@@ -132,6 +138,12 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         self.assertTrue(policy["dry_run"])
         self.assertEqual(600, policy["time_window_seconds"])
         self.assertEqual(["PIN_FAIL"], policy["counter_types_to_track"])
+        # the remaining scalar fields can be updated individually too
+        update_lockout_policy(policy_id, time_window_seconds=900, priority=7, enabled=False)
+        policy = get_lockout_policy(policy_id)
+        self.assertEqual(900, policy["time_window_seconds"])
+        self.assertEqual(7, policy["priority"])
+        self.assertFalse(policy["enabled"])
         # renaming to its own name is not a collision
         update_lockout_policy(policy_id, name="Renamed")
         # replace children as a whole

@@ -841,3 +841,52 @@ class PIManageConditionalAccessTestCase(CliTestCase):
         res = runner.invoke(pi_manage, ["conditionalaccess", "unlock-user", "ghost", "--realm", "nope"])
         self.assertEqual(res.exit_code, 0, res.output)
         self.assertIn("could not be resolved", res.output, res)
+
+    def test_07_list_locks_empty(self):
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["conditionalaccess", "list-locks"])
+        self.assertIn("No locked users.", res.output, res)
+
+    def test_08_unlock_by_id_missing(self):
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["conditionalaccess", "unlock-by-id",
+                                        "--resolver", "reso1", "--uid", "999", "--realm", "realm1"])
+        self.assertEqual(res.exit_code, 0, res.output)
+        self.assertIn("No lock found", res.output, res)
+
+    def test_09_clear_locks(self):
+        runner = self.app.test_cli_runner()
+        for uid in ("1", "2", "3"):
+            db.session.add(UserLockoutState(resolver="reso1", uid=uid, realm="realm1", is_locked=True,
+                                            lock_expires_at=utc_now() + dt.timedelta(seconds=600)))
+        db.session.commit()
+        res = runner.invoke(pi_manage, ["conditionalaccess", "clear-locks", "--yes"])
+        self.assertIn("Removed 3 user lock(s).", res.output, res)
+        self.assertEqual(0, UserLockoutState.query.count())
+
+    def test_10_unlock_user_resolvable(self):
+        from privacyidea.lib.user import User
+        from privacyidea.lib.realm import delete_realm
+        save_resolver({"resolver": "resolver1", "type": "passwdresolver", "fileName": PWFILE})
+        runner = self.app.test_cli_runner()
+        runner.invoke(pi_manage, ["config", "realm", "create", "realm1", "resolver1"])
+        try:
+            user = User("cornelius", "realm1")
+            self.assertTrue(user.exist(), "test fixture user cornelius must resolve")
+            # A resolvable user with no lock -> "No lock found".
+            res = runner.invoke(pi_manage, ["conditionalaccess", "unlock-user", "cornelius",
+                                            "--realm", "realm1"])
+            self.assertIn("No lock found for user cornelius@realm1.", res.output, res)
+            # Lock the resolved user, then unlock them by login/realm.
+            db.session.add(UserLockoutState(resolver=user.resolver, uid=user.uid, realm=user.realm,
+                                            is_locked=True,
+                                            lock_expires_at=utc_now() + dt.timedelta(seconds=600)))
+            db.session.commit()
+            res = runner.invoke(pi_manage, ["conditionalaccess", "unlock-user", "cornelius",
+                                            "--realm", "realm1"])
+            self.assertIn("Unlocked user cornelius@realm1.", res.output, res)
+            self.assertIsNone(UserLockoutState.query.filter_by(
+                resolver=user.resolver, uid=user.uid, realm=user.realm).first())
+        finally:
+            delete_realm("realm1")
+            delete_resolver("resolver1")
