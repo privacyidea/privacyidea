@@ -307,17 +307,17 @@ class AuthenticationLogTestCase(MyTestCase):
                                            realm="r1")
 
         # only the past entry
-        results = get_authentication_logs(end_timestamp=now)
+        results = get_authentication_logs(end_time=now)
         self.assertEqual(1, len(results))
         self.assertEqual(id1, results[0].id)
 
         # only the future entry
-        results = get_authentication_logs(start_timestamp=now)
+        results = get_authentication_logs(start_time=now)
         self.assertEqual(1, len(results))
         self.assertEqual(id2, results[0].id)
 
         # both entries
-        results = get_authentication_logs(start_timestamp=past, end_timestamp=future)
+        results = get_authentication_logs(start_time=past, end_time=future)
         self.assertEqual(2, len(results))
 
     def test_create_user_unknown_event(self):

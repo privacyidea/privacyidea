@@ -379,8 +379,8 @@ export class AuthenticationLog {
     this.authenticationLogService.authenticationLogFilter.set(
       this.authenticationLogService
         .authenticationLogFilter()
-        .removeKey("to")
-        .addEntry("from", toFilterDisplay(startIso))
+        .removeKey("end_time")
+        .addEntry("start_time", toFilterDisplay(startIso))
     );
   }
 
@@ -389,7 +389,7 @@ export class AuthenticationLog {
     this.authenticationLogService.timestampFrom.set(null);
     this.authenticationLogService.timestampTo.set(null);
     this.authenticationLogService.authenticationLogFilter.set(
-      this.authenticationLogService.authenticationLogFilter().removeKey("from").removeKey("to")
+      this.authenticationLogService.authenticationLogFilter().removeKey("start_time").removeKey("end_time")
     );
   }
 
@@ -400,7 +400,7 @@ export class AuthenticationLog {
     if (!value) {
       this.authenticationLogService.timestampFrom.set(null);
       this.authenticationLogService.authenticationLogFilter.set(
-        this.authenticationLogService.authenticationLogFilter().removeKey("from")
+        this.authenticationLogService.authenticationLogFilter().removeKey("start_time")
       );
       return;
     }
@@ -409,7 +409,7 @@ export class AuthenticationLog {
     input.value = toDatetimeLocal(iso);
     this.authenticationLogService.timestampFrom.set(iso);
     this.authenticationLogService.authenticationLogFilter.set(
-      this.authenticationLogService.authenticationLogFilter().addEntry("from", toFilterDisplay(iso))
+      this.authenticationLogService.authenticationLogFilter().addEntry("start_time", toFilterDisplay(iso))
     );
   }
 
@@ -420,7 +420,7 @@ export class AuthenticationLog {
     if (!value) {
       this.authenticationLogService.timestampTo.set(null);
       this.authenticationLogService.authenticationLogFilter.set(
-        this.authenticationLogService.authenticationLogFilter().removeKey("to")
+        this.authenticationLogService.authenticationLogFilter().removeKey("end_time")
       );
       return;
     }
@@ -429,7 +429,7 @@ export class AuthenticationLog {
     input.value = toDatetimeLocal(iso);
     this.authenticationLogService.timestampTo.set(iso);
     this.authenticationLogService.authenticationLogFilter.set(
-      this.authenticationLogService.authenticationLogFilter().addEntry("to", toFilterDisplay(iso))
+      this.authenticationLogService.authenticationLogFilter().addEntry("end_time", toFilterDisplay(iso))
     );
   }
 

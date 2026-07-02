@@ -156,8 +156,8 @@ describe("AuthenticationLogService", () => {
     TestBed.tick();
 
     const req = httpMock.expectOne((r) => r.url.endsWith("/authenticationlog/"));
-    expect(req.request.params.get("start")).toBe("2026-01-01T00:00:00+00:00");
-    expect(req.request.params.get("end")).toBe("2026-06-01T00:00:00+00:00");
+    expect(req.request.params.get("start_time")).toBe("2026-01-01T00:00:00+00:00");
+    expect(req.request.params.get("end_time")).toBe("2026-06-01T00:00:00+00:00");
     req.flush(emptyPage());
     flushEventTypes();
     await Promise.resolve();

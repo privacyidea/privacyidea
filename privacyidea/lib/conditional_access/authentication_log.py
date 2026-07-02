@@ -359,8 +359,8 @@ def _filter_conditions(resolver: str | list[str] | None = None,
                        transaction_id: str | list[str] | None = None,
                        previous_transaction_id: str | list[str] | None = None,
                        client_label: str | list[str] | None = None,
-                       start_timestamp: datetime | None = None,
-                       end_timestamp: datetime | None = None,
+                       start_time: datetime | None = None,
+                       end_time: datetime | None = None,
                        case_insensitive: bool = False) -> list:
     """
     Build the list of SQLAlchemy ``where`` conditions for the provided filters (``None`` means no filter on that
@@ -386,10 +386,10 @@ def _filter_conditions(resolver: str | list[str] | None = None,
     }
     conditions = [condition for column, value in match_filters.items()
                   if (condition := _match_condition(column, value, case_insensitive)) is not None]
-    if start_timestamp is not None:
-        conditions.append(AuthenticationLog.timestamp >= _naive_utc(start_timestamp))
-    if end_timestamp is not None:
-        conditions.append(AuthenticationLog.timestamp <= _naive_utc(end_timestamp))
+    if start_time is not None:
+        conditions.append(AuthenticationLog.timestamp >= _naive_utc(start_time))
+    if end_time is not None:
+        conditions.append(AuthenticationLog.timestamp <= _naive_utc(end_time))
     return conditions
 
 
@@ -448,8 +448,8 @@ def get_authentication_logs(resolver: str | list[str] | None = None,
                             transaction_id: str | list[str] | None = None,
                             previous_transaction_id: str | list[str] | None = None,
                             client_label: str | list[str] | None = None,
-                            start_timestamp: datetime | None = None,
-                            end_timestamp: datetime | None = None) -> list[AuthenticationLog]:
+                            start_time: datetime | None = None,
+                            end_time: datetime | None = None) -> list[AuthenticationLog]:
     """
     Return authentication log entries matching all provided filter criteria, ordered by id (i.e. chronologically).
     All parameters are optional; omitting a parameter means no filtering on that field. Each scalar filter accepts a
@@ -460,7 +460,7 @@ def get_authentication_logs(resolver: str | list[str] | None = None,
                                     event_type=event_type,
                                     source_ip=source_ip, serial=serial, transaction_id=transaction_id,
                                     previous_transaction_id=previous_transaction_id, client_label=client_label,
-                                    start_timestamp=start_timestamp, end_timestamp=end_timestamp)
+                                    start_time=start_time, end_time=end_time)
     stmt = select(AuthenticationLog).where(*conditions).order_by(AuthenticationLog.id)
     return db.session.scalars(stmt).all()
 
@@ -476,8 +476,8 @@ def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
                                      transaction_id: str | list[str] | None = None,
                                      previous_transaction_id: str | list[str] | None = None,
                                      client_label: str | list[str] | None = None,
-                                     start_timestamp: datetime | None = None,
-                                     end_timestamp: datetime | None = None,
+                                     start_time: datetime | None = None,
+                                     end_time: datetime | None = None,
                                      visibility_scopes: list[AuthenticationLogVisibilityScope] | None = None,
                                      case_insensitive: bool = False,
                                      page: int = 1,
@@ -488,8 +488,8 @@ def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
     Return a single page of authentication log entries matching the given filters.
 
     The filter parameters -- ``resolver``, ``uid``, ``realm``, ``username``, ``user_role``, ``event_type``, ``source_ip``,
-    ``serial``, ``transaction_id``, ``previous_transaction_id``, ``client_label``, ``start_timestamp`` and
-    ``end_timestamp`` -- behave
+    ``serial``, ``transaction_id``, ``previous_transaction_id``, ``client_label``, ``start_time`` and
+    ``end_time`` -- behave
     exactly like :func:`get_authentication_logs`. The remaining parameters control visibility scoping and pagination:
 
     :param visibility_scopes: restrict the result to entries matching any of these scopes
@@ -507,7 +507,7 @@ def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
                                     event_type=event_type,
                                     source_ip=source_ip, serial=serial, transaction_id=transaction_id,
                                     previous_transaction_id=previous_transaction_id, client_label=client_label,
-                                    start_timestamp=start_timestamp, end_timestamp=end_timestamp,
+                                    start_time=start_time, end_time=end_time,
                                     case_insensitive=case_insensitive)
     if visibility_scopes is not None:
         conditions.append(_visibility_condition(visibility_scopes))
@@ -546,18 +546,18 @@ def delete_authentication_logs(resolver: str | list[str] | None = None,
                                transaction_id: str | list[str] | None = None,
                                previous_transaction_id: str | list[str] | None = None,
                                client_label: str | list[str] | None = None,
-                               start_timestamp: datetime | None = None,
-                               end_timestamp: datetime | None = None,
+                               start_time: datetime | None = None,
+                               end_time: datetime | None = None,
                                visibility_scopes: list[AuthenticationLogVisibilityScope] | None = None,
                                chunk_size: int | None = None) -> int:
     """
     Delete all authentication log entries matching the given filters and return the number deleted.
 
     The filter parameters -- ``resolver``, ``uid``, ``realm``, ``username``, ``user_role``, ``event_type``, ``source_ip``,
-    ``serial``, ``transaction_id``, ``previous_transaction_id``, ``client_label``, ``start_timestamp`` and
-    ``end_timestamp`` -- behave
+    ``serial``, ``transaction_id``, ``previous_transaction_id``, ``client_label``, ``start_time`` and
+    ``end_time`` -- behave
     exactly like :func:`get_authentication_logs` (to delete entries older than a point in time, pass
-    ``end_timestamp``). The caller must pass at least one filter: with no filter this would delete the entire log,
+    ``end_time``). The caller must pass at least one filter: with no filter this would delete the entire log,
     which this function refuses.
 
     :param visibility_scopes: restrict the deletion to entries matching any of these scopes
@@ -569,7 +569,7 @@ def delete_authentication_logs(resolver: str | list[str] | None = None,
                                     event_type=event_type,
                                     source_ip=source_ip, serial=serial, transaction_id=transaction_id,
                                     previous_transaction_id=previous_transaction_id, client_label=client_label,
-                                    start_timestamp=start_timestamp, end_timestamp=end_timestamp)
+                                    start_time=start_time, end_time=end_time)
     # Guard on the caller's filters before adding the visibility restriction, so a scoped admin also cannot wipe a
     # whole scope with an unfiltered request.
     if not conditions:

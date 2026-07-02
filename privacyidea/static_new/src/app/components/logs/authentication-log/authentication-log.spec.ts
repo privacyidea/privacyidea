@@ -304,10 +304,10 @@ describe("AuthenticationLog", () => {
       expect(fromMs).toBeLessThanOrEqual(after - 3_600_000 + 1000);
       expect(service.timestampTo()).toBeNull();
       expect(component.selectedPreset()).toBe("1h");
-      expect(service.authenticationLogFilter().hasKey("from")).toBe(true);
-      expect(service.authenticationLogFilter().hasKey("to")).toBe(false);
+      expect(service.authenticationLogFilter().hasKey("start_time")).toBe(true);
+      expect(service.authenticationLogFilter().hasKey("end_time")).toBe(false);
       // Filter display value includes local UTC offset (e.g. +00:00, +02:00).
-      expect(service.authenticationLogFilter().getValueOfKey("from")).toMatch(/( [+-]\d{2}:\d{2}| Z)$/);
+      expect(service.authenticationLogFilter().getValueOfKey("start_time")).toMatch(/( [+-]\d{2}:\d{2}| Z)$/);
     });
 
     it("selectTimePreset('3m') subtracts 3 calendar months", () => {
@@ -332,8 +332,8 @@ describe("AuthenticationLog", () => {
       expect(service.timestampFrom()).toBeNull();
       expect(service.timestampTo()).toBeNull();
       expect(component.selectedPreset()).toBeNull();
-      expect(service.authenticationLogFilter().hasKey("from")).toBe(false);
-      expect(service.authenticationLogFilter().hasKey("to")).toBe(false);
+      expect(service.authenticationLogFilter().hasKey("start_time")).toBe(false);
+      expect(service.authenticationLogFilter().hasKey("end_time")).toBe(false);
     });
 
     it("onFromChange preserves user time on subsequent changes", () => {
@@ -349,7 +349,7 @@ describe("AuthenticationLog", () => {
       component.onFromChange({ target: { value: "2026-06-01T10:00" } } as unknown as Event);
       component.onFromChange({ target: { value: "" } } as unknown as Event);
       expect(service.timestampFrom()).toBeNull();
-      expect(service.authenticationLogFilter().hasKey("from")).toBe(false);
+      expect(service.authenticationLogFilter().hasKey("start_time")).toBe(false);
     });
   });
 

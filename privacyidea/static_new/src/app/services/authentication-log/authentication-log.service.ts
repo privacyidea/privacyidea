@@ -175,8 +175,8 @@ export class AuthenticationLogService implements AuthenticationLogServiceInterfa
         sort_order: this.sort().direction || "desc",
         // The WebUI filter is always case-insensitive.
         case_insensitive: true,
-        ...(this.timestampFrom() ? { start: this.timestampFrom()! } : {}),
-        ...(this.timestampTo() ? { end: this.timestampTo()! } : {}),
+        ...(this.timestampFrom() ? { start_time: this.timestampFrom()! } : {}),
+        ...(this.timestampTo() ? { end_time: this.timestampTo()! } : {}),
         ...this.filterParams()
       }
     };

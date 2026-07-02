@@ -17,8 +17,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 import logging
-from datetime import datetime, timezone
-
 from dateutil.parser import isoparse
 from flask import Blueprint, request, g
 
@@ -35,7 +33,7 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.params import get_optional
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.helper import get_authentication_log_visibility_scopes
-from privacyidea.lib.utils import parse_timedelta, is_true
+from privacyidea.lib.utils import is_true
 
 log = logging.getLogger(__name__)
 
@@ -92,9 +90,8 @@ def get_authentication_log():
     :query page_size: entries per page (default 15).
     :query sort_column: column to sort by (id, timestamp, event_type, realm, username, source_ip, serial).
     :query sort_order: ``asc`` or ``desc`` (default ``desc``).
-    :query timelimit: only entries newer than now minus this delta (e.g. ``1d``, ``2h``). Overrides ``start``.
-    :query start: only entries at/after this ISO 8601 timestamp.
-    :query end: only entries at/before this ISO 8601 timestamp.
+    :query start_time: only entries at/after this ISO 8601 timestamp.
+    :query end_time: only entries at/before this ISO 8601 timestamp.
     :query case_insensitive: if set, plain (non-wildcard) filter values match case-insensitively (wildcard values
         always match case-insensitively).
     :status 200: paginated result in ``result.value`` with ``auth_logs``, ``count``, ``current``, ``prev``, ``next``.
@@ -102,14 +99,10 @@ def get_authentication_log():
     params = request.all_data
     filters = {name: _split_csv(get_optional(params, name)) for name in _FILTER_PARAMS}
 
-    timelimit = get_optional(params, "timelimit")
-    if timelimit:
-        start_timestamp = datetime.now(timezone.utc) - parse_timedelta(timelimit)
-    else:
-        start = get_optional(params, "start")
-        start_timestamp = isoparse(start) if start else None
-    end = get_optional(params, "end")
-    end_timestamp = isoparse(end) if end else None
+    start_time = get_optional(params, "start_time")
+    start_time = isoparse(start_time) if start_time else None
+    end_time = get_optional(params, "end_time")
+    end_time = isoparse(end_time) if end_time else None
 
     visibility_scopes = get_authentication_log_visibility_scopes(PolicyAction.AUTHENTICATION_LOG_READ)
     # A scoped admin always also sees their own entries, added to the policy scope as an extra OR alternative.
@@ -129,8 +122,8 @@ def get_authentication_log():
 
     result = get_authentication_logs_paginate(
         **filters,
-        start_timestamp=start_timestamp,
-        end_timestamp=end_timestamp,
+        start_time=start_time,
+        end_time=end_time,
         case_insensitive=is_true(get_optional(params, "case_insensitive")),
         visibility_scopes=visibility_scopes,
         page=_positive_int(get_optional(params, "page"), default=1),
