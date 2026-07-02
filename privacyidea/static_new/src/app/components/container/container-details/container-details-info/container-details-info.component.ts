@@ -16,15 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { NgClass } from "@angular/common";
 import { Component, inject, input, linkedSignal, model, WritableSignal } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
 import { MatDivider } from "@angular/material/divider";
-import { MatFormField, MatLabel } from "@angular/material/form-field";
+import { MatFormField } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
-import { MatList, MatListItem } from "@angular/material/list";
-import { MatCell, MatColumnDef, MatRow, MatTableModule } from "@angular/material/table";
 import { EditButtonsComponent } from "@components/shared/edit-buttons/edit-buttons.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
@@ -40,20 +37,12 @@ export interface ContainerInfoDetail<T = unknown> {
   selector: "app-container-details-info",
   standalone: true,
   imports: [
-    MatTableModule,
-    MatColumnDef,
-    MatCell,
-    MatList,
-    MatListItem,
     MatFormField,
     MatInput,
     MatIconButton,
-    MatLabel,
     MatIcon,
     MatDivider,
-    MatRow,
-    EditButtonsComponent,
-    NgClass
+    EditButtonsComponent
   ],
   templateUrl: "./container-details-info.component.html",
   styleUrl: "./container-details-info.component.scss"
@@ -63,6 +52,7 @@ export class ContainerDetailsInfoComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   protected readonly Object = Object;
+  private readonly hiddenInfoKeys = ["registration_state"];
   containerSerial = this.containerService.containerSerial;
   infoData = input.required<ContainerInfoDetail[]>();
   detailData = input.required<ContainerInfoDetail[]>();
@@ -75,6 +65,14 @@ export class ContainerDetailsInfoComponent {
       return { key: "", value: "" };
     }
   });
+
+  protected asMap(value: unknown): Record<string, string> {
+    return value as Record<string, string>;
+  }
+
+  displayInfoKeys(value: Record<string, unknown>): string[] {
+    return Object.keys(value).filter((key) => !this.hiddenInfoKeys.includes(key));
+  }
 
   toggleInfoEdit(): void {
     this.isEditingInfo.update((b) => !b);

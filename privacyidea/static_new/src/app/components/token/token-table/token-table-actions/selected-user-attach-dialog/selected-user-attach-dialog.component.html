@@ -17,15 +17,15 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <app-dialog-wrapper
-  [title]="'Assign Selected Token to User'"
-  [showCancelButton]="true"
-  [actions]="actions()"
   (actionTriggered)="onAction($event)"
-  (wrapperClose)="onCancel()">
+  (wrapperClose)="onCancel()"
+  [actions]="actions()"
+  [showCancelButton]="true"
+  i18n-title
+  title="Assign Selected Token to User">
   @if (selectionContainsAssignedToken()) {
     <p
-      class="inline-warning"
-      i18n>
+      class="inline-warning" i18n>
       Some token are already assigned to a user.
       <br />
       Assigning a token to a user will remove the previous assignment.
@@ -35,9 +35,7 @@
     <mat-form-field class="input-width-l">
       <mat-label i18n>Select Realm of User</mat-label>
       <mat-select
-        (selectionChange)="onRealmChange($event.value)"
-        [value]="selectedRealm()"
-        required>
+        (selectionChange)="onRealmChange($event.value)" [value]="selectedRealm()" required>
         @for (option of realmService.realmOptions(); track option) {
           <mat-option [value]="option">{{ option }}</mat-option>
         }
@@ -49,18 +47,17 @@
     <mat-form-field class="input-width-l">
       <mat-label i18n>Enter User</mat-label>
       <app-clearable-input
-        (clearButtonClick)="onUserFilterInput('')"
-        [showClearButton]="userFilter() !== ''">
+        (clearButtonClick)="onUserFilterInput('')" [showClearButton]="userFilter() !== ''">
         <input
-          [value]="userFilter()"
           (input)="onUserFilterInput($any($event.target).value)"
           [matAutocomplete]="userAuto"
+          [value]="userFilter()"
           matInput
           required />
         <mat-autocomplete
           #userAuto="matAutocomplete"
-          [displayWith]="displayUser"
-          (optionSelected)="onUserSelected($event.option.value)">
+          (optionSelected)="onUserSelected($event.option.value)"
+          [displayWith]="displayUser">
           @for (user of userService.selectionFilteredUsers(); track user) {
             <mat-option [value]="user">{{ user.username }}</mat-option>
           }
@@ -74,25 +71,23 @@
   @if (authService.actionAllowed("setpin")) {
     <div class="selected-user-attach-container">
       <mat-form-field
-        appearance="fill"
-        class="input-width-l margin-bottom-16">
+        appearance="fill" class="input-width-l margin-bottom-16">
         <input
-          class="hidden-input"
-          type="text" />
+          class="hidden-input" type="text" />
         <input
-          class="hidden-input"
-          type="password" />
+          class="hidden-input" type="password" />
         <mat-label i18n>PIN (optional)</mat-label>
         <input
-          [value]="pin()"
           (input)="pin.set($any($event.target).value)"
           [type]="hidePin() ? 'password' : 'text'"
+          [value]="pin()"
           autocomplete="new-password"
           matInput />
         <button
           (click)="togglePinVisibility()"
-          [attr.aria-label]="'Show PIN'"
           [attr.aria-pressed]="!hidePin()"
+          aria-label="Show PIN"
+          i18n-aria-label
           mat-icon-button
           matSuffix
           type="button">
@@ -100,19 +95,19 @@
         </button>
       </mat-form-field>
       <mat-form-field
-        appearance="fill"
-        class="input-width-l margin-bottom-16">
+        appearance="fill" class="input-width-l margin-bottom-16">
         <mat-label i18n>PIN (repeat)</mat-label>
         <input
-          [value]="pinRepeat()"
           (input)="pinRepeat.set($any($event.target).value)"
           [type]="hidePin() ? 'password' : 'text'"
+          [value]="pinRepeat()"
           autocomplete="new-password"
           matInput />
         <button
           (click)="togglePinVisibility()"
-          [attr.aria-label]="'Show PIN Repeat'"
           [attr.aria-pressed]="!hidePin()"
+          aria-label="Show PIN Repeat"
+          i18n-aria-label
           mat-icon-button
           matSuffix
           type="button">

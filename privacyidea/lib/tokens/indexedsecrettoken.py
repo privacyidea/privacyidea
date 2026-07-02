@@ -42,7 +42,7 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib import _, lazy_gettext
 from privacyidea.lib.utils import to_unicode
 from privacyidea.lib.challenge import get_challenges
-from privacyidea.models import Challenge
+from privacyidea.lib.token import create_challenge
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.error import ValidateError
 
@@ -225,13 +225,12 @@ class IndexedSecretTokenClass(TokenClass):
             position_str = ",".join([f"{x!s}" for x in random_positions])
             attributes["random_positions"] = random_positions
 
-            db_challenge = Challenge(self.token.serial,
-                                     transaction_id=transactionid,
-                                     challenge=options.get("challenge"),
-                                     data=position_str,
-                                     session=options.get("session"),
-                                     validitytime=validity)
-            db_challenge.save()
+            db_challenge = create_challenge(self.token.serial,
+                                             transaction_id=transactionid,
+                                             challenge=options.get("challenge"),
+                                             data=position_str,
+                                             session=options.get("session"),
+                                             validitytime=validity)
             transactionid = transactionid or db_challenge.transaction_id
             return_message = return_message.format(position_str)
 

@@ -18,13 +18,13 @@
  **/
 import {
   Component,
-  ElementRef,
-  ViewChild,
-  WritableSignal,
   computed,
+  ElementRef,
   inject,
   linkedSignal,
-  signal
+  signal,
+  ViewChild,
+  WritableSignal
 } from "@angular/core";
 import {
   MatCell,
@@ -55,21 +55,22 @@ import { MatTooltipModule } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { UserNewResolverComponent } from "@components/user/user-new-resolver/user-new-resolver.component";
 import { ResolverService } from "@services/resolver/resolver.service";
 import { UserTableActionsComponent } from "./user-table-actions/user-table-actions.component";
 
 const columnKeysMap = [
-  { key: "username", label: "Username" },
-  { key: "userid", label: "User ID" },
-  { key: "givenname", label: "Given Name" },
-  { key: "surname", label: "Surname" },
-  { key: "email", label: "Email" },
-  { key: "phone", label: "Phone" },
-  { key: "mobile", label: "Mobile" },
-  { key: "description", label: "Description" },
-  { key: "resolver", label: "Resolver" }
+  { key: "username", label: $localize`Username` },
+  { key: "userid", label: $localize`User ID` },
+  { key: "givenname", label: $localize`Given Name` },
+  { key: "surname", label: $localize`Surname` },
+  { key: "email", label: $localize`Email` },
+  { key: "phone", label: $localize`Phone` },
+  { key: "mobile", label: $localize`Mobile` },
+  { key: "description", label: $localize`Description` },
+  { key: "resolver", label: $localize`Resolver` }
 ];
 
 @Component({
@@ -98,7 +99,8 @@ const columnKeysMap = [
     RouterLink,
     MatIcon,
     MatIconButton,
-    MatTooltipModule
+    MatTooltipModule,
+    ScrollEdgesDirective
   ],
   templateUrl: "./user-table.component.html",
   styleUrl: "./user-table.component.scss"
@@ -111,12 +113,11 @@ export class UserTableComponent {
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly resolverService = inject(ResolverService);
   protected readonly dialog = inject(MatDialog);
+  readonly apiFilter = this.userService.apiFilterOptions;
+  private basePageSizeOptions = [...this.tableUtilsService.pageSizeOptions()];
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
   sort = signal({ active: "", direction: "" } as Sort);
-  readonly apiFilter = this.userService.apiFilterOptions;
-
-  private basePageSizeOptions = [...this.tableUtilsService.pageSizeOptions()];
   pageSizeOptions = computed(() => {
     if (!this.basePageSizeOptions.includes(this.userService.pageSize())) {
       this.basePageSizeOptions.push(this.userService.pageSize());
@@ -155,19 +156,6 @@ export class UserTableComponent {
     }
   });
 
-  private clientsideSortUserData(data: UserData[], s: Sort): UserData[] {
-    if (!s.direction) return data;
-    const dir = s.direction === "asc" ? 1 : -1;
-    const key = s.active as keyof UserData;
-    return data.sort((a: UserData, b: UserData) => {
-      const va = (a?.[key] ?? "").toString().toLowerCase();
-      const vb = (b?.[key] ?? "").toString().toLowerCase();
-      if (va < vb) return -1 * dir;
-      if (va > vb) return 1 * dir;
-      return 0;
-    });
-  }
-
   toggleFilter(filterKeyword: string): void {
     const newValue = this.tableUtilsService.toggleKeywordInFilter({
       keyword: filterKeyword,
@@ -204,5 +192,18 @@ export class UserTableComponent {
         maxHeight: "100vh"
       });
     }
+  }
+
+  private clientsideSortUserData(data: UserData[], s: Sort): UserData[] {
+    if (!s.direction) return data;
+    const dir = s.direction === "asc" ? 1 : -1;
+    const key = s.active as keyof UserData;
+    return data.sort((a: UserData, b: UserData) => {
+      const va = (a?.[key] ?? "").toString().toLowerCase();
+      const vb = (b?.[key] ?? "").toString().toLowerCase();
+      if (va < vb) return -1 * dir;
+      if (va > vb) return 1 * dir;
+      return 0;
+    });
   }
 }

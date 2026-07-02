@@ -44,7 +44,7 @@ from flask_babel import _
 from flask import Blueprint, request, current_app, g
 from .lib.utils import (send_result,
                         get_priority_from_param)
-from ..lib.params import get_required
+from ..lib.params import get_required, get_optional
 from ..lib.log import log_with
 from ..lib.realm import (set_default_realm,
                          get_default_realm,
@@ -52,7 +52,7 @@ from ..lib.realm import (set_default_realm,
                          get_realms,
                          delete_realm)
 from ..api.lib.prepolicy import prepolicy, check_base_action
-from ..lib.utils import reduce_realms
+from ..lib.utils import reduce_realms, is_true
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.config import check_node_uuid_exists
 from privacyidea.lib.error import ParameterError
@@ -423,13 +423,23 @@ def delete_realm_api(realm=None):
     remains afterwards, that remaining realm is automatically promoted
     to default.
 
+    Custom user attributes are bound to the realm. If users in this realm have
+    custom attributes and ``delete_custom_attributes`` is not set, the deletion
+    is refused with a 400 (error code 908) whose message names the attribute
+    keys, so a client can ask for confirmation. Re-send with
+    ``delete_custom_attributes=1`` to delete the realm and those attributes
+    together.
+
     Requires admin authentication and the policy action :ref:`resolverdelete`.
 
     :param realm: path component, the name of the realm to delete.
+    :query delete_custom_attributes: if true, also delete the realm's custom
+        user attributes instead of refusing the deletion.
     :reqheader PI-Authorization: authentication token.
     :status 200: database id of the deleted realm in ``result.value``.
-    :status 400: a token or container in this realm still has a user
-        assigned.
+    :status 400: a token or container in this realm still has a user assigned,
+        or (error code 908) a user in this realm still has custom user
+        attributes and ``delete_custom_attributes`` was not set.
     :status 404: no realm with the given name exists.
 
     **Example request**:
@@ -457,7 +467,8 @@ def delete_realm_api(realm=None):
          "version": "privacyIDEA unknown"
        }
     """
-    ret = delete_realm(realm)
+    delete_custom_attributes = is_true(get_optional(request.all_data, "delete_custom_attributes"))
+    ret = delete_realm(realm, delete_custom_attributes=delete_custom_attributes)
     g.audit_object.log({"success": ret > 0,
                         "info": realm})
 

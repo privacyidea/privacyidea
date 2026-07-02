@@ -14,7 +14,7 @@ down_revision = 'd5870fd2f2a4'
 from alembic import op
 from sqlalchemy import orm
 import sqlalchemy as sa
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.schema import Sequence
 
 Base = declarative_base()

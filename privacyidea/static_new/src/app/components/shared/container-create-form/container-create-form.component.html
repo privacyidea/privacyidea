@@ -81,7 +81,7 @@
   <mat-checkbox
     [checked]="generateQRCode()"
     (change)="generateQRCode.set($event.checked); registrationSettings.expanded = false">
-    Generate a QR code to register the container on a smartphone.
+    <span i18n>Generate a QR code to register the container on a smartphone.</span>
   </mat-checkbox>
   <mat-accordion>
     <mat-expansion-panel

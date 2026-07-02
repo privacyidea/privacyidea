@@ -32,7 +32,7 @@ describe("MachineResolverHostsTabComponent", () => {
 
     fixture = TestBed.createComponent(MachineResolverHostsTabComponent);
     component = fixture.componentInstance;
-    fixture.componentRef.setInput("isEditMode", false);
+    fixture.componentRef.setInput("isCreateMode", true);
     fixture.componentRef.setInput("machineResolverData", { type: "hosts", filename: "testFileName", resolver: "test" });
     fixture.detectChanges();
   });

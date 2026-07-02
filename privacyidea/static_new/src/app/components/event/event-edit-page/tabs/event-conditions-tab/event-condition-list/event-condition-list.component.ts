@@ -30,21 +30,34 @@ import {
   ViewChildren
 } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
-import { MatError, MatFormField } from "@angular/material/form-field";
+import { MatError, MatFormField, MatSuffix } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { MatTooltip } from "@angular/material/tooltip";
+import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 import { EventConditionMultiValue, EventService } from "@services/event/event.service";
 
 @Component({
   selector: "app-event-condition-list",
-  imports: [MatFormField, MatIcon, MatIconButton, MatInput, MatOption, MatSelect, MatTooltip, MatError],
+  imports: [
+    MatFormField,
+    MatIcon,
+    MatIconButton,
+    MatInput,
+    MatOption,
+    MatSelect,
+    MatTooltip,
+    MatError,
+    MatSuffix,
+    ClearButtonComponent
+  ],
   templateUrl: "./event-condition-list.component.html",
   styleUrl: "./event-condition-list.component.scss"
 })
 export class EventConditionListComponent {
   protected readonly eventService = inject(EventService);
+  protected readonly Object = Object;
   conditions = input.required<Record<string, string | string[]>>();
   action = input<string>();
   emitOnConditionValueChange = input<boolean>(false);
@@ -55,7 +68,6 @@ export class EventConditionListComponent {
   toolTipText = input<string>("");
   newConditionValue = output<{ conditionName: string; conditionValue: string | string[] }>();
   actionButtonClicked = output<{ conditionName: string; conditionValue: string | string[] }>();
-
   editConditions = linkedSignal(() => {
     return this.conditions();
   });
@@ -69,38 +81,8 @@ export class EventConditionListComponent {
     }
     return multiValues;
   });
-
   showDescription: Record<string, boolean> = {};
-  protected readonly Object = Object;
-
   @ViewChildren("selectedConditionInput") selectedConditionInput!: QueryList<ElementRef | MatSelect>;
-
-  protected focusEffect = effect(() => {
-    const conditionName = this.focusConditionName();
-    if (conditionName) {
-      this.focusInputByConditionName(conditionName);
-    }
-  });
-
-  private focusInputByConditionName(conditionName: string) {
-    setTimeout(() => {
-      const inputs = this.selectedConditionInput.toArray();
-      // Try to find the input by name attribute or index
-      for (const input of inputs) {
-        if (input instanceof ElementRef) {
-          if (input.nativeElement && input.nativeElement.name === `conditionInput_${conditionName}`) {
-            input.nativeElement.focus();
-            break;
-          }
-        } else if (input instanceof MatSelect) {
-          // For MatSelect, try to match by a custom property if needed
-          // (Assume order matches for now)
-          // Optionally, add logic to match by conditionName if possible
-        }
-      }
-    });
-  }
-
   availableConditionValues = computed(() => {
     const valueMap: Record<string, string[] | EventConditionMultiValue[]> = {};
     for (const [name, details] of Object.entries(this.eventService.moduleConditions())) {
@@ -112,6 +94,12 @@ export class EventConditionListComponent {
       }
     }
     return valueMap;
+  });
+  protected focusEffect = effect(() => {
+    const conditionName = this.focusConditionName();
+    if (conditionName) {
+      this.focusInputByConditionName(conditionName);
+    }
   });
 
   getMultiValues(value: string | string[]): string[] {
@@ -136,6 +124,13 @@ export class EventConditionListComponent {
     }
   }
 
+  clearConditionValue(conditionName: string) {
+    this.editConditions.update((conditions) => ({ ...conditions, [conditionName]: "" }));
+    if (this.emitOnConditionValueChange()) {
+      this.newConditionValue.emit({ conditionName, conditionValue: "" });
+    }
+  }
+
   onActionButtonClicked(conditionName: string) {
     const conditionValue = this.editConditions()[conditionName];
     this.actionButtonClicked.emit({ conditionName, conditionValue });
@@ -147,5 +142,24 @@ export class EventConditionListComponent {
 
   enableShowDescription(conditionName: string) {
     this.showDescription[conditionName] = true;
+  }
+
+  private focusInputByConditionName(conditionName: string) {
+    setTimeout(() => {
+      const inputs = this.selectedConditionInput.toArray();
+      // Try to find the input by name attribute or index
+      for (const input of inputs) {
+        if (input instanceof ElementRef) {
+          if (input.nativeElement && input.nativeElement.name === `conditionInput_${conditionName}`) {
+            input.nativeElement.focus();
+            break;
+          }
+        } else if (input instanceof MatSelect) {
+          // For MatSelect, try to match by a custom property if needed
+          // (Assume order matches for now)
+          // Optionally, add logic to match by conditionName if possible
+        }
+      }
+    });
   }
 }

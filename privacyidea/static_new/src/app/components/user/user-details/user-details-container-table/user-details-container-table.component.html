@@ -17,9 +17,7 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
-  aria-label="User Details Container Table"
-  class="user-details-container-table-layout"
-  i18n-aria-label>
+  aria-label="User Details Container Table" class="user-details-container-table-layout" i18n-aria-label>
   <div class="details-header">
     <h4 i18n>Containers of User</h4>
     <h4 class="username-header">&nbsp;{{ userService.detailsUser().username }}</h4>
@@ -27,8 +25,7 @@
   </div>
   <div class="flex-row filter-paginator-container">
     <mat-form-field
-      subscriptSizing="dynamic"
-      class="user-details-container-table-filter">
+      class="user-details-container-table-filter" subscriptSizing="dynamic">
       <mat-label i18n>Filter Containers...</mat-label>
       <app-clearable-input
         (clearButtonClick)="filterValue = ''; dataSource.filter = ''; filterInput.value = ''"
@@ -59,9 +56,7 @@
       @for (column of columnsKeyMap; track column) {
         <ng-container [matColumnDef]="column.key">
           <th
-            *matHeaderCellDef
-            attr.aria-label="{{ column.label }} Header"
-            mat-header-cell>
+            *matHeaderCellDef attr.aria-label="{{ column.label }} Header" mat-header-cell>
             <div class="flex ali-center">
               {{ column.label }}
               <div class="margin-left-16 flex">
@@ -123,16 +118,13 @@
       }
 
       <tr
-        *matHeaderRowDef="displayedColumns"
-        mat-header-row></tr>
+        *matHeaderRowDef="displayedColumns" mat-header-row></tr>
       <tr
-        *matRowDef="let row; columns: displayedColumns"
-        mat-row></tr>
+        *matRowDef="let row; columns: displayedColumns" mat-row></tr>
 
       <tr *matNoDataRow>
         <td
-          [attr.colspan]="displayedColumns.length"
-          i18n>
+          [attr.colspan]="displayedColumns.length" i18n>
           No data matching the filter.
         </td>
       </tr>

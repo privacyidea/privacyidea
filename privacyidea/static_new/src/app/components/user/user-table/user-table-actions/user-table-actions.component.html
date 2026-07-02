@@ -17,15 +17,12 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
-  appOverflowNav
-  class="actions-div margin-bottom-16">
+  appOverflowNav class="actions-div margin-bottom-16">
   <mat-form-field
-    class="input-width-l"
-    subscriptSizing="dynamic">
-    <mat-label>Select Realm</mat-label>
+    class="input-width-l" subscriptSizing="dynamic">
+    <mat-label i18n>Select Realm</mat-label>
     <mat-select
-      [value]="userService.selectedUserRealm()"
-      (selectionChange)="userService.selectedUserRealm.set($event.value)">
+      (selectionChange)="userService.selectedUserRealm.set($event.value)" [value]="userService.selectedUserRealm()">
       @for (option of realmService.realmOptions(); track option) {
         <mat-option [value]="option">{{ option }}</mat-option>
       }
@@ -34,9 +31,7 @@
 
   @if (authService.actionAllowed("adduser") && anyEditableResolver()) {
     <button
-      (click)="navigateToCreateUser()"
-      class="action-button-primary button-width-m"
-      mat-stroked-button>
+      (click)="navigateToCreateUser()" class="action-button-primary button-width-m" mat-stroked-button>
       <mat-icon>add</mat-icon>
       <span i18n>Create User</span>
     </button>

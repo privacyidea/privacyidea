@@ -18,17 +18,17 @@
  **/
 
 import { HttpClient, HttpHeaders } from "@angular/common/http";
-import { Injectable, Signal, WritableSignal, computed, inject, signal } from "@angular/core";
+import { computed, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
 import { Router } from "@angular/router";
 import { PiResponse } from "@app/app.component";
-import { BEARER_TOKEN_STORAGE_KEY } from "@core/constants";
+import { AUTH_DATA_STORAGE_KEY, BEARER_TOKEN_STORAGE_KEY } from "@core/constants";
 import { environment } from "@env/environment";
 import { PolicyAction } from "@services/auth/policy-actions";
 import { LocalService, LocalServiceInterface } from "@services/local/local.service";
-import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
 import { tokenTypes } from "@utils/token.utils";
-import { Observable, catchError, tap, throwError } from "rxjs";
+import { catchError, Observable, tap, throwError } from "rxjs";
 
 export type AuthResponse = PiResponse<AuthData, AuthDetail>;
 
@@ -162,7 +162,10 @@ export interface WebAuthnLoginParams {
  * Imported `PasskeyCheckParams` from `validate.service` would create a
  * cycle, so callers pass the structurally compatible shape directly.
  */
-export type AuthenticateParams = PasswordLoginParams | WebAuthnLoginParams | {
+export type AuthenticateParams =
+  | PasswordLoginParams
+  | WebAuthnLoginParams
+  | {
   transaction_id: string;
   credential_id: string;
   authenticatorData: string;
@@ -232,16 +235,27 @@ export interface AuthServiceInterface {
 
   // Methods
   getHeaders(): HttpHeaders;
+
   authenticate(params: AuthenticateParams): Observable<AuthResponse>;
+
   acceptAuthentication(): void;
+
   logout(): void;
+
   actionAllowed(action: PolicyAction): boolean;
+
   actionsAllowed(actions: PolicyAction[]): boolean;
+
   oneActionAllowed(actions: PolicyAction[]): boolean;
+
   anyContainerActionAllowed(): boolean;
+
   tokenEnrollmentAllowed(): boolean;
+
   anyTokenActionAllowed(): boolean;
+
   checkForceServerGenerateOTPKey(tokenType: string): boolean;
+
   check2Step(tokenType: string): TwoStepValue;
 }
 
@@ -250,17 +264,10 @@ export interface AuthServiceInterface {
 })
 export class AuthService implements AuthServiceInterface {
   readonly authUrl = environment.proxyUrl + "/auth";
-  private readonly router = inject(Router);
-  private readonly dialog = inject(MatDialog);
-  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
-  private readonly localService: LocalServiceInterface = inject(LocalService);
-  private readonly http = inject(HttpClient);
-
   // Writable Signals
   readonly jwtData = signal<JwtData | null>(null);
   readonly authData = signal<AuthData | null>(null);
   readonly authenticationAccepted = signal<boolean>(false);
-
   // Computed signals
   readonly jwtNonce = computed(() => this.jwtData()?.nonce || "");
   readonly authtype = computed(() => (this.jwtData()?.authtype || this.jwtData() ? "cookie" : "none"));
@@ -268,6 +275,13 @@ export class AuthService implements AuthServiceInterface {
     const exp = this.jwtData()?.exp;
     return exp ? new Date(exp * 1000) : null;
   });
+  readonly jwtLogoutTimeS = computed(() => {
+    const expiration = this.jwtExpDate();
+    if (expiration == null) return null;
+    const now = new Date();
+    return Math.max(0, Math.floor((expiration.getTime() - now.getTime()) / 1000));
+  });
+  readonly logoutTimeS = computed(() => this.authData()?.logout_time || null);
   readonly isAuthenticated = computed(() => this.authenticationAccepted() && !!this.authData());
   readonly logLevel = computed(() => this.authData()?.log_level || 0);
   readonly menus = computed(() => this.authData()?.menus || []);
@@ -293,13 +307,6 @@ export class AuthService implements AuthServiceInterface {
   readonly role = computed(() => this.jwtData()?.role || this.authData()?.role || "");
   readonly token = computed(() => this.authData()?.token || "");
   readonly username = computed(() => this.jwtData()?.username || this.authData()?.username || "");
-  readonly logoutTimeS = computed(() => this.authData()?.logout_time || null);
-  readonly jwtLogoutTimeS = computed(() => {
-    const expiration = this.jwtExpDate();
-    if (expiration == null) return null;
-    const now = new Date();
-    return Math.max(0, Math.floor((expiration.getTime() - now.getTime()) / 1000));
-  });
   readonly auditPageSize = computed(() => this.authData()?.audit_page_size || 10);
   readonly tokenPageSize = computed(() => this.authData()?.token_page_size || null);
   readonly userPageSize = computed(() => this.authData()?.user_page_size || 10);
@@ -338,6 +345,10 @@ export class AuthService implements AuthServiceInterface {
   );
   readonly isSelfServiceUser = computed(() => this.role() === "user");
 
+  constructor() {
+    this.restoreSession();
+  }
+
   getHeaders(): HttpHeaders {
     return new HttpHeaders({
       "PI-Authorization": this.localService.getData(BEARER_TOKEN_STORAGE_KEY) || ""
@@ -361,6 +372,13 @@ export class AuthService implements AuthServiceInterface {
             this.authData.set(value);
             this.jwtData.set(this.decodeJwtPayload(value.token));
             this.localService.saveData(BEARER_TOKEN_STORAGE_KEY, value.token);
+            this.localService.saveData(AUTH_DATA_STORAGE_KEY, JSON.stringify(this.persistableAuthData(value)));
+            // Update version after login — the hide_version policy strips the
+            // version from pre-login responses, but the /auth response includes
+            // it because g.logged_in_user is set during authentication.
+            if (response.versionnumber) {
+              this.versioningService.rawVersion.set(response.versionnumber);
+            }
           }
         }),
         catchError((error) => {
@@ -377,9 +395,9 @@ export class AuthService implements AuthServiceInterface {
     this.dialog.closeAll();
     this.authData.set(null);
     this.jwtData.set(null);
-    this.localService.removeData(BEARER_TOKEN_STORAGE_KEY);
+    this.clearStoredSession();
     this.authenticationAccepted.set(false);
-    this.router.navigate(["login"]).then(() => this.notificationService.success($localize`Logout successful.`));
+    this.router.navigate(["login"]);
   }
 
   actionAllowed(action: PolicyAction): boolean {
@@ -429,6 +447,11 @@ export class AuthService implements AuthServiceInterface {
     }
   }
 
+  private readonly router = inject(Router);
+  private readonly dialog = inject(MatDialog);
+  private readonly localService: LocalServiceInterface = inject(LocalService);
+  private readonly http = inject(HttpClient);
+  private readonly versioningService: VersioningServiceInterface = inject(VersioningService);
   decodeJwtPayload(token: string): JwtData | null {
     try {
       const parts = token.split(".");
@@ -443,5 +466,55 @@ export class AuthService implements AuthServiceInterface {
       console.error("Failed to decode JWT:", e);
       return null;
     }
+  }
+
+  /**
+   * Strip the fields that the bearer token already carries before persisting the auth data.
+   * The token (stored separately) is the source of truth for identity and rights via the
+   * decoded JWT, so the token string and the JWT claims (rights, role, username, realm) are
+   * not duplicated into storage; everything that remains is UI/policy config not in the JWT.
+   */
+  private persistableAuthData(authData: AuthData): Omit<AuthData, "token" | "rights" | "role" | "username" | "realm"> {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { token, rights, role, username, realm, ...rest } = authData;
+    return rest;
+  }
+
+  /**
+   * Rehydrate the session from storage on bootstrap so a full page reload (e.g. switching
+   * the UI language, which loads a different locale bundle) does not drop an active login.
+   * The token and the auth data are restored only while the JWT is still valid; an
+   * expired or corrupt session is cleared instead.
+   */
+  private restoreSession(): void {
+    const token = this.localService.getData(BEARER_TOKEN_STORAGE_KEY);
+    if (!token) {
+      return;
+    }
+    const jwt = this.decodeJwtPayload(token);
+    // Treat a missing/zero exp as expired: such a token cannot establish a valid session.
+    if (!jwt || !jwt.exp || jwt.exp * 1000 <= Date.now()) {
+      this.clearStoredSession();
+      return;
+    }
+    const storedAuthData = this.localService.getData(AUTH_DATA_STORAGE_KEY);
+    if (!storedAuthData) {
+      // A token without its auth data cannot be restored; clear it so getHeaders() does not
+      // keep sending a bearer token for a session the UI considers logged out.
+      this.clearStoredSession();
+      return;
+    }
+    try {
+      this.authData.set(JSON.parse(storedAuthData) as AuthData);
+      this.jwtData.set(jwt);
+      this.authenticationAccepted.set(true);
+    } catch {
+      this.clearStoredSession();
+    }
+  }
+
+  private clearStoredSession(): void {
+    this.localService.removeData(BEARER_TOKEN_STORAGE_KEY);
+    this.localService.removeData(AUTH_DATA_STORAGE_KEY);
   }
 }

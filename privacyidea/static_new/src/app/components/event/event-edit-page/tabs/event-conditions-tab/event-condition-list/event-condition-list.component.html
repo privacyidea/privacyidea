@@ -27,6 +27,7 @@
           @if (showDescription[conditionName]) {
             <button
               (click)="disableShowDescription(conditionName)"
+              i18n-matTooltip
               mat-icon-button
               matTooltip="Hide Description">
               <mat-icon>info</mat-icon>
@@ -34,6 +35,7 @@
           } @else {
             <button
               (click)="enableShowDescription(conditionName)"
+              i18n-matTooltip
               mat-icon-button
               matTooltip="Show Description">
               <mat-icon>info_outline</mat-icon>
@@ -43,8 +45,7 @@
         @if (showDescription[conditionName]) {
           <!-- Display description as inner html to correctly render code tags -->
           <div
-            [innerHTML]="conditionDetails.desc"
-            class="description"></div>
+            [innerHTML]="conditionDetails.desc" class="description"></div>
         }
       </div>
       <div class="condition-value-container">
@@ -55,46 +56,42 @@
             <p i18n>No values available for this condition.</p>
           } @else if (conditionDetails?.type === "multi") {
             <mat-form-field
-              appearance="fill"
-              class="input-width-m"
-              subscriptSizing="dynamic">
+              appearance="fill" class="input-width-m" subscriptSizing="dynamic">
               <mat-select
                 #selectedConditionInput
                 (selectionChange)="onConditionValueChange(conditionName, $event.value)"
                 [multiple]="true"
-                [placeholder]="'Select values ...'"
                 [required]="inputRequired()"
-                [value]="multiValueConditions()[conditionName] || []">
+                [value]="multiValueConditions()[conditionName] || []"
+                i18n-placeholder
+                placeholder="Select values ...">
                 @for (option of availableConditionValues()[conditionName]; track option) {
                   <mat-option [value]="option">{{ option }}</mat-option>
                 }
               </mat-select>
-              <mat-error i18n> Select at least one value or remove the condition. </mat-error>
+              <mat-error i18n> Select at least one value or remove the condition.</mat-error>
             </mat-form-field>
           } @else {
             <!-- Needs to be a separate selection as multiple state can not be changed during runtime -->
             <mat-form-field
-              appearance="fill"
-              class="input-width-m"
-              subscriptSizing="dynamic">
+              appearance="fill" class="input-width-m" subscriptSizing="dynamic">
               <mat-select
                 #selectedConditionInput
                 (selectionChange)="onConditionValueChange(conditionName, $event.value)"
                 [required]="inputRequired()"
                 [value]="editConditions()[conditionName]"
+                i18n-placeholder
                 placeholder="Select one option ...">
                 @for (option of availableConditionValues()[conditionName]; track option) {
                   <mat-option [value]="option">{{ option }}</mat-option>
                 }
               </mat-select>
-              <mat-error i18n> Select a value or remove the condition. </mat-error>
+              <mat-error i18n> Select a value or remove the condition.</mat-error>
             </mat-form-field>
           }
         } @else {
           <mat-form-field
-            appearance="fill"
-            class="input-width-m height-56"
-            subscriptSizing="dynamic">
+            appearance="fill" class="input-width-m height-56" subscriptSizing="dynamic">
             @switch (conditionDetails?.type) {
               @case ("int") {
                 <input
@@ -104,7 +101,7 @@
                   [name]="'conditionInput_' + conditionName"
                   [required]="inputRequired()"
                   [value]="editConditions()[conditionName]"
-                  class="font-size-16"
+                  i18n-placeholder
                   matInput
                   placeholder="Enter a Number ..."
                   type="number" />
@@ -118,13 +115,17 @@
                   [name]="'conditionInput_' + conditionName"
                   [required]="inputRequired()"
                   [value]="editConditions()[conditionName] || ''"
-                  class="font-size-16"
+                  i18n-placeholder
                   matInput
                   placeholder="Enter value ..."
                   type="text" />
               }
             }
-            <mat-error i18n> Enter a value or remove the condition. </mat-error>
+            @if (editConditions()[conditionName]) {
+              <app-clear-button
+                (clearButtonClick)="clearConditionValue(conditionName)" matSuffix></app-clear-button>
+            }
+            <mat-error i18n> Enter a value or remove the condition.</mat-error>
           </mat-form-field>
         }
         <button

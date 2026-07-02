@@ -20,22 +20,13 @@
   appOverflowNav
   class="flex-row margin-bottom-16 gap-8">
   <button
-    data-overflow-pinned
-    [routerLink]="[ROUTE_PATHS.CONTAINERS_CREATE]"
-    class="action-button-primary button-width-m"
-    mat-stroked-button>
-    <mat-icon> create_new_folder</mat-icon>
-    Create Container
-  </button>
-  <button
     #advancedFilterTrigger="matMenuTrigger"
     data-overflow-pinned
     [matMenuTriggerFor]="advancedFilterMenu"
     class="action-button-secondary button-width-m"
-    i18n
     mat-stroked-button>
     <mat-icon> filter_list</mat-icon>
-    More Filter
+    <span i18n>More Filter</span>
   </button>
   <mat-menu
     #advancedFilterMenu="matMenu"
@@ -54,10 +45,9 @@
       (click)="deleteSelectedContainer()"
       [disabled]="containerSelection().length === 0"
       class="action-button-delete-secondary button-width-m"
-      i18n
       mat-stroked-button>
       <mat-icon> delete_sweep</mat-icon>
-      Delete
+      <span i18n>Delete</span>
     </button>
   }
 </div>

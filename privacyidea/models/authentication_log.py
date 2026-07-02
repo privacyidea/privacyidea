@@ -87,14 +87,20 @@ class AuthenticationLog(MethodsMixin, db.Model):
     uid: Mapped[str | None] = mapped_column(_case_sensitive_unicode(authentication_log_column_length["uid"]))
     realm: Mapped[str | None] = mapped_column(_case_sensitive_unicode(authentication_log_column_length["realm"]))
     username: Mapped[str | None] = mapped_column(_case_sensitive_unicode(authentication_log_column_length["username"]))
-    user_role: Mapped[str | None] = mapped_column(_case_sensitive_unicode(authentication_log_column_length["user_role"]))
-    event_type: Mapped[str] = mapped_column(_case_sensitive_unicode(authentication_log_column_length["event_type"]), nullable=False)
+    user_role: Mapped[str | None] = mapped_column(
+        _case_sensitive_unicode(authentication_log_column_length["user_role"]))
+    event_type: Mapped[str] = mapped_column(
+        _case_sensitive_unicode(authentication_log_column_length["event_type"]), nullable=False)
     timestamp: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
-    source_ip: Mapped[str | None] = mapped_column(_case_sensitive_unicode(authentication_log_column_length["source_ip"]))
-    client_label: Mapped[str | None] = mapped_column(_case_sensitive_unicode(authentication_log_column_length["client_label"]))
+    source_ip: Mapped[str | None] = mapped_column(
+        _case_sensitive_unicode(authentication_log_column_length["source_ip"]))
+    client_label: Mapped[str | None] = mapped_column(
+        _case_sensitive_unicode(authentication_log_column_length["client_label"]))
     serial: Mapped[str | None] = mapped_column(_case_sensitive_unicode(authentication_log_column_length["serial"]))
-    transaction_id: Mapped[str | None] = mapped_column(_case_sensitive_unicode(authentication_log_column_length["transaction_id"]))
-    previous_transaction_id: Mapped[str | None] = mapped_column(_case_sensitive_unicode(authentication_log_column_length["previous_transaction_id"]))
+    transaction_id: Mapped[str | None] = mapped_column(
+        _case_sensitive_unicode(authentication_log_column_length["transaction_id"]))
+    previous_transaction_id: Mapped[str | None] = mapped_column(
+        _case_sensitive_unicode(authentication_log_column_length["previous_transaction_id"]))
     other_info: Mapped[dict | None] = mapped_column(JSON)
 
     @property

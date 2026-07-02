@@ -3,5 +3,9 @@
 
 .challenges-table-container {
   @include styles.main-component-style;
+  max-height: var(--table-max-height);
   @include table.base-table-structure(".challenges-table", ".challenges-table-filter", ".table-scroll-container");
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }

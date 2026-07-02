@@ -4,6 +4,19 @@
 .container-table-container {
   @include styles.main-component-style;
   @include table.base-table-structure(".container-table", ".container-table-filter", ".table-scroll-container");
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  max-height: var(--table-max-height);
+
+  :host-context(body.self-service-layout) & {
+    height: auto;
+    max-height: var(--table-max-height);
+
+    .table-scroll-region {
+      flex: 0 1 auto;
+    }
+  }
 }
 
 tr.example-detail-row {

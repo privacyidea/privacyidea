@@ -17,11 +17,7 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
-  #scrollContainer
-  appScrollToTop
-  aria-label="Event Handler Editor"
-  class="edit-event-handler-layout"
-  i18n-aria-label>
+  #scrollContainer appScrollToTop aria-label="Event Handler Editor" class="edit-event-handler-layout" i18n-aria-label>
   <div class="edit-event-handler-container">
     <h3 class="margin-8 flex-row flex-nowrap ali-center">
       {{ title() }}
@@ -33,14 +29,14 @@
     </h3>
 
     <div
-      class="header-row sticky-header"
-      [appStickyHeader]="scrollContainer">
+      [appStickyHeader]="scrollContainer" class="header-row sticky-header">
       <div class="action-buttons">
         <mat-slide-toggle
           (change)="updateEventHandler('active', $event.checked)"
           [checked]="editEvent().active"
           [disableRipple]="true"
           [disabled]="!authService.actionAllowed('eventhandling_write')"
+          i18n-matTooltip
           labelPosition="before"
           matTooltip="Toggle Active Status">
           @if (editEvent().active) {
@@ -66,19 +62,18 @@
       </div>
     </div>
 
-    <div class="flex-column just-center">
+    <div>
       @if (isNewEvent()) {
-        <div class="flex-row gap-16">
+        <div class="two-col-grid">
           <mat-form-field class="input-width-l">
             <mat-label i18n>Name</mat-label>
             <app-clearable-input
-              (clearButtonClick)="updateEventHandler('name', '')"
-              [showClearButton]="!!editEvent().name">
+              (clearButtonClick)="updateEventHandler('name', '')" [showClearButton]="!!editEvent().name">
               <input
-                (input)="updateEventHandler('name', $event['target']['value'])"
                 (blur)="nameTouched.set(true)"
-                [value]="editEvent().name"
+                (input)="updateEventHandler('name', $event['target']['value'])"
                 [appErrorState]="showNameError()"
+                [value]="editEvent().name"
                 matInput
                 required
                 type="text" />
@@ -87,35 +82,35 @@
               <mat-error i18n>Name is <strong>required</strong>.</mat-error>
             }
             @if (showNameError() && editEvent().name !== "") {
-              <mat-error i18n
-                >Name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores and
-                hyphens are allowed.</mat-error
-              >
+              <mat-error
+                i18n>Name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores
+                     and hyphens are allowed.
+              </mat-error>
             }
           </mat-form-field>
           <mat-form-field class="input-width-l">
             <mat-label i18n>Handler Module</mat-label>
             <mat-select
               (selectionChange)="setNewHandlerModule($event.value)"
-              [value]="eventService.selectedHandlerModule()"
               [appErrorState]="showHandlerModuleError()"
+              [value]="eventService.selectedHandlerModule()"
               required>
               @for (module of eventService.eventHandlerModules(); track module) {
                 <mat-option [value]="module">{{ module }}</mat-option>
               }
             </mat-select>
-            <mat-error i18n> Selecting a handler module is <strong>required</strong>. </mat-error>
+            <mat-error i18n> Selecting a handler module is <strong>required</strong>.</mat-error>
           </mat-form-field>
         </div>
       }
 
-      <div class="flex-row gap-16 margin-bottom-32">
+      <div class="two-col-grid margin-bottom-32">
         <mat-form-field class="input-width-l">
           <mat-label i18n>Position</mat-label>
           <mat-select
             (selectionChange)="updateEventHandler('position', $event.value)"
-            [value]="editEvent().position"
             [appErrorState]="showPositionError()"
+            [value]="editEvent().position"
             required>
             @for (position of eventService.modulePositions(); track position) {
               <mat-option [value]="position">{{ position }}</mat-option>
@@ -128,8 +123,8 @@
           <mat-label i18n>Ordering</mat-label>
           <input
             (input)="updateEventHandler('ordering', +$event['target']['value'])"
-            [value]="editEvent().ordering"
             [appErrorState]="showOrderingError()"
+            [value]="editEvent().ordering"
             matInput
             required
             type="number" />
@@ -139,14 +134,11 @@
       </div>
 
       <app-event-selection
-        (newEvents)="setNewEvents($event)"
-        [events]="editEvent().event"></app-event-selection>
+        (newEvents)="setNewEvents($event)" [events]="editEvent().event"></app-event-selection>
     </div>
 
     <mat-tab-group
-      animationDuration="0ms"
-      mat-align-tabs="start"
-      mat-stretch-tabs="false">
+      animationDuration="0ms" mat-align-tabs="start" mat-stretch-tabs="false">
       @for (tab of availableTabs; track tab) {
         <mat-tab [label]="tab.toUpperCase()">
           <div class="tab-container">

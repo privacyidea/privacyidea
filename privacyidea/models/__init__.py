@@ -68,6 +68,7 @@ from .tokencontainer import (TokenContainer, TokenContainerInfo,
                              TokenContainerStates, TokenContainerTemplate,
                              TokenContainerToken)
 from .tokengroup import Tokengroup, TokenTokengroup
+from .usersetting import UserSetting
 
 # We don't use "import *" but to avoid the unused import warning we define this
 __all__ = ["db", "Audit", "audit_column_length", "AuthenticationLog", "authentication_log_column_length",
@@ -93,4 +94,4 @@ __all__ = ["db", "Audit", "audit_column_length", "AuthenticationLog", "authentic
            "TokenContainerRealm", "TokenContainerOwner",
            "TokenContainerStates", "TokenContainerTemplate",
            "TokenContainerToken",
-           "Tokengroup", "TokenTokengroup"]
+           "Tokengroup", "TokenTokengroup", "UserSetting"]

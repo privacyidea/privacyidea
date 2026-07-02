@@ -22,7 +22,11 @@
   aria-label="Create Container"
   class="container-create-container"
   i18n-aria-label>
-  <h3 class="margin-8">Create a New Container</h3>
+  <h3
+    class="margin-8"
+    i18n>
+    Create a New Container
+  </h3>
   <div
     class="sticky-header"
     [appStickyHeader]="scrollContainer">
@@ -50,11 +54,11 @@
           class="action-button-primary button-width-m"
           mat-stroked-button>
           <mat-icon>create_new_folder</mat-icon>
-          Create Container
+          <span i18n>Create Container</span>
         </button>
         <button
           (click)="reopenEnrollmentDialog()"
-          [matTooltip]="'Reopen enrollment dialog'"
+          matTooltip="Reopen enrollment dialog" i18n-matTooltip
           [ngClass]="{ hidden: !registerResponse() }"
           mat-icon-button
           type="button">
@@ -89,16 +93,14 @@
       (validInputChange)="onValidInputChange($event)"
       (clearTemplate)="clearTemplateSelection()"
       (templateChange)="onTemplateChange($event)">
-      <h4
-        userAssignment
-        i18n>
-        Assign the Container to a User
-      </h4>
-      <div
-        userAssignment
-        class="flex-row gap-16">
-        <app-user-assignment [showOnlyAddToRealm]="true"></app-user-assignment>
-      </div>
+      @if (showUserAssignment()) {
+        <ng-container userAssignment>
+          <h4 i18n>Assign the Container to a User</h4>
+          <div class="flex-row gap-16">
+            <app-user-assignment [showOnlyAddToRealm]="true"></app-user-assignment>
+          </div>
+        </ng-container>
+      }
     </app-container-create-form>
   </div>
 </div>

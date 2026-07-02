@@ -5,6 +5,7 @@
 .service-ids-container {
   @include styles.main-component-style;
   @include table.base-table-structure(".service-ids-table", ".table-filter", ".table-scroll-container");
+  max-height: var(--table-max-height);
 }
 
 .actions-container {

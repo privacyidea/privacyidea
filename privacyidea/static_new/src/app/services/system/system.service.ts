@@ -47,6 +47,7 @@ export interface SystemConfigInit {
   hashlibs?: string[];
   totpSteps?: number | number[];
   smsProviders?: string[];
+
   [key: string]: unknown;
 }
 
@@ -83,8 +84,11 @@ export interface SystemServiceInterface {
   radiusServers: Signal<string[]>;
 
   saveSystemConfig(config: Record<string, unknown>): Observable<PiResponse<Record<string, "insert" | "update">>>;
+
   deleteSystemConfig(key: string): Observable<PiResponse<boolean>>;
+
   deleteUserCache(): Observable<PiResponse<DeleteUserCacheResult>>;
+
   getDocumentation(): Observable<string>;
 }
 

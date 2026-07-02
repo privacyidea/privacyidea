@@ -19,39 +19,36 @@
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { Component } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { MatExpansionModule } from "@angular/material/expansion";
+import { MatDialog } from "@angular/material/dialog";
+import { provideRouter, Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService } from "@services/auth/auth.service";
 import { MachineResolver, MachineResolverService } from "@services/machine-resolver/machine-resolver.service";
-import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockMachineResolverService } from "@testing/mock-services/mock-machine-resolver-service";
-import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
+import { MockTableUtilsService } from "@testing/mock-services/mock-table-utils-service";
+import { of } from "rxjs";
 import { MachineResolverComponent } from "./machine-resolver.component";
 
-@Component({
-  standalone: true,
-  selector: "app-machine-resolver-panel-new",
-  template: ""
-})
-class MockMachineResolverPanelNewComponent {}
-
-@Component({
-  standalone: true,
-  selector: "app-machine-resolver-panel-edit",
-  template: ""
-})
-class MockMachineResolverPanelEditComponent {}
+class LocalMockMatDialog {
+  result$ = of(true);
+  open = jest.fn().mockReturnValue({
+    afterClosed: () => this.result$
+  });
+}
 
 describe("MachineResolverComponent", () => {
   let component: MachineResolverComponent;
   let fixture: ComponentFixture<MachineResolverComponent>;
   let machineResolverServiceMock: MockMachineResolverService;
   let authServiceMock: MockAuthService;
-  let pendingChangesService: MockPendingChangesService;
+  let dialog: LocalMockMatDialog;
+  let router: Router;
 
   beforeEach(async () => {
+    dialog = new LocalMockMatDialog();
     await TestBed.configureTestingModule({
       imports: [MachineResolverComponent],
       providers: [
@@ -59,77 +56,82 @@ describe("MachineResolverComponent", () => {
         provideHttpClientTesting(),
         { provide: MachineResolverService, useClass: MockMachineResolverService },
         { provide: AuthService, useClass: MockAuthService },
-        { provide: PendingChangesService, useClass: MockPendingChangesService }
+        { provide: TableUtilsService, useClass: MockTableUtilsService },
+        { provide: MatDialog, useValue: dialog },
+        provideRouter([])
       ]
-    })
-      .overrideComponent(MachineResolverComponent, {
-        set: {
-          imports: [MockMachineResolverPanelNewComponent, MockMachineResolverPanelEditComponent, MatExpansionModule]
-        }
-      })
-      .compileComponents();
+    }).compileComponents();
 
     fixture = TestBed.createComponent(MachineResolverComponent);
     component = fixture.componentInstance;
     machineResolverServiceMock = TestBed.inject(MachineResolverService) as unknown as MockMachineResolverService;
     authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
-    pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
+    router = TestBed.inject(Router);
+    jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
+    authServiceMock.actionAllowed.mockReturnValue(true);
+    fixture.detectChanges();
   });
 
   it("should create", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should inject the machineResolver service", () => {
-    expect(component.machineResolverService).toBeTruthy();
+  it("should have name and type columns defined", () => {
+    expect(component.columnKeys).toEqual(["resolvername", "type"]);
   });
 
-  it("should show MockMachineResolverPanelNewComponent one time", () => {
-    authServiceMock.actionAllowed.mockReturnValue(true);
-    const compiled = fixture.nativeElement as HTMLElement;
-    machineResolverServiceMock.machineResolvers.set([{}, {}] as unknown as MachineResolver[]);
+  it("should filter machine resolvers by name or type", () => {
+    const resolvers = [
+      { resolvername: "hosts1", type: "hosts", data: { resolver: "hosts1", type: "hosts" } },
+      { resolvername: "ldap1", type: "ldap", data: { resolver: "ldap1", type: "ldap" } }
+    ] as MachineResolver[];
+    machineResolverServiceMock.machineResolvers.set(resolvers);
     fixture.detectChanges();
-    const newPanels = compiled.querySelectorAll("app-machine-resolver-panel-new");
-    const editPanels = compiled.querySelectorAll("app-machine-resolver-panel-edit");
 
-    expect(newPanels.length).toBe(1);
-    expect(editPanels.length).toBe(2);
+    const ds = component.machineResolversDataSource();
+    expect(ds.filterPredicate(resolvers[0], "hosts1")).toBeTruthy();
+    expect(ds.filterPredicate(resolvers[1], "ldap")).toBeTruthy();
+    expect(ds.filterPredicate(resolvers[0], "nomatch")).toBeFalsy();
+    expect(ds.filterPredicate(resolvers[0], "  ")).toBeTruthy();
+
+    component.onFilterInput("ldap1");
+    expect(component.machineResolversDataSource().filteredData.length).toBe(1);
+    component.resetFilter();
+    expect(component.filterString()).toBe("");
+    expect(component.machineResolversDataSource().filteredData.length).toBe(2);
   });
 
-  describe("should show MockMachineResolverPanelEditComponent as many as there are machineResolvers", () => {
-    it("when there are 0 machineResolvers", () => {
-      authServiceMock.actionAllowed.mockReturnValue(true);
-      const compiled = fixture.nativeElement as HTMLElement;
-      machineResolverServiceMock.machineResolvers.set([]);
-      fixture.detectChanges();
-      const editPanels = compiled.querySelectorAll("app-machine-resolver-panel-edit");
-
-      expect(editPanels.length).toBe(0);
-    });
-
-    it("when there is 1 machineResolver", () => {
-      authServiceMock.actionAllowed.mockReturnValue(true);
-      const compiled = fixture.nativeElement as HTMLElement;
-      machineResolverServiceMock.machineResolvers.set([{}] as unknown as MachineResolver[]);
-      fixture.detectChanges();
-      const editPanels = compiled.querySelectorAll("app-machine-resolver-panel-edit");
-
-      expect(editPanels.length).toBe(1);
-    });
-
-    it("when there are 3 machineResolvers", () => {
-      authServiceMock.actionAllowed.mockReturnValue(true);
-      const compiled = fixture.nativeElement as HTMLElement;
-      machineResolverServiceMock.machineResolvers.set([{}, {}, {}] as unknown as MachineResolver[]);
-      fixture.detectChanges();
-      const editPanels = compiled.querySelectorAll("app-machine-resolver-panel-edit");
-
-      expect(editPanels.length).toBe(3);
-    });
+  it("falls back to an empty data source when no resolvers are loaded", () => {
+    machineResolverServiceMock.machineResolvers.set(undefined as never);
+    fixture.detectChanges();
+    expect(component.machineResolversDataSource().data).toEqual([]);
   });
 
-  it("ngOnDestroy clears all pending-changes registrations", () => {
-    component.ngOnDestroy();
-    expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
+  it("onNewMachineResolver navigates to the new page", () => {
+    component.onNewMachineResolver();
+    expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.MACHINE_RESOLVER_NEW);
+  });
+
+  it("links each resolver name to its details page", () => {
+    machineResolverServiceMock.machineResolvers.set([
+      { resolvername: "hosts1", type: "hosts", data: { resolver: "hosts1", type: "hosts" } } as MachineResolver
+    ]);
+    fixture.detectChanges();
+    const link = (fixture.nativeElement as HTMLElement).querySelector<HTMLAnchorElement>(
+      ".name-actions-container a"
+    );
+    expect(link?.getAttribute("href")).toBe(ROUTE_PATHS.MACHINE_RESOLVER_DETAILS + "hosts1");
+  });
+
+  it("onDeleteMachineResolver deletes after confirmation", async () => {
+    dialog.result$ = of(true);
+    await component.onDeleteMachineResolver({ resolvername: "hosts1" } as MachineResolver);
+    expect(machineResolverServiceMock.deleteMachineResolver).toHaveBeenCalledWith("hosts1");
+  });
+
+  it("onDeleteMachineResolver does not delete when cancelled", async () => {
+    dialog.result$ = of(false);
+    await component.onDeleteMachineResolver({ resolvername: "hosts1" } as MachineResolver);
+    expect(machineResolverServiceMock.deleteMachineResolver).not.toHaveBeenCalled();
   });
 });

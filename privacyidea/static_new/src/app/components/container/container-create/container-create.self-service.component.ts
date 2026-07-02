@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { NgClass } from "@angular/common";
+import { CommonModule, NgClass } from "@angular/common";
 import { Component, computed, inject, linkedSignal } from "@angular/core";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatOption } from "@angular/material/core";
@@ -28,6 +28,7 @@ import { MatTooltip } from "@angular/material/tooltip";
 import { ContainerCreateFormComponent } from "@components/shared/container-create-form/container-create-form.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
+import { UserAssignmentComponent } from "@components/token/user-assignment/user-assignment.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { assert } from "@utils/assert";
 import { ContainerCreateComponent } from "./container-create.component";
@@ -45,21 +46,23 @@ import { ContainerCreateComponent } from "./container-create.component";
     ScrollToTopDirective,
     StickyHeaderDirective,
     NgClass,
+    CommonModule,
+    UserAssignmentComponent,
     ContainerCreateFormComponent
   ],
-  templateUrl: "./container-create.self-service.component.html",
+  templateUrl: "./container-create.component.html",
   styleUrl: "./container-create.component.scss"
 })
 export class ContainerCreateSelfServiceComponent extends ContainerCreateComponent {
   protected override authService: AuthServiceInterface = inject(AuthService);
 
   override selectedUserRealm = linkedSignal(() => {
-    const realm = this.authService.authData()?.realm ?? "";
+    const realm = this.authService.realm();
     assert(realm != "", "User must have a realm to create a container in self-service");
     return realm;
   });
   override selectedUser = computed(() => {
-    const userName = this.authService.authData()?.username ?? "";
+    const userName = this.authService.username();
     assert(userName != "", "User must be authenticated to create a container in self-service");
     return userName;
   });

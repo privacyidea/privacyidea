@@ -12,7 +12,7 @@ down_revision = '849170064430'
 
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy import orm
 from sqlalchemy.schema import Sequence
 from privacyidea.lib.policy import SCOPE

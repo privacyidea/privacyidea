@@ -16,21 +16,13 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { NgClass } from "@angular/common";
-import { Component, inject } from "@angular/core";
-import { MatAutocomplete, MatAutocompleteTrigger, MatOption } from "@angular/material/autocomplete";
+import { Component } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
-import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
-import { MatInput } from "@angular/material/input";
-import { MatSelect } from "@angular/material/select";
 import { MatCell, MatColumnDef, MatTableModule } from "@angular/material/table";
-import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
-import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
-import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
-import { TokenService, TokenServiceInterface } from "@services/token/token.service";
-import { UserService, UserServiceInterface } from "@services/user/user.service";
+import { MatTooltip } from "@angular/material/tooltip";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
 import { TokenDetailsUserComponent } from "./token-details-user.component";
 
 @Component({
@@ -39,30 +31,14 @@ import { TokenDetailsUserComponent } from "./token-details-user.component";
   imports: [
     MatTableModule,
     MatColumnDef,
-    MatLabel,
     MatCell,
-    MatFormField,
-    MatInput,
-    MatAutocompleteTrigger,
-    MatAutocomplete,
-    MatOption,
-    MatSelect,
     MatIconButton,
     MatIcon,
-    NgClass,
-    ClearableInputComponent
+    MatTooltip,
+    CopyableComponent,
+    DetailsCardComponent
   ],
   templateUrl: "./token-details-user.self-service.component.html",
   styleUrl: "./token-details-user.component.scss"
 })
-export class TokenDetailsUserSelfServiceComponent extends TokenDetailsUserComponent {
-  protected override tokenService: TokenServiceInterface = inject(TokenService);
-  protected override realmService: RealmServiceInterface = inject(RealmService);
-  protected override userService: UserServiceInterface = inject(UserService);
-  protected override notificationService: NotificationServiceInterface = inject(NotificationService);
-  protected override authService: AuthServiceInterface = inject(AuthService);
-
-  constructor() {
-    super();
-  }
-}
+export class TokenDetailsUserSelfServiceComponent extends TokenDetailsUserComponent {}

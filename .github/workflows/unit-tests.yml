@@ -1,0 +1,204 @@
+# SPDX-FileCopyrightText: (C) 2026 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: CC0-1.0
+#
+# Reusable unit-test workflow shared by unit-tests-mariadb.yml and
+# unit-tests-postgres.yml. It runs the full suite (migration tests excluded)
+# against the database selected by the `db-kind` input.
+#
+# Both a MariaDB and a PostgreSQL service container are declared below; a job
+# can only declare services statically, so both start every run and the unused
+# one sits idle. Their healthchecks run in parallel with checkout/setup, so the
+# overhead is a few seconds of an idle container — the price for keeping the
+# test logic in one place instead of two near-identical files.
+
+name: Unit Tests (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      db-kind:
+        description: Which database to test against ("mariadb" or "postgres").
+        required: true
+        type: string
+      driver-pip:
+        description: Database driver to pip-install (e.g. PyMySQL, psycopg2-binary).
+        required: true
+        type: string
+      test-database-url:
+        description: SQLAlchemy URL passed to the suite as TEST_DATABASE_URL.
+        required: true
+        type: string
+      full-matrix-on-schedule:
+        description: On scheduled runs, test every supported Python version instead of just min+max.
+        type: boolean
+        default: false
+      coverage:
+        description: Collect coverage on the min Python version and upload it to Codecov.
+        type: boolean
+        default: false
+    secrets:
+      codecov_token:
+        description: Token for the Codecov upload (only needed when coverage is true).
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  versions:
+    name: Load Python versions
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      min: ${{ steps.load.outputs.min }}
+      matrix: ${{ steps.load.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - id: load
+        # On push/PR only test min and max; nightly may run all versions when
+        # the caller opts in via full-matrix-on-schedule.
+        env:
+          IS_SCHEDULE: ${{ github.event_name == 'schedule' }}
+          FULL_MATRIX_ON_SCHEDULE: ${{ inputs.full-matrix-on-schedule }}
+        run: |
+          set -a; source .github/python-versions.env; set +a
+          echo "min=$MIN" >> "$GITHUB_OUTPUT"
+          if [ "$IS_SCHEDULE" = "true" ] && [ "$FULL_MATRIX_ON_SCHEDULE" = "true" ]; then
+            echo -n "matrix=" >> "$GITHUB_OUTPUT"
+            printf '%s\n' "$ALL" | jq -Rc 'split(" ")' >> "$GITHUB_OUTPUT"
+          else
+            echo "matrix=[\"$MIN\",\"$MAX\"]" >> "$GITHUB_OUTPUT"
+          fi
+
+  test:
+    needs: versions
+    name: 'Python ${{ matrix.python-version }}'
+    permissions:
+      # Job-level permissions replace the workflow-level block, so contents:read
+      # must be restated here for actions/checkout.
+      contents: read
+      checks: write # allow the python tests to mark an action run as failed
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      # Do not cancel running matrix tests when one test fails
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJSON(needs.versions.outputs.matrix) }}
+
+    services:
+      # MariaDB 10.11 is the LTS most installations run (the Ubuntu 24.04
+      # default). Kept as a literal tag: a ${{ }} expression in image: is
+      # flagged by zizmor as an unpinned reference. Both 10.11 and 11 are
+      # covered for version-specific DDL by migration-tests.yml. Started for
+      # every caller; only used when db-kind is "mariadb".
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: privacyidea_test
+          MARIADB_USER: privacyidea
+          MARIADB_PASSWORD: privacyidea
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+      # Started for every caller; only used when db-kind is "postgres".
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: privacyidea_test
+          POSTGRES_USER: privacyidea
+          POSTGRES_PASSWORD: privacyidea
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U privacyidea"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      with:
+        persist-credentials: false
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+        cache-dependency-path: |
+          requirements.txt
+          tests/requirements.txt
+
+    - name: Install dependencies
+      # Pass the driver through env rather than expanding ${{ }} straight into
+      # the shell, so the input value can never be interpreted as code.
+      env:
+        DRIVER_PIP: ${{ inputs.driver-pip }}
+      run: |
+        pip install -r tests/requirements.txt
+        pip install "$DRIVER_PIP"
+
+    - name: Determine pytest-xdist worker count
+      # Derive the worker count once and reuse it for both the per-worker
+      # database pre-creation and the pytest -n flag, so the two can never drift
+      # (a hardcoded DB count smaller than the worker count leaves late workers
+      # with no database).
+      run: echo "WORKERS=$(nproc)" >> "$GITHUB_ENV"
+
+    - name: Pre-create per-worker databases (MariaDB)
+      # pytest-xdist workers append a _gw<N> suffix to TEST_DATABASE_URL (see
+      # tests/conftest.py). db.create_all() creates tables inside an existing
+      # database — the databases themselves must be pre-created.
+      if: ${{ inputs.db-kind == 'mariadb' }}
+      run: |
+        for i in $(seq 0 $((WORKERS - 1))); do
+          mysql -h 127.0.0.1 -u root -proot -e \
+            "CREATE DATABASE privacyidea_test_gw$i; \
+             GRANT ALL ON privacyidea_test_gw$i.* TO 'privacyidea'@'%';"
+        done
+
+    - name: Pre-create per-worker databases (PostgreSQL)
+      if: ${{ inputs.db-kind == 'postgres' }}
+      env:
+        PGPASSWORD: privacyidea
+      run: |
+        for i in $(seq 0 $((WORKERS - 1))); do
+          psql -h 127.0.0.1 -U privacyidea -d privacyidea_test \
+            -c "CREATE DATABASE privacyidea_test_gw$i OWNER privacyidea;"
+        done
+
+    - name: Test with pytest
+      id: pytest_run
+      env:
+        TEST_DATABASE_URL: ${{ inputs.test-database-url }}
+        PYTHONWARNINGS: "once::DeprecationWarning"
+        PYTHON_VERSION: ${{ matrix.python-version }}
+        MIN_PYTHON_VERSION: ${{ needs.versions.outputs.min }}
+        COVERAGE: ${{ inputs.coverage }}
+      run: |
+        pip freeze
+        # --dist=loadfile keeps all tests in one file on one worker, preserving
+        # the intra-file ordering the unittest-style suite currently relies on.
+        # Collect coverage only on the lowest Python version to avoid redundant
+        # reports and reduce overhead on all other matrix jobs.
+        if [ "$COVERAGE" = "true" ] && [ "$PYTHON_VERSION" = "$MIN_PYTHON_VERSION" ]; then
+          python -b -m pytest -v -n "$WORKERS" --dist=loadfile --cov=privacyidea --cov-report=xml -m "not migration" tests/
+        else
+          python -b -m pytest -v -n "$WORKERS" --dist=loadfile -m "not migration" tests/
+        fi
+
+    - name: Codecov upload
+      if: ${{ inputs.coverage && steps.pytest_run.outcome == 'success' && matrix.python-version == needs.versions.outputs.min }}
+      uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+      with:
+        files: ./coverage.xml
+        flags: backend
+        token: ${{ secrets.codecov_token }}

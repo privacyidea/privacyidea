@@ -310,7 +310,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     const currentTokenType = this.tokenService.selectedTokenType();
     let everythingIsValid = true;
     if (!currentTokenType) {
-      this.notificationService.warning("Please select a token type.");
+      this.notificationService.warning($localize`Please select a token type.`);
       return false;
     }
 
@@ -326,13 +326,13 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     }
 
     if (!everythingIsValid) {
-      this.notificationService.warning("Please fill in all required fields or correct invalid entries.");
+      this.notificationService.warning($localize`Please fill in all required fields or correct invalid entries.`);
       return false;
     }
 
     const strategy: EnrollTokenBase | undefined = this.enrollSwitch()?.currentStrategy();
     if (!strategy) {
-      this.notificationService.warning("Enrollment action is not available for the selected token type.");
+      this.notificationService.warning($localize`Enrollment action is not available for the selected token type.`);
       return false;
     }
 
@@ -374,7 +374,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
 
     enrollPromise.catch((error) => {
       const message = error.error?.result?.error?.message || "";
-      this.notificationService.error(`Failed to enroll token: ${message || error.message || error}`);
+      this.notificationService.error($localize`Failed to enroll token: ${message || error.message || error}`);
     });
     let enrollmentResponse: EnrollmentResponse | null = await enrollPromise;
 
@@ -395,6 +395,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     }
     // two step enrollment + handles further enrollment steps (verify + success dialog)
     this.handleCompleteEnrollment(enrollmentResponse);
+    this.pendingChangesService.clearAllRegistrations();
     return true;
   }
 
@@ -460,7 +461,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
 
   protected openLastStepDialog(response: EnrollmentResponse | null): void {
     if (!response) {
-      this.notificationService.warning("No enrollment response available.");
+      this.notificationService.warning($localize`No enrollment response available.`);
       return;
     }
 
@@ -484,7 +485,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     }
 
     if (this.isUserRequired() && !this.userService.selectedUser() && !this.enrolledDialogData()?.rollover) {
-      this.notificationService.warning("User is required for this token type, but no user was provided.");
+      this.notificationService.warning($localize`User is required for this token type, but no user was provided.`);
       return;
     }
 

@@ -7,8 +7,12 @@
 
 .edit-event-handler-container {
   @include styles.main-component-style;
+  // Shared detail/edit-page cap. See --detail-max-height in styles.scss.
+  max-height: var(--detail-max-height);
   display: grid;
   position: relative;
+  box-sizing: border-box;
+  width: min(calc(2 * var(--input-width-l) + var(--global-gap) + 2 * var(--global-padding)), calc(100vw - 4 * var(--global-padding)));
 }
 
 .header-row {
@@ -16,14 +20,18 @@
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
-  gap: 16px;
+  gap: var(--global-gap);
+}
+
+.edit-event-handler-container .sticky-header.is-sticky {
+  box-shadow: var(--elevation-8) !important;
 }
 
 .action-buttons {
   display: grid;
   grid-template-columns: auto 1fr 1fr;
   align-items: center;
-  gap: 16px;
+  gap: var(--global-gap);
 }
 
 .event-name {
@@ -39,7 +47,7 @@
 .event-details {
   display: grid;
   grid-template-columns: auto;
-  gap: 16px;
+  gap: var(--global-gap);
   padding: 0;
   border: 0;
   margin-bottom: auto;
@@ -68,5 +76,11 @@
 }
 
 .tab-container {
-  margin: 16px 8px 16px 8px;
+  margin: var(--global-padding) var(--half-global-padding) var(--global-padding) var(--half-global-padding);
+}
+
+.two-col-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--global-gap);
 }
