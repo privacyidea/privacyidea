@@ -2133,3 +2133,15 @@ class PushAPITestCase(MyApiTestCase):
 
         remove_token(self.serial_push)
         delete_policy("push_config")
+
+    def test_26_push_token_owner_fallbacks(self):
+        """The conditional-access owner lookup at /ttype/push falls back to an
+        empty user when the serial is missing or does not resolve to a token,
+        so the pre-check/post-eval never crash on an unknown serial."""
+        from privacyidea.api.ttype import _push_token_owner
+        with self.app.test_request_context():
+            # Missing serial -> empty user, no DB lookup.
+            self.assertFalse(_push_token_owner(None))
+            self.assertFalse(_push_token_owner(""))
+            # Unresolvable serial -> get_one_token raises -> empty user.
+            self.assertFalse(_push_token_owner("NO_SUCH_SERIAL_XYZ"))
