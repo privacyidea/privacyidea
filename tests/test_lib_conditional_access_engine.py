@@ -185,11 +185,11 @@ class LockoutEngineTestCase(MyTestCase):
         # A list of event types is counted together (OR-sum), not per type; an
         # untracked type does not contribute.
         self._seed_events(AuthEventType.PASSWORD_FAIL, 2)
-        self._seed_events(AuthEventType.OTP_FAIL, 3)
+        self._seed_events(AuthEventType.TOKEN_ONLY_FAIL, 3)
         self._seed_events(AuthEventType.MFA_FAIL, 4)
         args = (self.user.resolver, self.user.uid, self.user.realm)
         self.assertEqual(5, count_user_events(
-            *args, [AuthEventType.PASSWORD_FAIL, AuthEventType.OTP_FAIL], 3600))
+            *args, [AuthEventType.PASSWORD_FAIL, AuthEventType.TOKEN_ONLY_FAIL], 3600))
         # A single-element list matches the scalar form.
         self.assertEqual(2, count_user_events(*args, [AuthEventType.PASSWORD_FAIL], 3600))
         self.assertEqual(2, count_user_events(*args, AuthEventType.PASSWORD_FAIL, 3600))
@@ -336,18 +336,18 @@ class LockoutEngineTestCase(MyTestCase):
         # A policy tracking several types locks on the *combined* count: 2 + 1 = 3
         # reaches the threshold even though neither type alone does.
         self._make_policy(name="combo",
-                          counter_type=[AuthEventType.PASSWORD_FAIL, AuthEventType.OTP_FAIL])
+                          counter_type=[AuthEventType.PASSWORD_FAIL, AuthEventType.MFA_FAIL])
         self._seed_events(AuthEventType.PASSWORD_FAIL, 2)
-        self._seed_events(AuthEventType.OTP_FAIL, 1)
-        # The current request is an OTP_FAIL — one of the tracked types.
-        evaluate_lockout_policies(self.user, AuthEventType.OTP_FAIL)
+        self._seed_events(AuthEventType.MFA_FAIL, 1)
+        # The current request is an MFA_FAIL — one of the tracked types.
+        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
         self.assertTrue(is_user_locked(self.user))
 
     def test_evaluate_untracked_current_event_skips_policy(self):
         # The policy only reacts when the *current* event type is one it tracks,
         # even if enough events of its tracked types already exist.
         self._make_policy(name="combo",
-                          counter_type=[AuthEventType.PASSWORD_FAIL, AuthEventType.OTP_FAIL])
+                          counter_type=[AuthEventType.PASSWORD_FAIL, AuthEventType.PIN_FAIL])
         self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
         # MFA_FAIL is not tracked by this policy -> skipped, no lock.
         evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
@@ -716,10 +716,10 @@ class LockoutEngineTestCase(MyTestCase):
         # The pre-auth decision also counts all tracked types together: 2 + 2 = 4
         # crosses the threshold of 3, so the request is denied.
         self._make_policy(name="deny",
-                          counter_type=[AuthEventType.PASSWORD_FAIL, AuthEventType.OTP_FAIL],
+                          counter_type=[AuthEventType.PASSWORD_FAIL, AuthEventType.MFA_FAIL],
                           stages=((3, 1, LockoutAction.DENY, None),))
         self._seed_events(AuthEventType.PASSWORD_FAIL, 2)
-        self._seed_events(AuthEventType.OTP_FAIL, 2)
+        self._seed_events(AuthEventType.MFA_FAIL, 2)
         self.assertEqual(AccessDecision.DENY, evaluate_access_decision(self.user))
 
     def test_access_decision_does_not_reset_on_success(self):

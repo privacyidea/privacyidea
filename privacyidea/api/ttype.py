@@ -51,7 +51,7 @@ from privacyidea.lib.error import ParameterError
 from privacyidea.lib.event import EventConfiguration, event
 from privacyidea.lib.policy import PolicyClass, PolicyAction, SCOPE, Match
 from privacyidea.lib.token import get_one_token
-from privacyidea.lib.tokens.pushtoken import PUSH_AUTH_EVENT
+from privacyidea.lib.tokens.pushtoken import PUSH_AUTH_EVENT, PUSH_AUTH_TRANSACTION_ID
 from privacyidea.lib.user import get_user_from_param, User
 from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent
 from ..lib.framework import get_app_config_value
@@ -194,7 +194,8 @@ def token(ttype=None):
         # and the conditional-access engine to the resolved token owner (the param
         # user is empty for a push answer) so per-user failure counts add up.
         owner = push_owner if push_owner is not None else _push_token_owner(serial)
-        log_authentication(push_auth_event, user=owner, serial=serial)
+        log_authentication(push_auth_event, request, user=owner, serial=serial,
+                           transaction_id=getattr(g, PUSH_AUTH_TRANSACTION_ID, None))
         conditional_access_posteval(owner, push_auth_event)
 
     if res[0] == "json":

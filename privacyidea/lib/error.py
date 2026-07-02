@@ -36,6 +36,7 @@ log = logging.getLogger(__name__)
 class Error:
     SUBSCRIPTION = 101
     TOKENADMIN = 301
+    TOKEN_LOCKED = 1007
     CONFIGADMIN = 302
     POLICY = 303
     IMPORTADMIN = 304

@@ -8,6 +8,7 @@ Create Date: 2026-06-01 08:37:51.884173
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy import text, inspect, Sequence
+from sqlalchemy.dialects import mysql
 from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy.schema import CreateSequence, DropSequence
 
@@ -18,9 +19,23 @@ from privacyidea.models.utils import BigIntegerType
 
 # revision identifiers, used by Alembic.
 revision = '0147d78cbace'
-down_revision = 'd4f5a6b7c8e9'
+down_revision = 'a1b2c3d4e5f6'
 branch_labels = None
 depends_on = None
+
+
+def _unicode_case_sensitive(length):
+    """
+    A case-sensitive string column type (mirrors models.authentication_log._case_sensitive_unicode).
+
+    On MySQL/MariaDB the server-default collation is typically case-insensitive (*_ci), which would make the
+    authentication-log visibility boundary (realm/resolver/username) match case-insensitively -- a fail-open
+    authorization risk. Pinning to utf8mb4_bin makes matching case-sensitive; SQLite, PostgreSQL and Oracle already
+    compare case-sensitively by default.
+    Kept self-contained here (not imported from the model) so the migration stays a stable snapshot.
+    """
+    return sa.Unicode(length).with_variant(mysql.VARCHAR(length, charset="utf8mb4", collation="utf8mb4_bin"),
+                                           "mysql", "mariadb")
 
 
 def upgrade():
@@ -63,15 +78,18 @@ def upgrade():
         op.create_table(
             'authentication_log',
             id_column,
-            sa.Column('resolver', sa.Unicode(length=120), nullable=True),
-            sa.Column('uid', sa.Unicode(length=320), nullable=True),
-            sa.Column('realm', sa.Unicode(length=255), nullable=True),
-            sa.Column('event_type', sa.Unicode(length=40), nullable=False),
+            sa.Column('resolver', _unicode_case_sensitive(120), nullable=True),
+            sa.Column('uid', _unicode_case_sensitive(320), nullable=True),
+            sa.Column('realm', _unicode_case_sensitive(255), nullable=True),
+            sa.Column('username', _unicode_case_sensitive(255), nullable=True),
+            sa.Column('user_role', _unicode_case_sensitive(30), nullable=True),
+            sa.Column('event_type', _unicode_case_sensitive(40), nullable=False),
             sa.Column('timestamp', sa.DateTime(), nullable=False),
-            sa.Column('source_ip', sa.Unicode(length=50), nullable=True),
-            sa.Column('client_label', sa.Unicode(length=1024), nullable=True),
-            sa.Column('serial', sa.Unicode(length=1024), nullable=True),
-            sa.Column('transaction_id', sa.Unicode(length=1024), nullable=True),
+            sa.Column('source_ip', _unicode_case_sensitive(50), nullable=True),
+            sa.Column('client_label', _unicode_case_sensitive(1024), nullable=True),
+            sa.Column('serial', _unicode_case_sensitive(1024), nullable=True),
+            sa.Column('transaction_id', _unicode_case_sensitive(1024), nullable=True),
+            sa.Column('previous_transaction_id', _unicode_case_sensitive(1024), nullable=True),
             sa.Column('other_info', sa.JSON(), nullable=True),
             sa.PrimaryKeyConstraint('id'),
         )
