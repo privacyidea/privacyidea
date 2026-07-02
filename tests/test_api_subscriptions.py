@@ -1,3 +1,7 @@
+from datetime import datetime, timedelta
+
+from privacyidea.lib.subscriptions import DASHBOARD_PLUGINS
+from privacyidea.models import ClientApplication, Subscription, db
 from .base import MyApiTestCase
 
 SUB_FILE = "tests/testdata/test.sub"
@@ -72,4 +76,39 @@ class APISubscriptionsTestCase(MyApiTestCase):
             result = res.json.get("result")
             value = result.get("value")
             self.assertEqual(len(value), 0)
+
+    def test_02_status_endpoint(self):
+        # Seed a used+valid plugin and leave the rest unused.
+        db.session.add(ClientApplication(
+            ip="1.2.3.4",
+            clienttype="privacyidea-keycloak/1.0 test/1",
+            node="localnode",
+            lastseen=datetime.now()))
+        db.session.add(Subscription(
+            application="privacyidea-keycloak",
+            for_name="customer", for_email="c@x", for_phone="0",
+            by_name="vendor", by_email="v@x",
+            date_from=datetime.now() - timedelta(days=10),
+            date_till=datetime.now() + timedelta(days=100),
+            num_users=10, num_tokens=10, num_clients=10,
+            level="Gold", signature="0"))
+        db.session.commit()
+
+        with self.app.test_request_context('/subscriptions/status',
+                                           method="GET",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            value = res.json.get("result").get("value")
+
+        # First entry is always the server row, followed by DASHBOARD_PLUGINS in order.
+        self.assertTrue(value[0].get("is_server"))
+        self.assertEqual(value[0]["application"], "privacyidea")
+        self.assertEqual([e["application"] for e in value[1:]], DASHBOARD_PLUGINS)
+        by_app = {e["application"]: e for e in value[1:]}
+        self.assertEqual(by_app["privacyidea-keycloak"]["status"], "active")
+        # Everything else stays unused on a fresh test DB.
+        for plugin in DASHBOARD_PLUGINS:
+            if plugin != "privacyidea-keycloak":
+                self.assertEqual(by_app[plugin]["status"], "unused")
 
