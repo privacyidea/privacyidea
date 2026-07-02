@@ -307,11 +307,11 @@ def realmadmin(request=None, action=None):
         params = request.all_data
         if "realm" not in params:
             # add the realm to params
-            po = Match.admin(g, action=action).policies()
+            matching_policies = Match.admin(g, action=action).policies()
             # TODO: fix this: there could be a list of policies with a list
             # of realms!
-            if po and po[0].get("realm"):
-                request.all_data["realm"] = po[0].get("realm")[0]
+            if matching_policies and matching_policies[0].get("realm"):
+                request.all_data["realm"] = matching_policies[0].get("realm")[0]
 
     return True
 
