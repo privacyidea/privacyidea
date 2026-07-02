@@ -5,10 +5,10 @@
 name: Ruff
 on:
   pull_request:
-    branches:
-      - "master"
-      - 'branch-*'
-
+    paths:
+      - 'privacyidea/**.py'
+      - 'tests/**.py'
+      - 'tools/**.py'
 permissions: {}
 
 jobs:
