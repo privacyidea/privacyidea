@@ -149,9 +149,9 @@ describe("AuthenticationLogService", () => {
     TestBed.tick();
   });
 
-  it("includes start/end only when set", async () => {
-    service.start.set("2026-01-01T00:00:00+00:00");
-    service.end.set("2026-06-01T00:00:00+00:00");
+  it("includes from/to only when set", async () => {
+    service.timestampFrom.set("2026-01-01T00:00:00+00:00");
+    service.timestampTo.set("2026-06-01T00:00:00+00:00");
     service.authenticationLogResource.reload();
     TestBed.tick();
 

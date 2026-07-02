@@ -124,11 +124,10 @@ describe("AuthenticationLog", () => {
 
   it("onSortClick delegates to tableUtilsService with the timestamp fallback", () => {
     component.onSortClick("event_type");
-    expect(tableUtils.onSortButtonClick).toHaveBeenCalledWith(
-      "event_type",
-      service.sort,
-      { active: "timestamp", direction: "" }
-    );
+    expect(tableUtils.onSortButtonClick).toHaveBeenCalledWith("event_type", service.sort, {
+      active: "timestamp",
+      direction: ""
+    });
   });
 
   it("getFilterIconName reflects whether the keyword is active", () => {
@@ -289,6 +288,69 @@ describe("AuthenticationLog", () => {
     jest.runAllTimers();
     expect(focusSpy).toHaveBeenCalled();
     jest.useRealTimers();
+  });
+
+  describe("time filter", () => {
+    it("selectTimePreset sets from to a past ISO string, clears to and selectedPreset switches", () => {
+      const before = Date.now();
+      component.selectTimePreset("1h");
+      const after = Date.now();
+
+      const from = service.timestampFrom();
+      expect(from).not.toBeNull();
+      const fromMs = new Date(from!).getTime();
+      // Should be ~1 hour before now (within a 1-second tolerance either side).
+      expect(fromMs).toBeGreaterThanOrEqual(before - 3_600_000 - 1000);
+      expect(fromMs).toBeLessThanOrEqual(after - 3_600_000 + 1000);
+      expect(service.timestampTo()).toBeNull();
+      expect(component.selectedPreset()).toBe("1h");
+      expect(service.authenticationLogFilter().hasKey("from")).toBe(true);
+      expect(service.authenticationLogFilter().hasKey("to")).toBe(false);
+      // Filter display value includes local UTC offset (e.g. +00:00, +02:00).
+      expect(service.authenticationLogFilter().getValueOfKey("from")).toMatch(/( [+-]\d{2}:\d{2}| Z)$/);
+    });
+
+    it("selectTimePreset('3m') subtracts 3 calendar months", () => {
+      const before = new Date();
+      component.selectTimePreset("3m");
+      const after = new Date();
+
+      const from = new Date(service.timestampFrom()!);
+      const expectedMin = new Date(before);
+      expectedMin.setMonth(expectedMin.getMonth() - 3);
+      const expectedMax = new Date(after);
+      expectedMax.setMonth(expectedMax.getMonth() - 3);
+
+      expect(from.getTime()).toBeGreaterThanOrEqual(expectedMin.getTime() - 1000);
+      expect(from.getTime()).toBeLessThanOrEqual(expectedMax.getTime() + 1000);
+    });
+
+    it("clearTimeFilter resets from, to, selectedPreset and removes keys from filter text", () => {
+      component.selectTimePreset("7d");
+      component.clearTimeFilter();
+
+      expect(service.timestampFrom()).toBeNull();
+      expect(service.timestampTo()).toBeNull();
+      expect(component.selectedPreset()).toBeNull();
+      expect(service.authenticationLogFilter().hasKey("from")).toBe(false);
+      expect(service.authenticationLogFilter().hasKey("to")).toBe(false);
+    });
+
+    it("onFromChange preserves user time on subsequent changes", () => {
+      component.onFromChange({ target: { value: "2026-06-01T10:00" } } as unknown as Event);
+      component.onFromChange({ target: { value: "2026-06-02T14:30" } } as unknown as Event);
+      const from = new Date(service.timestampFrom()!);
+      expect(from.getDate()).toBe(2);
+      expect(from.getHours()).toBe(14);
+      expect(from.getMinutes()).toBe(30);
+    });
+
+    it("onFromChange clears from and removes key from filter text when value is empty", () => {
+      component.onFromChange({ target: { value: "2026-06-01T10:00" } } as unknown as Event);
+      component.onFromChange({ target: { value: "" } } as unknown as Event);
+      expect(service.timestampFrom()).toBeNull();
+      expect(service.authenticationLogFilter().hasKey("from")).toBe(false);
+    });
   });
 
   it("splitSerials splits comma-separated serials, trims, and drops blanks", () => {

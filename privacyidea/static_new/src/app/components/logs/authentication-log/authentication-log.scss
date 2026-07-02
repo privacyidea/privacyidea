@@ -57,3 +57,25 @@
     --filter-button-opacity: 1;
   }
 }
+
+.time-preset-menu .selected-preset.mat-mdc-menu-item {
+  background-color: var(--mat-sys-secondary-container);
+  color: var(--mat-sys-on-secondary-container);
+}
+
+.time-filter-custom-range {
+  padding: 8px 12px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  .mat-form-field {
+    width: 100%;
+  }
+
+  .custom-range-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    color: var(--mat-sys-on-surface-variant);
+  }
+}

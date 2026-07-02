@@ -93,8 +93,8 @@ export interface AuthenticationLogServiceInterface {
   pageSize: WritableSignal<number>;
   pageIndex: WritableSignal<number>;
   sort: WritableSignal<Sort>;
-  start: WritableSignal<string | null>;
-  end: WritableSignal<string | null>;
+  timestampFrom: WritableSignal<string | null>;
+  timestampTo: WritableSignal<string | null>;
   canRead: () => boolean;
   authenticationLogResource: HttpResourceRef<PiResponse<AuthenticationLogPage> | undefined>;
   eventTypesResource: HttpResourceRef<PiResponse<AuthenticationLogEventType[]> | undefined>;
@@ -139,8 +139,8 @@ export class AuthenticationLogService implements AuthenticationLogServiceInterfa
   );
 
   pageSize = signal(DEFAULT_PAGE_SIZE);
-  start = signal<string | null>(null);
-  end = signal<string | null>(null);
+  timestampFrom = signal<string | null>(null);
+  timestampTo = signal<string | null>(null);
   sort = signal({ active: "timestamp", direction: "desc" } as Sort);
 
   canRead = computed(() => this.authService.actionAllowed("authentication_log_read"));
@@ -151,8 +151,8 @@ export class AuthenticationLogService implements AuthenticationLogServiceInterfa
     source: () => ({
       filterParams: this.filterParams(),
       pageSize: this.pageSize(),
-      start: this.start(),
-      end: this.end(),
+      timestampFrom: this.timestampFrom(),
+      timestampTo: this.timestampTo(),
       sort: this.sort()
     }),
     // 1-based, matching the API's page param; the mat-paginator binding converts to its own 0-based index.
@@ -175,8 +175,8 @@ export class AuthenticationLogService implements AuthenticationLogServiceInterfa
         sort_order: this.sort().direction || "desc",
         // The WebUI filter is always case-insensitive.
         case_insensitive: true,
-        ...(this.start() ? { start: this.start()! } : {}),
-        ...(this.end() ? { end: this.end()! } : {}),
+        ...(this.timestampFrom() ? { start: this.timestampFrom()! } : {}),
+        ...(this.timestampTo() ? { end: this.timestampTo()! } : {}),
         ...this.filterParams()
       }
     };

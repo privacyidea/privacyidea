@@ -758,6 +758,17 @@ body.self-service-layout {
   max-width: none;
 }
 
+.time-preset-menu.mat-mdc-menu-panel {
+  min-width: 300px;
+}
+
+// Must live in global styles: the mat-menu panel renders in the CDK overlay, outside the component's DOM. Component
+// SCSS with Emulated encapsulation adds [_ngcontent-xxx] to selectors, which becomes unreliable across the overlay
+// boundary when mat-menu is nested inside @for/@if.
+.time-preset-menu {
+  --mat-menu-divider-color: var(--mat-sys-outline-variant);
+}
+
 mat-chip.mat-mdc-chip {
   &.clickable-chip {
     .mdc-evolution-chip__action--presentational {

@@ -126,7 +126,7 @@ export class FilterValue {
    * Converts the map to the normalized string format and updates _value.
    */
   public setFromMap(map: Map<string, string>): void {
-    const needsQuoting = (v: string) => /[\s"']/.test(v);
+    const needsQuoting = (v: string) => /[\s"':]/.test(v);
     const quoteAndEscape = (v: string) => `"${v.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`; // double-quote strategy
 
     const entries: string[] = [];

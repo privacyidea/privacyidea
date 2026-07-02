@@ -38,7 +38,9 @@
             matInput
             placeholder="Example query: 'username: alice event_type: LOGIN_SUCCESS'" />
         </app-clearable-input>
-        <mat-hint i18n>The search is case-insensitive. Use * as a wildcard.</mat-hint>
+        <mat-hint i18n>The search is case-insensitive. Use * as a wildcard. Wrap the filter value in quotation marks
+                       if it contains colons or spaces.
+        </mat-hint>
       </mat-form-field>
       <!-- Filters without their own table column live behind a "More Filter" menu next to the input. -->
       @if (!authService.isSelfServiceUser()) {
@@ -121,6 +123,64 @@
                       [selected]="selectedFilterValues('source_ip')"
                       (selectionChange)="setFilterValues('source_ip', $event)"
                       (addCustom)="onAddCustomFilter('source_ip')" />
+                  } @else if (column.key === "timestamp") {
+                    <button
+                      [matMenuTriggerFor]="timePresetMenu"
+                      class="filter-button"
+                      matTooltip="Filter by Time Period"
+                      i18n-matTooltip
+                      mat-icon-button>
+                      <mat-icon class="keyword-button-icon margin-left-0">filter_list</mat-icon>
+                    </button>
+                    <mat-menu
+                      #timePresetMenu="matMenu"
+                      class="time-preset-menu">
+                      <button
+                        (click)="clearTimeFilter()"
+                        mat-menu-item>
+                        <mat-icon>filter_alt_off</mat-icon>
+                        <span i18n>Clear Filter</span>
+                      </button>
+                      <mat-divider />
+                      @for (preset of timePresets; track preset.key) {
+                        <button
+                          (click)="selectTimePreset(preset.key)"
+                          [class.selected-preset]="selectedPreset() === preset.key"
+                          mat-menu-item>
+                          <span>{{ preset.label }}</span>
+                        </button>
+                      }
+                      <mat-divider />
+                      <div class="time-filter-custom-range">
+                        <span
+                          class="custom-range-label"
+                          i18n>Custom Range</span>
+                        <mat-form-field subscriptSizing="dynamic">
+                          <mat-label i18n>From</mat-label>
+                          <input
+                            (click)="$event.stopPropagation()"
+                            (mousedown)="$event.stopPropagation()"
+                            (keydown.arrowdown)="$event.stopPropagation()"
+                            (keydown.arrowup)="$event.stopPropagation()"
+                            (change)="onFromChange($event)"
+                            [value]="fromInputValue()"
+                            matInput
+                            type="datetime-local" />
+                        </mat-form-field>
+                        <mat-form-field subscriptSizing="dynamic">
+                          <mat-label i18n>To</mat-label>
+                          <input
+                            (click)="$event.stopPropagation()"
+                            (mousedown)="$event.stopPropagation()"
+                            (keydown.arrowdown)="$event.stopPropagation()"
+                            (keydown.arrowup)="$event.stopPropagation()"
+                            (change)="onToChange($event)"
+                            [value]="toInputValue()"
+                            matInput
+                            type="datetime-local" />
+                        </mat-form-field>
+                      </div>
+                    </mat-menu>
                   } @else {
                     <button
                       (click)="onKeywordClick(column.key)"
@@ -154,9 +214,7 @@
           <div [class.cell-scroll]="scrollableColumnKeys.includes(column.key)">
             @switch (column.key) {
               @case ("timestamp") {
-                <span>
-                  {{ element[column.key] ? element[column.key].split(".")[0].replace("T", " ") : "" }}
-                </span>
+                <span>{{ element.timestamp | date: "yyyy-MM-dd HH:mm:ss ZZZZZ" }}</span>
               }
               @case ("event_type") {
                 <span [ngClass]="getEventTypeClass(element[column.key])">

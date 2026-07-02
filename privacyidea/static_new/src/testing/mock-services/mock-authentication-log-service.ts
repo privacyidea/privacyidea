@@ -35,8 +35,8 @@ export class MockAuthenticationLogService implements AuthenticationLogServiceInt
   pageSize = signal(15);
   pageIndex = signal(1);
   sort = signal<Sort>({ active: "timestamp", direction: "desc" });
-  start = signal<string | null>(null);
-  end = signal<string | null>(null);
+  timestampFrom = signal<string | null>(null);
+  timestampTo = signal<string | null>(null);
   canRead = computed(() => true);
   authenticationLogResource = new MockHttpResourceRef<PiResponse<AuthenticationLogPage> | undefined>(
     MockPiResponse.fromValue<AuthenticationLogPage>({

@@ -16,8 +16,17 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { NgClass } from "@angular/common";
-import { Component, computed, ElementRef, inject, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
+import { DatePipe, formatDate, NgClass } from "@angular/common";
+import {
+  Component,
+  computed,
+  ElementRef,
+  inject,
+  linkedSignal,
+  signal,
+  ViewChild,
+  WritableSignal
+} from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatDividerModule } from "@angular/material/divider";
 import { MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
@@ -108,7 +117,7 @@ const USER_ROLE_BADGES: Record<string, { label: string; tooltip: string; class: 
 // `sortable` mirrors SORTABLE_COLUMNS in privacyidea/lib/conditional_access/authentication_log.py. Every column is
 // sortable except `other_info`, which is a JSON column the backend cannot order on meaningfully.
 const columnKeysMap: { key: string; label: string; filterable: boolean; sortable: boolean }[] = [
-  { key: "timestamp", label: $localize`Timestamp`, filterable: false, sortable: true },
+  { key: "timestamp", label: $localize`Timestamp`, filterable: true, sortable: true },
   { key: "event_type", label: $localize`Event Type`, filterable: true, sortable: true },
   { key: "username", label: $localize`User`, filterable: true, sortable: true },
   { key: "realm", label: $localize`Realm`, filterable: true, sortable: true },
@@ -121,6 +130,57 @@ const columnKeysMap: { key: string; label: string; filterable: boolean; sortable
   { key: "previous_transaction_id", label: $localize`Previous Transaction ID`, filterable: true, sortable: true },
   { key: "other_info", label: $localize`Info`, filterable: false, sortable: false }
 ];
+
+const TIME_PRESETS: readonly { key: string; label: string }[] = [
+  { key: "1h", label: $localize`Last 1 hour` },
+  { key: "24h", label: $localize`Last 24 hours` },
+  { key: "7d", label: $localize`Last 7 days` },
+  { key: "30d", label: $localize`Last 30 days` },
+  { key: "3m", label: $localize`Last 3 months` },
+  { key: "6m", label: $localize`Last 6 months` },
+  { key: "1y", label: $localize`Last year` }
+];
+
+// Computes the start of a time period relative to now, used by selectTimePreset to set the `from` filter.
+// period: a key from TIME_PRESETS, e.g. "1h", "24h", "7d", "30d", "3m", "1y" (number + unit h/d/m/y).
+// Returns an ISO 8601 string, e.g. "2026-06-02T10:00:00.000Z".
+function computePeriodStart(period: string): string {
+  const match = /^(\d+)([hdmy])$/.exec(period);
+  if (!match) throw new Error(`Unknown period key: ${period}`);
+  const amount = parseInt(match[1], 10);
+  const unit = match[2];
+  const now = new Date();
+  switch (unit) {
+    case "h":
+      return new Date(now.getTime() - amount * 3_600_000).toISOString();
+    case "d":
+      return new Date(now.getTime() - amount * 86_400_000).toISOString();
+    case "m": {
+      const date = new Date(now);
+      date.setMonth(date.getMonth() - amount);
+      return date.toISOString();
+    }
+    case "y": {
+      const date = new Date(now);
+      date.setFullYear(date.getFullYear() - amount);
+      return date.toISOString();
+    }
+    default:
+      throw new Error(`Unknown time unit: ${unit}`);
+  }
+}
+
+// Converts an ISO 8601 string to the format required by <input type="datetime-local">.
+// Input: ISO 8601, e.g. "2026-06-02T10:00:00.000Z". Output: "2026-06-02T10:00".
+function toDatetimeLocal(isoString: string): string {
+  return formatDate(isoString, "yyyy-MM-ddTHH:mm", "en-US");
+}
+
+// Converts an ISO 8601 string to the human-readable format shown in the active-filter chip.
+// Input: ISO 8601, e.g. "2026-06-02T10:00:00.000Z". Output: "2026-06-02 10:00:00 +00:00".
+function toFilterDisplay(isoString: string): string {
+  return formatDate(isoString, "yyyy-MM-dd HH:mm:ss ZZZZZ", "en-US");
+}
 
 // Full, independently-translatable tooltip per column that has an inline filter button. Kept as complete sentences
 // (not noun-interpolated) so each language can phrase determiner/grammar correctly; a column without an entry falls
@@ -159,6 +219,7 @@ const FILTER_TOOLTIPS: Record<string, string> = {
     FilterValueButtonComponent,
     RouterLink,
     ScrollToTopDirective,
+    DatePipe,
     ClearableInputComponent,
     MultiSelectFilterComponent,
     MultiSelectMenuComponent,
@@ -228,6 +289,17 @@ export class AuthenticationLog {
   });
   readonly showSourceIpMenu = computed(() => this.sourceIpOptions().length > 0);
 
+  readonly timePresets = TIME_PRESETS;
+  readonly selectedPreset = signal<string | null>(null);
+  readonly fromInputValue = computed(() => {
+    const s = this.authenticationLogService.timestampFrom();
+    return s ? toDatetimeLocal(s) : "";
+  });
+  readonly toInputValue = computed(() => {
+    const e = this.authenticationLogService.timestampTo();
+    return e ? toDatetimeLocal(e) : "";
+  });
+
   constructor() {
     // Load known clients for the source-IP options (no-op without the `clienttype` right; the resource gates on it).
     this.clientsService.requestClientsForAutocomplete();
@@ -264,7 +336,9 @@ export class AuthenticationLog {
     }
   });
   pageSizeOptions = computed(() =>
-    [...new Set([...this.tableUtilsService.pageSizeOptions(), this.authenticationLogService.pageSize()])].sort((a, b) => a - b)
+    [...new Set([...this.tableUtilsService.pageSizeOptions(), this.authenticationLogService.pageSize()])].sort(
+      (a, b) => a - b
+    )
   );
   noDataText = computed(() =>
     Object.keys(this.authenticationLogService.filterParams()).length > 0
@@ -295,6 +369,68 @@ export class AuthenticationLog {
   // Three-state sort cycle; clearing falls back to timestamp desc with a neutral direction so no column shows active.
   onSortClick(columnKey: string): void {
     this.tableUtilsService.onSortButtonClick(columnKey, this.sort, { active: "timestamp", direction: "" });
+  }
+
+  selectTimePreset(key: string): void {
+    this.selectedPreset.set(key);
+    const startIso = computePeriodStart(key);
+    this.authenticationLogService.timestampFrom.set(startIso);
+    this.authenticationLogService.timestampTo.set(null);
+    this.authenticationLogService.authenticationLogFilter.set(
+      this.authenticationLogService
+        .authenticationLogFilter()
+        .removeKey("to")
+        .addEntry("from", toFilterDisplay(startIso))
+    );
+  }
+
+  clearTimeFilter(): void {
+    this.selectedPreset.set(null);
+    this.authenticationLogService.timestampFrom.set(null);
+    this.authenticationLogService.timestampTo.set(null);
+    this.authenticationLogService.authenticationLogFilter.set(
+      this.authenticationLogService.authenticationLogFilter().removeKey("from").removeKey("to")
+    );
+  }
+
+  onFromChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const value = input.value;
+    this.selectedPreset.set(null);
+    if (!value) {
+      this.authenticationLogService.timestampFrom.set(null);
+      this.authenticationLogService.authenticationLogFilter.set(
+        this.authenticationLogService.authenticationLogFilter().removeKey("from")
+      );
+      return;
+    }
+
+    const iso = new Date(value).toISOString();
+    input.value = toDatetimeLocal(iso);
+    this.authenticationLogService.timestampFrom.set(iso);
+    this.authenticationLogService.authenticationLogFilter.set(
+      this.authenticationLogService.authenticationLogFilter().addEntry("from", toFilterDisplay(iso))
+    );
+  }
+
+  onToChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const value = input.value;
+    this.selectedPreset.set(null);
+    if (!value) {
+      this.authenticationLogService.timestampTo.set(null);
+      this.authenticationLogService.authenticationLogFilter.set(
+        this.authenticationLogService.authenticationLogFilter().removeKey("to")
+      );
+      return;
+    }
+
+    const iso = new Date(value).toISOString();
+    input.value = toDatetimeLocal(iso);
+    this.authenticationLogService.timestampTo.set(iso);
+    this.authenticationLogService.authenticationLogFilter.set(
+      this.authenticationLogService.authenticationLogFilter().addEntry("to", toFilterDisplay(iso))
+    );
   }
 
   // Predefined-value filters (event_type, realm) hold one or more comma-separated values the API splits as CSV.
