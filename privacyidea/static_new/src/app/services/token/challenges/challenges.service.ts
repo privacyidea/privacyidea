@@ -153,7 +153,10 @@ export class ChallengesService implements ChallengesServiceInterface {
   }
 
   deleteExpiredChallenges(): Observable<PiResponse<{ status: boolean; deleted: number }>> {
-    return this.http.delete<PiResponse<{ status: boolean; deleted: number }>>(`${this.tokenBaseUrl}challenges/expired`, {
+    return this.http.delete<PiResponse<{
+      status: boolean;
+      deleted: number
+    }>>(`${this.tokenBaseUrl}challenges/expired`, {
       headers: this.authService.getHeaders()
     });
   }

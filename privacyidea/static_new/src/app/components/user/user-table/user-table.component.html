@@ -17,20 +17,15 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
-  aria-label="User Layout"
-  class="user-layout"
-  i18n-aria-label>
+  aria-label="User Layout" class="user-layout" i18n-aria-label>
   <div
-    appScrollToTop
-    class="user-table-container">
+    appScrollToTop class="user-table-container">
     <div class="filter-paginator-container">
       <mat-form-field
-        subscriptSizing="dynamic"
-        class="token-table-filter">
+        class="token-table-filter" subscriptSizing="dynamic">
         <mat-label i18n>Filter Users...</mat-label>
         <app-clearable-input
-          (clearButtonClick)="userService.resetFilter()"
-          [showClearButton]="filterHTMLInputElement.value.length > 0">
+          (clearButtonClick)="userService.resetFilter()" [showClearButton]="filterHTMLInputElement.value.length > 0">
           <input
             #filterHTMLInputElement
             (input)="userService.handleFilterInput($event)"
@@ -49,18 +44,14 @@
         showFirstLastButtons></mat-paginator>
     </div>
     <app-user-table-actions />
-    <div class="table-scroll-region" appScrollEdges>
+    <div
+      appScrollEdges class="table-scroll-region">
       <table
-        [dataSource]="usersDataSource()"
-        aria-label="User Data Table"
-        class="token-table"
-        mat-table>
+        [dataSource]="usersDataSource()" aria-label="User Data Table" class="token-table" mat-table>
         @for (column of columnKeysMap; track column) {
           <ng-container [matColumnDef]="column.key">
             <th
-              *matHeaderCellDef
-              attr.aria-label="{{ column.label }} Header"
-              mat-header-cell>
+              *matHeaderCellDef attr.aria-label="{{ column.label }} Header" mat-header-cell>
               <div class="flex ali-center">
                 {{ column.label }}
                 <div class="margin-left-16 flex">
@@ -90,12 +81,9 @@
               </div>
             </th>
             <td
-              *matCellDef="let element; let row"
-              [ngClass]="{
+              *matCellDef="let element; let row" [ngClass]="{
                 'table-checkbox': column.key === 'select'
-              }"
-              attr.aria-label="{{ column.label }} Cell"
-              mat-cell>
+              }" attr.aria-label="{{ column.label }} Cell" mat-cell>
               <div>
                 @switch (column.key) {
                   @case ("username") {
@@ -131,21 +119,13 @@
           </ng-container>
         }
         <tr
-          *matHeaderRowDef="columnKeys; sticky: true"
-          aria-label="Header Row"
-          mat-header-row></tr>
+          *matHeaderRowDef="columnKeys; sticky: true" aria-label="Header Row" mat-header-row></tr>
         <tr
-          *matRowDef="let row; columns: columnKeys"
-          aria-label="Data Row"
-          mat-row></tr>
+          *matRowDef="let row; columns: columnKeys" aria-label="Data Row" mat-row></tr>
         <tr
-          *matNoDataRow
-          aria-label="No Data Row">
+          *matNoDataRow aria-label="No Data Row">
           <td
-            [attr.colspan]="columnKeys.length"
-            aria-label="No Data Cell"
-            i18n-aria-label
-            i18n>
+            [attr.colspan]="columnKeys.length" aria-label="No Data Cell" i18n i18n-aria-label>
             No data matching the filter.
           </td>
         </tr>

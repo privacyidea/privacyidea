@@ -60,13 +60,12 @@ export type EventActionOptionValues = Record<string, EventActionOptionValue>;
 })
 export class EventActionTabComponent {
   protected readonly eventService = inject(EventService);
+  protected readonly Object = Object;
   action = input.required<string>();
   options = input.required<EventActionOptionValues>();
   newAction = output<string>();
   newOptions = output<EventActionOptionValues>();
   optionsValid = output<boolean>();
-  protected readonly Object = Object;
-
   selectedAction = signal<string>("");
   selectedActionForm = form(this.selectedAction, (f) => {
     required(f);
@@ -137,20 +136,6 @@ export class EventActionTabComponent {
     });
   }
 
-  private isEmpty(value: EventActionOptionValue | undefined): boolean {
-    return value === null || value === undefined || value === "";
-  }
-
-  private optionsToDict(values: EventActionOptionValues): EventActionOptionValues {
-    const result: EventActionOptionValues = {};
-    for (const key of Object.keys(values)) {
-      const value = values[key];
-      if (value === null || value === undefined) continue;
-      result[key] = value;
-    }
-    return result;
-  }
-
   setOption(name: string, value: EventActionOptionValue): void {
     this.selectedOptions.update((current) => ({ ...current, [name]: value }));
   }
@@ -180,5 +165,19 @@ export class EventActionTabComponent {
     if (optionDetails.visibleValue === undefined) return true;
     const dependent = this.selectedOptions()[optionDetails.visibleIf];
     return dependent === optionDetails.visibleValue;
+  }
+
+  private isEmpty(value: EventActionOptionValue | undefined): boolean {
+    return value === null || value === undefined || value === "";
+  }
+
+  private optionsToDict(values: EventActionOptionValues): EventActionOptionValues {
+    const result: EventActionOptionValues = {};
+    for (const key of Object.keys(values)) {
+      const value = values[key];
+      if (value === null || value === undefined) continue;
+      result[key] = value;
+    }
+    return result;
   }
 }

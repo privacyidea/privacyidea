@@ -37,8 +37,7 @@ export interface SshkeyEnrollmentPayload extends TokenEnrollmentPayload {
 @Injectable({ providedIn: "root" })
 export class SshkeyApiPayloadMapper
   extends BaseApiPayloadMapper
-  implements TokenApiPayloadMapper<SshkeyEnrollmentData>
-{
+  implements TokenApiPayloadMapper<SshkeyEnrollmentData> {
   override toApiPayload(data: SshkeyEnrollmentData): SshkeyEnrollmentPayload {
     const basePayload = super.toApiPayload(data);
     const payload: SshkeyEnrollmentPayload = {

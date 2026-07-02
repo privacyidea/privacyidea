@@ -22,10 +22,7 @@
     <mat-form-field class="input-width-l">
       <mat-label>{{ attribute }}</mat-label>
       <input
-        matInput
-        #inputRef
-        [value]="newUserData()[attribute]"
-        (input)="setNewUserData(attribute, inputRef.value)" />
+        #inputRef (input)="setNewUserData(attribute, inputRef.value)" [value]="newUserData()[attribute]" matInput />
     </mat-form-field>
   }
 </div>

@@ -9,6 +9,7 @@
 .machine-resolver-table-container {
   @include styles.main-component-style;
   @include table.base-table-structure(".machine-resolver-table", ".table-filter", ".table-scroll-container");
+  max-height: var(--table-max-height);
   min-width: 616px;
 }
 
