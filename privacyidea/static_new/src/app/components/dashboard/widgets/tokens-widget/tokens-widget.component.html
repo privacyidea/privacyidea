@@ -23,25 +23,66 @@
       <tr>
         <td i18n>Total</td>
         <td>
-          <a [routerLink]="routePaths.TOKENS">{{ counts().total }}</a>
+          @if (counts().total > 0) {
+            <a [routerLink]="routePaths.TOKENS" (click)="showAllTokens()">{{ counts().total }}</a>
+          } @else {
+            {{ counts().total }}
+          }
         </td>
       </tr>
-      <tr>
-        <td i18n>Hardware</td>
-        <td>{{ counts().hardware }}</td>
-      </tr>
-      <tr>
-        <td i18n>Software</td>
-        <td>{{ counts().software }}</td>
-      </tr>
-      <tr>
-        <td i18n>Unassigned Hardware</td>
-        <td>{{ counts().unassigned_hardware }}</td>
-      </tr>
-      <tr>
-        <td i18n>Unassigned Software</td>
-        <td>{{ counts().unassigned_software }}</td>
-      </tr>
+      @if (showHardware()) {
+        <tr>
+          <td i18n>Hardware</td>
+          <td>
+            <a [routerLink]="routePaths.TOKENS" (click)="showKind('hardware')">{{ counts().hardware }}</a>
+          </td>
+        </tr>
+      }
+      @if (showSoftware()) {
+        <tr>
+          <td i18n>Software</td>
+          <td>
+            <a [routerLink]="routePaths.TOKENS" (click)="showKind('software')">{{ counts().software }}</a>
+          </td>
+        </tr>
+      }
+      @if (distinguishKinds()) {
+        <tr>
+          <td i18n>Unassigned Hardware</td>
+          <td>
+            @if (counts().unassigned_hardware > 0) {
+              <a [routerLink]="routePaths.TOKENS" (click)="showKind('hardware', true)">
+                {{ counts().unassigned_hardware }}
+              </a>
+            } @else {
+              {{ counts().unassigned_hardware }}
+            }
+          </td>
+        </tr>
+        <tr>
+          <td i18n>Unassigned Software</td>
+          <td>
+            @if (counts().unassigned_software > 0) {
+              <a [routerLink]="routePaths.TOKENS" (click)="showKind('software', true)">
+                {{ counts().unassigned_software }}
+              </a>
+            } @else {
+              {{ counts().unassigned_software }}
+            }
+          </td>
+        </tr>
+      } @else if (counts().total > 0) {
+        <tr>
+          <td i18n>Unassigned</td>
+          <td>
+            @if (unassignedTotal() > 0) {
+              <a [routerLink]="routePaths.TOKENS" (click)="showUnassigned()">{{ unassignedTotal() }}</a>
+            } @else {
+              {{ unassignedTotal() }}
+            }
+          </td>
+        </tr>
+      }
     </tbody>
   </table>
 </app-widget-state>

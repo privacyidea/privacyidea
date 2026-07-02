@@ -84,6 +84,7 @@ export class MockTokenService implements TokenServiceInterface {
   });
   showOnlyTokenNotInContainer = signal(false);
   tokenFilter = signal(new FilterValue());
+  presetFilter = signal<FilterValue | null>(null);
   readonly tokenDetailResource = new MockHttpResourceRef<PiResponse<Tokens>>(makeTokenDetailResponse("hotp"));
   readonly tokenTypesResource = new MockHttpResourceRef<PiResponse<Record<string, string>> | undefined>(
     MockPiResponse.fromValue<Record<string, string>>({})

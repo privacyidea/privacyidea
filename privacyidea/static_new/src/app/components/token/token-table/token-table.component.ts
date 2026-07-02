@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, ElementRef, inject, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
+import { Component, computed, effect, ElementRef, inject, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
 import { MatDividerModule } from "@angular/material/divider";
 import { MatMenuModule } from "@angular/material/menu";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
@@ -103,6 +103,19 @@ export class TokenTableComponent {
   pageSize = this.tokenService.pageSize;
   pageIndex = this.tokenService.pageIndex;
   sort = this.tokenService.sort;
+
+  constructor() {
+    effect(() => {
+      if (!this.contentService.onTokens()) {
+        return;
+      }
+      const preset = this.tokenService.presetFilter();
+      if (preset) {
+        this.tokenService.presetFilter.set(null);
+        this.tokenService.tokenFilter.set(preset);
+      }
+    });
+  }
 
   protected readonly filterInputValue = linkedSignal({
     source: () => this.tokenService.tokenFilter().filterString,

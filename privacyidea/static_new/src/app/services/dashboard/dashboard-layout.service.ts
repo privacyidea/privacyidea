@@ -222,7 +222,8 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
   private defaultWidgets(): WidgetInstance[] {
     const positions: { type: WidgetTypeId; x: number; y: number }[] = [
       { type: "tokens", x: 0, y: 0 },
-      { type: "events", x: 0, y: 8 },
+      { type: "token-types", x: 0, y: 5 },
+      { type: "events", x: 0, y: 10 },
       { type: "policies", x: 6, y: 0 },
       { type: "administration", x: 6, y: 5 },
       { type: "authentications", x: 16, y: 5 }

@@ -25,16 +25,38 @@
     [class.draggable]="layoutService.editMode() && !pinned()">
     <span class="widget-title">{{ widgetType()?.title }}</span>
 
-    @if (layoutService.editMode() && !pinned()) {
-      <button
-        mat-icon-button
-        class="widget-remove"
-        (click)="remove()"
-        aria-label="Remove widget"
-        i18n-aria-label>
-        <mat-icon>close</mat-icon>
-      </button>
-    }
+    <div class="widget-actions">
+      @if (showHeaderSpinner()) {
+        <mat-progress-spinner
+          class="widget-action widget-loading"
+          mode="indeterminate"
+          [diameter]="18"
+          aria-label="Loading widget"
+          i18n-aria-label />
+      }
+
+      @if (showReload()) {
+        <button
+          mat-icon-button
+          class="widget-action widget-reload"
+          (click)="reload()"
+          aria-label="Reload widget"
+          i18n-aria-label>
+          <mat-icon>refresh</mat-icon>
+        </button>
+      }
+
+      @if (layoutService.editMode() && !pinned()) {
+        <button
+          mat-icon-button
+          class="widget-action widget-remove"
+          (click)="remove()"
+          aria-label="Remove widget"
+          i18n-aria-label>
+          <mat-icon>close</mat-icon>
+        </button>
+      }
+    </div>
   </div>
 
   <div class="widget-body">

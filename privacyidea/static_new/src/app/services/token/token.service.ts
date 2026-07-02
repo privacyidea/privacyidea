@@ -117,6 +117,24 @@ export interface Tokens {
 
 export type TokenCount = Pick<Tokens, "count">;
 
+export interface TokenCountParams {
+  type?: TokenTypeKey;
+  type_list?: string;
+  serial?: string;
+  description?: string;
+  assigned?: "True" | "False";
+  active?: "True" | "False";
+  rollout_state?: string;
+  infokey?: string;
+  infovalue?: string;
+  container_serial?: string;
+  tokenrealm?: string;
+  realm?: string;
+  user?: string;
+  userid?: string;
+  resolver?: string;
+}
+
 export interface TokenInfo {
   CA?: string;
   dynamic_email?: string;
@@ -243,6 +261,7 @@ export interface TokenServiceInterface {
   selectedTokenType: WritableSignal<TokenType>;
   showOnlyTokenNotInContainer: WritableSignal<boolean>;
   tokenFilter: WritableSignal<FilterValue>;
+  presetFilter: WritableSignal<FilterValue | null>;
   tokenDetailResource: HttpResourceRef<PiResponse<Tokens> | undefined>;
   tokenDetailResourceValue: Signal<Tokens | undefined>;
   tokenTypesResource: HttpResourceRef<PiResponse<Record<string, string>> | undefined>;
@@ -318,7 +337,7 @@ export interface TokenServiceInterface {
 
   getTokenDetails(tokenSerial: string): Observable<PiResponse<Tokens>>;
 
-  getTokenCount(params: Record<string, string | number>): Observable<PiResponse<TokenCount>>;
+  getTokenCount(params?: TokenCountParams): Observable<PiResponse<TokenCount>>;
 
   enrollToken<T extends TokenEnrollmentData, R extends EnrollmentResponse>(args: {
     data: T;
@@ -422,6 +441,7 @@ export class TokenService implements TokenServiceInterface {
     }
   });
 
+  presetFilter: WritableSignal<FilterValue | null> = signal<FilterValue | null>(null);
   tokenFilter: WritableSignal<FilterValue> = linkedSignal({
     source: () => ({
       showOnlyTokenNotInContainer: this.showOnlyTokenNotInContainer(),
@@ -1043,10 +1063,10 @@ export class TokenService implements TokenServiceInterface {
     });
   }
 
-  getTokenCount(params: Record<string, string | number>): Observable<PiResponse<TokenCount>> {
+  getTokenCount(params: TokenCountParams = {}): Observable<PiResponse<TokenCount>> {
     return this.http.get<PiResponse<TokenCount>>(this.tokenBaseUrl, {
       headers: this.authService.getHeaders(),
-      params
+      params: { ...params, pagesize: 0 }
     });
   }
 

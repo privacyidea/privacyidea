@@ -49,6 +49,7 @@ export class AdministrationWidgetComponent extends DashboardWidget implements On
   private readonly adminAreas = ["system", "resolver", "realm", "policy", "event"];
 
   private readonly dataRef = signal<DashboardDataRef<PiResponse<Audit>[]> | null>(null);
+  override readonly partialLoading = computed(() => this.dataRef()?.revalidating() ?? false);
 
   readonly entries = computed<AuditData[]>(() => {
     const responses = this.dataRef()?.value() ?? [];
@@ -83,6 +84,11 @@ export class AdministrationWidgetComponent extends DashboardWidget implements On
         this.state.set("loading");
       }
     });
+  }
+
+  override reload(): void {
+    this.store.invalidate("dashboard:administration");
+    this.ngOnInit();
   }
 
   ngOnInit(): void {
