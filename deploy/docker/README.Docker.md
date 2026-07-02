@@ -1,71 +1,149 @@
 privacyIDEA and Docker
 ======================
 
-We provide a Dockerfile to create a simple privacyIDEA docker container which
-currently only contains the runnable code with the gunicorn WSGI server.
+This directory builds a single privacyIDEA container image and runs it as a
+small self-contained stack: one MariaDB plus three roles of the same image.
 
-> **_NOTE:_**  This is currently very much work-in-progress so expect breaking changes!
+> **_NOTE:_** This is work-in-progress; expect breaking changes.
 
-Build the container image with:
+For a high-availability setup with database replication and a load balancer,
+see [`ha/`](./ha/) instead.
+
+The image and its three roles
+------------------------------
+
+All three privacyIDEA services are built from the same `Dockerfile`. The role is
+selected at runtime by `entrypoint.sh` via environment variables:
+
+| Service   | Env selector        | What it does                                                            |
+|-----------|---------------------|-------------------------------------------------------------------------|
+| `pi-init` | `PI_INIT_ONLY=true` | Create tables, run DB migrations, bootstrap the admin, install the enckey canary, then exit. |
+| `pi`      | *(default)*         | Gunicorn web workers on port 8080.                                      |
+| `pi-cron` | `PI_CRON_MODE=true` | Maintenance scheduler: audit rotation, challenge cleanup, UI-configured periodic tasks. |
+
+`pi` and `pi-cron` wait for `pi-init` to finish (`service_completed_successfully`),
+so migrations never race against running workers.
+
+Quick start (compose)
+----------------------
+
+1. Generate the secrets (see [`secrets/README.md`](./secrets/README.md)):
+   ```
+   cd deploy/docker/secrets && \
+     head -c 96 /dev/urandom > enckey && \
+     python3 -c "import secrets; print(secrets.token_urlsafe())"   > pi_pepper && \
+     python3 -c "import secrets; print(secrets.token_hex())"       > secret_key && \
+     python3 -c "import secrets; print(secrets.token_urlsafe(32))" > mariadb_password && \
+     python3 -c "import secrets; print(secrets.token_urlsafe(32))" > mariadb_root_password && \
+     printf 'change-me\n' > bootstrap_admin_password && chmod 644 * && chmod 700 .
+   ```
+
+2. Optionally copy `.env.template` to `.env` to set the admin name, worker count, etc.
+
+3. Build and start:
+   ```
+   docker compose -f deploy/docker/compose.yaml up --build
+   ```
+   `pi-init` runs first (tables, migrations, admin), then `pi` and `pi-cron` start.
+   The web UI is served on http://localhost:8080.
+
+Configuration
+-------------
+
+Configuration comes from three places:
+
+- **Docker secrets** in `./secrets/` — keys and passwords (see above).
+- **`.env`** — compose interpolation values (`BOOTSTRAP_ADMIN`, `PI_WORKERS`,
+  `SQLALCHEMY_POOL_RECYCLE`). Copy `.env.template` to `.env`.
+- **`example.env`** — any additional privacyIDEA config keys, prefixed with
+  `PRIVACYIDEA_`, applied to all three roles. See
+  https://privacyidea.readthedocs.io/en/latest/installation/system/inifile.html
+
+Running a single container by hand
+----------------------------------
+
+Build:
 ```
-docker build . -f deploy/docker/Dockerfile -t <pi-tag>
+docker build . -f deploy/docker/Dockerfile -t privacyidea:latest
 ```
 
-Run the container with:
-```
-docker run -p 8080:8080 <pi-tag>:latest
-```
+The entrypoint honors these environment variables (all optional):
 
-A volume is automatically created and mounted at `/etc/privacyidea` in the
-container. An existing volume can be given at the container start with:
-```
-docker run -v <volume-id>:/etc/privacyidea -p 8080:8080 <pi-tag>:latest
-```
-Some configuration data is required and will be checked at the application start.
-The data can be passed to the container through environment files and/or secrets.
+| Variable                 | Default | Effect                                             |
+|--------------------------|---------|----------------------------------------------------|
+| `PI_CREATE_TABLES`       | `false` | Create the schema on start.                        |
+| `PI_RUN_MIGRATIONS`      | `false` | Run `pi-manage db upgrade` on start.               |
+| `PI_INIT_ONLY`           | `false` | Do init work, then exit (init-container pattern).  |
+| `PI_CRON_MODE`           | `false` | Run the maintenance scheduler instead of gunicorn. |
+| `PI_BOOTSTRAP_ADMIN`     | *(unset)* | Create this admin (with `PI_BOOTSTRAP_ADMIN_PASSWORD`). |
+| `PI_WORKERS`             | auto    | Gunicorn worker count (auto = `2*nproc+1`, capped at 4). |
+| `PI_PORT`                | `8080`  | Gunicorn bind port.                                |
 
-Some additional configuration data can be set at `/etc/privacyidea` for this
-container. See  https://privacyidea.readthedocs.io/en/latest/installation/pip.html#database
-and https://privacyidea.readthedocs.io/en/latest/installation/system/inifile.html#cfgfile
-for configuration options.
+**Do not enable `PI_RUN_MIGRATIONS` on more than one concurrently starting
+container.** Run migrations from a single init container (as `pi-init` does).
 
-Configuration options can be given as environment variables with the `PRIVACYIDEA_` prefix like:
-```
-docker run -p 8080:8080 -e PRIVACYIDEA_PI_PEPPER="Never know..." -e PRIVACYIDEA_PI_SECRET="t0p s3cr3t" <pi-tag>:latest
-```
-
-Docker compose
+Administration
 --------------
 
-A compose file can be used to start up the complete stack. An example is given
-in `deploy/docker/compose.yaml`:
+Run management commands inside the running container:
 ```
-SECRET_KEY=$SECRET_KEY PI_PEPPER=$PI_PEPPER docker compose -f deploy/docker/compose.yaml up
-```
-
-Setup privacyIDEA
------------------
-
-Commands can be run inside the container with:
-```
-docker exec -i <container name> pi-manage ...
+docker compose -f deploy/docker/compose.yaml exec pi pi-manage <args>
 ```
 
-To set up a running container use:
+Import configuration (e.g. a policy template):
 ```
-docker exec -i <privacyidea-container> pi-manage setup create_tables
-```
-
-Configuration can be imported in the container with:
-```
-cat <policy template yaml> | docker exec -i <container name> pi-manage config import
+cat <template>.yaml | docker compose -f deploy/docker/compose.yaml exec -T pi pi-manage config import
 ```
 
-TODO:
------
-* Add a reverse proxy service (https://github.com/docker/awesome-compose/blob/master/nginx-flask-mysql/compose.yaml)
-* Add an example for a `configs` element to the `compose.yaml` (https://docs.docker.com/reference/compose-file/services/#configs)
-* Add an example on how to manually mount the secret file into the container using `docker run`
-* Add dependencies in the container (PyKCS11, gssapi)
-* Extra build step for the new WebUI
-* Add recurring tasks runner (cron? via docker? via redis?)
+Backup and restore
+------------------
+
+`scripts/backup.sh` produces a single archive containing a logical DB dump plus
+the `enckey`, `pi_pepper`, and `secret_key` — the DB is useless without them, so
+they are bundled together.
+
+```
+./deploy/docker/scripts/backup.sh                    # backups/privacyidea_<ts>.tar.gz
+./deploy/docker/scripts/backup.sh --encrypt          # + age passphrase encryption
+./deploy/docker/scripts/backup.sh --encrypt-key AGE-PUB   # non-interactive (cron)
+```
+
+Restore drops and recreates the database, with a guard that warns if the backup's
+`enckey`/`pi_pepper` differ from the current ones:
+```
+./deploy/docker/scripts/restore.sh backups/privacyidea_<ts>.tar.gz
+```
+
+### Scheduling backups
+
+`pi-cron` handles in-database maintenance (audit rotation, challenge cleanup,
+periodic tasks) but deliberately does **not** take backups — a DB dump needs the
+host's Docker socket and `mariadb-dump`, which do not belong inside the app
+container. Schedule `backup.sh` from the host instead, e.g. a daily encrypted
+backup at 03:30 via the host crontab (`crontab -e`):
+```
+30 3 * * *  cd /path/to/privacyidea/deploy/docker && ./scripts/backup.sh --encrypt-key age1... >> /var/log/pi-backup.log 2>&1
+```
+Use `--encrypt-key <age-public-key>` (not `--encrypt`) so the run is
+non-interactive, and keep the matching age private key off this host. Copy the
+resulting archives to storage separate from this machine.
+
+Maintenance (pi-cron)
+---------------------
+
+`pi-cron` runs `cron-runner.py`, which schedules:
+
+- every minute — `privacyidea-cron run_scheduled` (UI-configured periodic tasks;
+  target node name `pi-cron`)
+- hourly — `pi-manage challenge cleanup`
+- daily at `PI_CRON_AUDIT_HOUR` (default 02:00) — `pi-manage audit rotate`
+
+Tune via `PI_CRON_*` environment variables (see the `pi-cron` service in
+`compose.yaml` and the header of `cron-runner.py`). Keep `pi-cron` at a single
+instance — two would race on deleting the same rows.
+
+TODO
+----
+* Publish an image so `build:` can be replaced with `image:`.
+* Add build steps for optional dependencies (PyKCS11, gssapi).
+* Document TLS termination / reverse proxy for the single-node case.

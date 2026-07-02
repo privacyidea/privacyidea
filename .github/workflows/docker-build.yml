@@ -1,0 +1,125 @@
+# SPDX-FileCopyrightText: (C) 2026 NetKnights GmbH <https://netknights.it>
+#
+# SPDX-License-Identifier: CC0-1.0
+#
+# Builds the single-node Docker image and boots the full compose stack to verify
+# it works end-to-end. Two layers of assurance:
+#   1. Static checks  — shellcheck, hadolint, compose config, python syntax.
+#   2. Build + smoke  — build the image, "compose up", then assert readiness,
+#                       admin authentication, and that pi-cron is running.
+#
+# Path-gated to the Docker deployment files so it does not run on every PR.
+
+name: Docker Build
+
+on:
+  pull_request:
+    branches:
+      - 'master'
+      - 'branch-*'
+    paths:
+      - 'deploy/docker/**'
+      - 'privacyidea/**.py'
+      - 'privacyidea/static_new/package.json'
+      - 'privacyidea/static_new/package-lock.json'
+      - 'pyproject.toml'
+      - 'requirements.txt'
+      - '.github/workflows/docker-build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static-checks:
+    name: Static checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: shellcheck shell scripts
+        run: shellcheck deploy/docker/entrypoint.sh deploy/docker/scripts/*.sh
+
+      - name: Lint Dockerfile (hadolint)
+        run: |
+          docker run --rm -i hadolint/hadolint:latest \
+            hadolint --failure-threshold error - < deploy/docker/Dockerfile
+
+      - name: Validate compose file
+        run: docker compose -f deploy/docker/compose.yaml config --quiet
+
+      - name: Check helper scripts compile
+        run: python3 -m py_compile deploy/docker/cron-runner.py deploy/docker/enckey-canary.py
+
+  build-and-smoke:
+    name: Build and smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    needs: static-checks
+    steps:
+      # fetch-depth: 0 so setuptools-scm can derive the version from git tags
+      # (the Dockerfile copies .git and builds the package with it).
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Generate throwaway secrets
+        working-directory: deploy/docker/secrets
+        run: |
+          # enckey is raw 96 binary bytes — do NOT hex/base64 encode it.
+          head -c 96 /dev/urandom > enckey
+          python3 -c "import secrets; print(secrets.token_urlsafe())"   > pi_pepper
+          python3 -c "import secrets; print(secrets.token_hex())"       > secret_key
+          python3 -c "import secrets; print(secrets.token_urlsafe(32))" > mariadb_password
+          python3 -c "import secrets; print(secrets.token_urlsafe(32))" > mariadb_root_password
+          printf 'smoke-test-admin-pw\n'                                > bootstrap_admin_password
+          # 0644, not 0600: file-based compose secrets are bind-mounted preserving
+          # host ownership, and the container runs as a non-root user (uid 65532)
+          # that differs from the file owner — so the secrets must be world-readable
+          # to be readable inside the container.
+          chmod 644 enckey pi_pepper secret_key mariadb_password mariadb_root_password bootstrap_admin_password
+
+      - name: Build images
+        run: docker compose -f deploy/docker/compose.yaml build
+
+      - name: Start stack
+        # "up -d" blocks on pi-init (service_completed_successfully) before
+        # starting pi/pi-cron, so a fresh init failure fails this step.
+        run: docker compose -f deploy/docker/compose.yaml up -d
+
+      - name: Smoke test
+        env:
+          PI_SMOKE_PASSWORD: smoke-test-admin-pw
+        run: ./deploy/docker/scripts/smoke-test.sh
+
+      - name: Restart idempotency (existing DB → migrate, not re-create)
+        # Second boot must detect the populated DB, run "db upgrade" (a no-op on a
+        # fresh schema), and NOT re-stamp or fail. Guards the create_tables/upgrade
+        # branch in entrypoint.sh.
+        run: |
+          docker compose -f deploy/docker/compose.yaml down
+          docker compose -f deploy/docker/compose.yaml up -d
+          docker compose -f deploy/docker/compose.yaml logs pi-init | grep -q "Existing database detected" \
+            || { echo "pi-init did not take the existing-database path on restart"; \
+                 docker compose -f deploy/docker/compose.yaml logs pi-init; exit 1; }
+
+      - name: Smoke test after restart
+        env:
+          PI_SMOKE_PASSWORD: smoke-test-admin-pw
+        run: ./deploy/docker/scripts/smoke-test.sh
+
+      - name: Dump logs on failure
+        if: failure()
+        run: docker compose -f deploy/docker/compose.yaml logs --no-color
+
+      - name: Tear down
+        if: always()
+        run: docker compose -f deploy/docker/compose.yaml down -v

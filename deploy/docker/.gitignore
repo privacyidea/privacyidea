@@ -1,0 +1,9 @@
+# Compose environment overrides (may contain hostnames, tuning)
+.env
+
+# Secret files (keys, passwords) — never commit
+secrets/*
+!secrets/README.md
+
+# Backup archives
+backups/
