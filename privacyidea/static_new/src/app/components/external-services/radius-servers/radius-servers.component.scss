@@ -5,6 +5,7 @@
 .radius-servers-container {
   @include styles.main-component-style;
   @include table.base-table-structure(".radius-servers-table", ".table-filter", ".table-scroll-container");
+  max-height: var(--table-max-height);
 }
 
 .actions-container {
