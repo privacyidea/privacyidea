@@ -119,8 +119,8 @@ describe("TokensWidgetComponent", () => {
   });
 
   it("should display the fetched counts", () => {
-    const cells = fixture.nativeElement.querySelectorAll("td:last-child");
-    const values = Array.from(cells).map((td: Element) => td.textContent?.trim());
+    const cells = fixture.nativeElement.querySelectorAll("td:last-child") as NodeListOf<Element>;
+    const values = Array.from(cells).map((td) => td.textContent?.trim());
     expect(values).toContain("100");
     expect(values).toContain("12");
     expect(values).toContain("25");
@@ -176,11 +176,11 @@ describe("TokensWidgetComponent", () => {
     expect(filter?.getValueOfKey("assigned")).toBeUndefined();
   });
 
-  it("should add assigned=false to the preset filter for unassigned counts", () => {
+  it("should add assigned=False to the preset filter for unassigned counts", () => {
     component.showKind("software", true);
     const filter = tokenMock.presetFilter();
     expect(filter?.getValueOfKey("infovalue")).toBe("software");
-    expect(filter?.getValueOfKey("assigned")).toBe("false");
+    expect(filter?.getValueOfKey("assigned")).toBe("False");
   });
 
   it("should set an empty preset filter when the total is clicked", () => {
@@ -218,10 +218,10 @@ describe("TokensWidgetComponent", () => {
     fixture2.destroy();
   });
 
-  it("should set an assigned=false preset filter (without a kind) for the combined Unassigned row", () => {
+  it("should set an assigned=False preset filter (without a kind) for the combined Unassigned row", () => {
     component.showUnassigned();
     const filter = tokenMock.presetFilter();
-    expect(filter?.getValueOfKey("assigned")).toBe("false");
+    expect(filter?.getValueOfKey("assigned")).toBe("False");
     expect(filter?.getValueOfKey("infokey")).toBeUndefined();
   });
 

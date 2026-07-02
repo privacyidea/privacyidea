@@ -35,7 +35,7 @@ import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { MockContentService, MockPiResponse, MockRealmService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
-import { BulkResult, TokenGroups, Tokens, TokenService } from "./token.service";
+import { BulkResult, TokenCountParams, TokenGroups, Tokens, TokenService } from "./token.service";
 
 class MockNotificationService {
   success = jest.fn();
@@ -265,6 +265,52 @@ describe("TokenService", () => {
     });
   });
 
+  describe("getTokenCount()", () => {
+    it("always sends pagesize=0 when called without filters", () => {
+      getSpy.mockReturnValue(of(MockPiResponse.fromValue({ count: 0 })));
+
+      tokenService.getTokenCount().subscribe();
+
+      expect(getSpy).toHaveBeenCalledWith(tokenService.tokenBaseUrl, {
+        headers: authService.getHeaders(),
+        params: { pagesize: 0 }
+      });
+    });
+
+    it("preserves provided filters while forcing pagesize=0", () => {
+      getSpy.mockReturnValue(of(MockPiResponse.fromValue({ count: 1 })));
+
+      tokenService
+        .getTokenCount({ type: "hotp", assigned: "False", infokey: "tokenkind", infovalue: "hardware" })
+        .subscribe();
+
+      expect(getSpy).toHaveBeenCalledWith(tokenService.tokenBaseUrl, {
+        headers: authService.getHeaders(),
+        params: {
+          type: "hotp",
+          assigned: "False",
+          infokey: "tokenkind",
+          infovalue: "hardware",
+          pagesize: 0
+        }
+      });
+    });
+
+    it("does not allow overriding pagesize even when passed via an unsafe cast", () => {
+      getSpy.mockReturnValue(of(MockPiResponse.fromValue({ count: 2 })));
+
+      tokenService.getTokenCount({ serial: "S1", pagesize: 25 } as unknown as TokenCountParams).subscribe();
+
+      expect(getSpy).toHaveBeenCalledWith(tokenService.tokenBaseUrl, {
+        headers: authService.getHeaders(),
+        params: {
+          serial: "S1",
+          pagesize: 0
+        }
+      });
+    });
+  });
+
   describe("pollTokenRolloutState()", () => {
     it("emits error once and stops polling when request fails", async () => {
       jest.useFakeTimers();
@@ -351,6 +397,18 @@ describe("TokenService", () => {
       expect(req.request.params.get("type")).toBe("*hotp*");
       expect(req.request.params.has("description")).toBe(false);
       expect(req.request.params.has("rollout_state")).toBe(false);
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("normalizes assigned/active boolean filters to backend format True/False", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.tokenFilter.set(new FilterValue({ value: "assigned: false active: true serial: OTP" }));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("assigned")).toBe("False");
+      expect(req.request.params.get("active")).toBe("True");
+      expect(req.request.params.get("serial")).toBe("*OTP*");
       req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
     });
   });

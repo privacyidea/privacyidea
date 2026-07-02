@@ -125,13 +125,13 @@ export class TokensWidgetComponent extends DashboardWidget implements OnInit {
   showKind(kind: "hardware" | "software", unassignedOnly = false): void {
     let filter = new FilterValue().addEntry("infokey", "tokenkind").addEntry("infovalue", kind);
     if (unassignedOnly) {
-      filter = filter.addEntry("assigned", "false");
+      filter = filter.addEntry("assigned", "False");
     }
     this.tokenService.presetFilter.set(filter);
   }
 
   showUnassigned(): void {
-    this.tokenService.presetFilter.set(new FilterValue().addEntry("assigned", "false"));
+    this.tokenService.presetFilter.set(new FilterValue().addEntry("assigned", "False"));
   }
 
   ngOnInit(): void {

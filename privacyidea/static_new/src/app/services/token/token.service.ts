@@ -408,9 +408,7 @@ export class TokenService implements TokenServiceInterface {
 
   readonly maxDescriptionLength = 80;
 
-
   readonly detailsUser = this.contentService.detailsUser;
-
 
   tokenSerialResource = httpResource<PiResponse<Tokens>>(() => {
     const filter = this.selectedToken();
@@ -424,7 +422,6 @@ export class TokenService implements TokenServiceInterface {
       params: { serial: `*${filter}*` }
     };
   });
-
 
   selectedTokenType = linkedSignal({
     source: () => ({

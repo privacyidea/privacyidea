@@ -34,6 +34,11 @@ export interface TokenTypeCount {
   count: number;
 }
 
+interface TokenTypeAccumulator {
+  items: TokenTypeCount[];
+  indexByKey: Map<TokenTypeKey, number>;
+}
+
 @Component({
   selector: "app-token-types-widget",
   standalone: true,
@@ -137,6 +142,10 @@ export class TokenTypesWidgetComponent extends DashboardWidget implements OnInit
 
     const typeByKey = new Map(tokenTypes.map((type) => [type.key, type]));
     const initialCounts = cached ?? [];
+    const initialAccumulator: TokenTypeAccumulator = {
+      items: initialCounts,
+      indexByKey: new Map(initialCounts.map((entry, index) => [entry.key, index]))
+    };
 
     this.typeCountsRef.set(
       this.store.load("dashboard:tokens:by_type", () =>
@@ -151,10 +160,23 @@ export class TokenTypesWidgetComponent extends DashboardWidget implements OnInit
             )
           )
         ).pipe(
-          scan((accumulated: TokenTypeCount[], entry) => {
-            const withoutCurrent = accumulated.filter((item) => item.key !== entry.key);
-            return [...withoutCurrent, entry];
-          }, initialCounts)
+          scan((accumulated: TokenTypeAccumulator, entry) => {
+            const index = accumulated.indexByKey.get(entry.key);
+            const nextItems = [...accumulated.items];
+
+            if (index === undefined) {
+              accumulated.indexByKey.set(entry.key, nextItems.length);
+              nextItems.push(entry);
+            } else {
+              nextItems[index] = entry;
+            }
+
+            return {
+              items: nextItems,
+              indexByKey: accumulated.indexByKey
+            };
+          }, initialAccumulator),
+          map((accumulated) => accumulated.items)
         )
       )
     );
