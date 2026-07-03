@@ -1,0 +1,62 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<app-details-card
+  class="details-card--counters"
+  title="Counters"
+  i18n-title>
+  <div class="details-field-list">
+    <app-detail-field
+      label="Max Count"
+      i18n-label
+      [displayText]="str(tokenDetails().maxfail)"
+      [editValue]="str(tokenDetails().maxfail)"
+      [editable]="isEditableElement('maxfail')"
+      [number]="true"
+      [blockEditing]="isAnyEditingOrRevoked()"
+      [save]="saveMaxfail" />
+    <app-detail-field
+      label="OTP Length"
+      i18n-label
+      [displayText]="str(tokenDetails().otplen)"
+      [editValue]="str(tokenDetails().otplen)" />
+    <app-detail-field
+      label="Count Window"
+      i18n-label
+      [displayText]="str(tokenDetails().count_window)"
+      [editValue]="str(tokenDetails().count_window)"
+      [editable]="isEditableElement('count_window')"
+      [number]="true"
+      [blockEditing]="isAnyEditingOrRevoked()"
+      [save]="saveCountWindow" />
+    <app-detail-field
+      label="Sync Window"
+      i18n-label
+      [displayText]="str(tokenDetails().sync_window)"
+      [editValue]="str(tokenDetails().sync_window)"
+      [editable]="isEditableElement('sync_window')"
+      [number]="true"
+      [blockEditing]="isAnyEditingOrRevoked()"
+      [save]="saveSyncWindow" />
+    <app-detail-field
+      label="Count"
+      i18n-label
+      [displayText]="str(tokenDetails().count)"
+      [editValue]="str(tokenDetails().count)" />
+  </div>
+</app-details-card>

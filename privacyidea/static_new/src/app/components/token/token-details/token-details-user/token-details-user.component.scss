@@ -4,18 +4,6 @@
 $border-color: var(--mat-sys-outline-variant);
 
 .user-container {
-  app-edit-buttons {
-    opacity: 0;
-    transition: opacity 120ms ease;
-    pointer-events: none;
-  }
-
-  &:hover app-edit-buttons,
-  td.padding-0 app-edit-buttons {
-    opacity: 1;
-    pointer-events: auto;
-  }
-
   .value-row {
     display: flex;
     flex-direction: row;
@@ -80,11 +68,6 @@ $border-color: var(--mat-sys-outline-variant);
   .user-editable-row {
     width: auto;
     min-width: 0;
-
-    mat-form-field {
-      width: 100%;
-      max-width: 100%;
-    }
   }
 
   .user-pin-container-padding {

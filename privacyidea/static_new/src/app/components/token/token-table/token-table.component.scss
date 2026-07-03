@@ -7,10 +7,17 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  max-height: var(--table-max-height);
+
+  :host-context(body.self-service-layout) & {
+    height: auto;
+    max-height: var(--table-max-height);
+  }
 
   .realm-break {
     margin-top: 3px;
   }
+
   .sticky-header {
     z-index: 120;
   }

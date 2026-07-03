@@ -49,8 +49,7 @@ export interface RemoteEnrollmentPayload extends TokenEnrollmentPayload {
 @Injectable({ providedIn: "root" })
 export class RemoteApiPayloadMapper
   extends BaseApiPayloadMapper
-  implements TokenApiPayloadMapper<RemoteEnrollmentData>
-{
+  implements TokenApiPayloadMapper<RemoteEnrollmentData> {
   override toApiPayload(data: RemoteEnrollmentData): RemoteEnrollmentPayload {
     const payload: RemoteEnrollmentPayload = {
       ...super.toApiPayload(data),

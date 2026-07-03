@@ -96,10 +96,6 @@ export class ContainerDetailsActionsComponent implements OnDestroy {
     );
   });
 
-  ngOnDestroy(): void {
-    this.containerService.stopPolling();
-  }
-
   constructor() {
     effect(() => {
       if (!this.containerService.isPollingActive()) {
@@ -107,6 +103,11 @@ export class ContainerDetailsActionsComponent implements OnDestroy {
       }
     });
   }
+
+  ngOnDestroy(): void {
+    this.containerService.stopPolling();
+  }
+
 
   enrollTokenInContainer() {
     this.containerService.selectedContainerSerial.set(this.containerSerial());

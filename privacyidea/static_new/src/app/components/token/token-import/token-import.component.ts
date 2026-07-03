@@ -67,6 +67,8 @@ export class TokenImportComponent implements OnDestroy, OnInit {
   fileName = signal("");
   file = signal<string | File>("");
   preSharedKey = signal("");
+  readonly preSharedKeyValid = computed(() => [0, 32].includes(this.preSharedKey().length));
+  readonly formValid = computed(() => !!this.file() && this.preSharedKeyValid());
   pskPassword = signal("");
   pskValidationOptions: Record<string, string> = {
     no_check: $localize`Do not verify the authenticity`,
@@ -75,9 +77,6 @@ export class TokenImportComponent implements OnDestroy, OnInit {
   };
   pskValidation = signal("check_fail_hard");
   selectedRealms = signal<string[]>(this.realmService.defaultRealm() ? [this.realmService.defaultRealm()!] : []);
-
-  readonly preSharedKeyValid = computed(() => [0, 32].includes(this.preSharedKey().length));
-  readonly formValid = computed(() => !!this.file() && this.preSharedKeyValid());
 
   ngOnInit(): void {
     this.pendingChangesService.registerHasChanges(

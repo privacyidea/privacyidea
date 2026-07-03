@@ -38,8 +38,7 @@ export interface IndexedSecretEnrollmentPayload extends TokenEnrollmentPayload {
 @Injectable({ providedIn: "root" })
 export class IndexedSecretApiPayloadMapper
   extends BaseApiPayloadMapper
-  implements TokenApiPayloadMapper<IndexedSecretEnrollmentData>
-{
+  implements TokenApiPayloadMapper<IndexedSecretEnrollmentData> {
   override toApiPayload(data: IndexedSecretEnrollmentData): IndexedSecretEnrollmentPayload {
     const payload: IndexedSecretEnrollmentPayload = {
       ...super.toApiPayload(data),

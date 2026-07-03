@@ -262,7 +262,9 @@ describe("UserService", () => {
         }
       };
 
-      (userService as { editableAttributesResource: UserService["editableAttributesResource"] }).editableAttributesResource =
+      (userService as {
+        editableAttributesResource: UserService["editableAttributesResource"]
+      }).editableAttributesResource =
         new MockHttpResourceRef(MockPiResponse.fromValue(policy)) as unknown as UserService["editableAttributesResource"];
 
       expect(userService.attributePolicy()).toEqual(policy);

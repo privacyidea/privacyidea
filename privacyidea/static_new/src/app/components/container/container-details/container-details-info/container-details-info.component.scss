@@ -1,6 +1,4 @@
 @use "styles";
 @use "table";
 
-.width-192 {
-  width: 192px;
-}
+@include table.details-info-grid;

@@ -20,6 +20,7 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal, WritableSignal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { EditableElement } from "@components/shared/edit-buttons/edit-buttons.component";
 import { AuthService } from "@services/auth/auth.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { RealmService } from "@services/realm/realm.service";
@@ -87,8 +88,6 @@ function makeTokenDetailResponse(tokentype: TokenTypeKey): MockPiResponse<Tokens
 describe("TokenDetailsUserComponent", () => {
   let fixture: ComponentFixture<TokenDetailsUserComponent>;
   let component: TokenDetailsUserComponent;
-  let selfFixture: ComponentFixture<TokenDetailsUserSelfServiceComponent>;
-  let selfComponent: TokenDetailsUserSelfServiceComponent;
   let tokenService: MockTokenService;
   let userService: MockUserService;
   let realmService: MockRealmService;
@@ -121,8 +120,6 @@ describe("TokenDetailsUserComponent", () => {
 
     fixture = TestBed.createComponent(TokenDetailsUserComponent);
     component = fixture.componentInstance;
-    selfFixture = TestBed.createComponent(TokenDetailsUserSelfServiceComponent);
-    selfComponent = selfFixture.componentInstance;
 
     tokenSerial = signal("Mock serial");
     isEditingUser = signal(false);
@@ -150,10 +147,6 @@ describe("TokenDetailsUserComponent", () => {
   it("falls back to an empty userRealm when no user_realm row is present", () => {
     component.userData.set([{ keyMap: { key: "username" }, value: "alice", isEditing: signal(false) }]);
     expect((component as unknown as { userRealm: () => string }).userRealm()).toBe("");
-  });
-
-  it("creates self service", () => {
-    expect(selfComponent).toBeTruthy();
   });
 
   it("tokenType reflects tokenDetailResource tokentype", () => {
@@ -206,5 +199,46 @@ describe("TokenDetailsUserComponent", () => {
     expect(userService.selectedUserRealm()).toBe("");
     expect(tokenService.tokenDetailResource.reload).toHaveBeenCalled();
     expect(isEditingUser()).toBe(true);
+  });
+
+  it("assignToSelf assigns the logged-in user and reloads token details", () => {
+    component.assignToSelf();
+
+    expect(tokenService.assignUser).toHaveBeenCalledWith({
+      tokenSerial: "Mock serial",
+      username: "alice",
+      realm: "default"
+    });
+    expect(tokenService.tokenDetailResource.reload).toHaveBeenCalled();
+  });
+
+  it("renders the username as a link in the admin component but as plain text in the self-service component", () => {
+    const row: EditableElement = { keyMap: { key: "username" }, value: "alice", isEditing: signal(false) };
+    isEditingUser.set(false);
+
+    component.userData.set([row]);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector("a")).toBeTruthy();
+
+    const ssFixture = TestBed.createComponent(TokenDetailsUserSelfServiceComponent);
+    ssFixture.componentInstance.userData.set([row]);
+    ssFixture.componentInstance.isAnyEditingOrRevoked = signal(false);
+    ssFixture.detectChanges();
+    expect(ssFixture.nativeElement.querySelector("a")).toBeNull();
+  });
+
+  it("offers only unassign when a user is already assigned", () => {
+    const auth = TestBed.inject(AuthService) as unknown as MockAuthService;
+    auth.role.set("user");
+    auth.actionAllowed.mockImplementation((action: string) => action === "assign" || action === "unassign");
+    component.userData.set([{ keyMap: { key: "username" }, value: "daemon", isEditing: signal(false) }]);
+    isEditingUser.set(false);
+    fixture.detectChanges();
+
+    const icons = Array.from(fixture.nativeElement.querySelectorAll("mat-icon")).map((e: Element) =>
+      e.textContent?.trim()
+    );
+    expect(icons).toContain("person_remove");
+    expect(icons).not.toContain("person_add");
   });
 });

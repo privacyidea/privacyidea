@@ -18,27 +18,18 @@
 -->
 
 <div
-  appScrollToTop
-  class="create-user-layout"
-  aria-label="Create New User"
-  i18n-aria-label>
+  appScrollToTop aria-label="Create New User" class="create-user-layout" i18n-aria-label>
   <h3
-    class="heading"
-    i18n>
+    class="heading" i18n>
     Create New User
   </h3>
   <div class="flex-row gap-8">
     <button
-      (click)="onCancel()"
-      class="action-button-secondary button-width-s"
-      mat-stroked-button>
+      (click)="onCancel()" class="action-button-secondary button-width-s" mat-stroked-button>
       <span i18n>Cancel</span>
     </button>
     <button
-      (click)="onSave()"
-      [disabled]="!canSave()"
-      class="action-button-primary button-width-s"
-      mat-stroked-button>
+      (click)="onSave()" [disabled]="!canSave()" class="action-button-primary button-width-s" mat-stroked-button>
       <mat-icon>add</mat-icon>
       <span i18n>Create</span>
     </button>
@@ -48,9 +39,7 @@
     <mat-form-field class="input-width-l">
       <mat-label i18n>Resolver</mat-label>
       <mat-select
-        [value]="resolver()"
-        (selectionChange)="resolver.set($event.value)"
-        required>
+        (selectionChange)="resolver.set($event.value)" [value]="resolver()" required>
         @for (option of resolverService.editableResolvers(); track option) {
           <mat-option [value]="option">{{ option }}</mat-option>
         }
@@ -60,22 +49,20 @@
         {{ correspondingRealms().join(", ") }}
       </mat-hint>
       @if (resolverForm().errors().some(e => e.kind === 'required') && resolverForm().touched()) {
-        <mat-error i18n> Resolver is <strong>required</strong> </mat-error>
+        <mat-error i18n> Resolver is <strong>required</strong></mat-error>
       }
     </mat-form-field>
 
     <mat-form-field class="input-width-l">
       <mat-label i18n>Username</mat-label>
       <input
-        [formField]="usernameForm"
-        matInput />
+        [formField]="usernameForm" matInput />
       @if (usernameForm().errors().some(e => e.kind === 'required') && usernameForm().touched()) {
-        <mat-error i18n> Username is <strong>required</strong> </mat-error>
+        <mat-error i18n> Username is <strong>required</strong></mat-error>
       }
     </mat-form-field>
   </div>
 
   <app-user-details-edit
-    [resolver]="resolver()"
-    (updateData)="editedUserData.set($event)"></app-user-details-edit>
+    (updateData)="editedUserData.set($event)" [resolver]="resolver()"></app-user-details-edit>
 </div>

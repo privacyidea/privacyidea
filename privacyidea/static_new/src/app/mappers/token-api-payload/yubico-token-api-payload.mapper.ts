@@ -37,8 +37,7 @@ export interface YubicoEnrollmentPayload extends TokenEnrollmentPayload {
 @Injectable({ providedIn: "root" })
 export class YubicoApiPayloadMapper
   extends BaseApiPayloadMapper
-  implements TokenApiPayloadMapper<YubicoEnrollmentData>
-{
+  implements TokenApiPayloadMapper<YubicoEnrollmentData> {
   override toApiPayload(data: YubicoEnrollmentData): YubicoEnrollmentPayload {
     const payload: YubicoEnrollmentPayload = {
       ...super.toApiPayload(data),

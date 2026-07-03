@@ -38,7 +38,7 @@ import {
 } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
-import { TokenService, Tokens } from "@services/token/token.service";
+import { Tokens, TokenService } from "@services/token/token.service";
 import { UserService } from "@services/user/user.service";
 import {
   MockAuthService,
@@ -524,7 +524,7 @@ describe("ContainerService", () => {
     expect(notificationServiceMock.error).toHaveBeenCalled();
   });
 
-  it('setContainerRealm joins array, blank array ⇒ ""', async () => {
+  it("setContainerRealm joins array, blank array ⇒ \"\"", async () => {
     const post = jest.spyOn(http, "post").mockReturnValue(of({}));
     await lastValueFrom(containerService.setContainerRealm("cX", ["r1", "r2"]));
     expect(post).toHaveBeenCalledWith(

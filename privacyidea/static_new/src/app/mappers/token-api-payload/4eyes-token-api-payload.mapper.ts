@@ -42,8 +42,7 @@ export interface FourEyesEnrollmentPayload extends TokenEnrollmentPayload {
 @Injectable({ providedIn: "root" })
 export class FourEyesApiPayloadMapper
   extends BaseApiPayloadMapper
-  implements TokenApiPayloadMapper<FourEyesEnrollmentData>
-{
+  implements TokenApiPayloadMapper<FourEyesEnrollmentData> {
   override toApiPayload(data: FourEyesEnrollmentData): FourEyesEnrollmentPayload {
     const basePayload = super.toApiPayload(data);
     const payload: FourEyesEnrollmentPayload = {
