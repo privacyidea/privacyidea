@@ -25,20 +25,27 @@ import { lastValueFrom, take } from "rxjs";
 
 export interface DialogServiceInterface {
   closeDialog<D, R>(ref: MatDialogRef<AbstractDialogComponent<D, R>, R>, result?: R): boolean;
+
   openDialog<D, R>(args: {
     component: ComponentType<AbstractDialogComponent<D, R>>;
     data?: D;
     configOverride?: Partial<MatDialogConfig<D>>;
   }): MatDialogRef<AbstractDialogComponent<D, R>, R>;
+
   openDialogAsync<D, R>(args: {
     component: ComponentType<AbstractDialogComponent<D, R>>;
     data?: D;
     configOverride?: Partial<MatDialogConfig<D>>;
   }): Promise<R | undefined>;
+
   closeLatestDialog(): void;
+
   closeAllDialogs(): void;
+
   isAnyDialogOpen(): boolean;
+
   isDialogOpen(ref: MatDialogRef<AbstractDialogComponent>): boolean;
+
   confirm(args: { title: string; message: string; confirmButtonText: string }): Promise<boolean>;
 }
 
@@ -47,15 +54,18 @@ export class DialogService implements DialogServiceInterface {
   private readonly dialog = inject(MatDialog);
   private readonly injector = inject(EnvironmentInjector);
   public openDialogs = new Set<MatDialogRef<AbstractDialogComponent>>();
-  closeAllDialogs(): void {
-    this.dialog.closeAll();
-    this.openDialogs.clear();
-  }
-  closeLatestDialog(): void {
-    const latestRef = Array.from(this.openDialogs).pop();
-    if (latestRef) {
-      latestRef.close();
+
+  /**
+   * @param ref The MatDialogRef of the dialog to be closed.
+   * @param result The optional return value of the dialog.
+   * @returns true if the dialog was found and closed.
+   */
+  closeDialog<D, R>(ref: MatDialogRef<AbstractDialogComponent<D, R>, R>, result?: R): boolean {
+    if (this.openDialogs.has(ref)) {
+      ref.close(result);
+      return true;
     }
+    return false;
   }
 
   /**
@@ -97,25 +107,24 @@ export class DialogService implements DialogServiceInterface {
     return lastValueFrom(dialogRef.afterClosed());
   }
 
-  /**
-   * @param ref The MatDialogRef of the dialog to be closed.
-   * @param result The optional return value of the dialog.
-   * @returns true if the dialog was found and closed.
-   */
-  closeDialog<D, R>(ref: MatDialogRef<AbstractDialogComponent<D, R>, R>, result?: R): boolean {
-    if (this.openDialogs.has(ref)) {
-      ref.close(result);
-      return true;
+  closeLatestDialog(): void {
+    const latestRef = Array.from(this.openDialogs).pop();
+    if (latestRef) {
+      latestRef.close();
     }
-    return false;
   }
 
-  isDialogOpen(ref: MatDialogRef<AbstractDialogComponent>): boolean {
-    return this.openDialogs.has(ref);
+  closeAllDialogs(): void {
+    this.dialog.closeAll();
+    this.openDialogs.clear();
   }
 
   isAnyDialogOpen(): boolean {
     return this.dialog.openDialogs.length > 0;
+  }
+
+  isDialogOpen(ref: MatDialogRef<AbstractDialogComponent>): boolean {
+    return this.openDialogs.has(ref);
   }
 
   async confirm(args: { title: string; message: string; confirmButtonText: string }): Promise<boolean> {

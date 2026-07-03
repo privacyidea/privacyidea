@@ -174,4 +174,13 @@ describe("ContentService", () => {
       expect(service.previousUrl()).toBe("/tokens");
     });
   });
+
+  describe("machineResolverSelected()", () => {
+    it("navigates to machine resolver details", () => {
+      emitNav("/tokens");
+      service.machineResolverSelected("hosts 1");
+
+      expect(mockRouter.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.MACHINE_RESOLVER_DETAILS + "hosts%201");
+    });
+  });
 });

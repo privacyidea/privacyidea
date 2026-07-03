@@ -21,20 +21,35 @@ import { Component, input, model } from "@angular/core";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatListItem } from "@angular/material/list";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 
 @Component({
   selector: "app-details-list-display",
   standalone: true,
-  imports: [NgClass, MatListItem],
+  imports: [MatListItem, CopyableComponent],
+  // Matches the container realm list: bullet + copyable rows, fixed to the
+  // standard row height with scroll for overflow.
   template: `
-    <div [ngClass]="{ 'details-scrollable-container': true, 'height-77': items().length > 2 }">
+    <div class="details-scrollable-container">
       @for (item of items(); track item) {
         <mat-list-item class="height-auto pad-0">
-          <span class="font-14">• {{ item }}</span>
+          <app-copyable [copyText]="item">
+            <span class="font-14">• {{ item }}</span>
+          </app-copyable>
         </mat-list-item>
       }
     </div>
-  `
+  `,
+  styles: [
+    `
+      .details-scrollable-container {
+        display: block;
+        max-height: 52px;
+        overflow-y: auto;
+        overflow-wrap: anywhere;
+      }
+    `
+  ]
 })
 export class DetailsListDisplayComponent {
   items = input.required<string[]>();
@@ -52,7 +67,7 @@ export class DetailsListDisplayComponent {
         <textarea
           [value]="value()"
           (input)="value.set($any($event.target).value)"
-          [maxlength]="maxlength()"
+          [attr.maxlength]="maxlength()"
           i18n-placeholder
           matInput
           placeholder="Enter description"

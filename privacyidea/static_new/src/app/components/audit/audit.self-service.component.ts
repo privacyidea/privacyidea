@@ -40,6 +40,7 @@ import {
 import { RouterLink } from "@angular/router";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { AuditComponent } from "./audit.component";
 
@@ -68,7 +69,8 @@ import { AuditComponent } from "./audit.component";
     MatButtonModule,
     MatIcon,
     ScrollToTopDirective,
-    ClearableInputComponent
+    ClearableInputComponent,
+    ScrollEdgesDirective
   ],
   templateUrl: "./audit.self-service.component.html",
   styleUrl: "./audit.component.scss"

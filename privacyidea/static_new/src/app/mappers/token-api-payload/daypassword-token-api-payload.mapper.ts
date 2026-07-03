@@ -47,8 +47,7 @@ export interface DaypasswordEnrollmentPayload extends TokenEnrollmentPayload {
 @Injectable({ providedIn: "root" })
 export class DaypasswordApiPayloadMapper
   extends BaseApiPayloadMapper
-  implements TokenApiPayloadMapper<DaypasswordEnrollmentData>
-{
+  implements TokenApiPayloadMapper<DaypasswordEnrollmentData> {
   override toApiPayload(data: DaypasswordEnrollmentData): DaypasswordEnrollmentPayload {
     const payload: DaypasswordEnrollmentPayload = {
       ...super.toApiPayload(data),

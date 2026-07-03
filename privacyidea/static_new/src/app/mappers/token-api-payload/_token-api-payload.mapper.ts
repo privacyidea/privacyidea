@@ -62,6 +62,7 @@ export interface U2fRegisterRequest {
   appId: string;
   version: string;
   challenge: string;
+
   [key: string]: unknown;
 }
 
@@ -104,6 +105,7 @@ export interface TokenEnrollmentData {
   serial?: string | null;
   rollover?: boolean | null;
   verify?: string;
+
   [key: string]: unknown; // TODO: remove this when all types are defined
 }
 
@@ -122,12 +124,15 @@ export interface TokenEnrollmentPayload {
   otplen?: number;
   timeStep?: string | number;
   genkey?: boolean | number;
+
   [key: string]: unknown; // TODO: remove this when all types are defined
 }
 
 export interface TokenApiPayloadMapper<T> {
   toApiPayload(data: T): TokenEnrollmentPayload;
+
   fromApiPayload(data: TokenEnrollmentPayload): T;
+
   fromTokenDetailsToEnrollmentData(details: TokenDetails): T;
 }
 

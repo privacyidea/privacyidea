@@ -88,7 +88,7 @@ describe("parseBooleanValue", () => {
   });
 
   it("should call assert for an invalid string", () => {
-    const errMsg = 'Initial value for parseBooleanValue must be "true", "false", "1" or "0" if string, but was invalid';
+    const errMsg = "Initial value for parseBooleanValue must be \"true\", \"false\", \"1\" or \"0\" if string, but was invalid";
     expect(() => parseBooleanValue("invalid")).toThrow(errMsg);
     expect(assert).toHaveBeenCalledWith(false, errMsg);
   });

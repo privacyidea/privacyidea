@@ -70,14 +70,11 @@ export class SelectedUserAssignDialogComponent extends AbstractDialogComponent<
   pinRepeat = signal("");
   hidePin = signal(true);
   selectedRealm = signal(this.userService.selectedUserRealm());
+  readonly realmInvalid = computed(() => !this.selectedRealm());
   selectedUser = signal<UserData | null>(null);
+  readonly userInvalid = computed(() => !this.selectedUser());
   userFilter = signal(this.userService.selectionFilter());
   pinsMatch = computed(() => this.pin() === this.pinRepeat());
-  readonly realmInvalid = computed(() => !this.selectedRealm());
-  readonly userInvalid = computed(() => !this.selectedUser());
-  selectionContainsAssignedToken = computed(() =>
-    this.tokenService.tokenSelection().some((token) => token.username && token.username !== "")
-  );
   readonly actions = computed<DialogAction<"submit" | null>[]>(() => [
     {
       label: $localize`Assign to Selected Token`,
@@ -88,6 +85,14 @@ export class SelectedUserAssignDialogComponent extends AbstractDialogComponent<
       disabled: !this.pinsMatch() || this.realmInvalid() || this.userInvalid()
     }
   ]);
+  selectionContainsAssignedToken = computed(() =>
+    this.tokenService.tokenSelection().some((token) => token.username && token.username !== "")
+  );
+  displayUser = (value: UserData | string | null): string => {
+    if (!value) return "";
+    if (typeof value === "string") return value;
+    return value.username;
+  };
 
   onRealmChange(realm: string): void {
     this.selectedRealm.set(realm);
@@ -110,12 +115,6 @@ export class SelectedUserAssignDialogComponent extends AbstractDialogComponent<
     this.userFilter.set(user.username);
     this.userService.selectionFilter.set(user.username);
   }
-
-  displayUser = (value: UserData | string | null): string => {
-    if (!value) return "";
-    if (typeof value === "string") return value;
-    return value.username;
-  };
 
   togglePinVisibility(): void {
     this.hidePin.update((prev) => !prev);

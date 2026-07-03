@@ -123,43 +123,6 @@ export class NewSmsGatewayComponent implements OnDestroy {
   /** Whether the parameters have been touched/dirtied */
   parametersDirty = signal(false);
 
-  updateParameter(key: string, value: string): void {
-    this.parametersModel.update((m) => ({ ...m, [key]: value }));
-    this.parametersDirty.set(true);
-  }
-
-  clearParameter(key: string): void {
-    this.parametersModel.update((m) => ({ ...m, [key]: "" }));
-    this.parametersDirty.set(true);
-  }
-
-  customOptions: Record<string, string> = {};
-  customHeaders: Record<string, string> = {};
-  optionSecrets: Record<string, boolean> = {};
-  headerSecrets: Record<string, boolean> = {};
-  private initialOptionSecrets: Record<string, boolean> = {};
-  private initialHeaderSecrets: Record<string, boolean> = {};
-
-  newOptionKey = signal("");
-  newOptionValue = signal("");
-  newOptionSecret = signal(false);
-  newHeaderKey = signal("");
-  newHeaderValue = signal("");
-  newHeaderSecret = signal(false);
-
-  optionDisplayedColumns: string[] = ["key", "value", "secret", "actions"];
-  optionFooterColumns: string[] = ["footerKey", "footerValue", "footerSecret", "footerActions"];
-
-  headerDisplayedColumns: string[] = ["key", "value", "secret", "actions"];
-  headerFooterColumns: string[] = ["footerKey", "footerValue", "footerSecret", "footerActions"];
-
-  providers = computed<Record<string, SmsProvider>>(() => {
-    if (!this.smsGatewayService.smsProvidersResource.hasValue()) return {};
-    return this.smsGatewayService.smsProvidersResource.value()?.result?.value ?? {};
-  });
-
-  selectedProvider = signal<SmsProvider | undefined>(undefined);
-
   constructor() {
     this.pendingChangesService.registerHasChanges(() => this.hasChanges);
     this.pendingChangesService.registerSave(() => this.save());
@@ -201,6 +164,42 @@ export class NewSmsGatewayComponent implements OnDestroy {
     });
   }
 
+  updateParameter(key: string, value: string): void {
+    this.parametersModel.update((m) => ({ ...m, [key]: value }));
+    this.parametersDirty.set(true);
+  }
+
+  clearParameter(key: string): void {
+    this.parametersModel.update((m) => ({ ...m, [key]: "" }));
+    this.parametersDirty.set(true);
+  }
+
+  customOptions: Record<string, string> = {};
+  customHeaders: Record<string, string> = {};
+  optionSecrets: Record<string, boolean> = {};
+  headerSecrets: Record<string, boolean> = {};
+  private initialOptionSecrets: Record<string, boolean> = {};
+  private initialHeaderSecrets: Record<string, boolean> = {};
+
+  newOptionKey = signal("");
+  newOptionValue = signal("");
+  newOptionSecret = signal(false);
+  newHeaderKey = signal("");
+  newHeaderValue = signal("");
+  newHeaderSecret = signal(false);
+
+  optionDisplayedColumns: string[] = ["key", "value", "secret", "actions"];
+  optionFooterColumns: string[] = ["footerKey", "footerValue", "footerSecret", "footerActions"];
+
+  headerDisplayedColumns: string[] = ["key", "value", "secret", "actions"];
+  headerFooterColumns: string[] = ["footerKey", "footerValue", "footerSecret", "footerActions"];
+
+  providers = computed<Record<string, SmsProvider>>(() => {
+    if (!this.smsGatewayService.smsProvidersResource.hasValue()) return {};
+    return this.smsGatewayService.smsProvidersResource.value()?.result?.value ?? {};
+  });
+
+  selectedProvider = signal<SmsProvider | undefined>(undefined);
   private initForm(): void {
     const initialModel = {
       name: this.data?.name || "",

@@ -14,6 +14,7 @@ from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from sqlalchemy.orm.exc import StaleDataError
 from testfixtures import LogCapture
 
+from privacyidea.lib.cache import ChallengeDTO
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
@@ -1733,8 +1734,12 @@ class PushAPITestCase(MyApiTestCase):
 
         answer_sig = self.smartphone_private_key.sign(f"{nonce}|{self.serial_push}".encode("utf8"),
                                                       padding.PKCS1v15(), hashes.SHA256())
-        # Simulate the challenge row vanishing during the answer commit.
-        with mock.patch.object(Challenge, "save", side_effect=StaleDataError("row gone")):
+        # Simulate the challenge row vanishing during the answer commit. The handler may hold
+        # either a DB-backed Challenge or a cached ChallengeDTO (when PI_REDIS_CACHE_CHALLENGES
+        # is enabled), so patch save() on both backends to exercise the StaleDataError path
+        # regardless of which one get_challenges() returns.
+        with (mock.patch.object(Challenge, "save", side_effect=StaleDataError("row gone")),
+              mock.patch.object(ChallengeDTO, "save", side_effect=StaleDataError("row gone"))):
             with self.app.test_request_context('/ttype/push', method='POST',
                                                data={"serial": self.serial_push,
                                                      "signature": b32encode(answer_sig)}):

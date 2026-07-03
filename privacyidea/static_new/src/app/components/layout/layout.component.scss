@@ -2,10 +2,14 @@
 @use "table";
 
 .layout {
-  --max-height: calc(100vh - 64px - var(--global-padding) * 2);
+  &:has(.self-service-layout) {
+    --max-width: calc(
+      100vw - var(--drawer-width-self-service) - 2 * var(--double-global-padding) - 2 * var(--global-padding)
+    );
+  }
 
-  &.with-secondary-toolbar {
-    --max-height: calc(100vh - 176px - var(--global-padding) * 2);
+  &:has(.admin-layout) {
+    --max-width: calc(100vw - 2 * var(--double-global-padding) - 2 * var(--global-padding));
   }
 }
 
@@ -37,16 +41,25 @@
 .admin-layout {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
 }
 
+// Fills the space below the toolbar(s). The routed component stretches to it
+// (align-items: stretch) so its container can reach the bottom, inset by the
+// single --global-padding — no hard-coded toolbar heights.
 .admin-content {
   flex: 1;
+  min-height: 0;
   display: flex;
   justify-content: center;
-  align-items: baseline;
+  align-items: stretch;
   padding: var(--global-padding);
+  overflow: hidden;
 }
+
+// NOTE: the routed host is styled from global styles (styles.scss), not here —
+// a rule scoped to this component can't match the router-outlet's dynamically
+// inserted component (it doesn't carry this component's _ngcontent attribute).
 
 .self-service-layout {
   display: flex;
@@ -61,10 +74,12 @@
 }
 
 .selfservice-content-container {
-  display: grid;
-  justify-items: center;
-  align-content: center;
-  overflow-x: auto;
-  height: calc(var(--main-height) - var(--global-padding) * 2);
-  padding: calc(2 * var(--global-padding));
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  height: 100vh;
+  min-height: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  padding: var(--global-padding);
 }
