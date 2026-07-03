@@ -17,9 +17,11 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import atexit
 import os
 import shutil
 import socket
+import tempfile
 
 # Per-worker DB isolation for pytest-xdist. Must run before any `privacyidea`
 # import, because TestingConfig.SQLALCHEMY_DATABASE_URI is evaluated at class
@@ -112,13 +114,20 @@ def _isolate_editable_testuser_db(worker):
     deleted`` because a foreign worker's token still references it, or user
     cache count mismatches - depending on which worker loses the race.
 
-    Redirect the shared seed to a per-worker copy in ``/tmp`` (mirroring the
-    per-worker main DB above). Only the shared ``tests/testdata`` seed is
-    rewritten; test_lib_resolver.py already copies the file to its own tempdir
-    per test and must keep that isolation, so connect strings pointing
-    elsewhere are left untouched."""
-    worker_db = f"/tmp/pi-testuser-{worker}.sqlite"
+    Redirect the shared seed to a per-worker copy in the temp dir (mirroring
+    the per-worker main DB above). The copy name includes the xdist test-run
+    uuid so two suites running concurrently on the same machine (which reuse
+    the worker names ``gw0``, ``gw1``, ...) get separate files instead of
+    colliding. Only the shared ``tests/testdata`` seed is rewritten;
+    test_lib_resolver.py already copies the file to its own tempdir per test
+    and must keep that isolation, so connect strings pointing elsewhere are
+    left untouched."""
+    run_id = os.environ.get("PYTEST_XDIST_TESTRUNUID", "")
+    worker_db = os.path.join(tempfile.gettempdir(), f"pi-testuser-{worker}-{run_id}.sqlite")
     shutil.copyfile(os.path.join("tests", "testdata", "testuser.sqlite"), worker_db)
+    # The file name is run-specific, so remove it when this worker exits
+    # rather than leaving copies to accumulate in the temp dir.
+    atexit.register(lambda: os.path.exists(worker_db) and os.remove(worker_db))
 
     from privacyidea.lib.resolvers.SQLIdResolver import IdResolver
     _original_create_connect_string = IdResolver._create_connect_string
