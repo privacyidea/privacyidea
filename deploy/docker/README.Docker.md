@@ -166,9 +166,15 @@ container.** Run migrations from a single init container (as `pi-init` does).
 Administration
 --------------
 
-Run management commands inside the running container:
+Run management commands against the running container:
 ```
 docker compose -f deploy/docker/compose.yaml exec pi pi-manage <args>
+```
+
+For one-off tasks, or when `pi` isn't running, use an ephemeral container instead
+(the entrypoint runs the passed command instead of the web server):
+```
+docker compose -f deploy/docker/compose.yaml run --rm --no-deps pi pi-manage <args>
 ```
 
 Import configuration (e.g. a policy template):

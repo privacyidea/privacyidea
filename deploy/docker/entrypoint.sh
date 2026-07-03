@@ -3,6 +3,15 @@
 # SPDX-License-Identifier: CC0-1.0
 set -eu
 
+# If a command was passed to the container (e.g.
+# `docker compose run --rm pi pi-manage ...`), run it directly instead of the web
+# server. The app config, database and secrets still come from DockerConfig and
+# the mounted /run/secrets. Normal compose services pass no command, so this is
+# skipped for them ($# == 0).
+if [ "$#" -gt 0 ]; then
+    exec "$@"
+fi
+
 # The application config (DockerConfig, selected by PI_CONFIG_NAME=docker) reads
 # the database URI, enckey, pepper and secret_key directly from the PI_DB_*,
 # PI_ENCFILE, PI_PEPPER_FILE and SECRET_KEY_FILE variables set in the compose
