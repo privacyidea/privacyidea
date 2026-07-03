@@ -54,6 +54,7 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { MultiSelectFilterComponent } from "@components/shared/multi-select-filter/multi-select-filter.component";
 import { MultiSelectFilterOption } from "@components/shared/multi-select-filter/multi-select-filter-option";
 import { MultiSelectMenuComponent } from "@components/shared/multi-select-filter/multi-select-menu/multi-select-menu.component";
@@ -219,6 +220,7 @@ const FILTER_TOOLTIPS: Record<string, string> = {
     FilterValueButtonComponent,
     RouterLink,
     ScrollToTopDirective,
+    ScrollEdgesDirective,
     DatePipe,
     ClearableInputComponent,
     MultiSelectFilterComponent,

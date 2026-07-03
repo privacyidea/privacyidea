@@ -77,278 +77,282 @@
       [pageSize]="authenticationLogService.pageSize()"
       showFirstLastButtons />
   </div>
-  <table
-    [dataSource]="dataSource()"
-    aria-label="Authentication Log Data Table"
-    class="authentication-log-table"
-    i18n-aria-label
-    mat-table>
-    @for (column of visibleColumns(); track column.key) {
-      <ng-container [matColumnDef]="column.key">
-        <th
-          *matHeaderCellDef
-          aria-label="{{ column.label }} Header"
-          mat-header-cell>
-          <div class="flex ali-center">
-            <div class="header-label">
-              {{ column.label }}
-              @if (column.key === "timestamp") {
-                <span
-                  class="header-hint"
-                  i18n>(local time)</span>
-              }
-            </div>
-            @if (column.filterable || column.sortable) {
-              <div class="margin-left-16 flex ali-center">
-                @if (column.filterable) {
-                  @if (column.key === "event_type") {
-                    <app-multi-select-filter
-                      [label]="column.label"
-                      [options]="eventTypeOptions()"
-                      [selected]="selectedFilterValues('event_type')"
-                      (selectionChange)="setFilterValues('event_type', $event)" />
-                  } @else if (column.key === "realm") {
-                    <app-multi-select-filter
-                      [label]="column.label"
-                      [options]="realmService.realmOptions()"
-                      [selected]="selectedFilterValues('realm')"
-                      (selectionChange)="setFilterValues('realm', $event)" />
-                  } @else if (column.key === "client_label") {
-                    <app-multi-select-filter
-                      [label]="column.label"
-                      [options]="clientLabelOptions"
-                      [valueSuffix]="'*'"
-                      [allowCustom]="true"
-                      [selected]="selectedFilterValues('client_label')"
-                      (selectionChange)="setFilterValues('client_label', $event)"
-                      (addCustom)="onAddCustomFilter('client_label')" />
-                  } @else if (column.key === "source_ip" && showSourceIpMenu()) {
-                    <app-multi-select-filter
-                      [label]="column.label"
-                      [options]="sourceIpOptions()"
-                      [allowCustom]="true"
-                      [selected]="selectedFilterValues('source_ip')"
-                      (selectionChange)="setFilterValues('source_ip', $event)"
-                      (addCustom)="onAddCustomFilter('source_ip')" />
-                  } @else if (column.key === "timestamp") {
-                    <button
-                      [matMenuTriggerFor]="timePresetMenu"
-                      class="filter-button"
-                      matTooltip="Filter by Time Period"
-                      i18n-matTooltip
-                      mat-icon-button>
-                      <mat-icon class="keyword-button-icon margin-left-0">filter_list</mat-icon>
-                    </button>
-                    <mat-menu
-                      #timePresetMenu="matMenu"
-                      class="time-preset-menu">
-                      <button
-                        (click)="clearTimeFilter()"
-                        mat-menu-item>
-                        <mat-icon>filter_alt_off</mat-icon>
-                        <span i18n>Clear Filter</span>
-                      </button>
-                      <mat-divider />
-                      @for (preset of timePresets; track preset.key) {
-                        <button
-                          (click)="selectTimePreset(preset.key)"
-                          [class.selected-preset]="selectedPreset() === preset.key"
-                          mat-menu-item>
-                          <span>{{ preset.label }}</span>
-                        </button>
-                      }
-                      <mat-divider />
-                      <div class="time-filter-custom-range">
-                        <span
-                          class="custom-range-label"
-                          i18n>Custom Range</span>
-                        <mat-form-field subscriptSizing="dynamic">
-                          <mat-label i18n>From</mat-label>
-                          <input
-                            (click)="$event.stopPropagation()"
-                            (mousedown)="$event.stopPropagation()"
-                            (keydown.arrowdown)="$event.stopPropagation()"
-                            (keydown.arrowup)="$event.stopPropagation()"
-                            (change)="onFromChange($event)"
-                            [value]="fromInputValue()"
-                            matInput
-                            type="datetime-local" />
-                        </mat-form-field>
-                        <mat-form-field subscriptSizing="dynamic">
-                          <mat-label i18n>To</mat-label>
-                          <input
-                            (click)="$event.stopPropagation()"
-                            (mousedown)="$event.stopPropagation()"
-                            (keydown.arrowdown)="$event.stopPropagation()"
-                            (keydown.arrowup)="$event.stopPropagation()"
-                            (change)="onToChange($event)"
-                            [value]="toInputValue()"
-                            matInput
-                            type="datetime-local" />
-                        </mat-form-field>
-                      </div>
-                    </mat-menu>
-                  } @else {
-                    <button
-                      (click)="onKeywordClick(column.key)"
-                      class="filter-button"
-                      mat-icon-button>
-                      <mat-icon class="keyword-button-icon margin-left-0">
-                        {{ getFilterIconName(column.key) }}
-                      </mat-icon>
-                    </button>
-                  }
-                }
-                @if (column.sortable) {
-                  <button
-                    (click)="onSortClick(column.key)"
-                    class="sort-button"
-                    i18n-matTooltip
-                    mat-icon-button
-                    matTooltip="Sort by {{ column.label }}"
-                    type="button">
-                    <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
-                  </button>
+  <div
+    appScrollEdges
+    class="table-scroll-region">
+    <table
+      [dataSource]="dataSource()"
+      aria-label="Authentication Log Data Table"
+      class="authentication-log-table"
+      i18n-aria-label
+      mat-table>
+      @for (column of visibleColumns(); track column.key) {
+        <ng-container [matColumnDef]="column.key">
+          <th
+            *matHeaderCellDef
+            aria-label="{{ column.label }} Header"
+            mat-header-cell>
+            <div class="flex ali-center">
+              <div class="header-label">
+                {{ column.label }}
+                @if (column.key === "timestamp") {
+                  <span
+                    class="header-hint"
+                    i18n>(local time)</span>
                 }
               </div>
-            }
-          </div>
-        </th>
-        <td
-          *matCellDef="let element"
-          aria-label="{{ column.label }} Cell"
-          mat-cell>
-          <div [class.cell-scroll]="scrollableColumnKeys.includes(column.key)">
-            @switch (column.key) {
-              @case ("timestamp") {
-                <span>{{ element.timestamp | date: "yyyy-MM-dd HH:mm:ss" }}</span>
+              @if (column.filterable || column.sortable) {
+                <div class="margin-left-16 flex ali-center">
+                  @if (column.filterable) {
+                    @if (column.key === "event_type") {
+                      <app-multi-select-filter
+                        [label]="column.label"
+                        [options]="eventTypeOptions()"
+                        [selected]="selectedFilterValues('event_type')"
+                        (selectionChange)="setFilterValues('event_type', $event)" />
+                    } @else if (column.key === "realm") {
+                      <app-multi-select-filter
+                        [label]="column.label"
+                        [options]="realmService.realmOptions()"
+                        [selected]="selectedFilterValues('realm')"
+                        (selectionChange)="setFilterValues('realm', $event)" />
+                    } @else if (column.key === "client_label") {
+                      <app-multi-select-filter
+                        [label]="column.label"
+                        [options]="clientLabelOptions"
+                        [valueSuffix]="'*'"
+                        [allowCustom]="true"
+                        [selected]="selectedFilterValues('client_label')"
+                        (selectionChange)="setFilterValues('client_label', $event)"
+                        (addCustom)="onAddCustomFilter('client_label')" />
+                    } @else if (column.key === "source_ip" && showSourceIpMenu()) {
+                      <app-multi-select-filter
+                        [label]="column.label"
+                        [options]="sourceIpOptions()"
+                        [allowCustom]="true"
+                        [selected]="selectedFilterValues('source_ip')"
+                        (selectionChange)="setFilterValues('source_ip', $event)"
+                        (addCustom)="onAddCustomFilter('source_ip')" />
+                    } @else if (column.key === "timestamp") {
+                      <button
+                        [matMenuTriggerFor]="timePresetMenu"
+                        class="filter-button"
+                        matTooltip="Filter by Time Period"
+                        i18n-matTooltip
+                        mat-icon-button>
+                        <mat-icon class="keyword-button-icon margin-left-0">filter_list</mat-icon>
+                      </button>
+                      <mat-menu
+                        #timePresetMenu="matMenu"
+                        class="time-preset-menu">
+                        <button
+                          (click)="clearTimeFilter()"
+                          mat-menu-item>
+                          <mat-icon>filter_alt_off</mat-icon>
+                          <span i18n>Clear Filter</span>
+                        </button>
+                        <mat-divider />
+                        @for (preset of timePresets; track preset.key) {
+                          <button
+                            (click)="selectTimePreset(preset.key)"
+                            [class.selected-preset]="selectedPreset() === preset.key"
+                            mat-menu-item>
+                            <span>{{ preset.label }}</span>
+                          </button>
+                        }
+                        <mat-divider />
+                        <div class="time-filter-custom-range">
+                          <span
+                            class="custom-range-label"
+                            i18n>Custom Range</span>
+                          <mat-form-field subscriptSizing="dynamic">
+                            <mat-label i18n>From</mat-label>
+                            <input
+                              (click)="$event.stopPropagation()"
+                              (mousedown)="$event.stopPropagation()"
+                              (keydown.arrowdown)="$event.stopPropagation()"
+                              (keydown.arrowup)="$event.stopPropagation()"
+                              (change)="onFromChange($event)"
+                              [value]="fromInputValue()"
+                              matInput
+                              type="datetime-local" />
+                          </mat-form-field>
+                          <mat-form-field subscriptSizing="dynamic">
+                            <mat-label i18n>To</mat-label>
+                            <input
+                              (click)="$event.stopPropagation()"
+                              (mousedown)="$event.stopPropagation()"
+                              (keydown.arrowdown)="$event.stopPropagation()"
+                              (keydown.arrowup)="$event.stopPropagation()"
+                              (change)="onToChange($event)"
+                              [value]="toInputValue()"
+                              matInput
+                              type="datetime-local" />
+                          </mat-form-field>
+                        </div>
+                      </mat-menu>
+                    } @else {
+                      <button
+                        (click)="onKeywordClick(column.key)"
+                        class="filter-button"
+                        mat-icon-button>
+                        <mat-icon class="keyword-button-icon margin-left-0">
+                          {{ getFilterIconName(column.key) }}
+                        </mat-icon>
+                      </button>
+                    }
+                  }
+                  @if (column.sortable) {
+                    <button
+                      (click)="onSortClick(column.key)"
+                      class="sort-button"
+                      i18n-matTooltip
+                      mat-icon-button
+                      matTooltip="Sort by {{ column.label }}"
+                      type="button">
+                      <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
+                    </button>
+                  }
+                </div>
               }
-              @case ("event_type") {
-                <span [ngClass]="getEventTypeClass(element[column.key])">
-                  {{ element[column.key] }}
-                </span>
-              }
-              @case ("serial") {
-                @for (serial of splitSerials(element.serial); track serial) {
-                  <app-copyable [copyText]="serial">
-                    <a
-                      (click)="contentService.tokenSelected(serial)"
-                      aria-label="{{ column.label }} Link"
-                      routerLink="/token">
-                      {{ serial }}
-                    </a>
-                    <app-filter-value-button
-                      class="margin-left-8"
-                      [label]="filterTooltip('serial')"
-                      [value]="serial"
-                      (filterValue)="addFilterValue('serial', '*' + $event + '*')" />
-                  </app-copyable>
+            </div>
+          </th>
+          <td
+            *matCellDef="let element"
+            aria-label="{{ column.label }} Cell"
+            mat-cell>
+            <div [class.cell-scroll]="scrollableColumnKeys.includes(column.key)">
+              @switch (column.key) {
+                @case ("timestamp") {
+                  <span>{{ element.timestamp | date: "yyyy-MM-dd HH:mm:ss" }}</span>
                 }
-              }
-              @case ("username") {
-                @if (element.username) {
-                  <app-copyable [copyText]="element.username">
-                    <a
-                      (click)="contentService.userSelected(element.username, element.realm)"
-                      (keydown.enter)="contentService.userSelected(element.username, element.realm)"
-                      (keydown.space)="
-                        $event.preventDefault(); contentService.userSelected(element.username, element.realm)
-                      "
-                      aria-label="{{ column.label }} Link"
-                      role="button"
-                      tabindex="0">
-                      {{ element.username }}
-                    </a>
-                    <app-filter-value-button
-                      class="margin-left-8"
-                      [label]="filterTooltip('username')"
-                      [value]="element.username"
-                      (filterValue)="addFilterValue('username', $event)" />
-                  </app-copyable>
-                  @let roleBadge = userRoleBadge(element.user_role);
-                  @if (roleBadge) {
-                    <span
-                      class="role-badge {{ roleBadge.class }}"
-                      [matTooltip]="roleBadge.tooltip">
-                      {{ roleBadge.label }}
-                    </span>
+                @case ("event_type") {
+                  <span [ngClass]="getEventTypeClass(element[column.key])">
+                    {{ element[column.key] }}
+                  </span>
+                }
+                @case ("serial") {
+                  @for (serial of splitSerials(element.serial); track serial) {
+                    <app-copyable [copyText]="serial">
+                      <a
+                        (click)="contentService.tokenSelected(serial)"
+                        aria-label="{{ column.label }} Link"
+                        routerLink="/token">
+                        {{ serial }}
+                      </a>
+                      <app-filter-value-button
+                        class="margin-left-8"
+                        [label]="filterTooltip('serial')"
+                        [value]="serial"
+                        (filterValue)="addFilterValue('serial', '*' + $event + '*')" />
+                    </app-copyable>
+                  }
+                }
+                @case ("username") {
+                  @if (element.username) {
+                    <app-copyable [copyText]="element.username">
+                      <a
+                        (click)="contentService.userSelected(element.username, element.realm)"
+                        (keydown.enter)="contentService.userSelected(element.username, element.realm)"
+                        (keydown.space)="
+                          $event.preventDefault(); contentService.userSelected(element.username, element.realm)
+                        "
+                        aria-label="{{ column.label }} Link"
+                        role="button"
+                        tabindex="0">
+                        {{ element.username }}
+                      </a>
+                      <app-filter-value-button
+                        class="margin-left-8"
+                        [label]="filterTooltip('username')"
+                        [value]="element.username"
+                        (filterValue)="addFilterValue('username', $event)" />
+                    </app-copyable>
+                    @let roleBadge = userRoleBadge(element.user_role);
+                    @if (roleBadge) {
+                      <span
+                        class="role-badge {{ roleBadge.class }}"
+                        [matTooltip]="roleBadge.tooltip">
+                        {{ roleBadge.label }}
+                      </span>
+                    }
+                  }
+                }
+                @case ("realm") {
+                  @if (element.realm) {
+                    <app-copyable [copyText]="element.realm">
+                      <a
+                        aria-label="{{ column.label }} Link"
+                        routerLink="/users/realms">
+                        {{ element.realm }}
+                      </a>
+                    </app-copyable>
+                  }
+                }
+                @case ("resolver") {
+                  @if (element.resolver) {
+                    <app-copyable [copyText]="element.resolver">
+                      <a
+                        [routerLink]="['/users/resolvers/details', element.resolver]"
+                        aria-label="{{ column.label }} Link">
+                        {{ element.resolver }}
+                      </a>
+                      <app-filter-value-button
+                        class="margin-left-8"
+                        [label]="filterTooltip('resolver')"
+                        [value]="element.resolver"
+                        (filterValue)="addFilterValue('resolver', $event)" />
+                    </app-copyable>
+                  }
+                }
+                @case ("other_info") {
+                  @let info = formatInfo(element.other_info);
+                  @if (info) {
+                    <app-copyable [copyText]="info">
+                      <span>{{ info }}</span>
+                    </app-copyable>
+                  }
+                }
+                @default {
+                  @if (element[column.key]) {
+                    <app-copyable [copyText]="element[column.key]">
+                      <span>{{ element[column.key] }}</span>
+                      @if (showInlineCellFilter(column.key)) {
+                        <app-filter-value-button
+                          class="margin-left-8"
+                          [label]="filterTooltip(column.key)"
+                          [value]="element[column.key]"
+                          (filterValue)="addFilterValue(column.key, $event)" />
+                      }
+                    </app-copyable>
                   }
                 }
               }
-              @case ("realm") {
-                @if (element.realm) {
-                  <app-copyable [copyText]="element.realm">
-                    <a
-                      aria-label="{{ column.label }} Link"
-                      routerLink="/users/realms">
-                      {{ element.realm }}
-                    </a>
-                  </app-copyable>
-                }
-              }
-              @case ("resolver") {
-                @if (element.resolver) {
-                  <app-copyable [copyText]="element.resolver">
-                    <a
-                      [routerLink]="['/users/resolvers/details', element.resolver]"
-                      aria-label="{{ column.label }} Link">
-                      {{ element.resolver }}
-                    </a>
-                    <app-filter-value-button
-                      class="margin-left-8"
-                      [label]="filterTooltip('resolver')"
-                      [value]="element.resolver"
-                      (filterValue)="addFilterValue('resolver', $event)" />
-                  </app-copyable>
-                }
-              }
-              @case ("other_info") {
-                @let info = formatInfo(element.other_info);
-                @if (info) {
-                  <app-copyable [copyText]="info">
-                    <span>{{ info }}</span>
-                  </app-copyable>
-                }
-              }
-              @default {
-                @if (element[column.key]) {
-                  <app-copyable [copyText]="element[column.key]">
-                    <span>{{ element[column.key] }}</span>
-                    @if (showInlineCellFilter(column.key)) {
-                      <app-filter-value-button
-                        class="margin-left-8"
-                        [label]="filterTooltip(column.key)"
-                        [value]="element[column.key]"
-                        (filterValue)="addFilterValue(column.key, $event)" />
-                    }
-                  </app-copyable>
-                }
-              }
-            }
-          </div>
-        </td>
-      </ng-container>
-    }
-    <tr
-      *matHeaderRowDef="visibleColumnKeys()"
-      aria-label="Header Row"
-      i18n-aria-label
-      mat-header-row></tr>
-    <tr
-      *matRowDef="let row; columns: visibleColumnKeys()"
-      aria-label="Data Row"
-      i18n-aria-label
-      mat-row></tr>
-    <tr
-      *matNoDataRow
-      aria-label="No Data Row"
-      i18n-aria-label>
-      <td
-        [attr.colspan]="visibleColumnKeys().length"
-        aria-label="No Data Cell"
+            </div>
+          </td>
+        </ng-container>
+      }
+      <tr
+        *matHeaderRowDef="visibleColumnKeys(); sticky: true"
+        aria-label="Header Row"
+        i18n-aria-label
+        mat-header-row></tr>
+      <tr
+        *matRowDef="let row; columns: visibleColumnKeys()"
+        aria-label="Data Row"
+        i18n-aria-label
+        mat-row></tr>
+      <tr
+        *matNoDataRow
+        aria-label="No Data Row"
         i18n-aria-label>
-        {{ noDataText() }}
-      </td>
-    </tr>
-  </table>
+        <td
+          [attr.colspan]="visibleColumnKeys().length"
+          aria-label="No Data Cell"
+          i18n-aria-label>
+          {{ noDataText() }}
+        </td>
+      </tr>
+    </table>
+  </div>
 </div>

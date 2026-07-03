@@ -3,19 +3,39 @@
 
 .authentication-log-table-container {
   @include styles.main-component-style;
+  max-height: var(--table-max-height);
   @include table.base-table-structure(
     ".authentication-log-table",
     ".authentication-log-table-filter",
     ".table-scroll-container"
   );
+  // Flex column so the filter row + paginator stay pinned and only the
+  // .table-scroll-region (flex: 1 1 auto, overflow: auto) scrolls — both
+  // vertically (with a sticky header row) and horizontally, as one unit.
+  // overflow: hidden hands scrolling to that inner region.
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  // Keep columns on a single line so the table grows past the region width
+  // (rather than wrapping to fit) and the region scrolls horizontally.
+  .authentication-log-table {
+    th,
+    td {
+      white-space: nowrap;
+    }
+  }
 }
 
 .cell-scroll {
   max-height: 120px;
   overflow-y: auto;
+  white-space: normal;
 }
 
 .header-label {
+  display: flex;
+  flex-direction: column;
   line-height: 1.2;
 }
 
