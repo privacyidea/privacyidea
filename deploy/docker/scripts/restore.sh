@@ -181,6 +181,14 @@ docker compose -f "${COMPOSE_FILE}" exec -T db \
     sh -c 'mariadb -uroot -p"$(cat /run/secrets/mariadb_root_password)"' \
     < "${TEMP_DIR}/database.sql"
 
+# Bring the restored schema up to the running image's version. Migrations live
+# only in the pi-init role, which a plain `restart` never re-runs — so apply them
+# here in an ephemeral container. It is a no-op when the backup and image are the
+# same version, and migrates the data up when restoring an older backup onto a
+# newer image. (Restore only onto the same or a newer privacyIDEA version.)
+echo "[restore] Applying database migrations..."
+docker compose -f "${COMPOSE_FILE}" run --rm --no-deps pi pi-manage db upgrade
+
 echo "[restore] Done."
 echo ""
 echo "Restart the privacyIDEA services to pick up the restored data:"

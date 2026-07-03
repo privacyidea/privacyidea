@@ -196,11 +196,14 @@ they are bundled together.
 ./deploy/docker/scripts/backup.sh --encrypt-key AGE-PUB   # non-interactive (cron)
 ```
 
-Restore drops and recreates the database. It reconciles each key in the backup
-with `secrets/`: a **missing** key is installed from the archive, a **matching**
-key is left as-is, and a key that is **present but different** is never
-overwritten — it warns and asks for confirmation (replacing a good `enckey` with
-a different one permanently loses the data it protects).
+Restore drops and recreates the database, then runs `pi-manage db upgrade` so the
+restored schema is migrated up to the running image (a no-op for a same-version
+restore; restore only onto the same or a newer privacyIDEA version). It also
+reconciles each key in the backup with `secrets/`: a **missing** key is installed
+from the archive, a **matching** key is left as-is, and a key that is **present
+but different** is never overwritten — it warns and asks for confirmation
+(replacing a good `enckey` with a different one permanently loses the data it
+protects).
 
 Same-host restore (keys already in place):
 ```
@@ -224,7 +227,7 @@ keys from the backup must be in place, **not** freshly generated. Order matters:
    data, so fresh ones are fine). Then review `.env`.
 4. `make up` — the stack starts with the restored keys.
 5. `./scripts/restore.sh privacyidea_<ts>.tar.gz` — imports the data (the keys
-   now match, so it just restores the database).
+   now match) and runs `db upgrade` to migrate the schema to this image's version.
 6. `docker compose -f compose.yaml restart pi pi-cron`.
 
 (If you skip step 2, `restore.sh` will offer to install the missing keys from the
