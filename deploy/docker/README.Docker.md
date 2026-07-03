@@ -65,6 +65,70 @@ Configuration comes from three places:
   notification links are blank). See
   https://privacyidea.readthedocs.io/en/latest/installation/system/inifile.html
 
+Environment variable reference
+------------------------------
+
+The bundled `compose.yaml` pre-wires most of these; day to day you mainly edit
+`.env` and `example.env`. Full list of what the deployment honors:
+
+**`.env` — compose interpolation** (copy from `.env.template`):
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `BOOTSTRAP_ADMIN` | `admin` | initial admin username created by `pi-init` |
+| `PI_WORKERS` | `4` | gunicorn workers in `pi` |
+| `SQLALCHEMY_POOL_RECYCLE` | `250` | DB connection recycle (seconds) |
+| `PI_SITE_ADDRESS` | `localhost` | public hostname for the `tls` (Caddy) profile |
+
+**Container role & startup** (`entrypoint.sh` — set per service in compose):
+
+| Variable | Default | Effect |
+|----------|---------|--------|
+| `PI_INIT_ONLY` | `false` | do init work, then exit (the `pi-init` role) |
+| `PI_CREATE_TABLES` | `false` | create schema on an empty DB |
+| `PI_RUN_MIGRATIONS` | `false` | run `pi-manage db upgrade` on an existing DB |
+| `PI_CRON_MODE` | `false` | run the maintenance scheduler (the `pi-cron` role) |
+| `PI_BOOTSTRAP_ADMIN` / `PI_BOOTSTRAP_ADMIN_PASSWORD` | *(unset)* | create this admin |
+| `PI_WORKERS` | auto (`2*nproc+1`, cap 4) | gunicorn workers |
+| `PI_PORT` | `8080` | gunicorn bind port |
+| `PI_STARTUP_DELAY` | `0` | seconds to sleep before startup (rarely needed) |
+
+**Database & secrets** (read by `DockerConfig`, since `PI_CONFIG_NAME=docker`).
+Every value below also accepts a `<NAME>_FILE` variant that reads the value from
+a file (that's how the Docker secrets are wired):
+
+| Variable | Purpose |
+|----------|---------|
+| `PI_DB_USER`, `PI_DB_HOST`, `PI_DB_NAME`, `PI_DB_PORT` | build the DB URI |
+| `PI_DB_PASSWORD` (`_FILE`) | DB password (compose uses `PI_DB_PASSWORD_FILE`) |
+| `PI_DB_DRIVER`, `PI_DB_EXTRA_PARAMS` | SQLAlchemy driver / extra URI params |
+| `SQLALCHEMY_DATABASE_URI` (`_FILE`) | full DB URI (overrides the `PI_DB_*` parts) |
+| `PI_ENCFILE` | path to the encryption key (auto-detects `/run/secrets/enckey`) |
+| `PI_PEPPER` (`_FILE`) | password pepper |
+| `PI_SECRET_KEY` (`_FILE`) | Flask secret key — alias of `SECRET_KEY` (`_FILE`), which also still works |
+| `PI_REDIS_URL` (`_FILE`) | optional Redis cache URL |
+| `PI_AUDIT_KEY_PUBLIC`, `PI_AUDIT_KEY_PRIVATE` | signed-audit key paths (auto-detect `/run/secrets/audit_key_*`) |
+
+**Maintenance** (`cron-runner.py`, on the `pi-cron` service). All default enabled;
+set to `false`/`0`/`no` to disable:
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `PI_CRON_PERIODIC_TASKS` | `true` | every-minute `run_scheduled` (the UI periodic-task lane) |
+| `PI_CRON_CHALLENGE_CLEANUP` | `true` | hourly challenge cleanup |
+| `PI_CRON_AUDIT_ROTATE` | `true` | audit-log rotation |
+| `PI_CRON_AUDIT_HOUR` | `2` | daily hour (UTC) for audit rotation |
+| `PI_CRON_AUDIT_INTERVAL` | *(unset)* | run audit every interval (`6h`,`90m`,`2d`) — overrides `_HOUR` |
+| `PI_CRON_AUDIT_HIGHWATERMARK` / `_LOWWATERMARK` | `50000` / `25000` | trim to low when count exceeds high |
+| `PI_CRON_AUDIT_AGE` | *(unset)* | delete entries older than N days instead of watermarks |
+| `PI_CRON_AUDIT_CHUNKSIZE` | *(unset)* | delete in chunks to avoid long locks |
+| `PI_CRON_USERCACHE_CLEANUP` | `true` | usercache cleanup (no-op unless the cache is on) |
+| `PI_CRON_USERCACHE_HOUR` / `_INTERVAL` | `4` | daily hour (UTC) or interval, like audit |
+
+**Arbitrary app config**: any privacyIDEA config key can be set as
+`PRIVACYIDEA_<KEY>` (put these in `example.env`). See the upstream config
+reference linked above.
+
 TLS
 ---
 
@@ -92,17 +156,9 @@ Build:
 docker build . -f deploy/docker/Dockerfile -t privacyidea:latest
 ```
 
-The entrypoint honors these environment variables (all optional):
-
-| Variable                 | Default | Effect                                             |
-|--------------------------|---------|----------------------------------------------------|
-| `PI_CREATE_TABLES`       | `false` | Create the schema on start.                        |
-| `PI_RUN_MIGRATIONS`      | `false` | Run `pi-manage db upgrade` on start.               |
-| `PI_INIT_ONLY`           | `false` | Do init work, then exit (init-container pattern).  |
-| `PI_CRON_MODE`           | `false` | Run the maintenance scheduler instead of gunicorn. |
-| `PI_BOOTSTRAP_ADMIN`     | *(unset)* | Create this admin (with `PI_BOOTSTRAP_ADMIN_PASSWORD`). |
-| `PI_WORKERS`             | auto    | Gunicorn worker count (auto = `2*nproc+1`, capped at 4). |
-| `PI_PORT`                | `8080`  | Gunicorn bind port.                                |
+The entrypoint's role is selected by environment variables — see the
+*Environment variable reference* above for the full list (`PI_INIT_ONLY`,
+`PI_CREATE_TABLES`, `PI_RUN_MIGRATIONS`, `PI_CRON_MODE`, `PI_PORT`, …).
 
 **Do not enable `PI_RUN_MIGRATIONS` on more than one concurrently starting
 container.** Run migrations from a single init container (as `pi-init` does).
