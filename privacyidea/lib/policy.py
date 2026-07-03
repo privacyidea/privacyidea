@@ -195,7 +195,8 @@ from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import (check_time_in_range, check_pin_contents,
                                    fetch_one_resource, is_true, check_ip_in_policy,
-                                   determine_logged_in_userparams, parse_string_to_dict)
+                                   determine_logged_in_userparams, parse_string_to_dict,
+                                   SQL_LIKE_ESCAPE, convert_wildcard_to_sql_like)
 from privacyidea.lib.utils.compare import COMPARATOR_DESCRIPTIONS
 from privacyidea.lib.utils.export import (register_import, register_export)
 from .log import log_with
@@ -1284,8 +1285,8 @@ def get_policies(active: bool | None = None, name: str | None = None, scope: str
     for attribute, value in filter_options.items():
         if value is not None:
             if "*" in value:
-                value = value.replace("*", "%")
-                stmt = stmt.filter(getattr(Policy, attribute).ilike(value))
+                stmt = stmt.filter(getattr(Policy, attribute).ilike(
+                    convert_wildcard_to_sql_like(value), escape=SQL_LIKE_ESCAPE))
             else:
                 stmt = stmt.filter(getattr(Policy, attribute) == value)
 

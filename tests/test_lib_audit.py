@@ -213,10 +213,20 @@ class AuditTestCase(MyTestCase):
                                      success=False)
             self.assertEqual(2, r)
 
-            # get failed authentication
-            r = self.Audit.get_count({"action": "/validate/check", "authentication": "!CHAL%"},
+            # get failed authentication: '*' is the wildcard, so "!CHAL*" excludes CHALLENGE
+            r = self.Audit.get_count({"action": "/validate/check", "authentication": "!CHAL*"},
                                      success=False)
             self.assertEqual(2, r)
+
+            # '*' expands: "CHAL*" matches CHALLENGE
+            r = self.Audit.get_count({"action": "/validate/check", "authentication": "CHAL*"},
+                                     success=False)
+            self.assertEqual(1, r)
+
+            # '%' is literal, not a wildcard: "CHAL%" matches nothing (no such literal value)
+            r = self.Audit.get_count({"action": "/validate/check", "authentication": "CHAL%"},
+                                     success=False)
+            self.assertEqual(0, r)
 
             # get one authentication during the last second
             r = self.Audit.get_count({"action": "/validate/check"}, success=True,

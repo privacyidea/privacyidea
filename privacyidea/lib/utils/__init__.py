@@ -961,6 +961,45 @@ def convert_column_to_unicode(value):
         return str(value)
 
 
+#: Escape character used for SQL ``LIKE``/``ILIKE`` patterns built from user input.
+#: Matches the character SQLAlchemy uses for ``autoescape`` and is portable across
+#: SQLite, MySQL, PostgreSQL and Oracle.
+SQL_LIKE_ESCAPE = "/"
+
+
+def escape_sql_like(value: str) -> str:
+    """
+    Escape the SQL ``LIKE``/``ILIKE`` metacharacters ``%`` and ``_`` (and the
+    escape character itself) so that ``value`` matches literally. The result must
+    be used with ``escape=SQL_LIKE_ESCAPE``, e.g. ``column.like(escape_sql_like(v),
+    escape=SQL_LIKE_ESCAPE)``. Use this when the value carries no wildcard at all;
+    use ``convert_wildcard_to_sql_like`` when a ``*`` wildcard should be honored.
+
+    :param value: the value to escape
+    :return: the escaped value
+    """
+    return (value.replace(SQL_LIKE_ESCAPE, SQL_LIKE_ESCAPE * 2)
+            .replace("%", f"{SQL_LIKE_ESCAPE}%")
+            .replace("_", f"{SQL_LIKE_ESCAPE}_"))
+
+
+def convert_wildcard_to_sql_like(value: str, wildcard: str = "*") -> str:
+    """
+    Turn a user supplied search pattern into a SQL ``LIKE`` pattern.
+
+    The user wildcard (``*`` by default) is converted to the SQL wildcard ``%``.
+    Literal ``%`` and ``_`` in the input are escaped so they match literally
+    instead of acting as SQL wildcards. The resulting pattern must be used with
+    ``escape=SQL_LIKE_ESCAPE``, e.g. ``column.like(convert_wildcard_to_sql_like(v),
+    escape=SQL_LIKE_ESCAPE)``.
+
+    :param value: the user supplied search pattern
+    :param wildcard: the character used as a wildcard in the user input
+    :return: an escaped SQL LIKE pattern
+    """
+    return escape_sql_like(value).replace(wildcard, "%")
+
+
 def convert_timestamp_to_utc(timestamp):
     """
     Convert a timezone-aware datetime object to a naive UTC datetime.
