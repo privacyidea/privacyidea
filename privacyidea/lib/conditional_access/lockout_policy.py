@@ -147,8 +147,7 @@ def _validate_counter_types(counter_types) -> list[str]:
     :class:`AuthEventType` values.
     """
     if not isinstance(counter_types, list) or not counter_types:
-        raise ParameterError("'counter_types_to_track' must be a non-empty list of "
-                             "authentication event types.")
+        raise ParameterError("'counter_types_to_track' must be a non-empty list of authentication event types.")
     valid_types = {event_type.value for event_type in AuthEventType}
     seen = []
     for counter_type in counter_types:
@@ -187,8 +186,7 @@ def _validate_stages(stages) -> list[dict]:
             raise ParameterError(f"Unknown stage key(s): {', '.join(sorted(unknown))}.")
         threshold = _validate_positive_int(stage.get("failure_threshold"), "failure_threshold")
         if threshold in thresholds:
-            raise ParameterError(f"Duplicate failure_threshold {threshold}: thresholds must be "
-                                 "unique within a policy.")
+            raise ParameterError(f"Duplicate failure_threshold {threshold}: thresholds must be unique within a policy.")
         thresholds.add(threshold)
         priority = _validate_positive_int(stage.get("priority", 1), "priority")
         actions = stage.get("actions", [])
@@ -220,8 +218,7 @@ def _build_stages(stage_dicts: list[dict]) -> list[LockoutPolicyStage]:
         LockoutPolicyStage(
             failure_threshold=stage["failure_threshold"],
             priority=stage["priority"],
-            actions=[LockoutStageAction(action_type=action["action_type"],
-                                        action_value=action["action_value"])
+            actions=[LockoutStageAction(action_type=action["action_type"], action_value=action["action_value"])
                      for action in stage["actions"]],
         ) for stage in stage_dicts
     ]
