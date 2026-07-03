@@ -32,7 +32,7 @@ from privacyidea.lib.user import User
 from privacyidea.lib.utils import to_bytes, to_unicode, AUTH_RESPONSE
 from privacyidea.models import Challenge
 from . import ldap3mock
-from .base import MyApiTestCase
+from .base import MyApiTestCase, force_expire_challenges
 
 PWFILE = "tests/testdata/passwords"
 HOSTSFILE = "tests/testdata/hosts"
@@ -585,7 +585,6 @@ class PushAPITestCase(MyApiTestCase):
         # authentication even if the challenge has meanwhile expired. The user may
         # take longer than the challenge validity to scan the QR and confirm.
         from .test_api_validate import LDAPDirectory
-        from privacyidea.models import Challenge
 
         ldap3mock.setLDAPDirectory(LDAPDirectory)
         params = {'LDAPURI': 'ldap://localhost',
@@ -648,10 +647,9 @@ class PushAPITestCase(MyApiTestCase):
         chal = get_challenges(serial=serial, transaction_id=transaction_id)[0]
         self.assertTrue(chal.get_otp_status()[1])
         # ... but it has meanwhile expired (user took longer than the challenge validity)
-        db_chal = Challenge.query.filter(Challenge.transaction_id == transaction_id).first()
-        db_chal.expiration = datetime.datetime.utcnow() - datetime.timedelta(seconds=10)
-        db_chal.save()
-        self.assertFalse(db_chal.is_valid())
+        force_expire_challenges(transaction_id)
+        expired_chal = get_challenges(serial=serial, transaction_id=transaction_id)[0]
+        self.assertFalse(expired_chal.is_valid())
 
         # The application finalizes via /validate/check with empty pass: must still succeed
         with self.app.test_request_context('/validate/check',
