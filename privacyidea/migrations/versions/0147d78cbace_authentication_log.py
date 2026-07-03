@@ -1,7 +1,7 @@
 """v3.14: Add authentication log table
 
 Revision ID: 0147d78cbace
-Revises: d4f5a6b7c8e9
+Revises: a1b2c3d4e5f6
 Create Date: 2026-06-01 08:37:51.884173
 
 """
