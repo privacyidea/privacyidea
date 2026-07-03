@@ -21,6 +21,9 @@ module needs no change here — just configure it in the UI for node pi-cron.
 
 Configuration via environment variables (all optional):
 
+  PI_CRON_TASK_TIMEOUT        Per-task wall-clock timeout in seconds (default: 3600).
+                              A hung task is killed so it cannot stall the scheduler.
+
   PI_CRON_PERIODIC_TASKS      Enable/disable privacyidea-cron run_scheduled (default: true)
 
   PI_CRON_CHALLENGE_CLEANUP   Enable/disable challenge cleanup (default: true)
@@ -53,7 +56,10 @@ from typing import Callable
 
 
 def _bool(name: str, default: bool) -> bool:
-    return os.environ.get(name, str(default)).lower() in ("1", "true", "yes")
+    val = os.environ.get(name)
+    if val is None or val.strip() == "":
+        return default
+    return val.strip().lower() in ("1", "true", "yes")
 
 
 def _int(name: str, default: int) -> int:
@@ -69,7 +75,8 @@ def _int(name: str, default: int) -> int:
 
 def _duration_minutes(name: str, default_minutes: int) -> int:
     """Parse a duration env var into minutes. Accepts e.g. "90m", "6h", "2d";
-    a bare number is minutes. Falls back to the default on anything unparseable."""
+    a bare number is minutes. Falls back to the default on anything unparsable
+    or non-positive (e.g. "0", which would otherwise fire every minute)."""
     val = os.environ.get(name)
     if not val:
         return default_minutes
@@ -77,7 +84,11 @@ def _duration_minutes(name: str, default_minutes: int) -> int:
     if not match:
         print(f"[pi-cron] WARNING: {name}={val!r} is not a duration, using {default_minutes}m", flush=True)
         return default_minutes
-    return int(match.group(1)) * {"": 1, "m": 1, "h": 60, "d": 1440}[match.group(2)]
+    minutes = int(match.group(1)) * {"": 1, "m": 1, "h": 60, "d": 1440}[match.group(2)]
+    if minutes <= 0:
+        print(f"[pi-cron] WARNING: {name}={val!r} is not a positive duration, using {default_minutes}m", flush=True)
+        return default_minutes
+    return minutes
 
 
 @dataclass
@@ -128,7 +139,11 @@ def scheduled_from_env(interval_var: str, hour_var: str, default_hour: int) -> S
               f"using {interval_var}={interval!r}", flush=True)
     if interval:
         return every(_duration_minutes(interval_var, 1440))   # bad value → daily
-    return daily_at(_int(hour_var, default_hour))
+    hour_val = _int(hour_var, default_hour)
+    if not 0 <= hour_val <= 23:
+        print(f"[pi-cron] WARNING: {hour_var}={hour_val} is out of range 0-23, using {default_hour}", flush=True)
+        hour_val = default_hour
+    return daily_at(hour_val)
 
 
 @dataclass
@@ -183,9 +198,21 @@ TASKS = [
 ]
 
 
+# Per-task wall-clock limit. The scheduler is single-threaded, so without a
+# timeout one hung command (e.g. blocked on a DB lock) would stall every other
+# task indefinitely. Default 1h; raise it if audit rotation over a huge table
+# legitimately needs longer.
+TASK_TIMEOUT = _int("PI_CRON_TASK_TIMEOUT", 3600)
+
+
 def run(cmd: list[str]) -> None:
     print(f"[pi-cron] {' '.join(cmd)}", flush=True)
-    result = subprocess.run(cmd)
+    try:
+        result = subprocess.run(cmd, timeout=TASK_TIMEOUT)
+    except subprocess.TimeoutExpired:
+        print(f"[pi-cron] WARNING: {' '.join(cmd)} timed out after {TASK_TIMEOUT}s; killed",
+              file=sys.stderr, flush=True)
+        return
     if result.returncode != 0:
         print(f"[pi-cron] WARNING: exited with code {result.returncode}", file=sys.stderr, flush=True)
 

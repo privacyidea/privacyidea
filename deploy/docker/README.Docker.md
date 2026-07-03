@@ -91,7 +91,6 @@ The bundled `compose.yaml` pre-wires most of these; day to day you mainly edit
 | `PI_CRON_MODE` | `false` | run the maintenance scheduler (the `pi-cron` role) |
 | `PI_BOOTSTRAP_ADMIN` / `PI_BOOTSTRAP_ADMIN_PASSWORD` | *(unset)* | create this admin |
 | `PI_WORKERS` | auto (`2*nproc+1`, cap 4) | gunicorn workers |
-| `PI_PORT` | `8080` | gunicorn bind port |
 | `PI_STARTUP_DELAY` | `0` | seconds to sleep before startup (rarely needed) |
 
 **Database & secrets** (read by `DockerConfig`, since `PI_CONFIG_NAME=docker`).
@@ -115,6 +114,7 @@ set to `false`/`0`/`no` to disable:
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
+| `PI_CRON_TASK_TIMEOUT` | `3600` | per-task timeout (seconds); a hung task is killed |
 | `PI_CRON_PERIODIC_TASKS` | `true` | every-minute `run_scheduled` (the UI periodic-task lane) |
 | `PI_CRON_CHALLENGE_CLEANUP` | `true` | hourly challenge cleanup |
 | `PI_CRON_AUDIT_ROTATE` | `true` | audit-log rotation |
@@ -133,21 +133,23 @@ reference linked above.
 TLS
 ---
 
-The `pi` service speaks plain HTTP on port 8080 — never expose that directly to
-users. Terminate TLS in front of it. An optional Caddy reverse proxy is included
-as the `tls` compose profile:
+The `pi` service speaks plain HTTP on port 8080. By default it is published only
+on `127.0.0.1` (host-local), so it is never exposed on the network in cleartext —
+terminate TLS in front of it for remote access. An optional Caddy reverse proxy
+is included as the `tls` compose profile:
 
 ```
 # set PI_SITE_ADDRESS=your.hostname in .env, then:
 docker compose -f compose.yaml --profile tls up -d
 ```
 
-With a public hostname and reachable ports 80/443, Caddy obtains and renews a
-Let's Encrypt certificate automatically. For an internal host, add `tls internal`
-to the [`Caddyfile`](./Caddyfile). When fronting with Caddy, you can remove the
-`pi` `ports:` mapping in `compose.yaml` so the app is reachable only over TLS.
-If you already run your own proxy (nginx, Traefik, a load balancer), point it at
-the `pi` container's port 8080 instead and skip the profile.
+Caddy reaches `pi` over the internal Docker network (not the localhost binding),
+publishes 80/443, and with a public hostname obtains and renews a Let's Encrypt
+certificate automatically. For an internal host, add `tls internal` to the
+[`Caddyfile`](./Caddyfile). If you run your own proxy (nginx, Traefik, a load
+balancer), point it at the `pi` container's port 8080 and skip the profile. Only
+change the `pi` `ports:` entry to `8080:8080` if you deliberately accept
+unencrypted access on the network.
 
 Running a single container by hand
 ----------------------------------
@@ -159,7 +161,8 @@ docker build . -f deploy/docker/Dockerfile -t privacyidea:latest
 
 The entrypoint's role is selected by environment variables — see the
 *Environment variable reference* above for the full list (`PI_INIT_ONLY`,
-`PI_CREATE_TABLES`, `PI_RUN_MIGRATIONS`, `PI_CRON_MODE`, `PI_PORT`, …).
+`PI_CREATE_TABLES`, `PI_RUN_MIGRATIONS`, `PI_CRON_MODE`, …). The container always
+serves on port 8080 internally; map host ports via the compose `ports:` entry.
 
 **Do not enable `PI_RUN_MIGRATIONS` on more than one concurrently starting
 container.** Run migrations from a single init container (as `pi-init` does).

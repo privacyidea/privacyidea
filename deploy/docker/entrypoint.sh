@@ -14,7 +14,7 @@ fi
 
 # The application config (DockerConfig, selected by PI_CONFIG_NAME=docker) reads
 # the database URI, enckey, pepper and secret_key directly from the PI_DB_*,
-# PI_ENCFILE, PI_PEPPER_FILE and SECRET_KEY_FILE variables set in the compose
+# PI_ENCFILE, PI_PEPPER_FILE and PI_SECRET_KEY_FILE variables set in the compose
 # file. The same config is loaded by pi-manage, so migrations and admin creation
 # below see the same credentials — nothing to construct here.
 #
@@ -26,6 +26,14 @@ if [ -z "${PI_BOOTSTRAP_ADMIN_PASSWORD:-}" ] && [ -f /run/secrets/bootstrap_admi
 fi
 
 DELAY="${PI_STARTUP_DELAY:-0}"
+# Guard against a non-integer value (e.g. "5s") — the arithmetic test would
+# otherwise print a shell error. Fall back to no delay.
+case "$DELAY" in
+    ''|*[!0-9]*)
+        echo "WARNING: PI_STARTUP_DELAY=${DELAY} is not an integer; ignoring." >&2
+        DELAY=0
+        ;;
+esac
 if [ "$DELAY" -gt 0 ]; then
     echo "Waiting for ${DELAY} seconds before startup..."
     sleep "$DELAY"
@@ -41,9 +49,6 @@ else
     DEFAULT_WORKERS="$CALCULATED"
 fi
 WORKERS="${PI_WORKERS:-$DEFAULT_WORKERS}"
-
-# Port to bind gunicorn to (default: 8080)
-PORT="${PI_PORT:-8080}"
 
 # Set FLASK_APP so the flask CLI can find the app for running migrations
 export FLASK_APP="privacyidea.app:create_docker_app()"
@@ -61,17 +66,32 @@ export FLASK_APP="privacyidea.app:create_docker_app()"
 # WARNING: only run this from a single container. Concurrent create_tables/upgrade
 # across replicas can corrupt the schema.
 if [ "${PI_CREATE_TABLES:-false}" = "true" ] || [ "${PI_RUN_MIGRATIONS:-false}" = "true" ]; then
-    if python3 -c "
+    # Probe the schema. Exit 0 = has tables, 1 = empty, 2 = could not determine
+    # (e.g. DB unreachable). A probe error must NOT be treated as "empty" — that
+    # could run create_tables against a populated DB and mis-stamp it — so abort.
+    set +e
+    python3 -c "
 import sys
 from sqlalchemy import inspect
 from privacyidea.app import create_app
 from privacyidea.models import db
-with create_app('docker', silent=True).app_context():
-    sys.exit(0 if inspect(db.engine).get_table_names() else 1)
-"; then
+try:
+    with create_app('docker', silent=True).app_context():
+        has_tables = bool(inspect(db.engine).get_table_names())
+except Exception as exc:
+    sys.stderr.write(f'Database probe failed: {exc}\n')
+    sys.exit(2)
+sys.exit(0 if has_tables else 1)
+"
+    PROBE_RC=$?
+    set -e
+    if [ "$PROBE_RC" -eq 0 ]; then
         DB_EMPTY=false
-    else
+    elif [ "$PROBE_RC" -eq 1 ]; then
         DB_EMPTY=true
+    else
+        echo "ERROR: could not determine database state (probe exit ${PROBE_RC}). Aborting." >&2
+        exit 1
     fi
 
     if [ "${PI_CREATE_TABLES:-false}" = "true" ] && [ "$DB_EMPTY" = "true" ]; then
@@ -120,9 +140,9 @@ if [ "${PI_INIT_ONLY:-false}" = "true" ]; then
     exit 0
 fi
 
-# Verify the enckey canary before starting gunicorn. Exit 2 = decrypt mismatch
-# (hard fail, enckey is wrong). Exit 1 = canary missing (warn and continue, so
-# deployments that predate the canary still start). Exit 0 = OK.
+# Verify the enckey canary before starting gunicorn. Exit 2 = wrong enckey or the
+# check could not complete (hard fail). Exit 1 = canary missing (warn and continue,
+# so deployments that predate the canary still start). Exit 0 = OK.
 echo "Verifying enckey canary..."
 set +e
 python3 /opt/privacyidea/enckey-canary.py verify
@@ -139,12 +159,14 @@ if [ "${PI_CRON_MODE:-false}" = "true" ]; then
     exec python3 /opt/privacyidea/cron-runner.py
 fi
 
-# Default: web server
-echo "Starting gunicorn with ${WORKERS} workers on port ${PORT}..."
+# Default: web server. The port is fixed at 8080 (the image EXPOSE, both
+# healthchecks and the compose port mapping all assume it); remap on the host
+# via the compose "ports:" entry rather than changing it here.
+echo "Starting gunicorn with ${WORKERS} workers on port 8080..."
 exec python3 -m gunicorn \
     --workers "${WORKERS}" \
     --worker-tmp-dir /dev/shm \
-    --bind "0.0.0.0:${PORT}" \
+    --bind "0.0.0.0:8080" \
     --access-logfile - \
     --error-logfile - \
     'privacyidea.app:create_docker_app()'

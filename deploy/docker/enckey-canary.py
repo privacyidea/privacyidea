@@ -18,13 +18,18 @@ Exit codes:
     0   success
     1   canary missing on verify (treated as a soft failure so legacy
         deployments without a canary still start; logs a warning)
-    2   canary present but decrypt mismatch — loud failure, bad enckey
+    2   verification failed — bad enckey, or the check could not complete
+        (e.g. database unreachable). Fail closed: do not start unverified.
+
+Uses create_docker_app() — the same app factory the workers use — so the canary
+verifies exactly the enckey the workers will load (pi.cfg / PRIVACYIDEA_ env
+precedence matches).
 
 Called by entrypoint.sh. Not intended to be used directly.
 """
 import sys
 
-from privacyidea.app import create_app
+from privacyidea.app import create_docker_app
 from privacyidea.lib.crypto import FAILED_TO_DECRYPT_PASSWORD, decryptPassword, encryptPassword
 from privacyidea.lib.error import HSMException
 from privacyidea.models import Config, db
@@ -34,7 +39,7 @@ CANARY_PLAINTEXT = "PRIVACYIDEA_ENCKEY_CANARY_V1"
 
 
 def install() -> int:
-    with create_app("docker", silent=True).app_context():
+    with create_docker_app().app_context():
         existing = Config.query.filter_by(Key=CANARY_KEY).first()
         if existing is not None:
             print(f"[enckey-canary] canary already present at pi_config['{CANARY_KEY}']")
@@ -48,32 +53,40 @@ def install() -> int:
 
 
 def verify() -> int:
-    with create_app("docker", silent=True).app_context():
-        row = Config.query.filter_by(Key=CANARY_KEY).first()
-        if row is None:
-            print(f"[enckey-canary] WARNING: no canary at pi_config['{CANARY_KEY}']. "
-                  "Legacy deployment? Run 'enckey-canary install' via pi-init.",
-                  file=sys.stderr)
-            return 1
-        try:
-            decrypted = decryptPassword(row.Value)
-        except HSMException as e:
-            # HSM (encryption module) could not initialize — enckey is unusable.
-            # Indistinguishable from "wrong enckey" as a failure mode, treat as fatal.
-            print(f"[enckey-canary] FATAL: HSM initialization failed ({e}). "
-                  "The enckey on disk is unusable.", file=sys.stderr)
-            return 2
-        if decrypted == FAILED_TO_DECRYPT_PASSWORD:
-            print(f"[enckey-canary] FATAL: canary decryption failed. The enckey on "
-                  f"disk cannot decrypt data encrypted at init time. Do NOT continue "
-                  f"— restore the original enckey from backup.", file=sys.stderr)
-            return 2
-        if decrypted != CANARY_PLAINTEXT:
-            print(f"[enckey-canary] FATAL: canary decrypted to unexpected value. "
-                  f"The enckey is wrong for this database.", file=sys.stderr)
-            return 2
-        print("[enckey-canary] OK — enckey matches the database")
-        return 0
+    try:
+        with create_docker_app().app_context():
+            row = Config.query.filter_by(Key=CANARY_KEY).first()
+            if row is None:
+                print(f"[enckey-canary] WARNING: no canary at pi_config['{CANARY_KEY}']. "
+                      "Legacy deployment? Run 'enckey-canary install' via pi-init.",
+                      file=sys.stderr)
+                return 1
+            try:
+                decrypted = decryptPassword(row.Value)
+            except HSMException as e:
+                # HSM (encryption module) could not initialize — enckey is unusable.
+                # Indistinguishable from "wrong enckey" as a failure mode, treat as fatal.
+                print(f"[enckey-canary] FATAL: HSM initialization failed ({e}). "
+                      "The enckey on disk is unusable.", file=sys.stderr)
+                return 2
+            if decrypted == FAILED_TO_DECRYPT_PASSWORD:
+                print(f"[enckey-canary] FATAL: canary decryption failed. The enckey on "
+                      f"disk cannot decrypt data encrypted at init time. Do NOT continue "
+                      f"— restore the original enckey from backup.", file=sys.stderr)
+                return 2
+            if decrypted != CANARY_PLAINTEXT:
+                print(f"[enckey-canary] FATAL: canary decrypted to unexpected value. "
+                      f"The enckey is wrong for this database.", file=sys.stderr)
+                return 2
+            print("[enckey-canary] OK — enckey matches the database")
+            return 0
+    except Exception as exc:
+        # Any other error (e.g. database unreachable) means we could not verify.
+        # Fail closed rather than start with an unverified enckey — the container
+        # restart policy retries once the database is reachable.
+        print(f"[enckey-canary] FATAL: could not verify enckey ({exc}). Refusing to start.",
+              file=sys.stderr)
+        return 2
 
 
 def main() -> int:

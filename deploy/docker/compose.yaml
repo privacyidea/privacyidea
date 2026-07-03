@@ -103,12 +103,16 @@ services:
       db:
         condition: service_healthy
 
-  # Web workers (gunicorn). Single instance on the published port.
+  # Web workers (gunicorn).
   pi:
     <<: *pi-common
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      # Bound to localhost only — this is plain HTTP and must not be exposed on
+      # the network. For remote access, terminate TLS (the "tls" Caddy profile,
+      # which reaches pi over the internal network) or your own reverse proxy.
+      # Change to "8080:8080" only if you accept unencrypted access.
+      - "127.0.0.1:8080:8080"
     environment:
       <<: *pi-common-env
       PI_CREATE_TABLES: "false"
