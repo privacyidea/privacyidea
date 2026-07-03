@@ -42,8 +42,11 @@ x-pi-common: &pi-common
     # Optional: additional PRIVACYIDEA_-prefixed config keys, applied to all roles.
     - ./example.env
   environment: &pi-common-env
-    # PI_DB_* match ConfigKey names so DockerConfig builds the URI directly.
-    # This also makes pi-manage work when exec'd into the container manually.
+    # These are DockerConfig's inputs: the DB connection parts (it builds the URI)
+    # and the file-based secrets. All other privacyIDEA config is set as
+    # PRIVACYIDEA_<key> in example.env — kept out of here so this block stays a
+    # single, consistent group. PI_DB_* names also let pi-manage work when exec'd
+    # into the container manually.
     PI_DB_USER: pi
     PI_DB_HOST: db
     PI_DB_NAME: pi
@@ -52,8 +55,6 @@ x-pi-common: &pi-common
     PI_ENCFILE: /run/secrets/enckey
     PI_PEPPER_FILE: /run/secrets/pi_pepper
     PI_SECRET_KEY_FILE: /run/secrets/secret_key
-    # Keep pooled connections below the server's wait_timeout.
-    PRIVACYIDEA_SQLALCHEMY_POOL_RECYCLE: ${SQLALCHEMY_POOL_RECYCLE:-250}
 
 services:
   db:

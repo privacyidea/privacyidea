@@ -55,15 +55,17 @@ The web UI is served on http://localhost:8080 (plain HTTP — see *TLS* below).
 Configuration
 -------------
 
-Configuration comes from three places:
+Config comes entirely from environment variables and secret files — this
+deployment does **not** use a `pi.cfg` (none is mounted; the app's optional
+`pi.cfg` read is simply a no-op here). Three places:
 
 - **Docker secrets** in `./secrets/` — keys and passwords (see above).
 - **`.env`** — compose interpolation values (`BOOTSTRAP_ADMIN`, `PI_WORKERS`,
-  `SQLALCHEMY_POOL_RECYCLE`). Copy `.env.template` to `.env`.
+  `PI_SITE_ADDRESS`). Copy `.env.template` to `.env`.
 - **`example.env`** — privacyIDEA application config keys, prefixed with
-  `PRIVACYIDEA_`, applied to all three roles. Set **`PRIVACYIDEA_PI_BASE_URL`**
-  here to your public URL (otherwise password recovery is disabled and
-  notification links are blank). See
+  `PRIVACYIDEA_`, applied to all three roles (e.g. `SQLALCHEMY_POOL_RECYCLE`,
+  languages, and **`PRIVACYIDEA_PI_BASE_URL`** — set that to your public URL, or
+  password recovery is disabled and notification links are blank). See
   https://privacyidea.readthedocs.io/en/latest/installation/system/inifile.html
 
 Environment variable reference
@@ -78,7 +80,6 @@ The bundled `compose.yaml` pre-wires most of these; day to day you mainly edit
 |----------|---------|---------|
 | `BOOTSTRAP_ADMIN` | `admin` | initial admin username created by `pi-init` |
 | `PI_WORKERS` | `4` | gunicorn workers in `pi` |
-| `SQLALCHEMY_POOL_RECYCLE` | `250` | DB connection recycle (seconds) |
 | `PI_SITE_ADDRESS` | `localhost` | public hostname for the `tls` (Caddy) profile |
 
 **Container role & startup** (`entrypoint.sh` — set per service in compose):
