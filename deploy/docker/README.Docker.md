@@ -133,19 +133,48 @@ they are bundled together.
 ./deploy/docker/scripts/backup.sh --encrypt-key AGE-PUB   # non-interactive (cron)
 ```
 
-Restore drops and recreates the database, with a guard that warns if the backup's
-`enckey`/`pi_pepper` differ from the current ones:
+Restore drops and recreates the database. It reconciles each key in the backup
+with `secrets/`: a **missing** key is installed from the archive, a **matching**
+key is left as-is, and a key that is **present but different** is never
+overwritten — it warns and asks for confirmation (replacing a good `enckey` with
+a different one permanently loses the data it protects).
+
+Same-host restore (keys already in place):
 ```
-./deploy/docker/scripts/restore.sh backups/privacyidea_<ts>.tar.gz
+./deploy/docker/scripts/restore.sh backups/privacyidea_<ts>.tar.gz   # add --yes for non-interactive
 ```
+
+### Disaster recovery on a fresh host
+
+The database dump is useless without the matching `enckey`/`pi_pepper`, and the
+`enckey` canary will refuse to start the workers if they don't match — so the
+keys from the backup must be in place, **not** freshly generated. Order matters:
+
+1. Put the deploy bundle on the new host and copy the backup archive to it.
+2. Extract the archive and place its crypto keys into `secrets/`:
+   ```
+   tar xzf privacyidea_<ts>.tar.gz            # -> a dir with database.sql, enckey, pi_pepper, secret_key
+   cp privacyidea_<ts>/{enckey,pi_pepper,secret_key} deploy/docker/secrets/
+   ```
+3. `make init` — idempotent: it keeps the keys you just restored and generates
+   only the still-missing database/admin passwords (those don't protect encrypted
+   data, so fresh ones are fine). Then review `.env`.
+4. `make up` — the stack starts with the restored keys.
+5. `./scripts/restore.sh privacyidea_<ts>.tar.gz` — imports the data (the keys
+   now match, so it just restores the database).
+6. `docker compose -f compose.yaml restart pi pi-cron`.
+
+(If you skip step 2, `restore.sh` will offer to install the missing keys from the
+archive — but you must then `make up`/restart so the workers pick them up.)
 
 ### Scheduling backups
 
 `pi-cron` handles in-database maintenance (audit rotation, challenge cleanup,
-periodic tasks) but deliberately does **not** take backups — a DB dump needs the
-host's Docker socket and `mariadb-dump`, which do not belong inside the app
-container. Schedule `backup.sh` from the host instead, e.g. a daily encrypted
-backup at 03:30 via the host crontab (`crontab -e`):
+periodic tasks) but deliberately does **not** take backups. `backup.sh` bundles
+the host-side secret files with the dump and writes archives that must then leave
+the host to count as a backup — work that belongs on the host, not in the app
+container's maintenance loop. Schedule it from the host instead, e.g. a daily
+encrypted backup at 03:30 via the host crontab (`crontab -e`):
 ```
 30 3 * * *  cd /path/to/privacyidea/deploy/docker && ./scripts/backup.sh --encrypt-key age1... >> /var/log/pi-backup.log 2>&1
 ```

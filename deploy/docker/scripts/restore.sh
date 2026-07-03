@@ -108,44 +108,61 @@ if [[ ! -f "${TEMP_DIR}/database.sql" || ! -f "${TEMP_DIR}/enckey" ]]; then
     exit 1
 fi
 
-check_key_mismatch() {
+# Reconcile one crypto secret with the copy carried in the backup:
+#   - not present on this host  -> install it from the backup (disaster recovery)
+#   - present and identical     -> nothing to do
+#   - present but different      -> do NOT overwrite; warn and require confirmation
+# The keys are never silently overwritten: replacing a good enckey with a
+# different one permanently loses the data it protects.
+reconcile_secret() {
     local name="$1"
     local current_file="${SECRETS_DIR}/${name}"
     local backup_file="${TEMP_DIR}/${name}"
 
     if [[ ! -f "${backup_file}" ]]; then
-        echo "WARNING: Backup does not contain '${name}' (older backup format). Skipping check."
+        echo "[restore] Backup contains no '${name}' (older format); leaving the current secret unchanged."
         return
     fi
 
-    local current backup
-    current=$(cat "${current_file}")
-    backup=$(cat "${backup_file}")
+    if [[ ! -f "${current_file}" ]]; then
+        echo "[restore] secrets/${name} is missing — installing it from the backup."
+        mkdir -p "${SECRETS_DIR}"
+        chmod 700 "${SECRETS_DIR}"
+        cp "${backup_file}" "${current_file}"
+        chmod 644 "${current_file}"
+        return
+    fi
 
-    if [[ "${current}" != "${backup}" ]]; then
-        echo "========================================================================"
-        echo "  WARNING: ${name} mismatch!"
-        echo "========================================================================"
-        echo "  The ${name} in this backup does NOT match secrets/${name} on this host."
-        if [[ "${name}" == "enckey" ]]; then
-            echo "  Token data will be permanently unrecoverable without the matching enckey."
-        elif [[ "${name}" == "pi_pepper" ]]; then
-            echo "  All user and admin passwords will fail to verify without the matching pepper."
-        fi
-        echo ""
-        echo "  To fix: replace secrets/${name} with the copy from the backup archive,"
-        echo "  then restart the stack BEFORE proceeding with the restore."
-        echo ""
-        confirm_prompt "  Proceed anyway? (type YES to confirm)"
-        if [[ "${confirm}" != "YES" ]]; then
-            echo "Restore aborted."
-            exit 1
-        fi
+    if cmp -s "${current_file}" "${backup_file}"; then
+        return
+    fi
+
+    echo "========================================================================"
+    echo "  WARNING: ${name} mismatch!"
+    echo "========================================================================"
+    echo "  secrets/${name} on this host differs from the copy in the backup."
+    if [[ "${name}" == "enckey" ]]; then
+        echo "  The restored token data was encrypted with the backup's enckey and"
+        echo "  is unrecoverable unless secrets/enckey matches it."
+    elif [[ "${name}" == "pi_pepper" ]]; then
+        echo "  User and admin passwords will fail to verify unless secrets/pi_pepper"
+        echo "  matches the backup."
+    fi
+    echo ""
+    echo "  This script will NOT overwrite an existing key. To use the backup's"
+    echo "  ${name}, replace secrets/${name} with the copy from the archive and"
+    echo "  restart the stack before restoring."
+    echo ""
+    confirm_prompt "  Proceed with the current secrets/${name} anyway? (type YES to confirm)"
+    if [[ "${confirm}" != "YES" ]]; then
+        echo "Restore aborted."
+        exit 1
     fi
 }
 
-check_key_mismatch "enckey"
-check_key_mismatch "pi_pepper"
+reconcile_secret "enckey"
+reconcile_secret "pi_pepper"
+reconcile_secret "secret_key"
 
 echo ""
 echo "========================================================================"

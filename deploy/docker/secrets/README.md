@@ -49,6 +49,24 @@ chmod 644 *
 chmod 700 .
 ```
 
+## Why `0644` and not `0600`?
+
+Docker Compose mounts file-based secrets by **bind-mounting them preserving the
+host file's ownership and mode** (setting `uid`/`gid`/`mode` on a secret is a
+Swarm-only feature that `docker compose` ignores). The containers run as the
+non-root user **uid 65532**, which differs from the host user that created the
+files — so with `0600` the container gets *permission denied* reading them, and
+`pi-init` fails to start. The files therefore need to be world-readable
+(`0644`), and secrecy is enforced one level up: the `secrets/` **directory is
+`0700`**, so no other host user can traverse into it. Inside the container only
+the privacyIDEA process runs, so `0644` there is not an exposure.
+
+`chown`-ing the files to `65532` to keep `0600` is intentionally **not** the
+default: it requires root (a normal user cannot chown to a uid it does not own),
+it stops the host user from reading the keys — which breaks `scripts/backup.sh` —
+and the fixed uid mis-maps under rootless Docker or userns-remap. On a hardened
+multi-tenant host you can still do it as a deliberate, root-required opt-in.
+
 ## Notes
 
 - **`enckey`** must never change once tokens have been created. Back it up
