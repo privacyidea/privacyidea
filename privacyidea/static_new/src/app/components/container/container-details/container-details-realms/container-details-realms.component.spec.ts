@@ -19,7 +19,8 @@
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { DetailsEditRegistry } from "@components/shared/details-shared/details-edit-registry.service";
+import { DetailsEditRegistry } from "@components/shared/details-shared/field-editing/details-edit-registry.service";
+import { EditableField } from "@components/shared/details-shared/field-editing/editable-field";
 import { AuthService } from "@services/auth/auth.service";
 import { ContainerService } from "@services/container/container.service";
 import { RealmService } from "@services/realm/realm.service";
@@ -27,13 +28,12 @@ import { MockAuthService, MockContainerService, MockRealmService } from "@testin
 import { ContainerDetailsRealmsComponent } from "./container-details-realms.component";
 
 interface ContainerRealmsFieldInternals {
-  toggle(): void;
-  commit(): void;
-  cancel(): void;
+  field: EditableField;
 }
 
 describe("ContainerDetailsRealmsComponent", () => {
   let component: ContainerDetailsRealmsComponent;
+  let internals: ContainerRealmsFieldInternals;
   let fixture: ComponentFixture<ContainerDetailsRealmsComponent>;
   let containerService: MockContainerService;
 
@@ -52,6 +52,7 @@ describe("ContainerDetailsRealmsComponent", () => {
 
     fixture = TestBed.createComponent(ContainerDetailsRealmsComponent);
     component = fixture.componentInstance;
+    internals = component as unknown as ContainerRealmsFieldInternals;
     containerService = TestBed.inject(ContainerService) as unknown as MockContainerService;
     fixture.componentRef.setInput("realms", ["realm1"]);
     fixture.detectChanges();
@@ -62,33 +63,33 @@ describe("ContainerDetailsRealmsComponent", () => {
   });
 
   it("toggle() seeds the selection from the current realms when entering edit mode", () => {
-    (component as unknown as ContainerRealmsFieldInternals).toggle();
+    internals.field.toggle();
 
-    expect(component.isEditing()).toBe(true);
+    expect(internals.field.isEditing()).toBe(true);
     expect(component.selectedRealms()).toEqual(["realm1"]);
 
-    (component as unknown as ContainerRealmsFieldInternals).toggle();
-    expect(component.isEditing()).toBe(false);
+    internals.field.toggle();
+    expect(internals.field.isEditing()).toBe(false);
   });
 
   it("commit() persists the selected realms and leaves edit mode", () => {
-    component.isEditing.set(true);
+    internals.field.toggle();
     component.selectedRealms.set(["realm2"]);
 
-    (component as unknown as ContainerRealmsFieldInternals).commit();
+    internals.field.commit();
 
     expect(containerService.setContainerRealm).toHaveBeenCalledWith(containerService.containerSerial(), ["realm2"]);
-    expect(component.isEditing()).toBe(false);
+    expect(internals.field.isEditing()).toBe(false);
   });
 
   it("cancel() restores the original realms and leaves edit mode", () => {
-    component.isEditing.set(true);
+    internals.field.toggle();
     component.selectedRealms.set(["realm2"]);
 
-    (component as unknown as ContainerRealmsFieldInternals).cancel();
+    internals.field.cancel();
 
     expect(component.selectedRealms()).toEqual(["realm1"]);
-    expect(component.isEditing()).toBe(false);
+    expect(internals.field.isEditing()).toBe(false);
   });
 
   it("registers and unregisters its edit handle with the registry", () => {

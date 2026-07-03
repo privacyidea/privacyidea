@@ -524,7 +524,7 @@ describe("ContainerService", () => {
     expect(notificationServiceMock.error).toHaveBeenCalled();
   });
 
-  it("setContainerRealm joins array, blank array ⇒ \"\"", async () => {
+  it('setContainerRealm joins array, blank array ⇒ ""', async () => {
     const post = jest.spyOn(http, "post").mockReturnValue(of({}));
     await lastValueFrom(containerService.setContainerRealm("cX", ["r1", "r2"]));
     expect(post).toHaveBeenCalledWith(
@@ -889,11 +889,12 @@ describe("ContainerService", () => {
       expect(containerService["compatibleTypes"]()).toEqual(["typeA", "typeB"]);
     });
 
-    it("sends the full list of compatible types as a comma-separated `type` param and returns the serials the backend returned", async () => {
+    it("sends the full list of compatible types as a comma-separated `type_list` param and returns the serials the backend returned", async () => {
       TestBed.tick();
 
       const req = httpMock.expectOne(
-        (r) => r.url === "/container/" && r.params.get("no_token") === "1" && r.params.get("type") === "typeA,typeB"
+        (r) =>
+          r.url === "/container/" && r.params.get("no_token") === "1" && r.params.get("type_list") === "typeA,typeB"
       );
       expect(req.request.method).toBe("GET");
       req.flush(
@@ -1069,7 +1070,7 @@ describe("ContainerService", () => {
       req.flush(MockPiResponse.fromValue({ containers: [], count: 0 }));
     });
 
-    it("sends multiple compatible types as a comma-separated `type` param", async () => {
+    it("sends multiple compatible types as a comma-separated `type_list` param", async () => {
       mockableService.containerTypeOptions = signal([
         { containerType: "smartphone", description: "", token_types: ["push"] },
         { containerType: "generic", description: "", token_types: ["push"] }
@@ -1078,7 +1079,10 @@ describe("ContainerService", () => {
       contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_ENROLLMENT);
       TestBed.tick();
       const req = httpMock.expectOne(
-        (r) => r.url === "/container/" && r.params.get("no_token") === "1" && r.params.get("type") === "smartphone,generic"
+        (r) =>
+          r.url === "/container/" &&
+          r.params.get("no_token") === "1" &&
+          r.params.get("type_list") === "smartphone,generic"
       );
       req.flush(MockPiResponse.fromValue({ containers: [], count: 0 }));
     });

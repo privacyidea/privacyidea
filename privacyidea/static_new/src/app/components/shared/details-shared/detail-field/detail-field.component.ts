@@ -16,28 +16,23 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject, input, OnDestroy, OnInit, signal } from "@angular/core";
-import { EditableElement, EditButtonsComponent } from "@components/shared/edit-buttons/edit-buttons.component";
-import { DetailsDefaultValueCellComponent } from "@components/shared/details-shared/details-shared.components";
-import { DetailsEditRegistry } from "@components/shared/details-shared/details-edit-registry.service";
+import { Component, input, signal } from "@angular/core";
+import { DetailFieldRowComponent } from "@components/shared/details-shared/field-editing/detail-field-row/detail-field-row.component";
+import { DetailsDefaultValueCellComponent } from "@components/shared/details-shared/value-cells/details-default-value-cell/details-default-value-cell.component";
+import { injectEditableField } from "@components/shared/details-shared/field-editing/editable-field";
+import { EditButtonsComponent } from "@components/shared/edit-buttons/edit-buttons.component";
 
 /**
  * Generic, explicitly-listed detail row for genuinely uniform "label: value"
- * fields (text / number, optionally inline-editable). Renders the 35/65 key/value
- * row, owns its edit state, and registers with the host's DetailsEditRegistry so
- * "is anything editing?" / "save all" work without a central data list.
+ * fields (text / number, optionally inline-editable).
  */
 @Component({
   selector: "app-detail-field",
   standalone: true,
-  imports: [DetailsDefaultValueCellComponent, EditButtonsComponent],
-  host: {
-    "[class.detail-field--editing]": "isEditing()"
-  },
-  templateUrl: "./detail-field.component.html",
-  styleUrl: "./detail-field.component.scss"
+  imports: [DetailFieldRowComponent, DetailsDefaultValueCellComponent, EditButtonsComponent],
+  templateUrl: "./detail-field.component.html"
 })
-export class DetailFieldComponent implements OnInit, OnDestroy {
+export class DetailFieldComponent {
   readonly label = input.required<string>();
   /** Formatted text shown when not editing. */
   readonly displayText = input<string>("");
@@ -52,44 +47,10 @@ export class DetailFieldComponent implements OnInit, OnDestroy {
   /** Persist the edited value. Only invoked for editable fields. */
   readonly save = input<(value: string) => void>(() => undefined);
 
-  private readonly registry = inject(DetailsEditRegistry);
-
-  readonly isEditing = signal(false);
   readonly draft = signal<string>("");
 
-  protected readonly editButtonsElement: EditableElement<string> = {
-    keyMap: { key: "" },
-    isEditing: this.isEditing,
-    value: ""
-  };
-
-  private readonly handle = {
-    isEditing: this.isEditing,
-    save: () => this.commit(),
-    cancel: () => this.cancel()
-  };
-
-  ngOnInit(): void {
-    this.registry.register(this.handle);
-  }
-
-  ngOnDestroy(): void {
-    this.registry.unregister(this.handle);
-  }
-
-  protected readonly toggle = (): void => {
-    if (!this.isEditing()) {
-      this.draft.set(this.editValue());
-    }
-    this.isEditing.update((editing) => !editing);
-  };
-
-  protected readonly commit = (): void => {
-    this.save()(this.draft());
-    this.isEditing.set(false);
-  };
-
-  protected readonly cancel = (): void => {
-    this.isEditing.set(false);
-  };
+  protected readonly field = injectEditableField({
+    onOpen: () => this.draft.set(this.editValue()),
+    onCommit: () => this.save()(this.draft())
+  });
 }

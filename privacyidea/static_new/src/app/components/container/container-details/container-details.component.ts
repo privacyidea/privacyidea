@@ -48,7 +48,7 @@ import { ContainerDetailsUserComponent } from "@components/container/container-d
 import { ContainerDetailsTokenTableComponent } from "@components/container/container-details/container-details-token-table/container-details-token-table.component";
 import { ContainerAddTokenComponent } from "@components/shared/container-add-token/container-add-token.component";
 import { DetailFieldComponent } from "@components/shared/details-shared/detail-field/detail-field.component";
-import { DetailsEditRegistry } from "@components/shared/details-shared/details-edit-registry.service";
+import { DetailsEditRegistry } from "@components/shared/details-shared/field-editing/details-edit-registry.service";
 import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
 import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";

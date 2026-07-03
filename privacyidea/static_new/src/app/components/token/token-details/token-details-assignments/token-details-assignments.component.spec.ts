@@ -19,18 +19,13 @@
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { DetailsEditRegistry } from "@components/shared/details-shared/details-edit-registry.service";
+import { DetailsEditRegistry } from "@components/shared/details-shared/field-editing/details-edit-registry.service";
 import { AuthService } from "@services/auth/auth.service";
 import { ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
 import { RealmService } from "@services/realm/realm.service";
 import { TokenService } from "@services/token/token.service";
-import {
-  MockContainerService,
-  MockContentService,
-  MockRealmService,
-  MockTokenService
-} from "@testing/mock-services";
+import { MockContainerService, MockContentService, MockRealmService, MockTokenService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { mockTokenDetails } from "@testing/mock-token-details";
 import { TokenDetailsAssignmentsComponent } from "./token-details-assignments.component";

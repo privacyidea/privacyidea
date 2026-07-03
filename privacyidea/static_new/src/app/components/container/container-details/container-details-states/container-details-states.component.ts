@@ -17,12 +17,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass } from "@angular/common";
-import { Component, computed, inject, input, OnDestroy, OnInit, signal } from "@angular/core";
-import { MatFormFieldModule } from "@angular/material/form-field";
-import { MatSelectModule } from "@angular/material/select";
-import { DetailsEditRegistry } from "@components/shared/details-shared/details-edit-registry.service";
-import { AutofocusDirective } from "@components/shared/directives/app-autofocus.directive";
-import { EditableElement, EditButtonsComponent } from "@components/shared/edit-buttons/edit-buttons.component";
+import { Component, computed, inject, input, signal } from "@angular/core";
+import { DetailFieldRowComponent } from "@components/shared/details-shared/field-editing/detail-field-row/detail-field-row.component";
+import { injectEditableField } from "@components/shared/details-shared/field-editing/editable-field";
+import { DetailsMultiSelectCellComponent } from "@components/shared/details-shared/value-cells/details-multi-select-cell/details-multi-select-cell.component";
+import { EditButtonsComponent } from "@components/shared/edit-buttons/edit-buttons.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
   CONTAINER_STATE_OPTIONS,
@@ -35,45 +34,38 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
 @Component({
   selector: "app-container-details-states",
   standalone: true,
-  imports: [NgClass, MatFormFieldModule, MatSelectModule, AutofocusDirective, EditButtonsComponent],
+  imports: [NgClass, EditButtonsComponent, DetailFieldRowComponent, DetailsMultiSelectCellComponent],
   templateUrl: "./container-details-states.component.html",
   styleUrl: "./container-details-states.component.scss"
 })
-export class ContainerDetailsStatesComponent implements OnInit, OnDestroy {
+export class ContainerDetailsStatesComponent {
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
-  private readonly registry = inject(DetailsEditRegistry);
 
   readonly states = input<string[]>([]);
   readonly blockEditing = input(false);
 
   protected readonly containerStateOptions = CONTAINER_STATE_OPTIONS;
 
-  readonly isEditing = signal(false);
   readonly selectedStates = signal<string[]>([]);
   protected readonly editable = computed(() => this.authService.actionAllowed("container_state"));
 
-  protected readonly editButtonsElement: EditableElement<string[]> = {
-    keyMap: { key: "" },
-    isEditing: this.isEditing,
-    value: []
-  };
-
-  private readonly handle = {
-    isEditing: this.isEditing,
-    save: () => this.commit(),
-    cancel: () => this.cancel()
-  };
-
-  ngOnInit(): void {
-    this.registry.register(this.handle);
-  }
-
-  ngOnDestroy(): void {
-    this.registry.unregister(this.handle);
-  }
+  protected readonly field = injectEditableField({
+    onOpen: () => this.selectedStates.set([...this.states()]),
+    onCancel: () => this.selectedStates.set([...this.states()]),
+    onCommit: () => {
+      if (this.selectedStates().length === 0) {
+        this.notificationService.error("At least one state must be selected.");
+        return false;
+      }
+      this.containerService
+        .setStates(this.containerService.containerSerial(), this.selectedStates())
+        .subscribe({ next: () => this.containerService.containerDetailsResource.reload() });
+      return true;
+    }
+  });
 
   protected onStatesChange(newStates: string[]): void {
     if (newStates.includes("active") && newStates.includes("disabled")) {
@@ -84,27 +76,4 @@ export class ContainerDetailsStatesComponent implements OnInit, OnDestroy {
       this.selectedStates.set(newStates);
     }
   }
-
-  protected readonly toggle = (): void => {
-    if (!this.isEditing()) {
-      this.selectedStates.set([...this.states()]);
-    }
-    this.isEditing.update((editing) => !editing);
-  };
-
-  protected readonly commit = (): void => {
-    if (this.selectedStates().length === 0) {
-      this.notificationService.error("At least one state must be selected.");
-      return;
-    }
-    this.containerService
-      .setStates(this.containerService.containerSerial(), this.selectedStates())
-      .subscribe({ next: () => this.containerService.containerDetailsResource.reload() });
-    this.isEditing.set(false);
-  };
-
-  protected readonly cancel = (): void => {
-    this.selectedStates.set([...this.states()]);
-    this.isEditing.set(false);
-  };
 }
