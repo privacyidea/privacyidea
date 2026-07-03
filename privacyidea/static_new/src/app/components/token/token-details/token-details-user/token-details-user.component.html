@@ -16,23 +16,13 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<section class="user-container responsive-pad-0-1310 details-card">
-  <h4
-    class="details-card-title"
-    i18n>
-    User
-  </h4>
+<app-details-card
+  class="user-container" title="User" i18n-title>
   <table
-    [dataSource]="userData()"
-    aria-label="User Detail Data Table"
-    class="user-details-table"
-    i18n-aria-label
-    mat-table>
+    [dataSource]="userData()" aria-label="User Detail Data Table" class="user-details-table" i18n-aria-label mat-table>
     <ng-container matColumnDef="key">
       <td
-        *matCellDef="let element"
-        class="details-key-row"
-        mat-cell>
+        *matCellDef="let element" class="details-key-row" mat-cell>
         {{ element.keyMap.label }}
       </td>
     </ng-container>
@@ -48,8 +38,7 @@
               @case ("username") {
                 @if (isEditingUser()) {
                   <mat-form-field
-                    class="input-width-m height-52"
-                    subscriptSizing="dynamic">
+                    class="input-width-m height-52" subscriptSizing="dynamic">
                     <mat-label i18n>Enter User</mat-label>
                     <app-clearable-input
                       (clearButtonClick)="userService.selectionFilter.set('')"
@@ -86,8 +75,7 @@
               @case ("user_realm") {
                 @if (isEditingUser()) {
                   <mat-form-field
-                    class="input-width-m height-52"
-                    subscriptSizing="dynamic">
+                    class="input-width-m height-52" subscriptSizing="dynamic">
                     <mat-label i18n>Select Realm of User</mat-label>
                     <mat-select
                       [value]="userService.selectedUserRealm()"
@@ -114,14 +102,13 @@
             @switch (element.keyMap.key) {
               @case ("username") {
                 @if (!(isAnyEditingOrRevoked() && !isEditingUser())) {
-                  @if (element.value && authService.actionAllowed("unassign")) {
-                    <button
-                      (click)="unassignUser()"
-                      class="yellow"
-                      i18n-aria-label="Unassign User"
-                      mat-icon-button>
-                      <mat-icon>person_remove</mat-icon>
-                    </button>
+                  @if (element.value) {
+                    @if (authService.actionAllowed("unassign")) {
+                      <button
+                        (click)="unassignUser()" class="yellow" i18n-aria-label="Unassign User" mat-icon-button>
+                        <mat-icon>person_remove</mat-icon>
+                      </button>
+                    }
                   } @else if (authService.actionAllowed("assign")) {
                     @if (isEditingUser()) {
                       <app-edit-buttons
@@ -134,9 +121,7 @@
                         [toggleEdit]="toggleUserEdit.bind(this)"></app-edit-buttons>
                     } @else {
                       <button
-                        (click)="toggleUserEdit()"
-                        i18n-aria-label="Assign User"
-                        mat-icon-button>
+                        (click)="toggleUserEdit()" i18n-aria-label="Assign User" mat-icon-button>
                         <mat-icon>person_add</mat-icon>
                       </button>
                     }
@@ -149,7 +134,6 @@
       </td>
     </ng-container>
     <tr
-      *matRowDef="let row; columns: ['key', 'value']"
-      mat-row></tr>
+      *matRowDef="let row; columns: ['key', 'value']" mat-row></tr>
   </table>
-</section>
+</app-details-card>

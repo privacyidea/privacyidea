@@ -10,12 +10,12 @@ counter of a token. If the maximum allowed fail counter is reached,
 authentication with this token is not possible anymore. The token gets a timestamp
 mark, when the maximum fail counter was reached.
 Starting with version 2.20 the administrator can define a timeout in minutes.
-If the last failed authentication is more than these specified minutes ago,
-a successful authentication will reset the fail counter and access will be
-granted.
+If the maximum fail counter was reached more than these specified minutes ago,
+any authentication attempt will reset the fail counter, and in case of a successful
+authentication access will be granted.
 See :ref:`clear_failcounter`.
 
-The failcounter avoids brute force attacks which guess passwords or OTP values.
+The failcounter helps mitigate brute force attacks which guess passwords or OTP values.
 Choose a failcounter clearing timeout, which is not too long. Otherwise brute
 force would also lock the token of the user forever.
 

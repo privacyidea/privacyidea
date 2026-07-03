@@ -41,14 +41,24 @@ export class EventSelectionComponent {
   touched = signal(false);
   invalid = computed(() => this.selectedEvents().length === 0);
   showError = computed(() => this.touched() && this.invalid());
+  searchTerm = signal("");
+  remainingEvents = linkedSignal({
+    source: () => ({
+      available: this.eventService.availableEvents(),
+      selected: this.selectedEvents(),
+      search: this.searchTerm()
+    }),
+    computation: ({ available, selected, search }) =>
+      available.filter(
+        (event) => !selected.includes(event) && (!search || event.toLowerCase().includes(search.toLowerCase()))
+      )
+  });
 
   constructor() {
     effect(() => {
       this.selectedEvents.set(this.events());
     });
   }
-
-  searchTerm = signal("");
 
   markTouched(): void {
     this.touched.set(true);
@@ -73,16 +83,4 @@ export class EventSelectionComponent {
       this.newEvents.emit(updated);
     }
   }
-
-  remainingEvents = linkedSignal({
-    source: () => ({
-      available: this.eventService.availableEvents(),
-      selected: this.selectedEvents(),
-      search: this.searchTerm()
-    }),
-    computation: ({ available, selected, search }) =>
-      available.filter(
-        (event) => !selected.includes(event) && (!search || event.toLowerCase().includes(search.toLowerCase()))
-      )
-  });
 }

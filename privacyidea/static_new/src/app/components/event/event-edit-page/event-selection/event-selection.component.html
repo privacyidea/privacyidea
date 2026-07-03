@@ -26,14 +26,12 @@
       <div class="panel-content">
         @if (selectedEvents().length > 0) {
           <mat-chip-set
-            aria-label="Selected events"
-            i18n-aria-label>
+            aria-label="Selected events" i18n-aria-label>
             @for (event of selectedEvents(); track $index) {
               <mat-chip (removed)="removeEvent(event)">
                 {{ event }}
                 <button
-                  matChipRemove
-                  [attr.aria-label]="'remove ' + event">
+                  [attr.aria-label]="'remove ' + event" matChipRemove>
                   <mat-icon>cancel</mat-icon>
                 </button>
               </mat-chip>
@@ -41,8 +39,7 @@
           </mat-chip-set>
         } @else {
           <p
-            class="selected-events-empty"
-            i18n>
+            class="selected-events-empty" i18n>
             At least one event must be selected.
           </p>
         }
@@ -58,34 +55,30 @@
 
       <div class="panel-content">
         <app-clearable-input
-          (clearButtonClick)="searchTerm.set('')"
-          [showClearButton]="searchTerm() !== ''">
+          (clearButtonClick)="searchTerm.set('')" [showClearButton]="searchTerm() !== ''">
           <input
-            clearableInput
-            type="text"
-            placeholder="Search events..."
-            i18n-placeholder
-            [ngModel]="searchTerm()"
             (ngModelChange)="searchTerm.set($event)"
-            class="search-input" />
+            [ngModel]="searchTerm()"
+            class="search-input"
+            clearableInput
+            i18n-placeholder
+            placeholder="Search events..."
+            type="text" />
         </app-clearable-input>
 
         @if (remainingEvents().length > 0) {
           <div class="event-items">
             @for (event of remainingEvents(); track event) {
               <div
-                class="event-item"
-                tabindex="0"
-                role="button"
                 (click)="addEvent(event)"
                 (keydown.enter)="addEvent(event)"
-                (keydown.space)="$event.preventDefault(); addEvent(event)">
+                (keydown.space)="$event.preventDefault(); addEvent(event)"
+                class="event-item"
+                role="button"
+                tabindex="0">
                 <span class="event-name">{{ event }}</span>
                 <button
-                  mat-icon-button
-                  tabindex="-1"
-                  aria-hidden="true"
-                  (click)="$event.stopPropagation(); addEvent(event)">
+                  (click)="$event.stopPropagation(); addEvent(event)" aria-hidden="true" mat-icon-button tabindex="-1">
                   <mat-icon>add</mat-icon>
                 </button>
               </div>

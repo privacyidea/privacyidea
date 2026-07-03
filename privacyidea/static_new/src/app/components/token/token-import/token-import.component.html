@@ -17,31 +17,21 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
-  #scrollContainer
-  appScrollToTop
-  aria-label="Import Tokens"
-  class="token-import-container"
-  i18n-aria-label>
+  #scrollContainer appScrollToTop aria-label="Import Tokens" class="token-import-container" i18n-aria-label>
   <h3
-    class="margin-8"
-    i18n>
+    class="margin-8" i18n>
     Import Tokens
   </h3>
   <div
-    class="sticky-header"
-    [appStickyHeader]="scrollContainer">
+    [appStickyHeader]="scrollContainer" class="sticky-header">
     <div class="sticky-controls">
       <mat-form-field class="input-width-xl">
         <mat-label i18n>File Type</mat-label>
         <mat-select
-          (selectionChange)="fileType.set($event.value)"
-          [panelClass]="'single-column-panel'"
-          [value]="fileType()">
+          (selectionChange)="fileType.set($event.value)" [panelClass]="'single-column-panel'" [value]="fileType()">
           @for (type of Object.keys(fileTypes); track type) {
             <mat-option
-              [value]="type"
-              class="select-option"
-              >{{ fileTypes[type] }}
+              [value]="type" class="select-option">{{ fileTypes[type] }}
             </mat-option>
           }
         </mat-select>
@@ -66,8 +56,7 @@
       }
       @case ("OATH CSV") {
         <div
-          class="margin-bottom-16"
-          i18n>
+          class="margin-bottom-16" i18n>
           The file is supposed to contain one token per line. At least the serial number and the seed are required.
           Other parameters are optional. If not defined, the following default values are used:
           <ul>
@@ -79,15 +68,13 @@
 
         <div i18n>HOTP and TOTP tokens:</div>
         <div
-          class="italic margin-bottom-16"
-          i18n>
+          class="italic margin-bottom-16" i18n>
           serial number, seed, type, otp length, time step
         </div>
 
         <div i18n>OCRA tokens:</div>
         <div
-          class="italic"
-          i18n>
+          class="italic" i18n>
           serial number, seed, type, ocrasuite
         </div>
       }
@@ -99,8 +86,7 @@
       }
       @case ("pskc") {
         <div
-          class="margin-bottom-32"
-          i18n>
+          class="margin-bottom-32" i18n>
           This is an RFC6030 OATH compliant PSKC file. Values in the PSKC files may be unencrypted or either encrypted
           with a Pre Shared Key or password. If the values are encrypted, please specify the Pre Shared Key in hex
           format or the password.
@@ -109,17 +95,17 @@
           <mat-form-field class="input-width-xl margin-bottom-16">
             <mat-label i18n>Pre Shared Key</mat-label>
             <input
-              [value]="preSharedKey()"
               (input)="preSharedKey.set($any($event.target).value)"
+              [value]="preSharedKey()"
               i18n-placeholder
               matInput
               placeholder="Pre Shared Key in hex format" />
-            <mat-hint i18n
-              >As the values are encrypted with AES128-CBC, you need to give a 32 characters long hex string.
+            <mat-hint
+              i18n>As the values are encrypted with AES128-CBC, you need to give a 32 characters long hex string.
             </mat-hint>
             @if (!preSharedKeyValid()) {
-              <mat-error i18n
-                >As the values are encrypted with AES128-CBC, you need to give a 32 characters long hex string.
+              <mat-error
+                i18n>As the values are encrypted with AES128-CBC, you need to give a 32 characters long hex string.
               </mat-error>
             }
           </mat-form-field>
@@ -128,8 +114,8 @@
           <mat-form-field class="input-width-xl">
             <mat-label i18n>Password</mat-label>
             <input
-              [value]="pskPassword()"
               (input)="pskPassword.set($any($event.target).value)"
+              [value]="pskPassword()"
               i18n-placeholder
               matInput
               placeholder="Password" />
@@ -139,8 +125,7 @@
           <mat-form-field class="input-width-xl">
             <mat-label i18n>Verification Method for the Authenticity of Imported Tokens</mat-label>
             <mat-select
-              (selectionChange)="pskValidation.set($event.value)"
-              [value]="pskValidation()">
+              (selectionChange)="pskValidation.set($event.value)" [value]="pskValidation()">
               @for (key of Object.keys(pskValidationOptions); track key) {
                 <mat-option [value]="key">{{ pskValidationOptions[key] }}</mat-option>
               }
@@ -156,15 +141,13 @@
     <mat-form-field class="input-width-l">
       <mat-label i18n>Select Realm for Tokens</mat-label>
       <mat-select
-        (selectionChange)="selectedRealms.set($event.value)"
-        [value]="selectedRealms()"
-        multiple>
+        (selectionChange)="selectedRealms.set($event.value)" [value]="selectedRealms()" multiple>
         <!--                <mat-option [value]="'-'"> -</mat-option>-->
         @for (option of realmService.realmOptions(); track option) {
           <mat-option [value]="option">{{ option }}</mat-option>
         }
       </mat-select>
-      <mat-hint i18n> All imported tokens will be added to these realms. </mat-hint>
+      <mat-hint i18n> All imported tokens will be added to these realms.</mat-hint>
     </mat-form-field>
   </div>
 
@@ -175,17 +158,12 @@
       @if (fileName()) {
         <span class="file-name">{{ fileName() }}</span>
         <button
-          (click)="clearFileSelection()"
-          mat-icon-button
-          type="button">
+          (click)="clearFileSelection()" mat-icon-button type="button">
           <mat-icon>add_circle</mat-icon>
         </button>
       } @else {
         <span
-          class="file-name not-selected"
-          i18n
-          >No file selected yet</span
-        >
+          class="file-name not-selected" i18n>No file selected yet</span>
       }
     </div>
 
@@ -198,10 +176,7 @@
       </div>
 
       <input
-        #fileUpload
-        (change)="onFileSelected($event)"
-        class="file-input"
-        type="file" />
+        #fileUpload (change)="onFileSelected($event)" class="file-input" type="file" />
 
       <div>
         <button

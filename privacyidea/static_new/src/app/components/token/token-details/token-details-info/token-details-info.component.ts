@@ -23,11 +23,12 @@ import { MatDivider } from "@angular/material/divider";
 import { MatFormField } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
+import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
 import { EditableElement, EditButtonsComponent } from "@components/shared/edit-buttons/edit-buttons.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { Observable, switchMap } from "rxjs";
-import { TIMESTAMP_INFO_KEYS } from "../token-details.component";
+import { TIMESTAMP_INFO_KEYS } from "../token-details.constants";
 
 @Component({
   selector: "app-token-details-info",
@@ -39,7 +40,8 @@ import { TIMESTAMP_INFO_KEYS } from "../token-details.component";
     MatIconButton,
     MatIcon,
     MatDivider,
-    EditButtonsComponent
+    EditButtonsComponent,
+    DetailsCardComponent
   ],
   templateUrl: "./token-details-info.component.html",
   styleUrl: "./token-details-info.component.scss"
@@ -47,18 +49,6 @@ import { TIMESTAMP_INFO_KEYS } from "../token-details.component";
 export class TokenDetailsInfoComponent {
   protected readonly Object = Object;
   protected readonly hiddenInfoKeys: readonly string[] = TIMESTAMP_INFO_KEYS;
-
-  visibleInfoKeys(value: Record<string, string>): string[] {
-    return Object.keys(value).filter((k) => !this.hiddenInfoKeys.includes(k));
-  }
-
-  asInfoMap(value: unknown): Record<string, string> {
-    return (value ?? {}) as Record<string, string>;
-  }
-
-  asInfoElement(element: EditableElement): EditableElement<Record<string, string>> {
-    return element as EditableElement<Record<string, string>>;
-  }
   private tokenService: TokenServiceInterface = inject(TokenService);
   tokenSerial = this.tokenService.tokenSerial;
   @Input() infoData!: WritableSignal<EditableElement[]>;
@@ -73,6 +63,18 @@ export class TokenDetailsInfoComponent {
     }
   });
   protected authService: AuthServiceInterface = inject(AuthService);
+
+  visibleInfoKeys(value: Record<string, string>): string[] {
+    return Object.keys(value).filter((k) => !this.hiddenInfoKeys.includes(k));
+  }
+
+  asInfoMap(value: unknown): Record<string, string> {
+    return (value ?? {}) as Record<string, string>;
+  }
+
+  asInfoElement(element: EditableElement): EditableElement<Record<string, string>> {
+    return element as EditableElement<Record<string, string>>;
+  }
 
   toggleInfoEdit(): void {
     if (this.isEditingInfo()) {

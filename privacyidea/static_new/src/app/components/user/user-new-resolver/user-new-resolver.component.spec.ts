@@ -40,7 +40,9 @@ interface MockResolverResourceShape {
   hasValue: jest.Mock<boolean>;
 }
 
-(globalThis as { IntersectionObserver: typeof IntersectionObserver }).IntersectionObserver = class IntersectionObserver {
+(globalThis as {
+  IntersectionObserver: typeof IntersectionObserver
+}).IntersectionObserver = class IntersectionObserver {
   disconnect = jest.fn();
   observe = jest.fn();
   unobserve = jest.fn();
@@ -142,7 +144,7 @@ describe("UserNewResolverComponent", () => {
     expect(component.resolverType()).toBe("passwdresolver");
     expect(component.formData["fileName"]).toBe("/tmp/test");
 
-    const inputElement = fixture.nativeElement.querySelector('input[placeholder="/etc/passwd"]');
+    const inputElement = fixture.nativeElement.querySelector("input[placeholder=\"/etc/passwd\"]");
     expect(inputElement?.value).toBe("/tmp/test");
   });
 
@@ -181,7 +183,7 @@ describe("UserNewResolverComponent", () => {
     expect(component.isEditMode()).toBeTruthy();
     expect(component.resolverType()).toBe("sqlresolver");
 
-    const dbInput = fixture.nativeElement.querySelector('input[placeholder="YourDatabase"]');
+    const dbInput = fixture.nativeElement.querySelector("input[placeholder=\"YourDatabase\"]");
     expect(dbInput?.value).toBe("testdb");
   });
 

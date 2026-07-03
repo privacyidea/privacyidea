@@ -1,0 +1,17 @@
+@use "table";
+
+:host {
+  display: contents;
+}
+
+.details-card--assignment {
+  @include table.card-width(m);
+}
+
+.container-serial-row {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  min-height: 101px;
+}

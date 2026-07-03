@@ -59,7 +59,7 @@ describe("AuthGuard — CanMatch helpers", () => {
     authMock = TestBed.inject(AuthService) as unknown as MockAuthService;
   });
 
-  it('adminMatch returns true only for role "admin"', () => {
+  it("adminMatch returns true only for role \"admin\"", () => {
     authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, role: "admin" });
     expect(runMatch(adminMatch)).toBe(true);
 
@@ -67,7 +67,7 @@ describe("AuthGuard — CanMatch helpers", () => {
     expect(runMatch(adminMatch)).toBe(false);
   });
 
-  it('selfServiceMatch returns true only for role "user"', () => {
+  it("selfServiceMatch returns true only for role \"user\"", () => {
     authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, role: "user" });
     expect(runMatch(selfServiceMatch)).toBe(true);
 

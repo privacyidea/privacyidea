@@ -35,7 +35,7 @@ import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { ContainerDetailToken } from "@services/container/container.service";
-import { TokenDetails, TokenService, Tokens } from "@services/token/token.service";
+import { TokenDetails, Tokens, TokenService } from "@services/token/token.service";
 import { UserService } from "@services/user/user.service";
 
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";

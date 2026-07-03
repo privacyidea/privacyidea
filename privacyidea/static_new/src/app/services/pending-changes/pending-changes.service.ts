@@ -36,27 +36,27 @@ export interface PendingChangesServiceInterface {
 
 @Injectable()
 export class PendingChangesService implements PendingChangesServiceInterface, OnDestroy {
-  private _hasChangesFn = signal<(() => boolean) | null>(null);
-  private _saveFn = signal<(() => Promise<boolean>) | null>(null);
-  private _validChanges: () => boolean = signal(true);
+  constructor() {
+    window.addEventListener("beforeunload", this.beforeUnloadHandler);
+  }
 
   private readonly beforeUnloadHandler = (event: BeforeUnloadEvent): void => {
     if (this.hasChanges) {
       event.preventDefault();
     }
   };
+  private _hasChangesFn = signal<(() => boolean) | null>(null);
+  private _saveFn = signal<(() => Promise<boolean>) | null>(null);
+  private _validChanges: () => boolean = signal(true);
 
-  constructor() {
-    window.addEventListener("beforeunload", this.beforeUnloadHandler);
-  }
-
-  ngOnDestroy(): void {
-    window.removeEventListener("beforeunload", this.beforeUnloadHandler);
-  }
 
   get hasChanges(): boolean {
     const fn = this._hasChangesFn();
     return fn ? fn() : false;
+  }
+
+  get validChanges(): boolean {
+    return this._validChanges();
   }
 
   get hasSaveFn(): boolean {
@@ -86,7 +86,7 @@ export class PendingChangesService implements PendingChangesServiceInterface, On
     this._validChanges = fn;
   }
 
-  get validChanges(): boolean {
-    return this._validChanges();
+  ngOnDestroy(): void {
+    window.removeEventListener("beforeunload", this.beforeUnloadHandler);
   }
 }
