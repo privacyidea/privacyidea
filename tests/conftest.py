@@ -98,6 +98,45 @@ import pytest
 
 from privacyidea.lib.caconnector import save_caconnector
 
+
+def _isolate_editable_testuser_db(worker):
+    """Give each xdist worker its own copy of ``tests/testdata/testuser.sqlite``.
+
+    Several test files (recovery, register, usercache, usernotification, ...)
+    use this SQLite file as an *editable* SQL resolver and insert/delete users
+    in it during the test. All xdist workers resolve the same CWD-relative path
+    (``sqlite:///tests/testdata//testuser.sqlite``), so under ``-n`` they share
+    the single on-disk file and clobber each other's rows. That surfaces as
+    rare, confusing failures far from the cause - e.g. ``ERR904 user can not be
+    found`` right after a successful ``create_user``, ``Realm can not be
+    deleted`` because a foreign worker's token still references it, or user
+    cache count mismatches - depending on which worker loses the race.
+
+    Redirect the shared seed to a per-worker copy in ``/tmp`` (mirroring the
+    per-worker main DB above). Only the shared ``tests/testdata`` seed is
+    rewritten; test_lib_resolver.py already copies the file to its own tempdir
+    per test and must keep that isolation, so connect strings pointing
+    elsewhere are left untouched."""
+    worker_db = f"/tmp/pi-testuser-{worker}.sqlite"
+    shutil.copyfile(os.path.join("tests", "testdata", "testuser.sqlite"), worker_db)
+
+    from privacyidea.lib.resolvers.SQLIdResolver import IdResolver
+    _original_create_connect_string = IdResolver._create_connect_string
+
+    def _worker_local_connect_string(param):
+        connect_string = _original_create_connect_string(param)
+        if (param.get("Driver") == "sqlite" and "tests/testdata" in connect_string
+                and connect_string.endswith("testuser.sqlite")):
+            return f"sqlite:///{worker_db}"
+        return connect_string
+
+    IdResolver._create_connect_string = staticmethod(_worker_local_connect_string)
+
+
+if _worker:
+    _isolate_editable_testuser_db(_worker)
+
+
 _redis_flush_client = None
 
 
