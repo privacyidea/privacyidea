@@ -72,20 +72,14 @@ jobs:
           persist-credentials: false
 
       - name: Generate throwaway secrets
-        working-directory: deploy/docker/secrets
+        working-directory: deploy/docker
         run: |
-          # enckey is raw 96 binary bytes — do NOT hex/base64 encode it.
-          head -c 96 /dev/urandom > enckey
-          python3 -c "import secrets; print(secrets.token_urlsafe())"   > pi_pepper
-          python3 -c "import secrets; print(secrets.token_hex())"       > secret_key
-          python3 -c "import secrets; print(secrets.token_urlsafe(32))" > mariadb_password
-          python3 -c "import secrets; print(secrets.token_urlsafe(32))" > mariadb_root_password
-          printf 'smoke-test-admin-pw\n'                                > bootstrap_admin_password
-          # 0644, not 0600: file-based compose secrets are bind-mounted preserving
-          # host ownership, and the container runs as a non-root user (uid 65532)
-          # that differs from the file owner — so the secrets must be world-readable
-          # to be readable inside the container.
-          chmod 644 enckey pi_pepper secret_key mariadb_password mariadb_root_password bootstrap_admin_password
+          # Use the same generator operators use, so CI can never drift from the
+          # set of secrets compose requires (this is what missed the audit keypair
+          # before). Then pin a known admin password for the smoke test to log in.
+          ./scripts/init-secrets.sh
+          printf 'smoke-test-admin-pw\n' > secrets/bootstrap_admin_password
+          chmod 644 secrets/bootstrap_admin_password
 
       - name: Build images
         run: docker compose -f deploy/docker/compose.yaml build
