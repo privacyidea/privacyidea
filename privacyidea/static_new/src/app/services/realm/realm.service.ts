@@ -186,6 +186,20 @@ export class RealmService implements RealmServiceInterface {
     return defaultRealm;
   });
 
+  constructor() {
+    effect(() => {
+      this.notificationService.handleResourceError(this.realmResource.error(), "realms");
+    });
+
+    effect(() => {
+      this.notificationService.handleResourceError(this.defaultRealmResource.error(), "default realm");
+    });
+
+    effect(() => {
+      this.notificationService.handleResourceError(this.adminRealmResource.error(), "admin realms");
+    });
+  }
+
   createRealm(
     realm: string,
     nodeId: string,
@@ -266,19 +280,7 @@ export class RealmService implements RealmServiceInterface {
         return throwError(() => error);
       })
     );
-  }
-
-  constructor() {
-    effect(() => {
-      this.notificationService.handleResourceError(this.realmResource.error(), "realms");
-    });
-
-    effect(() => {
-      this.notificationService.handleResourceError(this.defaultRealmResource.error(), "default realm");
-    });
-
-    effect(() => {
-      this.notificationService.handleResourceError(this.adminRealmResource.error(), "admin realms");
-    });
-  }
 }
+
+}
+

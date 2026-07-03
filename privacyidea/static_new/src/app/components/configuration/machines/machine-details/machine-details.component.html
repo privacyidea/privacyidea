@@ -210,6 +210,7 @@
               } @else {
                 <button
                   (click)="saveOptions(token)"
+                  color="primary"
                   i18n-matTooltip
                   mat-icon-button
                   matTooltip="Save Options">
@@ -217,7 +218,7 @@
                 </button>
                 <button
                   (click)="cancelEdit(token)"
-                  color="warn"
+                  class="red"
                   i18n-matTooltip
                   mat-icon-button
                   matTooltip="Cancel">

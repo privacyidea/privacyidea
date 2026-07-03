@@ -97,21 +97,44 @@ export class EventEditPageComponent implements OnDestroy {
   private readonly pendingChangesService = inject(PendingChangesService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
-
+  private editEventId: string | null = null;
   availableTabs: eventTab[] = ["action", "conditions"];
-
   // original event handler serves as input for child components to avoid a loop of change detection
   event = signal(EMPTY_EVENT);
   // edited event handler
   editEvent = signal(EMPTY_EVENT);
   isNewEvent = signal(false);
-  hasChanges = signal(false);
-  private editEventId: string | null = null;
-
-  selectedEvents = linkedSignal(() => this.event().event);
-
   readonly title = computed(() =>
     this.isNewEvent() ? $localize`Create New Event Handler` : $localize`Edit Event Handler`
+  );
+  hasChanges = signal(false);
+  selectedEvents = linkedSignal(() => this.event().event);
+  validConditionsDefinition = computed(() => {
+    if (!this.editEvent().conditions) return true;
+    for (const conditionValue of Object.values(this.editEvent().conditions)) {
+      if (conditionValue === null || conditionValue === undefined || conditionValue === "") return false;
+    }
+    return true;
+  });
+  validOptions = signal(false);
+  sectionValidity = computed(() => {
+    const validity: Record<string, boolean> = {};
+    validity["events"] = this.editEvent().event.length > 0;
+    validity["action"] = !!this.editEvent().action && this.validOptions();
+    validity["name"] = this.editEvent().name !== "" && /^[a-zA-Z0-9._-]*$/.test(this.editEvent().name);
+    validity["handlerModule"] =
+      this.eventService.selectedHandlerModule() !== null && this.eventService.selectedHandlerModule() !== "";
+    validity["position"] = this.editEvent().position !== null && this.editEvent().position !== "";
+    validity["conditions"] = this.validConditionsDefinition();
+    return validity;
+  });
+  canSave = computed(() => Object.values(this.sectionValidity()).every((value: boolean) => value));
+  nameTouched = signal(false);
+  showNameError = computed(() => this.nameTouched() && !this.sectionValidity()["name"]);
+  showHandlerModuleError = computed(() => !this.sectionValidity()["handlerModule"]);
+  showPositionError = computed(() => !this.sectionValidity()["position"]);
+  showOrderingError = computed(
+    () => this.editEvent().ordering === null || (this.editEvent().ordering as unknown) === ""
   );
 
   constructor() {
@@ -164,37 +187,6 @@ export class EventEditPageComponent implements OnDestroy {
   cancelEdit(): void {
     this.router.navigateByUrl(ROUTE_PATHS.EVENTS);
   }
-
-  validConditionsDefinition = computed(() => {
-    if (!this.editEvent().conditions) return true;
-    for (const conditionValue of Object.values(this.editEvent().conditions)) {
-      if (conditionValue === null || conditionValue === undefined || conditionValue === "") return false;
-    }
-    return true;
-  });
-
-  validOptions = signal(false);
-
-  sectionValidity = computed(() => {
-    const validity: Record<string, boolean> = {};
-    validity["events"] = this.editEvent().event.length > 0;
-    validity["action"] = !!this.editEvent().action && this.validOptions();
-    validity["name"] = this.editEvent().name !== "" && /^[a-zA-Z0-9._-]*$/.test(this.editEvent().name);
-    validity["handlerModule"] =
-      this.eventService.selectedHandlerModule() !== null && this.eventService.selectedHandlerModule() !== "";
-    validity["position"] = this.editEvent().position !== null && this.editEvent().position !== "";
-    validity["conditions"] = this.validConditionsDefinition();
-    return validity;
-  });
-  canSave = computed(() => Object.values(this.sectionValidity()).every((value: boolean) => value));
-
-  nameTouched = signal(false);
-  showNameError = computed(() => this.nameTouched() && !this.sectionValidity()["name"]);
-  showHandlerModuleError = computed(() => !this.sectionValidity()["handlerModule"]);
-  showPositionError = computed(() => !this.sectionValidity()["position"]);
-  showOrderingError = computed(
-    () => this.editEvent().ordering === null || (this.editEvent().ordering as unknown) === ""
-  );
 
   setNewAction(action: string): void {
     this.editEvent.set({ ...this.editEvent(), action });

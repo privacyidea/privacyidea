@@ -5,6 +5,7 @@
 .smtp-servers-container {
   @include styles.main-component-style;
   @include table.base-table-structure(".smtp-servers-table", ".smtp-table-filter", ".table-scroll-container");
+  max-height: var(--table-max-height);
 }
 
 .actions-container {

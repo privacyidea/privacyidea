@@ -11,6 +11,7 @@ import { MockPendingChangesService, MockSystemService } from "@testing/mock-serv
 import { Observable, of } from "rxjs";
 import { TokenTypeConfigComponent } from "./token-type-config.component";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { QUESTION_NUMBER_OF_ANSWERS } from "@constants/token.constants";
 
 class MockActivatedRoute {
   fragment: Observable<string | undefined> = of();
@@ -102,15 +103,16 @@ describe("TokenTypeConfigComponent", () => {
     expect(reloadSpy).toHaveBeenCalled();
   });
 
-  it("should add new question to formData and increment nextQuestion without saving", () => {
+  it("should add an empty question to formData without saving", () => {
     const saveSpy = jest.spyOn(component, "save");
-    const initialNext = component.nextQuestionIndex();
-    const newQuestion = "My new question?";
+    const before = component.questionKeys.length;
 
-    component.addQuestion(newQuestion);
+    component.addQuestion();
 
-    expect(component.formData()[`question.question.${initialNext}`]).toBe(newQuestion);
-    expect(component.nextQuestionIndex()).toBe(initialNext + 1);
+    const questionKeys = component.questionKeys;
+    expect(questionKeys.length).toBe(before + 1);
+    const addedKey = questionKeys[questionKeys.length - 1];
+    expect(component.formData()[addedKey]).toBe("");
     expect(saveSpy).not.toHaveBeenCalled();
   });
 
@@ -133,6 +135,56 @@ describe("TokenTypeConfigComponent", () => {
     expect(component.formData()).not.toHaveProperty(entryToDelete);
     expect(component.formData()[entryToKeep]).toEqual("456");
     expect(component.pendingDeletes().has(entryToDelete)).toBe(true);
+  });
+
+  it("should not resurrect a deleted question as an empty entry on save", async () => {
+    const systemService = TestBed.inject(SystemService) as unknown as MockSystemService;
+    const saveSpy = jest.spyOn(systemService, "saveSystemConfig");
+    const deleteSpy = jest.spyOn(systemService, "deleteSystemConfig");
+
+    systemService.systemConfig.set({
+      "question.question.0": "Q0",
+      [QUESTION_NUMBER_OF_ANSWERS]: "1"
+    });
+    fixture.detectChanges();
+
+    // Deleting the only question re-adds an empty slot via reconcile (reusing index 0)
+    // and queues the backend key for deletion.
+    component.deleteQuestion("question.question.0");
+
+    await component.save();
+
+    // The backend key must be deleted and NOT written back as an empty string.
+    expect(deleteSpy).toHaveBeenCalledWith("question.question.0");
+    const savedPayload = saveSpy.mock.calls[0][0] as Record<string, string>;
+    expect(savedPayload).not.toHaveProperty("question.question.0");
+  });
+
+  it("should delete an emptied question instead of persisting a blank value", async () => {
+    const systemService = TestBed.inject(SystemService) as unknown as MockSystemService;
+    const saveSpy = jest.spyOn(systemService, "saveSystemConfig");
+    const deleteSpy = jest.spyOn(systemService, "deleteSystemConfig");
+
+    systemService.systemConfig.set({
+      "question.question.0": "Q0",
+      "question.question.1": "Q1",
+      [QUESTION_NUMBER_OF_ANSWERS]: "2"
+    });
+    fixture.detectChanges();
+
+    // User clears the text of the second question (without touching the answer count).
+    component.onFormDataChange({
+      "question.question.0": "Q0",
+      "question.question.1": "",
+      [QUESTION_NUMBER_OF_ANSWERS]: "2"
+    });
+
+    await component.save();
+
+    expect(deleteSpy).toHaveBeenCalledWith("question.question.1");
+    const savedPayload = saveSpy.mock.calls[0][0] as Record<string, string>;
+    expect(savedPayload).not.toHaveProperty("question.question.1");
+    expect(savedPayload["question.question.0"]).toBe("Q0");
   });
 
   it("should update formData on onCheckboxChange", () => {

@@ -33,13 +33,13 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
 export class ResyncTokenActionComponent {
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
-  fristOTPValue = signal("");
+  firstOTPValue = signal("");
   secondOTPValue = signal("");
 
   async resyncOTPToken() {
     const response = await this.tokenService.resyncOTPToken(
       this.tokenService.tokenSerial(),
-      this.fristOTPValue(),
+      this.firstOTPValue(),
       this.secondOTPValue()
     );
 

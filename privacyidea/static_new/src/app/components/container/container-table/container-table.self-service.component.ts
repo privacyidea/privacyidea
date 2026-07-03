@@ -31,6 +31,7 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { ContainerTableComponent } from "@components/container/container-table/container-table.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
@@ -53,7 +54,8 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
     MatCheckboxModule,
     MatIcon,
     MatButtonModule,
-    ScrollToTopDirective
+    ScrollToTopDirective,
+    ScrollEdgesDirective
   ],
   templateUrl: "./container-table.self-service.component.html",
   styleUrl: "./container-table.component.scss"

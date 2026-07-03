@@ -60,13 +60,6 @@ export class PrivacyideaServerService implements PrivacyideaServerServiceInterfa
   private readonly http = inject(HttpClient);
 
   readonly privacyideaServerBaseUrl = environment.proxyUrl + "/privacyideaserver/";
-
-  constructor() {
-    effect(() => {
-      this.notificationService.handleResourceError(this.remoteServerResource.error(), "privacyIDEA servers");
-    });
-  }
-
   remoteServerResource = httpResource<PiResponse<PrivacyideaServers>>(() => {
     if (this.authService.isSelfServiceUser()) return undefined;
     if (!this.contentService.onExternalPrivacyIdea() && !this.contentService.onTokenEnrollmentLikely()) {
@@ -92,6 +85,12 @@ export class PrivacyideaServerService implements PrivacyideaServerServiceInterfa
     }
     return [];
   });
+
+  constructor() {
+    effect(() => {
+      this.notificationService.handleResourceError(this.remoteServerResource.error(), "privacyIDEA servers");
+    });
+  }
 
   async postPrivacyideaServer(server: PrivacyideaServer): Promise<void> {
     const url = `${this.privacyideaServerBaseUrl}${encodeURIComponent(server.identifier)}`;
@@ -146,4 +145,6 @@ export class PrivacyideaServerService implements PrivacyideaServerServiceInterfa
         return false;
       });
   }
+
 }
+

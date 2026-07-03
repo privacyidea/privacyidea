@@ -29,6 +29,7 @@ import { MatTableModule } from "@angular/material/table";
 import { MatTooltip } from "@angular/material/tooltip";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
@@ -49,7 +50,8 @@ import { TokenTableComponent } from "./token-table.component";
     MatIcon,
     MatTooltip,
     ScrollToTopDirective,
-    StickyHeaderDirective
+    StickyHeaderDirective,
+    ScrollEdgesDirective
   ],
   templateUrl: "./token-table.self-service.component.html",
   styleUrl: "./token-table.component.scss"

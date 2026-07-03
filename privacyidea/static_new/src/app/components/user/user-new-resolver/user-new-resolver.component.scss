@@ -7,6 +7,7 @@
 
 .user-new-resolver-container {
   @include styles.main-component-style;
+  max-height: var(--table-max-height);
   min-width: 632px;
 
   @media (max-width: 1000px) {

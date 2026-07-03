@@ -6,4 +6,6 @@
   box-sizing: border-box;
   width: min(calc(var(--input-width-xxl) + 2 * var(--global-padding)), calc(100vw - 4 * var(--global-padding)));
   margin-inline: auto;
+  // Shared detail/edit-page cap. See --detail-max-height in styles.scss.
+  max-height: var(--detail-max-height);
 }

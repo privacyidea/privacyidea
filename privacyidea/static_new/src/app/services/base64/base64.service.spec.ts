@@ -21,8 +21,11 @@ import { Base64Service } from "./base64.service";
 
 interface Base64PrivateAccess {
   base64EncArr(bytes: ArrayBufferLike): string;
+
   base64DecToArr(sBase64: string, nBlockSize?: number): Uint8Array;
+
   b64ToUint6(nChr: number): number;
+
   uint6ToB64(nUint6: number): number;
 }
 

@@ -27,14 +27,14 @@
       </mat-expansion-panel-header>
       <div class="configured-list">
         <app-event-condition-list
-          [conditions]="selectedConditions()"
-          [action]="'delete'"
-          [emitOnConditionValueChange]="true"
-          [inputRequired]="true"
-          [toolTipText]="removeToolTip"
+          (actionButtonClicked)="removeCondition($event.conditionName)"
           (newConditionValue)="onConditionValueChange($event.conditionName, $event.conditionValue)"
+          [action]="'delete'"
+          [conditions]="selectedConditions()"
+          [emitOnConditionValueChange]="true"
           [focusConditionName]="addedCondition()"
-          (actionButtonClicked)="removeCondition($event.conditionName)" />
+          [inputRequired]="true"
+          [toolTipText]="removeToolTip" />
       </div>
     </mat-expansion-panel>
   }
@@ -49,45 +49,42 @@
       @if (availableNonEmptyGroups().length > 1) {
         <div class="selector-row">
           <app-selector-buttons
-            class="flex-1"
-            [values]="availableNonEmptyGroups()"
+            (selected)="selectedGroup.set($event ?? '')"
             [initialValue]="selectedGroup()"
-            (selected)="selectedGroup.set($event ?? '')" />
+            [values]="availableNonEmptyGroups()"
+            class="flex-1" />
         </div>
       }
 
       <app-clearable-input
-        (clearButtonClick)="searchTerm.set('')"
-        [showClearButton]="searchTerm().length > 0">
+        (clearButtonClick)="searchTerm.set('')" [showClearButton]="searchTerm().length > 0">
         <input
-          clearableInput
-          type="text"
-          placeholder="Search conditions..."
-          i18n-placeholder
-          [ngModel]="searchTerm()"
           (ngModelChange)="searchTerm.set($event)"
-          class="search-input" />
+          [ngModel]="searchTerm()"
+          class="search-input"
+          clearableInput
+          i18n-placeholder
+          placeholder="Search conditions..."
+          type="text" />
       </app-clearable-input>
 
       @if (Object.keys(remainingConditionsInSelectedGroup()).length > 0) {
         <div class="conditions-list">
           <app-event-condition-list
-            [conditions]="remainingConditionsInSelectedGroup()"
-            [action]="'add'"
-            [emitOnConditionValueChange]="false"
-            [actionOnEnter]="true"
-            [toolTipText]="addToolTip"
+            (actionButtonClicked)="onConditionValueChange($event.conditionName, $event.conditionValue)"
             (newConditionValue)="onConditionValueToBeAddedChange($event.conditionName, $event.conditionValue)"
-            (actionButtonClicked)="onConditionValueChange($event.conditionName, $event.conditionValue)" />
+            [actionOnEnter]="true"
+            [action]="'add'"
+            [conditions]="remainingConditionsInSelectedGroup()"
+            [emitOnConditionValueChange]="false"
+            [toolTipText]="addToolTip" />
         </div>
       } @else {
         <div class="flex-column">
           @if (searchTerm() !== "") {
             <p i18n>No conditions match the search filter.</p>
             <button
-              mat-stroked-button
-              (click)="searchTerm.set('')"
-              i18n>
+              (click)="searchTerm.set('')" i18n mat-stroked-button>
               Clear Filter
             </button>
           } @else {

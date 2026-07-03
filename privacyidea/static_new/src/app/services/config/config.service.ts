@@ -45,6 +45,7 @@ export interface AppConfig {
 
 export interface ConfigServiceInterface {
   config: WritableSignal<AppConfig>;
+
   loadConfig(): void;
 }
 

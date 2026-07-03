@@ -246,6 +246,11 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
     this.stopPushPolling();
   }
 
+  clearRealmSelection(event: MouseEvent) {
+    event.stopPropagation();
+    this.realm.set("");
+  }
+
   private startPushPolling(): void {
     this.stopPushPolling();
 
@@ -370,10 +375,5 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
         setTimeout(() => this.otpInput?.nativeElement.focus(), 0);
       }
     }
-  }
-
-  clearRealmSelection(event: MouseEvent) {
-    event.stopPropagation();
-    this.realm.set("");
   }
 }
