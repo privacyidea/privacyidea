@@ -14,10 +14,14 @@
 #                PI_RESTORE_ASSUME_YES=1 environment variable. Intended for
 #                automated/CI use — never use it against production data.
 #
-# The backup archive must contain:
-#   database.sql  — logical SQL dump
-#   enckey        — encryption key used when the backup was taken
-#   pi_pepper     — pepper used when the backup was taken
+# The backup archive contains:
+#   database.sql  — logical SQL dump (required)
+#   enckey        — encryption key used when the backup was taken (required)
+#   pi_pepper     — password pepper used when the backup was taken
+#   secret_key    — Flask session signing key
+# database.sql and enckey are required; the keys are reconciled with secrets/ (a
+# missing key is installed, a matching one kept, a differing one refused). Older
+# archives may omit pi_pepper/secret_key — those are simply skipped.
 #
 # WARNING: This DROPS and recreates the pi database. All current data will be lost.
 
