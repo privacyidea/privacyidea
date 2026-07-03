@@ -263,6 +263,15 @@ class TokenFailCounterTestCase(MyTestCase):
         self.assertEqual(1, tok.get_failcount())
         self.assertIsNone(tok.get_tokeninfo(FAILCOUNTER_EXCEEDED))
 
+        # The checks below re-lock the token and expect it to *stay* locked.
+        # FAILCOUNTER_EXCEEDED is stored with minute precision (DATE_FORMAT), so
+        # with a 1-minute clear timeout a token that gets locked late within a
+        # wall-clock minute could be auto-cleared only seconds later, as soon as
+        # the minute rolls over - spuriously unlocking it. Use a clear timeout
+        # far larger than the test runtime so these assertions can't race a
+        # minute boundary.
+        set_privacyidea_config(FAILCOUNTER_CLEAR_TIMEOUT, 60)
+
         # after nine more invalid auth requests, the token is locked again
         for i in range(2, 11):
             res, reply = check_token_list([tok], "pin123456")
