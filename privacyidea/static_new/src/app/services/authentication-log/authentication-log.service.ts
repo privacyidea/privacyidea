@@ -60,7 +60,7 @@ export interface AuthenticationLogEventType {
   outcome: string;
 }
 
-const DEFAULT_PAGE_SIZE = 15;
+const DEFAULT_PAGE_SIZE = 100;
 
 // Shallow value-equality for the flat string->string filter params record.
 function shallowEqualRecord(a: Record<string, string>, b: Record<string, string>): boolean {
