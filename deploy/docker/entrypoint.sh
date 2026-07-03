@@ -25,6 +25,24 @@ if [ -z "${PI_BOOTSTRAP_ADMIN_PASSWORD:-}" ] && [ -f /run/secrets/bootstrap_admi
     export PI_BOOTSTRAP_ADMIN_PASSWORD
 fi
 
+# Fail closed on audit signing. Without the keypair, privacyIDEA silently disables
+# audit-log AND response signing — refuse to start instead, unless the operator
+# has explicitly opted out with PRIVACYIDEA_PI_AUDIT_NO_SIGN=true. (In the bundled
+# compose the keypair is a mandatory secret, so this mainly guards hand-rolled
+# runs / removed mounts.)
+if [ ! -f /run/secrets/audit_key_private ] || [ ! -f /run/secrets/audit_key_public ]; then
+    case "$(printf '%s' "${PRIVACYIDEA_PI_AUDIT_NO_SIGN:-}" | tr '[:upper:]' '[:lower:]')" in
+        true|1|yes)
+            echo "Audit signing keys absent and PRIVACYIDEA_PI_AUDIT_NO_SIGN is set — running unsigned." >&2
+            ;;
+        *)
+            echo "FATAL: audit signing keypair not found at /run/secrets/audit_key_{private,public}." >&2
+            echo "  Run 'make init' to generate it, or set PRIVACYIDEA_PI_AUDIT_NO_SIGN=true to run unsigned." >&2
+            exit 1
+            ;;
+    esac
+fi
+
 DELAY="${PI_STARTUP_DELAY:-0}"
 # Guard against a non-integer value (e.g. "5s") — the arithmetic test would
 # otherwise print a shell error. Fall back to no delay.

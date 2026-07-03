@@ -81,3 +81,6 @@ multi-tenant host you can still do it as a deliberate, root-required opt-in.
 - The database passwords in `mariadb_password` / `mariadb_root_password` are read
   by both the app and MariaDB from these files — there is nothing to keep in sync
   by hand.
+- `mariadb_root_password` is a **persistent** secret (needed by `scripts/backup.sh`
+  and `restore.sh`). Anyone who can read this file has full DB root access, so keep
+  the `secrets/` directory locked down; rotate it if it may have been exposed.

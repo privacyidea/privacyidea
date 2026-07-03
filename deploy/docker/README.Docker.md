@@ -284,6 +284,17 @@ let the operator choose an interval or a fixed hour from one env var. Adding a
 future maintenance task is a single entry plus any `PI_CRON_*` variables it
 reads; see the worked example in that file.
 
+Scheduler caveats (single-node, in-process — deliberately simple):
+- **Interval schedules count from container start, in memory.** A `_INTERVAL`
+  longer than how often the container restarts may never fire (the timer resets
+  on each start). For long periods (daily+), prefer the fixed-hour form
+  (`_HOUR`), which is restart-independent.
+- **The scheduler is single-threaded and samples once per minute.** A task that
+  runs longer than the gap to a fixed-time task's minute can delay or skip that
+  cycle (bounded by `PI_CRON_TASK_TIMEOUT`). Fine for the light default jobs; for
+  heavy custom work prefer the UI periodic-task lane.
+- Times are **UTC** (the image has no tzdata; see §Requirements/Maintenance notes).
+
 Upgrading
 ---------
 
