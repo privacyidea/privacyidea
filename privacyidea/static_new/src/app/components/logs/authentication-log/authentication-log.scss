@@ -15,6 +15,16 @@
   overflow-y: auto;
 }
 
+.header-label {
+  line-height: 1.2;
+}
+
+.header-hint {
+  font-size: 0.75rem;
+  color: var(--mat-sys-on-surface-variant);
+  white-space: nowrap;
+}
+
 .filter-with-actions {
   display: flex;
   align-items: center;

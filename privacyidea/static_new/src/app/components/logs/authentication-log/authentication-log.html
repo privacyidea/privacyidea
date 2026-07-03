@@ -90,7 +90,14 @@
           aria-label="{{ column.label }} Header"
           mat-header-cell>
           <div class="flex ali-center">
-            {{ column.label }}
+            <div class="header-label">
+              {{ column.label }}
+              @if (column.key === "timestamp") {
+                <span
+                  class="header-hint"
+                  i18n>(local time)</span>
+              }
+            </div>
             @if (column.filterable || column.sortable) {
               <div class="margin-left-16 flex ali-center">
                 @if (column.filterable) {
@@ -214,7 +221,7 @@
           <div [class.cell-scroll]="scrollableColumnKeys.includes(column.key)">
             @switch (column.key) {
               @case ("timestamp") {
-                <span>{{ element.timestamp | date: "yyyy-MM-dd HH:mm:ss ZZZZZ" }}</span>
+                <span>{{ element.timestamp | date: "yyyy-MM-dd HH:mm:ss" }}</span>
               }
               @case ("event_type") {
                 <span [ngClass]="getEventTypeClass(element[column.key])">
