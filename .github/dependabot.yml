@@ -7,6 +7,13 @@ updates:
       interval: "weekly"
     cooldown:
       default-days: 7
+    # Bundle all action updates into a single PR so we only have to run the
+    # "branch must be up to date with master" merge dance once per week
+    # instead of once per action.
+    groups:
+      github-actions:
+        patterns:
+          - "*"
 
   # Python and npm dependencies are updated manually on our schedule.
   # Dependabot PRs for these ecosystems tend to fail CI and create noise
