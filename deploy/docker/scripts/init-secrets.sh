@@ -39,6 +39,18 @@ gen secret_key            python3 -c "import secrets; print(secrets.token_hex())
 gen mariadb_password      python3 -c "import secrets; print(secrets.token_urlsafe(32))"
 gen mariadb_root_password python3 -c "import secrets; print(secrets.token_urlsafe(32))"
 
+# Audit signing keypair. DockerConfig auto-detects /run/secrets/audit_key_{public,private}
+# and privacyIDEA signs every audit entry (and API responses) with it. Without the
+# keypair, audit and response signing are silently disabled — so generate it here.
+if [[ -s "$SECRETS_DIR/audit_key_private" ]]; then
+    echo "[init-secrets] audit_key_private already exists — keeping it"
+else
+    openssl genrsa -out "$SECRETS_DIR/audit_key_private" 2048 2>/dev/null
+    openssl rsa -in "$SECRETS_DIR/audit_key_private" -pubout -out "$SECRETS_DIR/audit_key_public" 2>/dev/null
+    chmod 644 "$SECRETS_DIR/audit_key_private" "$SECRETS_DIR/audit_key_public"
+    echo "[init-secrets] generated audit_key_private + audit_key_public"
+fi
+
 # The admin password must be shown once so the operator can log in the first time.
 BOOTSTRAP_FILE="$SECRETS_DIR/bootstrap_admin_password"
 NEW_ADMIN_PW=false

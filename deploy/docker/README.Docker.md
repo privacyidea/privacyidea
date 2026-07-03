@@ -24,8 +24,8 @@ Requirements
 
 - Docker Engine 24+ with the Compose v2 plugin (`docker compose`, not
   `docker-compose`).
-- `make` and `python3` on the host for the helper targets (`make init` uses
-  `python3` to generate secrets).
+- `make`, `python3` and `openssl` on the host for the helper targets (`make init`
+  uses them to generate the secrets and the audit-signing keypair).
 - Free host ports: `8080` (the app) and, for the optional TLS profile, `80`/`443`.
 - Roughly 1–2 GB RAM and 2 CPUs is comfortable for a small deployment.
 
@@ -40,9 +40,10 @@ make up       # start the stack
 make smoke    # optional: verify readiness + admin login
 ```
 
-`make init` writes the six secret files with the correct format and permissions
-(see [`secrets/README.md`](./secrets/README.md) if you prefer to generate them by
-hand) and copies `.env.template` to `.env`. Review `.env` — at minimum set your
+`make init` writes the secret files (keys, passwords, and the audit-signing
+keypair) with the correct format and permissions (see
+[`secrets/README.md`](./secrets/README.md) if you prefer to generate them by hand)
+and copies `.env.template` to `.env`. Review `.env` — at minimum set your
 public URL via `PRIVACYIDEA_PI_BASE_URL` in `example.env`.
 
 `pi-init` runs first (tables, migrations, admin), then `pi` and `pi-cron` start.
@@ -251,7 +252,7 @@ Maintenance (pi-cron)
 
 - every minute — `privacyidea-cron run_scheduled` (runs the periodic tasks
   described below)
-- hourly — `pi-manage challenge cleanup`
+- hourly — `pi-manage config challenge cleanup`
 - daily at `PI_CRON_AUDIT_HOUR` (default 02:00) — `pi-manage audit rotate`.
   Alternatively set `PI_CRON_AUDIT_INTERVAL` (e.g. `6h`, `90m`, `2d`) to run on a
   fixed interval instead of a daily hour; it takes precedence if both are set.

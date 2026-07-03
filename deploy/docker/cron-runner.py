@@ -171,7 +171,7 @@ TASKS = [
     Task("challenge cleanup",
          _bool("PI_CRON_CHALLENGE_CLEANUP", True),
          hourly(),
-         lambda: ["pi-manage", "challenge", "cleanup"]),
+         lambda: ["pi-manage", "config", "challenge", "cleanup"]),
     Task("audit rotate",
          _bool("PI_CRON_AUDIT_ROTATE", True),
          scheduled_from_env("PI_CRON_AUDIT_INTERVAL", "PI_CRON_AUDIT_HOUR", 2),

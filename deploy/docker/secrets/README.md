@@ -16,6 +16,7 @@ except this README.
 | `mariadb_password`         | Password for the `pi` database user.                         |
 | `mariadb_root_password`    | MariaDB root password (used by `scripts/backup.sh` / `restore.sh`). |
 | `bootstrap_admin_password` | Password for the initial admin account created by `pi-init`. |
+| `audit_key_private` / `audit_key_public` | RSA keypair that signs audit entries and API responses. Without it, privacyIDEA silently disables audit/response signing. |
 
 ## Generating the secrets
 
@@ -41,6 +42,10 @@ python3 -c "import secrets; print(secrets.token_hex())"         > secret_key
 python3 -c "import secrets; print(secrets.token_urlsafe(32))"   > mariadb_password
 python3 -c "import secrets; print(secrets.token_urlsafe(32))"   > mariadb_root_password
 printf 'change-me-before-first-start\n'                          > bootstrap_admin_password
+
+# Audit signing keypair (RSA-2048).
+openssl genrsa -out audit_key_private 2048
+openssl rsa -in audit_key_private -pubout -out audit_key_public
 
 # Files must be readable by the container's non-root user (uid 65532), which
 # differs from the host owner — so 0644, not 0600. Protect the directory itself
