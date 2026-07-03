@@ -10,8 +10,6 @@
 #   pi-cron  PI_CRON_MODE=true  — maintenance scheduler (audit rotate, challenge
 #                                 cleanup, UI-configured periodic tasks)
 #
-# This is the standalone counterpart to the HA stack in ./ha/. It has no load
-# balancer and no database replication — for that see ./ha/ha-compose.yaml.
 
 name: privacyIDEA
 
