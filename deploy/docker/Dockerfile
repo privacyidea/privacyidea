@@ -36,8 +36,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 # Split into two RUN commands so a transient network timeout on one package
 # group does not force a full re-download of everything.
-RUN apk add --no-cache python-${PYTHON_VERSION} py${PYTHON_VERSION}-pip
-RUN apk add --no-cache build-base git
+RUN apk add --no-cache python-${PYTHON_VERSION} python-${PYTHON_VERSION}-dev py${PYTHON_VERSION}-pip
+# build-base + the python dev headers (Python.h) + krb5-dev (krb5 headers /
+# krb5-config) are needed to compile the gssapi extension — the [kerberos] extra
+# builds from source (no wheel for this platform), used for SASL-Kerberos LDAP.
+RUN apk add --no-cache build-base git krb5-dev
 
 RUN python3 -m venv /opt/privacyidea
 
@@ -61,13 +64,14 @@ COPY ./privacyidea/ ./privacyidea
 # Copy the pre-built Angular frontend from the node-builder stage
 COPY --from=node-builder /build/privacyidea/static_new/dist/ ./privacyidea/static_new/dist/
 
-RUN SETUPTOOLS_SCM_PRETEND_VERSION_FOR_PRIVACYIDEA=${GIT_VERSION} pip install --no-cache-dir .
+RUN SETUPTOOLS_SCM_PRETEND_VERSION_FOR_PRIVACYIDEA=${GIT_VERSION} pip install --no-cache-dir ".[kerberos]"
 
 #  Stage 3: Final slim runtime image 
 FROM cgr.dev/chainguard/wolfi-base
 
 ARG PYTHON_VERSION=3.13
-RUN apk add --no-cache python-${PYTHON_VERSION}
+# krb5 provides the runtime shared libs the built gssapi extension links against.
+RUN apk add --no-cache python-${PYTHON_VERSION} krb5
 
 WORKDIR /opt/privacyidea
 

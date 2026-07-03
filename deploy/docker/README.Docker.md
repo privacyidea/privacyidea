@@ -152,6 +152,24 @@ balancer), point it at the `pi` container's port 8080 and skip the profile. Only
 change the `pi` `ports:` entry to `8080:8080` if you deliberately accept
 unencrypted access on the network.
 
+Kerberos (LDAP SASL bind)
+-------------------------
+
+The image bundles the `gssapi` library, so an LDAP resolver configured with
+**SASL Kerberos** bind works. Kerberos itself still needs realm config: mount
+your `krb5.conf` read-only into the containers that talk to LDAP (`pi`, and
+`pi-cron` if resolver-touching periodic tasks run there):
+
+```yaml
+  pi:
+    volumes:
+      - /etc/krb5.conf:/etc/krb5.conf:ro
+```
+
+Without a valid `krb5.conf` the bind fails at runtime (wrong realm/KDC) even
+though the library is present. If you don't use Kerberos, ignore this — nothing
+to mount.
+
 Running a single container by hand
 ----------------------------------
 
@@ -341,4 +359,5 @@ backup cannot be restored.
 TODO
 ----
 * Publish an image so `build:` can be replaced with `image:`.
-* Add build steps for optional dependencies (PyKCS11, gssapi).
+* Add the `PyKCS11`/HSM extra to the image (same pattern as the `gssapi`/kerberos
+  extra, already included) for hardware-security-module token storage.
