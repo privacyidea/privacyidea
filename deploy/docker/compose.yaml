@@ -15,8 +15,14 @@
 
 name: privacyIDEA
 
-# Shared build + wiring for the three privacyIDEA roles. Each service overrides
-# only the env vars that make it an init/web/cron container.
+# Shared build + wiring for the three privacyIDEA roles. The three services below
+# reuse this block via YAML anchors: "&pi-common" / "&pi-common-env" name these
+# mappings, and "<<: *pi-common" in a service merges their keys in. Each service
+# then only lists the env vars that make it an init/web/cron container; keys it
+# repeats override the shared value.
+#
+# "x-" prefixes an extension field, which Compose ignores as a service — it just
+# holds the anchors.
 x-pi-common: &pi-common
   build:
     context: "../../"
@@ -112,25 +118,40 @@ services:
       retries: 3
       start_period: 15s
 
-  # Maintenance scheduler. Keep this at a single instance — two would race on
-  # deleting the same audit/challenge rows. Periodic tasks configured in the UI
-  # should target node name "pi-cron" to be picked up here.
+  # Maintenance scheduler. Runs the tasks defined in cron-runner.py's TASKS list
+  # (periodic tasks, challenge cleanup, audit rotation); toggle/tune them with the
+  # PI_CRON_* variables below. Keep this at a single instance — two would race on
+  # deleting the same rows. Periodic tasks configured in the UI should target node
+  # name "pi-cron" to be picked up here.
   pi-cron:
     <<: *pi-common
     restart: unless-stopped
     environment:
       <<: *pi-common-env
       PI_CRON_MODE: "true"
+      # Fixed node name so UI-configured periodic tasks (EventCounter, SimpleStats,
+      # MetricsCleanup, ...) can target this container. Those are configured in the
+      # web UI, not here — cron-runner.py's "periodic tasks" entry executes them.
       PRIVACYIDEA_PI_NODE: pi-cron
-      # Audit rotation — defaults shown. Set PI_CRON_AUDIT_AGE (days) to switch
-      # from watermark-based to age-based rotation, e.g. PI_CRON_AUDIT_AGE=90.
+      # Audit rotation — defaults shown.
+      # Schedule: by default daily at PI_CRON_AUDIT_HOUR. Set PI_CRON_AUDIT_INTERVAL
+      # (e.g. "6h", "90m", "2d") to run on a fixed interval instead; it takes
+      # precedence over PI_CRON_AUDIT_HOUR.
+      # Amount: watermark-based by default; set PI_CRON_AUDIT_AGE (days) for
+      # age-based rotation instead, e.g. PI_CRON_AUDIT_AGE=90.
       #PI_CRON_AUDIT_ROTATE: "true"
       #PI_CRON_AUDIT_HOUR: "2"
+      #PI_CRON_AUDIT_INTERVAL: "6h"
       #PI_CRON_AUDIT_HIGHWATERMARK: "50000"
       #PI_CRON_AUDIT_LOWWATERMARK: "25000"
       #PI_CRON_AUDIT_CHUNKSIZE: ""
       #PI_CRON_CHALLENGE_CLEANUP: "true"
       #PI_CRON_PERIODIC_TASKS: "true"
+      # Usercache cleanup — a no-op unless the user cache is enabled. Same
+      # schedule model as audit: PI_CRON_USERCACHE_HOUR or _INTERVAL.
+      #PI_CRON_USERCACHE_CLEANUP: "true"
+      #PI_CRON_USERCACHE_HOUR: "4"
+      #PI_CRON_USERCACHE_INTERVAL: "12h"
     healthcheck:
       disable: true
     depends_on:

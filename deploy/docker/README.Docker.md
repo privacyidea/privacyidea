@@ -4,11 +4,6 @@ privacyIDEA and Docker
 This directory builds a single privacyIDEA container image and runs it as a
 small self-contained stack: one MariaDB plus three roles of the same image.
 
-> **_NOTE:_** This is work-in-progress; expect breaking changes.
-
-For a high-availability setup with database replication and a load balancer,
-see [`ha/`](./ha/) instead.
-
 The image and its three roles
 ------------------------------
 
@@ -163,14 +158,33 @@ Maintenance (pi-cron)
 
 `pi-cron` runs `cron-runner.py`, which schedules:
 
-- every minute — `privacyidea-cron run_scheduled` (UI-configured periodic tasks;
-  target node name `pi-cron`)
+- every minute — `privacyidea-cron run_scheduled` (runs the periodic tasks
+  described below)
 - hourly — `pi-manage challenge cleanup`
-- daily at `PI_CRON_AUDIT_HOUR` (default 02:00) — `pi-manage audit rotate`
+- daily at `PI_CRON_AUDIT_HOUR` (default 02:00) — `pi-manage audit rotate`.
+  Alternatively set `PI_CRON_AUDIT_INTERVAL` (e.g. `6h`, `90m`, `2d`) to run on a
+  fixed interval instead of a daily hour; it takes precedence if both are set.
+- daily at `PI_CRON_USERCACHE_HOUR` (default 04:00) — `privacyidea-usercache-cleanup`
+  (a no-op unless the user cache is enabled). Same `_INTERVAL` override as audit.
+
+Two lanes of scheduled maintenance run here. The fixed jobs above are wired in
+`cron-runner.py`. Separately, privacyIDEA's **periodic-task modules**
+(EventCounter, SimpleStats, MetricsCleanup, …) are configured in the **web UI**
+and executed by the every-minute `run_scheduled` job whenever they target this
+container's node name (`pi-cron`). So a future table/metrics cleanup that ships
+as a periodic-task module needs **no change to the container** — configure it in
+the UI for node `pi-cron`, not as a `PI_CRON_*` variable.
 
 Tune via `PI_CRON_*` environment variables (see the `pi-cron` service in
 `compose.yaml` and the header of `cron-runner.py`). Keep `pi-cron` at a single
 instance — two would race on deleting the same rows.
+
+Each task is one entry in the `TASKS` list in `cron-runner.py` — a name, an
+enable flag, a schedule and the command to run. Schedules are `every_minute()`,
+`hourly()`, `daily_at(hour)`, `every(minutes)`, or `scheduled_from_env(...)` to
+let the operator choose an interval or a fixed hour from one env var. Adding a
+future maintenance task is a single entry plus any `PI_CRON_*` variables it
+reads; see the worked example in that file.
 
 Upgrading
 ---------
