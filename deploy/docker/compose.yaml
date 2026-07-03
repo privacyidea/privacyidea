@@ -47,7 +47,7 @@ x-pi-common: &pi-common
     # enckey, pepper and secret_key are read from these files by DockerConfig.
     PI_ENCFILE: /run/secrets/enckey
     PI_PEPPER_FILE: /run/secrets/pi_pepper
-    SECRET_KEY_FILE: /run/secrets/secret_key
+    PI_SECRET_KEY_FILE: /run/secrets/secret_key
     # Keep pooled connections below the server's wait_timeout.
     PRIVACYIDEA_SQLALCHEMY_POOL_RECYCLE: ${SQLALCHEMY_POOL_RECYCLE:-250}
 

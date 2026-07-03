@@ -2,6 +2,9 @@
 This testfile tests the basic app functionality of the privacyIDEA app
 """
 import os
+import importlib
+import shutil
+import tempfile
 import unittest
 import flask
 import inspect
@@ -10,6 +13,7 @@ import mock
 from testfixtures import Comparison, compare, OutputCapture
 from privacyidea.app import create_app
 from privacyidea.config import config, TestingConfig
+import privacyidea.config as pi_config
 
 dirname = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
 
@@ -172,3 +176,51 @@ class AppTestCase(unittest.TestCase):
                            level=logging.NOTSET,
                            partial=True)
             ], logger.handlers)
+
+
+class DockerConfigSecretKeyTestCase(unittest.TestCase):
+    """
+    DockerConfig reads the Flask SECRET_KEY from SECRET_KEY / SECRET_KEY_FILE and
+    also accepts PI_SECRET_KEY / PI_SECRET_KEY_FILE as an alias (for consistency
+    with the other PI_* secret variables), with the unprefixed name taking
+    precedence. DockerConfig evaluates these at class-definition time, so each
+    case sets the environment and reloads the config module.
+    """
+    _SECRET_ENV = ("SECRET_KEY", "SECRET_KEY_FILE", "PI_SECRET_KEY", "PI_SECRET_KEY_FILE")
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        self._saved_env = {key: os.environ.pop(key, None) for key in self._SECRET_ENV}
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+        for key in self._SECRET_ENV:
+            os.environ.pop(key, None)
+        for key, value in self._saved_env.items():
+            if value is not None:
+                os.environ[key] = value
+        # Restore the module to its original (test) environment.
+        importlib.reload(pi_config)
+
+    def _write_secret(self, name, value):
+        path = os.path.join(self.tmpdir, name)
+        with open(path, "w") as secret_file:
+            secret_file.write(value + "\n")
+        return path
+
+    def _docker_secret_key(self):
+        importlib.reload(pi_config)
+        return getattr(pi_config.DockerConfig, "SECRET_KEY", None)
+
+    def test_01_pi_secret_key_file_alias(self):
+        os.environ["PI_SECRET_KEY_FILE"] = self._write_secret("pi_sk", "ALIAS-VALUE")
+        self.assertEqual(self._docker_secret_key(), "ALIAS-VALUE")
+
+    def test_02_plain_secret_key_file_still_works(self):
+        os.environ["SECRET_KEY_FILE"] = self._write_secret("plain_sk", "PLAIN-VALUE")
+        self.assertEqual(self._docker_secret_key(), "PLAIN-VALUE")
+
+    def test_03_plain_takes_precedence_over_alias(self):
+        os.environ["SECRET_KEY_FILE"] = self._write_secret("plain_sk", "PLAIN-VALUE")
+        os.environ["PI_SECRET_KEY_FILE"] = self._write_secret("pi_sk", "ALIAS-VALUE")
+        self.assertEqual(self._docker_secret_key(), "PLAIN-VALUE")
