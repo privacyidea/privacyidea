@@ -50,7 +50,7 @@ jobs:
   build-dist:
     name: Build Python sdist and wheel
     permissions:
-      contents: write  # for softprops/action-gh-release to create GitHub release
+      contents: write  # for `gh release create` to create the GitHub release
     needs: build-webui
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -88,14 +88,14 @@ jobs:
         path: dist/*
     - name: Create GitHub pre-release
       id: gh_pre_release
-      uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
       if: contains(github.ref_name, 'dev')
-      with:
-        files: dist/*
-        prerelease: True
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: >-
+        gh release create "$GITHUB_REF_NAME" dist/* --prerelease --notes ""
     - name: Create GitHub release draft
-      uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
       if: steps.gh_pre_release.conclusion == 'skipped'
-      with:
-        files: dist/*
-        draft: True
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: >-
+        gh release create "$GITHUB_REF_NAME" dist/* --draft --notes ""
