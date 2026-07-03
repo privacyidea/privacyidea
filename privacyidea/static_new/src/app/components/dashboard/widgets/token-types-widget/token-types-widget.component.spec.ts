@@ -87,7 +87,8 @@ describe("TokenTypesWidgetComponent", () => {
   it("should override the static metadata", () => {
     expect(TokenTypesWidgetComponent.type).toBe("token-types");
     expect(TokenTypesWidgetComponent.title).toBeTruthy();
-    expect(TokenTypesWidgetComponent.icon).toBe("category");
+    expect(TokenTypesWidgetComponent.icon).toBe("shield");
+    expect(TokenTypesWidgetComponent.badgeIcon).toBe("category");
   });
 
   it("should list token types with a non-zero count, sorted by count descending", () => {

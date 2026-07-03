@@ -56,6 +56,8 @@ export class TokensWidgetComponent extends DashboardWidget implements OnInit {
   static override readonly requiredAction = "tokenlist";
   static override readonly title = $localize`Token usage`;
   static override readonly icon = "shield";
+  static override readonly badgeIcon = "123";
+  static override readonly badgeIconLarge = true;
   static override readonly defaultSize: WidgetSize = { cols: 6, rows: 5 };
   static override readonly minSize: WidgetSize = { cols: 4, rows: 5 };
   static override readonly maxSize: WidgetSize = { cols: 12, rows: 9 };

@@ -383,22 +383,29 @@ $button-low-contrast-variant: linear-gradient(
 }
 
 .icon-badge {
+  --mat-menu-item-spacing: 0;
   position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   vertical-align: middle;
 
+  > .mat-icon:not(.icon-badge-overlay) {
+    -webkit-mask-image: radial-gradient(
+      circle at 17.5px 17.5px,
+      transparent 0%,
+      transparent 7.5px,
+      black 8px,
+      black 14px
+    );
+    mask-image: radial-gradient(circle at 17.5px 17.5px, transparent 0%, transparent 7.5px, black 8px, black 14px);
+  }
+
   .icon-badge-overlay {
     position: absolute;
-    bottom: -1px;
-    font-size: 14px;
-    width: 14px;
-    height: 14px;
-    line-height: 14px;
-    border-radius: 50%;
-    background-color: var(--mat-sys-surface-container-lowest);
-    color: inherit;
+    z-index: 1;
+    bottom: 0px;
+    right: 0px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -409,9 +416,17 @@ $button-low-contrast-variant: linear-gradient(
       font-size: 14px !important;
     }
 
-    &.icon-badge-add {
+    &.icon-badge-large {
+      font-size: 18px !important;
+    }
+
+    &.icon-badge-bold {
       font-weight: bold;
-      right: -3px;
+    }
+
+    &.icon-badge-add {
+      font-size: 18px !important;
+      font-weight: bold;
     }
 
     &.icon-badge-gear {

@@ -50,7 +50,8 @@ export class TokenTypesWidgetComponent extends DashboardWidget implements OnInit
   static override readonly type = "token-types";
   static override readonly requiredAction = "tokenlist";
   static override readonly title = $localize`Tokens by type`;
-  static override readonly icon = "category";
+  static override readonly icon = "shield";
+  static override readonly badgeIcon = "category";
   static override readonly defaultSize: WidgetSize = { cols: 6, rows: 5 };
   static override readonly minSize: WidgetSize = { cols: 4, rows: 3 };
   static override readonly maxSize: WidgetSize = { cols: 12, rows: 12 };

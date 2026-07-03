@@ -30,7 +30,18 @@
       <button
         mat-menu-item
         (click)="add(widget.type)">
-        <mat-icon class="margin-right-16">{{ widget.icon }}</mat-icon>
+        @if (widget.badgeIcon) {
+          <span class="icon-badge margin-right-16">
+            <mat-icon>{{ widget.icon }}</mat-icon>
+            <mat-icon
+              class="icon-badge-overlay"
+              [class.icon-badge-large]="widget.badgeIconLarge">
+              {{ widget.badgeIcon }}
+            </mat-icon>
+          </span>
+        } @else {
+          <mat-icon class="margin-right-16">{{ widget.icon }}</mat-icon>
+        }
         {{ widget.title }}
       </button>
     }
