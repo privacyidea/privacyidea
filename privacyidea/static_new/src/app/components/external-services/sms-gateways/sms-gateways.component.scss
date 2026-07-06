@@ -5,6 +5,7 @@
 .sms-gateways-container {
   @include styles.main-component-style;
   @include table.base-table-structure(".sms-gateways-table", ".table-filter", ".table-scroll-container");
+  max-height: var(--table-max-height);
 }
 
 .actions-container {

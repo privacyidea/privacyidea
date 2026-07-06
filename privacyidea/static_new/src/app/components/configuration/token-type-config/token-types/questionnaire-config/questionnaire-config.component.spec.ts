@@ -60,27 +60,10 @@ describe("QuestionnaireConfigComponent", () => {
     expect(component.formData()[QUESTION_NUMBER_OF_ANSWERS]).toEqual(7);
   });
 
-  it("should emit addQuestionRequest when addQuestion is called with text", () => {
+  it("should emit addQuestionRequest when addQuestion is called", () => {
     jest.spyOn(component.addQuestionRequest, "emit");
-    const questionText = "What is your favorite color?";
-    component.newQuestionText.set(questionText);
     component.addQuestion();
-    expect(component.addQuestionRequest.emit).toHaveBeenCalledWith(questionText);
-  });
-
-  it("should clear newQuestionText after adding a question", () => {
-    const questionText = "What is your pet's name?";
-    component.newQuestionText.set(questionText);
-    expect(component.newQuestionText()).toBe(questionText);
-    component.addQuestion();
-    expect(component.newQuestionText()).toBe("");
-  });
-
-  it("should not emit addQuestionRequest when addQuestion is called with empty text", () => {
-    jest.spyOn(component.addQuestionRequest, "emit");
-    component.newQuestionText.set("");
-    component.addQuestion();
-    expect(component.addQuestionRequest.emit).not.toHaveBeenCalled();
+    expect(component.addQuestionRequest.emit).toHaveBeenCalled();
   });
 
   it("should emit deleteRequest when deleteEntry is called", () => {
@@ -101,5 +84,49 @@ describe("QuestionnaireConfigComponent", () => {
     fixture.componentRef.setInput("questionKeys", []);
     fixture.detectChanges();
     expect(component.questionKeys().length).toBe(0);
+  });
+
+  describe("blockNonNumeric", () => {
+    function keyEvent(key: string, modifiers: Partial<KeyboardEvent> = {}): KeyboardEvent {
+      return {
+        key,
+        ctrlKey: false,
+        metaKey: false,
+        preventDefault: jest.fn(),
+        ...modifiers
+      } as unknown as KeyboardEvent;
+    }
+
+    it("allows digit keys", () => {
+      const event = keyEvent("5");
+      component.blockNonNumeric(event);
+      expect(event.preventDefault).not.toHaveBeenCalled();
+    });
+
+    it("blocks non-digit printable keys", () => {
+      for (const key of ["a", "-", ".", "e"]) {
+        const event = keyEvent(key);
+        component.blockNonNumeric(event);
+        expect(event.preventDefault).toHaveBeenCalled();
+      }
+    });
+
+    it("allows multi-character (control) keys like Backspace and Enter", () => {
+      for (const key of ["Backspace", "Enter", "ArrowLeft", "Tab"]) {
+        const event = keyEvent(key);
+        component.blockNonNumeric(event);
+        expect(event.preventDefault).not.toHaveBeenCalled();
+      }
+    });
+
+    it("allows keyboard shortcuts with ctrl or meta held", () => {
+      const ctrlEvent = keyEvent("a", { ctrlKey: true });
+      component.blockNonNumeric(ctrlEvent);
+      expect(ctrlEvent.preventDefault).not.toHaveBeenCalled();
+
+      const metaEvent = keyEvent("v", { metaKey: true });
+      component.blockNonNumeric(metaEvent);
+      expect(metaEvent.preventDefault).not.toHaveBeenCalled();
+    });
   });
 });

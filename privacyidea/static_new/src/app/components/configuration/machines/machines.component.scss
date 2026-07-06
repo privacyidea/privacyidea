@@ -5,10 +5,7 @@
 .machines-container {
   @include styles.main-component-style;
   @include table.base-table-structure(".machines-table", ".table-filter", ".table-scroll-container");
-}
-
-.machines-layout {
-  padding: 24px;
+  max-height: var(--table-max-height) !important;
 }
 
 .header-row {

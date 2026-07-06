@@ -35,243 +35,65 @@
         }
       </ng-container>
     </app-details-header>
-    <div class="details-flex-layout responsive-flex-row-1310">
-      <div>
-        <table
-          [dataSource]="tokenDetailData()"
-          aria-label="Token Details Data Table"
-          class="details-table"
-          i18n-aria-label
-          mat-table>
-          <ng-container matColumnDef="key">
-            <td
-              *matCellDef="let element"
-              class="details-key-row"
-              mat-cell>
-              {{ element.keyMap.label }}
-            </td>
-          </ng-container>
-          <ng-container matColumnDef="value">
-            <td
-              *matCellDef="let element"
-              [ngClass]="
-                tableUtilsService.getTdClassForKey(element.keyMap.key).concat(element.isEditing() ? ['padding-0'] : [])
-              "
-              mat-cell>
-              @switch (element.keyMap.key) {
-                @case ("container_serial") {
-                  @if (element.isEditing()) {
-                    <mat-form-field
-                      class="input-width-m height-52"
-                      subscriptSizing="dynamic">
-                      <mat-label i18n>Enter Container</mat-label>
-                      <app-clearable-input
-                        (clearButtonClick)="containerService.selectedContainerSerial.set(null)"
-                        [showClearButton]="containerService.selectedContainerSerial() !== ''">
-                        <input
-                          [value]="containerService.selectedContainerSerial()"
-                          (input)="containerService.selectedContainerSerial.set($any($event.target).value)"
-                          [matAutocomplete]="containerAuto"
-                          matInput />
-                      </app-clearable-input>
-                      <mat-autocomplete
-                        #containerAuto="matAutocomplete"
-                        (optionSelected)="containerService.selectedContainerSerial.set($event.option.value)">
-                        @for (option of containerService.containersForTokenType(); track option) {
-                          <mat-option [value]="option">{{ option }}</mat-option>
-                        }
-                      </mat-autocomplete>
-                    </mat-form-field>
-                  } @else {
-                    <app-copyable [copyText]="element.value">
-                      @if (containerService.containerBelongsToUser(element.value)) {
-                        <a
-                          attr.aria-label="{{ element.keyMap.label }} Link"
-                          (click)="contentService.navigateContainerDetails(element.value)"
-                          (keydown.enter)="contentService.navigateContainerDetails(element.value)"
-                          (keydown.space)="
-                            $event.preventDefault(); contentService.navigateContainerDetails(element.value)
-                          "
-                          role="button"
-                          tabindex="0">
-                          {{ element.value }}
-                        </a>
-                      } @else {
-                        {{ element.value }}
-                      }
-                    </app-copyable>
-                  }
-                }
-                @case ("realms") {
-                  <div
-                    class="details-scrollable-container"
-                    [ngClass]="{ 'height-77': element.value.length > 2 }">
-                    @for (realm of element.value; track realm) {
-                      <mat-list-item class="height-auto pad-0">
-                        <span class="font-14">• {{ realm }}</span>
-                      </mat-list-item>
-                    }
-                  </div>
-                }
-                @case ("tokengroup") {
-                  <div
-                    [ngClass]="{
-                      'details-scrollable-container': true,
-                      'height-77': element.value.length > 2
-                    }">
-                    @for (tokengroup of element.value; track tokengroup) {
-                      <mat-list-item class="height-auto pad-0">
-                        <span class="font-14">• {{ tokengroup }}</span>
-                      </mat-list-item>
-                    }
-                  </div>
-                }
-                @case ("description") {
-                  @if (element.isEditing()) {
-                    <mat-form-field
-                      class="input-width-m description height-136"
-                      subscriptSizing="dynamic">
-                      <textarea
-                        [value]="element.value"
-                        (input)="element.value = $any($event.target).value"
-                        maxlength="80"
-                        i18n-placeholder
-                        matInput
-                        placeholder="Enter description"
-                        rows="4"></textarea>
-                      <mat-hint align="end"
-                        >{{ element.value?.length || 0 }} / {{ tokenService.maxDescriptionLength }}
-                      </mat-hint>
-                    </mat-form-field>
-                  } @else {
-                    <div class="details-description-div">
-                      <span class="details-table-item">
-                        {{ element.value }}
-                      </span>
-                    </div>
-                  }
-                }
-                @default {
-                  @if (element.isEditing() && isNumberElement(element.keyMap.key)) {
-                    <mat-form-field
-                      class="input-width-m height-52"
-                      subscriptSizing="dynamic">
-                      <input
-                        [value]="element.value"
-                        (input)="element.value = $any($event.target).value"
-                        matInput
-                        type="number" />
-                    </mat-form-field>
-                  } @else if (element.isEditing()) {
-                    <mat-form-field
-                      class="input-width-m"
-                      subscriptSizing="dynamic">
-                      <textarea
-                        [value]="element.value"
-                        (input)="element.value = $any($event.target).value"
-                        matInput
-                        rows="1"></textarea>
-                    </mat-form-field>
-                  } @else {
-                    <div [ngClass]="[tableUtilsService.getDivClassForKey(element.keyMap.key)]">
-                      <span
-                        [ngClass]="[
-                          tableUtilsService.getSpanClassForKey({
-                            key: element.keyMap.key,
-                            value: element.value,
-                            maxfail: maxfail
-                          })
-                        ]">
-                        {{
-                          tableUtilsService.getDisplayTextForKeyAndRevoked(
-                            element.keyMap.key,
-                            element.value,
-                            tokenIsRevoked()
-                          )
-                        }}
-                      </span>
-                    </div>
-                  }
-                }
-              }
-            </td>
-          </ng-container>
-          <ng-container matColumnDef="edit">
-            <td
-              *matCellDef="let element"
-              class="edit-column-cell"
-              mat-cell>
-              <div class="ali-center">
-                @if (
-                  element.keyMap.key === "failcount" && !isAnyEditingOrRevoked() && authService.actionAllowed("reset")
-                ) {
-                  <div class="edit-button-container">
-                    <button
-                      mat-icon-button
-                      (click)="resetFailCount()"
-                      i18n-aria-label="Reset Fail Count">
-                      <mat-icon> lock_reset</mat-icon>
-                    </button>
-                  </div>
-                } @else if (
-                  element.keyMap.key === "container_serial" &&
-                  !isAnyEditingOrRevoked() &&
-                  element.value &&
-                  authService.actionAllowed("container_remove_token")
-                ) {
-                  <div class="edit-button-container">
-                    <button
-                      mat-icon-button
-                      class="red"
-                      (click)="removeFromContainer()"
-                      i18n-aria-label="Delete Container">
-                      <mat-icon>folder_delete</mat-icon>
-                    </button>
-                  </div>
-                } @else if (isEditableElement(element.keyMap.key)) {
-                  <app-edit-buttons
-                    [toggleEdit]="toggleTokenEdit.bind(this)"
-                    [saveEdit]="saveTokenEdit.bind(this)"
-                    [cancelEdit]="cancelTokenEdit.bind(this)"
-                    [shouldHideEdit]="isAnyEditingOrRevoked()"
-                    [isEditingUser]="isEditingUser()"
-                    [isEditingInfo]="isEditingInfo()"
-                    [element]="element"></app-edit-buttons>
-                }
-              </div>
-            </td>
-          </ng-container>
-          <tr
-            *matRowDef="let row; columns: ['key', 'value', 'edit']"
-            class="height-52"
-            mat-row></tr>
-        </table>
-      </div>
-      <div class="responsive-flex-row-1580">
-        <div class="flex-column">
-          <app-token-details-user-self-service
-            [isAnyEditingOrRevoked]="isAnyEditingOrRevoked"
-            [isEditingInfo]="isEditingInfo"
-            [isEditingUser]="isEditingUser"
-            [tokenSerial]="tokenSerial"
-            [userData]="userData"
-            class="flex"></app-token-details-user-self-service>
-          <app-token-details-info
-            [detailData]="tokenDetailData"
-            [infoData]="infoData"
-            [isAnyEditingOrRevoked]="isAnyEditingOrRevoked"
-            [isEditingInfo]="isEditingInfo"
-            [isEditingUser]="isEditingUser"></app-token-details-info>
-          @if (tokenType() === "sshkey" || tokenType() === "hotp") {
-            <app-token-details-machine />
-          }
-        </div>
-        <app-token-details-actions
-          [repeatPinValue]="repeatPinValue"
-          [setPinValue]="setPinValue"
-          [tokenType]="tokenType"
-          [token]="tokenDetails()"></app-token-details-actions>
-      </div>
+
+    <div
+      class="details-grid">
+      <app-token-details-status
+        [tokenDetails]="tokenDetails()"
+        [isAnyEditingOrRevoked]="isAnyEditingOrRevoked()"
+        [selfService]="true" />
+
+      @if (showCounters()) {
+        <app-token-details-counters
+          [tokenDetails]="tokenDetails()"
+          [isAnyEditingOrRevoked]="isAnyEditingOrRevoked()" />
+      }
+
+      <app-token-details-user-self-service
+        class="details-card--user"
+        [isAnyEditingOrRevoked]="isAnyEditingOrRevoked"
+        [isEditingInfo]="isEditingInfo"
+        [isEditingUser]="isEditingUser"
+        [tokenSerial]="tokenSerial"
+        [userData]="userData"></app-token-details-user-self-service>
+
+      <app-token-details-assignments
+        [tokenDetails]="tokenDetails()"
+        [userRealm]="userRealm"
+        [isAnyEditingOrRevoked]="isAnyEditingOrRevoked()"
+        [selfService]="true" />
+
+      @if (tokenType() === "sshkey" || tokenType() === "hotp") {
+        <app-token-details-machine class="details-card--machine" />
+      }
+
+      <app-token-details-actions
+        class="details-card--actions"
+        [repeatPinValue]="repeatPinValue"
+        [setPinValue]="setPinValue"
+        [tokenType]="tokenType"
+        [token]="tokenDetails()"></app-token-details-actions>
+
+      @if (descriptionRow(); as desc) {
+        <app-token-details-description
+          [element]="desc"
+          [editable]="isEditableElement(desc.keyMap.key)"
+          [isAnyEditingOrRevoked]="isAnyEditingOrRevoked()"
+          [isEditingInfo]="isEditingInfo()"
+          [isEditingUser]="isEditingUser()"
+          [selfService]="true"
+          [cancelEdit]="cancelTokenEdit.bind(this)"
+          [saveEdit]="saveTokenEdit.bind(this)"
+          [toggleEdit]="toggleTokenEdit.bind(this)" />
+      }
+
+      <app-token-details-info
+        class="details-info-area"
+        [detailData]="tokenDetailData"
+        [infoData]="infoData"
+        [isAnyEditingOrRevoked]="isAnyEditingOrRevoked"
+        [isEditingInfo]="isEditingInfo"
+        [isEditingUser]="isEditingUser"></app-token-details-info>
     </div>
   </div>
 </div>

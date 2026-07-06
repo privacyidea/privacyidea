@@ -52,7 +52,7 @@ class Challenge(MethodsMixin, db.Model):
     session: Mapped[str | None] = mapped_column(Unicode(512), default='', quote=True, name="session")
     # The token serial number
     serial: Mapped[str | None] = mapped_column(Unicode(40), default='', index=True)
-    timestamp: Mapped[datetime | None] = mapped_column(DateTime, default=utc_now(), index=True)
+    timestamp: Mapped[datetime | None] = mapped_column(DateTime, default=utc_now, index=True)
     expiration: Mapped[datetime | None] = mapped_column(DateTime, index=True)
     received_count: Mapped[int | None] = mapped_column(Integer, default=0)
     otp_valid: Mapped[bool | None] = mapped_column(Boolean, default=False)
@@ -168,8 +168,13 @@ class Challenge(MethodsMixin, db.Model):
         :type timestamp: bool
         :return: dict of vars
         """
+        # The SQL primary key is intentionally not part of the public
+        # challenge representation. transaction_id is the identity field
+        # callers should use. .id is a storage-layer artifact, and exposing
+        # it would let consumers diverge between the SQL backend (real int)
+        # and the Redis cache backend (no PK at all - ChallengeDTO doesn't
+        # expose .id).
         descr = {
-            'id': self.id,
             'transaction_id': self.transaction_id,
             'challenge': self.challenge,
             'serial': self.serial,

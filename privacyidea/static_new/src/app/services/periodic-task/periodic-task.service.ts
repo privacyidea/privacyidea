@@ -17,8 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { HttpClient, HttpResourceRef, httpResource } from "@angular/common/http";
-import { Injectable, WritableSignal, effect, inject, signal, untracked } from "@angular/core";
+import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
+import { effect, inject, Injectable, signal, untracked, WritableSignal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { environment } from "@env/environment";
@@ -26,7 +26,7 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService } from "@services/notification/notification.service";
-import { Observable, catchError, forkJoin, lastValueFrom, of, throwError } from "rxjs";
+import { catchError, forkJoin, lastValueFrom, Observable, of, throwError } from "rxjs";
 
 export interface PeriodicTask {
   id: number | null;
@@ -96,11 +96,17 @@ export interface PeriodicTaskServiceInterface {
   periodicTasksResource: HttpResourceRef<PiResponse<PeriodicTask[]> | undefined>;
   periodicTaskModuleResource: HttpResourceRef<PiResponse<PeriodicTaskModule[]> | undefined>;
   moduleOptions: WritableSignal<Record<string, Record<string, PeriodicTaskOption>>>;
+
   enablePeriodicTask(taskId: number): Promise<PiResponse<number, never> | undefined>;
+
   disablePeriodicTask(taskId: number): Promise<PiResponse<number, never> | undefined>;
+
   deletePeriodicTask(taskId: number): Observable<PiResponse<number, never>>;
+
   deleteWithConfirmDialog(task: PeriodicTask): Promise<PiResponse<number, never> | undefined>;
+
   savePeriodicTask(task: PeriodicTask): Observable<PiResponse<number, never> | undefined>;
+
   fetchAllModuleOptions(): void;
 }
 
@@ -113,6 +119,27 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
   private readonly http = inject(HttpClient);
 
   private periodicTaskBaseUrl = environment.proxyUrl + "/periodictask/";
+  periodicTasksResource = httpResource<PiResponse<PeriodicTask[]>>(() => {
+    if (!this.contentService.onConfigurationPeriodicTasks() || !this.authService.actionAllowed("periodictask_read")) {
+      return undefined;
+    }
+    return {
+      url: this.periodicTaskBaseUrl,
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
+  });
+  periodicTaskModuleResource = httpResource<PiResponse<PeriodicTaskModule[]>>(() => {
+    if (!this.contentService.onConfigurationPeriodicTasks()) {
+      return undefined;
+    }
+    return {
+      url: this.periodicTaskBaseUrl + "taskmodules/",
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
+  });
+  moduleOptions = signal<Record<string, Record<string, PeriodicTaskOption>>>({});
 
   constructor() {
     effect(() => {
@@ -127,28 +154,6 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
       untracked(() => this.fetchAllModuleOptions());
     });
   }
-
-  periodicTasksResource = httpResource<PiResponse<PeriodicTask[]>>(() => {
-    if (!this.contentService.onConfigurationPeriodicTasks() || !this.authService.actionAllowed("periodictask_read")) {
-      return undefined;
-    }
-    return {
-      url: this.periodicTaskBaseUrl,
-      method: "GET",
-      headers: this.authService.getHeaders()
-    };
-  });
-
-  periodicTaskModuleResource = httpResource<PiResponse<PeriodicTaskModule[]>>(() => {
-    if (!this.contentService.onConfigurationPeriodicTasks()) {
-      return undefined;
-    }
-    return {
-      url: this.periodicTaskBaseUrl + "taskmodules/",
-      method: "GET",
-      headers: this.authService.getHeaders()
-    };
-  });
 
   enablePeriodicTask(taskId: number) {
     const headers = this.authService.getHeaders();
@@ -231,15 +236,6 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
     return undefined;
   }
 
-  convertNodesArrayToString(nodes: string[] | string | null | undefined): string {
-    if (Array.isArray(nodes)) {
-      return nodes.join(",");
-    } else if (typeof nodes === "string") {
-      return nodes;
-    }
-    return "";
-  }
-
   savePeriodicTask(task: PeriodicTask): Observable<PiResponse<number, never> | undefined> {
     const headers = this.authService.getHeaders();
     const { id, ...rest } = task;
@@ -257,8 +253,6 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
       })
     );
   }
-
-  moduleOptions = signal<Record<string, Record<string, PeriodicTaskOption>>>({});
 
   fetchAllModuleOptions() {
     const modules: string[] = this.periodicTaskModuleResource.value()?.result?.value ?? PERIODIC_TASK_MODULES;
@@ -289,5 +283,14 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
         this.notificationService.error("Failed to fetch module options.");
       }
     });
+  }
+
+  convertNodesArrayToString(nodes: string[] | string | null | undefined): string {
+    if (Array.isArray(nodes)) {
+      return nodes.join(",");
+    } else if (typeof nodes === "string") {
+      return nodes;
+    }
+    return "";
   }
 }

@@ -39,8 +39,7 @@ export interface RadiusEnrollmentPayload extends TokenEnrollmentPayload {
 @Injectable({ providedIn: "root" })
 export class RadiusApiPayloadMapper
   extends BaseApiPayloadMapper
-  implements TokenApiPayloadMapper<RadiusEnrollmentData>
-{
+  implements TokenApiPayloadMapper<RadiusEnrollmentData> {
   override toApiPayload(data: RadiusEnrollmentData): RadiusEnrollmentPayload {
     const payload: RadiusEnrollmentPayload = {
       ...super.toApiPayload(data),

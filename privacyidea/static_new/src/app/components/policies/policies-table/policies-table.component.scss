@@ -1,11 +1,6 @@
 @use "styles";
 @use "table";
 
-:host {
-  flex: 1;
-  align-self: stretch;
-}
-
 .policy-name-input {
   background-color: transparent;
   border: none;
@@ -19,6 +14,7 @@
 
 .policies-table-layout {
   @include styles.main-component-style;
+  max-height: var(--table-max-height);
   @include table.base-table-structure(".policies-table", ".policies-table-filter", ".table-scroll-container");
 
   & {

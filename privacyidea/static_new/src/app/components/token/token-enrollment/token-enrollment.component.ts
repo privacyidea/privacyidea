@@ -395,6 +395,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     }
     // two step enrollment + handles further enrollment steps (verify + success dialog)
     this.handleCompleteEnrollment(enrollmentResponse);
+    this.pendingChangesService.clearAllRegistrations();
     return true;
   }
 

@@ -37,6 +37,7 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -75,7 +76,8 @@ const columnKeysMap = [
     MatIconButton,
     MatMenuModule,
     MatDividerModule,
-    MatTooltipModule
+    MatTooltipModule,
+    ScrollEdgesDirective
   ],
   templateUrl: "./token-table.component.html",
   styleUrl: "./token-table.component.scss"
@@ -92,21 +94,10 @@ export class TokenTableComponent {
   readonly columnKeys: string[] = columnKeysMap.map((column) => column.key);
   readonly apiFilterKeyMap = this.tokenService.apiFilterKeyMap;
   readonly advancedApiFilter = this.tokenService.advancedApiFilter;
-  private basePageSizeOptions = [...this.tableUtilsService.pageSizeOptions()];
-  @ViewChild("filterHTMLInputElement", { static: false })
-  filterInput!: ElementRef<HTMLInputElement>;
-  tokenSelection = this.tokenService.tokenSelection;
-  tokenResource = this.tokenService.tokenResource;
-  tokenFilter = this.tokenService.tokenFilter;
-  pageSize = this.tokenService.pageSize;
-  pageIndex = this.tokenService.pageIndex;
-  sort = this.tokenService.sort;
-
   protected readonly filterInputValue = linkedSignal({
     source: () => this.tokenService.tokenFilter().filterString,
     computation: (v) => v
   });
-
   protected readonly showFilterHint = computed(() => {
     const current = this.filterInputValue().trim().toLowerCase();
     const applied = this.tokenService.tokenFilter().filterString.trim().toLowerCase();
@@ -118,7 +109,15 @@ export class TokenTableComponent {
     }
     return false;
   });
-
+  private basePageSizeOptions = [...this.tableUtilsService.pageSizeOptions()];
+  @ViewChild("filterHTMLInputElement", { static: false })
+  filterInput!: ElementRef<HTMLInputElement>;
+  tokenSelection = this.tokenService.tokenSelection;
+  tokenResource = this.tokenService.tokenResource;
+  tokenFilter = this.tokenService.tokenFilter;
+  pageSize = this.tokenService.pageSize;
+  pageIndex = this.tokenService.pageIndex;
+  sort = this.tokenService.sort;
   emptyResource = linkedSignal({
     source: this.pageSize,
     computation: (pageSize: number) =>

@@ -17,39 +17,31 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <app-dialog-wrapper
-  title="Token Assignment"
-  i18n-title="@@tokenAssignmentTitle"
-  (wrapperClose)="close()"
   (actionTriggered)="onAction($event)"
-  [actions]="dialogActions()">
+  (wrapperClose)="close()"
+  [actions]="dialogActions()"
+  i18n-title="@@tokenAssignmentTitle"
+  title="Token Assignment">
   <mat-form-field
-    appearance="fill"
-    class="pin-field">
+    appearance="fill" class="pin-field">
     <mat-label i18n>PIN (optional)</mat-label>
     <input
-      [value]="pin()"
       (input)="pin.set($event.target['value'])"
       [type]="hidePin() ? 'password' : 'text'"
+      [value]="pin()"
       autocomplete="new-password"
       matInput />
 
     <button
-      (click)="togglePinVisibility()"
-      mat-icon-button
-      matSuffix
-      type="button">
+      (click)="togglePinVisibility()" mat-icon-button matSuffix type="button">
       @if (hidePin()) {
         <mat-icon
-          aria-hidden="false"
-          i18n-aria-label="@@ariaShowPin"
-          aria-label="Show PIN">
+          aria-hidden="false" aria-label="Show PIN" i18n-aria-label="@@ariaShowPin">
           visibility_off
         </mat-icon>
       } @else {
         <mat-icon
-          aria-hidden="false"
-          i18n-aria-label="@@ariaHidePin"
-          aria-label="Hide PIN">
+          aria-hidden="false" aria-label="Hide PIN" i18n-aria-label="@@ariaHidePin">
           visibility
         </mat-icon>
       }
@@ -57,33 +49,25 @@
   </mat-form-field>
 
   <mat-form-field
-    appearance="fill"
-    class="pin-field">
+    appearance="fill" class="pin-field">
     <mat-label i18n>PIN (repeat)</mat-label>
     <input
-      [value]="pinRepeat()"
       (input)="pinRepeat.set($event.target['value'])"
       [type]="hidePin() ? 'password' : 'text'"
+      [value]="pinRepeat()"
       autocomplete="new-password"
       matInput />
 
     <button
-      (click)="togglePinVisibility()"
-      mat-icon-button
-      matSuffix
-      type="button">
+      (click)="togglePinVisibility()" mat-icon-button matSuffix type="button">
       @if (hidePin()) {
         <mat-icon
-          aria-hidden="false"
-          i18n-aria-label="@@ariaShowPin"
-          aria-label="Show PIN">
+          aria-hidden="false" aria-label="Show PIN" i18n-aria-label="@@ariaShowPin">
           visibility_off
         </mat-icon>
       } @else {
         <mat-icon
-          aria-hidden="false"
-          i18n-aria-label="@@ariaHidePin"
-          aria-label="Hide PIN">
+          aria-hidden="false" aria-label="Hide PIN" i18n-aria-label="@@ariaHidePin">
           visibility
         </mat-icon>
       }

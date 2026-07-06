@@ -375,6 +375,21 @@ type: ``bool``
 If the ``getchallenges`` action is defined, the administrator is
 allowed to check the status of open challenge requests.
 
+.. _policy_cancelchallenge:
+
+cancelchallenge
+~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+If the ``cancelchallenge`` action is defined, the administrator is
+allowed to cancel (delete) an active challenge by its transaction ID via
+``DELETE /token/challenges/transaction/<transaction_id>``.
+
+This is a separate, write-scoped permission from ``getchallenges`` -
+admins who should only inspect open challenges must *not* be granted
+``cancelchallenge``.
+
 .. _policy_tokenrealms:
 
 tokenrealms
@@ -817,7 +832,7 @@ type: ``bool``
 The administrator is allowed to download the audit log.
 
 .. note:: The :ref:`policy_auditlog_age` policy **is** applied to the
-   download — older entries are excluded just as in the search view.
+   download - older entries are excluded just as in the search view.
    The :ref:`policy_hide_audit_columns` policy, however, is **not**
    applied to the download: hidden columns are still present in the
    exported CSV. If you need that restriction, disallow downloading

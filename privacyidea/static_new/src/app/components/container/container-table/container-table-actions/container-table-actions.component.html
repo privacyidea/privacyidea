@@ -20,14 +20,6 @@
   appOverflowNav
   class="flex-row margin-bottom-16 gap-8">
   <button
-    data-overflow-pinned
-    [routerLink]="[ROUTE_PATHS.CONTAINERS_CREATE]"
-    class="action-button-primary button-width-m"
-    mat-stroked-button>
-    <mat-icon> create_new_folder</mat-icon>
-    <span i18n>Create Container</span>
-  </button>
-  <button
     #advancedFilterTrigger="matMenuTrigger"
     data-overflow-pinned
     [matMenuTriggerFor]="advancedFilterMenu"

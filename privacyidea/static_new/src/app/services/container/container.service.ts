@@ -39,6 +39,10 @@ import { catchError, forkJoin, lastValueFrom, Observable, of, Subject, throwErro
 const apiFilter = ["container_serial", "type", "description", "container_realm", "state"];
 const advancedApiFilter = ["token_serial", "template", "assigned"];
 
+// Filter keywords, a single value maps to the `type` query param, multiple to `type_list`.
+// TODO(4.0.0): send a single list-only `types` param once the backend drops the type/type_list split.
+const CONTAINER_TYPE_FILTER_KEYS = new Set<string>(["type", "types"]);
+
 export function toWildcardParam(
   key: string,
   value: string | null | undefined,
@@ -71,6 +75,7 @@ export interface ContainerDetails {
   count?: number;
   containers: ContainerDetailData[];
 }
+
 type ContainerRegistrationState = "registered" | "client_wait";
 
 export interface ContainerDetailData {
@@ -266,86 +271,25 @@ export class ContainerService implements ContainerServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly userService: UserServiceInterface = inject(UserService);
   private readonly http = inject(HttpClient);
-
-  containerBaseUrl = environment.proxyUrl + "/container/";
-  containerTemplateBaseUrl = environment.proxyUrl + "/container/template/";
   private readonly pollingTrigger = signal<number>(0);
   private readonly isRolloverPolling = signal(false);
   readonly compatibleWithSelectedTokenType: WritableSignal<string | null> = linkedSignal({
     source: this.tokenService.selectedTokenType,
     computation: (tokenType) => tokenType?.key ?? null
   });
-  readonly isPollingActive = signal(false);
-  readonly apiFilter = apiFilter;
-  readonly advancedApiFilter = advancedApiFilter;
-  stopPolling$ = new Subject<void>();
-  readonly eventPageSize = signal(10);
-
-  states = signal<string[]>([]);
-  containerSerial = this.contentService.containerSerial;
-  containerDetail = computed(() => {
-    const details = this.containerDetails();
-    const serial = this.containerSerial();
-    if (!details || !serial) {
-      return null;
-    }
-    return details.containers.find((container) => container.serial === serial) ?? null;
-  });
-
-  selectedContainerSerial: WritableSignal<string | null> = linkedSignal({
-    source: () => this.contentService.onTokensEnrollment(),
-    computation: (onTokensEnrollment, previous) => {
-      return onTokensEnrollment ? (previous?.value ?? "") : "";
-    }
-  });
-
-  sort = signal<Sort>({ active: "serial", direction: "asc" });
-
   filterContainersByTokenOwner: WritableSignal<boolean> = linkedSignal({
     source: this.contentService.routeUrl,
     computation: () => false
   });
+  readonly isPollingActive = signal(false);
+  readonly apiFilter = apiFilter;
+  readonly advancedApiFilter = advancedApiFilter;
+  stopPolling$ = new Subject<void>();
+  containerBaseUrl = environment.proxyUrl + "/container/";
+  readonly eventPageSize = signal(10);
 
-  containerFilter: WritableSignal<FilterValue> = linkedSignal({
-    source: this.contentService.routeUrl,
-    computation: () => new FilterValue()
-  });
-
-  filterParams = computed<Record<string, string>>(() => {
-    const allowed = [...this.apiFilter, ...this.advancedApiFilter];
-    const plainKeys = new Set(["user", "type", "state", "assigned"]);
-
-    const entries = Array.from(this.containerFilter().filterMap.entries())
-      .filter(([key]) => allowed.includes(key))
-      .flatMap(([key, value]) => Object.entries(toWildcardParam(key, value?.toString(), plainKeys)));
-
-    return Object.fromEntries(entries) as Record<string, string>;
-  });
-
-  pageSize = linkedSignal({
-    source: () => ({ filter: this.containerFilter(), size: this.eventPageSize() }),
-    computation: ({ size }): number => (size > 0 ? size : 10)
-  });
-
-  pageIndex = linkedSignal({
-    source: () => ({
-      filterValue: this.containerFilter(),
-      pageSize: this.pageSize(),
-      routeUrl: this.contentService.routeUrl()
-    }),
-    computation: () => 0
-  });
-
-  private readonly uniqueCompatibleType = computed<string | null>(() => {
-    const compatibleTokenType = this.compatibleWithSelectedTokenType();
-    if (!compatibleTokenType) return null;
-
-    const types = this.containerTypeOptions();
-    const compatible = types.filter((containerType) => (containerType.token_types ?? []).includes(compatibleTokenType));
-
-    return compatible.length === 1 ? String(compatible[0].containerType) : null;
-  });
-
+  states = signal<string[]>([]);
+  containerSerial = this.contentService.containerSerial;
   private readonly compatibleTypes = computed<string[]>(() => {
     const compatibleTokenType = this.compatibleWithSelectedTokenType();
     if (!compatibleTokenType) return [];
@@ -354,11 +298,9 @@ export class ContainerService implements ContainerServiceInterface {
       .filter((containerType) => (containerType.token_types ?? []).includes(compatibleTokenType))
       .map((containerType) => String(containerType.containerType));
   });
-
   private readonly serialFilterParam = computed(() =>
     toWildcardParam("container_serial", this.selectedContainerSerial(), new Set())
   );
-
   private readonly tokenInContainer = computed<boolean>(() => {
     let assigned = "";
     if (this.tokenService.tokenDetailResource.hasValue()) {
@@ -367,6 +309,63 @@ export class ContainerService implements ContainerServiceInterface {
     }
     return String(assigned).trim() !== "";
   });
+  private pollingTimeoutId: ReturnType<typeof setTimeout> | undefined;  containerDetail = computed(() => {
+    const details = this.containerDetails();
+    const serial = this.containerSerial();
+    if (!details || !serial) {
+      return null;
+    }
+    return details.containers.find((container) => container.serial === serial) ?? null;
+  });
+  containerTemplateBaseUrl = environment.proxyUrl + "/container/template/";
+
+  constructor() {
+    effect(() => {
+      this.notificationService.handleResourceError(this.containerDetailsResource.error(), "container details");
+    });
+    effect(() => {
+      if (this.containerResource.error()) {
+        const error = this.containerResource.error() as HttpErrorResponse;
+        this.notificationService.error(error.message);
+      }
+    });
+
+    effect(() => {
+      clearTimeout(this.pollingTimeoutId);
+      this.pollingTrigger();
+      const serial = this.containerSerial();
+      const active = this.isPollingActive();
+
+      const onAllowedRoute = this.contentService.onContainersCreate() || this.contentService.onContainersDetails();
+
+      if (!active || !serial || !this.containerDetailsResource.hasValue() || !onAllowedRoute) {
+        return;
+      }
+
+      const resourceValue = this.containerDetailsResource.value();
+      if (!resourceValue?.result?.value) {
+        return;
+      }
+
+      const containerData = resourceValue.result.value.containers[0];
+      const registrationState = containerData?.info?.registration_state;
+
+      if (registrationState !== "registered") {
+        this.pollingTimeoutId = setTimeout(() => {
+          this.pollingTrigger.update((count) => count + 1);
+        }, 2000);
+      } else {
+        const isRollover = this.isRolloverPolling();
+        if (isRollover) {
+          this.notificationService.success("Container rollover completed successfully.");
+        } else if (!this.contentService.onContainersCreate()) {
+          this.notificationService.success("Container registered successfully.");
+        }
+        this.isPollingActive.set(false);
+        this.isRolloverPolling.set(false);
+      }
+    });
+  }
 
   private containerRequest(params: Record<string, string | number | boolean>) {
     return {
@@ -383,7 +382,68 @@ export class ContainerService implements ContainerServiceInterface {
       pagesize: this.pageSize(),
       ...params
     });
-  }
+  }  selectedContainerSerial: WritableSignal<string | null> = linkedSignal({
+    source: () => this.contentService.onTokensEnrollment(),
+    computation: (onTokensEnrollment, previous) => {
+      return onTokensEnrollment ? (previous?.value ?? "") : "";
+    }
+  });
+
+
+
+
+
+  sort = signal<Sort>({ active: "serial", direction: "asc" });
+
+
+  containerFilter: WritableSignal<FilterValue> = linkedSignal({
+    source: this.contentService.routeUrl,
+    computation: () => new FilterValue()
+  });
+
+
+  filterParams = computed<Record<string, string>>(() => {
+    const allowed = [...this.apiFilter, ...this.advancedApiFilter];
+    const plainKeys = new Set(["user", "type", "state", "assigned"]);
+
+    const filterMap = this.containerFilter().filterMap;
+
+    const entries = Array.from(filterMap.entries())
+      .filter(([key]) => allowed.includes(key) && !CONTAINER_TYPE_FILTER_KEYS.has(key))
+      .flatMap(([key, value]) => Object.entries(toWildcardParam(key, value?.toString(), plainKeys)));
+
+    const params = Object.fromEntries(entries) as Record<string, string>;
+
+    const types = Array.from(CONTAINER_TYPE_FILTER_KEYS)
+      .flatMap((key) => (filterMap.get(key) ?? "").split(","))
+      .map((value) => value.trim())
+      .filter((value) => StringUtils.validFilterValue(value));
+    const uniqueTypes = Array.from(new Set(types));
+    if (uniqueTypes.length === 1) {
+      params["type"] = uniqueTypes[0];
+    } else if (uniqueTypes.length > 1) {
+      params["type_list"] = uniqueTypes.join(",");
+    }
+
+    return params;
+  });
+
+
+  pageSize = linkedSignal({
+    source: () => ({ filter: this.containerFilter(), size: this.eventPageSize() }),
+    computation: ({ size }): number => (size > 0 ? size : 10)
+  });
+
+
+  pageIndex = linkedSignal({
+    source: () => ({
+      filterValue: this.containerFilter(),
+      pageSize: this.pageSize(),
+      routeUrl: this.contentService.routeUrl()
+    }),
+    computation: () => 0
+  });
+
 
   containerResource = httpResource<PiResponse<ContainerDetails>>(() => {
     // Do not load containers if the action is not allowed.
@@ -440,9 +500,17 @@ export class ContainerService implements ContainerServiceInterface {
       }
     }
 
+    // Without compatible container types there is nothing to ask the backend for —
+    // either no token type is selected yet or no container supports it.
+    const compatibleTypes = this.compatibleTypes();
+    if (compatibleTypes.length === 0) {
+      return undefined;
+    }
+
     const token = this.tokenService.tokenDetailResource.value()?.result?.value?.tokens?.[0];
     const params: Record<string, string | number | boolean> = {
       no_token: 1,
+      type: compatibleTypes.join(","),
       ...this.serialFilterParam(),
       ...(this.filterContainersByTokenOwner() && token?.username && { user: token.username }),
       ...(this.filterContainersByTokenOwner() &&
@@ -451,11 +519,6 @@ export class ContainerService implements ContainerServiceInterface {
           realm: token.user_realm
         })
     };
-
-    const compatibleType = this.uniqueCompatibleType();
-    if (compatibleType) {
-      params["type"] = compatibleType;
-    }
 
     return this.paginatedContainerRequest(params);
   });
@@ -469,11 +532,7 @@ export class ContainerService implements ContainerServiceInterface {
     computation: (source, previous): string[] => {
       if (source.error) return [];
       if (!source.value) return source.isLoading ? (previous?.value ?? []) : [];
-      return (
-        source.value.result?.value?.containers
-          .filter((container) => this.compatibleTypes().includes(container.type))
-          .map((container) => container.serial) ?? []
-      );
+      return source.value.result?.value?.containers.map((container) => container.serial) ?? [];
     }
   });
 
@@ -693,7 +752,10 @@ export class ContainerService implements ContainerServiceInterface {
     return this.http
       .post<
         PiResponse<boolean>
-      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/unassign`, { user: username, realm: userRealm }, { headers })
+      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/unassign`, {
+        user: username,
+        realm: userRealm
+      }, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to unassign user.", error);
@@ -709,7 +771,10 @@ export class ContainerService implements ContainerServiceInterface {
     return this.http
       .post<
         PiResponse<boolean>
-      >(`${this.containerBaseUrl}${encodeURIComponent(args.containerSerial)}/assign`, { user: args.username, realm: args.userRealm }, { headers })
+      >(`${this.containerBaseUrl}${encodeURIComponent(args.containerSerial)}/assign`, {
+        user: args.username,
+        realm: args.userRealm
+      }, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to assign user.", error);
@@ -966,55 +1031,6 @@ export class ContainerService implements ContainerServiceInterface {
     this.pollingTrigger.update((count) => count + 1);
   }
 
-  private pollingTimeoutId: ReturnType<typeof setTimeout> | undefined;
-
-  constructor() {
-    effect(() => {
-      this.notificationService.handleResourceError(this.containerDetailsResource.error(), "container details");
-    });
-    effect(() => {
-      if (this.containerResource.error()) {
-        const error = this.containerResource.error() as HttpErrorResponse;
-        this.notificationService.error(error.message);
-      }
-    });
-
-    effect(() => {
-      clearTimeout(this.pollingTimeoutId);
-      this.pollingTrigger();
-      const serial = this.containerSerial();
-      const active = this.isPollingActive();
-
-      const onAllowedRoute = this.contentService.onContainersCreate() || this.contentService.onContainersDetails();
-
-      if (!active || !serial || !this.containerDetailsResource.hasValue() || !onAllowedRoute) {
-        return;
-      }
-
-      const resourceValue = this.containerDetailsResource.value();
-      if (!resourceValue?.result?.value) {
-        return;
-      }
-
-      const containerData = resourceValue.result.value.containers[0];
-      const registrationState = containerData?.info?.registration_state;
-
-      if (registrationState !== "registered") {
-        this.pollingTimeoutId = setTimeout(() => {
-          this.pollingTrigger.update((count) => count + 1);
-        }, 2000);
-      } else {
-        const isRollover = this.isRolloverPolling();
-        if (isRollover) {
-          this.notificationService.success("Container rollover completed successfully.");
-        } else if (!this.contentService.onContainersCreate()) {
-          this.notificationService.success("Container registered successfully.");
-        }
-        this.isPollingActive.set(false);
-        this.isRolloverPolling.set(false);
-      }
-    });
-  }
 
   async compareWithTemplate() {
     const serial = this.containerSerial();

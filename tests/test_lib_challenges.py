@@ -9,6 +9,7 @@ from privacyidea.lib.crypto import get_rand_digit_str
 from .base import MyTestCase
 from privacyidea.lib.challenge import (get_challenges, extract_answered_challenges, delete_challenges,
                                        cancel_enrollment_via_multichallenge)
+from privacyidea.lib.cache import redis_feature_enabled
 from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE)
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.models import Challenge, db
@@ -31,8 +32,14 @@ class ChallengeTestCase(MyTestCase):
         self.assertEqual(r[1].get("message"), _("please enter otp: "))
         transaction_id = r[1].get("transaction_id")
         chals = get_challenges()
-        self.assertEqual(len(chals), 1)
-        self.assertEqual(chals[0].transaction_id, transaction_id)
+        if redis_feature_enabled("challenges"):
+            # Unfiltered list-all is not served from the cache (the aggregate
+            # listing is degraded under Redis); the per-serial lookup below
+            # confirms the challenge was created.
+            self.assertEqual(len(chals), 0)
+        else:
+            self.assertEqual(len(chals), 1)
+            self.assertEqual(chals[0].transaction_id, transaction_id)
 
         # get challenge for this serial
         chals = get_challenges(serial="CHAL1")
@@ -62,9 +69,12 @@ class ChallengeTestCase(MyTestCase):
         challenges = get_challenges(serial="CHAL2")
         self.assertEqual(len(challenges), 2)
         self.assertEqual(extract_answered_challenges(challenges), [])
-        # answer one challenge
-        Challenge.query.filter_by(transaction_id=transaction_id1).update({"otp_valid": True})
-        db.session.commit()
+        # answer one challenge (backend-agnostic: set_otp_status + save work
+        # against both the DB and the Redis cache, unlike a raw Challenge.query
+        # update which would silently miss the Redis-backed challenge)
+        answered_challenge = get_challenges(transaction_id=transaction_id1)[0]
+        answered_challenge.set_otp_status(True)
+        answered_challenge.save()
         # two challenges, one answered challenge
         challenges = get_challenges(serial="CHAL2")
         answered = extract_answered_challenges(challenges)

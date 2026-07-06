@@ -792,6 +792,9 @@ class TokenContainerClass:
                     # challenge was created during the enrollment. It is still required, hence we only set the state to
                     # answered, but not delete it.
                     challenge.set_otp_status(True)
+                    # Explicit save commits the DB-backed Challenge - the
+                    # DTO auto-saves itself, but Challenge.set_otp_status
+                    # is in-memory only.
                     challenge.save()
                 else:
                     # Valid challenge: delete it
