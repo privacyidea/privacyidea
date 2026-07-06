@@ -446,7 +446,7 @@ def delete_smtpserver(identifier):
 
 @register_export('smtpserver')
 def export_smtpserver(name=None, censor=False):
-    """ Export given or all smtpserver configuration
+    """ Export given or all SMTP server configuration
 
     :param censor: If True, the password and private key password are replaced
         with the ``__CENSORED__`` placeholder instead of being returned in
@@ -470,8 +470,8 @@ def export_smtpserver(name=None, censor=False):
 
 @register_import('smtpserver')
 def import_smtpserver(data, name=None):
-    """Import policy configuration"""
-    log.debug(f'Import smtpserver config: {data!s}')
+    """Import SMTP server configuration"""
+    log.debug(f'Import SMTP server config: {data!s}')
     for res_name, res_data in data.items():
         if name and name != res_name:
             continue
