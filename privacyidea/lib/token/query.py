@@ -125,8 +125,10 @@ def _create_token_query(tokentype: str | None = None, token_type_list: list[str]
                 if "*" in realm:
                     sql_query = sql_query.where(
                         TokenRealm.realm_id.in_(
-                            select(Realm.id).where(func.lower(Realm.name).like(
-                            convert_wildcard_to_sql_like(realm.lower()), escape=SQL_LIKE_ESCAPE))
+                            select(Realm.id).where(
+                                func.lower(Realm.name).like(
+                                    convert_wildcard_to_sql_like(realm.lower()),
+                                    escape=SQL_LIKE_ESCAPE))
                         )
                     )
                 else:
