@@ -133,6 +133,13 @@ describe("UserDetailsContainerTableComponent", () => {
     });
   });
 
+  describe("selection signal source", () => {
+    it("falls back to undefined when the resource has no value, still resolving to []", () => {
+      containerServiceMock.userContainersResource.value.set(undefined);
+      expect(component.selection()).toEqual([]);
+    });
+  });
+
   describe("selection", () => {
     const rows: ContainerDetailData[] = [
       { serial: "C-1", states: [] } as unknown as ContainerDetailData,

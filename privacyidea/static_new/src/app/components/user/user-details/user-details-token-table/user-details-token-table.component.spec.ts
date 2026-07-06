@@ -174,6 +174,25 @@ describe("UserDetailsTokenTableComponent", () => {
     expect(component.dataSource.data.map((t: ContainerDetailToken) => t.serial)).toEqual(["KEEP-ME"]);
   });
 
+  it("falls back to a new empty data source when there is no resource value and no previous value", () => {
+    tokenServiceMock.userTokenResource.value.set(undefined);
+
+    const freshFixture = TestBed.createComponent(UserDetailsTokenTableComponent);
+    freshFixture.detectChanges();
+
+    expect(freshFixture.componentInstance.dataSource.data).toEqual([]);
+  });
+
+  it("falls back to an empty tokens array when the resource value has no tokens", () => {
+    tokenServiceMock.userTokenResource.value.set(
+      MockPiResponse.fromValue<Tokens>({ count: 0, current: 0 } as unknown as Tokens)
+    );
+
+    fixture.detectChanges();
+
+    expect(component.dataSource.data).toEqual([]);
+  });
+
   it("toggleRow adds and removes a row from the selection", () => {
     const rowA = { serial: "A" } as unknown as ContainerDetailToken;
     const rowB = { serial: "B" } as unknown as ContainerDetailToken;

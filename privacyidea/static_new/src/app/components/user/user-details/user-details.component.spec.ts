@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { of } from "rxjs";
+import { of, throwError } from "rxjs";
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
@@ -32,10 +32,11 @@ import { AuthService } from "@services/auth/auth.service";
 import { ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
+import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { TokenDetails, TokenService } from "@services/token/token.service";
-import { UserService } from "@services/user/user.service";
+import { UserData, UserService } from "@services/user/user.service";
 import {
   MockAuditService,
   MockContainerService,
@@ -59,6 +60,7 @@ describe("UserDetailsComponent", () => {
   let tokenServiceMock: MockTokenService;
   let dialogServiceMock: MockDialogService;
   let pendingChangesService: MockPendingChangesService;
+  let notificationServiceMock: MockNotificationService;
   let dialogMock: MockMatDialog;
 
   const mockUserData = {
@@ -99,9 +101,9 @@ describe("UserDetailsComponent", () => {
         { provide: TableUtilsService, useClass: MockTableUtilsService },
         { provide: DialogService, useClass: MockDialogService },
         { provide: PendingChangesService, useClass: MockPendingChangesService },
+        { provide: NotificationService, useClass: MockNotificationService },
         { provide: MatDialog, useValue: dialogMock },
-        MockLocalService,
-        MockNotificationService
+        MockLocalService
       ]
     }).compileComponents();
     jest.useFakeTimers();
@@ -111,6 +113,7 @@ describe("UserDetailsComponent", () => {
     userServiceMock = TestBed.inject(UserService) as unknown as MockUserService;
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
     pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
+    notificationServiceMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
 
     component = fixture.componentInstance;
     fixture.detectChanges();
@@ -295,6 +298,32 @@ describe("UserDetailsComponent", () => {
     expect(keys).toContain("resolver");
   });
 
+  it("detailsEntries falls back to the raw key label and dash placeholder for unmapped or nullish attributes", () => {
+    userServiceMock.user.set({
+      ...mockUserData,
+      groups: undefined
+    });
+
+    const entries = component.detailsEntries();
+    const groupsEntry = entries.find((e) => e.key === "groups");
+
+    expect(groupsEntry?.label).toBe("groups");
+    expect(groupsEntry?.value).toBe("-");
+  });
+
+  it("detailsEntries returns an empty list when userData is not set", () => {
+    userServiceMock.user.set(undefined as unknown as UserData);
+
+    expect(component.detailsEntries()).toEqual([]);
+  });
+
+  it("str stringifies values and normalizes null/undefined to an empty string", () => {
+    expect(component["str"](null)).toBe("");
+    expect(component["str"](undefined)).toBe("");
+    expect(component["str"](0)).toBe("0");
+    expect(component["str"]("abc")).toBe("abc");
+  });
+
   it("editUser enables inline edit mode with the user data", () => {
     component.userData.set(mockUserData);
 
@@ -352,6 +381,21 @@ describe("UserDetailsComponent", () => {
       component.editUser();
       component.onUpdateEditedUser({ ...component.editedUserData(), description: undefined });
       expect(component.editIsDirty()).toBe(false);
+    });
+
+    it("editIsDirty falls back to an empty object when userData is missing", () => {
+      component.editMode.set(true);
+      component.editedUserData.set({ username: "alice" });
+      component.userData.set(undefined as unknown as typeof mockUserData);
+
+      expect(component.editIsDirty()).toBe(true);
+    });
+
+    it("editIsDirty treats keys missing from the original user data as empty strings", () => {
+      component.editUser();
+      component.editedUserData.set({ ...component.editedUserData(), extraField: "new-value" });
+
+      expect(component.editIsDirty()).toBe(true);
     });
 
     it("cancelEdit without changes exits edit mode without opening any dialog", () => {
@@ -474,6 +518,32 @@ describe("UserDetailsComponent", () => {
 
       const result = await fn();
 
+      expect(result).toBe(false);
+      expect(component.editMode()).toBe(true);
+    });
+
+    it("pending-changes save logs and shows a notification when editUser throws an Error", async () => {
+      const errorSpy = jest.spyOn(console, "error").mockImplementation();
+      const fn = getSaveFn();
+      component.editUser();
+      userServiceMock.editUser = jest.fn().mockReturnValue(throwError(() => new Error("network down")));
+
+      const result = await fn();
+
+      expect(errorSpy).toHaveBeenCalledWith("Failed to save user edits", expect.any(Error));
+      expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to save user edits. network down");
+      expect(result).toBe(false);
+      expect(component.editMode()).toBe(true);
+    });
+
+    it("pending-changes save shows a stringified notification when editUser throws a non-Error value", async () => {
+      const fn = getSaveFn();
+      component.editUser();
+      userServiceMock.editUser = jest.fn().mockReturnValue(throwError(() => "boom"));
+
+      const result = await fn();
+
+      expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to save user edits. boom");
       expect(result).toBe(false);
       expect(component.editMode()).toBe(true);
     });

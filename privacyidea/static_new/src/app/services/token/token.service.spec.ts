@@ -136,6 +136,41 @@ describe("TokenService", () => {
         }
       });
     });
+
+    it("does not notify when notify=false but still propagates error", (done) => {
+      const error = new HttpErrorResponse({
+        error: { result: { error: { message: "boom" } } },
+        status: 500
+      });
+      postSpy.mockReturnValue(throwError(() => error));
+
+      tokenService.toggleActive("HOTP1", true, false).subscribe({
+        next: () => {
+          fail("expected error");
+        },
+        error: (err) => {
+          expect(err).toBe(error);
+          expect(notificationService.error).not.toHaveBeenCalled();
+          done();
+        }
+      });
+    });
+
+    it("falls back to an empty message when the error has no result message", (done) => {
+      const error = new HttpErrorResponse({ error: {}, status: 500 });
+      postSpy.mockReturnValue(throwError(() => error));
+
+      tokenService.toggleActive("HOTP1", true).subscribe({
+        next: () => {
+          fail("expected error");
+        },
+        error: (err) => {
+          expect(err).toBe(error);
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to toggle active. ");
+          done();
+        }
+      });
+    });
   });
 
   it("resetFailCount posts /reset with correct body", () => {
@@ -755,6 +790,35 @@ describe("TokenService", () => {
         }
       });
     });
+
+    it("does not notify when notify=false but still propagates error", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "uu" } } },
+        status: 500
+      });
+      postSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.unassignUser("SER", false).subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.error).not.toHaveBeenCalled();
+          done();
+        }
+      });
+    });
+
+    it("falls back to an empty message when the error has no result message", (done) => {
+      const boom = new HttpErrorResponse({ error: {}, status: 500 });
+      postSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.unassignUser("SER").subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to unassign user. ");
+          done();
+        }
+      });
+    });
   });
 
   describe("assignUser()", () => {
@@ -787,6 +851,35 @@ describe("TokenService", () => {
         error: (e) => {
           expect(e).toBe(boom);
           expect(notificationService.error).toHaveBeenCalledWith("Failed to reset fail count. rf");
+          done();
+        }
+      });
+    });
+
+    it("does not notify when notify=false but still propagates error", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "rf" } } },
+        status: 500
+      });
+      postSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.resetFailCount("SER", false).subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.error).not.toHaveBeenCalled();
+          done();
+        }
+      });
+    });
+
+    it("falls back to an empty message when the error has no result message", (done) => {
+      const boom = new HttpErrorResponse({ error: {}, status: 500 });
+      postSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.resetFailCount("SER").subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to reset fail count. ");
           done();
         }
       });

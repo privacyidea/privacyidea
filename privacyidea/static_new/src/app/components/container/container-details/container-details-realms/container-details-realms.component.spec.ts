@@ -29,6 +29,7 @@ import { ContainerDetailsRealmsComponent } from "./container-details-realms.comp
 
 interface ContainerRealmsFieldInternals {
   field: EditableField;
+  realmOptions: () => { value: string; label: string; disabled: boolean }[];
 }
 
 describe("ContainerDetailsRealmsComponent", () => {
@@ -36,6 +37,7 @@ describe("ContainerDetailsRealmsComponent", () => {
   let internals: ContainerRealmsFieldInternals;
   let fixture: ComponentFixture<ContainerDetailsRealmsComponent>;
   let containerService: MockContainerService;
+  let realmService: MockRealmService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -54,6 +56,7 @@ describe("ContainerDetailsRealmsComponent", () => {
     component = fixture.componentInstance;
     internals = component as unknown as ContainerRealmsFieldInternals;
     containerService = TestBed.inject(ContainerService) as unknown as MockContainerService;
+    realmService = TestBed.inject(RealmService) as unknown as MockRealmService;
     fixture.componentRef.setInput("realms", ["realm1"]);
     fixture.detectChanges();
   });
@@ -90,6 +93,16 @@ describe("ContainerDetailsRealmsComponent", () => {
 
     expect(component.selectedRealms()).toEqual(["realm1"]);
     expect(internals.field.isEditing()).toBe(false);
+  });
+
+  it("realmOptions() maps realms to options and disables the user's realm", () => {
+    fixture.componentRef.setInput("userRealm", "realm2");
+    realmService.realmOptions.set(["realm1", "realm2"]);
+
+    expect(internals.realmOptions()).toEqual([
+      { value: "realm1", label: "realm1", disabled: false },
+      { value: "realm2", label: "realm2", disabled: true }
+    ]);
   });
 
   it("registers and unregisters its edit handle with the registry", () => {

@@ -207,4 +207,19 @@ describe("UserDetailsSelfServiceComponent", () => {
     expect(host.querySelector(".detail-field-value ul")!.querySelectorAll("li").length).toBe(2);
     expect(host.querySelector(".value-toggle")!.getAttribute("aria-expanded")).toBe("true");
   });
+
+  it("toggleExpanded collapses an already expanded key", () => {
+    component.toggleExpanded("email");
+    expect(component.isExpanded("email")).toBe(true);
+
+    component.toggleExpanded("email");
+    expect(component.isExpanded("email")).toBe(false);
+  });
+
+  it("str returns an empty string for null/undefined and stringifies other values", () => {
+    expect(component["str"](null)).toBe("");
+    expect(component["str"](undefined)).toBe("");
+    expect(component["str"]("alice")).toBe("alice");
+    expect(component["str"](42)).toBe("42");
+  });
 });
