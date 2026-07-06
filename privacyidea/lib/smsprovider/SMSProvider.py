@@ -38,7 +38,7 @@ import time
 from sqlalchemy import select, update
 
 from privacyidea.lib import lazy_gettext
-from privacyidea.lib.crypto import is_censored, encryptPassword, decryptPassword
+from privacyidea.lib.crypto import is_censored, censor_dict, encryptPassword, decryptPassword
 from privacyidea.lib.error import ConfigAdminError
 from privacyidea.lib.metrics import inc, observe
 from privacyidea.lib.utils import fetch_one_resource, get_module_class
@@ -455,10 +455,20 @@ def list_smsgateways(identifier=None, id=None, gwtype=None):
 
 
 @register_export('smsgateway')
-def export_smsgateway(name=None):
-    """ Export given or all sms gateway configuration """
-    res = list_smsgateways(identifier=name)
+def export_smsgateway(name=None, censor=False):
+    """ Export given or all sms gateway configuration
 
+    :param censor: If True, secret-looking options and headers (those whose name
+        contains ``PASSWORD`` or ``SECRET``) are replaced with the
+        ``__CENSORED__`` placeholder instead of being returned in clear text.
+    """
+    res = list_smsgateways(identifier=name)
+    if censor:
+        for gateway in res.values():
+            for section in ("options", "headers"):
+                secret_keys = [key for key in gateway.get(section, {})
+                               if "PASSWORD" in key.upper() or "SECRET" in key.upper()]
+                gateway[section] = censor_dict(gateway.get(section, {}), secret_keys)
     return res
 
 
