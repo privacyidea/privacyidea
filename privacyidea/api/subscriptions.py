@@ -26,6 +26,7 @@ from privacyidea.lib.subscriptions import (get_subscription,
                                            get_users_with_active_tokens,
                                            get_plugin_subscription_status,
                                            get_server_subscription_status,
+                                           get_latest_github_versions,
                                            delete_subscription,
                                            save_subscription)
 import logging
@@ -92,6 +93,14 @@ def api_status():
     :status 200: list of status dictionaries in ``result.value``.
     """
     overview = [get_server_subscription_status()] + get_plugin_subscription_status()
+    # Enrich each entry with the latest release from GitHub (version, date and
+    # release page URL), cached server-side.
+    latest_versions = get_latest_github_versions()
+    for entry in overview:
+        release = latest_versions.get(entry["application"])
+        entry["current_version"] = release.get("version") if release else None
+        entry["current_version_date"] = release.get("released") if release else None
+        entry["current_version_url"] = release.get("url") if release else None
     g.audit_object.log({'success': True})
     return send_result(overview)
 

@@ -4,6 +4,7 @@ This test file tests the lib.subscriptions.py
 from datetime import datetime, timedelta
 
 import mock
+import requests
 
 from privacyidea.lib.subscriptions import (save_subscription,
                                            delete_subscription,
@@ -15,7 +16,9 @@ from privacyidea.lib.subscriptions import (save_subscription,
                                            get_plugin_subscription_status,
                                            get_server_subscription_status,
                                            get_subscription_application,
+                                           get_latest_github_versions,
                                            DASHBOARD_PLUGINS)
+from privacyidea.lib import subscriptions as subscriptions_module
 from privacyidea.lib.token import init_token
 from privacyidea.lib.user import User
 from privacyidea.models import ClientApplication, Subscription, db
@@ -459,6 +462,23 @@ class PluginSubscriptionStatusTestCase(MyTestCase):
         # ... and it resolves the authenticator subscription.
         self.assertEqual(app_row["subscription"], "valid")
         self.assertEqual(app_row["usage"], "yes")
+        # The version parsed from the user-agent is reported.
+        self.assertEqual(app_row["versions"], ["4.7.3"])
+
+    def test_14_versions_collected_from_useragents(self):
+        # Distinct versions seen in the user-agents are reported, newest first.
+        self._add_clientapp("privacyidea-keycloak", version="1.2.3")
+        self._add_clientapp("privacyidea-keycloak", version="1.3.0")
+
+        with mock.patch(
+                "privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                return_value=0):
+            overview = {e["application"]: e
+                        for e in get_plugin_subscription_status()}
+
+        self.assertEqual(overview["privacyidea-keycloak"]["versions"], ["1.3.0", "1.2.3"])
+        # A plugin never seen has no versions.
+        self.assertEqual(overview["privacyidea-shibboleth"]["versions"], [])
 
     def test_12_radius_row_mirrors_server_subscription(self):
         # RADIUS has no subscription of its own; it is covered by the server
@@ -509,6 +529,10 @@ class ServerSubscriptionStatusTestCase(MyTestCase):
         self.assertEqual(entry["usage"], "no")
         self.assertIsNone(entry["date_till"])
         self.assertIsNone(entry["days_left"])
+        # The server row reports its running version, with any dev/local
+        # suffix (e.g. "3.13.1+gc6d73eab6...") truncated.
+        self.assertEqual(len(entry["versions"]), 1)
+        self.assertNotIn("+", entry["versions"][0])
 
     def test_02_valid(self):
         self._add_server_subscription(days_left=100)
@@ -550,3 +574,52 @@ class ServerSubscriptionStatusTestCase(MyTestCase):
             entry = get_server_subscription_status()
         self.assertEqual(entry["subscription"], "valid")
         self.assertGreaterEqual(entry["days_left"], 60)
+
+
+class GithubVersionTestCase(MyTestCase):
+    """
+    Tests for :func:`get_latest_github_versions`. The network is mocked so the
+    tests never contact GitHub.
+    """
+
+    def setUp(self):
+        super().setUp()
+        subscriptions_module._github_version_cache["fetched_at"] = None
+        subscriptions_module._github_version_cache["versions"] = {}
+
+    def tearDown(self):
+        subscriptions_module._github_version_cache["fetched_at"] = None
+        subscriptions_module._github_version_cache["versions"] = {}
+        super().tearDown()
+
+    def test_01_fetch_parses_and_caches(self):
+        response = mock.Mock(status_code=200)
+        response.json.return_value = {"tag_name": "v4.7.3",
+                                      "published_at": "2026-05-20T10:00:00Z",
+                                      "html_url": "https://github.com/privacyidea/privacyidea/releases/tag/v4.7.3"}
+        with mock.patch("privacyidea.lib.subscriptions.requests.get",
+                        return_value=response) as mock_get:
+            versions = get_latest_github_versions()
+        # Leading "v" stripped, date truncated to the day, keyed by application.
+        self.assertEqual(versions["privacyidea"]["version"], "4.7.3")
+        self.assertEqual(versions["privacyidea"]["released"], "2026-05-20")
+        # Server and app are link-suppressed (not downloaded from GitHub).
+        self.assertIsNone(versions["privacyidea"]["url"])
+        self.assertIsNone(versions["privacyidea-app"]["url"])
+        # Other clients keep the release page link.
+        self.assertEqual(versions["privacyidea-keycloak"]["version"], "4.7.3")
+        self.assertEqual(versions["privacyidea-keycloak"]["url"],
+                         "https://github.com/privacyidea/privacyidea/releases/tag/v4.7.3")
+        self.assertTrue(mock_get.called)
+
+        # A second call within the TTL is served from cache (no new fetch).
+        with mock.patch("privacyidea.lib.subscriptions.requests.get") as mock_get2:
+            versions2 = get_latest_github_versions()
+            mock_get2.assert_not_called()
+        self.assertEqual(versions2["privacyidea"]["version"], "4.7.3")
+
+    def test_02_unreachable_repo_maps_to_none(self):
+        with mock.patch("privacyidea.lib.subscriptions.requests.get",
+                        side_effect=requests.RequestException("boom")):
+            versions = get_latest_github_versions()
+        self.assertIsNone(versions["privacyidea"])

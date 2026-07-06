@@ -50,6 +50,8 @@
                                  <th class="text-center" translate>Subscription</th>
                                  <th ng-if="subscriptionDetailed" translate>Expires</th>
                                  <th ng-if="subscriptionDetailed" translate>Last seen</th>
+                                 <th ng-if="subscriptionDetailed" translate>Versions</th>
+                                 <th ng-if="subscriptionDetailed" translate>Current version</th>
                              </tr>
                          </thead>
                          <tbody>
@@ -57,7 +59,7 @@
                                  ng-class="{'info': row.kind === 'server', 'active': row.kind === 'label'}">
                                  <!-- Section label: spans the whole row. -->
                                  <td ng-if="row.kind === 'label'"
-                                     colspan="{{ subscriptionDetailed ? 5 : 3 }}"
+                                     colspan="{{ subscriptionDetailed ? 7 : 3 }}"
                                      ng-style="{'padding-left': (row.indent * 20) + 'px'}">
                                      <strong>{{ row.label | translate }}</strong>
                                  </td>
@@ -104,6 +106,20 @@
                                  <td ng-if="row.kind !== 'label' && subscriptionDetailed">
                                      <span ng-if="row.kind === 'server'">—</span>
                                      <span ng-if="row.kind !== 'server'">{{ row.status.last_seen | date: "y-MM-dd HH:mm" }}</span>
+                                 </td>
+                                 <!-- Versions seen in the user-agents (detailed view only). -->
+                                 <td ng-if="row.kind !== 'label' && subscriptionDetailed">
+                                     <span ng-if="row.status.versions.length">{{ row.status.versions.join(", ") }}</span>
+                                     <span ng-if="!row.status.versions.length" class="text-muted">—</span>
+                                 </td>
+                                 <!-- Latest released version from GitHub (detailed view only),
+                                      version + date linking to the release page. -->
+                                 <td ng-if="row.kind !== 'label' && subscriptionDetailed">
+                                     <a ng-if="row.status.current_version && row.status.current_version_url"
+                                        ng-href="{{ row.status.current_version_url }}"
+                                        target="_blank" rel="noopener">{{ row.status.current_version }}<span ng-if="row.status.current_version_date"> ({{ row.status.current_version_date }})</span></a>
+                                     <span ng-if="row.status.current_version && !row.status.current_version_url">{{ row.status.current_version }}<span ng-if="row.status.current_version_date" class="text-muted"> ({{ row.status.current_version_date }})</span></span>
+                                     <span ng-if="!row.status.current_version" class="text-muted">—</span>
                                  </td>
                              </tr>
                          </tbody>

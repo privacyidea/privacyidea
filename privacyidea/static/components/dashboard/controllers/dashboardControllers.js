@@ -237,7 +237,9 @@ myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
      // RADIUS, which has no subscription application yet).
      function unusedStatus(application) {
          return {application: application, usage: "no", subscription: "none",
-                 date_till: null, days_left: null, last_seen: null};
+                 date_till: null, days_left: null, last_seen: null,
+                 versions: [], current_version: null,
+                 current_version_date: null, current_version_url: null};
      }
 
      function flattenSections(nodes, depth, rows, statusByApp) {

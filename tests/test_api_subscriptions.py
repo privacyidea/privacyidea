@@ -1,5 +1,7 @@
 from datetime import datetime, timedelta
 
+import mock
+
 from privacyidea.lib.subscriptions import DASHBOARD_PLUGINS
 from privacyidea.models import ClientApplication, Subscription, db
 from .base import MyApiTestCase
@@ -94,12 +96,17 @@ class APISubscriptionsTestCase(MyApiTestCase):
             level="Gold", signature="0"))
         db.session.commit()
 
-        with self.app.test_request_context('/subscriptions/status',
-                                           method="GET",
-                                           headers={'Authorization': self.at}):
-            res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200, res)
-            value = res.json.get("result").get("value")
+        # Mock the GitHub lookup so the test does not hit the network.
+        with mock.patch("privacyidea.api.subscriptions.get_latest_github_versions",
+                        return_value={"privacyidea-keycloak": {
+                            "version": "9.9.9", "released": "2026-01-02",
+                            "url": "https://github.com/privacyidea/keycloak-provider/releases/tag/v9.9.9"}}):
+            with self.app.test_request_context('/subscriptions/status',
+                                               method="GET",
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 200, res)
+                value = res.json.get("result").get("value")
 
         # First entry is always the server row, followed by DASHBOARD_PLUGINS in order.
         self.assertTrue(value[0].get("is_server"))
@@ -108,6 +115,13 @@ class APISubscriptionsTestCase(MyApiTestCase):
         by_app = {e["application"]: e for e in value[1:]}
         self.assertEqual(by_app["privacyidea-keycloak"]["subscription"], "valid")
         self.assertEqual(by_app["privacyidea-keycloak"]["usage"], "yes")
+        # The mocked GitHub lookup is merged in as current_version + date + url.
+        self.assertEqual(by_app["privacyidea-keycloak"]["current_version"], "9.9.9")
+        self.assertEqual(by_app["privacyidea-keycloak"]["current_version_date"], "2026-01-02")
+        self.assertEqual(by_app["privacyidea-keycloak"]["current_version_url"],
+                         "https://github.com/privacyidea/keycloak-provider/releases/tag/v9.9.9")
+        self.assertIsNone(by_app["privacyidea-adfs"]["current_version"])
+        self.assertIsNone(by_app["privacyidea-adfs"]["current_version_url"])
         # entraid-via-keycloak mirrors the keycloak subscription (same owning
         # application), so it is valid/used too even without its own client row.
         mirror_keycloak = {"privacyidea-keycloak", "entraid-via-keycloak"}

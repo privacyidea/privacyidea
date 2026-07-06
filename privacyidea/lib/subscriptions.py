@@ -23,6 +23,7 @@ Provide decorator to test the subscriptions.
 The code is tested in tests/test_lib_subscriptions.py.
 """
 
+import concurrent.futures
 import datetime
 import functools
 import logging
@@ -30,6 +31,7 @@ import os
 import random
 import traceback
 
+import requests
 from sqlalchemy import func, select, update
 
 from privacyidea.lib import lazy_gettext
@@ -38,7 +40,7 @@ from privacyidea.lib.error import SubscriptionError
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.token import get_tokens
 from .log import log_with
-from .utils import get_plugin_info_from_useragent
+from .utils import get_plugin_info_from_useragent, get_version_number
 from ..models import ClientApplication, Subscription, db
 
 EXPIRE_MESSAGE = lazy_gettext("My subscription has expired.")
@@ -143,7 +145,91 @@ EXPIRING_THRESHOLD_DAYS = 60
 # A plugin seen within this many days counts as actively used.
 USAGE_RECENT_DAYS = 7
 
+# GitHub repository (``owner/repo``) hosting each dashboard client, used to look
+# up the latest released version. Keyed by the dashboard application/user-agent.
+# An unknown/unreachable repository or one without a published release simply
+# yields no "current version" (None) — e.g. FreeRADIUS currently has no release.
+GITHUB_REPOS = {
+    "privacyidea": "privacyidea/privacyidea",
+    "privacyidea-app": "privacyidea/pi-authenticator",
+    "privacyidea-cp": "privacyidea/privacyidea-credential-provider",
+    "privacyidea-pam": "privacyidea/privacyidea-pam",
+    "pam-passkey": "privacyidea/pam-passkey",
+    "privacyidea-keycloak": "privacyidea/keycloak-provider",
+    "entraid-via-keycloak": "privacyidea/keycloak-protocolmapper-entraid",
+    "privacyidea-adfs": "privacyidea/adfs-provider",
+    "privacyidea-shibboleth": "privacyidea/shibboleth-plugin",
+    "privacyidea-radius": "privacyidea/FreeRADIUS",
+}
+# These clients are distributed via OS packages / app stores rather than a
+# downloadable GitHub release, so report their latest version + date but no
+# link to the release page.
+RELEASE_LINK_SUPPRESSED = {"privacyidea", "privacyidea-app"}
+# How long to cache the latest-release lookups, and the per-request timeout.
+GITHUB_VERSION_TTL = datetime.timedelta(hours=6)
+GITHUB_FETCH_TIMEOUT = 3
+_github_version_cache = {"fetched_at": None, "versions": {}}
+
 log = logging.getLogger(__name__)
+
+
+def _fetch_latest_release(repo):
+    """
+    Return ``{"version": ..., "released": ..., "url": ...}`` for the latest
+    release of a GitHub ``owner/repo`` — the release tag with any leading ``v``
+    stripped, the release date (``YYYY-MM-DD``) and the release page URL — or
+    None if it can't be determined.
+    """
+    url = f"https://api.github.com/repos/{repo}/releases/latest"
+    try:
+        response = requests.get(url, timeout=GITHUB_FETCH_TIMEOUT,
+                                headers={"Accept": "application/vnd.github+json"})
+        if response.status_code == 200:
+            data = response.json()
+            version = (data.get("tag_name") or "").lstrip("v")
+            if not version:
+                return None
+            return {"version": version,
+                    "released": (data.get("published_at") or "")[:10] or None,
+                    "url": data.get("html_url")}
+        log.info(f"GitHub returned {response.status_code} for the latest release of {repo}")
+    except (requests.RequestException, ValueError) as error:
+        log.info(f"Could not fetch the latest release for {repo}: {error}")
+    return None
+
+
+def get_latest_github_versions():
+    """
+    Return ``{application: {"version": ..., "released": ...} or None}`` for the
+    clients in :data:`GITHUB_REPOS`. Results are fetched from GitHub
+    concurrently and cached for :data:`GITHUB_VERSION_TTL`; this is best-effort,
+    so unreachable or unknown repositories map to None.
+
+    :rtype: dict
+    """
+    now = datetime.datetime.now()
+    if (_github_version_cache["fetched_at"]
+            and now - _github_version_cache["fetched_at"] < GITHUB_VERSION_TTL):
+        return _github_version_cache["versions"]
+
+    unique_repos = set(GITHUB_REPOS.values())
+    version_by_repo = {}
+    with concurrent.futures.ThreadPoolExecutor(max_workers=len(unique_repos) or 1) as executor:
+        future_to_repo = {executor.submit(_fetch_latest_release, repo): repo
+                          for repo in unique_repos}
+        for future in concurrent.futures.as_completed(future_to_repo):
+            version_by_repo[future_to_repo[future]] = future.result()
+
+    versions = {application: version_by_repo.get(repo)
+                for application, repo in GITHUB_REPOS.items()}
+    # Drop the release link for clients that are not downloaded from GitHub.
+    for application in RELEASE_LINK_SUPPRESSED:
+        release = versions.get(application)
+        if release:
+            versions[application] = {**release, "url": None}
+    _github_version_cache["versions"] = versions
+    _github_version_cache["fetched_at"] = now
+    return versions
 
 
 def get_users_with_active_tokens():
@@ -236,7 +322,8 @@ def get_plugin_subscription_status() -> list[dict]:
 
     :return: list of dicts in the order of :data:`DASHBOARD_PLUGINS`. Each dict
         has the keys ``application``, ``usage``, ``subscription``, ``last_seen``,
-        ``date_till`` and ``days_left``.
+        ``date_till``, ``days_left`` and ``versions`` (the distinct client
+        versions seen in the user-agents, newest first).
     :rtype: list[dict]
     """
     stmt = (
@@ -245,19 +332,23 @@ def get_plugin_subscription_status() -> list[dict]:
         .group_by(ClientApplication.clienttype)
     )
     last_seen_by_plugin: dict[str, datetime.datetime] = {}
+    # Distinct client versions seen per plugin, parsed from the user-agents.
+    versions_by_plugin: dict[str, set] = {}
     for clienttype, max_lastseen in db.session.execute(stmt).all():
         # MAX() can return NULL when every row for a clienttype has a NULL
         # lastseen; skip those so a later real timestamp doesn't compare
         # against None.
         if max_lastseen is None:
             continue
-        plugin = get_plugin_info_from_useragent(clienttype)[0]
+        plugin, version, _comment = get_plugin_info_from_useragent(clienttype)
         if not plugin:
             continue
         key = plugin.lower()
         current = last_seen_by_plugin.get(key)
         if current is None or max_lastseen > current:
             last_seen_by_plugin[key] = max_lastseen
+        if version:
+            versions_by_plugin.setdefault(key, set()).add(version)
 
     # Batch-load every subscription once instead of per-plugin lookups.
     # Sort by date_till ascending so that, when multiple rows exist for the
@@ -286,7 +377,10 @@ def get_plugin_subscription_status() -> list[dict]:
                          "subscription": state,
                          "last_seen": last_seen,
                          "date_till": date_till,
-                         "days_left": days_left})
+                         "days_left": days_left,
+                         # Versions seen in the user-agents, newest first.
+                         "versions": sorted(versions_by_plugin.get(plugin.lower(), []),
+                                            reverse=True)})
     return overview
 
 
@@ -314,7 +408,11 @@ def get_server_subscription_status() -> dict:
             "subscription": state,
             "last_seen": None,
             "date_till": date_till,
-            "days_left": days_left}
+            "days_left": days_left,
+            # The running server version (there is no user-agent for the
+            # server). Truncate any PEP 440 local/dev suffix (e.g.
+            # "3.13.1+gc6d73eab6.d20260602" -> "3.13.1").
+            "versions": [get_version_number().split("+")[0]]}
 
 
 def subscription_status(component="privacyidea", tokentype=None):
