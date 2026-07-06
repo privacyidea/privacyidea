@@ -196,26 +196,17 @@ services:
 # secrets/README.md) to generate them before the first "docker compose up".
 secrets:
   enckey:
-    # head -c 96 /dev/urandom > secrets/enckey
     file: ./secrets/enckey
   secret_key:
-    # python -c 'import secrets;print(secrets.token_hex())' > secrets/secret_key
     file: ./secrets/secret_key
   pi_pepper:
-    # python -c 'import secrets;print(secrets.token_urlsafe())' > secrets/pi_pepper
     file: ./secrets/pi_pepper
   mariadb_password:
-    # pwgen 20 1 > secrets/mariadb_password
     file: ./secrets/mariadb_password
   mariadb_root_password:
-    # pwgen 20 1 > secrets/mariadb_root_password
     file: ./secrets/mariadb_root_password
   bootstrap_admin_password:
-    # password for the initial admin account created by pi-init
     file: ./secrets/bootstrap_admin_password
-  # Audit signing keypair. Generate with:
-  #   openssl genrsa -out secrets/audit_key_private 2048
-  #   openssl rsa -in secrets/audit_key_private -pubout -out secrets/audit_key_public
   audit_key_private:
     file: ./secrets/audit_key_private
   audit_key_public:
