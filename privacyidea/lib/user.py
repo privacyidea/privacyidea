@@ -899,9 +899,16 @@ def get_user_list(param: dict = None, user: User = None, include_custom_attribut
         # user id is required to later get the custom attributes for the user
         requested_attributes.append("userid")
         remove_user_id = True
+    # username is always required for deduplication across resolvers
+    remove_username = False
+    if requested_attributes and "username" not in requested_attributes:
+        remove_username = True
     log.debug(f"With this search dictionary: {search_dict!r}")
     requested_pi_user_attributes = list({"realm", "resolver", "editable"}.intersection(requested_attributes or []))
     requested_user_store_attributes = list(set(requested_attributes or []) - set(requested_pi_user_attributes))
+    # Always fetch username from the resolver for dedup, even if not requested by the caller
+    if requested_user_store_attributes and "username" not in requested_user_store_attributes:
+        requested_user_store_attributes.append("username")
 
     for realm in realm_iteration:
         resolvers = get_ordered_resolvers(realm)
@@ -934,6 +941,8 @@ def get_user_list(param: dict = None, user: User = None, include_custom_attribut
                         user_info.pop("userid", None)
                     # Add user to users_dict, if it is not contained, yet
                     user_tuple = (user_info.get("username"), realm)
+                    if remove_username:
+                        user_info.pop("username", None)
                     if user_tuple not in users_dict:
                         users_dict[user_tuple] = user_info
                 log.debug(f"Found this userlist: {user_list!r}")
