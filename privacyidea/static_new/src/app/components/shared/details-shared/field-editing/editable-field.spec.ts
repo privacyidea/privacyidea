@@ -49,7 +49,7 @@ describe("injectEditableField", () => {
   }
 
   it("registers with the registry on creation and starts not editing", () => {
-    const { field } = createField({ onCommit: () => undefined });
+    const { field } = createField({ onCommit: async () => undefined });
     expect(field.isEditing()).toBe(false);
     expect(registry.anyEditing()).toBe(false);
 
@@ -59,7 +59,7 @@ describe("injectEditableField", () => {
   });
 
   it("unregisters from the registry on destroy", () => {
-    const { fixture, field } = createField({ onCommit: () => undefined });
+    const { fixture, field } = createField({ onCommit: async () => undefined });
     field.toggle();
     expect(registry.anyEditing()).toBe(true);
 
@@ -69,7 +69,7 @@ describe("injectEditableField", () => {
 
   it("runs onOpen only when entering edit mode", () => {
     const onOpen = jest.fn();
-    const { field } = createField({ onOpen, onCommit: () => undefined });
+    const { field } = createField({ onOpen, onCommit: async () => undefined });
 
     field.toggle();
     expect(onOpen).toHaveBeenCalledTimes(1);
@@ -78,29 +78,29 @@ describe("injectEditableField", () => {
     expect(onOpen).toHaveBeenCalledTimes(1);
   });
 
-  it("keeps edit mode open when onCommit returns false", () => {
-    const { field } = createField({ onCommit: () => false });
+  it("keeps edit mode open when onCommit returns false", async () => {
+    const { field } = createField({ onCommit: async () => false });
     field.toggle();
 
-    field.commit();
+    await field.commit();
     expect(field.isEditing()).toBe(true);
   });
 
-  it("closes edit mode when onCommit returns void", () => {
-    const onCommit = jest.fn(() => undefined);
+  it("closes edit mode when onCommit returns void", async () => {
+    const onCommit = jest.fn(async () => undefined);
     const { field } = createField({ onCommit });
     field.toggle();
 
-    field.commit();
+    await field.commit();
     expect(onCommit).toHaveBeenCalledTimes(1);
     expect(field.isEditing()).toBe(false);
   });
 
-  it("closes edit mode when onCommit returns true", () => {
-    const { field } = createField({ onCommit: () => true });
+  it("closes edit mode when onCommit returns true", async () => {
+    const { field } = createField({ onCommit: async () => true });
     field.toggle();
 
-    field.commit();
+    await field.commit();
     expect(field.isEditing()).toBe(false);
   });
 
@@ -124,7 +124,7 @@ describe("injectEditableField", () => {
 
   it("cancel always closes edit mode and calls onCancel", () => {
     const onCancel = jest.fn();
-    const { field } = createField({ onCancel, onCommit: () => undefined });
+    const { field } = createField({ onCancel, onCommit: async () => undefined });
     field.toggle();
 
     field.cancel();

@@ -58,7 +58,7 @@ export class ContainerDetailsRealmsComponent {
   protected readonly field = injectEditableField({
     onOpen: () => this.selectedRealms.set([...this.realms()]),
     onCancel: () => this.selectedRealms.set([...this.realms()]),
-    onCommit: () => {
+    onCommit: async () => {
       this.containerService
         .setContainerRealm(this.containerService.containerSerial(), this.selectedRealms())
         .subscribe({ next: () => this.containerService.containerDetailsResource.reload() });

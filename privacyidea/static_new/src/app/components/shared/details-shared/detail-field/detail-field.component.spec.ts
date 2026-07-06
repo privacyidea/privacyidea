@@ -58,13 +58,13 @@ describe("DetailFieldComponent", () => {
     expect(registry.anyEditing()).toBe(true);
   });
 
-  it("commit persists the draft via the save callback and exits editing", () => {
+  it("commit persists the draft via the save callback and exits editing", async () => {
     const saveSpy = jest.fn();
     fixture.componentRef.setInput("save", saveSpy);
 
     internals.field.toggle();
     component.draft.set("20");
-    internals.field.commit();
+    await internals.field.commit();
 
     expect(saveSpy).toHaveBeenCalledWith("20");
     expect(internals.field.isEditing()).toBe(false);

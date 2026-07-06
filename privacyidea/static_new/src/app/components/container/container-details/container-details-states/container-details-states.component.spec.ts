@@ -105,11 +105,11 @@ describe("ContainerDetailsStatesComponent", () => {
     expect(containerService.setStates).not.toHaveBeenCalled();
   });
 
-  it("commit() persists the selection and leaves edit mode", () => {
+  it("commit() persists the selection and leaves edit mode", async () => {
     internals.field.toggle();
     component.selectedStates.set(["disabled"]);
 
-    internals.field.commit();
+    await internals.field.commit();
 
     expect(containerService.setStates).toHaveBeenCalledWith(containerService.containerSerial(), ["disabled"]);
     expect(internals.field.isEditing()).toBe(false);

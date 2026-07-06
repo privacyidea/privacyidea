@@ -55,7 +55,7 @@ export class ContainerDetailsStatesComponent {
   protected readonly field = injectEditableField({
     onOpen: () => this.selectedStates.set([...this.states()]),
     onCancel: () => this.selectedStates.set([...this.states()]),
-    onCommit: () => {
+    onCommit: async () => {
       if (this.selectedStates().length === 0) {
         this.notificationService.error("At least one state must be selected.");
         return false;

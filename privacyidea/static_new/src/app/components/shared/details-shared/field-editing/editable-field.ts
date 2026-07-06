@@ -26,14 +26,14 @@ import { EditableElement } from "@components/shared/edit-buttons/edit-buttons.co
 export interface EditableFieldOptions {
   onOpen?: () => void;
   onCancel?: () => void;
-  onCommit: () => boolean | void | Promise<boolean | void>;
+  onCommit: () => Promise<boolean | void>;
 }
 
 export interface EditableField {
   readonly isEditing: Signal<boolean>;
   readonly editButtonsElement: EditableElement<unknown>;
   readonly toggle: () => void;
-  readonly commit: () => void;
+  readonly commit: () => Promise<void>;
   readonly cancel: () => void;
 }
 
@@ -49,18 +49,10 @@ export function injectEditableField(options: EditableFieldOptions): EditableFiel
     value: undefined
   };
 
-  const commit = (): void => {
-    const result = options.onCommit();
-    if (result instanceof Promise) {
-      // Keep edit mode open when the commit resolves to false (validation abort).
-      void result.then((resolved) => {
-        if (resolved !== false) {
-          isEditing.set(false);
-        }
-      });
-      return;
-    }
-    if (result !== false) {
+  const commit = async (): Promise<void> => {
+    const resolved = await options.onCommit();
+    // Keep edit mode open when the commit resolves to false (validation abort).
+    if (resolved !== false) {
       isEditing.set(false);
     }
   };

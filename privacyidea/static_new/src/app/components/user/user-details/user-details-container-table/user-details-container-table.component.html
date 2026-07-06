@@ -47,14 +47,16 @@
         <span i18n>Unassign</span>
       </button>
     }
-    <button
-      (click)="toggleActiveSelected()"
-      [disabled]="selection().length === 0"
-      class="action-button-secondary button-width-l"
-      mat-stroked-button>
-      <mat-icon>toggle_on</mat-icon>
-      <span i18n>(De)activate</span>
-    </button>
+    @if (authService.actionAllowed("container_state")) {
+      <button
+        (click)="toggleActiveSelected()"
+        [disabled]="selection().length === 0"
+        class="action-button-secondary button-width-l"
+        mat-stroked-button>
+        <mat-icon>toggle_on</mat-icon>
+        <span i18n>(De)activate</span>
+      </button>
+    }
   </div>
   <div class="table-wrapper">
     <table

@@ -51,6 +51,6 @@ export class DetailFieldComponent {
 
   protected readonly field = injectEditableField({
     onOpen: () => this.draft.set(this.editValue()),
-    onCommit: () => this.save()(this.draft())
+    onCommit: async () => this.save()(this.draft())
   });
 }

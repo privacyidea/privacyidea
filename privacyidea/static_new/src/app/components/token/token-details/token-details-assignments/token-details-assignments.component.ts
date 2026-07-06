@@ -99,7 +99,7 @@ export class TokenDetailsAssignmentsComponent {
   protected readonly realmsField = injectEditableField({
     onOpen: () => this.realmService.selectedRealms.set([...this.tokenDetails().realms]),
     onCancel: () => this.realmService.selectedRealms.set([...this.tokenDetails().realms]),
-    onCommit: () => {
+    onCommit: async () => {
       this.tokenService
         .setTokenRealm(this.tokenDetails().serial, this.realmService.selectedRealms())
         .subscribe({ next: () => this.tokenService.tokenDetailResource.reload() });
@@ -118,7 +118,7 @@ export class TokenDetailsAssignmentsComponent {
       }
     },
     onCancel: () => this.selectedTokengroup.set([...(this.tokenDetails().tokengroup as unknown as string[])]),
-    onCommit: () => {
+    onCommit: async () => {
       this.tokenService
         .setTokengroup(this.tokenDetails().serial, this.selectedTokengroup())
         .subscribe({ next: () => this.tokenService.tokenDetailResource.reload() });
@@ -128,7 +128,7 @@ export class TokenDetailsAssignmentsComponent {
   protected readonly containerField = injectEditableField({
     onOpen: () => this.containerService.selectedContainerSerial.set(""),
     onCancel: () => this.containerService.selectedContainerSerial.set(""),
-    onCommit: () => {
+    onCommit: async () => {
       const selected = this.containerService.selectedContainerSerial()?.trim() ?? null;
       this.containerService.selectedContainerSerial.set(selected);
       if (selected) {

@@ -72,11 +72,11 @@ describe("ContainerDetailsRealmsComponent", () => {
     expect(internals.field.isEditing()).toBe(false);
   });
 
-  it("commit() persists the selected realms and leaves edit mode", () => {
+  it("commit() persists the selected realms and leaves edit mode", async () => {
     internals.field.toggle();
     component.selectedRealms.set(["realm2"]);
 
-    internals.field.commit();
+    await internals.field.commit();
 
     expect(containerService.setContainerRealm).toHaveBeenCalledWith(containerService.containerSerial(), ["realm2"]);
     expect(internals.field.isEditing()).toBe(false);
