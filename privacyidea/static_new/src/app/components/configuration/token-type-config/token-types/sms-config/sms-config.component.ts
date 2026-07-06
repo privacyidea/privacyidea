@@ -18,7 +18,6 @@
  **/
 import { Component, input, output } from "@angular/core";
 
-import { FormsModule } from "@angular/forms";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
@@ -31,15 +30,7 @@ import { SMS_GATEWAY, SMS_PROVIDER_TIMEOUT } from "@constants/token.constants";
 @Component({
   selector: "app-sms-config",
   standalone: true,
-  imports: [
-    FormsModule,
-    MatExpansionModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatSelectModule,
-    RouterLink,
-    ClearButtonComponent
-  ],
+  imports: [MatExpansionModule, MatFormFieldModule, MatInputModule, MatSelectModule, RouterLink, ClearButtonComponent],
   templateUrl: "./sms-config.component.html",
   styleUrl: "./sms-config.component.scss"
 })
@@ -48,12 +39,12 @@ export class SmsConfigComponent {
   protected readonly SMS_GATEWAY = SMS_GATEWAY;
   protected readonly SMS_PROVIDER_TIMEOUT = SMS_PROVIDER_TIMEOUT;
 
-  formData = input.required<Record<string, any>>();
-  formDataChange = output<Record<string, any>>();
+  formData = input.required<Record<string, string | number>>();
+  formDataChange = output<Record<string, string | number>>();
   smsGateways = input.required<string[]>();
   expanded = input<boolean>(false);
 
-  updateFormData(fieldName: string, value: any): void {
+  updateFormData(fieldName: string, value: string | number): void {
     const newValue = { ...this.formData(), [fieldName]: value };
     this.formDataChange.emit(newValue);
   }

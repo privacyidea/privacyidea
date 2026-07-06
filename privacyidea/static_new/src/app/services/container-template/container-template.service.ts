@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
+import { HttpClient, HttpErrorResponse, httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, effect, inject, Injectable, linkedSignal, Signal, WritableSignal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
 import { environment } from "@env/environment";
@@ -32,9 +32,7 @@ export interface TemplateTokenType {
   token_types: string[];
 }
 
-export interface TemplateTokenTypes {
-  [key: string]: TemplateTokenType;
-}
+export type TemplateTokenTypes = Record<string, TemplateTokenType>;
 
 export interface ContainerTemplateServiceInterface {
   containerTemplateBaseUrl: string;
@@ -58,10 +56,14 @@ export interface ContainerTemplateServiceInterface {
   postTemplateEdits(template: ContainerTemplate): Promise<boolean>;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class ContainerTemplateService implements ContainerTemplateServiceInterface {
+  private readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly containerService: ContainerServiceInterface = inject(ContainerService);
+  private readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  private readonly http = inject(HttpClient);
+
   // --- Constants & Data ---
   readonly containerTemplateBaseUrl = environment.proxyUrl + "/container/templates";
   readonly emptyContainerTemplate: ContainerTemplate = {
@@ -73,13 +75,6 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
     }
   };
 
-  // --- Services ---
-  readonly authService: AuthServiceInterface = inject(AuthService);
-  readonly containerService: ContainerServiceInterface = inject(ContainerService);
-  readonly contentService: ContentServiceInterface = inject(ContentService);
-  readonly http = inject(HttpClient);
-  readonly notificationService: NotificationServiceInterface = inject(NotificationService);
-
   // --- Resources ---
 
   constructor() {
@@ -90,13 +85,28 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
       this.notificationService.handleResourceError(this.templateTokenTypesResource.error(), "template token types");
     });
   }
+
+  // --- Private Methods ---
+  private _performDeleteRequest(name: string) {
+    return this.http
+      .delete<PiResponse<boolean>>(`${environment.proxyUrl}/container/template/${encodeURIComponent(name)}`, {
+        headers: this.authService.getHeaders()
+      })
+      .pipe(
+        catchError((error) => {
+          console.warn("Failed to delete template:", error);
+          return throwError(() => error);
+        })
+      );
+  }
+
   readonly templatesResource = httpResource<PiResponse<{ templates: ContainerTemplate[] }>>(() => {
     if (!this.authService.actionAllowed("container_template_list")) return undefined;
     if (!this.contentService.onContainersCreate() && !this.contentService.onContainersTemplates()) {
       return undefined;
     }
 
-    let params: any = {};
+    let params: Record<string, string> = {};
     if (this.containerService.selectedContainerType()) {
       params = { container_type: this.containerService.selectedContainerType()!.containerType };
     }
@@ -179,8 +189,8 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
       await lastValueFrom(this._performDeleteRequest(name));
       this.templatesResource.reload();
       this.notificationService.success("Successfully deleted template.");
-    } catch (error: any) {
-      const message = error.error?.result?.error?.message || "";
+    } catch (error: unknown) {
+      const message = error instanceof HttpErrorResponse ? error.error?.result?.error?.message || "" : "";
       this.notificationService.error("Failed to delete template. " + message);
       throw error;
     }
@@ -198,8 +208,8 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
       }
       this.templatesResource.reload();
       this.notificationService.success("Successfully deleted templates.");
-    } catch (error: any) {
-      const message = error.error?.result?.error?.message || "";
+    } catch (error: unknown) {
+      const message = error instanceof HttpErrorResponse ? error.error?.result?.error?.message || "" : "";
       this.notificationService.error("Failed to delete templates. " + message);
       throw error;
     }
@@ -215,29 +225,19 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
       environment.proxyUrl +
       `/container/${encodeURIComponent(template.container_type)}/template/${encodeURIComponent(template.name)}`;
     try {
-      await lastValueFrom(this.http.post<PiResponse<any>>(url, template, { headers: this.authService.getHeaders() }));
+      await lastValueFrom(
+        this.http.post<PiResponse<{ template_id: number }>>(url, template, { headers: this.authService.getHeaders() })
+      );
       this.templatesResource.reload();
       this.notificationService.success(`Successfully saved template edits.`);
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.warn("Failed to save template edits:", error);
-      const message = error.error?.result?.error?.message || "";
+      const message = error instanceof HttpErrorResponse ? error.error?.result?.error?.message || "" : "";
       this.notificationService.error("Failed to save template edits. " + message);
       return false;
     }
   }
 
-  // --- Private Methods ---
-  private _performDeleteRequest(name: string) {
-    return this.http
-      .delete<PiResponse<any>>(`${environment.proxyUrl}/container/template/${encodeURIComponent(name)}`, {
-        headers: this.authService.getHeaders()
-      })
-      .pipe(
-        catchError((error) => {
-          console.warn("Failed to delete template:", error);
-          return throwError(() => error);
-        })
-      );
-  }
+
 }

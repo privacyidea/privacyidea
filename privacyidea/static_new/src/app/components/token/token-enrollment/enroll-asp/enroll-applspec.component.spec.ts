@@ -21,6 +21,9 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { EnrollApplspecComponent } from "./enroll-applspec.component";
+import { ServiceIdService } from "@services/service-id/service-id.service";
+import { MockServiceIdService, MockTokenService } from "@testing/mock-services";
+import { TokenService } from "@services/token/token.service";
 
 describe("EnrollAspComponent", () => {
   let component: EnrollApplspecComponent;
@@ -29,7 +32,12 @@ describe("EnrollAspComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EnrollApplspecComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting()]
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: ServiceIdService, useClass: MockServiceIdService },
+        { provide: TokenService, useClass: MockTokenService }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EnrollApplspecComponent);
@@ -41,13 +49,10 @@ describe("EnrollAspComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should initialize form controls with default values", () => {
-    expect(component.serviceIdControl.value).toBe("");
-    expect(component.serviceIdControl.enabled).toBe(true);
-    expect(component.generateOnServerControl.value).toBe(true);
-    expect(component.generateOnServerControl.enabled).toBe(true);
-    expect(component.otpKeyFormControl.value).toBe("");
-    expect(component.otpKeyFormControl.disabled).toBe(true);
+  it("should initialize signals with default values", () => {
+    expect(component.serviceId()).toBe("");
+    expect(component.generateOnServer()).toBe(true);
+    expect(component.otpKey()).toBe("");
   });
 
   describe("ngOnInit with enrollmentData input", () => {
@@ -58,9 +63,9 @@ describe("EnrollAspComponent", () => {
         generateOnServer: false
       });
       component.ngOnInit();
-      expect(component.serviceIdControl.value).toBe("service-123");
-      expect(component.generateOnServerControl.value).toBe(false);
-      expect(component.otpKeyFormControl.value).toBe("");
+      expect(component.serviceId()).toBe("service-123");
+      expect(component.generateOnServer()).toBe(false);
+      expect(component.otpKey()).toBe("");
     });
 
     it("should ignore values from enrollmentData if they are undefined", () => {
@@ -71,9 +76,9 @@ describe("EnrollAspComponent", () => {
         otpKey: undefined
       });
       component.ngOnInit();
-      expect(component.serviceIdControl.value).toBe("");
-      expect(component.generateOnServerControl.value).toBe(true);
-      expect(component.otpKeyFormControl.value).toBe("");
+      expect(component.serviceId()).toBe("");
+      expect(component.generateOnServer()).toBe(true);
+      expect(component.otpKey()).toBe("");
     });
   });
 });

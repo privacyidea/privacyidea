@@ -22,13 +22,12 @@ import { PiResponse } from "@app/app.component";
 import { environment } from "@env/environment";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService } from "@services/notification/notification.service";
-import { empty } from "rxjs";
 
-export type Applications = {
+export interface Applications {
   luks: ApplicationLuks;
   offline: ApplicationOffline;
   ssh: ApplicationSsh;
-};
+}
 
 interface ApplicationLuks {
   options: {
@@ -45,8 +44,8 @@ interface ApplicationOffline {
       count: { type: string };
       rounds: { type: string };
     };
-    passkey: {};
-    webauthn: {};
+    passkey: Record<string, never>;
+    webauthn: Record<string, never>;
   };
 }
 
@@ -72,14 +71,17 @@ export interface ApplicationServiceInterface {
   applications: WritableSignal<Applications>;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class ApplicationService implements ApplicationServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly notificationService = inject(NotificationService);
-  readonly applicationBaseUrl = environment.proxyUrl + "/application/";
 
+  readonly applicationBaseUrl = environment.proxyUrl + "/application/";
+  applicationResource = httpResource<PiResponse<Applications>>(() => ({
+    url: `${this.applicationBaseUrl}`,
+    method: "GET",
+    headers: this.authService.getHeaders()
+  }));
   private readonly empty: Applications = {
     luks: {
       options: {
@@ -102,18 +104,6 @@ export class ApplicationService implements ApplicationServiceInterface {
       }
     }
   };
-
-  constructor() {
-    effect(() => {
-      this.notificationService.handleResourceError(this.applicationResource.error(), "applications");
-    });
-  }
-
-  applicationResource = httpResource<PiResponse<Applications>>(() => ({
-    url: `${this.applicationBaseUrl}`,
-    method: "GET",
-    headers: this.authService.getHeaders()
-  }));
   applications: WritableSignal<Applications> = linkedSignal({
     source: () => ({
       value: this.applicationResource.hasValue() ? this.applicationResource.value() : undefined,
@@ -127,4 +117,10 @@ export class ApplicationService implements ApplicationServiceInterface {
       return value;
     }
   });
+
+  constructor() {
+    effect(() => {
+      this.notificationService.handleResourceError(this.applicationResource.error(), "applications");
+    });
+  }
 }

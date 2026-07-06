@@ -19,6 +19,38 @@ PWFILE = "tests/testdata/passwords"
 PWFILE2 = "tests/testdata/passwd"
 
 
+def force_expire_challenges(transaction_id):
+    """Force every challenge with ``transaction_id`` to be expired, on
+    whichever backend stores it, for tests that exercise the
+    expired-challenge rejection path.
+
+    A raw ``Challenge.query...update()`` only reaches the SQL backend and is a
+    no-op when the challenge lives in Redis. Going through the challenge object
+    doesn't help either: ``ChallengeDTO.save()`` deliberately refuses to write
+    an already-expired challenge, so for the cache backend the stored hash
+    field is rewritten directly (the key is still within its TTL, but
+    ``is_valid()`` now returns False, which is what the rejection path checks).
+    """
+    from datetime import timedelta
+    from privacyidea.models.utils import utc_now
+    from privacyidea.lib.challenge import get_challenges
+    from privacyidea.lib.cache import redis_feature_enabled
+
+    past = utc_now() - timedelta(minutes=5)
+    challenges = get_challenges(transaction_id=transaction_id)
+    for challenge in challenges:
+        challenge.expiration = past
+    if redis_feature_enabled("challenges"):
+        from privacyidea.lib.cache.redis import get_redis, _TXN_KEY
+        redis_client = get_redis()
+        for challenge in challenges:
+            redis_client.hset(_TXN_KEY.format(challenge.transaction_id),
+                              challenge.serial, challenge.to_payload())
+    else:
+        from privacyidea.models import db
+        db.session.commit()
+
+
 class FakeFlaskG(object):
     policy_object = None
     logged_in_user = {}
@@ -36,6 +68,40 @@ class FakeAudit(Audit):
     def __init__(self):
         super(FakeAudit).__init__()
         self.audit_data = {}
+
+
+class PristineSqliteFixtures:
+    """
+    Test-class mixin that keeps sqlite fixture files pristine.
+
+    SQL-resolver tests create/update/delete users in their backing sqlite
+    file, which would otherwise leave the committed fixture dirty in the
+    working tree. List the files to protect in ``pristine_fixtures``; they are
+    snapshotted in setUpClass and restored in tearDownClass, making the test
+    run byte-neutral for those files.
+
+    Place this mixin *first* in the base-class list so its setUpClass /
+    tearDownClass run and chain to the TestCase via super(), e.g.::
+
+        class FooTestCase(PristineSqliteFixtures, MyApiTestCase):
+            pristine_fixtures = ["tests/testdata/testuser-api.sqlite"]
+    """
+    pristine_fixtures: list = []
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls._pristine_fixture_backups = {}
+        for path in cls.pristine_fixtures:
+            with open(path, "rb") as fixture_file:
+                cls._pristine_fixture_backups[path] = fixture_file.read()
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        for path, data in getattr(cls, "_pristine_fixture_backups", {}).items():
+            with open(path, "wb") as fixture_file:
+                fixture_file.write(data)
 
 
 class MyTestCase(unittest.TestCase):

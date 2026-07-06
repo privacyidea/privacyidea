@@ -17,8 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { HttpClient, HttpParams, HttpResourceRef, httpResource } from "@angular/common/http";
-import { Injectable, WritableSignal, computed, effect, inject, linkedSignal, signal } from "@angular/core";
+import { HttpClient, HttpParams, httpResource, HttpResourceRef } from "@angular/common/http";
+import { computed, effect, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
 import { PiResponse } from "@app/app.component";
 import { AuditDownloadDialogComponent } from "@components/audit/audit-download-dialog/audit-download-dialog.component";
@@ -29,7 +29,7 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { StringUtils } from "@utils/string.utils";
-import { Subscription, finalize } from "rxjs";
+import { finalize, Observable, Subscription } from "rxjs";
 
 export interface Audit {
   auditcolumns: string[];
@@ -52,20 +52,20 @@ export interface AuditData {
   date?: string;
   duration?: number;
   info?: string;
-  log_level?: any;
+  log_level?: string;
   missing_line?: string;
   number?: number;
-  policies?: any;
+  policies?: string;
   privacyidea_server?: string;
-  realm?: any;
-  resolver?: any;
+  realm?: string;
+  resolver?: string;
   serial?: string;
   sig_check?: string;
   startdate?: string;
   success?: boolean;
   thread_id?: string;
-  token_type?: any;
-  user?: any;
+  token_type?: string;
+  user?: string;
   user_agent?: string;
   user_agent_version?: string;
 }
@@ -135,31 +135,23 @@ export interface AuditServiceInterface {
   handleFilterInput($event: Event): void;
 
   downloadCSV(): void;
+
+  fetchAuditPage(params: Record<string, string | number>): Observable<PiResponse<Audit>>;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class AuditService implements AuditServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
-  private readonly http: HttpClient = inject(HttpClient);
+  private readonly http = inject(HttpClient);
   readonly apiFilterKeyMap = apiFilterKeyMap;
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
-
-  constructor() {
-    effect(() => {
-      this.notificationService.handleResourceError(this.auditResource.error(), "audit data");
-    });
-  }
-
   auditFilter = signal(new FilterValue());
   filterParams = computed<Record<string, string>>(() => {
     const allowed = [...this.apiFilter, ...this.advancedApiFilter];
-
     const entries = Array.from(this.auditFilter().filterMap.entries())
       .filter(([key]) => allowed.includes(key))
       .map(([key, value]) => {
@@ -167,7 +159,6 @@ export class AuditService implements AuditServiceInterface {
         return [key, v ? `*${v}*` : v] as const;
       })
       .filter(([, v]) => StringUtils.validFilterValue(v));
-
     return Object.fromEntries(entries) as Record<string, string>;
   });
   pageSize = linkedSignal({
@@ -182,7 +173,6 @@ export class AuditService implements AuditServiceInterface {
     }),
     computation: () => 1
   });
-  private downloadSubscription?: Subscription;
   private auditBaseUrl = environment.proxyUrl + "/audit/";
   auditResource = httpResource<PiResponse<Audit>>(() => {
     // Only load audit logs on the audit route.
@@ -203,6 +193,12 @@ export class AuditService implements AuditServiceInterface {
   });
   sort = signal({ active: "serial", direction: "asc" } as Sort);
   isDownloading = signal(false);
+
+  constructor() {
+    effect(() => {
+      this.notificationService.handleResourceError(this.auditResource.error(), "audit data");
+    });
+  }
 
   clearFilter(): void {
     this.auditFilter.set(this.auditFilter().copyWith({ value: "" }));
@@ -230,6 +226,14 @@ export class AuditService implements AuditServiceInterface {
       });
   }
 
+  fetchAuditPage(params: Record<string, string | number>): Observable<PiResponse<Audit>> {
+    return this.http.get<PiResponse<Audit>>(this.auditBaseUrl, {
+      headers: this.authService.getHeaders(),
+      params
+    });
+  }
+
+  private downloadSubscription?: Subscription;
   private executeDownload(): void {
     this.isDownloading.set(true);
     const params = new HttpParams({ fromObject: this.filterParams() });
@@ -250,7 +254,7 @@ export class AuditService implements AuditServiceInterface {
           a.click();
           window.URL.revokeObjectURL(url);
         },
-        error: (_) => {
+        error: () => {
           this.notificationService.error($localize`Failed to download audit log.`);
         }
       });

@@ -1,6 +1,8 @@
+from email import message_from_string
+
 from privacyidea.lib.resolver import delete_resolver, save_resolver
 from privacyidea.lib.realm import delete_realm, set_realm, set_default_realm
-from .base import MyApiTestCase
+from .base import MyApiTestCase, PristineSqliteFixtures
 from privacyidea.lib.policy import SCOPE, delete_policy, set_policy
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
@@ -12,10 +14,11 @@ from privacyidea.lib.user import User
 from privacyidea.lib.error import Error
 
 
-class RegisterTestCase(MyApiTestCase):
+class RegisterTestCase(PristineSqliteFixtures, MyApiTestCase):
     """
     test the api.register and api.recover endpoints
     """
+    pristine_fixtures = ["tests/testdata/testuser.sqlite"]
     parameters = {'Driver': 'sqlite',
                   'Server': '/tests/testdata/',
                   'Database': "testuser.sqlite",
@@ -178,6 +181,37 @@ class RegisterTestCase(MyApiTestCase):
     def test_02_reset_password(self):
         smtpmock.setdata(response={"cornelius@privacyidea.org": (200, "OK")})
         set_privacyidea_config("recovery.identifier", "myserver")
+        # With a trusted PI_BASE_URL configured, recovery works and the link
+        # host is taken from the configuration, never from the inbound request
+        # host (which is "localhost" here)
+        self.app.config["PI_BASE_URL"] = "https://pi.example.com"
+        try:
+            with self.app.test_request_context('/recover',
+                                               method='POST',
+                                               data={"user": "corneliusReg",
+                                                     "realm": "register",
+                                                     "email":
+                                                         "cornelius@privacyidea.org"}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, res.data)
+                data = res.json
+                self.assertEqual(data.get("result").get("value"), True)
+                # The emailed link host is the configured PI_BASE_URL, not the
+                # request host (which is "localhost" here).
+                body = message_from_string(
+                    smtpmock.get_sent_message()).get_payload(decode=True).decode("utf-8")
+                self.assertIn("https://pi.example.com/#!/reset/corneliusReg@register/", body)
+                self.assertNotIn("localhost", body)
+        finally:
+            self.app.config.pop("PI_BASE_URL", None)
+
+    @smtpmock.activate
+    def test_02b_recover_requires_base_url(self):
+        # Without a configured PI_BASE_URL, the recovery link would be built
+        # from the untrusted HTTP Host header, so the endpoint must refuse
+        smtpmock.setdata(response={"cornelius@privacyidea.org": (200, "OK")})
+        set_privacyidea_config("recovery.identifier", "myserver")
+        self.app.config.pop("PI_BASE_URL", None)
         with self.app.test_request_context('/recover',
                                            method='POST',
                                            data={"user": "corneliusReg",
@@ -185,9 +219,8 @@ class RegisterTestCase(MyApiTestCase):
                                                  "email":
                                                      "cornelius@privacyidea.org"}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res.data)
-            data = res.json
-            self.assertEqual(data.get("result").get("value"), True)
+            self.assertEqual(res.status_code, 400, res.data)
+            self.assertFalse(res.json.get("result").get("status"))
 
     @smtpmock.activate
     def test_03_set_new_password(self):

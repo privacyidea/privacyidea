@@ -3,5 +3,29 @@
 
 .periodic-task-layout {
   @include styles.main-component-style;
-  @include table.base-table-structure(".token-table", ".token-table-filter", ".table-scroll-container");
+  @include table.base-table-structure(".periodic-task-table", ".periodic-task-table-filter", ".table-scroll-container");
+  max-height: var(--table-max-height);
+}
+
+.actions-container {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--global-gap);
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.no-indention {
+  padding-left: var(--global-padding);
+}
+
+.column-max-width {
+  max-width: 280px;
+}
+
+.truncate-cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

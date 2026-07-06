@@ -19,51 +19,77 @@
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { Router, provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { SmtpServersComponent } from "@components/external-services/smtp-servers/smtp-servers.component";
+import { AuthService } from "@services/auth/auth.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { SmtpService } from "@services/smtp/smtp.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
-import { MockDialogService } from "@testing/mock-services";
+import {
+  MockAuthService,
+  MockDialogService,
+  MockSmtpService,
+  MockTableUtilsService
+} from "@testing/mock-services";
 import { Subject } from "rxjs";
 
 describe("SmtpServersComponent", () => {
   let component: SmtpServersComponent;
   let fixture: ComponentFixture<SmtpServersComponent>;
-  let smtpServiceMock: any;
+  let smtpServiceMock: MockSmtpService;
   let dialogServiceMock: MockDialogService;
   let confirmClosed: Subject<boolean>;
   let router: Router;
 
   beforeEach(async () => {
-    smtpServiceMock = {
-      smtpServers: signal([
-        { identifier: "server1", server: "smtp1.com", sender: "s1@test.com", tls: true, enqueue_job: false },
-        { identifier: "server2", server: "smtp2.com", sender: "s2@test.com", tls: false, enqueue_job: true }
-      ]),
-      deleteSmtpServer: jest.fn()
-    };
-
     await TestBed.configureTestingModule({
       imports: [SmtpServersComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
-        { provide: SmtpService, useValue: smtpServiceMock },
-        { provide: DialogService, useClass: MockDialogService }
+        { provide: SmtpService, useClass: MockSmtpService },
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: DialogService, useClass: MockDialogService },
+        { provide: TableUtilsService, useClass: MockTableUtilsService }
       ]
     }).compileComponents();
+
+    smtpServiceMock = TestBed.inject(SmtpService) as unknown as MockSmtpService;
+    smtpServiceMock.smtpServers.set([
+      {
+        identifier: "server1",
+        server: "smtp1.com",
+        sender: "s1@test.com",
+        tls: true,
+        enqueue_job: false,
+        port: 25,
+        timeout: 10,
+        smime: false,
+        dont_send_on_error: false
+      },
+      {
+        identifier: "server2",
+        server: "smtp2.com",
+        sender: "s2@test.com",
+        tls: false,
+        enqueue_job: true,
+        port: 25,
+        timeout: 10,
+        smime: false,
+        dont_send_on_error: false
+      }
+    ]);
 
     fixture = TestBed.createComponent(SmtpServersComponent);
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
     router = TestBed.inject(Router);
     jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
     confirmClosed = new Subject();
-    let dialogRefMock = new MockMatDialogRef();
+    const dialogRefMock = new MockMatDialogRef();
     dialogRefMock.afterClosed.mockReturnValue(confirmClosed);
     dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
 

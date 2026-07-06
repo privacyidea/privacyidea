@@ -23,12 +23,10 @@ import {
   Component,
   computed,
   DestroyRef,
-  ElementRef,
   inject,
   linkedSignal,
   OnDestroy,
   OnInit,
-  Renderer2,
   signal,
   ViewChild
 } from "@angular/core";
@@ -55,6 +53,8 @@ import {
   ApiKeyData,
   YubikeyConfigComponent
 } from "@components/configuration/token-type-config/token-types/yubikey-config/yubikey-config.component";
+import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
+import { QUESTION_NUMBER_OF_ANSWERS } from "@constants/token.constants";
 import { environment } from "@env/environment";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
@@ -84,7 +84,8 @@ import { forkJoin, lastValueFrom } from "rxjs";
     QuestionnaireConfigComponent,
     YubicoConfigComponent,
     YubikeyConfigComponent,
-    DaypasswordConfigComponent
+    DaypasswordConfigComponent,
+    StickyHeaderDirective
   ],
   templateUrl: "./token-type-config.component.html",
   styleUrl: "./token-type-config.component.scss"
@@ -98,14 +99,10 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
   private readonly pendingChangesService = inject(PendingChangesService);
   private readonly http = inject(HttpClient);
   private readonly route = inject(ActivatedRoute);
-  private readonly renderer = inject(Renderer2);
   private destroyRef = inject(DestroyRef);
   queryParams = toSignal(this.route.queryParams);
   expandEmail = computed(() => this.queryParams()?.["expanded"] === "email");
 
-  @ViewChild("scrollContainer") scrollContainer!: ElementRef;
-  @ViewChild("stickyHeader") stickyHeader!: ElementRef;
-  @ViewChild("stickySentinel") stickySentinel!: ElementRef;
   @ViewChild(MatAccordion) accordion!: MatAccordion;
 
   allPanelsOpen = signal(false);
@@ -120,28 +117,29 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
     }
   }
 
-  private observer!: IntersectionObserver;
+  formData = linkedSignal<Record<string, string>, Record<string, string>>({
+    source: () => this.systemService.systemConfig(),
+    computation: (config) => this.reconcileQuestions({ ...config }, true)
+  });
 
-  formData = linkedSignal<any, Record<string, any>>({
-    source: () => this.systemService.systemConfig(),
-    computation: (config) => ({ ...config })
-  });
-  nextQuestionIndex = linkedSignal<any, number>({
-    source: () => this.systemService.systemConfig(),
-    computation: (config) => {
-      let max = -1;
-      Object.keys(config).forEach((key) => {
-        if (key.startsWith("question.question.")) {
-          const idx = parseInt(key.substring("question.question.".length));
-          if (!isNaN(idx) && idx > max) {
-            max = idx;
-          }
-        }
-      });
-      return max + 1;
+  onFormDataChange(data: Record<string, string | number | boolean>): void {
+    const normalized: Record<string, string> = {};
+    for (const [key, value] of Object.entries(data)) {
+      normalized[key] = typeof value === "boolean" ? (value ? "True" : "False") : String(value);
     }
-  });
-  pendingDeletes = linkedSignal<any, Set<string>>({
+    const prevRequired = parseInt(this.formData()[QUESTION_NUMBER_OF_ANSWERS] ?? "", 10) || 0;
+    const newRequired = parseInt(normalized[QUESTION_NUMBER_OF_ANSWERS] ?? "", 10) || 0;
+    const reconciled = this.reconcileQuestions(normalized, newRequired < prevRequired);
+    const backend = this.systemService.systemConfig() ?? {};
+    Object.keys(backend).forEach((key) => {
+      if (key.startsWith("question.question.") && !(key in reconciled)) {
+        this.pendingDeletes.update((set) => new Set(set).add(key));
+      }
+    });
+    this.formData.set(reconciled);
+  }
+
+  pendingDeletes = linkedSignal<Record<string, string>, Set<string>>({
     source: () => this.systemService.systemConfig(),
     computation: () => new Set<string>()
   });
@@ -177,13 +175,53 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
   hashLibs = computed<string[]>(() => this.systemConfigInit()?.hashlibs ?? ["sha1", "sha256", "sha512"]);
   totpSteps = computed<string[]>(() => {
     const steps = this.systemConfigInit()?.totpSteps ?? [30, 60];
-    return (Array.isArray(steps) ? steps : [steps]).map((s: any) => String(s));
+    return (Array.isArray(steps) ? steps : [steps]).map((s) => String(s));
   });
 
   expandedPanel: string | null = null;
 
   get questionKeys() {
     return Object.keys(this.formData()).filter((k) => k.startsWith("question.question."));
+  }
+
+  get hasEmptyQuestions() {
+    return this.questionKeys.some((k) => !(this.formData()[k] ?? "").trim());
+  }
+
+  private reconcileQuestions(data: Record<string, string>, allowTrim = false): Record<string, string> {
+    const result: Record<string, string> = { ...data };
+    const required = parseInt(result[QUESTION_NUMBER_OF_ANSWERS] ?? "", 10) || 0;
+
+    const questionKeys = Object.keys(result).filter((k) => k.startsWith("question.question."));
+    const emptyKeys = questionKeys.filter((k) => !(result[k] ?? "").trim());
+    const filledCount = questionKeys.length - emptyKeys.length;
+    const targetEmpty = Math.max(0, required - filledCount);
+
+    const removeCount = allowTrim ? Math.max(0, emptyKeys.length - targetEmpty) : 0;
+    for (let i = 0; i < removeCount; i++) {
+      delete result[emptyKeys[i]];
+    }
+
+    let toAdd = targetEmpty - (emptyKeys.length - removeCount);
+    while (toAdd > 0) {
+      result[this.nextQuestionKey(result)] = "";
+      toAdd--;
+    }
+
+    return result;
+  }
+
+  private nextQuestionKey(data: Record<string, string>): string {
+    let max = -1;
+    Object.keys(data).forEach((key) => {
+      if (key.startsWith("question.question.")) {
+        const idx = parseInt(key.substring("question.question.".length), 10);
+        if (!isNaN(idx) && idx > max) {
+          max = idx;
+        }
+      }
+    });
+    return `question.question.${max + 1}`;
   }
 
   get yubikeyApiIds() {
@@ -210,52 +248,20 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
         panel.scrollIntoView({ behavior: "smooth" });
       }
     }
-
-    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) {
-      return;
-    }
-
-    const options: IntersectionObserverInit = {
-      root: this.scrollContainer.nativeElement,
-      threshold: [0, 1]
-    };
-
-    this.observer = new IntersectionObserver(([entry]) => {
-      if (!entry.rootBounds) return;
-
-      const isSticky = entry.boundingClientRect.top < entry.rootBounds.top;
-
-      if (isSticky) {
-        this.renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
-      } else {
-        this.renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
-      }
-    }, options);
-
-    this.observer.observe(this.stickySentinel.nativeElement);
   }
 
-  addQuestion(text: string) {
-    if (!text) {
-      this.notificationService.warning($localize`Please enter a question.`);
-      return;
-    }
-    const index = this.nextQuestionIndex();
-    this.formData.update((f) => ({
-      ...f,
-      [`question.question.${index}`]: text
-    }));
-    this.nextQuestionIndex.update((n) => n + 1);
+  addQuestion() {
+    this.formData.update((f) => ({ ...f, [this.nextQuestionKey(f)]: "" }));
   }
 
   deleteQuestion(key: string) {
-    const existedInitially = this.systemService.systemConfig()?.hasOwnProperty(key) ?? false;
+    const existedInitially = Object.hasOwn(this.systemService.systemConfig() ?? {}, key);
 
     // Remove from local form data so it disappears from the list immediately
     this.formData.update((f) => {
-      const next = { ...f } as Record<string, any>;
+      const next = { ...f };
       delete next[key];
-      return next;
+      return this.reconcileQuestions(next);
     });
 
     // If it existed on the backend, collect it for deletion on save
@@ -269,11 +275,11 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
   }
 
   deleteSystemEntry(key: string) {
-    const existedInitially = this.systemService.systemConfig()?.hasOwnProperty(key) ?? false;
+    const existedInitially = Object.hasOwn(this.systemService.systemConfig() ?? {}, key);
 
     // Remove from local form data so it disappears from the list immediately
     this.formData.update((f) => {
-      const next = { ...f } as Record<string, any>;
+      const next = { ...f };
       delete next[key];
       return next;
     });
@@ -305,13 +311,14 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
             headers: this.authService.getHeaders()
           })
         );
-        if (response?.result?.value) {
+        const generatedKey = response?.result?.value;
+        if (generatedKey) {
           this.formData.update((f) => ({
             ...f,
-            [`yubikey.apiid.${apiId}`]: response.result?.value
+            [`yubikey.apiid.${apiId}`]: generatedKey
           }));
         }
-      } catch (e) {
+      } catch {
         this.notificationService.error($localize`Failed to generate API key.`);
       }
     } else {
@@ -327,9 +334,31 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
   }
 
   async savePromise(): Promise<boolean> {
-    const deletes = Array.from(this.pendingDeletes());
-    const deleteCalls = deletes.map((key) => this.systemService.deleteSystemConfig(key));
-    const saveCall = this.systemService.saveSystemConfig(this.formData());
+    // Empty question slots are UI scaffolding for the user to fill in; they must
+    // never be persisted. Strip them from the payload, and make sure any backend
+    // question that is now empty or removed gets deleted rather than written back
+    // as an empty string (which would resurrect a deleted question or save a blank
+    // one when saving bypasses the disabled button, e.g. via the unsaved-changes guard).
+    const payload: Record<string, string> = {};
+    for (const [key, value] of Object.entries(this.formData())) {
+      if (key.startsWith("question.question.") && !(value ?? "").trim()) {
+        continue;
+      }
+      payload[key] = value;
+    }
+
+    const backend = this.systemService.systemConfig() ?? {};
+    const deletes = new Set(this.pendingDeletes());
+    Object.keys(backend).forEach((key) => {
+      if (key.startsWith("question.question.") && !(key in payload)) {
+        deletes.add(key);
+      }
+    });
+    // Never delete a key we are about to (re)save.
+    Object.keys(payload).forEach((key) => deletes.delete(key));
+
+    const deleteCalls = Array.from(deletes).map((key) => this.systemService.deleteSystemConfig(key));
+    const saveCall = this.systemService.saveSystemConfig(payload);
 
     try {
       if (deleteCalls.length > 0) {
@@ -345,7 +374,7 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
         this.notificationService.error($localize`Failed to save token configuration.`);
         return false;
       }
-    } catch (e) {
+    } catch {
       this.notificationService.error($localize`Error saving token configuration.`);
       return false;
     }
@@ -353,12 +382,9 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
 
   ngOnDestroy() {
     this.pendingChangesService.clearAllRegistrations();
-    if (this.observer) {
-      this.observer.disconnect();
-    }
   }
 
-  onCheckboxChange(key: string, event: any) {
+  onCheckboxChange(key: string, event: { checked: boolean }) {
     this.formData.update((f) => ({
       ...f,
       [key]: event.checked ? "True" : "False"

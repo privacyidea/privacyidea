@@ -57,8 +57,8 @@ msgstr ""
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:91
 msgid ""
 "<li>Support and\n"
-"                        <a target=\"netknights\" href=\"https://netknights."
-"it/en/leistungen/service-level-agreements/\">\n"
+"                        <a target=\"netknights\" href=\"https://"
+"netknights.it/en/leistungen/service-level-agreements/\">\n"
 "                            Service Level Agreements by NetKnights</a>, "
 "Germany.\n"
 "                    </li>\n"
@@ -75,8 +75,8 @@ msgid ""
 "                    <li>Depending on the support level you get help with "
 "updates and yearly consultancy.</li>\n"
 "                    <li>By buying the\n"
-"                        <a target=\"netknights\" href=\"https://netknights."
-"it/en/produkte/privacyidea/\">privacyIDEA Enterprise Edition</a>\n"
+"                        <a target=\"netknights\" href=\"https://"
+"netknights.it/en/produkte/privacyidea/\">privacyIDEA Enterprise Edition</a>\n"
 "                        you ensure that professional developers can work "
 "full time\n"
 "                        on privacyIDEA, add new features and fix bugs in a "
@@ -86,8 +86,8 @@ msgid ""
 "                    </li>"
 msgstr ""
 "<li>ການຊ່ວຍເຫຼືອ ແລະ\n"
-"                        <a target=\"netknights\" href=\"https://netknights."
-"it/en/leistungen/service-level-agreements/\">\n"
+"                        <a target=\"netknights\" href=\"https://"
+"netknights.it/en/leistungen/service-level-agreements/\">\n"
 "                            ຂໍ້ຕົກລົງລະດັບການບໍລິການ ໂດຍ NetKnights</a>, "
 "ປະເທດເຢຍລະມັນ.\n"
 "                    </li>\n"
@@ -103,8 +103,8 @@ msgstr ""
 "                    <li>ຂຶ້ນຢູ່ກັບລະດັບການຊ່ວຍເຫຼືອ ທ່ານຈະໄດ້ຮັບການຊ່ວຍເຫຼືອດ້ານການອັບເດດ ແລະ "
 "ການໃຫ້ຄຳປຶກສາລາຍປີ.</li>\n"
 "                    <li>ໂດຍການຊື້\n"
-"                        <a target=\"netknights\" href=\"https://netknights."
-"it/en/produkte/privacyidea/\">privacyIDEA Enterprise Edition</a>\n"
+"                        <a target=\"netknights\" href=\"https://"
+"netknights.it/en/produkte/privacyidea/\">privacyIDEA Enterprise Edition</a>\n"
 "                        ທ່ານຮັບປະກັນວ່າ ນັກພັດທະນາມືອາຊີບສາມາດເຮັດວຽກເຕັມເວລາ\n"
 "                        ໃນ privacyIDEA, ເພີ່ມຄຸນສົມບັດໃໝ່ໆ ແລະ "
 "ແກ້ໄຂຂໍ້ຜິດພາດໄດ້ຢ່າງທັນເວລາ. ນອກຈາກນີ້, ທ່ານຍັງສະໜັບສະໜູນ\n"
@@ -576,7 +576,7 @@ msgstr "ການກວດສອບ (Audit)"
 msgid "Authentication Server URI"
 msgstr "URI ຂອງເຊີບເວີຢືນຢັນຕົວຕົນ"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:431
+#: privacyidea/static/components/login/controllers/loginControllers.js:429
 msgid "Authentication failed."
 msgstr "ການຢືນຢັນຕົວຕົນຜິດພາດ."
 
@@ -748,11 +748,11 @@ msgstr "ແມ່ແບບໃບຢັ້ງຢືນ"
 msgid "Certificates Templates file"
 msgstr "ໄຟລ໌ແມ່ແບບໃບຢັ້ງຢືນ"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:330
+#: privacyidea/static/components/login/controllers/loginControllers.js:328
 msgid "Challenge Response Authentication."
 msgstr "ການຢືນຢັນຕົວຕົນແບບ Challenge Response."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:409
+#: privacyidea/static/components/login/controllers/loginControllers.js:407
 msgid "Challenge Response Authentication. Your response was not valid!"
 msgstr "ການຢືນຢັນຕົວຕົນແບບ Challenge Response. ຄຳຕອບຂອງທ່ານບໍ່ຖືກຕ້ອງ!"
 
@@ -1458,8 +1458,8 @@ msgstr "ບໍ່ຕ້ອງຢືນຢັນຄວາມຖືກຕ້ອງ
 
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:15
 msgid ""
-"Do you really want to delete the Token {{ tokenSerial }} from user {{ token."
-"username }}?"
+"Do you really want to delete the Token {{ tokenSerial }} from user "
+"{{ token.username }}?"
 msgstr ""
 "ທ່ານຕ້ອງການລຶບໂທເຄັນ {{ tokenSerial }} ອອກຈາກຜູ້ໃຊ້ {{ token.username }} ແທ້ໆບໍ?"
 
@@ -1480,7 +1480,7 @@ msgstr "ທ່ານຕ້ອງການລຶບເຫດການນີ້ແ
 msgid "Do you really want to delete this machine resolver?"
 msgstr "ທ່ານຕ້ອງການລຶບ machine resolver ນີ້ແທ້ໆບໍ?"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:114
+#: privacyidea/static/components/login/controllers/loginControllers.js:116
 msgid "Do you really want to delete this object?"
 msgstr "ທ່ານຕ້ອງການລຶບວັດຖຸນີແທ້ໆບໍ?"
 
@@ -1728,7 +1728,7 @@ msgstr "ລົງທະບຽນໂທເຄັນໃໝ່"
 msgid "Enroll Token"
 msgstr "ລົງທະບຽນໂທເຄັນ"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:125
+#: privacyidea/static/components/login/controllers/loginControllers.js:127
 #: privacyidea/static/components/token/controllers/tokenControllers.js:196
 #: privacyidea/static/components/token/views/token.enroll.html:1
 #: privacyidea/static/components/token/views/token.enroll.html:226
@@ -2025,15 +2025,15 @@ msgstr "ຮັບເອກະສານລະບົບ"
 msgid "Get available CAs"
 msgstr "ຮັບ CAs ທີ່ມີຢູ່"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:513
+#: privacyidea/static/components/login/controllers/loginControllers.js:511
 msgid "Get the Authenticator App for Android."
 msgstr "ດາວໂຫຼດແອັບ Authenticator ສຳລັບ Android."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:520
+#: privacyidea/static/components/login/controllers/loginControllers.js:518
 msgid "Get the Authenticator App for iOS."
 msgstr "ດາວໂຫຼດແອັບ Authenticator ສຳລັບ iOS."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:527
+#: privacyidea/static/components/login/controllers/loginControllers.js:525
 msgid "Get the Authenticator App."
 msgstr "ດາວໂຫຼດແອັບ Authenticator."
 
@@ -2534,7 +2534,7 @@ msgstr ""
 "ລາຍການຄຳນິຍາມ\n"
 "                                privacyIDEA server"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:133
+#: privacyidea/static/components/login/controllers/loginControllers.js:135
 msgid "List tokens"
 msgstr "ລາຍການໂທເຄັນ"
 
@@ -2566,7 +2566,7 @@ msgstr "ບັນທຶກ (Log)"
 msgid "Log In"
 msgstr "ເຂົ້າສູ່ລະບົບ"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:140
+#: privacyidea/static/components/login/controllers/loginControllers.js:142
 msgid "Log out"
 msgstr "ອອກຈາກລະບົບ"
 
@@ -2986,7 +2986,7 @@ msgstr "ແທນທີ່ໄຄລ໌ເອັນສິດອຳນາດ"
 msgid "PGP Key"
 msgstr "ກະແຈ PGP"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:758
+#: privacyidea/static/components/login/controllers/loginControllers.js:756
 msgid "PIN changed successfully."
 msgstr "ປ່ຽນ PIN ສຳເລັດແລ້ວ."
 
@@ -3017,7 +3017,7 @@ msgstr "ພາຣາມິເຕີ"
 msgid "Passkey Log In"
 msgstr "ເຂົ້າສູ່ລະບົບດ້ວຍ Passkey"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:287
+#: privacyidea/static/components/login/controllers/loginControllers.js:289
 #, fuzzy
 msgid "Passkey login cancelled."
 msgstr "ເຂົ້າສູ່ລະບົບດ້ວຍ Passkey"
@@ -3104,7 +3104,7 @@ msgstr "ເບີໂທລະສັບ"
 msgid "Please answer at least {{ num_answers }} of the following questions."
 msgstr "ກະລຸນາຕອບຢ່າງໜ້ອຍ {{ num_answers }} ຂອງຄຳຖາມຕໍ່ໄປນີ້."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:340
+#: privacyidea/static/components/login/controllers/loginControllers.js:338
 msgid "Please confirm with one of these tokens:"
 msgstr "ກະລຸນາຢືນຢັນດ້ວຍໜຶ່ງໃນໂທເຄັນເຫຼົ່ານີ້:"
 
@@ -3382,7 +3382,7 @@ msgstr "Realm"
 msgid "Realm Name"
 msgstr "ຊື່ Realm"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:718
+#: privacyidea/static/components/login/controllers/loginControllers.js:716
 msgid "Realm defrealm created."
 msgstr "ສ້າງ Realm defrealm ແລ້ວ."
 
@@ -4108,7 +4108,7 @@ msgstr "ແອັບ Authenticator ບາງແອັບຮອງຮັບພຽ
 msgid "Some nice words..."
 msgstr "ຄຳເວົ້າດີໆ..."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:397
+#: privacyidea/static/components/login/controllers/loginControllers.js:395
 msgid "Something went wrong!"
 msgstr "ມີບາງຢ່າງຜິດພາດ!"
 
@@ -4652,8 +4652,9 @@ msgid ""
 "validate.html\" target=\"_blank\">\n"
 "        validate API</a> but can also be handled by the\n"
 "    <a href=\"https://privacyidea.readthedocs.io/en/latest/modules/lib/"
-"tokentypes/yubikey.html#privacyidea.lib.tokens.yubikeytoken."
-"YubikeyTokenClass.api_endpoint\" target=\"_blank\">\n"
+"tokentypes/"
+"yubikey.html#privacyidea.lib.tokens.yubikeytoken.YubikeyTokenClass.api_endpoint\" "
+"target=\"_blank\">\n"
 "        Yubico Validation Protocol</a>."
 msgstr ""
 
@@ -4957,8 +4958,8 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.details.html:615
 msgid ""
 "The token is currently assigned to container\n"
-"    <a ui-sref=\"token.containerdetails({containerSerial: "
-"containerSerial})\" ng-hide=\"!checkRight('container_list')\">\n"
+"    <a ui-sref=\"token.containerdetails({containerSerial: containerSerial})"
+"\" ng-hide=\"!checkRight('container_list')\">\n"
 "        {{ containerSerial }}\n"
 "    </a>\n"
 "    <span ng-hide=\"checkRight('container_list')\">{{ containerSerial }}</"
@@ -4993,20 +4994,20 @@ msgstr "ໂທເຄັນຖືກໝາຍວ່າສູນຫາຍສຳເ
 #: privacyidea/static/components/token/views/token.enroll.html:179
 msgid ""
 "The token was successfully enrolled with serial number\n"
-"            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
-"serial})\">\n"
+"            <a ui-sref=\"token.details({tokenSerial:enrolledToken.serial})"
+"\">\n"
 "                {{ enrolledToken.serial }}</a>\n"
 "            for user\n"
-"            <a ui-sref=\"user.details({username:newUser.user, realmname:"
-"newUser.realm})\">{{ newUser.user }}</a> in realm\n"
+"            <a ui-sref=\"user.details({username:newUser.user, "
+"realmname:newUser.realm})\">{{ newUser.user }}</a> in realm\n"
 "            {{ newUser.realm }}."
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.html:188
 msgid ""
 "The token was successfully enrolled with serial number\n"
-"            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
-"serial})\">\n"
+"            <a ui-sref=\"token.details({tokenSerial:enrolledToken.serial})"
+"\">\n"
 "                {{ enrolledToken.serial }}</a>."
 msgstr ""
 
@@ -5913,7 +5914,7 @@ msgstr "ທ່ານບໍ່ໄດ້ຮັບອະນຸຍາດໃຫ້ລ
 msgid "You are not authorized to delete the following tokens:"
 msgstr "ທ່ານບໍ່ໄດ້ຮັບອະນຸຍາດໃຫ້ລຶບໂທເຄັນເຫຼົ່ານີ້:"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:613
+#: privacyidea/static/components/login/controllers/loginControllers.js:611
 msgid ""
 "You are using a certain amount of Push tokens. Note, that you need a valid "
 "subscription, to use Push tokens in push mode. Otherwise Push tokens will "
@@ -6015,7 +6016,7 @@ msgstr "ທ່ານຈະຖືກອອກຈາກລະບົບໃນອີ
 msgid "Your CSR to the certificate authority failed."
 msgstr "CSR ຂອງທ່ານຫາອົງການອອກໃບຢັ້ງຢືນລົ້ມເຫຼວ."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:486
+#: privacyidea/static/components/login/controllers/loginControllers.js:484
 msgid "Your OTP pin expires on"
 msgstr "PIN OTP ຂອງທ່ານໝົດອາຍຸໃນ"
 
@@ -6058,7 +6059,7 @@ msgstr ""
 msgid "Your secret phrase."
 msgstr "ວະລີລັບຂອງທ່ານ."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:620
+#: privacyidea/static/components/login/controllers/loginControllers.js:618
 msgid "Your subscription for the privacyIDEA Authenticator has expired."
 msgstr "ການສະໝັກໃຊ້ຂອງທ່ານສຳລັບ privacyIDEA Authenticator ໄດ້ໝົດອາຍຸແລ້ວ."
 
@@ -6070,8 +6071,8 @@ msgid ""
 "sref=\"component.subscriptions\">subscription</a>."
 msgstr ""
 "ການສະໝັກໃຊ້ຂອງທ່ານບໍ່ມີຜົນອີກຕໍ່ໄປ. ບໍ່ແມ່ນທ່ານໃຊ້ໂທເຄັນເກີນຈຳນວນ ຫຼື\n"
-"        ການສະໝັກໃຊ້ໝົດອາຍຸ. ກະລຸນາກວດສອບວ່າທ່ານຈຳເປັນຕ້ອງຕໍ່ອາຍຸ <a ui-sref=\"component."
-"subscriptions\">ການສະໝັກໃຊ້</a> ຂອງທ່ານຫຼືບໍ່."
+"        ການສະໝັກໃຊ້ໝົດອາຍຸ. ກະລຸນາກວດສອບວ່າທ່ານຈຳເປັນຕ້ອງຕໍ່ອາຍຸ <a ui-"
+"sref=\"component.subscriptions\">ການສະໝັກໃຊ້</a> ຂອງທ່ານຫຼືບໍ່."
 
 #: privacyidea/static/components/login/views/pinchange.html:5
 msgid ""

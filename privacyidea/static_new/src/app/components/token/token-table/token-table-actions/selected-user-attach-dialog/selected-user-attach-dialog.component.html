@@ -17,88 +17,77 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <app-dialog-wrapper
-  [title]="'Assign Selected Token to User'"
-  [showCancelButton]="true"
+  (actionTriggered)="onAction($event)"
+  (wrapperClose)="onCancel()"
   [actions]="actions()"
-  (onAction)="onAction($event)"
-  (close)="onCancel()">
+  [showCancelButton]="true"
+  i18n-title
+  title="Assign Selected Token to User">
   @if (selectionContainsAssignedToken()) {
     <p
-      class="inline-warning"
-      i18n>
+      class="inline-warning" i18n>
       Some token are already assigned to a user.
       <br />
       Assigning a token to a user will remove the previous assignment.
     </p>
   }
   <div class="selected-user-attach-container">
-    <mat-form-field
-      class="input-width-l">
+    <mat-form-field class="input-width-l">
       <mat-label i18n>Select Realm of User</mat-label>
       <mat-select
-        [formControl]="selectedUserRealmControl"
-        [value]="selectedUserRealmControl.value"
-        required>
+        (selectionChange)="onRealmChange($event.value)" [value]="selectedRealm()" required>
         @for (option of realmService.realmOptions(); track option) {
           <mat-option [value]="option">{{ option }}</mat-option>
         }
       </mat-select>
+      @if (realmInvalid()) {
+        <mat-error i18n>User Realm is <strong>required</strong></mat-error>
+      }
     </mat-form-field>
-    <mat-form-field
-      class="input-width-l">
+    <mat-form-field class="input-width-l">
       <mat-label i18n>Enter User</mat-label>
       <app-clearable-input
-        (onClick)="userService.selectionFilter.set('')"
-        [showClearButton]="userService.selectionFilter() !== ''">
+        (clearButtonClick)="onUserFilterInput('')" [showClearButton]="userFilter() !== ''">
         <input
-          [formControl]="userFilterControl"
+          (input)="onUserFilterInput($any($event.target).value)"
           [matAutocomplete]="userAuto"
+          [value]="userFilter()"
           matInput
           required />
         <mat-autocomplete
           #userAuto="matAutocomplete"
-          [displayWith]="userService.displayUser">
+          (optionSelected)="onUserSelected($event.option.value)"
+          [displayWith]="displayUser">
           @for (user of userService.selectionFilteredUsers(); track user) {
             <mat-option [value]="user">{{ user.username }}</mat-option>
           }
         </mat-autocomplete>
       </app-clearable-input>
-      @if (selectedUserRealmControl.hasError("required")) {
-        <mat-error i18n>User Realm is <strong>required</strong></mat-error>
-      }
-      @if (userFilterControl.hasError("required")) {
+      @if (userInvalid()) {
         <mat-error i18n>User is <strong>required</strong></mat-error>
-      }
-      @if (userFilterControl.hasError("userNotInOptions")) {
-        <mat-error i18n>User must be selected from the list.</mat-error>
-      }
-      @if (userFilterControl.hasError("userNotInRealm")) {
-        <mat-error i18n> User does not exist in the selected realm.</mat-error>
       }
     </mat-form-field>
   </div>
   @if (authService.actionAllowed("setpin")) {
     <div class="selected-user-attach-container">
       <mat-form-field
-        appearance="fill"
-        class="input-width-l margin-bottom-16">
+        appearance="fill" class="input-width-l margin-bottom-16">
         <input
-          class="hidden-input"
-          type="text" />
+          class="hidden-input" type="text" />
         <input
-          class="hidden-input"
-          type="password" />
+          class="hidden-input" type="password" />
         <mat-label i18n>PIN (optional)</mat-label>
         <input
-          (ngModelChange)="pin.set($event)"
-          [ngModel]="pin()"
+          (input)="pin.set($any($event.target).value)"
           [type]="hidePin() ? 'password' : 'text'"
+          [value]="pin()"
           autocomplete="new-password"
           matInput />
         <button
           (click)="togglePinVisibility()"
-          [attr.aria-label]="'Show PIN'"
           [attr.aria-pressed]="!hidePin()"
+          aria-label="Show PIN"
+          i18n-aria-label
           mat-icon-button
           matSuffix
           type="button">
@@ -106,19 +95,19 @@
         </button>
       </mat-form-field>
       <mat-form-field
-        appearance="fill"
-        class="input-width-l margin-bottom-16">
+        appearance="fill" class="input-width-l margin-bottom-16">
         <mat-label i18n>PIN (repeat)</mat-label>
         <input
-          (ngModelChange)="pinRepeat.set($event)"
-          [ngModel]="pinRepeat()"
+          (input)="pinRepeat.set($any($event.target).value)"
           [type]="hidePin() ? 'password' : 'text'"
+          [value]="pinRepeat()"
           autocomplete="new-password"
           matInput />
         <button
           (click)="togglePinVisibility()"
-          [attr.aria-label]="'Show PIN Repeat'"
           [attr.aria-pressed]="!hidePin()"
+          aria-label="Show PIN Repeat"
+          i18n-aria-label
           mat-icon-button
           matSuffix
           type="button">

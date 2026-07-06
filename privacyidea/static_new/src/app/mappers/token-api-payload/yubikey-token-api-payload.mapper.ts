@@ -39,8 +39,7 @@ export interface YubikeyEnrollmentPayload extends TokenEnrollmentPayload {
 @Injectable({ providedIn: "root" })
 export class YubikeyApiPayloadMapper
   extends BaseApiPayloadMapper
-  implements TokenApiPayloadMapper<YubikeyEnrollmentData>
-{
+  implements TokenApiPayloadMapper<YubikeyEnrollmentData> {
   override toApiPayload(data: YubikeyEnrollmentData): YubikeyEnrollmentPayload {
     const basePayload = super.toApiPayload(data);
     const payload: YubikeyEnrollmentPayload = {
@@ -56,8 +55,8 @@ export class YubikeyApiPayloadMapper
     return payload;
   }
 
-  override fromApiPayload(payload: any): YubikeyEnrollmentData {
-    return payload as YubikeyEnrollmentData;
+  override fromApiPayload(payload: YubikeyEnrollmentPayload): YubikeyEnrollmentData {
+    return payload as unknown as YubikeyEnrollmentData;
   }
 
   override fromTokenDetailsToEnrollmentData(details: TokenDetails): YubikeyEnrollmentData {

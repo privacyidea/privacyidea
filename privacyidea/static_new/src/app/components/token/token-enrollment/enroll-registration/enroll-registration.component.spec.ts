@@ -21,6 +21,8 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { EnrollRegistrationComponent } from "./enroll-registration.component";
+import { TokenService } from "@services/token/token.service";
+import { MockTokenService } from "@testing/mock-services";
 
 describe("EnrollRegistrationComponent", () => {
   let component: EnrollRegistrationComponent;
@@ -29,7 +31,11 @@ describe("EnrollRegistrationComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EnrollRegistrationComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting()]
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: TokenService, useClass: MockTokenService }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EnrollRegistrationComponent);

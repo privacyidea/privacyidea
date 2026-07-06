@@ -368,4 +368,113 @@
             </table>
         </div>
     </div>
+
+    <!-- ===================== Open challenges (on demand) ===================== -->
+    <!-- Hidden behind a button so it doesn't take up space until the admin
+         asks for it; first reveal triggers the per-user aggregate fetch.
+         Hidden entirely when the admin lacks the `getchallenges` policy
+         right. This is a debug/troubleshooting aid in the old WebUI; the
+         new WebUI should reimplement it natively. -->
+    <div ng-show="showTokenOfUser && checkRight('getchallenges')"
+         style="margin-top: 1em;">
+        <button class="btn btn-transparent btn-block"
+                ng-click="toggleUserChallenges()">
+            <span class="glyphicon"
+                  ng-class="{'glyphicon-chevron-down': userChallengesOpen, 'glyphicon-chevron-right': !userChallengesOpen}">
+            </span>
+            <span translate>Show challenges for this user</span>
+            <span ng-show="userChallengesLoaded">({{ userChallenges.count }})</span>
+        </button>
+    </div>
+    <div ng-show="userChallengesOpen && showTokenOfUser && checkRight('getchallenges')"
+         style="margin-top: 1em;">
+        <div ng-show="userChallengesError"
+             class="alert alert-danger">
+            <span translate>Could not load challenges for this user. See the server log for details.</span>
+        </div>
+        <div ng-show="userChallengesLoaded && !userChallengesError && userChallenges.count === 0"
+             class="alert alert-info">
+            <span translate>No open challenges for any of this user's tokens.</span>
+        </div>
+        <div class="table-responsive" ng-show="!userChallengesError && userChallenges.count > 0">
+            <table class="table table-bordered table-striped">
+                <thead>
+                <tr>
+                    <th translate>Timestamp</th>
+                    <th translate>Serial</th>
+                    <th translate>Transaction ID</th>
+                    <th translate>Expiration</th>
+                    <th translate>Received</th>
+                    <th translate>OTP valid</th>
+                    <th ng-if="checkRight('cancelchallenge')"></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr ng-repeat="challenge in userChallenges.challenges">
+                    <td>{{ challenge.timestamp }}</td>
+                    <td><a ui-sref="token.details({tokenSerial: challenge.serial})">{{ challenge.serial }}</a></td>
+                    <td>{{ challenge.transaction_id }}</td>
+                    <td>{{ challenge.expiration }}</td>
+                    <td>{{ challenge.received_count }}</td>
+                    <td>
+                        <span class="label label-success" ng-show="challenge.otp_valid" translate>yes</span>
+                        <span class="label label-default" ng-hide="challenge.otp_valid" translate>no</span>
+                    </td>
+                    <td ng-if="checkRight('cancelchallenge')">
+                        <button class="btn btn-transparent btn-danger btn-sm"
+                                ng-click="cancelChallenge(challenge.transaction_id, true)"
+                                ng-hide="showCancelChallengeDialog[challenge.transaction_id]"
+                                uib-tooltip="{{ 'Cancel this challenge'|translate }}">
+                            <span class="glyphicon glyphicon-trash"></span>
+                            <span translate>Cancel</span>
+                        </button>
+                        <div ng-show="showCancelChallengeDialog[challenge.transaction_id]
+                                      && cancelChallengeSerials[challenge.transaction_id].length > 1"
+                             class="text-danger small">
+                            <span translate>This also cancels the related challenges on:</span>
+                            {{ cancelChallengeSerials[challenge.transaction_id].join(', ') }}
+                        </div>
+                        <button class="btn btn-danger btn-sm"
+                                ng-click="cancelChallenge(challenge.transaction_id, false)"
+                                ng-show="showCancelChallengeDialog[challenge.transaction_id]">
+                            <span translate>Cancel Challenge</span>
+                        </button>
+                        <button class="btn btn-default btn-sm"
+                                ng-click="showCancelChallengeDialog[challenge.transaction_id]=false"
+                                ng-show="showCancelChallengeDialog[challenge.transaction_id]">
+                            <span translate>Keep</span>
+                        </button>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div style="margin-top: 20px;" ng-show="canReadInternalAttributes">
+        <uib-accordion close-others="false">
+            <div uib-accordion-group
+                 class="panel-default"
+                 is-open="accordionState.internalAttributesOpen">
+                <uib-accordion-heading>
+                    <translate>Internal attributes</translate>
+                    <span class="pull-right glyphicon" aria-hidden="true"
+                          ng-class="{'glyphicon-chevron-down': accordionState.internalAttributesOpen,
+                                     'glyphicon-chevron-right': !accordionState.internalAttributesOpen}">
+                    </span>
+                </uib-accordion-heading>
+                <table class="table table-hover" ng-show="internalAttributesLoaded">
+                    <tr ng-repeat="(key, value) in internal_attributes">
+                        <td class="col-sm-4"><b>{{ key }}</b></td>
+                        <td class="col-sm-8">{{ formatInternalAttribute(value) }}</td>
+                    </tr>
+                    <tr ng-show="!(internal_attributes | json) || (internal_attributes | json) === '{}'">
+                        <td colspan="2" class="text-muted text-center" translate>
+                            No internal attributes recorded for this user.
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </uib-accordion>
+    </div>
 </div>

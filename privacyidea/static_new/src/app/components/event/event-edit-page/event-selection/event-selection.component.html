@@ -1,0 +1,93 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div class="event-selection-container">
+  <div class="selected-events-container">
+    <mat-expansion-panel [expanded]="true">
+      <mat-expansion-panel-header>
+        <mat-panel-title i18n>Selected Events</mat-panel-title>
+      </mat-expansion-panel-header>
+
+      <div class="panel-content">
+        @if (selectedEvents().length > 0) {
+          <mat-chip-set
+            aria-label="Selected events" i18n-aria-label>
+            @for (event of selectedEvents(); track $index) {
+              <mat-chip (removed)="removeEvent(event)">
+                {{ event }}
+                <button
+                  [attr.aria-label]="'remove ' + event" matChipRemove>
+                  <mat-icon>cancel</mat-icon>
+                </button>
+              </mat-chip>
+            }
+          </mat-chip-set>
+        } @else {
+          <p
+            class="selected-events-empty" i18n>
+            At least one event must be selected.
+          </p>
+        }
+      </div>
+    </mat-expansion-panel>
+  </div>
+
+  <div class="add-events-container">
+    <mat-expansion-panel [expanded]="true">
+      <mat-expansion-panel-header>
+        <mat-panel-title i18n>Add Events</mat-panel-title>
+      </mat-expansion-panel-header>
+
+      <div class="panel-content">
+        <app-clearable-input
+          (clearButtonClick)="searchTerm.set('')" [showClearButton]="searchTerm() !== ''">
+          <input
+            (ngModelChange)="searchTerm.set($event)"
+            [ngModel]="searchTerm()"
+            class="search-input"
+            clearableInput
+            i18n-placeholder
+            placeholder="Search events..."
+            type="text" />
+        </app-clearable-input>
+
+        @if (remainingEvents().length > 0) {
+          <div class="event-items">
+            @for (event of remainingEvents(); track event) {
+              <div
+                (click)="addEvent(event)"
+                (keydown.enter)="addEvent(event)"
+                (keydown.space)="$event.preventDefault(); addEvent(event)"
+                class="event-item"
+                role="button"
+                tabindex="0">
+                <span class="event-name">{{ event }}</span>
+                <button
+                  (click)="$event.stopPropagation(); addEvent(event)" aria-hidden="true" mat-icon-button tabindex="-1">
+                  <mat-icon>add</mat-icon>
+                </button>
+              </div>
+            }
+          </div>
+        } @else {
+          <p i18n>No events available.</p>
+        }
+      </div>
+    </mat-expansion-panel>
+  </div>
+</div>

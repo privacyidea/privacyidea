@@ -1,0 +1,8 @@
+@use "styles";
+@use "buttons";
+
+.edit-template-layout {
+  @include styles.main-component-style;
+  // Shared detail/edit-page cap. See --detail-max-height in styles.scss.
+  max-height: var(--table-max-height);
+}

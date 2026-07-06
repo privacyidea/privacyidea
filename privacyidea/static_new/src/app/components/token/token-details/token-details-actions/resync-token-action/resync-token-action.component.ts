@@ -16,8 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject } from "@angular/core";
-import { FormsModule } from "@angular/forms";
+import { Component, inject, signal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
@@ -27,21 +26,21 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
 
 @Component({
   selector: "app-resync-token-action",
-  imports: [FormsModule, MatIcon, MatButtonModule, MatFormField, MatInput, MatLabel],
+  imports: [MatIcon, MatButtonModule, MatFormField, MatInput, MatLabel],
   templateUrl: "./resync-token-action.component.html",
   styleUrl: "./resync-token-action.component.scss"
 })
 export class ResyncTokenActionComponent {
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
-  fristOTPValue: string = "";
-  secondOTPValue: string = "";
+  firstOTPValue = signal("");
+  secondOTPValue = signal("");
 
   async resyncOTPToken() {
     const response = await this.tokenService.resyncOTPToken(
       this.tokenService.tokenSerial(),
-      this.fristOTPValue,
-      this.secondOTPValue
+      this.firstOTPValue(),
+      this.secondOTPValue()
     );
 
     console.log("Token resynced successfully response:", response);

@@ -246,13 +246,17 @@ def init_random_pin(request=None, action=None):
     pin_pols = Match.user(g, scope=SCOPE.ENROLL, action=PolicyAction.OTPPINRANDOM,
                           user_object=user_object).action_values(unique=True)
     if len(pin_pols) == 1:
-        # check pin contents policy per token type, otherwise fall back
+        # check pin contents policy per token type, otherwise fall back.
+        # Use the same user_object the OTPPINRANDOM/PINHANDLING lookups use
+        # (derived from the request params), so all of this enrollment's PIN
+        # policies resolve the user consistently and pick up a realm injected
+        # by a preceding decorator (e.g. realmadmin).
         tokentype = request.all_data.get("type", "hotp")
         pol_contents = Match.admin_or_user(g, action=f"{tokentype!s}_{PolicyAction.OTPPINCONTENTS!s}",
-                                           user_obj=request.User).action_values(unique=True)
+                                           user_obj=user_object).action_values(unique=True)
         if not pol_contents:
             pol_contents = Match.admin_or_user(g, action=PolicyAction.OTPPINCONTENTS,
-                                               user_obj=request.User).action_values(unique=True)
+                                               user_obj=user_object).action_values(unique=True)
 
         if len(pol_contents) == 1:
             log.info(f"Creating random OTP PIN with length {list(pin_pols)[0]!s} "
@@ -338,6 +342,7 @@ def check_otp_pin(request=None, action=None):
         serial = path_elems[-1]
         # Also set it for later use
         request.all_data["serial"] = serial
+    pin_user = request.User
     if serial:
         # if this is a token, that does not use a pin, we ignore this check
         # And immediately return true
@@ -346,9 +351,16 @@ def check_otp_pin(request=None, action=None):
             if tokensobject_list[0].using_pin is False:
                 return True
             tokentype = tokensobject_list[0].token.tokentype
+            # Fall back to the token owner only when no user was supplied, so an admin setting a
+            # PIN by serial still gets the owner's realm/user-scoped PIN policy. Guarding on
+            # token_owner matters: for an unowned token .user is None, and passing None to
+            # check_pin would match every policy instead of only the unscoped ones.
+            token_owner = tokensobject_list[0].user
+            if token_owner and not request.User:
+                pin_user = token_owner
     # the default tokentype is still HOTP
     tokentype = tokentype or "hotp"
-    check_pin(g, pin, tokentype, request.User)
+    check_pin(g, pin, tokentype, pin_user)
     return True
 
 
@@ -361,7 +373,7 @@ def check_application_tokentype(request=None, action=None):
     Check ACTION.APPLICATION_TOKENTYPE
 
     This decorator should wrap
-        /validate/check, /validate/samlcheck and /validate/triggerchallenge.
+        /validate/check and /validate/triggerchallenge.
 
     :param request: The request that is intercepted during the API call
     :type request: Request Object

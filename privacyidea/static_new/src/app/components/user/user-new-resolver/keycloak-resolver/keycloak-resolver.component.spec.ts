@@ -28,7 +28,6 @@ describe("KeycloakResolverComponent", () => {
   let component: KeycloakResolverComponent;
   let componentRef: ComponentRef<KeycloakResolverComponent>;
   let fixture: ComponentFixture<KeycloakResolverComponent>;
-  let resolverService: MockResolverService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -40,7 +39,6 @@ describe("KeycloakResolverComponent", () => {
       imports: [KeycloakResolverComponent]
     }).compileComponents();
 
-    resolverService = TestBed.inject(ResolverService) as unknown as MockResolverService;
     fixture = TestBed.createComponent(KeycloakResolverComponent);
     component = fixture.componentInstance;
     componentRef = fixture.componentRef;
@@ -58,8 +56,8 @@ describe("KeycloakResolverComponent", () => {
     };
     componentRef.setInput("data", defaultData);
     fixture.detectChanges();
-    expect(component.baseUrlControl.value).toBe("http://localhost:8080");
-    expect(component.configAuthorizationGroup.value.endpoint).toBe("/realms/{realm}/protocol/openid-connect/token");
+    expect(component.model().base_url).toBe("http://localhost:8080");
+    expect(component.configAuthModel().endpoint).toBe("/realms/{realm}/protocol/openid-connect/token");
   });
 
   it("should enable group fields when active is true in data", () => {
@@ -74,12 +72,10 @@ describe("KeycloakResolverComponent", () => {
     componentRef.setInput("data", data);
     fixture.detectChanges();
 
-    expect(component.userGroupsControl.get("active")?.value).toBe(true);
-    expect(component.userGroupsControl.get("user_groups_attribute")?.enabled).toBe(true);
-    expect(component.userGroupsControl.get("endpoint")?.enabled).toBe(true);
-    expect(component.userGroupsControl.get("method")?.enabled).toBe(true);
-    // Programmatic updates should NOT mark the form as dirty
-    expect(component.userGroupsControl.dirty).toBe(false);
+    expect(component.userGroupsModel().active).toBe(true);
+    expect(component.userGroupsModel().user_groups_attribute).toBe("name");
+    expect(component.userGroupsModel().endpoint).toBe("/groups");
+    expect(component.userGroupsModel().method).toBe("GET");
   });
 
   it("should disable group fields when active is false in data", () => {
@@ -92,7 +88,6 @@ describe("KeycloakResolverComponent", () => {
     componentRef.setInput("data", data);
     fixture.detectChanges();
 
-    expect(component.userGroupsControl.get("active")?.value).toBe(false);
-    expect(component.userGroupsControl.get("user_groups_attribute")?.disabled).toBe(true);
+    expect(component.userGroupsModel().active).toBe(false);
   });
 });

@@ -17,8 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, input, linkedSignal, output, ViewEncapsulation } from "@angular/core";
-import { FormsModule } from "@angular/forms";
+import { Component, computed, input, linkedSignal, OnInit, output } from "@angular/core";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { HostsMachineResolverData, MachineResolverData } from "@services/machine-resolver/machine-resolver.service";
@@ -27,21 +26,22 @@ import { HostsMachineResolverData, MachineResolverData } from "@services/machine
   selector: "app-machine-resolver-hosts-tab",
   templateUrl: "./machine-resolver-hosts-tab.component.html",
   styleUrls: ["./machine-resolver-hosts-tab.component.scss"],
-  imports: [MatFormFieldModule, MatInputModule, FormsModule],
-  standalone: true,
-  encapsulation: ViewEncapsulation.ShadowDom
+  imports: [MatFormFieldModule, MatInputModule],
+  standalone: true
 })
-export class MachineResolverHostsTabComponent {
-  readonly isEditMode = input.required<boolean>();
+export class MachineResolverHostsTabComponent implements OnInit {
+  readonly isCreateMode = input<boolean>(false);
+  readonly canEdit = input<boolean>(false);
   readonly machineResolverData = input.required<MachineResolverData>();
+  readonly fieldsEnabled = computed(() => this.isCreateMode() || this.canEdit());
   readonly hostsData = linkedSignal<HostsMachineResolverData>(
     () => this.machineResolverData() as HostsMachineResolverData
   );
-  readonly onNewData = output<MachineResolverData>();
-  readonly onNewValidator = output<(data: MachineResolverData) => boolean>();
+  readonly newData = output<MachineResolverData>();
+  readonly newValidator = output<(data: MachineResolverData) => boolean>();
 
   ngOnInit(): void {
-    this.onNewValidator.emit(this.isValid.bind(this));
+    this.newValidator.emit(this.isValid.bind(this));
   }
 
   updateData(
@@ -50,8 +50,8 @@ export class MachineResolverHostsTabComponent {
       | { patch?: Partial<HostsMachineResolverData>; remove: (keyof HostsMachineResolverData)[] }
       | Partial<HostsMachineResolverData>
   ) {
-    let patch: Partial<HostsMachineResolverData> = {};
-    let remove: (keyof HostsMachineResolverData)[] = [];
+    let patch: Partial<HostsMachineResolverData>;
+    let remove: (keyof HostsMachineResolverData)[];
     if ("remove" in args || "patch" in args) {
       const complexArgs = args as {
         patch?: Partial<HostsMachineResolverData>;
@@ -61,6 +61,7 @@ export class MachineResolverHostsTabComponent {
       remove = complexArgs.remove || [];
     } else {
       patch = args as Partial<HostsMachineResolverData>;
+      remove = [];
     }
     const newData = { ...this.machineResolverData(), ...patch, type: "hosts" };
     if (remove.length > 0) {
@@ -68,12 +69,11 @@ export class MachineResolverHostsTabComponent {
         delete newData[key];
       });
     }
-    this.onNewData.emit(newData);
+    this.newData.emit(newData);
   }
 
   isValid(data: MachineResolverData): boolean {
     if (data.type !== "hosts") return false;
-    if ((data as HostsMachineResolverData).filename?.trim() === "") return false;
-    return true;
+    return !!(data as HostsMachineResolverData).filename?.trim();
   }
 }

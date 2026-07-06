@@ -21,9 +21,8 @@ from privacyidea.lib.caconnector import (get_caconnector_list,
                                          get_caconnector_type,
                                          get_caconnector_types,
                                          save_caconnector, delete_caconnector)
-from privacyidea.lib.caconnectors.baseca import AvailableCAConnectors
 from privacyidea.lib.caconnectors.localca import LocalCAConnector, ATTR
-from privacyidea.lib.caconnectors.msca import MSCAConnector, ATTR as MS_ATTR
+from privacyidea.lib.caconnectors.msca import MSCAConnector, ATTR as MS_ATTR, _grpc_available
 from privacyidea.lib.error import CAError, CSRError, CSRPending
 from privacyidea.lib.utils import int_to_hex
 from privacyidea.models import db, CAConnectorConfig
@@ -273,8 +272,8 @@ class LocalCATestCase(MyTestCase):
         cert_obj = x509.load_pem_x509_certificate(cert.encode())
         serial = cert_obj.serial_number
 
-        self.assertEqual("<Name(C=DE,ST=Hessen,O=privacyidea,CN=CA001)>", f"{cert_obj.issuer!r}")
-        self.assertEqual("<Name(C=DE,ST=Hessen,O=privacyidea,CN=requester.localdomain)>", f"{cert_obj.subject!r}")
+        self.assertEqual("<Name(CN=CA001,O=privacyidea,ST=Hessen,C=DE)>", f"{cert_obj.issuer!r}")
+        self.assertEqual("<Name(CN=requester.localdomain,O=privacyidea,ST=Hessen,C=DE)>", f"{cert_obj.subject!r}")
 
         # Check output files
         self.assertTrue(os.path.isfile(f"{self.ca_path}/DE_Hessen_privacyidea_requester.localdomain.pem"))
@@ -322,9 +321,9 @@ class LocalCATestCase(MyTestCase):
         _, cert = cacon.sign_request(REQUEST_USER)
         cert_obj = x509.load_pem_x509_certificate(cert.encode())
         self.assertEqual("{0!r}".format(cert_obj.issuer),
-                         "<Name(C=DE,ST=Hessen,O=privacyidea,CN=CA001)>")
+                         "<Name(CN=CA001,O=privacyidea,ST=Hessen,C=DE)>")
         self.assertEqual("{0!r}".format(cert_obj.subject),
-                         "<Name(C=DE,ST=Hessen,O=privacyidea,CN=usercert)>")
+                         "<Name(CN=usercert,O=privacyidea,ST=Hessen,C=DE)>")
 
         # Check output files
         self.assertTrue(os.path.isfile(f"{self.ca_path}/DE_Hessen_privacyidea_usercert.pem"))
@@ -342,10 +341,10 @@ class LocalCATestCase(MyTestCase):
         _, cert = cacon.sign_request(SPKAC, options={"spkac": 1})
         cert_obj = x509.load_pem_x509_certificate(cert.encode())
         self.assertEqual("{0!r}".format(cert_obj.issuer),
-                         "<Name(C=DE,ST=Hessen,O=privacyidea,CN=CA001)>")
+                         "<Name(CN=CA001,O=privacyidea,ST=Hessen,C=DE)>")
         # Email address is given in dotted oid
         self.assertEqual("{0!r}".format(cert_obj.subject),
-                         "<Name(CN=Steve Test,1.2.840.113549.1.9.1=steve@openssl.org)>")
+                         "<Name(1.2.840.113549.1.9.1=steve@openssl.org,CN=Steve Test)>")
         del os.environ["OPENSSL_ENABLE_MD5_VERIFY"]
 
     def test_05_templates(self):
@@ -431,7 +430,7 @@ CONF_LAB = {MS_ATTR.HOSTNAME: "10.0.5.100",
             MS_ATTR.CA: "CA03.nilsca.com\\nilsca-CA03-CA"}
 
 
-@unittest.skipUnless("privacyidea.lib.caconnectors.msca.MSCAConnector" in AvailableCAConnectors,
+@unittest.skipUnless(_grpc_available,
                      "Can not test MSCA. grpc module seems not available.")
 class MSCATestCase(MyTestCase):
     """

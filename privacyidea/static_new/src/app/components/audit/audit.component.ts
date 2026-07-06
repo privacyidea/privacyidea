@@ -39,44 +39,77 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 
 import { NgClass } from "@angular/common";
-import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { RouterLink } from "@angular/router";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 
+type AuditCellRenderType =
+  | "status-span"
+  | "highlight-ok"
+  | "date"
+  | "policies-csv"
+  | "copy-text"
+  | "serial-link"
+  | "container-link"
+  | "user-link"
+  | "default";
+
+const cellRenderTypeByKey: Record<string, AuditCellRenderType> = {
+  success: "status-span",
+  authentication: "status-span",
+  sig_check: "highlight-ok",
+  missing_line: "highlight-ok",
+  startdate: "date",
+  date: "date",
+  policies: "policies-csv",
+  serial: "serial-link",
+  container_serial: "container-link",
+  user: "user-link",
+  action: "copy-text",
+  action_detail: "copy-text",
+  info: "copy-text",
+  user_agent: "copy-text",
+  privacyidea_server: "copy-text",
+  realm: "copy-text",
+  administrator: "copy-text",
+  client: "copy-text",
+  resolver: "copy-text"
+};
+
 const columnKeysMap = [
-  { key: "number", label: "Number" },
-  { key: "action", label: "Action" },
-  { key: "success", label: "Success" },
-  { key: "authentication", label: "Authentication" },
-  { key: "serial", label: "Serial" },
-  { key: "container_serial", label: "Container Serial" },
-  { key: "startdate", label: "Start Date" },
-  { key: "duration", label: "Duration" },
-  { key: "token_type", label: "Token Type" },
-  { key: "user", label: "User" },
-  { key: "realm", label: "Realm" },
-  { key: "administrator", label: "Administrator" },
-  { key: "action_detail", label: "Action Detail" },
-  { key: "info", label: "Info" },
-  { key: "policies", label: "Policies" },
-  { key: "client", label: "Client" },
-  { key: "user_agent", label: "User Agent" },
-  { key: "user_agent_version", label: "User Agent Version" },
-  { key: "privacyidea_server", label: "PrivacyIDEA Server" },
-  { key: "log_level", label: "Log Level" },
-  { key: "clearance_level", label: "Clearance Level" },
-  { key: "sig_check", label: "Signature Check" },
-  { key: "missing_line", label: "Missing Line" },
-  { key: "resolver", label: "Resolver" },
-  { key: "thread_id", label: "Thread ID" },
-  { key: "container_type", label: "Container Type" }
+  { key: "number", label: $localize`Number` },
+  { key: "action", label: $localize`Action` },
+  { key: "success", label: $localize`Success` },
+  { key: "authentication", label: $localize`Authentication` },
+  { key: "serial", label: $localize`Serial` },
+  { key: "container_serial", label: $localize`Container Serial` },
+  { key: "startdate", label: $localize`Start Date` },
+  { key: "duration", label: $localize`Duration` },
+  { key: "token_type", label: $localize`Token Type` },
+  { key: "user", label: $localize`User` },
+  { key: "realm", label: $localize`Realm` },
+  { key: "administrator", label: $localize`Administrator` },
+  { key: "action_detail", label: $localize`Action Detail` },
+  { key: "info", label: $localize`Info` },
+  { key: "policies", label: $localize`Policies` },
+  { key: "client", label: $localize`Client` },
+  { key: "user_agent", label: $localize`User Agent` },
+  { key: "user_agent_version", label: $localize`User Agent Version` },
+  { key: "privacyidea_server", label: $localize`PrivacyIDEA Server` },
+  { key: "log_level", label: $localize`Log Level` },
+  { key: "clearance_level", label: $localize`Clearance Level` },
+  { key: "sig_check", label: $localize`Signature Check` },
+  { key: "missing_line", label: $localize`Missing Line` },
+  { key: "resolver", label: $localize`Resolver` },
+  { key: "thread_id", label: $localize`Thread ID` },
+  { key: "container_type", label: $localize`Container Type` }
 ];
 
 @Component({
@@ -85,7 +118,6 @@ const columnKeysMap = [
     MatCardModule,
     MatCell,
     MatFormField,
-    FormsModule,
     MatInput,
     MatPaginator,
     MatHeaderCellDef,
@@ -100,13 +132,14 @@ const columnKeysMap = [
     MatRow,
     MatColumnDef,
     MatLabel,
-    CopyButtonComponent,
+    CopyableComponent,
     RouterLink,
     ScrollToTopDirective,
     ClearableInputComponent,
     MatIcon,
     MatButtonModule,
-    MatIconModule
+    MatIconModule,
+    ScrollEdgesDirective
   ],
   templateUrl: "./audit.component.html",
   styleUrl: "./audit.component.scss"
@@ -194,5 +227,9 @@ export class AuditComponent {
   onKeywordClick(filterKeyword: string): void {
     this.toggleFilter(filterKeyword);
     this.filterInput?.nativeElement.focus();
+  }
+
+  getCellRenderType(columnKey: string): AuditCellRenderType {
+    return cellRenderTypeByKey[columnKey] ?? "default";
   }
 }

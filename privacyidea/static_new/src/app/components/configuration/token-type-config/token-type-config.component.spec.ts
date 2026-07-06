@@ -7,13 +7,15 @@ import { NotificationService } from "@services/notification/notification.service
 import { SmsGatewayService } from "@services/sms-gateway/sms-gateway.service";
 import { SmtpService } from "@services/smtp/smtp.service";
 import { SystemService } from "@services/system/system.service";
-import { MockSystemService } from "@testing/mock-services";
+import { MockPendingChangesService, MockSystemService } from "@testing/mock-services";
 import { Observable, of } from "rxjs";
 import { TokenTypeConfigComponent } from "./token-type-config.component";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { QUESTION_NUMBER_OF_ANSWERS } from "@constants/token.constants";
 
 class MockActivatedRoute {
   fragment: Observable<string | undefined> = of();
-  queryParams: Observable<Record<string, any>> = of({});
+  queryParams: Observable<Record<string, unknown>> = of({});
 }
 
 describe("TokenTypeConfigComponent", () => {
@@ -44,13 +46,19 @@ describe("TokenTypeConfigComponent", () => {
             smtpServerResource: { value: () => ({ result: { value: {} } }) }
           }
         },
-        { provide: NotificationService, useValue: { success: jest.fn(), error: jest.fn(), warning: jest.fn(), handleResourceError: jest.fn() } }
+        {
+          provide: NotificationService,
+          useValue: { success: jest.fn(), error: jest.fn(), warning: jest.fn(), handleResourceError: jest.fn() }
+        },
+        { provide: PendingChangesService, useClass: MockPendingChangesService }
       ]
     }).compileComponents();
 
     httpMock = TestBed.inject(HttpTestingController);
     activatedRoute = TestBed.inject(ActivatedRoute) as unknown as MockActivatedRoute;
-    jest.spyOn(document, "getElementById").mockReturnValue({ scrollIntoView: jest.fn() } as any);
+    jest
+      .spyOn(document, "getElementById")
+      .mockReturnValue({ scrollIntoView: jest.fn() } as unknown as HTMLElement);
 
     fixture = TestBed.createComponent(TokenTypeConfigComponent);
     component = fixture.componentInstance;
@@ -62,7 +70,7 @@ describe("TokenTypeConfigComponent", () => {
   });
 
   it("should initialize formData from systemConfig", () => {
-    expect(component.formData()["splitAtSign"]).toBe(true);
+    expect(component.formData()["splitAtSign"]).toBe("True");
     expect(component.formData()["someOtherConfig"]).toBe("test_value");
   });
 
@@ -85,9 +93,9 @@ describe("TokenTypeConfigComponent", () => {
   });
 
   it("should call saveSystemConfig on save", async () => {
-    const systemService = TestBed.inject(SystemService);
+    const systemService = TestBed.inject(SystemService) as unknown as MockSystemService;
     const saveSpy = jest.spyOn(systemService, "saveSystemConfig");
-    const reloadSpy = jest.spyOn((systemService as any).systemConfigResource, "reload");
+    const reloadSpy = jest.spyOn(systemService.systemConfigResource, "reload");
 
     await component.save();
 
@@ -95,28 +103,29 @@ describe("TokenTypeConfigComponent", () => {
     expect(reloadSpy).toHaveBeenCalled();
   });
 
-  it("should add new question to formData and increment nextQuestion without saving", () => {
+  it("should add an empty question to formData without saving", () => {
     const saveSpy = jest.spyOn(component, "save");
-    const initialNext = component.nextQuestionIndex();
-    const newQuestion = "My new question?";
+    const before = component.questionKeys.length;
 
-    component.addQuestion(newQuestion);
+    component.addQuestion();
 
-    expect(component.formData()[`question.question.${initialNext}`]).toBe(newQuestion);
-    expect(component.nextQuestionIndex()).toBe(initialNext + 1);
+    const questionKeys = component.questionKeys;
+    expect(questionKeys.length).toBe(before + 1);
+    const addedKey = questionKeys[questionKeys.length - 1];
+    expect(component.formData()[addedKey]).toBe("");
     expect(saveSpy).not.toHaveBeenCalled();
   });
 
   it("should update formData and pendingDeletes but not call service on deleteSystemEntry", () => {
-    const systemService = TestBed.inject(SystemService);
-    const deleteSpy = jest.spyOn(systemService as any, "deleteSystemConfig");
-    const reloadSpy = jest.spyOn((systemService as any).systemConfigResource, "reload");
+    const systemService = TestBed.inject(SystemService) as unknown as MockSystemService;
+    const deleteSpy = jest.spyOn(systemService, "deleteSystemConfig");
+    const reloadSpy = jest.spyOn(systemService.systemConfigResource, "reload");
 
     const entryToDelete = "yubikey.apiid.123";
     const entryToKeep = "yubikey.apiid.456";
 
     // Set initial config so it's tracked for deferred deletion
-    (systemService as any).systemConfig.set({ [entryToDelete]: "123", [entryToKeep]: "456" });
+    systemService.systemConfig.set({ [entryToDelete]: "123", [entryToKeep]: "456" });
     fixture.detectChanges();
 
     component.deleteSystemEntry(entryToDelete);
@@ -126,6 +135,56 @@ describe("TokenTypeConfigComponent", () => {
     expect(component.formData()).not.toHaveProperty(entryToDelete);
     expect(component.formData()[entryToKeep]).toEqual("456");
     expect(component.pendingDeletes().has(entryToDelete)).toBe(true);
+  });
+
+  it("should not resurrect a deleted question as an empty entry on save", async () => {
+    const systemService = TestBed.inject(SystemService) as unknown as MockSystemService;
+    const saveSpy = jest.spyOn(systemService, "saveSystemConfig");
+    const deleteSpy = jest.spyOn(systemService, "deleteSystemConfig");
+
+    systemService.systemConfig.set({
+      "question.question.0": "Q0",
+      [QUESTION_NUMBER_OF_ANSWERS]: "1"
+    });
+    fixture.detectChanges();
+
+    // Deleting the only question re-adds an empty slot via reconcile (reusing index 0)
+    // and queues the backend key for deletion.
+    component.deleteQuestion("question.question.0");
+
+    await component.save();
+
+    // The backend key must be deleted and NOT written back as an empty string.
+    expect(deleteSpy).toHaveBeenCalledWith("question.question.0");
+    const savedPayload = saveSpy.mock.calls[0][0] as Record<string, string>;
+    expect(savedPayload).not.toHaveProperty("question.question.0");
+  });
+
+  it("should delete an emptied question instead of persisting a blank value", async () => {
+    const systemService = TestBed.inject(SystemService) as unknown as MockSystemService;
+    const saveSpy = jest.spyOn(systemService, "saveSystemConfig");
+    const deleteSpy = jest.spyOn(systemService, "deleteSystemConfig");
+
+    systemService.systemConfig.set({
+      "question.question.0": "Q0",
+      "question.question.1": "Q1",
+      [QUESTION_NUMBER_OF_ANSWERS]: "2"
+    });
+    fixture.detectChanges();
+
+    // User clears the text of the second question (without touching the answer count).
+    component.onFormDataChange({
+      "question.question.0": "Q0",
+      "question.question.1": "",
+      [QUESTION_NUMBER_OF_ANSWERS]: "2"
+    });
+
+    await component.save();
+
+    expect(deleteSpy).toHaveBeenCalledWith("question.question.1");
+    const savedPayload = saveSpy.mock.calls[0][0] as Record<string, string>;
+    expect(savedPayload).not.toHaveProperty("question.question.1");
+    expect(savedPayload["question.question.0"]).toBe("Q0");
   });
 
   it("should update formData on onCheckboxChange", () => {
@@ -199,7 +258,9 @@ describe("TokenTypeConfigComponent", () => {
 
     it("should not scroll if expandedPanel is null", () => {
       const scrollSpy = jest.fn();
-      jest.spyOn(document, "getElementById").mockReturnValue({ scrollIntoView: scrollSpy } as any);
+      jest
+        .spyOn(document, "getElementById")
+        .mockReturnValue({ scrollIntoView: scrollSpy } as unknown as HTMLElement);
       component.ngAfterViewInit();
       expect(scrollSpy).not.toHaveBeenCalled();
     });
@@ -218,7 +279,9 @@ describe("TokenTypeConfigComponent", () => {
 
       it("should scroll to referenced panel when expandedPanel is defined", () => {
         const scrollSpy = jest.fn();
-        jest.spyOn(document, "getElementById").mockReturnValue({ scrollIntoView: scrollSpy } as any);
+        jest
+          .spyOn(document, "getElementById")
+          .mockReturnValue({ scrollIntoView: scrollSpy } as unknown as HTMLElement);
         component.ngAfterViewInit();
         expect(scrollSpy).toHaveBeenCalledWith({ behavior: "smooth" });
       });

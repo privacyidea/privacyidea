@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, signal, ViewChild, WritableSignal } from "@angular/core";
+import { Component, computed, ElementRef, inject, signal, ViewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { MatPaginator, MatPaginatorModule } from "@angular/material/paginator";
@@ -30,7 +30,7 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
@@ -51,14 +51,14 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
     MatFormFieldModule,
     MatInputModule,
     ClearableInputComponent,
-    CopyButtonComponent
+    CopyableComponent
   ],
   templateUrl: "./machines.component.html",
   styleUrl: "./machines.component.scss"
 })
 export class MachinesComponent {
   protected readonly machineService: MachineServiceInterface = inject(MachineService);
-  protected readonly router: Router = inject(Router);
+  protected readonly router = inject(Router);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
@@ -71,7 +71,7 @@ export class MachinesComponent {
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
-  @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: any;
+  @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef;
 
   displayedColumns: string[] = ["hostname", "ip", "id", "resolver_name"];
 

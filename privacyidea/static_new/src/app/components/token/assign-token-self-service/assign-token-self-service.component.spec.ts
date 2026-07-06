@@ -21,7 +21,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { Router } from "@angular/router";
 import { ContentService } from "@services/content/content.service";
 import { TokenService } from "@services/token/token.service";
-import { MockContentService, MockTokenService } from "@testing/mock-services";
+import { MockContentService, MockRouter, MockTokenService } from "@testing/mock-services";
 import { of } from "rxjs";
 import { AssignTokenSelfServiceComponent } from "./assign-token-self-service.component";
 
@@ -29,19 +29,15 @@ describe("AssignTokenSelfServiceComponent (no zone.js)", () => {
   let fixture: ComponentFixture<AssignTokenSelfServiceComponent>;
   let component: AssignTokenSelfServiceComponent;
 
-  let tokenSvc: MockTokenService;
-  let routerMock: { navigateByUrl: jest.Mock };
+  let tokenService: MockTokenService;
+  let routerMock: MockRouter;
 
   beforeEach(async () => {
-    routerMock = {
-      navigateByUrl: jest.fn()
-    };
-
     await TestBed.configureTestingModule({
       imports: [AssignTokenSelfServiceComponent],
       providers: [
         provideHttpClient(),
-        { provide: Router, useValue: routerMock },
+        { provide: Router, useClass: MockRouter },
         { provide: TokenService, useClass: MockTokenService },
         { provide: ContentService, useClass: MockContentService }
       ]
@@ -49,8 +45,9 @@ describe("AssignTokenSelfServiceComponent (no zone.js)", () => {
 
     fixture = TestBed.createComponent(AssignTokenSelfServiceComponent);
     component = fixture.componentInstance;
-    tokenSvc = TestBed.inject(TokenService) as unknown as MockTokenService;
-    tokenSvc.assignUser.mockReturnValue(of(null));
+    tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
+    routerMock = TestBed.inject(Router) as unknown as MockRouter;
+    tokenService.assignUser.mockReturnValue(of(null));
 
     fixture.detectChanges();
   });
@@ -72,8 +69,8 @@ describe("AssignTokenSelfServiceComponent (no zone.js)", () => {
 
     component.assignUserToToken();
 
-    expect(tokenSvc.assignUser).toHaveBeenCalledTimes(1);
-    expect(tokenSvc.assignUser).toHaveBeenCalledWith({
+    expect(tokenService.assignUser).toHaveBeenCalledTimes(1);
+    expect(tokenService.assignUser).toHaveBeenCalledWith({
       tokenSerial: serial,
       username: "",
       realm: "",
@@ -82,6 +79,6 @@ describe("AssignTokenSelfServiceComponent (no zone.js)", () => {
 
     expect(routerMock.navigateByUrl).toHaveBeenCalledTimes(1);
     expect(routerMock.navigateByUrl).toHaveBeenCalledWith(expect.stringContaining(serial));
-    expect(tokenSvc.tokenSerial()).toBe(serial);
+    expect(tokenService.tokenSerial()).toBe(serial);
   });
 });

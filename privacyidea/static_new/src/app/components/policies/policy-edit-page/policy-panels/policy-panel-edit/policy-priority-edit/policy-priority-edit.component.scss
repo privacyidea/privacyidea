@@ -1,0 +1,15 @@
+// Width is set by the caller via an .input-width-* class on the host element.
+:host {
+  display: block;
+}
+
+.action-priority-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--half-global-gap);
+  min-width: 0;
+}
+
+mat-form-field {
+  width: 100%;
+}

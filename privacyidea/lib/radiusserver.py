@@ -44,11 +44,10 @@ from sqlalchemy import select
 from privacyidea.lib import _
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
-                                    FAILED_TO_DECRYPT_PASSWORD)
+                                    FAILED_TO_DECRYPT_PASSWORD, CENSORED)
 from privacyidea.lib.error import (ConfigAdminError, PrivacyIDEAError,
                                    ResourceNotFoundError)
 from privacyidea.lib.log import log_with
-from privacyidea.lib.resolver import CENSORED
 from privacyidea.lib.utils import fetch_one_resource, to_bytes
 from privacyidea.lib.utils.export import (register_import, register_export)
 from privacyidea.models import db, RADIUSServer as RADIUSServerDB
@@ -206,7 +205,7 @@ def get_radiusservers(identifier: str = None, server: str = None) -> list[RADIUS
     return result
 
 
-@log_with(log)
+@log_with(log, log_exit=False)
 def list_radiusservers(identifier=None, server=None):
     res = {}
     server_list = get_radiusservers(identifier=identifier, server=server)

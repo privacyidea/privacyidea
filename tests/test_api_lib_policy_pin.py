@@ -96,7 +96,7 @@ from privacyidea.lib.tokens.webauthntoken import (DEFAULT_ALLOWED_TRANSPORTS,
                                                   DEFAULT_USER_VERIFICATION_REQUIREMENT,
                                                   PUBKEY_CRED_ALGORITHMS_ORDER)
 from privacyidea.lib.user import User
-from privacyidea.lib.users.custom_user_attributes import InternalCustomUserAttributes, INTERNAL_USAGE
+from privacyidea.lib.users.internal_user_attributes import InternalUserAttributes
 from privacyidea.lib.utils import (create_img, generate_charlists_from_pin_policy,
                                    CHARLIST_CONTENTPOLICY, check_pin_contents)
 from privacyidea.lib.utils import hexlify_and_unicode, AUTH_RESPONSE
@@ -427,6 +427,101 @@ class PrePolicyPinTestCase(PrePolicyHelperMixin, MyApiTestCase):
 
         # finally delete policy
         delete_policy("pol1")
+        delete_realm("home")
+
+    def test_09b_pin_policies_admin_by_serial(self):
+        # An admin acting on an existing token by serial without a user parameter must still have
+        # the realm-scoped PIN policy of the token owner enforced. The owner is derived from the
+        # serial, so the empty request.User does not silently skip the realm-scoped policy.
+        create_realm("home", [{'name': self.resolvername1}])
+        g.logged_in_user = {"username": "super",
+                            "realm": "",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST', headers={})
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+
+        # A token owned by cornelius in realm "home"
+        init_token({"type": "hotp", "serial": "PINBYSERIAL"}, user=User("cornelius", "home"))
+
+        # Realm-scoped admin PIN policy that requires a complex PIN
+        set_policy(name="pol1",
+                   scope=SCOPE.ADMIN,
+                   action="{0!s}={1!s},{2!s}={3!s}".format(PolicyAction.OTPPINMINLEN, "4",
+                                                           PolicyAction.OTPPINCONTENTS, "cn"),
+                   realm="home")
+        g.policy_object = PolicyClass()
+
+        # Admin sends only the serial and a weak PIN, with no user parameter -> empty request.User
+        req.all_data = {"serial": "PINBYSERIAL", "pin": "12"}
+        req.User = User()
+        # The realm-scoped policy is matched against the token owner -> weak PIN is rejected
+        self.assertRaises(PolicyError, check_otp_pin, req)
+
+        # A PIN that complies with the owner's realm policy is accepted
+        req.all_data = {"serial": "PINBYSERIAL", "pin": "abc123"}
+        req.User = User()
+        self.assertTrue(check_otp_pin(req))
+
+        # An explicitly supplied user is honored over the token owner: naming a
+        # user in a realm without a strict PIN policy uses that user's policies,
+        # so the weak PIN is accepted. The owner's home-realm policy is only used
+        # as a fallback when no user is supplied (empty request.User).
+        req.all_data = {"serial": "PINBYSERIAL", "pin": "12",
+                        "user": "cornelius", "realm": self.realm1}
+        req.User = User("cornelius", self.realm1)
+        self.assertTrue(check_otp_pin(req))
+
+        delete_policy("pol1")
+        remove_token("PINBYSERIAL")
+        delete_realm("home")
+
+    def test_09c_random_pin_contents_uses_param_user(self):
+        # init_random_pin must resolve the OTPPINCONTENTS policy with the same
+        # user as the OTPPINRANDOM lookup (the enrollment user from the request
+        # params), not request.User. When request.User is empty but the params
+        # carry the user (e.g. a realm injected by realmadmin), the user-scoped
+        # contents policy must still apply to the generated PIN.
+        create_realm("home", [{'name': self.resolvername1}])
+        g.logged_in_user = {"username": "super",
+                            "realm": "",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST', headers={})
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+
+        # Enrollment generates a random PIN of length 12 (SCOPE.ENROLL) whose
+        # contents must include a special character (OTPPINCONTENTS "s",
+        # SCOPE.ADMIN, realm-scoped). "s" is a deterministic discriminator: the
+        # fallback generate_password() charset is alphanumeric only, so a special
+        # character can only appear when the contents policy was actually applied.
+        set_policy(name="pol_rand", scope=SCOPE.ENROLL,
+                   action="{0!s}={1!s}".format(PolicyAction.OTPPINRANDOM, "12"),
+                   realm="home")
+        set_policy(name="pol_contents", scope=SCOPE.ADMIN,
+                   action="{0!s}={1!s}".format(PolicyAction.OTPPINCONTENTS, "s"),
+                   realm="home")
+        g.policy_object = PolicyClass()
+
+        # Admin enrolls for cornelius@home: the user is in the params, but
+        # request.User is empty.
+        req.all_data = {"type": "hotp", "user": "cornelius", "realm": "home"}
+        req.User = User()
+        self.assertTrue(init_random_pin(req))
+
+        # The realm-scoped contents policy was resolved via the param user (not
+        # the empty request.User), so the generated PIN has the configured length
+        # and contains a special character.
+        pin = req.all_data["pin"]
+        self.assertEqual(12, len(pin), pin)
+        self.assertTrue(any(not c.isalnum() for c in pin), pin)
+
+        delete_policy("pol_rand")
+        delete_policy("pol_contents")
         delete_realm("home")
 
     def test_01b_token_specific_pin_policy(self):

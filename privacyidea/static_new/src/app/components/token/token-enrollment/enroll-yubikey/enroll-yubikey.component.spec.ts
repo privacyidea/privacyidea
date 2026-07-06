@@ -19,6 +19,8 @@
 import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { EnrollYubikeyComponent } from "./enroll-yubikey.component";
+import { TokenService } from "@services/token/token.service";
+import { MockTokenService } from "@testing/mock-services";
 
 describe("EnrollYubikeyComponent", () => {
   let component: EnrollYubikeyComponent;
@@ -26,7 +28,7 @@ describe("EnrollYubikeyComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      providers: [provideHttpClient()],
+      providers: [provideHttpClient(), { provide: TokenService, useClass: MockTokenService }],
       imports: [EnrollYubikeyComponent]
     }).compileComponents();
 

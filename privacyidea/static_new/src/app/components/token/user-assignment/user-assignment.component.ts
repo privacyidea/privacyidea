@@ -16,8 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, effect, inject, input, Input, signal } from "@angular/core";
-import { FormControl, FormsModule, ReactiveFormsModule } from "@angular/forms";
+import { Component, computed, effect, inject, input, signal } from "@angular/core";
 import { MatAutocomplete, MatAutocompleteTrigger, MatOption } from "@angular/material/autocomplete";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatError, MatFormField, MatHint } from "@angular/material/form-field";
@@ -34,7 +33,6 @@ import { UserData, UserService, UserServiceInterface } from "@services/user/user
   standalone: true,
   imports: [
     ClearableInputComponent,
-    FormsModule,
     MatAutocomplete,
     MatAutocompleteTrigger,
     MatFormField,
@@ -42,7 +40,6 @@ import { UserData, UserService, UserServiceInterface } from "@services/user/user
     MatLabel,
     MatOption,
     MatSelect,
-    ReactiveFormsModule,
     MatCheckbox,
     MatError,
     MatHint
@@ -52,84 +49,58 @@ export class UserAssignmentComponent {
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
 
-  @Input() selectedUserRealmControl?: FormControl<string>;
-  @Input() userFilterControl?: FormControl<string | UserData | null>;
   showOnlyAddToRealm = input<boolean>(false);
   required = input<boolean>(false);
 
-  // Internal defaults if not provided
-  readonly internalSelectedUserRealmControl = new FormControl<string>(
-    {
-      value: this.userService.selectedUserRealm(),
-      disabled: false
-    },
-    { nonNullable: true }
-  );
-  readonly internalUserFilterControl = new FormControl<string | UserData | null>(
-    {
-      value: this.userService.selectionFilter(),
-      disabled: !this.userService.selectedUserRealm()
-    },
-    { nonNullable: true }
-  );
-
-  get selectedUserRealmCtrl() {
-    return this.selectedUserRealmControl ?? this.internalSelectedUserRealmControl;
-  }
-
-  get userFilterCtrl() {
-    return this.userFilterControl ?? this.internalUserFilterControl;
-  }
-
   onlyAddToRealm = signal(false);
+  userFilter = signal<string>(this.userService.selectionUsernameFilter());
 
-  onOnlyAddToRealmChange(checked: boolean) {
-    this.onlyAddToRealm.set(checked);
-  }
-
-  onSelectedRealmChange(realm: string) {
-    this.userFilterCtrl.reset("", { emitEvent: false });
-    this.userService.selectedUserRealm.set(realm);
-  }
+  readonly userInputDisabled = computed(() => !this.userService.selectedUserRealm() || this.onlyAddToRealm());
 
   constructor() {
     effect(() => {
       const users = this.userService.selectionFilteredUsers();
-      if (users.length === 1 && this.userFilterCtrl.value === users[0].username) {
-        this.userFilterCtrl.setValue(users[0]);
-      }
-    });
-
-    effect(() => {
-      const realm = this.userService.selectedUserRealm();
-      const onlyAddToRealm = this.onlyAddToRealm();
-      if (!realm || onlyAddToRealm) {
-        this.userFilterCtrl.disable({ emitEvent: false });
-      } else {
-        this.userFilterCtrl.enable({ emitEvent: false });
-      }
-    });
-
-    effect(() => {
-      const realm = this.userService.selectedUserRealm();
-      if (realm !== this.selectedUserRealmCtrl.value) {
-        this.selectedUserRealmCtrl.setValue(realm, { emitEvent: false });
+      const filter = this.userFilter();
+      if (users.length === 1 && filter === users[0].username) {
+        this.userService.selectionFilter.set(users[0]);
       }
     });
   }
 
-  ngOnInit(): void {
-    this.userService.selectedUserRealm.set(this.selectedUserRealmCtrl.value);
-    this.selectedUserRealmCtrl.valueChanges.subscribe((value) => {
-      this.userFilterCtrl.reset("", { emitEvent: false });
-      this.userService.selectedUserRealm.set(value);
-    });
+  readonly displayUser = (value: UserData | string | null): string => {
+    if (!value) return "";
+    if (typeof value === "string") return value;
+    return value.username;
+  };
 
-    this.userFilterCtrl.valueChanges.subscribe((value) => {
-      this.userService.selectionFilter.set(value ?? "");
-      if (value) {
-        this.onlyAddToRealm.set(false);
-      }
-    });
+  onlyAddToRealmChange(checked: boolean) {
+    this.onlyAddToRealm.set(checked);
+    if (checked) {
+      this.clearUser();
+    }
+  }
+
+  onSelectedRealmChange(realm: string) {
+    this.userService.selectedUserRealm.set(realm);
+    this.clearUser();
+  }
+
+  onUserFilterInput(value: string): void {
+    this.userFilter.set(value);
+    this.userService.selectionFilter.set(value);
+    if (value) {
+      this.onlyAddToRealm.set(false);
+    }
+  }
+
+  onUserSelected(user: UserData): void {
+    this.userFilter.set(user.username);
+    this.userService.selectionFilter.set(user);
+    this.onlyAddToRealm.set(false);
+  }
+
+  clearUser(): void {
+    this.userFilter.set("");
+    this.userService.selectionFilter.set("");
   }
 }

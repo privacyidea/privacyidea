@@ -45,7 +45,7 @@ describe("QuestionnaireConfigComponent", () => {
 
   it("should emit formDataChange when updateFormData is called", () => {
     jest.spyOn(component.formDataChange, "emit");
-    const newValue = 10;
+    const newValue = "10";
     component.updateFormData(QUESTION_NUMBER_OF_ANSWERS, newValue);
     expect(component.formDataChange.emit).toHaveBeenCalledWith({ [QUESTION_NUMBER_OF_ANSWERS]: newValue });
   });
@@ -60,34 +60,17 @@ describe("QuestionnaireConfigComponent", () => {
     expect(component.formData()[QUESTION_NUMBER_OF_ANSWERS]).toEqual(7);
   });
 
-  it("should emit onAddQuestion when addQuestion is called with text", () => {
-    jest.spyOn(component.onAddQuestion, "emit");
-    const questionText = "What is your favorite color?";
-    component.newQuestionText.set(questionText);
+  it("should emit addQuestionRequest when addQuestion is called", () => {
+    jest.spyOn(component.addQuestionRequest, "emit");
     component.addQuestion();
-    expect(component.onAddQuestion.emit).toHaveBeenCalledWith(questionText);
+    expect(component.addQuestionRequest.emit).toHaveBeenCalled();
   });
 
-  it("should clear newQuestionText after adding a question", () => {
-    const questionText = "What is your pet's name?";
-    component.newQuestionText.set(questionText);
-    expect(component.newQuestionText()).toBe(questionText);
-    component.addQuestion();
-    expect(component.newQuestionText()).toBe("");
-  });
-
-  it("should not emit onAddQuestion when addQuestion is called with empty text", () => {
-    jest.spyOn(component.onAddQuestion, "emit");
-    component.newQuestionText.set("");
-    component.addQuestion();
-    expect(component.onAddQuestion.emit).not.toHaveBeenCalled();
-  });
-
-  it("should emit onDeleteEntry when deleteEntry is called", () => {
-    jest.spyOn(component.onDeleteEntry, "emit");
+  it("should emit deleteRequest when deleteEntry is called", () => {
+    jest.spyOn(component.deleteRequest, "emit");
     const keyToDelete = "question.question.1";
     component.deleteEntry(keyToDelete);
-    expect(component.onDeleteEntry.emit).toHaveBeenCalledWith(keyToDelete);
+    expect(component.deleteRequest.emit).toHaveBeenCalledWith(keyToDelete);
   });
 
   it("should handle multiple question keys", () => {
@@ -101,5 +84,49 @@ describe("QuestionnaireConfigComponent", () => {
     fixture.componentRef.setInput("questionKeys", []);
     fixture.detectChanges();
     expect(component.questionKeys().length).toBe(0);
+  });
+
+  describe("blockNonNumeric", () => {
+    function keyEvent(key: string, modifiers: Partial<KeyboardEvent> = {}): KeyboardEvent {
+      return {
+        key,
+        ctrlKey: false,
+        metaKey: false,
+        preventDefault: jest.fn(),
+        ...modifiers
+      } as unknown as KeyboardEvent;
+    }
+
+    it("allows digit keys", () => {
+      const event = keyEvent("5");
+      component.blockNonNumeric(event);
+      expect(event.preventDefault).not.toHaveBeenCalled();
+    });
+
+    it("blocks non-digit printable keys", () => {
+      for (const key of ["a", "-", ".", "e"]) {
+        const event = keyEvent(key);
+        component.blockNonNumeric(event);
+        expect(event.preventDefault).toHaveBeenCalled();
+      }
+    });
+
+    it("allows multi-character (control) keys like Backspace and Enter", () => {
+      for (const key of ["Backspace", "Enter", "ArrowLeft", "Tab"]) {
+        const event = keyEvent(key);
+        component.blockNonNumeric(event);
+        expect(event.preventDefault).not.toHaveBeenCalled();
+      }
+    });
+
+    it("allows keyboard shortcuts with ctrl or meta held", () => {
+      const ctrlEvent = keyEvent("a", { ctrlKey: true });
+      component.blockNonNumeric(ctrlEvent);
+      expect(ctrlEvent.preventDefault).not.toHaveBeenCalled();
+
+      const metaEvent = keyEvent("v", { metaKey: true });
+      component.blockNonNumeric(metaEvent);
+      expect(metaEvent.preventDefault).not.toHaveBeenCalled();
+    });
   });
 });

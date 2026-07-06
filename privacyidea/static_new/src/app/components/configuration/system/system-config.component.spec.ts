@@ -21,14 +21,15 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { provideLocationMocks } from "@angular/common/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatSnackBar } from "@angular/material/snack-bar";
-import { provideRouter, Router } from "@angular/router";
+import { provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { SmtpService } from "@services/smtp/smtp.service";
 import { SystemService } from "@services/system/system.service";
-import { MockContentService, MockNotificationService, MockPiResponse } from "@testing/mock-services";
+import { MockContentService, MockNotificationService, MockPiResponse, MockSmtpService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
 import { MockSystemService } from "@testing/mock-services/mock-system-service";
@@ -41,7 +42,6 @@ describe("SystemConfigComponent", () => {
   let systemService: MockSystemService;
   let authService: MockAuthService;
   let notificationService: MockNotificationService;
-  let router: Router;
   let pendingChangesService: MockPendingChangesService;
 
   beforeEach(async () => {
@@ -57,7 +57,8 @@ describe("SystemConfigComponent", () => {
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: ContentService, useClass: MockContentService },
         { provide: MatSnackBar, useValue: { open: jest.fn() } },
-        { provide: PendingChangesService, useClass: MockPendingChangesService }
+        { provide: PendingChangesService, useClass: MockPendingChangesService },
+        { provide: SmtpService, useClass: MockSmtpService }
       ]
     }).compileComponents();
 
@@ -66,7 +67,6 @@ describe("SystemConfigComponent", () => {
     systemService = TestBed.inject(SystemService) as unknown as MockSystemService;
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
     notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
-    router = TestBed.inject(Router);
     pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
 
     const contentService = TestBed.inject(ContentService) as unknown as MockContentService;
@@ -81,29 +81,25 @@ describe("SystemConfigComponent", () => {
 
   it("should load system config on init", () => {
     expect(component.params).toBeDefined();
-    expect(component.params.splitAtSign).toBe(true);
-    expect(component.params.IncFailCountOnFalsePin).toBe(false);
-    expect(component.params.no_auth_counter).toBe(true);
-    expect(component.params.PrependPin).toBe(false);
-    expect(component.params.ReturnSamlAttributes).toBe(true);
-    expect(component.params.ReturnSamlAttributesOnFail).toBe(false);
-    expect(component.params.AutoResync).toBe(true);
-    expect(component.params.UiLoginDisplayHelpButton).toBe(false);
-    expect(component.params.UiLoginDisplayRealmBox).toBe(true);
-    expect(component.params.someOtherConfig).toBe("test_value");
+    expect(component.params().splitAtSign).toBe(true);
+    expect(component.params().IncFailCountOnFalsePin).toBe(false);
+    expect(component.params().no_auth_counter).toBe(true);
+    expect(component.params().PrependPin).toBe(false);
+    expect(component.params().AutoResync).toBe(true);
+    expect(component.params().UiLoginDisplayHelpButton).toBe(false);
+    expect(component.params().UiLoginDisplayRealmBox).toBe(true);
+    expect(component.params()["someOtherConfig"]).toBe("test_value");
   });
 
   it("should convert boolean config values correctly", () => {
     // Test that boolean values are properly converted
-    expect(component.params.splitAtSign).toBe(true);
-    expect(component.params.IncFailCountOnFalsePin).toBe(false);
-    expect(component.params.no_auth_counter).toBe(true);
-    expect(component.params.PrependPin).toBe(false);
-    expect(component.params.ReturnSamlAttributes).toBe(true);
-    expect(component.params.ReturnSamlAttributesOnFail).toBe(false);
-    expect(component.params.AutoResync).toBe(true);
-    expect(component.params.UiLoginDisplayHelpButton).toBe(false);
-    expect(component.params.UiLoginDisplayRealmBox).toBe(true);
+    expect(component.params().splitAtSign).toBe(true);
+    expect(component.params().IncFailCountOnFalsePin).toBe(false);
+    expect(component.params().no_auth_counter).toBe(true);
+    expect(component.params().PrependPin).toBe(false);
+    expect(component.params().AutoResync).toBe(true);
+    expect(component.params().UiLoginDisplayHelpButton).toBe(false);
+    expect(component.params().UiLoginDisplayRealmBox).toBe(true);
   });
 
   it("should load SMTP identifiers on init", () => {
@@ -124,7 +120,7 @@ describe("SystemConfigComponent", () => {
   it("should handle save system config error", () => {
     jest
       .spyOn(systemService, "saveSystemConfig")
-      .mockReturnValueOnce(of(new MockPiResponse<{ status: boolean }>({ result: { status: false } })));
+      .mockReturnValueOnce(of(new MockPiResponse<Record<string, "insert" | "update">>({ result: { status: false } })));
     const notificationSpy = jest.spyOn(notificationService, "error");
 
     component.saveSystemConfig();
@@ -145,7 +141,9 @@ describe("SystemConfigComponent", () => {
   it("should handle delete user cache error", () => {
     jest
       .spyOn(systemService, "deleteUserCache")
-      .mockReturnValueOnce(of(new MockPiResponse<{ status: boolean }>({ result: { status: false } })));
+      .mockReturnValueOnce(
+        of(new MockPiResponse<{ status: boolean; deleted: number }>({ result: { status: false } }))
+      );
     const notificationSpy = jest.spyOn(notificationService, "error");
 
     component.deleteUserCache();
@@ -173,10 +171,10 @@ describe("SystemConfigComponent", () => {
     expect(pendingChangesService.registerSave).toHaveBeenCalled();
   });
 
-  it("should report hasChanges based on form dirty state", () => {
+  it("should report hasChanges based on isDirty signal", () => {
     const fn = (pendingChangesService.registerHasChanges as jest.Mock).mock.calls[0][0] as () => boolean;
     expect(fn()).toBe(false);
-    component.systemConfigForm.form.markAsDirty();
+    component.isDirty.set(true);
     expect(fn()).toBe(true);
   });
 
@@ -192,7 +190,7 @@ describe("SystemConfigComponent", () => {
   it("_saveAndReturn should resolve false when save returns status false", async () => {
     jest
       .spyOn(systemService, "saveSystemConfig")
-      .mockReturnValueOnce(of(new MockPiResponse<{ status: boolean }>({ result: { status: false } })));
+      .mockReturnValueOnce(of(new MockPiResponse<Record<string, "insert" | "update">>({ result: { status: false } })));
     const saveFn = (pendingChangesService.registerSave as jest.Mock).mock.calls[0][0] as () => Promise<boolean>;
     const result = await saveFn();
     expect(notificationService.error).toHaveBeenCalledWith("Failed to save system configuration.");
@@ -200,9 +198,7 @@ describe("SystemConfigComponent", () => {
   });
 
   it("_saveAndReturn should resolve false on HTTP error", async () => {
-    jest
-      .spyOn(systemService, "saveSystemConfig")
-      .mockReturnValueOnce(throwError(() => new Error("Network error")));
+    jest.spyOn(systemService, "saveSystemConfig").mockReturnValueOnce(throwError(() => new Error("Network error")));
     const saveFn = (pendingChangesService.registerSave as jest.Mock).mock.calls[0][0] as () => Promise<boolean>;
     const result = await saveFn();
     expect(notificationService.error).toHaveBeenCalledWith("Error saving system configuration.");

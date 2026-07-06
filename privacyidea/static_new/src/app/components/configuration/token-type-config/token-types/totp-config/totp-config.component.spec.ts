@@ -86,15 +86,4 @@ describe("TotpConfigComponent", () => {
     expect(component.formData()[TOTP_TIME_SHIFT]).toEqual(5);
     expect(component.formData()[TOTP_HASHLIB]).toEqual("sha256");
   });
-
-  it("should call updateFormData with empty value when clearField is called", () => {
-    const initialTimeStep = "60";
-    fixture.componentRef.setInput("formData", { [TOTP_TIME_STEP]: initialTimeStep });
-    fixture.detectChanges();
-    expect(component.formData()[TOTP_TIME_STEP]).toEqual(initialTimeStep);
-
-    jest.spyOn(component, "updateFormData");
-    component.clearField(TOTP_TIME_STEP);
-    expect(component.updateFormData).toHaveBeenCalledWith(TOTP_TIME_STEP, "");
-  });
 });

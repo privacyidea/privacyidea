@@ -18,7 +18,6 @@
  **/
 
 import { Component, computed, inject, Signal } from "@angular/core";
-import { ReactiveFormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
@@ -38,7 +37,6 @@ import { TokenEnrollmentDialogData, TokenService, TokenServiceInterface } from "
     DialogWrapperComponent,
     MatIconModule,
     MatButtonModule,
-    ReactiveFormsModule,
     TokenEnrollmentDataComponent,
     TokenEnrolledTextComponent
   ]
@@ -48,7 +46,7 @@ export class TokenEnrollmentLastStepDialogComponent extends AbstractDialogCompon
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly Object = Object;
   protected readonly serial = this.data.response?.detail?.serial ?? "";
-  protected readonly containerSerial = this.data.response?.detail?.["container_serial"] ?? "";
+  protected readonly containerSerial = (this.data.response?.detail?.["container_serial"] ?? "") as string;
   protected readonly qrCode =
     this.data.response?.detail.googleurl?.img ??
     this.data.response?.detail.motpurl?.img ??
@@ -67,16 +65,17 @@ export class TokenEnrollmentLastStepDialogComponent extends AbstractDialogCompon
     this.rollover ? $localize`Token Successfully Rolled Over` : $localize`Token Successfully Enrolled`
   );
 
-  showQRCode(): boolean {
-    return !NO_QR_CODE_TOKEN_TYPES.includes(this.data.tokenType);
-  }
-
   constructor() {
     super();
     this.dialogRef.afterClosed().subscribe(() => {
       this.tokenService.stopPolling();
     });
   }
+
+  showQRCode(): boolean {
+    return !NO_QR_CODE_TOKEN_TYPES.includes(this.data.tokenType);
+  }
+
 
   onSwitchRoute() {
     this.dialogRef.close();

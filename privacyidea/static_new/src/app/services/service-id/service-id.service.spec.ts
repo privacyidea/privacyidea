@@ -24,38 +24,30 @@ import { environment } from "@env/environment";
 import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
-import { MockContentService, MockPiResponse } from "@testing/mock-services";
+import { MockAuthService, MockContentService, MockNotificationService, MockPiResponse } from "@testing/mock-services";
 import { lastValueFrom, of } from "rxjs";
 import { ServiceIdService } from "./service-id.service";
 
 describe("ServiceIdService", () => {
   let service: ServiceIdService;
   let httpMock: HttpTestingController;
-  let notificationService: NotificationService;
+  let notifyMock: MockNotificationService;
   let contentService: MockContentService;
 
   beforeEach(() => {
-    const authServiceMock = {
-      getHeaders: jest.fn().mockReturnValue({}),
-      isSelfServiceUser: jest.fn().mockReturnValue(false)
-    };
-    const notificationServiceMock = {
-      success: jest.fn(),
-      error: jest.fn(),
-      warning: jest.fn()
-    };
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: AuthService, useValue: authServiceMock },
-        { provide: NotificationService, useValue: notificationServiceMock },
+        ServiceIdService,
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: NotificationService, useClass: MockNotificationService },
         { provide: ContentService, useClass: MockContentService }
       ]
     });
     service = TestBed.inject(ServiceIdService);
     httpMock = TestBed.inject(HttpTestingController);
-    notificationService = TestBed.inject(NotificationService);
+    notifyMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     contentService = TestBed.inject(ContentService) as unknown as MockContentService;
   });
 
@@ -76,7 +68,7 @@ describe("ServiceIdService", () => {
     req.flush({ result: { status: true } });
 
     await promise;
-    expect(notificationService.success).toHaveBeenCalledWith("Successfully saved service ID.");
+    expect(notifyMock.success).toHaveBeenCalledWith("Successfully saved service ID.");
   });
 
   it("should show error notification when posting service ID fails", async () => {
@@ -90,7 +82,7 @@ describe("ServiceIdService", () => {
     });
 
     await expect(promise).rejects.toThrow();
-    expect(notificationService.error).toHaveBeenCalledWith("Failed to save service ID. Something went wrong");
+    expect(notifyMock.error).toHaveBeenCalledWith("Failed to save service ID. Something went wrong");
   });
 
   it("should delete service ID", async () => {
@@ -101,7 +93,7 @@ describe("ServiceIdService", () => {
     req.flush({ result: { status: true } });
 
     await promise;
-    expect(notificationService.success).toHaveBeenCalledWith("Successfully deleted service ID: test/1.");
+    expect(notifyMock.success).toHaveBeenCalledWith("Successfully deleted service ID: test/1.");
   });
 
   it("should show error notification when deleting service ID fails", async () => {
@@ -114,7 +106,7 @@ describe("ServiceIdService", () => {
     });
 
     await expect(promise).rejects.toThrow();
-    expect(notificationService.error).toHaveBeenCalledWith("Failed to delete service ID. Something went wrong");
+    expect(notifyMock.error).toHaveBeenCalledWith("Failed to delete service ID. Something went wrong");
   });
 
   it("serviceIdResource should not do request and return undefined on unexpected route", () => {

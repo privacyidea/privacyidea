@@ -59,8 +59,8 @@ msgstr ""
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:91
 msgid ""
 "<li>Support and\n"
-"                        <a target=\"netknights\" href=\"https://netknights."
-"it/en/leistungen/service-level-agreements/\">\n"
+"                        <a target=\"netknights\" href=\"https://"
+"netknights.it/en/leistungen/service-level-agreements/\">\n"
 "                            Service Level Agreements by NetKnights</a>, "
 "Germany.\n"
 "                    </li>\n"
@@ -77,8 +77,8 @@ msgid ""
 "                    <li>Depending on the support level you get help with "
 "updates and yearly consultancy.</li>\n"
 "                    <li>By buying the\n"
-"                        <a target=\"netknights\" href=\"https://netknights."
-"it/en/produkte/privacyidea/\">privacyIDEA Enterprise Edition</a>\n"
+"                        <a target=\"netknights\" href=\"https://"
+"netknights.it/en/produkte/privacyidea/\">privacyIDEA Enterprise Edition</a>\n"
 "                        you ensure that professional developers can work "
 "full time\n"
 "                        on privacyIDEA, add new features and fix bugs in a "
@@ -88,8 +88,8 @@ msgid ""
 "                    </li>"
 msgstr ""
 "<li>Dukungan dan\n"
-"                        <a target=\"netknights\" href=\"https://netknights."
-"it/en/leistungen/service-level-agreements/\">\n"
+"                        <a target=\"netknights\" href=\"https://"
+"netknights.it/en/leistungen/service-level-agreements/\">\n"
 " Perjanjian Tingkat Layanan oleh NetKnights</a>, Jerman.\n"
 "              </li>\n"
 "                    <li>Paket enterprise stabil untuk Ubuntu dan RHEL "
@@ -589,7 +589,7 @@ msgstr "Audit"
 msgid "Authentication Server URI"
 msgstr "URI Server Autentikasi"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:431
+#: privacyidea/static/components/login/controllers/loginControllers.js:429
 msgid "Authentication failed."
 msgstr "Autentikasi gagal."
 
@@ -764,11 +764,11 @@ msgstr "Templat Sertifikat"
 msgid "Certificates Templates file"
 msgstr "File Templat Sertifikat"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:330
+#: privacyidea/static/components/login/controllers/loginControllers.js:328
 msgid "Challenge Response Authentication."
 msgstr "Autentikasi Respons Tantangan."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:409
+#: privacyidea/static/components/login/controllers/loginControllers.js:407
 msgid "Challenge Response Authentication. Your response was not valid!"
 msgstr "Autentikasi Respons Tantangan. Respons Anda tidak valid!"
 
@@ -1492,8 +1492,8 @@ msgstr "Jangan verifikasi keaslian"
 
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:15
 msgid ""
-"Do you really want to delete the Token {{ tokenSerial }} from user {{ token."
-"username }}?"
+"Do you really want to delete the Token {{ tokenSerial }} from user "
+"{{ token.username }}?"
 msgstr ""
 "Apakah Anda benar-benar ingin menghapus Token {{ tokenSerial }} dari "
 "pengguna {{ token.username }}?"
@@ -1516,7 +1516,7 @@ msgstr "Apakah Anda benar-benar ingin menghapus acara ini?"
 msgid "Do you really want to delete this machine resolver?"
 msgstr "Apakah Anda benar-benar ingin menghapus resolver mesin ini?"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:114
+#: privacyidea/static/components/login/controllers/loginControllers.js:116
 msgid "Do you really want to delete this object?"
 msgstr "Apakah Anda benar-benar ingin menghapus objek ini?"
 
@@ -1765,7 +1765,7 @@ msgstr "Daftarkan Token Baru"
 msgid "Enroll Token"
 msgstr "Daftarkan Token"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:125
+#: privacyidea/static/components/login/controllers/loginControllers.js:127
 #: privacyidea/static/components/token/controllers/tokenControllers.js:196
 #: privacyidea/static/components/token/views/token.enroll.html:1
 #: privacyidea/static/components/token/views/token.enroll.html:226
@@ -2066,15 +2066,15 @@ msgstr "Dapatkan Dokumentasi Sistem"
 msgid "Get available CAs"
 msgstr "Dapatkan CA yang tersedia"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:513
+#: privacyidea/static/components/login/controllers/loginControllers.js:511
 msgid "Get the Authenticator App for Android."
 msgstr "Dapatkan Aplikasi Autentikator untuk Android."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:520
+#: privacyidea/static/components/login/controllers/loginControllers.js:518
 msgid "Get the Authenticator App for iOS."
 msgstr "Dapatkan Aplikasi Autentikator untuk iOS."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:527
+#: privacyidea/static/components/login/controllers/loginControllers.js:525
 msgid "Get the Authenticator App."
 msgstr "Dapatkan Aplikasi Autentikator."
 
@@ -2596,7 +2596,7 @@ msgstr ""
 "Daftar definisi server\n"
 "                                privacyIDEA"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:133
+#: privacyidea/static/components/login/controllers/loginControllers.js:135
 msgid "List tokens"
 msgstr "Daftar token"
 
@@ -2628,7 +2628,7 @@ msgstr "Log"
 msgid "Log In"
 msgstr "Masuk"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:140
+#: privacyidea/static/components/login/controllers/loginControllers.js:142
 msgid "Log out"
 msgstr "Keluar"
 
@@ -3060,7 +3060,7 @@ msgstr "Ganti Klien Otorisasi"
 msgid "PGP Key"
 msgstr "Kunci PGP"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:758
+#: privacyidea/static/components/login/controllers/loginControllers.js:756
 msgid "PIN changed successfully."
 msgstr "PIN berhasil diubah."
 
@@ -3091,7 +3091,7 @@ msgstr "Parameter"
 msgid "Passkey Log In"
 msgstr "Masuk dengan Kunci Sandi"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:287
+#: privacyidea/static/components/login/controllers/loginControllers.js:289
 #, fuzzy
 msgid "Passkey login cancelled."
 msgstr "Masuk dengan Kunci Sandi"
@@ -3180,7 +3180,7 @@ msgstr "Nomor telepon"
 msgid "Please answer at least {{ num_answers }} of the following questions."
 msgstr "Harap jawab setidaknya {{ num_answers }} dari pertanyaan berikut."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:340
+#: privacyidea/static/components/login/controllers/loginControllers.js:338
 msgid "Please confirm with one of these tokens:"
 msgstr "Silakan konfirmasi dengan salah satu token berikut:"
 
@@ -3479,7 +3479,7 @@ msgstr "Ranah"
 msgid "Realm Name"
 msgstr "Nama Ranah"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:718
+#: privacyidea/static/components/login/controllers/loginControllers.js:716
 msgid "Realm defrealm created."
 msgstr "Ranah defrealm dibuat."
 
@@ -4137,8 +4137,8 @@ msgid ""
 msgstr ""
 "ID Layanan dapat digunakan untuk melampirkan misalnya kunci SSH ke mesin dan "
 "layanan tertentu.\n"
-"Untuk melihat token yang dilampirkan, buka <a ui-sref=\"token."
-"applications\">aplikasi token</a>."
+"Untuk melihat token yang dilampirkan, buka <a ui-"
+"sref=\"token.applications\">aplikasi token</a>."
 
 #: privacyidea/static/components/config/views/config.realms.list.html:31
 msgid "Set Default"
@@ -4242,7 +4242,7 @@ msgstr "Beberapa Aplikasi Autentikator hanya mendukung algoritma SHA1."
 msgid "Some nice words..."
 msgstr "Beberapa kata yang bagus..."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:397
+#: privacyidea/static/components/login/controllers/loginControllers.js:395
 msgid "Something went wrong!"
 msgstr "Ada yang tidak beres!"
 
@@ -4944,8 +4944,9 @@ msgid ""
 "validate.html\" target=\"_blank\">\n"
 "        validate API</a> but can also be handled by the\n"
 "    <a href=\"https://privacyidea.readthedocs.io/en/latest/modules/lib/"
-"tokentypes/yubikey.html#privacyidea.lib.tokens.yubikeytoken."
-"YubikeyTokenClass.api_endpoint\" target=\"_blank\">\n"
+"tokentypes/"
+"yubikey.html#privacyidea.lib.tokens.yubikeytoken.YubikeyTokenClass.api_endpoint\" "
+"target=\"_blank\">\n"
 "        Yubico Validation Protocol</a>."
 msgstr ""
 "Permintaan autentikasi dapat ditangani oleh privacyIDEA default\n"
@@ -4953,8 +4954,9 @@ msgstr ""
 "validate.html\" target=\"_blank\">\n"
 "        API validasi</a> tetapi juga dapat ditangani oleh\n"
 "    <a href=\"https://privacyidea.readthedocs.io/en/latest/modules/lib/"
-"tokentypes/yubikey.html#privacyidea.lib.tokens.yubikeytoken."
-"YubikeyTokenClass.api_endpoint\" target=\"_blank\">\n"
+"tokentypes/"
+"yubikey.html#privacyidea.lib.tokens.yubikeytoken.YubikeyTokenClass.api_endpoint\" "
+"target=\"_blank\">\n"
 "        Protokol Validasi Yubico</a>."
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:8
@@ -5352,8 +5354,8 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.details.html:615
 msgid ""
 "The token is currently assigned to container\n"
-"    <a ui-sref=\"token.containerdetails({containerSerial: "
-"containerSerial})\" ng-hide=\"!checkRight('container_list')\">\n"
+"    <a ui-sref=\"token.containerdetails({containerSerial: containerSerial})"
+"\" ng-hide=\"!checkRight('container_list')\">\n"
 "        {{ containerSerial }}\n"
 "    </a>\n"
 "    <span ng-hide=\"checkRight('container_list')\">{{ containerSerial }}</"
@@ -5361,8 +5363,8 @@ msgid ""
 "    ."
 msgstr ""
 "Token saat ini ditetapkan ke kontainer\n"
-"    <a ui-sref=\"token.containerdetails({containerSerial: "
-"containerSerial})\" ng-hide=\"!checkRight('container_list')\">\n"
+"    <a ui-sref=\"token.containerdetails({containerSerial: containerSerial})"
+"\" ng-hide=\"!checkRight('container_list')\">\n"
 "        {{ containerSerial }}\n"
 "    </a>\n"
 "    <span ng-hide=\"checkRight('container_list')\">{{ containerSerial }}</"
@@ -5398,33 +5400,33 @@ msgstr "Token berhasil ditandai sebagai hilang."
 #: privacyidea/static/components/token/views/token.enroll.html:179
 msgid ""
 "The token was successfully enrolled with serial number\n"
-"            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
-"serial})\">\n"
+"            <a ui-sref=\"token.details({tokenSerial:enrolledToken.serial})"
+"\">\n"
 "                {{ enrolledToken.serial }}</a>\n"
 "            for user\n"
-"            <a ui-sref=\"user.details({username:newUser.user, realmname:"
-"newUser.realm})\">{{ newUser.user }}</a> in realm\n"
+"            <a ui-sref=\"user.details({username:newUser.user, "
+"realmname:newUser.realm})\">{{ newUser.user }}</a> in realm\n"
 "            {{ newUser.realm }}."
 msgstr ""
 "The token was successfully enrolled with serial number\n"
-"            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
-"serial})\">\n"
+"            <a ui-sref=\"token.details({tokenSerial:enrolledToken.serial})"
+"\">\n"
 "       {{ enrolledToken.serial }}</a>\n"
 "            for user\n"
-"            <a ui-sref=\"user.details({username:newUser.user, realmname:"
-"newUser.realm})\">{{ newUser.user }}</a> in realm\n"
+"            <a ui-sref=\"user.details({username:newUser.user, "
+"realmname:newUser.realm})\">{{ newUser.user }}</a> in realm\n"
 "          {{ newUser.realm }}."
 
 #: privacyidea/static/components/token/views/token.enroll.html:188
 msgid ""
 "The token was successfully enrolled with serial number\n"
-"            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
-"serial})\">\n"
+"            <a ui-sref=\"token.details({tokenSerial:enrolledToken.serial})"
+"\">\n"
 "                {{ enrolledToken.serial }}</a>."
 msgstr ""
 "The token was successfully enrolled with serial number\n"
-"            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
-"serial})\">\n"
+"            <a ui-sref=\"token.details({tokenSerial:enrolledToken.serial})"
+"\">\n"
 "       {{ enrolledToken.serial }}</a>."
 
 #: privacyidea/static/components/config/views/config.token.webauthn.html:32
@@ -5818,8 +5820,8 @@ msgid ""
 "To define service IDs go to <a ui-sref=\"config.serviceid\">Service ID "
 "config</a>"
 msgstr ""
-"Untuk mendefinisikan ID layanan, buka <a ui-sref=\"config."
-"serviceid\">konfigurasi ID Layanan</a>"
+"Untuk mendefinisikan ID layanan, buka <a ui-"
+"sref=\"config.serviceid\">konfigurasi ID Layanan</a>"
 
 #: privacyidea/static/components/token/views/token.enroll.radius.html:9
 msgid ""
@@ -6373,7 +6375,7 @@ msgstr ""
 msgid "You are not authorized to delete the following tokens:"
 msgstr "Kontainer berisi token offline berikut:"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:613
+#: privacyidea/static/components/login/controllers/loginControllers.js:611
 msgid ""
 "You are using a certain amount of Push tokens. Note, that you need a valid "
 "subscription, to use Push tokens in push mode. Otherwise Push tokens will "
@@ -6478,7 +6480,7 @@ msgstr "Anda akan keluar dalam {{ myCountdown }} detik."
 msgid "Your CSR to the certificate authority failed."
 msgstr "CSR Anda ke otoritas sertifikat gagal."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:486
+#: privacyidea/static/components/login/controllers/loginControllers.js:484
 msgid "Your OTP pin expires on"
 msgstr "PIN OTP Anda kedaluwarsa pada"
 
@@ -6521,7 +6523,7 @@ msgstr ""
 msgid "Your secret phrase."
 msgstr "Frasa rahasia Anda."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:620
+#: privacyidea/static/components/login/controllers/loginControllers.js:618
 msgid "Your subscription for the privacyIDEA Authenticator has expired."
 msgstr "Langganan Anda untuk Autentikator privacyIDEA telah kedaluwarsa."
 

@@ -26,7 +26,7 @@
       subscriptSizing="dynamic">
       <mat-label i18n>Filter SMS Gateways...</mat-label>
       <app-clearable-input
-        (onClick)="resetFilter()"
+        (clearButtonClick)="resetFilter()"
         [showClearButton]="filterString().length > 0">
         <input
           #filterHTMLInputElement
@@ -49,10 +49,9 @@
     <button
       (click)="onCreateNewGateway()"
       class="action-button-primary button-width-l"
-      i18n
       mat-stroked-button>
       <mat-icon>add</mat-icon>
-      Create SMS Gateway
+      <span i18n>Create SMS Gateway</span>
     </button>
   </div>
   <table
@@ -60,25 +59,27 @@
     class="sms-gateways-table"
     mat-table
     matSort>
-
     <ng-container matColumnDef="name">
       <th
         *matHeaderCellDef
         i18n
         mat-header-cell
-        mat-sort-header> Name
+        mat-sort-header>
+        Name
       </th>
       <td
         *matCellDef="let gateway"
         mat-cell>
-        <div class="flex-row flex-nowrap ali-center">
+        <app-copyable [copyText]="gateway.name">
           <a
+            role="button"
+            tabindex="0"
             (click)="onEditGateway(gateway)"
+            (keydown.enter)="onEditGateway(gateway)"
             class="flex ali-center">
             {{ gateway.name }}
           </a>
-          <app-copy-button [copyText]="gateway.name" />
-        </div>
+        </app-copyable>
       </td>
     </ng-container>
 
@@ -87,11 +88,13 @@
         *matHeaderCellDef
         i18n
         mat-header-cell
-        mat-sort-header> Description
+        mat-sort-header>
+        Description
       </th>
       <td
         *matCellDef="let gateway"
-        mat-cell> {{ gateway.description }}
+        mat-cell>
+        {{ gateway.description }}
       </td>
     </ng-container>
 
@@ -100,11 +103,13 @@
         *matHeaderCellDef
         i18n
         mat-header-cell
-        mat-sort-header> Provider Module
+        mat-sort-header>
+        Provider Module
       </th>
       <td
         *matCellDef="let gateway"
-        mat-cell> {{ gateway.providermodule.split('.').pop() }}
+        mat-cell>
+        {{ gateway.providermodule.split(".").pop() }}
       </td>
     </ng-container>
 
@@ -112,7 +117,8 @@
       <th
         *matHeaderCellDef
         i18n
-        mat-header-cell> Actions
+        mat-header-cell>
+        Actions
       </th>
       <td
         *matCellDef="let gateway"
@@ -134,7 +140,7 @@
       *matHeaderRowDef="displayedColumns"
       mat-header-row></tr>
     <tr
-      *matRowDef="let row; columns: displayedColumns;"
+      *matRowDef="let row; columns: displayedColumns"
       mat-row></tr>
 
     <tr
@@ -143,7 +149,8 @@
       <td
         class="mat-cell"
         colspan="4"
-        i18n>No SMS gateways found.
+        i18n>
+        No SMS gateways found.
       </td>
     </tr>
   </table>

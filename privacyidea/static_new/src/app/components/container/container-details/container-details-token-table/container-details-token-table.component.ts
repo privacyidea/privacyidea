@@ -19,17 +19,17 @@
 
 import { NgClass } from "@angular/common";
 import {
+  AfterViewInit,
   Component,
   computed,
   ElementRef,
   inject,
-  Input,
+  input,
   linkedSignal,
   signal,
   ViewChild,
   WritableSignal
 } from "@angular/core";
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatIconButton } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
@@ -46,8 +46,9 @@ import {
   MatTableModule
 } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { ContainerDetailsTokenActionsComponent } from "@components/container/container-details/container-details-token-actions/container-details-token-actions.component";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
@@ -63,11 +64,11 @@ import { TokenDetails, TokenService, TokenServiceInterface } from "@services/tok
 
 type ComparisonStatus = "excess" | "missing" | "correct";
 
-type ContainerDetailTokenData = {
+interface ContainerDetailTokenData {
   token: ContainerDetailToken;
   columnKey: string;
   status: ComparisonStatus;
-};
+}
 
 @Component({
   selector: "app-container-details-token-table",
@@ -81,20 +82,19 @@ type ContainerDetailTokenData = {
     MatTable,
     MatTableModule,
     MatIconButton,
-    CopyButtonComponent,
-    ReactiveFormsModule,
-    FormsModule,
+    CopyableComponent,
     MatPaginatorModule,
     NgClass,
     MatIconModule,
     MatTooltipModule,
     MatInput,
-    ClearableInputComponent
+    ClearableInputComponent,
+    ContainerDetailsTokenActionsComponent
   ],
   templateUrl: "./container-details-token-table.component.html",
   styleUrl: "./container-details-token-table.component.scss"
 })
-export class ContainerDetailsTokenTableComponent {
+export class ContainerDetailsTokenTableComponent implements AfterViewInit {
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
@@ -109,9 +109,9 @@ export class ContainerDetailsTokenTableComponent {
   pageSize = 5;
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
   pageIndex = this.tokenService.pageIndex;
-  @Input() containerTokenData!: WritableSignal<MatTableDataSource<ContainerDetailToken, MatPaginator>>;
+  containerTokenData = input.required<MatTableDataSource<ContainerDetailToken, MatPaginator>>();
 
-  filterValue: WritableSignal<string> = signal("");
+  filterValue = signal("");
   containerSerial = this.containerService.containerSerial;
 
   assignedUser: WritableSignal<{
@@ -218,16 +218,18 @@ export class ContainerDetailsTokenTableComponent {
     return tokens.some((token) => token.username !== "");
   });
 
+  containerHasSingleUser = computed<boolean>(
+    () => this.containerService.containerDetails().containers.at(0)?.users.length === 1
+  );
+
   ngAfterViewInit(): void {
     const dataSource = this.dataSource();
     dataSource.paginator = this.paginator;
 
-    if (this.containerTokenData) {
-      const externalDataSource = this.containerTokenData();
-      externalDataSource.paginator = this.paginator;
-      (externalDataSource as any)._sort = this.sort;
-    }
-    (dataSource as any)._sort = this.sort;
+    const externalDataSource = this.containerTokenData();
+    externalDataSource.paginator = this.paginator;
+    (externalDataSource as unknown as { _sort: WritableSignal<Sort> })._sort = this.sort;
+    (dataSource as unknown as { _sort: WritableSignal<Sort> })._sort = this.sort;
 
     dataSource.filterPredicate = (data: ContainerDetailTokenData, filter: string) => {
       const row = data.token;
@@ -243,18 +245,14 @@ export class ContainerDetailsTokenTableComponent {
     const normalised = trimmed.toLowerCase();
     this.dataSource().filter = normalised;
 
-    if (this.containerTokenData) {
-      this.containerTokenData().filter = normalised;
-    }
+    this.containerTokenData().filter = normalised;
   }
 
   clearFilter(): void {
     this.filterValue.set("");
     this.dataSource().filter = "";
 
-    if (this.containerTokenData) {
-      this.containerTokenData().filter = "";
-    }
+    this.containerTokenData().filter = "";
   }
 
   removeTokenFromContainer(containerSerial: string, tokenSerial: string) {
@@ -262,10 +260,10 @@ export class ContainerDetailsTokenTableComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: "Remove Token",
+          title: $localize`Remove Token`,
           items: [tokenSerial],
           itemType: "token",
-          confirmAction: { label: "Remove", value: true, type: "destruct" }
+          confirmAction: { label: $localize`Remove`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -306,10 +304,10 @@ export class ContainerDetailsTokenTableComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: "Delete Token",
+          title: $localize`Delete Token`,
           items: [tokenSerial],
           itemType: "token",
-          confirmAction: { label: "Delete", value: true, type: "destruct" }
+          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -336,7 +334,7 @@ export class ContainerDetailsTokenTableComponent {
       })
       .subscribe({
         next: () => {
-          this.notificationService.success("User assigned to token");
+          this.notificationService.success($localize`User assigned to token`);
           this.containerService.containerDetailsResource.reload();
         }
       });

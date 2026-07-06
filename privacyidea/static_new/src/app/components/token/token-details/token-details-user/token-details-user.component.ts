@@ -18,7 +18,6 @@
  **/
 import { NgClass } from "@angular/common";
 import { Component, computed, inject, Input, signal, Signal, WritableSignal } from "@angular/core";
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger, MatOption } from "@angular/material/autocomplete";
 import { MatIconButton } from "@angular/material/button";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
@@ -26,7 +25,10 @@ import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
 import { MatCell, MatColumnDef, MatTableModule } from "@angular/material/table";
+import { AutofocusDirective } from "@components/shared/directives/app-autofocus.directive";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
 import { EditableElement, EditButtonsComponent } from "@components/shared/edit-buttons/edit-buttons.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
@@ -45,17 +47,18 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
     MatCell,
     MatFormField,
     MatInput,
-    ReactiveFormsModule,
     MatAutocompleteTrigger,
     MatAutocomplete,
     MatOption,
-    FormsModule,
     MatSelect,
     MatIconButton,
     MatIcon,
     EditButtonsComponent,
     NgClass,
-    ClearableInputComponent
+    ClearableInputComponent,
+    AutofocusDirective,
+    CopyableComponent,
+    DetailsCardComponent
   ],
   templateUrl: "./token-details-user.component.html",
   styleUrl: "./token-details-user.component.scss"
@@ -69,6 +72,9 @@ export class TokenDetailsUserComponent {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
 
   @Input() userData = signal<EditableElement[]>([]);
+  protected readonly userRealm = computed(
+    () => (this.userData().find((detail) => detail.keyMap.key === "user_realm")?.value as string) ?? ""
+  );
   @Input() tokenSerial!: WritableSignal<string>;
   @Input() isEditingUser!: WritableSignal<boolean>;
   @Input() isEditingInfo!: WritableSignal<boolean>;
@@ -109,6 +115,20 @@ export class TokenDetailsUserComponent {
           this.userService.selectionFilter.set("");
           this.userService.selectedUserRealm.set("");
           this.isEditingUser.update((b) => !b);
+          this.tokenService.tokenDetailResource.reload();
+        }
+      });
+  }
+
+  assignToSelf() {
+    this.tokenService
+      .assignUser({
+        tokenSerial: this.tokenSerial(),
+        username: this.authService.username(),
+        realm: this.authService.realm()
+      })
+      .subscribe({
+        next: () => {
           this.tokenService.tokenDetailResource.reload();
         }
       });

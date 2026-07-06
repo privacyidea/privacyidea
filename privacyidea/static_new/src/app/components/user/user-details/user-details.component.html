@@ -17,20 +17,22 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
-  appScrollToTop
-  aria-label="Details"
-  class="details-container"
-  i18n-aria-label>
+  #scrollContainer appScrollToTop aria-label="Details" class="details-container" i18n-aria-label>
   <div class="details-header">
-    <h3 i18n>Details for User:</h3>
-    <div class="flex-row flex-nowrap ali-center">
-      <h3 class="username-header">{{ userService.detailsUsername() }}</h3>
-      <app-copy-button [copyText]="userService.detailsUsername()"></app-copy-button>
-    </div>
-    <h3>in Realm {{ userService.selectedUserRealm() }}</h3>
+    <ng-container>
+      <h3 i18n>Details for User:</h3>
+      <app-copyable [copyText]="userService.detailsUser().username">
+        <h3 class="username-header">{{ userService.detailsUser().username }}</h3>
+      </app-copyable>
+      <h3 i18n>in Realm</h3>
+      <app-copyable [copyText]="userService.selectedUserRealm()">
+        <h3 class="margin-0">{{ userService.selectedUserRealm() }}</h3>
+      </app-copyable>
+    </ng-container>
     <button
       (click)="showUserAuditLog()"
       [routerLink]="[ROUTE_PATHS.AUDIT]"
+      i18n-matTooltip
       mat-icon-button
       matTooltip="Show audit log of user">
       <mat-icon>receipt_long</mat-icon>
@@ -38,21 +40,30 @@
   </div>
 
   @if (userData().editable) {
-    <div class="flex gap-8 margin-bottom-16">
+    <div
+      [appStickyHeader]="scrollContainer" class="flex gap-8 sticky-header">
       @if (authService.actionsAllowed(["updateuser", "resolverread"])) {
-        <button
-          (click)="editUser()"
-          class="action-button-secondary button-width-s"
-          mat-stroked-button>
-          <mat-icon>edit</mat-icon>
-          <span i18n>Edit</span>
-        </button>
+        @if (!editMode()) {
+          <button
+            (click)="editUser()" class="action-button-primary button-width-s" mat-stroked-button>
+            <mat-icon>edit</mat-icon>
+            <span i18n>Edit</span>
+          </button>
+        } @else {
+          <button
+            (click)="saveEdit()" class="action-button-primary button-width-s" mat-stroked-button>
+            <mat-icon>save</mat-icon>
+            <span i18n>Save</span>
+          </button>
+          <button
+            (click)="cancelEdit()" class="action-button-secondary button-width-s" mat-stroked-button>
+            <span i18n>Cancel</span>
+          </button>
+        }
       }
-      @if (authService.actionAllowed("deleteuser")) {
+      @if (authService.actionAllowed("deleteuser") && !editMode()) {
         <button
-          (click)="deleteUser()"
-          class="action-button-delete-secondary button-width-s"
-          mat-stroked-button>
+          (click)="deleteUser()" class="action-button-delete-secondary button-width-s" mat-stroked-button>
           <mat-icon>delete</mat-icon>
           <span i18n>Delete</span>
         </button>
@@ -60,26 +71,50 @@
     </div>
   }
 
-  <div class="user-details">
-    @for (col of detailsColumns(); track $index) {
-      <div class="user-details-column">
-        @for (item of col; track item.key) {
-          <div class="label">{{ item.label }}:</div>
-          @if (Array.isArray(item.value) && item.value.length > 1) {
-            <div class="value">
-              <ul class="no-indention margin-0">
-                @for (val of item.value; track val) {
-                  <li>{{ val }}</li>
-                }
-              </ul>
-            </div>
-          } @else {
-            <div class="value">{{ item.value }}</div>
+  @if (editMode()) {
+    <app-user-details-edit
+      (updateData)="onUpdateEditedUser($event)"
+      [initialUserData]="userData()"
+      [resolver]="userData().resolver"></app-user-details-edit>
+  } @else {
+    <div class="user-details">
+      @for (col of detailsColumns(); track $index) {
+        <div class="user-details-column">
+          @for (item of col; track item.key) {
+            <div class="label">{{ item.label }}:</div>
+            @if (Array.isArray(item.value) && item.value.length > 1) {
+              <div class="value">
+                <ul class="value-list">
+                  @if (isExpanded(item.key)) {
+                    @for (val of item.value; track val) {
+                      <li>{{ val }}</li>
+                    }
+                  } @else {
+                    <li>{{ item.value[0] }}</li>
+                  }
+                </ul>
+                <button
+                  (click)="toggleExpanded(item.key)"
+                  [attr.aria-expanded]="isExpanded(item.key)"
+                  class="value-toggle"
+                  type="button">
+                  @if (isExpanded(item.key)) {
+                    <mat-icon>expand_less</mat-icon>
+                    <span i18n>Show less</span>
+                  } @else {
+                    <mat-icon>expand_more</mat-icon>
+                    <span i18n>Show {{ item.value.length - 1 }} more</span>
+                  }
+                </button>
+              </div>
+            } @else {
+              <div class="value">{{ item.value }}</div>
+            }
           }
-        }
-      </div>
-    }
-  </div>
+        </div>
+      }
+    </div>
+  }
 
   <div class="flex-column">
     <div class="details-header">
@@ -90,21 +125,22 @@
         <mat-label i18n>Attribute Key</mat-label>
         <div class="flex-row">
           @if (keyMode() === "select") {
-            <mat-select [(ngModel)]="selectedKey">
+            <mat-select
+              (selectionChange)="selectedKey.set($event.value)" [value]="selectedKey()">
               @for (k of keyOptions(); track k) {
                 <mat-option [value]="k">{{ k }}</mat-option>
               }
               @if (hasWildcardKey()) {
                 <mat-option
-                  (onSelectionChange)="switchToCustomKey()"
-                  [value]="'__CUSTOM__'">
+                  (onSelectionChange)="switchToCustomKey()" [value]="'__CUSTOM__'">
                   <i i18n>Custom…</i>
                 </mat-option>
               }
             </mat-select>
           } @else {
             <input
-              [(ngModel)]="addKeyInput"
+              (input)="addKeyInput.set($event.target['value'])"
+              [value]="addKeyInput()"
               i18n-placeholder
               matInput
               placeholder="Enter key" />
@@ -128,12 +164,14 @@
 
         @if (isValueInput()) {
           <input
-            [(ngModel)]="addValueInput"
+            (input)="addValueInput.set($event.target['value'])"
+            [value]="addValueInput()"
             i18n-placeholder
             matInput
             placeholder="Enter value" />
         } @else {
-          <mat-select [(ngModel)]="selectedValue">
+          <mat-select
+            (selectionChange)="selectedValue.set($event.value)" [value]="selectedValue()">
             @for (v of valueOptions(); track v) {
               <mat-option [value]="v">{{ v }}</mat-option>
             }
@@ -146,7 +184,6 @@
         [disabled]="!canAddAttribute()"
         class="ml-8 margin-bottom-16"
         color="primary"
-        i18n
         mat-icon-button>
         <mat-icon>save</mat-icon>
       </button>
@@ -182,12 +219,10 @@
 
   <div class="flex-row filter-paginator-container margin-top-16">
     <mat-form-field
-      class="input-width-xl"
-      subscriptSizing="dynamic">
+      class="input-width-xl" subscriptSizing="dynamic">
       <mat-label i18n>Assign Token to User</mat-label>
       <app-clearable-input
-        (onClick)="tokenService.clearFilter()"
-        [showClearButton]="tokenService.tokenFilter().isNotEmpty">
+        (clearButtonClick)="tokenService.clearFilter()" [showClearButton]="tokenService.tokenFilter().isNotEmpty">
         <input
           #filterHTMLInputElement
           #tokenAutoTrigger="matAutocompleteTrigger"
@@ -201,16 +236,13 @@
       <mat-autocomplete #tokenAuto="matAutocomplete">
         @for (option of tokenDataSource().data; track option) {
           <mat-option
-            (click)="assignUserToToken(option)"
-            class="token-option">
+            (click)="assignUserToToken(option)" class="token-option">
             <span class="token-option-span">{{ option["serial"] }}</span>
             <span class="token-option-span">
               {{ option["tokentype"] }}
             </span>
             <span
-              [ngClass]="option['active'] ? 'highlight-true' : 'highlight-false'"
-              class="token-option-span"
-              i18n>
+              [ngClass]="option['active'] ? 'highlight-true' : 'highlight-false'" class="token-option-span" i18n>
               {{ option["active"] ? "active" : "deactivated" }}
             </span>
             <span class="token-option-span">
@@ -224,8 +256,8 @@
     <mat-paginator
       (page)="onPageEvent($event)"
       [length]="total()"
-      [pageSizeOptions]="pageSizeOptions()"
       [pageIndex]="pageIndex()"
+      [pageSizeOptions]="pageSizeOptions()"
       [pageSize]="pageSize()"
       showFirstLastButtons />
   </div>

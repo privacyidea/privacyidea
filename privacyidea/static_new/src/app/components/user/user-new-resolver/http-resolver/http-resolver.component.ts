@@ -17,8 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, effect, inject, input, linkedSignal, signal } from "@angular/core";
-import { toSignal } from "@angular/core/rxjs-interop";
-import { AbstractControl, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
+import { form, FormField } from "@angular/forms/signals";
 
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
@@ -37,23 +36,146 @@ import {
 import { MatError } from "@angular/material/form-field";
 import { MatDivider } from "@angular/material/list";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { ResolverService } from "@services/resolver/resolver.service";
+import {
+  EntraIDResolverData,
+  HTTPRequestConfig,
+  HTTPResolverData,
+  HTTPUserGroupsConfig,
+  KeycloakResolverData,
+  ResolverService
+} from "@services/resolver/resolver.service";
 import { parseBooleanValue } from "@utils/parse-boolean-value";
-import { HttpConfigComponent } from "./http-config/http-config.component";
-import { HttpGroupsAttributeComponent } from "./http-groups-attribute/http-groups-attribute.component";
+import { HttpConfigComponent, HttpConfigModel } from "./http-config/http-config.component";
+import { HttpGroupsAttributeComponent, UserGroupsModel } from "./http-groups-attribute/http-groups-attribute.component";
 
-export type AttributeMappingRow = {
+export interface AttributeMappingRow {
   privacyideaAttr: string | null;
   userStoreAttr: string;
   isCustom?: boolean;
+}
+
+export interface ClientCertificateModel {
+  private_key_file: string;
+  private_key_password: string;
+  certificate_fingerprint: string;
+}
+
+/**
+ * Shape of the `data` input / `serverDefaults`. The HTTP resolver UI supports
+ * Keycloak and EntraID variants, and additionally exposes the flat
+ * basic-mode fields (endpoint, method, headers, ...) that mirror the
+ * single-request `HTTPRequestConfig` plus simple user/password auth.
+ */
+export type HttpResolverInputData = HTTPResolverData &
+  Partial<EntraIDResolverData> &
+  Partial<KeycloakResolverData> &
+  Partial<HTTPRequestConfig> & {
+  username?: string;
+  password?: string;
 };
+
+export interface HttpResolverModel {
+  // Basic mode fields
+  endpoint: string;
+  method: string;
+  requestMapping: string;
+  headers: string;
+  responseMapping: string;
+  errorResponse: string;
+  // Advanced mode fields
+  base_url: string;
+  realm: string;
+  global_headers: string;
+  Editable: boolean;
+  verify_tls: boolean;
+  tls_ca_path: string;
+  timeout: number;
+  // Auth fields (non-entraid)
+  username: string;
+  password: string;
+  // Entraid fields
+  tenant: string;
+  client_id: string;
+  authority: string;
+  client_credential_type: string;
+  client_secret: string;
+  client_certificate: ClientCertificateModel;
+  // Nested config groups
+  config_authorization: HttpConfigModel;
+  config_user_auth: HttpConfigModel;
+  config_get_user_list: HttpConfigModel;
+  config_get_user_by_id: HttpConfigModel;
+  config_get_user_by_name: HttpConfigModel;
+  config_create_user: HttpConfigModel;
+  config_edit_user: HttpConfigModel;
+  config_delete_user: HttpConfigModel;
+  config_get_user_groups: UserGroupsModel;
+  attribute_mapping: Record<string, string>;
+}
+
+const EMPTY_HTTP_CONFIG: HttpConfigModel = {
+  method: "GET",
+  endpoint: "",
+  headers: "",
+  requestMapping: "",
+  responseMapping: "",
+  hasSpecialErrorHandler: false,
+  errorResponse: ""
+};
+
+const EMPTY_USER_GROUPS: UserGroupsModel = {
+  active: false,
+  pi_user_groups_key: "groups",
+  user_groups_attribute: "",
+  method: "GET",
+  endpoint: ""
+};
+
+function emptyHttpModel(): HttpResolverModel {
+  return {
+    endpoint: "",
+    method: "GET",
+    requestMapping: "",
+    headers: "",
+    responseMapping: "",
+    errorResponse: "",
+    base_url: "",
+    realm: "",
+    global_headers: "",
+    Editable: false,
+    verify_tls: true,
+    tls_ca_path: "",
+    timeout: 60,
+    username: "",
+    password: "",
+    tenant: "",
+    client_id: "",
+    authority: "",
+    client_credential_type: "secret",
+    client_secret: "",
+    client_certificate: {
+      private_key_file: "",
+      private_key_password: "",
+      certificate_fingerprint: ""
+    },
+    config_authorization: { ...EMPTY_HTTP_CONFIG },
+    config_user_auth: { ...EMPTY_HTTP_CONFIG },
+    config_get_user_list: { ...EMPTY_HTTP_CONFIG },
+    config_get_user_by_id: { ...EMPTY_HTTP_CONFIG },
+    config_get_user_by_name: { ...EMPTY_HTTP_CONFIG },
+    config_create_user: { ...EMPTY_HTTP_CONFIG },
+    config_edit_user: { ...EMPTY_HTTP_CONFIG },
+    config_delete_user: { ...EMPTY_HTTP_CONFIG },
+    config_get_user_groups: { ...EMPTY_USER_GROUPS },
+    attribute_mapping: {}
+  };
+}
 
 @Component({
   selector: "app-http-resolver",
   standalone: true,
   imports: [
-    FormsModule,
-    ReactiveFormsModule,
+    FormField,
     MatFormField,
     MatLabel,
     MatError,
@@ -92,68 +214,137 @@ export class HttpResolverComponent {
   protected readonly displayedColumns: string[] = ["privacyideaAttr", "userStoreAttr", "actions"];
   protected readonly CUSTOM_ATTR_VALUE = "__custom__";
   private resolverService = inject(ResolverService);
-  data = input({});
+  data = input<HttpResolverInputData>({});
   type = input<string>("httpresolver");
-  serverDefaults = signal<any>({});
-  mergedData = computed(() => {
+  serverDefaults = signal<HttpResolverInputData>({});
+  mergedData = computed<HttpResolverInputData>(() => {
     const data = this.data();
     if (data && Object.keys(data).length > 0) {
       return data;
     }
     return this.serverDefaults();
   });
-  isAdvanced: boolean = false;
-  isAuthorizationExpanded: boolean = false;
-  endpointControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
-  methodControl = new FormControl<string>("GET", { nonNullable: true, validators: [Validators.required] });
-  requestMappingControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
-  headersControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
-  responseMappingControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
-  errorResponseControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
-  baseUrlControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
-  tenantControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
-  clientIdControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
-  clientSecretControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
+  isAdvanced = false;
+  isAuthorizationExpanded = false;
 
-  realmControl = new FormControl<string>("", { nonNullable: true });
-  globalHeadersControl = new FormControl<string>("", { nonNullable: true });
-  editableControl = new FormControl<boolean>(false, { nonNullable: true });
-  verifyTlsControl = new FormControl<boolean>(true, { nonNullable: true });
-  tlsCaPathControl = new FormControl<string>("", { nonNullable: true });
-  timeoutControl = new FormControl<number>(60, { nonNullable: true });
-  usernameControl = new FormControl<string>("", { nonNullable: true });
-  passwordControl = new FormControl<string>("", { nonNullable: true });
-  authorityControl = new FormControl<string>("", { nonNullable: true });
-  clientCredentialTypeControl = new FormControl<string>("secret", { nonNullable: true });
-  clientCredentialType = toSignal(this.clientCredentialTypeControl.valueChanges, {
-    initialValue: this.clientCredentialTypeControl.value
-  });
-  verifyTls = toSignal(this.verifyTlsControl.valueChanges, { initialValue: this.verifyTlsControl.value });
-  editable = toSignal(this.editableControl.valueChanges, { initialValue: this.editableControl.value });
+  model = signal<HttpResolverModel>(emptyHttpModel());
 
-  clientCertificateGroup = new FormGroup({
-    private_key_file: new FormControl<string>("", { nonNullable: true }),
-    private_key_password: new FormControl<string>("", { nonNullable: true }),
-    certificate_fingerprint: new FormControl<string>("", { nonNullable: true })
+  httpForm = form(this.model, () => {
+    // Validators applied conditionally in template, but form-level validation
+    // is handled via isValid() which checks required fields based on mode
   });
 
-  attributeMappingControl = new FormControl<Record<string, string>>({}, { nonNullable: true });
-  userGroupsControl = new FormGroup({
-    active: new FormControl<boolean>(false, { nonNullable: true }),
-    pi_user_groups_key: new FormControl<string>("groups"),
-    user_groups_attribute: new FormControl<string>(""),
-    method: new FormControl<string>("GET"),
-    endpoint: new FormControl<string>("")
+  // Expose nested sub-signals for sub-components
+  configAuthorizationModel = computed(() => {
+    const currentModel = this.model();
+    return {
+      get: () => currentModel.config_authorization,
+      update: (fn: (config: HttpConfigModel) => HttpConfigModel) => {
+        this.model.update((model) => ({ ...model, config_authorization: fn(model.config_authorization) }));
+      }
+    };
   });
 
-  configAuthorizationGroup = this.createConfigGroup();
-  configUserAuthGroup = this.createConfigGroup();
-  configGetUserListGroup = this.createConfigGroup();
-  configGetUserByIdGroup = this.createConfigGroup();
-  configGetUserByNameGroup = this.createConfigGroup();
-  configCreateUserGroup = this.createConfigGroup();
-  configEditUserGroup = this.createConfigGroup();
-  configDeleteUserGroup = this.createConfigGroup();
+  constructor() {
+    effect(() => {
+      this.syncControls();
+    });
+
+    effect(
+      () => {
+        if (Object.keys(this.data()).length === 0) {
+          this.resolverService.getDefaultResolverConfig(this.type()).subscribe((resp) => {
+            if (resp.result?.status && resp.result?.value) {
+              this.serverDefaults.set(resp.result.value as HttpResolverInputData);
+            }
+          });
+        }
+      },
+      { allowSignalWrites: true }
+    );
+
+    effect(() => {
+      const basic = this.basicSettings();
+      const data = this.mergedData();
+      if (!basic && !this.model().responseMapping) {
+        if (data.responseMapping === undefined) {
+          this.model.update((m) => ({
+            ...m,
+            responseMapping: "{\"username\":\"{username}\", \"userid\":\"{userid}\"}"
+          }));
+        }
+        if (data.verify_tls === undefined) {
+          this.model.update((m) => ({ ...m, verify_tls: true }));
+        }
+      }
+      if (basic && this.model().responseMapping) {
+        if (data.responseMapping === undefined) {
+          this.model.update((m) => ({ ...m, responseMapping: "" }));
+        }
+        if (data.verify_tls === undefined) {
+          this.model.update((m) => ({ ...m, verify_tls: false }));
+        }
+      }
+    });
+
+    // Sync sub-component models to main model when they change
+    effect(() => {
+      const auth = this.configAuthModel();
+      this.model.update((m) => ({ ...m, config_authorization: auth }));
+    });
+    effect(() => {
+      const userAuth = this.configUserAuthModel();
+      this.model.update((m) => ({ ...m, config_user_auth: userAuth }));
+    });
+    effect(() => {
+      const list = this.configGetUserListModel();
+      this.model.update((m) => ({ ...m, config_get_user_list: list }));
+    });
+    effect(() => {
+      const byId = this.configGetUserByIdModel();
+      this.model.update((m) => ({ ...m, config_get_user_by_id: byId }));
+    });
+    effect(() => {
+      const byName = this.configGetUserByNameModel();
+      this.model.update((m) => ({ ...m, config_get_user_by_name: byName }));
+    });
+    effect(() => {
+      const create = this.configCreateUserModel();
+      this.model.update((m) => ({ ...m, config_create_user: create }));
+    });
+    effect(() => {
+      const edit = this.configEditUserModel();
+      this.model.update((m) => ({ ...m, config_edit_user: edit }));
+    });
+    effect(() => {
+      const del = this.configDeleteUserModel();
+      this.model.update((m) => ({ ...m, config_delete_user: del }));
+    });
+    effect(() => {
+      const groups = this.userGroupsModel();
+      this.model.update((m) => ({ ...m, user_groups: groups }));
+    });
+  }
+
+  isValid = () => {
+    const currentModel = this.model();
+    const basic = this.basicSettings();
+    if (!basic && this.isAdvanced) {
+      return !!currentModel.base_url;
+    }
+    if (basic) {
+      return (
+        !!currentModel.endpoint &&
+        !!currentModel.method &&
+        !!currentModel.requestMapping &&
+        !!currentModel.headers &&
+        !!currentModel.responseMapping
+      );
+    }
+    return !!currentModel.base_url;
+  };
+  isDirty = () => this.httpForm().dirty();
+  getValue = () => this.model();
 
   checkUserPasswordHint = computed(() => {
     if (this.type() === "entraidresolver") {
@@ -161,63 +352,21 @@ export class HttpResolverComponent {
     }
     return $localize`Possible tags: ` + `{userid} {username} {password}`;
   });
-
+  // Signals derived from model for reactive sub-component inputs
+  configAuthModel = signal<HttpConfigModel>({ ...EMPTY_HTTP_CONFIG });
+  configUserAuthModel = signal<HttpConfigModel>({ ...EMPTY_HTTP_CONFIG });
+  configGetUserListModel = signal<HttpConfigModel>({ ...EMPTY_HTTP_CONFIG });
+  configGetUserByIdModel = signal<HttpConfigModel>({ ...EMPTY_HTTP_CONFIG });
+  configGetUserByNameModel = signal<HttpConfigModel>({ ...EMPTY_HTTP_CONFIG });
+  configCreateUserModel = signal<HttpConfigModel>({ ...EMPTY_HTTP_CONFIG });
+  configEditUserModel = signal<HttpConfigModel>({ ...EMPTY_HTTP_CONFIG });
+  configDeleteUserModel = signal<HttpConfigModel>({ ...EMPTY_HTTP_CONFIG });
+  userGroupsModel = signal<UserGroupsModel>({ ...EMPTY_USER_GROUPS });
   protected basicSettings = linkedSignal<boolean>(() => {
     if (this.isAdvanced) {
       return false;
     }
     return this.mergedData().base_url === undefined;
-  });
-  controls = computed<Record<string, AbstractControl>>(() => {
-    const controls: Record<string, AbstractControl> = {};
-    const data = this.mergedData();
-
-    if (!this.isAdvanced && this.basicSettings()) {
-      controls["endpoint"] = this.endpointControl;
-      controls["method"] = this.methodControl;
-      controls["requestMapping"] = this.requestMappingControl;
-      controls["headers"] = this.headersControl;
-      controls["responseMapping"] = this.responseMappingControl;
-
-      if (data?.hasSpecialErrorHandler) {
-        controls["errorResponse"] = this.errorResponseControl;
-      }
-    } else {
-      controls["base_url"] = this.baseUrlControl;
-      controls["realm"] = this.realmControl;
-      controls["headers"] = this.globalHeadersControl;
-      controls["Editable"] = this.editableControl;
-      controls["verify_tls"] = this.verifyTlsControl;
-      controls["tls_ca_path"] = this.tlsCaPathControl;
-      controls["timeout"] = this.timeoutControl;
-      controls["attribute_mapping"] = this.attributeMappingControl;
-
-      controls["config_authorization"] = this.configAuthorizationGroup;
-      controls["config_user_auth"] = this.configUserAuthGroup;
-      controls["config_get_user_list"] = this.configGetUserListGroup;
-      controls["config_get_user_by_id"] = this.configGetUserByIdGroup;
-      controls["config_get_user_by_name"] = this.configGetUserByNameGroup;
-      controls["config_create_user"] = this.configCreateUserGroup;
-      controls["config_edit_user"] = this.configEditUserGroup;
-      controls["config_delete_user"] = this.configDeleteUserGroup;
-      controls["config_get_user_groups"] = this.userGroupsControl;
-
-      if (this.type() === "entraidresolver") {
-        controls["tenant"] = this.tenantControl;
-        controls["client_id"] = this.clientIdControl;
-        controls["authority"] = this.authorityControl;
-        controls["client_credential_type"] = this.clientCredentialTypeControl;
-        controls["client_certificate"] = this.clientCertificateGroup;
-
-        if (this.clientCredentialType() === "secret") {
-          controls["client_secret"] = this.clientSecretControl;
-        }
-      } else {
-        controls["username"] = this.usernameControl;
-        controls["password"] = this.passwordControl;
-      }
-    }
-    return controls;
   });
   protected defaultMapping = signal<AttributeMappingRow[]>([
     { privacyideaAttr: "userid", userStoreAttr: "userid" },
@@ -225,7 +374,7 @@ export class HttpResolverComponent {
   ]);
   protected mappingRows = linkedSignal<AttributeMappingRow[]>(() => {
     const existing = this.mergedData()?.attribute_mapping;
-    let rows: AttributeMappingRow[] = [];
+    let rows: AttributeMappingRow[];
     if (existing && Object.keys(existing).length > 0) {
       rows = Object.entries(existing).map(([privacyideaAttr, userStoreAttr]) => ({
         privacyideaAttr,
@@ -247,53 +396,6 @@ export class HttpResolverComponent {
     });
   });
 
-  constructor() {
-    effect(() => {
-      this.syncControls();
-    });
-
-    effect(
-      () => {
-        if (Object.keys(this.data()).length === 0) {
-          this.resolverService.getDefaultResolverConfig(this.type()).subscribe((resp) => {
-            if (resp.result?.status && resp.result?.value) {
-              this.serverDefaults.set(resp.result.value);
-            }
-          });
-        }
-      },
-      { allowSignalWrites: true }
-    );
-
-    effect(() => {
-      const basic = this.basicSettings();
-      const data = this.mergedData();
-      if (!basic && !this.responseMappingControl.value) {
-        if (data.responseMapping === undefined) {
-          this.responseMappingControl.setValue('{"username":"{username}", "userid":"{userid}"}');
-        }
-        if (data.verify_tls === undefined) {
-          this.verifyTlsControl.setValue(true);
-        }
-      }
-      if (basic && this.responseMappingControl.value) {
-        if (data.responseMapping === undefined) {
-          this.responseMappingControl.setValue("");
-        }
-        if (data.verify_tls === undefined) {
-          this.verifyTlsControl.setValue(false);
-        }
-      }
-    });
-
-    effect(() => {
-      if (this.verifyTls()) {
-        this.tlsCaPathControl.enable({ emitEvent: false });
-      } else {
-        this.tlsCaPathControl.disable({ emitEvent: false });
-      }
-    });
-  }
 
   setCustomAttr(rowIndex: number, customValue: string): void {
     const v = (customValue ?? "").trim();
@@ -343,97 +445,124 @@ export class HttpResolverComponent {
     this.syncMappingToData();
   }
 
-  protected createConfigGroup() {
-    return new FormGroup({
-      method: new FormControl<string>("GET", { nonNullable: true }),
-      endpoint: new FormControl<string>("", { nonNullable: true }),
-      headers: new FormControl<string>("", { nonNullable: true }),
-      requestMapping: new FormControl<string>("", { nonNullable: true }),
-      responseMapping: new FormControl<string>("", { nonNullable: true }),
-      hasSpecialErrorHandler: new FormControl<boolean>(false, { nonNullable: true }),
-      errorResponse: new FormControl<string>("", { nonNullable: true })
-    });
-  }
-
   protected syncControls(): void {
     const data = this.mergedData();
     if (!data) return;
 
-    if (data.endpoint !== undefined) this.endpointControl.setValue(data.endpoint);
-    if (data.method !== undefined) this.methodControl.setValue(data.method.toUpperCase());
-    if (data.requestMapping !== undefined)
-      this.requestMappingControl.setValue(this.formatConfigValue(data.requestMapping));
-    if (data.headers !== undefined) this.headersControl.setValue(this.formatConfigValue(data.headers));
-    if (data.responseMapping !== undefined)
-      this.responseMappingControl.setValue(this.formatConfigValue(data.responseMapping));
-    if (data.errorResponse !== undefined)
-      this.errorResponseControl.setValue(this.formatConfigValue(data.errorResponse));
-    if (data.base_url !== undefined) this.baseUrlControl.setValue(data.base_url);
-    if (data.tenant !== undefined) this.tenantControl.setValue(data.tenant);
-    if (data.client_id !== undefined) this.clientIdControl.setValue(data.client_id);
-    if (data.client_secret !== undefined) this.clientSecretControl.setValue(data.client_secret);
+    const updates: Partial<HttpResolverModel> = {};
 
-    if (data.realm !== undefined) this.realmControl.setValue(data.realm);
-    if (data.headers !== undefined) this.globalHeadersControl.setValue(this.formatConfigValue(data.headers));
-    if (data.Editable !== undefined) this.editableControl.setValue(parseBooleanValue(data.Editable));
-    if (data.verify_tls !== undefined) this.verifyTlsControl.setValue(parseBooleanValue(data.verify_tls));
-    if (data.tls_ca_path !== undefined) this.tlsCaPathControl.setValue(data.tls_ca_path);
-    if (data.timeout !== undefined) this.timeoutControl.setValue(Number(data.timeout));
-    if (data.username !== undefined) this.usernameControl.setValue(data.username);
-    if (data.password !== undefined) this.passwordControl.setValue(data.password);
-    if (data.authority !== undefined) this.authorityControl.setValue(data.authority);
-    if (data.client_credential_type !== undefined)
-      this.clientCredentialTypeControl.setValue(data.client_credential_type);
+    if (data.endpoint !== undefined) updates.endpoint = data.endpoint;
+    if (data.method !== undefined) updates.method = data.method.toUpperCase();
+    if (data.requestMapping !== undefined) updates.requestMapping = this.formatConfigValue(data.requestMapping);
+    if (data.headers !== undefined) updates.headers = this.formatConfigValue(data.headers);
+    if (data.responseMapping !== undefined) updates.responseMapping = this.formatConfigValue(data.responseMapping);
+    if (data.errorResponse !== undefined) updates.errorResponse = this.formatConfigValue(data.errorResponse);
+    if (data.base_url !== undefined) updates.base_url = data.base_url;
+    if (data.tenant !== undefined) updates.tenant = data.tenant;
+    if (data.client_id !== undefined) updates.client_id = data.client_id;
+    if (data.client_secret !== undefined) updates.client_secret = data.client_secret;
+    if (data.realm !== undefined) updates.realm = data.realm;
+    if (data.headers !== undefined) updates.global_headers = this.formatConfigValue(data.headers);
+    if (data.Editable !== undefined) updates.Editable = parseBooleanValue(data.Editable);
+    if (data.verify_tls !== undefined) updates.verify_tls = parseBooleanValue(data.verify_tls);
+    if (data.tls_ca_path !== undefined) updates.tls_ca_path = data.tls_ca_path;
+    if (data.timeout !== undefined) updates.timeout = Number(data.timeout);
+    if (data.username !== undefined) updates.username = data.username;
+    if (data.password !== undefined) updates.password = data.password;
+    if (data.authority !== undefined) updates.authority = data.authority;
+    if (data.client_credential_type !== undefined) updates.client_credential_type = data.client_credential_type;
 
     if (data.client_certificate) {
-      this.clientCertificateGroup.patchValue(data.client_certificate);
+      updates.client_certificate = {
+        private_key_file: data.client_certificate.private_key_file || "",
+        private_key_password: data.client_certificate.private_key_password || "",
+        certificate_fingerprint: data.client_certificate.certificate_fingerprint || ""
+      };
     }
 
     if (data.attribute_mapping) {
-      this.attributeMappingControl.setValue(data.attribute_mapping);
+      updates.attribute_mapping = data.attribute_mapping;
     } else {
       this.syncMappingToData();
     }
-    this.syncGroup(this.userGroupsControl, data.config_get_user_groups);
 
-    this.syncGroup(this.configAuthorizationGroup, data.config_authorization);
-    this.syncGroup(this.configUserAuthGroup, data.config_user_auth);
-    this.syncGroup(this.configGetUserListGroup, data.config_get_user_list);
-    this.syncGroup(this.configGetUserByIdGroup, data.config_get_user_by_id);
-    this.syncGroup(this.configGetUserByNameGroup, data.config_get_user_by_name);
-    this.syncGroup(this.configCreateUserGroup, data.config_create_user);
-    this.syncGroup(this.configEditUserGroup, data.config_edit_user);
-    this.syncGroup(this.configDeleteUserGroup, data.config_delete_user);
-  }
-
-  protected syncGroup(group: FormGroup, config: any) {
-    if (config) {
-      const sanitizedConfig = { ...config };
-      if (sanitizedConfig.method) {
-        sanitizedConfig.method = sanitizedConfig.method.toUpperCase();
-      }
-      ["headers", "requestMapping", "responseMapping", "errorResponse"].forEach((field) => {
-        if (sanitizedConfig[field] !== undefined) {
-          sanitizedConfig[field] = this.formatConfigValue(sanitizedConfig[field]);
-        }
-      });
-      group.patchValue(sanitizedConfig);
+    if (Object.keys(updates).length > 0) {
+      this.model.update((m) => ({ ...m, ...updates }));
     }
+
+    const userGroupsCfg = data.config_get_user_groups;
+    if (userGroupsCfg) {
+      this.userGroupsModel.update((g) => ({ ...g, ...this.sanitizeConfig(userGroupsCfg) }));
+    }
+    const authCfg = data.config_authorization;
+    if (authCfg) {
+      this.configAuthModel.update((c) => ({ ...c, ...this.sanitizeConfig(authCfg) }));
+    }
+    const userAuthCfg = data.config_user_auth;
+    if (userAuthCfg && typeof userAuthCfg !== "string") {
+      this.configUserAuthModel.update((c) => ({ ...c, ...this.sanitizeConfig(userAuthCfg) }));
+    }
+    const listCfg = data.config_get_user_list;
+    if (listCfg) {
+      this.configGetUserListModel.update((c) => ({ ...c, ...this.sanitizeConfig(listCfg) }));
+    }
+    const byIdCfg = data.config_get_user_by_id;
+    if (byIdCfg) {
+      this.configGetUserByIdModel.update((c) => ({ ...c, ...this.sanitizeConfig(byIdCfg) }));
+    }
+    const byNameCfg = data.config_get_user_by_name;
+    if (byNameCfg) {
+      this.configGetUserByNameModel.update((c) => ({ ...c, ...this.sanitizeConfig(byNameCfg) }));
+    }
+    const createCfg = data.config_create_user;
+    if (createCfg) {
+      this.configCreateUserModel.update((c) => ({ ...c, ...this.sanitizeConfig(createCfg) }));
+    }
+    const editCfg = data.config_edit_user;
+    if (editCfg) {
+      this.configEditUserModel.update((c) => ({ ...c, ...this.sanitizeConfig(editCfg) }));
+    }
+    const deleteCfg = data.config_delete_user;
+    if (deleteCfg) {
+      this.configDeleteUserModel.update((c) => ({ ...c, ...this.sanitizeConfig(deleteCfg) }));
+    }
+
+    this.httpForm().reset();
   }
 
-  private formatConfigValue(value: {} | null): string {
+  protected onMappingChanged(): void {
+    this.mappingRows.set([...this.mappingRows()]);
+    this.syncMappingToData();
+  }
+
+  private sanitizeConfig<T extends HTTPRequestConfig | HTTPUserGroupsConfig>(
+    config: T
+  ): T & { headers?: string; requestMapping?: string; responseMapping?: string; errorResponse?: string } {
+    const sanitized: Record<string, unknown> = { ...config };
+    if (typeof sanitized["method"] === "string") {
+      sanitized["method"] = (sanitized["method"] as string).toUpperCase();
+    }
+    (["headers", "requestMapping", "responseMapping", "errorResponse"] as const).forEach((field) => {
+      if (sanitized[field] !== undefined) {
+        sanitized[field] = this.formatConfigValue(sanitized[field] as Record<string, unknown> | string | null);
+      }
+    });
+    return sanitized as T & {
+      headers?: string;
+      requestMapping?: string;
+      responseMapping?: string;
+      errorResponse?: string;
+    };
+  }
+
+  private formatConfigValue(value: Record<string, unknown> | string | null | undefined): string {
     if (typeof value === "object" && value !== null) {
       if (Object.keys(value).length === 0) {
         return "";
       }
       return JSON.stringify(value);
     }
-    return <string>value ?? "";
-  }
-
-  protected onMappingChanged(): void {
-    this.mappingRows.set([...this.mappingRows()]);
-    this.syncMappingToData();
+    return value != null ? String(value) : "";
   }
 
   private syncMappingToData(): void {
@@ -447,6 +576,6 @@ export class HttpResolverComponent {
       }
     }
 
-    this.attributeMappingControl.setValue(map);
+    this.model.update((m) => ({ ...m, attribute_mapping: map }));
   }
 }

@@ -68,7 +68,7 @@ application_tokentype
 type: ``bool``
 
 If this policy is set, an application may add a parameter ``type`` as
-tokentype in the authentication request like ``validate/check``, ``validate/samlcheck``
+tokentype in the authentication request like ``validate/check``
 or ``validate/triggerchallenge``.
 
 Then the application can determine via this parameter, which tokens of a user
@@ -284,6 +284,12 @@ type: ``bool``
 In case of a successful authentication additional user information is added
 to the response. A dictionary containing user information is added in
 ``detail->user``.
+
+.. note:: This policy only fires on a successful authentication. There is
+   no equivalent of the removed ``ReturnSamlAttributesOnFail`` option that
+   returned user attributes on a failed authentication; relying parties that
+   need user data after a failed authentication must look the user up
+   themselves.
 
 .. _policy_add_resolver_in_response:
 

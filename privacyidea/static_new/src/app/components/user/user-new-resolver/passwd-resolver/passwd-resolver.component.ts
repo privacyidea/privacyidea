@@ -16,38 +16,46 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, input } from "@angular/core";
-import { FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
+import { Component, effect, input, signal } from "@angular/core";
+import { form, FormField, required } from "@angular/forms/signals";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { PasswdResolverData } from "@services/resolver/resolver.service";
 
+interface PasswdFormModel {
+  fileName: string;
+}
+
 @Component({
   selector: "app-passwd-resolver",
   standalone: true,
-  imports: [FormsModule, ReactiveFormsModule, MatFormField, MatLabel, MatInput, MatError, ClearableInputComponent],
+  imports: [FormField, MatFormField, MatLabel, MatInput, MatError, ClearableInputComponent],
   templateUrl: "./passwd-resolver.component.html",
   styleUrl: "./passwd-resolver.component.scss"
 })
 export class PasswdResolverComponent {
   data = input<Partial<PasswdResolverData>>({});
 
-  filenameControl = new FormControl<string>("", {
-    nonNullable: true,
-    validators: [Validators.required]
-  });
+  model = signal<PasswdFormModel>({ fileName: "" });
 
-  controls = computed(() => ({
-    fileName: this.filenameControl
-  }));
+  passwdForm = form(this.model, (f) => {
+    required(f.fileName);
+  });
 
   constructor() {
     effect(() => {
       const initial = this.data()?.fileName || this.data()?.filename;
       if (initial !== undefined) {
-        this.filenameControl.setValue(initial, { emitEvent: false });
+        this.model.set({ fileName: initial });
+        this.passwdForm().reset();
       }
     });
   }
+
+  isValid = () => this.passwdForm().valid();
+  isDirty = () => this.passwdForm().dirty();
+  getValue = () => this.model();
+
+
 }

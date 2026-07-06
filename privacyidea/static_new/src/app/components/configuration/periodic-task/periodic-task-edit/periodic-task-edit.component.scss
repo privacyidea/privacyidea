@@ -1,0 +1,81 @@
+@use "styles";
+
+.periodic-task-page-layout {
+  @include styles.main-component-style;
+  // Shared detail/edit-page cap. See --detail-max-height in styles.scss.
+  max-height: var(--table-max-height);
+}
+
+.page-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--global-gap);
+  margin-bottom: 16px;
+}
+
+.periodic-task-name-color {
+  color: var(--mat-sys-primary);
+}
+
+.task-metadata {
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.875rem;
+}
+
+.metadata-row {
+  margin-bottom: 4px;
+}
+
+.metadata-label {
+  font-weight: 500;
+  margin-right: 8px;
+}
+
+.no-indention {
+  padding-left: var(--global-padding);
+}
+
+.options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: var(--global-gap);
+}
+
+.option-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--half-global-gap);
+  padding: 12px 16px;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: var(--border-radius);
+}
+
+.option-row {
+  display: flex;
+  align-items: center;
+  gap: var(--half-global-gap);
+}
+
+.option-name {
+  font-weight: 500;
+}
+
+.option-required {
+  color: var(--mat-sys-error);
+  margin-left: 4px;
+}
+
+.option-description {
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.875rem;
+}
+
+.example-grid {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: var(--global-gap);
+  padding: 0;
+  border: 0;
+  margin-bottom: auto;
+}

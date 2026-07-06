@@ -1,3 +1,9 @@
+@use "styles";
+
+:host {
+  display: block;
+}
+
 .full-width {
   width: 100%;
 }

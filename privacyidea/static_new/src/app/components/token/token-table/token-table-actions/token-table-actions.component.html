@@ -16,88 +16,57 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div appOverflowNav class="flex-row gap-8">
-  <button
-    data-overflow-pinned
-    [routerLink]="[ROUTE_PATHS.TOKENS_ENROLLMENT]"
-    class="action-button-primary button-width-m"
-    mat-stroked-button>
-    <mat-icon> add_moderator</mat-icon>
-    Enroll Token
-  </button>
-  <button
-    data-overflow-pinned
-    [matMenuTriggerFor]="advancedFilterMenu"
-    class="action-button-secondary button-width-m"
-    i18n
-    mat-stroked-button>
-    <mat-icon> filter_list</mat-icon>
-    More Filter
-  </button>
-  <mat-menu #advancedFilterMenu="matMenu">
-    @for (keyword of advancedApiFilter; track keyword) {
-      <button
-        class="mat-menu-item"
-        (click)="onAdvancedFilterClick(keyword)"
-        mat-menu-item>
-        <mat-icon class="margin-right-16">{{ getFilterIconName(keyword) }}</mat-icon>
-        {{ keyword }}
-      </button>
-    }
-  </mat-menu>
+<div
+  appOverflowNav class="flex-row gap-8">
   @if (authService.oneActionAllowed(["delete", "assign", "unassign", "enable", "disable", "reset"])) {
     @if (authService.actionAllowed("delete")) {
       <button
         (click)="deleteSelectedTokens()"
         [disabled]="tokenSelection().length === 0"
-        class="action-button-delete-secondary button-width-m"
-        i18n
+        class="action-button-delete-secondary button-width-l"
         mat-stroked-button>
         <mat-icon> delete_sweep</mat-icon>
-        Delete
+        <span i18n>Delete</span>
       </button>
     }
     @if (authService.actionAllowed("assign")) {
       <button
         (click)="assignSelectedTokens()"
         [disabled]="tokenSelection().length === 0"
-        class="action-button-secondary button-width-m"
-        i18n
+        class="action-button-secondary button-width-l"
         mat-stroked-button>
         <mat-icon> person_add</mat-icon>
-        Assign
+        <span i18n>Assign</span>
       </button>
     }
     @if (authService.actionAllowed("unassign")) {
       <button
         (click)="unassignSelectedTokens()"
         [disabled]="tokenSelection().length === 0"
-        class="action-button-secondary button-width-m"
+        class="action-button-secondary button-width-l"
         mat-stroked-button>
         <mat-icon> person_remove</mat-icon>
-        Unassign
+        <span i18n>Unassign</span>
       </button>
     }
     @if (authService.actionAllowed("enable") && authService.actionAllowed("disable")) {
       <button
         (click)="toggleActiveSelectedTokens()"
         [disabled]="tokenSelection().length === 0"
-        class="action-button-secondary button-width-m"
-        i18n
+        class="action-button-secondary button-width-l"
         mat-stroked-button>
         <mat-icon> toggle_on</mat-icon>
-        (De)activate
+        <span i18n>(De)activate</span>
       </button>
     }
     @if (authService.actionAllowed("reset")) {
       <button
         (click)="resetFailcounterSelectedTokens()"
         [disabled]="tokenSelection().length === 0"
-        class="action-button-secondary button-width-m"
-        i18n
+        class="action-button-secondary button-width-l"
         mat-stroked-button>
         <mat-icon> restart_alt</mat-icon>
-        Reset Failcounters
+        <span i18n>Reset Failcounters</span>
       </button>
     }
   }

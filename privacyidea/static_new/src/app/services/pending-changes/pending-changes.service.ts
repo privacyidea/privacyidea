@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Injectable, signal } from "@angular/core";
+import { Injectable, OnDestroy, signal } from "@angular/core";
 
 export interface PendingChangesServiceInterface {
   hasChanges: boolean;
@@ -34,15 +34,29 @@ export interface PendingChangesServiceInterface {
   registerValidChanges(fn: () => boolean): void;
 }
 
-@Injectable({ providedIn: "root" })
-export class PendingChangesService implements PendingChangesServiceInterface {
+@Injectable()
+export class PendingChangesService implements PendingChangesServiceInterface, OnDestroy {
+  constructor() {
+    window.addEventListener("beforeunload", this.beforeUnloadHandler);
+  }
+
+  private readonly beforeUnloadHandler = (event: BeforeUnloadEvent): void => {
+    if (this.hasChanges) {
+      event.preventDefault();
+    }
+  };
   private _hasChangesFn = signal<(() => boolean) | null>(null);
   private _saveFn = signal<(() => Promise<boolean>) | null>(null);
   private _validChanges: () => boolean = signal(true);
 
+
   get hasChanges(): boolean {
     const fn = this._hasChangesFn();
     return fn ? fn() : false;
+  }
+
+  get validChanges(): boolean {
+    return this._validChanges();
   }
 
   get hasSaveFn(): boolean {
@@ -72,7 +86,7 @@ export class PendingChangesService implements PendingChangesServiceInterface {
     this._validChanges = fn;
   }
 
-  get validChanges(): boolean {
-    return this._validChanges();
+  ngOnDestroy(): void {
+    window.removeEventListener("beforeunload", this.beforeUnloadHandler);
   }
 }

@@ -24,6 +24,7 @@ import { MatIcon } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { LanguageSwitcherComponent } from "@components/shared/language-switcher/language-switcher.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ThemeSwitcherComponent } from "@components/shared/theme-switcher/theme-switcher.component";
 import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
@@ -71,9 +72,11 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
 import { from } from "rxjs";
 
+const PROFILE_TEXT_BREAKPOINT = 1701;
+
 @Component({
   selector: "app-user-utils-panel",
-  imports: [MatIcon, MatIconButton, MatTooltip, ThemeSwitcherComponent, NgClass, DatePipe],
+  imports: [MatIcon, MatIconButton, MatTooltip, LanguageSwitcherComponent, ThemeSwitcherComponent, NgClass, DatePipe],
   templateUrl: "./user-utils-panel.component.html",
   styleUrl: "./user-utils-panel.component.scss"
 })
@@ -109,13 +112,13 @@ export class UserUtilsPanelComponent {
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
   private readonly pendingChangesService: PendingChangesServiceInterface = inject(PendingChangesService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
-  protected readonly router: Router = inject(Router);
+  protected readonly router = inject(Router);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
-  isLargeScreen = signal(window.innerWidth > 1630);
+  isLargeScreen = signal(window.innerWidth > PROFILE_TEXT_BREAKPOINT);
 
   @HostListener("window:resize")
   onResize() {
-    this.isLargeScreen.set(window.innerWidth > 1630);
+    this.isLargeScreen.set(window.innerWidth > PROFILE_TEXT_BREAKPOINT);
   }
 
   profileText = computed(() => {
@@ -185,7 +188,7 @@ export class UserUtilsPanelComponent {
   refreshPage() {
     if (this.contentService.onTokenDetails()) {
       this.tokenService.tokenDetailResource.reload();
-      this.containerService.containerResource.reload();
+      this.containerService.containersForTokenTypeResource.reload();
       return;
     } else if (this.contentService.onContainersDetails()) {
       this.containerService.containerDetailsResource.reload();
@@ -196,7 +199,7 @@ export class UserUtilsPanelComponent {
       this.userService.usersResource.reload();
       this.tokenService.tokenResource.reload();
       this.tokenService.userTokenResource.reload();
-      this.containerService.containerResource.reload();
+      this.containerService.userContainersResource.reload();
       return;
     }
 
@@ -214,7 +217,7 @@ export class UserUtilsPanelComponent {
         this.machineService.tokenApplicationResource.reload();
         break;
       case ROUTE_PATHS.TOKENS_ENROLLMENT:
-        this.containerService.containerResource.reload();
+        this.containerService.containersForTokenTypeResource.reload();
         this.userService.usersResource.reload();
         break;
       case ROUTE_PATHS.AUDIT:

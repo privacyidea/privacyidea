@@ -16,15 +16,18 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, inject, Input, OnInit, Output } from "@angular/core";
-import { FormControl, FormsModule, ReactiveFormsModule } from "@angular/forms";
+import { Component, forwardRef, inject } from "@angular/core";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
-import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
   SpassApiPayloadMapper,
   SpassEnrollmentData
 } from "@app/mappers/token-api-payload/spass-token-api-payload.mapper";
+import {
+  EnrollmentArgs,
+  EnrollTokenBase
+} from "@components/token/token-enrollment/enroll-token-base";
 
 export interface SpassEnrollmentOptions extends TokenEnrollmentData {
   type: "spass";
@@ -33,36 +36,18 @@ export interface SpassEnrollmentOptions extends TokenEnrollmentData {
 @Component({
   selector: "app-enroll-spass",
   standalone: true,
-  imports: [FormsModule, ReactiveFormsModule],
+  imports: [],
   templateUrl: "./enroll-spass.component.html",
-  styleUrl: "./enroll-spass.component.scss"
+  styleUrl: "./enroll-spass.component.scss",
+  providers: [
+    { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollSpassComponent) }
+  ]
 })
-export class EnrollSpassComponent implements OnInit {
+export class EnrollSpassComponent extends EnrollTokenBase<SpassEnrollmentData> {
   protected readonly enrollmentMapper: SpassApiPayloadMapper = inject(SpassApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
-  @Input() wizard: boolean = false;
-  @Output() additionalFormFieldsChange = new EventEmitter<{
-    [key: string]: FormControl<any>;
-  }>();
-  @Output() enrollmentArgsGetterChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => {
-      data: SpassEnrollmentData;
-      mapper: TokenApiPayloadMapper<SpassEnrollmentData>;
-    } | null
-  >();
-
-  ngOnInit(): void {
-    this.additionalFormFieldsChange.emit({});
-    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
-  }
-
-  enrollmentArgsGetter = (
-    basicOptions: TokenEnrollmentData
-  ): {
-    data: SpassEnrollmentData;
-    mapper: TokenApiPayloadMapper<SpassEnrollmentData>;
-  } | null => {
+  buildEnrollmentArgs(basicOptions: TokenEnrollmentData): EnrollmentArgs<SpassEnrollmentData> | null {
     const enrollmentData: SpassEnrollmentOptions = {
       ...basicOptions,
       type: "spass"
@@ -71,5 +56,5 @@ export class EnrollSpassComponent implements OnInit {
       data: enrollmentData,
       mapper: this.enrollmentMapper
     };
-  };
+  }
 }

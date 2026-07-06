@@ -21,6 +21,9 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { EnrollFoureyesComponent } from "./enroll-foureyes.component";
+import { RealmService } from "@services/realm/realm.service";
+import { MockRealmService, MockTokenService } from "@testing/mock-services";
+import { TokenService } from "@services/token/token.service";
 
 describe("EnrollFoureyesComponent", () => {
   let component: EnrollFoureyesComponent;
@@ -29,7 +32,12 @@ describe("EnrollFoureyesComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EnrollFoureyesComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting()]
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: RealmService, useClass: MockRealmService },
+        { provide: TokenService, useClass: MockTokenService }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EnrollFoureyesComponent);
@@ -51,9 +59,9 @@ describe("EnrollFoureyesComponent", () => {
           { realm: "realm2", tokens: 2 }
         ]
       });
-      component.ngOnInit();
-      expect(component.separatorControl.value).toBe(":");
-      expect(component.requiredTokensOfRealmsControl.value).toEqual(["realm1", "realm2"]);
+      fixture.detectChanges();
+      expect(component.separator()).toBe(":");
+      expect(component.requiredTokensOfRealms()).toEqual(["realm1", "realm2"]);
       expect(component.tokensByRealm).toEqual(
         new Map([
           ["realm1", 1],
@@ -68,9 +76,9 @@ describe("EnrollFoureyesComponent", () => {
         separator: undefined,
         requiredTokenOfRealms: undefined
       });
-      component.ngOnInit();
-      expect(component.separatorControl.value).toBe("|");
-      expect(component.requiredTokensOfRealmsControl.value).toEqual([]);
+      fixture.detectChanges();
+      expect(component.separator()).toBe("|");
+      expect(component.requiredTokensOfRealms()).toEqual([]);
       expect(component.tokensByRealm).toEqual(new Map());
     });
   });

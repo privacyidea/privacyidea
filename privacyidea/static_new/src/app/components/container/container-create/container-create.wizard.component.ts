@@ -19,16 +19,15 @@
 import { AsyncPipe, NgClass, TitleCasePipe } from "@angular/common";
 import { HttpClient } from "@angular/common/http";
 import { Component, inject, linkedSignal, SecurityContext, WritableSignal } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
 import { DomSanitizer } from "@angular/platform-browser";
 import { PiResponse } from "@app/app.component";
-import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { ContainerCreatedDialogWizardComponent } from "@components/container/container-create/container-created-dialog/container-created-dialog.wizard.component";
 import { ContainerRegistrationCompletedDialogData } from "@components/container/container-create/container-registration-completed-dialog/container-registration-completed-dialog.component";
 import { ContainerRegistrationCompletedDialogWizardComponent } from "@components/container/container-create/container-registration-completed-dialog/container-registration-completed-dialog.wizard.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { environment } from "@env/environment";
 import {
   ContainerRegisterData,
@@ -43,17 +42,7 @@ import { ContainerCreateComponent } from "./container-create.component";
 
 @Component({
   selector: "app-container-create-wizard",
-  imports: [
-    MatButton,
-    MatIcon,
-    FormsModule,
-    MatIconButton,
-    AsyncPipe,
-    ScrollToTopDirective,
-    MatTooltip,
-    NgClass,
-    TitleCasePipe
-  ],
+  imports: [MatButton, MatIcon, MatIconButton, AsyncPipe, ScrollToTopDirective, MatTooltip, NgClass, TitleCasePipe],
   templateUrl: "./container-create.wizard.component.html",
   styleUrl: "./container-create.component.scss"
 })
@@ -74,7 +63,6 @@ export class ContainerCreateWizardComponent extends ContainerCreateComponent {
 
   protected override resetCreateOptions = () => {
     this.registerResponse.set(null);
-    this.pollResponse.set(null);
     this.passphrasePrompt.set("");
     this.passphraseResponse.set("");
     this.description.set("");
@@ -106,7 +94,7 @@ export class ContainerCreateWizardComponent extends ContainerCreateComponent {
     this.containerSerial.set(serial);
     this.openRegistrationDialog({
       result: { value: { container_serial: serial } }
-    } as any);
+    } as unknown as PiResponse<ContainerRegisterData>);
   }
 
   protected override openRegistrationDialog(response: PiResponse<ContainerRegisterData>) {

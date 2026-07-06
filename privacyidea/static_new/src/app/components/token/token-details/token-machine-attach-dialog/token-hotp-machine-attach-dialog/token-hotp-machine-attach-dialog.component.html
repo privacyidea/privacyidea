@@ -19,38 +19,35 @@
 
 <app-dialog-wrapper
   title="Attach Offline Machine"
-  (onAction)="onAction($event)"
+  i18n-title
+  (actionTriggered)="onAction($event)"
   [actions]="[assignAction]"
   [showCancelButton]="true"
-  (close)="close()">
-  <!-- number input field for countControl and roundsControl -->
-  <form [formGroup]="formGroup">
-    <mat-form-field
-      appearance="fill"
-      class="full-width">
-      <mat-label i18n>Count</mat-label>
-      <input
-        matInput
-        type="number"
-        min="1"
-        [formControl]="countControl" />
-      @if (countControl.touched && countControl.invalid) {
-        <mat-error i18n> Count must be a positive integer.</mat-error>
-      }
-    </mat-form-field>
-    <br />
-    <mat-form-field
-      appearance="fill"
-      class="full-width">
-      <mat-label i18n>Rounds</mat-label>
-      <input
-        matInput
-        type="number"
-        min="1"
-        [formControl]="roundsControl" />
-      @if (roundsControl.touched && roundsControl.invalid) {
-        <mat-error i18n> Rounds must be a positive integer.</mat-error>
-      }
-    </mat-form-field>
-  </form>
+  (wrapperClose)="close()">
+  <!-- number input field for countForm and roundsForm -->
+  <mat-form-field
+    appearance="fill"
+    class="full-width">
+    <mat-label i18n>Count</mat-label>
+    <input
+      [formField]="countForm"
+      matInput
+      type="number" />
+    @if (countForm().touched() && !countForm().valid()) {
+      <mat-error i18n> Count must be a positive integer.</mat-error>
+    }
+  </mat-form-field>
+  <br />
+  <mat-form-field
+    appearance="fill"
+    class="full-width">
+    <mat-label i18n>Rounds</mat-label>
+    <input
+      [formField]="roundsForm"
+      matInput
+      type="number" />
+    @if (roundsForm().touched() && !roundsForm().valid()) {
+      <mat-error i18n> Rounds must be a positive integer.</mat-error>
+    }
+  </mat-form-field>
 </app-dialog-wrapper>

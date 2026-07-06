@@ -24,15 +24,19 @@ import { AuthService, JwtData } from "@services/auth/auth.service";
 import { ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
+import { RealmService } from "@services/realm/realm.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
-import { TokenService } from "@services/token/token.service";
+import { TokenDetails, TokenService } from "@services/token/token.service";
+import { PageEvent } from "@angular/material/paginator";
+import { Sort } from "@angular/material/sort";
 import {
-    MockContainerService,
-    MockContentService,
-    MockLocalService,
-    MockNotificationService,
-    MockTableUtilsService,
-    MockTokenService
+  MockContainerService,
+  MockContentService,
+  MockLocalService,
+  MockNotificationService,
+  MockRealmService,
+  MockTableUtilsService,
+  MockTokenService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
@@ -51,17 +55,12 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
   let tableFixture: ComponentFixture<TokenTableComponent>;
   let table: TokenTableComponent;
 
-  let selfFixture: ComponentFixture<TokenTableSelfServiceComponent>;
-  let component: TokenTableSelfServiceComponent;
-
   let tokenService: MockTokenService;
   let authServiceMock: MockAuthService;
-  let dialogServiceMock: MockDialogService;
-  let dialogMock: MatDialogMock;
   let tableUtilsService: MockTableUtilsService;
 
   beforeAll(() => {
-    jest.spyOn(console, "warn").mockImplementation(() => {});
+    jest.spyOn(console, "warn").mockReturnValue();
   });
 
   beforeEach(async () => {
@@ -77,6 +76,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContainerService, useClass: MockContainerService },
         { provide: MatDialog, useClass: MatDialogMock },
+        { provide: RealmService, useClass: MockRealmService },
         MockLocalService,
         MockNotificationService
       ]
@@ -85,25 +85,17 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     tableFixture = TestBed.createComponent(TokenTableComponent);
     table = tableFixture.componentInstance;
 
-    selfFixture = TestBed.createComponent(TokenTableSelfServiceComponent);
-    component = selfFixture.componentInstance;
-
     tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
     authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
-    dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
-    dialogMock = TestBed.inject(MatDialog) as unknown as MatDialogMock;
     tableUtilsService = TestBed.inject(TableUtilsService) as unknown as MockTableUtilsService;
 
     tokenService.toggleActive.mockReturnValue(of({}));
     tokenService.resetFailCount.mockReturnValue(of(null));
-    (tokenService as any).revokeToken = jest.fn().mockReturnValue(of({}));
-    (tokenService as any).deleteToken = jest.fn().mockReturnValue(of({}));
     authServiceMock.actionAllowed.mockImplementation((action: string) =>
       authServiceMock.jwtData()?.rights?.includes(action)
     );
 
     tableFixture.detectChanges();
-    selfFixture.detectChanges();
   });
 
   afterEach(() => {
@@ -115,11 +107,12 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
   });
 
   it("TokenTableSelfServiceComponent should create", () => {
-    expect(component).toBeTruthy();
+    const selfFixture = TestBed.createComponent(TokenTableSelfServiceComponent);
+    expect(selfFixture.componentInstance).toBeTruthy();
   });
 
   it("isAllSelected/toggleAllRows/toggleRow work as expected", () => {
-    const tokens = [{ serial: "T-1" } as any, { serial: "T-2" } as any];
+    const tokens = [{ serial: "T-1" } as TokenDetails, { serial: "T-2" } as TokenDetails];
     tokenService.tokenResourceValue.set({
       tokens,
       count: 2,
@@ -145,7 +138,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
   });
 
   it("toggleActive calls service and reloads when allowed & not revoked/locked", () => {
-    const t = { serial: "A", active: true, revoked: false, locked: false } as any;
+    const t = { serial: "A", active: true, revoked: false, locked: false } as TokenDetails;
     authServiceMock.jwtData.set({
       ...authServiceMock.jwtData(),
       rights: ["disable", "enable"]
@@ -158,7 +151,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
   });
 
   it("toggleActive does nothing if action not allowed", () => {
-    const t = { serial: "A", active: true, revoked: false, locked: false } as any;
+    const t = { serial: "A", active: true, revoked: false, locked: false } as TokenDetails;
     authServiceMock.jwtData.set({
       ...authServiceMock.jwtData(),
       rights: []
@@ -176,14 +169,14 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
       rights: ["disable", "enable"]
     } as JwtData);
 
-    table.toggleActive({ serial: "X", active: true, revoked: true, locked: false } as any);
-    table.toggleActive({ serial: "Y", active: false, revoked: false, locked: true } as any);
+    table.toggleActive({ serial: "X", active: true, revoked: true, locked: false } as TokenDetails);
+    table.toggleActive({ serial: "Y", active: false, revoked: false, locked: true } as TokenDetails);
 
     expect(tokenService.toggleActive).not.toHaveBeenCalled();
   });
 
   it("resetFailCount calls service and reloads when allowed & not revoked/locked", () => {
-    const t = { serial: "B", revoked: false, locked: false } as any;
+    const t = { serial: "B", revoked: false, locked: false } as TokenDetails;
     authServiceMock.jwtData.set({
       ...authServiceMock.jwtData(),
       rights: ["reset"]
@@ -200,44 +193,44 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
       ...authServiceMock.jwtData(),
       rights: []
     } as JwtData);
-    table.resetFailCount({ serial: "B", revoked: false, locked: false } as any);
+    table.resetFailCount({ serial: "B", revoked: false, locked: false } as TokenDetails);
     expect(tokenService.resetFailCount).not.toHaveBeenCalled();
 
     authServiceMock.jwtData.set({
       ...authServiceMock.jwtData(),
       rights: ["reset"]
     } as JwtData);
-    table.resetFailCount({ serial: "B", revoked: true, locked: false } as any);
-    table.resetFailCount({ serial: "B", revoked: false, locked: true } as any);
+    table.resetFailCount({ serial: "B", revoked: true, locked: false } as TokenDetails);
+    table.resetFailCount({ serial: "B", revoked: false, locked: true } as TokenDetails);
     expect(tokenService.resetFailCount).not.toHaveBeenCalled();
   });
 
   it("onPageEvent updates page size, index and service's eventPageSize", () => {
-    table.onPageEvent({ pageIndex: 2, pageSize: 25, length: 100 } as any);
-    expect(tokenService.eventPageSize).toBe(25);
+    table.onPageEvent({ pageIndex: 2, pageSize: 25, length: 100 } as PageEvent);
+    expect(tokenService.eventPageSize()).toBe(25);
     expect(table.pageSize()).toBe(25);
     expect(table.pageIndex()).toBe(2);
   });
 
   it("onSortEvent sets default when direction empty, else sets provided sort", () => {
-    table.onSortEvent({ active: "failcount", direction: "" } as any);
+    table.onSortEvent({ active: "failcount", direction: "" } as Sort);
     expect(table.sort()).toEqual({ active: "serial", direction: "asc" });
 
-    table.onSortEvent({ active: "description", direction: "desc" } as any);
+    table.onSortEvent({ active: "description", direction: "desc" } as Sort);
     expect(table.sort()).toEqual({ active: "description", direction: "desc" });
   });
 
   it("onFilterInput should only update filter if user: and realm: are NOT in the input", () => {
-    const inputEvent = { target: { value: "type: hotp" } } as any;
+    const inputEvent = { target: { value: "type: hotp" } } as unknown as Event;
     table.onFilterInput(inputEvent);
     expect(tokenService.handleFilterInput).toHaveBeenCalledWith(inputEvent);
 
     jest.clearAllMocks();
-    const inputEventWithUser = { target: { value: "user: admin" } } as any;
+    const inputEventWithUser = { target: { value: "user: admin" } } as unknown as Event;
     table.onFilterInput(inputEventWithUser);
     expect(tokenService.handleFilterInput).not.toHaveBeenCalled();
 
-    const inputEventWithRealm = { target: { value: "realm: default" } } as any;
+    const inputEventWithRealm = { target: { value: "realm: default" } } as unknown as Event;
     table.onFilterInput(inputEventWithRealm);
     expect(tokenService.handleFilterInput).not.toHaveBeenCalled();
   });
@@ -247,7 +240,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     expect(Array.isArray(initial)).toBe(true);
     expect(initial.length).toBe(table.pageSize());
 
-    const tokens = [{ serial: "S-1" }, { serial: "S-2" }] as any;
+    const tokens = [{ serial: "S-1" }, { serial: "S-2" }] as TokenDetails[];
     tokenService.tokenResourceValue.set({ tokens, count: 2, current: 1 });
     tableFixture.detectChanges();
 
@@ -292,6 +285,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
   });
 
   it("pageSizeOptions should add custom page size if not included in default options", () => {
+    const component = TestBed.createComponent(TokenTableSelfServiceComponent).componentInstance;
     const defaultOptions = [5, 10, 25, 50];
     tableUtilsService.pageSizeOptions.set(defaultOptions);
     expect(component.pageSizeOptions()).toEqual(defaultOptions);

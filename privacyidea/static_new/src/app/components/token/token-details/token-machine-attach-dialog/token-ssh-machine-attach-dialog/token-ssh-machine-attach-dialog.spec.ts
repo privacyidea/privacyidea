@@ -24,31 +24,26 @@ import { Observable, of } from "rxjs";
 
 import { TokenSshMachineAssignDialogComponent } from "./token-ssh-machine-attach-dialog";
 
-import { ApplicationService } from "@services/application/application.service";
-import { MachineService } from "@services/machine/machine.service";
-import { UserService } from "@services/user/user.service";
+import { PiResponse } from "@app/app.component";
+import { Applications, ApplicationService } from "@services/application/application.service";
+import { Machine, MachineService } from "@services/machine/machine.service";
+import { UserData, UserService } from "@services/user/user.service";
 import { MockApplicationService, MockMachineService, MockUserService } from "@testing/mock-services";
-
-type TestMachine = {
-  id: number;
-  hostname: string[];
-  ip: string;
-  resolver_name: string;
-};
+import { MockPiResponse } from "@testing/mock-services/mock-utils";
 
 describe("TokenSshMachineAssignDialogComponent", () => {
   let component: TokenSshMachineAssignDialogComponent;
   let fixture: ComponentFixture<TokenSshMachineAssignDialogComponent>;
   let dialogRef: { close: jest.Mock };
-  let appSvc: MockApplicationService;
-  let machSvc: MockMachineService;
-  let userSvc: MockUserService;
+  let applicationService: MockApplicationService;
+  let machineService: MockMachineService;
+  let userService: MockUserService;
 
   beforeEach(async () => {
     dialogRef = { close: jest.fn() };
-    appSvc = new MockApplicationService();
-    machSvc = new MockMachineService();
-    userSvc = new MockUserService();
+    applicationService = new MockApplicationService();
+    machineService = new MockMachineService();
+    userService = new MockUserService();
 
     await TestBed.configureTestingModule({
       imports: [TokenSshMachineAssignDialogComponent, MatDialogModule],
@@ -57,21 +52,25 @@ describe("TokenSshMachineAssignDialogComponent", () => {
         provideHttpClientTesting(),
         { provide: MAT_DIALOG_DATA, useValue: { tokenSerial: "SER-SSH", tokenDetails: {}, tokenType: "ssh" } },
         { provide: MatDialogRef, useValue: dialogRef },
-        { provide: ApplicationService, useValue: appSvc },
-        { provide: MachineService, useValue: machSvc },
-        { provide: UserService, useValue: userSvc }
+        { provide: ApplicationService, useValue: applicationService },
+        { provide: MachineService, useValue: machineService },
+        { provide: UserService, useValue: userService }
       ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(TokenSshMachineAssignDialogComponent);
     component = fixture.componentInstance;
 
-    machSvc.machines.set([
+    machineService.machines.set([
       { id: 1, hostname: ["host-1"], ip: "10.0.0.1", resolver_name: "resA" },
       { id: 2, hostname: ["host-2", "alias-2"], ip: "10.0.0.2", resolver_name: "resB" }
-    ] as any);
+    ]);
 
-    userSvc.users.set([{ username: "alice" }, { username: "bob" }, { username: "carol" }] as any);
+    userService.users.set([
+      { username: "alice" },
+      { username: "bob" },
+      { username: "carol" }
+    ] as unknown as UserData[]);
 
     fixture.detectChanges();
   });
@@ -89,9 +88,9 @@ describe("TokenSshMachineAssignDialogComponent", () => {
   it("availableServiceIds mirrors application service IDs", () => {
     expect(component.availableServiceIds()).toEqual(["svc-1", "svc-2"]);
 
-    appSvc.applications.set({
+    applicationService.applications.set({
       ssh: { options: { sshkey: { service_id: { value: [] } } } }
-    } as any);
+    } as unknown as Applications);
     expect(component.availableApplications()).toEqual([]);
     expect(component.availableServiceIds()).toEqual([]);
   });
@@ -100,40 +99,44 @@ describe("TokenSshMachineAssignDialogComponent", () => {
     expect(component.availableUsers()).toEqual(["alice", "bob", "carol"]);
   });
 
-  it("filteredMachines respects machineFilter via selectedMachine valueChanges", () => {
-    component.ngOnInit();
-
+  it("filteredMachines respects machineFilter via selectedMachineValue effect", () => {
     expect(component.filteredMachines()).toHaveLength(2);
 
-    component.selectedMachine.setValue("host-2");
+    component.selectedMachineValue.set("host-2");
+    fixture.detectChanges();
+    TestBed.tick();
+    fixture.detectChanges();
     expect(component.filteredMachines()).toHaveLength(1);
-    const only = component.filteredMachines()![0] as any;
+    const only = component.filteredMachines()![0] as Machine;
     expect(only.hostname).toEqual(["host-2", "alias-2"]);
   });
 
-  it("filteredUsers respects userFilter via selectedUser valueChanges (subscription wired in ngOnInit)", () => {
-    component.ngOnInit();
-    component.selectedMachine.setValue("anything");
-
-    component.selectedUser.setValue("bo");
+  it("filteredUsers respects userFilter via selectedUserValue effect", () => {
+    component.selectedUserValue.set("bo");
+    fixture.detectChanges();
+    TestBed.tick();
+    fixture.detectChanges();
     expect(component.filteredUsers()).toEqual(["bob"]);
 
-    component.selectedUser.setValue("");
+    component.selectedUserValue.set("");
+    fixture.detectChanges();
+    TestBed.tick();
+    fixture.detectChanges();
     expect(component.filteredUsers()).toEqual(["alice", "bob", "carol"]);
   });
 
   it("getFullMachineName formats correctly", () => {
-    const m: TestMachine = { id: 7, hostname: ["a", "b"], ip: "1.2.3.4", resolver_name: "R" };
+    const m: Machine = { id: 7, hostname: ["a", "b"], ip: "1.2.3.4", resolver_name: "R" };
     expect(component.getFullMachineName(m)).toBe("a, b [7] (1.2.3.4 in R)");
     expect(component.getFullMachineName("literal")).toBe("literal");
   });
 
   it("onAssign: does nothing if form invalid", () => {
-    component.selectedMachine.setValue("");
-    component.selectedServiceId.setValue("");
-    component.selectedUser.setValue("");
+    component.selectedMachineValue.set("");
+    component.selectedServiceIdValue.set("");
+    component.selectedUserValue.set("");
 
-    const postSpy = jest.spyOn(machSvc, "postAssignMachineToToken");
+    const postSpy = jest.spyOn(machineService, "postAssignMachineToToken");
 
     component.onAssign();
 
@@ -142,11 +145,11 @@ describe("TokenSshMachineAssignDialogComponent", () => {
   });
 
   it("onAssign: aborts if selectedMachine is a string", () => {
-    component.selectedMachine.setValue("just-a-string");
-    component.selectedServiceId.setValue("svc-1");
-    component.selectedUser.setValue("alice");
+    component.selectedMachineValue.set("just-a-string");
+    component.selectedServiceIdValue.set("svc-1");
+    component.selectedUserValue.set("alice");
 
-    const postSpy = jest.spyOn(machSvc, "postAssignMachineToToken");
+    const postSpy = jest.spyOn(machineService, "postAssignMachineToToken");
 
     component.onAssign();
 
@@ -155,13 +158,15 @@ describe("TokenSshMachineAssignDialogComponent", () => {
   });
 
   it("onAssign: posts payload, reloads resources (via subscription), and closes with the same Observable", () => {
-    const machine: TestMachine = { id: 2, hostname: ["host-2"], ip: "10.0.0.2", resolver_name: "resB" } as any;
+    const machine: Machine = { id: 2, hostname: ["host-2"], ip: "10.0.0.2", resolver_name: "resB" };
 
-    component.selectedMachine.setValue(machine);
-    component.selectedServiceId.setValue("svc-2");
-    component.selectedUser.setValue("bob");
+    component.selectedMachineValue.set(machine);
+    component.selectedServiceIdValue.set("svc-2");
+    component.selectedUserValue.set("bob");
 
-    const postSpy = jest.spyOn(machSvc, "postAssignMachineToToken").mockReturnValue(of({}) as any);
+    const postSpy = jest
+      .spyOn(machineService, "postAssignMachineToToken")
+      .mockReturnValue(of(MockPiResponse.fromValue<number>(0)));
 
     component.onAssign();
 
@@ -175,10 +180,10 @@ describe("TokenSshMachineAssignDialogComponent", () => {
       resolver: "resB"
     });
 
-    expect(machSvc.machinesResource.reload).toHaveBeenCalled();
-    expect(machSvc.tokenApplicationResource.reload).toHaveBeenCalled();
+    expect(machineService.machinesResource.reload).toHaveBeenCalled();
+    expect(machineService.tokenApplicationResource.reload).toHaveBeenCalled();
 
-    const returned$ = postSpy.mock.results[0].value as Observable<any>;
+    const returned$ = postSpy.mock.results[0].value as Observable<PiResponse<number>>;
     expect(dialogRef.close).toHaveBeenCalledWith(returned$);
   });
 
@@ -187,25 +192,46 @@ describe("TokenSshMachineAssignDialogComponent", () => {
     expect(dialogRef.close).toHaveBeenCalledWith(null);
   });
 
-  describe("machineValidator", () => {
-    it("returns {required:true} when value is falsy or string", () => {
-      expect(component.machineValidator({ value: null } as any)).toEqual({ required: true });
-      expect(component.machineValidator({ value: "" } as any)).toEqual({ required: true });
-      expect(component.machineValidator({ value: "str" } as any)).toEqual({ required: true });
-    });
-
-    it("returns {invalidMachine:true} when object is missing fields", () => {
-      expect(component.machineValidator({ value: { id: 1, hostname: ["h"], ip: "x" } } as any)).toEqual({
-        invalidMachine: true
-      });
-    });
-
-    it("returns null for a valid machine", () => {
+  describe("selectedMachineForm validation", () => {
+    it("is invalid when value is falsy or a plain string", () => {
+      component.selectedMachineValue.set("");
+      expect(component.selectedMachineForm().valid()).toBe(false);
       expect(
-        component.machineValidator({
-          value: { id: 1, hostname: ["h"], ip: "x", resolver_name: "R" }
-        } as any)
-      ).toBeNull();
+        component
+          .selectedMachineForm()
+          .errors()
+          .some((e) => e.kind === "required")
+      ).toBe(true);
+
+      component.selectedMachineValue.set("str");
+      expect(component.selectedMachineForm().valid()).toBe(false);
+      expect(
+        component
+          .selectedMachineForm()
+          .errors()
+          .some((e) => e.kind === "required")
+      ).toBe(true);
+    });
+
+    it("reports invalidMachine when object is missing required fields", () => {
+      component.selectedMachineValue.set({ id: 1, hostname: ["h"], ip: "x" } as unknown as Machine);
+      expect(component.selectedMachineForm().valid()).toBe(false);
+      expect(
+        component
+          .selectedMachineForm()
+          .errors()
+          .some((e) => e.kind === "invalidMachine")
+      ).toBe(true);
+    });
+
+    it("is valid for a complete machine object", () => {
+      component.selectedMachineValue.set({
+        id: 1,
+        hostname: ["h"],
+        ip: "x",
+        resolver_name: "R"
+      });
+      expect(component.selectedMachineForm().valid()).toBe(true);
     });
   });
 });

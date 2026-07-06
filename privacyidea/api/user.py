@@ -50,7 +50,6 @@ custom-attribute write/delete endpoints are gated by the
 :ref:`policy_delete_custom_user_attributes` policies and may be
 invoked by users on themselves as well as by admins on other users.
 """
-from flask_babel import _
 import logging
 
 from flask import g, Blueprint, request
@@ -59,12 +58,13 @@ from privacyidea.api.auth import admin_required
 from privacyidea.api.lib.prepolicy import prepolicy, check_base_action, realmadmin, check_custom_user_attributes
 from privacyidea.api.lib.utils import send_result
 from privacyidea.lib.params import get_optional, get_required
-from privacyidea.lib.error import ParameterError, PolicyError
+from privacyidea.lib.error import PolicyError, UserError
 from privacyidea.lib.event import event
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import get_allowed_custom_attributes
-from privacyidea.lib.user import get_user_list, create_user, User, is_attribute_at_all
-from privacyidea.lib.users.custom_user_attributes import InternalCustomUserAttributes
+from privacyidea.lib.user import get_user_list, create_user, User, is_attribute_at_all, get_user_from_param
+from privacyidea.lib.usersetting import (SettingsSubject, delete_user_settings, get_user_settings,
+                                         set_user_settings)
 from privacyidea.lib.utils import is_true
 
 log = logging.getLogger(__name__)
@@ -165,6 +165,80 @@ def get_users():
     return send_result(users)
 
 
+@user_blueprint.route('/settings', methods=['GET'])
+@event("user_settings_get", request, g)
+def get_user_settings_api():
+    """
+    Return the WebUI settings of the logged-in principal.
+
+    The settings are always scoped to the caller's own JWT identity; there
+    is no way to read another principal's settings through this endpoint. The
+    stored document is returned verbatim (an empty object if nothing has been
+    stored); the WebUI applies its own defaults for absent keys.
+
+    Requires authentication (any role).
+
+    :reqheader PI-Authorization: JWT auth token returned by
+        :http:post:`/auth`.
+    :status 200: the settings object in ``result.value``.
+    """
+    subject = SettingsSubject.from_logged_in_user(g.logged_in_user, request.User)
+    settings = get_user_settings(subject)
+    g.audit_object.log({"success": True})
+    return send_result(settings)
+
+
+@user_blueprint.route('/settings', methods=['POST'])
+@event("user_settings_set", request, g)
+def set_user_settings_api():
+    """
+    Store WebUI settings for the logged-in principal.
+
+    The settings must be a JSON object and stay within the server-side size
+    limit; key and value-type enforcement is not active yet, so any keys are
+    currently accepted (see ``PI_USER_SETTINGS_ALLOWED_KEYS``). By default the
+    given keys are merged into the existing settings; pass ``replace=1`` to
+    replace the whole document. Always scoped to the caller's own JWT identity.
+
+    Requires authentication (any role).
+
+    :jsonparam settings: a JSON object with the settings to store.
+    :jsonparam replace: if true, replace the whole document instead of merging.
+    :status 200: the stored settings object in ``result.value`` -- the same
+        shape :http:get:`/user/settings` returns.
+    :status 400: the settings are not a JSON object, not JSON-serializable, or
+        exceed the maximum size.
+    """
+    settings = get_required(request.all_data, "settings")
+    replace = is_true(get_optional(request.all_data, "replace"))
+    subject = SettingsSubject.from_logged_in_user(g.logged_in_user, request.User)
+    stored = set_user_settings(subject, settings, replace=replace)
+    g.audit_object.log({"success": True})
+    return send_result(stored)
+
+
+@user_blueprint.route('/settings', methods=['DELETE'])
+@user_blueprint.route('/settings/<key>', methods=['DELETE'])
+@event("user_settings_delete", request, g)
+def delete_user_settings_api(key=None):
+    """
+    Delete WebUI settings of the logged-in principal.
+
+    With a ``key`` path segment only that setting is removed (the WebUI then
+    falls back to its own default for it); without one the whole document is
+    cleared. Always scoped to the caller's own JWT identity.
+
+    Requires authentication (any role).
+
+    :param key: the single setting to delete; omit to clear all settings.
+    :status 200: the remaining settings object in ``result.value``.
+    """
+    subject = SettingsSubject.from_logged_in_user(g.logged_in_user, request.User)
+    remaining = delete_user_settings(subject, key=key)
+    g.audit_object.log({"success": True})
+    return send_result(remaining)
+
+
 @user_blueprint.route('/attribute', methods=['POST'])
 @prepolicy(check_custom_user_attributes, request, "set")
 @event("set_custom_user_attribute", request, g)
@@ -178,8 +252,7 @@ def set_user_attribute():
 
     Authorization is gated by the :ref:`policy_set_custom_user_attributes`
     policy. The policy value whitelists allowed key/value combinations
-    (the ``*`` wildcard is allowed for keys or values). Attribute keys
-    starting with an internal privacyIDEA prefix are rejected.
+    (the ``*`` wildcard is allowed for keys or values).
 
     :jsonparam user: user name (required).
     :jsonparam resolver: resolver name.
@@ -188,7 +261,6 @@ def set_user_attribute():
     :jsonparam value: attribute value (required).
     :jsonparam type: optional attribute type identifier.
     :status 200: database id of the attribute row in ``result.value``.
-    :status 400: attribute name uses a reserved internal prefix.
     :status 403: the active policy does not allow this key/value
         combination.
     """
@@ -199,13 +271,6 @@ def set_user_attribute():
     attrkey = get_required(request.all_data, "key")
     attrvalue = get_required(request.all_data, "value")
     attrtype = get_optional(request.all_data, "type")
-
-    # Check if the attribute starts with an internally used prefix
-    internal_prefixes = InternalCustomUserAttributes.get_internal_prefixes()
-    for prefix in internal_prefixes:
-        if attrkey.startswith(prefix):
-            raise ParameterError(_("Invalid attribute name! The name shall not start with {prefix}. "
-                                   "This is an internally used prefix.").format(prefix=prefix))
 
     r = request.User.set_attribute(attrkey, attrvalue, attrtype)
     g.audit_object.log({"success": True,
@@ -239,6 +304,42 @@ def get_user_attribute():
         r = r.get(attrkey)
     g.audit_object.log({"success": True,
                         "info": f"{attrkey!s}"})
+    return send_result(r)
+
+
+@user_blueprint.route('/internal_attribute', methods=['GET'])
+@admin_required
+@prepolicy(realmadmin, request, PolicyAction.GET_USER_INTERNAL_ATTRIBUTES)
+@prepolicy(check_base_action, request, PolicyAction.GET_USER_INTERNAL_ATTRIBUTES)
+@event("get_user_internal_attribute", request, g)
+def get_user_internal_attribute():
+    """
+    Return privacyIDEA-internal attributes for a user. These are caches
+    privacyIDEA writes about itself (e.g. ``fido2_user_id``,
+    ``last_used_token``) and are NOT user-facing — admin-only, read-only.
+
+    Requires the policy action :ref:`policy_get_user_internal_attributes`.
+    A realm-restricted admin is confined to their realms.
+
+    Intended for support / debugging via the WebUI details panel.
+
+    :query user: user name (required).
+    :query resolver: resolver name.
+    :query realm: realm name.
+    :status 200: dict of internal attributes in ``result.value``.
+    """
+    # Resolve the user from request.all_data *after* the prepolicies ran, not
+    # from request.User: realmadmin may have injected the admin's realm into
+    # request.all_data when no realm was given. request.User was built earlier
+    # (in before_request) from the original params and would resolve in the
+    # default realm, so reading it would return data for a different realm than
+    # the one check_base_action authorized.
+    user = get_user_from_param(request.all_data)
+    if not user or not user.exist():
+        username = get_required(request.all_data, "user")
+        raise UserError(f"The user '{username!s}' does not exist.")
+    r = user.internal_attributes
+    g.audit_object.log({"success": True, "info": f"{user.login!s}"})
     return send_result(r)
 
 

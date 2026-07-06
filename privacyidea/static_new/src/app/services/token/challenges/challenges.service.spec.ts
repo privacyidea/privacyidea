@@ -21,13 +21,21 @@ import { TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { ChallengesService } from "./challenges.service";
+import { TokenService } from "@services/token/token.service";
+import { MockContentService, MockTokenService } from "@testing/mock-services";
+import { ContentService } from "@services/content/content.service";
 
 describe("ChallengesService", () => {
   let challengesService: ChallengesService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [provideHttpClient()]
+      providers: [
+        provideHttpClient(),
+        ChallengesService,
+        { provide: TokenService, useClass: MockTokenService },
+        { provide: ContentService, useClass: MockContentService }
+      ]
     });
     challengesService = TestBed.inject(ChallengesService);
   });

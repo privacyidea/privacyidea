@@ -22,6 +22,8 @@ import { HttpTestingController, provideHttpClientTesting } from "@angular/common
 import { TestBed } from "@angular/core/testing";
 import { PiResponse } from "@app/app.component";
 import { environment } from "@env/environment";
+import { BEARER_TOKEN_STORAGE_KEY } from "@core/constants";
+import { LocalService } from "@services/local/local.service";
 import { VersioningService } from "@services/version/version.service";
 import { MockVersioningService } from "@testing/mock-services/mock-versioning-service";
 import { AppConfig, ConfigService } from "./config.service";
@@ -96,7 +98,7 @@ describe("ConfigService", () => {
     const req = httpMock.expectOne(environment.proxyUrl + "/config");
     expect(req.request.method).toBe("GET");
 
-    const mockResponse: PiResponse<Record<any, any>> = {
+    const mockResponse: PiResponse<AppConfig> = {
       id: 1,
       jsonrpc: "2.0",
       detail: {},
@@ -111,6 +113,25 @@ describe("ConfigService", () => {
 
     expect(service.config()).toEqual(mockConfig);
     expect(setSpy).toHaveBeenCalledWith("3.8");
+  });
+
+  it("should not send an auth header when no token is stored", () => {
+    const localService = TestBed.inject(LocalService);
+    localService.removeData(BEARER_TOKEN_STORAGE_KEY);
+    service.loadConfig();
+    const req = httpMock.expectOne(environment.proxyUrl + "/config");
+    expect(req.request.headers.has("PI-Authorization")).toBe(false);
+    req.flush({ result: { status: true, value: mockConfig } });
+  });
+
+  it("should send the stored bearer token so an authenticated reload keeps the version", () => {
+    const localService = TestBed.inject(LocalService);
+    localService.saveData(BEARER_TOKEN_STORAGE_KEY, "the-jwt");
+    service.loadConfig();
+    const req = httpMock.expectOne(environment.proxyUrl + "/config");
+    expect(req.request.headers.get("PI-Authorization")).toBe("the-jwt");
+    req.flush({ result: { status: true, value: mockConfig } });
+    localService.removeData(BEARER_TOKEN_STORAGE_KEY);
   });
 
   it("should handle error and keep default config", () => {

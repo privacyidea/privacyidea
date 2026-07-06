@@ -4,10 +4,11 @@
 .container-templates-layout {
   @include styles.main-component-style;
   @include table.base-table-structure(
-          ".container-templates-table",
-          ".container-templates-table-filter",
-          ".container-templates-scroll-container"
+    ".container-templates-table",
+    ".container-templates-table-filter",
+    ".container-templates-scroll-container"
   );
+  max-height: var(--table-max-height);
 
   & {
     display: flex;

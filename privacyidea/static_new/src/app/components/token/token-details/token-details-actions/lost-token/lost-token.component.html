@@ -17,11 +17,11 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <app-dialog-wrapper
-  (close)="close()"
-  (onAction)="onCloseAction()"
+  (wrapperClose)="close()"
+  (actionTriggered)="onCloseAction()"
   [showCancelButton]="false"
   [actions]="[closeAction]"
-  [title]="'Token ' + data.tokenSerial() + ' is lost?'">
+  [title]="dialogTitle()">
   <div class="lost-content">
     <p i18n>
       If the token is lost, you can enroll a temporary password based token and give the password to the user. The OTP
@@ -34,10 +34,9 @@
         <button
           mat-stroked-button
           class="action-button-primary button-width-l"
-          (click)="lostToken()"
-          i18n>
+          (click)="lostToken()">
           <mat-icon class="question-icon">question_mark</mat-icon>
-          Mark Token as Lost
+          <span i18n>Mark Token as Lost</span>
         </button>
       </div>
     } @else {
@@ -52,7 +51,14 @@
       </mat-card>
       <p i18n>
         The serial of the new token is
-        <a (click)="tokenSelected(lostTokenData?.serial)"> {{ lostTokenData?.serial ?? "" }}</a>
+        <a
+          (click)="tokenSelected(lostTokenData?.serial)"
+          (keydown.enter)="tokenSelected(lostTokenData?.serial)"
+          (keydown.space)="$event.preventDefault(); tokenSelected(lostTokenData?.serial)"
+          role="button"
+          tabindex="0">
+          {{ lostTokenData?.serial ?? "" }}</a
+        >
         <br />
         The password that needs to be combined with the OTP PIN:
       </p>

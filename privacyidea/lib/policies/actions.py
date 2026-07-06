@@ -20,6 +20,7 @@ class PolicyAction:
     CHALLENGETEXT_HEADER = "challenge_text_header"
     CHALLENGETEXT_FOOTER = "challenge_text_footer"
     GETCHALLENGES = "getchallenges"
+    CANCELCHALLENGE = "cancelchallenge"
     COPYTOKENPIN = "copytokenpin"
     COPYTOKENUSER = "copytokenuser"
     DEFAULT_TOKENTYPE = "default_tokentype"
@@ -114,6 +115,7 @@ class PolicyAction:
     TRIGGERCHALLENGE = "triggerchallenge"
     UNASSIGN = "unassign"
     USERLIST = "userlist"
+    GET_USER_INTERNAL_ATTRIBUTES = "get_user_internal_attributes"
     USERPAGESIZE = "user_page_size"
     ADDUSER = "adduser"
     DELETEUSER = "deleteuser"
@@ -223,6 +225,7 @@ class PolicyAction:
     HIDE_SPECIFIC_ERROR_MESSAGE_FOR_TTYPE = "hide_specific_error_message_for_ttype"
     REQUIRE_AUTH_FOR_RESOLVER_DETAILS = "require_auth_for_resolver_details"
     PASSKEY_LOGIN = "passkey_login"
+    HIDE_VERSION = "hide_version"
 
 
 class PasskeyLoginButtonOptions:

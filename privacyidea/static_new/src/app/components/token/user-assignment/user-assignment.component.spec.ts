@@ -18,7 +18,6 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { FormControl, ReactiveFormsModule } from "@angular/forms";
 import { By } from "@angular/platform-browser";
 import { RealmService } from "@services/realm/realm.service";
 import { UserData, UserService } from "@services/user/user.service";
@@ -29,11 +28,10 @@ describe("UserAssignmentComponent", () => {
   let component: UserAssignmentComponent;
   let fixture: ComponentFixture<UserAssignmentComponent>;
   let userServiceMock: MockUserService;
-  let realmServiceMock: MockRealmService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [UserAssignmentComponent, ReactiveFormsModule],
+      imports: [UserAssignmentComponent],
       providers: [
         { provide: UserService, useClass: MockUserService },
         { provide: RealmService, useClass: MockRealmService }
@@ -42,7 +40,6 @@ describe("UserAssignmentComponent", () => {
 
     fixture = TestBed.createComponent(UserAssignmentComponent);
     userServiceMock = TestBed.inject(UserService) as unknown as MockUserService;
-    realmServiceMock = TestBed.inject(RealmService) as unknown as MockRealmService;
     component = fixture.componentInstance;
     fixture.componentRef.setInput("showOnlyAddToRealm", true);
     fixture.detectChanges();
@@ -52,135 +49,113 @@ describe("UserAssignmentComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should use internal controls if inputs not provided", () => {
-    expect(component.selectedUserRealmCtrl).toBe(component.internalSelectedUserRealmControl);
-    expect(component.userFilterCtrl).toBe(component.internalUserFilterControl);
-  });
-
-  it("should bind input controls if provided", () => {
-    const realmCtrl = new FormControl<string>("realm2", { nonNullable: true });
-    const userCtrl = new FormControl<string | UserData | null>("user1", { nonNullable: true });
-    component.selectedUserRealmControl = realmCtrl;
-    component.userFilterControl = userCtrl;
-    expect(component.selectedUserRealmCtrl).toBe(realmCtrl);
-    expect(component.userFilterCtrl).toBe(userCtrl);
-  });
-
-  it("should enable/disable userFilterCtrl on onlyAddToRealm checkbox change", () => {
+  it("should disable user filter when onlyAddToRealm is checked", () => {
     userServiceMock.selectedUserRealm.set("realm1");
     fixture.detectChanges();
-    const userCtrl = component.userFilterCtrl;
-    component.onOnlyAddToRealmChange(true);
+    expect(component.userInputDisabled()).toBe(false);
+
+    component.onlyAddToRealmChange(true);
     fixture.detectChanges();
-    expect(userCtrl.disabled).toBe(true);
-    component.onOnlyAddToRealmChange(false);
+    expect(component.onlyAddToRealm()).toBe(true);
+    expect(component.userInputDisabled()).toBe(true);
+
+    component.onlyAddToRealmChange(false);
     fixture.detectChanges();
-    expect(userCtrl.enabled).toBe(true);
+    expect(component.onlyAddToRealm()).toBe(false);
+    expect(component.userInputDisabled()).toBe(false);
   });
 
-  it("should enable/disable userFilterCtrl when checkbox is clicked", () => {
+  it("should toggle onlyAddToRealm via the checkbox click", () => {
     userServiceMock.selectedUserRealm.set("realm1");
     fixture.detectChanges();
-    const userCtrl = component.userFilterCtrl;
-    // Find the checkbox element
     const checkboxDebug = fixture.debugElement.query(By.css("mat-checkbox input[type='checkbox']"));
     expect(checkboxDebug).toBeTruthy();
 
-    // Initially unchecked
     expect(component.onlyAddToRealm()).toBe(false);
-    expect(userCtrl.enabled).toBe(true);
+    expect(component.userInputDisabled()).toBe(false);
 
-    // Simulate checking the checkbox
     checkboxDebug.nativeElement.click();
     fixture.detectChanges();
 
     expect(component.onlyAddToRealm()).toBe(true);
-    expect(userCtrl.disabled).toBe(true);
+    expect(component.userInputDisabled()).toBe(true);
 
-    // Simulate unchecking the checkbox
     checkboxDebug.nativeElement.click();
     fixture.detectChanges();
 
     expect(component.onlyAddToRealm()).toBe(false);
-    expect(userCtrl.enabled).toBe(true);
+    expect(component.userInputDisabled()).toBe(false);
   });
 
-  it("should reset user filter on realm change", () => {
-    const userCtrl = component.userFilterCtrl;
-    const realmCtrl = component.selectedUserRealmCtrl;
+  it("should clear user filter on realm change", () => {
+    component.onUserFilterInput("user1");
+    expect(component.userFilter()).toBe("user1");
 
-    userCtrl.setValue("user1");
-    expect(userCtrl.value).toBe("user1");
-
-    realmCtrl.setValue("realm2");
     component.onSelectedRealmChange("realm2");
-
     fixture.detectChanges();
 
     expect(userServiceMock.selectedUserRealm()).toBe("realm2");
-    expect(userCtrl.value).toBe("");
-    expect(userCtrl.enabled).toBe(true);
+    expect(component.userFilter()).toBe("");
+    expect(component.userInputDisabled()).toBe(false);
   });
 
-  it("should disable user filter if realm is empty", () => {
-    const realmCtrl = component.selectedUserRealmCtrl;
-    const userCtrl = component.userFilterCtrl;
-    realmCtrl.setValue("");
-    component.onSelectedRealmChange(realmCtrl.value);
+  it("should disable user filter input if realm is empty", () => {
+    component.onSelectedRealmChange("");
     fixture.detectChanges();
-    expect(userCtrl.value).toBe("");
-    expect(userCtrl.disabled).toBe(true);
-    realmCtrl.setValue("realm1");
-    component.onSelectedRealmChange(realmCtrl.value);
+    expect(component.userInputDisabled()).toBe(true);
+
+    component.onSelectedRealmChange("realm1");
     fixture.detectChanges();
-    expect(userCtrl.enabled).toBe(true);
+    expect(component.userInputDisabled()).toBe(false);
   });
 
   it("should be disabled initially if no realm is selected", () => {
-    // We recreate the component to ensure clean initialization.
     fixture = TestBed.createComponent(UserAssignmentComponent);
     component = fixture.componentInstance;
     userServiceMock.selectedUserRealm.set("");
     fixture.detectChanges();
 
-    const userCtrl = component.userFilterCtrl;
-    expect(userCtrl.disabled).toBe(true);
+    expect(component.userInputDisabled()).toBe(true);
   });
 
-  it("should set onlyAddToRealm to false when user selected", () => {
-    const userCtrl = component.userFilterCtrl;
-    userCtrl.setValue("user1");
+  it("should set onlyAddToRealm to false when typing in user filter", () => {
+    component.onlyAddToRealm.set(true);
+    component.onUserFilterInput("user1");
     expect(component.onlyAddToRealm()).toBe(false);
+    expect(component.userFilter()).toBe("user1");
   });
 
-  it("should disable onlyAddToRealm checkbox when user is selected", () => {
-    const userCtrl = component.userFilterCtrl;
-    userCtrl.setValue("user1");
-    // Simulate template logic: checkbox is disabled if userFilterCtrl.value is truthy
-    expect(!!userCtrl.value).toBe(true);
+  it("should set onlyAddToRealm to false when a user is selected", () => {
+    component.onlyAddToRealm.set(true);
+    const user: UserData = {
+      username: "user1",
+      resolver: "",
+      description: "",
+      editable: false,
+      email: "",
+      givenname: "",
+      mobile: "",
+      phone: "",
+      surname: "",
+      userid: ""
+    } as UserData;
+    component.onUserSelected(user);
+    expect(component.onlyAddToRealm()).toBe(false);
+    expect(component.userFilter()).toBe("user1");
+    expect(userServiceMock.selectionFilter()).toEqual(user);
   });
 
-  it("should enable onlyAddToRealm checkbox when user is cleared", () => {
-    const userCtrl = component.userFilterCtrl;
-    userCtrl.setValue("user1");
-    userCtrl.setValue(null);
-    // Simulate template logic: checkbox is enabled if userFilterCtrl.value is falsy
-    expect(!userCtrl.value).toBe(true);
+  it("clearUser resets the filter", () => {
+    component.onUserFilterInput("user1");
+    expect(component.userFilter()).toBe("user1");
+    component.clearUser();
+    expect(component.userFilter()).toBe("");
+    expect(userServiceMock.selectionFilter()).toBe("");
   });
 
-  it("should update control when signal changes (fallback simulation)", () => {
-    // Re-create the component with clean state
-    fixture = TestBed.createComponent(UserAssignmentComponent);
-    component = fixture.componentInstance;
-    userServiceMock.selectedUserRealm.set("");
-    fixture.detectChanges();
-
-    expect(component.selectedUserRealmCtrl.value).toBe("");
-
-    // Simulate signal getting a value (like from fallback)
-    userServiceMock.selectedUserRealm.set("fallback-realm");
-    fixture.detectChanges();
-
-    expect(component.selectedUserRealmCtrl.value).toBe("fallback-realm");
+  it("displayUser formats values correctly", () => {
+    expect(component.displayUser(null)).toBe("");
+    expect(component.displayUser("alice")).toBe("alice");
+    expect(component.displayUser({ username: "bob" } as UserData)).toBe("bob");
   });
 });

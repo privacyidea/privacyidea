@@ -16,17 +16,18 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, effect, EventEmitter, inject, input, OnInit, Output } from "@angular/core";
-import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
+import { Component, effect, forwardRef, inject, input, signal } from "@angular/core";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
 
-import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
   IndexedSecretApiPayloadMapper,
   IndexedSecretEnrollmentData
 } from "@app/mappers/token-api-payload/indexedsecret-token-api-payload.mapper";
+import { EnrollmentArgs, EnrollTokenBase } from "@components/token/token-enrollment/enroll-token-base";
 
 export interface IndexedSecretEnrollmentOptions extends TokenEnrollmentData {
   type: "indexedsecret";
@@ -36,65 +37,48 @@ export interface IndexedSecretEnrollmentOptions extends TokenEnrollmentData {
 @Component({
   selector: "app-enroll-indexedsecret",
   standalone: true,
-  imports: [MatFormField, MatInput, MatLabel, ReactiveFormsModule, FormsModule, MatError],
+  imports: [MatFormField, MatInput, MatLabel, MatError, FormField],
   templateUrl: "./enroll-indexedsecret.component.html",
-  styleUrl: "./enroll-indexedsecret.component.scss"
+  styleUrl: "./enroll-indexedsecret.component.scss",
+  providers: [{ provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollIndexedsecretComponent) }]
 })
-export class EnrollIndexedsecretComponent implements OnInit {
+export class EnrollIndexedsecretComponent extends EnrollTokenBase<IndexedSecretEnrollmentData> {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly enrollmentMapper: IndexedSecretApiPayloadMapper = inject(IndexedSecretApiPayloadMapper);
 
+  enrollmentData = input<IndexedSecretEnrollmentData | null>();
   disabled = input<boolean>(false);
 
-  constructor() {
-    effect(() =>
-      this.disabled()
-        ? this.indexedSecretForm.disable({ emitEvent: false })
-        : this.indexedSecretForm.enable({ emitEvent: false })
-    );
-  }
-
-  @Output() additionalFormFieldsChange = new EventEmitter<{
-    [key: string]: FormControl<any>;
-  }>();
-  @Output() enrollmentArgsGetterChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => {
-      data: IndexedSecretEnrollmentData;
-      mapper: TokenApiPayloadMapper<IndexedSecretEnrollmentData>;
-    } | null
-  >();
-
-  otpKeyControl = new FormControl<string>("", [Validators.required, Validators.minLength(16)]);
-
-  indexedSecretForm = new FormGroup({
-    otpKey: this.otpKeyControl
+  otpKey = signal<string>("");
+  otpKeyForm = form(this.otpKey, (f) => {
+    required(f);
+    validate(f, (ctx) => (ctx.value().length < 16 ? [{ kind: "minlength" }] : []));
+    disabled(f, () => this.disabled());
   });
 
-  ngOnInit(): void {
-    this.additionalFormFieldsChange.emit({
-      otpKey: this.otpKeyControl
+  constructor() {
+    super();
+
+    // Apply initial enrollment data
+    effect(() => {
+      if (!this.enrollmentData()) return;
+      if (this.enrollmentData()?.otpKey) this.otpKey.set(this.enrollmentData()!.otpKey ?? "");
     });
-    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
   }
 
-  enrollmentArgsGetter = (
-    basicOptions: TokenEnrollmentData
-  ): {
-    data: IndexedSecretEnrollmentData;
-    mapper: TokenApiPayloadMapper<IndexedSecretEnrollmentData>;
-  } | null => {
-    if (this.otpKeyControl.invalid) {
-      this.indexedSecretForm.markAllAsTouched();
+  buildEnrollmentArgs(basicOptions: TokenEnrollmentData): EnrollmentArgs<IndexedSecretEnrollmentData> | null {
+    if (!this.otpKeyForm().valid()) {
+      this.otpKeyForm().markAsTouched();
       return null;
     }
     const enrollmentData: IndexedSecretEnrollmentOptions = {
       ...basicOptions,
       type: "indexedsecret",
-      otpKey: this.otpKeyControl.value ?? ""
+      otpKey: this.otpKey()
     };
     return {
       data: enrollmentData,
       mapper: this.enrollmentMapper
     };
-  };
+  }
 }

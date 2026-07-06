@@ -16,12 +16,14 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<mat-form-field class="full-width">
+<mat-form-field
+  class="input-width-xl"
+  subscriptSizing="dynamic">
   <mat-label i18n="@@resolverFilename">Resolver Filename</mat-label>
   <input
     matInput
-    [disabled]="!isEditMode()"
+    [disabled]="!fieldsEnabled()"
     placeholder="/etc/hosts"
-    [ngModel]="hostsData().filename"
-    (ngModelChange)="updateData({ filename: $event })" />
+    [value]="hostsData().filename ?? ''"
+    (input)="updateData({ filename: $event.target['value'] })" />
 </mat-form-field>

@@ -180,9 +180,9 @@ describe("ResolverService", () => {
   describe("userAttributes signal", () => {
     it("should return attribute keys for ldapresolver  with stringified mapping", async () => {
       const mockResolvers = {
-        "ldap/1": { data: { USERINFO: '{ "surname": "sn", "givenname": "givenName" }' }, type: "ldapresolver" }
+        "ldap/1": { data: { USERINFO: "{ \"surname\": \"sn\", \"givenname\": \"givenName\" }" }, type: "ldapresolver" }
       };
-      (resolverService as any).selectedResolverName.set("ldap/1");
+      resolverService.selectedResolverName.set("ldap/1");
       const mockResponse = MockPiResponse.fromValue(mockResolvers);
 
       TestBed.tick();
@@ -199,7 +199,7 @@ describe("ResolverService", () => {
       const mockResolvers = {
         "ldap/1": { data: { USERINFO: "{ 'surname': 'sn', 'givenname': 'givenName' " }, type: "ldapresolver" }
       };
-      (resolverService as any).selectedResolverName.set("ldap/1");
+      resolverService.selectedResolverName.set("ldap/1");
       const mockResponse = MockPiResponse.fromValue(mockResolvers);
 
       TestBed.tick();
@@ -217,7 +217,7 @@ describe("ResolverService", () => {
         "sql/1": { data: { Map: { givenname: "displayname", email: "mail" } }, type: "sqlresolver" }
       };
       const mockResponse = MockPiResponse.fromValue(mockResolvers);
-      (resolverService as any).selectedResolverName.set("sql/1");
+      resolverService.selectedResolverName.set("sql/1");
 
       TestBed.tick();
       httpMock.expectOne(resolverService.resolverBaseUrl); // accept initial load of all resolvers;
@@ -243,7 +243,7 @@ describe("ResolverService", () => {
         }
       };
       const mockResponse = MockPiResponse.fromValue(mockResolvers);
-      (resolverService as any).selectedResolverName.set("http1");
+      resolverService.selectedResolverName.set("http1");
 
       TestBed.tick();
       httpMock.expectOne(resolverService.resolverBaseUrl); // accept initial load of all resolvers;

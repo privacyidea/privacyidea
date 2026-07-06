@@ -45,11 +45,12 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from dateutil.parser import isoparse
+from sqlalchemy.orm.exc import StaleDataError
 
 from privacyidea.api.lib.policyhelper import get_pushtoken_add_config, get_init_tokenlabel_parameters
 from privacyidea.lib import _, lazy_gettext
 from privacyidea.lib.apps import _construct_extra_parameters
-from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.challenge import get_challenges, delete_challenges
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import geturandom, generate_keypair
 from privacyidea.lib.decorators import check_token_locked
@@ -63,7 +64,7 @@ from privacyidea.lib.policy import (SCOPE, GROUP, Match,
                                     get_action_values_from_options,
                                     comma_escape_text)
 from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway, create_sms_instance
-from privacyidea.lib.token import get_one_token, init_token
+from privacyidea.lib.token import get_one_token, init_token, create_challenge
 from privacyidea.lib.tokenclass import (TokenClass, AuthenticationMode, ClientMode,
                                         ChallengeSession)
 from privacyidea.lib.tokenrolloutstate import RolloutState
@@ -73,7 +74,7 @@ from privacyidea.lib.tokens.push_types import (PushMode, PushPresenceOptions,
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import create_img, b32encode_and_unicode
 from privacyidea.lib.utils import prepare_result, to_bytes, is_true, create_tag_dict
-from privacyidea.models import Challenge, Token, db
+from privacyidea.models import Token, db
 
 log = logging.getLogger(__name__)
 
@@ -711,6 +712,11 @@ class PushTokenClass(TokenClass):
             if (challenges and challenges[0].is_valid()
                     and challenges[0].get_session() == ChallengeSession.ENROLLMENT):
                 challenges[0].set_otp_status(True)
+                # Explicit save commits the DB-backed Challenge - the DTO
+                # auto-saves itself, but Challenge.set_otp_status is just
+                # an in-memory mutation. Without this commit, a later
+                # exception in the same request would roll back the
+                # answered state for DB-only deployments.
                 challenges[0].save()
         except ResourceNotFoundError:
             raise ResourceNotFoundError("No token with this serial number in the rollout state 'clientwait'.")
@@ -796,9 +802,26 @@ class PushTokenClass(TokenClass):
                                 DEFAULT_MOBILE_TEXT_CODE_TO_PHONE)
                         else:
                             challenge.set_otp_status(True)
+                    # Explicit save commits the DB-backed Challenge - the
+                    # DTO auto-saves itself, but Challenge.set_* mutators
+                    # are in-memory only. Without this commit, the verify
+                    # state would not persist on DB-only deployments.
                     challenge.save()
                 except InvalidSignature as _e:
                     pass
+                except StaleDataError:
+                    # The challenge row was deleted concurrently while we were committing the
+                    # answer (e.g. a push_wait timeout firing at the same instant). The answer
+                    # is moot, so treat it as a non-match instead of failing the request. Clear
+                    # any details already collected.
+                    db.session.rollback()
+                    result = False
+                    details = {}
+                    # rollback() expires every challenge object in the session, so re-reading a
+                    # not-yet-checked sibling below would re-fetch it from the DB - raising an
+                    # uncaught ObjectDeletedError if that row was deleted concurrently too. A unique
+                    # nonce matches at most one challenge, so break: there is nothing left to check.
+                    break
         return result, details
 
     @classmethod
@@ -1201,13 +1224,12 @@ class PushTokenClass(TokenClass):
                 validity = int(get_from_config(lookup_for, validity))
 
                 # Create the challenge in the database
-                db_challenge = Challenge(self.token.serial,
-                                         transaction_id=transactionid,
-                                         challenge=challenge,
-                                         data=data,
-                                         session=options.get("session"),
-                                         validitytime=validity)
-                db_challenge.save()
+                db_challenge = create_challenge(self.token.serial,
+                                               transaction_id=transactionid,
+                                               challenge=challenge,
+                                               data=data,
+                                               session=options.get("session"),
+                                               validitytime=validity)
                 self.challenge_janitor()
                 transactionid = db_challenge.transaction_id
 
@@ -1289,11 +1311,17 @@ class PushTokenClass(TokenClass):
                         break
                     time.sleep(POLL_INTERVAL - (elapsed_time % POLL_INTERVAL))
 
+                # The push_wait transaction_id is never returned to the client, so nothing can
+                # poll or redeem this challenge after the loop. Delete it (whether answered,
+                # declined or timed out).
+                if transaction_id:
+                    delete_challenges(serial=self.token.serial, transaction_id=transaction_id)
+
         elif code_to_phone_enabled and options.get("transaction_id"):
             # Step 2 of code_to_phone: the user submits the display_code shown after
             # the smartphone confirmed. Delegate entirely to check_challenge_response,
             # which enforces transaction_id binding and increments the failcount on
-            # wrong codes — avoiding both the unbounded-challenge-scan and the missing
+            # wrong codes - avoiding both the unbounded-challenge-scan and the missing
             # failcount increment that a hand-rolled loop here would have.
             otp_counter = self.check_challenge_response(passw=passw, options=options)
             if otp_counter >= 0:
@@ -1335,6 +1363,18 @@ class PushTokenClass(TokenClass):
             challenges = get_challenges(serial=self.token.serial, transaction_id=transaction_id)
 
             for challenge in challenges:
+                # An enrollment challenge that has already been answered by the smartphone
+                # (otp_valid is set during the rollout in _handle_enrollment_step2) must finalize
+                # the authentication even if the challenge has meanwhile expired. The user may take
+                # some time to scan the QR code and confirm on the device, but once the smartphone
+                # has registered, the pending /validate/check should still succeed.
+                if challenge.get_session() == ChallengeSession.ENROLLMENT:
+                    _, status = challenge.get_otp_status()
+                    if status is True:
+                        otp_counter = 1
+                        break
+                    continue
+
                 # Check that the challenge is not expired
                 if challenge.is_valid():
                     data = challenge.get_data()

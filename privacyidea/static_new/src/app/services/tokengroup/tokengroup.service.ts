@@ -25,9 +25,7 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { lastValueFrom } from "rxjs";
 
-type Tokengroups = {
-  [key: string]: _Tokengroup;
-};
+type Tokengroups = Record<string, _Tokengroup>;
 
 interface _Tokengroup {
   description: string;
@@ -43,27 +41,20 @@ export interface Tokengroup {
 export interface TokengroupServiceInterface {
   tokengroupResource: HttpResourceRef<PiResponse<Tokengroups> | undefined>;
   tokengroups: WritableSignal<Tokengroup[]>;
+
   postTokengroup(tokengroup: Tokengroup): Promise<void>;
+
   deleteTokengroup(groupname: string): Promise<void>;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class TokengroupService implements TokengroupServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
-  private readonly http: HttpClient = inject(HttpClient);
+  private readonly http = inject(HttpClient);
 
   private readonly tokengroupBaseUrl = environment.proxyUrl + "/tokengroup/";
-
-  constructor() {
-    effect(() => {
-      this.notificationService.handleResourceError(this.tokengroupResource.error(), "tokengroups");
-    });
-  }
-
   tokengroupResource = httpResource<PiResponse<Tokengroups>>(() => {
     if (!this.contentService.onExternalTokenGroups()) {
       return undefined;
@@ -74,7 +65,6 @@ export class TokengroupService implements TokengroupServiceInterface {
       headers: this.authService.getHeaders()
     };
   });
-
   tokengroups: WritableSignal<Tokengroup[]> = linkedSignal({
     source: () => ({
       value: this.tokengroupResource.hasValue() ? this.tokengroupResource.value() : undefined,
@@ -93,9 +83,15 @@ export class TokengroupService implements TokengroupServiceInterface {
     }
   });
 
+  constructor() {
+    effect(() => {
+      this.notificationService.handleResourceError(this.tokengroupResource.error(), "tokengroups");
+    });
+  }
+
   async postTokengroup(tokengroup: Tokengroup): Promise<void> {
     const url = `${this.tokengroupBaseUrl}${encodeURIComponent(tokengroup.groupname)}`;
-    const request = this.http.post<PiResponse<any>>(url, tokengroup, { headers: this.authService.getHeaders() });
+    const request = this.http.post<PiResponse<number>>(url, tokengroup, { headers: this.authService.getHeaders() });
 
     return lastValueFrom(request)
       .then(() => {
@@ -110,7 +106,7 @@ export class TokengroupService implements TokengroupServiceInterface {
   }
 
   async deleteTokengroup(groupname: string): Promise<void> {
-    const request = this.http.delete<PiResponse<any>>(`${this.tokengroupBaseUrl}${encodeURIComponent(groupname)}`, {
+    const request = this.http.delete<PiResponse<number>>(`${this.tokengroupBaseUrl}${encodeURIComponent(groupname)}`, {
       headers: this.authService.getHeaders()
     });
     return lastValueFrom(request)
@@ -124,4 +120,6 @@ export class TokengroupService implements TokengroupServiceInterface {
         throw new Error("delete-failed");
       });
   }
+
 }
+

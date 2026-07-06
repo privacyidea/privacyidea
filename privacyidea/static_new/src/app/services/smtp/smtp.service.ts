@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
+import { HttpClient, HttpErrorResponse, httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, effect, inject, Injectable, Signal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
 import { environment } from "@env/environment";
@@ -43,9 +43,7 @@ export interface SmtpServer {
   dont_send_on_error: boolean;
 }
 
-export type SmtpServers = {
-  [key: string]: SmtpServer;
-};
+export type SmtpServers = Record<string, SmtpServer>;
 
 export interface SmtpServiceInterface {
   smtpServerResource: HttpResourceRef<PiResponse<SmtpServers> | undefined>;
@@ -53,28 +51,19 @@ export interface SmtpServiceInterface {
 
   postSmtpServer(server: SmtpServer): Promise<void>;
 
-  testSmtpServer(params: any): Promise<boolean>;
+  testSmtpServer(params: SmtpServer & { recipient: string }): Promise<boolean>;
 
   deleteSmtpServer(identifier: string): Promise<void>;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class SmtpService implements SmtpServiceInterface {
+  private readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  private readonly http = inject(HttpClient);
+
   readonly smtpServerBaseUrl = environment.proxyUrl + "/smtpserver/";
-
-  readonly authService: AuthServiceInterface = inject(AuthService);
-  readonly contentService: ContentServiceInterface = inject(ContentService);
-  readonly notificationService: NotificationServiceInterface = inject(NotificationService);
-  readonly http: HttpClient = inject(HttpClient);
-
-  constructor() {
-    effect(() => {
-      this.notificationService.handleResourceError(this.smtpServerResource.error(), "SMTP servers");
-    });
-  }
-
   readonly smtpServerResource = httpResource<PiResponse<SmtpServers>>(() => {
     if (
       !this.contentService.onExternalSmtp() &&
@@ -89,7 +78,6 @@ export class SmtpService implements SmtpServiceInterface {
       headers: this.authService.getHeaders()
     };
   });
-
   readonly smtpServers = computed<SmtpServer[]>(() => {
     if (!this.smtpServerResource.hasValue()) return [];
     const res = this.smtpServerResource.value();
@@ -103,22 +91,28 @@ export class SmtpService implements SmtpServiceInterface {
     return [];
   });
 
+  constructor() {
+    effect(() => {
+      this.notificationService.handleResourceError(this.smtpServerResource.error(), "SMTP servers");
+    });
+  }
+
   async postSmtpServer(server: SmtpServer): Promise<void> {
     const url = `${this.smtpServerBaseUrl}${encodeURIComponent(server.identifier)}`;
-    const request = this.http.post<PiResponse<any>>(url, server, { headers: this.authService.getHeaders() });
+    const request = this.http.post<PiResponse<boolean>>(url, server, { headers: this.authService.getHeaders() });
 
     try {
       await lastValueFrom(request);
       this.notificationService.success($localize`Successfully saved SMTP server.`);
       this.smtpServerResource.reload();
-    } catch (error: any) {
-      const message = error.error?.result?.error?.message || "";
+    } catch (error) {
+      const message = (error as HttpErrorResponse).error?.result?.error?.message || "";
       this.notificationService.error($localize`Failed to save SMTP server. ` + message);
-      throw new Error("post-failed");
+      throw new Error("post-failed", { cause: error });
     }
   }
 
-  async testSmtpServer(params: any): Promise<boolean> {
+  async testSmtpServer(params: SmtpServer & { recipient: string }): Promise<boolean> {
     const url = `${this.smtpServerBaseUrl}send_test_email`;
     const request = this.http.post<PiResponse<boolean>>(url, params, { headers: this.authService.getHeaders() });
     try {
@@ -128,25 +122,30 @@ export class SmtpService implements SmtpServiceInterface {
         return true;
       }
       return false;
-    } catch (error: any) {
-      const message = error.error?.result?.error?.message || "";
+    } catch (error) {
+      const message = (error as HttpErrorResponse).error?.result?.error?.message || "";
       this.notificationService.error($localize`Failed to send test email. ` + message);
       return false;
     }
   }
 
   async deleteSmtpServer(identifier: string): Promise<void> {
-    const request = this.http.delete<PiResponse<any>>(`${this.smtpServerBaseUrl}${encodeURIComponent(identifier)}`, {
-      headers: this.authService.getHeaders()
-    });
+    const request = this.http.delete<PiResponse<boolean>>(
+      `${this.smtpServerBaseUrl}${encodeURIComponent(identifier)}`,
+      {
+        headers: this.authService.getHeaders()
+      }
+    );
     try {
       await lastValueFrom(request);
       this.notificationService.success($localize`Successfully deleted SMTP server: ${identifier}.`);
       this.smtpServerResource.reload();
-    } catch (error: any) {
-      const message = error.error?.result?.error?.message || "";
+    } catch (error) {
+      const message = (error as HttpErrorResponse).error?.result?.error?.message || "";
       this.notificationService.error($localize`Failed to delete SMTP server. ` + message);
-      throw new Error("delete-failed");
+      throw new Error("delete-failed", { cause: error });
     }
   }
+
 }
+

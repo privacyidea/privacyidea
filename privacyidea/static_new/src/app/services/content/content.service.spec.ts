@@ -29,7 +29,7 @@ describe("ContentService", () => {
   let events$: Subject<NavigationEnd>;
   let mockRouter: {
     url: string;
-    events: any;
+    events: Subject<NavigationEnd>;
     navigateByUrl: jest.Mock<Promise<boolean>, [string]>;
   };
 
@@ -42,7 +42,7 @@ describe("ContentService", () => {
     events$ = new Subject<NavigationEnd>();
     mockRouter = {
       url: "/start",
-      events: events$.asObservable(),
+      events: events$,
       navigateByUrl: jest.fn(async (url: string) => {
         emitNav(url);
         return true;
@@ -50,7 +50,7 @@ describe("ContentService", () => {
     };
 
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), { provide: Router, useValue: mockRouter }]
+      providers: [provideHttpClient(), ContentService, { provide: Router, useValue: mockRouter }]
     });
 
     service = TestBed.inject(ContentService);
@@ -144,6 +144,25 @@ describe("ContentService", () => {
     });
   });
 
+  describe("userSelected()", () => {
+    it("navigates to user details and stores username and realm", () => {
+      emitNav("/tokens");
+      service.userSelected("alice", "themis");
+
+      expect(mockRouter.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.USERS_DETAILS + "/alice?realm=themis");
+      expect(service.detailsUser().username).toBe("alice");
+      expect(service.detailsUser().realm).toBe("themis");
+    });
+
+    it("stores an empty realm when none is provided", () => {
+      emitNav("/tokens");
+      service.userSelected("alice", undefined as unknown as string);
+
+      expect(mockRouter.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.USERS_DETAILS + "/alice?realm=");
+      expect(service.detailsUser().realm).toBe("");
+    });
+  });
+
   describe("containerSelected()", () => {
     it("navigates to container details and sets serial", async () => {
       emitNav("/tokens");
@@ -153,6 +172,15 @@ describe("ContentService", () => {
       expect(service.containerSerial()).toBe("C1");
       expect(service.routeUrl()).toBe(ROUTE_PATHS.CONTAINERS_DETAILS + "C1");
       expect(service.previousUrl()).toBe("/tokens");
+    });
+  });
+
+  describe("machineResolverSelected()", () => {
+    it("navigates to machine resolver details", () => {
+      emitNav("/tokens");
+      service.machineResolverSelected("hosts 1");
+
+      expect(mockRouter.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.MACHINE_RESOLVER_DETAILS + "hosts%201");
     });
   });
 });

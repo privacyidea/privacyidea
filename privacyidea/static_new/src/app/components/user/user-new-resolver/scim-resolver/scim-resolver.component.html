@@ -23,19 +23,13 @@
       <mat-form-field class="input-width-l">
         <mat-label i18n>Authentication Server URI</mat-label>
         <app-clearable-input
-          (onClick)="authServerControl.setValue('')"
-          [showClearButton]="!!authServerControl.value">
+          (clearButtonClick)="model.update(m => ({ ...m, Authserver: '' }))" [showClearButton]="!!model().Authserver">
           <input
-            [formControl]="authServerControl"
-            matInput
-            placeholder="http://localhost:8080/osiam-auth-server"
-            required />
+            [formField]="scimForm.Authserver" matInput placeholder="http://localhost:8080/osiam-auth-server" />
         </app-clearable-input>
-        @if (authServerControl.hasError("required") && authServerControl.touched) {
+        @if (scimForm.Authserver().errors().some(e => e.kind === 'required') && scimForm.Authserver().touched()) {
           <mat-error i18n>
-            Authentication server URI is
-            <strong>required</strong>
-            .
+            Authentication server URI is <strong>required</strong> .
           </mat-error>
         }
       </mat-form-field>
@@ -43,19 +37,14 @@
       <mat-form-field class="input-width-l">
         <mat-label i18n>Resource Server Uri</mat-label>
         <app-clearable-input
-          (onClick)="resourceServerControl.setValue('')"
-          [showClearButton]="!!resourceServerControl.value">
+          (clearButtonClick)="model.update(m => ({ ...m, Resourceserver: '' }))"
+          [showClearButton]="!!model().Resourceserver">
           <input
-            [formControl]="resourceServerControl"
-            matInput
-            placeholder="http://localhost:8080/osiam-resource-server"
-            required />
+            [formField]="scimForm.Resourceserver" matInput placeholder="http://localhost:8080/osiam-resource-server" />
         </app-clearable-input>
-        @if (resourceServerControl.hasError("required") && resourceServerControl.touched) {
+        @if (scimForm.Resourceserver().errors().some(e => e.kind === 'required') && scimForm.Resourceserver().touched()) {
           <mat-error i18n>
-            Resource server URI is
-            <strong>required</strong>
-            .
+            Resource server URI is <strong>required</strong> .
           </mat-error>
         }
       </mat-form-field>
@@ -65,19 +54,13 @@
       <mat-form-field class="input-width-l">
         <mat-label i18n>Client</mat-label>
         <app-clearable-input
-          (onClick)="clientControl.setValue('')"
-          [showClearButton]="!!clientControl.value">
+          (clearButtonClick)="model.update(m => ({ ...m, Client: '' }))" [showClearButton]="!!model().Client">
           <input
-            [formControl]="clientControl"
-            matInput
-            placeholder="hostname"
-            required />
+            [formField]="scimForm.Client" matInput placeholder="hostname" />
         </app-clearable-input>
-        @if (clientControl.hasError("required") && clientControl.touched) {
+        @if (scimForm.Client().errors().some(e => e.kind === 'required') && scimForm.Client().touched()) {
           <mat-error i18n>
-            Client is
-            <strong>required</strong>
-            .
+            Client is <strong>required</strong> .
           </mat-error>
         }
       </mat-form-field>
@@ -85,20 +68,13 @@
       <mat-form-field class="input-width-l">
         <mat-label i18n>Secret</mat-label>
         <app-clearable-input
-          (onClick)="secretControl.setValue('')"
-          [showClearButton]="!!secretControl.value">
+          (clearButtonClick)="model.update(m => ({ ...m, Secret: '' }))" [showClearButton]="!!model().Secret">
           <input
-            [formControl]="secretControl"
-            matInput
-            placeholder="d81c31e4-9f65-4805-b5ba-6edf0761f954"
-            required
-            type="password" />
+            [formField]="scimForm.Secret" matInput placeholder="d81c31e4-9f65-4805-b5ba-6edf0761f954" type="password" />
         </app-clearable-input>
-        @if (secretControl.hasError("required") && secretControl.touched) {
+        @if (scimForm.Secret().errors().some(e => e.kind === 'required') && scimForm.Secret().touched()) {
           <mat-error i18n>
-            Secret is
-            <strong>required</strong>
-            .
+            Secret is <strong>required</strong> .
           </mat-error>
         }
       </mat-form-field>
@@ -107,15 +83,12 @@
     <mat-form-field class="input-width-xl">
       <mat-label i18n>Mapping</mat-label>
       <textarea
-        [formControl]="mappingControl"
+        [formField]="scimForm.Mapping"
         matInput
-        placeholder='{"userName": "username", "id": "userid", "emails.0.value": "email"}'
-        required></textarea>
-      @if (mappingControl.hasError("required") && mappingControl.touched) {
+        placeholder='{"userName": "username", "id": "userid", "emails.0.value": "email"}'></textarea>
+      @if (scimForm.Mapping().errors().some(e => e.kind === 'required') && scimForm.Mapping().touched()) {
         <mat-error i18n>
-          Mapping is
-          <strong>required</strong>
-          .
+          Mapping is <strong>required</strong> .
         </mat-error>
       }
     </mat-form-field>

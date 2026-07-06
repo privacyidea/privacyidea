@@ -29,10 +29,9 @@
           aria-label="Go to Questionnaire token configuration"
           i18n-aria-label
           (click)="goToQuestionConfig()"
-          (keydown)="onQuestionConfigKeydown($event)"
-        >
-          Questionnaire Token Configuration
-        </a>!
+          (keydown)="onQuestionConfigKeydown($event)">
+          Questionnaire Token Configuration </a
+        >!
       </span>
     } @else {
       <span
@@ -44,21 +43,20 @@
   } @else {
     <span i18n> Please answer at least {{ configMinNumberOfAnswers() }} of the following questions: </span>
   }
-  <div
-    [formGroup]="questionForm()"
-    class="margin-top-16 flex-column gap-16">
-    @for (question of configQuestions(); track question; let i = $index) {
-      <mat-form-field
-        class="input-width-xl">
+  <div class="margin-top-16 flex-column gap-16">
+    @for (question of configQuestions(); track question) {
+      <mat-form-field class="input-width-xl">
         <mat-label>{{ question.question }}</mat-label>
         <input
-          [formControlName]="questionControlNames()[i]"
+          [value]="answers()[question.question]"
+          (input)="setAnswer(question.question, $event.target['value'])"
+          [disabled]="disabled()"
           matInput
           type="text" />
       </mat-form-field>
     }
   </div>
-  @if (questionForm().hasError("minAnswers") && questionForm().touched) {
-    <mat-error>At least {{ configMinNumberOfAnswers() }} answers are <strong>required</strong>.</mat-error>
+  @if (answeredCount() < configMinNumberOfAnswers() && formTouched()) {
+    <mat-error i18n>At least {{ configMinNumberOfAnswers() }} answers are <strong>required</strong>.</mat-error>
   }
 </div>

@@ -19,7 +19,7 @@
 import { AsyncPipe, NgClass } from "@angular/common";
 import { HttpClient } from "@angular/common/http";
 import { Component, computed, inject, SecurityContext } from "@angular/core";
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
+import { FormField } from "@angular/forms/signals";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatNativeDateModule } from "@angular/material/core";
 import { MatDatepickerModule } from "@angular/material/datepicker";
@@ -49,8 +49,7 @@ import { TokenEnrollmentComponent } from "./token-enrollment.component";
 @Component({
   selector: "app-token-enrollment-wizard",
   imports: [
-    ReactiveFormsModule,
-    FormsModule,
+    FormField,
     MatNativeDateModule,
     MatDatepickerModule,
     MatButton,
@@ -71,8 +70,8 @@ import { TokenEnrollmentComponent } from "./token-enrollment.component";
   styleUrl: "./token-enrollment.component.scss"
 })
 export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
-  protected readonly http: HttpClient = inject(HttpClient);
-  protected readonly sanitizer: DomSanitizer = inject(DomSanitizer);
+  protected readonly http = inject(HttpClient);
+  protected readonly sanitizer = inject(DomSanitizer);
   protected override readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected override readonly realmService: RealmServiceInterface = inject(RealmService);
   protected override readonly notificationService: NotificationServiceInterface = inject(NotificationService);
@@ -81,7 +80,7 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
   protected override readonly versioningService: VersioningServiceInterface = inject(VersioningService);
   protected override readonly contentService: ContentServiceInterface = inject(ContentService);
   protected override readonly dialogService: DialogServiceInterface = inject(DialogService);
-  protected override readonly authService: AuthService = inject(AuthService);
+  protected override readonly authService = inject(AuthService);
   protected override wizard = true;
   protected readonly tokenType = computed(() => {
     const defaultType = this.authService.defaultTokentype() || "hotp";
@@ -120,7 +119,7 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
 
   override openLastStepDialog(response: EnrollmentResponse | null): void {
     if (!response) {
-      this.notificationService.warning("No enrollment response available.");
+      this.notificationService.warning($localize`No enrollment response available.`);
       return;
     }
 

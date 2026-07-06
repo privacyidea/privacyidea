@@ -38,8 +38,7 @@ export interface QuestionEnrollmentPayload extends TokenEnrollmentPayload {
 @Injectable({ providedIn: "root" })
 export class QuestionApiPayloadMapper
   extends BaseApiPayloadMapper
-  implements TokenApiPayloadMapper<QuestionEnrollmentData>
-{
+  implements TokenApiPayloadMapper<QuestionEnrollmentData> {
   override toApiPayload(data: QuestionEnrollmentData): QuestionEnrollmentPayload {
     const payload: QuestionEnrollmentPayload = {
       ...super.toApiPayload(data),
@@ -56,7 +55,7 @@ export class QuestionApiPayloadMapper
     return payload;
   }
 
-  override fromApiPayload(payload: any): QuestionEnrollmentData {
+  override fromApiPayload(payload: QuestionEnrollmentPayload): QuestionEnrollmentData {
     // Placeholder: Implement transformation from API payload. We will replace this later.
     return payload as QuestionEnrollmentData;
   }

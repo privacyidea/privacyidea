@@ -1,25 +1,114 @@
 @use "styles";
 @use "table";
 
-$padding-horizontal: 16px;
+// Unwrap into the parent details grid so each action section flows as its own
+// grid item (like the other detail cards), with only the grid gap between them.
+:host {
+  display: contents;
+}
 
-.actions-otp-container {
+// The verify-enrollment prompt stays a single full-width row above the sections.
+.actions-verify-row {
+  flex: 0 0 100%;
+}
+
+.actions-status-row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding: 12px 14px;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: var(--border-radius);
+  background: var(--mat-sys-surface-container-low);
+}
+
+// display:contents so the sections below become direct participants of the
+// parent details grid rather than a nested flex row.
+.actions-sections-row {
+  display: contents;
+}
+
+.actions-section {
   display: flex;
   flex-direction: column;
-  padding: 0 $padding-horizontal;
+  gap: 8px;
+  flex: 0 0 auto;
+  width: fit-content;
+  align-self: flex-start;
 
-  .actions-pin-input,
-  .actions-otp-pin-input {
-    display: flex;
+  app-set-pin-action,
+  app-resync-token-action,
+  app-test-otp-pin-action,
+  .passkey-test-panel {
+    flex: 0 0 auto;
+    width: fit-content;
+    min-height: 0;
   }
+}
 
-  .actions-pin-input-button,
-  .actions-visibility-button {
-    display: flex;
-  }
-
-  .actions-pin-button {
+.test-sync-section {
+  app-resync-token-action,
+  app-test-otp-pin-action {
     display: flex;
     flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 8px 12px 12px;
+    border: 1px solid var(--mat-sys-outline-variant);
+    border-radius: var(--border-radius);
+    box-sizing: border-box;
+
+    .actions-pin-input,
+    .actions-otp-pin-input {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .actions-pin-input-button,
+    .actions-pin-button {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
   }
+}
+
+.passkey-test-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 12px 12px;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: var(--border-radius);
+  box-sizing: border-box;
+}
+
+.passkey-test-result {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.passkey-test-result--success {
+  color: var(--mat-sys-primary);
+}
+
+.passkey-test-result--warning {
+  color: var(--mat-sys-error);
+}
+
+.lifecycle-buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
 }

@@ -27,7 +27,7 @@ import { MatFormField, MatLabel } from "@angular/material/select";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTabsModule } from "@angular/material/tabs";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { TokenApplicationsActionsComponent } from "@components/token/token-applications/token-applications-actions/token-applications-actions.component";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { MachineService, MachineServiceInterface, TokenApplication } from "@services/machine/machine.service";
@@ -45,7 +45,7 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
     MatInput,
     MatLabel,
     NgClass,
-    CopyButtonComponent,
+    CopyableComponent,
     ClearableInputComponent,
     MatIconModule,
     MatButtonModule,
@@ -67,7 +67,7 @@ export class TokenApplicationsOfflineComponent {
   sort = this.machineService.sort;
 
   dataSource = computed(() => {
-    var data = this.machineService.tokenApplications();
+    const data = this.machineService.tokenApplications();
     if (data) {
       return new MatTableDataSource<TokenApplication>(data);
     }

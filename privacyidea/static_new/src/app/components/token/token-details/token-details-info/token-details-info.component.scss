@@ -1,10 +1,8 @@
 @use "styles";
 @use "table";
 
-.info-container {
-  padding: 0 var(--global-padding);
+:host {
+  display: block;
 }
 
-.width-192 {
-  width: 192px;
-}
+@include table.details-info-grid;

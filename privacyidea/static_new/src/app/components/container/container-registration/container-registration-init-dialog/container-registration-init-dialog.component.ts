@@ -18,10 +18,21 @@
  **/
 import { Component, ViewChild } from "@angular/core";
 import { MatDialogContent } from "@angular/material/dialog";
+import { ContainerRegistrationConfigComponent } from "@components/container/container-registration/container-registration-config/container-registration-config.component";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
-import { ContainerRegistrationConfigComponent } from "@components/container/container-registration/container-registration-config/container-registration-config.component";
 import { DialogAction } from "@models/dialog";
+
+export interface ContainerRegistrationInitDialogData {
+  rollover: boolean;
+  containerHasOwner: boolean;
+  registerContainer: (
+    userStorePassphrase: boolean,
+    passphrasePrompt: string,
+    passphraseResponse: string,
+    rollover: boolean
+  ) => void;
+}
 
 @Component({
   selector: "app-container-registration-init-dialog",
@@ -29,7 +40,7 @@ import { DialogAction } from "@models/dialog";
   styleUrls: ["./container-registration-init-dialog.component.scss"],
   imports: [MatDialogContent, ContainerRegistrationConfigComponent, DialogWrapperComponent]
 })
-export class ContainerRegistrationInitDialogComponent extends AbstractDialogComponent<any> {
+export class ContainerRegistrationInitDialogComponent extends AbstractDialogComponent<ContainerRegistrationInitDialogData> {
   @ViewChild(ContainerRegistrationConfigComponent)
   registrationConfigComponent!: ContainerRegistrationConfigComponent;
 

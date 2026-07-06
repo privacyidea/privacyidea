@@ -16,12 +16,15 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, inject, Input, OnInit, Output } from "@angular/core";
-import { FormControl, FormsModule, ReactiveFormsModule } from "@angular/forms";
+import { Component, forwardRef, inject } from "@angular/core";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
-import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { TanApiPayloadMapper, TanEnrollmentData } from "@app/mappers/token-api-payload/tan-token-api-payload.mapper";
+import {
+  EnrollmentArgs,
+  EnrollTokenBase
+} from "@components/token/token-enrollment/enroll-token-base";
 
 export interface TanEnrollmentOptions extends TokenEnrollmentData {
   type: "tan";
@@ -30,36 +33,18 @@ export interface TanEnrollmentOptions extends TokenEnrollmentData {
 @Component({
   selector: "app-enroll-tan",
   standalone: true,
-  imports: [ReactiveFormsModule, FormsModule],
+  imports: [],
   templateUrl: "./enroll-tan.component.html",
-  styleUrl: "./enroll-tan.component.scss"
+  styleUrl: "./enroll-tan.component.scss",
+  providers: [
+    { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollTanComponent) }
+  ]
 })
-export class EnrollTanComponent implements OnInit {
+export class EnrollTanComponent extends EnrollTokenBase<TanEnrollmentData> {
   protected readonly enrollmentMapper: TanApiPayloadMapper = inject(TanApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
-  @Input() wizard: boolean = false;
-  @Output() additionalFormFieldsChange = new EventEmitter<{
-    [key: string]: FormControl<any>;
-  }>();
-  @Output() enrollmentArgsGetterChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => {
-      data: TanEnrollmentData;
-      mapper: TokenApiPayloadMapper<TanEnrollmentData>;
-    } | null
-  >();
-
-  ngOnInit(): void {
-    this.additionalFormFieldsChange.emit({});
-    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
-  }
-
-  enrollmentArgsGetter = (
-    basicOptions: TokenEnrollmentData
-  ): {
-    data: TanEnrollmentData;
-    mapper: TokenApiPayloadMapper<TanEnrollmentData>;
-  } | null => {
+  buildEnrollmentArgs(basicOptions: TokenEnrollmentData): EnrollmentArgs<TanEnrollmentData> | null {
     const enrollmentData: TanEnrollmentOptions = {
       ...basicOptions,
       type: "tan"
@@ -68,5 +53,5 @@ export class EnrollTanComponent implements OnInit {
       data: enrollmentData,
       mapper: this.enrollmentMapper
     };
-  };
+  }
 }

@@ -33,11 +33,14 @@ The code is tested in tests/test_lib_smsprovider
 """
 import logging
 import re
+import time
 
 from sqlalchemy import select, update
 
 from privacyidea.lib import lazy_gettext
+from privacyidea.lib.crypto import is_censored, encryptPassword, decryptPassword
 from privacyidea.lib.error import ConfigAdminError
+from privacyidea.lib.metrics import inc, observe
 from privacyidea.lib.utils import fetch_one_resource, get_module_class
 from privacyidea.lib.utils.export import (register_import, register_export)
 from privacyidea.models import SMSGateway, SMSGatewayOption, db
@@ -51,6 +54,16 @@ SMS_PROVIDERS = [
     "privacyidea.lib.smsprovider.SmppSMSProvider.SmppSMSProvider",
     "privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider",
     "privacyidea.lib.smsprovider.ScriptSMSProvider.ScriptSMSProvider"]
+
+# Keywords in option keys that indicate the value is sensitive and must be
+# stored encrypted in the database (case-insensitive substring match).
+SENSITIVE_OPTION_KEYWORDS = ("PASSWORD", "SECRET")
+
+
+def _is_sensitive_key(key):
+    """Return True if the given option/header key name indicates a secret value."""
+    upper_key = key.upper()
+    return any(kw in upper_key for kw in SENSITIVE_OPTION_KEYWORDS)
 
 
 class SMSError(Exception):
@@ -182,7 +195,8 @@ def get_sms_provider_class(packageName, className):
 
 
 def set_smsgateway(identifier, providermodule=None, description=None,
-                   options=None, headers=None):
+                   options=None, headers=None,
+                   secret_options=None, secret_headers=None):
     """
     Set an SMS Gateway configuration
 
@@ -195,8 +209,16 @@ def set_smsgateway(identifier, providermodule=None, description=None,
     :param description: A description of this gateway definition
     :param options: Options and Parameter for this module
     :param headers: Headers for this module
+    :param secret_options: Set of option key names whose values are secret
+        and must be stored encrypted. If None, falls back to the key-name
+        heuristic (PASSWORD/SECRET).
+    :param secret_headers: Set of header key names whose values are secret
+        and must be stored encrypted. If None, falls back to the key-name
+        heuristic (PASSWORD/SECRET).
     :type options: dict
     :type headers: dict
+    :type secret_options: set or None
+    :type secret_headers: set or None
     :return: The id of the event.
     """
     stmt = select(SMSGateway).filter_by(identifier=identifier)
@@ -224,27 +246,68 @@ def set_smsgateway(identifier, providermodule=None, description=None,
         if option.Type == "header" and option.Key not in new_header_keys:
             db.session.delete(option)
 
-    # Update / Create options and header
+    # Update / Create options and headers
     existing_option_keys = {opt.Key for opt in sms_gateway.options if opt.Type == "option"}
     existing_header_keys = {opt.Key for opt in sms_gateway.options if opt.Type == "header"}
-    header_and_options = {"option": options, "header": headers}
-    for option_type, options in header_and_options.items():
-        for option in options:
-            if (option_type == "option" and option in existing_option_keys) or (
-                    option_type == "header" and option in existing_header_keys):
+    secret_sets = {"option": secret_options, "header": secret_headers}
+    sections = {"option": options, "header": headers}
+    for option_type, key_values in sections.items():
+        for key in key_values:
+            value = key_values[key]
+            explicit_secrets = secret_sets[option_type]
+            # If the user keeps a censored value, we can still apply an explicit
+            # secret checkbox change by toggling encryption state in-place.
+            if is_censored(value):
+                if explicit_secrets is None:
+                    continue
+                existing_row = sms_gateway.options.filter_by(Key=key, Type=option_type).first()
+                if not existing_row:
+                    continue
+                should_be_secret = key in explicit_secrets
+                if should_be_secret == bool(existing_row.Encrypted):
+                    continue
+                if should_be_secret:
+                    current_value = existing_row.Value or ""
+                    existing_row.Value = encryptPassword(current_value) if current_value else ""
+                    existing_row.Encrypted = True
+                    continue
+
+                current_value = existing_row.Value or ""
+                if current_value:
+                    decrypted = decryptPassword(current_value)
+                    if not decrypted or decrypted.startswith("FAILED TO DECRYPT"):
+                        # Keep encrypted data untouched if decryption fails.
+                        continue
+                    current_value = decrypted
+                existing_row.Value = current_value
+                existing_row.Encrypted = False
+                continue
+            # Determine if this value is secret: use explicit set if provided,
+            # otherwise fall back to the key-name heuristic.
+            if explicit_secrets is not None:
+                is_secret = key in explicit_secrets
+            else:
+                is_secret = _is_sensitive_key(key)
+            encrypted = False
+            if is_secret and value:
+                value = encryptPassword(value)
+                encrypted = True
+            if (option_type == "option" and key in existing_option_keys) or (
+                    option_type == "header" and key in existing_header_keys):
                 # Update existing option
                 update_stmt = update(SMSGatewayOption).where(
                     SMSGatewayOption.gateway_id == sms_gateway.id,
-                    SMSGatewayOption.Key == option,
+                    SMSGatewayOption.Key == key,
                     SMSGatewayOption.Type == option_type
-                ).values(Value=options[option])
+                ).values(Value=value, Encrypted=encrypted)
                 db.session.execute(update_stmt)
             else:
                 # Create new option
                 sms_option = SMSGatewayOption(gateway_id=sms_gateway.id,
-                                              Key=option,
-                                              Value=options[option],
-                                              Type=option_type)
+                                              Key=key,
+                                              Value=value,
+                                              Type=option_type,
+                                              Encrypted=encrypted)
                 db.session.add(sms_option)
     db.session.commit()
 
@@ -287,11 +350,11 @@ def delete_smsgateway_header(id, header_key):
 
 def delete_smsgateway_key_generic(id, key, Type="option"):
     """
-    Delete the SMS gateway header
+    Delete an SMS gateway option or header.
 
     :param id: The id of the SMS Gateway definition
     :param key: The identifier/key
-    :param type: The type of the key
+    :param Type: The type of the key ("option" or "header")
     :return: True
     """
     return fetch_one_resource(SMSGatewayOption, gateway_id=id, Key=key, Type=Type).delete()
@@ -355,7 +418,17 @@ def send_sms_identifier(identifier, phone, message):
     :return: True in case of success
     """
     sms = create_sms_instance(identifier)
-    return sms.submit_message(phone, message)
+    labels = {"gateway": identifier}
+    start = time.monotonic()
+    try:
+        result = sms.submit_message(phone, message)
+    except Exception:
+        observe("sms_send_duration_seconds", time.monotonic() - start, labels)
+        inc("sms_send_total", {**labels, "result": "failed"})
+        raise
+    observe("sms_send_duration_seconds", time.monotonic() - start, labels)
+    inc("sms_send_total", {**labels, "result": "ok" if result else "failed"})
+    return result
 
 
 def list_smsgateways(identifier=None, id=None, gwtype=None):

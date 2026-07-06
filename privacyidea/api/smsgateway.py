@@ -36,6 +36,7 @@ from flask import g
 import logging
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.policies.actions import PolicyAction
+from ..lib.crypto import censor_dict
 from privacyidea.lib.smsprovider.SMSProvider import (SMS_PROVIDERS,
                                                      get_smsgateway,
                                                      set_smsgateway,
@@ -44,7 +45,6 @@ from privacyidea.lib.smsprovider.SMSProvider import (SMS_PROVIDERS,
                                                      get_sms_provider_class)
 
 log = logging.getLogger(__name__)
-
 
 smsgateway_blueprint = Blueprint('smsgateway_blueprint', __name__)
 
@@ -67,6 +67,12 @@ def get_gateway(gwid=None):
       the gateway-creation form; it does not look up a gateway with the
       literal id ``providers``.
 
+    Secret options and headers (those whose name contains ``PASSWORD`` or
+    ``SECRET``) are not returned in clear text; they are replaced by the
+    placeholder ``__CENSORED__``. When updating a gateway, submit
+    ``__CENSORED__`` for such a value to keep it unchanged, an empty string to
+    clear it, or a new value to replace it.
+
     Requires admin authentication and the policy action
     :ref:`policy_smsgateway_read`.
 
@@ -82,7 +88,23 @@ def get_gateway(gwid=None):
                                               classname.rsplit(".", 1)[1])
             res[classname] = smsclass.parameters()
     else:
-        res = [gw.as_dict() for gw in get_smsgateway(id=gwid)]
+        res = []
+        for gw in get_smsgateway(id=gwid):
+            gw_dict = gw.as_dict()
+            # Censor values that are stored encrypted. The Encrypted column
+            # on each option/header row tells us exactly which values are
+            # secret – no key-name heuristic needed.
+            encrypted_option_keys = [opt.Key for opt in gw.options
+                                     if opt.Encrypted and (opt.Type == "option" or not opt.Type)]
+            encrypted_header_keys = [opt.Key for opt in gw.options
+                                     if opt.Encrypted and opt.Type == "header"]
+            gw_dict["options"] = censor_dict(gw_dict.get("options", {}), encrypted_option_keys)
+            gw_dict["headers"] = censor_dict(gw_dict.get("headers", {}), encrypted_header_keys)
+            # Include lists of secret key names so the UI can restore
+            # the "Secret" checkbox state when editing a gateway.
+            gw_dict["secret_options"] = encrypted_option_keys
+            gw_dict["secret_headers"] = encrypted_header_keys
+            res.append(gw_dict)
 
     g.audit_object.log({"success": True})
     return send_result(res)
@@ -117,14 +139,28 @@ def set_gateway():
     description = get_optional(param, "description")
     options = {}
     headers = {}
+    secret_options = set()
+    secret_headers = set()
+    has_explicit_secret_options = False
+    has_explicit_secret_headers = False
     for k, v in param.items():
         if k.startswith("option."):
             options[k[7:]] = v
         elif k.startswith("header."):
             headers[k[7:]] = v
+        elif k.startswith("secret.option."):
+            has_explicit_secret_options = True
+            if v and str(v).lower() not in ("0", "false", "no", ""):
+                secret_options.add(k[14:])
+        elif k.startswith("secret.header."):
+            has_explicit_secret_headers = True
+            if v and str(v).lower() not in ("0", "false", "no", ""):
+                secret_headers.add(k[14:])
 
     res = set_smsgateway(identifier, providermodule, description,
-                         options=options, headers=headers)
+                         options=options, headers=headers,
+                         secret_options=secret_options if has_explicit_secret_options else None,
+                         secret_headers=secret_headers if has_explicit_secret_headers else None)
     g.audit_object.log({"success": True,
                         "info": res})
     return send_result(res)

@@ -16,9 +16,9 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+
 import { NgClass } from "@angular/common";
 import { Component, inject } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -28,8 +28,10 @@ import { MatPaginatorModule } from "@angular/material/paginator";
 import { MatTableModule } from "@angular/material/table";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
-import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { ContainerTableComponent } from "@components/container/container-table/container-table.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
@@ -38,7 +40,6 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
-import { ContainerTableComponent } from "./container-table.component";
 
 @Component({
   selector: "app-container-table-self-service",
@@ -49,12 +50,12 @@ import { ContainerTableComponent } from "./container-table.component";
     MatInputModule,
     MatPaginatorModule,
     NgClass,
-    CopyButtonComponent,
+    CopyableComponent,
     MatCheckboxModule,
-    FormsModule,
     MatIcon,
     MatButtonModule,
-    ScrollToTopDirective
+    ScrollToTopDirective,
+    ScrollEdgesDirective
   ],
   templateUrl: "./container-table.self-service.component.html",
   styleUrl: "./container-table.component.scss"
@@ -75,11 +76,11 @@ export class ContainerTableSelfServiceComponent extends ContainerTableComponent 
   }
 
   readonly columnKeysMapSelfService = [
-    { key: "serial", label: "Serial" },
-    { key: "type", label: "Type" },
-    { key: "states", label: "Status" },
-    { key: "description", label: "Description" },
-    { key: "delete", label: "Delete" }
+    { key: "serial", label: $localize`Serial` },
+    { key: "type", label: $localize`Type` },
+    { key: "states", label: $localize`Status` },
+    { key: "description", label: $localize`Description` },
+    { key: "delete", label: $localize`Delete` }
   ];
   readonly columnKeysSelfService: string[] = this.columnKeysMapSelfService.map(
     (column: { key: string; label: string }) => column.key
@@ -94,10 +95,10 @@ export class ContainerTableSelfServiceComponent extends ContainerTableComponent 
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: "Delete Container",
+          title: $localize`Delete Container`,
           items: [serial],
           itemType: "container",
-          confirmAction: { label: "Delete", value: true, type: "destruct" }
+          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()

@@ -18,7 +18,6 @@
  **/
 import { HttpParams } from "@angular/common/http";
 import { Component, effect, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatButton } from "@angular/material/button";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
@@ -38,7 +37,6 @@ import { SearchTokenDialogComponent } from "./search-token-dialog/search-token-d
 @Component({
   selector: "app-token-get-serial",
   imports: [
-    FormsModule,
     MatProgressBarModule,
     MatFormField,
     MatInput,
@@ -65,11 +63,11 @@ export class TokenFindSerialComponent {
   tokenCount = signal<string>("");
   serialSubscription: Subscription | null = null;
   assignmentStates = [
-    { key: "assigned", info: "The token is assigned to a user" },
-    { key: "unassigned", info: "The token is not assigned to a user" },
+    { key: "assigned", info: $localize`The token is assigned to a user` },
+    { key: "unassigned", info: $localize`The token is not assigned to a user` },
     {
       key: "don't care",
-      info: "It does not matter, if the token is assigned or not"
+      info: $localize`It does not matter, if the token is assigned or not`
     }
   ];
   tokenWithOTP = ["hotp", "totp", "spass", "motp", "sshkey", "yubikey", "remote", "yubico", "radius", "sms"];

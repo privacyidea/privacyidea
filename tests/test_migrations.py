@@ -62,6 +62,7 @@ from tests.migration_test_utils import (
     START_REVISION,
     drop_all_tables,
     get_alembic_cfg,
+    is_oracle,
     is_postgres,
     load_seed,
 )
@@ -100,18 +101,29 @@ def _get_schema_snapshot(engine) -> dict[str, dict]:
     on the same engine, so dialect-specific artefacts (e.g. MariaDB
     auto-creating indexes for FK columns) appear in both snapshots and cancel.
     """
+    ora = is_oracle(str(engine.url))
+
+    def _norm(name):
+        # Oracle assigns a fresh, non-deterministic name (SYS_C…) to every
+        # unnamed constraint/index, so the same object reflects under a
+        # different name after a downgrade/upgrade round-trip. Normalise those
+        # to None so the comparison keys on structure, not on the generated id.
+        if ora and name and name.lower().startswith("sys_c"):
+            return None
+        return name
+
     inspector = sa_inspect(engine)
     snapshot: dict[str, dict] = {}
     for table in inspector.get_table_names():
         snapshot[table] = {
             "columns": frozenset(col["name"] for col in inspector.get_columns(table)),
             "indexes": frozenset(
-                (idx.get("name"), tuple(idx["column_names"]), bool(idx.get("unique", False)))
+                (_norm(idx.get("name")), tuple(idx["column_names"]), bool(idx.get("unique", False)))
                 for idx in inspector.get_indexes(table)
             ),
             "foreign_keys": frozenset(
                 (
-                    fk.get("name"),
+                    _norm(fk.get("name")),
                     tuple(fk["constrained_columns"]),
                     fk["referred_table"],
                     tuple(fk["referred_columns"]),
@@ -119,7 +131,7 @@ def _get_schema_snapshot(engine) -> dict[str, dict]:
                 for fk in inspector.get_foreign_keys(table)
             ),
             "unique_constraints": frozenset(
-                (uc.get("name"), tuple(uc["column_names"]))
+                (_norm(uc.get("name")), tuple(uc["column_names"]))
                 for uc in inspector.get_unique_constraints(table)
             ),
         }
@@ -138,10 +150,12 @@ def _wait_for_db(engine, timeout: int = 30, interval: float = 1.0) -> None:
     """
     deadline = time.monotonic() + timeout
     last_exc: OperationalError | None = None
+    # Oracle has no bare "SELECT 1" — it requires a FROM clause (the dual table).
+    probe = "SELECT 1 FROM dual" if is_oracle(str(engine.url)) else "SELECT 1"
     while time.monotonic() < deadline:
         try:
             with engine.connect() as conn:
-                conn.execute(text("SELECT 1"))
+                conn.execute(text(probe))
             return  # success
         except OperationalError as exc:
             last_exc = exc
@@ -541,6 +555,279 @@ def test_schema_matches_models_after_upgrade_to_head(flask_app):
     )
 
 
+def _get_declared_sequence_names() -> set[str]:
+    """
+    Collect every Sequence(...) name declared on any mapped_column across the
+    models. Alembic's autogenerate does not compare sequences, so we have to
+    check these ourselves — otherwise a migration that creates a table with
+    sa.Identity() while the model declares Sequence() ships silently and
+    blows up on the first insert on MariaDB 10.3+ / SQLAlchemy 2.x (which
+    honors Sequence() on MySQL/MariaDB and emits SELECT nextval(...)).
+    """
+    from sqlalchemy import Sequence
+    from privacyidea.models import db
+
+    names: set[str] = set()
+    for table in db.metadata.tables.values():
+        for col in table.columns:
+            default = col.default
+            if isinstance(default, Sequence):
+                names.add(default.name)
+    return names
+
+
+def _get_existing_sequence_names(engine) -> set[str]:
+    """Return the set of sequence names present in the live database."""
+    with engine.connect() as conn:
+        if is_postgres(str(engine.url)):
+            rows = conn.execute(
+                text("SELECT sequencename FROM pg_sequences WHERE schemaname = 'public'")
+            ).fetchall()
+        elif is_oracle(str(engine.url)):
+            rows = conn.execute(text("SELECT sequence_name FROM user_sequences")).fetchall()
+        else:
+            rows = conn.execute(text(
+                "SELECT table_name FROM information_schema.tables "
+                "WHERE table_schema = DATABASE() AND table_type = 'SEQUENCE'"
+            )).fetchall()
+    # Oracle stores unquoted identifiers upper-cased; the models declare them
+    # lower-cased, so compare case-insensitively across all dialects.
+    return {r[0].lower() for r in rows}
+
+
+def test_all_declared_sequences_exist_after_upgrade_to_head(flask_app):
+    """
+    Every Sequence(...) declared on a model must exist in the database after
+    upgrading to head. Alembic's autogenerate does not compare sequences, so
+    this check is not covered by test_schema_matches_models_after_upgrade_to_head.
+
+    On MariaDB 10.3+ / SQLAlchemy 2.x, a column with a Sequence() default
+    causes SQLAlchemy to emit SELECT nextval(<seq>) on insert. If the
+    corresponding CREATE SEQUENCE was never issued by a migration (e.g. the
+    table was created with sa.Identity() while the model declares Sequence()),
+    every insert fails at runtime with "Unknown SEQUENCE".
+    """
+    from flask_migrate import upgrade as flask_upgrade
+
+    load_seed()
+    flask_upgrade()
+
+    engine = create_engine(DB_URL)
+    try:
+        # supports_sequences is a class attribute on the base MySQL dialect
+        # (False) and is upgraded to True only after connection-time server
+        # detection identifies a MariaDB server. Connect first, then check.
+        with engine.connect() as conn:
+            if not conn.dialect.supports_sequences:
+                pytest.skip(
+                    f"Dialect {conn.dialect.name!r} does not support sequences; "
+                    "the model declares Sequence() but the dialect ignores it."
+                )
+        actual = _get_existing_sequence_names(engine)
+    finally:
+        engine.dispose()
+
+    expected = _get_declared_sequence_names()
+    missing = expected - actual
+    assert not missing, (
+        f"The following sequences are declared on the models but do not exist "
+        f"in the database after upgrade to head: {sorted(missing)}.\n"
+        f"This means a migration creates the table without issuing CREATE SEQUENCE "
+        f"(e.g. via sa.Identity() instead of sa.Sequence()). Inserts will fail "
+        f"on MariaDB 10.3+ with 'Unknown SEQUENCE'."
+    )
+
+
+def _generic_dummy_value(col):
+    """
+    Return a value appropriate for *col*'s SQL type, used by the insert smoke
+    test to populate NOT NULL columns without per-table fixtures. Returns None
+    only for column types we don't know how to fill — caller must skip those.
+    """
+    import datetime as dt
+    from sqlalchemy import (
+        BigInteger, Boolean, Date, DateTime, Float, Integer, Interval,
+        JSON, LargeBinary, Numeric, SmallInteger, String, Text, Time,
+        Unicode, UnicodeText,
+    )
+
+    t = col.type
+    if isinstance(t, (String, Unicode, UnicodeText, Text)):
+        length = getattr(t, "length", None) or 8
+        return "x" * min(length, 8)
+    if isinstance(t, Boolean):
+        return False
+    if isinstance(t, (Integer, BigInteger, SmallInteger)):
+        return 1
+    if isinstance(t, DateTime):
+        return dt.datetime(2000, 1, 1)
+    if isinstance(t, Date):
+        return dt.date(2000, 1, 1)
+    if isinstance(t, Time):
+        return dt.time(0, 0)
+    if isinstance(t, Interval):
+        return dt.timedelta(0)
+    if isinstance(t, (Float, Numeric)):
+        return 0
+    if isinstance(t, LargeBinary):
+        return b"x"
+    if isinstance(t, JSON):
+        return {}
+    return None
+
+
+def test_default_insert_succeeds_for_every_model_table(flask_app):
+    """
+    For every table the SQLAlchemy models declare, build a minimal INSERT and
+    execute it against the live (upgraded-to-head) DB. Catches failures that
+    schema checks cannot — e.g. a Sequence default declared on the model but
+    no CREATE SEQUENCE issued by any migration, an Identity column SQLAlchemy
+    can't drive on this dialect, or a NOT NULL column whose default isn't
+    actually applied.
+
+    Strategy:
+      - PKs whose default is a Sequence or that are autoincrement are omitted
+        so SQLAlchemy fires its auto-PK path — this is the exact path that
+        breaks when the migration created the table without the matching
+        CREATE SEQUENCE / AUTO_INCREMENT machinery the model expects.
+      - NOT NULL columns without any default get a type-appropriate dummy.
+      - Nullable columns and columns with Python/server defaults are omitted.
+      - FK checks are disabled for the duration so we don't have to insert in
+        dependency order; this test is about INSERT mechanics, not referential
+        integrity.
+      - All inserts run inside a single transaction that is rolled back at
+        the end, so no rows leak into the test DB.
+    """
+    from flask_migrate import upgrade as flask_upgrade
+    from sqlalchemy import Sequence
+    from privacyidea.models import db
+
+    load_seed()
+    flask_upgrade()
+
+    engine = create_engine(DB_URL)
+    is_pg = is_postgres()
+    is_ora = is_oracle()
+    failures: list[tuple[str, str]] = []
+
+    # Oracle has no session-level FK switch like MySQL/Postgres, so disable
+    # every FK constraint up front and re-enable them in the finally. The DDL
+    # auto-commits, but no real rows are ever committed (each insert is rolled
+    # back to a savepoint), so re-enabling validates only the untouched seed
+    # data, which already satisfies every FK.
+    disabled_fks: list[tuple[str, str]] = []
+    if is_ora:
+        with engine.connect() as setup_conn:
+            rows = setup_conn.execute(text(
+                "SELECT table_name, constraint_name FROM user_constraints "
+                "WHERE constraint_type = 'R'"
+            )).fetchall()
+            for tbl, con in rows:
+                setup_conn.execute(text(f'ALTER TABLE "{tbl}" DISABLE CONSTRAINT "{con}"'))
+                disabled_fks.append((tbl, con))
+            setup_conn.commit()
+
+    try:
+        with engine.connect() as conn:
+            outer = conn.begin()
+            try:
+                if is_pg:
+                    conn.execute(text("SET session_replication_role = 'replica'"))
+                elif not is_ora:
+                    conn.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
+
+                for table in db.metadata.sorted_tables:
+                    values = {}
+                    skip_reason = None
+                    for col in table.columns:
+                        # A PK column is auto-generated only if it has an
+                        # explicit Sequence/Identity, OR it's the sole integer
+                        # PK with autoincrement not explicitly disabled.
+                        # Composite PKs and string PKs do not auto-generate
+                        # — every member must be filled by the caller.
+                        from sqlalchemy import BigInteger, Integer, SmallInteger
+                        is_sole_int_pk = (
+                            col.primary_key
+                            and len(table.primary_key.columns) == 1
+                            and isinstance(col.type, (Integer, BigInteger, SmallInteger))
+                            and col.autoincrement is not False
+                        )
+                        is_auto_pk = isinstance(col.default, Sequence) or is_sole_int_pk
+                        if is_auto_pk:
+                            continue
+                        # Oracle stores '' as NULL, so a scalar empty-string
+                        # default does not satisfy a NOT NULL column — relying on
+                        # it produces ORA-01400. Fall through to supply a dummy in
+                        # that case instead of trusting the default to fire.
+                        default_is_empty_string = (
+                            col.default is not None
+                            and getattr(col.default, "is_scalar", False)
+                            and col.default.arg == ""
+                        )
+                        skip_for_default = col.default is not None or col.server_default is not None
+                        if is_ora and not col.nullable and default_is_empty_string:
+                            skip_for_default = False
+                        if skip_for_default:
+                            continue
+                        if col.nullable:
+                            continue
+                        val = _generic_dummy_value(col)
+                        if val is None:
+                            skip_reason = f"no dummy generator for column {col.name!r} of type {col.type!r}"
+                            break
+                        values[col.name] = val
+
+                    if skip_reason is not None:
+                        failures.append((table.name, f"SKIPPED: {skip_reason}"))
+                        continue
+
+                    # Oracle has no "INSERT ... DEFAULT VALUES" / empty-column-list
+                    # syntax (ORA-00928). A table whose every column is an auto PK
+                    # or nullable therefore yields an empty value set; supply a
+                    # dummy for one fillable non-PK column so the statement is
+                    # valid (FK checks are disabled, so an FK column is fine).
+                    if is_ora and not values:
+                        for col in table.columns:
+                            is_sole_int_pk = (
+                                col.primary_key
+                                and len(table.primary_key.columns) == 1
+                                and isinstance(col.type, (BigInteger, Integer, SmallInteger))
+                                and col.autoincrement is not False
+                            )
+                            if isinstance(col.default, Sequence) or is_sole_int_pk:
+                                continue
+                            val = _generic_dummy_value(col)
+                            if val is not None:
+                                values[col.name] = val
+                                break
+
+                    sp = conn.begin_nested()
+                    try:
+                        conn.execute(table.insert().values(**values))
+                        sp.rollback()
+                    except Exception as e:
+                        sp.rollback()
+                        first_line = str(e).splitlines()[0] if str(e) else type(e).__name__
+                        failures.append((table.name, first_line))
+            finally:
+                outer.rollback()
+    finally:
+        if disabled_fks:
+            with engine.connect() as teardown_conn:
+                for tbl, con in disabled_fks:
+                    teardown_conn.execute(text(f'ALTER TABLE "{tbl}" ENABLE CONSTRAINT "{con}"'))
+                teardown_conn.commit()
+        engine.dispose()
+
+    assert not failures, (
+        "INSERT failed for the following model tables after upgrade-to-head. "
+        "This usually means a migration created the table without the auto-PK "
+        "machinery the model expects (e.g. sa.Identity() instead of sa.Sequence(), "
+        "or a NOT NULL column added without a default):\n"
+        + "\n".join(f"  {tbl}: {msg}" for tbl, msg in failures)
+    )
+
+
 def test_all_down_revisions_point_to_existing_revisions():
     """
     Every migration's down_revision must reference a revision that actually
@@ -755,6 +1042,100 @@ def _row_counts(engine, tables: set[str]) -> dict[str, int]:
     return counts
 
 
+def test_migrations_do_not_emit_raw_create_sequence_sql():
+    """
+    Migrations must create sequences via SQLAlchemy's CreateSequence construct,
+    never a raw "CREATE SEQUENCE ..." SQL string.
+
+    CreateSequence is rewritten by the increment_by_zero @compiles hook in
+    privacyidea.models.db, which appends INCREMENT BY 0 on MariaDB. A Galera
+    cluster only accepts a cached sequence defined that way; a raw string
+    bypasses the hook and fails with "CACHE without INCREMENT BY 0 in Galera
+    cluster". We cannot reproduce that rejection in CI — it needs a live wsrep
+    provider, and standalone MariaDB accepts the cached sequence — so this
+    static check is the guard against the gap.
+
+    Only CREATE is restricted: ALTER SEQUENCE / DROP SEQUENCE carry no such
+    Galera constraint and may stay as raw strings.
+
+    The check only inspects strings passed to op.execute(...) — docstrings,
+    comments and print() messages that merely mention "create sequence" are
+    ignored. Both plain strings and f-strings are covered (an f-string's
+    literal segments are ast.Constant nodes).
+    """
+    import ast
+
+    def _literal_sql(node) -> str:
+        """Concatenate the literal string content of a string, f-string, or text('...') argument."""
+        if isinstance(node, ast.Constant) and isinstance(node.value, str):
+            return node.value
+        if isinstance(node, ast.JoinedStr):
+            return "".join(
+                part.value for part in node.values
+                if isinstance(part, ast.Constant) and isinstance(part.value, str)
+            )
+        # Unwrap text("...") / sa.text("...") wrappers.
+        if isinstance(node, ast.Call) and node.args:
+            func = node.func
+            name = func.attr if isinstance(func, ast.Attribute) else getattr(func, "id", None)
+            if name == "text":
+                return _literal_sql(node.args[0])
+        return ""
+
+    def _is_op_execute(node) -> bool:
+        return (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "execute"
+            and isinstance(node.func.value, ast.Name)
+            and node.func.value.id == "op"
+        )
+
+    versions_dir = pathlib.Path(__file__).parent.parent / "privacyidea" / "migrations" / "versions"
+    offenders: list[str] = []
+    for path in sorted(versions_dir.glob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if _is_op_execute(node) and node.args:
+                if "CREATE SEQUENCE" in _literal_sql(node.args[0]).upper():
+                    offenders.append(f"{path.name}:{node.lineno}")
+
+    assert not offenders, (
+        "The following migrations build a sequence from a raw 'CREATE SEQUENCE' "
+        "string instead of SQLAlchemy's CreateSequence construct:\n"
+        + "\n".join(f"  {o}" for o in offenders)
+        + "\n\nUse op.execute(CreateSequence(Sequence(name, start=...), if_not_exists=...)) "
+        "so the increment_by_zero hook can make it Galera-safe."
+    )
+
+
+def test_create_sequence_is_galera_safe_on_mariadb():
+    """
+    The increment_by_zero hook (privacyidea.models.db) must render CREATE
+    SEQUENCE with INCREMENT BY 0 on MariaDB, and must NOT do so on PostgreSQL
+    (which rejects a zero increment). This guards the hook itself against being
+    removed or scoped to the wrong dialect — the thing every sequence migration
+    and db.create_all() rely on to work on a Galera cluster.
+    """
+    from sqlalchemy import Sequence
+    from sqlalchemy.schema import CreateSequence
+    from sqlalchemy.dialects import mysql, postgresql
+    import privacyidea.models.db  # noqa: F401 - importing registers the @compiles hook
+
+    seq = Sequence("dummy_galera_check_seq", start=1)
+
+    mariadb_sql = str(CreateSequence(seq).compile(dialect=mysql.dialect(is_mariadb=True))).upper()
+    assert "INCREMENT BY 0" in mariadb_sql, (
+        f"CREATE SEQUENCE on MariaDB must include INCREMENT BY 0 to work on Galera, got: {mariadb_sql!r}"
+    )
+
+    postgres_sql = str(CreateSequence(seq).compile(dialect=postgresql.dialect())).upper()
+    assert "INCREMENT BY 0" not in postgres_sql, (
+        f"CREATE SEQUENCE on PostgreSQL must NOT include INCREMENT BY 0 (zero increment is invalid), "
+        f"got: {postgres_sql!r}"
+    )
+
+
 def test_downgrade_does_not_destroy_data_in_surviving_tables(flask_app):
     """
     Downgrading must not delete data from tables that survive the downgrade.
@@ -810,212 +1191,3 @@ def test_downgrade_does_not_destroy_data_in_surviving_tables(flask_app):
             f"Data in the 'realm' table was lost during downgrade. "
             f"Expected 'defrealm', got {realm_check!r}."
         )
-
-
-def _get_declared_sequence_names() -> set[str]:
-    """
-    Collect every Sequence(...) name declared on any column across the models.
-    Alembic's autogenerate does not compare sequences, so we have to check
-    these ourselves — otherwise a migration that creates a table with
-    sa.Identity() while the model declares Sequence() ships silently and
-    blows up on the first insert on MariaDB 10.3+ / SQLAlchemy 2.x (which
-    honors Sequence() on MySQL/MariaDB and emits SELECT nextval(...)).
-    """
-    from sqlalchemy import Sequence
-    from privacyidea.models import db
-
-    names: set[str] = set()
-    for table in db.metadata.tables.values():
-        for col in table.columns:
-            default = col.default
-            if isinstance(default, Sequence):
-                names.add(default.name)
-    return names
-
-
-def _get_existing_sequence_names(engine) -> set[str]:
-    """Return the set of sequence names present in the live database."""
-    with engine.connect() as conn:
-        if is_postgres(str(engine.url)):
-            rows = conn.execute(
-                text("SELECT sequencename FROM pg_sequences WHERE schemaname = 'public'")
-            ).fetchall()
-        else:
-            rows = conn.execute(text(
-                "SELECT table_name FROM information_schema.tables "
-                "WHERE table_schema = DATABASE() AND table_type = 'SEQUENCE'"
-            )).fetchall()
-    return {r[0] for r in rows}
-
-
-def test_all_declared_sequences_exist_after_upgrade_to_head(flask_app):
-    """
-    Every Sequence(...) declared on a model must exist in the database after
-    upgrading to head. Alembic's autogenerate does not compare sequences, so
-    this check is not covered by test_schema_matches_models_after_upgrade_to_head.
-
-    On MariaDB 10.3+ / SQLAlchemy 2.x, a column with a Sequence() default
-    causes SQLAlchemy to emit SELECT nextval(<seq>) on insert. If the
-    corresponding CREATE SEQUENCE was never issued by a migration (e.g. the
-    table was created with sa.Identity() while the model declares Sequence()),
-    every insert fails at runtime with "Unknown SEQUENCE".
-    """
-    from flask_migrate import upgrade as flask_upgrade
-
-    load_seed()
-    flask_upgrade()
-
-    engine = create_engine(DB_URL)
-    try:
-        # supports_sequences is False on the base MySQL dialect and is upgraded
-        # to True only after server detection identifies a MariaDB. Connect first.
-        with engine.connect() as conn:
-            if not conn.dialect.supports_sequences:
-                pytest.skip(
-                    f"Dialect {conn.dialect.name!r} does not support sequences; "
-                    "the model declares Sequence() but the dialect ignores it."
-                )
-        actual = _get_existing_sequence_names(engine)
-    finally:
-        engine.dispose()
-
-    expected = _get_declared_sequence_names()
-    missing = expected - actual
-    assert not missing, (
-        f"The following sequences are declared on the models but do not exist "
-        f"in the database after upgrade to head: {sorted(missing)}.\n"
-        f"This means a migration creates the table without issuing CREATE SEQUENCE "
-        f"(e.g. via sa.Identity() instead of sa.Sequence()). Inserts will fail "
-        f"on MariaDB 10.3+ with 'Unknown SEQUENCE'."
-    )
-
-
-def _generic_dummy_value(col):
-    """
-    Return a value appropriate for *col*'s SQL type, used by the insert smoke
-    test to populate NOT NULL columns without per-table fixtures. Returns None
-    only for column types we don't know how to fill — caller must skip those.
-    """
-    import datetime as dt
-    from sqlalchemy import (
-        BigInteger, Boolean, Date, DateTime, Float, Integer, Interval,
-        JSON, LargeBinary, Numeric, SmallInteger, String, Text, Time,
-        Unicode, UnicodeText,
-    )
-
-    t = col.type
-    if isinstance(t, (String, Unicode, UnicodeText, Text)):
-        length = getattr(t, "length", None) or 8
-        return "x" * min(length, 8)
-    if isinstance(t, Boolean):
-        return False
-    if isinstance(t, (Integer, BigInteger, SmallInteger)):
-        return 1
-    if isinstance(t, DateTime):
-        return dt.datetime(2000, 1, 1)
-    if isinstance(t, Date):
-        return dt.date(2000, 1, 1)
-    if isinstance(t, Time):
-        return dt.time(0, 0)
-    if isinstance(t, Interval):
-        return dt.timedelta(0)
-    if isinstance(t, (Float, Numeric)):
-        return 0
-    if isinstance(t, LargeBinary):
-        return b"x"
-    if isinstance(t, JSON):
-        return {}
-    return None
-
-
-def test_default_insert_succeeds_for_every_model_table(flask_app):
-    """
-    For every table the SQLAlchemy models declare, build a minimal INSERT and
-    execute it against the live (upgraded-to-head) DB. Catches failures that
-    schema checks cannot — e.g. a Sequence default declared on the model but
-    no CREATE SEQUENCE issued by any migration, an Identity column SQLAlchemy
-    can't drive on this dialect, or a NOT NULL column whose default isn't
-    actually applied.
-
-    Strategy:
-      - PKs whose default is a Sequence or that are autoincrement are omitted
-        so SQLAlchemy fires its auto-PK path — this is the exact path that
-        breaks when the migration created the table without the matching
-        CREATE SEQUENCE / AUTO_INCREMENT machinery the model expects.
-      - NOT NULL columns without any default get a type-appropriate dummy.
-      - Nullable columns and columns with Python/server defaults are omitted.
-      - FK checks are disabled for the duration so we don't have to insert in
-        dependency order; this test is about INSERT mechanics, not referential
-        integrity.
-      - All inserts run inside a single transaction that is rolled back at
-        the end, so no rows leak into the test DB.
-    """
-    from flask_migrate import upgrade as flask_upgrade
-    from sqlalchemy import BigInteger, Integer, SmallInteger, Sequence
-    from privacyidea.models import db
-
-    load_seed()
-    flask_upgrade()
-
-    engine = create_engine(DB_URL)
-    is_pg = is_postgres()
-    failures: list[tuple[str, str]] = []
-
-    try:
-        with engine.connect() as conn:
-            outer = conn.begin()
-            try:
-                if is_pg:
-                    conn.execute(text("SET session_replication_role = 'replica'"))
-                else:
-                    conn.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
-
-                for table in db.metadata.sorted_tables:
-                    values = {}
-                    skip_reason = None
-                    for col in table.columns:
-                        is_sole_int_pk = (
-                            col.primary_key
-                            and len(table.primary_key.columns) == 1
-                            and isinstance(col.type, (Integer, BigInteger, SmallInteger))
-                            and col.autoincrement is not False
-                        )
-                        is_auto_pk = isinstance(col.default, Sequence) or is_sole_int_pk
-                        if is_auto_pk:
-                            continue
-                        if col.default is not None or col.server_default is not None:
-                            continue
-                        if col.nullable:
-                            continue
-                        val = _generic_dummy_value(col)
-                        if val is None:
-                            skip_reason = (
-                                f"no dummy generator for column {col.name!r} of type {col.type!r}"
-                            )
-                            break
-                        values[col.name] = val
-
-                    if skip_reason is not None:
-                        failures.append((table.name, f"SKIPPED: {skip_reason}"))
-                        continue
-
-                    sp = conn.begin_nested()
-                    try:
-                        conn.execute(table.insert().values(**values))
-                        sp.rollback()
-                    except Exception as e:
-                        sp.rollback()
-                        first_line = str(e).splitlines()[0] if str(e) else type(e).__name__
-                        failures.append((table.name, first_line))
-            finally:
-                outer.rollback()
-    finally:
-        engine.dispose()
-
-    assert not failures, (
-        "INSERT failed for the following model tables after upgrade-to-head. "
-        "This usually means a migration created the table without the auto-PK "
-        "machinery the model expects (e.g. sa.Identity() instead of sa.Sequence(), "
-        "or a NOT NULL column added without a default):\n"
-        + "\n".join(f"  {tbl}: {msg}" for tbl, msg in failures)
-    )

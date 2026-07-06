@@ -21,7 +21,7 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatDialog, MatDialogRef } from "@angular/material/dialog";
-import { ActivatedRoute, NavigationEnd, Router } from "@angular/router";
+import { ActivatedRoute, Router } from "@angular/router";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { AuditService } from "@services/audit/audit.service";
 import { AuthService } from "@services/auth/auth.service";
@@ -31,17 +31,20 @@ import { BulkResult, TokenDetails, TokenService } from "@services/token/token.se
 import { VersioningService } from "@services/version/version.service";
 import {
   MockAuditService,
+  MockAuthService,
   MockContentService,
   MockDialogService,
+  MockDocumentationService,
   MockNotificationService,
   MockPiResponse,
+  MockRouter,
   MockTableUtilsService,
   MockTokenService,
   MockVersioningService
 } from "@testing/mock-services";
-import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { of, throwError } from "rxjs";
 import { TokenTableActionsComponent } from "./token-table-actions.component";
+import { DocumentationService } from "@services/documentation/documentation.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { FilterValue } from "@core/models/filter_value/filter_value";
@@ -53,7 +56,7 @@ describe("TokenTableActionsComponent", () => {
   let tokenService: jest.Mocked<MockTokenService>;
   let dialogService: MockDialogService;
   let notificationService: jest.Mocked<NotificationServiceInterface>;
-  let router: jest.Mocked<Router>;
+  let router: MockRouter;
   let tableUtilsService: MockTableUtilsService;
 
   beforeEach(async () => {
@@ -63,18 +66,12 @@ describe("TokenTableActionsComponent", () => {
       } as unknown as MatDialogRef<SimpleConfirmationDialogComponent>)
     };
 
-    const routerMock = {
-      navigateByUrl: jest.fn(),
-      events: of(new NavigationEnd(1, "/start", "/start")),
-      url: "/start"
-    };
-
     await TestBed.configureTestingModule({
       imports: [TokenTableActionsComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: Router, useValue: routerMock },
+        { provide: Router, useClass: MockRouter },
         { provide: ActivatedRoute, useValue: { params: of({ id: "123" }) } },
         { provide: TokenService, useClass: MockTokenService },
         { provide: MatDialog, useValue: dialogMock },
@@ -84,6 +81,7 @@ describe("TokenTableActionsComponent", () => {
         { provide: AuditService, useClass: MockAuditService },
         { provide: AuthService, useClass: MockAuthService },
         { provide: DialogService, useClass: MockDialogService },
+        { provide: DocumentationService, useClass: MockDocumentationService },
         { provide: TableUtilsService, useClass: MockTableUtilsService }
       ]
     }).compileComponents();
@@ -97,7 +95,7 @@ describe("TokenTableActionsComponent", () => {
       afterClosed: () => of(true)
     }));
     notificationService = TestBed.inject(NotificationService) as unknown as jest.Mocked<NotificationServiceInterface>;
-    router = TestBed.inject(Router) as unknown as jest.Mocked<Router>;
+    router = TestBed.inject(Router) as unknown as MockRouter;
     tableUtilsService = TestBed.inject(TableUtilsService) as unknown as MockTableUtilsService;
 
     fixture.detectChanges();
@@ -600,9 +598,9 @@ describe("TokenTableActionsComponent", () => {
       const tokens = [{ serial: "T1" }] as TokenDetails[];
       tokenService.tokenSelection.set(tokens);
 
-      jest.spyOn(tokenService, "bulkUnassignTokens").mockReturnValue(
-        throwError(() => ({ error: { result: { error: { message: "Not allowed" } } } }))
-      );
+      jest
+        .spyOn(tokenService, "bulkUnassignTokens")
+        .mockReturnValue(throwError(() => ({ error: { result: { error: { message: "Not allowed" } } } })));
       mockDialogResult(true);
 
       component.tokenSelection.set(tokens);

@@ -21,6 +21,7 @@ import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { Sort } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import {
+  CONTAINER_STATE_OPTIONS,
   ContainerDetailData,
   ContainerService,
   ContainerServiceInterface
@@ -30,7 +31,6 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 import { NgClass } from "@angular/common";
-import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatDividerModule } from "@angular/material/divider";
@@ -39,13 +39,14 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatMenuModule } from "@angular/material/menu";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { ContainerTableActionsComponent } from "@components/container/container-table/container-table-actions/container-table-actions.component";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
-import { ContainerTableActionsComponent } from "./container-table-actions/container-table-actions.component";
-
 @Component({
   selector: "app-container-table",
   standalone: true,
@@ -56,8 +57,8 @@ import { ContainerTableActionsComponent } from "./container-table-actions/contai
     MatPaginatorModule,
     NgClass,
     CopyButtonComponent,
+    CopyableComponent,
     MatCheckboxModule,
-    FormsModule,
     ScrollToTopDirective,
     ClearableInputComponent,
     ContainerTableActionsComponent,
@@ -65,7 +66,8 @@ import { ContainerTableActionsComponent } from "./container-table-actions/contai
     MatButtonModule,
     MatMenuModule,
     MatDividerModule,
-    MatTooltipModule
+    MatTooltipModule,
+    ScrollEdgesDirective
   ],
   templateUrl: "./container-table.component.html",
   styleUrl: "./container-table.component.scss"
@@ -96,6 +98,8 @@ export class ContainerTableComponent {
   pageIndex = this.containerService.pageIndex;
   sort = this.containerService.sort;
   containerResource = this.containerService.containerResource;
+
+  readonly containerStateOptions = CONTAINER_STATE_OPTIONS;
 
   containerDataSource: WritableSignal<MatTableDataSource<ContainerDetailData>> = linkedSignal({
     source: this.containerResource.value,
@@ -132,6 +136,7 @@ export class ContainerTableComponent {
   readonly apiFilterKeyMap: Record<string, string> = {
     serial: "container_serial",
     type: "type",
+    states: "state",
     description: "description",
     user_name: "user",
     realms: "container_realm"
@@ -174,7 +179,7 @@ export class ContainerTableComponent {
 
   onPageEvent(event: PageEvent) {
     this.pageSize.set(event.pageSize);
-    this.containerService.eventPageSize = event.pageSize;
+    this.containerService.eventPageSize.set(event.pageSize);
     this.pageIndex.set(event.pageIndex);
   }
 

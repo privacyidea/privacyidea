@@ -22,16 +22,18 @@
   aria-label="Create Container"
   class="container-create-container"
   i18n-aria-label>
-  <h3 class="margin-8">Create a New Container</h3>
-  <div #stickySentinel></div>
+  <h3
+    class="margin-8"
+    i18n>
+    Create a New Container
+  </h3>
   <div
-    #stickyHeader
-    class="sticky-header">
+    class="sticky-header"
+    [appStickyHeader]="scrollContainer">
     <div class="sticky-controls ali-center">
       <mat-form-field class="input-width-xl type-select">
         <mat-select
-          [(ngModel)]="containerService.selectedContainerType"
-          [ngModelOptions]="{ standalone: true }"
+          (selectionChange)="containerService.selectedContainerType.set($event.value)"
           [panelClass]="'single-column-panel'"
           [value]="containerService.selectedContainerType()">
           @for (type of containerService.containerTypeOptions(); track type) {
@@ -52,11 +54,11 @@
           class="action-button-primary button-width-m"
           mat-stroked-button>
           <mat-icon>create_new_folder</mat-icon>
-          Create Container
+          <span i18n>Create Container</span>
         </button>
         <button
           (click)="reopenEnrollmentDialog()"
-          [matTooltip]="'Reopen enrollment dialog'"
+          matTooltip="Reopen enrollment dialog" i18n-matTooltip
           [ngClass]="{ hidden: !registerResponse() }"
           mat-icon-button
           type="button">
@@ -71,30 +73,34 @@
       [containerService]="containerService"
       [tokenService]="tokenService"
       [authService]="authService"
-      [description]="description"
-      [selectedTemplate]="selectedTemplate"
-      [templateOptions]="templateOptions"
-      [availableTokenTypes]="availableTokenTypes"
-      [generateQRCode]="generateQRCode"
-      [passphrasePrompt]="passphrasePrompt"
-      [passphraseResponse]="passphraseResponse"
-      [userStorePassphrase]="userStorePassphrase"
+      [description]="description()"
+      (descriptionChange)="description.set($event)"
+      [selectedTemplate]="selectedTemplate()"
+      (selectedTemplateChange)="selectedTemplate.set($event)"
+      [templateOptions]="templateOptions()"
+      [availableTokenTypes]="availableTokenTypes()"
+      [generateQRCode]="generateQRCode()"
+      (generateQRCodeChange)="generateQRCode.set($event)"
+      [passphrasePrompt]="passphrasePrompt()"
+      (passphrasePromptChange)="passphrasePrompt.set($event)"
+      [passphraseResponse]="passphraseResponse()"
+      (passphraseResponseChange)="passphraseResponse.set($event)"
+      [userStorePassphrase]="userStorePassphrase()"
+      (userStorePassphraseChange)="userStorePassphrase.set($event)"
       [showRegistration]="containerService.selectedContainerType()?.containerType === 'smartphone'"
       [containerHasOwner]="isUserSelected()"
       [templateFieldClass]="'input-width-l'"
       (validInputChange)="onValidInputChange($event)"
       (clearTemplate)="clearTemplateSelection()"
       (templateChange)="onTemplateChange($event)">
-      <h4
-        userAssignment
-        i18n>
-        Assign the Container to a User
-      </h4>
-      <div
-        userAssignment
-        class="flex-row gap-16">
-        <app-user-assignment [showOnlyAddToRealm]="true"></app-user-assignment>
-      </div>
+      @if (showUserAssignment()) {
+        <ng-container userAssignment>
+          <h4 i18n>Assign the Container to a User</h4>
+          <div class="flex-row gap-16">
+            <app-user-assignment [showOnlyAddToRealm]="true"></app-user-assignment>
+          </div>
+        </ng-container>
+      }
     </app-container-create-form>
   </div>
 </div>

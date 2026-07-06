@@ -1,0 +1,79 @@
+@use "styles";
+@use "@angular/material";
+
+.policy-action-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 52px;
+  padding: 8px 16px;
+  margin: 4px 0;
+  border-radius: var(--border-radius);
+  border: 1px solid color-mix(in srgb, var(--mat-sys-outline-variant), transparent 50%);
+  background-color: var(--mat-sys-surface-container-low);
+  font-weight: 500;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.detail-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detail-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+
+.detail-description {
+  font-weight: normal;
+  font-size: 0.75rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.detail-input {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+
+  .flex-1,
+  .flex-2 {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+// Fixed-width value slot. Always reserved (even when empty) so the description
+// never runs into the value/button area, and so all action buttons align.
+.detail-value {
+  flex: 0 0 var(--input-width-m);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.action-value-input,
+.action-value-textarea {
+  background-color: var(--mat-sys-surface);
+  border: 1px solid var(--mat-sys-outline);
+  border-radius: var(--border-radius);
+
+  box-sizing: border-box;
+  color: var(--mat-sys-on-surface);
+  font-family: inherit;
+  width: 100%;
+}
+
+.action-value-textarea {
+  min-height: 40px;
+  resize: vertical;
+}

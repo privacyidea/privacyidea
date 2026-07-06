@@ -19,7 +19,6 @@
 
 import { Component, computed, inject, linkedSignal, signal } from "@angular/core";
 
-import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -37,7 +36,7 @@ import { deepCopy } from "@utils/deep-copy.utils";
 @Component({
   selector: "app-container-template-copy-dialog",
   standalone: true,
-  imports: [FormsModule, MatInputModule, MatButtonModule, MatCardModule, MatFormFieldModule, DialogWrapperComponent],
+  imports: [MatInputModule, MatButtonModule, MatCardModule, MatFormFieldModule, DialogWrapperComponent],
   templateUrl: "./container-template-copy-dialog.component.html",
   styleUrl: "./container-template-copy-dialog.component.scss"
 })

@@ -16,59 +16,38 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject } from "@angular/core";
-import {
-  AbstractControl,
-  FormControl,
-  FormGroup,
-  ReactiveFormsModule,
-  ValidationErrors,
-  Validators
-} from "@angular/forms";
-import { MatAutocompleteModule } from "@angular/material/autocomplete";
+import { Component, computed, inject, signal } from "@angular/core";
+import { form, FormField, validate } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
-import { MatOptionModule } from "@angular/material/core";
 import { MatDialogModule } from "@angular/material/dialog";
-import { MatDividerModule } from "@angular/material/divider";
 import { MatInputModule } from "@angular/material/input";
-import { MatSelectModule } from "@angular/material/select";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { DialogAction } from "@models/dialog";
-import { Machine, MachineService, MachineServiceInterface } from "@services/machine/machine.service";
+import { PiResponse } from "@app/app.component";
+import { MachineService, MachineServiceInterface } from "@services/machine/machine.service";
 import { Observable } from "rxjs";
 
-export type HotpMachineAssignDialogData = {
+export interface HotpMachineAssignDialogData {
   tokenSerial: string;
-};
+}
 
 @Component({
-  selector: "token-ssh-machine-attach-dialog",
+  selector: "app-token-hotp-machine-attach-dialog",
   styleUrls: ["./token-hotp-machine-attach-dialog.component.scss"],
   templateUrl: "./token-hotp-machine-attach-dialog.component.html",
   standalone: true,
-  imports: [
-    ReactiveFormsModule,
-    MatSelectModule,
-    MatInputModule,
-    MatButtonModule,
-    MatDialogModule,
-    MatOptionModule,
-    MatSelectModule,
-    MatDividerModule,
-    MatAutocompleteModule,
-    DialogWrapperComponent
-  ]
+  imports: [FormField, MatInputModule, MatButtonModule, MatDialogModule, DialogWrapperComponent]
 })
 export class TokenHotpMachineAssignDialogComponent extends AbstractDialogComponent<
   HotpMachineAssignDialogData,
-  Observable<any> | null
+  Observable<PiResponse<number>> | null
 > {
   private machineService: MachineServiceInterface = inject(MachineService);
   public tokenSerial = this.data.tokenSerial;
 
   assignAction: DialogAction<string> = {
-    label: "Assign",
+    label: $localize`Assign`,
     value: "assign",
     type: "confirm",
     primary: true
@@ -79,34 +58,43 @@ export class TokenHotpMachineAssignDialogComponent extends AbstractDialogCompone
     }
   }
 
-  countControl = new FormControl<number | null>(100, {
-    nonNullable: true,
-    validators: [Validators.required, Validators.min(10)]
+  countValue = signal("100");
+  countForm = form(this.countValue, (f) => {
+    validate(f, (ctx) => {
+      const value = ctx.value();
+      const numericValue = Number(value);
+      if (!value || isNaN(numericValue)) return [{ kind: "required" }];
+      if (numericValue < 10) return [{ kind: "min" }];
+      return [];
+    });
   });
 
-  roundsControl = new FormControl<number | null>(10000, {
-    nonNullable: true,
-    validators: [Validators.required, Validators.min(1000)]
+  roundsValue = signal("10000");
+  roundsForm = form(this.roundsValue, (f) => {
+    validate(f, (ctx) => {
+      const value = ctx.value();
+      const numericValue = Number(value);
+      if (!value || isNaN(numericValue)) return [{ kind: "required" }];
+      if (numericValue < 1000) return [{ kind: "min" }];
+      return [];
+    });
   });
 
-  formGroup = new FormGroup({
-    count: this.countControl,
-    rounds: this.roundsControl
-  });
+  isFormValid = computed(() => this.countForm().valid() && this.roundsForm().valid());
 
   onAssign() {
-    if (this.formGroup.invalid) return;
+    if (!this.isFormValid()) return;
 
     const request = this.machineService.postAssignMachineToToken({
       application: "offline",
-      count: this.countControl.value!,
+      count: Number(this.countValue()),
       machineid: 0,
       resolver: "",
-      rounds: this.roundsControl.value!,
+      rounds: Number(this.roundsValue()),
       serial: this.data.tokenSerial
     });
     request.subscribe({
-      next: (_) => {
+      next: () => {
         // Subscribed to ensure that the request will be executed
       },
       error: (error) => {
@@ -114,19 +102,5 @@ export class TokenHotpMachineAssignDialogComponent extends AbstractDialogCompone
       }
     });
     this.dialogRef.close(request);
-  }
-
-  machineValidator(control: AbstractControl<string | Machine>): ValidationErrors | null {
-    if (!control.value) {
-      return { required: true }; // Machine selection is required
-    }
-    if (typeof control.value === "string") {
-      return { required: true }; // Machine selection is required
-    }
-    const machine = control.value as Machine;
-    if (!machine.id || !machine.hostname || !machine.ip || !machine.resolver_name) {
-      return { invalidMachine: true }; // Invalid machine object
-    }
-    return null; // No validation error
   }
 }

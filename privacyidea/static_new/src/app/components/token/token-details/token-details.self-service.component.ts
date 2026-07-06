@@ -16,24 +16,16 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { NgClass } from "@angular/common";
 import { Component } from "@angular/core";
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
-import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
-import { MatIconButton } from "@angular/material/button";
-import { MatFormFieldModule } from "@angular/material/form-field";
-import { MatIcon } from "@angular/material/icon";
-import { MatInput } from "@angular/material/input";
-import { MatListItem } from "@angular/material/list";
-import { MatSelectModule } from "@angular/material/select";
-import { MatCell, MatColumnDef, MatRow, MatTable, MatTableModule } from "@angular/material/table";
-import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { DetailsEditRegistry } from "@components/shared/details-shared/details-edit-registry.service";
 import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
-import { EditButtonsComponent } from "@components/shared/edit-buttons/edit-buttons.component";
 import { TokenDetailsMachineComponent } from "@components/token/token-details/token-details-machine/token-details-machine.component";
 import { TokenDetailsActionsComponent } from "./token-details-actions/token-details-actions.component";
+import { TokenDetailsAssignmentsComponent } from "./token-details-assignments/token-details-assignments.component";
+import { TokenDetailsCountersComponent } from "./token-details-counters/token-details-counters.component";
+import { TokenDetailsDescriptionComponent } from "./token-details-description/token-details-description.component";
 import { TokenDetailsInfoComponent } from "./token-details-info/token-details-info.component";
+import { TokenDetailsStatusComponent } from "./token-details-status/token-details-status.component";
 import { TokenDetailsUserSelfServiceComponent } from "./token-details-user/token-details-user.self-service.component";
 import { TokenDetailsComponent } from "./token-details.component";
 
@@ -41,38 +33,18 @@ import { TokenDetailsComponent } from "./token-details.component";
   selector: "app-token-details-self-service",
   standalone: true,
   imports: [
-    MatCell,
-    MatTableModule,
-    MatColumnDef,
-    MatIcon,
-    MatListItem,
-    MatRow,
-    MatTable,
-    NgClass,
-    FormsModule,
-    MatInput,
-    MatFormFieldModule,
-    MatSelectModule,
-    ReactiveFormsModule,
-    MatIconButton,
     TokenDetailsUserSelfServiceComponent,
-    MatAutocomplete,
-    MatAutocompleteTrigger,
     TokenDetailsInfoComponent,
     TokenDetailsActionsComponent,
-    EditButtonsComponent,
-    CopyButtonComponent,
-    ClearableInputComponent,
+    TokenDetailsStatusComponent,
+    TokenDetailsCountersComponent,
+    TokenDetailsAssignmentsComponent,
+    TokenDetailsDescriptionComponent,
     TokenDetailsMachineComponent,
     DetailsHeaderComponent
   ],
+  providers: [DetailsEditRegistry],
   templateUrl: "./token-details.self-service.component.html",
   styleUrls: ["./token-details.component.scss"]
 })
-export class TokenDetailsSelfServiceComponent extends TokenDetailsComponent {
-  toggleActive(active: boolean): void {
-    this.tokenService.toggleActive(this.tokenSerial(), active).subscribe(() => {
-      this.tokenService.tokenDetailResource.reload();
-    });
-  }
-}
+export class TokenDetailsSelfServiceComponent extends TokenDetailsComponent {}

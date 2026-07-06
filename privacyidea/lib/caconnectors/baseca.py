@@ -24,8 +24,9 @@ In this first implementation it is only a local certificate authority.
 This module is tested in tests/test_lib_caconnector.py
 """
 
-# This takes a set of all CA Connector modules.
-AvailableCAConnectors = []
+# This contains the fully qualified class paths of all available CA connectors.
+AvailableCAConnectors = ["privacyidea.lib.caconnectors.localca.LocalCAConnector",
+                         "privacyidea.lib.caconnectors.msca.MSCAConnector"]
 
 
 class BaseCAConnector:

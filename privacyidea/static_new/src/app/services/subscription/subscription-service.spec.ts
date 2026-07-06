@@ -23,29 +23,30 @@ import { environment } from "@env/environment";
 import { AuthService } from "@services/auth/auth.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { SubscriptionService } from "./subscription.service";
+import { MockContentService, MockNotificationService } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { ContentService } from "@services/content/content.service";
 
 describe("SubscriptionService", () => {
   let service: SubscriptionService;
   let httpMock: HttpTestingController;
-  let authMock: { getHeaders: jest.Mock };
-  let notifyMock: { warning: jest.Mock };
+  let notifyMock: MockNotificationService;
 
   beforeEach(() => {
-    authMock = { getHeaders: jest.fn(() => ({}) as any) } as any;
-    notifyMock = { success: jest.fn(), error: jest.fn(), warning: jest.fn() } as any;
-
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         SubscriptionService,
-        { provide: AuthService, useValue: authMock },
-        { provide: NotificationService, useValue: notifyMock }
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: NotificationService, useClass: MockNotificationService },
+        { provide: ContentService, useClass: MockContentService }
       ]
     });
 
     service = TestBed.inject(SubscriptionService);
     httpMock = TestBed.inject(HttpTestingController);
+    notifyMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
   });
 
   it("reload() should not throw", () => {

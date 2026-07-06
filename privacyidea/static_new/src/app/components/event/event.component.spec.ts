@@ -20,10 +20,13 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
+import { Sort } from "@angular/material/sort";
 import { provideRouter, Router } from "@angular/router";
 import { EventHandler, EventService } from "@services/event/event.service";
 import { MockEventService } from "@testing/mock-services/mock-event-service";
 import { EventComponent } from "./event.component";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
+import { MockTableUtilsService } from "@testing/mock-services";
 
 describe("EventComponent", () => {
   let component: EventComponent;
@@ -33,7 +36,12 @@ describe("EventComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EventComponent],
-      providers: [provideHttpClient(), provideRouter([]), { provide: EventService, useClass: MockEventService }]
+      providers: [
+        provideHttpClient(),
+        provideRouter([]),
+        { provide: EventService, useClass: MockEventService },
+        { provide: TableUtilsService, useClass: MockTableUtilsService }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EventComponent);
@@ -99,7 +107,7 @@ describe("EventComponent", () => {
       active: true,
       ordering: 1
     };
-    component.onEditEventHandler(handler as any);
+    component.onEditEventHandler(handler);
     expect(spy).toHaveBeenCalled();
   });
 
@@ -112,7 +120,8 @@ describe("EventComponent", () => {
 
   it("should call eventService.deleteWithConfirmDialog on delete", () => {
     const spy = jest.spyOn(component["eventService"], "deleteWithConfirmDialog");
-    const handler = {
+    const handler: EventHandler = {
+      id: null,
       name: "foo",
       event: [],
       handlermodule: "",
@@ -123,13 +132,14 @@ describe("EventComponent", () => {
       active: true,
       ordering: 1
     };
-    component.onDeleteEventHandler(handler as any);
+    component.onDeleteEventHandler(handler);
     expect(spy).toHaveBeenCalled();
   });
 
   it("should filter eventHandlerDataSource by name", () => {
     const ds = component.eventHandlerDataSource();
-    const handler = {
+    const handler: EventHandler = {
+      id: null,
       name: "SpecialName",
       handlermodule: "mod",
       position: "pos",
@@ -140,13 +150,14 @@ describe("EventComponent", () => {
       active: true,
       ordering: 1
     };
-    expect(ds.filterPredicate(handler as any, "specialname")).toBe(true);
-    expect(ds.filterPredicate(handler as any, "notfound")).toBe(false);
+    expect(ds.filterPredicate(handler, "specialname")).toBe(true);
+    expect(ds.filterPredicate(handler, "notfound")).toBe(false);
   });
 
   it("should filter eventHandlerDataSource by handlermodule", () => {
     const ds = component.eventHandlerDataSource();
-    const handler = {
+    const handler: EventHandler = {
+      id: null,
       name: "n",
       handlermodule: "ModuleX",
       position: "p",
@@ -157,13 +168,14 @@ describe("EventComponent", () => {
       active: true,
       ordering: 1
     };
-    expect(ds.filterPredicate(handler as any, "modulex")).toBe(true);
-    expect(ds.filterPredicate(handler as any, "notfound")).toBe(false);
+    expect(ds.filterPredicate(handler, "modulex")).toBe(true);
+    expect(ds.filterPredicate(handler, "notfound")).toBe(false);
   });
 
   it("should filter eventHandlerDataSource by position", () => {
     const ds = component.eventHandlerDataSource();
-    const handler = {
+    const handler: EventHandler = {
+      id: null,
       name: "n",
       handlermodule: "m",
       position: "PosY",
@@ -174,13 +186,14 @@ describe("EventComponent", () => {
       active: true,
       ordering: 1
     };
-    expect(ds.filterPredicate(handler as any, "posy")).toBe(true);
-    expect(ds.filterPredicate(handler as any, "notfound")).toBe(false);
+    expect(ds.filterPredicate(handler, "posy")).toBe(true);
+    expect(ds.filterPredicate(handler, "notfound")).toBe(false);
   });
 
   it("should filter eventHandlerDataSource by action", () => {
     const ds = component.eventHandlerDataSource();
-    const handler = {
+    const handler: EventHandler = {
+      id: null,
       name: "n",
       handlermodule: "m",
       position: "p",
@@ -191,13 +204,14 @@ describe("EventComponent", () => {
       active: true,
       ordering: 1
     };
-    expect(ds.filterPredicate(handler as any, "actionz")).toBe(true);
-    expect(ds.filterPredicate(handler as any, "notfound")).toBe(false);
+    expect(ds.filterPredicate(handler, "actionz")).toBe(true);
+    expect(ds.filterPredicate(handler, "notfound")).toBe(false);
   });
 
   it("should filter eventHandlerDataSource by options", () => {
     const ds = component.eventHandlerDataSource();
-    const handler = {
+    const handler: EventHandler = {
+      id: null,
       name: "n",
       handlermodule: "m",
       position: "p",
@@ -208,15 +222,16 @@ describe("EventComponent", () => {
       active: true,
       ordering: 1
     };
-    expect(ds.filterPredicate(handler as any, "foo: baropt")).toBe(true);
-    expect(ds.filterPredicate(handler as any, "foo")).toBe(true);
-    expect(ds.filterPredicate(handler as any, "baropt")).toBe(true);
-    expect(ds.filterPredicate(handler as any, "notfound")).toBe(false);
+    expect(ds.filterPredicate(handler, "foo: baropt")).toBe(true);
+    expect(ds.filterPredicate(handler, "foo")).toBe(true);
+    expect(ds.filterPredicate(handler, "baropt")).toBe(true);
+    expect(ds.filterPredicate(handler, "notfound")).toBe(false);
   });
 
   it("should filter eventHandlerDataSource by events", () => {
     const ds = component.eventHandlerDataSource();
-    const handler = {
+    const handler: EventHandler = {
+      id: null,
       name: "n",
       handlermodule: "m",
       position: "p",
@@ -227,13 +242,14 @@ describe("EventComponent", () => {
       active: true,
       ordering: 1
     };
-    expect(ds.filterPredicate(handler as any, "eventa")).toBe(true);
-    expect(ds.filterPredicate(handler as any, "notfound")).toBe(false);
+    expect(ds.filterPredicate(handler, "eventa")).toBe(true);
+    expect(ds.filterPredicate(handler, "notfound")).toBe(false);
   });
 
   it("should filter eventHandlerDataSource by conditions", () => {
     const ds = component.eventHandlerDataSource();
-    const handler = {
+    const handler: EventHandler = {
+      id: null,
       name: "n",
       handlermodule: "m",
       position: "p",
@@ -244,15 +260,16 @@ describe("EventComponent", () => {
       active: true,
       ordering: 1
     };
-    expect(ds.filterPredicate(handler as any, "cond: condval")).toBe(true);
-    expect(ds.filterPredicate(handler as any, "cond")).toBe(true);
-    expect(ds.filterPredicate(handler as any, "condval")).toBe(true);
-    expect(ds.filterPredicate(handler as any, "notfound")).toBe(false);
+    expect(ds.filterPredicate(handler, "cond: condval")).toBe(true);
+    expect(ds.filterPredicate(handler, "cond")).toBe(true);
+    expect(ds.filterPredicate(handler, "condval")).toBe(true);
+    expect(ds.filterPredicate(handler, "notfound")).toBe(false);
   });
 
   it("should return true for empty filter in filterPredicate", () => {
     const ds = component.eventHandlerDataSource();
-    const handler = {
+    const handler: EventHandler = {
+      id: null,
       name: "n",
       handlermodule: "m",
       position: "p",
@@ -263,8 +280,8 @@ describe("EventComponent", () => {
       active: true,
       ordering: 1
     };
-    expect(ds.filterPredicate(handler as any, "")).toBe(true);
-    expect(ds.filterPredicate(handler as any, "   ")).toBe(true);
+    expect(ds.filterPredicate(handler, "")).toBe(true);
+    expect(ds.filterPredicate(handler, "   ")).toBe(true);
   });
 
   it("should update totalLength when eventHandlers changes", () => {
@@ -358,8 +375,10 @@ describe("EventComponent", () => {
         ordering: 2
       }
     ];
-    const sorted = (component as any).clientsideSortEventData([...data], { active: "name", direction: "asc" });
-    expect(sorted.map((e: any) => e.name)).toEqual(["Alice", "Bob", "Charlie"]);
+    const sorted = (
+      component as unknown as { clientsideSortEventData: (data: EventHandler[], s: Sort) => EventHandler[] }
+    ).clientsideSortEventData([...data] as unknown as EventHandler[], { active: "name", direction: "asc" });
+    expect(sorted.map((e: EventHandler) => e.name)).toEqual(["Alice", "Bob", "Charlie"]);
   });
 
   it("should sort event handlers by name descending", () => {
@@ -398,8 +417,10 @@ describe("EventComponent", () => {
         ordering: 2
       }
     ];
-    const sorted = (component as any).clientsideSortEventData([...data], { active: "name", direction: "desc" });
-    expect(sorted.map((e: any) => e.name)).toEqual(["Charlie", "Bob", "Alice"]);
+    const sorted = (
+      component as unknown as { clientsideSortEventData: (data: EventHandler[], s: Sort) => EventHandler[] }
+    ).clientsideSortEventData([...data] as unknown as EventHandler[], { active: "name", direction: "desc" });
+    expect(sorted.map((e: EventHandler) => e.name)).toEqual(["Charlie", "Bob", "Alice"]);
   });
 
   it("should sort event handlers by ordering ascending", () => {
@@ -438,8 +459,10 @@ describe("EventComponent", () => {
         ordering: 2
       }
     ];
-    const sorted = (component as any).clientsideSortEventData([...data], { active: "ordering", direction: "asc" });
-    expect(sorted.map((e: any) => e.ordering)).toEqual([1, 2, 3]);
+    const sorted = (
+      component as unknown as { clientsideSortEventData: (data: EventHandler[], s: Sort) => EventHandler[] }
+    ).clientsideSortEventData([...data] as unknown as EventHandler[], { active: "ordering", direction: "asc" });
+    expect(sorted.map((e: EventHandler) => e.ordering)).toEqual([1, 2, 3]);
   });
 
   it("should sort event handlers by ordering descending", () => {
@@ -478,8 +501,10 @@ describe("EventComponent", () => {
         ordering: 2
       }
     ];
-    const sorted = (component as any).clientsideSortEventData([...data], { active: "ordering", direction: "desc" });
-    expect(sorted.map((e: any) => e.ordering)).toEqual([3, 2, 1]);
+    const sorted = (
+      component as unknown as { clientsideSortEventData: (data: EventHandler[], s: Sort) => EventHandler[] }
+    ).clientsideSortEventData([...data] as unknown as EventHandler[], { active: "ordering", direction: "desc" });
+    expect(sorted.map((e: EventHandler) => e.ordering)).toEqual([3, 2, 1]);
   });
 
   it("should return original array if no direction is set", () => {
@@ -507,19 +532,29 @@ describe("EventComponent", () => {
         ordering: 1
       }
     ];
-    const sorted = (component as any).clientsideSortEventData([...data], { active: "name", direction: "" });
+    const sorted = (
+      component as unknown as { clientsideSortEventData: (data: EventHandler[], s: Sort) => EventHandler[] }
+    ).clientsideSortEventData([...data] as unknown as EventHandler[], { active: "name", direction: "" });
     expect(sorted).toEqual(data);
   });
 
   it("should handle empty array", () => {
-    const sorted = (component as any).clientsideSortEventData([], { active: "name", direction: "asc" });
+    const sorted = (
+      component as unknown as { clientsideSortEventData: (data: EventHandler[], s: Sort) => EventHandler[] }
+    ).clientsideSortEventData([], { active: "name", direction: "asc" });
     expect(sorted).toEqual([]);
   });
 
   it("should handle missing sort key gracefully", () => {
-    const data = [{ name: "Charlie", ordering: 3 }, { name: "Alice" }, { name: "Bob", ordering: 2 }];
-    const sorted = (component as any).clientsideSortEventData([...data], { active: "ordering", direction: "asc" });
-    expect(sorted.map((e: any) => e.ordering)).toEqual([undefined, 2, 3]);
+    const data = [
+      { name: "Charlie", ordering: 3 },
+      { name: "Alice" },
+      { name: "Bob", ordering: 2 }
+    ] as unknown as EventHandler[];
+    const sorted = (
+      component as unknown as { clientsideSortEventData: (data: EventHandler[], s: Sort) => EventHandler[] }
+    ).clientsideSortEventData([...data] as unknown as EventHandler[], { active: "ordering", direction: "asc" });
+    expect(sorted.map((e: EventHandler) => e.ordering)).toEqual([undefined, 2, 3]);
   });
 
   it("should call eventService.disableEvent if eventHandler is active", () => {
@@ -536,7 +571,7 @@ describe("EventComponent", () => {
       ordering: 1
     };
     const spy = jest.spyOn(component["eventService"], "disableEvent");
-    component.toggleActive(handler as any);
+    component.toggleActive(handler as unknown as EventHandler);
     expect(spy).toHaveBeenCalledWith("123");
   });
 
@@ -554,7 +589,7 @@ describe("EventComponent", () => {
       ordering: 1
     };
     const spy = jest.spyOn(component["eventService"], "enableEvent");
-    component.toggleActive(handler as any);
+    component.toggleActive(handler as unknown as EventHandler);
     expect(spy).toHaveBeenCalledWith("456");
   });
 });

@@ -45,6 +45,7 @@ import codecs
 
 from passlib.context import CryptContext
 
+from privacyidea.lib.metrics import track_resolver_op
 from privacyidea.lib.utils import convert_column_to_unicode
 from .UserIdResolver import UserIdResolver
 
@@ -173,6 +174,7 @@ class IdResolver (UserIdResolver):
                         if email_match:
                             self.email_dict[fields[ID]] = email_match.group(0)
 
+    @track_resolver_op("check_pass")
     def checkPass(self, uid, password):
         """
         This function checks the password for a given uid.
@@ -194,7 +196,7 @@ class IdResolver (UserIdResolver):
         """
         log.info(f"checking password for user uid {uid!s}")
         cryptedpasswd = self.pass_dict.get(uid)
-        log.debug(f"We found the encrypted pass {cryptedpasswd!s} for uid {uid!s}")
+        log.debug(f"We found an encrypted pass for uid {uid!s}: {bool(cryptedpasswd)}")
         if cryptedpasswd:
             if cryptedpasswd in ['x', '*']:
                 err = "Sorry, currently no support for shadow passwords"
@@ -211,6 +213,7 @@ class IdResolver (UserIdResolver):
                         "found in file")
             return False
 
+    @track_resolver_op("get_user_info")
     def get_user_info(self, user_id: int or str, attributes: list[str] = None, no_passwd: bool = False) -> dict:
         """
         get some info about the user
@@ -260,6 +263,7 @@ class IdResolver (UserIdResolver):
         attributes.extend(self.search_field_indices.keys())
         return attributes
 
+    @track_resolver_op("get_username")
     def getUsername(self, userId):
         '''
         Returns the username/loginname for a given userid
@@ -277,6 +281,7 @@ class IdResolver (UserIdResolver):
             log.debug("Username for user ID %s could not be found.", userId)
         return username
 
+    @track_resolver_op("get_user_id")
     def getUserId(self, LoginName):
         """
         search the user id from the login name
@@ -312,6 +317,7 @@ class IdResolver (UserIdResolver):
 
         return self.search_fields
 
+    @track_resolver_op("get_user_list")
     def getUserList(self, search_dict: dict = None, attributes: list[str] = None) -> list[dict]:
         """
         get a list of all users matching the search criteria of the searchdict

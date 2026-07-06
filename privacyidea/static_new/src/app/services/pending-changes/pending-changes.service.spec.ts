@@ -24,7 +24,9 @@ describe("PendingChangesService", () => {
   let service: PendingChangesService;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({});
+    TestBed.configureTestingModule({
+      providers: [PendingChangesService]
+    });
     service = TestBed.inject(PendingChangesService);
   });
 
@@ -71,6 +73,29 @@ describe("PendingChangesService", () => {
     it("should return the result of the registered validChanges function", () => {
       service.registerValidChanges(() => false);
       expect(service.validChanges).toBe(false);
+    });
+  });
+
+  describe("beforeunload", () => {
+    function dispatchBeforeUnload(): boolean {
+      const event = new Event("beforeunload", { cancelable: true });
+      window.dispatchEvent(event);
+      return event.defaultPrevented;
+    }
+
+    it("should not block unload when there are no pending changes", () => {
+      expect(dispatchBeforeUnload()).toBe(false);
+    });
+
+    it("should block unload when there are pending changes", () => {
+      service.registerHasChanges(() => true);
+      expect(dispatchBeforeUnload()).toBe(true);
+    });
+
+    it("should stop blocking unload after the service is destroyed", () => {
+      service.registerHasChanges(() => true);
+      service.ngOnDestroy();
+      expect(dispatchBeforeUnload()).toBe(false);
     });
   });
 });

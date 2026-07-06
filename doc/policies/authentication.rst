@@ -1015,6 +1015,14 @@ supported by the token.
 .. note:: If you configure this, you will likely also want to configure
     :ref:`policy_webauthn_enroll_user_verification_requirement`.
 
+.. note:: When this is not set to ``required`` and a user has multiple
+    discoverable credentials for the same relying party on a single
+    authenticator (typical for external FIDO2 security keys), the browser's
+    account picker may show generic placeholder labels instead of the user
+    names. The authenticator only releases the credentials'
+    ``user.name`` / ``user.displayName`` fields after user verification.
+    See :ref:`passkey` for more detail.
+
 
 question_number
 ~~~~~~~~~~~~~~~
@@ -1056,6 +1064,8 @@ used a TOTP token to authenticate, an input field to enter the OTP value is disp
 This policy takes precedence over the `preferred_client_mode` policy.
 
 .. versionadded:: 3.12
+
+.. _policy_passkey_trigger_by_pin:
 
 passkey_trigger_by_pin
 ~~~~~~~~~~~~~~~~~~~~~~

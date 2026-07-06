@@ -19,12 +19,16 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
-import { SaveAndExitDialogComponent, SaveAndExitDialogData } from "./save-and-exit-dialog.component";
+import {
+  SaveAndExitDialogComponent,
+  SaveAndExitDialogData,
+  SaveAndExitDialogResult
+} from "./save-and-exit-dialog.component";
 
 describe("SaveAndExitDialogComponent", () => {
   let component: SaveAndExitDialogComponent;
   let fixture: ComponentFixture<SaveAndExitDialogComponent>;
-  let mockDialogRef: MockMatDialogRef<any, any>;
+  let mockDialogRef: MockMatDialogRef<SaveAndExitDialogComponent, SaveAndExitDialogResult>;
 
   beforeEach(async () => {
     const mockValue: SaveAndExitDialogData = {
@@ -52,7 +56,10 @@ describe("SaveAndExitDialogComponent", () => {
 
     fixture = TestBed.createComponent(SaveAndExitDialogComponent);
     component = fixture.componentInstance;
-    mockDialogRef = TestBed.inject(MatDialogRef) as unknown as MockMatDialogRef<any, any>;
+    mockDialogRef = TestBed.inject(MatDialogRef) as unknown as MockMatDialogRef<
+      SaveAndExitDialogComponent,
+      SaveAndExitDialogResult
+    >;
     fixture.detectChanges();
   });
 
@@ -61,12 +68,12 @@ describe("SaveAndExitDialogComponent", () => {
   });
 
   describe("Actions Logic", () => {
-    it("should compute both actions when save is allowed and include save icon", () => {
+    it("should compute both actions when save is allowed without a save icon", () => {
       const actions = component.actions();
       expect(actions.length).toBe(2);
       const saveAction = actions.find((a) => a.value === "save-exit");
       expect(saveAction).toBeTruthy();
-      expect(saveAction?.icon).toBe("save");
+      expect(saveAction?.icon).toBeUndefined();
       expect(actions.some((a) => a.value === "discard")).toBeTruthy();
     });
   });

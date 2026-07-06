@@ -25,7 +25,8 @@ from privacyidea.lib.smsprovider.SMSProvider import (SMSError,
                                                      delete_smsgateway_option,
                                                      delete_smsgateway_header,
                                                      delete_smsgateway_key_generic,
-                                                     create_sms_instance)
+                                                     create_sms_instance,
+                                                     _is_sensitive_key)
 from privacyidea.lib.smsprovider.ScriptSMSProvider import ScriptSMSProvider, SCRIPT_WAIT
 from privacyidea.lib.smsprovider.SipgateSMSProvider import SipgateSMSProvider
 from privacyidea.lib.smsprovider.SipgateSMSProvider import URL
@@ -689,11 +690,8 @@ class HttpSMSTestCase(MyTestCase):
             for x in mock_log.call_args_list:
                 print(x[0][0])
             call = [x[0][0] for x in mock_log.call_args_list if x[0][0].startswith('passing JSON data')][0]
-            # "passing JSON data: {'text': 'Hello: 7', 'phone': 123456,
-            #                      'receiverlist': [{'phone': 'one'}, {'phone': 'two'}]}"
-            self.assertIn('passing JSON data: {', call)
-            self.assertIn("'text': 'Hello: 7'", call)
-            self.assertRegex(call, r"passing JSON data: {.*'receiverlist': \[{.*'phone': '123456'.*}\].*}")
+            # JSON data content is hidden for security
+            self.assertIn('passing JSON data (content hidden for security)', call)
         delete_smsgateway(identifier)
 
 
@@ -805,8 +803,8 @@ class FirebaseProviderTestCase(MyTestCase):
         valid_file = "tests/testdata/firebase-test.json"
         valid_config = {FirebaseConfig.JSON_CONFIG: valid_file}
         fb_id = set_smsgateway("test",
-                           'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
-                           "", valid_config)
+                               'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
+                               "", valid_config)
         self.assertGreater(fb_id, 0)
         delete_smsgateway("test")
 
@@ -842,3 +840,270 @@ class FirebaseProviderTestCase(MyTestCase):
             except Exception:
                 # Ignore cleanup errors; gateway may not have been created.
                 pass
+
+
+class SendSmsIdentifierMetricsTestCase(MyTestCase):
+    """Cover the metric-recording wrapper in ``send_sms_identifier``.
+
+    The function builds the provider via ``create_sms_instance`` and then
+    times / counts the call to ``submit_message``. We patch the factory so
+    these tests don't need a real gateway in the database.
+    """
+
+    def setUp(self):
+        from privacyidea.models import db as _db
+        from privacyidea.models.metric_aggregate import MetricAggregate
+        _db.session.query(MetricAggregate).delete()
+        _db.session.commit()
+
+    def _read_counter(self, result):
+        from privacyidea.lib.metrics import get_metrics
+        rows = get_metrics(name="sms_send_total")
+        match = [r for r in rows if r["labels"].get("result") == result
+                 and r["labels"].get("gateway") == "gw1"]
+        return sum(r["count"] for r in match)
+
+    def test_success_records_ok_counter(self):
+        from privacyidea.lib.smsprovider import SMSProvider as smsmod
+        fake = mock.MagicMock()
+        fake.submit_message.return_value = True
+        with mock.patch.object(smsmod, "create_sms_instance", return_value=fake):
+            self.assertTrue(smsmod.send_sms_identifier("gw1", "+1555", "hello"))
+        self.assertEqual(self._read_counter("ok"), 1)
+        self.assertEqual(self._read_counter("failed"), 0)
+
+    def test_returning_false_records_failed_counter(self):
+        # ISMSProvider.submit_message is documented as boolean-returning, so a
+        # provider that returns False (without raising) must still increment the
+        # failed counter, not ok.
+        from privacyidea.lib.smsprovider import SMSProvider as smsmod
+        fake = mock.MagicMock()
+        fake.submit_message.return_value = False
+        with mock.patch.object(smsmod, "create_sms_instance", return_value=fake):
+            self.assertFalse(smsmod.send_sms_identifier("gw1", "+1555", "hello"))
+        self.assertEqual(self._read_counter("failed"), 1)
+        self.assertEqual(self._read_counter("ok"), 0)
+
+    def test_exception_records_failed_counter_and_reraises(self):
+        # The path codecov flagged: the provider raises, we record duration +
+        # failed counter, then re-raise so the caller still sees the error.
+        from privacyidea.lib.smsprovider import SMSProvider as smsmod
+        fake = mock.MagicMock()
+        fake.submit_message.side_effect = SMSError(500, "gateway is down")
+        with mock.patch.object(smsmod, "create_sms_instance", return_value=fake):
+            with self.assertRaises(SMSError):
+                smsmod.send_sms_identifier("gw1", "+1555", "hello")
+        self.assertEqual(self._read_counter("failed"), 1)
+        self.assertEqual(self._read_counter("ok"), 0)
+        # And the duration histogram must have been written too (count of 1).
+        from privacyidea.lib.metrics import get_metrics
+        durations = get_metrics(name="sms_send_duration_seconds")
+        durations = [d for d in durations if d["labels"].get("gateway") == "gw1"]
+        self.assertEqual(len(durations), 1)
+        self.assertEqual(durations[0]["count"], 1)
+
+
+class SMSGatewayOptionEncryptionTestCase(MyTestCase):
+    """Test that sensitive SMS gateway options are encrypted in the database."""
+
+    def test_01_sensitive_key_detection(self):
+        """_is_sensitive_key correctly identifies sensitive option keys."""
+        self.assertTrue(_is_sensitive_key("PASSWORD"))
+        self.assertTrue(_is_sensitive_key("password"))
+        self.assertTrue(_is_sensitive_key("MAILPASSWORD"))
+        self.assertTrue(_is_sensitive_key("MY_SECRET"))
+        self.assertTrue(_is_sensitive_key("secret"))
+        self.assertTrue(_is_sensitive_key("API_SECRET_KEY"))
+        # Non-sensitive keys
+        self.assertFalse(_is_sensitive_key("URL"))
+        self.assertFalse(_is_sensitive_key("HTTP_METHOD"))
+        self.assertFalse(_is_sensitive_key("USERNAME"))
+        self.assertFalse(_is_sensitive_key("TIMEOUT"))
+
+    def test_02_password_option_encrypted_in_db(self):
+        """PASSWORD option values are stored encrypted in the DB but readable via option_dict."""
+        identifier = "test_encrypt_gw"
+        provider_module = "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider"
+        plaintext_password = "my_super_secret_password"
+
+        gw_id = set_smsgateway(identifier, provider_module,
+                               description="encryption test",
+                               options={"URL": "https://example.com/sms",
+                                        "HTTP_METHOD": "POST",
+                                        "PASSWORD": plaintext_password,
+                                        "USERNAME": "testuser"})
+        self.assertTrue(gw_id > 0)
+
+        # Verify the raw DB value is NOT the plaintext password
+        stmt = select(SMSGatewayOption).filter_by(gateway_id=gw_id, Key="PASSWORD", Type="option")
+        option = db.session.execute(stmt).scalar_one()
+        self.assertNotEqual(option.Value, plaintext_password,
+                            "PASSWORD should be stored encrypted, not as plaintext!")
+        self.assertIn(":", option.Value)
+        self.assertTrue(option.Encrypted, "Encrypted flag should be True for sensitive options")
+
+        # Verify the decrypted value via option_dict matches the original
+        gw = get_smsgateway(id=gw_id)[0]
+        self.assertEqual(gw.option_dict.get("PASSWORD"), plaintext_password)
+
+        # Verify non-sensitive values are stored as-is
+        stmt = select(SMSGatewayOption).filter_by(gateway_id=gw_id, Key="URL", Type="option")
+        option = db.session.execute(stmt).scalar_one()
+        self.assertEqual(option.Value, "https://example.com/sms")
+        self.assertFalse(option.Encrypted)
+
+        # Verify USERNAME (not sensitive) is stored in plaintext
+        stmt = select(SMSGatewayOption).filter_by(gateway_id=gw_id, Key="USERNAME", Type="option")
+        option = db.session.execute(stmt).scalar_one()
+        self.assertEqual(option.Value, "testuser")
+        self.assertFalse(option.Encrypted)
+
+        # Clean up
+        delete_smsgateway(identifier)
+
+    def test_03_secret_option_encrypted_in_db(self):
+        """Options with SECRET in the key name are also encrypted."""
+        identifier = "test_secret_gw"
+        provider_module = "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider"
+        api_secret = "abc123secret456"
+
+        gw_id = set_smsgateway(identifier, provider_module,
+                               description="secret test",
+                               options={"URL": "https://example.com/sms",
+                                        "HTTP_METHOD": "POST",
+                                        "API_SECRET": api_secret})
+
+        # Verify raw DB value is encrypted
+        stmt = select(SMSGatewayOption).filter_by(gateway_id=gw_id, Key="API_SECRET", Type="option")
+        option = db.session.execute(stmt).scalar_one()
+        self.assertNotEqual(option.Value, api_secret)
+        self.assertIn(":", option.Value)
+        self.assertTrue(option.Encrypted)
+
+        # Verify decrypted value is correct
+        gw = get_smsgateway(id=gw_id)[0]
+        self.assertEqual(gw.option_dict.get("API_SECRET"), api_secret)
+
+        # Clean up
+        delete_smsgateway(identifier)
+
+    def test_04_sensitive_header_encrypted_in_db(self):
+        """Headers with sensitive key names are also encrypted."""
+        identifier = "test_header_gw"
+        provider_module = "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider"
+        secret_header_value = "Bearer token12345"
+
+        gw_id = set_smsgateway(identifier, provider_module,
+                               description="header test",
+                               options={"URL": "https://example.com/sms",
+                                        "HTTP_METHOD": "POST"},
+                               headers={"X-API-SECRET": secret_header_value,
+                                        "Content-Type": "application/json"})
+
+        # Verify the sensitive header is encrypted in DB
+        stmt = select(SMSGatewayOption).filter_by(gateway_id=gw_id, Key="X-API-SECRET", Type="header")
+        option = db.session.execute(stmt).scalar_one()
+        self.assertNotEqual(option.Value, secret_header_value)
+        self.assertIn(":", option.Value)
+        self.assertTrue(option.Encrypted)
+
+        # Verify non-sensitive header is stored in plaintext
+        stmt = select(SMSGatewayOption).filter_by(gateway_id=gw_id, Key="Content-Type", Type="header")
+        option = db.session.execute(stmt).scalar_one()
+        self.assertEqual(option.Value, "application/json")
+        self.assertFalse(option.Encrypted)
+
+        # Verify decrypted header value is correct
+        gw = get_smsgateway(id=gw_id)[0]
+        self.assertEqual(gw.header_dict.get("X-API-SECRET"), secret_header_value)
+        self.assertEqual(gw.header_dict.get("Content-Type"), "application/json")
+
+        # Clean up
+        delete_smsgateway(identifier)
+
+    def test_05_update_encrypted_option(self):
+        """Updating a sensitive option re-encrypts with the new value."""
+        identifier = "test_update_gw"
+        provider_module = "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider"
+        old_password = "old_password_123"
+        new_password = "new_password_456"
+
+        gw_id = set_smsgateway(identifier, provider_module,
+                               options={"URL": "https://example.com",
+                                        "HTTP_METHOD": "POST",
+                                        "PASSWORD": old_password})
+
+        gw = get_smsgateway(id=gw_id)[0]
+        self.assertEqual(gw.option_dict.get("PASSWORD"), old_password)
+
+        # Update the password
+        set_smsgateway(identifier, provider_module,
+                       options={"URL": "https://example.com",
+                                "HTTP_METHOD": "POST",
+                                "PASSWORD": new_password})
+
+        gw = get_smsgateway(id=gw_id)[0]
+        self.assertEqual(gw.option_dict.get("PASSWORD"), new_password)
+
+        # Verify raw DB value is encrypted
+        stmt = select(SMSGatewayOption).filter_by(gateway_id=gw_id, Key="PASSWORD", Type="option")
+        option = db.session.execute(stmt).scalar_one()
+        self.assertNotEqual(option.Value, new_password)
+        self.assertIn(":", option.Value)
+        self.assertTrue(option.Encrypted)
+
+        # Clean up
+        delete_smsgateway(identifier)
+
+    def test_06_censored_password_not_overwritten(self):
+        """Sending CENSORED placeholder keeps the existing encrypted password unchanged."""
+        from privacyidea.lib.crypto import CENSORED
+
+        identifier = "test_censored_gw"
+        provider_module = "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider"
+        real_password = "the_real_password"
+
+        gw_id = set_smsgateway(identifier, provider_module,
+                               options={"URL": "https://example.com",
+                                        "HTTP_METHOD": "POST",
+                                        "PASSWORD": real_password})
+
+        # Get the encrypted value from DB
+        stmt = select(SMSGatewayOption).filter_by(gateway_id=gw_id, Key="PASSWORD", Type="option")
+        option = db.session.execute(stmt).scalar_one()
+        encrypted_value_before = option.Value
+
+        # Update with CENSORED - should keep existing value
+        set_smsgateway(identifier, provider_module,
+                       options={"URL": "https://example.com",
+                                "HTTP_METHOD": "POST",
+                                "PASSWORD": CENSORED})
+
+        db.session.expire_all()
+        stmt = select(SMSGatewayOption).filter_by(gateway_id=gw_id, Key="PASSWORD", Type="option")
+        option = db.session.execute(stmt).scalar_one()
+        self.assertEqual(option.Value, encrypted_value_before)
+
+        gw = get_smsgateway(id=gw_id)[0]
+        self.assertEqual(gw.option_dict.get("PASSWORD"), real_password)
+
+        # Clean up
+        delete_smsgateway(identifier)
+
+    def test_07_empty_password_not_encrypted(self):
+        """An empty string password is stored as-is (not encrypted)."""
+        identifier = "test_empty_pw_gw"
+        provider_module = "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider"
+
+        gw_id = set_smsgateway(identifier, provider_module,
+                               options={"URL": "https://example.com",
+                                        "HTTP_METHOD": "POST",
+                                        "PASSWORD": ""})
+
+        stmt = select(SMSGatewayOption).filter_by(gateway_id=gw_id, Key="PASSWORD", Type="option")
+        option = db.session.execute(stmt).scalar_one()
+        self.assertEqual(option.Value, "")
+        self.assertFalse(option.Encrypted)
+
+        # Clean up
+        delete_smsgateway(identifier)

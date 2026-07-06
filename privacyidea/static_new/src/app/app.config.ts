@@ -18,14 +18,27 @@
  **/
 import { APP_BASE_HREF } from "@angular/common";
 import { provideHttpClient, withInterceptors } from "@angular/common/http";
-import { ApplicationConfig, inject, provideAppInitializer, provideZonelessChangeDetection } from "@angular/core";
+import {
+  ApplicationConfig,
+  inject,
+  LOCALE_ID,
+  provideAppInitializer,
+  provideZonelessChangeDetection
+} from "@angular/core";
+import { MatPaginatorIntl } from "@angular/material/paginator";
 import { provideRouter } from "@angular/router";
+import { localeBaseHref } from "@core/locale";
 import { routes } from "./app.routes";
+import { createPaginatorIntl } from "./paginator-intl";
 import { loadingInterceptor } from "./interceptor/loading/loading.interceptor";
 import { userAgentInterceptor } from "./interceptor/user-agent/user-agent.interceptor";
 import { AuthService } from "./services/auth/auth.service";
 import { ConfigService } from "./services/config/config.service";
 import { ThemeService } from "./services/theme/theme.service";
+
+export function baseHrefFactory(): string {
+  return localeBaseHref(inject(LOCALE_ID));
+}
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -35,8 +48,12 @@ export const appConfig: ApplicationConfig = {
     }),
     provideZonelessChangeDetection(),
     provideRouter(routes),
-    { provide: APP_BASE_HREF, useValue: "/app/v2/" },
+    {
+      provide: APP_BASE_HREF,
+      useFactory: baseHrefFactory
+    },
     AuthService,
+    { provide: MatPaginatorIntl, useFactory: createPaginatorIntl },
     provideHttpClient(withInterceptors([loadingInterceptor, userAgentInterceptor])),
     provideAppInitializer(() => {
       const themeService = inject(ThemeService);

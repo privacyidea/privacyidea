@@ -20,9 +20,11 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { PiResponse } from "@app/app.component";
 import { NotificationService } from "@services/notification/notification.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { ChallengesService } from "@services/token/challenges/challenges.service";
-import { MockNotificationService } from "@testing/mock-services";
+import { MockChallengesService, MockNotificationService, MockTableUtilsService } from "@testing/mock-services";
 import { of, throwError } from "rxjs";
 import { ChallengesTableActionsComponent } from "./challenges-table-actions.component";
 
@@ -38,7 +40,9 @@ describe("ChallengesTableActionsComponent", () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: NotificationService, useClass: MockNotificationService }
+        { provide: NotificationService, useClass: MockNotificationService },
+        { provide: ChallengesService, useClass: MockChallengesService },
+        { provide: TableUtilsService, useClass: MockTableUtilsService }
       ]
     }).compileComponents();
 
@@ -54,7 +58,9 @@ describe("ChallengesTableActionsComponent", () => {
   });
 
   it("should delete expired challenges and reload on success", () => {
-    const deleteSpy = jest.spyOn(challengesService, "deleteExpiredChallenges").mockReturnValue(of({} as any));
+    const deleteSpy = jest
+      .spyOn(challengesService, "deleteExpiredChallenges")
+      .mockReturnValue(of({} as PiResponse<unknown>));
     const reloadSpy = jest.spyOn(challengesService.challengesResource, "reload");
 
     component.onDeleteExpiredChallenges();

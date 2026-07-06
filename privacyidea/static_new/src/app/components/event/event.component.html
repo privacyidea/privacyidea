@@ -17,18 +17,13 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
-  appScrollToTop
-  aria-label="Event Handlers"
-  class="events-table-container"
-  i18n-aria-label>
+  appScrollToTop aria-label="Event Handlers" class="events-table-container" i18n-aria-label>
   <div class="filter-paginator-container">
     <mat-form-field
-      class="event-handler-table-filter"
-      subscriptSizing="dynamic">
+      class="event-handler-table-filter" subscriptSizing="dynamic">
       <mat-label i18n>Filter Event Handlers ...</mat-label>
       <app-clearable-input
-        (onClick)="onClearFilter()"
-        [showClearButton]="filterHTMLInputElement.value.length > 0">
+        (clearButtonClick)="onClearFilter()" [showClearButton]="filterHTMLInputElement.value.length > 0">
         <input
           #filterHTMLInputElement
           (input)="onFilterInput(filterHTMLInputElement.value)"
@@ -50,33 +45,26 @@
   <div class="actions-container">
     @if (authService.actionAllowed("eventhandling_write")) {
       <button
-        (click)="onCreateNewEventHandler()"
-        class="action-button-primary button-width-l"
-        i18n
-        mat-stroked-button>
+        (click)="onCreateNewEventHandler()" class="action-button-primary button-width-xl" mat-stroked-button>
         <mat-icon>add</mat-icon>
-        Create New Event Handler
+        <span i18n>Create New Event Handler</span>
       </button>
     }
     <mat-slide-toggle
-      (change)="toggleDetailedView()"
-      [checked]="detailedView()">Detailed View
+      (change)="toggleDetailedView()" [checked]="detailedView()" i18n>Detailed View
     </mat-slide-toggle>
   </div>
 
   <table
-    [dataSource]="eventHandlerDataSource()"
-    class="event-handler-table"
-    mat-table>
+    [dataSource]="eventHandlerDataSource()" class="event-handler-table" mat-table>
     @for (column of Object.keys(columnKeysMap); track column) {
       @if (column !== "delete" || authService.actionAllowed("eventhandling_write")) {
         <ng-container [matColumnDef]="column">
           <th
-            *matHeaderCellDef
-            mat-header-cell>
+            *matHeaderCellDef mat-header-cell>
             <div class="flex ali-center">
               {{ columnKeysMap[column] }}
-              @if (column !== 'delete') {
+              @if (column !== "delete") {
                 <div class="margin-left-16 flex">
                   <button
                     (click)="tableUtilsService.onSortButtonClick(column, sort)"
@@ -90,21 +78,21 @@
             </div>
           </th>
           <td
-            *matCellDef="let element; let row"
-            class="column-max-width"
-            mat-cell>
+            *matCellDef="let element; let row" class="column-max-width" mat-cell>
             @switch (column) {
               @case ("name") {
                 <div
-                  [ngClass]="detailedView() ? 'break-words' : 'event-table-cell'"
-                  [attr.title]="element.name">
+                  [attr.title]="element.name" [ngClass]="detailedView() ? 'break-words' : 'event-table-cell'">
                   @if (authService.actionAllowed("eventhandling_write")) {
                     <a
                       (click)="onEditEventHandler(element)"
-                      [innerHTML]="element.name | highlight:filterString()"
+                      (keydown.enter)="onEditEventHandler(element)"
+                      (keydown.space)="onEditEventHandler(element); $event.preventDefault()"
+                      [innerHTML]="element.name | highlight: filterString()"
+                      role="button"
                       tabindex="0"></a>
                   } @else {
-                    <span [innerHTML]="element.name | highlight:filterString()"></span>
+                    <span [innerHTML]="element.name | highlight: filterString()"></span>
                   }
                 </div>
               }
@@ -113,13 +101,13 @@
                   <div class="detailed-cell-container">
                     <ul class="no-indention margin-0">
                       @for (event of getEventArray(element.event); track event) {
-                        <li [innerHTML]="event | highlight:filterString()"></li>
+                        <li [innerHTML]="event | highlight: filterString()"></li>
                       }
                     </ul>
                   </div>
                 } @else {
                   <div class="event-table-cell">
-                  <span [innerHTML]="(element.event?.join(', ')) | highlight:filterString()"></span>
+                    <span [innerHTML]="element.event?.join(', ') | highlight: filterString()"></span>
                   </div>
                 }
               }
@@ -128,24 +116,33 @@
                   <div class="detailed-cell-container">
                     <ul class="no-indention margin-0">
                       @for (condition of Object.entries(element.conditions); track condition[0]) {
-                        <li [innerHTML]="(condition[0] + ': ' + condition[1]) | highlight:filterString()"></li>
+                        <li [innerHTML]="condition[0] + ': ' + condition[1] | highlight: filterString()"></li>
                       }
                     </ul>
                   </div>
                 } @else {
                   <div class="event-table-cell">
-                    <span [innerHTML]="formatConditions(element.conditions) | highlight:filterString()"></span>
+                    <span [innerHTML]="formatConditions(element.conditions) | highlight: filterString()"></span>
                   </div>
                 }
               }
               @case ("action") {
-                <div [innerHTML]="element.action | highlight:filterString()"></div>
                 @if (detailedView()) {
-                  <ul class="no-indention margin-top-0">
-                    @for (option of Object.entries(element.options); track option[0]) {
-                      <li [innerHTML]="(option[0] + ': ' + option[1]) | highlight:filterString()"></li>
-                    }
-                  </ul>
+                  <div class="detailed-cell-container">
+                    <div class="break-words">
+                      <span [innerHTML]="element.action | highlight: filterString()"></span>
+                    </div>
+                    <ul class="no-indention margin-top-0">
+                      @for (option of Object.entries(element.options); track option[0]) {
+                        <li [innerHTML]="option[0] + ': ' + option[1] | highlight: filterString()"></li>
+                      }
+                    </ul>
+                  </div>
+                } @else {
+                  <div
+                    [attr.title]="element.action" class="event-table-cell">
+                    <span [innerHTML]="element.action | highlight: filterString()"></span>
+                  </div>
                 }
               }
               @case ("active") {
@@ -154,11 +151,13 @@
                   [checked]="element.active"
                   [disableRipple]="true"
                   [disabled]="!authService.actionAllowed('eventhandling_write')"
+                  i18n-matTooltip
                   matTooltip="Toggle Active Status"></mat-slide-toggle>
               }
               @case ("delete") {
                 <button
                   (click)="onDeleteEventHandler(element); $event.stopPropagation()"
+                  i18n-matTooltip
                   mat-icon-button
                   matTooltip="Delete Event Handler">
                   <mat-icon>delete</mat-icon>
@@ -169,7 +168,7 @@
               }
               @default {
                 <span
-                  [innerHTML]="element[column] | highlight:filterString()"
+                  [innerHTML]="element[column] | highlight: filterString()"
                   [ngClass]="detailedView() ? 'break-words' : 'text-overflow-ellipsis'"></span>
               }
             }
@@ -179,8 +178,7 @@
     }
 
     <tr
-      *matHeaderRowDef="columnKeys()"
-      mat-header-row></tr>
+      *matHeaderRowDef="columnKeys()" mat-header-row></tr>
     <tr
       *matRowDef="let row; columns: columnKeys()"
       [ngClass]="detailedView() ? 'detailed-row' : 'compact-row'"

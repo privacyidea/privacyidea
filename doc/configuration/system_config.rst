@@ -52,8 +52,9 @@ any token, the failcounter of *all* tokens is increased.
 Clear failcounter after minutes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-When the failcounter reaches the maximum, the token gets a timestamp of the time the max fail count was reached. *After* the
-specified amount of minutes in this option, any authentication attempt will clear the fail counter.
+When the failcounter reaches the maximum, the token gets a timestamp of the time the max fail count was reached.
+After the specified amount of minutes have passed since that timestamp, any authentication attempt will clear the fail
+counter.
 
 A ``0`` means that the automatic clearing of the fail counter is not used.
 
@@ -79,30 +80,6 @@ Prepend the PIN in front of the OTP value.
 
 Defines if the OTP PIN should be given in front (``pin123456``)
 or in the back (``123456pin``) of the OTP value.
-
-
-.. index:: SAML attributes
-.. _return_saml_attributes:
-
-Include SAML attributes in the authentication response.
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. deprecated:: v3.11
-  The :http:post:`/validate/samlcheck` endpoint will be removed in v3.12. Use the
-  :http:post:`/validate/check` endpoint with :ref:`policy_add_user_in_response` and/or
-  :ref:`policy_add_resolver_in_response` policies instead.
-
-This option defines, if during a SAML authentication request
-additional SAML attributes should be returned.
-Usually an authentication response only returns *true* or *false*.
-
-The SAML attributes are the known attributes of a user that are defined in the
-attribute mapping of the user resolver and possible :ref:`custom user attributes <user_attributes>`,
-like *email*, *phone*, *givenname*, *surname* or any other attributes the resolver
-provides. For more information read :ref:`useridresolvers`.
-
-In addition you can set the parameter **Include SAML attributes even if the user
-failed to authenticate.**. In this case the response contains the SAML attributes
-of the user, even if the user failed to authenticate.
 
 
 .. index:: autoresync, autosync

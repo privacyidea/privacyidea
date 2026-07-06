@@ -43,7 +43,7 @@
         class="application-table-filter">
         <mat-label i18n>Filter SSH Applications...</mat-label>
         <app-clearable-input
-          (onClick)="machineService.clearFilter()"
+          (clearButtonClick)="machineService.clearFilter()"
           [showClearButton]="machineService.machineFilter().isNotEmpty">
           <input
             #filterInput
@@ -111,19 +111,28 @@
             <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
               @switch (column.key) {
                 @case ("serial") {
-                  <div class="flex-row flex-nowrap ali-center">
+                  <app-copyable [copyText]="element.serial">
                     <a
                       (click)="contentService.tokenSelected(element.serial)"
-                      attr.aria-label="{{ column.label }} Link">
+                      (keydown.enter)="contentService.tokenSelected(element.serial)"
+                      (keydown.space)="$event.preventDefault(); contentService.tokenSelected(element.serial)"
+                      attr.aria-label="{{ column.label }} Link"
+                      role="button"
+                      tabindex="0">
                       {{ element[column.key] }}
                     </a>
-                    <app-copy-button [copyText]="element.serial"></app-copy-button>
-                  </div>
+                  </app-copyable>
                 }
                 @case ("user") {
                   <a
                     (click)="contentService.userSelected(element[column.key], element['user_realm'])"
-                    attr.aria-label="{{ column.label }} Link">
+                    (keydown.enter)="contentService.userSelected(element[column.key], element['user_realm'])"
+                    (keydown.space)="
+                      $event.preventDefault(); contentService.userSelected(element[column.key], element['user_realm'])
+                    "
+                    attr.aria-label="{{ column.label }} Link"
+                    role="button"
+                    tabindex="0">
                     {{ element[column.key] }}
                   </a>
                 }

@@ -21,12 +21,11 @@ import { computed, Injectable, Signal, signal, WritableSignal } from "@angular/c
 export interface VersioningServiceInterface {
   rawVersion: WritableSignal<string>;
   version: Signal<string>;
+
   getVersion(): string;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable({ providedIn: "root" })
 export class VersioningService implements VersioningServiceInterface {
   rawVersion = signal("");
   version = computed(() => {

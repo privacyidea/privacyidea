@@ -17,63 +17,47 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
-  aria-label="User Resolver Editor"
-  class="user-new-resolver-layout"
-  i18n-aria-label>
+  aria-label="User Resolver Editor" class="user-new-resolver-layout" i18n-aria-label>
   <div
-    #scrollContainer
-    appScrollToTop
-    class="user-new-resolver-container">
-    @if (isEditMode) {
+    #scrollContainer appScrollToTop class="user-new-resolver-container">
+    @if (isEditMode()) {
       <h3
-        class="margin-8"
-        i18n>
+        class="margin-8" i18n>
         Edit User Source
       </h3>
     } @else {
       <h3
-        class="margin-8"
-        i18n>
+        class="margin-8" i18n>
         Create User Source
       </h3>
     }
 
     <div
-      #leftColumn
-      class="flex-row margin-bottom-0 margin-left-16 margin-top-16 container-template-fix">
+      #leftColumn class="flex-row margin-bottom-0 margin-left-16 margin-top-16 container-template-fix">
       <mat-form-field class="input-width-l">
         <mat-label i18n>Resolver Name</mat-label>
         <mat-hint>
-          @if (isEditMode) {
+          @if (isEditMode()) {
             <span i18n>Change the configuration of the selected resolver.</span>
           } @else {
             <span i18n>Define a new resolver used as a user source.</span>
           }
         </mat-hint>
         <app-clearable-input
-          (onClick)="resolverName = ''"
-          [showClearButton]="!isEditMode && !!resolverName">
+          (clearButtonClick)="resolverNameModel.update(m => ({ ...m, resolverName: '' }))"
+          [showClearButton]="!isEditMode() && !!resolverNameModel().resolverName">
           <input
-            #nameInput="ngModel"
-            [(ngModel)]="resolverName"
-            [disabled]="isEditMode"
-            matInput
-            pattern="^[a-zA-Z0-9._-]*$"
-            placeholder="resolver1"
-            required />
+            [formField]="resolverNameForm.resolverName" matInput placeholder="resolver1" />
         </app-clearable-input>
-        @if (nameInput.errors?.['required'] && (nameInput.dirty || nameInput.touched)) {
+        @if (resolverNameForm.resolverName().errors().some(e => e.kind === 'required') && resolverNameForm.resolverName().touched()) {
           <mat-error i18n>
-            Resolver name is
-            <strong>required</strong>
-            .
+            Resolver name is <strong>required</strong> .
           </mat-error>
         }
-        @if (nameInput.errors?.['pattern'] && (nameInput.dirty || nameInput.touched)) {
+        @if (resolverNameForm.resolverName().errors().some(e => e.kind === 'pattern') && resolverNameForm.resolverName().touched()) {
           <mat-error i18n>
-            Resolver name contains
-            <strong>invalid characters</strong>
-            . Only alphanumeric characters, dots, underscores and hyphens are allowed.
+            Resolver name contains <strong>invalid characters</strong> . Only alphanumeric characters, dots, underscores
+            and hyphens are allowed.
           </mat-error>
         }
       </mat-form-field>
@@ -81,9 +65,7 @@
       <mat-form-field class="input-width-l resolver-type-select">
         <mat-label i18n>Type</mat-label>
         <mat-select
-          (ngModelChange)="onTypeChange($event)"
-          [(ngModel)]="resolverType"
-          [disabled]="isEditMode">
+          (selectionChange)="onTypeChange($event.value)" [disabled]="isEditMode()" [value]="resolverType()">
           <mat-option [value]="'ldapresolver'">LDAP</mat-option>
           <mat-option [value]="'sqlresolver'">SQL</mat-option>
           <mat-option [value]="'httpresolver'">HTTP</mat-option>
@@ -96,22 +78,17 @@
     </div>
 
     <div
-      #stickySentinel
-      class="sticky-sentinel"></div>
-
-    <div
-      #stickyHeader
-      class="sticky-header">
+      [appStickyHeader]="scrollContainer" class="sticky-header">
       <div class="sticky-controls ali-center">
-        @if (resolverType !== "passwdresolver") {
-          @if (["entraidresolver", "keycloakresolver", "httpresolver"].includes(resolverType)) {
+        @if (resolverType() !== "passwdresolver") {
+          @if (["entraidresolver", "keycloakresolver", "httpresolver"].includes(resolverType())) {
             <mat-form-field class="input-width-s">
               <mat-label i18n>Test Username</mat-label>
               <app-clearable-input
-                (onClick)="testUsername = ''"
-                [showClearButton]="!!testUsername">
+                (clearButtonClick)="testUsername.set('')" [showClearButton]="!!testUsername()">
                 <input
-                  [(ngModel)]="testUsername"
+                  (input)="testUsername.set($any($event.target).value)"
+                  [value]="testUsername()"
                   matInput
                   placeholder="foo@bar.com" />
               </app-clearable-input>
@@ -120,20 +97,20 @@
             <mat-form-field class="input-width-s">
               <mat-label i18n>Test User ID</mat-label>
               <app-clearable-input
-                (onClick)="testUserId = ''"
-                [showClearButton]="!!testUserId">
+                (clearButtonClick)="testUserId.set('')" [showClearButton]="!!testUserId()">
                 <input
-                  [(ngModel)]="testUserId"
+                  (input)="testUserId.set($any($event.target).value)"
+                  [value]="testUserId()"
                   matInput
                   placeholder="foo@bar.com" />
               </app-clearable-input>
             </mat-form-field>
           }
 
-          @if (resolverType === "ldapresolver") {
+          @if (resolverType() === "ldapresolver") {
             <button
               (click)="onQuickTest()"
-              [disabled]="isSaving() || isTesting() || !resolverType || isAdditionalFieldsInvalid"
+              [disabled]="isSaving() || isTesting() || !resolverType() || isAdditionalFieldsInvalid"
               class="action-button-secondary button-width-l"
               mat-stroked-button>
               <mat-icon>wifi</mat-icon>
@@ -143,7 +120,7 @@
 
           <button
             (click)="onTest()"
-            [disabled]="isSaving() || isTesting() || !resolverType || isAdditionalFieldsInvalid"
+            [disabled]="isSaving() || isTesting() || !resolverType() || isAdditionalFieldsInvalid"
             class="action-button-secondary button-width-m"
             mat-stroked-button>
             <mat-icon>wifi</mat-icon>
@@ -151,55 +128,40 @@
           </button>
         }
         <button
-          (click)="onCancel()"
-          class="action-button-secondary button-width-s"
-          mat-stroked-button>
+          (click)="onCancel()" class="action-button-secondary button-width-s" mat-stroked-button>
           <span i18n>Cancel</span>
         </button>
 
         <button
-          (click)="onSave()"
-          [disabled]="!canSave"
-          class="action-button-primary button-width-s"
-          mat-stroked-button>
+          (click)="onSave()" [disabled]="!canSave" class="action-button-primary button-width-s" mat-stroked-button>
           <mat-icon>save</mat-icon>
           <span i18n>Save</span>
         </button>
       </div>
     </div>
-
-    @if (resolverType === "ldapresolver") {
-      <app-ldap-resolver [data]="formData" />
+    @if (resolverType() === "ldapresolver") {
+      <app-ldap-resolver [data]="$any(formData)" />
     }
-
-    @if (resolverType === "sqlresolver") {
-      <app-sql-resolver [data]="formData" />
+    @if (resolverType() === "sqlresolver") {
+      <app-sql-resolver [data]="$any(formData)" />
     }
-
-    @if (resolverType === "passwdresolver") {
-      <app-passwd-resolver [data]="formData" />
+    @if (resolverType() === "passwdresolver") {
+      <app-passwd-resolver [data]="$any(formData)" />
     }
-
-    @if (resolverType === "scimresolver") {
-      <app-scim-resolver [data]="formData" />
+    @if (resolverType() === "scimresolver") {
+      <app-scim-resolver [data]="$any(formData)" />
     }
-
-    @if (resolverType === "httpresolver") {
+    @if (resolverType() === "httpresolver") {
       <app-http-resolver
-        [data]="formData"
-        [type]="resolverType" />
+        [data]="$any(formData)" [type]="resolverType()" />
     }
-
-    @if (resolverType === "entraidresolver") {
+    @if (resolverType() === "entraidresolver") {
       <app-entraid-resolver
-        [data]="formData"
-        [type]="resolverType" />
+        [data]="$any(formData)" [type]="resolverType()" />
     }
-
-    @if (resolverType === "keycloakresolver") {
+    @if (resolverType() === "keycloakresolver") {
       <app-keycloak-resolver
-        [data]="formData"
-        [type]="resolverType" />
+        [data]="$any(formData)" [type]="resolverType()" />
     }
   </div>
 </div>

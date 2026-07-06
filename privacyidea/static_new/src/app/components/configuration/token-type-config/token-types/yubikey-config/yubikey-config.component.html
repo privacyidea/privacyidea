@@ -22,25 +22,27 @@
   </mat-expansion-panel-header>
   <div class="panel-content expansion-well">
     <p i18n>This is a Yubikey in the Yubico Mode authenticated against privacyIDEA.</p>
-    <p i18n>The Yubikey emits a 44 character on time password.
-    </p>
-    <p i18n>The authentication request can be handled by the default privacyIDEA
+    <p i18n>The Yubikey emits a 44 character on time password.</p>
+    <p i18n>
+      The authentication request can be handled by the default privacyIDEA
       <a
         href="https://privacyidea.readthedocs.io/en/latest/modules/api/validate.html"
-        target="_blank">validate API
+        target="_blank"
+        >validate API
       </a>
-            but can also be handled by the
+      but can also be handled by the
       <a
         href="https://privacyidea.readthedocs.io/en/latest/modules/lib/tokentypes/yubikey.html#privacyidea.lib.tokens.yubikeytoken.YubikeyTokenClass.api_endpoint"
-        target="_blank">Yubico Validation Protocol.
+        target="_blank"
+        >Yubico Validation Protocol.
       </a>
     </p>
 
     <table class="table margin-bottom-16">
       <thead>
-      <tr>
-        <th i18n>Client ID API Key</th>
-      </tr>
+        <tr>
+          <th i18n>Client ID API Key</th>
+        </tr>
       </thead>
       <tbody>
         @for (key of yubikeyApiIds(); track key) {
@@ -70,18 +72,17 @@
         class="input-width-m">
         <mat-label i18n>Client ID</mat-label>
         <input
-          (ngModelChange)="newYubikeyApiId.set($event)"
-          [ngModel]="newYubikeyApiId()"
-          #apiIdInput="ngModel"
-          [ngModelOptions]="{ standalone: true }"
+          #apiIdInput
+          (input)="newYubikeyApiId.set($any($event.target).value)"
+          [value]="newYubikeyApiId()"
           matInput
           pattern="^[a-zA-Z0-9._-]*$"
           placeholder="Client ID"
-          required>
-        @if (apiIdInput.errors?.['required']) {
+          required />
+        @if (apiIdInput.validity.valueMissing) {
           <mat-error i18n>Client ID is <strong>required</strong></mat-error>
         }
-        @if (apiIdInput.errors?.['pattern']) {
+        @if (apiIdInput.validity.patternMismatch) {
           <mat-error i18n>Invalid characters. Only alphanumeric, dots, underscores and hyphens are allowed.</mat-error>
         }
       </mat-form-field>
@@ -91,18 +92,16 @@
         class="input-width-l">
         <mat-label i18n>API Key</mat-label>
         <input
-          (ngModelChange)="newYubikeyApiKey.set($event)"
-          [ngModel]="newYubikeyApiKey()"
-          #apiKeyInput="ngModel"
-          [ngModelOptions]="{ standalone: true }"
+          (input)="newYubikeyApiKey.set($any($event.target).value)"
+          [value]="newYubikeyApiKey()"
           [disabled]="newYubikeyGenKey()"
           matInput
-          placeholder="API Key">
+          placeholder="API Key" />
       </mat-form-field>
 
       <mat-checkbox
-        (ngModelChange)="newYubikeyGenKey.set($event)"
-        [ngModel]="newYubikeyGenKey()"
+        (change)="newYubikeyGenKey.set($event.checked)"
+        [checked]="newYubikeyGenKey()"
         class="genkey-spacing"
         i18n>
         Generate API Key
@@ -111,7 +110,7 @@
 
     <button
       (click)="createNewKey()"
-      class="action-button-secondary button-width-s margin-top-16"
+      class="action-button-secondary button-width-m margin-top-16"
       mat-stroked-button>
       <mat-icon>add</mat-icon>
       <span i18n>Add</span>

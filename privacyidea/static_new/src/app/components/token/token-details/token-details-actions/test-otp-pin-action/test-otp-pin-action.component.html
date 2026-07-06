@@ -16,6 +16,7 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
+<ng-content select="[panelTitle]"></ng-content>
 <div class="actions-otp-pin-input">
   <input
     class="hidden-input"
@@ -23,10 +24,13 @@
   <input
     class="hidden-input"
     type="password" />
-  <mat-form-field class="input-width-s">
+  <mat-form-field
+    class="input-width-m"
+    subscriptSizing="dynamic">
     <mat-label i18n>PIN and/or OTP</mat-label>
     <input
-      [(ngModel)]="otpOrPinToTest"
+      [value]="otpOrPinToTest()"
+      (input)="otpOrPinToTest.set($any($event.target).value)"
       [type]="hide ? 'password' : 'text'"
       autocomplete="one-time-code"
       matInput />
@@ -44,18 +48,16 @@
 <div class="actions-pin-button">
   <button
     (click)="testToken()"
-    class="action-button-secondary button-width-m"
-    i18n
+    class="action-button-secondary button-width-l"
     mat-stroked-button>
     <mat-icon>help_outline</mat-icon>
-    Test Token
+    <span i18n>Test Token</span>
   </button>
   <button
     (click)="verifyOTPValue()"
-    class="action-button-secondary button-width-m"
-    i18n
+    class="action-button-secondary button-width-l"
     mat-stroked-button>
     <mat-icon>help_outline</mat-icon>
-    Verify OTP Value
+    <span i18n>Verify OTP Value</span>
   </button>
 </div>

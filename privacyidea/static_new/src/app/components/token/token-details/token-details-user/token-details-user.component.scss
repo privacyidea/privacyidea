@@ -2,25 +2,61 @@
 @use "table";
 
 $border-color: var(--mat-sys-outline-variant);
-$gap-small: 8px;
-$padding-horizontal: 16px;
 
 .user-container {
-  display: flex;
-  gap: var(--global-padding);
-  padding: 0 0 0 var(--global-padding);
+  .value-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .value-content {
+    flex: 1 1 0;
+    min-width: 0;
+
+    mat-form-field {
+      width: 100%;
+    }
+  }
+
+  .value-edit {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+  }
 
   .user-details-table {
     border-collapse: collapse;
-    display: flex;
-    width: auto;
-    max-width: fit-content;
-    justify-content: center;
-    border-bottom: 0;
+    width: 100%;
+    table-layout: fixed;
+
+    td:nth-child(even) {
+      background: transparent;
+    }
+
+    tr.mat-mdc-row:nth-child(odd) td {
+      background: var(--mat-sys-surface-variant);
+    }
+
+    tr.mat-mdc-row:nth-child(even) td {
+      background: transparent;
+    }
 
     th,
     td {
       border: 1px solid $border-color;
+      padding-left: 12px !important;
+      padding-right: 12px !important;
+    }
+
+    td:nth-child(1) {
+      width: 110px;
+    }
+    td:nth-child(2) {
+      width: auto;
     }
   }
 
@@ -30,8 +66,8 @@ $padding-horizontal: 16px;
   }
 
   .user-editable-row {
-    width: 241px;
-    min-width: 241px;
+    width: auto;
+    min-width: 0;
   }
 
   .user-pin-container-padding {

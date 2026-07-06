@@ -67,10 +67,12 @@ angular.module("privacyideaApp")
             obj = angular.element(document.querySelector("#EXTERNAL_LINKS"));
             $scope.piExternalLinks = obj.val();
             obj = angular.element(document.querySelector('#REALMS'));
-            $scope.piRealms = obj.val().mysplit(",").sort();
-            if ($scope.piRealms.length > 0) {
-                $scope.piRealms.push("-");
-            }
+            // A "-" entry in the realmdropdown policy is the indicator that the
+            // dropdown should offer a "no realm" option; render it as an empty
+            // entry rather than a literal dash.
+            $scope.piRealms = obj.val().mysplit(",").map(function (r) {
+                return r === "-" ? "" : r;
+            });
             obj = angular.element(document.querySelector('#LOGO'));
             $scope.piLogo = obj.val();
             obj = angular.element(document.querySelector('#HAS_JOB_QUEUE'));
@@ -156,6 +158,26 @@ angular.module("privacyideaApp")
                         params: oldParams
                     };
                 });
+
+            // Auth guard: pages other than the login/recovery/register flows
+            // require an active JWT. Without one, controllers that gate
+            // everything behind checkRight() render a blank shell instead of
+            // surfacing the missing-auth state, so we redirect explicitly.
+            // States that must remain reachable without a JWT:
+            // - login / initial_login: where the JWT is obtained
+            // - recovery / reset: password recovery flow
+            // - register: self-registration
+            // - response / pinchange: mid-login challenge response / forced PIN change
+            // - offline: offline-mode landing page
+            const PUBLIC_STATES = ['login', 'initial_login', 'recovery', 'reset',
+                                   'register', 'response', 'pinchange', 'offline'];
+            $transitions.onBefore({}, function (transition) {
+                const target = transition.to().name;
+                if (PUBLIC_STATES.indexOf(target) !== -1) return;
+                if (!AuthFactory.getAuthToken()) {
+                    return transition.router.stateService.target('login');
+                }
+            });
 
             // When transitioning to the login state (e.g. after a 4305 JWT expiry redirect),
             // reset the login form so the realm dropdown is populated with the correct values.
@@ -298,10 +320,6 @@ angular.module("privacyideaApp")
                 $scope.polling = false;
                 $scope.image = false;
                 //debug: console.log($scope.login);
-                // Replace the placeholder for no realm with no realm
-                if ($scope.login.realm === "-") {
-                    $scope.login.realm = "";
-                }
                 $http.post(authUrl, {
                     username: $scope.login.username,
                     password: $scope.login.password,
@@ -490,7 +508,27 @@ angular.module("privacyideaApp")
                 }
                 $scope.backend_log_level = data.result.value.log_level;
                 $scope.backend_debug_passwords = data.result.value.debug_passwords;
+                // Debug-banner dismissal: per-session, sessionStorage clears
+                // when the tab closes so the reminder comes back next time.
+                try {
+                    $scope.debugBannerDismissed =
+                        sessionStorage.getItem("piDebugBannerDismissed") === "1";
+                } catch (e) {
+                    $scope.debugBannerDismissed = false;
+                }
+                $scope.dismissDebugBanner = function () {
+                    $scope.debugBannerDismissed = true;
+                    try {
+                        sessionStorage.setItem("piDebugBannerDismissed", "1");
+                    } catch (e) { /* private mode etc. - in-memory only */ }
+                };
                 $scope.privacyideaVersionNumber = data.versionnumber;
+                // Also refresh $rootScope: the login page may have blanked it
+                // (hide_version policy), but the authenticated /auth response
+                // carries the real version. The User-Agent interceptor reads it
+                // from $rootScope, so without this every post-login API call
+                // would send a version-less User-Agent for the whole session.
+                $rootScope.privacyideaVersionNumber = data.versionnumber;
                 const lang = gettextCatalog.getCurrentLanguage();
                 if (data.result.value.hasOwnProperty("supportmail")) {
                     $scope.privacyideaSupportLink = data.result.value.supportmail;
@@ -731,7 +769,7 @@ angular.module("privacyideaApp")
             };
 
             $scope.clearRealmSelection = function () {
-                $scope.login.realm = "-";
+                $scope.login.realm = "";
             };
         }]);
 

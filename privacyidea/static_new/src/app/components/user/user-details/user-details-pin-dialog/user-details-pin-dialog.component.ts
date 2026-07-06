@@ -16,8 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, signal, WritableSignal } from "@angular/core";
-import { FormsModule } from "@angular/forms";
+import { Component, computed, signal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatDialogModule } from "@angular/material/dialog";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -32,26 +31,18 @@ import { DialogAction } from "@models/dialog";
   templateUrl: "./user-details-pin-dialog.component.html",
   styleUrls: ["./user-details-pin-dialog.component.scss"],
   standalone: true,
-  imports: [
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
-    FormsModule,
-    MatDialogModule,
-    MatIconModule,
-    DialogWrapperComponent
-  ]
+  imports: [MatFormFieldModule, MatInputModule, MatButtonModule, MatDialogModule, MatIconModule, DialogWrapperComponent]
 })
-export class UserDetailsPinDialogComponent extends AbstractDialogComponent<any, string | null> {
-  pin: WritableSignal<string> = signal("");
-  pinRepeat: WritableSignal<string> = signal("");
-  hidePin: WritableSignal<boolean> = signal(true);
+export class UserDetailsPinDialogComponent extends AbstractDialogComponent<void, string | null> {
+  pin = signal("");
+  pinRepeat = signal("");
+  hidePin = signal(true);
   pinsMatch = computed(() => this.pin() === this.pinRepeat());
 
   dialogActions = computed((): DialogAction<string>[] => {
     return [
       {
-        label: "Confirm",
+        label: $localize`Confirm`,
         value: "confirm",
         type: "confirm",
         disabled: !this.pinsMatch(),

@@ -22,7 +22,10 @@ import { TestBed } from "@angular/core/testing";
 import { MatTableDataSource } from "@angular/material/table";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuthService, JwtData } from "@services/auth/auth.service";
+import { ContainerDetailToken } from "@services/container/container.service";
 import { TableUtilsService } from "./table-utils.service";
+import { TokenService } from "@services/token/token.service";
+import { MockTokenService } from "@testing/mock-services";
 
 describe("TableUtilsService", () => {
   let service: TableUtilsService;
@@ -31,7 +34,12 @@ describe("TableUtilsService", () => {
   beforeEach(() => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      providers: [TableUtilsService, provideHttpClient(), provideHttpClientTesting()]
+      providers: [
+        TableUtilsService,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: TokenService, useClass: MockTokenService }
+      ]
     });
     service = TestBed.inject(TableUtilsService);
     authService = TestBed.inject(AuthService);
@@ -116,7 +124,7 @@ describe("TableUtilsService", () => {
     ["username", false],
     ["realms", false],
     ["unknown", false]
-  ])('isLink("%s") → %s', (key, expected) => {
+  ])("isLink(\"%s\") → %s", (key, expected) => {
     expect(service.isLink(key)).toBe(expected);
   });
 
@@ -130,7 +138,7 @@ describe("TableUtilsService", () => {
       expect(service.getClassForColumn("active", { active: true })).toBe("highlight-true");
       expect(service.getClassForColumn("active", { active: false })).toBe("highlight-false");
       // Allow enable / disable
-      let jwtData = {
+      const jwtData = {
         username: "",
         realm: "",
         nonce: "",
@@ -150,7 +158,7 @@ describe("TableUtilsService", () => {
       expect(service.getClassForColumn("failcount", { failcount: 2, maxfail: 5 })).toBe("highlight-warning");
       expect(service.getClassForColumn("failcount", { failcount: 5, maxfail: 5 })).toBe("highlight-false");
       // Allow reset failcount
-      let jwtData = {
+      const jwtData = {
         username: "",
         realm: "",
         nonce: "",
@@ -164,11 +172,11 @@ describe("TableUtilsService", () => {
       expect(service.getClassForColumn("failcount", { failcount: 5, maxfail: 5 })).toBe("highlight-false-clickable");
     });
 
-    it('returns "" when failcount is empty string', () => {
+    it("returns \"\" when failcount is empty string", () => {
       expect(service.getClassForColumn("failcount", { failcount: "", maxfail: 5 })).toBe("");
     });
 
-    it('returns "" when active is undefined', () => {
+    it("returns \"\" when active is undefined", () => {
       expect(service.getClassForColumn("active", { active: undefined })).toBe("");
     });
   });
@@ -184,7 +192,7 @@ describe("TableUtilsService", () => {
       expect(service.getTooltipForColumn("failcount", { revoked: true })).toBe("Revoked");
     });
 
-    it('returns empty string when active = ""', () => {
+    it("returns empty string when active = \"\"", () => {
       expect(service.getTooltipForColumn("active", { active: "" })).toBe("");
     });
 
@@ -201,7 +209,7 @@ describe("TableUtilsService", () => {
       [{ active: true, locked: true }, "locked"],
       [{ active: false, revoked: true }, "revoked"],
       [{ active: "" }, ""]
-    ])('maps element → "%s"', (element, expected) => {
+    ])("maps element → \"%s\"", (element, expected) => {
       expect(service.getDisplayText("active", element)).toBe(expected);
     });
 
@@ -235,7 +243,7 @@ describe("TableUtilsService", () => {
     ["count_window", "details-value"],
     ["sync_window", "details-value"],
     ["other", ""]
-  ])('getDivClassForKey("%s") → "%s"', (key, expected) => {
+  ])("getDivClassForKey(\"%s\") → \"%s\"", (key, expected) => {
     expect(service.getDivClassForKey(key)).toBe(expected);
   });
 
@@ -245,11 +253,11 @@ describe("TableUtilsService", () => {
     ["realms", "table-scroll-container"],
     ["description", "table-scroll-container"],
     ["xyz", "flex-center-vertical"]
-  ])('getClassForColumnKey("%s") → "%s"', (col, expected) => {
+  ])("getClassForColumnKey(\"%s\") → \"%s\"", (col, expected) => {
     expect(service.getClassForColumnKey(col)).toBe(expected);
   });
 
-  it('getChildClassForColumnKey returns "scroll-item" only for scroll containers', () => {
+  it("getChildClassForColumnKey returns \"scroll-item\" only for scroll containers", () => {
     expect(service.getChildClassForColumnKey("realms")).toBe("scroll-item");
     expect(service.getChildClassForColumnKey("active")).toBe("");
   });
@@ -269,18 +277,22 @@ describe("TableUtilsService", () => {
     ["realms", "height-78"],
     ["tokengroup", "height-78"],
     ["id", "height-53"]
-  ])('getTdClassForKey("%s") includes %s', (key, expectedPart) => {
+  ])("getTdClassForKey(\"%s\") includes %s", (key, expectedPart) => {
     expect(service.getTdClassForKey(key)).toContain(expectedPart);
   });
 
   it.each([
     ["active", false, "highlight-true"],
     ["disabled", false, "highlight-false"],
+    ["damaged", false, "highlight-false"],
+    ["lost", false, "highlight-false"],
     ["other", false, ""],
     ["active", true, "highlight-true-clickable"],
     ["disabled", true, "highlight-false-clickable"],
+    ["damaged", true, "highlight-false-clickable"],
+    ["lost", true, "highlight-false-clickable"],
     ["other", true, ""]
-  ])('getSpanClassForState("%s", %s) → %s', (state, clickable, expected) => {
+  ])("getSpanClassForState(\"%s\", %s) → %s", (state, clickable, expected) => {
     expect(service.getSpanClassForState(state, clickable)).toBe(expected);
   });
 
@@ -288,7 +300,75 @@ describe("TableUtilsService", () => {
     ["active", "active"],
     ["disabled", "deactivated"],
     ["mystery", "mystery"]
-  ])('getDisplayTextForState("%s") → %s', (state, expected) => {
+  ])("getDisplayTextForState(\"%s\") → %s", (state, expected) => {
     expect(service.getDisplayTextForState(state)).toBe(expected);
+  });
+
+  describe("clientsideSortTokenData", () => {
+    const makeToken = (overrides: Partial<ContainerDetailToken> & Record<string, unknown> = {}) =>
+      ({
+        active: true,
+        container_serial: "C1",
+        count: 0,
+        count_window: 0,
+        description: "",
+        failcount: 0,
+        id: 0,
+        revoked: false,
+        serial: "",
+        sync_window: 0,
+        tokengroup: [],
+        tokentype: "hotp",
+        user_editable: false,
+        user_id: "",
+        user_realm: "",
+        username: "",
+        ...overrides
+      }) as unknown as ContainerDetailToken;
+
+    it("returns the input untouched when direction is empty", () => {
+      const data = [makeToken({ serial: "B" }), makeToken({ serial: "A" })];
+      const result = service.clientsideSortTokenData(data, { active: "serial", direction: "" });
+      expect(result).toBe(data);
+      expect(result.map((t) => t.serial)).toEqual(["B", "A"]);
+    });
+
+    it("sorts ascending by the chosen key (case-insensitive)", () => {
+      const data = [makeToken({ serial: "beta" }), makeToken({ serial: "Alpha" }), makeToken({ serial: "gamma" })];
+      const result = service.clientsideSortTokenData(data, { active: "serial", direction: "asc" });
+      expect(result.map((t) => t.serial)).toEqual(["Alpha", "beta", "gamma"]);
+    });
+
+    it("sorts descending by the chosen key", () => {
+      const data = [
+        makeToken({ description: "banana" }),
+        makeToken({ description: "apple" }),
+        makeToken({ description: "cherry" })
+      ];
+      const result = service.clientsideSortTokenData(data, { active: "description", direction: "desc" });
+      expect(result.map((t) => t.description)).toEqual(["cherry", "banana", "apple"]);
+    });
+
+    it("treats undefined / null values as empty strings (sorted first ascending)", () => {
+      const data = [
+        makeToken({ serial: "x", resolver: "zeta" }),
+        makeToken({ serial: "y", resolver: undefined }),
+        makeToken({ serial: "z", resolver: "alpha" })
+      ];
+      const result = service.clientsideSortTokenData(data, { active: "resolver", direction: "asc" });
+      expect(result.map((t) => t.serial)).toEqual(["y", "z", "x"]);
+    });
+
+    it("sorts numeric fields by their stringified value", () => {
+      const data = [makeToken({ failcount: 2 }), makeToken({ failcount: 10 }), makeToken({ failcount: 1 })];
+      const result = service.clientsideSortTokenData(data, { active: "failcount", direction: "asc" });
+      expect(result.map((t) => t.failcount)).toEqual([1, 10, 2]);
+    });
+
+    it("mutates and returns the same array reference", () => {
+      const data = [makeToken({ serial: "b" }), makeToken({ serial: "a" })];
+      const result = service.clientsideSortTokenData(data, { active: "serial", direction: "asc" });
+      expect(result).toBe(data);
+    });
   });
 });

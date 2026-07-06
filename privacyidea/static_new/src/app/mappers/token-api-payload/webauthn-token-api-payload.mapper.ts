@@ -52,7 +52,7 @@ export interface WebauthnFinalizeData extends WebAuthnEnrollmentData {
   authenticatorAttachment: string | null; // Attachment type of the authenticator (e.g, 'platform', 'cross-platform', or null)
   regdata: string; // Base64-encoded attestation object
   clientdata: string; // Base64-encoded client data JSON
-  credProps?: any; // Optional credential properties, if available
+  credProps?: CredentialPropertiesOutput; // Optional credential properties, if available
 }
 
 export interface WebAuthnEnrollmentPayload extends TokenEnrollmentPayload {
@@ -67,14 +67,13 @@ export interface WebAuthnFinalizePayload extends TokenEnrollmentPayload {
   serial: string;
   rawId: string;
   authenticatorAttachment: string | null;
-  credProps?: any;
+  credProps?: CredentialPropertiesOutput;
 }
 
 @Injectable({ providedIn: "root" })
 export class WebAuthnApiPayloadMapper
   extends BaseApiPayloadMapper
-  implements TokenApiPayloadMapper<WebAuthnEnrollmentData>
-{
+  implements TokenApiPayloadMapper<WebAuthnEnrollmentData> {
   override toApiPayload(data: WebAuthnEnrollmentData): WebAuthnEnrollmentPayload {
     const payload: WebAuthnEnrollmentPayload = {
       ...super.toApiPayload(data),
@@ -89,7 +88,7 @@ export class WebAuthnApiPayloadMapper
     return payload;
   }
 
-  override fromApiPayload(payload: any): WebAuthnEnrollmentData {
+  override fromApiPayload(payload: WebAuthnEnrollmentPayload): WebAuthnEnrollmentData {
     // Placeholder: Implement transformation from API payload. We will replace this later.
     return payload as WebAuthnEnrollmentData;
   }
@@ -122,12 +121,12 @@ export class WebAuthnFinalizeApiPayloadMapper implements TokenApiPayloadMapper<W
     return payload;
   }
 
-  fromApiPayload(payload: any): WebauthnFinalizeData {
+  fromApiPayload(payload: WebAuthnFinalizePayload): WebauthnFinalizeData {
     // Placeholder: Implement transformation from API payload. We will replace this later.
     return payload as WebauthnFinalizeData;
   }
 
-  fromTokenDetailsToEnrollmentData(details: TokenDetails): WebauthnFinalizeData {
+  fromTokenDetailsToEnrollmentData(): WebauthnFinalizeData {
     return {} as WebauthnFinalizeData;
   }
 }

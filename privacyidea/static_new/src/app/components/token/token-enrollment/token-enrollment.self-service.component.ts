@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, inject } from "@angular/core";
-import { ReactiveFormsModule } from "@angular/forms";
+import { FormField } from "@angular/forms/signals";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { DateAdapter, MAT_DATE_FORMATS, MatNativeDateModule, provideNativeDateAdapter } from "@angular/material/core";
 import { MAT_TOOLTIP_DEFAULT_OPTIONS } from "@angular/material/tooltip";
@@ -28,13 +28,9 @@ import { MatOption } from "@angular/material/select";
 import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
-import {
-  EnrollTokenTypeSwitchComponent
-} from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
+import { EnrollTokenTypeSwitchComponent } from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
 import { EnrollmentPinComponent } from "@components/shared/enrollment-pin/enrollment-pin.component";
-import {
-  TokenEnrollmentLastStepDialogSelfServiceComponent
-} from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component";
+import { TokenEnrollmentLastStepDialogSelfServiceComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component";
 import {
   CUSTOM_DATE_FORMATS,
   CustomDateAdapter,
@@ -49,14 +45,12 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
 import { CUSTOM_TOOLTIP_OPTIONS } from "./token-enrollment.constants";
-import {
-  TokenEnrollmentTypeSelectorComponent
-} from "./token-enrollment-type-selector/token-enrollment-type-selector.component";
+import { TokenEnrollmentTypeSelectorComponent } from "./token-enrollment-type-selector/token-enrollment-type-selector.component";
 
 @Component({
   selector: "app-token-enrollment-self-service",
   imports: [
-    ReactiveFormsModule,
+    FormField,
     MatFormField,
     MatOption,
     MatInput,
@@ -98,7 +92,7 @@ export class TokenEnrollmentSelfServiceComponent extends TokenEnrollmentComponen
 
   protected override openLastStepDialog(response: EnrollmentResponse | null): void {
     if (!response) {
-      this.notificationService.warning("No enrollment response available.");
+      this.notificationService.warning($localize`No enrollment response available.`);
       return;
     }
 

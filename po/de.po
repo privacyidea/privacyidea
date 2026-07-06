@@ -70,8 +70,8 @@ msgstr ""
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:91
 msgid ""
 "<li>Support and\n"
-"                        <a target=\"netknights\" href=\"https://netknights."
-"it/en/leistungen/service-level-agreements/\">\n"
+"                        <a target=\"netknights\" href=\"https://"
+"netknights.it/en/leistungen/service-level-agreements/\">\n"
 "                            Service Level Agreements by NetKnights</a>, "
 "Germany.\n"
 "                    </li>\n"
@@ -88,8 +88,8 @@ msgid ""
 "                    <li>Depending on the support level you get help with "
 "updates and yearly consultancy.</li>\n"
 "                    <li>By buying the\n"
-"                        <a target=\"netknights\" href=\"https://netknights."
-"it/en/produkte/privacyidea/\">privacyIDEA Enterprise Edition</a>\n"
+"                        <a target=\"netknights\" href=\"https://"
+"netknights.it/en/produkte/privacyidea/\">privacyIDEA Enterprise Edition</a>\n"
 "                        you ensure that professional developers can work "
 "full time\n"
 "                        on privacyIDEA, add new features and fix bugs in a "
@@ -568,7 +568,7 @@ msgstr "Audit"
 msgid "Authentication Server URI"
 msgstr "URI des Authentisierungsservers"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:431
+#: privacyidea/static/components/login/controllers/loginControllers.js:429
 msgid "Authentication failed."
 msgstr "Authentisierung fehlgeschlagen."
 
@@ -739,11 +739,11 @@ msgstr "Zertifikatsvorlage"
 msgid "Certificates Templates file"
 msgstr "Datei mit Zertifikatstemplates"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:330
+#: privacyidea/static/components/login/controllers/loginControllers.js:328
 msgid "Challenge Response Authentication."
 msgstr "Challenge-Response Anmeldung."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:409
+#: privacyidea/static/components/login/controllers/loginControllers.js:407
 msgid "Challenge Response Authentication. Your response was not valid!"
 msgstr "Challenge-Response Anmeldung. Ihre Antwort war ungültig!"
 
@@ -1454,11 +1454,11 @@ msgstr "Token nicht verifizieren"
 
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:15
 msgid ""
-"Do you really want to delete the Token {{ tokenSerial }} from user {{ token."
-"username }}?"
+"Do you really want to delete the Token {{ tokenSerial }} from user "
+"{{ token.username }}?"
 msgstr ""
-"Wollen Sie wirklich den Token {{ tokenSerial }} des Benutzers {{ token."
-"username }} löschen?"
+"Wollen Sie wirklich den Token {{ tokenSerial }} des Benutzers "
+"{{ token.username }} löschen?"
 
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:18
 msgid "Do you really want to delete the Token {{ tokenSerial }}?"
@@ -1477,7 +1477,7 @@ msgstr "Wollen Sie wirklich diese Ereignisdefinition löschen?"
 msgid "Do you really want to delete this machine resolver?"
 msgstr "Wollen Sie wirklich diesen Maschinen-Resolver löschen?"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:114
+#: privacyidea/static/components/login/controllers/loginControllers.js:116
 msgid "Do you really want to delete this object?"
 msgstr "Wollen Sie dieses Objekt wirklich löschen?"
 
@@ -1717,7 +1717,7 @@ msgstr "Neuen Token ausrollen"
 msgid "Enroll Token"
 msgstr "Token ausrollen"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:125
+#: privacyidea/static/components/login/controllers/loginControllers.js:127
 #: privacyidea/static/components/token/controllers/tokenControllers.js:196
 #: privacyidea/static/components/token/views/token.enroll.html:1
 #: privacyidea/static/components/token/views/token.enroll.html:226
@@ -1932,16 +1932,17 @@ msgid ""
 "For SMS tokens to work properly you need to set the\n"
 "    <a ui-sref=\"config.tokens({tokentype:'sms'})\">SMS Token Config</a>!"
 msgstr ""
-"Damit SMS-Token richtig funktionieren, müssen Sie die  <a ui-sref=\"config."
-"tokens({tokentype:'sms'})\">SMS-Token Konfiguration</a> setzen!"
+"Damit SMS-Token richtig funktionieren, müssen Sie die  <a ui-"
+"sref=\"config.tokens({tokentype:'sms'})\">SMS-Token Konfiguration</a> setzen!"
 
 #: privacyidea/static/components/token/views/token.enroll.tiqr.html:1
 msgid ""
 "For TiQR tokens to work properly you need to set the\n"
 "    <a ui-sref=\"config.tokens({tokentype:'tiqr'})\">TiQR Token Config</a>!"
 msgstr ""
-"Damit TiQR-Token richtig funktionieren, müssen Sie die  <a ui-sref=\"config."
-"tokens({tokentype:'tiqr'})\">TiQR-Token Konfiguration</a> setzen!"
+"Damit TiQR-Token richtig funktionieren, müssen Sie die  <a ui-"
+"sref=\"config.tokens({tokentype:'tiqr'})\">TiQR-Token Konfiguration</a> "
+"setzen!"
 
 #: privacyidea/static/components/token/views/token.enroll.yubico.html:8
 msgid ""
@@ -1949,8 +1950,9 @@ msgid ""
 "    <a ui-sref=\"config.tokens({tokentype:'yubico'})\">Yubico Token Config</"
 "a>!"
 msgstr ""
-"Damit Yubico-Token richtig funktionieren, müssen Sie die <a ui-sref=\"config."
-"tokens({tokentype:'yubico'})\">Yubico-Token Konfiguration</a> setzen!"
+"Damit Yubico-Token richtig funktionieren, müssen Sie die <a ui-"
+"sref=\"config.tokens({tokentype:'yubico'})\">Yubico-Token Konfiguration</a> "
+"setzen!"
 
 #: privacyidea/static/components/token/views/token.enroll.push.html:6
 msgid ""
@@ -2011,15 +2013,15 @@ msgstr "System Dokumentation"
 msgid "Get available CAs"
 msgstr "Verfügbare CAs abrufen"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:513
+#: privacyidea/static/components/login/controllers/loginControllers.js:511
 msgid "Get the Authenticator App for Android."
 msgstr "Laden Sie die Authenticator App für Android."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:520
+#: privacyidea/static/components/login/controllers/loginControllers.js:518
 msgid "Get the Authenticator App for iOS."
 msgstr "Laden Sie die Authenticator App für iOS."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:527
+#: privacyidea/static/components/login/controllers/loginControllers.js:525
 msgid "Get the Authenticator App."
 msgstr "Laden Sie die Authenticator App."
 
@@ -2532,7 +2534,7 @@ msgid ""
 "                                definitions"
 msgstr "Liste der privacyIDEA Server"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:133
+#: privacyidea/static/components/login/controllers/loginControllers.js:135
 msgid "List tokens"
 msgstr "Tokenliste anzeigen"
 
@@ -2564,7 +2566,7 @@ msgstr "Logbuch"
 msgid "Log In"
 msgstr "Anmelden"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:140
+#: privacyidea/static/components/login/controllers/loginControllers.js:142
 msgid "Log out"
 msgstr "Abmelden"
 
@@ -2991,7 +2993,7 @@ msgstr "Überschreibe den authorisierenden Client"
 msgid "PGP Key"
 msgstr "PGP-Schlüssel"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:758
+#: privacyidea/static/components/login/controllers/loginControllers.js:756
 msgid "PIN changed successfully."
 msgstr "PIN erfolgreich geändert."
 
@@ -3022,7 +3024,7 @@ msgstr "Parameter"
 msgid "Passkey Log In"
 msgstr "Passkey Anmeldung"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:287
+#: privacyidea/static/components/login/controllers/loginControllers.js:289
 msgid "Passkey login cancelled."
 msgstr "Passkey-Anmeldung abgebrochen."
 
@@ -3111,7 +3113,7 @@ msgid "Please answer at least {{ num_answers }} of the following questions."
 msgstr ""
 "Bitte beantworten Sie wenigstens {{ num_answers }} der folgenden Fragen."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:340
+#: privacyidea/static/components/login/controllers/loginControllers.js:338
 msgid "Please confirm with one of these tokens:"
 msgstr "Bitte bestätigen Sie mit einem dieser Token:"
 
@@ -3411,7 +3413,7 @@ msgstr "Realm"
 msgid "Realm Name"
 msgstr "Realm Name"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:718
+#: privacyidea/static/components/login/controllers/loginControllers.js:716
 msgid "Realm defrealm created."
 msgstr "Der Realm defrealm wurde erzeugt."
 
@@ -4163,7 +4165,7 @@ msgstr "Einige Authenticator-Apps unterstützen lediglich den SHA1-Algorithmus."
 msgid "Some nice words..."
 msgstr "Ein paar nette Worte..."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:397
+#: privacyidea/static/components/login/controllers/loginControllers.js:395
 msgid "Something went wrong!"
 msgstr "Etwas ist schief gelaufen!"
 
@@ -4834,15 +4836,16 @@ msgid ""
 "validate.html\" target=\"_blank\">\n"
 "        validate API</a> but can also be handled by the\n"
 "    <a href=\"https://privacyidea.readthedocs.io/en/latest/modules/lib/"
-"tokentypes/yubikey.html#privacyidea.lib.tokens.yubikeytoken."
-"YubikeyTokenClass.api_endpoint\" target=\"_blank\">\n"
+"tokentypes/"
+"yubikey.html#privacyidea.lib.tokens.yubikeytoken.YubikeyTokenClass.api_endpoint\" "
+"target=\"_blank\">\n"
 "        Yubico Validation Protocol</a>."
 msgstr ""
 "Die Authentifizierung kann von der normalen privacyIDEA <a href=\"http://"
 "privacyidea.readthedocs.org/en/latest/modules/api/validate.html\" "
 "target=\"_blank\">validate API</a> aber auch vom <a href=\"http://"
-"privacyidea.readthedocs.org/en/latest/modules/lib/tokentypes/yubikey."
-"html#privacyidea.lib.tokens.yubikeytoken.YubikeyTokenClass.api_endpoint\" "
+"privacyidea.readthedocs.org/en/latest/modules/lib/tokentypes/"
+"yubikey.html#privacyidea.lib.tokens.yubikeytoken.YubikeyTokenClass.api_endpoint\" "
 "target=\"_blank\">Yubico Validation Protokoll</a> durchgeführt werden."
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:8
@@ -5147,8 +5150,9 @@ msgid ""
 "        <a ui-sref=\"token.details({tokenSerial:lostResult.serial})\">\n"
 "        {{ lostResult.serial }}</a>."
 msgstr ""
-"Die Seriennummer des neuen Tokens ist <a ui-sref=\"token."
-"details({tokenSerial:lostResult.serial})\">{{ lostResult.serial }}</a>."
+"Die Seriennummer des neuen Tokens ist <a ui-"
+"sref=\"token.details({tokenSerial:lostResult.serial})"
+"\">{{ lostResult.serial }}</a>."
 
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:24
 #: privacyidea/static/components/token/views/token.enroll.totp.html:24
@@ -5233,8 +5237,8 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.details.html:615
 msgid ""
 "The token is currently assigned to container\n"
-"    <a ui-sref=\"token.containerdetails({containerSerial: "
-"containerSerial})\" ng-hide=\"!checkRight('container_list')\">\n"
+"    <a ui-sref=\"token.containerdetails({containerSerial: containerSerial})"
+"\" ng-hide=\"!checkRight('container_list')\">\n"
 "        {{ containerSerial }}\n"
 "    </a>\n"
 "    <span ng-hide=\"checkRight('container_list')\">{{ containerSerial }}</"
@@ -5242,8 +5246,8 @@ msgid ""
 "    ."
 msgstr ""
 "Der Token ist aktuell in dem Container\n"
-"    <a ui-sref=\"token.containerdetails({containerSerial: "
-"containerSerial})\" ng-hide=\"!checkRight('container_list')\">\n"
+"    <a ui-sref=\"token.containerdetails({containerSerial: containerSerial})"
+"\" ng-hide=\"!checkRight('container_list')\">\n"
 "        {{ containerSerial }}\n"
 "    </a>\n"
 "    <span ng-hide=\"checkRight('container_list')\">{{ containerSerial }}</"
@@ -5277,30 +5281,30 @@ msgstr "Der Token wurde erfolgreich als verloren markiert."
 #: privacyidea/static/components/token/views/token.enroll.html:179
 msgid ""
 "The token was successfully enrolled with serial number\n"
-"            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
-"serial})\">\n"
+"            <a ui-sref=\"token.details({tokenSerial:enrolledToken.serial})"
+"\">\n"
 "                {{ enrolledToken.serial }}</a>\n"
 "            for user\n"
-"            <a ui-sref=\"user.details({username:newUser.user, realmname:"
-"newUser.realm})\">{{ newUser.user }}</a> in realm\n"
+"            <a ui-sref=\"user.details({username:newUser.user, "
+"realmname:newUser.realm})\">{{ newUser.user }}</a> in realm\n"
 "            {{ newUser.realm }}."
 msgstr ""
-"Der Token mit der Seriennummer <a ui-sref=\"token.details({tokenSerial:"
-"enrolledToken.serial})\">{{ enrolledToken.serial }}</a> wurde erfolgreich "
-"für den Benutzer\n"
-"<a ui-sref=\"user.details({username:newUser.user, realmname:newUser."
-"realm})\">{{ newUser.user }}</a> in Realm {{ newUser.realm }} ausgerollt."
+"Der Token mit der Seriennummer <a ui-"
+"sref=\"token.details({tokenSerial:enrolledToken.serial})"
+"\">{{ enrolledToken.serial }}</a> wurde erfolgreich für den Benutzer\n"
+"<a ui-sref=\"user.details({username:newUser.user, realmname:newUser.realm})"
+"\">{{ newUser.user }}</a> in Realm {{ newUser.realm }} ausgerollt."
 
 #: privacyidea/static/components/token/views/token.enroll.html:188
 msgid ""
 "The token was successfully enrolled with serial number\n"
-"            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
-"serial})\">\n"
+"            <a ui-sref=\"token.details({tokenSerial:enrolledToken.serial})"
+"\">\n"
 "                {{ enrolledToken.serial }}</a>."
 msgstr ""
-"Der Token mit der Seriennummer  <a ui-sref=\"token.details({tokenSerial:"
-"enrolledToken.serial})\">{{ enrolledToken.serial }}</a>  wurde erfolgreich "
-"ausgerollt."
+"Der Token mit der Seriennummer  <a ui-"
+"sref=\"token.details({tokenSerial:enrolledToken.serial})"
+"\">{{ enrolledToken.serial }}</a>  wurde erfolgreich ausgerollt."
 
 #: privacyidea/static/components/config/views/config.token.webauthn.html:32
 msgid "The trust_anchor_dir must be an absolute path."
@@ -5673,8 +5677,8 @@ msgid ""
 "To define service IDs go to <a ui-sref=\"config.serviceid\">Service ID "
 "config</a>"
 msgstr ""
-"Um eine Dienste-Kennzeichnung zu erstellen gehen Sie zu <a ui-sref=\"config."
-"serviceid\">Dienste-Kennzeichnungen Konfiguration</a>"
+"Um eine Dienste-Kennzeichnung zu erstellen gehen Sie zu <a ui-"
+"sref=\"config.serviceid\">Dienste-Kennzeichnungen Konfiguration</a>"
 
 #: privacyidea/static/components/token/views/token.enroll.radius.html:9
 msgid ""
@@ -5683,8 +5687,9 @@ msgid ""
 "    <a ui-sref=\"config.tokens({tokentype:'radius'})\">RADIUS Token Config</"
 "a>."
 msgstr ""
-"Um RADIUS Token leichter auszurollen, können Sie die    <a ui-sref=\"config."
-"tokens({tokentype:'radius'})\">RADIUS Token Konfiguration</a> setzen."
+"Um RADIUS Token leichter auszurollen, können Sie die    <a ui-"
+"sref=\"config.tokens({tokentype:'radius'})\">RADIUS Token Konfiguration</a> "
+"setzen."
 
 #: privacyidea/static/components/directives/views/directive.filter.table.html:7
 #: privacyidea/static/components/directives/views/directive.filter.table.html:8
@@ -6212,7 +6217,7 @@ msgstr "Sie dürfen diesen Token Typ nicht ausrollen! Aktion wird übersprungen!
 msgid "You are not authorized to delete the following tokens:"
 msgstr "Keine Berechtigung zum Löschen der folgenden Token:"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:613
+#: privacyidea/static/components/login/controllers/loginControllers.js:611
 msgid ""
 "You are using a certain amount of Push tokens. Note, that you need a valid "
 "subscription, to use Push tokens in push mode. Otherwise Push tokens will "
@@ -6258,8 +6263,8 @@ msgid ""
 msgstr ""
 "Sie haben keine editierbaren Resolver definiert. Daher können Sie in keine "
 "Benutzer-Quelle schreiben. \n"
-"Wenn Sie Benutzer hinzufügen wollen, müssen Sie einen <a ui-sref=\"config."
-"resolvers.list\">editierbaren Resolver definieren</a> \n"
+"Wenn Sie Benutzer hinzufügen wollen, müssen Sie einen <a ui-"
+"sref=\"config.resolvers.list\">editierbaren Resolver definieren</a> \n"
 "(bpsw. SQLResolver) und die Checkbox \"Benutzerquelle editierbar\" anhaken."
 
 #: privacyidea/static/components/token/views/token.enrolled.registration.html:16
@@ -6317,7 +6322,7 @@ msgstr "Sie werden nach {{ myCountdown }} Sekunden abgemeldet."
 msgid "Your CSR to the certificate authority failed."
 msgstr "Der CSR an die Zertifizierungsstelle ist fehlgeschlagen."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:486
+#: privacyidea/static/components/login/controllers/loginControllers.js:484
 msgid "Your OTP pin expires on"
 msgstr "Ihre OTP PIN läuft ab am"
 
@@ -6361,7 +6366,7 @@ msgstr ""
 msgid "Your secret phrase."
 msgstr "Ihre geheime Zeichenkette oder Satz."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:620
+#: privacyidea/static/components/login/controllers/loginControllers.js:618
 msgid "Your subscription for the privacyIDEA Authenticator has expired."
 msgstr "Die Susbscription für den privacyIDEA Authenticator ist abgelaufen."
 
@@ -6374,8 +6379,8 @@ msgid ""
 msgstr ""
 "Ihre Subskription ist nicht mehr gültig. Entweder haben Sie die Anzahl der "
 "erlaubten Token überschritten oder Ihre Subskription ist abgelaufen. Bitte "
-"überprüfen Sie, ob Sie Ihre <a ui-sref=\"component."
-"subscriptions\">Subskription</a> erneuern müssen."
+"überprüfen Sie, ob Sie Ihre <a ui-"
+"sref=\"component.subscriptions\">Subskription</a> erneuern müssen."
 
 #: privacyidea/static/components/login/views/pinchange.html:5
 msgid ""
@@ -7186,8 +7191,9 @@ msgstr "— alle —"
 #~ "werden.</p>\n"
 #~ "<p>Mittels Richtlinien kann der Administrator das Verhalten von "
 #~ "privacyIDEA bestimmen.\n"
-#~ "Mehr zu Richtlinie erfahren Sie in der <a href=\"http://privacyidea."
-#~ "readthedocs.io/en/latest/policies/index.html\" target=\"policy\">Online\n"
+#~ "Mehr zu Richtlinie erfahren Sie in der <a href=\"http://"
+#~ "privacyidea.readthedocs.io/en/latest/policies/index.html\" "
+#~ "target=\"policy\">Online\n"
 #~ "Dokumentation</a>.</p>"
 
 #~ msgid ""

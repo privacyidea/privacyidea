@@ -22,7 +22,10 @@ import click
 from privacyidea.cli import create_silent_app, NoPluginsFlaskGroup, get_version
 from privacyidea.cli.pitokenjanitor.utils.deprecated import deprecated
 from privacyidea.cli.pitokenjanitor.utils.findcontainer import findcontainer
+from privacyidea.cli.pitokenjanitor.utils.findcustomattributes import findcustomattributes
+from privacyidea.cli.pitokenjanitor.utils.findinternalattributes import findinternalattributes
 from privacyidea.cli.pitokenjanitor.utils.findtokens import findtokens
+from privacyidea.cli.pitokenjanitor.utils.findusersettings import findusersettings
 from privacyidea.cli.pitokenjanitor.utils.importtokens import importtokens_cli
 from privacyidea.cli.pitokenjanitor.utils.updatetokens import updatetokens
 
@@ -59,6 +62,9 @@ cli.add_command(findtokens)
 cli.add_command(importtokens_cli)
 cli.add_command(updatetokens)
 cli.add_command(findcontainer)
+cli.add_command(findcustomattributes)
+cli.add_command(findinternalattributes)
+cli.add_command(findusersettings)
 cli.add_command(deprecated)
 
 if __name__ == '__main__':

@@ -17,9 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, effect, inject, input } from "@angular/core";
-import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { AbstractControl, FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
+import { Component, computed, effect, inject, input, signal } from "@angular/core";
+import { form, FormField, required } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
@@ -28,14 +27,46 @@ import { MatOption, MatSelect, MatSelectModule } from "@angular/material/select"
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { BindType, LdapPreset, LDAPResolverData, ResolverService } from "@services/resolver/resolver.service";
 import { parseBooleanValue } from "@utils/parse-boolean-value";
-import { merge } from "rxjs";
+
+interface LdapFormModel {
+  SCOPE: string;
+  LDAPBASE: string;
+  LDAPURI: string;
+  START_TLS: boolean;
+  TLS_VERSION: string;
+  TLS_VERIFY: boolean;
+  TLS_CA_FILE: string;
+  AUTHTYPE: BindType;
+  BINDPW: string;
+  BINDDN: string;
+  TIMEOUT: number;
+  CACHE_TIMEOUT: number;
+  SIZELIMIT: number;
+  SERVERPOOL_ROUNDS: number;
+  SERVERPOOL_SKIP: number;
+  SERVERPOOL_PERSISTENT: boolean;
+  EDITABLE: boolean;
+  OBJECT_CLASSES: string;
+  DN_TEMPLATE: string;
+  LOGINNAMEATTRIBUTE: string;
+  UIDTYPE: string;
+  LDAPSEARCHFILTER: string;
+  USERINFO: string;
+  MULTIVALUEATTRIBUTES: string;
+  recursive_group_search: boolean;
+  group_base_dn: string;
+  group_search_filter: string;
+  group_name_attribute: string;
+  group_attribute_mapping_key: string;
+  NOREFERRALS: boolean;
+  NOSCHEMAS: boolean;
+}
 
 @Component({
   selector: "app-ldap-resolver",
   standalone: true,
   imports: [
-    FormsModule,
-    ReactiveFormsModule,
+    FormField,
     MatFormField,
     MatLabel,
     MatInput,
@@ -58,7 +89,7 @@ export class LdapResolverComponent {
       loginName: "uid",
       searchFilter: "(uid=*)(objectClass=inetOrgPerson)",
       userInfo:
-        '{ "phone" : "telephoneNumber", "mobile" : "mobile", "email" : "mail", "surname" : "sn", "givenname" : "givenName" }',
+        "{ \"phone\" : \"telephoneNumber\", \"mobile\" : \"mobile\", \"email\" : \"mail\", \"surname\" : \"sn\", \"givenname\" : \"givenName\" }",
       uidType: "entryUUID"
     },
     {
@@ -66,254 +97,127 @@ export class LdapResolverComponent {
       loginName: "sAMAccountName",
       searchFilter: "(sAMAccountName=*)(objectCategory=person)",
       userInfo:
-        '{ "phone" : "telephoneNumber", "mobile" : "mobile", "email" : "mail", "surname" : "sn", "givenname" : "givenName" }',
+        "{ \"phone\" : \"telephoneNumber\", \"mobile\" : \"mobile\", \"email\" : \"mail\", \"surname\" : \"sn\", \"givenname\" : \"givenName\" }",
       uidType: "objectGUID"
     }
   ];
   data = input<Partial<LDAPResolverData>>({});
   isEditMode = computed(() => !!this.resolverService.selectedResolverName());
 
-  // --- Connection Details ---
-  scopeControl = new FormControl<string>("SUBTREE", { nonNullable: true });
-  // Base DN
-  ldapBaseControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
-  // Server URI
-  ldapUriControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
-  startTlsControl = new FormControl<boolean>(true, { nonNullable: true });
-  tlsVersionControl = new FormControl<string>("TLSv1_3", { nonNullable: true });
-  // Verify TLS certificate of the server.
-  tlsVerifyControl = new FormControl<boolean>(true, { nonNullable: true });
-  // CA Certificate
-  tlsCaFileControl = new FormControl<string>("", { nonNullable: true });
+  model = signal<LdapFormModel>({
+    SCOPE: "SUBTREE",
+    LDAPBASE: "",
+    LDAPURI: "",
+    START_TLS: true,
+    TLS_VERSION: "TLSv1_3",
+    TLS_VERIFY: true,
+    TLS_CA_FILE: "",
+    AUTHTYPE: "Simple",
+    BINDPW: "",
+    BINDDN: "",
+    TIMEOUT: 5,
+    CACHE_TIMEOUT: 120,
+    SIZELIMIT: 500,
+    SERVERPOOL_ROUNDS: 2,
+    SERVERPOOL_SKIP: 30,
+    SERVERPOOL_PERSISTENT: false,
+    EDITABLE: false,
+    OBJECT_CLASSES: "",
+    DN_TEMPLATE: "",
+    LOGINNAMEATTRIBUTE: "",
+    UIDTYPE: "DN",
+    LDAPSEARCHFILTER: "",
+    USERINFO: "",
+    MULTIVALUEATTRIBUTES: "",
+    recursive_group_search: false,
+    group_base_dn: "",
+    group_search_filter: "",
+    group_name_attribute: "",
+    group_attribute_mapping_key: "",
+    NOREFERRALS: false,
+    NOSCHEMAS: false
+  });
 
-  // --- Credentials ---
-  bindTypeControl = new FormControl<BindType>("Simple", { nonNullable: true });
-  bindPwControl = new FormControl<string>("", { nonNullable: true });
-  bindDnControl = new FormControl<string>("", { nonNullable: true });
-
-  // --- Settings ---
-  timeoutControl = new FormControl<number>(5, { nonNullable: true });
-  cacheTimeoutControl = new FormControl<number>(120, { nonNullable: true });
-  sizeLimitControl = new FormControl<number>(500, { nonNullable: true });
-  // Server Pool Retry Rounds
-  serverPoolRoundsControl = new FormControl<number>(2, { nonNullable: true });
-  // Server Pool Skip Timeout
-  serverPoolSkipControl = new FormControl<number>(30, { nonNullable: true });
-  // Per-Process Server Pool
-  serverPoolPersistentControl = new FormControl<boolean>(false, { nonNullable: true });
-  // Edit User Store
-  editableControl = new FormControl<boolean>(false, { nonNullable: true });
-  // Object Classes of a New Created User Object
-  objectClassesControl = new FormControl<string>("", { nonNullable: true });
-  // DN of a New Created User Object
-  dnTemplateControl = new FormControl<string>("", { nonNullable: true });
-
-  // --- Attributes & Mapping ---
-  loginNameAttributeControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
-  uidTypeControl = new FormControl<string>("DN", { nonNullable: true });
-  // Search Filter
-  ldapSearchFilterControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
-  // Attribute Mapping
-  userInfoControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
-  multivalueAttributesControl = new FormControl<string>("", { nonNullable: true });
-  // Recursive Search of User Groups
-  recursiveGroupSearchControl = new FormControl<boolean>(false, { nonNullable: true });
-  // Base DN of User Groups
-  groupBaseDNControl = new FormControl<string>("", { nonNullable: true });
-  // Search Filter for User Groups
-  groupSearchFilterControl = new FormControl<string>("", { nonNullable: true });
-  groupNameAttributeControl = new FormControl<string>("", { nonNullable: true });
-  // User Info Key
-  groupAttributeMappingKeyControl = new FormControl<string>("", { nonNullable: true });
-  // No Anonymous Referral Chasing
-  noReferralsControl = new FormControl<boolean>(false, { nonNullable: true });
-  // No Retrieval of Schema Information
-  noSchemasControl = new FormControl<boolean>(false, { nonNullable: true });
-
-  controls = computed<Record<string, AbstractControl>>(() => ({
-    LDAPURI: this.ldapUriControl,
-    START_TLS: this.startTlsControl,
-    LDAPBASE: this.ldapBaseControl,
-    LOGINNAMEATTRIBUTE: this.loginNameAttributeControl,
-    LDAPSEARCHFILTER: this.ldapSearchFilterControl,
-    USERINFO: this.userInfoControl,
-    TLS_VERSION: this.tlsVersionControl,
-    TLS_VERIFY: this.tlsVerifyControl,
-    TLS_CA_FILE: this.tlsCaFileControl,
-    SCOPE: this.scopeControl,
-    AUTHTYPE: this.bindTypeControl,
-    BINDDN: this.bindDnControl,
-    BINDPW: this.bindPwControl,
-    TIMEOUT: this.timeoutControl,
-    CACHE_TIMEOUT: this.cacheTimeoutControl,
-    SIZELIMIT: this.sizeLimitControl,
-    SERVERPOOL_ROUNDS: this.serverPoolRoundsControl,
-    SERVERPOOL_SKIP: this.serverPoolSkipControl,
-    SERVERPOOL_PERSISTENT: this.serverPoolPersistentControl,
-    EDITABLE: this.editableControl,
-    OBJECT_CLASSES: this.objectClassesControl,
-    DN_TEMPLATE: this.dnTemplateControl,
-    MULTIVALUEATTRIBUTES: this.multivalueAttributesControl,
-    UIDTYPE: this.uidTypeControl,
-    recursive_group_search: this.recursiveGroupSearchControl,
-    group_base_dn: this.groupBaseDNControl,
-    group_search_filter: this.groupSearchFilterControl,
-    group_name_attribute: this.groupNameAttributeControl,
-    group_attribute_mapping_key: this.groupAttributeMappingKeyControl,
-    NOREFERRALS: this.noReferralsControl,
-    NOSCHEMAS: this.noSchemasControl
-  }));
+  ldapForm = form(this.model, (f) => {
+    required(f.LDAPBASE);
+    required(f.LDAPURI);
+    required(f.LOGINNAMEATTRIBUTE);
+    required(f.LDAPSEARCHFILTER);
+    required(f.USERINFO);
+  });
 
   constructor() {
     effect(() => {
       const initial = this.data();
-      // --- Connection Details ---
-      // Scope
-      if (initial.SCOPE !== undefined) this.scopeControl.setValue(initial.SCOPE, { emitEvent: false });
-      // Base DN
-      if (initial.LDAPBASE !== undefined) this.ldapBaseControl.setValue(initial.LDAPBASE, { emitEvent: false });
-      // Server URI
-      if (initial.LDAPURI !== undefined) this.ldapUriControl.setValue(initial.LDAPURI, { emitEvent: false });
-      // STARTTLS
-      if (initial.START_TLS !== undefined)
-        this.startTlsControl.setValue(parseBooleanValue(initial.START_TLS), { emitEvent: false });
-      // TLS Version
-      if (initial.TLS_VERSION !== undefined) this.tlsVersionControl.setValue(initial.TLS_VERSION, { emitEvent: false });
-      // Verify TLS certificate of the server.
-      if (initial.TLS_VERIFY !== undefined)
-        this.tlsVerifyControl.setValue(parseBooleanValue(initial.TLS_VERIFY), { emitEvent: false });
-      // CA Certificate
-      if (initial.TLS_CA_FILE !== undefined) this.tlsCaFileControl.setValue(initial.TLS_CA_FILE, { emitEvent: false });
-
-      // --- Credentials ---
-      // Bind Type
-      if (initial.AUTHTYPE !== undefined) this.bindTypeControl.setValue(initial.AUTHTYPE, { emitEvent: false });
-      // Bind password / Keyfile Path
-      if (initial.BINDPW !== undefined) this.bindPwControl.setValue(initial.BINDPW, { emitEvent: false });
-      // Bind DN
-      if (initial.BINDDN !== undefined) this.bindDnControl.setValue(initial.BINDDN, { emitEvent: false });
-
-      // --- Settings ---
-      // Timeout
-      if (initial.TIMEOUT !== undefined) this.timeoutControl.setValue(Number(initial.TIMEOUT), { emitEvent: false });
-      // Cache Timeout
-      if (initial.CACHE_TIMEOUT !== undefined)
-        this.cacheTimeoutControl.setValue(Number(initial.CACHE_TIMEOUT), { emitEvent: false });
-      // Size Limit
-      if (initial.SIZELIMIT !== undefined)
-        this.sizeLimitControl.setValue(Number(initial.SIZELIMIT), { emitEvent: false });
-      // Server Pool Retry Rounds
-      if (initial.SERVERPOOL_ROUNDS !== undefined)
-        this.serverPoolRoundsControl.setValue(Number(initial.SERVERPOOL_ROUNDS), { emitEvent: false });
-      // Server Pool Skip Timeout
-      if (initial.SERVERPOOL_SKIP !== undefined)
-        this.serverPoolSkipControl.setValue(Number(initial.SERVERPOOL_SKIP), { emitEvent: false });
-      // Per-Process Server Pool
-      if (initial.SERVERPOOL_PERSISTENT !== undefined)
-        this.serverPoolPersistentControl.setValue(parseBooleanValue(initial.SERVERPOOL_PERSISTENT), {
-          emitEvent: false
-        });
-      // Edit User Store
-      if (initial.EDITABLE !== undefined)
-        this.editableControl.setValue(parseBooleanValue(initial.EDITABLE), { emitEvent: false });
-      // Object Classes of a New Created User Object
-      if (initial.OBJECT_CLASSES !== undefined)
-        this.objectClassesControl.setValue(initial.OBJECT_CLASSES, { emitEvent: false });
-      // DN of a New Created User Object
-      if (initial.DN_TEMPLATE !== undefined) this.dnTemplateControl.setValue(initial.DN_TEMPLATE, { emitEvent: false });
-
-      // --- Attributes & Mapping ---
-      // Loginname Attribute
-      if (initial.LOGINNAMEATTRIBUTE !== undefined)
-        this.loginNameAttributeControl.setValue(initial.LOGINNAMEATTRIBUTE, { emitEvent: false });
-      // UID Type
-      if (initial.UIDTYPE !== undefined) this.uidTypeControl.setValue(initial.UIDTYPE, { emitEvent: false });
-      // Search Filter
-      if (initial.LDAPSEARCHFILTER !== undefined)
-        this.ldapSearchFilterControl.setValue(initial.LDAPSEARCHFILTER, { emitEvent: false });
-      // Attribute Mapping
-      if (initial.USERINFO !== undefined) this.userInfoControl.setValue(initial.USERINFO, { emitEvent: false });
-      // Multivalue Attributes
-      if (initial.MULTIVALUEATTRIBUTES !== undefined)
-        this.multivalueAttributesControl.setValue(initial.MULTIVALUEATTRIBUTES, { emitEvent: false });
-      // Recursive Search of User Groups
-      if (initial.recursive_group_search !== undefined)
-        this.recursiveGroupSearchControl.setValue(parseBooleanValue(initial.recursive_group_search), {
-          emitEvent: false
-        });
-      // Base DN of User Groups
-      if (initial.group_base_dn !== undefined)
-        this.groupBaseDNControl.setValue(initial.group_base_dn, { emitEvent: false });
-      // Search Filter for User Groups
-      if (initial.group_search_filter !== undefined)
-        this.groupSearchFilterControl.setValue(initial.group_search_filter, { emitEvent: false });
-      // Group Name Attribute
-      if (initial.group_name_attribute !== undefined)
-        this.groupNameAttributeControl.setValue(initial.group_name_attribute, { emitEvent: false });
-      // User Info Key
-      if (initial.group_attribute_mapping_key !== undefined)
-        this.groupAttributeMappingKeyControl.setValue(initial.group_attribute_mapping_key, { emitEvent: false });
-      // No Anonymous Referral Chasing
-      if (initial.NOREFERRALS !== undefined)
-        this.noReferralsControl.setValue(parseBooleanValue(initial.NOREFERRALS), { emitEvent: false });
-      // No Retrieval of Schema Information
-      if (initial.NOSCHEMAS !== undefined)
-        this.noSchemasControl.setValue(parseBooleanValue(initial.NOSCHEMAS), { emitEvent: false });
-      this._updateTlsLogic();
+      this.model.update((m) => ({
+        ...m,
+        ...(initial.SCOPE !== undefined ? { SCOPE: initial.SCOPE } : {}),
+        ...(initial.LDAPBASE !== undefined ? { LDAPBASE: initial.LDAPBASE } : {}),
+        ...(initial.LDAPURI !== undefined ? { LDAPURI: initial.LDAPURI } : {}),
+        ...(initial.START_TLS !== undefined ? { START_TLS: parseBooleanValue(initial.START_TLS) } : {}),
+        ...(initial.TLS_VERSION !== undefined ? { TLS_VERSION: initial.TLS_VERSION } : {}),
+        ...(initial.TLS_VERIFY !== undefined ? { TLS_VERIFY: parseBooleanValue(initial.TLS_VERIFY) } : {}),
+        ...(initial.TLS_CA_FILE !== undefined ? { TLS_CA_FILE: initial.TLS_CA_FILE } : {}),
+        ...(initial.AUTHTYPE !== undefined ? { AUTHTYPE: initial.AUTHTYPE } : {}),
+        ...(initial.BINDPW !== undefined ? { BINDPW: initial.BINDPW } : {}),
+        ...(initial.BINDDN !== undefined ? { BINDDN: initial.BINDDN } : {}),
+        ...(initial.TIMEOUT !== undefined ? { TIMEOUT: Number(initial.TIMEOUT) } : {}),
+        ...(initial.CACHE_TIMEOUT !== undefined ? { CACHE_TIMEOUT: Number(initial.CACHE_TIMEOUT) } : {}),
+        ...(initial.SIZELIMIT !== undefined ? { SIZELIMIT: Number(initial.SIZELIMIT) } : {}),
+        ...(initial.SERVERPOOL_ROUNDS !== undefined ? { SERVERPOOL_ROUNDS: Number(initial.SERVERPOOL_ROUNDS) } : {}),
+        ...(initial.SERVERPOOL_SKIP !== undefined ? { SERVERPOOL_SKIP: Number(initial.SERVERPOOL_SKIP) } : {}),
+        ...(initial.SERVERPOOL_PERSISTENT !== undefined
+          ? { SERVERPOOL_PERSISTENT: parseBooleanValue(initial.SERVERPOOL_PERSISTENT) }
+          : {}),
+        ...(initial.EDITABLE !== undefined ? { EDITABLE: parseBooleanValue(initial.EDITABLE) } : {}),
+        ...(initial.OBJECT_CLASSES !== undefined ? { OBJECT_CLASSES: initial.OBJECT_CLASSES } : {}),
+        ...(initial.DN_TEMPLATE !== undefined ? { DN_TEMPLATE: initial.DN_TEMPLATE } : {}),
+        ...(initial.LOGINNAMEATTRIBUTE !== undefined ? { LOGINNAMEATTRIBUTE: initial.LOGINNAMEATTRIBUTE } : {}),
+        ...(initial.UIDTYPE !== undefined ? { UIDTYPE: initial.UIDTYPE } : {}),
+        ...(initial.LDAPSEARCHFILTER !== undefined ? { LDAPSEARCHFILTER: initial.LDAPSEARCHFILTER } : {}),
+        ...(initial.USERINFO !== undefined ? { USERINFO: initial.USERINFO } : {}),
+        ...(initial.MULTIVALUEATTRIBUTES !== undefined ? { MULTIVALUEATTRIBUTES: initial.MULTIVALUEATTRIBUTES } : {}),
+        ...(initial.recursive_group_search !== undefined
+          ? { recursive_group_search: parseBooleanValue(initial.recursive_group_search) }
+          : {}),
+        ...(initial.group_base_dn !== undefined ? { group_base_dn: initial.group_base_dn } : {}),
+        ...(initial.group_search_filter !== undefined ? { group_search_filter: initial.group_search_filter } : {}),
+        ...(initial.group_name_attribute !== undefined ? { group_name_attribute: initial.group_name_attribute } : {}),
+        ...(initial.group_attribute_mapping_key !== undefined
+          ? { group_attribute_mapping_key: initial.group_attribute_mapping_key }
+          : {}),
+        ...(initial.NOREFERRALS !== undefined ? { NOREFERRALS: parseBooleanValue(initial.NOREFERRALS) } : {}),
+        ...(initial.NOSCHEMAS !== undefined ? { NOSCHEMAS: parseBooleanValue(initial.NOSCHEMAS) } : {})
+      }));
+      this.ldapForm().reset();
     });
-
-    merge(this.startTlsControl.valueChanges, this.tlsVerifyControl.valueChanges, this.ldapUriControl.valueChanges)
-      .pipe(takeUntilDestroyed())
-      .subscribe(() => this._updateTlsLogic());
   }
 
-  private _updateTlsLogic(): void {
-    if (this._isLdaps) {
-      this.startTlsControl.setValue(true, { emitEvent: false });
-      this.startTlsControl.disable({ emitEvent: false });
-    } else {
-      this.startTlsControl.enable({ emitEvent: false });
-    }
+  isValid = () => this.ldapForm().valid();
+  isDirty = () => this.ldapForm().dirty();
+  getValue = () => this.model();
 
-    const startTls = this.startTlsControl.value;
-    const tlsVerify = this.tlsVerifyControl.value;
+  // Computed TLS state
+  isLdapsUri = computed(() => (this.model().LDAPURI || "").startsWith("ldaps:"));
+  isLdapUri = computed(() => (this.model().LDAPURI || "").startsWith("ldap:"));
+  startTlsDisabled = computed(() => this.isLdapsUri());
+  tlsVersionDisabled = computed(() => !this.model().START_TLS || this.isLdapsUri());
+  tlsVerifyDisabled = computed(() => !this.model().START_TLS || this.isLdapsUri());
+  tlsCaFileDisabled = computed(() => !this.model().START_TLS || !this.model().TLS_VERIFY || this.isLdapsUri());
+  tlsCaFileRequired = computed(() => this.model().START_TLS && this.model().TLS_VERIFY && !this.isLdapsUri());
 
-    if (!startTls) {
-      this.tlsVersionControl.disable({ emitEvent: false });
-      this.tlsVerifyControl.disable({ emitEvent: false });
-    } else {
-      this.tlsVersionControl.enable({ emitEvent: false });
-      this.tlsVerifyControl.enable({ emitEvent: false });
-    }
-
-    if (!startTls || !tlsVerify) {
-      this.tlsCaFileControl.disable({ emitEvent: false });
-      this.tlsCaFileControl.clearValidators();
-    } else {
-      this.tlsCaFileControl.enable({ emitEvent: false });
-      this.tlsCaFileControl.setValidators([Validators.required]);
-    }
-
-    this.tlsCaFileControl.updateValueAndValidity({ emitEvent: false });
+  get showTls(): boolean {
+    return this.isLdapUri() || this.isLdapsUri();
   }
 
   applyLdapPreset(preset: LdapPreset): void {
-    this.loginNameAttributeControl.setValue(preset.loginName);
-    this.ldapSearchFilterControl.setValue(preset.searchFilter);
-    this.userInfoControl.setValue(preset.userInfo);
-    this.uidTypeControl.setValue(preset.uidType);
-    this.multivalueAttributesControl.setValue("");
-  }
-
-  get showTls(): boolean {
-    return this._isLdap || this._isLdaps;
-  }
-
-  private get _isLdap(): boolean {
-    return (this.ldapUriControl.value || "").startsWith("ldap:");
-  }
-
-  private get _isLdaps(): boolean {
-    return (this.ldapUriControl.value || "").startsWith("ldaps:");
+    this.model.update((m) => ({
+      ...m,
+      LOGINNAMEATTRIBUTE: preset.loginName,
+      LDAPSEARCHFILTER: preset.searchFilter,
+      USERINFO: preset.userInfo,
+      UIDTYPE: preset.uidType,
+      MULTIVALUEATTRIBUTES: ""
+    }));
   }
 }

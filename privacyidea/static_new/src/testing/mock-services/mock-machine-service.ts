@@ -17,9 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { WritableSignal, signal } from "@angular/core";
+import { signal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
-import { PiResponse } from "@app/app.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import {
   MachineServiceInterface,
@@ -27,56 +26,41 @@ import {
   TokenApplication,
   TokenApplications
 } from "@services/machine/machine.service";
-import { Observable, of } from "rxjs";
+import { of } from "rxjs";
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 
 export class MockMachineService implements MachineServiceInterface {
-  getMachineTokens(args: { machineid: number; resolver: string }): Observable<PiResponse<TokenApplications>> {
-    throw new Error("Method not implemented.");
-  }
-  baseUrl: string = "environment.mockProxyUrl + '/machine/'";
-  filterValue: WritableSignal<Record<string, string>> = signal({});
+  getMachineTokens = jest.fn().mockReturnValue(of(MockPiResponse.fromValue<TokenApplications>([])));
+  baseUrl = "environment.mockProxyUrl + '/machine/'";
+  filterValue = signal<Record<string, string>>({});
   sshApiFilter: string[] = [];
   offlineApiFilter: string[] = [];
   advancedApiFilter: string[] = [];
-  machines: WritableSignal<Machines> = signal<Machines>([]);
-  tokenApplications: WritableSignal<TokenApplication[]> = signal([]);
+  machines = signal<Machines>([]);
+  tokenApplications = signal<TokenApplication[]>([]);
   selectedApplicationType = signal<"ssh" | "offline">("ssh");
   pageSize = signal(10);
-  machineFilter: WritableSignal<FilterValue> = signal(new FilterValue());
+  machineFilter = signal(new FilterValue());
   filterParams = signal<Record<string, string>>({});
-  sort: WritableSignal<Sort> = signal({ active: "", direction: "" });
+  sort = signal<Sort>({ active: "", direction: "" });
   pageIndex = signal(0);
   machinesResource = new MockHttpResourceRef(MockPiResponse.fromValue<Machines>([]));
   tokenApplicationResource = new MockHttpResourceRef(MockPiResponse.fromValue([]));
 
-  handleFilterInput(_$event: Event): void {
-    throw new Error("Method not implemented.");
-  }
-  clearFilter(): void {
-    throw new Error("Method not implemented.");
-  }
+  handleFilterInput = jest.fn();
+  clearFilter = jest.fn();
 
   deleteAssignMachineToToken() {
-    return of({} as any);
+    return of(MockPiResponse.fromValue<number>(0));
   }
 
-  postAssignMachineToToken(_args: {
-    service_id?: string;
-    user?: string;
-    serial: string;
-    application: "ssh" | "offline";
-    machineid: number;
-    resolver: string;
-    count?: number;
-    rounds?: number;
-  }) {
-    return of({} as any);
+  postAssignMachineToToken() {
+    return of(MockPiResponse.fromValue<number>(0));
   }
 
-  postTokenOption = jest.fn().mockReturnValue(of({} as any));
+  postTokenOption = jest.fn().mockReturnValue(of(MockPiResponse.fromValue({ added: 0, deleted: 0 })));
   getAuthItem = jest.fn().mockReturnValue(of({ result: { value: { serial: "", machineid: "", resolver: "" } } }));
-  postToken = jest.fn().mockReturnValue(of({} as any));
+  postToken = jest.fn().mockReturnValue(of(MockPiResponse.fromValue<number>(0)));
   getMachine = jest.fn().mockReturnValue(
     of({
       result: {
@@ -96,8 +80,11 @@ export class MockMachineService implements MachineServiceInterface {
       }
     })
   );
-  deleteToken = jest.fn().mockReturnValue(of({} as any));
-  deleteTokenById = jest.fn().mockReturnValue(of({} as any));
+  deleteToken = jest.fn().mockReturnValue(of(MockPiResponse.fromValue<number>(0)));
+  deleteTokenById = jest.fn().mockReturnValue(of(MockPiResponse.fromValue<number>(0)));
   onPageEvent = jest.fn();
   onSortEvent = jest.fn();
+  toggleFilter = jest.fn();
+  getFilterIconName = jest.fn().mockReturnValue("filter_list");
+  focusActiveInput = jest.fn();
 }

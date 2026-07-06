@@ -1,0 +1,234 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<app-details-card
+  class="details-card--assignment"
+  title="Assignments"
+  i18n-title>
+  <div class="details-field-list">
+    <div class="detail-field">
+      <div
+        class="detail-field-key"
+        i18n>
+        Token Realms
+      </div>
+      <div class="detail-field-value">
+        <div class="value-row">
+          <div class="value-content">
+            @if (realmsIsEditing()) {
+              <mat-form-field
+                class="input-width-m height-52"
+                subscriptSizing="dynamic">
+                <mat-label i18n>Select Realms</mat-label>
+                <mat-select
+                  [value]="realmService.selectedRealms()"
+                  (selectionChange)="realmService.selectedRealms.set($event.value)"
+                  appAutofocus
+                  multiple>
+                  @for (option of realmService.realmOptions(); track option) {
+                    @if (option === userRealm()) {
+                      <mat-option
+                        disabled
+                        value="{{ option }}">
+                        {{ option }}
+                      </mat-option>
+                    } @else {
+                      <mat-option value="{{ option }}">{{ option }}</mat-option>
+                    }
+                  }
+                </mat-select>
+              </mat-form-field>
+            } @else {
+              <app-details-list-display [items]="tokenDetails().realms" />
+            }
+          </div>
+          <div class="value-edit">
+            @if (realmsEditable()) {
+              <app-edit-buttons
+                [element]="realmsEditButtonsElement"
+                [toggleEdit]="toggleRealms"
+                [saveEdit]="commitRealms"
+                [cancelEdit]="cancelRealms"
+                [shouldHideEdit]="isAnyEditingOrRevoked()"
+                [isEditingUser]="false"
+                [isEditingInfo]="false"></app-edit-buttons>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-field">
+      <div
+        class="detail-field-key"
+        i18n>
+        Token Groups
+      </div>
+      <div class="detail-field-value">
+        <div class="value-row">
+          <div class="value-content">
+            @if (tokengroupIsEditing()) {
+              <mat-form-field
+                class="input-width-m height-52"
+                subscriptSizing="dynamic">
+                <mat-label i18n>Select Token Group</mat-label>
+                <mat-select
+                  [value]="selectedTokengroup()"
+                  (selectionChange)="selectedTokengroup.set($event.value)"
+                  appAutofocus
+                  multiple>
+                  @for (option of tokengroupOptions(); track option) {
+                    @if (option === userRealm()) {
+                      <mat-option
+                        disabled
+                        value="{{ option }}">
+                        {{ option }}
+                      </mat-option>
+                    } @else {
+                      <mat-option value="{{ option }}">{{ option }}</mat-option>
+                    }
+                  }
+                </mat-select>
+              </mat-form-field>
+            } @else {
+              <app-details-list-display [items]="$any(tokenDetails().tokengroup)" />
+            }
+          </div>
+          <div class="value-edit">
+            @if (tokengroupEditable()) {
+              <app-edit-buttons
+                [element]="tokengroupEditButtonsElement"
+                [toggleEdit]="toggleTokengroup"
+                [saveEdit]="commitTokengroup"
+                [cancelEdit]="cancelTokengroup"
+                [shouldHideEdit]="isAnyEditingOrRevoked()"
+                [isEditingUser]="false"
+                [isEditingInfo]="false"></app-edit-buttons>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-field">
+      <div
+        class="detail-field-key"
+        i18n>
+        Container Serial
+      </div>
+      <div class="detail-field-value">
+        <div class="value-row">
+          <div class="value-content">
+            <div class="container-serial-row">
+              @if (containerIsEditing()) {
+                <mat-form-field
+                  class="input-width-m height-52"
+                  subscriptSizing="dynamic">
+                  <mat-label i18n>Enter Container</mat-label>
+                  <app-clearable-input
+                    (clearButtonClick)="containerService.selectedContainerSerial.set('')"
+                    [showClearButton]="containerService.selectedContainerSerial() !== ''">
+                    <input
+                      [value]="containerService.selectedContainerSerial()"
+                      (input)="containerService.selectedContainerSerial.set($any($event.target).value)"
+                      [matAutocomplete]="containerAuto"
+                      appAutofocus
+                      matInput />
+                  </app-clearable-input>
+                  <mat-autocomplete
+                    #containerAuto="matAutocomplete"
+                    (optionSelected)="containerService.selectedContainerSerial.set($event.option.value)">
+                    @for (option of containerService.containersForTokenType(); track option) {
+                      <mat-option [value]="option">{{ option }}</mat-option>
+                    }
+                  </mat-autocomplete>
+                </mat-form-field>
+                @if (!selfService()) {
+                  <mat-checkbox
+                    [checked]="containerService.filterContainersByTokenOwner()"
+                    (change)="containerService.filterContainersByTokenOwner.set($event.checked)"
+                    [disabled]="!tokenDetails().username"
+                    i18n>
+                    Filter by token owner
+                  </mat-checkbox>
+                }
+              } @else if (selfService()) {
+                <app-copyable [copyText]="containerSerial()">
+                  @if (containerService.containerBelongsToUser(containerSerial())) {
+                    <a
+                      (click)="contentService.navigateContainerDetails(containerSerial())"
+                      (keydown.enter)="contentService.navigateContainerDetails(containerSerial())"
+                      (keydown.space)="
+                        $event.preventDefault(); contentService.navigateContainerDetails(containerSerial())
+                      "
+                      aria-label="Container Serial Link"
+                      i18n-aria-label
+                      role="button"
+                      tabindex="0">
+                      {{ containerSerial() }}
+                    </a>
+                  } @else {
+                    {{ containerSerial() }}
+                  }
+                </app-copyable>
+              } @else {
+                <div class="flex-row flex-nowrap ali-center">
+                  <a
+                    (click)="contentService.navigateContainerDetails(containerSerial())"
+                    (keydown.enter)="contentService.navigateContainerDetails(containerSerial())"
+                    (keydown.space)="
+                      $event.preventDefault(); contentService.navigateContainerDetails(containerSerial())
+                    "
+                    aria-label="Container Serial Link"
+                    i18n-aria-label
+                    role="button"
+                    tabindex="0">
+                    {{ containerSerial() }}
+                  </a>
+                  @if (containerSerial() !== "") {
+                    <app-copy-button [copyText]="containerSerial()"></app-copy-button>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+          <div class="value-edit">
+            @if (!isAnyEditingOrRevoked() && containerSerial() && containerCanRemove()) {
+              <button
+                (click)="removeContainer()"
+                class="red"
+                i18n-aria-label="Delete Container"
+                mat-icon-button>
+                <mat-icon>folder_delete</mat-icon>
+              </button>
+            } @else if (containerEditable()) {
+              <app-edit-buttons
+                [element]="containerEditButtonsElement"
+                [toggleEdit]="toggleContainer"
+                [saveEdit]="commitContainer"
+                [cancelEdit]="cancelContainer"
+                [shouldHideEdit]="isAnyEditingOrRevoked()"
+                [isEditingUser]="false"
+                [isEditingInfo]="false"></app-edit-buttons>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</app-details-card>

@@ -18,7 +18,6 @@
  **/
 
 import { Component, inject, linkedSignal, signal, viewChild, WritableSignal } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
@@ -41,15 +40,14 @@ import { Resolver, ResolverService } from "@services/resolver/resolver.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 
 const columnKeysMap = [
-  { key: "resolvername", label: "Name" },
-  { key: "type", label: "Type" }
+  { key: "resolvername", label: $localize`Name` },
+  { key: "type", label: $localize`Type` }
 ];
 
 @Component({
   selector: "app-user-resolver",
   standalone: true,
   imports: [
-    FormsModule,
     MatTableModule,
     MatPaginatorModule,
     MatSortModule,
@@ -142,9 +140,13 @@ export class UserResolversComponent {
           return;
         }
         this.resolverService.deleteResolver(resolver.resolvername).subscribe({
-          next: () => {
-            this.notificationService.success($localize`Resolver "${resolver.resolvername}" deleted.`);
-            this.resolverService.resolversResource.reload?.();
+          next: (res) => {
+            if (res.result?.status === true && (res.result.value ?? -1) >= 0) {
+              this.notificationService.success($localize`Resolver "${resolver.resolvername}" deleted.`);
+              this.resolverService.resolversResource.reload?.();
+            } else {
+              this.notificationService.error($localize`Resolver "${resolver.resolvername}" not found.`);
+            }
           },
           error: (err) => {
             const message = err.error?.result?.error?.message || err.message;

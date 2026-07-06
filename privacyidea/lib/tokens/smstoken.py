@@ -66,7 +66,7 @@ from privacyidea.lib.smsprovider.SMSProvider import (get_sms_provider_class,
 from privacyidea.lib.tokenclass import ChallengeSession, AuthenticationMode
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.lib.utils import is_true, create_tag_dict
-from privacyidea.models import Challenge
+from privacyidea.lib.token import create_challenge
 
 log = logging.getLogger(__name__)
 
@@ -350,13 +350,12 @@ class SmsTokenClass(HotpTokenClass):
                     # Create the challenge in the database
                     if is_true(get_from_config("sms.concurrent_challenges")):
                         data = self.get_otp()[2]
-                db_challenge = Challenge(self.token.serial,
-                                         transaction_id=transactionid,
-                                         challenge=options.get("challenge"),
-                                         data=data,
-                                         session=options.get("session"),
-                                         validitytime=validity)
-                db_challenge.save()
+                db_challenge = create_challenge(self.token.serial,
+                                               transaction_id=transactionid,
+                                               challenge=options.get("challenge"),
+                                               data=data,
+                                               session=options.get("session"),
+                                               validitytime=validity)
                 transactionid = transactionid or db_challenge.transaction_id
             except Exception as e:
                 info = _("The PIN was correct, but the SMS could not be sent!")
@@ -388,7 +387,7 @@ class SmsTokenClass(HotpTokenClass):
 
         ret = HotpTokenClass.check_otp(self, anOtpVal, counter, window, options)
         if ret < 0 and is_true(get_from_config("sms.concurrent_challenges")):
-            if safe_compare(options.get("data"), anOtpVal):
+            if options.get("data") is not None and safe_compare(options.get("data"), anOtpVal):
                 # We authenticate from the saved challenge
                 ret = 1
         if ret >= 0 and self._get_auto_sms(options):

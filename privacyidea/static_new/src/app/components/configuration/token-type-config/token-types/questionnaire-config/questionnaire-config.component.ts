@@ -16,58 +16,49 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, input, output, signal } from "@angular/core";
+import { Component, input, output } from "@angular/core";
 
-import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
-import { MatDivider } from "@angular/material/list";
 import { QUESTION_NUMBER_OF_ANSWERS } from "@constants/token.constants";
 
 @Component({
   selector: "app-questionnaire-config",
   standalone: true,
-  imports: [
-    FormsModule,
-    MatExpansionModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
-    MatIconModule,
-    MatDivider
-  ],
+  imports: [MatExpansionModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule],
   templateUrl: "./questionnaire-config.component.html",
   styleUrl: "./questionnaire-config.component.scss"
 })
 export class QuestionnaireConfigComponent {
   protected readonly QUESTION_NUMBER_OF_ANSWERS = QUESTION_NUMBER_OF_ANSWERS;
 
-  formData = input.required<Record<string, any>>();
+  formData = input.required<Record<string, string>>();
   questionKeys = input.required<string[]>();
   expanded = input<boolean>(false);
 
-  formDataChange = output<Record<string, any>>();
-  onAddQuestion = output<string>();
-  onDeleteEntry = output<string>();
+  formDataChange = output<Record<string, string>>();
+  addQuestionRequest = output<void>();
+  deleteRequest = output<string>();
 
-  newQuestionText = signal("");
+  blockNonNumeric(event: KeyboardEvent): void {
+    if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && (event.key < "0" || event.key > "9")) {
+      event.preventDefault();
+    }
+  }
 
-  updateFormData(fieldName: string, value: any): void {
+  updateFormData(fieldName: string, value: string): void {
     const newValue = { ...this.formData(), [fieldName]: value };
     this.formDataChange.emit(newValue);
   }
 
   addQuestion() {
-    if (this.newQuestionText()) {
-      this.onAddQuestion.emit(this.newQuestionText());
-      this.newQuestionText.set("");
-    }
+    this.addQuestionRequest.emit();
   }
 
   deleteEntry(key: string) {
-    this.onDeleteEntry.emit(key);
+    this.deleteRequest.emit(key);
   }
 }

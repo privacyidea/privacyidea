@@ -23,10 +23,12 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
-import { NavigationComponent } from "@components/layout/navigation/navigation.component";
+import { NavItem, NavigationComponent } from "@components/layout/navigation/navigation.component";
 import { AuthService } from "@services/auth/auth.service";
 import { ConfigService } from "@services/config/config.service";
 import { ContentService } from "@services/content/content.service";
+import { DashboardLayoutService } from "@services/dashboard/dashboard-layout.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { SessionTimerService } from "@services/session-timer/session-timer.service";
 import { UserService } from "@services/user/user.service";
@@ -34,12 +36,27 @@ import { VersioningService } from "@services/version/version.service";
 import { MockConfigService } from "@testing/mock-services/mock-config-service";
 import {
   MockContentService,
+  MockDocumentationService,
   MockLocalService,
   MockNotificationService,
+  MockPeriodicTaskService,
+  MockRealmService,
   MockSessionTimerService,
+  MockSystemService,
   MockUserService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { RealmService } from "@services/realm/realm.service";
+import { DocumentationService } from "@services/documentation/documentation.service";
+import { PeriodicTaskService } from "@services/periodic-task/periodic-task.service";
+import { MockEventService } from "@testing/mock-services/mock-event-service";
+import { EventService } from "@services/event/event.service";
+import { SystemService } from "@services/system/system.service";
+
+interface NavigationComponentPrivate {
+  getFilteredNavItems: () => NavItem[];
+  calculateVisibleItems: (navEl: HTMLElement) => void;
+}
 
 describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", () => {
   let component: NavigationComponent;
@@ -80,6 +97,12 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: ConfigService, useClass: MockConfigService },
         { provide: MatSnackBar, useValue: { open: jest.fn() } },
+        { provide: RealmService, useClass: MockRealmService },
+        { provide: DocumentationService, useClass: MockDocumentationService },
+        { provide: PeriodicTaskService, useClass: MockPeriodicTaskService },
+        { provide: EventService, useClass: MockEventService },
+        { provide: SystemService, UseClass: MockSystemService },
+        PendingChangesService,
         MockLocalService
       ]
     })
@@ -159,18 +182,19 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
     navEl.appendChild(item1);
     navEl.appendChild(item2);
 
+    const componentPrivate = component as unknown as NavigationComponentPrivate;
     jest
-      .spyOn(component as any, "getFilteredNavItems")
-      .mockReturnValue([{ section: "token" }, { section: "container" }]);
+      .spyOn(componentPrivate, "getFilteredNavItems")
+      .mockReturnValue([{ section: "token" }, { section: "container" }] as NavItem[]);
 
-    (component as any).calculateVisibleItems(navEl);
+    componentPrivate.calculateVisibleItems(navEl);
 
     expect(component.visibleNavCount()).toBe(2);
 
     // Shrink navWidth - should trigger overflow
     // To fit 1 item (100px) with more button (50px) and safety buffer (30px), we need at least 180px.
     Object.defineProperty(navEl, "clientWidth", { value: 200, configurable: true });
-    (component as any).calculateVisibleItems(navEl);
+    componentPrivate.calculateVisibleItems(navEl);
     // item1(100) fits in availableWidth (200 - 50 - 30 = 120).
     expect(component.visibleNavCount()).toBe(1);
   });
@@ -192,12 +216,13 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
     navEl.appendChild(item1);
     navEl.appendChild(item2);
 
+    const componentPrivate = component as unknown as NavigationComponentPrivate;
     jest
-      .spyOn(component as any, "getFilteredNavItems")
-      .mockReturnValue([{ section: "token" }, { section: "container" }]);
+      .spyOn(componentPrivate, "getFilteredNavItems")
+      .mockReturnValue([{ section: "token" }, { section: "container" }] as NavItem[]);
 
     // Initial calculation to store widths
-    (component as any).calculateVisibleItems(navEl);
+    componentPrivate.calculateVisibleItems(navEl);
     expect(component.visibleNavCount()).toBe(2);
 
     // Remove item2 from DOM (simulating Angular removing it from visible items)
@@ -205,7 +230,7 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
 
     // Grow container
     Object.defineProperty(navEl, "clientWidth", { value: 500, configurable: true });
-    (component as any).calculateVisibleItems(navEl);
+    componentPrivate.calculateVisibleItems(navEl);
 
     // Should still calculate 2 visible items because it remembers the width of 'container'
     expect(component.visibleNavCount()).toBe(2);
@@ -298,6 +323,53 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
     it("should detect 'token' for tokens route", () => {
       contentService.routeUrl.set(ROUTE_PATHS.TOKENS);
       expect(component.activeSection()).toBe("token");
+    });
+  });
+
+  describe("dashboard toolbar actions", () => {
+    let layoutService: DashboardLayoutService;
+
+    beforeEach(() => {
+      layoutService = TestBed.inject(DashboardLayoutService);
+      layoutService.editMode.set(false);
+    });
+
+    it("should begin a staged edit when entering edit mode", () => {
+      const beginSpy = jest.spyOn(layoutService, "beginEdit");
+      component.enterDashboardEdit();
+      expect(beginSpy).toHaveBeenCalled();
+      expect(layoutService.editMode()).toBe(true);
+    });
+
+    it("should commit the staged edit on save", () => {
+      const saveSpy = jest.spyOn(layoutService, "saveEdit");
+      component.enterDashboardEdit();
+      component.saveDashboard();
+      expect(saveSpy).toHaveBeenCalled();
+      expect(layoutService.editMode()).toBe(false);
+    });
+
+    it("should discard the staged edit on cancel", () => {
+      const cancelSpy = jest.spyOn(layoutService, "cancelEdit");
+      component.enterDashboardEdit();
+      component.cancelDashboard();
+      expect(cancelSpy).toHaveBeenCalled();
+      expect(layoutService.editMode()).toBe(false);
+    });
+
+    it("should register the pending-changes save hook while editing", () => {
+      const pendingChanges = TestBed.inject(PendingChangesService);
+      component.enterDashboardEdit();
+      expect(pendingChanges.hasSaveFn).toBe(true);
+
+      component.saveDashboard();
+      expect(pendingChanges.hasSaveFn).toBe(false);
+    });
+
+    it("should detect 'dashboard' for dashboard route", () => {
+      const contentService = TestBed.inject(ContentService) as unknown as MockContentService;
+      contentService.routeUrl.set(ROUTE_PATHS.DASHBOARD);
+      expect(component.activeSection()).toBe("dashboard");
     });
   });
 });

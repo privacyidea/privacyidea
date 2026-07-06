@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, signal, ViewChild, WritableSignal } from "@angular/core";
+import { Component, computed, ElementRef, inject, signal, ViewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { MatPaginator } from "@angular/material/paginator";
@@ -31,7 +31,7 @@ import { SmtpServer, SmtpService, SmtpServiceInterface } from "@services/smtp/sm
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { Router } from "@angular/router";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
@@ -52,7 +52,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
     MatLabel,
     ClearableInputComponent,
     MatInput,
-    CopyButtonComponent
+    CopyableComponent
   ],
   templateUrl: "./smtp-servers.component.html",
   styleUrl: "./smtp-servers.component.scss"
@@ -71,7 +71,7 @@ export class SmtpServersComponent {
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
-  @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: any;
+  @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
 
   displayedColumns: string[] = ["identifier", "server", "sender", "tls", "description", "actions"];
 
@@ -99,7 +99,7 @@ export class SmtpServersComponent {
           title: $localize`Delete SMTP Server`,
           items: [server.identifier],
           itemType: "smtp-server",
-          confirmAction: { label: "Delete", value: true, type: "destruct" }
+          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()

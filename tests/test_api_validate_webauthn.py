@@ -334,6 +334,126 @@ class WebAuthn(MyApiTestCase):
         remove_token(totp.get_serial())
         remove_token(webauthn_serial)
 
+    def test_13_reset_all_user_tokens(self):
+        """
+        A successful WebAuthn authentication goes through _handle_fido2_auth and not
+        through check_token_list. The reset_all_user_tokens policy must still reset
+        the failcounter of all the user's other tokens.
+        """
+        delete_policy("wan1")
+        delete_policy("wan2")
+
+        set_policy("wan1", scope=SCOPE.ENROLL, action="webauthn_relying_party_id=fritz.box")
+        set_policy("wan2", scope=SCOPE.ENROLL, action="webauthn_relying_party_name=fritz.box")
+        set_policy("challenge_response", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=totp hotp")
+
+        pin = "12"
+        user = User("hans", self.realm1)
+        hotp = init_token({"type": "hotp", "pin": pin, "genkey": "1"}, user=user)
+        totp = init_token({"type": "totp", "pin": pin, "genkey": "1"}, user=user)
+        headers = {"authorization": self.at,
+                   "Host": "pi.fritz.box:5000",
+                   "Origin": "https://pi.fritz.box:5000"}
+
+        # Enroll WebAuthn via the API
+        data = {
+            "2stepinit": False,
+            "genkey": True,
+            "realm": self.realm1,
+            "timeStep": 30,
+            "type": "webauthn",
+            "user": "hans",
+            "pin": "12"
+        }
+        with patch('privacyidea.lib.tokens.webauthntoken.WebAuthnTokenClass._get_nonce') as mock_nonce:
+            mock_nonce.return_value = webauthn_b64_decode("RjCK6QlzmOpWN4BwE6xD5tx5P0czKCFemfqMBnAhch0")
+            with self.app.test_request_context('/token/init',
+                                               method='POST',
+                                               data=data,
+                                               headers=headers):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res)
+                data = res.json
+                webauthn_request = data.get("detail").get("webAuthnRegisterRequest")
+                transaction_id = webauthn_request.get("transaction_id")
+                webauthn_serial = data.get("detail").get("serial")
+
+        # 2nd enrollment step
+        data = {"user": "hans",
+                "realm": self.realm1,
+                "serial": webauthn_serial,
+                "type": "webauthn",
+                "transaction_id": transaction_id,
+                "clientdata": "eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoiUmpDSzZRbHptT3BXTjRCd0U2eEQ1dHg1UDBj"
+                              "ektDRmVtZnFNQm5BaGNoMCIsIm9yaWdpbiI6Imh0dHBzOi8vcGkuZnJpdHouYm94OjUwMDAifQ",
+                "regdata": "o2NmbXRmcGFja2VkZ2F0dFN0bXSjY2FsZyZjc2lnWEcwRQIga75EjPA16t5Tck2dwpAE-PoalJVtpqVCauYvZz_FU3c"
+                           "CIQCrR-KSlaLQhuuAVkmx0KYkoQIgHDYeZX4Dxi98BW4itGN4NWOBWQLdMIIC2TCCAcGgAwIBAgIJAPDqu31oBEyKMA"
+                           "0GCSqGSIb3DQEBCwUAMC4xLDAqBgNVBAMTI1l1YmljbyBVMkYgUm9vdCBDQSBTZXJpYWwgNDU3MjAwNjMxMCAXDTE0M"
+                           "DgwMTAwMDAwMFoYDzIwNTAwOTA0MDAwMDAwWjBvMQswCQYDVQQGEwJTRTESMBAGA1UECgwJWXViaWNvIEFCMSIwIAYD"
+                           "VQQLDBlBdXRoZW50aWNhdG9yIEF0dGVzdGF0aW9uMSgwJgYDVQQDDB9ZdWJpY28gVTJGIEVFIFNlcmlhbCAyMTA5ND"
+                           "Y3Mzc2MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE5mfTO7qcRZuAnvzLaguuLFz8S9eB1XNIPZb96SUfZCzN5sIGV"
+                           "RTzM4JGrJlSgAAq0jivvANxttf6w7_LnnnSMKOBgTB_MBMGCisGAQQBgsQKDQEEBQQDBQQDMCIGCSsGAQQBgsQKAgQV"
+                           "MS4zLjYuMS40LjEuNDE0ODIuMS43MBMGCysGAQQBguUcAgEBBAQDAgQwMCEGCysGAQQBguUcAQEEBBIEEC_AV5-BE0f"
+                           "qsRa7Wo25ICowDAYDVR0TAQH_BAIwADANBgkqhkiG9w0BAQsFAAOCAQEAtjGoKNeTOK0pAIoNf3mjoD3PLgybH2L6z7"
+                           "SKnlWVd6dRbJWbZCsY8AxMdyKNGfnUQiJcEmi9IxigjGoXcwZPApnJm7JDike7Z7HQ2yUrlJZ-EgFamivp5C3UVCaIk"
+                           "GH-HyJW_vh23XOZMkaDcRqwbeq8b0Voavnu4YF5bCM7PtnsPcCsvfL5DahPGSfpc9YyANG49OQBOZolNF3MBKKrspOA"
+                           "I7RfW0JSQY0NUnWFYx9hxFbNuYsKFN4NblJ_Zz9tMk1YYSkTJ6VfxHTo5tfIcaLfZ1dIrMeY12-WevjMufFW_qB4Er"
+                           "Y5Gjft3cbiZBELmbQ9QLUyLX78lHiLC9pJImhhdXRoRGF0YVjE1kwVsywYDmugu2qhEi7LiS8tgyaE5XqILRqvKXkZ-"
+                           "1pFAAAABC_AV5-BE0fqsRa7Wo25ICoAQIwkrRnq993po4HbKnUzQuq90bg6wFf8w0ulx8kSxw_5osFUpDm5Ct4B4JeL"
+                           "F1B4rpd3Cy4iAZT0msTxhwXVrAalAQIDJiABIVggwD4LMXnu6jGwvc-PwbT46HLfUFAp6flASQh4CuEsACIiWCDKyZP"
+                           "LKFfXGZa--6Gjbp0dmq_fDIYWYVapphWk6WodBA"}
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data=data,
+                                           headers=headers):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+
+        # Trigger all 3 token
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "hans", "pass": pin},
+                                           headers=headers), patch(
+            'privacyidea.lib.tokens.webauthntoken.WebAuthnTokenClass._get_nonce') as mock_nonce:
+            mock_nonce.return_value = webauthn_b64_decode("Z1osHXV_kbmE0Jg5S2zkBWUKI3ZO6UYO-hkzBv-YypA")
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            transaction_id = res.json.get("detail").get("transaction_id")
+
+        # Raise the failcounter of the other tokens and enable the reset policy
+        hotp.set_failcount(3)
+        totp.set_failcount(2)
+        set_policy("reset_all", scope=SCOPE.AUTH, action=PolicyAction.RESETALLTOKENS)
+
+        # Answer the WebAuthn challenge. The userHandle is the serial.
+        user_handle = bytes_to_base64url(webauthn_serial.encode())
+        data = {
+            "authenticatordata": "1kwVsywYDmugu2qhEi7LiS8tgyaE5XqILRqvKXkZ-1oBAAAACA",
+            "clientdata": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiWjFvc0hYVl9rYm1FMEpnNVMyemtCV1VLSTNaTzZVWU8t"
+                          "aGt6QnYtWXlwQSIsIm9yaWdpbiI6Imh0dHBzOi8vcGkuZnJpdHouYm94OjUwMDAifQ",
+            "credentialid": "jCStGer33emjgdsqdTNC6r3RuDrAV_zDS6XHyRLHD_miwVSkObkK3gHgl4sXUHiul3cLLiIBlPSaxPGHBdWsBg",
+            "signaturedata": "MEYCIQDl9geJO2uBLoedFxpGLhOyxKIhp9CJXdFO0gAp56HgcQIhAO5MRvXN_ZOEl-M_fhIsVJCq4xeVrbME-Mw2C"
+                             "AVK_1kh",
+            "transaction_id": transaction_id,
+            "userHandle": user_handle,
+            "username": "hans"
+        }
+        with self.app.test_request_context('/validate/check', method='POST', data=data, headers=headers):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertTrue(res.json.get("result").get("value"))
+            self.assertEqual("ACCEPT", res.json.get("result").get("authentication"))
+
+        # The failcounter of all the user's tokens must have been reset
+        self.assertEqual(0, get_one_token(serial=hotp.get_serial()).get_failcount())
+        self.assertEqual(0, get_one_token(serial=totp.get_serial()).get_failcount())
+
+        delete_policy("challenge_response")
+        delete_policy("reset_all")
+        remove_token(hotp.get_serial())
+        remove_token(totp.get_serial())
+        remove_token(webauthn_serial)
+
     def test_20_authenticate_other_token(self):
         set_policy("enroll", scope=SCOPE.ADMIN, action=["enrollWEBAUTHN", "enrollHOTP", PolicyAction.ENROLLPIN,
                                                         PolicyAction.TRIGGERCHALLENGE])

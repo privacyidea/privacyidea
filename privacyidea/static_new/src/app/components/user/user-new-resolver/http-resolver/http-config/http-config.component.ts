@@ -16,31 +16,33 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, Input } from "@angular/core";
-import { FormGroup, ReactiveFormsModule } from "@angular/forms";
-import { MatCheckboxModule } from "@angular/material/checkbox";
+import { Component, input, model } from "@angular/core";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { MatCheckboxModule } from "@angular/material/checkbox";
+
+export interface HttpConfigModel {
+  method: string;
+  endpoint: string;
+  headers: string;
+  requestMapping: string;
+  responseMapping: string;
+  hasSpecialErrorHandler: boolean;
+  errorResponse: string;
+}
 
 @Component({
   selector: "app-http-config",
   standalone: true,
-  imports: [
-    ReactiveFormsModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatSelectModule,
-    MatCheckboxModule,
-    ClearableInputComponent
-  ],
+  imports: [MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule, ClearableInputComponent],
   templateUrl: "./http-config.component.html",
   styleUrl: "./http-config.component.scss"
 })
 export class HttpConfigComponent {
-  @Input({ required: true }) formGroup!: FormGroup;
-  @Input({ required: true }) title!: string;
-  @Input() description?: string;
-  @Input() endpointHint?: string;
+  model = model.required<HttpConfigModel>();
+  title = input.required<string>();
+  description = input<string>();
+  endpointHint = input<string>();
 }

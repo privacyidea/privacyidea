@@ -1,0 +1,80 @@
+# SPDX-FileCopyrightText: (C) 2026 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: CC0-1.0
+#
+# Sanity-checks .github/python-versions.env so a typo (e.g. unquoted spaces,
+# missing key) is caught at PR time rather than at consumer-workflow runtime.
+
+name: Validate python-versions.env
+
+on:
+  pull_request:
+    branches:
+      - 'master'
+      - 'branch-*'
+    paths:
+      - '.github/python-versions.env'
+      - '.github/workflows/python-versions-validate.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate env file
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Source and check required keys
+        run: |
+          set -a
+          source .github/python-versions.env
+          set +a
+          missing=0
+          for key in MIN MAX RELEASE MIGRATION ALL; do
+            if [ -z "${!key}" ]; then
+              echo "::error file=.github/python-versions.env::$key is unset or empty"
+              missing=1
+            fi
+          done
+          [ "$missing" -eq 0 ] || exit 1
+
+      - name: Check value formats
+        run: |
+          set -a
+          source .github/python-versions.env
+          set +a
+          fail=0
+          # MIN/MAX/RELEASE/MIGRATION must look like "3.X"
+          for key in MIN MAX RELEASE MIGRATION; do
+            value=${!key}
+            if ! [[ "$value" =~ ^3\.[0-9]+$ ]]; then
+              echo "::error file=.github/python-versions.env::$key=$value does not match 3.X"
+              fail=1
+            fi
+          done
+          # Validate ALL using the same splitting the consumer workflows use:
+          # `jq -Rc 'split(" ")'` does NOT collapse repeated/leading/trailing
+          # spaces, so a value like "3.10  3.14" would yield an empty matrix
+          # entry. Reject anything that doesn't match a strict single-space
+          # separated list of "3.X" tokens.
+          tokens=$(printf '%s' "$ALL" | jq -Rc 'split(" ")')
+          if printf '%s' "$tokens" | jq -e 'any(.[]; . == "")' >/dev/null; then
+            echo "::error file=.github/python-versions.env::ALL contains empty token (check for repeated/leading/trailing spaces)"
+            fail=1
+          fi
+          if ! printf '%s' "$tokens" | jq -e 'all(.[]; test("^3\\.[0-9]+$"))' >/dev/null; then
+            echo "::error file=.github/python-versions.env::ALL contains a token that does not match 3.X"
+            fail=1
+          fi
+          # ALL must contain MIN and MAX
+          for required in "$MIN" "$MAX"; do
+            if ! printf '%s' "$tokens" | jq -e --arg v "$required" 'any(.[]; . == $v)' >/dev/null; then
+              echo "::error file=.github/python-versions.env::ALL does not contain $required"
+              fail=1
+            fi
+          done
+          [ "$fail" -eq 0 ] || exit 1

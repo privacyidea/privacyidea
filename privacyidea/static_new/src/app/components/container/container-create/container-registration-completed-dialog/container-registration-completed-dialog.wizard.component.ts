@@ -37,6 +37,8 @@ import { ContainerRegistrationCompletedDialogComponent } from "./container-regis
 })
 export class ContainerRegistrationCompletedDialogWizardComponent extends ContainerRegistrationCompletedDialogComponent {
   public readonly authService: AuthServiceInterface = inject(AuthService);
+  private http = inject(HttpClient);
+  private sanitizer = inject(DomSanitizer);
 
   tagData: Signal<Record<string, string>> = computed(() => ({
     containerSerial: this.data.containerSerial
@@ -53,11 +55,4 @@ export class ContainerRegistrationCompletedDialogWizardComponent extends Contain
         sanitized: this.sanitizer.bypassSecurityTrustHtml(StringUtils.replaceWithTags(raw, this.tagData()))
       }))
     );
-
-  constructor(
-    private http: HttpClient,
-    private sanitizer: DomSanitizer
-  ) {
-    super();
-  }
 }

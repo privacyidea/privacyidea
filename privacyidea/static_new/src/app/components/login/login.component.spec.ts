@@ -23,19 +23,26 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
-import { AuthData, AuthDetail, AuthService } from "@services/auth/auth.service";
+import {
+  AuthData,
+  AuthDetail,
+  AuthService,
+  MultiChallenge,
+  WebAuthnSignRequestData
+} from "@services/auth/auth.service";
 import { ConfigService } from "@services/config/config.service";
 import { LocalService } from "@services/local/local.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { SessionTimerService } from "@services/session-timer/session-timer.service";
-import { ValidateService } from "@services/validate/validate.service";
+import { ValidateService, WebAuthnSignRequest } from "@services/validate/validate.service";
 import {
-    MockAuthDetail,
-    MockLocalService,
-    MockNotificationService,
-    MockPiResponse,
-    MockSessionTimerService,
-    MockValidateService
+  MockAuthDetail,
+  MockLocalService,
+  MockNotificationService,
+  MockPiResponse,
+  MockRouter,
+  MockSessionTimerService,
+  MockValidateService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockConfigService } from "@testing/mock-services/mock-config-service";
@@ -51,14 +58,9 @@ describe("LoginComponent", () => {
   let notificationService: MockNotificationService;
   let sessionTimerService: MockSessionTimerService;
   let validateService: MockValidateService;
-  let router: jest.Mocked<Router>;
+  let router: MockRouter;
 
   beforeEach(async () => {
-    const routerMock = {
-      navigateByUrl: jest.fn().mockResolvedValue(true),
-      navigate: jest.fn().mockResolvedValue(true)
-    };
-
     await TestBed.configureTestingModule({
       imports: [LoginComponent],
       providers: [
@@ -69,10 +71,8 @@ describe("LoginComponent", () => {
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: ValidateService, useClass: MockValidateService },
         { provide: SessionTimerService, useClass: MockSessionTimerService },
-        { provide: Router, useValue: routerMock },
-        { provide: ConfigService, useClass: MockConfigService },
-        MockLocalService,
-        MockNotificationService
+        { provide: Router, useClass: MockRouter },
+        { provide: ConfigService, useClass: MockConfigService }
       ]
     }).compileComponents();
 
@@ -83,7 +83,9 @@ describe("LoginComponent", () => {
     sessionTimerService = TestBed.inject(SessionTimerService) as unknown as MockSessionTimerService;
     validateService = TestBed.inject(ValidateService) as unknown as MockValidateService;
     configService = TestBed.inject(ConfigService) as unknown as MockConfigService;
-    router = TestBed.inject(Router) as jest.Mocked<Router>;
+    router = TestBed.inject(Router) as unknown as MockRouter;
+    (router.navigateByUrl as jest.Mock).mockResolvedValue(true);
+    (router.navigate as jest.Mock).mockResolvedValue(true);
 
     // Default setup for most tests (not logged in)
     fixture = TestBed.createComponent(LoginComponent);
@@ -96,7 +98,7 @@ describe("LoginComponent", () => {
   });
 
   describe("when already logged in", () => {
-    it("should warn and open a snack bar on initialization", () => {
+    it("does not warn (loginGuard redirects authenticated users away from the login route)", () => {
       authService.isAuthenticated.set(true);
       const warn = jest.spyOn(console, "warn").mockImplementation();
 
@@ -104,8 +106,8 @@ describe("LoginComponent", () => {
       const loggedInFixture = TestBed.createComponent(LoginComponent);
       loggedInFixture.detectChanges();
 
-      expect(notificationService.warning).toHaveBeenCalledWith("User is already logged in.");
-      expect(warn).toHaveBeenCalledWith("User is already logged in.");
+      expect(notificationService.warning).not.toHaveBeenCalledWith("User is already logged in.");
+      expect(warn).not.toHaveBeenCalledWith("User is already logged in.");
 
       warn.mockRestore();
     });
@@ -120,6 +122,7 @@ describe("LoginComponent", () => {
     it("should redirect to token wizard", () => {
       authService.authData.set({
         ...authService.authData()!,
+        role: "user",
         token_wizard: true
       });
       component.onSubmit();
@@ -130,6 +133,7 @@ describe("LoginComponent", () => {
     it("should redirect to token wizard first if token and container wizard are enabled", () => {
       authService.authData.set({
         ...authService.authData()!,
+        role: "user",
         token_wizard: true,
         container_wizard: { enabled: true, type: "smartphone", registration: false, template: null }
       });
@@ -141,6 +145,7 @@ describe("LoginComponent", () => {
     it("should redirect to container wizard if only container wizard is enabled", () => {
       authService.authData.set({
         ...authService.authData()!,
+        role: "user",
         token_wizard: false,
         container_wizard: { enabled: true, type: "smartphone", registration: false, template: null }
       });
@@ -154,6 +159,10 @@ describe("LoginComponent", () => {
     beforeEach(() => {
       component.username.set("test-user");
       component.password.set("test-pass");
+      authService.authData.set({
+        ...authService.authData()!,
+        admin_dashboard: true
+      });
     });
 
     it("should call authService.authenticate with username/password", () => {
@@ -163,7 +172,7 @@ describe("LoginComponent", () => {
         username: "test-user",
         password: "test-pass"
       });
-      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.TOKENS);
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.DASHBOARD);
     });
 
     it("should call authService.authenticate with username/password/realm", () => {
@@ -175,7 +184,7 @@ describe("LoginComponent", () => {
         password: "test-pass",
         realm: "test-realm"
       });
-      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.TOKENS);
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.DASHBOARD);
     });
 
     it("should call authService.authenticate not with empty realm", () => {
@@ -186,15 +195,36 @@ describe("LoginComponent", () => {
         username: "test-user",
         password: "test-pass"
       });
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.DASHBOARD);
+    });
+
+    it("should redirect admins to the token overview when the dashboard policy is disabled", () => {
+      authService.authData.set({
+        ...authService.authData()!,
+        admin_dashboard: false
+      });
+      component.onSubmit();
+
       expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.TOKENS);
     });
 
+    it("should not send the realm when the '-' no-realm sentinel is selected", () => {
+      component.realm.set("-");
+      component.onSubmit();
+
+      expect(authService.authenticate).toHaveBeenCalledWith({
+        username: "test-user",
+        password: "test-pass"
+      });
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.DASHBOARD);
+    });
+
     it("should handle a complex multi-challenge response with WebAuthn and OTP", () => {
-      const webAuthnSignRequestData = {
+      const webAuthnSignRequestData: WebAuthnSignRequestData = {
         allowCredentials: [
           {
             id: "sLGtMkbtYaEl2sYAD4iDdsVRUyihBfPBDhkVQemXUujuLE2G7WdSO5sb0IfGE-dwsABqT00mcqR9oTntiP0mEQ",
-            transports: ["usb", "internal", "nfc", "ble"],
+            transports: ["usb", "internal", "nfc", "ble"] as AuthenticatorTransport[],
             type: "public-key"
           }
         ],
@@ -232,7 +262,7 @@ describe("LoginComponent", () => {
             }
           ]
         },
-        result: { authentication: "CHALLENGE", status: true, value: false as any }
+        result: { authentication: "CHALLENGE", status: true }
       });
       authService.authenticate.mockReturnValue(of(multiChallengeResponse));
 
@@ -244,7 +274,7 @@ describe("LoginComponent", () => {
       ]);
       expect(component.showOtpField()).toBe(true);
       expect(component.webAuthnTriggered()).toEqual(webAuthnSignRequestData);
-      expect((component as any).transactionId).toBe("02247192477167467513");
+      expect((component as unknown as { transactionId: string }).transactionId).toBe("02247192477167467513");
       expect(component.pushTriggered()).toBe(false); // No push challenge in this specific multi_challenge
 
       expect(localService.saveData).not.toHaveBeenCalled();
@@ -256,7 +286,7 @@ describe("LoginComponent", () => {
     it("should handle a challenge response", () => {
       const challengeResponse = new MockPiResponse<AuthData, AuthDetail>({
         detail: { message: "Please enter OTP" }, // Use detail.message for simple cases
-        result: { authentication: "CHALLENGE", status: true, value: false as any }
+        result: { authentication: "CHALLENGE", status: true }
       });
       authService.authenticate.mockReturnValue(of(challengeResponse));
 
@@ -274,7 +304,7 @@ describe("LoginComponent", () => {
       // GIVEN: The component is in a challenge state
       component.showOtpField.set(true);
       component.otp.set("654321");
-      (component as any).transactionId = "tx123";
+      (component as unknown as { transactionId: string }).transactionId = "tx123";
 
       // WHEN: The form is submitted
       component.onSubmit();
@@ -366,14 +396,17 @@ describe("LoginComponent", () => {
 
   describe("passkeyLogin", () => {
     it("should call validateService.authenticatePasskey and handle success", () => {
+      authService.authData.set({
+        ...authService.authData()!,
+        admin_dashboard: true
+      });
       const successResponse = MockPiResponse.fromValue<AuthData, AuthDetail>({ token: "passkey-token" } as AuthData);
       jest.spyOn(validateService, "authenticatePasskey").mockReturnValue(of(successResponse));
 
       component.passkeyLogin();
 
       expect(validateService.authenticatePasskey).toHaveBeenCalled();
-      expect(localService.saveData).toHaveBeenCalledWith("bearer_token", "passkey-token");
-      expect(router.navigateByUrl).toHaveBeenCalledWith("/tokens");
+      expect(router.navigateByUrl).toHaveBeenCalledWith("/dashboard");
     });
 
     it("should handle failure", () => {
@@ -388,10 +421,10 @@ describe("LoginComponent", () => {
 
   describe("webAuthnLogin", () => {
     it("should call validateService.authenticateWebAuthn with correct data", () => {
-      const signRequest = { challenge: "abc" };
+      const signRequest = { challenge: "abc" } as unknown as WebAuthnSignRequest;
       component.webAuthnTriggered.set(signRequest);
       component.username.set("test-user");
-      (component as any).transactionId = "tx-webauthn";
+      (component as unknown as { transactionId: string }).transactionId = "tx-webauthn";
       const mockResponse = new MockPiResponse<AuthData, AuthDetail>({ detail: new MockAuthDetail() });
       jest.spyOn(validateService, "authenticateWebAuthn").mockReturnValue(of(mockResponse));
 
@@ -424,9 +457,9 @@ describe("LoginComponent", () => {
       const challengeResponse = new MockPiResponse<AuthData, AuthDetail>({
         detail: {
           transaction_id: "tx-push",
-          multi_challenge: [{ type: "push" } as any]
+          multi_challenge: [{ type: "push" } as MultiChallenge]
         },
-        result: { authentication: "CHALLENGE", status: true, value: false as any }
+        result: { authentication: "CHALLENGE", status: true }
       });
       authService.authenticate.mockReturnValue(of(challengeResponse));
 
@@ -445,10 +478,11 @@ describe("LoginComponent", () => {
       jest.spyOn(validateService, "pollTransaction").mockReturnValueOnce(of(false)).mockReturnValueOnce(of(true)); // Succeed on second poll
       const successResponse = MockPiResponse.fromValue<AuthData, AuthDetail>({ token: "push-token" } as AuthData);
       authService.authenticate.mockReturnValue(of(successResponse));
-      (component as any).transactionId = "tx-push-success";
+      const internals = component as unknown as { transactionId: string; startPushPolling: () => void };
+      internals.transactionId = "tx-push-success";
       component.username.set("test-user");
 
-      (component as any).startPushPolling();
+      internals.startPushPolling();
       jest.advanceTimersByTime(500); // 2 polls at 200ms interval + buffer
       await Promise.resolve();
 
@@ -457,19 +491,14 @@ describe("LoginComponent", () => {
         password: "",
         transaction_id: "tx-push-success"
       });
-      expect(localService.saveData).toHaveBeenCalledWith("bearer_token", "push-token");
     });
   });
 
   describe("logout", () => {
-    it("should remove token, logout, and navigate to login", async () => {
+    it("delegates to authService.logout() (which clears storage and navigates)", () => {
       const authServiceSpy = jest.spyOn(authService, "logout");
       component.logout();
-      fixture.whenStable().then(() => {
-        expect(localService.removeData).toHaveBeenCalledWith("bearer_token");
-        expect(authServiceSpy).toHaveBeenCalled();
-        expect(router.navigate).toHaveBeenCalledWith(["login"]);
-      });
+      expect(authServiceSpy).toHaveBeenCalled();
     });
   });
 

@@ -36,21 +36,20 @@ export interface FourEyesEnrollmentData extends TokenEnrollmentData {
 
 export interface FourEyesEnrollmentPayload extends TokenEnrollmentPayload {
   separator: string;
-  "4eyes": { [key: string]: { count: number; selected: boolean } };
+  "4eyes": Record<string, { count: number; selected: boolean }>;
 }
 
 @Injectable({ providedIn: "root" })
 export class FourEyesApiPayloadMapper
   extends BaseApiPayloadMapper
-  implements TokenApiPayloadMapper<FourEyesEnrollmentData>
-{
+  implements TokenApiPayloadMapper<FourEyesEnrollmentData> {
   override toApiPayload(data: FourEyesEnrollmentData): FourEyesEnrollmentPayload {
     const basePayload = super.toApiPayload(data);
     const payload: FourEyesEnrollmentPayload = {
       ...basePayload,
       separator: data.separator,
       "4eyes": (data.requiredTokenOfRealms ?? []).reduce(
-        (acc: { [key: string]: { count: number; selected: boolean } }, curr) => {
+        (acc: Record<string, { count: number; selected: boolean }>, curr) => {
           acc[curr.realm] = { count: curr.tokens, selected: true };
           return acc;
         },
@@ -67,7 +66,7 @@ export class FourEyesApiPayloadMapper
 
   override fromApiPayload(payload: FourEyesEnrollmentPayload): FourEyesEnrollmentData {
     const requiredTokenOfRealms = Object.entries(payload["4eyes"] || {})
-      .filter(([_, value]) => value.selected)
+      .filter(([, value]) => value.selected)
       .map(([realm, value]) => ({
         realm,
         tokens: value.count

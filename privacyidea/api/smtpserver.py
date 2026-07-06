@@ -43,7 +43,11 @@ from ..lib.params import get_optional, get_required
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.log import log_with
 from ..lib.policies.actions import PolicyAction
+from ..lib.crypto import censor_dict
 from ..lib.utils import is_true
+
+#: SMTP server fields that must never be returned in clear text by the API.
+SMTPSERVER_SECRET_KEYS = {"password", "private_key_password"}
 
 log = logging.getLogger(__name__)
 
@@ -124,9 +128,12 @@ def list_smtpservers_api():
     ``dont_send_on_error``, ``private_key``, ``private_key_password`` and
     ``certificate``.
 
-    .. warning::
-       The response currently returns the SMTP password decrypted, not
-       redacted. Treat it accordingly.
+    Secret values are not returned in clear text: ``password`` and
+    ``private_key_password`` are replaced by the placeholder ``__CENSORED__``.
+    (``private_key`` holds the *path* to the S/MIME key file, not key material,
+    so it is returned unchanged.) When updating a server, submit ``__CENSORED__``
+    for a secret to keep its stored value, an empty string to clear it, or a new
+    value to change it.
 
     Requires admin authentication and the policy action
     :ref:`policy_smtpserver_read`.
@@ -134,6 +141,9 @@ def list_smtpservers_api():
     :status 200: dict of definitions in ``result.value``.
     """
     res = list_smtpservers()
+    # Do not expose secrets in the API response
+    for identifier, data in res.items():
+        res[identifier] = censor_dict(data, SMTPSERVER_SECRET_KEYS)
     g.audit_object.log({'success': True})
     return send_result(res)
 

@@ -1,0 +1,97 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+<div class="event-conditions-container">
+  @if (Object.keys(selectedConditions()).length > 0) {
+    <mat-expansion-panel [expanded]="true">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          <p i18n>Configured Conditions</p>
+        </mat-panel-title>
+      </mat-expansion-panel-header>
+      <div class="configured-list">
+        <app-event-condition-list
+          (actionButtonClicked)="removeCondition($event.conditionName)"
+          (newConditionValue)="onConditionValueChange($event.conditionName, $event.conditionValue)"
+          [action]="'delete'"
+          [conditions]="selectedConditions()"
+          [emitOnConditionValueChange]="true"
+          [focusConditionName]="addedCondition()"
+          [inputRequired]="true"
+          [toolTipText]="removeToolTip" />
+      </div>
+    </mat-expansion-panel>
+  }
+
+  <mat-expansion-panel [expanded]="true">
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        <p i18n>Add New Conditions</p>
+      </mat-panel-title>
+    </mat-expansion-panel-header>
+    <div class="panel-content">
+      @if (availableNonEmptyGroups().length > 1) {
+        <div class="selector-row">
+          <app-selector-buttons
+            (selected)="selectedGroup.set($event ?? '')"
+            [initialValue]="selectedGroup()"
+            [values]="availableNonEmptyGroups()"
+            class="flex-1" />
+        </div>
+      }
+
+      <app-clearable-input
+        (clearButtonClick)="searchTerm.set('')" [showClearButton]="searchTerm().length > 0">
+        <input
+          (ngModelChange)="searchTerm.set($event)"
+          [ngModel]="searchTerm()"
+          class="search-input"
+          clearableInput
+          i18n-placeholder
+          placeholder="Search conditions..."
+          type="text" />
+      </app-clearable-input>
+
+      @if (Object.keys(remainingConditionsInSelectedGroup()).length > 0) {
+        <div class="conditions-list">
+          <app-event-condition-list
+            (actionButtonClicked)="onConditionValueChange($event.conditionName, $event.conditionValue)"
+            (newConditionValue)="onConditionValueToBeAddedChange($event.conditionName, $event.conditionValue)"
+            [actionOnEnter]="true"
+            [action]="'add'"
+            [conditions]="remainingConditionsInSelectedGroup()"
+            [emitOnConditionValueChange]="false"
+            [toolTipText]="addToolTip" />
+        </div>
+      } @else {
+        <div class="flex-column">
+          @if (searchTerm() !== "") {
+            <p i18n>No conditions match the search filter.</p>
+            <button
+              (click)="searchTerm.set('')" i18n mat-stroked-button>
+              Clear Filter
+            </button>
+          } @else {
+            <p i18n>All available conditions have been configured.</p>
+          }
+        </div>
+      }
+    </div>
+  </mat-expansion-panel>
+</div>

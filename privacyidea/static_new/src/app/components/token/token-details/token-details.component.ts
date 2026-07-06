@@ -17,135 +17,118 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import {
+  AfterViewInit,
   Component,
   computed,
   effect,
+  ElementRef,
   inject,
   linkedSignal,
   OnDestroy,
   OnInit,
+  Renderer2,
   signal,
   ViewChild,
   WritableSignal
 } from "@angular/core";
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
-import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
-import { MatCell, MatColumnDef, MatRow, MatTable, MatTableModule } from "@angular/material/table";
-import { EditableElement, EditButtonsComponent } from "@components/shared/edit-buttons/edit-buttons.component";
+import { MatButton } from "@angular/material/button";
+import { Router, RouterLink } from "@angular/router";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import {
+  formatTokenTimestamp,
+  infoDetailsKeyMap,
+  TIMESTAMP_INFO_KEYS,
+  tokenDetailsKeyMap,
+  tokenDetailsRightsMap,
+  USER_TIMESTAMP_INFO_KEYS,
+  userDetailsKeyMap
+} from "./token-details.constants";
+import { LostTokenComponent } from "./token-details-actions/lost-token/lost-token.component";
+import { TokenRolloverComponent } from "./token-details-actions/token-rollover/token-rollover.component";
+import {
+  HotpMachineAssignDialogData,
+  TokenHotpMachineAssignDialogComponent
+} from "./token-machine-attach-dialog/token-hotp-machine-attach-dialog/token-hotp-machine-attach-dialog";
+import { ValidateService, ValidateServiceInterface } from "@services/validate/validate.service";
+import { tokenTypes } from "@utils/token.utils";
+import { lastValueFrom, switchMap } from "rxjs";
+import { EditableElement } from "@components/shared/edit-buttons/edit-buttons.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
-import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
-import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { TokenDetails, TokenService, TokenServiceInterface, TokenTypeKey } from "@services/token/token.service";
 
 import { NgClass } from "@angular/common";
-import { MatIconButton } from "@angular/material/button";
-import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
-import { MatInput } from "@angular/material/input";
-import { MatListItem } from "@angular/material/list";
-import { MatSelectModule } from "@angular/material/select";
 import { ROUTE_PATHS } from "@app/route_paths";
-import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { DetailsEditRegistry } from "@components/shared/details-shared/details-edit-registry.service";
 import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
+import { OverflowNavDirective } from "@components/shared/directives/overflow-nav/overflow-nav.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
-import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { Base64Service, Base64ServiceInterface } from "@services/base64/base64.service";
 import { PolicyAction } from "@services/auth/policy-actions";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { MachineService, MachineServiceInterface } from "@services/machine/machine.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { TokenDetailsActionsComponent } from "./token-details-actions/token-details-actions.component";
+import { TokenDetailsAssignmentsComponent } from "./token-details-assignments/token-details-assignments.component";
+import { TokenDetailsCountersComponent } from "./token-details-counters/token-details-counters.component";
+import { TokenDetailsDescriptionComponent } from "./token-details-description/token-details-description.component";
 import { TokenDetailsInfoComponent } from "./token-details-info/token-details-info.component";
 import { TokenDetailsMachineComponent } from "./token-details-machine/token-details-machine.component";
+import { TokenDetailsStatusComponent } from "./token-details-status/token-details-status.component";
 import { TokenDetailsUserComponent } from "./token-details-user/token-details-user.component";
 import {
   SshMachineAssignDialogData,
   TokenSshMachineAssignDialogComponent
 } from "./token-machine-attach-dialog/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog";
 
-export const tokenDetailsKeyMap = [
-  { key: "tokentype", label: "Type" },
-  { key: "active", label: "Status" },
-  { key: "maxfail", label: "Max Count" },
-  { key: "failcount", label: "Fail Count" },
-  { key: "rollout_state", label: "Rollout State" },
-  { key: "otplen", label: "OTP Length" },
-  { key: "count_window", label: "Count Window" },
-  { key: "sync_window", label: "Sync Window" },
-  { key: "count", label: "Count" },
-  { key: "description", label: "Description" },
-  { key: "realms", label: "Token Realms" },
-  { key: "tokengroup", label: "Token Groups" },
-  { key: "container_serial", label: "Container Serial" }
-];
-
-export const tokenDetailsRightsMap = [
-  { key: "maxfail", right: "set" },
-  { key: "count_window", right: "set" },
-  { key: "sync_window", right: "set" },
-  { key: "description", right: "setdescription" },
-  { key: "realms", right: "tokenrealms" },
-  { key: "tokengroup", right: "tokengroups" },
-  { key: "container_serial", right: "container_add_token" }
-];
-
-export const userDetailsKeyMap = [
-  { key: "user_realm", label: "User Realm" },
-  { key: "username", label: "User" },
-  { key: "resolver", label: "Resolver" },
-  { key: "user_id", label: "User ID" }
-];
-
-export const infoDetailsKeyMap = [{ key: "info", label: "Information" }];
-
 @Component({
   imports: [
-    MatCell,
-    MatTableModule,
-    MatColumnDef,
     MatIcon,
-    MatListItem,
-    MatRow,
-    MatTable,
     NgClass,
-    FormsModule,
-    MatInput,
-    MatFormFieldModule,
-    MatSelectModule,
-    ReactiveFormsModule,
-    MatIconButton,
     TokenDetailsUserComponent,
-    MatAutocomplete,
-    MatAutocompleteTrigger,
     TokenDetailsInfoComponent,
     TokenDetailsActionsComponent,
-    EditButtonsComponent,
-    CopyButtonComponent,
+    TokenDetailsStatusComponent,
+    TokenDetailsCountersComponent,
+    TokenDetailsAssignmentsComponent,
+    TokenDetailsDescriptionComponent,
+    MatButton,
+    RouterLink,
     ScrollToTopDirective,
-    ClearableInputComponent,
-    CopyButtonComponent,
-    ClearableInputComponent,
     TokenDetailsMachineComponent,
-    DetailsHeaderComponent
+    DetailsHeaderComponent,
+    OverflowNavDirective
   ],
+  providers: [DetailsEditRegistry],
   templateUrl: "./token-details.component.html",
   styleUrls: ["./token-details.component.scss"]
 })
-export class TokenDetailsComponent implements OnInit, OnDestroy {
+export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
+  private readonly renderer = inject(Renderer2);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
-  protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly editRegistry = inject(DetailsEditRegistry);
   protected readonly machineService: MachineServiceInterface = inject(MachineService);
   private readonly auditService: AuditServiceInterface = inject(AuditService);
   private readonly pendingChangesService = inject(PendingChangesService);
+  private readonly validateService: ValidateServiceInterface = inject(ValidateService);
+  private readonly base64Service: Base64ServiceInterface = inject(Base64Service);
+  private readonly router = inject(Router);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
+  protected isLost = signal(false);
+  protected readonly rolloverTokenTypes = computed(() =>
+    tokenTypes.filter((t) => t.rollover === true).map((t) => t.key)
+  );
+  protected readonly tokenTypeKey = computed(() => this.tokenType() as TokenTypeKey);
   tokenIsActive = this.tokenService.tokenIsActive;
   tokenIsRevoked = this.tokenService.tokenIsRevoked;
   tokenSerial = this.tokenService.tokenSerial;
@@ -153,6 +136,11 @@ export class TokenDetailsComponent implements OnInit, OnDestroy {
   isEditingInfo = signal(false);
   setPinValue = signal("");
   repeatPinValue = signal("");
+  passkeyTestResult = signal<{
+    kind: "success" | "warning";
+    message: string;
+    mismatch?: { serial: string; username: string; realm?: string };
+  } | null>(null);
   isAttachedToMachine = computed<boolean>(() => {
     const tokenApplications = this.machineService.tokenApplications();
     if (!tokenApplications) return false;
@@ -203,11 +191,17 @@ export class TokenDetailsComponent implements OnInit, OnDestroy {
         }));
       }
       return tokenDetailsKeyMap
-        .map((detail) => ({
-          keyMap: detail,
-          value: details[detail.key as keyof TokenDetails],
-          isEditing: signal(false)
-        }))
+        .map((detail) => {
+          const fromInfo = (TIMESTAMP_INFO_KEYS as readonly string[]).includes(detail.key);
+          const value = fromInfo
+            ? formatTokenTimestamp(details.info?.[detail.key])
+            : details[detail.key as keyof TokenDetails];
+          return {
+            keyMap: detail,
+            value,
+            isEditing: signal(false)
+          };
+        })
         .filter((detail) => detail.value !== undefined);
     }
   });
@@ -241,25 +235,38 @@ export class TokenDetailsComponent implements OnInit, OnDestroy {
         }));
       }
       return userDetailsKeyMap
-        .map((detail) => ({
-          keyMap: detail,
-          value: details[detail.key as keyof TokenDetails],
-          isEditing: signal(false)
-        }))
+        .map((detail) => {
+          const fromInfo = (USER_TIMESTAMP_INFO_KEYS as readonly string[]).includes(detail.key);
+          const value = fromInfo
+            ? formatTokenTimestamp(details.info?.[detail.key])
+            : details[detail.key as keyof TokenDetails];
+          return {
+            keyMap: detail,
+            value,
+            isEditing: signal(false)
+          };
+        })
         .filter((detail) => detail.value !== undefined);
     }
   });
-  tokengroupOptions = signal<string[]>([]);
-  selectedTokengroup = signal<string[]>([]);
+  showCounters = computed(() => {
+    const type = this.tokenDetails()?.tokentype;
+    return !(type === "webauthn" || type === "passkey" || type === "push");
+  });
+  descriptionRow = computed(
+    () => this.tokenDetailData().find((r) => r.keyMap.key === "description") as EditableElement<string> | undefined
+  );
   tokenType = linkedSignal({
     source: this.tokenDetails,
     computation: () => this.tokenDetails()?.tokentype ?? ""
   });
   userRealm = "";
-  maxfail = 0;
   isAnyEditingOrRevoked = computed(() => {
     return (
+      // Block editing until the token details have loaded for the first time.
+      !this.tokenDetailResource.hasValue() ||
       this.tokenDetailData().some((element) => element.isEditing()) ||
+      this.editRegistry.anyEditing() ||
       this.isEditingUser() ||
       this.isEditingInfo() ||
       this.tokenIsRevoked()
@@ -271,22 +278,27 @@ export class TokenDetailsComponent implements OnInit, OnDestroy {
       if (!this.tokenDetails()) return;
       this.tokenIsActive.set(this.tokenDetails().active);
       this.tokenIsRevoked.set(this.tokenDetails().revoked);
-      this.maxfail = this.tokenDetails().maxfail;
       this.realmService.selectedRealms.set(this.tokenDetails().realms);
-      this.userRealm = this.userData().find((detail) => detail.keyMap.key === "user_realm")?.value || "";
+      this.userRealm = (this.userData().find((detail) => detail.keyMap.key === "user_realm")?.value as string) || "";
       this.containerService.compatibleWithSelectedTokenType.set(this.tokenDetails().tokentype);
     });
   }
 
   @ViewChild(TokenDetailsUserComponent) userChild?: TokenDetailsUserComponent;
   @ViewChild(TokenDetailsInfoComponent) infoChild?: TokenDetailsInfoComponent;
+  @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
+  @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
+  @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
+
+  private stickyObserver?: IntersectionObserver;
 
   ngOnInit(): void {
     this.pendingChangesService.registerHasChanges(
       () =>
         this.tokenDetailData().some((element) => element.isEditing()) ||
+        this.editRegistry.anyEditing() ||
         this.isEditingUser() ||
-        this.isEditingInfo(),
+        this.isEditingInfo()
     );
     this.pendingChangesService.registerValidChanges(() => true);
     this.pendingChangesService.registerSave(() => this.saveAllInlineEdits());
@@ -298,13 +310,14 @@ export class TokenDetailsComponent implements OnInit, OnDestroy {
         this.saveTokenEdit(row);
       }
     }
+    await this.editRegistry.saveAll();
     if (this.isEditingUser()) {
       this.userChild?.saveUser();
     }
     if (this.isEditingInfo()) {
       const infoElement = this.infoData().find((d) => d.keyMap.key === "info");
       if (infoElement) {
-        this.infoChild?.saveInfo(infoElement as any);
+        this.infoChild?.saveInfo(infoElement as unknown as EditableElement<Record<string, string>>);
       } else {
         this.isEditingInfo.set(false);
       }
@@ -312,8 +325,27 @@ export class TokenDetailsComponent implements OnInit, OnDestroy {
     return true;
   }
 
+  ngAfterViewInit(): void {
+    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) return;
+
+    this.stickyObserver = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.rootBounds) return;
+        const shouldFloat = entry.boundingClientRect.top < entry.rootBounds.top;
+        if (shouldFloat) {
+          this.renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
+        } else {
+          this.renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
+        }
+      },
+      { root: this.scrollContainer.nativeElement, threshold: [0, 1] }
+    );
+    this.stickyObserver.observe(this.stickySentinel.nativeElement);
+  }
+
   ngOnDestroy(): void {
     this.pendingChangesService.clearAllRegistrations();
+    this.stickyObserver?.disconnect();
   }
 
   resetFailCount(): void {
@@ -324,80 +356,231 @@ export class TokenDetailsComponent implements OnInit, OnDestroy {
     });
   }
 
-  cancelTokenEdit(element: EditableElement) {
-    this.resetEdit(element.keyMap.key);
-    element.isEditing.set(!element.isEditing());
-  }
-
-  saveTokenEdit(element: EditableElement<string>) {
-    switch (element.keyMap.key) {
-      case "container_serial":
-        this.containerService.selectedContainerSerial.set(
-          this.containerService.selectedContainerSerial()?.trim() ?? null
-        );
-        this.saveContainer();
-        break;
-      case "tokengroup":
-        this.saveTokengroup(this.selectedTokengroup());
-        break;
-      case "realms":
-        this.saveRealms();
-        break;
-      default:
-        this.saveTokenDetail(element.keyMap.key, element.value);
-        break;
-    }
-    element.isEditing.set(!element.isEditing());
-  }
-
-  toggleTokenEdit(element: EditableElement): void {
-    switch (element.keyMap.key) {
-      case "tokengroup":
-        if (this.tokengroupOptions().length === 0) {
-          this.tokenService.getTokengroups().subscribe({
-            next: (response) => {
-              const tokengroups = response.result?.value || {};
-              this.tokengroupOptions.set(Object.keys(tokengroups));
-              this.selectedTokengroup.set(
-                this.tokenDetailData().find((detail) => detail.keyMap.key === "tokengroup")?.value
-              );
-            }
-          });
-        }
-        break;
-    }
-    element.isEditing.set(!element.isEditing());
-  }
-
-  saveTokenDetail(key: string, value: string): void {
-    this.tokenService.saveTokenDetail(this.tokenSerial(), key, value).subscribe({
+  toggleActive(): void {
+    this.tokenService.toggleActive(this.tokenSerial(), this.tokenIsActive()).subscribe({
       next: () => {
         this.tokenDetailResource.reload();
       }
     });
   }
 
-  saveContainer() {
-    const selectedContainer = this.containerService.selectedContainerSerial();
-    if (selectedContainer) {
-      this.containerService.addToken(this.tokenSerial(), selectedContainer).subscribe({
-        next: () => {
-          this.tokenDetailResource.reload();
+  deleteToken(): void {
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
+        data: {
+          title: $localize`Delete Token`,
+          items: [this.tokenSerial()],
+          itemType: "token",
+          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
+        }
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (result) {
+            this.tokenService.deleteToken(this.tokenSerial()).subscribe({
+              next: () => {
+                this.router.navigateByUrl(ROUTE_PATHS.TOKENS).then();
+                this.tokenSerial.set("");
+              }
+            });
+          }
         }
       });
-    }
   }
 
-  removeFromContainer() {
-    const containerSerial = this.tokenDetails().container_serial;
+  revokeToken(): void {
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
+        data: {
+          title: $localize`Revoke Token`,
+          items: [this.tokenSerial()],
+          itemType: "token",
+          confirmAction: { label: $localize`Revoke`, value: true, type: "destruct" }
+        }
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (result) {
+            this.tokenService
+              .revokeToken(this.tokenSerial())
+              .pipe(switchMap(() => this.tokenService.getTokenDetails(this.tokenSerial())))
+              .subscribe({
+                next: () => {
+                  this.tokenDetailResource.reload();
+                }
+              });
+          }
+        }
+      });
+  }
 
-    if (!containerSerial) {
-      return;
-    }
+  testPasskey(): void {
+    this.passkeyTestResult.set(null);
+    const expectedHash = (this.tokenDetails()?.info as Record<string, string> | undefined)?.["credential_id_hash"];
+    let usedCredentialId: string | null = null;
+    this.validateService
+      .authenticatePasskey({
+        isTest: true,
+        onCredentialId: (id) => (usedCredentialId = id)
+      })
+      .subscribe({
+        next: async (checkResponse) => {
+          if (!checkResponse.result?.value) {
+            this.passkeyTestResult.set({ kind: "warning", message: $localize`No user found.` });
+            return;
+          }
+          const username = checkResponse.detail?.username ?? $localize`Unknown User`;
+          const authenticatedSerial = checkResponse.detail?.serial;
+          const isAdmin = this.authService.role() === "admin";
+          let mismatch = false;
+          if (isAdmin && expectedHash && usedCredentialId) {
+            const actualHash = await this.sha256HexFromBase64Url(usedCredentialId);
+            mismatch = actualHash.toLowerCase() !== expectedHash.toLowerCase();
+          }
+          if (mismatch) {
+            const matchedSerial = authenticatedSerial ?? "";
+            this.passkeyTestResult.set({
+              kind: "warning",
+              message: $localize`You authenticated with a different passkey than the one shown on this page.`,
+              mismatch: { serial: matchedSerial, username }
+            });
+            if (matchedSerial) {
+              this.tokenService.getTokenDetails(matchedSerial).subscribe({
+                next: (response) => {
+                  const realm = response?.result?.value?.tokens?.[0]?.user_realm;
+                  const current = this.passkeyTestResult();
+                  if (current?.mismatch && current.mismatch.serial === matchedSerial && realm) {
+                    this.passkeyTestResult.set({
+                      ...current,
+                      mismatch: { ...current.mismatch, realm }
+                    });
+                  }
+                }
+              });
+            }
+          } else {
+            this.passkeyTestResult.set({
+              kind: "success",
+              message: $localize`Authentication successful. You would have been logged in as: ` + username
+            });
+          }
+        }
+      });
+  }
 
-    this.containerService.removeToken(this.tokenSerial(), containerSerial).subscribe({
+  private async sha256HexFromBase64Url(base64Url: string): Promise<string> {
+    const bytes = this.base64Service.webAuthnBase64DecToArr(base64Url);
+    const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+    const digest = await crypto.subtle.digest("SHA-256", buffer);
+    return Array.from(new Uint8Array(digest))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+  }
+
+  attachSshToMachineDialog(): void {
+    const data: SshMachineAssignDialogData = {
+      tokenSerial: this.tokenSerial(),
+      tokenType: this.tokenType(),
+      tokenDetails: this.tokenDetails()
+    };
+    this.dialogService
+      .openDialog({ component: TokenSshMachineAssignDialogComponent, data: data })
+      .afterClosed()
+      .subscribe((request) => {
+        if (!request) return;
+        lastValueFrom(request).then(() => {
+          this.machineService.tokenApplicationResource.reload();
+        });
+      });
+  }
+
+  attachHotpToMachineDialog(): void {
+    const data: HotpMachineAssignDialogData = { tokenSerial: this.tokenSerial() };
+    this.dialogService
+      .openDialog({ component: TokenHotpMachineAssignDialogComponent, data: data })
+      .afterClosed()
+      .subscribe((request) => {
+        if (request) {
+          lastValueFrom(request).then(() => {
+            this.machineService.tokenApplicationResource.reload();
+          });
+        }
+      });
+  }
+
+  attachPasskeyToMachine(): void {
+    this.machineService
+      .postAssignMachineToToken({
+        serial: this.tokenSerial(),
+        application: "offline",
+        machineid: 0,
+        resolver: ""
+      })
+      .subscribe({
+        next: () => {
+          this.machineService.tokenApplicationResource.reload();
+        },
+        error: (error) => {
+          console.error("Error during assignment request:", error);
+        }
+      });
+  }
+
+  removePasskeyFromMachine(): void {
+    const mtid = this.machineService.tokenApplications()?.[0]?.id;
+    this.machineService
+      .deleteAssignMachineToToken({
+        serial: this.tokenSerial(),
+        application: "offline",
+        mtid: `${mtid}`
+      })
+      .subscribe({
+        next: () => {
+          this.machineService.tokenApplicationResource.reload();
+        },
+        error: (error) => {
+          console.error("Error during unassignment request:", error);
+        }
+      });
+  }
+
+  openLostTokenDialog(): void {
+    this.dialogService.openDialog({
+      component: LostTokenComponent,
+      data: { isLost: this.isLost, tokenSerial: this.tokenSerial }
+    });
+  }
+
+  rolloverToken(): void {
+    const token = this.tokenDetails();
+    if (!token) return;
+    this.dialogService.openDialog({
+      component: TokenRolloverComponent,
+      data: { token: token }
+    });
+  }
+
+  cancelTokenEdit(element: EditableElement) {
+    this.resetEdit();
+    element.isEditing.set(!element.isEditing());
+  }
+
+  saveTokenEdit(element: EditableElement) {
+    this.saveTokenDetail(element.keyMap.key, element.value);
+    element.isEditing.set(!element.isEditing());
+  }
+
+  toggleTokenEdit(element: EditableElement): void {
+    element.isEditing.set(!element.isEditing());
+  }
+
+  saveTokenDetail(key: string, value: unknown): void {
+    this.tokenService.saveTokenDetail(this.tokenSerial(), key, value).subscribe({
       next: () => {
-        this.containerService.selectedContainerSerial.set("");
         this.tokenDetailResource.reload();
       }
     });
@@ -406,10 +589,6 @@ export class TokenDetailsComponent implements OnInit, OnDestroy {
   isEditableElement(key: string) {
     const rightEntry = tokenDetailsRightsMap.find((entry) => entry.key === key);
     return !!(rightEntry && this.authService.actionAllowed(rightEntry.right as PolicyAction));
-  }
-
-  isNumberElement(key: string) {
-    return key === "maxfail" || key === "count_window" || key === "sync_window";
   }
 
   openSshMachineAssignDialog() {
@@ -426,38 +605,7 @@ export class TokenDetailsComponent implements OnInit, OnDestroy {
     this.auditService.auditFilter.set(new FilterValue({ value: `serial: ${this.tokenSerial()}` }));
   }
 
-  private resetEdit(type: string): void {
-    switch (type) {
-      case "container_serial":
-        this.containerService.selectedContainerSerial.set("");
-        break;
-      case "tokengroup":
-        this.selectedTokengroup.set(this.tokenDetailData().find((detail) => detail.keyMap.key === "tokengroup")?.value);
-        break;
-      case "realms":
-        this.realmService.selectedRealms.set(
-          this.tokenDetailData().find((detail) => detail.keyMap.key === "realms")?.value
-        );
-        break;
-      default:
-        this.tokenDetailResource.reload();
-        break;
-    }
-  }
-
-  private saveRealms() {
-    this.tokenService.setTokenRealm(this.tokenSerial(), this.realmService.selectedRealms()).subscribe({
-      next: () => {
-        this.tokenDetailResource.reload();
-      }
-    });
-  }
-
-  private saveTokengroup(value: string[]) {
-    this.tokenService.setTokengroup(this.tokenSerial(), value).subscribe({
-      next: () => {
-        this.tokenDetailResource.reload();
-      }
-    });
+  private resetEdit(): void {
+    this.tokenDetailResource.reload();
   }
 }

@@ -22,7 +22,7 @@ import { SubscriptionExpiryDialogComponent } from "@components/shared/subscripti
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { Subscription, SubscriptionService } from "./subscription.service";
 
-@Injectable({ providedIn: "root" })
+@Injectable()
 export class SubscriptionExpiryService {
   private readonly dialog = inject(MatDialog);
   private readonly auth: AuthServiceInterface = inject(AuthService);

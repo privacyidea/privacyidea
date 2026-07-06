@@ -27,13 +27,13 @@ import {
   linkedSignal,
   OnDestroy,
   OnInit,
+  Renderer2,
   Signal,
   signal,
   ViewChild,
   WritableSignal
 } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
-import { FormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger, MatOption } from "@angular/material/autocomplete";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
@@ -45,22 +45,28 @@ import { MatTooltip } from "@angular/material/tooltip";
 import { Router, RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import {
+  SaveAndExitDialogComponent,
+  SaveAndExitDialogResult
+} from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
-import { EditUserDialogComponent } from "@components/user/edit-user-dialog/edit-user-dialog.component";
+import { UserDetailsEditComponent } from "@components/user/user-details-edit/user-details-edit.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
-import { UserService, UserServiceInterface } from "@services/user/user.service";
+import { EditUserData, UserService, UserServiceInterface } from "@services/user/user.service";
 import { filter, firstValueFrom, map } from "rxjs";
-import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { UserDetailsContainerTableComponent } from "./user-details-container-table/user-details-container-table.component";
 import { UserDetailsPinDialogComponent } from "./user-details-pin-dialog/user-details-pin-dialog.component";
 import { UserDetailsTokenTableComponent } from "./user-details-token-table/user-details-token-table.component";
+import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 
 @Component({
   selector: "app-user-details",
@@ -80,11 +86,12 @@ import { UserDetailsTokenTableComponent } from "./user-details-token-table/user-
     NgClass,
     MatPaginator,
     UserDetailsContainerTableComponent,
-    FormsModule,
     MatSelectModule,
     MatTooltip,
     RouterLink,
-    CopyButtonComponent
+    CopyableComponent,
+    UserDetailsEditComponent,
+    StickyHeaderDirective
   ],
   templateUrl: "./user-details.component.html",
   styleUrl: "./user-details.component.scss"
@@ -97,24 +104,9 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
-  private router = inject(Router);
-  private breakpointObserver = inject(BreakpointObserver);
   private readonly pendingChangesService = inject(PendingChangesService);
-
-  private isSmall = toSignal(this.breakpointObserver.observe("(max-width: 1000px)").pipe(map((r) => r.matches)));
-  private isMedium = toSignal(this.breakpointObserver.observe("(max-width: 1240px)").pipe(map((r) => r.matches)));
-
-  colCount = computed(() => {
-    if (this.isSmall()) return 1;
-    if (this.isMedium()) return 2;
-    return 3;
-  });
-
-  customColCount = computed(() => {
-    if (this.isSmall()) return 1;
-    return 2;
-  });
-
+  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  private readonly renderer = inject(Renderer2);
   readonly labels: Record<string, string> = {
     username: $localize`Username`,
     givenname: $localize`Given name`,
@@ -127,17 +119,29 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
     resolver: $localize`Resolver`
   };
   readonly excludedKeys = new Set(["editable"]);
+  protected readonly Array = Array;
+  private router = inject(Router);
+  private breakpointObserver = inject(BreakpointObserver);
+  private isSmall = toSignal(this.breakpointObserver.observe("(max-width: 1000px)").pipe(map((r) => r.matches)));
+  private isMedium = toSignal(this.breakpointObserver.observe("(max-width: 1240px)").pipe(map((r) => r.matches)));
+  colCount = computed(() => {
+    if (this.isSmall()) return 1;
+    if (this.isMedium()) return 2;
+    return 3;
+  });
+  customColCount = computed(() => {
+    if (this.isSmall()) return 1;
+    return 2;
+  });
   customAttributeKeys: Signal<Set<string>> = computed(() => {
-    const attributeKeys = Object.entries(this.userService.userAttributesList()).map(([_, attribute]) => attribute.key);
+    const attributeKeys = this.userService.userAttributesList().map((attribute) => attribute.key);
     return new Set(attributeKeys);
   });
-
   userData = this.userService.user;
   tokenResource = this.tokenService.tokenResource;
   pageIndex = this.tokenService.pageIndex;
   pageSize = this.tokenService.pageSize;
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
-
   total: WritableSignal<number> = linkedSignal({
     source: this.tokenService.tokenResourceValue,
     computation: (tokenResourceValue, previous) => {
@@ -147,13 +151,10 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
       return previous?.value ?? 0;
     }
   });
-
   @ViewChild("filterHTMLInputElement")
   filterHTMLInputElement!: ElementRef<HTMLInputElement>;
-
   @ViewChild("tokenAutoTrigger", { read: MatAutocompleteTrigger })
   tokenAutoTrigger!: MatAutocompleteTrigger;
-
   tokenDataSource: WritableSignal<MatTableDataSource<TokenDetails>> = linkedSignal({
     source: this.tokenService.tokenResourceValue,
     computation: (tokenResourceValue, previous) => {
@@ -163,11 +164,11 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
       return previous?.value ?? new MatTableDataSource();
     }
   });
-
   attributeSetMap = this.userService.attributeSetMap;
   deletableAttributes = this.userService.deletableAttributes;
   keyOptions = this.userService.keyOptions;
   hasWildcardKey = this.userService.hasWildcardKey;
+  expandedKeys = signal<Set<string>>(new Set<string>());
   addKeyInput = signal<string>("");
   addValueInput = signal<string>("");
   selectedKey = signal<string | null>(null);
@@ -191,19 +192,6 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
     const value = this.isValueInput() ? this.addValueInput().trim() : (this.selectedValue() ?? "").trim();
     return key.length > 0 && value.length > 0;
   });
-
-  constructor() {
-    effect(() => {
-      const hasWildcard = this.hasWildcardKey();
-      const hasFixedKeys = this.keyOptions().length > 0;
-      if (hasWildcard && !hasFixedKeys) {
-        this.keyMode.set("input");
-      } else {
-        this.keyMode.set("select");
-      }
-    });
-  }
-
   detailsEntries = computed(() =>
     Object.entries(this.userData() ?? {})
       .filter(([key]) => !this.excludedKeys.has(key) && !this.customAttributeKeys().has(key))
@@ -227,27 +215,63 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
     const perCol = Math.ceil(attributes.length / colCount);
     return Array.from({ length: colCount }, (_, i) => attributes.slice(i * perCol, (i + 1) * perCol));
   });
+  editMode = signal(false);
+  editedUserData: WritableSignal<EditUserData> = signal({ username: "" });
+  editIsDirty = computed(() => {
+    if (!this.editMode()) return false;
+    const original: Record<string, unknown> = this.userData() ?? {};
+    return Object.entries(this.editedUserData()).some(([key, value]) => (value ?? "") !== (original[key] ?? ""));
+  });
+
+  constructor() {
+    effect(() => {
+      const hasWildcard = this.hasWildcardKey();
+      const hasFixedKeys = this.keyOptions().length > 0;
+      if (hasWildcard && !hasFixedKeys) {
+        this.keyMode.set("input");
+      } else {
+        this.keyMode.set("select");
+      }
+    });
+  }
 
   ngOnInit(): void {
     this.pendingChangesService.registerHasChanges(
       () =>
+        this.editIsDirty() ||
         !!this.addKeyInput() ||
         !!this.addValueInput() ||
         !!this.selectedKey() ||
-        !!this.selectedValue(),
+        !!this.selectedValue()
     );
-    this.pendingChangesService.registerValidChanges(
-      () => {
-        const key = this.keyMode() === "input" ? this.addKeyInput().trim() : (this.selectedKey() ?? "").trim();
-        const value = this.isValueInput() ? this.addValueInput().trim() : (this.selectedValue() ?? "").trim();
-        return !!key && !!value;
-      },
-    );
-    this.pendingChangesService.registerSave(() => this.addCustomAttribute());
+    this.pendingChangesService.registerValidChanges(() => {
+      if (this.editMode()) return true;
+      const key = this.keyMode() === "input" ? this.addKeyInput().trim() : (this.selectedKey() ?? "").trim();
+      const value = this.isValueInput() ? this.addValueInput().trim() : (this.selectedValue() ?? "").trim();
+      return !!key && !!value;
+    });
+    this.pendingChangesService.registerSave(() => {
+      if (this.editMode()) return this.saveEditAsync();
+      return this.addCustomAttribute();
+    });
   }
 
   ngOnDestroy(): void {
     this.pendingChangesService.clearAllRegistrations();
+  }
+
+  isExpanded(key: string): boolean {
+    return this.expandedKeys().has(key);
+  }
+
+  toggleExpanded(key: string): void {
+    const next = new Set(this.expandedKeys());
+    if (next.has(key)) {
+      next.delete(key);
+    } else {
+      next.add(key);
+    }
+    this.expandedKeys.set(next);
   }
 
   switchToCustomKey() {
@@ -298,7 +322,7 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
         this.tokenService
           .assignUser({
             tokenSerial: option["serial"],
-            username: this.userService.detailsUsername(),
+            username: this.userService.detailsUser().username,
             realm: this.userService.selectedUserRealm(),
             pin: pin
           })
@@ -312,7 +336,7 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
   }
 
   onPageEvent(event: PageEvent) {
-    this.tokenService.eventPageSize = event.pageSize;
+    this.tokenService.eventPageSize.set(event.pageSize);
     this.pageIndex.set(event.pageIndex);
     setTimeout(() => {
       this.filterHTMLInputElement.nativeElement.focus();
@@ -321,14 +345,43 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
   }
 
   showUserAuditLog() {
-    this.auditService.auditFilter.set(new FilterValue({ value: `user: ${this.userService.detailsUsername()}` }));
+    this.auditService.auditFilter.set(new FilterValue({ value: `user: ${this.userService.detailsUser().username}` }));
   }
 
   editUser() {
-    this.dialogService.openDialog({
-      component: EditUserDialogComponent,
-      data: this.userData()
-    });
+    this.editedUserData.set({ ...this.userData() });
+    this.editMode.set(true);
+  }
+
+  cancelEdit() {
+    if (!this.editIsDirty()) {
+      this.editMode.set(false);
+      return;
+    }
+    this.dialogService
+      .openDialog({
+        component: SaveAndExitDialogComponent,
+        data: {
+          allowSaveExit: true,
+          saveExitDisabled: false
+        }
+      })
+      .afterClosed()
+      .subscribe((result: SaveAndExitDialogResult | undefined) => {
+        if (result === "discard") {
+          this.editMode.set(false);
+        } else if (result === "save-exit") {
+          this.saveEdit();
+        }
+      });
+  }
+
+  onUpdateEditedUser(newData: EditUserData) {
+    this.editedUserData.set(newData);
+  }
+
+  saveEdit() {
+    void this.saveEditAsync();
   }
 
   deleteUser() {
@@ -336,10 +389,10 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: "Delete User",
+          title: $localize`Delete User`,
           items: [this.userData().username],
           itemType: "user",
-          confirmAction: { label: "Delete", value: true, type: "destruct" }
+          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -359,5 +412,20 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
       });
   }
 
-  protected readonly Array = Array;
+  private async saveEditAsync(): Promise<boolean> {
+    const data = { ...this.editedUserData(), username: this.userData().username };
+    try {
+      const success = await firstValueFrom(this.userService.editUser(this.userData().resolver, data));
+      if (success) {
+        this.userService.userResource.reload();
+        this.editMode.set(false);
+      }
+      return !!success;
+    } catch (error) {
+      console.error("Failed to save user edits", error);
+      const message = error instanceof Error ? error.message : String(error);
+      this.notificationService.error("Failed to save user edits. " + message);
+      return false;
+    }
+  }
 }

@@ -1,0 +1,153 @@
+/**
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+@use "buttons";
+
+:host {
+  display: block;
+  flex: 1;
+  min-width: 0;
+}
+
+.dashboard-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--global-gap);
+  box-sizing: border-box;
+  height: 100%;
+  width: 100%;
+  border-radius: var(--border-radius);
+  box-shadow: inset 0px 3px 5px -1px  var(--dashboard-shadow-color),
+  inset 0px 5px 8px 0px  var(--dashboard-shadow-color),
+  inset 0px 1px 14px 0px  var(--dashboard-shadow-color);
+}
+
+.dashboard-scroll-wrapper {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-field-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  padding: var(--global-padding);
+}
+
+.dashboard-bottom-fade {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 10;
+  height: 32px;
+  pointer-events: none;
+  background: linear-gradient(to top, color-mix(in srgb, var(--mat-sys-shadow) 22%, transparent), transparent);
+  opacity: 1;
+  transition: opacity 150ms ease;
+
+  &--hidden {
+    opacity: 0;
+  }
+}
+
+.dashboard-field {
+  position: relative;
+  width: 100%;
+  min-height: 100%;
+
+  &.editing {
+    background-image: radial-gradient(circle, var(--mat-sys-outline-variant) 1.5px, transparent 1.6px);
+    background-repeat: repeat;
+  }
+}
+
+.drop-target {
+  position: absolute;
+  box-sizing: border-box;
+  border: 2px dashed var(--mat-sys-primary);
+  border-radius: var(--border-radius);
+  background: color-mix(in srgb, var(--mat-sys-primary) 8%, transparent);
+  pointer-events: none;
+
+  &.invalid {
+    border-color: var(--mat-sys-error);
+    background: color-mix(in srgb, var(--mat-sys-error) 8%, transparent);
+  }
+}
+
+.widget-cell {
+  position: absolute;
+  box-sizing: border-box;
+
+  &.cdk-drag-dragging {
+    z-index: 2;
+  }
+
+  &.resizing-invalid {
+    z-index: 5;
+    outline: 2px solid var(--mat-sys-error);
+    outline-offset: -2px;
+    border-radius: var(--border-radius);
+  }
+}
+
+.resize-handle {
+  position: absolute;
+  z-index: 3;
+  touch-action: none;
+}
+
+.handle-e {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: ew-resize;
+}
+
+.handle-s {
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 8px;
+  cursor: ns-resize;
+}
+
+.handle-se {
+  right: 0;
+  bottom: 0;
+  width: 16px;
+  height: 16px;
+  z-index: 4;
+  cursor: nwse-resize;
+  --texture-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M19.51 3.08L3.08 19.51c.09.34.27.65.51.9.25.24.56.42.9.51L20.93 4.49c-.19-.69-.73-1.23-1.42-1.41zM11.88 3L3 11.88v2.83L14.71 3h-2.83zM5 3c-1.1 0-2 .9-2 2v2l4-4H5zm14 18c.55 0 1.05-.22 1.41-.59.37-.36.59-.86.59-1.41v-2l-4 4h2zm-9.71 0h2.83L21 12.12V9.29L9.29 21z'/%3E%3C/svg%3E");
+  background-color: var(--mat-sys-outline);
+  -webkit-mask-image: var(--texture-svg);
+  mask-image: var(--texture-svg);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}

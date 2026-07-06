@@ -52,8 +52,8 @@ describe("ResyncTokenActionComponent", () => {
   });
 
   it("should resync OTP token", () => {
-    component.fristOTPValue = "otp1";
-    component.secondOTPValue = "otp2";
+    component.firstOTPValue.set("otp1");
+    component.secondOTPValue.set("otp2");
 
     const resyncSpy = jest.spyOn(tokenService, "resyncOTPToken");
     component.resyncOTPToken();
@@ -62,8 +62,8 @@ describe("ResyncTokenActionComponent", () => {
   });
 
   it("should resync OTP token on button click", () => {
-    component.fristOTPValue = "otp1";
-    component.secondOTPValue = "otp2";
+    component.firstOTPValue.set("otp1");
+    component.secondOTPValue.set("otp2");
 
     const resyncSpy = jest.spyOn(tokenService, "resyncOTPToken");
 

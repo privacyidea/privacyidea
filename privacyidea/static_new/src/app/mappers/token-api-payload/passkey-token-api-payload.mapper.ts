@@ -38,7 +38,7 @@ export interface PasskeyFinalizeData extends PasskeyEnrollmentData {
   authenticatorAttachment: string | null;
   transaction_id: string;
   serial: string;
-  credProps?: any;
+  credProps?: CredentialPropertiesOutput;
 }
 
 export interface PasskeyFinalizationPayload extends TokenEnrollmentPayload {
@@ -49,14 +49,13 @@ export interface PasskeyFinalizationPayload extends TokenEnrollmentPayload {
   authenticatorAttachment: string | null;
   transaction_id: string;
   serial: string;
-  credProps?: any;
+  credProps?: CredentialPropertiesOutput;
 }
 
 @Injectable({ providedIn: "root" })
 export class PasskeyApiPayloadMapper
   extends BaseApiPayloadMapper
-  implements TokenApiPayloadMapper<PasskeyEnrollmentData>
-{
+  implements TokenApiPayloadMapper<PasskeyEnrollmentData> {
   override toApiPayload(data: PasskeyEnrollmentData): TokenEnrollmentPayload {
     const payload: TokenEnrollmentPayload = super.toApiPayload(data);
 
@@ -67,7 +66,7 @@ export class PasskeyApiPayloadMapper
     return payload;
   }
 
-  override fromApiPayload(payload: any): PasskeyEnrollmentData {
+  override fromApiPayload(payload: TokenEnrollmentPayload): PasskeyEnrollmentData {
     // Placeholder: Implement transformation from API payload. We will replace this later.
     return payload as PasskeyEnrollmentData;
   }
@@ -99,12 +98,12 @@ export class PasskeyFinalizeApiPayloadMapper implements TokenApiPayloadMapper<Pa
     return payload;
   }
 
-  fromApiPayload(payload: any): PasskeyFinalizeData {
+  fromApiPayload(payload: PasskeyFinalizationPayload): PasskeyFinalizeData {
     // Placeholder: Implement transformation from API payload. We will replace this later.
     return payload as PasskeyFinalizeData;
   }
 
-  fromTokenDetailsToEnrollmentData(details: TokenDetails): PasskeyFinalizeData {
+  fromTokenDetailsToEnrollmentData(): PasskeyFinalizeData {
     return {} as PasskeyFinalizeData;
   }
 }
