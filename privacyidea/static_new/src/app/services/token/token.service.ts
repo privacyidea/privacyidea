@@ -35,6 +35,7 @@ import { ContentService, ContentServiceInterface, DetailsUser } from "@services/
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
+import { parseBooleanValue } from "@utils/parse-boolean-value";
 import { StringUtils } from "@utils/string.utils";
 import { tokenTypes } from "@utils/token.utils";
 import {
@@ -385,7 +386,12 @@ export class TokenService implements TokenServiceInterface {
       .filter(([key]) => allowed.includes(key))
       .map(([key, value]) => [key, (value ?? "").toString().trim()] as const)
       .filter(([key, v]) => (key === "container_serial" ? true : StringUtils.validFilterValue(v)))
-      .map(([key, v]) => [key, plainKeys.has(key) ? v : `*${v}*`] as const);
+      .map(([key, v]) => {
+        if (key === "active" || key === "assigned") {
+          return [key, parseBooleanValue(v) ? "True" : "False"] as const;
+        }
+        return [key, plainKeys.has(key) ? v : `*${v}*`] as const;
+      });
     return Object.fromEntries(entries) as Record<string, string>;
   });
 
