@@ -149,6 +149,48 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
                                   "resolver": self.resolvername2})
         self.assertTrue(len(userlist) == 0, userlist)
 
+    def test_05b_get_user_list_comma_separated_realms(self):
+        # Set up first realm
+        rid = save_resolver({"resolver": self.resolvername1,
+                             "type": "passwdresolver",
+                             "fileName": PWFILE})
+        self.assertTrue(rid > 0, rid)
+        (added, failed) = set_realm(self.realm1,
+                                    [{'name': self.resolvername1}])
+        self.assertTrue(len(failed) == 0)
+        self.assertTrue(len(added) == 1)
+
+        # Set up a second realm with a different resolver
+        rid = save_resolver({"resolver": self.resolvername3,
+                             "type": "passwdresolver",
+                             "fileName": PWFILE2})
+        self.assertTrue(rid > 0, rid)
+        (added, failed) = set_realm(self.realm2,
+                                    [{'name': self.resolvername3}])
+        self.assertTrue(len(failed) == 0)
+        self.assertTrue(len(added) == 1)
+
+        # Comma-separated realms should return users from both realms
+        userlist = get_user_list({"realm": f"{self.realm1},{self.realm2}"})
+        realms_in_result = set(u.get("realm") for u in userlist)
+        self.assertIn(self.realm1, realms_in_result)
+        self.assertIn(self.realm2, realms_in_result)
+
+        # Verify it returns more users than a single realm
+        userlist_realm1 = get_user_list({"realm": self.realm1})
+        userlist_realm2 = get_user_list({"realm": self.realm2})
+        self.assertEqual(len(userlist), len(userlist_realm1) + len(userlist_realm2))
+
+        # Comma-separated with spaces should also work
+        userlist_spaces = get_user_list({"realm": f" {self.realm1} , {self.realm2} "})
+        self.assertEqual(len(userlist_spaces), len(userlist))
+
+        # List form should also work
+        userlist_list = get_user_list({"realm": [self.realm1, self.realm2]})
+        self.assertEqual(len(userlist_list), len(userlist))
+
+        delete_realm(self.realm2)
+
     def test_06_get_user_phone(self):
         phone = User(login="cornelius", realm=self.realm1).get_user_phone()
         self.assertTrue(phone == "+49 561 3166797", phone)
