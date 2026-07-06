@@ -17,46 +17,55 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
-  appScrollToTop aria-label="User Details" class="details-container" i18n-aria-label>
+  appScrollToTop
+  aria-label="User Details"
+  class="details-container"
+  i18n-aria-label>
   <div class="details-header">
     <h3 i18n>Your Details</h3>
   </div>
 
-  <div class="user-info-panel">
-    <dl class="info-grid">
+  <app-details-card
+    class="details-card--user-info"
+    title="Attributes"
+    i18n-title>
+    <div class="details-field-list">
       @for (item of detailsEntries(); track item.key) {
-        <dt class="info-key">{{ item.label }}</dt>
-        <dd class="info-value">
-          @if (Array.isArray(item.value) && item.value.length > 1) {
-            <ul class="value-list">
-              @if (isExpanded(item.key)) {
-                @for (val of item.value; track val) {
-                  <li>{{ val }}</li>
+        @if (Array.isArray(item.value) && item.value.length > 1) {
+          <app-detail-field-row [label]="item.label">
+            <ng-container fieldValue>
+              <ul class="value-list">
+                @if (isExpanded(item.key)) {
+                  @for (val of item.value; track val) {
+                    <li>{{ val }}</li>
+                  }
+                } @else {
+                  <li>{{ item.value[0] }}</li>
                 }
-              } @else {
-                <li>{{ item.value[0] }}</li>
-              }
-            </ul>
-            <button
-              (click)="toggleExpanded(item.key)"
-              [attr.aria-expanded]="isExpanded(item.key)"
-              class="value-toggle"
-              type="button">
-              @if (isExpanded(item.key)) {
-                <mat-icon>expand_less</mat-icon>
-                <span i18n>Show less</span>
-              } @else {
-                <mat-icon>expand_more</mat-icon>
-                <span i18n>Show {{ item.value.length - 1 }} more</span>
-              }
-            </button>
-          } @else {
-            <span>{{ item.value }}</span>
-          }
-        </dd>
+              </ul>
+              <button
+                (click)="toggleExpanded(item.key)"
+                [attr.aria-expanded]="isExpanded(item.key)"
+                class="value-toggle"
+                type="button">
+                @if (isExpanded(item.key)) {
+                  <mat-icon>expand_less</mat-icon>
+                  <span i18n>Show less</span>
+                } @else {
+                  <mat-icon>expand_more</mat-icon>
+                  <span i18n>Show {{ item.value.length - 1 }} more</span>
+                }
+              </button>
+            </ng-container>
+          </app-detail-field-row>
+        } @else {
+          <app-detail-field
+            [label]="item.label"
+            [displayText]="str(item.value)" />
+        }
       }
-    </dl>
-  </div>
+    </div>
+  </app-details-card>
 
   <div class="flex gap-8 margin-top-16">
     @if (authService.tokenEnrollmentAllowed()) {

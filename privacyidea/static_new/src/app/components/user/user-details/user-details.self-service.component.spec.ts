@@ -177,8 +177,8 @@ describe("UserDetailsSelfServiceComponent", () => {
 
     const host: HTMLElement = fixture.nativeElement;
     expect(host.querySelector(".details-header h3")?.textContent).toContain("Your Details");
-    const labels = host.querySelectorAll(".info-key");
-    const values = host.querySelectorAll(".info-value");
+    const labels = host.querySelectorAll(".detail-field-label");
+    const values = host.querySelectorAll(".detail-field-value");
     expect(labels.length).toBe(component.detailsEntries().length);
     expect(values.length).toBe(component.detailsEntries().length);
     expect(host.textContent).toContain("alice");
@@ -193,7 +193,7 @@ describe("UserDetailsSelfServiceComponent", () => {
     fixture.detectChanges();
 
     const host: HTMLElement = fixture.nativeElement;
-    const ul = host.querySelector(".info-value ul");
+    const ul = host.querySelector(".detail-field-value ul");
     expect(ul).toBeTruthy();
     expect(ul!.querySelectorAll("li").length).toBe(1);
 
@@ -204,7 +204,7 @@ describe("UserDetailsSelfServiceComponent", () => {
     toggle.click();
     fixture.detectChanges();
 
-    expect(host.querySelector(".info-value ul")!.querySelectorAll("li").length).toBe(2);
+    expect(host.querySelector(".detail-field-value ul")!.querySelectorAll("li").length).toBe(2);
     expect(host.querySelector(".value-toggle")!.getAttribute("aria-expanded")).toBe("true");
   });
 });

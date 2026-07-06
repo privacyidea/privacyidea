@@ -3,9 +3,9 @@
 
 .details-container {
   @include styles.main-component-style;
-  // Shared detail/edit-page cap. See --detail-max-height in styles.scss.
   max-height: var(--table-max-height);
   display: grid;
+  gap: var(--global-gap);
 }
 
 .details-panels-row {
@@ -15,55 +15,9 @@
   align-items: flex-start;
 }
 
-.user-info-panel {
-  display: block;
+.details-card--user-info {
   width: 585px;
   max-width: 100%;
-  box-sizing: border-box;
-  padding: 12px 20px 20px;
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: var(--border-radius);
-  background: var(--mat-sys-surface-container-low);
-}
-
-.info-grid {
-  display: grid;
-  grid-template-columns: minmax(140px, max-content) 1fr;
-  column-gap: var(--global-gap);
-  row-gap: var(--quarter-global-gap);
-  margin: 0;
-  padding: 0;
-  text-align: left;
-  width: 100%;
-
-  .info-key {
-    font-weight: 500;
-    color: var(--mat-sys-on-surface-variant);
-    align-self: center;
-    text-align: left;
-  }
-
-  .info-value {
-    margin: 0;
-    overflow-wrap: anywhere;
-    align-self: center;
-    text-align: left;
-    min-width: 0;
-  }
-}
-
-.panel-title {
-  margin: 0 0 var(--half-global-gap);
-  font-weight: 600;
-}
-
-.custom-attr-grid {
-  grid-template-columns: minmax(120px, max-content) 1fr auto;
-  margin-top: var(--half-global-gap);
-
-  .custom-attr-delete {
-    align-self: center;
-  }
 }
 
 .value-list {

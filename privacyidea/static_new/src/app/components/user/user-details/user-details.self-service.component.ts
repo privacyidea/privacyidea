@@ -21,6 +21,10 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { DetailFieldComponent } from "@components/shared/details-shared/detail-field/detail-field.component";
+import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
+import { DetailFieldRowComponent } from "@components/shared/details-shared/field-editing/detail-field-row/detail-field-row.component";
+import { DetailsEditRegistry } from "@components/shared/details-shared/field-editing/details-edit-registry.service";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
@@ -28,7 +32,15 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
 @Component({
   selector: "app-user-details-self-service",
   standalone: true,
-  imports: [ScrollToTopDirective, MatIcon, MatButtonModule],
+  imports: [
+    ScrollToTopDirective,
+    MatIcon,
+    MatButtonModule,
+    DetailsCardComponent,
+    DetailFieldComponent,
+    DetailFieldRowComponent
+  ],
+  providers: [DetailsEditRegistry],
   templateUrl: "./user-details.self-service.component.html",
   styleUrl: "./user-details.component.scss"
 })
@@ -122,5 +134,9 @@ export class UserDetailsSelfServiceComponent {
     if (value === null || value === undefined) return "-";
     if (typeof value === "string" && value.trim() === "") return "-";
     return value;
+  }
+
+  protected str(value: unknown): string {
+    return value === null || value === undefined ? "" : String(value);
   }
 }

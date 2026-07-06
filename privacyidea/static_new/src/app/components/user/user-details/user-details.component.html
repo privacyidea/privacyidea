@@ -86,59 +86,63 @@
 
   <div class="details-panels-row">
     @if (editMode()) {
-      <app-user-details-edit
-        [resolver]="userData().resolver"
-        [initialUserData]="userData()"
-        (updateData)="onUpdateEditedUser($event)"></app-user-details-edit>
+      <app-details-card
+        class="details-card--user-info"
+        title="Attributes"
+        i18n-title>
+        <app-user-details-edit
+          [resolver]="userData().resolver"
+          [initialUserData]="userData()"
+          (updateData)="onUpdateEditedUser($event)"></app-user-details-edit>
+      </app-details-card>
     } @else {
-      <div class="user-info-panel">
-        <h4
-          class="panel-title"
-          i18n>
-          Attributes:
-        </h4>
-        <dl class="info-grid">
+      <app-details-card
+        class="details-card--user-info"
+        title="Attributes"
+        i18n-title>
+        <div class="details-field-list">
           @for (item of detailsEntries(); track item.key) {
-            <dt class="info-key">{{ item.label }}</dt>
-            <dd class="info-value">
-              @if (Array.isArray(item.value) && item.value.length > 1) {
-                <ul class="value-list">
-                  @if (isExpanded(item.key)) {
-                    @for (val of item.value; track val) {
-                      <li>{{ val }}</li>
+            @if (Array.isArray(item.value) && item.value.length > 1) {
+              <app-detail-field-row [label]="item.label">
+                <ng-container fieldValue>
+                  <ul class="value-list">
+                    @if (isExpanded(item.key)) {
+                      @for (val of item.value; track val) {
+                        <li>{{ val }}</li>
+                      }
+                    } @else {
+                      <li>{{ item.value[0] }}</li>
                     }
-                  } @else {
-                    <li>{{ item.value[0] }}</li>
-                  }
-                </ul>
-                <button
-                  (click)="toggleExpanded(item.key)"
-                  [attr.aria-expanded]="isExpanded(item.key)"
-                  class="value-toggle"
-                  type="button">
-                  @if (isExpanded(item.key)) {
-                    <mat-icon>expand_less</mat-icon>
-                    <span i18n>Show less</span>
-                  } @else {
-                    <mat-icon>expand_more</mat-icon>
-                    <span i18n>Show {{ item.value.length - 1 }} more</span>
-                  }
-                </button>
-              } @else {
-                <span>{{ item.value }}</span>
-              }
-            </dd>
+                  </ul>
+                  <button
+                    (click)="toggleExpanded(item.key)"
+                    [attr.aria-expanded]="isExpanded(item.key)"
+                    class="value-toggle"
+                    type="button">
+                    @if (isExpanded(item.key)) {
+                      <mat-icon>expand_less</mat-icon>
+                      <span i18n>Show less</span>
+                    } @else {
+                      <mat-icon>expand_more</mat-icon>
+                      <span i18n>Show {{ item.value.length - 1 }} more</span>
+                    }
+                  </button>
+                </ng-container>
+              </app-detail-field-row>
+            } @else {
+              <app-detail-field
+                [label]="item.label"
+                [displayText]="str(item.value)" />
+            }
           }
-        </dl>
-      </div>
+        </div>
+      </app-details-card>
     }
 
-    <div class="user-info-panel custom-attr-panel">
-      <h4
-        class="panel-title"
-        i18n>
-        Custom Attributes:
-      </h4>
+    <app-details-card
+      class="details-card--user-info"
+      title="Custom Attributes"
+      i18n-title>
       <div class="add-attr-row">
         <mat-form-field class="input-width-l">
           <mat-label i18n>Attribute Key</mat-label>
@@ -212,92 +216,96 @@
       </div>
 
       @if (userService.userAttributesList().length > 0) {
-        <dl class="info-grid custom-attr-grid">
+        <div class="details-field-list margin-top-8">
           @for (attr of userService.userAttributesList(); track attr.key) {
-            <dt class="info-key">{{ attr.key }}:</dt>
-            <dd class="info-value">{{ attr.value || "-" }}</dd>
-            @if (deletableAttributes().includes(attr.key) || deletableAttributes().includes("*")) {
-              <button
-                (click)="deleteCustomAttribute(attr.key)"
-                aria-label="Delete custom attribute"
-                class="custom-attr-delete"
-                i18n-aria-label="Delete custom attribute"
-                mat-icon-button>
-                <mat-icon>delete</mat-icon>
-              </button>
-            } @else {
-              <span></span>
-            }
+            <app-detail-field-row [label]="attr.key">
+              <span fieldValue>{{ attr.value || "-" }}</span>
+              <ng-container fieldEdit>
+                @if (deletableAttributes().includes(attr.key) || deletableAttributes().includes("*")) {
+                  <button
+                    (click)="deleteCustomAttribute(attr.key)"
+                    aria-label="Delete custom attribute"
+                    i18n-aria-label="Delete custom attribute"
+                    mat-icon-button>
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                }
+              </ng-container>
+            </app-detail-field-row>
           }
-        </dl>
+        </div>
       }
+    </app-details-card>
+  </div>
+
+  <app-details-card class="details-card--tokens">
+    <app-user-details-token-table>
+      @if (authService.tokenEnrollmentAllowed()) {
+        <button
+          (click)="enrollNewToken()"
+          class="action-button-primary button-width-m"
+          mat-stroked-button>
+          <mat-icon>add_moderator</mat-icon>
+          <span i18n>Enroll new token</span>
+        </button>
+      }
+    </app-user-details-token-table>
+
+    <div class="flex-row margin-top-16">
+      <mat-form-field
+        class="input-width-xl"
+        subscriptSizing="dynamic">
+        <mat-label i18n>Assign Token to User</mat-label>
+        <app-clearable-input
+          (clearButtonClick)="tokenService.clearFilter()"
+          [showClearButton]="tokenService.tokenFilter().isNotEmpty">
+          <input
+            #filterHTMLInputElement
+            #tokenAutoTrigger="matAutocompleteTrigger"
+            (input)="tokenService.handleFilterInput($event)"
+            [matAutocomplete]="tokenAuto"
+            [value]="tokenService.tokenFilter().filterString"
+            i18n-placeholder
+            matInput
+            placeholder="Example query: 'type: hotp serial: 123'" />
+        </app-clearable-input>
+        <mat-autocomplete #tokenAuto="matAutocomplete">
+          @for (option of tokenDataSource().data; track option) {
+            <mat-option
+              (click)="assignUserToToken(option)"
+              class="token-option">
+              <span class="token-option-span">{{ option["serial"] }}</span>
+              <span class="token-option-span">
+                {{ option["tokentype"] }}
+              </span>
+              <span
+                [ngClass]="option['active'] ? 'highlight-true' : 'highlight-false'"
+                class="token-option-span"
+                i18n>
+                {{ option["active"] ? "active" : "deactivated" }}
+              </span>
+              <span class="token-option-span">
+                {{ option["username"] }}
+              </span>
+              <mat-icon>add</mat-icon>
+            </mat-option>
+          }
+        </mat-autocomplete>
+      </mat-form-field>
     </div>
-  </div>
+  </app-details-card>
 
-  <app-user-details-token-table>
-    @if (authService.tokenEnrollmentAllowed()) {
-      <button
-        (click)="enrollNewToken()"
-        class="action-button-primary button-width-m"
-        mat-stroked-button>
-        <mat-icon>add_moderator</mat-icon>
-        <span i18n>Enroll new token</span>
-      </button>
-    }
-  </app-user-details-token-table>
-
-  <div class="flex-row filter-paginator-container margin-top-16">
-    <mat-form-field
-      class="input-width-xl"
-      subscriptSizing="dynamic">
-      <mat-label i18n>Assign Token to User</mat-label>
-      <app-clearable-input
-        (clearButtonClick)="tokenService.clearFilter()"
-        [showClearButton]="tokenService.tokenFilter().isNotEmpty">
-        <input
-          #filterHTMLInputElement
-          #tokenAutoTrigger="matAutocompleteTrigger"
-          (input)="tokenService.handleFilterInput($event)"
-          [matAutocomplete]="tokenAuto"
-          [value]="tokenService.tokenFilter().filterString"
-          i18n-placeholder
-          matInput
-          placeholder="Example query: 'type: hotp serial: 123'" />
-      </app-clearable-input>
-      <mat-autocomplete #tokenAuto="matAutocomplete">
-        @for (option of tokenDataSource().data; track option) {
-          <mat-option
-            (click)="assignUserToToken(option)"
-            class="token-option">
-            <span class="token-option-span">{{ option["serial"] }}</span>
-            <span class="token-option-span">
-              {{ option["tokentype"] }}
-            </span>
-            <span
-              [ngClass]="option['active'] ? 'highlight-true' : 'highlight-false'"
-              class="token-option-span"
-              i18n>
-              {{ option["active"] ? "active" : "deactivated" }}
-            </span>
-            <span class="token-option-span">
-              {{ option["username"] }}
-            </span>
-            <mat-icon>add</mat-icon>
-          </mat-option>
-        }
-      </mat-autocomplete>
-    </mat-form-field>
-  </div>
-
-  <app-user-details-container-table>
-    @if (authService.actionAllowed("container_create")) {
-      <button
-        (click)="createNewContainer()"
-        class="action-button-primary button-width-m"
-        mat-stroked-button>
-        <mat-icon>create_new_folder</mat-icon>
-        <span i18n>Create new container</span>
-      </button>
-    }
-  </app-user-details-container-table>
+  <app-details-card class="details-card--containers">
+    <app-user-details-container-table>
+      @if (authService.actionAllowed("container_create")) {
+        <button
+          (click)="createNewContainer()"
+          class="action-button-primary button-width-m"
+          mat-stroked-button>
+          <mat-icon>create_new_folder</mat-icon>
+          <span i18n>Create new container</span>
+        </button>
+      }
+    </app-user-details-container-table>
+  </app-details-card>
 </div>

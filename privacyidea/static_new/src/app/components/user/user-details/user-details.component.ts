@@ -40,6 +40,10 @@ import { Router, RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { DetailFieldComponent } from "@components/shared/details-shared/detail-field/detail-field.component";
+import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
+import { DetailFieldRowComponent } from "@components/shared/details-shared/field-editing/detail-field-row/detail-field-row.component";
+import { DetailsEditRegistry } from "@components/shared/details-shared/field-editing/details-edit-registry.service";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import {
   SaveAndExitDialogComponent,
@@ -83,8 +87,12 @@ import { StickyHeaderDirective } from "@components/shared/directives/sticky-head
     RouterLink,
     CopyableComponent,
     UserDetailsEditComponent,
-    StickyHeaderDirective
+    StickyHeaderDirective,
+    DetailsCardComponent,
+    DetailFieldComponent,
+    DetailFieldRowComponent
   ],
+  providers: [DetailsEditRegistry],
   templateUrl: "./user-details.component.html",
   styleUrl: "./user-details.component.scss"
 })
@@ -384,4 +392,8 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
   }
 
   protected readonly Array = Array;
+
+  protected str(value: unknown): string {
+    return value === null || value === undefined ? "" : String(value);
+  }
 }

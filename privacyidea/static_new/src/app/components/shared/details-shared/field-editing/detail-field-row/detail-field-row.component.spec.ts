@@ -49,7 +49,7 @@ describe("DetailFieldRowComponent", () => {
 
   it("projects the three named slots into the key/value/edit skeleton", () => {
     const el: HTMLElement = fixture.nativeElement;
-    expect(el.querySelector(".detail-field-key")?.textContent).toContain("KEY-CONTENT");
+    expect(el.querySelector(".detail-field-label")?.textContent).toContain("KEY-CONTENT");
     expect(el.querySelector(".value-content")?.textContent).toContain("VALUE-CONTENT");
     expect(el.querySelector(".value-edit")?.textContent).toContain("EDIT-CONTENT");
   });
