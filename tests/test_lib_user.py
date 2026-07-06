@@ -70,20 +70,25 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
 
     def tearDown(self):
         # Clean up realms and resolvers that tests may have created
+        from privacyidea.lib.error import ResourceNotFoundError, ConfigAdminError
+
         for realm in [self.realm1, self.realm2, "sqlrealm", "passwordrealm",
                       "double", "ldap", "sort_realm", "sort_alpha_realm",
                       "sort_node_realm", "masked_realm", "EntraID"]:
             try:
-                delete_realm(realm)
-            except Exception:
+                delete_realm(realm, delete_custom_attributes=True)
+            except ResourceNotFoundError:
                 pass
+
         for resolver in [self.resolvername1, self.resolvername2, self.resolvername3,
                          "SQL1", "double1", "double2", "double3",
                          "ldapresolver", "entraid", "reso4", "mask_resolver"]:
             try:
                 delete_resolver(resolver)
-            except Exception:
-                pass
+            except ConfigAdminError:
+                # Should not happen if realm cleanup above succeeded.
+                raise
+
         super().tearDown()
 
     def test_create_user(self):
