@@ -41,10 +41,16 @@ import { CopyableComponent } from "@components/shared/copyable/copyable.componen
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerDetailToken } from "@services/container/container.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
-import { forkJoin } from "rxjs";
+import { catchError, forkJoin, map, Observable, of } from "rxjs";
+
+interface BulkActionResult {
+  serial: string;
+  ok: boolean;
+}
 
 @Component({
   selector: "app-user-details-token-table",
@@ -77,6 +83,7 @@ export class UserDetailsTokenTableComponent implements AfterViewInit {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly userService: UserServiceInterface = inject(UserService);
+  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   readonly columnsKeyMap = this.tableUtilsService.pickColumns(
     "serial",
     "tokentype",
@@ -161,22 +168,39 @@ export class UserDetailsTokenTableComponent implements AfterViewInit {
 
   unassignSelected(): void {
     const serials = this.selection().map((r) => r.serial);
-    forkJoin(serials.map((s) => this.tokenService.unassignUser(s))).subscribe({
-      next: () => this.tokenService.userTokenResource.reload()
+    forkJoin(serials.map((s) => this.runBulkAction(s, this.tokenService.unassignUser(s, false)))).subscribe({
+      next: (results) => this.finishBulkAction("unassign", results)
     });
   }
 
   toggleActiveSelected(): void {
     const rows = this.selection();
-    forkJoin(rows.map((r) => this.tokenService.toggleActive(r.serial, r.active))).subscribe({
-      next: () => this.tokenService.userTokenResource.reload()
+    forkJoin(
+      rows.map((r) => this.runBulkAction(r.serial, this.tokenService.toggleActive(r.serial, r.active, false)))
+    ).subscribe({
+      next: (results) => this.finishBulkAction("toggle active", results)
     });
   }
 
   resetFailcountSelected(): void {
     const serials = this.selection().map((r) => r.serial);
-    forkJoin(serials.map((s) => this.tokenService.resetFailCount(s))).subscribe({
-      next: () => this.tokenService.userTokenResource.reload()
+    forkJoin(serials.map((s) => this.runBulkAction(s, this.tokenService.resetFailCount(s, false)))).subscribe({
+      next: (results) => this.finishBulkAction("reset fail count", results)
     });
+  }
+
+  private runBulkAction(serial: string, request: Observable<unknown>): Observable<BulkActionResult> {
+    return request.pipe(
+      map(() => ({ serial, ok: true })),
+      catchError(() => of({ serial, ok: false }))
+    );
+  }
+
+  private finishBulkAction(action: string, results: BulkActionResult[]): void {
+    this.tokenService.userTokenResource.reload();
+    const failed = results.filter((r) => !r.ok).map((r) => r.serial);
+    if (failed.length > 0) {
+      this.notificationService.error(`${failed.length}/${results.length} ${action} failed: ${failed.join(", ")}`);
+    }
   }
 }

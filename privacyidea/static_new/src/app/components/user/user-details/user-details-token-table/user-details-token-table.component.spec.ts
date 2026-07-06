@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { of, throwError } from "rxjs";
 
 import {
   MockContentService,
@@ -33,6 +34,7 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 
 import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
+import { NotificationService } from "@services/notification/notification.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { ContainerDetailToken } from "@services/container/container.service";
 import { TokenDetails, Tokens, TokenService } from "@services/token/token.service";
@@ -46,6 +48,7 @@ describe("UserDetailsTokenTableComponent", () => {
   let component: UserDetailsTokenTableComponent;
 
   let tokenServiceMock: MockTokenService;
+  let notificationServiceMock: MockNotificationService;
 
   beforeEach(async () => {
     TestBed.resetTestingModule();
@@ -60,12 +63,13 @@ describe("UserDetailsTokenTableComponent", () => {
         { provide: AuthService, useClass: MockAuthService },
         { provide: TokenService, useClass: MockTokenService },
         { provide: UserService, useClass: MockUserService },
-        MockLocalService,
-        MockNotificationService
+        { provide: NotificationService, useClass: MockNotificationService },
+        MockLocalService
       ]
     }).compileComponents();
 
     tokenServiceMock = TestBed.inject(TokenService) as unknown as MockTokenService;
+    notificationServiceMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
 
     fixture = TestBed.createComponent(UserDetailsTokenTableComponent);
     component = fixture.componentInstance;
@@ -220,9 +224,24 @@ describe("UserDetailsTokenTableComponent", () => {
 
     component.unassignSelected();
 
-    expect(tokenServiceMock.unassignUser).toHaveBeenCalledWith("A");
-    expect(tokenServiceMock.unassignUser).toHaveBeenCalledWith("B");
+    expect(tokenServiceMock.unassignUser).toHaveBeenCalledWith("A", false);
+    expect(tokenServiceMock.unassignUser).toHaveBeenCalledWith("B", false);
     expect(tokenServiceMock.userTokenResource.reload).toHaveBeenCalledTimes(1);
+    expect(notificationServiceMock.error).not.toHaveBeenCalled();
+  });
+
+  it("unassignSelected still reloads when one of the requests fails and shows a summary", () => {
+    const rowA = { serial: "A" } as unknown as ContainerDetailToken;
+    const rowB = { serial: "B" } as unknown as ContainerDetailToken;
+    component.selection.set([rowA, rowB]);
+    tokenServiceMock.unassignUser.mockImplementation((serial: string) =>
+      serial === "A" ? throwError(() => new Error("failed")) : of(null)
+    );
+
+    component.unassignSelected();
+
+    expect(tokenServiceMock.userTokenResource.reload).toHaveBeenCalledTimes(1);
+    expect(notificationServiceMock.error).toHaveBeenCalledWith("1/2 unassign failed: A");
   });
 
   it("toggleActiveSelected toggles each selected token and reloads", () => {
@@ -232,9 +251,10 @@ describe("UserDetailsTokenTableComponent", () => {
 
     component.toggleActiveSelected();
 
-    expect(tokenServiceMock.toggleActive).toHaveBeenCalledWith("A", true);
-    expect(tokenServiceMock.toggleActive).toHaveBeenCalledWith("B", false);
+    expect(tokenServiceMock.toggleActive).toHaveBeenCalledWith("A", true, false);
+    expect(tokenServiceMock.toggleActive).toHaveBeenCalledWith("B", false, false);
     expect(tokenServiceMock.userTokenResource.reload).toHaveBeenCalledTimes(1);
+    expect(notificationServiceMock.error).not.toHaveBeenCalled();
   });
 
   it("resetFailcountSelected resets each selected token and reloads", () => {
@@ -244,8 +264,9 @@ describe("UserDetailsTokenTableComponent", () => {
 
     component.resetFailcountSelected();
 
-    expect(tokenServiceMock.resetFailCount).toHaveBeenCalledWith("A");
-    expect(tokenServiceMock.resetFailCount).toHaveBeenCalledWith("B");
+    expect(tokenServiceMock.resetFailCount).toHaveBeenCalledWith("A", false);
+    expect(tokenServiceMock.resetFailCount).toHaveBeenCalledWith("B", false);
     expect(tokenServiceMock.userTokenResource.reload).toHaveBeenCalledTimes(1);
+    expect(notificationServiceMock.error).not.toHaveBeenCalled();
   });
 });

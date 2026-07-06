@@ -270,9 +270,9 @@ export interface TokenServiceInterface {
 
   handleFilterInput($event: Event): void;
 
-  toggleActive(tokenSerial: string, active: boolean): Observable<PiResponse<boolean>>;
+  toggleActive(tokenSerial: string, active: boolean, notify?: boolean): Observable<PiResponse<boolean>>;
 
-  resetFailCount(tokenSerial: string): Observable<PiResponse<boolean>>;
+  resetFailCount(tokenSerial: string, notify?: boolean): Observable<PiResponse<boolean>>;
 
   saveTokenDetail(tokenSerial: string, key: string, value: unknown): Observable<PiResponse<boolean>>;
 
@@ -292,7 +292,7 @@ export interface TokenServiceInterface {
 
   unassignUserFromAll(tokenSerials: string[]): Observable<PiResponse<boolean>[]>;
 
-  unassignUser(tokenSerial: string): Observable<PiResponse<boolean>>;
+  unassignUser(tokenSerial: string, notify?: boolean): Observable<PiResponse<boolean>>;
 
   bulkUnassignTokens(tokenDetails: TokenDetails[]): Observable<PiResponse<BulkResult>>;
 
@@ -742,7 +742,7 @@ export class TokenService implements TokenServiceInterface {
       });
   }
 
-  toggleActive(tokenSerial: string, active: boolean): Observable<PiResponse<boolean>> {
+  toggleActive(tokenSerial: string, active: boolean, notify = true): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     const action = active ? "disable" : "enable";
     return this.http
@@ -750,20 +750,24 @@ export class TokenService implements TokenServiceInterface {
       .pipe(
         catchError((error) => {
           console.error("Failed to toggle active.", error);
-          const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to toggle active. " + message);
+          if (notify) {
+            const message = error.error?.result?.error?.message || "";
+            this.notificationService.error("Failed to toggle active. " + message);
+          }
           return throwError(() => error);
         })
       );
   }
 
-  resetFailCount(tokenSerial: string): Observable<PiResponse<boolean>> {
+  resetFailCount(tokenSerial: string, notify = true): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http.post<PiResponse<boolean>>(this.tokenBaseUrl + "reset", { serial: tokenSerial }, { headers }).pipe(
       catchError((error) => {
         console.error("Failed to reset fail count.", error);
-        const message = error.error?.result?.error?.message || "";
-        this.notificationService.error("Failed to reset fail count. " + message);
+        if (notify) {
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.error("Failed to reset fail count. " + message);
+        }
         return throwError(() => error);
       })
     );
@@ -907,15 +911,17 @@ export class TokenService implements TokenServiceInterface {
     );
   }
 
-  unassignUser(tokenSerial: string): Observable<PiResponse<boolean>> {
+  unassignUser(tokenSerial: string, notify = true): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http
       .post<PiResponse<boolean>>(`${this.tokenBaseUrl}unassign`, { serial: tokenSerial }, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to unassign user.", error);
-          const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to unassign user. " + message);
+          if (notify) {
+            const message = error.error?.result?.error?.message || "";
+            this.notificationService.error("Failed to unassign user. " + message);
+          }
           return throwError(() => error);
         })
       );
