@@ -228,8 +228,8 @@ class TokenTestCase(MyTestCase):
 
         # '*' still works as a wildcard and matches both "ESC_01" and "ESCX01"
         matches = get_tokens(serial_wildcard="ESC*01")
-        self.assertCountEqual(["ESC_01", "ESCX01", "ESCY01", "ESCZ01"],
-                              [token_obj.token.serial for token_obj in matches], matches)
+        self.assertSetEqual({"ESC_01", "ESCX01", "ESCY01", "ESCZ01"},
+                            {token_obj.token.serial for token_obj in matches}, matches)
 
         # '%' is literal even on the LIKE path: "50%*" must not let the literal
         # '%' act as a wildcard, so "cost is 50XXoff" is not matched.
@@ -238,6 +238,26 @@ class TokenTestCase(MyTestCase):
 
         for serial in ["ESC_01", "ESCX01", "ESCY01", "ESCZ01"]:
             remove_token(serial)
+
+    def test_02b_get_tokens_rollout_state_like_escaping(self):
+        # rollout_state filter: '*' is a wildcard, literal '_' is matched literally.
+        literal = init_token({"type": "spass", "serial": "ROLLA"})
+        literal.token.rollout_state = "phase_1"
+        literal.token.save()
+        other = init_token({"type": "spass", "serial": "ROLLB"})
+        other.token.rollout_state = "phaseX1"
+        other.token.save()
+
+        # '*' expands and matches both rollout states
+        matches = get_tokens(rollout_state="phase*")
+        self.assertSetEqual({"ROLLA", "ROLLB"}, {token_obj.token.serial for token_obj in matches}, matches)
+
+        # '_' is literal, so "phase_1*" matches only the "phase_1" token
+        matches = get_tokens(rollout_state="phase_1*")
+        self.assertListEqual(["ROLLA"], [token_obj.token.serial for token_obj in matches], matches)
+
+        remove_token("ROLLA")
+        remove_token("ROLLB")
 
     def test_03_get_token_type(self):
         ttype = get_token_type("hotptoken")

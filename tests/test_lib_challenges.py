@@ -8,7 +8,7 @@ import json
 from privacyidea.lib.crypto import get_rand_digit_str
 from .base import MyTestCase
 from privacyidea.lib.challenge import (get_challenges, extract_answered_challenges, delete_challenges,
-                                       cancel_enrollment_via_multichallenge)
+                                       cancel_enrollment_via_multichallenge, get_challenges_paginate)
 from privacyidea.lib.cache import redis_feature_enabled
 from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE)
 from privacyidea.lib.policies.actions import PolicyAction
@@ -51,6 +51,28 @@ class ChallengeTestCase(MyTestCase):
         self.assertEqual(len(chals), 0)
 
         delete_policy("chalresp")
+
+    def test_01a_get_challenges_paginate_like_escaping(self):
+        # SQL LIKE metacharacters in the filter must match literally; only '*' is a wildcard.
+        Challenge(serial="ESC_01", transaction_id="txn_esc_1").save()
+        Challenge(serial="ESCX01", transaction_id="txn_esc_2").save()
+
+        # '*' expands: "ESC*01" matches both serials
+        result = get_challenges_paginate(serial="ESC*01")
+        self.assertSetEqual({"ESC_01", "ESCX01"},
+                            {challenge["serial"] for challenge in result["challenges"]}, result)
+
+        # '_' is literal: "ESC_*" matches only "ESC_01", not "ESCX01"
+        result = get_challenges_paginate(serial="ESC_*")
+        self.assertListEqual(["ESC_01"], [challenge["serial"] for challenge in result["challenges"]], result)
+
+        # transaction_id also goes through the wildcard branch, matching both challenges
+        result = get_challenges_paginate(transaction_id="txn_esc_*")
+        self.assertSetEqual({"ESC_01", "ESCX01"},
+                            {challenge["serial"] for challenge in result["challenges"]}, result)
+
+        delete_challenges(serial="ESC_01")
+        delete_challenges(serial="ESCX01")
 
     def test_02_extract_answered_challenges(self):
         token = init_token({"genkey": 1, "serial": "CHAL2", "pin": "pin"})
