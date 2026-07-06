@@ -16,10 +16,10 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { DatePipe } from "@angular/common";
 import { Component, OnInit, computed, effect, inject, signal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
 import { WidgetStateComponent } from "@components/dashboard/widgets/widget-state/widget-state.component";
+import { LocalDateTimePipe } from "@components/shared/pipes/local-date-time.pipe";
 import { DASHBOARD_COLUMNS, DashboardWidget, WidgetSize } from "@models/dashboard";
 import { Audit, AuditData, AuditService, AuditServiceInterface } from "@services/audit/audit.service";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -29,7 +29,7 @@ import { forkJoin } from "rxjs";
 @Component({
   selector: "app-administration-widget",
   standalone: true,
-  imports: [DatePipe, WidgetStateComponent],
+  imports: [LocalDateTimePipe, WidgetStateComponent],
   templateUrl: "./administration-widget.component.html",
   styleUrl: "./administration-widget.component.scss"
 })
