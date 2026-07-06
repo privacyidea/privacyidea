@@ -906,8 +906,10 @@ def get_user_list(param: dict = None, user: User = None, include_custom_attribut
     log.debug(f"With this search dictionary: {search_dict!r}")
     requested_pi_user_attributes = list({"realm", "resolver", "editable"}.intersection(requested_attributes or []))
     requested_user_store_attributes = list(set(requested_attributes or []) - set(requested_pi_user_attributes))
-    # Always fetch username from the resolver for dedup, even if not requested by the caller
-    if requested_user_store_attributes and "username" not in requested_user_store_attributes:
+    # Always fetch username from the resolver for dedup, even if not requested by the caller.
+    # If requested_attributes contains only PI attributes, requested_user_store_attributes would be empty, and some
+    # resolvers treat an empty list as "fetch all".
+    if requested_attributes and "username" not in requested_user_store_attributes:
         requested_user_store_attributes.append("username")
 
     for realm in realm_iteration:
