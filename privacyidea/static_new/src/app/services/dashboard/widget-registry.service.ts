@@ -44,11 +44,11 @@ export class WidgetRegistryService implements WidgetRegistryServiceInterface {
     SubscriptionsWidgetComponent
   ];
 
-  private readonly byType = new Map<string, WidgetComponentType>(
-    this.widgetTypes.map((widget) => [widget.type, widget])
-  );
-
   public get(type: string): WidgetComponentType | undefined {
     return this.byType.get(type);
   }
+
+  private readonly byType = new Map<string, WidgetComponentType>(
+    this.widgetTypes.map((widget) => [widget.type, widget])
+  );
 }

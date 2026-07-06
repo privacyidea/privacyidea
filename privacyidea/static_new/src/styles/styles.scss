@@ -48,6 +48,32 @@ body {
   --light-distance: -4px;
   --shadow-distance: 2px;
 
+  // Max height for the main content container of a routed component. Viewport-
+  // relative rather than `100%` so it doesn't depend on the parent height chain
+  // resolving, and the `min(vh, calc(100vh - fixed-chrome))` shape stays on-
+  // screen through 200% zoom (the vh wins at normal zoom, the calc takes over
+  // once zoom shrinks the viewport enough that the fixed toolbar would push the
+  // content off the bottom). Both are overridden for self-service in
+  // `body.self-service-layout` below (side drawer, no top toolbar → less chrome).
+  //
+  // General components (short forms, config landings, …): admin chrome ~120px
+  // (toolbar + content padding), the mixin default.
+  --content-max-height: min(88vh, calc(100vh - 120px));
+  // Table list pages carry an internal filter row + paginator, so their scroll
+  // region needs more headroom — heavier chrome (~190px, measured 81vh @100% →
+  // ~62vh @200%). The 9 table components opt into this explicitly.
+  --table-max-height: min(81vh, calc(100vh - 190px));
+  // Detail & edit pages (token/container/user details, enrollment, policy and
+  // other edit/new forms): tall content, same 190px admin chrome as the tables.
+  // 81vh at ~100% zoom, shrinking to ≈62vh at 200%. SS override below (flat 88vh).
+  --detail-max-height: min(86vh, calc(100vh - 160px));
+
+  // Standardized detail-card widths, applied via the card-width() mixin.
+  --card-width-s: 400px;
+  --card-width-m: 585px;
+  --card-width-l: 728px;
+  --card-width-xl: 932px;
+
   // Pre-baked Material elevation shadows (0..24) as CSS variables.
   // Generated at build time so that elevation can be re-skinned at runtime
   // by reassigning --elevation-3 / --elevation-5 / --elevation-8.
@@ -166,12 +192,43 @@ body {
   box-shadow: var(--elevation-5);
   background-color: var(--table-color);
   max-width: var(--max-width);
-  max-height: var(--max-height);
+  // Cap at the viewport-aware content height (see --content-max-height) and
+  // scroll internally when taller. Viewport-relative rather than `100%` so it
+  // doesn't depend on the parent height chain resolving, and stays on-screen
+  // through 200% zoom. Applies to every component that uses this mixin.
+  max-height: var(--content-max-height);
   overflow: auto;
+}
+
+// Global (unencapsulated) so it can match the router-outlet's dynamically
+// inserted component. Gives the routed host a definite height so components
+// that fill via `height: 100%` (e.g. token-details, dashboard) can stretch to
+// the bottom. Note main-component-style no longer relies on this — it caps via
+// the viewport-relative --content-max-height directly.
+.admin-content > *:not(router-outlet) {
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+}
+
+.selfservice-content-container > *:not(router-outlet) {
+  min-height: 0;
+  min-width: 0;
 }
 
 body.self-service-layout {
   --overlay-margin: var(--drawer-width-self-service);
+  // Self-service has a side drawer, no top toolbar — less fixed chrome than
+  // admin. General components: just the 32px top/bottom content padding.
+  --content-max-height: min(96vh, calc(100vh - 2 * var(--global-padding)));
+  // Tables: + ~30px for their filter/paginator (≈62px total), calibrated from
+  // the measured perfect-fit at 100%/200% zoom (~94vh → ~88vh). A single vh base
+  // can't hold across zoom (measured drop ~6vh > what a fixed vh base gives), so
+  // the fixed-px offset reproduces both zooms; the calc() guards high zoom.
+  --table-max-height: min(94vh, calc(100vh - 2 * var(--global-padding) - 30px));
+  // Detail & edit pages: little chrome in self-service, so a flat 88vh fits at
+  // every zoom (matches the enrollment page Henrik tuned).
+  --detail-max-height: 88vh;
 }
 
 .shadow {

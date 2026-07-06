@@ -27,6 +27,7 @@ import { NotificationService, NotificationServiceInterface } from "@services/not
 import { lastValueFrom, Observable } from "rxjs";
 
 export type ActionType = "bool" | "int" | "str" | "text";
+
 export interface PolicyActionDetail<T extends string | number | boolean = string | number | boolean> {
   desc: string;
   type: ActionType;
@@ -163,32 +164,59 @@ export interface PolicyServiceInterface {
   readonly allPolicies: Signal<PolicyDetail[]>;
   allPoliciesResource: HttpResourceRef<PiResponse<PolicyDetail[], unknown> | undefined>;
   policyActionResource: HttpResourceRef<PiResponse<ScopedPolicyActions> | undefined>;
+
   getEmptyPolicy(): PolicyDetail;
+
   filteredPolicyActionGroups(alreadyAddedActionNames: string[], filterValue: string): PolicyActionGroups;
+
   getActionDetail(actionName: string, scope: string): PolicyActionDetail | null;
+
   getGroupOfAction(actionName: string, scope: string): string | null;
+
   getScopeOfAction(name: string): string | null;
+
   canSavePolicy(policy: PolicyDetail): boolean;
+
   getDetailsOfAction(actionName: string, scope?: string): PolicyActionDetail | null;
+
   copyPolicy(oldName: string, newName: string): Promise<PiResponse<Record<string, number>>>;
+
   createPolicy(policyData: PolicyDetail): Promise<PiResponse<Record<string, number>>>;
+
   deletePolicy(name: string): Promise<PiResponse<number>>;
+
   enablePolicy(name: string): Promise<PiResponse<number>>;
+
   disablePolicy(name: string): Promise<PiResponse<number>>;
+
   isScopeChangeable(policy: PolicyDetail): boolean;
+
   getPolicies(): Observable<PiResponse<PolicyDetail[]>>;
+
   getActionNamesOf(scope?: string, group?: string): string[];
+
   getActionsOf(scope?: string, group?: string): Record<string, PolicyActionDetail>;
+
   actionValueIsValid(action: PolicyActionDetail, value: string | number | boolean): boolean;
+
   saveNewPolicy(newPolicy: PolicyDetail): Promise<boolean>;
+
   policyHasConditions(policy: PolicyDetail): boolean;
+
   policyHasAdminConditions(policy: PolicyDetail): boolean;
+
   policyHasUserConditions(policy: PolicyDetail): boolean;
+
   policyHasEnvironmentConditions(policy: PolicyDetail): boolean;
+
   policyHasAdditionalConditions(policy: PolicyDetail): boolean;
+
   policyHasActions(policy: PolicyDetail): boolean;
+
   isPolicyEdited(editedPolicy: PolicyDetail, originalPolicy: PolicyDetail): boolean;
+
   togglePolicyActive(policy: PolicyDetail): void;
+
   savePolicyEdits(originalPolicyName: string, updatedPolicy: PolicyDetail): Promise<boolean>;
 }
 
@@ -200,6 +228,29 @@ export class PolicyService implements PolicyServiceInterface {
   private readonly http = inject(HttpClient);
 
   readonly policyBaseUrl = environment.proxyUrl + "/policy/";
+  readonly isEditMode = linkedSignal({
+    source: () => this.contentService.routeUrl(),
+    computation: () => false
+  });
+  /**
+   * Filter policy actions by the actionFilter signal and already added actions.
+   * @returns {PolicyActionGroups} The filtered policy actions grouped by scope and group.
+   */
+    // currentActionGroupsFiltered = computed<PolicyActionGroups>(() => {
+    //   return this.filteredPolicyActionGroups(this.alreadyAddedActionNames(), this.actionFilter());
+    // });
+
+  _allPolicies = computed(() => {
+    if (!this.allPoliciesResource.hasValue()) return [];
+    return this.allPoliciesResource.value()?.result?.value ?? [];
+  });
+
+  filteredGroupNamesOf(selectedScope: string, alreadyAddedActionNames: string[], filter: string): string[] {
+    const policyActionGroupFiltered = this.filteredPolicyActionGroups(alreadyAddedActionNames, filter)[selectedScope];
+    if (!policyActionGroupFiltered) return [];
+    return Object.keys(policyActionGroupFiltered);
+  }
+
   readonly policyActionResource = httpResource<PiResponse<ScopedPolicyActions>>(() => {
     // Only load policy definitions on the policies route.
     if (!this.contentService.onPolicies()) {
@@ -212,18 +263,7 @@ export class PolicyService implements PolicyServiceInterface {
       headers: this.authService.getHeaders()
     };
   });
-  /**
-   * Filter policy actions by the actionFilter signal and already added actions.
-   * @returns {PolicyActionGroups} The filtered policy actions grouped by scope and group.
-   */
-  // currentActionGroupsFiltered = computed<PolicyActionGroups>(() => {
-  //   return this.filteredPolicyActionGroups(this.alreadyAddedActionNames(), this.actionFilter());
-  // });
 
-  _allPolicies = computed(() => {
-    if (!this.allPoliciesResource.hasValue()) return [];
-    return this.allPoliciesResource.value()?.result?.value ?? [];
-  });
 
   getEmptyPolicy(): PolicyDetail {
     return {
@@ -248,10 +288,7 @@ export class PolicyService implements PolicyServiceInterface {
     };
   }
 
-  readonly isEditMode = linkedSignal({
-    source: () => this.contentService.routeUrl(),
-    computation: () => false
-  });
+
   policyActions = computed(() => {
     if (!this.policyActionResource.hasValue()) return {};
     return this.policyActionResource.value()?.result?.value ?? {};
@@ -582,6 +619,7 @@ export class PolicyService implements PolicyServiceInterface {
     }
     return false;
   }
+
   isPolicyEdited(editedPolicy: PolicyDetail, originalPolicy: PolicyDetail): boolean {
     if (JSON.stringify(originalPolicy) === JSON.stringify(this.getEmptyPolicy())) {
       // remove scope temporarily and then compare to ignore scope changes
@@ -665,9 +703,5 @@ export class PolicyService implements PolicyServiceInterface {
     };
   });
 
-  filteredGroupNamesOf(selectedScope: string, alreadyAddedActionNames: string[], filter: string): string[] {
-    const policyActionGroupFiltered = this.filteredPolicyActionGroups(alreadyAddedActionNames, filter)[selectedScope];
-    if (!policyActionGroupFiltered) return [];
-    return Object.keys(policyActionGroupFiltered);
-  }
+
 }

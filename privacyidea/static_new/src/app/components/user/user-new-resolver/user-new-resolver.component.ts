@@ -97,27 +97,6 @@ export class UserNewResolverComponent implements OnDestroy {
   httpResolver = viewChild(HttpResolverComponent);
   entraidResolver = viewChild(EntraidResolverComponent);
   keycloakResolver = viewChild(KeycloakResolverComponent);
-
-  resolverType = signal<ResolverType>("passwdresolver");
-  formData: ResolverData = { fileName: "/etc/passwd" };
-  testUsername = signal<string>("");
-  testUserId = signal<string>("");
-
-  isSaving = signal(false);
-  isTesting = signal(false);
-  isEditMode = signal(false);
-
-  // Resolver name form
-  resolverNameModel = signal<ResolverNameModel>({ resolverName: "" });
-  resolverNameForm = form(this.resolverNameModel, (f) => {
-    required(f.resolverName);
-    pattern(f.resolverName, /^[a-zA-Z0-9._-]*$/);
-  });
-
-  get resolverName(): string {
-    return this.resolverNameModel().resolverName;
-  }
-
   private _activeResolver = computed(() => {
     return (
       this.ldapResolver() ||
@@ -128,6 +107,19 @@ export class UserNewResolverComponent implements OnDestroy {
       this.keycloakResolver() ||
       this.httpResolver()
     );
+  });
+  resolverType = signal<ResolverType>("passwdresolver");
+  formData: ResolverData = { fileName: "/etc/passwd" };
+  testUsername = signal<string>("");
+  testUserId = signal<string>("");
+  isSaving = signal(false);
+  isTesting = signal(false);
+  isEditMode = signal(false);
+  // Resolver name form
+  resolverNameModel = signal<ResolverNameModel>({ resolverName: "" });
+  resolverNameForm = form(this.resolverNameModel, (f) => {
+    required(f.resolverName);
+    pattern(f.resolverName, /^[a-zA-Z0-9._-]*$/);
   });
 
   constructor() {
@@ -172,6 +164,10 @@ export class UserNewResolverComponent implements OnDestroy {
         }
       }
     });
+  }
+
+  get resolverName(): string {
+    return this.resolverNameModel().resolverName;
   }
 
   get isAdditionalFieldsInvalid(): boolean {

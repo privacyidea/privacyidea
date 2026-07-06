@@ -57,10 +57,6 @@ export class ScimResolverComponent {
     required(f.Mapping);
   });
 
-  isValid = () => this.scimForm().valid();
-  isDirty = () => this.scimForm().dirty();
-  getValue = () => this.model();
-
   constructor() {
     effect(() => {
       const initial = this.data();
@@ -74,4 +70,10 @@ export class ScimResolverComponent {
       this.scimForm().reset();
     });
   }
+
+  isValid = () => this.scimForm().valid();
+  isDirty = () => this.scimForm().dirty();
+  getValue = () => this.model();
+
+
 }

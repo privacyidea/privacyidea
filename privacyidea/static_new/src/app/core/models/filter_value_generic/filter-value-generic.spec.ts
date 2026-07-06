@@ -118,7 +118,7 @@ describe("FilterValueGeneric", () => {
     });
 
     it("should handle multi-word values with double quotes (lowercase output)", () => {
-      const res = filter.setByString('name:"Strict Security Policy" realm:internal');
+      const res = filter.setByString("name:\"Strict Security Policy\" realm:internal");
       expect(res.getFilterOfKey("name")).toBe("strict security policy");
       expect(res.getFilterOfKey("realm")).toBe("internal");
     });
@@ -134,8 +134,8 @@ describe("FilterValueGeneric", () => {
     });
 
     it("should handle escaped quotes and backslashes", () => {
-      const res = filter.setByString('name:"Policy \\"Beta\\"" realm:C:\\\\Windows');
-      expect(res.getFilterOfKey("name")).toBe('policy "beta"');
+      const res = filter.setByString("name:\"Policy \\\"Beta\\\"\" realm:C:\\\\Windows");
+      expect(res.getFilterOfKey("name")).toBe("policy \"beta\"");
       expect(res.getFilterOfKey("realm")).toBe("c:\\windows");
     });
 
@@ -262,7 +262,7 @@ describe("FilterValueGeneric", () => {
     });
 
     it("should remain stable with malicious looking inputs", () => {
-      const nightmare = 'key:"\'\\"":: : : :   key2: : : ';
+      const nightmare = "key:\"'\\\"\":: : : :   key2: : : ";
       expect(() => filter.setByString(nightmare)).not.toThrow();
     });
   });

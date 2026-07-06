@@ -17,16 +17,13 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
-  appScrollToTop
-  class="audit-table-container">
+  appScrollToTop class="audit-table-container">
   <div class="filter-paginator-container">
     <mat-form-field
-      subscriptSizing="dynamic"
-      class="audit-table-filter">
+      class="audit-table-filter" subscriptSizing="dynamic">
       <mat-label i18n>Filter Audit Log...</mat-label>
       <app-clearable-input
-        (clearButtonClick)="auditService.clearFilter()"
-        [showClearButton]="auditService.auditFilter().isNotEmpty">
+        (clearButtonClick)="auditService.clearFilter()" [showClearButton]="auditService.auditFilter().isNotEmpty">
         <input
           #filterHTMLInputElement
           (input)="auditService.handleFilterInput($event)"
@@ -58,31 +55,22 @@
       </button>
     }
   </div>
-  <div class="table-scroll-region" appScrollEdges>
+  <div
+    appScrollEdges class="table-scroll-region">
     <table
-      [dataSource]="auditDataSource()"
-      aria-label="Audit Data Table"
-      class="audit-table"
-      i18n-aria-label
-      mat-table>
+      [dataSource]="auditDataSource()" aria-label="Audit Data Table" class="audit-table" i18n-aria-label mat-table>
       @for (column of columnKeysMap; track column) {
         <ng-container [matColumnDef]="column.key">
           <th
-            *matHeaderCellDef
-            attr.aria-label="{{ column.label }} Header"
-            mat-header-cell>
+            *matHeaderCellDef attr.aria-label="{{ column.label }} Header" mat-header-cell>
             <div class="flex ali-center">
               {{ column.label }}
-              @if (
-                !["number", "log_level", "clearance_level", "sig_check", "missing_line", "thread_id"].includes(
-                  column.key
-                )
-              ) {
+              @if (!["number", "log_level", "clearance_level", "sig_check", "missing_line", "thread_id"].includes(
+                column.key
+              )) {
                 <div class="margin-left-16">
                   <button
-                    (click)="onKeywordClick(apiFilterKeyMap[column.key])"
-                    class="filter-button"
-                    mat-icon-button>
+                    (click)="onKeywordClick(apiFilterKeyMap[column.key])" class="filter-button" mat-icon-button>
                     <mat-icon class="keyword-button-icon margin-left-0">
                       {{ getFilterIconName(column.key) }}
                     </mat-icon>
@@ -92,12 +80,9 @@
             </div>
           </th>
           <td
-            *matCellDef="let element; let row"
-            [ngClass]="{
+            *matCellDef="let element; let row" [ngClass]="{
               'table-checkbox': column.key === 'select'
-            }"
-            attr.aria-label="{{ column.label }} Cell"
-            mat-cell>
+            }" attr.aria-label="{{ column.label }} Cell" mat-cell>
             <div>
               @switch (getCellRenderType(column.key)) {
                 @case ("status-span") {
@@ -181,24 +166,13 @@
         </ng-container>
       }
       <tr
-        *matHeaderRowDef="columnKeys; sticky: true"
-        aria-label="Header Row"
-        i18n-aria-label
-        mat-header-row></tr>
+        *matHeaderRowDef="columnKeys; sticky: true" aria-label="Header Row" i18n-aria-label mat-header-row></tr>
       <tr
-        *matRowDef="let row; columns: columnKeys"
-        aria-label="Data Row"
-        i18n-aria-label
-        mat-row></tr>
+        *matRowDef="let row; columns: columnKeys" aria-label="Data Row" i18n-aria-label mat-row></tr>
       <tr
-        *matNoDataRow
-        aria-label="No Data Row"
-        i18n-aria-label>
+        *matNoDataRow aria-label="No Data Row" i18n-aria-label>
         <td
-          [attr.colspan]="columnKeys.length"
-          aria-label="No Data Cell"
-          i18n
-          i18n-aria-label>
+          [attr.colspan]="columnKeys.length" aria-label="No Data Cell" i18n i18n-aria-label>
           No data matching the filter.
         </td>
       </tr>

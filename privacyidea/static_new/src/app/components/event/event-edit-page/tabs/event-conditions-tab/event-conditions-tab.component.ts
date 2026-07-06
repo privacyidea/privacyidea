@@ -52,13 +52,11 @@ import { EventService } from "@services/event/event.service";
 })
 export class EventConditionsTabComponent {
   protected readonly eventService = inject(EventService);
+  protected readonly Object = Object;
   conditions = input.required<Record<string, string>>();
   newConditions = output<Record<string, string>>();
-
   selectedConditions = linkedSignal(() => this.conditions());
   conditionsToBeAdded = signal<Record<string, string>>({});
-  protected readonly Object = Object;
-
   addToolTip = $localize`Add Condition`;
   removeToolTip = $localize`Remove Condition`;
 
@@ -66,22 +64,6 @@ export class EventConditionsTabComponent {
   searchTerm = signal("");
 
   availableGroups = computed(() => Object.keys(this.eventService.moduleConditionsByGroup()));
-
-  availableNonEmptyGroups = computed(() =>
-    this.availableGroups().filter((g) => Object.keys(this.remainingConditionsByGroup()[g] || {}).length > 0)
-  );
-
-  selectedGroup: WritableSignal<string> = linkedSignal({
-    source: () => this.availableNonEmptyGroups(),
-    computation: (groups, previous) => {
-      const prev = previous?.value;
-      if (prev && groups.includes(prev)) return prev;
-      return groups[0] ?? "";
-    }
-  });
-
-  remainingConditionsInSelectedGroup = computed(() => this.remainingConditionsByGroup()[this.selectedGroup()] ?? {});
-
   remainingConditionsByGroup = linkedSignal({
     source: () => ({
       available: this.eventService.moduleConditionsByGroup(),
@@ -106,6 +88,18 @@ export class EventConditionsTabComponent {
       return remaining;
     }
   });
+  availableNonEmptyGroups = computed(() =>
+    this.availableGroups().filter((g) => Object.keys(this.remainingConditionsByGroup()[g] || {}).length > 0)
+  );
+  selectedGroup: WritableSignal<string> = linkedSignal({
+    source: () => this.availableNonEmptyGroups(),
+    computation: (groups, previous) => {
+      const prev = previous?.value;
+      if (prev && groups.includes(prev)) return prev;
+      return groups[0] ?? "";
+    }
+  });
+  remainingConditionsInSelectedGroup = computed(() => this.remainingConditionsByGroup()[this.selectedGroup()] ?? {});
 
   onConditionValueToBeAddedChange(conditionName: string, value: string | string[]) {
     const normalizedValue = Array.isArray(value) ? value.join(",") : value;

@@ -82,7 +82,7 @@ export class MockTokenService implements TokenServiceInterface {
     info: "",
     text: "HMAC-based One-Time Password"
   });
-  showOnlyTokenNotInContainer = signal(false);
+  showOnlyTokenInContainer = signal(false);
   tokenFilter = signal(new FilterValue());
   readonly tokenDetailResource = new MockHttpResourceRef<PiResponse<Tokens>>(makeTokenDetailResponse("hotp"));
   readonly tokenTypesResource = new MockHttpResourceRef<PiResponse<Record<string, string>> | undefined>(

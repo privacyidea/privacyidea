@@ -30,15 +30,15 @@ export class FilterValueGeneric<T> {
   constructor(
     args:
       | {
-          availableFilters: FilterOption<T>[];
-          filterMap?: Map<string, FilterOption<T>>;
-          hiddenFilterMap?: Map<string, FilterOption<T>>;
-        }
+      availableFilters: FilterOption<T>[];
+      filterMap?: Map<string, FilterOption<T>>;
+      hiddenFilterMap?: Map<string, FilterOption<T>>;
+    }
       | {
-          availableFiltersMap: Map<string, FilterOption<T>>;
-          filterMap?: Map<string, FilterOption<T>>;
-          hiddenFilterMap?: Map<string, FilterOption<T>>;
-        }
+      availableFiltersMap: Map<string, FilterOption<T>>;
+      filterMap?: Map<string, FilterOption<T>>;
+      hiddenFilterMap?: Map<string, FilterOption<T>>;
+    }
   ) {
     if ("availableFilters" in args) {
       this.availableFilters = args.availableFilters.reduce(
@@ -238,7 +238,7 @@ function parseToMap(text: string): Map<string, string | null> {
     let valMatch: RegExpMatchArray | null;
 
     if ((valMatch = tempRemaining.match(RE_QUOTED_DBL))) {
-      value = valMatch[1].replace(/\\"/g, '"').replace(/\\\\/g, "\\");
+      value = valMatch[1].replace(/\\"/g, "\"").replace(/\\\\/g, "\\");
       remaining = tempRemaining.slice(valMatch[0].length).trim();
     } else if ((valMatch = tempRemaining.match(RE_QUOTED_SNG))) {
       value = valMatch[1].replace(/\\'/g, "'").replace(/\\\\/g, "\\");
