@@ -35,6 +35,7 @@ export class AuditDownloadDialogComponent extends AbstractDialogComponent<void, 
     type: "confirm",
     primary: true
   };
+
   onAction(value: boolean) {
     this.close(value);
   }

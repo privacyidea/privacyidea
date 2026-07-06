@@ -50,7 +50,7 @@ jobs:
   build-dist:
     name: Build Python sdist and wheel
     permissions:
-      contents: write  # for softprops/action-gh-release to create GitHub release
+      contents: write  # for `gh release create` to create the GitHub release
     needs: build-webui
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -73,7 +73,7 @@ jobs:
       run: ls -R ./privacyidea/static_new/dist
     - run: mkdir -p dist
     - name: Set up Python ${{ steps.pyversions.outputs.release }}
-      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+      uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
       with:
         python-version: ${{ steps.pyversions.outputs.release }}
     - name: Install build environment
@@ -88,14 +88,14 @@ jobs:
         path: dist/*
     - name: Create GitHub pre-release
       id: gh_pre_release
-      uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
       if: contains(github.ref_name, 'dev')
-      with:
-        files: dist/*
-        prerelease: True
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: >-
+        gh release create "$GITHUB_REF_NAME" dist/* --prerelease --notes ""
     - name: Create GitHub release draft
-      uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
       if: steps.gh_pre_release.conclusion == 'skipped'
-      with:
-        files: dist/*
-        draft: True
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: >-
+        gh release create "$GITHUB_REF_NAME" dist/* --draft --notes ""

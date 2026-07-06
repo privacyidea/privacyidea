@@ -1202,6 +1202,48 @@ def validate_actions(scope: str, action: str | dict) -> bool:
     return True
 
 
+def filter_invalid_actions(scope: str, action: str | dict) -> tuple[dict, list]:
+    """
+    Remove the actions that are not valid for the given scope.
+
+    This is used to import a policy that was exported from a different
+    privacyIDEA version which still contained actions (e.g. of a removed token
+    type) that are no longer available.
+
+    :param scope: The scope of the policy
+    :param action: The policy actions as a dict or comma separated string
+    :return: A tuple ``(cleaned_actions, dropped_actions)`` where
+        ``cleaned_actions`` is a dict of the actions that are valid for the
+        scope and ``dropped_actions`` is the list of action keys that were
+        removed because they are not valid for the scope.
+    """
+    from .token import get_dynamic_policy_definitions
+    policy_definitions = get_static_policy_definitions(scope) | get_dynamic_policy_definitions(scope)
+    allowed_actions = set(policy_definitions.keys())
+
+    # Parse the action into a {key: value} dict, mirroring validate_actions()
+    if isinstance(action, dict):
+        actions = dict(action)
+    elif isinstance(action, str):
+        actions = {}
+        for x in re.split(r'(?<!\\),', action or ""):
+            action_tmp = x.strip().split("=", 1)
+            actions[action_tmp[0]] = action_tmp[1] if len(action_tmp) == 2 else True
+    else:
+        return {}, []
+
+    cleaned = {}
+    dropped = []
+    for action_key, action_value in actions.items():
+        # check the action key without its wildcard/negation prefix
+        raw = remove_wildcards_and_negations([action_key])
+        if raw and raw[0] not in allowed_actions:
+            dropped.append(action_key)
+        else:
+            cleaned[action_key] = action_value
+    return cleaned, dropped
+
+
 def validate_values(values: str | list | None, allowed_values: list, name: str) -> bool:
     """
     Checks if all values are contained in the 'allowed_values' list.
@@ -3612,16 +3654,57 @@ def export_policy(name=None):
 
 
 @register_import('policy')
-def import_policy(data, name=None):
-    """Import policy configuration"""
+def import_policy(data, name=None, skip_invalid=False):
+    """Import policy configuration
+
+    Each policy is imported independently. If a single policy cannot be
+    imported (e.g. because it references an action that is not available in
+    this privacyIDEA version), the remaining policies are still imported and a
+    ``PolicyError`` summarizing the failures is raised after all policies have
+    been processed.
+
+    :param skip_invalid: If True, actions that are not valid for the policy's
+        scope (e.g. of a removed token type) are dropped instead of failing the
+        whole policy. A policy that has no valid action left after dropping is
+        skipped without causing a failure.
+    """
     log.debug(f'Import policy config: {data!s}')
+    imported = []
+    skipped = []
+    failed = {}
     for res_data in data:
-        if name and name != res_data.get('name'):
+        policy_name = res_data.get('name')
+        if name and name != policy_name:
             continue
-        rid = set_policy(**res_data)
+        if skip_invalid:
+            cleaned, dropped = filter_invalid_actions(res_data.get('scope'),
+                                                      res_data.get('action', {}))
+            if dropped:
+                log.warning(f'Policy "{policy_name}": dropping actions not valid '
+                            f'for this version: {dropped}')
+                res_data['action'] = cleaned
+            if not cleaned:
+                log.warning(f'Skipping policy "{policy_name}": no valid actions '
+                            f'remain after dropping {dropped}.')
+                skipped.append(policy_name)
+                continue
+        try:
+            rid = set_policy(**res_data)
+        except Exception as e:
+            log.warning(f'Could not import policy "{policy_name}": {e!r}')
+            failed[policy_name] = e
+            continue
         # TODO: we have no information if a new policy was created or an
         #  existing policy updated. We would need to enhance "set_policy()"
         #  to either force overwriting or not and also return if the policy
         #  existed before.
-        log.info('Import of policy "{!s}" finished,'
-                 ' id: {!s}'.format(res_data['name'], rid))
+        imported.append(policy_name)
+        log.info(f'Import of policy "{policy_name}" finished, id: {rid!s}')
+
+    if skipped:
+        log.warning(f'Skipped policies with no valid actions: {skipped}')
+
+    if failed:
+        failure_summary = ', '.join(f'"{n}" ({e!r})' for n, e in failed.items())
+        raise PolicyError(f"Could not import the following policies: "
+                          f"{failure_summary}. Successfully imported: {imported}.")

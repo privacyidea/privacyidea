@@ -89,7 +89,7 @@ export class LdapResolverComponent {
       loginName: "uid",
       searchFilter: "(uid=*)(objectClass=inetOrgPerson)",
       userInfo:
-        '{ "phone" : "telephoneNumber", "mobile" : "mobile", "email" : "mail", "surname" : "sn", "givenname" : "givenName" }',
+        "{ \"phone\" : \"telephoneNumber\", \"mobile\" : \"mobile\", \"email\" : \"mail\", \"surname\" : \"sn\", \"givenname\" : \"givenName\" }",
       uidType: "entryUUID"
     },
     {
@@ -97,7 +97,7 @@ export class LdapResolverComponent {
       loginName: "sAMAccountName",
       searchFilter: "(sAMAccountName=*)(objectCategory=person)",
       userInfo:
-        '{ "phone" : "telephoneNumber", "mobile" : "mobile", "email" : "mail", "surname" : "sn", "givenname" : "givenName" }',
+        "{ \"phone\" : \"telephoneNumber\", \"mobile\" : \"mobile\", \"email\" : \"mail\", \"surname\" : \"sn\", \"givenname\" : \"givenName\" }",
       uidType: "objectGUID"
     }
   ];
@@ -146,24 +146,6 @@ export class LdapResolverComponent {
     required(f.USERINFO);
   });
 
-  isValid = () => this.ldapForm().valid();
-  isDirty = () => this.ldapForm().dirty();
-  getValue = () => this.model();
-
-  // Computed TLS state
-  isLdapsUri = computed(() => (this.model().LDAPURI || "").startsWith("ldaps:"));
-  isLdapUri = computed(() => (this.model().LDAPURI || "").startsWith("ldap:"));
-
-  get showTls(): boolean {
-    return this.isLdapUri() || this.isLdapsUri();
-  }
-
-  startTlsDisabled = computed(() => this.isLdapsUri());
-  tlsVersionDisabled = computed(() => !this.model().START_TLS || this.isLdapsUri());
-  tlsVerifyDisabled = computed(() => !this.model().START_TLS || this.isLdapsUri());
-  tlsCaFileDisabled = computed(() => !this.model().START_TLS || !this.model().TLS_VERIFY || this.isLdapsUri());
-  tlsCaFileRequired = computed(() => this.model().START_TLS && this.model().TLS_VERIFY && !this.isLdapsUri());
-
   constructor() {
     effect(() => {
       const initial = this.data();
@@ -209,6 +191,23 @@ export class LdapResolverComponent {
       }));
       this.ldapForm().reset();
     });
+  }
+
+  isValid = () => this.ldapForm().valid();
+  isDirty = () => this.ldapForm().dirty();
+  getValue = () => this.model();
+
+  // Computed TLS state
+  isLdapsUri = computed(() => (this.model().LDAPURI || "").startsWith("ldaps:"));
+  isLdapUri = computed(() => (this.model().LDAPURI || "").startsWith("ldap:"));
+  startTlsDisabled = computed(() => this.isLdapsUri());
+  tlsVersionDisabled = computed(() => !this.model().START_TLS || this.isLdapsUri());
+  tlsVerifyDisabled = computed(() => !this.model().START_TLS || this.isLdapsUri());
+  tlsCaFileDisabled = computed(() => !this.model().START_TLS || !this.model().TLS_VERIFY || this.isLdapsUri());
+  tlsCaFileRequired = computed(() => this.model().START_TLS && this.model().TLS_VERIFY && !this.isLdapsUri());
+
+  get showTls(): boolean {
+    return this.isLdapUri() || this.isLdapsUri();
   }
 
   applyLdapPreset(preset: LdapPreset): void {

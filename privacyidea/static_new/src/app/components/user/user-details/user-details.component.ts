@@ -104,26 +104,9 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
-  private router = inject(Router);
-  private breakpointObserver = inject(BreakpointObserver);
   private readonly pendingChangesService = inject(PendingChangesService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly renderer = inject(Renderer2);
-
-  private isSmall = toSignal(this.breakpointObserver.observe("(max-width: 1000px)").pipe(map((r) => r.matches)));
-  private isMedium = toSignal(this.breakpointObserver.observe("(max-width: 1240px)").pipe(map((r) => r.matches)));
-
-  colCount = computed(() => {
-    if (this.isSmall()) return 1;
-    if (this.isMedium()) return 2;
-    return 3;
-  });
-
-  customColCount = computed(() => {
-    if (this.isSmall()) return 1;
-    return 2;
-  });
-
   readonly labels: Record<string, string> = {
     username: $localize`Username`,
     givenname: $localize`Given name`,
@@ -136,17 +119,29 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
     resolver: $localize`Resolver`
   };
   readonly excludedKeys = new Set(["editable"]);
+  protected readonly Array = Array;
+  private router = inject(Router);
+  private breakpointObserver = inject(BreakpointObserver);
+  private isSmall = toSignal(this.breakpointObserver.observe("(max-width: 1000px)").pipe(map((r) => r.matches)));
+  private isMedium = toSignal(this.breakpointObserver.observe("(max-width: 1240px)").pipe(map((r) => r.matches)));
+  colCount = computed(() => {
+    if (this.isSmall()) return 1;
+    if (this.isMedium()) return 2;
+    return 3;
+  });
+  customColCount = computed(() => {
+    if (this.isSmall()) return 1;
+    return 2;
+  });
   customAttributeKeys: Signal<Set<string>> = computed(() => {
     const attributeKeys = this.userService.userAttributesList().map((attribute) => attribute.key);
     return new Set(attributeKeys);
   });
-
   userData = this.userService.user;
   tokenResource = this.tokenService.tokenResource;
   pageIndex = this.tokenService.pageIndex;
   pageSize = this.tokenService.pageSize;
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
-
   total: WritableSignal<number> = linkedSignal({
     source: this.tokenService.tokenResourceValue,
     computation: (tokenResourceValue, previous) => {
@@ -156,13 +151,10 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
       return previous?.value ?? 0;
     }
   });
-
   @ViewChild("filterHTMLInputElement")
   filterHTMLInputElement!: ElementRef<HTMLInputElement>;
-
   @ViewChild("tokenAutoTrigger", { read: MatAutocompleteTrigger })
   tokenAutoTrigger!: MatAutocompleteTrigger;
-
   tokenDataSource: WritableSignal<MatTableDataSource<TokenDetails>> = linkedSignal({
     source: this.tokenService.tokenResourceValue,
     computation: (tokenResourceValue, previous) => {
@@ -172,7 +164,6 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
       return previous?.value ?? new MatTableDataSource();
     }
   });
-
   attributeSetMap = this.userService.attributeSetMap;
   deletableAttributes = this.userService.deletableAttributes;
   keyOptions = this.userService.keyOptions;
@@ -201,19 +192,6 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
     const value = this.isValueInput() ? this.addValueInput().trim() : (this.selectedValue() ?? "").trim();
     return key.length > 0 && value.length > 0;
   });
-
-  constructor() {
-    effect(() => {
-      const hasWildcard = this.hasWildcardKey();
-      const hasFixedKeys = this.keyOptions().length > 0;
-      if (hasWildcard && !hasFixedKeys) {
-        this.keyMode.set("input");
-      } else {
-        this.keyMode.set("select");
-      }
-    });
-  }
-
   detailsEntries = computed(() =>
     Object.entries(this.userData() ?? {})
       .filter(([key]) => !this.excludedKeys.has(key) && !this.customAttributeKeys().has(key))
@@ -237,6 +215,25 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
     const perCol = Math.ceil(attributes.length / colCount);
     return Array.from({ length: colCount }, (_, i) => attributes.slice(i * perCol, (i + 1) * perCol));
   });
+  editMode = signal(false);
+  editedUserData: WritableSignal<EditUserData> = signal({ username: "" });
+  editIsDirty = computed(() => {
+    if (!this.editMode()) return false;
+    const original: Record<string, unknown> = this.userData() ?? {};
+    return Object.entries(this.editedUserData()).some(([key, value]) => (value ?? "") !== (original[key] ?? ""));
+  });
+
+  constructor() {
+    effect(() => {
+      const hasWildcard = this.hasWildcardKey();
+      const hasFixedKeys = this.keyOptions().length > 0;
+      if (hasWildcard && !hasFixedKeys) {
+        this.keyMode.set("input");
+      } else {
+        this.keyMode.set("select");
+      }
+    });
+  }
 
   ngOnInit(): void {
     this.pendingChangesService.registerHasChanges(
@@ -257,23 +254,6 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
       if (this.editMode()) return this.saveEditAsync();
       return this.addCustomAttribute();
     });
-  }
-
-  private async saveEditAsync(): Promise<boolean> {
-    const data = { ...this.editedUserData(), username: this.userData().username };
-    try {
-      const success = await firstValueFrom(this.userService.editUser(this.userData().resolver, data));
-      if (success) {
-        this.userService.userResource.reload();
-        this.editMode.set(false);
-      }
-      return !!success;
-    } catch (error) {
-      console.error("Failed to save user edits", error);
-      const message = error instanceof Error ? error.message : String(error);
-      this.notificationService.error("Failed to save user edits. " + message);
-      return false;
-    }
   }
 
   ngOnDestroy(): void {
@@ -368,15 +348,6 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
     this.auditService.auditFilter.set(new FilterValue({ value: `user: ${this.userService.detailsUser().username}` }));
   }
 
-  editMode = signal(false);
-  editedUserData: WritableSignal<EditUserData> = signal({ username: "" });
-
-  editIsDirty = computed(() => {
-    if (!this.editMode()) return false;
-    const original: Record<string, unknown> = this.userData() ?? {};
-    return Object.entries(this.editedUserData()).some(([key, value]) => (value ?? "") !== (original[key] ?? ""));
-  });
-
   editUser() {
     this.editedUserData.set({ ...this.userData() });
     this.editMode.set(true);
@@ -441,5 +412,20 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
       });
   }
 
-  protected readonly Array = Array;
+  private async saveEditAsync(): Promise<boolean> {
+    const data = { ...this.editedUserData(), username: this.userData().username };
+    try {
+      const success = await firstValueFrom(this.userService.editUser(this.userData().resolver, data));
+      if (success) {
+        this.userService.userResource.reload();
+        this.editMode.set(false);
+      }
+      return !!success;
+    } catch (error) {
+      console.error("Failed to save user edits", error);
+      const message = error instanceof Error ? error.message : String(error);
+      this.notificationService.error("Failed to save user edits. " + message);
+      return false;
+    }
+  }
 }

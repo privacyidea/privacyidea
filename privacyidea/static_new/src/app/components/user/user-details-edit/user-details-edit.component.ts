@@ -41,14 +41,16 @@ import { EditUserData, UserData } from "@services/user/user.service";
 })
 export class UserDetailsEditComponent {
   protected readonly resolverService: ResolverServiceInterface = inject(ResolverService);
-
+  // Store the latest user data to preserve edits
+  private lastUserData = signal<EditUserData | null>(null);
   resolver = input.required<string>();
   initialUserData = input<UserData>();
   updateData = output<EditUserData>();
-
-  // Store the latest user data to preserve edits
-  private lastUserData = signal<EditUserData | null>(null);
-
+  attributes = computed(() => {
+    const attributes = this.resolverService.userAttributes();
+    // Remove 'username' and 'userid' from the list of attributes
+    return attributes.filter((attribute) => attribute !== "username" && attribute !== "userid");
+  });
   protected newUserData: WritableSignal<EditUserData> = linkedSignal(() => {
     const attributes = this.resolverService.userAttributes();
     const previousData = this.lastUserData() || this.initialUserData();
@@ -58,12 +60,6 @@ export class UserDetailsEditComponent {
       newData[attribute] = previousData?.[attribute] ?? "";
     }
     return newData;
-  });
-
-  attributes = computed(() => {
-    const attributes = this.resolverService.userAttributes();
-    // Remove 'username' and 'userid' from the list of attributes
-    return attributes.filter((attribute) => attribute !== "username" && attribute !== "userid");
   });
 
   constructor() {

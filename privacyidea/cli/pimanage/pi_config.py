@@ -20,6 +20,7 @@
 import copy
 import sys
 import ast
+import inspect
 from functools import partial
 import click
 from flask import current_app
@@ -561,6 +562,13 @@ imp_fmt_dict = {
 }
 
 
+def _accepts_parameter(func, parameter):
+    """Whether the registered importer/exporter function accepts the given
+    keyword parameter. Used to pass optional flags ('skip_invalid', 'censor')
+    only to the functions that support them."""
+    return parameter in inspect.signature(func).parameters
+
+
 @config_cli.command("import")
 @click.option('-i', '--input', "infile", type=click.File('r'),
               default=sys.stdin, show_default=False,
@@ -574,8 +582,12 @@ imp_fmt_dict = {
                    '{!s}'.format(', '.join(['all'] + list(IMPORT_FUNCTIONS.keys()))))
 @click.option('-n', '--name', metavar="NAME",
               help='The name of the configuration object to import (default: import all)')
+@click.option('--skip-invalid', is_flag=True, default=False,
+              help='Skip parts of the configuration that are not valid for this '
+                   'privacyIDEA version (e.g. policy actions of a removed token '
+                   'type) instead of failing, and import the rest.')
 @click.pass_context
-def config_import(ctx, infile, types, name):
+def config_import(ctx, infile, types, name, skip_invalid):
     """
     Import server configuration using specific or all registered importer types.
 
@@ -618,15 +630,32 @@ def config_import(ctx, infile, types, name):
                         "works as expected.", fg="yellow")
 
     # we need to go through the importer functions based on priority
+    failed_types = []
     for typ, value in sorted(IMPORT_FUNCTIONS.items(), key=lambda x: x[1]['prio']):
         if typ in imp_types:
             if typ in data:
                 click.echo(f"Importing configuration type '{typ}'.")
+                # only pass 'skip_invalid' to importers that support it
+                kwargs = {"name": name}
+                supports_skip_invalid = _accepts_parameter(value['func'], "skip_invalid")
+                if supports_skip_invalid:
+                    kwargs["skip_invalid"] = skip_invalid
                 try:
-                    value['func'](data[typ], name=name)
+                    value['func'](data[typ], **kwargs)
                 except Exception as e:
                     click.secho(f"Could not successfully import data of "
                                 f"type {typ}: {e!r}", fg="red")
+                    failed_types.append(typ)
+                    if supports_skip_invalid and not skip_invalid:
+                        click.secho("  Hint: some entries may use configuration "
+                                    "not available in this privacyIDEA version. "
+                                    "Re-run with '--skip-invalid' to skip them and "
+                                    "import the rest.", fg="yellow")
+
+    if failed_types:
+        click.secho(f"Import finished with errors. Failed configuration types: "
+                    f"{', '.join(failed_types)}.", fg="red")
+        ctx.exit(1)
 
 
 # Create the "importer" command as a hidden and deprecated alias for "import"
@@ -661,7 +690,13 @@ exp_fmt_dict = {
                    f"{', '.join(['all'] + list(EXPORT_FUNCTIONS.keys()))}")
 @click.option('-n', '--name', metavar="NAME",
               help='The name of the configuration object to export (default: export all)')
-def config_export(output, fmt, types, name):
+@click.option('--censor', is_flag=True, default=False,
+              help="Replace secrets (passwords, RADIUS secrets, secret-looking "
+                   "options/headers) with the placeholder '__CENSORED__' instead "
+                   "of exporting them in clear text. The resulting file is safe to "
+                   "share but can only be re-imported on the same instance, where "
+                   "the original secrets are kept unchanged.")
+def config_export(output, fmt, types, name, censor):
     """
     Export server configuration using specific or all registered exporter types.
     """
@@ -669,7 +704,17 @@ def config_export(output, fmt, types, name):
 
     out = {}
     for typ in exp_types:
-        out.update({typ: EXPORT_FUNCTIONS[typ](name=name)})
+        func = EXPORT_FUNCTIONS[typ]
+        kwargs = {"name": name}
+        # only pass 'censor' to exporters that support it (those that hold secrets)
+        if _accepts_parameter(func, "censor"):
+            kwargs["censor"] = censor
+        out.update({typ: func(**kwargs)})
+
+    if censor:
+        click.secho("Secrets have been replaced with '__CENSORED__'. This export "
+                    "can only be re-imported on the same instance.",
+                    fg="yellow", err=True)
 
     if out:
         # Add version information to output

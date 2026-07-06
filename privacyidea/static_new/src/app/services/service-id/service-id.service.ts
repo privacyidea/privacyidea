@@ -41,7 +41,9 @@ export interface ServiceId {
 export interface ServiceIdServiceInterface {
   serviceIdResource: HttpResourceRef<PiResponse<ServiceIds> | undefined>;
   serviceIds: WritableSignal<ServiceId[]>;
+
   postServiceId(serviceId: ServiceId): Promise<void>;
+
   deleteServiceId(servicename: string): Promise<void>;
 }
 

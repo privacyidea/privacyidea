@@ -138,7 +138,7 @@ describe("Round-trip safety via setFromMap", () => {
 
 describe("Edge cases", () => {
   test("trailing spaces do not affect parsing", () => {
-    const fv = new FilterValue({ value: 'description:"this token is"   user:  alice   ' });
+    const fv = new FilterValue({ value: "description:\"this token is\"   user:  alice   " });
     expect(fv.filterMap.get("description")).toBe("this token is");
     expect(fv.filterMap.get("user")).toBe("alice");
   });

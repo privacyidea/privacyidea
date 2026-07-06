@@ -17,9 +17,11 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import atexit
 import os
 import shutil
 import socket
+import tempfile
 
 # Per-worker DB isolation for pytest-xdist. Must run before any `privacyidea`
 # import, because TestingConfig.SQLALCHEMY_DATABASE_URI is evaluated at class
@@ -95,8 +97,83 @@ if _worker:
             os.environ[_redis_var] = _redis_url_for_worker(_redis_url, _worker)
 
 import pytest
+from sqlalchemy import event
+from sqlalchemy.engine import Engine
+
+
+@event.listens_for(Engine, "connect")
+def _force_read_committed_on_mysql(dbapi_connection, connection_record):
+    """Set READ COMMITTED on every MySQL/MariaDB connection used by the tests.
+
+    The test harness runs many simulated requests and pi-manage calls in a
+    single process sharing one connection pool. On MariaDB's default REPEATABLE
+    READ isolation a pooled connection keeps the snapshot of its first read, so
+    a read issued after another test context committed can observe stale (empty)
+    data. In production each request and each pi-manage call runs in its own
+    process, so this only affects the test harness.
+
+    This is scoped to the connection's driver (only MySQL/MariaDB), so it does
+    not touch SQLite connections — including the separate SQLite engine the
+    external-audit tests create, which rejects this isolation level. It also
+    leaves SQLALCHEMY_ENGINE_OPTIONS untouched, so the audit engine's option
+    inheritance is unaffected.
+    """
+    driver_module = type(dbapi_connection).__module__ or ""
+    if "pymysql" in driver_module or "mysql" in driver_module.lower():
+        cursor = dbapi_connection.cursor()
+        try:
+            cursor.execute("SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED")
+        finally:
+            cursor.close()
+
 
 from privacyidea.lib.caconnector import save_caconnector
+
+
+def _isolate_editable_testuser_db(worker):
+    """Give each xdist worker its own copy of ``tests/testdata/testuser.sqlite``.
+
+    Several test files (recovery, register, usercache, usernotification, ...)
+    use this SQLite file as an *editable* SQL resolver and insert/delete users
+    in it during the test. All xdist workers resolve the same CWD-relative path
+    (``sqlite:///tests/testdata//testuser.sqlite``), so under ``-n`` they share
+    the single on-disk file and clobber each other's rows. That surfaces as
+    rare, confusing failures far from the cause - e.g. ``ERR904 user can not be
+    found`` right after a successful ``create_user``, ``Realm can not be
+    deleted`` because a foreign worker's token still references it, or user
+    cache count mismatches - depending on which worker loses the race.
+
+    Redirect the shared seed to a per-worker copy in the temp dir (mirroring
+    the per-worker main DB above). The copy name includes the xdist test-run
+    uuid so two suites running concurrently on the same machine (which reuse
+    the worker names ``gw0``, ``gw1``, ...) get separate files instead of
+    colliding. Only the shared ``tests/testdata`` seed is rewritten;
+    test_lib_resolver.py already copies the file to its own tempdir per test
+    and must keep that isolation, so connect strings pointing elsewhere are
+    left untouched."""
+    run_id = os.environ.get("PYTEST_XDIST_TESTRUNUID", "")
+    worker_db = os.path.join(tempfile.gettempdir(), f"pi-testuser-{worker}-{run_id}.sqlite")
+    shutil.copyfile(os.path.join("tests", "testdata", "testuser.sqlite"), worker_db)
+    # The file name is run-specific, so remove it when this worker exits
+    # rather than leaving copies to accumulate in the temp dir.
+    atexit.register(lambda: os.path.exists(worker_db) and os.remove(worker_db))
+
+    from privacyidea.lib.resolvers.SQLIdResolver import IdResolver
+    _original_create_connect_string = IdResolver._create_connect_string
+
+    def _worker_local_connect_string(param):
+        connect_string = _original_create_connect_string(param)
+        if (param.get("Driver") == "sqlite" and "tests/testdata" in connect_string
+                and connect_string.endswith("testuser.sqlite")):
+            return f"sqlite:///{worker_db}"
+        return connect_string
+
+    IdResolver._create_connect_string = staticmethod(_worker_local_connect_string)
+
+
+if _worker:
+    _isolate_editable_testuser_db(_worker)
+
 
 _redis_flush_client = None
 

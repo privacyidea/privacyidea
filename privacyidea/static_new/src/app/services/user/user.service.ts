@@ -107,12 +107,19 @@ export interface UserServiceInterface {
   detailsUser: WritableSignal<DetailsUser>;
 
   setUserAttribute(key: string, value: string): Observable<PiResponse<number> | undefined>;
+
   deleteUserAttribute(key: string): Observable<PiResponse<number> | undefined>;
+
   createUser(resolver: string, userData: EditUserData): Observable<boolean>;
+
   editUser(resolver: string, userData: EditUserData): Observable<boolean>;
+
   deleteUser(resolver: string, username: string): Observable<boolean>;
+
   resetFilter(): void;
+
   handleFilterInput($event: Event): void;
+
   displayUser(user: UserData | string): string;
 }
 
@@ -124,6 +131,11 @@ export class UserService implements UserServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly notificationService = inject(NotificationService);
   private readonly http = inject(HttpClient);
+  readonly apiFilter = apiFilter;
+  readonly advancedApiFilter = advancedApiFilter;
+  private baseUrl = environment.proxyUrl + "/user/";
+  private hasTokenSelection = computed(() => this.tokenService.tokenSelection().length > 0);
+  filterValue = signal({} as Record<string, string>);
 
   constructor() {
     effect(() => {
@@ -146,10 +158,6 @@ export class UserService implements UserServiceInterface {
     });
   }
 
-  readonly apiFilter = apiFilter;
-  readonly advancedApiFilter = advancedApiFilter;
-  private baseUrl = environment.proxyUrl + "/user/";
-  filterValue = signal({} as Record<string, string>);
   readonly advancedApiFilterOptions = advancedApiFilter;
 
   filterParams = computed<Record<string, string>>(() => {
@@ -337,7 +345,6 @@ export class UserService implements UserServiceInterface {
     }
   });
 
-  private hasTokenSelection = computed(() => this.tokenService.tokenSelection().length > 0);
 
   usersResource = httpResource<PiResponse<UserData[]>>(() => {
     const selectedUserRealm = this.selectedUserRealm();
