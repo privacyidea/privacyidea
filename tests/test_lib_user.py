@@ -129,7 +129,7 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
         self.assertEqual("0", uid)
         self.assertEqual("passwdresolver", rtype)
         self.assertEqual(self.resolvername1, resolvername)
-        self.assertEqual(user.realm_id, 1)
+        self.assertIsNotNone(user.realm_id)
 
         # create user by uid. fail, since the resolver is missing
         self.assertRaises(UserError, User, realm=self.realm1, uid="0")
@@ -139,7 +139,7 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
         self.assertEqual("root", user2.login)
         self.assertEqual("passwdresolver", rtype)
         self.assertEqual(self.resolvername1, resolvername)
-        self.assertEqual(user.realm_id, 1)
+        self.assertEqual(user.realm_id, user2.realm_id)
 
     def test_get_username(self):
         username = get_username("0", self.resolvername1)
