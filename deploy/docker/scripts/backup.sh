@@ -15,13 +15,17 @@
 # Output (encrypted):    backups/privacyidea_YYYYMMDD_HHMMSS.tar.gz.age
 #
 # Archive contents:
-#   database.sql  — full logical dump of the pi database
-#   enckey        — PrivacyIDEA token encryption key
-#   pi_pepper     — password hashing pepper
-#   secret_key    — Flask session signing key
+#   database.sql       — full logical dump of the pi database
+#   enckey             — PrivacyIDEA token encryption key
+#   pi_pepper          — password hashing pepper
+#   secret_key         — Flask session signing key
+#   audit_key_private  — audit signing private key (if present)
+#   audit_key_public   — audit signing public key (if present)
 #
-# IMPORTANT: These three keys and the database dump must stay together.
-#            A database without its matching enckey and pi_pepper cannot be used.
+# IMPORTANT: These keys and the database dump must stay together. A database
+#            without its matching enckey/pi_pepper cannot be used; without the
+#            matching audit keypair, existing audit-log signatures cannot be
+#            verified after a restore.
 
 set -euo pipefail
 
@@ -90,6 +94,13 @@ echo "[backup] Copying secrets..."
 cp "${SECRETS_DIR}/enckey"     "${BACKUP_WORK}/enckey"
 cp "${SECRETS_DIR}/pi_pepper"  "${BACKUP_WORK}/pi_pepper"
 cp "${SECRETS_DIR}/secret_key" "${BACKUP_WORK}/secret_key"
+# Audit signing keypair, if present — needed so restored audit entries stay
+# verifiable and the (fail-closed) stack can start after a disaster recovery.
+for audit_key in audit_key_private audit_key_public; do
+    if [[ -f "${SECRETS_DIR}/${audit_key}" ]]; then
+        cp "${SECRETS_DIR}/${audit_key}" "${BACKUP_WORK}/${audit_key}"
+    fi
+done
 
 echo "[backup] Creating archive..."
 ARCHIVE="${BACKUP_DIR}/${BACKUP_NAME}.tar.gz"

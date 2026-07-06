@@ -58,9 +58,15 @@ if [ "$DELAY" -gt 0 ]; then
 fi
 
 # Calculate standard Gunicorn recommendation based on host cores with a cap of 4.
-# This can still be overwritten with PI_WORKERS
+# This can still be overwritten with PI_WORKERS. Fall back gracefully if neither
+# nproc nor getconf is present, so a minimal base image can't break startup.
+if command -v nproc >/dev/null 2>&1; then
+    CORES=$(nproc)
+else
+    CORES=$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 1)
+fi
 CAP=$(( 4 ))
-CALCULATED=$(( $(nproc) * 2 + 1 ))
+CALCULATED=$(( CORES * 2 + 1 ))
 if [ "$CALCULATED" -gt "$CAP" ]; then
     DEFAULT_WORKERS="$CAP"
 else
@@ -91,10 +97,10 @@ if [ "${PI_CREATE_TABLES:-false}" = "true" ] || [ "${PI_RUN_MIGRATIONS:-false}" 
     python3 -c "
 import sys
 from sqlalchemy import inspect
-from privacyidea.app import create_app
+from privacyidea.app import create_docker_app
 from privacyidea.models import db
 try:
-    with create_app('docker', silent=True).app_context():
+    with create_docker_app().app_context():
         has_tables = bool(inspect(db.engine).get_table_names())
 except Exception as exc:
     sys.stderr.write(f'Database probe failed: {exc}\n')

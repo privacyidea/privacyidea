@@ -15,13 +15,15 @@
 #                automated/CI use — never use it against production data.
 #
 # The backup archive contains:
-#   database.sql  — logical SQL dump (required)
-#   enckey        — encryption key used when the backup was taken (required)
-#   pi_pepper     — password pepper used when the backup was taken
-#   secret_key    — Flask session signing key
+#   database.sql       — logical SQL dump (required)
+#   enckey             — encryption key used when the backup was taken (required)
+#   pi_pepper          — password pepper used when the backup was taken
+#   secret_key         — Flask session signing key
+#   audit_key_private  — audit signing keypair (private)
+#   audit_key_public   — audit signing keypair (public)
 # database.sql and enckey are required; the keys are reconciled with secrets/ (a
 # missing key is installed, a matching one kept, a differing one refused). Older
-# archives may omit pi_pepper/secret_key — those are simply skipped.
+# archives may omit pi_pepper/secret_key/audit keys — those are simply skipped.
 #
 # WARNING: This DROPS and recreates the pi database. All current data will be lost.
 
@@ -167,6 +169,8 @@ reconcile_secret() {
 reconcile_secret "enckey"
 reconcile_secret "pi_pepper"
 reconcile_secret "secret_key"
+reconcile_secret "audit_key_private"
+reconcile_secret "audit_key_public"
 
 echo ""
 echo "========================================================================"
