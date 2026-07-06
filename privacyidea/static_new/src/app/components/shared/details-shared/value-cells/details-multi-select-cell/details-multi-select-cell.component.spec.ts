@@ -16,17 +16,19 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { OverlayContainer } from "@angular/cdk/overlay";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { MatOption } from "@angular/material/core";
 import { MatSelect, MatSelectChange } from "@angular/material/select";
 import { DetailsMultiSelectCellComponent } from "./details-multi-select-cell.component";
 
 describe("DetailsMultiSelectCellComponent", () => {
   let fixture: ComponentFixture<DetailsMultiSelectCellComponent>;
   let component: DetailsMultiSelectCellComponent;
+  let overlayContainerElement: HTMLElement;
 
   beforeEach(() => {
     TestBed.configureTestingModule({ imports: [DetailsMultiSelectCellComponent] });
+    overlayContainerElement = TestBed.inject(OverlayContainer).getContainerElement();
     fixture = TestBed.createComponent(DetailsMultiSelectCellComponent);
     component = fixture.componentInstance;
     fixture.componentRef.setInput("selectLabel", "Select Realms");
@@ -39,13 +41,14 @@ describe("DetailsMultiSelectCellComponent", () => {
   });
 
   it("renders one mat-option per option, disabled where requested", () => {
-    const options: MatOption[] = fixture.debugElement
-      .queryAll((el) => el.componentInstance instanceof MatOption)
-      .map((el) => el.componentInstance);
+    fixture.nativeElement.querySelector(".mat-mdc-select-trigger").click();
+    fixture.detectChanges();
+
+    const options = overlayContainerElement.querySelectorAll(".mat-mdc-option");
 
     expect(options.length).toBe(2);
-    expect(options[0].disabled).toBe(false);
-    expect(options[1].disabled).toBe(true);
+    expect(options[0].classList.contains("mdc-list-item--disabled")).toBe(false);
+    expect(options[1].classList.contains("mdc-list-item--disabled")).toBe(true);
   });
 
   it("emits selectionChange with the new values", () => {

@@ -459,7 +459,9 @@ describe("UserService", () => {
       TestBed.tick();
 
       // Expect and flush the main user details request
-      const req = mockBackend.expectOne(environment.proxyUrl + "/user/?user=" + user + "&realm=" + realm);
+      const req = mockBackend.expectOne(
+        environment.proxyUrl + "/user/?include_custom_attributes=false&user=" + user + "&realm=" + realm
+      );
       req.flush({ result: {} });
 
       // Ignore and flush all other open requests
@@ -481,7 +483,9 @@ describe("UserService", () => {
       TestBed.tick();
 
       // Expect and flush an error response
-      const req = mockBackend.expectOne(environment.proxyUrl + "/user/?user=" + user + "&realm=" + realm);
+      const req = mockBackend.expectOne(
+        environment.proxyUrl + "/user/?include_custom_attributes=false&user=" + user + "&realm=" + realm
+      );
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
         status: 403,
         statusText: "Permission denied"
@@ -518,7 +522,9 @@ describe("UserService", () => {
       TestBed.tick();
 
       // Load alice
-      const req1 = mockBackend.expectOne(environment.proxyUrl + "/user/?user=alice&realm=" + realm);
+      const req1 = mockBackend.expectOne(
+        environment.proxyUrl + "/user/?include_custom_attributes=false&user=alice&realm=" + realm
+      );
       req1.flush(MockPiResponse.fromValue([buildUser("alice")]));
       httpMock.match(() => true).forEach((r) => r.flush({ result: {} }));
       await Promise.resolve();
@@ -533,7 +539,9 @@ describe("UserService", () => {
       // Before bob's response arrives, user should be reset to empty
       expect(userService.user().username).toBe("");
 
-      const req2 = mockBackend.expectOne(environment.proxyUrl + "/user/?user=bob&realm=" + realm);
+      const req2 = mockBackend.expectOne(
+        environment.proxyUrl + "/user/?include_custom_attributes=false&user=bob&realm=" + realm
+      );
       req2.flush(MockPiResponse.fromValue([buildUser("bob")]));
       httpMock.match(() => true).forEach((r) => r.flush({ result: {} }));
       await Promise.resolve();

@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component } from "@angular/core";
+import { Component, signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { DetailFieldRowComponent } from "./detail-field-row.component";
 
@@ -26,14 +26,14 @@ import { DetailFieldRowComponent } from "./detail-field-row.component";
   template: `
     <app-detail-field-row
       label="KEY-CONTENT"
-      [isEditing]="editing">
+      [isEditing]="editing()">
       <span fieldValue>VALUE-CONTENT</span>
       <span fieldEdit>EDIT-CONTENT</span>
     </app-detail-field-row>
   `
 })
 class HostComponent {
-  editing = false;
+  editing = signal(false);
 }
 
 describe("DetailFieldRowComponent", () => {
@@ -58,11 +58,11 @@ describe("DetailFieldRowComponent", () => {
     const rowEl = fixture.nativeElement.querySelector("app-detail-field-row") as HTMLElement;
     expect(rowEl.classList.contains("detail-field--editing")).toBe(false);
 
-    host.editing = true;
+    host.editing.set(true);
     fixture.detectChanges();
     expect(rowEl.classList.contains("detail-field--editing")).toBe(true);
 
-    host.editing = false;
+    host.editing.set(false);
     fixture.detectChanges();
     expect(rowEl.classList.contains("detail-field--editing")).toBe(false);
   });
