@@ -397,9 +397,11 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
                 repl = repl or {}
                 reply_dict.update(repl)
                 if otp_count >= 0:
-                    # This is a successful authentication
+                    # This is a successful authentication. LOGIN_SUCCESS is classified
+                    # once, later, in the final valid_token_list block (which re-checks
+                    # check_all before confirming success), so it is deliberately not
+                    # appended here as well - it would be a redundant duplicate.
                     valid_token_list.append(token_object)
-                    request_events.append(AuthEventType.LOGIN_SUCCESS)
                 elif pin_match:
                     # The PIN (first factor) of the token matches, but the OTP did not. For logging check if a pin was
                     # required / checked at all.

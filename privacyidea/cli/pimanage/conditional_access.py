@@ -38,8 +38,8 @@ def _format_expiry(expires_at):
     return expires_at.isoformat() if expires_at else "permanent"
 
 
-@conditional_access_cli.command("list-blocks", help="List the currently blocked IPs.")
-def list_blocks():
+@conditional_access_cli.command("list-blocked-ips", help="List the currently blocked IPs.")
+def list_blocked_ips():
     rows = BlockList.query.filter_by(is_blocked=True).all()
     if not rows:
         click.echo("No blocked IPs.")
@@ -69,8 +69,8 @@ def clear_blocks():
     click.echo(f"Removed {count} IP block(s).")
 
 
-@conditional_access_cli.command("list-locks", help="List the currently locked users.")
-def list_locks():
+@conditional_access_cli.command("list-locked-users", help="List the currently locked users.")
+def list_locked_users():
     rows = UserLockoutState.query.filter_by(is_locked=True).all()
     if not rows:
         click.echo("No locked users.")
@@ -88,7 +88,7 @@ def list_locks():
 def unlock_user(login, realm, resolver):
     user = User(login=login, realm=realm, resolver=resolver or "")
     if user.is_empty() or not user.exist():
-        click.echo(f"User {login}@{realm} could not be resolved. Use 'list-locks' and "
+        click.echo(f"User {login}@{realm} could not be resolved. Use 'list-locked-users' and "
                    f"'unlock-by-id' if the user no longer exists in the resolver.")
         return
     row = UserLockoutState.query.filter_by(resolver=user.resolver, uid=user.uid, realm=user.realm).first()
@@ -116,9 +116,15 @@ def unlock_by_id(resolver, uid, realm):
     click.echo(f"Unlocked (resolver={resolver}, uid={uid}, realm={realm}).")
 
 
-@conditional_access_cli.command("clear-locks", help="Remove ALL user locks.")
-@click.confirmation_option(prompt="Remove all user locks?")
-def clear_locks():
-    count = UserLockoutState.query.delete()
+@conditional_access_cli.command("clear-locks",
+                                help="Remove ALL user locks, or only those of a given realm.")
+@click.option("--realm", help="Only clear locks of users in this realm.")
+@click.confirmation_option(prompt="Remove the matching user locks?")
+def clear_locks(realm):
+    query = UserLockoutState.query
+    if realm:
+        query = query.filter_by(realm=realm)
+    count = query.delete()
     db.session.commit()
-    click.echo(f"Removed {count} user lock(s).")
+    scope = f" in realm '{realm}'" if realm else ""
+    click.echo(f"Removed {count} user lock(s){scope}.")

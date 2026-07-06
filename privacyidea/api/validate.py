@@ -140,7 +140,7 @@ from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent,
 from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
 from .lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
 from .lib.utils import (get_required, map_error_to_code, send_error, send_result, log_authentication,
-                        conditional_access_precheck, conditional_access_posteval)
+                        conditional_access_gate, conditional_access_posteval)
 from ..lib.conditional_access.authentication_error_codes import (AuthEventType, AUTH_EVENT_TYPE_KEY,
                                                                  LOG_TRANSACTION_ID_KEY)
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
@@ -333,6 +333,47 @@ def _conditional_access_identity():
     return token.user if (token and token.user) else request.User
 
 
+def _challenge_owner(challenge) -> User:
+    """
+    Resolve the owner (a token owner or the first container user) of a single
+    challenge. Returns an empty :class:`User` when no owner can be resolved.
+    """
+    challenge_type = "token"
+    if challenge.data:
+        try:
+            challenge_data = json.loads(challenge.data)
+            if isinstance(challenge_data, dict):
+                challenge_type = challenge_data.get("type", "token")
+        except json.JSONDecodeError:
+            pass
+    try:
+        if challenge_type == "container":
+            users = find_container_by_serial(challenge.serial).get_users()
+            return users[0] if users else User()
+        token = get_one_token(serial=challenge.serial, silent_fail=True)
+        return token.user if (token and token.user) else User()
+    except Exception as ex:
+        log.debug(f"Conditional-access pre-check could not resolve a challenge owner: {ex!r}")
+        return User()
+
+
+def _poll_transaction_identity() -> User:
+    """
+    Resolve the identity the /validate/polltransaction conditional-access
+    pre-check must gate on: the owner of the (first valid) challenge for the
+    polled transaction. The poll carries only a transaction id, so the owner is
+    looked up from it; an empty :class:`User` (IP-block still applies) is
+    returned when the transaction has no valid challenge.
+    """
+    transaction_id = (request.view_args or {}).get("transaction_id") \
+        or get_optional(request.all_data, "transaction_id")
+    if not transaction_id:
+        return User()
+    valid_challenges = [challenge for challenge in get_challenges(transaction_id=transaction_id)
+                        if challenge.is_valid()]
+    return _challenge_owner(valid_challenges[0]) if valid_challenges else User()
+
+
 @validate_blueprint.route('/check', methods=['POST', 'GET'])
 @validate_blueprint.route('/radiuscheck', methods=['POST', 'GET'])
 @postpolicy(hide_specific_error_message)
@@ -365,6 +406,7 @@ def _conditional_access_identity():
 @CheckSubscription(request)
 @prepolicy(api_key_required, request=request)
 @event("validate_check", request, g)
+@conditional_access_gate(_conditional_access_identity)
 def check():
     """
     Verify an authentication attempt.
@@ -499,14 +541,10 @@ def check():
 
 
     """
-    # Conditional-access pre-check: reject a locked user, a blocked source IP, or a
-    # policy DENY decision before any token logic (generic failure response, reason
-    # recorded only in the audit log; see the helper for details). The identity is
-    # resolved up front (see _conditional_access_identity) so a username-less passkey
-    # (credential_id) or serial-only request is gated on the real token owner.
-    rejection = conditional_access_precheck(_conditional_access_identity())
-    if rejection is not None:
-        return rejection
+    # The conditional-access pre-check runs in the @conditional_access_gate
+    # decorator above (resolving the identity via _conditional_access_identity),
+    # so a locked user, blocked source IP or DENY decision is rejected before the
+    # body runs.
 
     # Handle Enrollment Cancellation (Immediate Return)
     if is_true(request.all_data.get("cancel_enrollment")):
@@ -916,6 +954,7 @@ def _log_authentication_event(context):
 @prepolicy(load_challenge_text, request=request)
 @prepolicy(fido2_auth, request=request)
 @event("validate_triggerchallenge", request, g)
+@conditional_access_gate()
 def trigger_challenge():
     """
     Trigger a fresh challenge for every challenge-response token
@@ -1033,13 +1072,9 @@ def trigger_challenge():
 
     """
     user = request.User
-    # Conditional-access pre-check: do not trigger a challenge for a locked user,
-    # from a blocked source IP, or when a DENY policy applies (generic failure,
-    # reason recorded only in the audit log).
-    rejection = conditional_access_precheck(user)
-    if rejection is not None:
-        return rejection
-
+    # The conditional-access pre-check runs in the @conditional_access_gate
+    # decorator above (gating on request.User), so a locked user, blocked source
+    # IP or DENY decision is rejected before a challenge is triggered.
     serial = get_optional(request.all_data, "serial")
     token_type = get_optional(request.all_data, "type")
     details = {"messages": [], "transaction_ids": []}
@@ -1093,6 +1128,7 @@ def trigger_challenge():
 @CheckSubscription(request)
 @prepolicy(api_key_required, request=request)
 @event("validate_poll_transaction", request, g)
+@conditional_access_gate(_poll_transaction_identity)
 def poll_transaction(transaction_id=None):
     """
     Report whether a challenge has been answered. Out-of-band tokens
@@ -1148,22 +1184,8 @@ def poll_transaction(transaction_id=None):
         g.audit_object.log({
             "serial": ",".join(challenge.serial for challenge in log_challenges),
         })
-        # check if the challenge is from a token or container
-        challenge = log_challenges[0]
-        challenge_type = "token"
-        if challenge.data:
-            try:
-                challenge_data = json.loads(challenge.data)
-                if isinstance(challenge_data, dict):
-                    challenge_type = challenge_data.get("type", "token")
-            except json.JSONDecodeError:
-                pass
-        if challenge_type == "container":
-            container = find_container_by_serial(log_challenges[0].serial)
-            users = container.get_users()
-            user = users[0] if users else User()
-        else:
-            user = get_one_token(serial=log_challenges[0].serial).user
+        # Resolve the token/container owner of the first logged challenge.
+        user = _challenge_owner(log_challenges[0])
 
         if user:
             g.audit_object.log({
@@ -1172,14 +1194,12 @@ def poll_transaction(transaction_id=None):
                 "realm": user.realm,
             })
 
-    # Conditional-access pre-check: reject the poll of a locked user (the token
-    # owner resolved above), a blocked source IP, or a DENY decision with a generic
-    # failure. The poll outcome is deliberately NOT written to the authentication
-    # log or fed to the engine here — the smartphone's answer was already logged at
-    # /ttype/push, so polling only gates, it does not accumulate or react.
-    rejection = conditional_access_precheck(user)
-    if rejection is not None:
-        return rejection
+    # The conditional-access pre-check runs in the @conditional_access_gate
+    # decorator above (resolving the challenge owner via _poll_transaction_identity),
+    # so the poll of a locked user, a blocked source IP or a DENY decision is
+    # rejected before this body runs. The poll outcome is deliberately NOT written
+    # to the authentication log or fed to the engine — the smartphone's answer was
+    # already logged at /ttype/push, so polling only gates, it does not accumulate.
 
     # In any case, we log the transaction ID
     g.audit_object.log({

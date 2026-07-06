@@ -42,8 +42,7 @@ from flask import (Blueprint,
 from flask import g, jsonify, current_app
 
 from privacyidea.api.lib.utils import (get_all_params, get_optional, map_error_to_code, send_error,
-                                       log_authentication, conditional_access_precheck,
-                                       conditional_access_posteval)
+                                       log_authentication, conditional_access_posteval)
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.config import (get_token_class, get_from_config,
                                     SYSCONF, ensure_no_config_object, get_privacyidea_node)
@@ -147,9 +146,6 @@ def token(ttype=None):
         log.error(f"Invalid tokentype provided. ttype: {ttype.lower()}")
         raise ParameterError(f"Invalid tokentype provided. ttype: {ttype.lower()}")
 
-    # The push token owner, resolved once from the serial: used for the
-    # conditional-access pre-check below and the engine post-eval further down.
-    push_owner = None
     if ttype == "push":
         # Code to phone message
         # TODO this is probably not perfect, but we can not evaluate policies in the token class itself
@@ -160,14 +156,9 @@ def token(ttype=None):
         if len(policies) >= 1:
             code_to_phone_message = list(policies)[0]
         request.all_data[PushAction.PUSH_CODE_TO_PHONE_MESSAGE] = code_to_phone_message
-
-        # Conditional-access pre-check (push only): reject the smartphone's poll /
-        # answer when the token owner is locked, the source IP is blocked, or a DENY
-        # policy applies. Generic failure, reason recorded only in the audit log.
-        push_owner = _push_token_owner(g.serial)
-        rejection = conditional_access_precheck(push_owner)
-        if rejection is not None:
-            return rejection
+        # The conditional-access pre-check for push runs inside the push token's
+        # _api_endpoint_post (auth path only), not here, so enrollment and firebase
+        # token updates are never gated by a lockout.
 
     try:
         res = token_class.api_endpoint(request, g)
@@ -193,7 +184,7 @@ def token(ttype=None):
         # The smartphone's request carries only the serial; scope the auth-log row
         # and the conditional-access engine to the resolved token owner (the param
         # user is empty for a push answer) so per-user failure counts add up.
-        owner = push_owner if push_owner is not None else _push_token_owner(serial)
+        owner = _push_token_owner(serial)
         log_authentication(push_auth_event, request, user=owner, serial=serial,
                            transaction_id=getattr(g, PUSH_AUTH_TRANSACTION_ID, None))
         conditional_access_posteval(owner, push_auth_event)

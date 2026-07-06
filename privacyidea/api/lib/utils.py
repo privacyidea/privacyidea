@@ -22,6 +22,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+import functools
 import json
 import logging
 import re
@@ -350,6 +351,31 @@ def conditional_access_precheck(user) -> "Response | None":
                             "info": "Rejected: denied by conditional-access policy"})
         return send_result(False, rid=2, details={})
     return None
+
+
+def conditional_access_gate(identity_resolver=None):
+    """
+    View decorator that runs :func:`conditional_access_precheck` before the
+    decorated endpoint body (and, when placed above them, before the endpoint's
+    pre-policies). If the pre-check rejects the request, its generic-failure
+    response is returned immediately and the endpoint never runs.
+
+    :param identity_resolver: an optional zero-argument callable returning the
+        :class:`~privacyidea.lib.user.User` the pre-check should gate on. When
+        omitted, ``request.User`` is used. Endpoints that must resolve the
+        identity differently (a serial/credential-id request, or a transaction
+        owner) pass their own resolver.
+    """
+    def decorator(wrapped_function):
+        @functools.wraps(wrapped_function)
+        def wrapper(*args, **kwargs):
+            user = identity_resolver() if identity_resolver is not None else request.User
+            rejection = conditional_access_precheck(user)
+            if rejection is not None:
+                return rejection
+            return wrapped_function(*args, **kwargs)
+        return wrapper
+    return decorator
 
 
 def conditional_access_posteval(user, event_type) -> None:

@@ -94,8 +94,6 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         # counter types
         self.assertRaises(ParameterError, create_lockout_policy, "P", 600, [], [_stage()])
         self.assertRaises(ParameterError, create_lockout_policy, "P", 600, ["NOT_A_TYPE"], [_stage()])
-        self.assertRaises(ParameterError, create_lockout_policy, "P", 600,
-                          ["PIN_FAIL", "PIN_FAIL"], [_stage()])
         self.assertRaises(ParameterError, create_lockout_policy, "P", 600, "PIN_FAIL", [_stage()])
         # stages
         self.assertRaises(ParameterError, create_lockout_policy, "P", 600, ["PIN_FAIL"], [])
@@ -118,6 +116,14 @@ class LockoutPolicyCrudTestCase(MyTestCase):
                           [_stage(actions=[{"action_type": "LOCK_USER", "bogus": 1}])])
         # nothing invalid was persisted
         self.assertEqual(1, db.session.query(LockoutPolicy).count())
+
+    def test_02b_duplicate_counter_types_are_deduplicated(self):
+        # A repeated counter type is silently de-duplicated (order preserved),
+        # not rejected: tracking the same event type twice has no effect.
+        policy_id = create_lockout_policy("Dedup", 600,
+                                          ["MFA_FAIL", "PIN_FAIL", "MFA_FAIL"], [_stage()])
+        self.assertEqual(["MFA_FAIL", "PIN_FAIL"],
+                         get_lockout_policy(policy_id)["counter_types_to_track"])
 
     def test_03_list_and_order(self):
         create_lockout_policy("Low", 600, ["PIN_FAIL"], [_stage()], priority=1)

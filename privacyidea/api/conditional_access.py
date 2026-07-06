@@ -38,8 +38,7 @@ from privacyidea.lib.conditional_access.lockout_policy import (list_lockout_poli
                                                                get_lockout_policy,
                                                                create_lockout_policy,
                                                                update_lockout_policy,
-                                                               delete_lockout_policy,
-                                                               enable_lockout_policy)
+                                                               delete_lockout_policy)
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.params import get_optional, get_required
@@ -81,14 +80,14 @@ def _int_policy_id(policy_id) -> int:
 
 
 @conditional_access_blueprint.route('policy', methods=['GET'])
-@prepolicy(check_base_action, request, PolicyAction.CONDITIONAL_ACCESS_READ)
+@prepolicy(check_base_action, request, PolicyAction.LOCKOUT_POLICY_READ)
 @log_with(log)
 def list_policies():
     """
     Return all conditional-access lockout policies with their stages and
     actions, ordered by descending priority (the engine's evaluation order).
 
-    Requires the admin policy action :ref:`policy_conditional_access_read`.
+    Requires the admin policy action :ref:`policy_lockout_policy_read`.
 
     :query enabled: if given, only return policies whose enabled state matches
         this boolean.
@@ -103,14 +102,14 @@ def list_policies():
 
 
 @conditional_access_blueprint.route('policy/<policy_id>', methods=['GET'])
-@prepolicy(check_base_action, request, PolicyAction.CONDITIONAL_ACCESS_READ)
+@prepolicy(check_base_action, request, PolicyAction.LOCKOUT_POLICY_READ)
 @log_with(log)
 def get_policy(policy_id):
     """
     Return a single conditional-access lockout policy with its stages and
     actions.
 
-    Requires the admin policy action :ref:`policy_conditional_access_read`.
+    Requires the admin policy action :ref:`policy_lockout_policy_read`.
 
     :status 200: the policy dict in ``result.value``
     :status 404: no policy with this id exists
@@ -121,13 +120,13 @@ def get_policy(policy_id):
 
 
 @conditional_access_blueprint.route('policy', methods=['POST'])
-@prepolicy(check_base_action, request, PolicyAction.CONDITIONAL_ACCESS_WRITE)
+@prepolicy(check_base_action, request, PolicyAction.LOCKOUT_POLICY_WRITE)
 @log_with(log)
 def create_policy():
     """
     Create a conditional-access lockout policy with its stages and actions.
 
-    Requires the admin policy action :ref:`policy_conditional_access_write`.
+    Requires the admin policy action :ref:`policy_lockout_policy_write`.
 
     :jsonparam name: unique policy name. Required.
     :jsonparam time_window_seconds: sliding window (in seconds) over which the
@@ -161,16 +160,18 @@ def create_policy():
     return send_result(policy_id)
 
 
-@conditional_access_blueprint.route('policy/<policy_id>', methods=['POST'])
-@prepolicy(check_base_action, request, PolicyAction.CONDITIONAL_ACCESS_WRITE)
+@conditional_access_blueprint.route('policy/<policy_id>', methods=['PATCH'])
+@prepolicy(check_base_action, request, PolicyAction.LOCKOUT_POLICY_WRITE)
 @log_with(log)
 def update_policy(policy_id):
     """
-    Update a conditional-access lockout policy. Only the given parameters are
-    changed; ``counter_types_to_track`` and ``stages`` are replaced as a whole
-    when given.
+    Partially update a conditional-access lockout policy. Only the given
+    parameters are changed and all others are left untouched;
+    ``counter_types_to_track`` and ``stages`` are replaced as a whole when
+    given. Enabling or disabling a policy is done through this endpoint by
+    sending ``{"enabled": true}`` / ``{"enabled": false}``.
 
-    Requires the admin policy action :ref:`policy_conditional_access_write`.
+    Requires the admin policy action :ref:`policy_lockout_policy_write`.
     Parameters are as for creating a policy, all optional.
 
     :status 200: the id of the updated policy in ``result.value``
@@ -181,7 +182,7 @@ def update_policy(policy_id):
     enabled = get_optional(params, "enabled")
     dry_run = get_optional(params, "dry_run")
     policy_id = _int_policy_id(policy_id)
-    update_lockout_policy(
+    policy_id, changed_fields = update_lockout_policy(
         policy_id,
         name=get_optional(params, "name"),
         time_window_seconds=get_optional(params, "time_window_seconds"),
@@ -190,58 +191,25 @@ def update_policy(policy_id):
         enabled=is_true(enabled) if enabled is not None else None,
         dry_run=is_true(dry_run) if dry_run is not None else None,
         priority=get_optional(params, "priority"))
-    g.audit_object.log({"success": True, "info": f"updated policy {policy_id}"})
+    g.audit_object.log({"success": True,
+                        "info": f"updated policy {policy_id} "
+                                f"({', '.join(changed_fields) or 'no fields'})"})
     return send_result(policy_id)
 
 
 @conditional_access_blueprint.route('policy/<policy_id>', methods=['DELETE'])
-@prepolicy(check_base_action, request, PolicyAction.CONDITIONAL_ACCESS_WRITE)
+@prepolicy(check_base_action, request, PolicyAction.LOCKOUT_POLICY_WRITE)
 @log_with(log)
 def delete_policy(policy_id):
     """
     Delete a conditional-access lockout policy with all its stages and actions.
     Existing locks and blocks written by the policy stay in force.
 
-    Requires the admin policy action :ref:`policy_conditional_access_write`.
+    Requires the admin policy action :ref:`policy_lockout_policy_write`.
 
     :status 200: the id of the deleted policy in ``result.value``
     :status 404: no policy with this id exists
     """
     delete_lockout_policy(_int_policy_id(policy_id))
     g.audit_object.log({"success": True, "info": f"deleted policy {policy_id}"})
-    return send_result(policy_id)
-
-
-@conditional_access_blueprint.route('policy/<policy_id>/enable', methods=['POST'])
-@prepolicy(check_base_action, request, PolicyAction.CONDITIONAL_ACCESS_WRITE)
-@log_with(log)
-def enable_policy(policy_id):
-    """
-    Enable a conditional-access lockout policy.
-
-    Requires the admin policy action :ref:`policy_conditional_access_write`.
-
-    :status 200: the id of the policy in ``result.value``
-    :status 404: no policy with this id exists
-    """
-    enable_lockout_policy(_int_policy_id(policy_id), enable=True)
-    g.audit_object.log({"success": True, "info": f"enabled policy {policy_id}"})
-    return send_result(policy_id)
-
-
-@conditional_access_blueprint.route('policy/<policy_id>/disable', methods=['POST'])
-@prepolicy(check_base_action, request, PolicyAction.CONDITIONAL_ACCESS_WRITE)
-@log_with(log)
-def disable_policy(policy_id):
-    """
-    Disable a conditional-access lockout policy (it is no longer evaluated;
-    locks and blocks it already wrote stay in force).
-
-    Requires the admin policy action :ref:`policy_conditional_access_write`.
-
-    :status 200: the id of the policy in ``result.value``
-    :status 404: no policy with this id exists
-    """
-    enable_lockout_policy(_int_policy_id(policy_id), enable=False)
-    g.audit_object.log({"success": True, "info": f"disabled policy {policy_id}"})
     return send_result(policy_id)

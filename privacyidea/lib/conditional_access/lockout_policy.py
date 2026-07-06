@@ -53,6 +53,7 @@ must not silently create a policy that never matches or an action that never
 fires).
 """
 import logging
+from dataclasses import dataclass, field
 
 from sqlalchemy import select
 
@@ -71,35 +72,53 @@ log = logging.getLogger(__name__)
 MAX_NAME_LENGTH = 255
 
 
+@dataclass
+class StageActionDefinition:
+    """One validated stage action (see :func:`_validate_stages`)."""
+    action_type: str
+    action_value: object = None
+
+
+@dataclass
+class StageDefinition:
+    """
+    One validated stage with its actions, as produced by
+    :func:`_validate_stages` and consumed by :func:`_build_stages`. Using a
+    dataclass (instead of a bare ``dict``) makes the shape explicit and lets
+    the type checker verify the hand-off between validation and ORM building.
+    """
+    failure_threshold: int
+    priority: int
+    actions: list[StageActionDefinition] = field(default_factory=list)
+
+
 def lockout_policy_to_dict(policy: LockoutPolicy) -> dict:
     """
     Serialize a :class:`~privacyidea.models.lockout_policy.LockoutPolicy` with
     its stages and actions into the plain-dict shape documented in the module
     docstring (plus the ``id`` of each row).
     """
-    return {
-        "id": policy.id,
-        "name": policy.name,
-        "time_window_seconds": policy.time_window_seconds,
-        "enabled": policy.enabled,
-        "dry_run": policy.dry_run,
-        "priority": policy.priority,
-        "counter_types_to_track": list(policy.counter_types_to_track),
-        "stages": [
-            {
-                "id": stage.id,
-                "failure_threshold": stage.failure_threshold,
-                "priority": stage.priority,
-                "actions": [
-                    {
-                        "id": action.id,
-                        "action_type": action.action_type,
-                        "action_value": action.action_value,
-                    } for action in stage.actions
-                ],
-            } for stage in policy.stages
-        ],
-    }
+    # The scalar columns (id, name, time_window_seconds, enabled, dry_run,
+    # priority) map straight through; counter_types_to_track (an association
+    # proxy) and stages (a relationship) are not table columns, so they are
+    # serialized explicitly.
+    result = {column: getattr(policy, column) for column in policy.__table__.columns.keys()}
+    result["counter_types_to_track"] = list(policy.counter_types_to_track)
+    result["stages"] = [
+        {
+            "id": stage.id,
+            "failure_threshold": stage.failure_threshold,
+            "priority": stage.priority,
+            "actions": [
+                {
+                    "id": action.id,
+                    "action_type": action.action_type,
+                    "action_value": action.action_value,
+                } for action in stage.actions
+            ],
+        } for stage in policy.stages
+    ]
+    return result
 
 
 def _get_policy(policy_id: int) -> LockoutPolicy:
@@ -143,8 +162,12 @@ def _validate_positive_int(value, field: str) -> int:
 
 def _validate_counter_types(counter_types) -> list[str]:
     """
-    Validate the tracked counter types: a non-empty list of unique
+    Validate the tracked counter types: a non-empty list of
     :class:`AuthEventType` values.
+
+    A counter type repeated in the list is de-duplicated (order preserved)
+    rather than rejected - tracking the same event type twice has no effect on
+    evaluation, so a copy-paste duplicate should not fail the whole request.
     """
     if not isinstance(counter_types, list) or not counter_types:
         raise ParameterError("'counter_types_to_track' must be a non-empty list of authentication event types.")
@@ -154,13 +177,12 @@ def _validate_counter_types(counter_types) -> list[str]:
         if counter_type not in valid_types:
             raise ParameterError(f"Unknown counter type '{counter_type}'. "
                                  f"Valid types: {', '.join(sorted(valid_types))}.")
-        if counter_type in seen:
-            raise ParameterError(f"Duplicate counter type '{counter_type}'.")
-        seen.append(counter_type)
+        if counter_type not in seen:
+            seen.append(counter_type)
     return seen
 
 
-def _validate_stages(stages) -> list[dict]:
+def _validate_stages(stages) -> list[StageDefinition]:
     """
     Validate the stage definitions: a non-empty list of dicts, each with a
     unique positive ``failure_threshold``, an optional positive ``priority``
@@ -169,7 +191,7 @@ def _validate_stages(stages) -> list[dict]:
     (its action-specific interpretation happens in the engine); unknown keys in
     a stage or action dict are rejected so typos fail loudly.
 
-    :return: normalized list of stage dicts (without ids)
+    :return: normalized list of :class:`StageDefinition` (without ids)
     """
     if not isinstance(stages, list) or not stages:
         raise ParameterError("'stages' must be a non-empty list of stage definitions.")
@@ -203,24 +225,24 @@ def _validate_stages(stages) -> list[dict]:
             if action_type not in valid_actions:
                 raise ParameterError(f"Unknown action type '{action_type}'. "
                                      f"Valid types: {', '.join(sorted(valid_actions))}.")
-            normalized_actions.append({"action_type": action_type,
-                                       "action_value": action.get("action_value")})
-        normalized.append({"failure_threshold": threshold, "priority": priority,
-                           "actions": normalized_actions})
+            normalized_actions.append(StageActionDefinition(action_type=action_type,
+                                                            action_value=action.get("action_value")))
+        normalized.append(StageDefinition(failure_threshold=threshold, priority=priority,
+                                          actions=normalized_actions))
     return normalized
 
 
-def _build_stages(stage_dicts: list[dict]) -> list[LockoutPolicyStage]:
+def _build_stages(stage_defs: list[StageDefinition]) -> list[LockoutPolicyStage]:
     """
-    Turn validated stage dicts into (unpersisted) ORM objects.
+    Turn validated :class:`StageDefinition` objects into (unpersisted) ORM objects.
     """
     return [
         LockoutPolicyStage(
-            failure_threshold=stage["failure_threshold"],
-            priority=stage["priority"],
-            actions=[LockoutStageAction(action_type=action["action_type"], action_value=action["action_value"])
-                     for action in stage["actions"]],
-        ) for stage in stage_dicts
+            failure_threshold=stage.failure_threshold,
+            priority=stage.priority,
+            actions=[LockoutStageAction(action_type=action.action_type, action_value=action.action_value)
+                     for action in stage.actions],
+        ) for stage in stage_defs
     ]
 
 
@@ -266,12 +288,12 @@ def create_lockout_policy(name: str, time_window_seconds: int, counter_types_to_
     time_window_seconds = _validate_positive_int(time_window_seconds, "time_window_seconds")
     priority = _validate_positive_int(priority, "priority")
     counter_types = _validate_counter_types(counter_types_to_track)
-    stage_dicts = _validate_stages(stages)
+    stage_defs = _validate_stages(stages)
 
     policy = LockoutPolicy(name=name, time_window_seconds=time_window_seconds,
                            enabled=bool(enabled), dry_run=bool(dry_run), priority=priority,
                            counter_types_to_track=counter_types,
-                           stages=_build_stages(stage_dicts))
+                           stages=_build_stages(stage_defs))
     db.session.add(policy)
     db.session.commit()
     log.info(f"Created lockout policy '{name}' (id {policy.id}).")
@@ -283,7 +305,7 @@ def update_lockout_policy(policy_id: int, name: str | None = None,
                           time_window_seconds: int | None = None,
                           counter_types_to_track: list[str] | None = None,
                           stages: list[dict] | None = None, enabled: bool | None = None,
-                          dry_run: bool | None = None, priority: int | None = None) -> int:
+                          dry_run: bool | None = None, priority: int | None = None) -> tuple[int, list[str]]:
     """
     Update a lockout policy. Only the given (non-``None``) fields are changed.
 
@@ -296,7 +318,9 @@ def update_lockout_policy(policy_id: int, name: str | None = None,
 
     All fields are validated before anything is written.
 
-    :return: the id of the updated policy
+    :return: a ``(policy_id, changed_fields)`` tuple, where ``changed_fields`` is
+        the list of field names that were provided (and thus written), so the
+        caller can record them in the audit log
     :raises ResourceNotFoundError: if no policy with this id exists
     """
     policy = _get_policy(policy_id)
@@ -314,23 +338,32 @@ def update_lockout_policy(policy_id: int, name: str | None = None,
     if stages is not None:
         stages = _validate_stages(stages)
 
+    changed_fields = []
     if name is not None:
         policy.name = name
+        changed_fields.append("name")
     if time_window_seconds is not None:
         policy.time_window_seconds = time_window_seconds
+        changed_fields.append("time_window_seconds")
     if priority is not None:
         policy.priority = priority
+        changed_fields.append("priority")
     if enabled is not None:
         policy.enabled = bool(enabled)
+        changed_fields.append("enabled")
     if dry_run is not None:
         policy.dry_run = bool(dry_run)
+        changed_fields.append("dry_run")
     if counter_types_to_track is not None:
         policy.counter_types_to_track = counter_types_to_track
+        changed_fields.append("counter_types_to_track")
     if stages is not None:
         policy.stages = _build_stages(stages)
+        changed_fields.append("stages")
     db.session.commit()
-    log.info(f"Updated lockout policy '{policy.name}' (id {policy.id}).")
-    return policy.id
+    log.info(f"Updated lockout policy '{policy.name}' (id {policy.id}); "
+             f"changed fields: {', '.join(changed_fields) or 'none'}.")
+    return policy.id, changed_fields
 
 
 @log_with(log)
