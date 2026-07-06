@@ -117,10 +117,16 @@ def save_resolver(params):
                                              resolvername)
 
     # Everything passed. So lets actually create the resolver in the DB
+    resolver = None
     if update_resolver:
         resolver_stmt = select(Resolver).where(func.lower(Resolver.name) == resolvername.lower())
-        resolver_id = db.session.scalar(resolver_stmt).id
+        resolver = db.session.scalar(resolver_stmt)
+    if resolver is not None:
+        resolver_id = resolver.id
     else:
+        # Either this is a new resolver, or the cached configuration reported it
+        # as existing while it is no longer in the database (e.g. a stale config
+        # object after a delete). In both cases we (re-)create it.
         resolver = Resolver(params.get("resolver"),
                             params.get("type"))
         db.session.add(resolver)
