@@ -20,13 +20,15 @@ import { provideZonelessChangeDetection } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideRouter } from "@angular/router";
 import { DashboardWidget, WidgetInstance } from "@models/dashboard";
-import { AuditService } from "@services/audit/audit.service";
+import { Audit, AuditService } from "@services/audit/audit.service";
 import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
+import { DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { MockAuditService } from "@testing/mock-services/mock-audit-service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockContentService } from "@testing/mock-services/mock-content-service";
-import { of } from "rxjs";
+import { MockPiResponse } from "@testing/mock-services/mock-utils";
+import { of, Subject } from "rxjs";
 import { AuthenticationsWidgetComponent } from "./authentications-widget.component";
 
 function makeAuditResponse(count: number, auditdata: object[] = []) {
@@ -165,5 +167,40 @@ describe("AuthenticationsWidgetComponent", () => {
 
     expect(fixture2.nativeElement.querySelector("table")).toBeNull();
     fixture2.destroy();
+  });
+
+  it("should set the state to loading while the requests are still in flight", () => {
+    TestBed.inject(DashboardDataStore).invalidate();
+    auditMock.fetchAuditPage.mockImplementation(() => new Subject<MockPiResponse<Audit>>().asObservable());
+
+    const fixture2 = TestBed.createComponent(AuthenticationsWidgetComponent);
+    fixture2.componentRef.setInput("instance", instance);
+    fixture2.detectChanges();
+
+    expect(fixture2.componentInstance.state()).toBe("loading");
+    fixture2.destroy();
+  });
+
+  it("should set the state to error when a request fails", () => {
+    TestBed.inject(DashboardDataStore).invalidate();
+    const subject = new Subject<MockPiResponse<Audit>>();
+    auditMock.fetchAuditPage.mockImplementation(() => subject.asObservable());
+
+    const fixture2 = TestBed.createComponent(AuthenticationsWidgetComponent);
+    fixture2.componentRef.setInput("instance", instance);
+    fixture2.detectChanges();
+    subject.error(new Error("boom"));
+    fixture2.detectChanges();
+
+    expect(fixture2.componentInstance.state()).toBe("error");
+    fixture2.destroy();
+  });
+
+  it("should invalidate the cache and reload on reload()", () => {
+    auditMock.fetchAuditPage.mockClear();
+
+    component.reload();
+
+    expect(auditMock.fetchAuditPage).toHaveBeenCalledTimes(2);
   });
 });

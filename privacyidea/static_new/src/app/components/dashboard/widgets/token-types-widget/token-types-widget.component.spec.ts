@@ -212,4 +212,79 @@ describe("TokenTypesWidgetComponent", () => {
     expect(fixture2.nativeElement.querySelector("table")).toBeNull();
     fixture2.destroy();
   });
+
+  it("should skip reloading when every previously loaded type has a zero count", () => {
+    const store = TestBed.inject(DashboardDataStore);
+    store.invalidate();
+    tokenMock.getTokenCount.mockImplementation(() => of(makeCountResponse(0)));
+
+    const fixture1 = TestBed.createComponent(TokenTypesWidgetComponent);
+    fixture1.componentRef.setInput("instance", instance);
+    fixture1.detectChanges();
+
+    tokenMock.getTokenCount.mockClear();
+
+    const fixture2 = TestBed.createComponent(TokenTypesWidgetComponent);
+    fixture2.componentRef.setInput("instance", instance);
+    fixture2.detectChanges();
+
+    expect(tokenMock.getTokenCount).not.toHaveBeenCalled();
+    fixture2.destroy();
+    fixture1.destroy();
+  });
+
+  it("should report partial data while some but not all token types have loaded", () => {
+    const store = TestBed.inject(DashboardDataStore);
+    store.invalidate();
+
+    const pending = new Subject<ReturnType<typeof makeCountResponse>>();
+    tokenMock.getTokenCount.mockImplementation((params: TokenCountParams = {}) =>
+      params.type === "hotp" ? of(makeCountResponse(5)) : pending.asObservable()
+    );
+
+    const fixture2 = TestBed.createComponent(TokenTypesWidgetComponent);
+    fixture2.componentRef.setInput("instance", instance);
+    fixture2.detectChanges();
+
+    expect(fixture2.componentInstance.hasPartialData()).toBe(true);
+    expect(fixture2.componentInstance.loading()).toBe(true);
+    fixture2.destroy();
+  });
+
+  it("should report not loading once the widget is denied or in error", () => {
+    component.state.set("denied");
+    expect(component.loading()).toBe(false);
+
+    component.state.set("error");
+    expect(component.loading()).toBe(false);
+  });
+
+  it("should set the state to loading while the request is still in flight", () => {
+    const store = TestBed.inject(DashboardDataStore);
+    store.invalidate();
+    tokenMock.getTokenCount.mockImplementation(() => new Subject().asObservable());
+
+    const fixture2 = TestBed.createComponent(TokenTypesWidgetComponent);
+    fixture2.componentRef.setInput("instance", instance);
+    fixture2.detectChanges();
+
+    expect(fixture2.componentInstance.state()).toBe("loading");
+    fixture2.destroy();
+  });
+
+  it("should set the state to error when the request fails", () => {
+    const store = TestBed.inject(DashboardDataStore);
+    store.invalidate();
+    const subject = new Subject<ReturnType<typeof makeCountResponse>>();
+    tokenMock.getTokenCount.mockImplementation(() => subject.asObservable());
+
+    const fixture2 = TestBed.createComponent(TokenTypesWidgetComponent);
+    fixture2.componentRef.setInput("instance", instance);
+    fixture2.detectChanges();
+    subject.error(new Error("boom"));
+    fixture2.detectChanges();
+
+    expect(fixture2.componentInstance.state()).toBe("error");
+    fixture2.destroy();
+  });
 });
