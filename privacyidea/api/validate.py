@@ -133,7 +133,7 @@ from privacyidea.lib.subscriptions import CheckSubscription
 from privacyidea.lib.token import (check_user_pass, check_serial_pass,
                                    check_otp, create_challenges_from_tokens, get_one_token)
 from privacyidea.lib.token import get_tokens
-from privacyidea.lib.tokenclass import ChallengeSession
+from privacyidea.lib.tokenclass import CHALLENGE_REFUSAL_STATUS
 from privacyidea.lib.user import log_used_user, User, split_user
 from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent, AUTH_RESPONSE
 from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
@@ -935,9 +935,10 @@ def poll_transaction(transaction_id=None):
         non-expired challenge with this transaction id has been
         answered, ``false`` otherwise. ``detail.challenge_status`` is
         one of ``accept`` (an answered challenge exists),
-        ``declined`` (the user declined a challenge), or ``pending``
-        (the challenges are still open or no matching challenge
-        exists at all).
+        ``declined`` (the user declined a challenge they did not
+        trigger), ``cancelled`` (the user aborted a challenge they
+        triggered themselves), or ``pending`` (the challenges are
+        still open or no matching challenge exists at all).
     """
 
     if transaction_id is None:
@@ -947,19 +948,24 @@ def poll_transaction(transaction_id=None):
     matching_challenges = [challenge for challenge in get_challenges(transaction_id=transaction_id)
                            if challenge.is_valid()]
     answered_challenges = extract_answered_challenges(matching_challenges)
-    declined_challenges = []
     if answered_challenges:
         result = True
         log_challenges = answered_challenges
         details = {"challenge_status": "accept"}
     else:
         result = False
+        # Group refused challenges by the status they report; "declined" (not-me) outranks
+        # "cancelled" (self-abort) as the higher-suspicion signal for conditional access.
+        refused_challenges = {}
         for challenge in matching_challenges:
-            if challenge.session == ChallengeSession.DECLINED:
-                declined_challenges.append(challenge)
-        if declined_challenges:
-            log_challenges = declined_challenges
-            details = {"challenge_status": "declined"}
+            status = CHALLENGE_REFUSAL_STATUS.get(challenge.session)
+            if status:
+                refused_challenges.setdefault(status, []).append(challenge)
+        for status in ("declined", "cancelled"):
+            if refused_challenges.get(status):
+                log_challenges = refused_challenges[status]
+                details = {"challenge_status": status}
+                break
         else:
             log_challenges = matching_challenges
             details = {"challenge_status": "pending"}

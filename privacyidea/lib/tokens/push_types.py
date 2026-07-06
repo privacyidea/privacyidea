@@ -21,6 +21,22 @@ class PushPresenceOptions(str, Enum):
     CUSTOM = "CUSTOM"
 
 
+class PushDeclineReason(str, Enum):
+    """Why the user refused a push challenge. Signed by the smartphone as part
+    of the decline payload and used to differentiate the two decline events in
+    the authentication log / conditional-access policies.
+
+    ``__str__`` returns the value so members interpolate to their string form on
+    every supported Python version (3.10+). On a 3.11+ floor this can subclass
+    :class:`enum.StrEnum` and drop ``__str__`` instead, with no change to usage.
+    """
+    UNKNOWN_TRIGGER = "unknown_trigger"  # the user did not trigger this request
+    CANCELLED = "cancelled"  # the user triggered it, but aborted
+
+    def __str__(self) -> str:
+        return self.value
+
+
 class PushAction:
     FIREBASE_CONFIG = "push_firebase_configuration"
     REGISTRATION_URL = "push_registration_url"

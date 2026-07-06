@@ -121,6 +121,15 @@ log = logging.getLogger(__name__)
 class ChallengeSession:
     ENROLLMENT = "enrollment"
     DECLINED = "challenge_declined"
+    CANCELLED = "challenge_cancelled"
+
+
+# Maps a refused challenge session to the challenge_status string reported to clients and the
+# audit log. Single source of truth shared by the push answer scan and /validate/polltransaction.
+CHALLENGE_REFUSAL_STATUS = {
+    ChallengeSession.DECLINED: "declined",
+    ChallengeSession.CANCELLED: "cancelled",
+}
 
 
 class Tokenkind:

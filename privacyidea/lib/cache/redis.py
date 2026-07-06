@@ -341,6 +341,11 @@ class ChallengeDTO:
         now = utc_now()
         return self.timestamp <= now < self.expiration
 
+    def is_open(self) -> bool:
+        from privacyidea.lib.tokenclass import ChallengeSession
+        return (self.is_valid() and not self.otp_valid
+                and self.get_session() not in (ChallengeSession.DECLINED, ChallengeSession.CANCELLED))
+
     def get_session(self) -> str:
         return self.session
 
