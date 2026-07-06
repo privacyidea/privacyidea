@@ -442,6 +442,30 @@
       </span>
       <span i18n>Create</span>
     </a>
+    <a
+      [ngClass]="contentService.routeUrl() === ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS ? 'sub-nav-active' : ''"
+      [routerLink]="[ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS]">
+      <mat-icon>security</mat-icon>
+      <span i18n>Conditional Access</span>
+    </a>
+    @if (contentService.routeUrl().startsWith(ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_DETAILS)) {
+      <a class="sub-nav-active">
+        <span class="icon-badge">
+          <mat-icon class="margin-right-5">security</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-gear">settings</mat-icon>
+        </span>
+        <span i18n>Conditional Access Details</span>
+      </a>
+    }
+    <a
+      [ngClass]="contentService.routeUrl() === ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_NEW ? 'sub-nav-active' : ''"
+      [routerLink]="[ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_NEW]">
+      <span class="icon-badge">
+        <mat-icon class="margin-right-2">security</mat-icon>
+        <mat-icon class="icon-badge-overlay icon-badge-add">add</mat-icon>
+      </span>
+      <span i18n>Create Conditional Access</span>
+    </a>
     <ng-container *ngTemplateOutlet="supportDocs"></ng-container>
   </mat-toolbar>
 }

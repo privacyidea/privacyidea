@@ -1,0 +1,221 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div
+  appScrollToTop
+  aria-label="Conditional Access Policies"
+  class="conditional-access-container"
+  i18n-aria-label>
+  <div class="filter-paginator-container">
+    <mat-form-field
+      appearance="fill"
+      class="conditional-access-table-filter"
+      subscriptSizing="dynamic">
+      <mat-label i18n>Filter Policies...</mat-label>
+      <app-clearable-input
+        (clearButtonClick)="resetFilter()"
+        [showClearButton]="filterString().length > 0">
+        <input
+          #filterHTMLInputElement
+          (input)="onFilterInput(filterHTMLInputElement.value)"
+          [value]="filterString()"
+          aria-label="Filter Input"
+          i18n-aria-label
+          i18n-placeholder
+          matInput
+          placeholder="Filter by name or tracked event type" />
+      </app-clearable-input>
+    </mat-form-field>
+    <mat-paginator
+      [length]="totalLength()"
+      [pageSizeOptions]="pageSizeOptions()"
+      [pageSize]="pageSizeOptions()[1]"
+      showFirstLastButtons />
+  </div>
+  <table
+    [dataSource]="policyDataSource()"
+    class="conditional-access-table"
+    mat-table
+    matSort>
+    <ng-container matColumnDef="name">
+      <th
+        *matHeaderCellDef
+        i18n
+        mat-header-cell
+        mat-sort-header>
+        Name
+      </th>
+      <td
+        *matCellDef="let policy"
+        mat-cell>
+        <a
+          role="button"
+          tabindex="0"
+          (click)="onEditPolicy(policy)"
+          (keydown.enter)="onEditPolicy(policy)"
+          class="flex ali-center">
+          {{ policy.name }}
+        </a>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="priority">
+      <th
+        *matHeaderCellDef
+        i18n
+        mat-header-cell
+        mat-sort-header>
+        Priority
+      </th>
+      <td
+        *matCellDef="let policy"
+        mat-cell>
+        {{ policy.priority }}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="time_window_seconds">
+      <th
+        *matHeaderCellDef
+        i18n
+        mat-header-cell
+        mat-sort-header>
+        Time Window (s)
+      </th>
+      <td
+        *matCellDef="let policy"
+        mat-cell>
+        {{ policy.time_window_seconds }}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="counter_types_to_track">
+      <th
+        *matHeaderCellDef
+        i18n
+        mat-header-cell>
+        Tracked Event Types
+      </th>
+      <td
+        *matCellDef="let policy"
+        mat-cell>
+        {{ policy.counter_types_to_track.join(", ") }}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="stages">
+      <th
+        *matHeaderCellDef
+        class="text-center"
+        i18n
+        mat-header-cell>
+        Stages
+      </th>
+      <td
+        *matCellDef="let policy"
+        class="text-center"
+        mat-cell>
+        {{ policy.stages.length }}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="enabled">
+      <th
+        *matHeaderCellDef
+        i18n
+        mat-header-cell
+        mat-sort-header>
+        Enabled
+      </th>
+      <td
+        *matCellDef="let policy"
+        mat-cell>
+        <mat-slide-toggle
+          (click)="onToggleEnabled(policy); $event.stopPropagation()"
+          [checked]="policy.enabled"
+          [disableRipple]="true"
+          [disabled]="!authService.actionAllowed('conditional_access_write')"
+          i18n-matTooltip
+          matTooltip="Toggle Enabled" />
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="dry_run">
+      <th
+        *matHeaderCellDef
+        i18n
+        mat-header-cell>
+        Dry Run
+      </th>
+      <td
+        *matCellDef="let policy"
+        mat-cell>
+        <mat-slide-toggle
+          (click)="onToggleDryRun(policy); $event.stopPropagation()"
+          [checked]="policy.dry_run"
+          [disableRipple]="true"
+          [disabled]="!authService.actionAllowed('conditional_access_write')"
+          i18n-matTooltip
+          matTooltip="Toggle Dry Run (evaluate but do not enforce)" />
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="actions">
+      <th
+        *matHeaderCellDef
+        i18n
+        mat-header-cell>
+        Actions
+      </th>
+      <td
+        *matCellDef="let policy"
+        mat-cell>
+        @if (authService.actionAllowed("conditional_access_write")) {
+          <div class="flex just-center">
+            <button
+              (click)="onDeletePolicy(policy); $event.stopPropagation()"
+              color="warn"
+              i18n-matTooltip
+              mat-icon-button
+              matTooltip="Delete">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+        }
+      </td>
+    </ng-container>
+
+    <tr
+      *matHeaderRowDef="displayedColumns"
+      mat-header-row></tr>
+    <tr
+      *matRowDef="let row; columns: displayedColumns"
+      mat-row></tr>
+
+    <tr
+      *matNoDataRow
+      class="mat-row">
+      <td
+        class="mat-cell"
+        colspan="8"
+        i18n>
+        No conditional-access policies found.
+      </td>
+    </tr>
+  </table>
+</div>

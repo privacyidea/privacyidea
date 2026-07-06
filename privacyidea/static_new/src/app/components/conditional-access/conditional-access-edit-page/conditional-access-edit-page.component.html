@@ -1,0 +1,162 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div
+  #scrollContainer
+  appScrollToTop
+  aria-label="Conditional-Access Policy Editor"
+  class="edit-policy-layout"
+  i18n-aria-label>
+  <div class="edit-policy-container">
+    <h3 class="margin-8 flex-row flex-nowrap ali-center">
+      {{ title() }}
+      @if (!isNewPolicy()) {
+        <span>:&nbsp;</span>
+        <span class="policy-name-color">{{ editPolicy().name }}</span>
+      }
+    </h3>
+
+    <div
+      [appStickyHeader]="scrollContainer"
+      class="header-row sticky-header">
+      <div class="action-buttons">
+        @if (!isNewPolicy()) {
+          <mat-slide-toggle
+            (change)="toggleEnabled($event.checked)"
+            [checked]="editPolicy().enabled"
+            [disableRipple]="true"
+            [disabled]="!authService.actionAllowed('conditional_access_write')"
+            i18n-matTooltip
+            labelPosition="before"
+            matTooltip="Toggle Enabled">
+            @if (editPolicy().enabled) {
+              <span i18n>Enabled</span>
+            } @else {
+              <span i18n>Disabled</span>
+            }
+          </mat-slide-toggle>
+        }
+        <button
+          (click)="$event.stopPropagation(); savePolicy()"
+          [disabled]="!canSave()"
+          class="action-button-primary button-width-s"
+          mat-stroked-button>
+          <mat-icon>save</mat-icon>
+          <span i18n>Save</span>
+        </button>
+        <button
+          (click)="$event.stopPropagation(); cancelEdit()"
+          class="action-button-secondary button-width-s"
+          mat-stroked-button>
+          <span i18n>Cancel</span>
+        </button>
+        @if (!isNewPolicy() && authService.actionAllowed("conditional_access_write")) {
+          <button
+            (click)="$event.stopPropagation(); deletePolicy()"
+            class="action-button-delete-secondary button-width-s"
+            color="warn"
+            mat-stroked-button>
+            <mat-icon>delete</mat-icon>
+            <span i18n>Delete</span>
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="edit-policy-fields">
+      <mat-form-field
+        appearance="fill"
+        class="input-width-l"
+        subscriptSizing="dynamic">
+        <mat-label i18n>Name</mat-label>
+        <input
+          matInput
+          [formField]="policyForm.name"
+          (blur)="nameTouched.set(true)" />
+        @if (showNameError()) {
+          <mat-error i18n>Name is required (max. 255 characters).</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field
+        appearance="fill"
+        class="input-width-s"
+        subscriptSizing="dynamic">
+        <mat-label i18n>Time window (seconds)</mat-label>
+        <input
+          matInput
+          type="number"
+          min="1"
+          [value]="editPolicy().time_window_seconds"
+          (input)="onTimeWindowInput($any($event.target).value)" />
+        @if (!timeWindowValid()) {
+          <mat-error i18n>Must be at least 1 second.</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field
+        appearance="fill"
+        class="input-width-s"
+        subscriptSizing="dynamic">
+        <mat-label i18n>Priority</mat-label>
+        <input
+          matInput
+          type="number"
+          min="1"
+          [value]="editPolicy().priority"
+          (input)="onPriorityInput($any($event.target).value)" />
+        @if (!priorityValid()) {
+          <mat-error i18n>Must be at least 1.</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field
+        appearance="fill"
+        class="input-width-l"
+        subscriptSizing="dynamic">
+        <mat-label i18n>Tracked event types</mat-label>
+        <mat-select
+          multiple
+          [value]="editPolicy().counter_types_to_track"
+          (selectionChange)="onCounterTypesChange($event.value)">
+          @for (eventType of allAuthEventTypes; track eventType) {
+            <mat-option [value]="eventType">{{ eventType }}</mat-option>
+          }
+        </mat-select>
+        @if (!counterTypesValid()) {
+          <mat-error i18n>Select at least one event type.</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-slide-toggle
+        (change)="toggleDryRun($event.checked)"
+        [checked]="editPolicy().dry_run"
+        [disableRipple]="true">
+        <span i18n>Dry run (evaluate but do not enforce)</span>
+      </mat-slide-toggle>
+    </div>
+
+    <h4 i18n>Stages</h4>
+    @if (!stagesValid()) {
+      <p class="ca-stages-error" i18n>At least one stage is required, and every stage needs a threshold and priority of at least 1.</p>
+    }
+    <app-conditional-access-stages-list
+      [stages]="editPolicy().stages"
+      (stagesChange)="onStagesChange($event)" />
+  </div>
+</div>

@@ -37,6 +37,8 @@ export type PolicyAction =
   | "challenge_text_header"
   | "challenge_text_footer"
   | "getchallenges"
+  | "conditional_access_read"
+  | "conditional_access_write"
   | "copytokenpin"
   | "copytokenuser"
   | "default_tokentype"

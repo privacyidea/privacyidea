@@ -1,0 +1,23 @@
+.ca-stage-item {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 4px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+}
+
+.ca-stage-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ca-stage-title {
+  font-weight: 500;
+}
+
+.ca-stage-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 8px;
+}

@@ -1,0 +1,30 @@
+@use "styles";
+
+.edit-policy-layout {
+  @include styles.main-component-style;
+  max-height: var(--table-max-height);
+  max-width: 904px;
+}
+
+.header-row {
+  display: flex;
+  align-items: center;
+}
+
+.action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.edit-policy-fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin: 16px 0;
+}
+
+.ca-stages-error {
+  color: var(--mat-sys-error, #b3261e);
+}

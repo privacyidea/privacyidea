@@ -1,0 +1,40 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div class="ca-actions-list">
+  <p class="ca-actions-list-label" i18n>Actions</p>
+  @if (actions().length === 0) {
+    <p class="ca-actions-list-empty" i18n>No actions defined for this stage yet.</p>
+  }
+  @for (action of actions(); track $index) {
+    <app-conditional-access-action-item
+      [action]="action"
+      (updateAction)="onUpdateAction($index, $event)"
+      (removeAction)="onRemoveAction($index)" />
+  }
+</div>
+<div class="ca-add-button-row">
+  <button
+    mat-stroked-button
+    type="button"
+    class="action-button-secondary button-width-m"
+    (click)="onAddAction()">
+    <mat-icon>add</mat-icon>
+    <span i18n>Add Action</span>
+  </button>
+</div>

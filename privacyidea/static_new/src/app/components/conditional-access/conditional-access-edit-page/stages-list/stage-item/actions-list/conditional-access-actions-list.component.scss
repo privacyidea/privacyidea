@@ -1,0 +1,25 @@
+@use "styles";
+
+.ca-actions-list {
+  display: flex;
+  flex-direction: column;
+  padding-left: 16px;
+  border-left: 2px solid rgba(0, 0, 0, 0.08);
+}
+
+.ca-actions-list-label {
+  font-weight: 500;
+  margin: 4px 0;
+}
+
+.ca-actions-list-empty {
+  color: rgba(0, 0, 0, 0.6);
+  font-style: italic;
+  margin: 4px 0;
+}
+
+.ca-add-button-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+}

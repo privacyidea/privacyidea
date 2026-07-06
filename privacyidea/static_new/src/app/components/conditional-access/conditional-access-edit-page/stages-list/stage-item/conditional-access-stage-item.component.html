@@ -1,0 +1,62 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div class="ca-stage-item">
+  <div class="ca-stage-header">
+    <span class="ca-stage-title" i18n>Stage {{ stageNumber() }}</span>
+    <button
+      mat-icon-button
+      aria-label="Remove stage"
+      i18n-aria-label
+      (click)="onRemoveStage()">
+      <mat-icon>delete</mat-icon>
+    </button>
+  </div>
+
+  <div class="ca-stage-fields">
+    <mat-form-field
+      appearance="fill"
+      subscriptSizing="dynamic"
+      class="input-width-s">
+      <mat-label i18n>Failure threshold</mat-label>
+      <input
+        matInput
+        type="number"
+        min="1"
+        [value]="stage().failure_threshold"
+        (input)="onFailureThresholdInput($any($event.target).value)" />
+    </mat-form-field>
+
+    <mat-form-field
+      appearance="fill"
+      subscriptSizing="dynamic"
+      class="input-width-s">
+      <mat-label i18n>Stage priority</mat-label>
+      <input
+        matInput
+        type="number"
+        min="1"
+        [value]="stage().priority"
+        (input)="onPriorityInput($any($event.target).value)" />
+    </mat-form-field>
+  </div>
+
+  <app-conditional-access-actions-list
+    [actions]="stage().actions"
+    (actionsChange)="onActionsChange($event)" />
+</div>

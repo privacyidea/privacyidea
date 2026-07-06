@@ -52,6 +52,8 @@ import { MachineResolverDetailsComponent } from "@components/machine-resolver/ma
 import { MachineResolverComponent } from "@components/machine-resolver/machine-resolver.component";
 import { PolicyEditPageComponent } from "@components/policies/policy-edit-page/policy-edit-page.component";
 import { PoliciesTableComponent } from "@components/policies/policies-table/policies-table.component";
+import { ConditionalAccessComponent } from "@components/conditional-access/conditional-access.component";
+import { ConditionalAccessEditPageComponent } from "@components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component";
 import { ChallengesTableComponent } from "@components/token/challenges-table/challenges-table.component";
 import { ContainerCreateComponent } from "@components/container/container-create/container-create.component";
 import { ContainerDetailsComponent } from "@components/container/container-details/container-details.component";
@@ -132,7 +134,18 @@ export const routes: Routes = [
     children: [
       { path: "", component: PoliciesTableComponent },
       { path: "new", component: PolicyEditPageComponent, canDeactivate: [pendingChangesGuard] },
-      { path: "details/:name", component: PolicyEditPageComponent, canDeactivate: [pendingChangesGuard] }
+      { path: "details/:name", component: PolicyEditPageComponent, canDeactivate: [pendingChangesGuard] },
+      { path: "conditional-access", component: ConditionalAccessComponent },
+      {
+        path: "conditional-access/new",
+        component: ConditionalAccessEditPageComponent,
+        canDeactivate: [pendingChangesGuard]
+      },
+      {
+        path: "conditional-access/details/:id",
+        component: ConditionalAccessEditPageComponent,
+        canDeactivate: [pendingChangesGuard]
+      }
     ]
   },
   {
