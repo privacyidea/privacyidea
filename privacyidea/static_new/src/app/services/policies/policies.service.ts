@@ -155,6 +155,30 @@ export const HANDLE_MISSING_DATA_OPTIONS: HandleMissingDataOption[] = [
   { key: "condition_is_true", label: $localize`Condition is true` }
 ];
 
+// 3. User Agent Options - key is the literal User-Agent header value sent by the client
+export interface UserAgentOption {
+  key: string;
+  label: string;
+}
+
+export const USER_AGENT_OPTIONS: UserAgentOption[] = [
+  { key: "privacyidea-cp", label: $localize`Credential Provider` },
+  { key: "privacyIDEA-Keycloak", label: $localize`Keycloak` },
+  { key: "PrivacyIDEA-ADFS", label: $localize`AD FS` },
+  { key: "simpleSAMLphp", label: $localize`SimpleSAMLphp` },
+  { key: "PAM", label: $localize`PAM` },
+  { key: "privacyIDEA-Shibboleth", label: $localize`Shibboleth` },
+  { key: "privacyidea-nextcloud", label: $localize`Nextcloud` },
+  { key: "FreeRADIUS", label: $localize`FreeRADIUS` },
+  { key: "privacyIDEA-LDAP-Proxy", label: $localize`LDAP Proxy` },
+  { key: "privacyIDEA-App", label: $localize`privacyIDEA Authenticator` },
+  { key: "privacyIDEA-WebUI", label: $localize`privacyIDEA WebUI` }
+];
+
+export function getUserAgentLabel(identifier: string): string {
+  return USER_AGENT_OPTIONS.find((o) => o.key === identifier)?.label ?? identifier;
+}
+
 export interface PolicyServiceInterface {
   readonly isEditMode: Signal<boolean>;
   readonly policyActions: Signal<ScopedPolicyActions>;
