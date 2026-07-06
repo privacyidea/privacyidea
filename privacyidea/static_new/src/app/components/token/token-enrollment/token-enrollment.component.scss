@@ -5,4 +5,7 @@
   @include styles.main-component-style;
   display: grid;
   min-width: 616px;
+  // Shared detail/edit-page cap (admin 81vh→≈62vh across zoom via 190px chrome;
+  // self-service flat 88vh). See --detail-max-height in styles.scss.
+  max-height: var(--table-max-height);
 }

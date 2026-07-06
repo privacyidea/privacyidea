@@ -43,8 +43,7 @@ export interface ApplspecEnrollmentPayload extends TokenEnrollmentPayload {
 @Injectable({ providedIn: "root" })
 export class ApplspecApiPayloadMapper
   extends BaseApiPayloadMapper
-  implements TokenApiPayloadMapper<ApplspecEnrollmentData>
-{
+  implements TokenApiPayloadMapper<ApplspecEnrollmentData> {
   override toApiPayload(data: ApplspecEnrollmentData): ApplspecEnrollmentPayload {
     const payload: ApplspecEnrollmentPayload = {
       ...super.toApiPayload(data),

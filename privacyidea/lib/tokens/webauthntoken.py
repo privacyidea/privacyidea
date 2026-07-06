@@ -54,7 +54,7 @@ from privacyidea.lib.params import (attestation_certificate_allowed, get_require
                                     get_optional_one_of, get_optional, get_required)
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, GROUP
-from privacyidea.lib.token import get_tokens
+from privacyidea.lib.token import get_tokens, create_challenge as _create_challenge
 from privacyidea.lib.tokenclass import TokenClass, ClientMode
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.webauthn import (CoseAlgorithm, webauthn_b64_encode, webauthn_b64_decode, TRANSPORTS,
@@ -444,9 +444,9 @@ web-safe base64 without padding. For more detailed instructions, refer to
 
 The *userHandle* and *assertionClientExtensions* are optional and should be
 omitted, if not provided by the authenticator. The
-*assertionClientExtensions* – if available – must be encoded as a utf-8 JSON
+*assertionClientExtensions* - if available - must be encoded as a utf-8 JSON
 string, and transmitted to the server as web-safe base64. The *userHandle*
-is simply passed as a string, note – however – that it may be necessary to
+is simply passed as a string, note - however - that it may be necessary to
 re-encode this to utf-16, since the authenticator will return utf-8, while the
 library making the http request will likely require all parameters in the
 native encoding of the language (usually utf-16).
@@ -469,7 +469,7 @@ native encoding of the language (usually utf-16).
 
 """
 
-from privacyidea.models import Challenge, TokenCredentialIdHash, db
+from privacyidea.models import TokenCredentialIdHash, db
 
 IMAGES = {"yubico": "privacyidea/static/img/FIDO-U2F-Security-Key-444x444.png",
           "plug-up": "privacyidea/static/img/plugup.jpg",
@@ -1191,13 +1191,12 @@ class WebAuthnTokenClass(TokenClass):
             nonce = self._get_nonce()
             data = {FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: user_verification}
             # Create the challenge in the database
-            challenge = Challenge(serial=self.token.serial,
-                                  transaction_id=get_optional(params, "transaction_id"),
-                                  challenge=hexlify_and_unicode(nonce),
-                                  data=json.dumps(data),
-                                  session=get_optional(params, "session"),
-                                  validitytime=self._get_challenge_validity_time())
-            challenge.save()
+            challenge = _create_challenge(self.token.serial,
+                                               transaction_id=get_optional(params, "transaction_id"),
+                                               challenge=hexlify_and_unicode(nonce),
+                                               data=json.dumps(data),
+                                               session=get_optional(params, "session"),
+                                               validitytime=self._get_challenge_validity_time())
 
             exclude_credential_ids = []
             if is_true(get_optional(params, FIDO2PolicyAction.AVOID_DOUBLE_REGISTRATION)):
@@ -1367,13 +1366,12 @@ class WebAuthnTokenClass(TokenClass):
         user_verification = get_required(options, FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT)
         data = {FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: user_verification}
         # Create the challenge in the database
-        db_challenge = Challenge(serial=self.token.serial,
-                                 transaction_id=transactionid,
-                                 challenge=challenge,
-                                 data=json.dumps(data),
-                                 session=get_optional(options, "session"),
-                                 validitytime=self._get_challenge_validity_time())
-        db_challenge.save()
+        db_challenge = _create_challenge(self.token.serial,
+                                              transaction_id=transactionid,
+                                              challenge=challenge,
+                                              data=json.dumps(data),
+                                              session=get_optional(options, "session"),
+                                              validitytime=self._get_challenge_validity_time())
 
         allowed_transports = get_required(options, FIDO2PolicyAction.ALLOWED_TRANSPORTS)
         if isinstance(allowed_transports, str):

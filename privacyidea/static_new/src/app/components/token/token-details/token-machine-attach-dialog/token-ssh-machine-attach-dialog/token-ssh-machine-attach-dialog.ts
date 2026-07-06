@@ -76,6 +76,24 @@ export class TokenSshMachineAssignDialogComponent extends AbstractDialogComponen
     type: "confirm",
     primary: true
   };
+  constructor() {
+    super();
+    effect(() => {
+      const value = this.selectedMachineValue();
+      this.machineFilter.set(
+        typeof value === "string"
+          ? value.trim().toLowerCase()
+          : value
+            ? this.getFullMachineName(value).trim().toLowerCase()
+            : ""
+      );
+    });
+    effect(() => {
+      const userValue = this.selectedUserValue();
+      this.userFilter.set(userValue ? userValue.trim().toLowerCase() : "");
+    });
+  }
+
   onAction(actionValue: string): void {
     if (actionValue === "assign") {
       this.onAssign();
@@ -154,25 +172,6 @@ export class TokenSshMachineAssignDialogComponent extends AbstractDialogComponen
   isFormValid = computed(
     () => this.selectedMachineForm().valid() && this.selectedServiceIdForm().valid() && this.selectedUserForm().valid()
   );
-
-  constructor() {
-    super();
-    effect(() => {
-      const value = this.selectedMachineValue();
-      this.machineFilter.set(
-        typeof value === "string"
-          ? value.trim().toLowerCase()
-          : value
-            ? this.getFullMachineName(value).trim().toLowerCase()
-            : ""
-      );
-    });
-    effect(() => {
-      const userValue = this.selectedUserValue();
-      this.userFilter.set(userValue ? userValue.trim().toLowerCase() : "");
-    });
-  }
-
   /// Methods ///
   getFullMachineName(machine: string | Machine): string {
     if (typeof machine === "string") {

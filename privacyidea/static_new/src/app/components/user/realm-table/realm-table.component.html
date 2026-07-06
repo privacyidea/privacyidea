@@ -1,18 +1,13 @@
 <div
-  aria-label="Realm Layout"
-  class="realm-layout"
-  i18n-aria-label>
+  aria-label="Realm Layout" class="realm-layout" i18n-aria-label>
   <div
-    appScrollToTop
-    class="realm-table-container">
+    appScrollToTop class="realm-table-container">
     <div class="filter-paginator-container">
       <mat-form-field
-        class="token-table-filter"
-        subscriptSizing="dynamic">
+        class="token-table-filter" subscriptSizing="dynamic">
         <mat-label i18n>Filter Realms...</mat-label>
         <app-clearable-input
-          (clearButtonClick)="resetFilter()"
-          [showClearButton]="filterString().length > 0">
+          (clearButtonClick)="resetFilter()" [showClearButton]="filterString().length > 0">
           <input
             #filterHTMLInputElement
             (input)="onFilterInput(filterHTMLInputElement.value)"
@@ -28,13 +23,11 @@
 
     <div class="flex-row margin-bottom-16">
       <mat-form-field
-        class="input-width-m"
-        subscriptSizing="dynamic">
+        class="input-width-m" subscriptSizing="dynamic">
         <mat-label i18n>Node</mat-label>
 
         <mat-select
-          (selectionChange)="selectedNode.set($event.value)"
-          [value]="selectedNode()">
+          (selectionChange)="selectedNode.set($event.value)" [value]="selectedNode()">
           @for (node of nodeOptions(); track node.value) {
             <mat-option [value]="node.value">
               {{ node.label }}
@@ -44,21 +37,16 @@
       </mat-form-field>
     </div>
 
-    <div class="audit-table-overflow">
+    <div
+      appScrollEdges class="table-scroll-region">
       <table
-        [dataSource]="realmsDataSource()"
-        aria-label="Realm Data Table"
-        class="token-table"
-        mat-table>
+        [dataSource]="realmsDataSource()" aria-label="Realm Data Table" class="token-table" mat-table>
         @for (column of columnKeysMap; track column) {
           <ng-container [matColumnDef]="column.key">
             <th
-              *matHeaderCellDef
-              attr.aria-label="{{ column.label }} Header"
-              mat-header-cell>
+              *matHeaderCellDef attr.aria-label="{{ column.label }} Header" mat-header-cell>
               <div
-                [ngClass]="{ 'just-center': column.key === 'actions' }"
-                class="flex ali-center">
+                [ngClass]="{ 'just-center': column.key === 'actions' }" class="flex ali-center">
                 {{ column.label }}
                 <div class="margin-left-16 flex">
                   @if (!["actions", "resolvers"].includes(column.key)) {
@@ -75,13 +63,10 @@
             </th>
 
             <td
-              *matCellDef="let element"
-              [ngClass]="{
+              *matCellDef="let element" [ngClass]="{
                 'width-100': column.key === 'resolvers',
                 'actions-cell': column.key === 'actions'
-              }"
-              attr.aria-label="{{ column.label }} Cell"
-              mat-cell>
+              }" attr.aria-label="{{ column.label }} Cell" mat-cell>
               @switch (column.key) {
                 @case ("name") {
                   <app-copyable [copyText]="element.name">
@@ -113,8 +98,7 @@
                         <div class="node-resolvers-group">
                           <div class="resolver-node-label">
                             <mat-icon
-                              aria-hidden="true"
-                              class="resolver-node-icon">
+                              aria-hidden="true" class="resolver-node-icon">
                               dns
                             </mat-icon>
                             <span>{{ group.label }}</span>
@@ -136,9 +120,9 @@
                                   <span class="priority-label">{{ r.name }}</span>
                                   <input
                                     (click)="$event.stopPropagation()"
+                                    (input)="setEditResolverPriority(group.id, r.name, $event.target['value'])"
                                     (keydown)="$event.stopPropagation()"
                                     (mousedown)="$event.stopPropagation()"
-                                    (input)="setEditResolverPriority(group.id, r.name, $event.target['value'])"
                                     [value]="r.priority"
                                     class="resolver-priority-input"
                                     max="999"
@@ -160,8 +144,7 @@
                           <div class="resolver-node-group">
                             <div class="resolver-node-label">
                               <mat-icon
-                                aria-hidden="true"
-                                class="resolver-node-icon">
+                                aria-hidden="true" class="resolver-node-icon">
                                 dns
                               </mat-icon>
                               <span>{{ group.nodeLabel }}</span>
@@ -200,17 +183,17 @@
                           (click)="saveEditedRealm(element)"
                           [disabled]="!canSaveEditedRealm(element)"
                           aria-label="Save realm"
-                          i18n-aria-label
                           color="primary"
+                          i18n-aria-label
                           mat-icon-button
                           type="button">
-                          <mat-icon>save_as</mat-icon>
+                          <mat-icon>save</mat-icon>
                         </button>
                         <button
                           (click)="cancelEditRealm()"
                           aria-label="Cancel edit"
-                          i18n-aria-label
                           class="red"
+                          i18n-aria-label
                           mat-icon-button
                           type="button">
                           <mat-icon>cancel</mat-icon>
@@ -222,9 +205,9 @@
                           (click)="startEditRealm(element)"
                           aria-label="Edit realm"
                           i18n-aria-label
+                          i18n-matTooltip
                           mat-icon-button
                           matTooltip="Edit realm"
-                          i18n-matTooltip
                           type="button">
                           <mat-icon>edit</mat-icon>
                         </button>
@@ -233,11 +216,11 @@
                         <button
                           (click)="onDeleteRealm(element)"
                           aria-label="Delete realm"
-                          i18n-aria-label
                           color="warn"
+                          i18n-aria-label
+                          i18n-matTooltip
                           mat-icon-button
                           matTooltip="Delete realm"
-                          i18n-matTooltip
                           type="button">
                           <mat-icon>delete</mat-icon>
                         </button>
@@ -252,18 +235,14 @@
             </td>
 
             <td
-              *matFooterCellDef
-              mat-footer-cell>
+              *matFooterCellDef mat-footer-cell>
               @switch (column.key) {
                 @case ("name") {
                   <mat-form-field
-                    class="input-width-l margin-top-16"
-                    subscriptSizing="dynamic">
+                    class="input-width-l margin-top-16" subscriptSizing="dynamic">
                     <mat-label i18n>Realm Name</mat-label>
                     <input
-                      (input)="newRealmName.set($any($event.target).value)"
-                      [value]="newRealmName()"
-                      matInput />
+                      (input)="newRealmName.set($any($event.target).value)" [value]="newRealmName()" matInput />
                     @if (newRealmNameHasPatternError()) {
                       <mat-error i18n>Invalid characters.</mat-error>
                     }
@@ -275,16 +254,14 @@
                       <div class="node-resolvers-group">
                         <div class="resolver-node-label">
                           <mat-icon
-                            aria-hidden="true"
-                            class="resolver-node-icon">
+                            aria-hidden="true" class="resolver-node-icon">
                             dns
                           </mat-icon>
                           <span>{{ group.label }}</span>
                         </div>
 
                         <mat-form-field
-                          class="input-width-l"
-                          subscriptSizing="dynamic">
+                          class="input-width-l" subscriptSizing="dynamic">
                           <mat-label i18n>Resolvers</mat-label>
                           <mat-select
                             (selectionChange)="onNewRealmNodeResolversChange(group.id, $event.value)"
@@ -335,9 +312,9 @@
                       (click)="resetCreateForm()"
                       [disabled]="isCreatingRealm()"
                       class="action-button-secondary button-width-m"
+                      i18n-matTooltip
                       mat-stroked-button
                       matTooltip="Reset form"
-                      i18n-matTooltip
                       type="button">
                       <mat-icon>redo</mat-icon>
                       <span i18n>Reset</span>
@@ -353,14 +330,10 @@
         }
 
         <tr
-          *matHeaderRowDef="columnKeys"
-          aria-label="Header Row"
-          mat-header-row></tr>
+          *matHeaderRowDef="columnKeys; sticky: true" aria-label="Header Row" mat-header-row></tr>
 
         <tr
-          *matRowDef="let row; columns: columnKeys"
-          aria-label="Data Row"
-          mat-row></tr>
+          *matRowDef="let row; columns: columnKeys" aria-label="Data Row" mat-row></tr>
 
         <tr
           *matFooterRowDef="columnKeys"
@@ -369,14 +342,9 @@
           mat-footer-row></tr>
 
         <tr
-          *matNoDataRow
-          aria-label="No Data Row"
-          mat-no-data-row>
+          *matNoDataRow aria-label="No Data Row" mat-no-data-row>
           <td
-            [attr.colspan]="columnKeys.length"
-            aria-label="No Data Cell"
-            i18n-aria-label
-            i18n>
+            [attr.colspan]="columnKeys.length" aria-label="No Data Cell" i18n i18n-aria-label>
             No data matching the filter.
           </td>
         </tr>

@@ -47,13 +47,14 @@ export interface LdapPreset {
 export type BindType = "" | "Simple" | "Anonymous" | "SASL Digest-MD5" | "NTLM" | "SASL Kerberos";
 
 export interface ResolverData {
-  [key: string]: unknown;
   USERINFO?: string;
   Map?: string;
   attribute_mapping?: Record<string, string>;
   Editable?: boolean | string;
   editable?: boolean | string;
   EDITABLE?: boolean | string;
+
+  [key: string]: unknown;
 }
 
 export type Resolvers = Record<string, Resolver>;
@@ -204,8 +205,11 @@ export interface ResolverServiceInterface {
   userAttributes: Signal<string[]>;
 
   postResolverTest(data: ResolverData): Observable<PiResponse<boolean, { description: string }>>;
+
   postResolver(resolverName: string, data: ResolverData): Observable<PiResponse<number>>;
+
   deleteResolver(resolverName: string): Observable<PiResponse<number>>;
+
   getDefaultResolverConfig(resolverType: string): Observable<PiResponse<unknown>>;
 }
 
@@ -217,15 +221,6 @@ export class ResolverService implements ResolverServiceInterface {
   private readonly http = inject(HttpClient);
 
   readonly resolverBaseUrl = environment.proxyUrl + "/resolver/";
-
-  constructor() {
-    effect(() => {
-      this.notificationService.handleResourceError(this.resolversResource.error(), "resolvers");
-    });
-    effect(() => {
-      this.notificationService.handleResourceError(this.selectedResolverResource.error(), "resolver details");
-    });
-  }
   resolversResource = httpResource<PiResponse<Resolvers>>(() => {
     if (!this.contentService.onAnyUsersRoute()) {
       return undefined;
@@ -250,6 +245,36 @@ export class ResolverService implements ResolverServiceInterface {
       method: "GET",
       headers: this.authService.getHeaders()
     };
+  });
+  resolverResourceValue = computed(() => {
+    if (!this.resolversResource.hasValue()) return {};
+    return this.resolversResource.value()?.result?.value || {};
+  });
+  resolvers = computed<Resolver[]>(() => {
+    const resolvers = this.resolverResourceValue();
+    return resolvers
+      ? Object.entries(resolvers).map(([name, data]) => ({
+        ...data,
+        resolvername: data.resolvername || name
+      }))
+      : [];
+  });
+  resolverOptions = computed(() => {
+    const resolvers = this.resolverResourceValue();
+    return resolvers ? Object.keys(resolvers) : [];
+  });
+  editableResolvers = computed(() => {
+    const resolvers = this.resolverResourceValue();
+    if (!resolvers) return [];
+    const editableResolverNames: string[] = [];
+    for (const [name, resolver] of Object.entries(resolvers)) {
+      const editable =
+        resolver.data?.["Editable"] || resolver.data?.["editable"] || resolver.data?.["EDITABLE"] || false;
+      if (parseBooleanValue(editable)) {
+        editableResolverNames.push(name);
+      }
+    }
+    return editableResolverNames;
   });
   userAttributes = computed(() => {
     if (!this.selectedResolverResource.hasValue()) return [];
@@ -283,37 +308,15 @@ export class ResolverService implements ResolverServiceInterface {
     }
     return Object.keys(userInfo);
   });
-  resolverResourceValue = computed(() => {
-    if (!this.resolversResource.hasValue()) return {};
-    return this.resolversResource.value()?.result?.value || {};
-  });
-  resolvers = computed<Resolver[]>(() => {
-    const resolvers = this.resolverResourceValue();
-    return resolvers
-      ? Object.entries(resolvers).map(([name, data]) => ({
-          ...data,
-          resolvername: data.resolvername || name
-        }))
-      : [];
-  });
-  resolverOptions = computed(() => {
-    const resolvers = this.resolverResourceValue();
-    return resolvers ? Object.keys(resolvers) : [];
-  });
 
-  editableResolvers = computed(() => {
-    const resolvers = this.resolverResourceValue();
-    if (!resolvers) return [];
-    const editableResolverNames: string[] = [];
-    for (const [name, resolver] of Object.entries(resolvers)) {
-      const editable =
-        resolver.data?.["Editable"] || resolver.data?.["editable"] || resolver.data?.["EDITABLE"] || false;
-      if (parseBooleanValue(editable)) {
-        editableResolverNames.push(name);
-      }
-    }
-    return editableResolverNames;
-  });
+  constructor() {
+    effect(() => {
+      this.notificationService.handleResourceError(this.resolversResource.error(), "resolvers");
+    });
+    effect(() => {
+      this.notificationService.handleResourceError(this.selectedResolverResource.error(), "resolver details");
+    });
+  }
 
   postResolverTest(data: ResolverData = {}): Observable<PiResponse<boolean, { description: string }>> {
     return this.http

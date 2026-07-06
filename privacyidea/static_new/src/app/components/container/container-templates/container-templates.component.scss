@@ -8,6 +8,7 @@
     ".container-templates-table-filter",
     ".container-templates-scroll-container"
   );
+  max-height: var(--table-max-height);
 
   & {
     display: flex;

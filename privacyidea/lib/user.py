@@ -1021,18 +1021,23 @@ def get_internal_attributes(uid: str, resolver: str, realm_id: int) -> dict:
     return {row.Key: row.Value for row in rows}
 
 
-def find_orphaned_internal_attributes(orphaned_on_error: bool = False) -> list[tuple[str, str, int | None]]:
+def _find_orphaned_attributes(model, orphaned_on_error: bool = False) -> list[tuple[str, str, int | None]]:
     """
-    Return the list of ``(user_id, resolver, realm_id)`` tuples in
-    ``internaluserattribute`` whose user is no longer in the resolver.
+    Return the ``(user_id, resolver, realm_id)`` tuples in *model* whose user
+    can no longer be resolved.
 
-    privacyIDEA does not own the user store, so deleting a user upstream
-    leaves behind ``internaluserattribute`` rows that can never be reached
-    again through the normal :class:`User` API. The token janitor exposes a
-    CLI command that calls this helper to find and prune them.
+    Shared by the internal- and custom-attribute janitors. *model* must expose
+    ``user_id``, ``resolver`` and ``realm_id`` columns (i.e.
+    :class:`InternalUserAttribute` or :class:`CustomUserAttribute`).
 
-    :param orphaned_on_error: If the resolver raises while looking up the
-        user, treat that row as orphaned. Mirrors the semantics of
+    privacyIDEA does not own the user store, so deleting a user upstream leaves
+    behind attribute rows that can never be reached again through the normal
+    :class:`User` API. The token janitor calls this helper to find and prune
+    them.
+
+    :param model: the attribute model class to scan.
+    :param orphaned_on_error: If the resolver raises while looking up the user,
+        treat that row as orphaned. Mirrors the semantics of
         :meth:`TokenClass.is_orphaned`.
 
     The returned tuples may contain empty strings for ``user_id`` or
@@ -1042,8 +1047,7 @@ def find_orphaned_internal_attributes(orphaned_on_error: bool = False) -> list[t
     """
     from privacyidea.lib.resolver import get_resolver_object
 
-    stmt = select(InternalUserAttribute.user_id, InternalUserAttribute.resolver,
-                  InternalUserAttribute.realm_id).distinct()
+    stmt = select(model.user_id, model.resolver, model.realm_id).distinct()
     rows = db.session.execute(stmt).all()
 
     orphans: list[tuple[str, str, int | None]] = []
@@ -1077,22 +1081,52 @@ def find_orphaned_internal_attributes(orphaned_on_error: bool = False) -> list[t
     return orphans
 
 
-def delete_orphaned_internal_attributes(orphans: list[tuple[str, str, int | None]]) -> int:
+def _delete_orphaned_attributes(model, orphans: list[tuple[str, str, int | None]]) -> int:
     """
-    Delete every ``internaluserattribute`` row whose ``(user_id, resolver,
-    realm_id)`` matches one of *orphans*. Returns the total number of rows
-    deleted.
+    Delete every *model* row whose ``(user_id, resolver, realm_id)`` matches one
+    of *orphans*. Returns the total number of rows deleted.
 
-    Bypasses the :class:`User` API on purpose — orphans are by definition
-    users that cannot be constructed.
+    Bypasses the :class:`User` API on purpose — orphans are by definition users
+    that cannot be constructed.
     """
     total = 0
     for user_id, resolver_name, realm_id in orphans:
-        stmt = delete(InternalUserAttribute).filter_by(
-            user_id=user_id, resolver=resolver_name, realm_id=realm_id)
+        stmt = delete(model).filter_by(user_id=user_id, resolver=resolver_name, realm_id=realm_id)
         total += db.session.execute(stmt).rowcount
     db.session.commit()
     return total
+
+
+def find_orphaned_internal_attributes(orphaned_on_error: bool = False) -> list[tuple[str, str, int | None]]:
+    """
+    Return the ``(user_id, resolver, realm_id)`` tuples in ``internaluserattribute``
+    whose user is no longer in the resolver. See :func:`_find_orphaned_attributes`.
+    """
+    return _find_orphaned_attributes(InternalUserAttribute, orphaned_on_error=orphaned_on_error)
+
+
+def delete_orphaned_internal_attributes(orphans: list[tuple[str, str, int | None]]) -> int:
+    """
+    Delete every ``internaluserattribute`` row belonging to one of *orphans*.
+    See :func:`_delete_orphaned_attributes`.
+    """
+    return _delete_orphaned_attributes(InternalUserAttribute, orphans)
+
+
+def find_orphaned_custom_attributes(orphaned_on_error: bool = False) -> list[tuple[str, str, int | None]]:
+    """
+    Return the ``(user_id, resolver, realm_id)`` tuples in ``customuserattribute``
+    whose user is no longer in the resolver. See :func:`_find_orphaned_attributes`.
+    """
+    return _find_orphaned_attributes(CustomUserAttribute, orphaned_on_error=orphaned_on_error)
+
+
+def delete_orphaned_custom_attributes(orphans: list[tuple[str, str, int | None]]) -> int:
+    """
+    Delete every ``customuserattribute`` row belonging to one of *orphans*.
+    See :func:`_delete_orphaned_attributes`.
+    """
+    return _delete_orphaned_attributes(CustomUserAttribute, orphans)
 
 
 def is_attribute_at_all() -> bool:

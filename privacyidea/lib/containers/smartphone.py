@@ -38,7 +38,6 @@ from privacyidea.lib.crypto import (geturandom, encryptPassword, b64url_str_key_
 from privacyidea.lib.error import ContainerInvalidChallenge, ContainerNotRegistered, ParameterError
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.utils import create_img
-from privacyidea.models import Challenge
 
 log = logging.getLogger(__name__)
 
@@ -380,8 +379,9 @@ class SmartphoneContainer(TokenContainerClass):
         data_str = json.dumps(data)
         if validity_time:
             validity_time *= 60
-        db_challenge = Challenge(serial=self.serial, challenge=nonce, data=data_str, validitytime=validity_time)
-        db_challenge.save()
+        from privacyidea.lib.token import create_challenge
+        db_challenge = create_challenge(serial=self.serial, challenge=nonce,
+                                        data=data_str, validitytime=validity_time)
         timestamp = db_challenge.timestamp.replace(tzinfo=timezone.utc)
         time_stamp_iso = timestamp.isoformat()
 

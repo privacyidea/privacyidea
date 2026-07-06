@@ -17,16 +17,7 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
-  appOverflowNav
-  class="flex-row gap-8">
-  <button
-    data-overflow-pinned
-    [routerLink]="[ROUTE_PATHS.TOKENS_ENROLLMENT]"
-    class="action-button-primary button-width-l"
-    mat-stroked-button>
-    <mat-icon> add_moderator</mat-icon>
-    <span i18n>Enroll Token</span>
-  </button>
+  appOverflowNav class="flex-row gap-8">
   @if (authService.oneActionAllowed(["delete", "assign", "unassign", "enable", "disable", "reset"])) {
     @if (authService.actionAllowed("delete")) {
       <button

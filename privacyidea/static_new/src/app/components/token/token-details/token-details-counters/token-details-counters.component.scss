@@ -1,0 +1,12 @@
+@use "table";
+
+:host {
+  display: contents;
+}
+
+.details-card--counters {
+  // Width is column-driven (not content-driven), so it stays constant when
+  // toggling edit mode instead of growing for the wider input fields.
+  @include table.card-width(m);
+  box-sizing: border-box;
+}

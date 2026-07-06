@@ -70,9 +70,9 @@ export type HttpResolverInputData = HTTPResolverData &
   Partial<EntraIDResolverData> &
   Partial<KeycloakResolverData> &
   Partial<HTTPRequestConfig> & {
-    username?: string;
-    password?: string;
-  };
+  username?: string;
+  password?: string;
+};
 
 export interface HttpResolverModel {
   // Basic mode fields
@@ -245,79 +245,6 @@ export class HttpResolverComponent {
     };
   });
 
-  isValid = () => {
-    const currentModel = this.model();
-    const basic = this.basicSettings();
-    if (!basic && this.isAdvanced) {
-      return !!currentModel.base_url;
-    }
-    if (basic) {
-      return (
-        !!currentModel.endpoint &&
-        !!currentModel.method &&
-        !!currentModel.requestMapping &&
-        !!currentModel.headers &&
-        !!currentModel.responseMapping
-      );
-    }
-    return !!currentModel.base_url;
-  };
-  isDirty = () => this.httpForm().dirty();
-  getValue = () => this.model();
-
-  checkUserPasswordHint = computed(() => {
-    if (this.type() === "entraidresolver") {
-      return $localize`Possible tags: ` + `{userid} {username} {password} {client_id} {client_credential} {tenant}`;
-    }
-    return $localize`Possible tags: ` + `{userid} {username} {password}`;
-  });
-
-  protected basicSettings = linkedSignal<boolean>(() => {
-    if (this.isAdvanced) {
-      return false;
-    }
-    return this.mergedData().base_url === undefined;
-  });
-
-  // Signals derived from model for reactive sub-component inputs
-  configAuthModel = signal<HttpConfigModel>({ ...EMPTY_HTTP_CONFIG });
-  configUserAuthModel = signal<HttpConfigModel>({ ...EMPTY_HTTP_CONFIG });
-  configGetUserListModel = signal<HttpConfigModel>({ ...EMPTY_HTTP_CONFIG });
-  configGetUserByIdModel = signal<HttpConfigModel>({ ...EMPTY_HTTP_CONFIG });
-  configGetUserByNameModel = signal<HttpConfigModel>({ ...EMPTY_HTTP_CONFIG });
-  configCreateUserModel = signal<HttpConfigModel>({ ...EMPTY_HTTP_CONFIG });
-  configEditUserModel = signal<HttpConfigModel>({ ...EMPTY_HTTP_CONFIG });
-  configDeleteUserModel = signal<HttpConfigModel>({ ...EMPTY_HTTP_CONFIG });
-  userGroupsModel = signal<UserGroupsModel>({ ...EMPTY_USER_GROUPS });
-
-  protected defaultMapping = signal<AttributeMappingRow[]>([
-    { privacyideaAttr: "userid", userStoreAttr: "userid" },
-    { privacyideaAttr: "givenname", userStoreAttr: "givenname" }
-  ]);
-  protected mappingRows = linkedSignal<AttributeMappingRow[]>(() => {
-    const existing = this.mergedData()?.attribute_mapping;
-    let rows: AttributeMappingRow[];
-    if (existing && Object.keys(existing).length > 0) {
-      rows = Object.entries(existing).map(([privacyideaAttr, userStoreAttr]) => ({
-        privacyideaAttr,
-        userStoreAttr: userStoreAttr as string,
-        isCustom: !this.privacyideaAttributes.includes(privacyideaAttr)
-      }));
-    } else {
-      rows = this.defaultMapping().map((row) => ({ ...row, isCustom: false }));
-    }
-    // Always add an empty row at the end to allow adding new attributes
-    rows.push({ privacyideaAttr: null, userStoreAttr: "", isCustom: false });
-    return rows;
-  });
-  protected availableAttributes = computed(() => {
-    const rows = this.mappingRows();
-    return rows.map((_, rowIndex) => {
-      const selectedAttributes = rows.filter((_, i) => i !== rowIndex).map((row) => row.privacyideaAttr);
-      return this.privacyideaAttributes.filter((attr) => !selectedAttributes.includes(attr));
-    });
-  });
-
   constructor() {
     effect(() => {
       this.syncControls();
@@ -341,7 +268,10 @@ export class HttpResolverComponent {
       const data = this.mergedData();
       if (!basic && !this.model().responseMapping) {
         if (data.responseMapping === undefined) {
-          this.model.update((m) => ({ ...m, responseMapping: '{"username":"{username}", "userid":"{userid}"}' }));
+          this.model.update((m) => ({
+            ...m,
+            responseMapping: "{\"username\":\"{username}\", \"userid\":\"{userid}\"}"
+          }));
         }
         if (data.verify_tls === undefined) {
           this.model.update((m) => ({ ...m, verify_tls: true }));
@@ -392,9 +322,80 @@ export class HttpResolverComponent {
     });
     effect(() => {
       const groups = this.userGroupsModel();
-      this.model.update((m) => ({ ...m, config_get_user_groups: groups }));
+      this.model.update((m) => ({ ...m, user_groups: groups }));
     });
   }
+
+  isValid = () => {
+    const currentModel = this.model();
+    const basic = this.basicSettings();
+    if (!basic && this.isAdvanced) {
+      return !!currentModel.base_url;
+    }
+    if (basic) {
+      return (
+        !!currentModel.endpoint &&
+        !!currentModel.method &&
+        !!currentModel.requestMapping &&
+        !!currentModel.headers &&
+        !!currentModel.responseMapping
+      );
+    }
+    return !!currentModel.base_url;
+  };
+  isDirty = () => this.httpForm().dirty();
+  getValue = () => this.model();
+
+  checkUserPasswordHint = computed(() => {
+    if (this.type() === "entraidresolver") {
+      return $localize`Possible tags: ` + `{userid} {username} {password} {client_id} {client_credential} {tenant}`;
+    }
+    return $localize`Possible tags: ` + `{userid} {username} {password}`;
+  });
+  // Signals derived from model for reactive sub-component inputs
+  configAuthModel = signal<HttpConfigModel>({ ...EMPTY_HTTP_CONFIG });
+  configUserAuthModel = signal<HttpConfigModel>({ ...EMPTY_HTTP_CONFIG });
+  configGetUserListModel = signal<HttpConfigModel>({ ...EMPTY_HTTP_CONFIG });
+  configGetUserByIdModel = signal<HttpConfigModel>({ ...EMPTY_HTTP_CONFIG });
+  configGetUserByNameModel = signal<HttpConfigModel>({ ...EMPTY_HTTP_CONFIG });
+  configCreateUserModel = signal<HttpConfigModel>({ ...EMPTY_HTTP_CONFIG });
+  configEditUserModel = signal<HttpConfigModel>({ ...EMPTY_HTTP_CONFIG });
+  configDeleteUserModel = signal<HttpConfigModel>({ ...EMPTY_HTTP_CONFIG });
+  userGroupsModel = signal<UserGroupsModel>({ ...EMPTY_USER_GROUPS });
+  protected basicSettings = linkedSignal<boolean>(() => {
+    if (this.isAdvanced) {
+      return false;
+    }
+    return this.mergedData().base_url === undefined;
+  });
+  protected defaultMapping = signal<AttributeMappingRow[]>([
+    { privacyideaAttr: "userid", userStoreAttr: "userid" },
+    { privacyideaAttr: "givenname", userStoreAttr: "givenname" }
+  ]);
+  protected mappingRows = linkedSignal<AttributeMappingRow[]>(() => {
+    const existing = this.mergedData()?.attribute_mapping;
+    let rows: AttributeMappingRow[];
+    if (existing && Object.keys(existing).length > 0) {
+      rows = Object.entries(existing).map(([privacyideaAttr, userStoreAttr]) => ({
+        privacyideaAttr,
+        userStoreAttr: userStoreAttr as string,
+        isCustom: !this.privacyideaAttributes.includes(privacyideaAttr)
+      }));
+    } else {
+      rows = this.defaultMapping().map((row) => ({ ...row, isCustom: false }));
+    }
+    // Always add an empty row at the end to allow adding new attributes
+    rows.push({ privacyideaAttr: null, userStoreAttr: "", isCustom: false });
+    return rows;
+  });
+  protected availableAttributes = computed(() => {
+    const rows = this.mappingRows();
+    return rows.map((_, rowIndex) => {
+      const selectedAttributes = rows.filter((_, i) => i !== rowIndex).map((row) => row.privacyideaAttr);
+      return this.privacyideaAttributes.filter((attr) => !selectedAttributes.includes(attr));
+    });
+  });
+
 
   setCustomAttr(rowIndex: number, customValue: string): void {
     const v = (customValue ?? "").trim();
@@ -529,6 +530,11 @@ export class HttpResolverComponent {
     this.httpForm().reset();
   }
 
+  protected onMappingChanged(): void {
+    this.mappingRows.set([...this.mappingRows()]);
+    this.syncMappingToData();
+  }
+
   private sanitizeConfig<T extends HTTPRequestConfig | HTTPUserGroupsConfig>(
     config: T
   ): T & { headers?: string; requestMapping?: string; responseMapping?: string; errorResponse?: string } {
@@ -557,11 +563,6 @@ export class HttpResolverComponent {
       return JSON.stringify(value);
     }
     return value != null ? String(value) : "";
-  }
-
-  protected onMappingChanged(): void {
-    this.mappingRows.set([...this.mappingRows()]);
-    this.syncMappingToData();
   }
 
   private syncMappingToData(): void {

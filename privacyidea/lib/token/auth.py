@@ -4,8 +4,7 @@
 
 import logging
 from collections import defaultdict
-
-from sqlalchemy.sql.expression import delete
+from typing import TYPE_CHECKING
 
 from privacyidea.lib import _
 from privacyidea.lib.challengeresponsedecorators import (generic_challenge_response_reset_pin,
@@ -27,9 +26,11 @@ from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import (is_true, create_tag_dict,
                                    redacted_phone_number, redacted_email)
-from privacyidea.models import (db, Challenge)
 
 from privacyidea.lib.token.query import get_one_token, get_tokens
+
+if TYPE_CHECKING:
+    from privacyidea.models import Challenge
 
 
 log = logging.getLogger(__name__)
@@ -498,12 +499,11 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
                         token_object.reset()
                         token_object.post_success()
 
-                    # Clean up all challenges with this transaction_id
+                    # Clean up all challenges with this transaction_id from
+                    # both Redis (when active) and the DB.
+                    from privacyidea.lib.challenge import cancel_challenge
                     transaction_id = options.get("transaction_id") or options.get("state")
-                    session = db.session
-                    stmt = delete(Challenge).where(Challenge.transaction_id == str(transaction_id))
-                    session.execute(stmt)
-                    session.commit()
+                    cancel_challenge(str(transaction_id))
                     # Authentication is successful, stop here
                     break
 
@@ -624,3 +624,59 @@ def challenge_text_replace(message: str, user: User | None, token_obj: TokenClas
     message = message.format_map(defaultdict(str, tags))
 
     return message
+
+
+def create_challenge(serial: str, transaction_id: str = None, challenge: str = '',
+                     data=None, session: str = '',
+                     validitytime: int = 120) -> "Challenge":
+    """
+    Create a new challenge and persist it - to Redis if available, to the DB otherwise.
+
+    This is the single entry point for challenge creation. When the challenge
+    cache is enabled (PI_REDIS_URL set *and* PI_REDIS_CACHE_CHALLENGES on), the
+    challenge is written to Redis only and the SQL INSERT is skipped. If the
+    cache is off or Redis fails, the challenge falls back to the database so it
+    is never silently lost.
+
+    Always returns a ``Challenge`` instance. On the cache path that instance is
+    the in-memory object used to build the Redis payload; it is not added to the
+    SQL session, so its ``.id`` is ``None`` and it must not be ``save()``-ed or
+    mutated by the caller. Use ``transaction_id`` for identity - it's the only
+    stable identifier across both backends. To read the challenge back (from
+    whichever backend holds it) use ``get_challenges()``.
+
+    :param serial: Serial number of the token this challenge belongs to
+    :param transaction_id: Transaction id of the challenge. A new one is generated if None.
+    :param challenge: The challenge string
+    :param data: Optional data to store with the challenge (str, dict, or None)
+    :param session: Session string
+    :param validitytime: Validity period in seconds (default: 120)
+    :return: The created Challenge object
+    """
+    from privacyidea.lib.cache import cache_challenge, redis_feature_enabled
+    from privacyidea.models import Challenge
+    db_challenge = Challenge(serial,
+                             transaction_id=transaction_id,
+                             challenge=challenge,
+                             data=data if data is not None else '',
+                             session=session if session is not None else '',
+                             validitytime=validitytime)
+    if redis_feature_enabled("challenges"):
+        # Cache only, skip the DB write. Redis TTL handles expiry;
+        # challenges are ephemeral by nature.
+        cache_challenge(
+            serial=db_challenge.serial,
+            transaction_id=db_challenge.transaction_id,
+            challenge=db_challenge.challenge,
+            data=db_challenge.data,
+            session=db_challenge.session,
+            timestamp=db_challenge.timestamp,
+            expiration=db_challenge.expiration,
+        )
+        # If cache_challenge() failed it called _disable_redis(), so the flag
+        # check now returns False. Fall back to DB so the challenge is not lost.
+        if not redis_feature_enabled("challenges"):
+            db_challenge.save()
+    else:
+        db_challenge.save()
+    return db_challenge

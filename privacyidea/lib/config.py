@@ -53,6 +53,7 @@ from privacyidea.lib.utils.export import (register_import, register_export)
 from .caconnectors.baseca import BaseCAConnector
 from .crypto import decryptPassword
 from .crypto import encryptPassword
+from .crypto import CENSORED, is_censored
 from .log import log_with
 from .machines.base import BaseMachineResolver
 from .resolvers.UserIdResolver import UserIdResolver
@@ -1109,11 +1110,22 @@ def check_node_uuid_exists(node_uuid) -> bool:
 
 
 @register_export()
-def export_config(name=None):
-    """Export the global configuration"""
+def export_config(name=None, censor=False):
+    """Export the global configuration
+
+    :param censor: If True, the value of password-type entries is replaced with
+        the ``__CENSORED__`` placeholder instead of being exported.
+    """
     c = copy.copy(get_config_object().config)
     if name:
         c = {name: c[name]} if name in c.keys() else {}
+    if censor:
+        # copy.copy is shallow, so build new dicts for the censored entries
+        # instead of mutating the cached config object
+        c = {key: ({**values, "Value": CENSORED}
+                   if isinstance(values, dict) and values.get("Type") == "password"
+                   else values)
+             for key, values in c.items()}
     return c
 
 
@@ -1125,6 +1137,12 @@ def import_config(data, name=None):
     data.pop('__timestamp__', None)
     for key, values in data.items():
         if name and name != key:
+            continue
+        if is_censored(values.get('Value')):
+            # A censored value means "keep the stored secret". On the same
+            # instance the existing value is kept untouched; on a fresh instance
+            # there is nothing to keep, so the entry is skipped.
+            log.info(f'Skipping import of censored configuration entry "{key}".')
             continue
         r = set_privacyidea_config(key, values['Value'],
                                    desc=values['Description'] if 'Description' in values else None,

@@ -17,18 +17,13 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
-  appScrollToTop
-  aria-label="Event Handlers"
-  class="events-table-container"
-  i18n-aria-label>
+  appScrollToTop aria-label="Event Handlers" class="events-table-container" i18n-aria-label>
   <div class="filter-paginator-container">
     <mat-form-field
-      class="event-handler-table-filter"
-      subscriptSizing="dynamic">
+      class="event-handler-table-filter" subscriptSizing="dynamic">
       <mat-label i18n>Filter Event Handlers ...</mat-label>
       <app-clearable-input
-        (clearButtonClick)="onClearFilter()"
-        [showClearButton]="filterHTMLInputElement.value.length > 0">
+        (clearButtonClick)="onClearFilter()" [showClearButton]="filterHTMLInputElement.value.length > 0">
         <input
           #filterHTMLInputElement
           (input)="onFilterInput(filterHTMLInputElement.value)"
@@ -50,31 +45,23 @@
   <div class="actions-container">
     @if (authService.actionAllowed("eventhandling_write")) {
       <button
-        (click)="onCreateNewEventHandler()"
-        class="action-button-primary button-width-xl"
-        mat-stroked-button>
+        (click)="onCreateNewEventHandler()" class="action-button-primary button-width-xl" mat-stroked-button>
         <mat-icon>add</mat-icon>
         <span i18n>Create New Event Handler</span>
       </button>
     }
     <mat-slide-toggle
-      (change)="toggleDetailedView()"
-      [checked]="detailedView()"
-      i18n
-      >Detailed View
+      (change)="toggleDetailedView()" [checked]="detailedView()" i18n>Detailed View
     </mat-slide-toggle>
   </div>
 
   <table
-    [dataSource]="eventHandlerDataSource()"
-    class="event-handler-table"
-    mat-table>
+    [dataSource]="eventHandlerDataSource()" class="event-handler-table" mat-table>
     @for (column of Object.keys(columnKeysMap); track column) {
       @if (column !== "delete" || authService.actionAllowed("eventhandling_write")) {
         <ng-container [matColumnDef]="column">
           <th
-            *matHeaderCellDef
-            mat-header-cell>
+            *matHeaderCellDef mat-header-cell>
             <div class="flex ali-center">
               {{ columnKeysMap[column] }}
               @if (column !== "delete") {
@@ -91,22 +78,19 @@
             </div>
           </th>
           <td
-            *matCellDef="let element; let row"
-            class="column-max-width"
-            mat-cell>
+            *matCellDef="let element; let row" class="column-max-width" mat-cell>
             @switch (column) {
               @case ("name") {
                 <div
-                  [ngClass]="detailedView() ? 'break-words' : 'event-table-cell'"
-                  [attr.title]="element.name">
+                  [attr.title]="element.name" [ngClass]="detailedView() ? 'break-words' : 'event-table-cell'">
                   @if (authService.actionAllowed("eventhandling_write")) {
                     <a
-                      role="button"
-                      tabindex="0"
                       (click)="onEditEventHandler(element)"
                       (keydown.enter)="onEditEventHandler(element)"
                       (keydown.space)="onEditEventHandler(element); $event.preventDefault()"
-                      [innerHTML]="element.name | highlight: filterString()"></a>
+                      [innerHTML]="element.name | highlight: filterString()"
+                      role="button"
+                      tabindex="0"></a>
                   } @else {
                     <span [innerHTML]="element.name | highlight: filterString()"></span>
                   }
@@ -156,8 +140,7 @@
                   </div>
                 } @else {
                   <div
-                    class="event-table-cell"
-                    [attr.title]="element.action">
+                    [attr.title]="element.action" class="event-table-cell">
                     <span [innerHTML]="element.action | highlight: filterString()"></span>
                   </div>
                 }
@@ -168,15 +151,15 @@
                   [checked]="element.active"
                   [disableRipple]="true"
                   [disabled]="!authService.actionAllowed('eventhandling_write')"
-                  matTooltip="Toggle Active Status"
-                  i18n-matTooltip></mat-slide-toggle>
+                  i18n-matTooltip
+                  matTooltip="Toggle Active Status"></mat-slide-toggle>
               }
               @case ("delete") {
                 <button
                   (click)="onDeleteEventHandler(element); $event.stopPropagation()"
+                  i18n-matTooltip
                   mat-icon-button
-                  matTooltip="Delete Event Handler"
-                  i18n-matTooltip>
+                  matTooltip="Delete Event Handler">
                   <mat-icon>delete</mat-icon>
                 </button>
               }
@@ -195,8 +178,7 @@
     }
 
     <tr
-      *matHeaderRowDef="columnKeys()"
-      mat-header-row></tr>
+      *matHeaderRowDef="columnKeys()" mat-header-row></tr>
     <tr
       *matRowDef="let row; columns: columnKeys()"
       [ngClass]="detailedView() ? 'detailed-row' : 'compact-row'"
