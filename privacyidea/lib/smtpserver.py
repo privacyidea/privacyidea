@@ -477,5 +477,5 @@ def import_smtpserver(data, name=None):
             continue
         # condition is apparently not used anymore
         rid = add_smtpserver(res_name, **res_data)
-        log.info(f'Import of smtpserver "{res_name!s}" finished,'
+        log.info(f'Import of SMTP server "{res_name!s}" finished,'
                  f' id: {rid!s}')
