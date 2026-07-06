@@ -409,3 +409,31 @@ class SendEmailMetricsTestCase(MyTestCase):
             self.assertTrue(send_email_data("mail.example", "subj", "body",
                                             "from@example.com", ["to@example.com"]))
         self.assertEqual(self._read_counter("emailtoken", "ok"), 1)
+
+
+class SMTPServerExportImportTestCase(MyTestCase):
+    """Coverage for the registry export/import of SMTP servers, including
+    censoring and the private_key_password round-trip."""
+
+    def test_01_export_censor_and_roundtrip(self):
+        from privacyidea.lib.smtpserver import (export_smtpserver, import_smtpserver,
+                                                add_smtpserver, delete_smtpserver)
+        from privacyidea.lib.crypto import CENSORED
+        add_smtpserver("expsmtp", server="mail.example", password="smtppw",
+                       private_key_password="pkppw")
+        # censored export replaces both secrets
+        censored = export_smtpserver(censor=True)
+        self.assertEqual(censored["expsmtp"]["password"], CENSORED)
+        self.assertEqual(censored["expsmtp"]["private_key_password"], CENSORED)
+        # clear-text export decrypts both secrets
+        exported = export_smtpserver()
+        self.assertEqual(exported["expsmtp"]["password"], "smtppw")
+        self.assertEqual(exported["expsmtp"]["private_key_password"], "pkppw")
+        # the export round-trips: re-importing and re-exporting yields the same
+        # clear-text secrets (i.e. private_key_password is not double-encrypted)
+        delete_smtpserver("expsmtp")
+        import_smtpserver(exported)
+        reexported = export_smtpserver()
+        self.assertEqual(reexported["expsmtp"]["password"], "smtppw")
+        self.assertEqual(reexported["expsmtp"]["private_key_password"], "pkppw")
+        delete_smtpserver("expsmtp")

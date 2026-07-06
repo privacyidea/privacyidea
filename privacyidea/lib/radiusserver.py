@@ -361,9 +361,18 @@ def delete_radius(identifier):
 
 
 @register_export('radiusserver')
-def export_radiusserver(name=None):
-    """ Export given or all radiusserver configuration """
-    return list_radiusservers(identifier=name)
+def export_radiusserver(name=None, censor=False):
+    """ Export given or all radiusserver configuration
+
+    :param censor: If True, the RADIUS secret is replaced with the
+        ``__CENSORED__`` placeholder instead of being returned in clear text.
+    """
+    res = list_radiusservers(identifier=name)
+    if censor:
+        for server in res.values():
+            if "secret" in server:
+                server["secret"] = CENSORED
+    return res
 
 
 @register_import('radiusserver')
@@ -373,7 +382,8 @@ def import_radiusserver(data, name=None):
     for res_name, res_data in data.items():
         if name and name != res_name:
             continue
-        res_data['secret'] = res_data.pop('password')
+        # export_radiusserver() already provides the RADIUS secret under the
+        # 'secret' key, which is also what add_radius() expects.
         rid = add_radius(res_name, **res_data)
-        log.info(f'Import of smtpserver "{res_name!s}" finished,'
+        log.info(f'Import of radiusserver "{res_name!s}" finished,'
                  f' id: {rid!s}')
