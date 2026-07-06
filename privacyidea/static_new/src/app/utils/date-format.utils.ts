@@ -17,9 +17,30 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+// Matches server-supplied "YYYY-MM-DD HH:mm:ss[.fraction][offset]" timestamps that use a
+// space instead of "T", or a fractional-seconds part longer than the 3 digits (milliseconds)
+// the Date Time String Format allows. Both are only reliably parsed by new Date() on some
+// engines, so normalize to a spec-conformant ISO string before parsing.
+const LOOSE_ISO_DATE_TIME_REGEX = /^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}:\d{2})(\.\d+)?(Z|[+-]\d{2}:?\d{2})?$/;
+
+function normalizeDateTimeString(value: string): string {
+  const match = LOOSE_ISO_DATE_TIME_REGEX.exec(value);
+  if (!match) return value;
+  const [, datePart, timePart, fraction, offset] = match;
+  const milliseconds = fraction ? `.${fraction.slice(1, 4).padEnd(3, "0")}` : "";
+  return `${datePart}T${timePart}${milliseconds}${offset ?? ""}`;
+}
+
+let localDateTimeFormatter: Intl.DateTimeFormat | undefined;
+function getLocalDateTimeFormatter(): Intl.DateTimeFormat {
+  localDateTimeFormatter ??= new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "medium" });
+  return localDateTimeFormatter;
+}
+
 export function formatLocalDateTime(value: string | number | Date | null | undefined): string {
   if (value === null || value === undefined || value === "") return "";
-  const date = value instanceof Date ? value : new Date(value);
+  const normalized = typeof value === "string" ? normalizeDateTimeString(value) : value;
+  const date = normalized instanceof Date ? normalized : new Date(normalized);
   if (Number.isNaN(date.getTime())) return String(value);
-  return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "medium" }).format(date);
+  return getLocalDateTimeFormatter().format(date);
 }

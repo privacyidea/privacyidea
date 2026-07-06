@@ -91,6 +91,14 @@ if (typeof globalThis.structuredClone !== "function") {
   globalThis.structuredClone = (<T>(value: T): T => deserialize(serialize(value)) as T) as typeof structuredClone;
 }
 
+// Pin the default Intl locale so date/number formatting is deterministic across
+// dev machines and CI, regardless of the runtime's OS/LANG settings. Production
+// code keeps calling Intl.*(undefined, ...) to honor the real user's browser locale.
+const RealDateTimeFormat = Intl.DateTimeFormat;
+Intl.DateTimeFormat = function (locales?: Intl.LocalesArgument, options?: Intl.DateTimeFormatOptions) {
+  return new RealDateTimeFormat(locales ?? "en-US", options);
+} as typeof Intl.DateTimeFormat;
+
 Object.defineProperty(window, "matchMedia", {
   writable: true,
   configurable: true,

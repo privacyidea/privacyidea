@@ -54,4 +54,18 @@ describe("formatLocalDateTime", () => {
     const date = new Date(2026, 0, 1, 0, 0, 0);
     expect(formatLocalDateTime(date)).toBe(expectedLocalDateTime(2026, 0, 1, 0, 0, 0));
   });
+
+  it("formats a space-separated server timestamp the same as its 'T'-separated equivalent", () => {
+    expect(formatLocalDateTime("2026-01-05 10:30:45")).toBe(formatLocalDateTime("2026-01-05T10:30:45"));
+  });
+
+  it("formats a timestamp with microsecond precision instead of returning the raw value", () => {
+    expect(formatLocalDateTime("2026-01-05T10:30:45.123456")).toBe(formatLocalDateTime("2026-01-05T10:30:45.123"));
+  });
+
+  it("formats a space-separated timestamp with microsecond precision and a UTC offset", () => {
+    expect(formatLocalDateTime("2026-01-05 10:30:45.123456+0200")).toBe(
+      formatLocalDateTime("2026-01-05T10:30:45.123+02:00")
+    );
+  });
 });
