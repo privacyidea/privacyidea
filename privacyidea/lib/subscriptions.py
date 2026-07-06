@@ -63,35 +63,85 @@ SIGN_FORMAT = """{application}
 {level}
 """
 
-APPLICATIONS = {"demo_application": 0,
-                "owncloud": 50,
-                "privacyidea-nextcloud": 50,
-                "privacyidea-ldap-proxy": 50,
-                "privacyidea-cp": 50,
-                "privacyidea-pam": 10000,
-                "pam-passkey": 10000,
-                "privacyidea-shibboleth": 10000,
-                "privacyidea-adfs": 50,
-                "privacyidea-keycloak": 10000,
-                "simplesamlphp": 10000,
-                "privacyidea-simplesamlphp": 10000,
-                "privacyidea authenticator": 10,
-                "privacyidea": 50}
+# Single source of truth for subscription applications. Each entry maps an
+# application name to its configuration:
+#   ``free_users``   the free-tier limit (users with active tokens) allowed
+#                    without a subscription file.
+#   ``user_agents``  optional list of additional client user-agents that are
+#                    counted against this application's subscription. This lets
+#                    several distinct clients (e.g. privacyidea-pam and
+#                    pam-passkey) share one subscription. The application key
+#                    itself is always implicitly one of its own user-agents.
+# The flat lookups below (:data:`APPLICATIONS`, :data:`APPLICATION_ALIASES`)
+# are derived from this dict, so adding a client to a subscription is a single
+# edit here.
+SUBSCRIPTIONS = {
+    "demo_application": {"free_users": 0},
+    "owncloud": {"free_users": 50},
+    "privacyidea-nextcloud": {"free_users": 50},
+    "privacyidea-ldap-proxy": {"free_users": 50},
+    "privacyidea-cp": {"free_users": 50},
+    "privacyidea-pam": {"free_users": 10000, "user_agents": ["pam-passkey"]},
+    "privacyidea-shibboleth": {"free_users": 10000},
+    "privacyidea-adfs": {"free_users": 50},
+    "privacyidea-keycloak": {"free_users": 10000, "user_agents": ["entraid-via-keycloak"]},
+    "simplesamlphp": {"free_users": 10000},
+    "privacyidea-simplesamlphp": {"free_users": 10000},
+    "privacyidea authenticator": {"free_users": 10, "user_agents": ["privacyidea-app"]},
+    "privacyidea": {"free_users": 50, "user_agents": ["privacyidea-radius"]},
+}
 
-# Plugins shown on the dashboard subscription overview. The API response
-# preserves this order; the frontend re-sorts by status and uses this as
-# the per-bucket tiebreaker. Display names live on the frontend (see
-# ``pluginDisplayName`` in dashboardControllers.js).
+# Free-tier limit per subscription application. Derived from SUBSCRIPTIONS.
+APPLICATIONS = {application: config["free_users"]
+                for application, config in SUBSCRIPTIONS.items()}
+
+# Maps a client user-agent name to the application whose subscription it counts
+# against, so multiple user-agents can count towards the same subscription.
+# Derived from the ``user_agents`` lists in SUBSCRIPTIONS. Keys are lower-case.
+APPLICATION_ALIASES = {user_agent.lower(): application
+                       for application, config in SUBSCRIPTIONS.items()
+                       for user_agent in config.get("user_agents", [])}
+
+
+def get_subscription_application(plugin_name):
+    """
+    Map a plugin user-agent name to the application whose subscription it
+    counts against, following :data:`APPLICATION_ALIASES`. Names that are not
+    aliases are returned lower-cased and otherwise unchanged.
+
+    :param plugin_name: the plugin name parsed from a request's user-agent
+    :type plugin_name: str
+    :return: the canonical application name for subscription counting
+    :rtype: str
+    """
+    name = (plugin_name or "").lower()
+    return APPLICATION_ALIASES.get(name, name)
+
+
+# Client user-agents shown on the dashboard subscription overview, each as its
+# own row. Aliased user-agents (e.g. pam-passkey, entraid-via-keycloak) stay
+# separate rows but resolve their subscription and free limit through their
+# owning application (see :func:`get_plugin_subscription_status`). The frontend
+# groups these into sections and provides the display names (see the section
+# layout and ``pluginDisplayName`` in dashboardControllers.js), so this list is
+# just the set of rows the backend reports a status for; order is not
+# significant.
 DASHBOARD_PLUGINS = [
+    "privacyidea-app",
+    "privacyidea-radius",
     "privacyidea-cp",
-    "privacyidea-adfs",
     "privacyidea-pam",
     "pam-passkey",
-    "privacyidea-shibboleth",
     "privacyidea-keycloak",
+    "entraid-via-keycloak",
+    "privacyidea-adfs",
+    "privacyidea-shibboleth",
 ]
 
-EXPIRING_THRESHOLD_DAYS = 30
+# A subscription within this many days of its end date is flagged "expiring".
+EXPIRING_THRESHOLD_DAYS = 60
+# A plugin seen within this many days counts as actively used.
+USAGE_RECENT_DAYS = 7
 
 log = logging.getLogger(__name__)
 
@@ -116,52 +166,76 @@ def get_users_with_active_tokens():
     return len(rows)
 
 
-def _classify_subscription_date(
-        date_till: datetime.datetime,
-        now: datetime.datetime) -> tuple[str, int]:
+def _subscription_state(subscription, now, token_users):
     """
-    Map a subscription's ``date_till`` to a dashboard status. The caller is
-    responsible for handling the "no subscription on file" case before
-    calling this helper.
+    Classify a subscription record into a dashboard subscription state. This is
+    about the subscription itself, independent of how recently the plugin was
+    used (see :func:`_usage_state`).
 
-    :return: ``(status, days_left)`` where status is one of ``"active"``,
-        ``"expiring"`` or ``"expired"``, and ``days_left`` is the integer
-        day delta (negative when expired).
+    Possible values, with the colour the frontend maps them to:
+
+    * ``none`` (grey) — no subscription on file.
+    * ``valid`` (green) — subscription valid, not near expiry, within token limit.
+    * ``expiring`` (yellow) — subscription valid but ends within
+      :data:`EXPIRING_THRESHOLD_DAYS` days.
+    * ``exceeded`` (yellow) — subscription valid but more users with active
+      tokens than the subscription allows (``num_tokens``).
+    * ``expired`` (red) — subscription ``date_till`` is in the past.
+
+    :param subscription: the subscription dict, or None if none is on file
+    :param now: the reference "now" timestamp
+    :param token_users: number of users with active tokens (for the token check)
+    :return: ``(state, date_till, days_left)`` — ``date_till``/``days_left`` are
+        None when no subscription is on file.
+    :rtype: tuple
     """
-    days_left = (date_till - now).days
-    if date_till < now:
-        return "expired", days_left
-    if days_left < EXPIRING_THRESHOLD_DAYS:
-        return "expiring", days_left
-    return "active", days_left
+    if not subscription:
+        return "none", None, None
+    date_till = subscription.get("date_till")
+    days_left = (date_till - now).days if date_till else None
+    if date_till and date_till < now:
+        return "expired", date_till, days_left
+    allowed_tokens = subscription.get("num_tokens")
+    if allowed_tokens is not None and token_users > allowed_tokens:
+        return "exceeded", date_till, days_left
+    if days_left is not None and days_left < EXPIRING_THRESHOLD_DAYS:
+        return "expiring", date_till, days_left
+    return "valid", date_till, days_left
+
+
+def _usage_state(has_subscription, last_seen, now):
+    """
+    Classify whether a plugin is actively used: ``"yes"`` (green) if it has a
+    subscription on file or was seen within :data:`USAGE_RECENT_DAYS` days,
+    otherwise ``"no"`` (blue).
+
+    :rtype: str
+    """
+    if has_subscription:
+        return "yes"
+    if last_seen is not None and (now - last_seen).days < USAGE_RECENT_DAYS:
+        return "yes"
+    return "no"
 
 
 def get_plugin_subscription_status() -> list[dict]:
     """
     Return a dashboard status entry for each plugin in :data:`DASHBOARD_PLUGINS`.
 
-    Each entry has a ``status`` field. Possible values, with the colour the
-    frontend dashboard maps them to:
+    Each entry carries two independent axes:
 
-    * ``active`` (green) — used, valid subscription, at least
-      :data:`EXPIRING_THRESHOLD_DAYS` days left.
-    * ``expiring`` (orange) — used, valid subscription, within
-      :data:`EXPIRING_THRESHOLD_DAYS` days of expiry.
-    * ``expired`` (red) — used, subscription exists but ``date_till`` is in
-      the past. Distinct from ``no_subscription`` so the dashboard can
-      surface former customers whose subscription lapsed.
-    * ``no_subscription`` (orange) — used, no subscription on file, token-user
-      count still within the free limit from :data:`APPLICATIONS`.
-    * ``exceeded`` (red) — used, no subscription on file, token-user count
-      exceeds the free limit.
-    * ``unused`` (grey) — plugin has not contacted this server.
+    * ``usage`` — ``"yes"``/``"no"``; see :func:`_usage_state`.
+    * ``subscription`` — one of ``none``/``valid``/``expiring``/``exceeded``/
+      ``expired``; see :func:`_subscription_state`.
 
-    Plugin usage is derived from the ``ClientApplication`` table by parsing
-    each stored user-agent string with
+    Aliased user-agents (e.g. pam-passkey) keep their own row and their own
+    ``last_seen`` but resolve their subscription through their owning
+    application. Plugin usage is derived from the ``ClientApplication`` table by
+    parsing each stored user-agent with
     :func:`~privacyidea.lib.utils.get_plugin_info_from_useragent`.
 
-    :return: list of dicts in the order of :data:`DASHBOARD_PLUGINS`. Each
-        dict has the keys ``application``, ``status``, ``last_seen``,
+    :return: list of dicts in the order of :data:`DASHBOARD_PLUGINS`. Each dict
+        has the keys ``application``, ``usage``, ``subscription``, ``last_seen``,
         ``date_till`` and ``days_left``.
     :rtype: list[dict]
     """
@@ -197,64 +271,50 @@ def get_plugin_subscription_status() -> list[dict]:
                             for sub in all_subscriptions
                             if sub.get("application")}
 
-    # Lazily computed — only the no_subscription/exceeded branch needs it.
-    token_users: int | None = None
+    token_users = get_users_with_active_tokens()
     now = datetime.datetime.now()
     overview = []
     for plugin in DASHBOARD_PLUGINS:
-        entry = {"application": plugin,
-                 "last_seen": last_seen_by_plugin.get(plugin.lower()),
-                 "date_till": None,
-                 "days_left": None,
-                 "status": "unused"}
-        if entry["last_seen"] is None:
-            overview.append(entry)
-            continue
-
-        subscription = subscriptions_by_app.get(plugin.lower())
-        date_till = subscription.get("date_till") if subscription else None
-        if date_till:
-            status, days_left = _classify_subscription_date(date_till, now)
-            entry["date_till"] = date_till
-            entry["days_left"] = days_left
-            entry["status"] = status
-        else:
-            if token_users is None:
-                token_users = get_users_with_active_tokens()
-            free_limit = APPLICATIONS[plugin.lower()]
-            entry["status"] = "exceeded" if token_users > free_limit else "no_subscription"
-        overview.append(entry)
+        last_seen = last_seen_by_plugin.get(plugin.lower())
+        # Aliased user-agents keep their own panel/last_seen but share the
+        # owning application's subscription.
+        owning_application = get_subscription_application(plugin)
+        subscription = subscriptions_by_app.get(owning_application)
+        state, date_till, days_left = _subscription_state(subscription, now, token_users)
+        overview.append({"application": plugin,
+                         "usage": _usage_state(bool(subscription), last_seen, now),
+                         "subscription": state,
+                         "last_seen": last_seen,
+                         "date_till": date_till,
+                         "days_left": days_left})
     return overview
 
 
 def get_server_subscription_status() -> dict:
     """
     Dashboard status entry for the privacyIDEA server itself. Same shape as
-    entries from :func:`get_plugin_subscription_status` plus ``is_server: True``.
-    Lets the frontend render the server row without duplicating the
-    :data:`EXPIRING_THRESHOLD_DAYS` rule.
+    entries from :func:`get_plugin_subscription_status` plus ``is_server: True``,
+    so the frontend renders the server row without duplicating the
+    classification rules.
 
     :rtype: dict
     """
-    entry = {"application": "privacyidea",
-             "is_server": True,
-             "last_seen": None,
-             "date_till": None,
-             "days_left": None,
-             "status": "no_subscription"}
     # Pick the row with the latest date_till for determinism when multiple
     # server subscriptions exist.
     subscriptions = sorted(get_subscription("privacyidea"),
                            key=lambda s: s.get("date_till") or datetime.datetime.min,
                            reverse=True)
     subscription = subscriptions[0] if subscriptions else None
-    date_till = subscription.get("date_till") if subscription else None
-    if date_till:
-        status, days_left = _classify_subscription_date(date_till, datetime.datetime.now())
-        entry["date_till"] = date_till
-        entry["days_left"] = days_left
-        entry["status"] = status
-    return entry
+    now = datetime.datetime.now()
+    state, date_till, days_left = _subscription_state(
+        subscription, now, get_users_with_active_tokens())
+    return {"application": "privacyidea",
+            "is_server": True,
+            "usage": _usage_state(bool(subscription), None, now),
+            "subscription": state,
+            "last_seen": None,
+            "date_till": date_till,
+            "days_left": days_left}
 
 
 def subscription_status(component="privacyidea", tokentype=None):
@@ -443,12 +503,14 @@ def check_subscription(application, max_free_subscriptions=None):
         without a subscription file. If not given, the default is used.
     :return: bool
     """
-    if application.lower() in APPLICATIONS:
-        subscriptions = get_subscription(application) or get_subscription(
-            application.lower())
+    # Alias user-agents (e.g. pam-passkey) count against another application's
+    # subscription; normalize before looking up the subscription and free limit.
+    application = get_subscription_application(application)
+    if application in APPLICATIONS:
+        subscriptions = get_subscription(application)
         # get the number of users with active tokens
         token_users = get_users_with_active_tokens()
-        free_subscriptions = max_free_subscriptions or APPLICATIONS.get(application.lower())
+        free_subscriptions = max_free_subscriptions or APPLICATIONS.get(application)
         if len(subscriptions) == 0:
             if subscription_exceeded_probability(token_users, free_subscriptions):
                 raise SubscriptionError(description="No subscription for your client.",

@@ -43,6 +43,7 @@ from flask import g, jsonify, current_app
 
 from privacyidea.api.lib.utils import get_all_params, get_optional, map_error_to_code, send_error
 from privacyidea.lib.audit import getAudit
+from privacyidea.lib.clientapplication import save_clientapplication
 from privacyidea.lib.config import (get_token_class, get_from_config,
                                     SYSCONF, ensure_no_config_object, get_privacyidea_node)
 from privacyidea.lib.error import ParameterError
@@ -91,6 +92,13 @@ def before_request():
                         "action": f"{request.method!s} {request.url_rule!s}",
                         "thread_id": f"{threading.current_thread().ident!s}",
                         "info": ""})
+    # Record the client application (e.g. the privacyIDEA Authenticator App) for
+    # the client-type overview. Only on POST (enrollment, challenge answer,
+    # firebase-token update) so the frequent GET polls do not trigger a DB write
+    # on every poll.
+    if request.method == "POST":
+        # default IP if the request carries none, matching save_client_application_type
+        save_clientapplication(g.client_ip or "0.0.0.0", f"{request.user_agent!s}" or "unknown")  # nosec B104
 
 
 @ttype_blueprint.route('/<ttype>', methods=['POST', 'GET'])

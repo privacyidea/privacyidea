@@ -51,6 +51,27 @@ class ClientApplicationTestCase(MyTestCase):
         self.assertTrue(r["RADIUS"][0]["lastseen"] < datetime.now())
         self.assertTrue(r["SAML"][0]["lastseen"] < datetime.now())
 
+    def test_03_update_refreshes_lastseen(self):
+        # Saving the same (ip, clienttype, node) again must update the existing
+        # row's lastseen instead of leaving it stale (regression: the update
+        # path used to assign an unmapped ``last_seen`` attribute).
+        ClientApplication.query.delete()
+        t1 = datetime.now()
+        t2 = t1 + timedelta(minutes=5)
+
+        with mock.patch("privacyidea.lib.clientapplication.datetime") as mock_dt:
+            mock_dt.now.return_value = t1
+            save_clientapplication("1.2.3.4", "PAM")
+        row = ClientApplication.query.filter_by(ip="1.2.3.4", clienttype="PAM").one()
+        self.assertEqual(row.lastseen, t1)
+
+        with mock.patch("privacyidea.lib.clientapplication.datetime") as mock_dt:
+            mock_dt.now.return_value = t2
+            save_clientapplication("1.2.3.4", "PAM")
+        # Still exactly one row, and its lastseen advanced to t2.
+        row = ClientApplication.query.filter_by(ip="1.2.3.4", clienttype="PAM").one()
+        self.assertEqual(row.lastseen, t2)
+
     def test_02_multiple_nodes(self):
         @contextmanager
         def _set_node(node):

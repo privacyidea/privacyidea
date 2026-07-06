@@ -44,40 +44,80 @@ myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
                        "inactive": [], "num_inactive": 0};
     $scope.events = {"active": [], "num_active": 0,
                      "inactive": [], "num_inactive": 0};
-    $scope.pluginStatus = [];
+    // Flat, sectioned rows for the subscription overview (see buildSubscriptionRows).
+    $scope.subscriptionRows = [];
     // null = still loading, "ok" = loaded, "error" = request failed
     $scope.pluginStatusLoadState = null;
-    // Maps plugin status to the bootstrap text-color class for the traffic-light dot.
-    $scope.pluginStatusDot = {
-        "active": "text-success",
-        "expiring": "text-warning",
-        "no_subscription": "text-warning",
-        "exceeded": "text-danger",
-        "expired": "text-danger",
-        "unused": "text-muted"
+    // The overview has two independent axes, each rendered as a coloured dot.
+    // The maps below give the bootstrap text-color class and the label per
+    // value. `gettext()` is the angular-gettext no-op marker so the extractor
+    // picks the strings up; the template applies the `translate` filter so the
+    // rendered label reacts to language changes.
+    // Usage: is the plugin actively used / covered?
+    $scope.usageDot = {
+        "yes": "text-success",   // green
+        "no": "text-danger"      // red
     };
-    // Status label per status key. `gettext()` is the angular-gettext no-op
-    // marker so the extractor picks the strings up; the template applies the
-    // `translate` filter so the rendered label reacts to language changes.
-    $scope.pluginStatusText = {
-        "active": gettext("Active"),
-        "expiring": gettext("Expiring soon"),
-        "no_subscription": gettext("No subscription"),
-        "exceeded": gettext("Subscription required"),
-        "expired": gettext("Expired"),
-        "unused": gettext("Not used")
+    $scope.usageText = {
+        "yes": gettext("Yes"),
+        "no": gettext("No")
+    };
+    // Subscription: state of the subscription record itself.
+    $scope.subscriptionDot = {
+        "none": "text-muted",      // grey
+        "valid": "text-success",   // green
+        "expiring": "text-warning",// yellow
+        "exceeded": "text-warning",// yellow
+        "expired": "text-danger"   // red
+    };
+    $scope.subscriptionText = {
+        "none": gettext("None"),
+        "valid": gettext("Valid"),
+        "expiring": gettext("Expiring"),
+        "exceeded": gettext("Exceeded"),
+        "expired": gettext("Expired")
+    };
+    // Tooltip explaining the concrete reason for a dot's colour. For the usage
+    // "OR" rule we state which branch actually applies (subscription vs. recent
+    // activity), rather than making the admin guess. Returned strings are the
+    // gettext() source; the template applies the `translate` filter.
+    $scope.usageReasonText = function (status) {
+        if (status.usage === "yes") {
+            return status.subscription !== "none"
+                ? gettext("In use: covered by a subscription.")
+                : gettext("In use: seen within the last 7 days.");
+        }
+        return gettext("Not in use: no subscription, and not seen in the last 7 days.");
+    };
+    $scope.subscriptionReasonText = function (status) {
+        return {
+            "none": gettext("No subscription. Get a subscription for enterprise support."),
+            "valid": gettext("Valid: subscription in place and no other condition applies."),
+            "expiring": gettext("Expiring: the subscription ends in less than 60 days."),
+            "exceeded": gettext("Exceeded: subscription is valid, but more tokens are in use than it allows."),
+            "expired": gettext("Expired: the subscription's end date has passed.")
+        }[status.subscription] || "";
     };
     // Display name per plugin application key. The privacyidea- prefix is
     // dropped — context already makes it obvious. Unknown keys fall back to
     // the raw application identifier in the view.
     $scope.pluginDisplayName = {
+        "privacyidea": "privacyIDEA Server",
+        "privacyidea-app": "privacyIDEA Authenticator App",
+        "privacyidea-radius": "RADIUS",
         "privacyidea-cp": "Windows Credential Provider",
-        "privacyidea-adfs": "AD FS",
         "privacyidea-pam": "PAM OTP & Push",
         "pam-passkey": "PAM Passkey",
-        "privacyidea-shibboleth": "Shibboleth",
         "privacyidea-keycloak": "Keycloak",
-        "privacyidea": "privacyIDEA Server"
+        "entraid-via-keycloak": "EntraID Integration",
+        "privacyidea-adfs": "AD FS",
+        "privacyidea-shibboleth": "Shibboleth"
+    };
+    // Subscription overview view mode. Start compact; the "Show details" button
+    // switches to the detailed view (adds the Expires and Last seen columns).
+    $scope.subscriptionDetailed = false;
+    $scope.toggleSubscriptionDetail = function () {
+        $scope.subscriptionDetailed = !$scope.subscriptionDetailed;
     };
     $scope.authentications = {"success": 0, "fail": 0};
     $scope.latestNews = null;
@@ -170,36 +210,74 @@ myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
     };
 
 
-     // Sort priority per status: subscribed first, then used-but-unsubscribed,
-     // then never-used. The server entry (is_server) is always pinned to the
-     // top, regardless of status.
-     var PLUGIN_STATUS_ORDER = {
-         "active": 1, "expiring": 1, "expired": 1,
-         "no_subscription": 2, "exceeded": 2,
-         "unused": 3
-     };
+     // Hierarchy of the subscription overview. The server is the base component
+     // and is rendered on its own at the top. Everything else is a "use case",
+     // some grouped under sub-labels. Labels are pure headers; plugin nodes pull
+     // their status from the backend by `application`. This tree is flattened
+     // into rows with an `indent` level for rendering (see buildSubscriptionRows).
+     var SUBSCRIPTION_SECTIONS = [
+         {kind: "label", label: gettext("Use Cases"), children: [
+             {kind: "plugin", application: "privacyidea-app"},
+             {kind: "plugin", application: "privacyidea-radius"},
+             {kind: "label", label: gettext("System Login"), children: [
+                 {kind: "plugin", application: "privacyidea-cp"},
+                 {kind: "plugin", application: "privacyidea-pam"},
+                 {kind: "plugin", application: "pam-passkey"}
+             ]},
+             {kind: "label", label: gettext("Single Sign On"), children: [
+                 {kind: "plugin", application: "privacyidea-keycloak"},
+                 {kind: "plugin", application: "entraid-via-keycloak"},
+                 {kind: "plugin", application: "privacyidea-adfs"},
+                 {kind: "plugin", application: "privacyidea-shibboleth"}
+             ]}
+         ]}
+     ];
+
+     // Default status for a section plugin the backend did not report (e.g.
+     // RADIUS, which has no subscription application yet).
+     function unusedStatus(application) {
+         return {application: application, usage: "no", subscription: "none",
+                 date_till: null, days_left: null, last_seen: null};
+     }
+
+     function flattenSections(nodes, depth, rows, statusByApp) {
+         nodes.forEach(function (node) {
+             if (node.kind === "label") {
+                 rows.push({kind: "label", label: node.label, indent: depth});
+                 flattenSections(node.children || [], depth + 1, rows, statusByApp);
+             } else {
+                 rows.push({kind: "plugin", indent: depth, application: node.application,
+                            status: statusByApp[node.application] || unusedStatus(node.application)});
+             }
+         });
+         return rows;
+     }
+
+     // Turn the backend status list into the flat, sectioned row list the
+     // template renders: server row first, then the flattened use-case tree.
+     function buildSubscriptionRows(entries) {
+         var statusByApp = {};
+         var serverEntry = null;
+         (entries || []).forEach(function (entry) {
+             // date_till arrives as an RFC-1123 string; parse it to a Date so
+             // the `date` filter can format it (otherwise it renders verbatim
+             // with the time and timezone).
+             if (entry.date_till) { entry.date_till = new Date(entry.date_till); }
+             if (entry.is_server) { serverEntry = entry; }
+             statusByApp[entry.application] = entry;
+         });
+         var rows = [{kind: "server", indent: 0,
+                      status: serverEntry || unusedStatus("privacyidea")}];
+         return flattenSections(SUBSCRIPTION_SECTIONS, 0, rows, statusByApp);
+     }
 
      $scope.getPluginStatus = function() {
         $scope.pluginStatusLoadState = null;
         SubscriptionFactory.getStatus(function (data) {
-            var entries = data.result.value;
-            // Decorate with the original index so the sort tiebreaker preserves
-            // the backend's DASHBOARD_PLUGINS order regardless of whether the
-            // JS engine's sort is stable.
-            var sorted = entries.map(function(entry, idx) {
-                    return {entry: entry, idx: idx};
-                }).sort(function(a, b) {
-                    if (a.entry.is_server && !b.entry.is_server) return -1;
-                    if (b.entry.is_server && !a.entry.is_server) return 1;
-                    // Unknown statuses sort to the bottom rather than producing NaN.
-                    var diff = (PLUGIN_STATUS_ORDER[a.entry.status] || 99) -
-                               (PLUGIN_STATUS_ORDER[b.entry.status] || 99);
-                    return diff !== 0 ? diff : a.idx - b.idx;
-                }).map(function(item) { return item.entry; });
-            $scope.pluginStatus = sorted;
+            $scope.subscriptionRows = buildSubscriptionRows(data.result.value);
             $scope.pluginStatusLoadState = "ok";
         }, function () {
-            $scope.pluginStatus = [];
+            $scope.subscriptionRows = [];
             $scope.pluginStatusLoadState = "error";
         });
      };

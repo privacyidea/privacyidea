@@ -106,9 +106,17 @@ class APISubscriptionsTestCase(MyApiTestCase):
         self.assertEqual(value[0]["application"], "privacyidea")
         self.assertEqual([e["application"] for e in value[1:]], DASHBOARD_PLUGINS)
         by_app = {e["application"]: e for e in value[1:]}
-        self.assertEqual(by_app["privacyidea-keycloak"]["status"], "active")
-        # Everything else stays unused on a fresh test DB.
+        self.assertEqual(by_app["privacyidea-keycloak"]["subscription"], "valid")
+        self.assertEqual(by_app["privacyidea-keycloak"]["usage"], "yes")
+        # entraid-via-keycloak mirrors the keycloak subscription (same owning
+        # application), so it is valid/used too even without its own client row.
+        mirror_keycloak = {"privacyidea-keycloak", "entraid-via-keycloak"}
         for plugin in DASHBOARD_PLUGINS:
-            if plugin != "privacyidea-keycloak":
-                self.assertEqual(by_app[plugin]["status"], "unused")
+            if plugin in mirror_keycloak:
+                self.assertEqual(by_app[plugin]["subscription"], "valid")
+                self.assertEqual(by_app[plugin]["usage"], "yes")
+            else:
+                # No subscription and unused on a fresh test DB.
+                self.assertEqual(by_app[plugin]["subscription"], "none")
+                self.assertEqual(by_app[plugin]["usage"], "no")
 

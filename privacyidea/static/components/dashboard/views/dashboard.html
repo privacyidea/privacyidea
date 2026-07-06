@@ -17,7 +17,101 @@
        </div>
     </div>
 
-    <div class="row">  <!-- upper row -->
+   <div class="row dashboard-flow">
+       <div ng-class="subscriptionDetailed ? 'col-lg-9' : 'col-lg-3'">
+             <div class="panel panel-default" ng-show="checkRight('managesubscription')">
+                 <div class="panel-heading">
+                    <a ui-sref="component.subscriptions">
+                    <span class="glyphicon glyphicon-th-list"
+                          aria-hidden="true"></span>
+                    <span translate>Subscriptions</span></a>
+                    <button type="button" class="btn btn-xs btn-default pull-right"
+                            ng-if="pluginStatusLoadState === 'ok'"
+                            ng-click="toggleSubscriptionDetail()"
+                            title="{{ (subscriptionDetailed ? 'Compact view' : 'Detailed view') | translate }}"
+                            aria-label="{{ (subscriptionDetailed ? 'Compact view' : 'Detailed view') | translate }}">
+                        <span class="glyphicon"
+                              ng-class="subscriptionDetailed ? 'glyphicon-resize-small' : 'glyphicon-resize-full'"
+                              aria-hidden="true"></span>
+                    </button>
+		 </div>
+                 <div class="panel-body">
+                     <p ng-if="pluginStatusLoadState === null" translate>Loading…</p>
+                     <p ng-if="pluginStatusLoadState === 'error'" class="text-danger" translate>
+                         Could not load subscription status.
+                     </p>
+                     <table class="table subscription-table"
+                            ng-class="{'subscription-compact': !subscriptionDetailed}"
+                            ng-if="pluginStatusLoadState === 'ok'">
+                         <thead>
+                             <tr>
+                                 <th translate>Application</th>
+                                 <th class="text-center" translate>Usage</th>
+                                 <th class="text-center" translate>Subscription</th>
+                                 <th ng-if="subscriptionDetailed" translate>Expires</th>
+                                 <th ng-if="subscriptionDetailed" translate>Last seen</th>
+                             </tr>
+                         </thead>
+                         <tbody>
+                             <tr ng-repeat="row in subscriptionRows"
+                                 ng-class="{'info': row.kind === 'server', 'active': row.kind === 'label'}">
+                                 <!-- Section label: spans the whole row. -->
+                                 <td ng-if="row.kind === 'label'"
+                                     colspan="{{ subscriptionDetailed ? 5 : 3 }}"
+                                     ng-style="{'padding-left': (row.indent * 20) + 'px'}">
+                                     <strong>{{ row.label | translate }}</strong>
+                                 </td>
+                                 <!-- Application name (server / plugin). -->
+                                 <td ng-if="row.kind !== 'label'"
+                                     ng-style="{'padding-left': (row.indent * 20) + 'px'}">
+                                     <strong ng-if="row.kind === 'server'">{{ pluginDisplayName[row.status.application] || row.status.application }}</strong>
+                                     <span ng-if="row.kind === 'plugin'">{{ pluginDisplayName[row.application] || row.application }}</span>
+                                 </td>
+                                 <!-- Usage: yes/no. Compact shows only the dot. Hover explains why. -->
+                                 <td ng-if="row.kind !== 'label'" class="text-center subscription-status-cell">
+                                     <span uib-tooltip="{{ usageReasonText(row.status) | translate }}"
+                                           tooltip-placement="top">
+                                         <span class="status-dot"
+                                               ng-class="usageDot[row.status.usage]"
+                                               aria-hidden="true">●</span>
+                                         <span class="status-text" ng-if="subscriptionDetailed">{{ usageText[row.status.usage] | translate }}</span>
+                                     </span>
+                                 </td>
+                                 <!-- Subscription state. Compact shows only the dot. Hover explains why. -->
+                                 <td ng-if="row.kind !== 'label'" class="text-center subscription-status-cell">
+                                     <span uib-tooltip="{{ subscriptionReasonText(row.status) | translate }}"
+                                           tooltip-placement="top">
+                                         <span class="status-dot"
+                                               ng-class="subscriptionDot[row.status.subscription]"
+                                               aria-hidden="true">●</span>
+                                         <span class="status-text" ng-if="subscriptionDetailed">{{ subscriptionText[row.status.subscription] | translate }}</span>
+                                     </span>
+                                 </td>
+                                 <!-- Expires (detailed view only). -->
+                                 <td ng-if="row.kind !== 'label' && subscriptionDetailed">
+                                     <span ng-if="row.status.date_till">
+                                         {{ row.status.date_till | date: "y-MM-dd" }}
+                                         <span ng-if="row.status.days_left > 0">
+                                             ({{ row.status.days_left }} <span translate>days left</span>)
+                                         </span>
+                                         <span ng-if="row.status.days_left < 0">
+                                             ({{ -row.status.days_left }} <span translate>days ago</span>)
+                                         </span>
+                                     </span>
+                                     <span ng-if="!row.status.date_till">—</span>
+                                 </td>
+                                 <!-- Last seen (detailed view only). -->
+                                 <td ng-if="row.kind !== 'label' && subscriptionDetailed">
+                                     <span ng-if="row.kind === 'server'">—</span>
+                                     <span ng-if="row.kind !== 'server'">{{ row.status.last_seen | date: "y-MM-dd HH:mm" }}</span>
+                                 </td>
+                             </tr>
+                         </tbody>
+                     </table>
+                 </div>
+           </div>
+       </div>
+
        <div class="col-lg-4">
            <div class="panel panel-default"
                   ng-show="checkRight('tokenlist')">
@@ -442,62 +536,6 @@
                             </tr>
                         </tbody>
                     </table>
-                 </div>
-           </div>
-       </div>
-   </div>
-   <div class="row">
-       <div class="col-lg-9">
-             <div class="panel panel-default" ng-show="checkRight('managesubscription')">
-                 <div class="panel-heading">
-                    <a ui-sref="component.subscriptions">
-                    <span class="glyphicon glyphicon-th-list"
-                          aria-hidden="true"></span>
-                    <span translate>Subscriptions</span></a>
-		 </div>
-                 <div class="panel-body">
-                     <p ng-if="pluginStatusLoadState === null" translate>Loading…</p>
-                     <p ng-if="pluginStatusLoadState === 'error'" class="text-danger" translate>
-                         Could not load subscription status.
-                     </p>
-                     <table class="table" ng-if="pluginStatusLoadState === 'ok'">
-                         <thead>
-                             <tr>
-                                 <th translate>Application</th>
-                                 <th translate>Status</th>
-                                 <th translate>Expires</th>
-                                 <th translate>Last seen</th>
-                             </tr>
-                         </thead>
-                         <tbody>
-                             <tr ng-repeat="entry in pluginStatus"
-                                 ng-class="{'info': entry.is_server}">
-                                 <td>
-                                     <strong ng-if="entry.is_server">{{ pluginDisplayName[entry.application] }}</strong>
-                                     <span ng-if="!entry.is_server">{{ pluginDisplayName[entry.application] || entry.application }}</span>
-                                 </td>
-                                 <td>
-                                     <span ng-class="pluginStatusDot[entry.status]"
-                                           style="font-size: 1.2em; line-height: 1;"
-                                           aria-hidden="true">●</span>
-                                     {{ pluginStatusText[entry.status] | translate }}
-                                 </td>
-                                 <td>
-                                     {{ entry.date_till | date: "y-MM-dd" }}
-                                     <span ng-if="entry.days_left > 0">
-                                         ({{ entry.days_left }} <span translate>days left</span>)
-                                     </span>
-                                     <span ng-if="entry.days_left < 0">
-                                         ({{ -entry.days_left }} <span translate>days ago</span>)
-                                     </span>
-                                 </td>
-                                 <td>
-                                     <span ng-if="entry.is_server">—</span>
-                                     <span ng-if="!entry.is_server">{{ entry.last_seen | date: "y-MM-dd HH:mm" }}</span>
-                                 </td>
-                             </tr>
-                         </tbody>
-                     </table>
                  </div>
            </div>
        </div>

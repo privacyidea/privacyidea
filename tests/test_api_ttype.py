@@ -473,6 +473,34 @@ class TtypePushAPITestCase(MyApiTestCase):
         # remove the policy
         delete_policy("push1")
 
+    def test_05_ttype_post_records_clientapplication(self):
+        from privacyidea.lib.clientapplication import get_clientapplication
+        from privacyidea.models import ClientApplication
+        ClientApplication.query.delete()
+
+        # A POST to /ttype/push records the client application (its user-agent),
+        # so e.g. the privacyIDEA Authenticator App shows up in the clienttype
+        # overview. The recording happens in before_request, regardless of the
+        # request outcome.
+        with self.app.test_request_context('/ttype/push',
+                                           method='POST',
+                                           data={"serial": "PIPU-unknown"},
+                                           headers={"User-Agent": "privacyIDEA-App/1.2.3"}):
+            self.app.full_dispatch_request()
+        self.assertIn("privacyIDEA-App/1.2.3", get_clientapplication())
+
+        # A GET (polling) must NOT record anything, so the frequent polls do
+        # not cause a DB write on every request.
+        ClientApplication.query.delete()
+        with self.app.test_request_context('/ttype/push',
+                                           method='GET',
+                                           query_string={"serial": "PIPU-unknown",
+                                                         "timestamp": "2026-01-01T00:00:00",
+                                                         "signature": "AA"},
+                                           headers={"User-Agent": "privacyIDEA-App/1.2.3"}):
+            self.app.full_dispatch_request()
+        self.assertEqual(len(get_clientapplication()), 0)
+
     def test_04_api_poll_declined_chal(self):
         self.setUp_user_realms()
         # create FireBase Service and policies
