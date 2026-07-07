@@ -642,6 +642,7 @@ def _handle_fido2_auth(context: dict, credential_id: str):
     # Policy Checks
     if (PolicyAction.DISABLED_TOKEN_TYPES in request.all_data and
             token.get_type() in request.all_data[PolicyAction.DISABLED_TOKEN_TYPES]):
+        context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NO_USABLE_TOKEN
         raise PolicyError(_("The authentication method is not available."))
 
     if not token.user:
