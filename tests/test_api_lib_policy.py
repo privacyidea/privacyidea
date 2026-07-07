@@ -1233,6 +1233,36 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         self.assertTrue(container_wizard["registration"])
         delete_policy("container_wizard")
 
+    def test_13_get_webui_settings_is_debug(self):
+        self.setUp_user_realms()
+
+        builder = EnvironBuilder(method="POST", data={}, headers={})
+        env = builder.get_environ()
+        req = Request(env)
+        req.User = User("cornelius", self.realm1)
+        req.all_data = {}
+
+        user_response = {"jsonrpc": "2.0",
+                         "result": {"status": True,
+                                    "value": {"role": "user",
+                                              "username": "cornelius",
+                                              "realm": self.realm1}},
+                         "version": "privacyIDEA test",
+                         "id": 1}
+
+        self.assertFalse(current_app.debug)
+        resp = jsonify(user_response)
+        new_response = get_webui_settings(req, resp)
+        self.assertFalse(new_response.json["result"]["value"]["is_debug"])
+
+        current_app.config["DEBUG"] = True
+        try:
+            resp = jsonify(user_response)
+            new_response = get_webui_settings(req, resp)
+            self.assertTrue(new_response.json["result"]["value"]["is_debug"])
+        finally:
+            current_app.config["DEBUG"] = False
+
     def test_16_init_token_defaults(self):
         g.logged_in_user = {"username": "cornelius",
                             "realm": "",

@@ -85,6 +85,7 @@ export class MockAuthService implements AuthServiceInterface {
       }
   );
   readonly isSelfServiceUser = computed(() => this.role() === "user");
+  readonly isDebug = computed(() => this.authData()?.is_debug ?? false);
 
   // Methods
   getHeaders = jest.fn().mockReturnValue(new HttpHeaders());
@@ -143,6 +144,7 @@ export class MockAuthService implements AuthServiceInterface {
       type: "",
       registration: false,
       template: null
-    }
+    },
+    is_debug: false
   };
 }

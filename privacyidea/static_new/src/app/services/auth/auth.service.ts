@@ -76,6 +76,7 @@ export interface AuthData {
   require_description: string[];
   rss_age: number;
   container_wizard: ContainerWizardConfig;
+  is_debug: boolean;
 }
 
 export interface JwtData {
@@ -232,6 +233,7 @@ export interface AuthServiceInterface {
     template: string | null;
   }>;
   readonly isSelfServiceUser: Signal<boolean>;
+  readonly isDebug: Signal<boolean>;
 
   // Methods
   getHeaders(): HttpHeaders;
@@ -344,6 +346,7 @@ export class AuthService implements AuthServiceInterface {
       }
   );
   readonly isSelfServiceUser = computed(() => this.role() === "user");
+  readonly isDebug = computed(() => this.authData()?.is_debug || false);
 
   constructor() {
     this.restoreSession();

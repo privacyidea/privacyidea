@@ -258,7 +258,8 @@ describe("AuthService", () => {
         type: "",
         registration: false,
         template: null
-      }
+      },
+      is_debug: false
     });
     expect(authService.isAuthenticated()).toBe(true);
 
@@ -384,7 +385,8 @@ describe("AuthService", () => {
           logout_redirect_url: "",
           require_description: [],
           rss_age: 0,
-          container_wizard: { enabled: false, type: "generic", registration: false, template: null }
+          container_wizard: { enabled: false, type: "generic", registration: false, template: null },
+          is_debug: false
         }
       }
     };

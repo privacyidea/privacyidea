@@ -1,0 +1,26 @@
+.debug-ribbon {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  width: 100px;
+  height: 100px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.debug-ribbon-text {
+  position: absolute;
+  top: 15px;
+  left: -25px;
+  width: 100px;
+  padding: 4px 0;
+  transform: rotate(-45deg);
+  font-size: 0.8rem;
+  background-color: var(--red-base);
+  color: white;
+  text-align: center;
+  font-weight: bold;
+  text-transform: uppercase;
+  box-shadow: var(--mat-sys-level2);
+}

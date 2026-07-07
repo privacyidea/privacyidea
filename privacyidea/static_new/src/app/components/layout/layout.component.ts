@@ -20,6 +20,7 @@
 import { Component, computed, DOCUMENT, effect, inject, OnDestroy, OnInit, Renderer2, signal } from "@angular/core";
 import { MatProgressBar } from "@angular/material/progress-bar";
 import { RouterOutlet } from "@angular/router";
+import { DebugNoticeComponent } from "@components/layout/debug-notice/debug-notice.component";
 import { NavigationSelfServiceComponent } from "@components/layout/navigation-self-service/navigation-self-service.component";
 import { NavigationSelfServiceWizardComponent } from "@components/layout/navigation-self-service/navigation-self-service.wizard.component";
 import { NavigationComponent } from "@components/layout/navigation/navigation.component";
@@ -36,7 +37,8 @@ import { LoadingService, LoadingServiceInterface } from "@services/loading/loadi
     MatProgressBar,
     NavigationComponent,
     NavigationSelfServiceComponent,
-    NavigationSelfServiceWizardComponent
+    NavigationSelfServiceWizardComponent,
+    DebugNoticeComponent
   ],
   styleUrl: "./layout.component.scss"
 })
