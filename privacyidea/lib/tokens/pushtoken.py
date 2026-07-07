@@ -106,7 +106,7 @@ ALLOWED_NUMBER_OF_OPTIONS = list(range(2, 11))
 DEFAULT_NUMBER_OF_PRESENCE_OPTIONS = 3
 # The decline reasons this server version understands. A signed but unrecognized
 # reason still declines, but is logged as app/server vocabulary drift.
-KNOWN_DECLINE_REASONS = frozenset(PushDeclineReason)
+KNOWN_DECLINE_REASONS = frozenset(r.value for r in PushDeclineReason)
 
 
 def strip_pem_headers(key: str) -> str:
@@ -1361,7 +1361,7 @@ class PushTokenClass(TokenClass):
                     return True, -1, {"transaction_id": transaction_id, "message": message}
 
                 # Standard / require_presence: wait for the challenge to be answered
-                start_time = time.time()
+                start_time = time.monotonic()
                 challenge_status = None
                 while True:
                     db.session.commit()
@@ -1374,8 +1374,8 @@ class PushTokenClass(TokenClass):
                         # waiting instead of blocking until the timeout, and carry the reason out.
                         challenge_status = state.refused_status
                         break
-                    elapsed_time = time.time() - start_time
-                    if otp_counter >= 0 or elapsed_time > waiting or elapsed_time < 0:
+                    elapsed_time = time.monotonic() - start_time
+                    if otp_counter >= 0 or elapsed_time > waiting:
                         break
                     time.sleep(POLL_INTERVAL - (elapsed_time % POLL_INTERVAL))
 

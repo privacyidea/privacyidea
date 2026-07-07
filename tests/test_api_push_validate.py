@@ -1767,11 +1767,11 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
 
         smartphone = self._start_smartphone_answer("decline")
         try:
-            start_time = time.time()
+            start_time = time.monotonic()
             with self.app.test_request_context('/validate/check', method='POST',
                                                data={"user": "selfservice", "pass": "push_pin"}):
                 res = self.app.full_dispatch_request()
-                elapsed_time = time.time() - start_time
+                elapsed_time = time.monotonic() - start_time
                 self.assertEqual(200, res.status_code, res)
                 result = res.json.get("result")
                 self.assertFalse(result.get("value"), res.json)
@@ -1807,11 +1807,11 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
 
         smartphone = self._start_smartphone_answer("decline", decline_reason=PushDeclineReason.CANCELLED)
         try:
-            start_time = time.time()
+            start_time = time.monotonic()
             with self.app.test_request_context('/validate/check', method='POST',
                                                data={"user": "selfservice", "pass": "push_pin"}):
                 res = self.app.full_dispatch_request()
-                elapsed_time = time.time() - start_time
+                elapsed_time = time.monotonic() - start_time
                 self.assertEqual(200, res.status_code, res)
                 self.assertFalse(res.json["result"].get("value"), res.json)
                 self.assertEqual(AUTH_RESPONSE.DECLINED, res.json["result"].get("authentication"), res.json)
