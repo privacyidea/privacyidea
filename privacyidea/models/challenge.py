@@ -104,7 +104,7 @@ class Challenge(MethodsMixin, db.Model):
             return True
         return False
 
-    def is_open(self):
+    def is_open(self) -> bool:
         """
         Returns true if the challenge can still be answered: it is not expired,
         has not been answered yet, and has not been refused (declined or
