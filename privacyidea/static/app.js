@@ -174,7 +174,7 @@ myApp.config(['$compileProvider',
     function ($compileProvider) {
         // allow only links to our readthedocs documentation, netknights homepage, community privacyidea and
         // "otpauth:" and pia scheme links
-        let url_re = /^\s*(https:\/\/(privacyidea\.readthedocs\.io|netknights\.it|community\.privacyidea\.org|www\.privacyidea\.org|github\.com)\/|otpauth:|pia:|mailto:|file:|blob:)/;
+        let url_re = /^\s*(https:\/\/(privacyidea\.readthedocs\.io|netknights\.it|community\.privacyidea\.org|www\.privacyidea\.org|privacyidea\.org|github\.com)\/|otpauth:|pia:|mailto:|file:|blob:)/;
         $compileProvider.aHrefSanitizationTrustedUrlList(url_re);
     }]);
 

@@ -38,6 +38,13 @@
     margin-left: 6px;
 }
 
+/* Keep the Versions cell from stretching the column: cap its width and wrap a
+   long list of versions onto multiple lines inside the cell. */
+.subscription-table .subscription-versions {
+    max-width: 130px;
+    white-space: normal;
+}
+
 .table-capitalize-header > thead > tr > th {
     text-transform: capitalize;
 }

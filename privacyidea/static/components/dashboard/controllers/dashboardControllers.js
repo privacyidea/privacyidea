@@ -22,11 +22,11 @@
 myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
                                          "SubscriptionFactory", "AuditFactory",
                                          "$scope", "$location", "AuthFactory", "$timeout",
-                                         "InfoFactory",
+                                         "InfoFactory", "inform",
                                          function (ConfigFactory, TokenFactory,
                                                    SubscriptionFactory, AuditFactory,
                                                    $scope, $location, AuthFactory, $timeout,
-                                                   InfoFactory) {
+                                                   InfoFactory, inform) {
 
     $scope.tokens = {"total": 0, "hardware": 0};
     $scope.certificates = {"entries": [], "summary": {"ok": 0, "warning": 0,
@@ -113,11 +113,82 @@ myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
         "privacyidea-adfs": "AD FS",
         "privacyidea-shibboleth": "Shibboleth"
     };
+    // External link target per component, split by subscription state:
+    //   sub   -> shown when a subscription exists
+    //   nosub -> shown when there is no subscription
+    // TODO: replace the placeholders with the real per-component URLs. Targets
+    // must stay on a host allowed by the href sanitization list in app.js.
+    var LINK_SUB = "https://netknights.it/";
+    var LINK_NOSUB = "https://privacyidea.org/";
+    $scope.componentLinks = {
+        "privacyidea":            {sub: LINK_SUB, nosub: LINK_NOSUB},
+        "privacyidea-app":        {sub: LINK_SUB, nosub: LINK_NOSUB},
+        "privacyidea-radius":     {sub: LINK_SUB, nosub: LINK_NOSUB},
+        "privacyidea-cp":         {sub: LINK_SUB, nosub: LINK_NOSUB},
+        "privacyidea-pam":        {sub: LINK_SUB, nosub: LINK_NOSUB},
+        "pam-passkey":            {sub: LINK_SUB, nosub: LINK_NOSUB},
+        "privacyidea-keycloak":   {sub: LINK_SUB, nosub: LINK_NOSUB},
+        "entraid-via-keycloak":   {sub: LINK_SUB, nosub: LINK_NOSUB},
+        "privacyidea-adfs":       {sub: LINK_SUB, nosub: LINK_NOSUB},
+        "privacyidea-shibboleth": {sub: LINK_SUB, nosub: LINK_NOSUB}
+    };
+    // Pick the link for a row based on whether it has a subscription. Returns
+    // "" when the component has no configured link (then it renders as text).
+    $scope.componentLinkTarget = function (status) {
+        var links = $scope.componentLinks[status.application];
+        if (!links) { return ""; }
+        return status.subscription === "none" ? links.nosub : links.sub;
+    };
     // Subscription overview view mode. Start compact; the "Show details" button
     // switches to the detailed view (adds the Expires and Last seen columns).
     $scope.subscriptionDetailed = false;
     $scope.toggleSubscriptionDetail = function () {
         $scope.subscriptionDetailed = !$scope.subscriptionDetailed;
+    };
+    // Copy the panel's data (server + component rows, without the section
+    // labels) as a JSON string to the clipboard.
+    $scope.copySubscriptionInfo = function () {
+        // Normalize the timestamp fields to ISO 8601 so the copied JSON is
+        // uniform (last_seen arrives as an RFC-1123 string, date_till as a
+        // Date). Copy each status so the displayed rows are not mutated.
+        var toIso = function (value) {
+            if (!value) { return value; }
+            var date = (value instanceof Date) ? value : new Date(value);
+            return isNaN(date.getTime()) ? value : date.toISOString();
+        };
+        var data = $scope.subscriptionRows
+            .filter(function (row) { return row.kind !== "label"; })
+            .map(function (row) {
+                return angular.extend({}, row.status, {
+                    last_seen: toIso(row.status.last_seen),
+                    date_till: toIso(row.status.date_till)
+                });
+            });
+        var json = JSON.stringify(data, null, 2);
+        var ok = function () {
+            inform.add(gettext("Subscription info copied to clipboard."),
+                       {type: "info", ttl: 3000});
+        };
+        var fail = function () {
+            inform.add(gettext("Could not copy to the clipboard."),
+                       {type: "danger", ttl: 5000});
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(json).then(ok, fail);
+        } else {
+            // Fallback for non-secure contexts where navigator.clipboard is absent.
+            try {
+                var textarea = document.createElement("textarea");
+                textarea.value = json;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand("copy");
+                document.body.removeChild(textarea);
+                ok();
+            } catch (e) {
+                fail();
+            }
+        }
     };
     $scope.authentications = {"success": 0, "fail": 0};
     $scope.latestNews = null;
