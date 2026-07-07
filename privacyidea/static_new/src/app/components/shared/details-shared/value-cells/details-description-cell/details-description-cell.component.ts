@@ -29,6 +29,6 @@ import { MatInput } from "@angular/material/input";
 export class DetailsDescriptionCellComponent {
   value = model.required<string>();
   isEditing = input(false);
-  maxlength = input(80);
+  maxLength = input(80);
   rows = input(4);
 }

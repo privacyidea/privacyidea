@@ -71,7 +71,7 @@
     @if (authService.tokenEnrollmentAllowed()) {
       <button
         (click)="enrollNewToken()"
-        class="action-button-primary button-width-m"
+        class="action-button-primary button-width-l"
         mat-stroked-button>
         <mat-icon>add_moderator</mat-icon>
         <span i18n>Enroll new token</span>
@@ -80,7 +80,7 @@
     @if (authService.actionAllowed("container_create")) {
       <button
         (click)="createNewContainer()"
-        class="action-button-primary button-width-m"
+        class="action-button-primary button-width-l"
         mat-stroked-button>
         <mat-icon>create_new_folder</mat-icon>
         <span i18n>Create new container</span>

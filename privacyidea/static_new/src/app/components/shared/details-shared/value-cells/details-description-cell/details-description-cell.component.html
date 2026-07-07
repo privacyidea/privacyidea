@@ -23,7 +23,7 @@
     <textarea
       [value]="value()"
       (input)="value.set($any($event.target).value)"
-      [attr.maxlength]="maxlength()"
+      [attr.maxlength]="maxLength()"
       i18n-placeholder
       matInput
       placeholder="Enter description"
