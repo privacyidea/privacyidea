@@ -34,6 +34,11 @@
 .subscription-table.subscription-compact .status-dot {
     font-size: 1.7em;
 }
+/* Bootstrap's .text-warning is a muted brown; use a bright yellow for the
+   traffic-light dots (expiring / exceeded). Scoped to the dots only. */
+.subscription-table .status-dot.text-warning {
+    color: #f5b800;
+}
 .subscription-table .status-text {
     margin-left: 6px;
 }
