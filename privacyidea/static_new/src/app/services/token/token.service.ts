@@ -388,7 +388,11 @@ export class TokenService implements TokenServiceInterface {
       .filter(([key, v]) => (key === "container_serial" ? true : StringUtils.validFilterValue(v)))
       .map(([key, v]) => {
         if (key === "active" || key === "assigned") {
-          return [key, parseBooleanValue(v) ? "True" : "False"] as const;
+          const lower = v.toLowerCase();
+          if (lower === "true" || lower === "1" || lower === "false" || lower === "0") {
+            return [key, parseBooleanValue(v) ? "True" : "False"] as const;
+          }
+          return [key, v] as const;
         }
         return [key, plainKeys.has(key) ? v : `*${v}*`] as const;
       });
