@@ -77,6 +77,10 @@ export interface UserServiceInterface {
   userAttributesList: Signal<{ key: string; value: string }[]>;
   userAttributesResource: HttpResourceRef<PiResponse<Record<string, string>> | undefined>;
 
+  internalAttributes: Signal<Record<string, string>>;
+  internalAttributesList: Signal<{ key: string; value: string }[]>;
+  internalAttributesResource: HttpResourceRef<PiResponse<Record<string, string>> | undefined>;
+
   attributePolicy: Signal<UserAttributePolicy>;
   deletableAttributes: Signal<string[]>;
   attributeSetMap: Signal<Record<string, string[]>>;
@@ -156,6 +160,9 @@ export class UserService implements UserServiceInterface {
     effect(() => {
       this.notificationService.handleResourceError(this.userAttributesResource.error(), "user attributes");
     });
+    effect(() => {
+      this.notificationService.handleResourceError(this.internalAttributesResource.error(), "internal attributes");
+    });
   }
 
   readonly advancedApiFilterOptions = advancedApiFilter;
@@ -227,6 +234,37 @@ export class UserService implements UserServiceInterface {
 
     return {
       url: this.baseUrl + "attribute",
+      method: "GET",
+      headers: this.authService.getHeaders(),
+      params: { user: this.detailsUser().username, realm: this.selectedUserRealm() }
+    };
+  });
+
+  internalAttributes = computed<Record<string, string>>(() => {
+    if (!this.internalAttributesResource.hasValue()) return {};
+    return this.internalAttributesResource.value()?.result?.value ?? {};
+  });
+
+  internalAttributesList = computed(() =>
+    Object.entries(this.internalAttributes()).map(([key, raw]) => ({
+      key,
+      value: Array.isArray(raw) ? raw.join(", ") : String(raw ?? "")
+    }))
+  );
+
+  internalAttributesResource = httpResource<PiResponse<Record<string, string>>>(() => {
+    // Only load internal attributes on the user details page, and only for
+    // admins that hold the get_user_internal_attributes right (self-service
+    // users never do, as it's an admin-only policy).
+    if (!this.contentService.onUserDetails()) {
+      return undefined;
+    }
+    if (!this.authService.actionAllowed("get_user_internal_attributes")) {
+      return undefined;
+    }
+
+    return {
+      url: this.baseUrl + "internal_attribute",
       method: "GET",
       headers: this.authService.getHeaders(),
       params: { user: this.detailsUser().username, realm: this.selectedUserRealm() }
@@ -345,7 +383,6 @@ export class UserService implements UserServiceInterface {
       return value;
     }
   });
-
 
   usersResource = httpResource<PiResponse<UserData[]>>(() => {
     const selectedUserRealm = this.selectedUserRealm();

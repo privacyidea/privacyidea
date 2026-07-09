@@ -197,6 +197,12 @@ export class UserDetailsContainerTableComponent {
     });
   }
 
+  handleStateClick(element: ContainerDetailData) {
+    this.containerService.toggleActive(element.serial, element.states).subscribe({
+      next: () => this.containerService.userContainersResource.reload()
+    });
+  }
+
   private clientsideSortContainerData(data: ContainerDetailData[], s: Sort) {
     if (!s.direction) return data;
     const dir = s.direction === "asc" ? 1 : -1;

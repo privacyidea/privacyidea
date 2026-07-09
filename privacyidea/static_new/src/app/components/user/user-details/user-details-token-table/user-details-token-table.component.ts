@@ -189,6 +189,27 @@ export class UserDetailsTokenTableComponent implements AfterViewInit {
     });
   }
 
+  toggleActive(tokenDetails: TokenDetails): void {
+    if (
+      !tokenDetails.revoked &&
+      !tokenDetails.locked &&
+      ((tokenDetails.active && this.authService.actionAllowed("disable")) ||
+        (!tokenDetails.active && this.authService.actionAllowed("enable")))
+    ) {
+      this.tokenService.toggleActive(tokenDetails.serial, tokenDetails.active).subscribe({
+        next: () => this.tokenService.userTokenResource.reload()
+      });
+    }
+  }
+
+  resetFailCount(tokenDetails: TokenDetails): void {
+    if (!tokenDetails.revoked && !tokenDetails.locked && this.authService.actionAllowed("reset")) {
+      this.tokenService.resetFailCount(tokenDetails.serial).subscribe({
+        next: () => this.tokenService.userTokenResource.reload()
+      });
+    }
+  }
+
   private runBulkAction(serial: string, request: Observable<unknown>): Observable<BulkActionResult> {
     return request.pipe(
       map(() => ({ serial, ok: true })),

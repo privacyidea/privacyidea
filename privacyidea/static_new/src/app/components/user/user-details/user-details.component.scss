@@ -4,8 +4,20 @@
 .details-container {
   @include styles.main-component-style;
   max-height: var(--table-max-height);
-  display: grid;
+  display: flex;
+  flex-direction: column;
+}
+
+.flex-column {
   gap: var(--global-gap);
+}
+
+.sticky-header {
+  // .details-container's grid gap already adds --global-gap above this element;
+  // cancel it so the sticky-header's own padding is the only visible spacing
+  // below the heading (both share the same background, so the gap would
+  // otherwise read as one oversized blank space).
+  margin-top: calc(-1 * var(--global-gap));
 }
 
 .details-panels-row {

@@ -128,11 +128,24 @@
                   </app-copyable>
                 }
                 @case ("states") {
-                  <span
-                    [matTooltip]="tableUtilsService.getTooltipForColumn('states', element)"
-                    [ngClass]="tableUtilsService.getSpanClassForState(element.states?.[0], true)">
-                    {{ tableUtilsService.getDisplayTextForState(element.states?.[0]) }}
-                  </span>
+                  @if (authService.actionAllowed("container_state")) {
+                    <span
+                      (click)="handleStateClick(element)"
+                      (keydown.enter)="handleStateClick(element)"
+                      (keydown.space)="$event.preventDefault(); handleStateClick(element)"
+                      [matTooltip]="tableUtilsService.getTooltipForColumn('states', element)"
+                      [ngClass]="tableUtilsService.getSpanClassForState(element.states?.[0], true)"
+                      role="button"
+                      tabindex="0">
+                      {{ tableUtilsService.getDisplayTextForState(element.states?.[0]) }}
+                    </span>
+                  } @else {
+                    <span
+                      [matTooltip]="tableUtilsService.getTooltipForColumn('states', element)"
+                      [ngClass]="tableUtilsService.getSpanClassForState(element.states?.[0], false)">
+                      {{ tableUtilsService.getDisplayTextForState(element.states?.[0]) }}
+                    </span>
+                  }
                 }
                 @case ("realms") {
                   <div [ngClass]="{ 'realm-list': (element.realms?.length || 0) > 1 }">
