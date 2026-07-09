@@ -203,26 +203,29 @@ class LdapMachineResolver(BaseMachineResolver):
             # returns a list of Machine objects
             for entry in self.connection.response:
                 dn = entry.get("dn")
-                attributes = entry.get("attributes")
+                try:
+                    attributes = entry.get("attributes")
 
-                if entry.get("type") == "searchResEntry":
-                    machine = {}
+                    if entry.get("type") == "searchResEntry":
+                        machine = {}
 
-                    if self.id_attribute.lower() == "dn":
-                        machine['machineid'] = dn
-                    else:
-                        machine['machineid'] = self._get_entry(self.id_attribute, attributes)
+                        if self.id_attribute.lower() == "dn":
+                            machine['machineid'] = dn
+                        else:
+                            machine['machineid'] = self._get_entry(self.id_attribute, attributes)
 
-                    machine['hostname'] = self._get_entry(self.hostname_attribute, attributes)
-                    machine['ip'] = self._get_entry(self.ip_attribute, attributes)
+                        machine['hostname'] = self._get_entry(self.hostname_attribute, attributes)
+                        machine['ip'] = self._get_entry(self.ip_attribute, attributes)
 
-                    if machine['ip']:
-                        machine['ip'] = netaddr.IPAddress(machine['ip'])
+                        if machine['ip']:
+                            machine['ip'] = netaddr.IPAddress(machine['ip'])
 
-                    machines.append(Machine(self.name,
-                                            machine['machineid'],
-                                            hostname=machine['hostname'],
-                                            ip=machine['ip']))
+                        machines.append(Machine(self.name,
+                                                machine['machineid'],
+                                                hostname=machine['hostname'],
+                                                ip=machine['ip']))
+                except:
+                    log.warning(f"Failed to parse machine object {dn!s} : {attributes!s}")
         except Exception as exx:  # pragma: no cover
             log.error(f"Error during fetching LDAP objects: {exx!r}")
             log.debug(f"{traceback.format_exc()!s}")
