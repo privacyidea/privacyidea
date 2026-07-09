@@ -76,7 +76,7 @@ export interface AuthData {
   require_description: string[];
   rss_age: number;
   container_wizard: ContainerWizardConfig;
-  is_debug: boolean;
+  is_debug?: boolean;
 }
 
 export interface JwtData {

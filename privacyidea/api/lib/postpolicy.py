@@ -852,9 +852,10 @@ def get_webui_settings(request, response):
         rss_age(request, None)
         content["result"]["value"]["rss_age"] = request.all_data.get("rss_age", FETCH_DAYS)
         content["result"]["value"]["container_wizard"] = container_wizard
-        content["result"]["value"]["is_debug"] = bool(current_app.debug)
 
         if role == ROLE.ADMIN:
+            content["result"]["value"]["is_debug"] = bool(current_app.debug)
+
             # Add a support mailto, for administrators with systemwrite rights.
             subscriptions = get_subscription("privacyidea")
             if len(subscriptions) == 1:

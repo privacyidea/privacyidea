@@ -1249,19 +1249,33 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
                                               "realm": self.realm1}},
                          "version": "privacyIDEA test",
                          "id": 1}
+        admin_response = {"jsonrpc": "2.0",
+                          "result": {"status": True,
+                                     "value": {"role": "admin",
+                                               "username": "cornelius",
+                                               "realm": ""}},
+                          "version": "privacyIDEA test",
+                          "id": 1}
 
         self.assertFalse(current_app.debug)
-        resp = jsonify(user_response)
+        resp = jsonify(admin_response)
         new_response = get_webui_settings(req, resp)
         self.assertFalse(new_response.json["result"]["value"]["is_debug"])
 
+        old_debug = current_app.config.get("DEBUG")
         current_app.config["DEBUG"] = True
         try:
             resp = jsonify(user_response)
             new_response = get_webui_settings(req, resp)
+            self.assertNotIn("is_debug", new_response.json["result"]["value"])
+            resp = jsonify(admin_response)
+            new_response = get_webui_settings(req, resp)
             self.assertTrue(new_response.json["result"]["value"]["is_debug"])
         finally:
-            current_app.config["DEBUG"] = False
+            if old_debug is None:
+                current_app.config.pop("DEBUG", None)
+            else:
+                current_app.config["DEBUG"] = old_debug
 
     def test_16_init_token_defaults(self):
         g.logged_in_user = {"username": "cornelius",
