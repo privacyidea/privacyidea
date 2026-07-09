@@ -3148,6 +3148,23 @@ class ResolverTestCase(MyTestCase):
         self.assertFalse(resolver.checkPass("dummy", "pw"))
         resolver.close()
 
+    def test_12_save_resolver_recreates_when_cache_stale(self):
+        # If the cached configuration reports a resolver as existing while it is
+        # no longer in the database (a stale config object, e.g. after a delete
+        # in another request), save_resolver must (re-)create it instead of
+        # crashing with "'NoneType' object has no attribute 'id'".
+        params = {"resolver": "phantomresolver", "type": "passwdresolver",
+                  "fileName": "tests/testdata/passwords"}
+        stale = {"phantomresolver": {"type": "passwdresolver",
+                                     "resolvername": "phantomresolver",
+                                     "data": {}, "censor_keys": []}}
+        with mock.patch("privacyidea.lib.resolver.get_resolver_list", return_value=stale):
+            rid = save_resolver(params)
+        self.assertTrue(rid and rid > 0, rid)
+        created = db.session.scalar(select(Resolver).where(Resolver.name == "phantomresolver"))
+        self.assertIsNotNone(created)
+        delete_resolver("phantomresolver")
+
     @ldap3mock.activate
     def test_13_update_resolver(self):
         ldap3mock.setLDAPDirectory(LDAPDirectory)
