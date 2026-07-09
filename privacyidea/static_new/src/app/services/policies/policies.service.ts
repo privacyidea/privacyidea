@@ -155,7 +155,7 @@ export const HANDLE_MISSING_DATA_OPTIONS: HandleMissingDataOption[] = [
   { key: "condition_is_true", label: $localize`Condition is true` }
 ];
 
-// 3. User Agent Options - key is the literal User-Agent header value sent by the client
+// 3. User Agent Options - key is the parsed application identifier (typically the prefix before "/") from the User-Agent header
 export interface UserAgentOption {
   key: string;
   label: string;
