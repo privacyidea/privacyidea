@@ -31,6 +31,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
+from privacyidea.lib.challenge_types import is_challenge_open
 from privacyidea.lib.crypto import get_rand_digit_str, encryptPassword, decryptPassword
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import convert_column_to_unicode
@@ -114,10 +115,7 @@ class Challenge(MethodsMixin, db.Model):
         :return: True if the challenge is still open
         :rtype: bool
         """
-        # Local import to avoid a circular import (lib.tokenclass imports models).
-        from privacyidea.lib.tokenclass import ChallengeSession
-        return (self.is_valid() and not self.otp_valid
-                and self.get_session() not in (ChallengeSession.DECLINED, ChallengeSession.CANCELLED))
+        return is_challenge_open(self.is_valid(), self.otp_valid, self.get_session())
 
     def set_data(self, data):
         """

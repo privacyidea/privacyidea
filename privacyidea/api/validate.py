@@ -954,14 +954,15 @@ def poll_transaction(transaction_id=None):
         details = {"challenge_status": "accept"}
     else:
         result = False
-        # Group refused challenges by the status they report; "declined" (not-me) outranks
-        # "cancelled" (self-abort) as the higher-suspicion signal for conditional access.
+        # Group refused challenges by the status they report and report them in the precedence
+        # defined by CHALLENGE_REFUSAL_STATUS: "declined" (not-me) outranks "cancelled"
+        # (self-abort) as the higher-suspicion signal for conditional access.
         refused_challenges = {}
         for challenge in matching_challenges:
             status = CHALLENGE_REFUSAL_STATUS.get(challenge.session)
             if status:
                 refused_challenges.setdefault(status, []).append(challenge)
-        for status in ("declined", "cancelled"):
+        for status in CHALLENGE_REFUSAL_STATUS.values():
             if refused_challenges.get(status):
                 log_challenges = refused_challenges[status]
                 details = {"challenge_status": status}
