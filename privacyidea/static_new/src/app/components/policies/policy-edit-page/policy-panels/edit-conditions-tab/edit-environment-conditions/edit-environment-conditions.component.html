@@ -102,7 +102,7 @@
     <div class="user-agent-list">
       @for (userAgent of selectedUserAgents(); track $index) {
         <div class="user-agent-chip-edit">
-          <span>{{ userAgent }}</span>
+          <span>{{ getUserAgentLabel(userAgent) }}</span>
           <button
             mat-icon-button
             (click)="removeUserAgent(userAgent)"
@@ -147,8 +147,8 @@
             class="select-search-input" />
         </div>
 
-        @for (ua of filteredUserAgentPresets(); track ua) {
-          <mat-option [value]="ua">{{ ua }}</mat-option>
+        @for (ua of filteredUserAgentPresets(); track ua.key) {
+          <mat-option [value]="ua.key">{{ ua.label }}</mat-option>
         }
 
         @if (filteredUserAgentPresets().length === 0) {

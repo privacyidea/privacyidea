@@ -59,7 +59,7 @@
         <div class="center">
           <mat-slide-toggle
             #slideToggle
-            [checked]="!condition[4]"
+            [checked]="condition[4]"
             (click)="$event.stopPropagation()"
             (change)="updateActiveState($index, $event.checked); slideToggle._switchElement.nativeElement.blur()">
           </mat-slide-toggle>
