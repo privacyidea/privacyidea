@@ -290,8 +290,8 @@ def init_random_pin(request=None, action=None):
 
 def realmadmin(request=None, action=None):
     """
-    This decorator adds the realm(s) to the parameters if the
-    administrator, calling this API is a realm admin.
+    This decorator adds the realm(s) to the parameters if the administrator
+    calling this API is a realm admin.
     This way, if the admin calls e.g. GET /user without realm parameter,
     he will not see all users, but only users in the realms granted by
     matching policies.
@@ -300,6 +300,10 @@ def realmadmin(request=None, action=None):
     If any matching policy lists no realms (i.e. "all realms"), the realm
     parameter is left unset so that the downstream function queries all
     realms.
+
+    For the user-list action, several granted realms are injected as a list;
+    a single granted realm, or any other action, injects a single realm
+    string (endpoints other than the user list expect a scalar realm).
 
     :param request: The HTTP request
     :param action: The action like ACTION.USERLIST

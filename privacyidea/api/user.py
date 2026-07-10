@@ -92,7 +92,8 @@ def get_users():
     queries the union. With neither parameter all resolvers across all
     realms are queried.
 
-    :query realm: query every resolver in this realm.
+    :query realm: query every resolver in this realm. Several realms may be
+        given as a comma-separated list.
     :query resolver: query this resolver.
     :query user / username: filter by login name; supports the ``*``
         wildcard.

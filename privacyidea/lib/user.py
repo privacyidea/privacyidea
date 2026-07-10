@@ -820,7 +820,9 @@ def get_user_list(param: dict = None, user: User = None, include_custom_attribut
     """
     This function returns a list of user dictionaries. The user dict contains the resolver and custom user attributes,
     if requested.
-    If no realm is given in the param, the users from all realms are returned.
+    The ``realm`` parameter may be a single realm name, a comma-separated string of realm names, or a list of
+    realm names (surrounding whitespace is ignored); users from all given realms are returned. If neither a
+    realm nor a resolver is given, the users from all realms are returned.
     The ``realm``, ``resolver`` and ``editable`` keys are added on the lib layer and are only included in the
     returned user dictionaries when ``requested_attributes`` is None/empty or explicitly lists them.
     If only a resolver is given (no realm), the function looks up all realms containing that resolver and
@@ -902,8 +904,12 @@ def get_user_list(param: dict = None, user: User = None, include_custom_attribut
         realm_iteration = list(all_realms)
 
     if not realm_iteration:
-        # No realm given but a resolver is given. Find all realms that contain this resolver.
         resolver_name = param_resolver or user_resolver
+        if not resolver_name:
+            # A realm filter was given but normalised to no valid realm names
+            # (e.g. "," or " , "), and no resolver was provided. Nothing to search.
+            return []
+        # No realm given but a resolver is given. Find all realms that contain this resolver.
         realm_iteration = get_realms_of_resolver(resolver_name)
         if not realm_iteration:
             log.warning(f"Resolver '{resolver_name}' is not assigned to any realm.")
