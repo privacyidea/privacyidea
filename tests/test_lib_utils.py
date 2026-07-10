@@ -426,6 +426,13 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(f"a{SQL_LIKE_ESCAPE}_b%c", convert_wildcard_to_sql_like("a_b*c"))
         # a custom wildcard character can be used
         self.assertEqual("a%b", convert_wildcard_to_sql_like("a?b", wildcard="?"))
+        # a custom wildcard that is itself a LIKE metacharacter or the escape
+        # character is still handled correctly: only the wildcard expands, any
+        # remaining metacharacters are escaped to match literally
+        self.assertEqual("a%b%x", convert_wildcard_to_sql_like("a_b_x", wildcard="_"))
+        self.assertEqual(f"a{SQL_LIKE_ESCAPE}%b%c", convert_wildcard_to_sql_like("a%b_c", wildcard="_"))
+        self.assertEqual(f"a%b{SQL_LIKE_ESCAPE}_c", convert_wildcard_to_sql_like("a%b_c", wildcard="%"))
+        self.assertEqual(f"a%b{SQL_LIKE_ESCAPE}_c", convert_wildcard_to_sql_like("a/b_c", wildcard="/"))
 
     def test_16_parse_int(self):
         r = parse_int("xxx", 12)

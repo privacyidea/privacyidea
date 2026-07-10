@@ -228,6 +228,11 @@ class AuditTestCase(MyTestCase):
                                      success=False)
             self.assertEqual(0, r)
 
+            # A non-string filter value is coerced to a string and still applied,
+            # rather than silently dropped: "12345" matches no action, so no entries.
+            r = self.Audit.get_count({"action": 12345})
+            self.assertEqual(0, r)
+
             # get one authentication during the last second
             r = self.Audit.get_count({"action": "/validate/check"}, success=True,
                                      timedelta=datetime.timedelta(seconds=1))

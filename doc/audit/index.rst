@@ -18,6 +18,28 @@ Starting with version 3.2 privacyIDEA also provides a :ref:`logger_audit` and
 a :ref:`container_audit` which can be used to send privacyIDEA audit log messages
 to services like splunk or logstash.
 
+.. _audit_search:
+
+Searching the audit log
+-----------------------
+
+The audit log can be filtered in the WebUI and via the ``GET /audit/`` API by
+any audit column (``user``, ``realm``, ``serial``, ``action``, ...). Filter
+values are matched as follows:
+
+* ``*`` is the wildcard and matches any sequence of characters. For example,
+  ``action=*/token/init`` matches every action ending in ``/token/init`` and
+  ``serial=OATH*`` matches every serial starting with ``OATH``.
+* All other characters are matched literally. In particular ``%`` and ``_`` are
+  *not* wildcards. A value that contains no ``*`` must match the column exactly.
+* A leading ``!`` negates the condition, e.g. ``authentication=!CHALLENGE``
+  returns the entries whose ``authentication`` is not ``CHALLENGE``.
+
+.. versionchanged:: 3.14 ``*`` is the only wildcard. Earlier versions also
+   treated a literal ``%`` as a wildcard in the audit search; now ``%`` and
+   ``_`` match literally. Update any saved filters or integrations that relied
+   on ``%`` to use ``*`` instead.
+
 .. _sql_audit:
 
 SQL Audit

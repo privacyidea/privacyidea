@@ -997,7 +997,10 @@ def convert_wildcard_to_sql_like(value: str, wildcard: str = "*") -> str:
     :param wildcard: the character used as a wildcard in the user input
     :return: an escaped SQL LIKE pattern
     """
-    return escape_sql_like(value).replace(wildcard, "%")
+    # Escape each literal segment, then join with the SQL wildcard. Splitting on
+    # the user wildcard first means it can never collide with the escaping, so any
+    # wildcard character (including '%' or '_') is handled correctly.
+    return "%".join(escape_sql_like(part) for part in value.split(wildcard))
 
 
 def convert_timestamp_to_utc(timestamp):

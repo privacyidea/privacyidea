@@ -277,9 +277,15 @@ class Audit(AuditBase):
                     realm_conditions.append(LogEntry.realm == realm)
                 filter_realm = or_(*realm_conditions)
                 conditions.append(filter_realm)
-            # We only build a string filter for actual strings, and not if the
-            # search value is empty or only consists of '*'
-            elif isinstance(search_value, str) and search_value.strip() != '' and search_value.strip('*') != '':
+            # Any other filter value is compared as a string. Coerce non-string
+            # scalars so a meaningful filter is never silently dropped, which would
+            # widen the audit result set. An empty value or a bare '*' wildcard means
+            # "no filter" for this key.
+            elif search_value is not None:
+                if not isinstance(search_value, str):
+                    search_value = str(search_value)
+                if search_value.strip() == '' or search_value.strip('*') == '':
+                    continue
                 try:
                     if search_key == "success":
                         # "success" is the only integer.
