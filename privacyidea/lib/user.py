@@ -820,7 +820,9 @@ def get_user_list(param: dict = None, user: User = None, include_custom_attribut
     """
     This function returns a list of user dictionaries. The user dict contains the resolver and custom user attributes,
     if requested.
-    If no realm is given in the param, the users from all realms are returned.
+    The ``realm`` parameter may be a single realm name, a comma-separated string of realm names, or a list of
+    realm names (surrounding whitespace is ignored); users from all given realms are returned. If neither a
+    realm nor a resolver is given, the users from all realms are returned.
     The ``realm``, ``resolver`` and ``editable`` keys are added on the lib layer and are only included in the
     returned user dictionaries when ``requested_attributes`` is None/empty or explicitly lists them.
     If only a resolver is given (no realm), the function looks up all realms containing that resolver and
@@ -863,7 +865,20 @@ def get_user_list(param: dict = None, user: User = None, include_custom_attribut
 
     # determine which scope we want to show
     param_resolver = get_optional(param, "resolver")
-    param_realm = get_optional(param, "realm")
+    param_realm_raw = get_optional(param, "realm")
+    # param_realm_raw may be a single string, a comma-separated string of
+    # multiple realms, or a list.  Normalise to a list of individual realm
+    # names (or an empty list when unset).
+    if isinstance(param_realm_raw, list):
+        param_realms = [r.strip() for r in param_realm_raw if r and r.strip()]
+    elif isinstance(param_realm_raw, str) and "," in param_realm_raw:
+        param_realms = [r.strip() for r in param_realm_raw.split(",") if r.strip()]
+    elif isinstance(param_realm_raw, str) and param_realm_raw.strip():
+        param_realms = [param_realm_raw.strip()]
+    elif param_realm_raw:
+        param_realms = [param_realm_raw]
+    else:
+        param_realms = []
     user_resolver = None
     user_realm = None
     # list of realms to iterate through
@@ -873,21 +888,28 @@ def get_user_list(param: dict = None, user: User = None, include_custom_attribut
         user_realm = user.realm
 
     # Determine the realms to iterate through. Dedupe while preserving order in case param_realm == user_realm.
-    if param_realm:
-        realm_iteration.append(param_realm)
+    for r in param_realms:
+        realm_iteration.append(r)
     if user_realm:
         realm_iteration.append(user_realm)
     realm_iteration = list(dict.fromkeys(realm_iteration))
 
-    if not (param_resolver or user_resolver or param_realm or user_realm):
+    if not (param_resolver or user_resolver or param_realm_raw or user_realm):
         # if no realm or resolver was specified, we search the resolvers in all realms
+        # Note: we test param_realm_raw (not the normalised param_realms) so that a
+        # non-empty realm filter which normalises to no valid realms (e.g. ",") does
+        # not fall through to searching every realm.
         log.debug("Seldom event: Calling get_user_list with absolutely no information on realms or resolvers!")
         all_realms = get_realms()
         realm_iteration = list(all_realms)
 
     if not realm_iteration:
-        # No realm given but a resolver is given. Find all realms that contain this resolver.
         resolver_name = param_resolver or user_resolver
+        if not resolver_name:
+            # A realm filter was given but normalised to no valid realm names
+            # (e.g. "," or " , "), and no resolver was provided. Nothing to search.
+            return []
+        # No realm given but a resolver is given. Find all realms that contain this resolver.
         realm_iteration = get_realms_of_resolver(resolver_name)
         if not realm_iteration:
             log.warning(f"Resolver '{resolver_name}' is not assigned to any realm.")
