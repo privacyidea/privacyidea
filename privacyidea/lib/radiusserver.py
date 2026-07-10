@@ -381,6 +381,8 @@ def import_radiusserver(data, name=None):
     for res_name, res_data in data.items():
         if name and name != res_name:
             continue
+        # Copy before normalizing so the caller's dict is left untouched.
+        res_data = dict(res_data)
         # Current exports provide the RADIUS secret under the 'secret' key, but
         # config files written by older privacyIDEA versions use the legacy
         # 'password' key. Map it onto 'secret' (what add_radius() expects) so

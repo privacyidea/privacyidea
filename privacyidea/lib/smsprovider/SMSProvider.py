@@ -431,29 +431,6 @@ def send_sms_identifier(identifier, phone, message):
     return result
 
 
-def list_smsgateways(identifier=None, id=None, gwtype=None):
-    """
-    This returns a list of all sms gateways matching the criterion.
-    If no identifier or server is provided, it will return a list of all sms
-    gateway definitions.
-
-    :param identifier: The identifier or the name of the SMSGateway definition.
-        As the identifier is unique, providing an identifier will return a
-        list with either one or no sms gateway
-    :type identifier: basestring
-    :param id: The id of the sms gateway in the database
-    :type id: basestring
-    :return: dict of SMSGateway configurations with gateway identifiers as keys.
-    """
-    res = {}
-    for gw in get_smsgateway(identifier=identifier, id=id, gwtype=gwtype):
-        res[gw.identifier] = gw.as_dict()
-        res[gw.identifier].pop('name')
-        res[gw.identifier].pop('id')
-
-    return res
-
-
 @register_export('smsgateway')
 def export_smsgateway(name=None, censor=False):
     """ Export given or all sms gateway configuration
