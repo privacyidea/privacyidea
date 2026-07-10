@@ -200,11 +200,13 @@ To clean up expired challenges read the :ref:`pimanage_challenge` section.
         approve (or decline) the challenge on their separate device within this
         window. An answer arriving after the challenge has expired is rejected.
       * The **finalize window** starts once the challenge has been answered.
-        Answering the challenge extends its expiration by a grace period so
-        that the plugin can still finalize the authentication via
-        ``/validate/check`` afterwards. Once this grace period elapses, the
-        answered challenge can no longer be redeemed and the transaction has to
-        be started again.
+        Answering the challenge pushes its expiration out to at least a grace
+        period from that moment, so that the plugin can still finalize the
+        authentication via ``/validate/check`` afterwards. The expiration only
+        ever moves forward, so with an answer window longer than the grace the
+        challenge may stay redeemable until its original expiration. Once the
+        challenge finally expires it can no longer be redeemed and the
+        transaction has to be started again.
 
       Both windows behave identically whether or not the Redis challenge cache
       is enabled. The concrete durations are token-type specific (see the

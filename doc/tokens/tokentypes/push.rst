@@ -116,10 +116,12 @@ two consecutive time windows:
   ``DefaultChallengeValidityTime``, 120 seconds). A response that arrives after
   this window is rejected.
 * **Finalize window** -- once the smartphone has answered, the challenge
-  expiration is extended by ``PushChallengeFinalizeGrace`` (default 300 seconds)
-  so that the application can finalize the authentication via ``/validate/check``
-  (and read a decline reason). After this grace period the answered challenge can
-  no longer be redeemed.
+  expiration is pushed out to at least ``PushChallengeFinalizeGrace`` seconds
+  (default 300) from the moment it was answered, so that the application can
+  finalize the authentication via ``/validate/check`` (and read a decline
+  reason). The expiration only ever moves forward, so with an answer window
+  longer than the grace the challenge may stay redeemable until its original
+  expiration. Once the challenge finally expires it can no longer be redeemed.
 
 The finalize window also bounds how long an answered enrollment challenge stays
 valid while the user finishes scanning and confirming on the device. Both windows
