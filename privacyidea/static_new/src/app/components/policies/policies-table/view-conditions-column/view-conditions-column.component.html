@@ -85,7 +85,7 @@
         <div class="additional-condition-item">
           <div class="status-row">
             <div class="active-status">
-              <mat-icon [class.active]="!condition[4]">{{ !condition[4] ? "check_circle" : "cancel" }}</mat-icon>
+              <mat-icon [class.active]="condition[4]">{{ condition[4] ? "check_circle" : "cancel" }}</mat-icon>
             </div>
             <span class="additional-condition-badge">{{ getSectionLabel(condition[0]) }}</span>
           </div>
