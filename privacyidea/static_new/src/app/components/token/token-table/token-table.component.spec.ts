@@ -21,19 +21,23 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatDialog } from "@angular/material/dialog";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { AuditService } from "@services/audit/audit.service";
 import { AuthService, JwtData } from "@services/auth/auth.service";
 import { ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { DialogService } from "@services/dialog/dialog.service";
+import { DocumentationService } from "@services/documentation/documentation.service";
 import { RealmService } from "@services/realm/realm.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { TokenDetails, TokenService } from "@services/token/token.service";
 import { PageEvent } from "@angular/material/paginator";
 import { Sort } from "@angular/material/sort";
 import {
+  MockAuditService,
   MockContainerService,
   MockContentService,
+  MockDocumentationService,
   MockLocalService,
   MockNotificationService,
   MockRealmService,
@@ -76,6 +80,8 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
         { provide: TableUtilsService, useClass: MockTableUtilsService },
         { provide: ContentService, useClass: MockContentService },
         { provide: DialogService, useClass: MockDialogService },
+        { provide: DocumentationService, useClass: MockDocumentationService },
+        { provide: AuditService, useClass: MockAuditService },
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContainerService, useClass: MockContainerService },
         { provide: MatDialog, useClass: MatDialogMock },
