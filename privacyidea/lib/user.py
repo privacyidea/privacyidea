@@ -970,7 +970,8 @@ def get_user_list(param: dict = None, user: User = None, include_custom_attribut
                     # resolver's user listing to actually return the username. SQL and LDAP resolvers always do,
                     # but for HTTP-based resolvers (e.g. Keycloak, Entra ID) it depends on the configured listing
                     # endpoint and attribute mapping. If the listing does not return a username, all users of that
-                    # resolver share the same ("", realm) key and collapse into a single entry.
+                    # resolver share the same (None, realm) key - or ("", realm) if the mapped field is present but
+                    # empty - and collapse into a single entry.
                     user_tuple = (user_info.get("username"), realm)
                     if remove_username:
                         user_info.pop("username", None)
