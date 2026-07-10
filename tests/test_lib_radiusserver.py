@@ -176,3 +176,22 @@ class RADIUSServerTestCase(MyTestCase):
         self.assertIn("exprad", servers)
         self.assertEqual(servers["exprad"]["secret"], "radsecret")
         delete_radius("exprad")
+
+    def test_10_import_legacy_password_key(self):
+        from privacyidea.lib.radiusserver import import_radiusserver, list_radiusservers
+        # Config files exported by older privacyIDEA versions serialize the RADIUS
+        # secret under the legacy 'password' key. Importing them must still work
+        # (the secret is mapped onto the 'secret' key add_radius() expects).
+        legacy_export = {"legacyrad": {"server": "1.2.3.4",
+                                       "port": 1812,
+                                       "dictionary": DICT_FILE,
+                                       "description": "",
+                                       "password": "legacysecret",
+                                       "timeout": 5,
+                                       "retries": 3,
+                                       "options": {}}}
+        import_radiusserver(legacy_export)
+        servers = list_radiusservers()
+        self.assertIn("legacyrad", servers)
+        self.assertEqual(servers["legacyrad"]["secret"], "legacysecret")
+        delete_radius("legacyrad")

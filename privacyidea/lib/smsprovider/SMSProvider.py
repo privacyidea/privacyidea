@@ -458,17 +458,33 @@ def list_smsgateways(identifier=None, id=None, gwtype=None):
 def export_smsgateway(name=None, censor=False):
     """ Export given or all sms gateway configuration
 
-    :param censor: If True, secret-looking options and headers (those whose name
-        contains ``PASSWORD`` or ``SECRET``) are replaced with the
-        ``__CENSORED__`` placeholder instead of being returned in clear text.
+    :param censor: If True, secret option and header values are replaced with
+        the ``__CENSORED__`` placeholder instead of being returned in clear
+        text. A value counts as secret when it is stored encrypted (marked via
+        the explicit ``secret.option.<key>`` / ``secret.header.<key>`` flag) or
+        when its key name looks sensitive (e.g. contains ``PASSWORD`` or
+        ``SECRET``). Censoring by the stored encryption state is what catches
+        secrets whose key name gives no hint - the name heuristic alone would
+        leak them.
     """
-    res = list_smsgateways(identifier=name)
-    if censor:
-        for gateway in res.values():
-            for section in ("options", "headers"):
-                secret_keys = [key for key in gateway.get(section, {})
-                               if "PASSWORD" in key.upper() or "SECRET" in key.upper()]
-                gateway[section] = censor_dict(gateway.get(section, {}), secret_keys)
+    res = {}
+    for gw in get_smsgateway(identifier=name):
+        gateway = gw.as_dict()
+        gateway.pop('name')
+        gateway.pop('id')
+        if censor:
+            encrypted_keys = {"option": set(), "header": set()}
+            for option in gw.options:
+                if option.Encrypted:
+                    # Type is "header" for headers, "option" or empty for options
+                    # (mirrors SMSGateway._get_options_by_type).
+                    encrypted_keys["header" if option.Type == "header" else "option"].add(option.Key)
+            for section, option_type in (("options", "option"), ("headers", "header")):
+                values = gateway.get(section, {})
+                secret_keys = [key for key in values
+                               if _is_sensitive_key(key) or key in encrypted_keys[option_type]]
+                gateway[section] = censor_dict(values, secret_keys)
+        res[gw.identifier] = gateway
     return res
 
 
