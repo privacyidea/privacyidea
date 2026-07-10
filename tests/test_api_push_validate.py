@@ -17,6 +17,7 @@ from testfixtures import LogCapture
 
 from privacyidea.lib.cache import ChallengeDTO
 from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_config
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
 from privacyidea.lib.realm import set_realm, set_default_realm, delete_realm
@@ -33,6 +34,7 @@ from privacyidea.lib.tokens.pushtoken import (PushAction, strip_pem_headers, POL
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import to_bytes, to_unicode, AUTH_RESPONSE
 from privacyidea.models import Challenge
+from privacyidea.models.utils import utc_now
 from . import ldap3mock
 from .base import MyApiTestCase, force_expire_challenges
 
@@ -607,12 +609,9 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
         delete_realm("ldaprealm")
         delete_resolver("catchall")
 
-    @ldap3mock.activate
-    def test_10a_finalize_enroll_push_after_challenge_expired(self):
-        # Regression test: an enrollment challenge that has been answered by the
-        # smartphone (otp_valid set during the rollout) must finalize the
-        # authentication even if the challenge has meanwhile expired. The user may
-        # take longer than the challenge validity to scan the QR and confirm.
+    def _setup_multichallenge_push_enrollment(self):
+        """Configure LDAP passthru + ENROLL_VIA_MULTICHALLENGE=push. Returns nothing;
+        the caller is responsible for _teardown_multichallenge_push_enrollment()."""
         from .test_api_validate import LDAPDirectory
 
         ldap3mock.setLDAPDirectory(LDAPDirectory)
@@ -650,7 +649,20 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
                            "myFB", FB_CONFIG_VALS)
         self.assertTrue(r > 0)
 
-        # Trigger the enrollment challenge
+    def _teardown_multichallenge_push_enrollment(self, serial=None):
+        delete_policy("pol_passthru")
+        delete_policy("pol_tokenlabel")
+        delete_policy("pol_multienroll")
+        delete_policy("pol_push2")
+        if serial:
+            remove_token(serial)
+        delete_realm("ldaprealm")
+        delete_resolver("catchall")
+
+    def _enroll_and_answer_push(self):
+        """Trigger a multichallenge push enrollment and let the smartphone answer it
+        (rollout step 2). Returns (serial, transaction_id) with the enrollment
+        challenge marked answered (otp_valid set)."""
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"user": "alice", "pass": "alicepw"}):
@@ -671,16 +683,30 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
                                                  "fbtoken": "firebaseT"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
+        return serial, transaction_id
 
-        # The challenge is answered (otp_valid flipped to 1) ...
+    @ldap3mock.activate
+    def test_10a_finalize_enroll_push_within_grace(self):
+        # An enrollment challenge answered by the smartphone (otp_valid set during the
+        # rollout) can be finalized by the application after the original challenge
+        # validity has passed: answering extends the expiration by the finalize grace,
+        # so the pending /validate/check still succeeds. The user may take longer than
+        # the challenge validity to scan the QR and confirm.
+        set_privacyidea_config("PushChallengeValidityTime", 120)
+        set_privacyidea_config("PushChallengeFinalizeGrace", 300)
+        self._setup_multichallenge_push_enrollment()
+
+        serial, transaction_id = self._enroll_and_answer_push()
+
+        # The challenge is answered (otp_valid flipped to 1) and answering pushed the
+        # expiration out by the finalize grace, so it is still valid well beyond the
+        # 120s answer window - which is what lets the (possibly delayed) finalize succeed.
         chal = get_challenges(serial=serial, transaction_id=transaction_id)[0]
         self.assertTrue(chal.get_otp_status()[1])
-        # ... but it has meanwhile expired (user took longer than the challenge validity)
-        force_expire_challenges(transaction_id)
-        expired_chal = get_challenges(serial=serial, transaction_id=transaction_id)[0]
-        self.assertFalse(expired_chal.is_valid())
+        self.assertTrue(chal.is_valid())
+        self.assertGreater((chal.expiration - utc_now()).total_seconds(), 200)
 
-        # The application finalizes via /validate/check with empty pass: must still succeed
+        # The application finalizes via /validate/check with empty pass: succeeds
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"user": "alice",
@@ -692,14 +718,35 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             self.assertTrue(result.get("value"), res.json)
             self.assertEqual(result.get("authentication"), "ACCEPT", res.json)
 
-        # Cleanup
-        delete_policy("pol_passthru")
-        delete_policy("pol_tokenlabel")
-        delete_policy("pol_multienroll")
-        delete_policy("pol_push2")
-        remove_token(serial)
-        delete_realm("ldaprealm")
-        delete_resolver("catchall")
+        self._teardown_multichallenge_push_enrollment(serial)
+        delete_privacyidea_config("PushChallengeValidityTime")
+        delete_privacyidea_config("PushChallengeFinalizeGrace")
+
+    @ldap3mock.activate
+    def test_10a2_finalize_enroll_push_after_grace_fails(self):
+        # Once the finalize window (validity + grace) has elapsed, the answered
+        # enrollment challenge can no longer be redeemed: a late /validate/check must
+        # not complete the authentication. (The token itself is already enrolled - the
+        # smartphone registered in step 2 - but this login is not finalized.)
+        # Identical in both backends.
+        self._setup_multichallenge_push_enrollment()
+
+        serial, transaction_id = self._enroll_and_answer_push()
+
+        # Simulate a finalize arriving after the whole finalize window elapsed.
+        force_expire_challenges(transaction_id)
+        self.assertFalse(get_challenges(serial=serial, transaction_id=transaction_id)[0].is_valid())
+
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "alice",
+                                                 "transaction_id": transaction_id,
+                                                 "pass": ""}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            self.assertFalse(res.json.get("result").get("value"), res.json)
+
+        self._teardown_multichallenge_push_enrollment(serial)
 
     @ldap3mock.activate
     def test_10b_finalize_enroll_push_before_smartphone_confirms(self):

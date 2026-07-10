@@ -77,6 +77,7 @@ from privacyidea.lib.user import User
 from privacyidea.lib.utils import create_img, b32encode_and_unicode
 from privacyidea.lib.utils import prepare_result, to_bytes, is_true, create_tag_dict
 from privacyidea.models import Token, db
+from privacyidea.models.utils import utc_now
 
 if TYPE_CHECKING:
     from privacyidea.lib.cache import ChallengeDTO
@@ -107,6 +108,32 @@ DEFAULT_NUMBER_OF_PRESENCE_OPTIONS = 3
 # The decline reasons this server version understands. A signed but unrecognized
 # reason still declines, but is logged as app/server vocabulary drift.
 KNOWN_DECLINE_REASONS = frozenset(r.value for r in PushDeclineReason)
+
+# Seconds an answered challenge stays redeemable after the smartphone answered.
+# The challenge validity is the window the smartphone has to answer; the
+# authenticating client then still has to poll /validate/check to finalize,
+# which happens after the answer. This bounded finalize window lets that poll
+# read the recorded answer while preventing an answered challenge from being
+# redeemed indefinitely later. Overridable via 'PushChallengeFinalizeGrace'.
+DEFAULT_CHALLENGE_FINALIZE_GRACE = 300
+
+
+def extend_finalize_window(challenge: "Challenge | ChallengeDTO") -> None:
+    """
+    Extend an answered challenge's expiration so the client's finalize/poll
+    call can still read the recorded answer.
+
+    The smartphone must answer within the original challenge validity (the
+    answer window; the answering endpoint still gates on ``is_open()``). Once
+    answered, the expiration is pushed out by the finalize grace so the answer
+    stays readable in both backends - the DB janitor keys on ``expiration`` and
+    the Redis cache key TTL follows ``expiration`` - and becomes inert once the
+    grace elapses. The expiration is only ever moved forward (never shortened),
+    mirroring the Redis ``expire(gt=True)`` semantics so both backends agree
+    regardless of how the grace compares to the remaining validity.
+    """
+    grace = int(get_from_config("PushChallengeFinalizeGrace", DEFAULT_CHALLENGE_FINALIZE_GRACE))
+    challenge.expiration = max(challenge.expiration, utc_now() + timedelta(seconds=grace))
 
 
 def strip_pem_headers(key: str) -> str:
@@ -731,6 +758,10 @@ class PushTokenClass(TokenClass):
             if (challenges and challenges[0].is_valid()
                     and challenges[0].get_session() == ChallengeSession.ENROLLMENT):
                 challenges[0].set_otp_status(True)
+                # The smartphone registered within the answer window; extend the
+                # expiration so the pending /validate/check can finalize the
+                # enrollment even though scanning and confirming took some time.
+                extend_finalize_window(challenges[0])
                 # Explicit save commits the DB-backed Challenge - the DTO
                 # auto-saves itself, but Challenge.set_otp_status is just
                 # an in-memory mutation. Without this commit, a later
@@ -859,6 +890,13 @@ class PushTokenClass(TokenClass):
                                 DEFAULT_MOBILE_TEXT_CODE_TO_PHONE)
                         else:
                             challenge.set_otp_status(True)
+                    if result:
+                        # The smartphone answered (accepted, declined or - for
+                        # code_to_phone - confirmed) within the answer window.
+                        # Extend the expiration so the client can still finalize.
+                        # A failed presence answer leaves result False, keeping
+                        # the original validity so the user can retry.
+                        extend_finalize_window(challenge)
                     # Explicit save commits the DB-backed Challenge - the
                     # DTO auto-saves itself, but Challenge.set_* mutators
                     # are in-memory only. Without this commit, the verify
@@ -1418,12 +1456,17 @@ class PushTokenClass(TokenClass):
         state = _PushChallengeState()
         challenges = get_challenges(serial=self.token.serial, transaction_id=transaction_id)
         for challenge in challenges:
+            # Nothing is finalized on an expired challenge. The smartphone answers within the
+            # original validity (the answer window); answering pushes the expiration out by the
+            # finalize grace (extend_finalize_window), so a still-answerable or freshly-answered
+            # challenge - enrollment included - is valid here. Once the grace elapses the challenge
+            # is inert in both backends (Redis evicts the key; the DB row may linger but is_valid()
+            # rejects it), closing the window in which a stale answer could be redeemed.
+            if not challenge.is_valid():
+                continue
             session = challenge.get_session()
-            # An enrollment challenge that has already been answered by the smartphone
-            # (otp_valid is set during the rollout in _handle_enrollment_step2) must finalize
-            # the authentication even if the challenge has meanwhile expired. The user may take
-            # some time to scan the QR code and confirm on the device, but once the smartphone
-            # has registered, the pending /validate/check should still succeed.
+            # An enrollment challenge already answered by the smartphone (otp_valid was set during
+            # the rollout in _handle_enrollment_step2) finalizes the authentication.
             if session == ChallengeSession.ENROLLMENT:
                 _, status = challenge.get_otp_status()
                 if status is True:
@@ -1437,34 +1480,31 @@ class PushTokenClass(TokenClass):
                 state.refused_status = refused_status
                 continue
 
-            # Check that the challenge is not expired
-            if challenge.is_valid():
-                data = challenge.get_data()
-
-                if isinstance(data, dict) and data.get("mode") == PushMode.CODE_TO_PHONE:
-                    if not data.get("smartphone_confirmed"):
-                        # Step 1 not completed yet; smartphone has not confirmed.
-                        log.debug("code_to_phone: waiting for smartphone confirmation.")
-                        return state
-                    # Step 2: smartphone has confirmed, check the display_code
-                    display_code = data.get("display_code", "")
-                    if display_code and display_code == passw:
-                        state.otp_counter = 1
-                        return state
-                    elif passw is not None:
-                        log.debug("Received the wrong display code for push code_to_phone!")
-                        self.inc_failcount()
-                        return state
-                    else:
-                        # No passw provided yet (e.g. during polling)
-                        return state
+            data = challenge.get_data()
+            if isinstance(data, dict) and data.get("mode") == PushMode.CODE_TO_PHONE:
+                if not data.get("smartphone_confirmed"):
+                    # Step 1 not completed yet; smartphone has not confirmed.
+                    log.debug("code_to_phone: waiting for smartphone confirmation.")
+                    return state
+                # Step 2: smartphone has confirmed, check the display_code
+                display_code = data.get("display_code", "")
+                if display_code and display_code == passw:
+                    state.otp_counter = 1
+                    return state
+                elif passw is not None:
+                    log.debug("Received the wrong display code for push code_to_phone!")
+                    self.inc_failcount()
+                    return state
                 else:
-                    _, status = challenge.get_otp_status()
-                    if status is True:
-                        # create a positive response
-                        state.otp_counter = 1
-                        # do not delete the challenge yet, that is the job of the calling context
-                        break
+                    # No passw provided yet (e.g. during polling)
+                    return state
+            else:
+                _, status = challenge.get_otp_status()
+                if status is True:
+                    # create a positive response
+                    state.otp_counter = 1
+                    # do not delete the challenge yet, that is the job of the calling context
+                    break
         return state
 
     @check_token_locked

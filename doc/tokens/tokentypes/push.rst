@@ -105,6 +105,26 @@ The application can check with the original transaction ID
 with the privacyIDEA server, if the challenge has been successfully
 answered and automatically login the user.
 
+Challenge lifetime
+..................
+
+As an out-of-band token (see :ref:`authentication_modes`), a push challenge has
+two consecutive time windows:
+
+* **Answer window** -- the time the smartphone has to accept or decline the
+  challenge. It is controlled by ``PushChallengeValidityTime`` (falling back to
+  ``DefaultChallengeValidityTime``, 120 seconds). A response that arrives after
+  this window is rejected.
+* **Finalize window** -- once the smartphone has answered, the challenge
+  expiration is extended by ``PushChallengeFinalizeGrace`` (default 300 seconds)
+  so that the application can finalize the authentication via ``/validate/check``
+  (and read a decline reason). After this grace period the answered challenge can
+  no longer be redeemed.
+
+The finalize window also bounds how long an answered enrollment challenge stays
+valid while the user finishes scanning and confirming on the device. Both windows
+behave identically whether or not the Redis challenge cache is enabled.
+
 
 More information
 ~~~~~~~~~~~~~~~~
