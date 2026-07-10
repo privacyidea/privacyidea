@@ -41,7 +41,13 @@ import { MatSelect, MatSelectChange, MatSelectModule } from "@angular/material/s
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/multi-select-only.component";
 import { ClientsService, ClientsServiceInterface } from "@services/clients/clients.service";
-import { PolicyDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
+import {
+  getUserAgentLabel,
+  PolicyDetail,
+  PolicyService,
+  PolicyServiceInterface,
+  USER_AGENT_OPTIONS
+} from "@services/policies/policies.service";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
 
 interface ClientSuggestion {
@@ -155,19 +161,8 @@ export class EditEnvironmentConditionsComponent implements OnInit {
     return matches.slice(0, 20);
   });
 
-  userAgentPresets = [
-    "Credential Provider",
-    "Keycloak",
-    "AD FS",
-    "SimpleSAMLphp",
-    "PAM",
-    "Shibboleth",
-    "Nextcloud",
-    "FreeRADIUS",
-    "LDAP Proxy",
-    "privacyIDEA Authenticator",
-    "privacyIDEA WebUI"
-  ];
+  readonly userAgentOptions = USER_AGENT_OPTIONS;
+  readonly getUserAgentLabel = getUserAgentLabel;
   userAgentSearch = signal<string>("");
 
   readonly availablePinodesList = computed(() => this.systemService.nodes().map((node) => node.name));
@@ -177,7 +172,9 @@ export class EditEnvironmentConditionsComponent implements OnInit {
   filteredUserAgentPresets = computed(() => {
     const selected = this.selectedUserAgents();
     const search = this.userAgentSearch().toLowerCase();
-    return this.userAgentPresets.filter((ua) => !selected.includes(ua) && ua.toLowerCase().includes(search));
+    return this.userAgentOptions.filter(
+      (ua) => !selected.includes(ua.key) && ua.label.toLowerCase().includes(search)
+    );
   });
 
   private clientInitialized = false;
@@ -284,7 +281,7 @@ export class EditEnvironmentConditionsComponent implements OnInit {
     event.stopPropagation();
     const currentResults = this.filteredUserAgentPresets();
     if (currentResults.length > 0) {
-      this.addUserAgentValue(currentResults[0]);
+      this.addUserAgentValue(currentResults[0].key);
       this.userAgentSearch.set("");
       select.close();
     }

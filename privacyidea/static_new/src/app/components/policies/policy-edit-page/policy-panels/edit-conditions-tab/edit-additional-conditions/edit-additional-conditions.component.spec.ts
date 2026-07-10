@@ -77,7 +77,7 @@ describe("EditAdditionalConditionsComponent", () => {
 
     expect(spy).toHaveBeenCalledWith(
       expect.objectContaining({
-        conditions: [["token", "serial", "equals", "12345", true, "condition_is_false"]]
+        conditions: [["token", "serial", "equals", "12345", false, "condition_is_false"]]
       })
     );
   });
@@ -186,7 +186,7 @@ describe("EditAdditionalConditionsComponent", () => {
 
     it("should return true when editing and active state has changed", () => {
       component.startEditCondition(mockCondition, 0);
-      component.conditionActive.set(false);
+      component.conditionActive.set(true);
       expect(component.isFormDirty()).toBe(true);
     });
   });
