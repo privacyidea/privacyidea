@@ -149,4 +149,42 @@ describe("DashboardDataStore", () => {
 
     expect(factory).toHaveBeenCalledTimes(2);
   });
+
+  it("refreshAll() is a no-op on an empty store", () => {
+    expect(() => store.refreshAll()).not.toThrow();
+  });
+
+  it("refreshAll() re-invokes the factory of every tracked key and keeps the stale value visible meanwhile", () => {
+    const tokensFactory = jest.fn(() => of(1));
+    const eventsFactory = jest.fn(() => of("a"));
+    const tokensRef = store.load("dashboard:tokens", tokensFactory);
+    const eventsRef = store.load("dashboard:events", eventsFactory);
+
+    const subject = new Subject<number>();
+    tokensFactory.mockReturnValue(subject.asObservable());
+
+    store.refreshAll();
+
+    expect(tokensFactory).toHaveBeenCalledTimes(2);
+    expect(eventsFactory).toHaveBeenCalledTimes(2);
+    // old value stays visible while the refresh is in flight
+    expect(tokensRef.value()).toBe(1);
+    expect(tokensRef.revalidating()).toBe(true);
+
+    subject.next(2);
+    subject.complete();
+    expect(tokensRef.value()).toBe(2);
+    expect(tokensRef.revalidating()).toBe(false);
+    expect(eventsRef.value()).toBe("a");
+  });
+
+  it("refreshAll() does not restart an entry that is still in flight", () => {
+    const subject = new Subject<number>();
+    const factory = jest.fn(() => subject.asObservable());
+    store.load("k", factory);
+
+    store.refreshAll();
+
+    expect(factory).toHaveBeenCalledTimes(1);
+  });
 });

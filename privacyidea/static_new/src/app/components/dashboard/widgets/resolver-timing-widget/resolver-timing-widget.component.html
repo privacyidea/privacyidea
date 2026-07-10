@@ -1,0 +1,51 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+<app-widget-state [state]="state()">
+  <div class="table-container">
+    <table class="resolver-timing-table">
+      <thead>
+        <tr>
+          <th i18n>Resolver</th>
+          <th i18n>Operation</th>
+          <th i18n>Count</th>
+          <th i18n>Avg (ms)</th>
+          <th i18n>P95 (ms)</th>
+          <th i18n>Max (ms)</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of rows(); track row.resolver + row.op) {
+          <tr>
+            <td>{{ row.resolver }}</td>
+            <td>{{ row.op }}</td>
+            <td>{{ row.count }}</td>
+            <td>{{ row.avgMs !== null ? row.avgMs : "—" }}</td>
+            <td><span [class]="badgeClass(row)">{{ row.p95Ms !== null ? row.p95Ms : "—" }}</span></td>
+            <td>{{ row.maxMs !== null ? row.maxMs : "—" }}</td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="6" i18n>No resolver activity in this window.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</app-widget-state>

@@ -30,6 +30,7 @@ interface CacheEntry<T> {
   revalidating: WritableSignal<boolean>;
   error: WritableSignal<boolean>;
   inFlight: boolean;
+  factory?: () => Observable<T>;
   subscription?: Subscription;
 }
 
@@ -37,6 +38,8 @@ export interface DashboardDataStoreInterface {
   load<T>(key: string, factory: () => Observable<T>): DashboardDataRef<T>;
 
   invalidate(key?: string): void;
+
+  refreshAll(): void;
 }
 
 @Injectable({ providedIn: "root" })
@@ -45,25 +48,13 @@ export class DashboardDataStore implements DashboardDataStoreInterface {
 
   load<T>(key: string, factory: () => Observable<T>): DashboardDataRef<T> {
     const entry = this.entryFor<T>(key);
-    if (!entry.inFlight) {
-      entry.inFlight = true;
-      entry.error.set(false);
-      entry.revalidating.set(true);
-      entry.subscription = factory()
-        .pipe(
-          take(1),
-          finalize(() => {
-            entry.revalidating.set(false);
-            entry.inFlight = false;
-            entry.subscription = undefined;
-          })
-        )
-        .subscribe({
-          next: (value) => entry.value.set(value),
-          error: () => entry.error.set(true)
-        });
-    }
+    entry.factory = factory;
+    this.startFetch(entry);
     return entry;
+  }
+
+  refreshAll(): void {
+    this.entries.forEach((entry) => this.startFetch(entry));
   }
 
   invalidate(key?: string): void {
@@ -74,6 +65,29 @@ export class DashboardDataStore implements DashboardDataStoreInterface {
       this.entries.forEach((entry) => entry.subscription?.unsubscribe());
       this.entries.clear();
     }
+  }
+
+  private startFetch<T>(entry: CacheEntry<T>): void {
+    if (entry.inFlight || !entry.factory) {
+      return;
+    }
+    entry.inFlight = true;
+    entry.error.set(false);
+    entry.revalidating.set(true);
+    entry.subscription = entry
+      .factory()
+      .pipe(
+        take(1),
+        finalize(() => {
+          entry.revalidating.set(false);
+          entry.inFlight = false;
+          entry.subscription = undefined;
+        })
+      )
+      .subscribe({
+        next: (value) => entry.value.set(value),
+        error: () => entry.error.set(true)
+      });
   }
 
   private entryFor<T>(key: string): CacheEntry<T> {

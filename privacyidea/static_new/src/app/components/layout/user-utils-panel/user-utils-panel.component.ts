@@ -37,6 +37,7 @@ import {
 } from "@services/container-template/container-template.service";
 import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { DocumentationService, DocumentationServiceInterface } from "@services/documentation/documentation.service";
 import { EventService, EventServiceInterface } from "@services/event/event.service";
@@ -96,6 +97,7 @@ export class UserUtilsPanelComponent {
   private readonly subscriptionService = inject(SubscriptionService);
   private readonly machineResolverService: MachineResolverServiceInterface = inject(MachineResolverService);
   private readonly containerTemplateService: ContainerTemplateServiceInterface = inject(ContainerTemplateService);
+  private readonly dashboardDataStore = inject(DashboardDataStore);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly sessionTimerService: SessionTimerServiceInterface = inject(SessionTimerService);
@@ -204,6 +206,9 @@ export class UserUtilsPanelComponent {
     }
 
     switch (this.contentService.routeUrl()) {
+      case ROUTE_PATHS.DASHBOARD:
+        this.dashboardDataStore.refreshAll();
+        break;
       case ROUTE_PATHS.TOKENS:
         this.tokenService.tokenResource.reload();
         break;
