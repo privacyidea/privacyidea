@@ -155,6 +155,30 @@ export const HANDLE_MISSING_DATA_OPTIONS: HandleMissingDataOption[] = [
   { key: "condition_is_true", label: $localize`Condition is true` }
 ];
 
+// 3. User Agent Options - key is the parsed application identifier (typically the prefix before "/") from the User-Agent header
+export interface UserAgentOption {
+  key: string;
+  label: string;
+}
+
+export const USER_AGENT_OPTIONS: UserAgentOption[] = [
+  { key: "privacyidea-cp", label: "Credential Provider" },
+  { key: "privacyIDEA-Keycloak", label: "Keycloak" },
+  { key: "PrivacyIDEA-ADFS", label: "AD FS" },
+  { key: "simpleSAMLphp", label: "SimpleSAMLphp" },
+  { key: "PAM", label: "PAM" },
+  { key: "privacyIDEA-Shibboleth", label: "Shibboleth" },
+  { key: "privacyidea-nextcloud", label: "Nextcloud" },
+  { key: "FreeRADIUS", label: "FreeRADIUS" },
+  { key: "privacyIDEA-LDAP-Proxy", label: "LDAP Proxy" },
+  { key: "privacyIDEA-App", label: "privacyIDEA Authenticator" },
+  { key: "privacyIDEA-WebUI", label: "privacyIDEA WebUI" }
+];
+
+export function getUserAgentLabel(identifier: string): string {
+  return USER_AGENT_OPTIONS.find((o) => o.key === identifier)?.label ?? identifier;
+}
+
 export interface PolicyServiceInterface {
   readonly isEditMode: Signal<boolean>;
   readonly policyActions: Signal<ScopedPolicyActions>;
@@ -236,9 +260,9 @@ export class PolicyService implements PolicyServiceInterface {
    * Filter policy actions by the actionFilter signal and already added actions.
    * @returns {PolicyActionGroups} The filtered policy actions grouped by scope and group.
    */
-    // currentActionGroupsFiltered = computed<PolicyActionGroups>(() => {
-    //   return this.filteredPolicyActionGroups(this.alreadyAddedActionNames(), this.actionFilter());
-    // });
+  // currentActionGroupsFiltered = computed<PolicyActionGroups>(() => {
+  //   return this.filteredPolicyActionGroups(this.alreadyAddedActionNames(), this.actionFilter());
+  // });
 
   _allPolicies = computed(() => {
     if (!this.allPoliciesResource.hasValue()) return [];
@@ -264,7 +288,6 @@ export class PolicyService implements PolicyServiceInterface {
     };
   });
 
-
   getEmptyPolicy(): PolicyDetail {
     return {
       action: null,
@@ -287,7 +310,6 @@ export class PolicyService implements PolicyServiceInterface {
       user_case_insensitive: false
     };
   }
-
 
   policyActions = computed(() => {
     if (!this.policyActionResource.hasValue()) return {};
@@ -702,6 +724,4 @@ export class PolicyService implements PolicyServiceInterface {
       headers: this.authService.getHeaders()
     };
   });
-
-
 }
