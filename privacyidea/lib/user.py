@@ -921,9 +921,18 @@ def get_user_list(param: dict = None, user: User = None, include_custom_attribut
         # user id is required to later get the custom attributes for the user
         requested_attributes.append("userid")
         remove_user_id = True
+    # username is always required for deduplication across resolvers
+    remove_username = False
+    if requested_attributes and "username" not in requested_attributes:
+        remove_username = True
     log.debug(f"With this search dictionary: {search_dict!r}")
     requested_pi_user_attributes = list({"realm", "resolver", "editable"}.intersection(requested_attributes or []))
     requested_user_store_attributes = list(set(requested_attributes or []) - set(requested_pi_user_attributes))
+    # Always fetch username from the resolver for dedup, even if not requested by the caller.
+    # If requested_attributes contains only PI attributes, requested_user_store_attributes would be empty, and some
+    # resolvers treat an empty list as "fetch all".
+    if requested_attributes and "username" not in requested_user_store_attributes:
+        requested_user_store_attributes.append("username")
 
     for realm in realm_iteration:
         resolvers = get_ordered_resolvers(realm)
@@ -937,7 +946,9 @@ def get_user_list(param: dict = None, user: User = None, include_custom_attribut
                 if not resolver:
                     log.info(f"Can not find a resolver with the name '{resolver_name}'")
                     continue
-                user_list = resolver.getUserList(search_dict, requested_user_store_attributes)
+                # Pass a copy of the attribute list: some resolvers (e.g. SQLIdResolver) append to it in place,
+                # which would otherwise leak attributes like "userid" into the results of subsequent resolvers.
+                user_list = resolver.getUserList(search_dict, list(requested_user_store_attributes))
                 for user_info in user_list:
                     if not requested_attributes or "realm" in requested_pi_user_attributes:
                         user_info["realm"] = realm
@@ -954,8 +965,16 @@ def get_user_list(param: dict = None, user: User = None, include_custom_attribut
                     if remove_user_id:
                         # Remove the userid if it is not requested, as it is only needed for the custom attributes
                         user_info.pop("userid", None)
-                    # Add user to users_dict, if it is not contained, yet
+                    # Add user to users_dict, if it is not contained, yet.
+                    # Deduplication across the resolvers of a realm relies on the username. This requires the
+                    # resolver's user listing to actually return the username. SQL and LDAP resolvers always do,
+                    # but for HTTP-based resolvers (e.g. Keycloak, Entra ID) it depends on the configured listing
+                    # endpoint and attribute mapping. If the listing does not return a username, all users of that
+                    # resolver share the same (None, realm) key - or ("", realm) if the mapped field is present but
+                    # empty - and collapse into a single entry.
                     user_tuple = (user_info.get("username"), realm)
+                    if remove_username:
+                        user_info.pop("username", None)
                     if user_tuple not in users_dict:
                         users_dict[user_tuple] = user_info
                 log.debug(f"Found this userlist: {user_list!r}")
