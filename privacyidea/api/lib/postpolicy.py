@@ -872,7 +872,7 @@ def get_webui_settings(request, response):
                 action_allowed = Match.generic(g, scope=role,
                                                action=PolicyAction.SYSTEMWRITE,
                                                adminuser=username,
-                                               adminrealm=realm).allowed()  # allowed-permission-check
+                                               adminrealm=realm).allowed()
                 if action_allowed:
                     body = str(BODY_TEMPLATE).format(subscriptions=subscriptions,
                                                      version=version,
