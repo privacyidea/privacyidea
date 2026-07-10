@@ -11,8 +11,8 @@ from testfixtures import log_capture, LogCapture
 from privacyidea.config import TestingConfig
 from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.framework import get_app_config
-from privacyidea.lib.realm import (set_realm, delete_realm, get_realm_id, get_ordered_resolvers)
-from privacyidea.lib.resolver import (save_resolver, delete_resolver)
+from privacyidea.lib.realm import (set_realm, delete_realm, get_realm_id, get_realms, get_ordered_resolvers)
+from privacyidea.lib.resolver import (save_resolver, delete_resolver, get_resolver_list)
 from privacyidea.lib.resolvers.EntraIDResolver import (CLIENT_ID, CLIENT_CREDENTIAL_TYPE, ClientCredentialType,
                                                        CLIENT_SECRET, TENANT)
 from privacyidea.lib.user import (User, create_user,
@@ -62,33 +62,29 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
 
     def setUp(self):
         super().setUp()
+        # Remember the node config so tests that override it can be rolled back in tearDown
+        self._orig_node_uuid = get_app_config().get("PI_NODE_UUID")
         # Create the primary resolver and realm used by most tests
-        save_resolver({"resolver": self.resolvername1,
-                       "type": "passwdresolver",
-                       "fileName": PWFILE})
-        set_realm(self.realm1, [{'name': self.resolvername1}])
+        rid = save_resolver({"resolver": self.resolvername1,
+                             "type": "passwdresolver",
+                             "fileName": PWFILE})
+        self.assertTrue(rid > 0, rid)
+        (added, failed) = set_realm(self.realm1, [{'name': self.resolvername1}])
+        self.assertEqual(len(failed), 0, failed)
+        self.assertEqual(len(added), 1, added)
 
     def tearDown(self):
-        # Clean up realms and resolvers that tests may have created
-        from privacyidea.lib.error import ResourceNotFoundError, ConfigAdminError
-
-        for realm in [self.realm1, self.realm2, "sqlrealm", "passwordrealm",
-                      "double", "ldap", "sort_realm", "sort_alpha_realm",
-                      "sort_node_realm", "masked_realm", "EntraID"]:
-            try:
-                delete_realm(realm, delete_custom_attributes=True)
-            except ResourceNotFoundError:
-                pass
-
-        for resolver in [self.resolvername1, self.resolvername2, self.resolvername3,
-                         "SQL1", "double1", "double2", "double3",
-                         "ldapresolver", "entraid", "reso4", "mask_resolver"]:
-            try:
-                delete_resolver(resolver)
-            except ConfigAdminError:
-                # Should not happen if realm cleanup above succeeded.
-                raise
-
+        # Remove all realms first, so that no resolver is still assigned to a realm, then remove
+        # all resolvers. This keeps cleanup independent of the specific names a test created.
+        for realm in list(get_realms()):
+            delete_realm(realm, delete_custom_attributes=True)
+        for resolver in list(get_resolver_list()):
+            delete_resolver(resolver)
+        # Restore the node config that individual tests may have overridden
+        if self._orig_node_uuid is None:
+            get_app_config().pop("PI_NODE_UUID", None)
+        else:
+            get_app_config()["PI_NODE_UUID"] = self._orig_node_uuid
         super().tearDown()
 
     def test_create_user(self):
@@ -129,7 +125,7 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
         self.assertEqual("0", uid)
         self.assertEqual("passwdresolver", rtype)
         self.assertEqual(self.resolvername1, resolvername)
-        self.assertIsNotNone(user.realm_id)
+        self.assertEqual(get_realm_id(self.realm1), user.realm_id)
 
         # create user by uid. fail, since the resolver is missing
         self.assertRaises(UserError, User, realm=self.realm1, uid="0")
@@ -170,9 +166,9 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
 
     def test_get_user_list_dedup_without_username_attribute(self):
         """
-        Test that get_user_list returns all users even when requested_attributes
-        does not include 'username'. Previously, the dedup key was (None, realm)
-        for every user when username wasn't fetched, collapsing all results to one.
+        get_user_list returns all users of a realm even when the requested attributes
+        do not include 'username'. The username is always fetched internally so users can
+        be deduplicated across resolvers, and is stripped from the output when not requested.
         """
         # Request only 'givenname' — username is not in the requested attributes
         userlist = get_user_list({"realm": self.realm1},
