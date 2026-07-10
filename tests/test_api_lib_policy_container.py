@@ -1130,12 +1130,8 @@ class PrePolicyContainerTestCase(PrePolicyHelperMixin, MyApiTestCase):
         delete_policy("applspec_genkey")
 
     def test_87_force_server_generate_key_without_any_policy(self):
-        # Regression for #5570: force_server_generate is an opt-in enforcement toggle.
-        # It must stay off when no policy enables it - in particular when there is no
-        # policy at all in the scope. Previously the fail-open Match.allowed() returned
-        # True in that case and silently forced server-side key generation.
-        # Note: the other force_server_generate tests always set an unrelated "enroll"
-        # policy first, which hid this because the scope was then non-empty.
+        # force_server_generate is an opt-in enforcement toggle: with no policy at all in
+        # the scope, server-side key generation is not forced, for a user or an admin.
         for policy in PolicyClass().list_policies():
             delete_policy(policy["name"])
         self.assertEqual([], PolicyClass().list_policies(active=True))

@@ -1825,11 +1825,8 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
     def test_22b_preferred_client_mode_without_any_auth_policy(self):
         """
-        Regression for #5570: client_mode_per_user is an opt-in toggle and must stay off
-        when no policy enables it - in particular when there is no policy at all in the
-        AUTH scope. Previously the fail-open Match.allowed() returned True in that case and
-        applied the per-user client mode by default. Note that test_22 sets an unrelated
-        AUTH policy first, which hid this because the scope was then non-empty.
+        With no policy at all in the AUTH scope, the opt-in client_mode_per_user toggle is
+        off, so the per-user preferred client mode is not applied and the default is used.
         """
         builder = EnvironBuilder(method='POST', data={}, headers=Headers({"user_agent": "privacyidea-cp"}))
         env = builder.get_environ()
@@ -1857,8 +1854,8 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
                               "message": ""},
                          ]}}
         response = jsonify(response_data)
-        # The user prefers "push" (-> poll). If client_mode_per_user were wrongly enabled,
-        # the preferred mode would become "poll"; with the toggle off it stays the default.
+        # The user prefers "push" (client mode "poll"); with the toggle off this preference
+        # is ignored and the preferred mode stays the multi_challenge default "interactive".
         user.set_internal_attribute(InternalUserAttributes.LAST_USED_TOKEN, {"privacyidea-cp": "push"})
 
         preferred_client_mode(request, response)
