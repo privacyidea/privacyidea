@@ -146,6 +146,10 @@ def get_users():
        }
     """
     realm = get_optional(request.all_data, "realm")
+    # realmadmin may have injected a list of realms for a multi-realm admin.
+    # Normalise to a comma-separated string so the audit info stays scalar.
+    if isinstance(realm, list):
+        realm = ",".join(realm)
     search_parameters = dict(request.all_data)
     requested_attributes = request.all_data.get("attributes")
     if requested_attributes:

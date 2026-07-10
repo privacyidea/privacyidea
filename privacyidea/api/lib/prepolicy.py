@@ -324,12 +324,7 @@ def realmadmin(request=None, action=None):
                     all_realms.extend(pol_realms)
                 if all_realms:
                     # Deduplicate while preserving order
-                    seen = set()
-                    unique_realms = []
-                    for r in all_realms:
-                        if r not in seen:
-                            seen.add(r)
-                            unique_realms.append(r)
+                    unique_realms = list(dict.fromkeys(all_realms))
                     if len(unique_realms) == 1 or action != PolicyAction.USERLIST:
                         request.all_data["realm"] = unique_realms[0]
                     else:

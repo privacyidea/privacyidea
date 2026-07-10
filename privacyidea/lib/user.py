@@ -871,6 +871,8 @@ def get_user_list(param: dict = None, user: User = None, include_custom_attribut
         param_realms = [r.strip() for r in param_realm_raw if r and r.strip()]
     elif isinstance(param_realm_raw, str) and "," in param_realm_raw:
         param_realms = [r.strip() for r in param_realm_raw.split(",") if r.strip()]
+    elif isinstance(param_realm_raw, str) and param_realm_raw.strip():
+        param_realms = [param_realm_raw.strip()]
     elif param_realm_raw:
         param_realms = [param_realm_raw]
     else:
@@ -890,8 +892,11 @@ def get_user_list(param: dict = None, user: User = None, include_custom_attribut
         realm_iteration.append(user_realm)
     realm_iteration = list(dict.fromkeys(realm_iteration))
 
-    if not (param_resolver or user_resolver or param_realms or user_realm):
+    if not (param_resolver or user_resolver or param_realm_raw or user_realm):
         # if no realm or resolver was specified, we search the resolvers in all realms
+        # Note: we test param_realm_raw (not the normalised param_realms) so that a
+        # non-empty realm filter which normalises to no valid realms (e.g. ",") does
+        # not fall through to searching every realm.
         log.debug("Seldom event: Calling get_user_list with absolutely no information on realms or resolvers!")
         all_realms = get_realms()
         realm_iteration = list(all_realms)

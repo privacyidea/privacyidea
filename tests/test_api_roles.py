@@ -219,8 +219,16 @@ class APIAuthTestCase(MyApiTestCase):
             self.assertIn(self.realm3, realms_in_result)
             self.assertNotIn(self.realm2, realms_in_result)
 
+        # Remove the restrictive admin policies so the audit log is readable.
         delete_policy("realmadmin_pol1")
         delete_policy("realmadmin_pol2")
+
+        # The audit info must record the realms as a plain scalar, not a
+        # Python list-repr, even when several realms are in scope.
+        audit_entry = self.find_most_recent_audit_entry(action="GET /user/")
+        self.assertNotIn("[", audit_entry.get("info", ""), audit_entry)
+        self.assertIn(self.realm1, audit_entry.get("info", ""))
+        self.assertIn(self.realm3, audit_entry.get("info", ""))
 
     def test_03d_realmadmin_no_realm_in_policy_means_all(self):
         """A policy with no realm restriction should leave the realm
