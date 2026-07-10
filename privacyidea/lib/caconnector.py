@@ -343,9 +343,13 @@ def get_caconnector_object(connector_name):
 
 
 @register_export('caconnector')
-def export_caconnector(name=None):
-    """ Export given or all caconnector configuration """
-    return get_caconnector_list(filter_caconnector_name=name)
+def export_caconnector(name=None, censor=False):
+    """ Export given or all caconnector configuration
+
+    :param censor: If True, password-type config values are replaced with the
+        ``__CENSORED__`` placeholder instead of being returned in clear text.
+    """
+    return get_caconnector_list(filter_caconnector_name=name, censor=censor)
 
 
 @register_import('caconnector')

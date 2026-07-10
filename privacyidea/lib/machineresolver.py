@@ -299,9 +299,13 @@ def pretestresolver(resolvertype, params):
 
 
 @register_export('machineresolver')
-def export_machineresolver(name=None):
-    """ Export given or all machineresolver configuration """
-    return get_resolver_list(filter_resolver_name=name)
+def export_machineresolver(name=None, censor=False):
+    """ Export given or all machineresolver configuration
+
+    :param censor: If True, password-type config values are replaced with the
+        ``__CENSORED__`` placeholder instead of being returned in clear text.
+    """
+    return get_resolver_list(filter_resolver_name=name, censor=censor)
 
 
 @register_import('machineresolver')

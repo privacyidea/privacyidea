@@ -161,7 +161,7 @@ export class EditAdditionalConditionsComponent {
         this.conditionKey() !== original[1] ||
         this.conditionComparator() !== original[2] ||
         this.conditionValue() !== original[3] ||
-        this.conditionActive() !== !original[4] ||
+        this.conditionActive() !== original[4] ||
         this.conditionHandleMissingData() !== original[5]
       );
     }
@@ -183,7 +183,7 @@ export class EditAdditionalConditionsComponent {
     this.conditionKey.set(condition[1]);
     this.conditionComparator.set(condition[2]);
     this.conditionValue.set(condition[3]);
-    this.conditionActive.set(!condition[4]);
+    this.conditionActive.set(condition[4]);
     this.conditionHandleMissingData.set(condition[5]);
   }
 
@@ -200,7 +200,7 @@ export class EditAdditionalConditionsComponent {
       key,
       comparator,
       this.conditionValue(),
-      !this.conditionActive(),
+      this.conditionActive(),
       missingData
     ];
 
@@ -260,7 +260,7 @@ export class EditAdditionalConditionsComponent {
     if (!conditions[index]) return;
 
     conditions[index] = [...conditions[index]];
-    conditions[index][4] = !active;
+    conditions[index][4] = active;
 
     this.policyEdit.emit({ conditions });
 
