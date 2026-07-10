@@ -473,9 +473,11 @@ def preferred_client_mode(request, response):
     else:
         preferred_client_mode_list = DEFAULT_PREFERRED_CLIENT_MODE_LIST
 
-    # check policy if client mode per user shall be used
+    # check policy if client mode per user shall be used. This is an opt-in toggle,
+    # so use enforced()/any() rather than the fail-open allowed(), which would
+    # enable it by default on any system without auth policies defined at all.
     client_mode_per_user_pol = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.CLIENT_MODE_PER_USER,
-                                          user_object=user).allowed()
+                                          user_object=user).enforced()
     last_used_token_type = None
     if client_mode_per_user_pol:
         user_agent, __, __ = get_plugin_info_from_useragent(request.user_agent.string)
@@ -864,11 +866,13 @@ def get_webui_settings(request, response):
                     check_subscription("privacyidea")
                 except SubscriptionError:
                     subject = EXPIRE_MESSAGE
-                # Check policy, if the admin is allowed to save config
+                # Check policy, if the admin is allowed to save config. This is a genuine
+                # permission check: an admin on a system without admin policies effectively
+                # has systemwrite rights, so the fail-open allowed() is intended here.
                 action_allowed = Match.generic(g, scope=role,
                                                action=PolicyAction.SYSTEMWRITE,
                                                adminuser=username,
-                                               adminrealm=realm).allowed()
+                                               adminrealm=realm).allowed()  # allowed-permission-check
                 if action_allowed:
                     body = str(BODY_TEMPLATE).format(subscriptions=subscriptions,
                                                      version=version,
