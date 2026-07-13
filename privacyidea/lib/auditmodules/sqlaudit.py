@@ -59,7 +59,8 @@ from privacyidea.lib.crypto import Sign
 from privacyidea.lib.lifecycle import register_finalizer
 from privacyidea.lib.pooling import get_engine
 from privacyidea.lib.utils import censor_connect_string
-from privacyidea.lib.utils import truncate_comma_list, is_true
+from privacyidea.lib.utils import (truncate_comma_list, is_true,
+                                   convert_wildcard_to_sql_like, SQL_LIKE_ESCAPE)
 from privacyidea.models import Audit as LogEntry
 from privacyidea.models import audit_column_length as column_length
 
@@ -276,8 +277,15 @@ class Audit(AuditBase):
                     realm_conditions.append(LogEntry.realm == realm)
                 filter_realm = or_(*realm_conditions)
                 conditions.append(filter_realm)
-            # We do not search if the search value only consists of '*'
-            elif search_value.strip() != '' and search_value.strip('*') != '':
+            # Any other filter value is compared as a string. Coerce non-string
+            # scalars so a meaningful filter is never silently dropped, which would
+            # widen the audit result set. An empty value or a bare '*' wildcard means
+            # "no filter" for this key.
+            elif search_value is not None:
+                if not isinstance(search_value, str):
+                    search_value = str(search_value)
+                if search_value.strip() == '' or search_value.strip('*') == '':
+                    continue
                 try:
                     if search_key == "success":
                         # "success" is the only integer.
@@ -285,21 +293,25 @@ class Audit(AuditBase):
                         conditions.append(getattr(LogEntry, search_key) ==
                                           int(is_true(search_value)))
                     else:
-                        # All other keys are compared as strings
+                        # All other keys are compared as strings. Only '*' is a wildcard; literal '%' and '_' are
+                        # matched literally. A leading '!' negates the condition.
                         column = getattr(LogEntry, search_key)
                         if search_key in ["date", "startdate"]:
                             # but we cast a column with a DateTime type to an
                             # ISO-format string first
                             column = to_isodate(column)
-                        search_value = search_value.replace('*', '%')
-                        if '%' in search_value:
-                            if search_value.startswith("!"):
-                                conditions.append(column.notlike(search_value[1:]))
+                        negate = search_value.startswith("!")
+                        if negate:
+                            search_value = search_value[1:]
+                        if "*" in search_value:
+                            pattern = convert_wildcard_to_sql_like(search_value)
+                            if negate:
+                                conditions.append(column.notlike(pattern, escape=SQL_LIKE_ESCAPE))
                             else:
-                                conditions.append(column.like(search_value))
+                                conditions.append(column.like(pattern, escape=SQL_LIKE_ESCAPE))
                         else:
-                            if search_value.startswith("!"):
-                                conditions.append(column != search_value[1:])
+                            if negate:
+                                conditions.append(column != search_value)
                             else:
                                 conditions.append(column == search_value)
                 except Exception as exx:
