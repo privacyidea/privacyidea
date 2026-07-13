@@ -30,7 +30,8 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    check_serial_valid, determine_logged_in_userparams,
                                    to_list, parse_string_to_dict, convert_imagefile_to_dataimage,
                                    get_plugin_info_from_useragent, get_computer_name_from_user_agent,
-                                   redacted_email, redacted_phone_number)
+                                   redacted_email, redacted_phone_number,
+                                   convert_wildcard_to_sql_like, SQL_LIKE_ESCAPE)
 from .base import MyTestCase, OverrideConfigTestCase
 
 
@@ -411,6 +412,27 @@ class UtilsTestCase(MyTestCase):
         d = datetime.now(tz=gettz('America/New York'))
         d_utc = convert_timestamp_to_utc(d)
         self.assertGreater(d_utc, d.replace(tzinfo=None))
+
+    def test_15_convert_wildcard_to_sql_like(self):
+        # the user wildcard '*' becomes the SQL wildcard '%'
+        self.assertEqual("PUSH%", convert_wildcard_to_sql_like("PUSH*"))
+        self.assertEqual("%", convert_wildcard_to_sql_like("*"))
+        # SQL LIKE metacharacters in the input are escaped so they match literally
+        self.assertEqual(f"OATH{SQL_LIKE_ESCAPE}_01", convert_wildcard_to_sql_like("OATH_01"))
+        self.assertEqual(f"a{SQL_LIKE_ESCAPE}%b", convert_wildcard_to_sql_like("a%b"))
+        # the escape character itself is escaped
+        self.assertEqual(f"a{SQL_LIKE_ESCAPE}{SQL_LIKE_ESCAPE}b", convert_wildcard_to_sql_like("a/b"))
+        # combination: literals stay literal, only '*' expands
+        self.assertEqual(f"a{SQL_LIKE_ESCAPE}_b%c", convert_wildcard_to_sql_like("a_b*c"))
+        # a custom wildcard character can be used
+        self.assertEqual("a%b", convert_wildcard_to_sql_like("a?b", wildcard="?"))
+        # a custom wildcard that is itself a LIKE metacharacter or the escape
+        # character is still handled correctly: only the wildcard expands, any
+        # remaining metacharacters are escaped to match literally
+        self.assertEqual("a%b%x", convert_wildcard_to_sql_like("a_b_x", wildcard="_"))
+        self.assertEqual(f"a{SQL_LIKE_ESCAPE}%b%c", convert_wildcard_to_sql_like("a%b_c", wildcard="_"))
+        self.assertEqual(f"a%b{SQL_LIKE_ESCAPE}_c", convert_wildcard_to_sql_like("a%b_c", wildcard="%"))
+        self.assertEqual(f"a%b{SQL_LIKE_ESCAPE}_c", convert_wildcard_to_sql_like("a/b_c", wildcard="/"))
 
     def test_16_parse_int(self):
         r = parse_int("xxx", 12)

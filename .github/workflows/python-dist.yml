@@ -8,7 +8,11 @@ name: Python Release
 on:
   push:
     tags:
+      # Real release tags only. Dev tags (e.g. v3.14dev0) are intentionally
+      # excluded - they don't get a GitHub release. The '!' pattern is
+      # evaluated after 'v*', so it removes the dev tags from the match.
       - 'v*'
+      - '!v*dev*'
 
 permissions:
   contents: read
@@ -86,16 +90,26 @@ jobs:
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         path: dist/*
-    - name: Create GitHub pre-release
-      id: gh_pre_release
-      if: contains(github.ref_name, 'dev')
+    # Release notes are taken from the matching "Version <x.y.z>" section of the
+    # Changelog. The section is filled from the GitHub milestone before the
+    # release. Fail if no matching section exists so a tag/Changelog mismatch
+    # can never publish an empty release.
+    - name: Extract release notes from Changelog
+      id: release_notes
+      run: |
+        version="${GITHUB_REF_NAME#v}"
+        awk -v ver="$version" '
+          BEGIN { gsub(/\./, "\\.", ver); re = "^Version " ver "[[:space:]]*(,|$)" }
+          $0 ~ re { found=1; next }
+          found && /^Version / { exit }
+          found { print }
+        ' Changelog > release_notes.md
+        if [ ! -s release_notes.md ]; then
+          echo "::error::No Changelog section found for version ${version}"
+          exit 1
+        fi
+    - name: Create GitHub release
       env:
         GH_TOKEN: ${{ github.token }}
       run: >-
-        gh release create "$GITHUB_REF_NAME" dist/* --prerelease --notes ""
-    - name: Create GitHub release draft
-      if: steps.gh_pre_release.conclusion == 'skipped'
-      env:
-        GH_TOKEN: ${{ github.token }}
-      run: >-
-        gh release create "$GITHUB_REF_NAME" dist/* --draft --notes ""
+        gh release create "$GITHUB_REF_NAME" dist/* --notes-file release_notes.md
