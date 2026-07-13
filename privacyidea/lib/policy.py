@@ -204,6 +204,7 @@ from .policies.actions import PolicyAction, PasskeyLoginButtonOptions
 from .policies.conditions import PolicyConditionClass, ConditionCheck, ConditionSection
 from .policies.evaluators import EVALUATOR_FUNCTIONS
 from ..models import (Policy, db, save_config_timestamp, PolicyDescription, PolicyCondition)
+from ..models.policy import parse_action_string
 
 log = logging.getLogger(__name__)
 
@@ -1155,6 +1156,12 @@ def remove_wildcards_and_negations(value_list: list[str]) -> list[str]:
     return raw_values
 
 
+def _allowed_actions_for_scope(scope: str) -> set:
+    """Return the set of action names defined for the given scope (static + dynamic)."""
+    from .token import get_dynamic_policy_definitions
+    return set(get_static_policy_definitions(scope) | get_dynamic_policy_definitions(scope))
+
+
 def validate_actions(scope: str, action: str | dict) -> bool:
     """
     Check if the given actions are valid for the given scope.
@@ -1163,26 +1170,14 @@ def validate_actions(scope: str, action: str | dict) -> bool:
     :param action: The policy actions
     :return: True if all actions are valid, raises a Parameter Error otherwise
     """
-    from .token import get_dynamic_policy_definitions
-    policy_definitions_static = get_static_policy_definitions(scope)
-    policy_definitions_dynamic = get_dynamic_policy_definitions(scope)
-    policy_definitions = policy_definitions_static | policy_definitions_dynamic
-    allowed_actions = set(policy_definitions.keys())
-    actions = {}
+    allowed_actions = _allowed_actions_for_scope(scope)
     if isinstance(action, dict):
-        action_keys = list(action.keys())
-        actions = action
+        actions = dict(action)
     elif isinstance(action, str):
-        # This is similarly implemented in models.py in Policy.get(), but with the actual code structure there is no
-        # possibility to use the same function without mixing up the layers
-        for x in re.split(r'(?<!\\),', action or ""):
-            action_tmp = x.strip().split("=", 1)
-            action_key = action_tmp[0]
-            action_value = action_tmp[1] if len(action_tmp) == 2 else True
-            actions[action_key] = action_value
-        action_keys = list(actions.keys())
+        actions = parse_action_string(action)
     else:
         raise ParameterError(f"Invalid actions type {type(action)}. Must be a string or a dictionary.")
+    action_keys = list(actions.keys())
 
     raw_actions = remove_wildcards_and_negations(action_keys)
     invalid_actions = list(set(raw_actions) - allowed_actions)
@@ -1218,18 +1213,12 @@ def filter_invalid_actions(scope: str, action: str | dict) -> tuple[dict, list]:
         scope and ``dropped_actions`` is the list of action keys that were
         removed because they are not valid for the scope.
     """
-    from .token import get_dynamic_policy_definitions
-    policy_definitions = get_static_policy_definitions(scope) | get_dynamic_policy_definitions(scope)
-    allowed_actions = set(policy_definitions.keys())
+    allowed_actions = _allowed_actions_for_scope(scope)
 
-    # Parse the action into a {key: value} dict, mirroring validate_actions()
     if isinstance(action, dict):
         actions = dict(action)
     elif isinstance(action, str):
-        actions = {}
-        for x in re.split(r'(?<!\\),', action or ""):
-            action_tmp = x.strip().split("=", 1)
-            actions[action_tmp[0]] = action_tmp[1] if len(action_tmp) == 2 else True
+        actions = parse_action_string(action)
     else:
         return {}, []
 
@@ -3714,7 +3703,10 @@ def import_policy(data, name=None, skip_invalid=False):
                 log.warning(f'Policy "{policy_name}": dropping actions not valid '
                             f'for this version: {dropped}')
                 res_data['action'] = cleaned
-            if not cleaned:
+            # Only skip when dropping actions emptied the policy. A policy that
+            # had no actions to begin with has nothing invalid and must import
+            # just like a plain (non-skip_invalid) import would.
+            if not cleaned and dropped:
                 log.warning(f'Skipping policy "{policy_name}": no valid actions '
                             f'remain after dropping {dropped}.')
                 skipped.append(policy_name)
