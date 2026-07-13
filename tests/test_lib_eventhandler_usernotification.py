@@ -58,7 +58,6 @@ OAUTH_URL = "otpauth://hotp/OATH0001D8B6?secret=GQROHTUPBAK5N6T2HBUK4IP42R56E" \
 
 
 class UserNotificationTestCase(PristineSqliteFixtures, MyTestCase):
-
     pristine_fixtures = ["tests/testdata/testuser.sqlite"]
 
     def test_01_basefunctions(self):
@@ -1708,3 +1707,164 @@ class UserNotificationTestCase(PristineSqliteFixtures, MyTestCase):
             self.assertTrue(call_args[0][0].startswith("Failed to write notification file:"))
 
         os.remove("tests/testdata/testOATH123456.txt")
+
+    def test_23_admin_realm_option_required(self):
+        """
+        Test that the "To admin realm" and "reply_to admin realm" sub-options
+        are marked as required in the action definition.
+        """
+        actions = UserNotificationEventHandler().actions
+        sendmail_opts = actions["sendmail"]
+
+        # "To admin realm" must be required
+        to_admin_realm_key = "To " + NOTIFY_TYPE.ADMIN_REALM
+        self.assertIn(to_admin_realm_key, sendmail_opts)
+        self.assertTrue(sendmail_opts[to_admin_realm_key].get("required"),
+                        f"'{to_admin_realm_key}' should be marked required")
+
+        # "reply_to admin realm" must be required
+        reply_to_admin_realm_key = "reply_to " + NOTIFY_TYPE.ADMIN_REALM
+        self.assertIn(reply_to_admin_realm_key, sendmail_opts)
+        self.assertTrue(sendmail_opts[reply_to_admin_realm_key].get("required"),
+                        f"'{reply_to_admin_realm_key}' should be marked required")
+
+    @smtpmock.activate
+    def test_24_empty_admin_realm_no_fanout(self):
+        """
+        Test that an empty/None admin realm in "To admin realm" does NOT
+        fan out notifications to all users. Instead, the recipient email list
+        should be empty.
+        """
+        # setup realms
+        self.setUp_user_realms()
+
+        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False)
+        self.assertTrue(r > 0)
+
+        smtpmock.setdata(response={"recp@example.com": (200, "OK")},
+                         support_tls=False)
+
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        audit_object.audit_data["serial"] = "123456"
+
+        g.logged_in_user = {"username": "testadmin",
+                            "role": "admin",
+                            "realm": ""}
+        g.audit_object = audit_object
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SomeSerial",
+                        "user": "cornelius"}
+        req.User = User("cornelius", self.realm1)
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+
+        # Test with "To admin realm" set to empty string
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {
+                       "options": {"body": "test body",
+                                   "emailconfig": "myserver",
+                                   "To": NOTIFY_TYPE.ADMIN_REALM,
+                                   "To " + NOTIFY_TYPE.ADMIN_REALM: ""}}}
+
+        un_handler = UserNotificationEventHandler()
+        with mock.patch("logging.Logger.warning") as mock_log:
+            res = un_handler.do("sendmail", options=options)
+            # Check that the warning about empty admin realm was logged
+            mock_log.assert_any_call(
+                "No admin realm specified for ADMIN_REALM notification. "
+                "No recipients will be notified.")
+
+        # Test with "To admin realm" not set at all (None)
+        options_none = {"g": g,
+                        "request": req,
+                        "response": resp,
+                        "handler_def": {
+                            "options": {"body": "test body",
+                                        "emailconfig": "myserver",
+                                        "To": NOTIFY_TYPE.ADMIN_REALM}}}
+
+        un_handler = UserNotificationEventHandler()
+        with mock.patch("logging.Logger.warning") as mock_log:
+            res = un_handler.do("sendmail", options=options_none)
+            mock_log.assert_any_call(
+                "No admin realm specified for ADMIN_REALM notification. "
+                "No recipients will be notified.")
+
+    @smtpmock.activate
+    def test_25_empty_reply_to_admin_realm_no_fanout(self):
+        """
+        Test that an empty/None admin realm in "reply_to admin realm" does NOT
+        fan out reply-to addresses to all users. Instead, the reply-to header
+        should be empty.
+        """
+        # setup realms
+        self.setUp_user_realms()
+
+        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False)
+        self.assertTrue(r > 0)
+
+        smtpmock.setdata(response={"recp@example.com": (200, "OK")},
+                         support_tls=False)
+
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        audit_object.audit_data["serial"] = "123456"
+
+        g.logged_in_user = {"username": "testadmin",
+                            "role": "admin",
+                            "realm": ""}
+        g.audit_object = audit_object
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SomeSerial",
+                        "user": "cornelius"}
+        req.User = User("cornelius", self.realm1)
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+
+        # Send to tokenowner but with reply_to set to an empty admin realm
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {
+                       "options": {"body": "test body",
+                                   "emailconfig": "myserver",
+                                   "To": NOTIFY_TYPE.TOKENOWNER,
+                                   "reply_to": NOTIFY_TYPE.ADMIN_REALM,
+                                   "reply_to " + NOTIFY_TYPE.ADMIN_REALM: ""}}}
+
+        un_handler = UserNotificationEventHandler()
+        with mock.patch("logging.Logger.warning") as mock_log:
+            res = un_handler.do("sendmail", options=options)
+            self.assertTrue(res)
+            mock_log.assert_any_call(
+                "No admin realm specified for ADMIN_REALM reply-to. "
+                "Reply-To header will be empty.")
+
+        # Verify the sent email does not have a populated Reply-To with all users
+        msg = smtpmock.get_sent_message()
+        # The Reply-To should either be empty or not contain realm1 user emails
+        # (realm1 has user@localhost.localdomain)
+        if "Reply-To:" in msg:
+            # If Reply-To header exists, it should be empty
+            parsed = email.message_from_string(msg)
+            reply_to_val = parsed.get("Reply-To", "")
+            self.assertEqual(reply_to_val, "")

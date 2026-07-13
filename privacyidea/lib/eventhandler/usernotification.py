@@ -171,6 +171,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                         NOTIFY_TYPE.EMAIL]},
                 "reply_to " + NOTIFY_TYPE.ADMIN_REALM: {
                     "type": "str",
+                    "required": True,
                     "value": get_app_config_value("SUPERUSER_REALM", []),
                     "visibleIf": "reply_to",
                     "visibleValue": NOTIFY_TYPE.ADMIN_REALM},
@@ -224,6 +225,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                         NOTIFY_TYPE.EMAIL]},
                 "To " + NOTIFY_TYPE.ADMIN_REALM: {
                     "type": "str",
+                    "required": True,
                     "value": get_app_config_value("SUPERUSER_REALM", []),
                     "visibleIf": "To",
                     "visibleValue": NOTIFY_TYPE.ADMIN_REALM},
@@ -351,10 +353,15 @@ class UserNotificationEventHandler(BaseEventHandler):
         elif notify_type == NOTIFY_TYPE.ADMIN_REALM:
             # Send emails to all the users in the specified admin realm
             admin_realm = handler_options.get("To " + NOTIFY_TYPE.ADMIN_REALM)
-            attr = is_attribute_at_all()
-            ulist = get_user_list({"realm": admin_realm}, include_custom_attributes=attr)
-            # create a list of all user-emails, if the user has an email
-            emails = [u.get("email") for u in ulist if u.get("email")]
+            if admin_realm:
+                attr = is_attribute_at_all()
+                ulist = get_user_list({"realm": admin_realm}, include_custom_attributes=attr)
+                # create a list of all user-emails, if the user has an email
+                emails = [u.get("email") for u in ulist if u.get("email")]
+            else:
+                log.warning("No admin realm specified for ADMIN_REALM notification. "
+                            "No recipients will be notified.")
+                emails = []
             recipient = {
                 "givenname": f"admin of realm {admin_realm}",
                 "email": emails
@@ -477,11 +484,16 @@ class UserNotificationEventHandler(BaseEventHandler):
                     elif reply_to_type == NOTIFY_TYPE.ADMIN_REALM:
                         # Adds all email addresses from a specific admin realm to the reply-to-header
                         admin_realm = handler_options.get("reply_to " + NOTIFY_TYPE.ADMIN_REALM)
-                        attr = is_attribute_at_all()
-                        ulist = get_user_list({"realm": admin_realm}, include_custom_attributes=attr)
-                        # create a list of all user-emails, if the user has an email
-                        emails = [u.get("email") for u in ulist if u.get("email")]
-                        reply_to = ",".join(emails)
+                        if admin_realm:
+                            attr = is_attribute_at_all()
+                            ulist = get_user_list({"realm": admin_realm}, include_custom_attributes=attr)
+                            # create a list of all user-emails, if the user has an email
+                            emails = [u.get("email") for u in ulist if u.get("email")]
+                            reply_to = ",".join(emails)
+                        else:
+                            log.warning("No admin realm specified for ADMIN_REALM reply-to. "
+                                        "Reply-To header will be empty.")
+                            reply_to = ""
 
                     elif reply_to_type == NOTIFY_TYPE.LOGGED_IN_USER:
                         # Add email address from the logged in user into the reply-to header
