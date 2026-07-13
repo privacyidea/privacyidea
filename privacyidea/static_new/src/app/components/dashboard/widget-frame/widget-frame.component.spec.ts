@@ -75,7 +75,7 @@ describe("WidgetFrameComponent", () => {
   });
 
   it("should render the widget title", () => {
-    expect(fixture.nativeElement.querySelector(".widget-title").textContent).toContain("Token usage");
+    expect(fixture.nativeElement.querySelector(".widget-title").textContent).toContain("Token Usage");
   });
 
   it("should show a reload button when the widget is not loading", () => {
