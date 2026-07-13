@@ -2163,11 +2163,9 @@ class TokenTestCase(MyTestCase):
             {"serial": "EXISTING001", "type": "hotp", "otpkey": None}
         ]
 
-        with mock.patch("privacyidea.lib.token.importexport.create_tokenclass_object") as mock_create:
-            # We don't need to mock create since token already exists
-            # Instead, mock the import_token method on the token to raise an exception
-            with mock.patch.object(type(existing), "import_token", side_effect=Exception("Import failed")):
-                result = import_tokens(bad_token_data, update_existing_tokens=True)
+        # Mock the import_token method on the token to raise an exception
+        with mock.patch.object(type(existing), "import_token", side_effect=Exception("Import failed")):
+            result = import_tokens(bad_token_data, update_existing_tokens=True)
 
         # The token should be in failed list
         self.assertIn("EXISTING001", result.failed_tokens)

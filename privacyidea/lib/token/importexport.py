@@ -5,16 +5,13 @@
 import logging
 from dataclasses import dataclass
 
-
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
 from privacyidea.models import (Token)
 
 from privacyidea.lib.token.query import create_tokenclass_object, get_one_token
 
-
 log = logging.getLogger(__name__)
-
 
 
 @dataclass(frozen=True)
@@ -66,7 +63,7 @@ def import_tokens(tokens: list[dict], update_existing_tokens: bool = True,
         # Validate serial early
         if not serial:
             log.error("Token entry is missing a serial number. Skipping.")
-            failed_tokens.append(serial)
+            failed_tokens.append('token with missing serial')
             continue
 
         # Validate type early
