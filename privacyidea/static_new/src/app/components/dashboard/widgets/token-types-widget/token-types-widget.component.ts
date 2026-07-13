@@ -49,7 +49,7 @@ interface TokenTypeAccumulator {
 export class TokenTypesWidgetComponent extends DashboardWidget implements OnInit {
   static override readonly type = "token-types";
   static override readonly requiredAction = "tokenlist";
-  static override readonly title = $localize`Tokens by type`;
+  static override readonly title = $localize`Tokens by Type`;
   static override readonly icon = "shield";
   static override readonly badgeIcon = "category";
   static override readonly defaultSize: WidgetSize = { cols: 6, rows: 5 };

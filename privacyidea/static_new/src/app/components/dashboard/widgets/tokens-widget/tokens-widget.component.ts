@@ -54,7 +54,7 @@ interface TokenCountResponses {
 export class TokensWidgetComponent extends DashboardWidget implements OnInit {
   static override readonly type = "tokens";
   static override readonly requiredAction = "tokenlist";
-  static override readonly title = $localize`Token usage`;
+  static override readonly title = $localize`Token Usage`;
   static override readonly icon = "shield";
   static override readonly badgeIcon = "123";
   static override readonly badgeIconLarge = true;
