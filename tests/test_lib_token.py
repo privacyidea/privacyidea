@@ -2131,7 +2131,7 @@ class TokenTestCase(MyTestCase):
         ]
         result = import_tokens(tokens_data, update_existing_tokens=True)
         self.assertEqual(len(result.failed_tokens), 1)
-        self.assertIsNone(result.failed_tokens[0])
+        self.assertEqual(result.failed_tokens[0], 'token with missing serial')
         self.assertEqual(len(result.successful_tokens), 0)
         self.assertEqual(len(result.updated_tokens), 0)
 
