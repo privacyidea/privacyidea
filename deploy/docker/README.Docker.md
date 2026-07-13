@@ -50,7 +50,29 @@ public URL via `PRIVACYIDEA_PI_BASE_URL` in `example.env`.
 The web UI is served on http://localhost:8080 (plain HTTP — see *TLS* below).
 
 `make help` lists all targets (`up`, `down`, `logs`, `ps`, `backup`, `restore`,
-`upgrade`, `build`).
+`upgrade`, `build`, `pimanage`).
+
+Running pi-manage
+-----------------
+
+For one-off admin commands, `make pimanage` starts a throwaway container that
+runs a single `pi-manage` command and then removes itself:
+
+```
+make pimanage ARGS="admin list"
+make pimanage ARGS="config exporter"
+```
+
+The command goes in `ARGS="..."` rather than directly after the target because
+`make` would otherwise treat each word as its own target and parse any `-`-option
+(e.g. `admin add … -p`) as one of its own flags; quoting in `ARGS` passes the
+whole command through to `pi-manage` verbatim.
+
+It runs with `--no-deps`, so it does **not** start `pi-init` (no migrations or
+admin bootstrap as a side effect) — it just needs the `db` service to be up,
+which is the normal case while the stack is running. Under the hood this is
+`docker compose run --rm --no-deps pi pi-manage …`; the container gets the same
+config and secrets as the web workers.
 
 Configuration
 -------------

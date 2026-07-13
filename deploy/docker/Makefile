@@ -7,7 +7,7 @@ COMPOSE := docker compose -f compose.yaml
 
 .DEFAULT_GOAL := help
 
-.PHONY: help init up down restart ps logs smoke backup restore upgrade build
+.PHONY: help init up down restart ps logs smoke backup restore upgrade build pimanage
 
 help:  ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
@@ -49,3 +49,7 @@ upgrade:  ## Back up, pull the new image, and restart (safe upgrade)
 
 build:  ## Build the image locally (development; not needed when pulling)
 	$(COMPOSE) build
+
+pimanage:  ## Run a one-off pi-manage command (ARGS="admin list"); needs db running
+	@[ -n "$(ARGS)" ] || { echo 'usage: make pimanage ARGS="admin list"'; exit 1; }
+	$(COMPOSE) run --rm --no-deps pi pi-manage $(ARGS)
