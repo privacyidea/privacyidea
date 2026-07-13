@@ -1732,8 +1732,9 @@ class UserNotificationTestCase(PristineSqliteFixtures, MyTestCase):
     def test_24_empty_admin_realm_no_fanout(self):
         """
         Test that an empty/None admin realm in "To admin realm" does NOT
-        fan out notifications to all users. Instead, the recipient email list
-        should be empty.
+        fan out notifications to all users. The handler should short-circuit
+        without attempting to send any email: it returns True (no-op default),
+        no SMTP send is attempted (sent_recipient stays None).
         """
         # setup realms
         self.setUp_user_realms()
@@ -1767,7 +1768,7 @@ class UserNotificationTestCase(PristineSqliteFixtures, MyTestCase):
         resp = Response()
         resp.data = """{"result": {"value": true}}"""
 
-        # Test with "To admin realm" set to empty string
+        # --- Case 1: "To admin realm" set to empty string ---
         options = {"g": g,
                    "request": req,
                    "response": resp,
@@ -1778,14 +1779,17 @@ class UserNotificationTestCase(PristineSqliteFixtures, MyTestCase):
                                    "To " + NOTIFY_TYPE.ADMIN_REALM: ""}}}
 
         un_handler = UserNotificationEventHandler()
-        with mock.patch("logging.Logger.warning") as mock_log:
-            res = un_handler.do("sendmail", options=options)
-            # Check that the warning about empty admin realm was logged
-            mock_log.assert_any_call(
-                "No admin realm specified for ADMIN_REALM notification. "
-                "No recipients will be notified.")
+        res = un_handler.do("sendmail", options=options)
+        # Handler returns True (default, short-circuited before send)
+        self.assertTrue(res)
+        # No SMTP send was attempted
+        self.assertIsNone(smtpmock.get_sent_recipient())
+        self.assertIsNone(smtpmock.get_sent_message())
 
-        # Test with "To admin realm" not set at all (None)
+        # --- Case 2: "To admin realm" key missing entirely (None) ---
+        smtpmock.setdata(response={"recp@example.com": (200, "OK")},
+                         support_tls=False)
+
         options_none = {"g": g,
                         "request": req,
                         "response": resp,
@@ -1795,23 +1799,30 @@ class UserNotificationTestCase(PristineSqliteFixtures, MyTestCase):
                                         "To": NOTIFY_TYPE.ADMIN_REALM}}}
 
         un_handler = UserNotificationEventHandler()
-        with mock.patch("logging.Logger.warning") as mock_log:
-            res = un_handler.do("sendmail", options=options_none)
-            mock_log.assert_any_call(
-                "No admin realm specified for ADMIN_REALM notification. "
-                "No recipients will be notified.")
+        res = un_handler.do("sendmail", options=options_none)
+        # Handler returns True (default, short-circuited before send)
+        self.assertTrue(res)
+        # No SMTP send was attempted
+        self.assertIsNone(smtpmock.get_sent_recipient())
+        self.assertIsNone(smtpmock.get_sent_message())
 
     @smtpmock.activate
     def test_25_empty_reply_to_admin_realm_no_fanout(self):
         """
         Test that an empty/None admin realm in "reply_to admin realm" does NOT
-        fan out reply-to addresses to all users. Instead, the reply-to header
-        should be empty.
+        fan out reply-to addresses to all users in all realms.
+        The SMTP layer (smtpserver.py:109) falls back reply_to to the sender
+        when reply_to is falsy: reply_to = reply_to or mail_from.
+        So we assert that Reply-To equals the configured sender (not a
+        comma-separated list of realm user emails).
         """
         # setup realms
         self.setUp_user_realms()
 
-        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False)
+        # Use a known sender so we can assert the fallback
+        smtp_sender = "noreply@example.com"
+        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False,
+                           sender=smtp_sender)
         self.assertTrue(r > 0)
 
         smtpmock.setdata(response={"recp@example.com": (200, "OK")},
@@ -1857,14 +1868,17 @@ class UserNotificationTestCase(PristineSqliteFixtures, MyTestCase):
             self.assertTrue(res)
             mock_log.assert_any_call(
                 "No admin realm specified for ADMIN_REALM reply-to. "
-                "Reply-To header will be empty.")
+                "Reply-To will fall back to the SMTP sender address.")
 
-        # Verify the sent email does not have a populated Reply-To with all users
+        # Parse the sent email and check the Reply-To header
         msg = smtpmock.get_sent_message()
-        # The Reply-To should either be empty or not contain realm1 user emails
-        # (realm1 has user@localhost.localdomain)
-        if "Reply-To:" in msg:
-            # If Reply-To header exists, it should be empty
-            parsed = email.message_from_string(msg)
-            reply_to_val = parsed.get("Reply-To", "")
-            self.assertEqual(reply_to_val, "")
+        self.assertIsNotNone(msg)
+        parsed = email.message_from_string(msg)
+        reply_to_val = parsed.get("Reply-To", "")
+
+        # Reply-To must be the sender fallback, NOT a comma-separated list of realm users
+        self.assertEqual(reply_to_val, smtp_sender)
+        # Must not contain any comma (i.e. no multi-recipient fanout)
+        self.assertNotIn(",", reply_to_val)
+        # Must not contain realm1 user emails
+        self.assertNotIn("user@localhost.localdomain", reply_to_val)

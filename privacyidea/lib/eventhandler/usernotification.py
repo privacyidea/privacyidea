@@ -358,14 +358,13 @@ class UserNotificationEventHandler(BaseEventHandler):
                 ulist = get_user_list({"realm": admin_realm}, include_custom_attributes=attr)
                 # create a list of all user-emails, if the user has an email
                 emails = [u.get("email") for u in ulist if u.get("email")]
+                recipient = {
+                    "givenname": f"admin of realm {admin_realm}",
+                    "email": emails
+                }
             else:
                 log.warning("No admin realm specified for ADMIN_REALM notification. "
                             "No recipients will be notified.")
-                emails = []
-            recipient = {
-                "givenname": f"admin of realm {admin_realm}",
-                "email": emails
-            }
         elif notify_type == NOTIFY_TYPE.LOGGED_IN_USER:
             # Send notification to the logged in user
             if logged_in_user.get("username") and not logged_in_user.get(
@@ -380,7 +379,7 @@ class UserNotificationEventHandler(BaseEventHandler):
             else:
                 # Try to find the user in the specified realm
                 user = User(logged_in_user.get("username"),
-                                logged_in_user.get("realm"))
+                            logged_in_user.get("realm"))
                 email = handler_options.get("To " + NOTIFY_TYPE.LOGGED_IN_USER, 'email')
                 if user:
                     user_info = user.get_specific_info(["givenname", "surname", email, "mobile"])
@@ -466,8 +465,6 @@ class UserNotificationEventHandler(BaseEventHandler):
             subject = subject.format(**tags)
             # Send notification
             if action.lower() == "sendmail":
-                if not recipient:
-                    log.warning("Unable to determine the recipient for the user notification!")
                 if reply_to_type:
                     if reply_to_type == NOTIFY_TYPE.NO_REPLY_TO:
                         reply_to = ""
@@ -492,8 +489,8 @@ class UserNotificationEventHandler(BaseEventHandler):
                             reply_to = ",".join(emails)
                         else:
                             log.warning("No admin realm specified for ADMIN_REALM reply-to. "
-                                        "Reply-To header will be empty.")
-                            reply_to = ""
+                                        "Reply-To will fall back to the SMTP sender address.")
+                            reply_to = None
 
                     elif reply_to_type == NOTIFY_TYPE.LOGGED_IN_USER:
                         # Add email address from the logged in user into the reply-to header
@@ -508,7 +505,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                         else:
                             # Try to find the user in the specified realm
                             user = User(logged_in_user.get("username"),
-                                            logged_in_user.get("realm"))
+                                        logged_in_user.get("realm"))
                             if user:
                                 reply_to = user.get_specific_info([email]).get(email) if user else ""
 
