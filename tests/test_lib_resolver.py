@@ -282,6 +282,31 @@ class SQLResolverTestCase(MyTestCase):
         userlist = resolver.getUserList()
         self.assertEqual(len(userlist), 4)
 
+    def test_01b_like_escaping(self):
+        # SQL LIKE metacharacters (_ and %) in a login/search value must be
+        # matched literally; only the '*' wildcard should expand.
+        resolver = SQLResolver()
+        resolver.loadConfig(self.parameters)
+        # Two users differing only where a '_' wildcard would otherwise match.
+        uid_underscore = resolver.add_user({"username": "esc_a", "email": "esc1@example.com",
+                                            "password": "x", "mobile": "1"})
+        resolver.add_user({"username": "escXa", "email": "esc2@example.com",
+                           "password": "x", "mobile": "2"})
+
+        # getUserList: '_' is literal, so only "esc_a" matches
+        matches = resolver.getUserList({"username": "esc_a"})
+        self.assertListEqual(["esc_a"], [user["username"] for user in matches], matches)
+
+        # '*' still expands as a wildcard and matches both
+        matches = resolver.getUserList({"username": "esc*a"})
+        self.assertCountEqual(["esc_a", "escXa"], [user["username"] for user in matches], matches)
+
+        # getUserId resolves the login literally to the exact user, not "escXa"
+        self.assertEqual(str(uid_underscore), str(resolver.getUserId("esc_a")))
+
+        resolver.delete_user(uid_underscore)
+        resolver.delete_user(resolver.getUserId("escXa"))
+
     def test_02_check_passwords(self):
         resolver = SQLResolver()
         resolver.loadConfig(self.parameters)
