@@ -62,16 +62,31 @@ def import_tokens(tokens: list[dict], update_existing_tokens: bool = True,
 
     for token_info_dict in tokens:
         serial = token_info_dict.get("serial")
+
+        # Validate serial early
+        if not serial:
+            log.error("Token entry is missing a serial number. Skipping.")
+            failed_tokens.append(serial)
+            continue
+
+        # Validate type early
+        token_type = token_info_dict.get("type")
+        if not token_type:
+            log.error(f"Token entry for serial {serial} is missing a type. Skipping.")
+            failed_tokens.append(serial)
+            continue
+
         existing_token = get_one_token(serial=serial, silent_fail=True)
         # We check if there is no existing token or if we want to update existing tokens
         if not existing_token or update_existing_tokens:
+            created = False
             # We create a new token, if there is no existing token
             if not existing_token:
                 try:
-                    token_type = token_info_dict.get("type")
                     db_token = Token(serial, tokentype=token_type.lower())
                     db_token.save()
                     token = create_tokenclass_object(db_token)
+                    created = True
                 except Exception as e:
                     log.error(f"Could not create token {serial}: {e}")
                     failed_tokens.append(serial)
@@ -92,14 +107,16 @@ def import_tokens(tokens: list[dict], update_existing_tokens: bool = True,
                     log.error(f"Could not assign user to token {serial}: {e}. "
                               f"The token will not be imported.")
                     failed_tokens.append(serial)
-                    token.delete_token()
+                    if created:
+                        token.delete_token()
                     continue
             try:
                 token.import_token(token_info_dict)
             except Exception as e:
                 log.exception(f"Could not import token {serial}: {e}")
                 failed_tokens.append(serial)
-                token.delete_token()
+                if created:
+                    token.delete_token()
                 continue
 
             if not existing_token:
