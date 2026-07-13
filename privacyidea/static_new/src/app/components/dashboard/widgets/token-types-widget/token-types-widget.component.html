@@ -23,14 +23,14 @@
       <tbody>
         @for (type of typeCounts(); track type.key) {
           <tr>
-            <td>{{ type.name }}</td>
             <td>
               <a
                 [routerLink]="routePaths.TOKENS"
                 (click)="showType(type.key)"
-                >{{ type.count }}</a
+                >{{ type.name }}</a
               >
             </td>
+            <td>{{ type.count }}</td>
           </tr>
         }
       </tbody>
