@@ -70,7 +70,7 @@ function setTokenDetailUsername(name: string) {
 
   ref.update((resp) => {
     const current = resp!.result!.value as unknown as Tokens;
-    const first = (current.tokens?.[0] ?? ({} as Partial<TokenDetails> as TokenDetails));
+    const first = current.tokens?.[0] ?? ({} as Partial<TokenDetails> as TokenDetails);
     first.username = name;
     return {
       ...resp!,
@@ -262,10 +262,13 @@ describe("UserService", () => {
         }
       };
 
-      (userService as {
-        editableAttributesResource: UserService["editableAttributesResource"]
-      }).editableAttributesResource =
-        new MockHttpResourceRef(MockPiResponse.fromValue(policy)) as unknown as UserService["editableAttributesResource"];
+      (
+        userService as {
+          editableAttributesResource: UserService["editableAttributesResource"];
+        }
+      ).editableAttributesResource = new MockHttpResourceRef(
+        MockPiResponse.fromValue(policy)
+      ) as unknown as UserService["editableAttributesResource"];
 
       expect(userService.attributePolicy()).toEqual(policy);
       expect(userService.deletableAttributes()).toEqual(["department", "attr2", "attr1"]);
@@ -284,6 +287,27 @@ describe("UserService", () => {
       expect(userService.userAttributesList()).toEqual([
         { key: "city", value: "Berlin" },
         { key: "department", value: "sales, finance" }
+      ]);
+    });
+
+    it("internalAttributes and internalAttributesList derive from internalAttributesResource value, formatting dict values", () => {
+      const attrs = {
+        description: "some note",
+        last_used_token: { "privacyIDEA-WebUI": "spass", "privacyIDEA-Keycloak": "totp" }
+      };
+
+      (
+        userService as {
+          internalAttributesResource: UserService["internalAttributesResource"];
+        }
+      ).internalAttributesResource = new MockHttpResourceRef(
+        MockPiResponse.fromValue(attrs)
+      ) as unknown as UserService["internalAttributesResource"];
+
+      expect(userService.internalAttributes()).toEqual(attrs);
+      expect(userService.internalAttributesList()).toEqual([
+        { key: "description", value: "some note" },
+        { key: "last_used_token", value: "privacyIDEA-WebUI: spass, privacyIDEA-Keycloak: totp" }
       ]);
     });
 

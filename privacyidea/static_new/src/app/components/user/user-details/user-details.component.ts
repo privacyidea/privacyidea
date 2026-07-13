@@ -138,6 +138,15 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
   deletableAttributes = this.userService.deletableAttributes;
   keyOptions = this.userService.keyOptions;
   hasWildcardKey = this.userService.hasWildcardKey;
+  canSetCustomAttribute = computed(() => this.keyOptions().length > 0 || this.hasWildcardKey());
+  showsInternalAttributes = computed(
+    () =>
+      this.authService.actionAllowed("get_user_internal_attributes") &&
+      this.userService.internalAttributesList().length > 0
+  );
+  hasNoAttributes = computed(
+    () => this.userService.userAttributesList().length === 0 && !this.showsInternalAttributes()
+  );
   expandedKeys = signal<Set<string>>(new Set<string>());
   addKeyInput = signal<string>("");
   addValueInput = signal<string>("");

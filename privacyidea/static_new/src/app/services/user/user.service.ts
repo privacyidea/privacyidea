@@ -72,14 +72,16 @@ export interface UserAttributePolicy {
   set: Record<string, string[]>;
 }
 
-export interface UserServiceInterface {
-  userAttributes: Signal<Record<string, string>>;
-  userAttributesList: Signal<{ key: string; value: string }[]>;
-  userAttributesResource: HttpResourceRef<PiResponse<Record<string, string>> | undefined>;
+export type AttributeValue = string | string[] | Record<string, string>;
 
-  internalAttributes: Signal<Record<string, string>>;
+export interface UserServiceInterface {
+  userAttributes: Signal<Record<string, AttributeValue>>;
+  userAttributesList: Signal<{ key: string; value: string }[]>;
+  userAttributesResource: HttpResourceRef<PiResponse<Record<string, AttributeValue>> | undefined>;
+
+  internalAttributes: Signal<Record<string, AttributeValue>>;
   internalAttributesList: Signal<{ key: string; value: string }[]>;
-  internalAttributesResource: HttpResourceRef<PiResponse<Record<string, string>> | undefined>;
+  internalAttributesResource: HttpResourceRef<PiResponse<Record<string, AttributeValue>> | undefined>;
 
   attributePolicy: Signal<UserAttributePolicy>;
   deletableAttributes: Signal<string[]>;
@@ -214,7 +216,19 @@ export class UserService implements UserServiceInterface {
       .sort()
   );
 
-  userAttributes = computed<Record<string, string>>(() => {
+  private formatAttributeValue(raw: AttributeValue): string {
+    if (Array.isArray(raw)) {
+      return raw.join(", ");
+    }
+    if (raw !== null && typeof raw === "object") {
+      return Object.entries(raw)
+        .map(([key, value]) => `${key}: ${value}`)
+        .join(", ");
+    }
+    return String(raw ?? "");
+  }
+
+  userAttributes = computed<Record<string, AttributeValue>>(() => {
     if (!this.userAttributesResource.hasValue()) return {};
     return this.userAttributesResource.value()?.result?.value ?? {};
   });
@@ -222,11 +236,11 @@ export class UserService implements UserServiceInterface {
   userAttributesList = computed(() =>
     Object.entries(this.userAttributes()).map(([key, raw]) => ({
       key,
-      value: Array.isArray(raw) ? raw.join(", ") : String(raw ?? "")
+      value: this.formatAttributeValue(raw)
     }))
   );
 
-  userAttributesResource = httpResource<PiResponse<Record<string, string>>>(() => {
+  userAttributesResource = httpResource<PiResponse<Record<string, AttributeValue>>>(() => {
     // Only load user attributes on the user details page.
     if (!this.contentService.onUserDetails()) {
       return undefined;
@@ -240,7 +254,7 @@ export class UserService implements UserServiceInterface {
     };
   });
 
-  internalAttributes = computed<Record<string, string>>(() => {
+  internalAttributes = computed<Record<string, AttributeValue>>(() => {
     if (!this.internalAttributesResource.hasValue()) return {};
     return this.internalAttributesResource.value()?.result?.value ?? {};
   });
@@ -248,11 +262,11 @@ export class UserService implements UserServiceInterface {
   internalAttributesList = computed(() =>
     Object.entries(this.internalAttributes()).map(([key, raw]) => ({
       key,
-      value: Array.isArray(raw) ? raw.join(", ") : String(raw ?? "")
+      value: this.formatAttributeValue(raw)
     }))
   );
 
-  internalAttributesResource = httpResource<PiResponse<Record<string, string>>>(() => {
+  internalAttributesResource = httpResource<PiResponse<Record<string, AttributeValue>>>(() => {
     // Only load internal attributes on the user details page, and only for
     // admins that hold the get_user_internal_attributes right (self-service
     // users never do, as it's an admin-only policy).

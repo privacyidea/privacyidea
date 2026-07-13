@@ -142,12 +142,12 @@
 
       <app-details-card
         class="details-card--user-info"
-        title="Custom Attributes"
+        title="Custom/Internal Attributes"
         i18n-title>
-        <div class="add-attr-row">
-          <mat-form-field class="input-width-l">
-            <mat-label i18n>Attribute Key</mat-label>
-            <div class="flex-row">
+        @if (canSetCustomAttribute()) {
+          <div class="add-attr-row">
+            <mat-form-field class="input-width-l">
+              <mat-label i18n>Attribute Key</mat-label>
               @if (keyMode() === "select") {
                 <mat-select
                   [value]="selectedKey()"
@@ -170,51 +170,51 @@
                   i18n-placeholder
                   matInput
                   placeholder="Enter key" />
-                @if (keyOptions().length > 0) {
-                  <button
-                    (click)="switchToSelectKey()"
-                    aria-label="Back to key select"
-                    class="ml-4 mt--8 return-button"
-                    i18n-aria-label="Back to key select"
-                    mat-icon-button
-                    type="button">
-                    <mat-icon>arrow_left</mat-icon>
-                  </button>
-                }
               }
-            </div>
-          </mat-form-field>
-
-          <mat-form-field class="input-width-l">
-            <mat-label i18n>Attribute Value</mat-label>
-
-            @if (isValueInput()) {
-              <input
-                [value]="addValueInput()"
-                (input)="addValueInput.set($event.target['value'])"
-                i18n-placeholder
-                matInput
-                placeholder="Enter value" />
-            } @else {
-              <mat-select
-                [value]="selectedValue()"
-                (selectionChange)="selectedValue.set($event.value)">
-                @for (v of valueOptions(); track v) {
-                  <mat-option [value]="v">{{ v }}</mat-option>
-                }
-              </mat-select>
+            </mat-form-field>
+            @if (keyMode() === "input" && keyOptions().length > 0) {
+              <button
+                (click)="switchToSelectKey()"
+                aria-label="Back to key select"
+                class="margin-bottom-16 return-button"
+                i18n-aria-label="Back to key select"
+                mat-icon-button
+                type="button">
+                <mat-icon>arrow_left</mat-icon>
+              </button>
             }
-          </mat-form-field>
 
-          <button
-            (click)="addCustomAttribute()"
-            [disabled]="!canAddAttribute()"
-            class="ml-8 margin-bottom-16"
-            color="primary"
-            mat-icon-button>
-            <mat-icon>save</mat-icon>
-          </button>
-        </div>
+            <mat-form-field class="input-width-l">
+              <mat-label i18n>Attribute Value</mat-label>
+
+              @if (isValueInput()) {
+                <input
+                  [value]="addValueInput()"
+                  (input)="addValueInput.set($event.target['value'])"
+                  i18n-placeholder
+                  matInput
+                  placeholder="Enter value" />
+              } @else {
+                <mat-select
+                  [value]="selectedValue()"
+                  (selectionChange)="selectedValue.set($event.value)">
+                  @for (v of valueOptions(); track v) {
+                    <mat-option [value]="v">{{ v }}</mat-option>
+                  }
+                </mat-select>
+              }
+            </mat-form-field>
+
+            <button
+              (click)="addCustomAttribute()"
+              [disabled]="!canAddAttribute()"
+              class="ml-8 margin-bottom-16"
+              color="primary"
+              mat-icon-button>
+              <mat-icon>save</mat-icon>
+            </button>
+          </div>
+        }
 
         @if (userService.userAttributesList().length > 0) {
           <div class="details-field-list margin-top-8">
@@ -236,26 +236,26 @@
             }
           </div>
         }
-      </app-details-card>
 
-      @if (authService.actionAllowed("get_user_internal_attributes")) {
-        <app-details-card
-          class="details-card--user-info"
-          title="Internal Attributes"
-          i18n-title>
-          @if (userService.internalAttributesList().length > 0) {
-            <div class="details-field-list">
-              @for (attr of userService.internalAttributesList(); track attr.key) {
-                <app-detail-field-row [label]="attr.key">
-                  <span fieldValue>{{ attr.value || "-" }}</span>
-                </app-detail-field-row>
-              }
-            </div>
-          } @else {
-            <p i18n>No internal attributes found.</p>
-          }
-        </app-details-card>
-      }
+        @if (showsInternalAttributes()) {
+          <p
+            class="attribute-group-label"
+            i18n>
+            Internal
+          </p>
+          <div class="details-field-list">
+            @for (attr of userService.internalAttributesList(); track attr.key) {
+              <app-detail-field-row [label]="attr.key">
+                <span fieldValue>{{ attr.value || "-" }}</span>
+              </app-detail-field-row>
+            }
+          </div>
+        }
+
+        @if (hasNoAttributes()) {
+          <p i18n>No attributes found.</p>
+        }
+      </app-details-card>
     </div>
 
     <app-details-card class="details-card--tokens">

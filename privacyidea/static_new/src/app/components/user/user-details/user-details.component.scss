@@ -32,6 +32,15 @@
   max-width: 100%;
 }
 
+.attribute-group-label {
+  margin: var(--half-global-padding) 0 var(--quarter-global-padding);
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.75em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 .value-list {
   list-style: disc outside;
   padding-left: 1em;
@@ -98,17 +107,9 @@
   margin-left: var(--half-global-padding);
 }
 
-.ml-4 {
-  margin-left: var(--quarter-global-padding);
-}
-
 .no-indention {
   margin-left: var(--half-global-padding);
   padding-left: var(--half-global-padding);
-}
-
-.mt--8 {
-  margin-top: calc(var(--half-global-padding) * -1);
 }
 
 .username-header {
