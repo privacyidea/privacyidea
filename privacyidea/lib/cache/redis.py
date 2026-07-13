@@ -46,6 +46,7 @@ from urllib.parse import urlparse, urlunparse
 
 import redis as redis_lib
 
+from privacyidea.lib.challenge_types import is_challenge_open
 from privacyidea.lib.framework import get_app_config_value, get_app_local_store
 from privacyidea.lib.utils import convert_column_to_unicode
 from privacyidea.models.utils import utc_now
@@ -340,6 +341,9 @@ class ChallengeDTO:
     def is_valid(self) -> bool:
         now = utc_now()
         return self.timestamp <= now < self.expiration
+
+    def is_open(self) -> bool:
+        return is_challenge_open(self.is_valid(), self.otp_valid, self.get_session())
 
     def get_session(self) -> str:
         return self.session
