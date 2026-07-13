@@ -1755,7 +1755,11 @@ def force_server_generate_key(request: Request, action=None):
     params = request.all_data
     tokentype = params.get("type", "HOTP")
     action = f"{tokentype.lower()}_{PolicyAction.FORCE_SERVER_GENERATE}"
-    force_genkey = Match.admin_or_user(g, action=action, user_obj=request.User).allowed()
+    # This is an opt-in enforcement toggle: the server is only forced to generate
+    # the key if a policy explicitly says so. Use enforced()/any() rather than the
+    # fail-open allowed(), which would force key generation on any system that has
+    # no admin/user policies defined at all.
+    force_genkey = Match.admin_or_user(g, action=action, user_obj=request.User).enforced()
     g.policies[action] = force_genkey
 
     return True
