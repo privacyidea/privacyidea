@@ -729,6 +729,37 @@ For these reasons, ``none`` is the recommended setting for passkeys; see :ref:`p
 This policy is separate from :ref:`policy_webauthn_enroll_authenticator_attestation_form` and
 :ref:`policy_webauthn_enroll_authenticator_attestation_level`, which are not used for passkey enrollment.
 
+.. _policy_passkey_user_display_name:
+
+passkey_user_display_name
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+This action configures the display name of the passkey that the authenticator shows to the user during
+registration (and later when selecting a credential). If the policy is not set, the display name defaults to
+the login name of the user.
+
+The value supports tags of the form ``{tagname}`` for replacement. The following tags are always available:
+
+* ``{user}`` – the login name of the user
+* ``{realm}`` – the realm of the user
+* ``{resolver}`` – the resolver of the user
+* ``{serial}`` – the serial number of the passkey token
+
+In addition, every attribute the user's resolver provides can be used as a tag, for example ``{givenname}``,
+``{surname}``, ``{email}`` or ``{mobile}`` for an LDAP resolver (the available attributes depend on the resolver
+configuration). The built-in tags above take precedence over resolver attributes with the same name.
+
+For example, the value ``{user}@{realm}`` results in a display name like ``nils@realm1``, and
+``{givenname} {surname}`` in ``Nils Behlen``.
+
+Unknown tags and tags whose value is empty (for example an attribute that the resolver does not return) are
+replaced with an empty string. Static text and braces that do not form a valid tag are kept unchanged.
+
+.. note:: Authenticators may truncate the display name, so the resolved value is limited to 64 bytes. Keep the
+    template short enough that the resolved name stays within this limit.
+
 .. _policy_webauthn_enroll_req:
 
 webauthn_req
