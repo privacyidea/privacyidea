@@ -384,21 +384,46 @@ $button-low-contrast-variant: linear-gradient(
 
 .icon-badge {
   --mat-menu-item-spacing: 0;
+  --icon-badge-size: 12px;
+  --icon-badge-icon-size: var(--icon-badge-size);
+  --icon-badge-mask-size: var(--icon-badge-size);
   position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   vertical-align: middle;
 
+  &:has(.icon-badge-large) {
+    --icon-badge-size: 16px;
+  }
+
+  &:has(.icon-badge-small) {
+    --icon-badge-size: 12px;
+  }
+
+  &:has(.icon-badge-icon-large) {
+    --icon-badge-icon-size: 18px;
+  }
+
+  &:has(.icon-badge-mask-small) {
+    --icon-badge-mask-size: 10px;
+  }
+
   > .mat-icon:not(.icon-badge-overlay) {
     -webkit-mask-image: radial-gradient(
-      circle at 17.5px 17.5px,
+      circle at calc(100% - var(--icon-badge-size) / 2) calc(100% - var(--icon-badge-size) / 2),
       transparent 0%,
-      transparent 7.5px,
-      black 8px,
-      black 14px
+      transparent calc(var(--icon-badge-mask-size) / 2 + 0.5px),
+      black calc(var(--icon-badge-mask-size) / 2 + 1px),
+      black calc(var(--icon-badge-mask-size) / 2 + 7px)
     );
-    mask-image: radial-gradient(circle at 17.5px 17.5px, transparent 0%, transparent 7.5px, black 8px, black 14px);
+    mask-image: radial-gradient(
+      circle at calc(100% - var(--icon-badge-size) / 2) calc(100% - var(--icon-badge-size) / 2),
+      transparent 0%,
+      transparent calc(var(--icon-badge-mask-size) / 2 + 0.5px),
+      black calc(var(--icon-badge-mask-size) / 2 + 1px),
+      black calc(var(--icon-badge-mask-size) / 2 + 7px)
+    );
   }
 
   .icon-badge-overlay {
@@ -411,26 +436,13 @@ $button-low-contrast-variant: linear-gradient(
     justify-content: center;
 
     &.mat-icon {
-      width: 14px !important;
-      height: 14px !important;
-      font-size: 14px !important;
-    }
-
-    &.icon-badge-large {
-      font-size: 18px !important;
+      width: var(--icon-badge-size) !important;
+      height: var(--icon-badge-size) !important;
+      font-size: var(--icon-badge-icon-size) !important;
     }
 
     &.icon-badge-bold {
       font-weight: bold;
-    }
-
-    &.icon-badge-add {
-      font-size: 18px !important;
-      font-weight: bold;
-    }
-
-    &.icon-badge-gear {
-      right: -1px;
     }
   }
 }

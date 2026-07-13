@@ -109,14 +109,16 @@
         An open-source project
         <a
           href="https://netknights.it/"
-          target="_blank">maintained by NetKnights
+          target="_blank"
+          >maintained by NetKnights
         </a>
       </div>
       <div i18n>
         in collaboration with
         <a
           href="https://github.com/privacyidea/privacyidea"
-          target="_blank">community contributors
+          target="_blank"
+          >community contributors
         </a>
       </div>
     </div>
@@ -202,7 +204,8 @@
   </span>
   <span
     class="beta-badge margin-right-16"
-    i18n>Beta
+    i18n
+    >Beta
   </span>
 </ng-template>
 
@@ -427,8 +430,8 @@
     @if (contentService.routeUrl().startsWith(ROUTE_PATHS.POLICIES_DETAILS)) {
       <a class="sub-nav-active">
         <span class="icon-badge">
-          <mat-icon>gavel</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-gear">settings</mat-icon>
+          <mat-icon class="padding-right-4">gavel</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-large">settings</mat-icon>
         </span>
         <span i18n>Details</span>
       </a>
@@ -437,8 +440,8 @@
       [ngClass]="contentService.routeUrl() === ROUTE_PATHS.POLICIES_NEW ? 'sub-nav-active' : ''"
       [routerLink]="[ROUTE_PATHS.POLICIES_NEW]">
       <span class="icon-badge">
-        <mat-icon>gavel</mat-icon>
-        <mat-icon class="icon-badge-overlay icon-badge-add">add</mat-icon>
+        <mat-icon class="padding-right-4">gavel</mat-icon>
+        <mat-icon class="icon-badge-overlay icon-badge-large icon-badge-mask-small icon-badge-bold">add</mat-icon>
       </span>
       <span i18n>Create</span>
     </a>
@@ -535,7 +538,7 @@
         data-overflow-child>
         <span class="icon-badge">
           <mat-icon>lan</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-gear">settings</mat-icon>
+          <mat-icon class="icon-badge-overlay">settings</mat-icon>
         </span>
         <span i18n>Machine Resolver Details</span>
       </a>
@@ -546,7 +549,7 @@
         data-overflow-child>
         <span class="icon-badge">
           <mat-icon>lan</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-add">add</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
         <span i18n>Create Machine Resolver</span>
       </a>
@@ -564,8 +567,8 @@
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon>flag</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-gear">settings</mat-icon>
+          <mat-icon class="padding-right-4">flag</mat-icon>
+          <mat-icon class="icon-badge-overlay">settings</mat-icon>
         </span>
         <span i18n>Event Details</span>
       </a>
@@ -575,8 +578,8 @@
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon>flag</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-add">add</mat-icon>
+          <mat-icon class="padding-right-2">flag</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
         <span i18n>Create Event</span>
       </a>
@@ -595,7 +598,7 @@
         data-overflow-child>
         <span class="icon-badge">
           <mat-icon>event_repeat</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-gear">settings</mat-icon>
+          <mat-icon class="icon-badge-overlay">settings</mat-icon>
         </span>
         <span i18n>Periodic Task Details</span>
       </a>
@@ -606,7 +609,7 @@
         data-overflow-child>
         <span class="icon-badge">
           <mat-icon>event_repeat</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-add">add</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
         <span i18n>Create Periodic Task</span>
       </a>
@@ -633,8 +636,8 @@
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon>email</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-gear">settings</mat-icon>
+          <mat-icon class="padding-right-4">email</mat-icon>
+          <mat-icon class="icon-badge-overlay">settings</mat-icon>
         </span>
         <span i18n>SMTP Details</span>
       </a>
@@ -644,8 +647,8 @@
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon>email</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-add">add</mat-icon>
+          <mat-icon class="padding-right-2">email</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
         <span i18n>Create SMTP Server</span>
       </a>
@@ -663,8 +666,8 @@
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon>vpn_lock</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-gear">settings</mat-icon>
+          <mat-icon class="padding-right-4">vpn_lock</mat-icon>
+          <mat-icon class="icon-badge-overlay">settings</mat-icon>
         </span>
         <span i18n>RADIUS Details</span>
       </a>
@@ -674,8 +677,8 @@
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon>vpn_lock</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-add">add</mat-icon>
+          <mat-icon class="padding-right-2">vpn_lock</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
         <span i18n>Create RADIUS Server</span>
       </a>
@@ -693,8 +696,8 @@
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon>sms</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-gear">settings</mat-icon>
+          <mat-icon class="padding-right-4">sms</mat-icon>
+          <mat-icon class="icon-badge-overlay">settings</mat-icon>
         </span>
         <span i18n>SMS Gateway Details</span>
       </a>
@@ -704,8 +707,8 @@
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon>sms</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-add">add</mat-icon>
+          <mat-icon class="padding-right-2">sms</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
         <span i18n>Create SMS Gateway</span>
       </a>
@@ -723,8 +726,8 @@
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon>assured_workload</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-gear">settings</mat-icon>
+          <mat-icon class="padding-right-2">assured_workload</mat-icon>
+          <mat-icon class="icon-badge-overlay">settings</mat-icon>
         </span>
         <span i18n>CA Connector Details</span>
       </a>
@@ -734,8 +737,8 @@
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon>assured_workload</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-add">add</mat-icon>
+          <mat-icon class="padding-right-2">assured_workload</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
         <span i18n>Create CA Connector</span>
       </a>
@@ -754,7 +757,7 @@
         data-overflow-child>
         <span class="icon-badge">
           <mat-icon class="mdi--pi-logo margin-right-5"></mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-gear">settings</mat-icon>
+          <mat-icon class="icon-badge-overlay">settings</mat-icon>
         </span>
         <span i18n>PrivacyIDEA Server Details</span>
       </a>
@@ -765,7 +768,7 @@
         data-overflow-child>
         <span class="icon-badge">
           <mat-icon class="mdi--pi-logo margin-right-3"></mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-add">add</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
         <span i18n>Create PrivacyIDEA Server</span>
       </a>
@@ -783,8 +786,8 @@
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon>local_police</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-gear">settings</mat-icon>
+          <mat-icon class="padding-right-4">local_police</mat-icon>
+          <mat-icon class="icon-badge-overlay">settings</mat-icon>
         </span>
         <span i18n>Tokengroup Details</span>
       </a>
@@ -794,8 +797,8 @@
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon>local_police</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-add">add</mat-icon>
+          <mat-icon class="padding-right-2">local_police</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
         <span i18n>Create Tokengroup</span>
       </a>
@@ -813,8 +816,8 @@
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon>storage</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-gear">settings</mat-icon>
+          <mat-icon class="padding-right-4">storage</mat-icon>
+          <mat-icon class="icon-badge-overlay">settings</mat-icon>
         </span>
         <span i18n>Service ID Details</span>
       </a>
@@ -824,8 +827,8 @@
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon>storage</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-add">add</mat-icon>
+          <mat-icon class="padding-right-2">storage</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
         <span i18n>Create Service ID</span>
       </a>

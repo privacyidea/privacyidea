@@ -44,6 +44,17 @@
   }
 }
 
+.widget-title-group {
+  display: flex;
+  align-items: center;
+  gap: var(--quarter-global-gap);
+  min-width: 0;
+}
+
+.widget-title-icon {
+  flex: none;
+}
+
 .widget-title {
   font-weight: 500;
   font-size: 14px;

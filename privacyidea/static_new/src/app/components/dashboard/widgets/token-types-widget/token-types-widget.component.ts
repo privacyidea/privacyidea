@@ -19,6 +19,7 @@
 import { Component, computed, effect, inject, OnInit, signal } from "@angular/core";
 import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { TokenTypesWidgetIconComponent } from "@components/dashboard/widgets/token-types-widget/token-types-widget-icon.component";
 import { WidgetStateComponent } from "@components/dashboard/widgets/widget-state/widget-state.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { DashboardWidget, WidgetSize } from "@models/dashboard";
@@ -51,7 +52,7 @@ export class TokenTypesWidgetComponent extends DashboardWidget implements OnInit
   static override readonly requiredAction = "tokenlist";
   static override readonly title = $localize`Tokens by Type`;
   static override readonly icon = "shield";
-  static override readonly badgeIcon = "category";
+  static override readonly headerIcon = TokenTypesWidgetIconComponent;
   static override readonly defaultSize: WidgetSize = { cols: 6, rows: 5 };
   static override readonly minSize: WidgetSize = { cols: 4, rows: 3 };
   static override readonly maxSize: WidgetSize = { cols: 12, rows: 12 };

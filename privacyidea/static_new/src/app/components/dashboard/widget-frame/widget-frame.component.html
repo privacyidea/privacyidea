@@ -23,7 +23,14 @@
     cdkDragHandle
     [cdkDragHandleDisabled]="!layoutService.editMode() || pinned()"
     [class.draggable]="layoutService.editMode() && !pinned()">
-    <span class="widget-title">{{ widgetType()?.title }}</span>
+    <span class="widget-title-group">
+      @if (headerIcon(); as icon) {
+        <ng-container *ngComponentOutlet="icon" />
+      } @else if (widgetType()?.icon) {
+        <mat-icon class="widget-title-icon">{{ widgetType()?.icon }}</mat-icon>
+      }
+      <span class="widget-title">{{ widgetType()?.title }}</span>
+    </span>
 
     <div class="widget-actions">
       @if (showHeaderSpinner()) {
@@ -61,7 +68,10 @@
 
   <div class="widget-body">
     @if (component(); as widgetComponent) {
-      <ng-container *ngComponentOutlet="widgetComponent; inputs: outletInputs()" />
+      <ng-template
+        [ngComponentOutlet]="widgetComponent"
+        [ngComponentOutletInputs]="outletInputs()"
+        #widgetOutlet="ngComponentOutlet"></ng-template>
     }
   </div>
 </div>

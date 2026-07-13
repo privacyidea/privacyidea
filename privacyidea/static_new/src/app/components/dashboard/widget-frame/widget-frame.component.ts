@@ -46,7 +46,7 @@ export class WidgetFrameComponent {
 
   readonly instance = input.required<WidgetInstance>();
 
-  private readonly outlet = viewChild(NgComponentOutlet);
+  private readonly outlet = viewChild<NgComponentOutlet>("widgetOutlet");
 
   protected readonly widgetType = computed(() => this.registry.get(this.instance().type));
   protected readonly component = computed(() => this.widgetType() ?? null);
@@ -67,6 +67,8 @@ export class WidgetFrameComponent {
     const instance = this.outlet()?.componentInstance as DashboardWidgetLike | undefined;
     return instance?.partialLoading?.() ?? false;
   });
+
+  protected readonly headerIcon = computed(() => this.widgetType()?.headerIcon ?? null);
 
   protected readonly showHeaderSpinner = computed(
     () => !this.initialLoading() && (this.loading() || this.partialLoading())

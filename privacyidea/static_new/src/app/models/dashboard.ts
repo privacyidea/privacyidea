@@ -54,8 +54,7 @@ export abstract class DashboardWidget {
   static readonly type: WidgetTypeId;
   static readonly title: string = "";
   static readonly icon: string = "";
-  static readonly badgeIcon: string | null = null;
-  static readonly badgeIconLarge: boolean = false;
+  static readonly headerIcon: Type<unknown> | null = null;
   static readonly defaultSize: WidgetSize = { cols: 3, rows: 3 };
   static readonly minSize: WidgetSize = { cols: 3, rows: 3 };
   static readonly maxSize: WidgetSize = { cols: DASHBOARD_COLUMNS, rows: Number.POSITIVE_INFINITY };

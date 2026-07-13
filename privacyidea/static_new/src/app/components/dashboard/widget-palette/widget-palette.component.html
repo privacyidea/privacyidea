@@ -30,14 +30,9 @@
       <button
         mat-menu-item
         (click)="add(widget.type)">
-        @if (widget.badgeIcon) {
-          <span class="icon-badge margin-right-16">
-            <mat-icon>{{ widget.icon }}</mat-icon>
-            <mat-icon
-              class="icon-badge-overlay"
-              [class.icon-badge-large]="widget.badgeIconLarge">
-              {{ widget.badgeIcon }}
-            </mat-icon>
+        @if (widget.headerIcon; as icon) {
+          <span class="margin-right-16">
+            <ng-container *ngComponentOutlet="icon" />
           </span>
         } @else {
           <mat-icon class="margin-right-16">{{ widget.icon }}</mat-icon>

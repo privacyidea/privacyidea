@@ -88,7 +88,7 @@ describe("TokenTypesWidgetComponent", () => {
     expect(TokenTypesWidgetComponent.type).toBe("token-types");
     expect(TokenTypesWidgetComponent.title).toBeTruthy();
     expect(TokenTypesWidgetComponent.icon).toBe("shield");
-    expect(TokenTypesWidgetComponent.badgeIcon).toBe("category");
+    expect(TokenTypesWidgetComponent.headerIcon).toBeTruthy();
   });
 
   it("should list token types with a non-zero count, sorted by count descending", () => {
