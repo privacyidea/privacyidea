@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { NgClass } from "@angular/common";
+import { NgClass, NgTemplateOutlet } from "@angular/common";
 import {
   Component,
   computed,
@@ -50,6 +50,7 @@ import {
   SaveAndExitDialogResult
 } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { UserDetailsEditComponent } from "@components/user/user-details-edit/user-details-edit.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
@@ -63,7 +64,6 @@ import { filter, firstValueFrom } from "rxjs";
 import { UserDetailsContainerTableComponent } from "./user-details-container-table/user-details-container-table.component";
 import { UserDetailsPinDialogComponent } from "./user-details-pin-dialog/user-details-pin-dialog.component";
 import { UserDetailsTokenTableComponent } from "./user-details-token-table/user-details-token-table.component";
-import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 
 @Component({
   selector: "app-user-details",
@@ -81,6 +81,7 @@ import { StickyHeaderDirective } from "@components/shared/directives/sticky-head
     MatOption,
     MatFormField,
     NgClass,
+    NgTemplateOutlet,
     UserDetailsContainerTableComponent,
     MatSelectModule,
     MatTooltip,
@@ -139,13 +140,11 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
   keyOptions = this.userService.keyOptions;
   hasWildcardKey = this.userService.hasWildcardKey;
   canSetCustomAttribute = computed(() => this.keyOptions().length > 0 || this.hasWildcardKey());
-  showsInternalAttributes = computed(
+  showsAttributeExtrasColumn = computed(
     () =>
-      this.authService.actionAllowed("get_user_internal_attributes") &&
-      this.userService.internalAttributesList().length > 0
-  );
-  hasNoAttributes = computed(
-    () => this.userService.userAttributesList().length === 0 && !this.showsInternalAttributes()
+      this.canSetCustomAttribute() ||
+      this.userService.userAttributesList().length > 0 ||
+      this.authService.actionAllowed("get_user_internal_attributes")
   );
   expandedKeys = signal<Set<string>>(new Set<string>());
   addKeyInput = signal<string>("");
@@ -193,6 +192,11 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
         value: value ?? "-"
       }))
   );
+  detailsEntryColumns = computed(() => {
+    const entries = this.detailsEntries();
+    const half = Math.ceil(entries.length / 2);
+    return [entries.slice(0, half), entries.slice(half)];
+  });
 
   ngOnInit(): void {
     this.pendingChangesService.registerHasChanges(

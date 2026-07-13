@@ -99,163 +99,188 @@
       } @else {
         <app-details-card
           class="details-card--user-info"
+          [class.details-card--wide]="!showsAttributeExtrasColumn()"
           title="Attributes"
           i18n-title>
-          <div class="details-field-list">
-            @for (item of detailsEntries(); track item.key) {
-              @if (Array.isArray(item.value) && item.value.length > 1) {
-                <app-detail-field-row [label]="item.label">
-                  <ng-container fieldValue>
-                    <ul class="value-list">
-                      @if (isExpanded(item.key)) {
-                        @for (val of item.value; track val) {
-                          <li>{{ val }}</li>
-                        }
-                      } @else {
-                        <li>{{ item.value[0] }}</li>
-                      }
-                    </ul>
-                    <button
-                      (click)="toggleExpanded(item.key)"
-                      [attr.aria-expanded]="isExpanded(item.key)"
-                      class="value-toggle"
-                      type="button">
-                      @if (isExpanded(item.key)) {
-                        <mat-icon>expand_less</mat-icon>
-                        <span i18n>Show less</span>
-                      } @else {
-                        <mat-icon>expand_more</mat-icon>
-                        <span i18n>Show {{ item.value.length - 1 }} more</span>
-                      }
-                    </button>
-                  </ng-container>
-                </app-detail-field-row>
-              } @else {
-                <app-detail-field
-                  [label]="item.label"
-                  [displayText]="str(item.value)" />
+          @if (showsAttributeExtrasColumn()) {
+            <div class="details-field-list">
+              @for (item of detailsEntries(); track item.key) {
+                <ng-container *ngTemplateOutlet="attributeRow; context: { $implicit: item }"></ng-container>
               }
-            }
-          </div>
+            </div>
+          } @else {
+            <div class="details-field-list-columns">
+              @for (column of detailsEntryColumns(); track $index) {
+                <div class="details-field-list">
+                  @for (item of column; track item.key) {
+                    <ng-container *ngTemplateOutlet="attributeRow; context: { $implicit: item }"></ng-container>
+                  }
+                </div>
+              }
+            </div>
+          }
         </app-details-card>
       }
 
-      <app-details-card
-        class="details-card--user-info"
-        title="Custom/Internal Attributes"
-        i18n-title>
-        @if (canSetCustomAttribute()) {
-          <div class="add-attr-row">
-            <mat-form-field class="input-width-l">
-              <mat-label i18n>Attribute Key</mat-label>
-              @if (keyMode() === "select") {
-                <mat-select
-                  [value]="selectedKey()"
-                  (selectionChange)="selectedKey.set($event.value)">
-                  @for (k of keyOptions(); track k) {
-                    <mat-option [value]="k">{{ k }}</mat-option>
+      <ng-template
+        #attributeRow
+        let-item>
+        @if (Array.isArray(item.value) && item.value.length > 1) {
+          <app-detail-field-row [label]="item.label">
+            <ng-container fieldValue>
+              <ul class="value-list">
+                @if (isExpanded(item.key)) {
+                  @for (val of item.value; track val) {
+                    <li>{{ val }}</li>
                   }
-                  @if (hasWildcardKey()) {
-                    <mat-option
-                      (onSelectionChange)="switchToCustomKey()"
-                      [value]="'__CUSTOM__'">
-                      <i i18n>Custom…</i>
-                    </mat-option>
-                  }
-                </mat-select>
-              } @else {
-                <input
-                  [value]="addKeyInput()"
-                  (input)="addKeyInput.set($event.target['value'])"
-                  i18n-placeholder
-                  matInput
-                  placeholder="Enter key" />
-              }
-            </mat-form-field>
-            @if (keyMode() === "input" && keyOptions().length > 0) {
+                } @else {
+                  <li>{{ item.value[0] }}</li>
+                }
+              </ul>
               <button
-                (click)="switchToSelectKey()"
-                aria-label="Back to key select"
-                class="margin-bottom-16 return-button"
-                i18n-aria-label="Back to key select"
-                mat-icon-button
+                (click)="toggleExpanded(item.key)"
+                [attr.aria-expanded]="isExpanded(item.key)"
+                class="value-toggle"
                 type="button">
-                <mat-icon>arrow_left</mat-icon>
+                @if (isExpanded(item.key)) {
+                  <mat-icon>expand_less</mat-icon>
+                  <span i18n>Show less</span>
+                } @else {
+                  <mat-icon>expand_more</mat-icon>
+                  <span i18n>Show {{ item.value.length - 1 }} more</span>
+                }
               </button>
-            }
-
-            <mat-form-field class="input-width-l">
-              <mat-label i18n>Attribute Value</mat-label>
-
-              @if (isValueInput()) {
-                <input
-                  [value]="addValueInput()"
-                  (input)="addValueInput.set($event.target['value'])"
-                  i18n-placeholder
-                  matInput
-                  placeholder="Enter value" />
-              } @else {
-                <mat-select
-                  [value]="selectedValue()"
-                  (selectionChange)="selectedValue.set($event.value)">
-                  @for (v of valueOptions(); track v) {
-                    <mat-option [value]="v">{{ v }}</mat-option>
-                  }
-                </mat-select>
-              }
-            </mat-form-field>
-
-            <button
-              (click)="addCustomAttribute()"
-              [disabled]="!canAddAttribute()"
-              class="ml-8 margin-bottom-16"
-              color="primary"
-              mat-icon-button>
-              <mat-icon>save</mat-icon>
-            </button>
-          </div>
+            </ng-container>
+          </app-detail-field-row>
+        } @else {
+          <app-detail-field
+            [label]="item.label"
+            [displayText]="str(item.value)" />
         }
+      </ng-template>
 
-        @if (userService.userAttributesList().length > 0) {
-          <div class="details-field-list margin-top-8">
-            @for (attr of userService.userAttributesList(); track attr.key) {
-              <app-detail-field-row [label]="attr.key">
-                <span fieldValue>{{ attr.value || "-" }}</span>
-                <ng-container fieldEdit>
-                  @if (deletableAttributes().includes(attr.key) || deletableAttributes().includes("*")) {
+      @if (showsAttributeExtrasColumn()) {
+        <div class="details-panels-column">
+          @if (canSetCustomAttribute() || userService.userAttributesList().length > 0) {
+            <app-details-card
+              class="details-card--user-info"
+              title="Custom Attributes"
+              i18n-title>
+              @if (canSetCustomAttribute()) {
+                <div class="add-attr-row">
+                  <mat-form-field class="input-width-l">
+                    <mat-label i18n>Attribute Key</mat-label>
+                    @if (keyMode() === "select") {
+                      <mat-select
+                        [value]="selectedKey()"
+                        (selectionChange)="selectedKey.set($event.value)">
+                        @for (k of keyOptions(); track k) {
+                          <mat-option [value]="k">{{ k }}</mat-option>
+                        }
+                        @if (hasWildcardKey()) {
+                          <mat-option
+                            (onSelectionChange)="switchToCustomKey()"
+                            [value]="'__CUSTOM__'">
+                            <i i18n>Custom…</i>
+                          </mat-option>
+                        }
+                      </mat-select>
+                    } @else {
+                      <input
+                        [value]="addKeyInput()"
+                        (input)="addKeyInput.set($event.target['value'])"
+                        i18n-placeholder
+                        matInput
+                        placeholder="Enter key" />
+                    }
+                  </mat-form-field>
+                  @if (keyMode() === "input" && keyOptions().length > 0) {
                     <button
-                      (click)="deleteCustomAttribute(attr.key)"
-                      aria-label="Delete custom attribute"
-                      i18n-aria-label="Delete custom attribute"
-                      mat-icon-button>
-                      <mat-icon>delete</mat-icon>
+                      (click)="switchToSelectKey()"
+                      aria-label="Back to key select"
+                      class="margin-bottom-16 return-button"
+                      i18n-aria-label="Back to key select"
+                      mat-icon-button
+                      type="button">
+                      <mat-icon>arrow_left</mat-icon>
                     </button>
                   }
-                </ng-container>
-              </app-detail-field-row>
-            }
-          </div>
-        }
 
-        @if (showsInternalAttributes()) {
-          <p
-            class="attribute-group-label"
-            i18n>
-            Internal
-          </p>
-          <div class="details-field-list">
-            @for (attr of userService.internalAttributesList(); track attr.key) {
-              <app-detail-field-row [label]="attr.key">
-                <span fieldValue>{{ attr.value || "-" }}</span>
-              </app-detail-field-row>
-            }
-          </div>
-        }
+                  <mat-form-field class="input-width-l">
+                    <mat-label i18n>Attribute Value</mat-label>
 
-        @if (hasNoAttributes()) {
-          <p i18n>No attributes found.</p>
-        }
-      </app-details-card>
+                    @if (isValueInput()) {
+                      <input
+                        [value]="addValueInput()"
+                        (input)="addValueInput.set($event.target['value'])"
+                        i18n-placeholder
+                        matInput
+                        placeholder="Enter value" />
+                    } @else {
+                      <mat-select
+                        [value]="selectedValue()"
+                        (selectionChange)="selectedValue.set($event.value)">
+                        @for (v of valueOptions(); track v) {
+                          <mat-option [value]="v">{{ v }}</mat-option>
+                        }
+                      </mat-select>
+                    }
+                  </mat-form-field>
+
+                  <button
+                    (click)="addCustomAttribute()"
+                    [disabled]="!canAddAttribute()"
+                    class="ml-8 margin-bottom-16"
+                    color="primary"
+                    mat-icon-button>
+                    <mat-icon>save</mat-icon>
+                  </button>
+                </div>
+              }
+
+              @if (userService.userAttributesList().length > 0) {
+                <div class="details-field-list margin-top-8">
+                  @for (attr of userService.userAttributesList(); track attr.key) {
+                    <app-detail-field-row [label]="attr.key">
+                      <span fieldValue>{{ attr.value || "-" }}</span>
+                      <ng-container fieldEdit>
+                        @if (deletableAttributes().includes(attr.key) || deletableAttributes().includes("*")) {
+                          <button
+                            (click)="deleteCustomAttribute(attr.key)"
+                            aria-label="Delete custom attribute"
+                            i18n-aria-label="Delete custom attribute"
+                            mat-icon-button>
+                            <mat-icon>delete</mat-icon>
+                          </button>
+                        }
+                      </ng-container>
+                    </app-detail-field-row>
+                  }
+                </div>
+              }
+            </app-details-card>
+          }
+
+          @if (authService.actionAllowed("get_user_internal_attributes")) {
+            <app-details-card
+              class="details-card--user-info"
+              title="Internal Attributes"
+              i18n-title>
+              @if (userService.internalAttributesList().length > 0) {
+                <div class="details-field-list">
+                  @for (attr of userService.internalAttributesList(); track attr.key) {
+                    <app-detail-field-row [label]="attr.key">
+                      <span fieldValue>{{ attr.value || "-" }}</span>
+                    </app-detail-field-row>
+                  }
+                </div>
+              } @else {
+                <p i18n>No internal attributes found.</p>
+              }
+            </app-details-card>
+          }
+        </div>
+      }
     </div>
 
     <app-details-card class="details-card--tokens">
