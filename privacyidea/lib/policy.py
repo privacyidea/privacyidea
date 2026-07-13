@@ -3327,7 +3327,7 @@ class Match:
         """
         return bool(self.policies(write_to_audit_log=write_to_audit_log))
 
-    def enforced(self, write_to_audit_log=True):
+    def enforced(self, write_to_audit_log: bool = True) -> bool:
         """
         Return True if at least one policy matches, i.e. the matched action is
         actively configured.
