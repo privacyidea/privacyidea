@@ -136,8 +136,11 @@ class PasskeyTokenClass(TokenClass):
                     PasskeyAction.UserDisplayName: {
                         'type': 'str',
                         'desc': _("The display name of the passkey that is shown by the authenticator during "
-                                  "registration. You can use the tags {user} and {realm} for replacement, e.g. "
-                                  "'{user}@{realm}'. Defaults to the login name of the user."),
+                                  "registration. You can use the tags {user} (login name), {realm}, {resolver} and "
+                                  "{serial}, as well as any attribute the user's resolver provides (e.g. {givenname}, "
+                                  "{surname}, {email}), for replacement, e.g. '{user}@{realm}'. Unknown tags resolve "
+                                  "to an empty string and the result is limited to 64 bytes. Defaults to the login "
+                                  "name of the user."),
                         'group': 'WebAuthn'
                     }
                 }
