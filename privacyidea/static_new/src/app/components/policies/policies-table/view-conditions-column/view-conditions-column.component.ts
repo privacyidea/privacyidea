@@ -23,6 +23,7 @@ import {
   AdditionalCondition,
   COMPARATOR_OPTIONS,
   ComparatorOptionKey,
+  getUserAgentLabel,
   HANDLE_MISSING_DATA_OPTIONS,
   HandleMissingDataOptionKey,
   PolicyDetail,
@@ -55,7 +56,7 @@ export class ViewConditionsColumnComponent {
   selectedPinodes = computed<string[]>(() => this.policy().pinode || []);
   selectedValidTime = computed(() => this.policy().time || "");
   selectedClient = computed(() => this.policy().client || []);
-  selectedUserAgents = computed(() => this.policy().user_agents || []);
+  selectedUserAgents = computed(() => (this.policy().user_agents || []).map(getUserAgentLabel));
 
   // Additional Conditions
   additionalConditions = computed<AdditionalCondition[]>(() => this.policy().conditions || []);
