@@ -64,6 +64,11 @@ describe("MachinesComponent", () => {
     expect(component.machineDataSource().data[0].id).toBe(1);
   });
 
+  it("should initialize paginator page size to the second page size option", () => {
+    expect(component.paginator.pageSize).toBe(component.pageSizeOptions()[1]);
+    expect(component.paginator.pageSize).toBe(10);
+  });
+
   it("should filter machines", () => {
     component.onFilterInput("host1");
     expect(component.machineDataSource().filter).toBe("host1");
