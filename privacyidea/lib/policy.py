@@ -3316,6 +3316,25 @@ class Match:
         """
         return bool(self.policies(write_to_audit_log=write_to_audit_log))
 
+    def enforced(self, write_to_audit_log: bool = True) -> bool:
+        """
+        Return True if at least one policy matches, i.e. the matched action is
+        actively configured.
+
+        This is an intention-revealing alias for :py:meth:`any` meant for
+        *opt-in* enforcement/feature toggles: a feature is only enforced if a
+        policy explicitly turns it on. Use this instead of :py:meth:`allowed`
+        whenever the result is stored as a feature flag rather than used as a
+        permission gate, because :py:meth:`allowed` is fail-open (it returns
+        True when the whole scope is unconfigured) and would enable the feature
+        by default.
+
+        :param write_to_audit_log: If True, write the list of matching policies
+            to the audit log
+        :return: True or False
+        """
+        return self.any(write_to_audit_log=write_to_audit_log)
+
     def action_values(self, unique, allow_white_space_in_action=False, write_to_audit_log=True):
         """
         Return a dictionary of action values extracted from the matching policies.
@@ -3352,6 +3371,17 @@ class Match:
         This is the case
          * *either* if there are no active policies defined in the matched scope
          * *or* the action is explicitly allowed by a policy in the matched scope
+
+        This method is **fail-open**: it returns True when the whole scope is
+        unconfigured. It is therefore only correct for *permission gates* -
+        checks whose result is immediately used to deny an action (typically
+        ``if not match.allowed(): raise PolicyError(...)``).
+
+        Do **not** capture the result into a feature flag or enforcement toggle.
+        For an *opt-in* toggle (a feature that should stay off unless a policy
+        turns it on) use :py:meth:`enforced` / :py:meth:`any` instead, otherwise
+        the feature would be enabled by default on any system without policies
+        in the matched scope.
 
         Example usage::
 
