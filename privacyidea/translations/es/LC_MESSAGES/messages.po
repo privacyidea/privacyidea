@@ -3,13 +3,14 @@
 # This file is distributed under the same license as the PROJECT project.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2020.
 # Paul Lettich <paul.lettich@netknights.it>, 2026.
+# Libre <6n0n1m0s@proton.me>, 2026.
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2026-05-19 14:39+0200\n"
-"PO-Revision-Date: 2026-03-03 16:09+0000\n"
-"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
+"PO-Revision-Date: 2026-07-09 07:01+0000\n"
+"Last-Translator: Libre <6n0n1m0s@proton.me>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/es/>\n"
 "Language: es\n"
@@ -18,10 +19,11 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
 "Generated-By: Babel 2.17.0\n"
+"X-Generator: Weblate 2026.7.1.dev0\n"
 
 #: api/auth.py:290
 msgid "Authentication with passkey disabled."
-msgstr ""
+msgstr "Autenticación con clave de acceso deshabilitada"
 
 # | msgid "Authentication failure. Missing Username"
 #: api/auth.py:295
