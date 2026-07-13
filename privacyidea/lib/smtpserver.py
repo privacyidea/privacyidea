@@ -30,7 +30,7 @@ from flask import current_app
 from sqlalchemy import select
 
 from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
-                                    FAILED_TO_DECRYPT_PASSWORD, is_censored, CENSORED)
+                                    FAILED_TO_DECRYPT_PASSWORD, is_censored, censor_dict)
 from privacyidea.lib.log import log_with
 from privacyidea.lib.metrics import inc, observe
 from privacyidea.lib.queue import job, wrap_job, has_job_queue
@@ -453,18 +453,19 @@ def export_smtpserver(name=None, censor=False):
         clear text.
     """
     res = list_smtpservers(identifier=name)
-    for server in res.values():
+    for identifier, server in res.items():
+        if censor:
+            # The secret values are about to be replaced by the placeholder, so
+            # there is no point decrypting private_key_password first.
+            secret_keys = [key for key in ("password", "private_key_password") if server.get(key)]
+            res[identifier] = censor_dict(server, secret_keys)
+            continue
         # list_smtpservers() decrypts 'password' but returns 'private_key_password'
         # still encrypted. Decrypt it here so that a (non-censored) export can be
         # re-imported without add_smtpserver() encrypting it a second time.
         if server.get("private_key_password"):
             decrypted = decryptPassword(server["private_key_password"])
             server["private_key_password"] = "" if decrypted == FAILED_TO_DECRYPT_PASSWORD else decrypted
-    if censor:
-        for server in res.values():
-            for secret_key in ("password", "private_key_password"):
-                if server.get(secret_key):
-                    server[secret_key] = CENSORED
     return res
 
 
