@@ -249,11 +249,11 @@ class SMSTestCase(MyTestCase):
                        secret_options={"apitoken"},
                        secret_headers={"X-Auth"})
         censored = export_smsgateway(censor=True)
-        self.assertEqual(censored["expgw2"]["options"]["apitoken"], CENSORED)
-        self.assertEqual(censored["expgw2"]["headers"]["X-Auth"], CENSORED)
+        self.assertEqual(CENSORED, censored["expgw2"]["options"]["apitoken"])
+        self.assertEqual(CENSORED, censored["expgw2"]["headers"]["X-Auth"])
         # non-secret values are still returned as stored
-        self.assertEqual(censored["expgw2"]["options"]["URL"], "http://example.com")
-        self.assertEqual(censored["expgw2"]["headers"]["X-Plain"], "ok")
+        self.assertEqual("http://example.com", censored["expgw2"]["options"]["URL"])
+        self.assertEqual("ok", censored["expgw2"]["headers"]["X-Plain"])
         delete_smsgateway("expgw2")
 
 

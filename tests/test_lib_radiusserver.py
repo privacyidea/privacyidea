@@ -193,5 +193,5 @@ class RADIUSServerTestCase(MyTestCase):
         import_radiusserver(legacy_export)
         servers = list_radiusservers()
         self.assertIn("legacyrad", servers)
-        self.assertEqual(servers["legacyrad"]["secret"], "legacysecret")
+        self.assertEqual("legacysecret", servers["legacyrad"]["secret"])
         delete_radius("legacyrad")
