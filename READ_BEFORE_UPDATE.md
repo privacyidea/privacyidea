@@ -122,6 +122,14 @@
   use `enrolled` instead. You can find affected event handlers in the WebUI under *Config -> Events*
   by reviewing handlers whose conditions reference `rollout_state`.
 
+* Realm-restricted admins with the `userlist` right now see users from **all** realms granted to
+  them, not just one. Previously, when such an admin called `GET /user/` without an explicit `realm`
+  parameter, only the users of a single realm were returned (the first realm of the first matching
+  `userlist` policy), even when the admin was authorized for several realms — whether through one
+  policy listing multiple realms or through multiple policies. The endpoint now returns the union of
+  users across every granted realm. If you have admins that should stay scoped to a single realm,
+  review their `userlist` policies to confirm they grant only the intended realms.
+
 * Resolvers within a realm that share the same priority are now sorted **alphabetically by name**.
   Previously, the order was undefined and depended on the database insertion order, which could
   differ between SQLite, PostgreSQL and MariaDB. If you rely on a specific resolver ordering

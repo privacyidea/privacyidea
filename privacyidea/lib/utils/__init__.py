@@ -1243,7 +1243,7 @@ def prepare_result(obj, rid=1, details=None, **kwargs):
             r_authentication = AUTH_RESPONSE.CHALLENGE
         elif details.get("multi_challenge") or details.get("passkey"):
             r_authentication = AUTH_RESPONSE.CHALLENGE
-        elif not obj and (details.get("challenge_status") == "declined"):
+        elif not obj and (details.get("challenge_status") in ("declined", "cancelled")):
             r_authentication = AUTH_RESPONSE.DECLINED
         else:
             r_authentication = AUTH_RESPONSE.REJECT
