@@ -31,6 +31,7 @@ from privacyidea.lib.lifecycle import call_finalizers
 from privacyidea.lib.resolver import (save_resolver, delete_resolver,
                                       get_resolver_list)
 from privacyidea.models import db, Challenge, AuthenticationLog
+from privacyidea.models.lockout_policy import BlockList, UserLockoutState
 from privacyidea.models.utils import utc_now
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from .base import CliTestCase
@@ -762,3 +763,143 @@ class PIManageAuthLogTestCase(CliTestCase):
         res = runner.invoke(pi_manage, ["authlog", "cleanup"])
         self.assertNotEqual(res.exit_code, 0, res.output)
         self.assertIn("--age", res.output, res)
+
+
+class PIManageConditionalAccessTestCase(CliTestCase):
+    """
+    Tests for ``pi-manage conditionalaccess`` — the escape hatch for clearing
+    locked users and blocked IPs from the command line.
+    """
+
+    def tearDown(self):
+        BlockList.query.delete()
+        UserLockoutState.query.delete()
+        db.session.commit()
+        super().tearDown()
+
+    def test_01_help_lists_subcommands(self):
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["conditionalaccess"])
+        self.assertIn("list-blocked-ips", res.output, res)
+        self.assertIn("unblock-ip", res.output, res)
+        self.assertIn("list-locked-users", res.output, res)
+        self.assertIn("unlock-user", res.output, res)
+
+    def test_02_list_and_unblock_ip(self):
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["conditionalaccess", "list-blocked-ips"])
+        self.assertIn("No blocked IPs.", res.output, res)
+
+        db.session.add(BlockList(ip="203.0.113.7", is_blocked=True,
+                                 block_expires_at=utc_now() + dt.timedelta(seconds=600),
+                                 reason="brute force"))
+        db.session.commit()
+
+        res = runner.invoke(pi_manage, ["conditionalaccess", "list-blocked-ips"])
+        self.assertIn("203.0.113.7", res.output, res)
+        self.assertIn("brute force", res.output, res)
+
+        res = runner.invoke(pi_manage, ["conditionalaccess", "unblock-ip", "203.0.113.7"])
+        self.assertIn("Removed the block for IP 203.0.113.7.", res.output, res)
+        self.assertIsNone(BlockList.query.filter_by(ip="203.0.113.7").first())
+
+    def test_03_unblock_missing_ip(self):
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["conditionalaccess", "unblock-ip", "203.0.113.9"])
+        self.assertEqual(res.exit_code, 0, res.output)
+        self.assertIn("No block found for IP 203.0.113.9.", res.output, res)
+
+    def test_04_list_and_unlock_by_id(self):
+        runner = self.app.test_cli_runner()
+        db.session.add(UserLockoutState(resolver="reso1", uid="42", realm="realm1", is_locked=True,
+                                        lock_expires_at=utc_now() + dt.timedelta(seconds=600)))
+        db.session.commit()
+
+        res = runner.invoke(pi_manage, ["conditionalaccess", "list-locked-users"])
+        self.assertIn("uid=42", res.output, res)
+        self.assertIn("realm=realm1", res.output, res)
+
+        res = runner.invoke(pi_manage, ["conditionalaccess", "unlock-by-id",
+                                        "--resolver", "reso1", "--uid", "42", "--realm", "realm1"])
+        self.assertIn("Unlocked", res.output, res)
+        self.assertIsNone(UserLockoutState.query.filter_by(resolver="reso1", uid="42",
+                                                           realm="realm1").first())
+
+    def test_05_clear_blocks(self):
+        runner = self.app.test_cli_runner()
+        for ip in ("203.0.113.7", "203.0.113.8"):
+            db.session.add(BlockList(ip=ip, is_blocked=True,
+                                     block_expires_at=utc_now() + dt.timedelta(seconds=600)))
+        db.session.commit()
+
+        res = runner.invoke(pi_manage, ["conditionalaccess", "clear-blocks", "--yes"])
+        self.assertIn("Removed 2 IP block(s).", res.output, res)
+        self.assertEqual(0, BlockList.query.count())
+
+    def test_06_unlock_user_unresolvable(self):
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["conditionalaccess", "unlock-user", "ghost", "--realm", "nope"])
+        self.assertEqual(res.exit_code, 0, res.output)
+        self.assertIn("could not be resolved", res.output, res)
+
+    def test_07_list_locks_empty(self):
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["conditionalaccess", "list-locked-users"])
+        self.assertIn("No locked users.", res.output, res)
+
+    def test_08_unlock_by_id_missing(self):
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["conditionalaccess", "unlock-by-id",
+                                        "--resolver", "reso1", "--uid", "999", "--realm", "realm1"])
+        self.assertEqual(res.exit_code, 0, res.output)
+        self.assertIn("No lock found", res.output, res)
+
+    def test_09_clear_locks(self):
+        runner = self.app.test_cli_runner()
+        for uid in ("1", "2", "3"):
+            db.session.add(UserLockoutState(resolver="reso1", uid=uid, realm="realm1", is_locked=True,
+                                            lock_expires_at=utc_now() + dt.timedelta(seconds=600)))
+        db.session.commit()
+        res = runner.invoke(pi_manage, ["conditionalaccess", "clear-locks", "--yes"])
+        self.assertIn("Removed 3 user lock(s).", res.output, res)
+        self.assertEqual(0, UserLockoutState.query.count())
+
+    def test_09b_clear_locks_by_realm(self):
+        runner = self.app.test_cli_runner()
+        db.session.add(UserLockoutState(resolver="reso1", uid="1", realm="realm1", is_locked=True,
+                                        lock_expires_at=utc_now() + dt.timedelta(seconds=600)))
+        db.session.add(UserLockoutState(resolver="reso2", uid="2", realm="realm2", is_locked=True,
+                                        lock_expires_at=utc_now() + dt.timedelta(seconds=600)))
+        db.session.commit()
+        res = runner.invoke(pi_manage, ["conditionalaccess", "clear-locks", "--realm", "realm1", "--yes"])
+        self.assertIn("Removed 1 user lock(s) in realm 'realm1'.", res.output, res)
+        # Only the realm1 lock was removed; realm2 is untouched.
+        self.assertEqual(0, UserLockoutState.query.filter_by(realm="realm1").count())
+        self.assertEqual(1, UserLockoutState.query.filter_by(realm="realm2").count())
+
+    def test_10_unlock_user_resolvable(self):
+        from privacyidea.lib.user import User
+        from privacyidea.lib.realm import delete_realm
+        save_resolver({"resolver": "resolver1", "type": "passwdresolver", "fileName": PWFILE})
+        runner = self.app.test_cli_runner()
+        runner.invoke(pi_manage, ["config", "realm", "create", "realm1", "resolver1"])
+        try:
+            user = User("cornelius", "realm1")
+            self.assertTrue(user.exist(), "test fixture user cornelius must resolve")
+            # A resolvable user with no lock -> "No lock found".
+            res = runner.invoke(pi_manage, ["conditionalaccess", "unlock-user", "cornelius",
+                                            "--realm", "realm1"])
+            self.assertIn("No lock found for user cornelius@realm1.", res.output, res)
+            # Lock the resolved user, then unlock them by login/realm.
+            db.session.add(UserLockoutState(resolver=user.resolver, uid=user.uid, realm=user.realm,
+                                            is_locked=True,
+                                            lock_expires_at=utc_now() + dt.timedelta(seconds=600)))
+            db.session.commit()
+            res = runner.invoke(pi_manage, ["conditionalaccess", "unlock-user", "cornelius",
+                                            "--realm", "realm1"])
+            self.assertIn("Unlocked user cornelius@realm1.", res.output, res)
+            self.assertIsNone(UserLockoutState.query.filter_by(
+                resolver=user.resolver, uid=user.uid, realm=user.realm).first())
+        finally:
+            delete_realm("realm1")
+            delete_resolver("resolver1")

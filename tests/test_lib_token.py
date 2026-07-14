@@ -1313,7 +1313,8 @@ class TokenTestCase(MyTestCase):
         # other tests on this worker's DB may have consumed the lower ids and
         # the lowest surviving id need not be 1.
         ids = [token.get("id") for token in tokens]
-        self.assertEqual(ids, sorted(ids), ids)
+        self.assertEqual(sorted(ids), ids, ids)
+        self.assertGreaterEqual(tokens[-1].get("id"), len(tokens), tokens[-1])
 
         # unknown sort key results in sorting by serial
         tokendata = get_tokens_paginate(sortby="unknown", page=1, psize=100)

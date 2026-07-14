@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C /home/henrik/WebstormProjects/privacyidea diff *)",
+      "Bash(git -C /home/henrik/WebstormProjects/privacyidea show *)",
+      "Bash(git -C /home/henrik/WebstormProjects/privacyidea log *)",
+      "Bash(git -C /home/henrik/WebstormProjects/privacyidea status *)"
+    ]
+  }
+}

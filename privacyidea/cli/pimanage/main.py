@@ -64,6 +64,7 @@ from .pi_config import (config_cli, ca_cli, realm_cli, resolver_cli, event_cli,
 from .api import api_cli
 from .token import token_cli
 from .authentication_log import authentication_log_cli
+from .conditional_access import conditional_access_cli
 
 CONTEXT_SETTINGS = dict(
     help_option_names=['-h', '--help'],
@@ -132,6 +133,7 @@ cli.add_command(backup_cli)
 cli.add_command(api_cli)
 cli.add_command(token_cli)
 cli.add_command(authentication_log_cli)
+cli.add_command(conditional_access_cli)
 
 if __name__ == '__main__':
     cli()
