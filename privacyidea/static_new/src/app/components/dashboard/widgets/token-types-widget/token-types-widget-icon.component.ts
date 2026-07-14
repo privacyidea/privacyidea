@@ -16,15 +16,13 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { Component } from "@angular/core";
+import { MatIcon } from "@angular/material/icon";
 
-@use "../widget";
-
-:host {
-  @include widget.host;
-  width: 100%;
-  align-items: flex-start;
-}
-
-.tokens-table {
-  @include widget.stat-table;
-}
+@Component({
+  selector: "app-token-types-widget-icon",
+  standalone: true,
+  imports: [MatIcon],
+  templateUrl: "./token-types-widget-icon.component.html"
+})
+export class TokenTypesWidgetIconComponent {}

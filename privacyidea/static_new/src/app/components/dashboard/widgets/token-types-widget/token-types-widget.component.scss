@@ -25,6 +25,12 @@
   align-items: flex-start;
 }
 
-.tokens-table {
+.token-types-table {
   @include widget.stat-table;
+}
+
+.empty-hint {
+  margin: 0;
+  padding: var(--quarter-global-padding) var(--global-padding);
+  color: var(--mat-sys-outline);
 }
