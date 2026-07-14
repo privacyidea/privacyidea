@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component } from "@angular/core";
-import { DetailsEditRegistry } from "@components/shared/details-shared/details-edit-registry.service";
+import { DetailsEditRegistry } from "@components/shared/details-shared/field-editing/details-edit-registry.service";
 import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
 import { TokenDetailsMachineComponent } from "@components/token/token-details/token-details-machine/token-details-machine.component";
 import { TokenDetailsActionsComponent } from "./token-details-actions/token-details-actions.component";

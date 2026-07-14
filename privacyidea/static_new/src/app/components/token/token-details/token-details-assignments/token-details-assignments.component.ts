@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, inject, input, OnDestroy, OnInit, signal } from "@angular/core";
+import { Component, computed, inject, input, signal } from "@angular/core";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatIconButton } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
@@ -24,15 +24,16 @@ import { MatOption } from "@angular/material/core";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
-import { MatSelectModule } from "@angular/material/select";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { DetailFieldRowComponent } from "@components/shared/details-shared/field-editing/detail-field-row/detail-field-row.component";
 import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
-import { DetailsEditRegistry } from "@components/shared/details-shared/details-edit-registry.service";
-import { DetailsListDisplayComponent } from "@components/shared/details-shared/details-shared.components";
+import { DetailsListDisplayComponent } from "@components/shared/details-shared/value-cells/details-list-display/details-list-display.component";
+import { DetailsMultiSelectCellComponent } from "@components/shared/details-shared/value-cells/details-multi-select-cell/details-multi-select-cell.component";
+import { injectEditableField } from "@components/shared/details-shared/field-editing/editable-field";
 import { AutofocusDirective } from "@components/shared/directives/app-autofocus.directive";
-import { EditableElement, EditButtonsComponent } from "@components/shared/edit-buttons/edit-buttons.component";
+import { EditButtonsComponent } from "@components/shared/edit-buttons/edit-buttons.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
@@ -44,10 +45,11 @@ import { TokenDetails, TokenService, TokenServiceInterface } from "@services/tok
   standalone: true,
   imports: [
     DetailsCardComponent,
+    DetailFieldRowComponent,
     DetailsListDisplayComponent,
+    DetailsMultiSelectCellComponent,
     EditButtonsComponent,
     MatFormFieldModule,
-    MatSelectModule,
     MatInput,
     MatAutocomplete,
     MatAutocompleteTrigger,
@@ -63,13 +65,12 @@ import { TokenDetails, TokenService, TokenServiceInterface } from "@services/tok
   templateUrl: "./token-details-assignments.component.html",
   styleUrl: "./token-details-assignments.component.scss"
 })
-export class TokenDetailsAssignmentsComponent implements OnInit, OnDestroy {
+export class TokenDetailsAssignmentsComponent {
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
-  private readonly registry = inject(DetailsEditRegistry);
 
   readonly tokenDetails = input.required<TokenDetails>();
   readonly userRealm = input("");
@@ -78,87 +79,35 @@ export class TokenDetailsAssignmentsComponent implements OnInit, OnDestroy {
 
   protected readonly containerSerial = computed(() => this.str(this.tokenDetails().container_serial));
 
-  protected readonly realmsIsEditing = signal(false);
-  protected readonly tokengroupIsEditing = signal(false);
-  protected readonly containerIsEditing = signal(false);
-
   protected readonly selectedTokengroup = signal<string[]>([]);
   protected readonly tokengroupOptions = signal<string[]>([]);
+
+  protected readonly realmOptions = computed(() =>
+    this.realmService
+      .realmOptions()
+      .map((realm) => ({ value: realm, label: realm, disabled: realm === this.userRealm() }))
+  );
+  protected readonly tokengroupSelectOptions = computed(() =>
+    this.tokengroupOptions().map((group) => ({ value: group, label: group, disabled: group === this.userRealm() }))
+  );
 
   protected readonly realmsEditable = computed(() => this.authService.actionAllowed("tokenrealms"));
   protected readonly tokengroupEditable = computed(() => this.authService.actionAllowed("tokengroups"));
   protected readonly containerEditable = computed(() => this.authService.actionAllowed("container_add_token"));
   protected readonly containerCanRemove = computed(() => this.authService.actionAllowed("container_remove_token"));
 
-  protected readonly realmsEditButtonsElement: EditableElement<string[]> = {
-    keyMap: { key: "" },
-    isEditing: this.realmsIsEditing,
-    value: []
-  };
-  protected readonly tokengroupEditButtonsElement: EditableElement<string[]> = {
-    keyMap: { key: "" },
-    isEditing: this.tokengroupIsEditing,
-    value: []
-  };
-  protected readonly containerEditButtonsElement: EditableElement<string> = {
-    keyMap: { key: "" },
-    isEditing: this.containerIsEditing,
-    value: ""
-  };
-
-  private readonly realmsHandle = {
-    isEditing: this.realmsIsEditing,
-    save: () => this.commitRealms(),
-    cancel: () => this.cancelRealms()
-  };
-  private readonly tokengroupHandle = {
-    isEditing: this.tokengroupIsEditing,
-    save: () => this.commitTokengroup(),
-    cancel: () => this.cancelTokengroup()
-  };
-  private readonly containerHandle = {
-    isEditing: this.containerIsEditing,
-    save: () => this.commitContainer(),
-    cancel: () => this.cancelContainer()
-  };
-
-  ngOnInit(): void {
-    this.registry.register(this.realmsHandle);
-    this.registry.register(this.tokengroupHandle);
-    this.registry.register(this.containerHandle);
-  }
-
-  ngOnDestroy(): void {
-    this.registry.unregister(this.realmsHandle);
-    this.registry.unregister(this.tokengroupHandle);
-    this.registry.unregister(this.containerHandle);
-  }
-
-  protected str(value: unknown): string {
-    return value === null || value === undefined ? "" : String(value);
-  }
-
-  protected readonly toggleRealms = (): void => {
-    if (!this.realmsIsEditing()) {
-      this.realmService.selectedRealms.set([...this.tokenDetails().realms]);
+  protected readonly realmsField = injectEditableField({
+    onOpen: () => this.realmService.selectedRealms.set([...this.tokenDetails().realms]),
+    onCancel: () => this.realmService.selectedRealms.set([...this.tokenDetails().realms]),
+    onCommit: async () => {
+      this.tokenService
+        .setTokenRealm(this.tokenDetails().serial, this.realmService.selectedRealms())
+        .subscribe({ next: () => this.tokenService.tokenDetailResource.reload() });
     }
-    this.realmsIsEditing.update((editing) => !editing);
-  };
+  });
 
-  protected readonly commitRealms = (): void => {
-    this.tokenService
-      .setTokenRealm(this.tokenService.tokenSerial(), this.realmService.selectedRealms())
-      .subscribe({ next: () => this.tokenService.tokenDetailResource.reload() });
-    this.realmsIsEditing.set(false);
-  };
-
-  protected readonly cancelRealms = (): void => {
-    this.realmService.selectedRealms.set([...this.tokenDetails().realms]);
-    this.realmsIsEditing.set(false);
-  };
-
-  protected readonly toggleTokengroup = (): void => {
-    if (!this.tokengroupIsEditing()) {
+  protected readonly tokengroupField = injectEditableField({
+    onOpen: () => {
       this.selectedTokengroup.set([...(this.tokenDetails().tokengroup as unknown as string[])]);
       if (this.tokengroupOptions().length === 0) {
         this.tokenService.getTokengroups().subscribe({
@@ -167,51 +116,39 @@ export class TokenDetailsAssignmentsComponent implements OnInit, OnDestroy {
           }
         });
       }
+    },
+    onCancel: () => this.selectedTokengroup.set([...(this.tokenDetails().tokengroup as unknown as string[])]),
+    onCommit: async () => {
+      this.tokenService
+        .setTokengroup(this.tokenDetails().serial, this.selectedTokengroup())
+        .subscribe({ next: () => this.tokenService.tokenDetailResource.reload() });
     }
-    this.tokengroupIsEditing.update((editing) => !editing);
-  };
+  });
 
-  protected readonly commitTokengroup = (): void => {
-    this.tokenService
-      .setTokengroup(this.tokenService.tokenSerial(), this.selectedTokengroup())
-      .subscribe({ next: () => this.tokenService.tokenDetailResource.reload() });
-    this.tokengroupIsEditing.set(false);
-  };
-
-  protected readonly cancelTokengroup = (): void => {
-    this.selectedTokengroup.set([...(this.tokenDetails().tokengroup as unknown as string[])]);
-    this.tokengroupIsEditing.set(false);
-  };
-
-  protected readonly toggleContainer = (): void => {
-    if (!this.containerIsEditing()) {
-      this.containerService.selectedContainerSerial.set("");
+  protected readonly containerField = injectEditableField({
+    onOpen: () => this.containerService.selectedContainerSerial.set(""),
+    onCancel: () => this.containerService.selectedContainerSerial.set(""),
+    onCommit: async () => {
+      const selected = this.containerService.selectedContainerSerial()?.trim() ?? null;
+      this.containerService.selectedContainerSerial.set(selected);
+      if (selected) {
+        this.containerService.addToken(this.tokenDetails().serial, selected).subscribe({
+          next: () => this.tokenService.tokenDetailResource.reload()
+        });
+      }
     }
-    this.containerIsEditing.update((editing) => !editing);
-  };
+  });
 
-  protected readonly commitContainer = (): void => {
-    const selected = this.containerService.selectedContainerSerial()?.trim() ?? null;
-    this.containerService.selectedContainerSerial.set(selected);
-    if (selected) {
-      this.containerService.addToken(this.tokenService.tokenSerial(), selected).subscribe({
-        next: () => this.tokenService.tokenDetailResource.reload()
-      });
-    }
-    this.containerIsEditing.set(false);
-  };
-
-  protected readonly cancelContainer = (): void => {
-    this.containerService.selectedContainerSerial.set("");
-    this.containerIsEditing.set(false);
-  };
+  protected str(value: unknown): string {
+    return value === null || value === undefined ? "" : String(value);
+  }
 
   protected removeContainer(): void {
     const current = this.containerSerial();
     if (!current) {
       return;
     }
-    this.containerService.removeToken(this.tokenService.tokenSerial(), current).subscribe({
+    this.containerService.removeToken(this.tokenDetails().serial, current).subscribe({
       next: () => {
         this.containerService.selectedContainerSerial.set("");
         this.tokenService.tokenDetailResource.reload();
