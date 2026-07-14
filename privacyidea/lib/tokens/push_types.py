@@ -37,6 +37,21 @@ class PushDeclineReason(str, Enum):
         return self.value
 
 
+class PushCapability(str, Enum):
+    """Optional push features this server version supports, advertised to the
+    smartphone in every challenge so a newer app knows which fields it may add
+    to its signed answer. An absent capability means the app falls back to
+    legacy behaviour. Adding a feature is appending a member.
+
+    ``__str__`` returns the value so members interpolate to their string form,
+    matching :class:`PushDeclineReason`.
+    """
+    DECLINE_REASON = "decline_reason"
+
+    def __str__(self) -> str:
+        return self.value
+
+
 class PushAction:
     FIREBASE_CONFIG = "push_firebase_configuration"
     REGISTRATION_URL = "push_registration_url"

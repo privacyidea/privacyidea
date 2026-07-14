@@ -10,6 +10,7 @@ from threading import Timer
 
 import mock
 import responses
+import rfc8785
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
@@ -34,13 +35,14 @@ from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway, delete_smsgateway
 from privacyidea.lib.token import get_tokens, remove_token, init_token, import_tokens
 from privacyidea.lib.tokenclass import ChallengeSession
-from privacyidea.lib.tokens.push_types import PushMode
+from privacyidea.lib.tokens.push_types import PushMode, PushCapability
 from privacyidea.lib.tokens.pushtoken import (PushTokenClass, PushAction,
                                               DEFAULT_CHALLENGE_TEXT, PUBLIC_KEY_SMARTPHONE, PRIVATE_KEY_SERVER,
                                               PUBLIC_KEY_SERVER, AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC,
                                               AVAILABLE_PRESENCE_OPTIONS_NUMERIC,
                                               PushAllowPolling, POLLING_ALLOWED, POLL_ONLY,
-                                              PushPresenceOptions, strip_pem_headers)
+                                              PushPresenceOptions, strip_pem_headers,
+                                              SERVER_PUSH_CAPABILITIES)
 from privacyidea.lib.user import (User)
 from privacyidea.lib.utils import to_bytes, b32encode_and_unicode, to_unicode, AUTH_RESPONSE
 from privacyidea.models import Token, Challenge, db
@@ -73,6 +75,13 @@ def _check_firebase_params(request):
     signature = b32decode(data.get("signature"))
     # If signature does not match it will raise InvalidSignature exception
     public_key.verify(signature, sign_string.encode("utf8"), padding.PKCS1v15(), hashes.SHA256())
+    # The capabilities advertisement travels as a JSON string and carries its own
+    # detached signature over the canonical form of {capabilities, nonce}, built
+    # from the parsed structure. The main signature above is unaffected by it.
+    capabilities = json.loads(data.get("capabilities"))
+    capabilities_sign_input = rfc8785.dumps({"capabilities": capabilities, "nonce": data.get("nonce")})
+    public_key.verify(b32decode(data.get("capabilities_signature")),
+                      capabilities_sign_input, padding.PKCS1v15(), hashes.SHA256())
     headers = {"request-id": "728d329e-0e86-11e4-a748-0c84dc037c13"}
     return 200, headers, json.dumps({})
 
@@ -1665,6 +1674,16 @@ class PushTokenTestCase(MyTestCase):
                                              sign_string.encode('utf8'),
                                              padding.PKCS1v15(),
                                              hashes.SHA256())
+        # The poll response advertises the server capabilities with its own
+        # detached, nonce-bound signature (same as the Firebase-delivered path).
+        self.assertDictEqual(SERVER_PUSH_CAPABILITIES, json.loads(server_challenge['capabilities']),
+                             "poll response capabilities do not match the server's advertised set")
+        capabilities_sign_input = rfc8785.dumps({"capabilities": json.loads(server_challenge['capabilities']),
+                                                 "nonce": server_challenge['nonce']})
+        parsed_stripped_server_pubkey.verify(b32decode(server_challenge['capabilities_signature']),
+                                             capabilities_sign_input,
+                                             padding.PKCS1v15(),
+                                             hashes.SHA256())
         self.assertFalse(db_challenge.get_otp_status()[1], str(db_challenge))
 
         # Now mark the challenge as answered so we receive an empty list
@@ -2017,3 +2036,20 @@ class PushTokenTestCase(MyTestCase):
 
         # Clean up
         remove_token(pushtoken.token.serial)
+
+
+class PushCapabilitiesTestCase(MyTestCase):
+    """The capability advertisement and the canonical bytes it is signed over.
+    The signing uses the rfc8785 (JCS) standard."""
+
+    def test_01_server_advertises_decline_reason(self):
+        # the enum value is the exact key advertised, mapped to an enabled toggle
+        self.assertEqual("decline_reason", PushCapability.DECLINE_REASON.value)
+        self.assertDictEqual({PushCapability.DECLINE_REASON.value: True}, SERVER_PUSH_CAPABILITIES)
+
+    def test_02_signed_bytes_reference_vector(self):
+        # The exact bytes signed for capabilities_signature. Pins the wrapper
+        # shape (keys "capabilities" < "nonce") and the JCS form the app must
+        # reproduce. Guards against an accidental format/shape change.
+        signed = rfc8785.dumps({"capabilities": SERVER_PUSH_CAPABILITIES, "nonce": "ABC123"})
+        self.assertEqual(b'{"capabilities":{"decline_reason":true},"nonce":"ABC123"}', signed)
