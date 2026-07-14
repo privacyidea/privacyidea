@@ -18,6 +18,7 @@
 -->
 <button
   (click)="emit($event)"
+  [attr.aria-label]="label()"
   [matTooltip]="label()"
   class="filter-value-button"
   type="button">

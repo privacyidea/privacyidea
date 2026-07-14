@@ -19,7 +19,9 @@
 
 <button
   [matMenuTriggerFor]="inner.matMenu"
+  aria-label="Filter by {{ label() }}"
   class="filter-button"
+  i18n-aria-label
   i18n-matTooltip
   mat-icon-button
   matTooltip="Filter by {{ label() }}">

@@ -343,7 +343,9 @@ export class AuthenticationLog {
     )
   );
   noDataText = computed(() =>
-    Object.keys(this.authenticationLogService.filterParams()).length > 0
+    Object.keys(this.authenticationLogService.filterParams()).length > 0 ||
+    this.authenticationLogService.timestampFrom() ||
+    this.authenticationLogService.timestampTo()
       ? $localize`No authentication log entries matching the filter.`
       : $localize`No authentication log entries.`
   );
