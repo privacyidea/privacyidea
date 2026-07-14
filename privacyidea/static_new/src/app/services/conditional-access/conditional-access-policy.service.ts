@@ -180,13 +180,15 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
 
   async savePolicy(policy: LockoutPolicySaveParams): Promise<number | undefined> {
     const headers = this.authService.getHeaders();
-    const url = policy.id != null ? `${this.baseUrl}/${policy.id}` : this.baseUrl;
-    const request = this.http.post<PiResponse<number>>(url, policy, { headers });
+    const isUpdate = policy.id != null;
+    const request = isUpdate
+      ? this.http.patch<PiResponse<number>>(`${this.baseUrl}/${policy.id}`, policy, { headers })
+      : this.http.post<PiResponse<number>>(this.baseUrl, policy, { headers });
 
     try {
       const response = await lastValueFrom(request);
       this.notificationService.success(
-        policy.id != null
+        isUpdate
           ? $localize`Successfully updated conditional-access policy.`
           : $localize`Successfully created conditional-access policy.`
       );
@@ -232,7 +234,7 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
   async enablePolicy(id: number): Promise<void> {
     const headers = this.authService.getHeaders();
     try {
-      await lastValueFrom(this.http.post(`${this.baseUrl}/${id}/enable`, {}, { headers }));
+      await lastValueFrom(this.http.patch(`${this.baseUrl}/${id}`, { enabled: true }, { headers }));
       this.policiesResource.reload();
     } catch {
       this.notificationService.error($localize`Failed to enable conditional-access policy.`);
@@ -243,7 +245,7 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
   async disablePolicy(id: number): Promise<void> {
     const headers = this.authService.getHeaders();
     try {
-      await lastValueFrom(this.http.post(`${this.baseUrl}/${id}/disable`, {}, { headers }));
+      await lastValueFrom(this.http.patch(`${this.baseUrl}/${id}`, { enabled: false }, { headers }));
       this.policiesResource.reload();
     } catch {
       this.notificationService.error($localize`Failed to disable conditional-access policy.`);

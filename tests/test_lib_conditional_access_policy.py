@@ -163,6 +163,17 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         self.assertEqual(1, db.session.query(LockoutPolicyStage).count())
         self.assertEqual(1, db.session.query(LockoutPolicyCounterType).count())
         self.assertEqual(1, db.session.query(LockoutStageAction).count())
+        # replacing children with a reused counter type / threshold stays within
+        # the (policy_id, counter_type) and (policy_id, failure_threshold) unique
+        # constraints
+        update_lockout_policy(policy_id, counter_types_to_track=["MFA_FAIL"],
+                              stages=[_stage(3, actions=[{"action_type": "ALLOW"}])])
+        policy = get_lockout_policy(policy_id)
+        self.assertEqual(["MFA_FAIL"], policy["counter_types_to_track"])
+        self.assertEqual(3, policy["stages"][0]["failure_threshold"])
+        self.assertEqual("ALLOW", policy["stages"][0]["actions"][0]["action_type"])
+        self.assertEqual(1, db.session.query(LockoutPolicyStage).count())
+        self.assertEqual(1, db.session.query(LockoutPolicyCounterType).count())
 
     def test_05_update_validation(self):
         policy_id = create_lockout_policy("A", 600, ["PIN_FAIL"], [_stage(5)])

@@ -139,11 +139,11 @@ describe("ConditionalAccessPolicyService", () => {
       expect(notificationServiceMock.success).toHaveBeenCalled();
     });
 
-    it("should POST to the id URL when updating (id present)", async () => {
+    it("should PATCH to the id URL when updating (id present)", async () => {
       const promise = service.savePolicy({ ...samplePolicy });
 
       const req = httpMock.expectOne(`${service.baseUrl}/1`);
-      expect(req.request.method).toBe("POST");
+      expect(req.request.method).toBe("PATCH");
       req.flush(MockPiResponse.fromValue(1));
 
       await promise;
@@ -207,25 +207,27 @@ describe("ConditionalAccessPolicyService", () => {
   });
 
   describe("enablePolicy / disablePolicy", () => {
-    it("should POST to enable", async () => {
+    it("should PATCH to enable", async () => {
       const promise = service.enablePolicy(1);
-      const req = httpMock.expectOne(`${service.baseUrl}/1/enable`);
-      expect(req.request.method).toBe("POST");
+      const req = httpMock.expectOne(`${service.baseUrl}/1`);
+      expect(req.request.method).toBe("PATCH");
+      expect(req.request.body).toEqual({ enabled: true });
       req.flush({});
       await promise;
     });
 
-    it("should POST to disable", async () => {
+    it("should PATCH to disable", async () => {
       const promise = service.disablePolicy(1);
-      const req = httpMock.expectOne(`${service.baseUrl}/1/disable`);
-      expect(req.request.method).toBe("POST");
+      const req = httpMock.expectOne(`${service.baseUrl}/1`);
+      expect(req.request.method).toBe("PATCH");
+      expect(req.request.body).toEqual({ enabled: false });
       req.flush({});
       await promise;
     });
 
     it("should notify on enable error", async () => {
       const promise = service.enablePolicy(1);
-      const req = httpMock.expectOne(`${service.baseUrl}/1/enable`);
+      const req = httpMock.expectOne(`${service.baseUrl}/1`);
       req.flush(null, { status: 500, statusText: "Internal Server Error" });
       await promise;
       expect(notificationServiceMock.error).toHaveBeenCalled();
@@ -233,7 +235,7 @@ describe("ConditionalAccessPolicyService", () => {
 
     it("should notify on disable error", async () => {
       const promise = service.disablePolicy(1);
-      const req = httpMock.expectOne(`${service.baseUrl}/1/disable`);
+      const req = httpMock.expectOne(`${service.baseUrl}/1`);
       req.flush(null, { status: 500, statusText: "Internal Server Error" });
       await promise;
       expect(notificationServiceMock.error).toHaveBeenCalled();

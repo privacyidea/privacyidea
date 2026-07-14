@@ -355,9 +355,19 @@ def update_lockout_policy(policy_id: int, name: str | None = None,
         policy.dry_run = bool(dry_run)
         changed_fields.append("dry_run")
     if counter_types_to_track is not None:
+        # Delete the existing rows and flush before inserting the replacements,
+        # so a single flush never holds two rows with the same
+        # (policy_id, counter_type). This keeps a replacement that reuses a
+        # counter type within the (policy_id, counter_type) unique constraint.
+        policy.counter_types = []
+        db.session.flush()
         policy.counter_types_to_track = counter_types_to_track
         changed_fields.append("counter_types_to_track")
     if stages is not None:
+        # Same split-flush replacement, keeping the (policy_id, failure_threshold)
+        # unique constraint when a threshold is reused across the update.
+        policy.stages = []
+        db.session.flush()
         policy.stages = _build_stages(stages)
         changed_fields.append("stages")
     db.session.commit()
