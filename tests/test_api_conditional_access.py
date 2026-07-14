@@ -23,7 +23,7 @@ policy stage and lock the user.
 """
 from datetime import timedelta
 
-from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs
 from privacyidea.lib.conditional_access.engine import LockoutAction, is_user_locked, is_ip_blocked
 from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver

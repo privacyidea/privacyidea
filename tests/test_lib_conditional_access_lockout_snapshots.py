@@ -39,7 +39,7 @@ faithful transcription of the corresponding rows.
 from datetime import timedelta
 from email import message_from_string
 
-from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.engine import (
     LockoutAction,
     evaluate_lockout_policies,
