@@ -33,7 +33,7 @@ from privacyidea.lib.resolver import (save_resolver, delete_resolver,
 from privacyidea.models import db, Challenge, AuthenticationLog
 from privacyidea.models.lockout_policy import BlockList, UserLockoutState
 from privacyidea.models.utils import utc_now
-from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from .base import CliTestCase
 from ..base import PWFILE
 
@@ -780,14 +780,14 @@ class PIManageConditionalAccessTestCase(CliTestCase):
     def test_01_help_lists_subcommands(self):
         runner = self.app.test_cli_runner()
         res = runner.invoke(pi_manage, ["conditionalaccess"])
-        self.assertIn("list-blocks", res.output, res)
+        self.assertIn("list-blocked-ips", res.output, res)
         self.assertIn("unblock-ip", res.output, res)
-        self.assertIn("list-locks", res.output, res)
+        self.assertIn("list-locked-users", res.output, res)
         self.assertIn("unlock-user", res.output, res)
 
     def test_02_list_and_unblock_ip(self):
         runner = self.app.test_cli_runner()
-        res = runner.invoke(pi_manage, ["conditionalaccess", "list-blocks"])
+        res = runner.invoke(pi_manage, ["conditionalaccess", "list-blocked-ips"])
         self.assertIn("No blocked IPs.", res.output, res)
 
         db.session.add(BlockList(ip="203.0.113.7", is_blocked=True,
@@ -795,7 +795,7 @@ class PIManageConditionalAccessTestCase(CliTestCase):
                                  reason="brute force"))
         db.session.commit()
 
-        res = runner.invoke(pi_manage, ["conditionalaccess", "list-blocks"])
+        res = runner.invoke(pi_manage, ["conditionalaccess", "list-blocked-ips"])
         self.assertIn("203.0.113.7", res.output, res)
         self.assertIn("brute force", res.output, res)
 
@@ -815,7 +815,7 @@ class PIManageConditionalAccessTestCase(CliTestCase):
                                         lock_expires_at=utc_now() + dt.timedelta(seconds=600)))
         db.session.commit()
 
-        res = runner.invoke(pi_manage, ["conditionalaccess", "list-locks"])
+        res = runner.invoke(pi_manage, ["conditionalaccess", "list-locked-users"])
         self.assertIn("uid=42", res.output, res)
         self.assertIn("realm=realm1", res.output, res)
 
@@ -844,7 +844,7 @@ class PIManageConditionalAccessTestCase(CliTestCase):
 
     def test_07_list_locks_empty(self):
         runner = self.app.test_cli_runner()
-        res = runner.invoke(pi_manage, ["conditionalaccess", "list-locks"])
+        res = runner.invoke(pi_manage, ["conditionalaccess", "list-locked-users"])
         self.assertIn("No locked users.", res.output, res)
 
     def test_08_unlock_by_id_missing(self):
@@ -863,6 +863,19 @@ class PIManageConditionalAccessTestCase(CliTestCase):
         res = runner.invoke(pi_manage, ["conditionalaccess", "clear-locks", "--yes"])
         self.assertIn("Removed 3 user lock(s).", res.output, res)
         self.assertEqual(0, UserLockoutState.query.count())
+
+    def test_09b_clear_locks_by_realm(self):
+        runner = self.app.test_cli_runner()
+        db.session.add(UserLockoutState(resolver="reso1", uid="1", realm="realm1", is_locked=True,
+                                        lock_expires_at=utc_now() + dt.timedelta(seconds=600)))
+        db.session.add(UserLockoutState(resolver="reso2", uid="2", realm="realm2", is_locked=True,
+                                        lock_expires_at=utc_now() + dt.timedelta(seconds=600)))
+        db.session.commit()
+        res = runner.invoke(pi_manage, ["conditionalaccess", "clear-locks", "--realm", "realm1", "--yes"])
+        self.assertIn("Removed 1 user lock(s) in realm 'realm1'.", res.output, res)
+        # Only the realm1 lock was removed; realm2 is untouched.
+        self.assertEqual(0, UserLockoutState.query.filter_by(realm="realm1").count())
+        self.assertEqual(1, UserLockoutState.query.filter_by(realm="realm2").count())
 
     def test_10_unlock_user_resolvable(self):
         from privacyidea.lib.user import User

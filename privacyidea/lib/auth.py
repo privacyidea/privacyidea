@@ -23,7 +23,7 @@ import logging
 
 from sqlalchemy import select
 
-from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType, AUTH_EVENT_TYPE_KEY
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, AUTH_EVENT_TYPE_KEY
 from privacyidea.lib.container import find_container_for_token
 from privacyidea.lib.crypto import hash_with_pepper, verify_with_pepper
 from privacyidea.lib.error import AuthError, Error, TokenAdminError, UserError

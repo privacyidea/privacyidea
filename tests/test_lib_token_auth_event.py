@@ -16,7 +16,7 @@
 # SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-from privacyidea.lib.conditional_access.authentication_error_codes import (AuthEventType, AUTH_EVENT_TYPE_KEY,
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
                                                                            REQUEST_EVENT_PRECEDENCE,
                                                                            reduce_request_events)
 from privacyidea.lib.policies.actions import PolicyAction

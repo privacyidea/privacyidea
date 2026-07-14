@@ -27,7 +27,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import func, select
 
 from privacyidea.lib import _
-from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import _naive_utc
 from privacyidea.models import (AuthenticationLog, BlockList, LockoutPolicy, LockoutPolicyCounterType,
                                  LockoutStageAction, UserLockoutState, db)
@@ -59,7 +59,7 @@ class LockoutAction(str, Enum):
 
     ``str`` is used instead of ``StrEnum`` (3.11+) for compatibility with Python
     3.10, mirroring
-    :class:`~privacyidea.lib.conditional_access.authentication_error_codes.AuthEventType`.
+    :class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthEventType`.
     """
     LOCK_USER = "LOCK_USER"
     PERMANENT_LOCK_USER = "PERMANENT_LOCK_USER"

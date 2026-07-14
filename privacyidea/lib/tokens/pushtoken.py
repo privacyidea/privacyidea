@@ -52,7 +52,7 @@ from privacyidea.api.lib.policyhelper import get_pushtoken_add_config, get_init_
 from privacyidea.lib import _, lazy_gettext
 from privacyidea.lib.apps import _construct_extra_parameters
 from privacyidea.lib.challenge import get_challenges, delete_challenges
-from privacyidea.lib.conditional_access.authentication_error_codes import (AuthEventType,
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType,
                                                                            SUPPRESS_TERMINAL_EVENT_KEY,
                                                                            LOG_TRANSACTION_ID_KEY)
 from privacyidea.lib.config import get_from_config
@@ -894,11 +894,35 @@ class PushTokenClass(TokenClass):
         if all(k in request_data for k in ("fbtoken", "pubkey")):
             return cls._handle_enrollment_step2(serial, request_data)
         elif "signature" in request_data and "new_fb_token" not in request_data:
+            # Conditional-access pre-check runs ONLY here, on the authentication
+            # path (the signed challenge answer), never on enrollment or firebase
+            # token updates. The smartphone sends only the serial, so the token
+            # owner is resolved from it and the answer is rejected (generic
+            # failure, reason recorded only in the audit log) when that owner is
+            # locked, the source IP is blocked, or a DENY policy applies - before
+            # the signature is verified.
+            from privacyidea.api.lib.utils import conditional_access_precheck
+            if conditional_access_precheck(cls._resolve_token_owner(serial)) is not None:
+                return False, {}
             return cls._handle_auth_response(serial, request_data)
         elif all(k in request_data for k in ('new_fb_token', 'timestamp', 'signature')):
             return cls._handle_firebase_update(serial, request_data)
         else:
             raise ParameterError("Missing parameters!")
+
+    @staticmethod
+    def _resolve_token_owner(serial: str) -> User:
+        """
+        Resolve the owner of the push token addressed by *serial* for the
+        conditional-access pre-check. Returns an empty :class:`User` when the
+        serial is missing or the token has no resolvable owner.
+        """
+        if not serial:
+            return User()
+        try:
+            return get_one_token(serial=serial).user or User()
+        except Exception:
+            return User()
 
     def _get_existing_challenge_data(self, transaction_id: str, push_mode: PushMode) -> dict | None:
         """

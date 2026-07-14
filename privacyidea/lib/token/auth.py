@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 from privacyidea.lib import _
 from privacyidea.lib.challengeresponsedecorators import (generic_challenge_response_reset_pin,
                                                          generic_challenge_response_resync)
-from privacyidea.lib.conditional_access.authentication_error_codes import (AuthEventType, AUTH_EVENT_TYPE_KEY,
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
                                                                            NO_FIRST_FACTOR_KEY, reduce_request_events,
                                                                            SUPPRESS_TERMINAL_EVENT_KEY)
 from privacyidea.lib.config import (get_from_config,
@@ -397,9 +397,11 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
                 repl = repl or {}
                 reply_dict.update(repl)
                 if otp_count >= 0:
-                    # This is a successful authentication
+                    # This is a successful authentication. LOGIN_SUCCESS is classified
+                    # once, later, in the final valid_token_list block (which re-checks
+                    # check_all before confirming success), so it is deliberately not
+                    # appended here as well - it would be a redundant duplicate.
                     valid_token_list.append(token_object)
-                    request_events.append(AuthEventType.LOGIN_SUCCESS)
                 elif pin_match:
                     # The PIN (first factor) of the token matches, but the OTP did not. For logging check if a pin was
                     # required / checked at all.

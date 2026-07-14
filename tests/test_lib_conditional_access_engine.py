@@ -24,7 +24,7 @@ de-duplication, dry-run, and the LOCK_USER / PERMANENT_LOCK_USER actions).
 from datetime import timedelta
 from email import message_from_string
 
-from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.engine import (
     AccessDecision,
     LockoutAction,

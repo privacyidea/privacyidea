@@ -16,7 +16,7 @@ from testfixtures import LogCapture
 
 from privacyidea.lib.cache import ChallengeDTO
 from privacyidea.lib.challenge import get_challenges, delete_challenges
-from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.engine import is_user_locked, LockoutAction
 from privacyidea.models.lockout_policy import (LockoutPolicy, LockoutPolicyStage, LockoutStageAction,
                                                LockoutPolicyCounterType, UserLockoutState)
@@ -36,6 +36,7 @@ from privacyidea.lib.user import User
 from privacyidea.lib.utils import to_bytes, to_unicode, AUTH_RESPONSE
 from privacyidea.models import db, Challenge
 from privacyidea.models.authentication_log import AuthenticationLog
+from privacyidea.models.utils import utc_now
 from . import ldap3mock
 from .authlog_utils import assert_authentication_log, assert_authentication_log_entry
 from .base import MyApiTestCase
@@ -1594,6 +1595,100 @@ class PushAPITestCase(MyApiTestCase):
             self.assertTrue(is_user_locked(user))
         finally:
             clear_ca()
+            remove_token(self.serial_push)
+            delete_policy("push_config")
+
+    def _clear_ca(self):
+        for model in (UserLockoutState, LockoutStageAction, LockoutPolicyStage,
+                      LockoutPolicyCounterType, LockoutPolicy, AuthenticationLog):
+            db.session.query(model).delete()
+        db.session.commit()
+
+    def _enroll_push_for(self, user: User) -> None:
+        """Enroll ``self.serial_push`` for *user* through the real two-step flow."""
+        with self.app.test_request_context('/token/init', method='POST',
+                                           data={"type": "push", "pin": "push_pin",
+                                                 "user": user.login, "realm": user.realm,
+                                                 "serial": self.serial_push, "genkey": 1},
+                                           headers={'Authorization': self.at}):
+            result = self.app.full_dispatch_request()
+            enrollment_credential = result.json.get("detail").get("enrollment_credential")
+        with self.app.test_request_context('/ttype/push', method='POST',
+                                           data={"enrollment_credential": enrollment_credential,
+                                                 "serial": self.serial_push,
+                                                 "pubkey": self.smartphone_public_key_pem_urlsafe,
+                                                 "fbtoken": "firebaseT"}):
+            return self.app.full_dispatch_request()
+
+    def test_18e_push_enrollment_not_gated_by_lockout(self):
+        """A locked token owner must still be able to complete push enrollment:
+        the conditional-access pre-check runs only on the authentication path,
+        not on the enrollment step at /ttype/push."""
+        self.setUp_user_realms()
+        user = User("selfservice", self.realm1)
+        set_policy("push_config", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
+                          f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        self._clear_ca()
+        # Lock the owner up front.
+        db.session.add(UserLockoutState(resolver=user.resolver, uid=user.uid, realm=user.realm,
+                                        is_locked=True, lock_expires_at=utc_now() + datetime.timedelta(seconds=600)))
+        db.session.commit()
+        try:
+            self.assertTrue(is_user_locked(user))
+            # The enrollment step2 must succeed despite the lock.
+            response = self._enroll_push_for(user)
+            self.assertEqual(200, response.status_code, response)
+            self.assertTrue(response.json["result"]["value"], response.json)
+            # The public key was registered -> enrollment really went through.
+            token = get_tokens(serial=self.serial_push)[0]
+            self.assertEqual(RolloutState.ENROLLED, token.token.rollout_state)
+        finally:
+            self._clear_ca()
+            remove_token(self.serial_push)
+            delete_policy("push_config")
+
+    def test_18f_push_auth_answer_gated_by_lockout(self):
+        """A locked owner's signed push answer is rejected by the pre-check before
+        the signature is verified: the answer is not processed (no
+        CHALLENGE_ANSWERED log row) and the challenge stays open."""
+        self.setUp_user_realms()
+        user = User("selfservice", self.realm1)
+        set_policy("push_config", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
+                          f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        self._clear_ca()
+        self._enroll_push_for(user)
+        try:
+            # Trigger a real challenge while unlocked, then read its nonce.
+            with self.app.test_request_context('/validate/check', method='POST',
+                                               data={"user": "selfservice", "pass": "push_pin"}):
+                self.app.full_dispatch_request()
+            challenge = get_challenges(serial=self.serial_push)[0]
+            nonce = challenge.challenge
+            transaction_id = challenge.transaction_id
+            # Now lock the owner and answer with a VALID signature.
+            db.session.add(UserLockoutState(resolver=user.resolver, uid=user.uid, realm=user.realm,
+                                            is_locked=True,
+                                            lock_expires_at=utc_now() + datetime.timedelta(seconds=600)))
+            db.session.commit()
+            self.assertTrue(is_user_locked(user))
+            logs_before = db.session.query(AuthenticationLog).count()
+            signature = self.smartphone_private_key.sign(f"{nonce}|{self.serial_push}".encode("utf8"),
+                                                         padding.PKCS1v15(), hashes.SHA256())
+            with self.app.test_request_context('/ttype/push', method='POST',
+                                               data={"serial": self.serial_push,
+                                                     "signature": b32encode(signature)}):
+                response = self.app.full_dispatch_request()
+            self.assertEqual(200, response.status_code, response)
+            # Generic failure, and the answer was never processed.
+            self.assertFalse(response.json["result"]["value"], response.json)
+            self.assertEqual(logs_before, db.session.query(AuthenticationLog).count())
+            # The challenge is still open (the answer did not consume it).
+            self.assertTrue(get_challenges(transaction_id=transaction_id))
+        finally:
+            self._clear_ca()
+            delete_challenges(serial=self.serial_push)
             remove_token(self.serial_push)
             delete_policy("push_config")
 

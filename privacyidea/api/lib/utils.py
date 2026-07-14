@@ -22,6 +22,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+import functools
 import json
 import logging
 import re
@@ -35,7 +36,7 @@ import jwt
 from flask import jsonify, current_app, Response, Request, request, g, has_request_context
 from flask_babel import _
 
-from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import log_authentication_event, AuthLogUserRole
 from privacyidea.lib.user import User
 # Re-exported from privacyidea.lib.params for backwards-compatibility with
@@ -251,7 +252,8 @@ def _determine_user_role(user: User | None, internal_admin: bool) -> AuthLogUser
 
 def log_authentication(event_type: AuthEventType | None, request: Request | None = None, user: User | None = None,
                        serial: str | None = None, transaction_id: str | None = None,
-                       previous_transaction_id: str | None = None, internal_admin: bool = False) -> int | None:
+                       previous_transaction_id: str | None = None, username: str | None = None,
+                       internal_admin: bool = False) -> int | None:
     """
     Write one authentication_log entry for the current request.
 
@@ -263,6 +265,10 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
     The ``(resolver, uid, realm)`` identity tuple is only written for a resolved
     user; an unresolvable user (e.g. USER_UNKNOWN) is logged with resolver and uid
     None while realm and username are still captured from the User object.
+
+    ``username`` overrides the login name derived from the User object. It is needed for
+    local administrators, who have no User object (the login name is not stored there) but
+    whose login name should still be recorded.
 
     Some requests identify a token but not its user (e.g. the smartphone ``/ttype/push`` confirm carries only the
     serial). In that case the token owner is resolved from the serial, so a row that names a single token always also
@@ -305,7 +311,7 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
         resolver=user.resolver if resolved else None,
         uid=user.uid if resolved else None,
         realm=(user.realm or None) if user else None,
-        username=(user.login or None) if user else None,
+        username=username or ((user.login or None) if user else None),
         user_role=_determine_user_role(user, internal_admin),
         source_ip=source_ip,
         client_label=client_label,
@@ -350,6 +356,31 @@ def conditional_access_precheck(user) -> "Response | None":
                             "info": "Rejected: denied by conditional-access policy"})
         return send_result(False, rid=2, details={})
     return None
+
+
+def conditional_access_gate(identity_resolver=None):
+    """
+    View decorator that runs :func:`conditional_access_precheck` before the
+    decorated endpoint body (and, when placed above them, before the endpoint's
+    pre-policies). If the pre-check rejects the request, its generic-failure
+    response is returned immediately and the endpoint never runs.
+
+    :param identity_resolver: an optional zero-argument callable returning the
+        :class:`~privacyidea.lib.user.User` the pre-check should gate on. When
+        omitted, ``request.User`` is used. Endpoints that must resolve the
+        identity differently (a serial/credential-id request, or a transaction
+        owner) pass their own resolver.
+    """
+    def decorator(wrapped_function):
+        @functools.wraps(wrapped_function)
+        def wrapper(*args, **kwargs):
+            user = identity_resolver() if identity_resolver is not None else request.User
+            rejection = conditional_access_precheck(user)
+            if rejection is not None:
+                return rejection
+            return wrapped_function(*args, **kwargs)
+        return wrapper
+    return decorator
 
 
 def conditional_access_posteval(user, event_type) -> None:
