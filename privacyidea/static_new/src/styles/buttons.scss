@@ -794,6 +794,10 @@ $icon-badge-notch-mask: radial-gradient(
 
 .scroll-to-top-fab-icon {
   width: 24px;
+  // The material-icons ligature text ("keyboard_arrow_upward") can lay out
+  // wider than the icon glyph it's substituted for; clip it so the raw text
+  // run never leaks into an ancestor's scrollable overflow.
+  overflow: hidden;
 }
 
 mat-icon {

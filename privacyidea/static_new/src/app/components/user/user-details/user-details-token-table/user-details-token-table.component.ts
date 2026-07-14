@@ -17,22 +17,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass } from "@angular/common";
-import {
-  AfterViewInit,
-  Component,
-  effect,
-  ElementRef,
-  inject,
-  linkedSignal,
-  signal,
-  ViewChild,
-  WritableSignal
-} from "@angular/core";
-import { MatIconButton } from "@angular/material/button";
-import { MatFormField } from "@angular/material/form-field";
+import { AfterViewInit, Component, effect, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { MatButton, MatIconButton } from "@angular/material/button";
+import { MatCheckbox } from "@angular/material/checkbox";
 import { MatIcon } from "@angular/material/icon";
-import { MatInput, MatLabel } from "@angular/material/input";
-import { MatPaginator } from "@angular/material/paginator";
 import { Sort } from "@angular/material/sort";
 import {
   MatCell,
@@ -53,26 +41,31 @@ import { CopyableComponent } from "@components/shared/copyable/copyable.componen
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerDetailToken } from "@services/container/container.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
+import { catchError, forkJoin, map, Observable, of } from "rxjs";
+
+interface BulkActionResult {
+  serial: string;
+  ok: boolean;
+}
 
 @Component({
   selector: "app-user-details-token-table",
   imports: [
     CopyableComponent,
+    MatButton,
     MatCell,
     MatCellDef,
+    MatCheckbox,
     MatColumnDef,
-    MatFormField,
     MatHeaderCell,
     MatHeaderRow,
     MatHeaderRowDef,
     MatIcon,
     MatIconButton,
-    MatInput,
-    MatLabel,
-    MatPaginator,
     MatRow,
     MatRowDef,
     MatTable,
@@ -90,6 +83,7 @@ export class UserDetailsTokenTableComponent implements AfterViewInit {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly userService: UserServiceInterface = inject(UserService);
+  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   readonly columnsKeyMap = this.tableUtilsService.pickColumns(
     "serial",
     "tokentype",
@@ -100,25 +94,29 @@ export class UserDetailsTokenTableComponent implements AfterViewInit {
     "container_serial"
   );
   readonly columnKeys = [...this.tableUtilsService.getColumnKeys(this.columnsKeyMap)];
-  displayedColumns: string[] = [...this.columnsKeyMap.map((column) => column.key)];
+
+  get displayedColumns(): string[] {
+    return ["select", ...this.columnsKeyMap.map((column) => column.key)];
+  }
+
   dataSource = new MatTableDataSource<ContainerDetailToken>([]);
-  filterValue = "";
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
   sort = signal({ active: "serial", direction: "asc" } as Sort);
   apiFilter = this.tokenService.apiFilter;
-  @ViewChild("filterInput", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
-  userTokenData: WritableSignal<MatTableDataSource<TokenDetails, MatPaginator>> = linkedSignal({
+  selection: WritableSignal<ContainerDetailToken[]> = linkedSignal({
+    source: () =>
+      this.tokenService.userTokenResource.hasValue() ? this.tokenService.userTokenResource.value() : undefined,
+    computation: () => []
+  });
+  userTokenData: WritableSignal<MatTableDataSource<TokenDetails>> = linkedSignal({
     source: () =>
       this.tokenService.userTokenResource.hasValue() ? this.tokenService.userTokenResource.value() : undefined,
     computation: (userTokenResource, previous) => {
       if (!userTokenResource) {
-        return previous?.value ?? new MatTableDataSource<TokenDetails, MatPaginator>([]);
+        return previous?.value ?? new MatTableDataSource<TokenDetails>([]);
       }
-      return new MatTableDataSource<TokenDetails, MatPaginator>(userTokenResource.result?.value?.tokens ?? []);
+      return new MatTableDataSource<TokenDetails>(userTokenResource.result?.value?.tokens ?? []);
     }
   });
-  pageSize = 10;
-  pageSizeOptions = this.tableUtilsService.pageSizeOptions;
 
   constructor() {
     effect(() => {
@@ -139,51 +137,91 @@ export class UserDetailsTokenTableComponent implements AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    this.dataSource.paginator = this.paginator;
     (this.dataSource as unknown as { _sort: WritableSignal<Sort> })._sort = this.sort;
-    this.dataSource.filterPredicate = (row: ContainerDetailToken, filter: string) => {
-      const haystack = [
-        row.serial,
-        row.tokentype,
-        String(row.active),
-        row.description ?? "",
-        String(row.failcount ?? ""),
-        String(row.maxfail ?? ""),
-        row.container_serial ?? ""
-      ]
-        .join(" ")
-        .toLowerCase();
-      return haystack.includes(filter);
-    };
   }
 
-  handleFilterInput($event: Event): void {
-    const raw = ($event.target as HTMLInputElement).value ?? "";
-    const trimmed = raw.trim();
-    this.filterValue = trimmed;
-    const normalised = trimmed.toLowerCase();
-    this.dataSource.filter = normalised;
+  isAllSelected(): boolean {
+    return this.selection().length === this.dataSource.data.length && this.dataSource.data.length > 0;
+  }
 
-    if (this.userTokenData) {
-      this.userTokenData().filter = normalised;
+  toggleAllRows(): void {
+    if (this.isAllSelected()) {
+      this.selection.set([]);
+    } else {
+      this.selection.set([...this.dataSource.data]);
     }
   }
 
-  toggleActive(token: TokenDetails): void {
-    this.tokenService.toggleActive(token.serial, token.active).subscribe({
-      next: () => {
-        this.tokenService.userTokenResource.reload();
-      }
+  toggleRow(row: ContainerDetailToken): void {
+    const current = this.selection();
+    if (current.includes(row)) {
+      this.selection.set(current.filter((r) => r !== row));
+    } else {
+      this.selection.set([...current, row]);
+    }
+  }
+
+  deleteSelected(): void {
+    const serials = this.selection().map((r) => r.serial);
+    this.tokenService.bulkDeleteWithConfirmDialog(serials, () => this.tokenService.userTokenResource.reload());
+  }
+
+  unassignSelected(): void {
+    const serials = this.selection().map((r) => r.serial);
+    forkJoin(serials.map((s) => this.runBulkAction(s, this.tokenService.unassignUser(s, false)))).subscribe({
+      next: (results) => this.finishBulkAction("unassign", results)
     });
   }
 
-  resetFailCount(element: TokenDetails): void {
-    if (!element.revoked && !element.locked && this.authService.actionAllowed("reset")) {
-      this.tokenService.resetFailCount(element.serial).subscribe({
-        next: () => {
-          this.tokenService.userTokenResource.reload();
-        }
+  toggleActiveSelected(): void {
+    const rows = this.selection();
+    forkJoin(
+      rows.map((r) => this.runBulkAction(r.serial, this.tokenService.toggleActive(r.serial, r.active, false)))
+    ).subscribe({
+      next: (results) => this.finishBulkAction("toggle active", results)
+    });
+  }
+
+  resetFailcountSelected(): void {
+    const serials = this.selection().map((r) => r.serial);
+    forkJoin(serials.map((s) => this.runBulkAction(s, this.tokenService.resetFailCount(s, false)))).subscribe({
+      next: (results) => this.finishBulkAction("reset fail count", results)
+    });
+  }
+
+  toggleActive(tokenDetails: TokenDetails): void {
+    if (
+      !tokenDetails.revoked &&
+      !tokenDetails.locked &&
+      ((tokenDetails.active && this.authService.actionAllowed("disable")) ||
+        (!tokenDetails.active && this.authService.actionAllowed("enable")))
+    ) {
+      this.tokenService.toggleActive(tokenDetails.serial, tokenDetails.active).subscribe({
+        next: () => this.tokenService.userTokenResource.reload()
       });
+    }
+  }
+
+  resetFailCount(tokenDetails: TokenDetails): void {
+    if (!tokenDetails.revoked && !tokenDetails.locked && this.authService.actionAllowed("reset")) {
+      this.tokenService.resetFailCount(tokenDetails.serial).subscribe({
+        next: () => this.tokenService.userTokenResource.reload()
+      });
+    }
+  }
+
+  private runBulkAction(serial: string, request: Observable<unknown>): Observable<BulkActionResult> {
+    return request.pipe(
+      map(() => ({ serial, ok: true })),
+      catchError(() => of({ serial, ok: false }))
+    );
+  }
+
+  private finishBulkAction(action: string, results: BulkActionResult[]): void {
+    this.tokenService.userTokenResource.reload();
+    const failed = results.filter((r) => !r.ok).map((r) => r.serial);
+    if (failed.length > 0) {
+      this.notificationService.error(`${failed.length}/${results.length} ${action} failed: ${failed.join(", ")}`);
     }
   }
 }

@@ -16,23 +16,56 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { BreakpointObserver } from "@angular/cdk/layout";
-import { Component, computed, inject, signal, Signal } from "@angular/core";
-import { toSignal } from "@angular/core/rxjs-interop";
+import { Component, computed, inject, signal } from "@angular/core";
+import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
+import { Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { DetailFieldComponent } from "@components/shared/details-shared/detail-field/detail-field.component";
+import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
+import { DetailFieldRowComponent } from "@components/shared/details-shared/field-editing/detail-field-row/detail-field-row.component";
+import { DetailsEditRegistry } from "@components/shared/details-shared/field-editing/details-edit-registry.service";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
-import { map } from "rxjs";
 
 @Component({
   selector: "app-user-details-self-service",
   standalone: true,
-  imports: [ScrollToTopDirective, MatIcon],
+  imports: [
+    ScrollToTopDirective,
+    MatIcon,
+    MatButtonModule,
+    DetailsCardComponent,
+    DetailFieldComponent,
+    DetailFieldRowComponent
+  ],
+  providers: [DetailsEditRegistry],
   templateUrl: "./user-details.self-service.component.html",
   styleUrl: "./user-details.component.scss"
 })
 export class UserDetailsSelfServiceComponent {
+  protected readonly ROUTE_PATHS = ROUTE_PATHS;
   protected readonly userService: UserServiceInterface = inject(UserService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly router = inject(Router);
+
+  expandedKeys = signal<Set<string>>(new Set<string>());
+
+  isExpanded(key: string): boolean {
+    return this.expandedKeys().has(key);
+  }
+
+  toggleExpanded(key: string): void {
+    const next = new Set(this.expandedKeys());
+    if (next.has(key)) {
+      next.delete(key);
+    } else {
+      next.add(key);
+    }
+    this.expandedKeys.set(next);
+  }
+
   readonly labels: Record<string, string> = {
     username: $localize`Username`,
     givenname: $localize`Given name`,
@@ -44,6 +77,7 @@ export class UserDetailsSelfServiceComponent {
     userid: $localize`User ID`,
     resolver: $localize`Resolver`
   };
+
   readonly excludedKeys = new Set<string>(["editable"]);
   readonly detailOrder: string[] = [
     "username",
@@ -56,17 +90,9 @@ export class UserDetailsSelfServiceComponent {
     "userid",
     "resolver"
   ];
-  protected readonly Array = Array;
-  private breakpointObserver = inject(BreakpointObserver);
-  private isSmall = toSignal(this.breakpointObserver.observe("(max-width: 1000px)").pipe(map((r) => r.matches)));
-  private isMedium = toSignal(this.breakpointObserver.observe("(max-width: 1240px)").pipe(map((r) => r.matches)));
-  expandedKeys = signal<Set<string>>(new Set<string>());
-  colCount = computed(() => {
-    if (this.isSmall()) return 1;
-    if (this.isMedium()) return 2;
-    return 3;
-  });
+
   userData = this.userService.user;
+
   detailsEntries = computed(() => {
     const data: Record<string, unknown> = this.userData() ?? {};
     const result: { key: string; label: string; value: unknown }[] = [];
@@ -93,30 +119,24 @@ export class UserDetailsSelfServiceComponent {
 
     return result;
   });
-  detailsColumns: Signal<{ key: string; label: string; value: unknown }[][]> = computed(() => {
-    const entries = this.detailsEntries();
-    const colCount = this.colCount();
-    const perCol = Math.ceil(entries.length / colCount);
-    return Array.from({ length: colCount }, (_, i) => entries.slice(i * perCol, (i + 1) * perCol));
-  });
 
-  isExpanded(key: string): boolean {
-    return this.expandedKeys().has(key);
+  protected readonly Array = Array;
+
+  enrollNewToken() {
+    this.router.navigateByUrl(ROUTE_PATHS.TOKENS_ENROLLMENT).then();
   }
 
-  toggleExpanded(key: string): void {
-    const next = new Set(this.expandedKeys());
-    if (next.has(key)) {
-      next.delete(key);
-    } else {
-      next.add(key);
-    }
-    this.expandedKeys.set(next);
+  createNewContainer() {
+    this.router.navigateByUrl(ROUTE_PATHS.CONTAINERS_CREATE).then();
   }
 
   private normalizeValue(value: unknown): unknown {
     if (value === null || value === undefined) return "-";
     if (typeof value === "string" && value.trim() === "") return "-";
     return value;
+  }
+
+  protected str(value: unknown): string {
+    return value === null || value === undefined ? "" : String(value);
   }
 }
