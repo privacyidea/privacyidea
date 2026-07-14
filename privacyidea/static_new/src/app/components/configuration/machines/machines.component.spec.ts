@@ -64,11 +64,6 @@ describe("MachinesComponent", () => {
     expect(component.machineDataSource().data[0].id).toBe(1);
   });
 
-  it("should initialize paginator page size to the second page size option", () => {
-    expect(component.paginator.pageSize).toBe(component.pageSizeOptions()[1]);
-    expect(component.paginator.pageSize).toBe(10);
-  });
-
   it("should filter machines", () => {
     component.onFilterInput("host1");
     expect(component.machineDataSource().filter).toBe("host1");
@@ -82,5 +77,33 @@ describe("MachinesComponent", () => {
     expect(router.navigateByUrl).toHaveBeenCalledWith(
       ROUTE_PATHS.CONFIGURATION_MACHINES_DETAILS + machine.id + "?resolver=" + encodeURIComponent(machine.resolver_name)
     );
+  });
+
+  it("should initialize paginator page size to the second page size option", () => {
+    expect(component.paginator.pageSize).toBe(component.pageSizeOptions()[1]);
+    expect(component.paginator.pageSize).toBe(10);
+  });
+});
+
+describe("MachinesComponent pageSize fallback", () => {
+  it("defaults pageSize to 10 when the second page size option is missing", async () => {
+    await TestBed.configureTestingModule({
+      imports: [MachinesComponent],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
+        { provide: MachineService, useClass: MockMachineService },
+        { provide: TableUtilsService, useClass: MockTableUtilsService }
+      ]
+    }).compileComponents();
+
+    const tableUtils = TestBed.inject(TableUtilsService) as unknown as MockTableUtilsService;
+    tableUtils.pageSizeOptions.set([5]);
+
+    const component = TestBed.createComponent(MachinesComponent).componentInstance;
+
+    expect(component.pageSizeOptions()[1]).toBeUndefined();
+    expect(component.pageSize()).toBe(10);
   });
 });
