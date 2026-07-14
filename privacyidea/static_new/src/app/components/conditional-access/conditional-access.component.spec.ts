@@ -108,4 +108,89 @@ describe("ConditionalAccessComponent", () => {
     await component.onDeletePolicy(samplePolicy);
     expect(policyServiceMock.deleteWithConfirmDialog).toHaveBeenCalledWith(samplePolicy);
   });
+
+  it("should join all stage thresholds for display", () => {
+    const multiStage: LockoutPolicy = {
+      ...samplePolicy,
+      stages: [
+        { failure_threshold: 3, priority: 1, actions: [] },
+        { failure_threshold: 5, priority: 2, actions: [] }
+      ]
+    };
+    expect(component.thresholdDisplay(multiStage)).toBe("3, 5");
+  });
+
+  describe("inline editing", () => {
+    it("should enter edit mode with a working copy that does not mutate the source", () => {
+      component.startEdit(samplePolicy);
+      expect(component.isEditing(samplePolicy)).toBe(true);
+      component.setEditName("Changed");
+      expect(component.editBuffer()?.name).toBe("Changed");
+      expect(samplePolicy.name).toBe("Brute Force");
+    });
+
+    it("should cancel edit mode without saving", () => {
+      component.startEdit(samplePolicy);
+      component.cancelEdit();
+      expect(component.isEditing(samplePolicy)).toBe(false);
+      expect(component.editBuffer()).toBeNull();
+      expect(policyServiceMock.savePolicy).not.toHaveBeenCalled();
+    });
+
+    it("should edit scalar fields and the single-stage threshold", () => {
+      component.startEdit(samplePolicy);
+      component.setEditPriority("7");
+      component.setEditTimeWindow("900");
+      component.setEditCounterTypes(["MFA_FAIL"]);
+      component.setEditThreshold("9");
+      const buffer = component.editBuffer();
+      expect(buffer?.priority).toBe(7);
+      expect(buffer?.time_window_seconds).toBe(900);
+      expect(buffer?.counter_types_to_track).toEqual(["MFA_FAIL"]);
+      expect(buffer?.stages[0].failure_threshold).toBe(9);
+      expect(component.canSaveEdit()).toBe(true);
+    });
+
+    it("should not treat a multi-stage policy as inline-threshold editable", () => {
+      component.startEdit({
+        ...samplePolicy,
+        stages: [
+          { failure_threshold: 3, priority: 1, actions: [] },
+          { failure_threshold: 5, priority: 2, actions: [] }
+        ]
+      });
+      expect(component.editIsSingleStage()).toBe(false);
+      // threshold edits are ignored for multi-stage policies
+      component.setEditThreshold("9");
+      expect(component.editBuffer()?.stages[0].failure_threshold).toBe(3);
+    });
+
+    it("should block saving with an invalid buffer", () => {
+      component.startEdit(samplePolicy);
+      component.setEditName("   ");
+      expect(component.canSaveEdit()).toBe(false);
+      component.setEditName("Ok");
+      component.setEditCounterTypes([]);
+      expect(component.canSaveEdit()).toBe(false);
+    });
+
+    it("should persist the buffer and leave edit mode on save", async () => {
+      component.startEdit(samplePolicy);
+      component.setEditName("Renamed");
+      await component.saveEdit();
+      expect(policyServiceMock.savePolicy).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 1, name: "Renamed" })
+      );
+      expect(component.editBuffer()).toBeNull();
+      expect(component.isEditing(samplePolicy)).toBe(false);
+    });
+
+    it("should stay in edit mode when the save fails", async () => {
+      policyServiceMock.savePolicy.mockResolvedValueOnce(undefined);
+      component.startEdit(samplePolicy);
+      await component.saveEdit();
+      expect(component.isEditing(samplePolicy)).toBe(true);
+      expect(component.editBuffer()).not.toBeNull();
+    });
+  });
 });

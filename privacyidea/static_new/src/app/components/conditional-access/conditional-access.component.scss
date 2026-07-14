@@ -19,3 +19,68 @@
   width: 100%;
   margin-bottom: 16px;
 }
+
+// Pin the editable columns to fixed widths on both header and data cells so the
+// layout is identical whether a row shows text or edit controls. Without this,
+// the auto-sized table grows these columns to each control's larger intrinsic
+// width when a row enters edit mode.
+.conditional-access-table {
+  .mat-column-priority {
+    width: 88px;
+  }
+
+  .mat-column-time_window_seconds {
+    width: 128px;
+  }
+
+  .mat-column-counter_types_to_track {
+    width: 213px;
+  }
+
+  .mat-column-threshold {
+    width: 96px;
+  }
+}
+
+// Only while editing: drop the cell's own padding so the control can fill the
+// cell edge to edge. The control carries the 16px horizontal inset itself, so
+// its content stays aligned with the surrounding display cells.
+.ca-edit-cell {
+  padding: 0;
+}
+
+// Inline-edit controls fill their (fixed) cell in both dimensions, so a row does
+// not grow when it enters edit mode. The name input uses size="1" so its
+// intrinsic width never widens the auto-sized Name column.
+.ca-edit-input {
+  width: 100%;
+  height: 52px;
+  box-sizing: border-box;
+  padding: 0 16px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.ca-edit-input-num {
+  width: 100%;
+}
+
+// Fill the full 52px row height (reach the row bottom) with no reserved subscript
+// space, so the multi-select looks like the cell it replaces. The subscript
+// wrapper and the bottom line-ripple are hidden so the field is exactly the
+// container height (52px) and does not add a pixel that grows the row.
+.ca-edit-select {
+  display: block;
+  width: 100%;
+  height: 52px;
+  --mat-form-field-container-height: 52px;
+
+  ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+    display: none;
+  }
+
+  ::ng-deep .mdc-line-ripple {
+    display: none;
+  }
+}

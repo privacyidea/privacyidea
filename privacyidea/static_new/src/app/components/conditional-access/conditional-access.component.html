@@ -62,15 +62,27 @@
       </th>
       <td
         *matCellDef="let policy"
+        [class.ca-edit-cell]="isEditing(policy)"
         mat-cell>
-        <a
-          role="button"
-          tabindex="0"
-          (click)="onEditPolicy(policy)"
-          (keydown.enter)="onEditPolicy(policy)"
-          class="flex ali-center">
-          {{ policy.name }}
-        </a>
+        @if (isEditing(policy)) {
+          <input
+            (click)="$event.stopPropagation()"
+            (input)="setEditName($any($event.target).value)"
+            [value]="editBuffer()?.name"
+            aria-label="Policy name"
+            class="ca-edit-input"
+            i18n-aria-label
+            size="1" />
+        } @else {
+          <a
+            role="button"
+            tabindex="0"
+            (click)="onEditPolicy(policy)"
+            (keydown.enter)="onEditPolicy(policy)"
+            class="flex ali-center">
+            {{ policy.name }}
+          </a>
+        }
       </td>
     </ng-container>
 
@@ -84,8 +96,21 @@
       </th>
       <td
         *matCellDef="let policy"
+        [class.ca-edit-cell]="isEditing(policy)"
         mat-cell>
-        {{ policy.priority }}
+        @if (isEditing(policy)) {
+          <input
+            (click)="$event.stopPropagation()"
+            (input)="setEditPriority($any($event.target).value)"
+            [value]="editBuffer()?.priority"
+            aria-label="Priority"
+            class="ca-edit-input ca-edit-input-num"
+            i18n-aria-label
+            min="1"
+            type="number" />
+        } @else {
+          {{ policy.priority }}
+        }
       </td>
     </ng-container>
 
@@ -99,8 +124,21 @@
       </th>
       <td
         *matCellDef="let policy"
+        [class.ca-edit-cell]="isEditing(policy)"
         mat-cell>
-        {{ policy.time_window_seconds }}
+        @if (isEditing(policy)) {
+          <input
+            (click)="$event.stopPropagation()"
+            (input)="setEditTimeWindow($any($event.target).value)"
+            [value]="editBuffer()?.time_window_seconds"
+            aria-label="Time window in seconds"
+            class="ca-edit-input ca-edit-input-num"
+            i18n-aria-label
+            min="1"
+            type="number" />
+        } @else {
+          {{ policy.time_window_seconds }}
+        }
       </td>
     </ng-container>
 
@@ -113,8 +151,23 @@
       </th>
       <td
         *matCellDef="let policy"
+        [class.ca-edit-cell]="isEditing(policy)"
         mat-cell>
-        {{ policy.counter_types_to_track.join(", ") }}
+        @if (isEditing(policy)) {
+          <mat-form-field class="ca-edit-select">
+            <mat-select
+              (click)="$event.stopPropagation()"
+              (selectionChange)="setEditCounterTypes($event.value)"
+              [value]="editBuffer()?.counter_types_to_track"
+              multiple>
+              @for (eventType of allAuthEventTypes; track eventType) {
+                <mat-option [value]="eventType">{{ eventType }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        } @else {
+          {{ policy.counter_types_to_track.join(", ") }}
+        }
       </td>
     </ng-container>
 
@@ -134,6 +187,33 @@
       </td>
     </ng-container>
 
+    <ng-container matColumnDef="threshold">
+      <th
+        *matHeaderCellDef
+        i18n
+        mat-header-cell>
+        Threshold
+      </th>
+      <td
+        *matCellDef="let policy"
+        [class.ca-edit-cell]="isEditing(policy) && editIsSingleStage()"
+        mat-cell>
+        @if (isEditing(policy) && editIsSingleStage()) {
+          <input
+            (click)="$event.stopPropagation()"
+            (input)="setEditThreshold($any($event.target).value)"
+            [value]="editThreshold()"
+            aria-label="Failure threshold"
+            class="ca-edit-input ca-edit-input-num"
+            i18n-aria-label
+            min="1"
+            type="number" />
+        } @else {
+          {{ thresholdDisplay(policy) }}
+        }
+      </td>
+    </ng-container>
+
     <ng-container matColumnDef="enabled">
       <th
         *matHeaderCellDef
@@ -149,7 +229,7 @@
           (click)="onToggleEnabled(policy); $event.stopPropagation()"
           [checked]="policy.enabled"
           [disableRipple]="true"
-          [disabled]="!authService.actionAllowed('conditional_access_write')"
+          [disabled]="!authService.actionAllowed('conditional_access_write') || isEditing(policy)"
           i18n-matTooltip
           matTooltip="Toggle Enabled" />
       </td>
@@ -169,7 +249,7 @@
           (click)="onToggleDryRun(policy); $event.stopPropagation()"
           [checked]="policy.dry_run"
           [disableRipple]="true"
-          [disabled]="!authService.actionAllowed('conditional_access_write')"
+          [disabled]="!authService.actionAllowed('conditional_access_write') || isEditing(policy)"
           i18n-matTooltip
           matTooltip="Toggle Dry Run (evaluate but do not enforce)" />
       </td>
@@ -187,14 +267,41 @@
         mat-cell>
         @if (authService.actionAllowed("conditional_access_write")) {
           <div class="flex just-center">
-            <button
-              (click)="onDeletePolicy(policy); $event.stopPropagation()"
-              color="warn"
-              i18n-matTooltip
-              mat-icon-button
-              matTooltip="Delete">
-              <mat-icon>delete</mat-icon>
-            </button>
+            @if (isEditing(policy)) {
+              <button
+                (click)="saveEdit(); $event.stopPropagation()"
+                [disabled]="!canSaveEdit()"
+                color="primary"
+                i18n-matTooltip
+                mat-icon-button
+                matTooltip="Save">
+                <mat-icon>save</mat-icon>
+              </button>
+              <button
+                (click)="cancelEdit(); $event.stopPropagation()"
+                class="red"
+                i18n-matTooltip
+                mat-icon-button
+                matTooltip="Cancel">
+                <mat-icon>cancel</mat-icon>
+              </button>
+            } @else {
+              <button
+                (click)="startEdit(policy); $event.stopPropagation()"
+                i18n-matTooltip
+                mat-icon-button
+                matTooltip="Edit">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button
+                (click)="onDeletePolicy(policy); $event.stopPropagation()"
+                color="warn"
+                i18n-matTooltip
+                mat-icon-button
+                matTooltip="Delete">
+                <mat-icon>delete</mat-icon>
+              </button>
+            }
           </div>
         }
       </td>
@@ -212,7 +319,7 @@
       class="mat-row">
       <td
         class="mat-cell"
-        colspan="8"
+        colspan="9"
         i18n>
         No conditional-access policies found.
       </td>
