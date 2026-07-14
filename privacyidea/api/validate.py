@@ -141,7 +141,7 @@ from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
 from .lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
 from .lib.utils import (get_required, map_error_to_code, send_error, send_result, log_authentication,
                         conditional_access_gate, conditional_access_posteval)
-from ..lib.conditional_access.authentication_error_codes import (AuthEventType, AUTH_EVENT_TYPE_KEY,
+from ..lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
                                                                  LOG_TRANSACTION_ID_KEY)
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
 from ..lib.fido2.challenge import create_fido2_challenge, verify_fido2_challenge

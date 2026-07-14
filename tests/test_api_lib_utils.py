@@ -432,7 +432,7 @@ class ConditionalAccessPostevalTestCase(MyApiTestCase):
     def test_01_engine_error_is_swallowed(self):
         from flask import g
         from privacyidea.api.lib.utils import conditional_access_posteval
-        from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
+        from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
         with self.app.test_request_context('/validate/check', method='POST'):
             g.client_ip = "10.0.0.9"
             with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies",
@@ -443,7 +443,7 @@ class ConditionalAccessPostevalTestCase(MyApiTestCase):
     def test_02_rollback_error_is_also_swallowed(self):
         from flask import g
         from privacyidea.api.lib.utils import conditional_access_posteval
-        from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
+        from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
         with self.app.test_request_context('/validate/check', method='POST'):
             g.client_ip = "10.0.0.9"
             with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies",

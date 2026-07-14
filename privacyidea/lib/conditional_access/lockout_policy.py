@@ -45,7 +45,7 @@ A policy is passed around as a plain dict::
     }
 
 ``counter_types_to_track`` values must be
-:class:`~privacyidea.lib.conditional_access.authentication_error_codes.AuthEventType`
+:class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthEventType`
 names and ``action_type`` values must be
 :class:`~privacyidea.lib.conditional_access.engine.LockoutAction` names; anything
 else is a :class:`~privacyidea.lib.error.ParameterError` (fail-closed - a typo
@@ -57,7 +57,7 @@ from dataclasses import dataclass, field
 
 from sqlalchemy import select
 
-from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.engine import LockoutAction
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError
 from privacyidea.lib.log import log_with

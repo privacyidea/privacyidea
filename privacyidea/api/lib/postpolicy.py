@@ -57,7 +57,7 @@ from flask import g, current_app, make_response, Request
 from flask_babel import _, lazy_gettext
 
 from privacyidea.api.lib.utils import get_all_params, log_authentication
-from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import reclassify_authentication_log_event
 from privacyidea.config import ConfigKey
 from privacyidea.lib.auth import ROLE

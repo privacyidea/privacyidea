@@ -16,7 +16,7 @@ from testfixtures import LogCapture
 
 from privacyidea.lib.cache import ChallengeDTO
 from privacyidea.lib.challenge import get_challenges, delete_challenges
-from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.engine import is_user_locked, LockoutAction
 from privacyidea.models.lockout_policy import (LockoutPolicy, LockoutPolicyStage, LockoutStageAction,
                                                LockoutPolicyCounterType, UserLockoutState)

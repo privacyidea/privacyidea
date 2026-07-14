@@ -28,7 +28,7 @@ import json
 
 from werkzeug.test import TestResponse
 
-from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.engine import LockoutAction
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
