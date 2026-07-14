@@ -220,7 +220,7 @@ class LdapMachineTestCase(MyTestCase):
         config["IPATTRIBUTE"] = "iPAddress"
         resolver = LdapMachineResolver("myResolver", config=config)
         machines = resolver.get_machines()
-        # An unparseable ip is dropped, but the machine is still returned.
+        # An unparsable ip is dropped, but the machine is still returned.
         self.assertEqual(2, len(machines))
         by_id = {m.id: m for m in machines}
         self.assertEqual(netaddr.IPAddress("1.2.3.4"),
