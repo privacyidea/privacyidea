@@ -24,7 +24,7 @@ import { AuthService } from "@services/auth/auth.service";
 import { MockAuditService } from "@testing/mock-services/mock-audit-service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
-import { of } from "rxjs";
+import { of, Subject } from "rxjs";
 import { AdministrationWidgetComponent } from "./administration-widget.component";
 
 const ADMIN_AREAS = ["system", "resolver", "realm", "policy", "event"];
@@ -151,5 +151,47 @@ describe("AdministrationWidgetComponent", () => {
     expect(auditMock.fetchAuditPage).not.toHaveBeenCalled();
     const table = fixture.nativeElement.querySelector("table");
     expect(table).toBeNull();
+  });
+
+  it("should keep entries with equal dates in a stable order", () => {
+    const entries: AuditData[] = [
+      { number: 1, date: "2026-01-01 08:00:00", administrator: "first", action: "POST /system", action_detail: "" },
+      { number: 2, date: "2026-01-01 08:00:00", administrator: "second", action: "POST /system", action_detail: "" }
+    ];
+    stubAreas([entries, [], [], [], []]);
+    fixture.detectChanges();
+
+    const rows = fixture.nativeElement.querySelectorAll("tbody tr");
+    expect(rows[0].textContent).toContain("first");
+    expect(rows[1].textContent).toContain("second");
+  });
+
+  it("should set the state to loading while the requests are still in flight", () => {
+    const subject = new Subject<MockPiResponse<Audit>>();
+    auditMock.fetchAuditPage.mockImplementation(() => subject.asObservable());
+
+    fixture.detectChanges();
+
+    expect(component.state()).toBe("loading");
+  });
+
+  it("should set the state to error when a request fails", () => {
+    const subject = new Subject<MockPiResponse<Audit>>();
+    auditMock.fetchAuditPage.mockImplementation(() => subject.asObservable());
+
+    fixture.detectChanges();
+    subject.error(new Error("boom"));
+    fixture.detectChanges();
+
+    expect(component.state()).toBe("error");
+  });
+
+  it("should invalidate the cache and reload on reload()", () => {
+    fixture.detectChanges();
+    auditMock.fetchAuditPage.mockClear();
+
+    component.reload();
+
+    expect(auditMock.fetchAuditPage).toHaveBeenCalledTimes(ADMIN_AREAS.length);
   });
 });

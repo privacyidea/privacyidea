@@ -17,28 +17,29 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
-@if (availableWidgetTypes().length > 0) {
-  <button
-    mat-stroked-button
-    class="action-button-secondary button-width-m"
-    [matMenuTriggerFor]="widgetMenu">
-    <mat-icon>add</mat-icon>
-    <span i18n>Add Widget</span>
-  </button>
-  <mat-menu #widgetMenu="matMenu">
-    @for (widget of availableWidgetTypes(); track widget.type) {
-      <button
-        mat-menu-item
-        (click)="add(widget.type)">
-        @if (widget.headerIcon; as icon) {
-          <span class="margin-right-16">
-            <ng-container *ngComponentOutlet="icon" />
-          </span>
-        } @else {
-          <mat-icon class="margin-right-16">{{ widget.icon }}</mat-icon>
+<app-widget-state [state]="state()">
+  @if (typeCounts().length > 0) {
+    <table class="token-types-table">
+      <tbody>
+        @for (type of typeCounts(); track type.key) {
+          <tr>
+            <td>
+              <a
+                [routerLink]="routePaths.TOKENS"
+                (click)="showType(type.key)"
+                >{{ type.name }}</a
+              >
+            </td>
+            <td>{{ type.count }}</td>
+          </tr>
         }
-        {{ widget.title }}
-      </button>
-    }
-  </mat-menu>
-}
+      </tbody>
+    </table>
+  } @else if (!loadingMore()) {
+    <p
+      class="empty-hint"
+      i18n>
+      No tokens
+    </p>
+  }
+</app-widget-state>

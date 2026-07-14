@@ -32,6 +32,14 @@ $button-low-contrast-variant: linear-gradient(
   var(--mat-sys-surface-container-highest)
 );
 
+$icon-badge-notch-mask: radial-gradient(
+  circle at calc(100% - var(--icon-badge-size) / 2) calc(100% - var(--icon-badge-size) / 2),
+  transparent 0%,
+  transparent calc(var(--icon-badge-mask-size) / 2 + 0.5px),
+  black calc(var(--icon-badge-mask-size) / 2 + 1px),
+  black calc(var(--icon-badge-mask-size) / 2 + 7px)
+);
+
 @mixin button-base($height, $width, $background-color, $border-color, $color) {
   height: $height;
   width: $width;
@@ -380,42 +388,72 @@ $button-low-contrast-variant: linear-gradient(
   mask-repeat: no-repeat;
   -webkit-mask-size: 100% 100%;
   mask-size: 100% 100%;
+  -webkit-mask-origin: content-box;
+  mask-origin: content-box;
+  -webkit-mask-clip: content-box;
+  mask-clip: content-box;
 }
 
 .icon-badge {
+  --mat-menu-item-spacing: 0;
+  --icon-badge-size: 12px;
+  --icon-badge-icon-size: var(--icon-badge-size);
+  --icon-badge-mask-size: var(--icon-badge-size);
   position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   vertical-align: middle;
 
+  &:has(.icon-badge-large) {
+    --icon-badge-size: 16px;
+  }
+
+  &:has(.icon-badge-small) {
+    --icon-badge-size: 12px;
+  }
+
+  &:has(.icon-badge-icon-large) {
+    --icon-badge-icon-size: 18px;
+  }
+
+  &:has(.icon-badge-mask-small) {
+    --icon-badge-mask-size: 10px;
+  }
+
+  > .mat-icon:not(.icon-badge-overlay) {
+    -webkit-mask-image: $icon-badge-notch-mask;
+    mask-image: $icon-badge-notch-mask;
+  }
+
+  > .mat-icon[class*="mdi--"]:not(.icon-badge-overlay) {
+    -webkit-mask-image: var(--svg), $icon-badge-notch-mask;
+    -webkit-mask-composite: source-in;
+    -webkit-mask-origin: content-box, border-box;
+    -webkit-mask-clip: content-box, border-box;
+    mask-image: var(--svg), $icon-badge-notch-mask;
+    mask-composite: intersect;
+    mask-origin: content-box, border-box;
+    mask-clip: content-box, border-box;
+  }
+
   .icon-badge-overlay {
     position: absolute;
-    bottom: -1px;
-    font-size: 14px;
-    width: 14px;
-    height: 14px;
-    line-height: 14px;
-    border-radius: 50%;
-    background-color: var(--mat-sys-surface-container-lowest);
-    color: inherit;
+    z-index: 1;
+    bottom: 0px;
+    right: 0px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
 
     &.mat-icon {
-      width: 14px !important;
-      height: 14px !important;
-      font-size: 14px !important;
+      width: var(--icon-badge-size) !important;
+      height: var(--icon-badge-size) !important;
+      font-size: var(--icon-badge-icon-size) !important;
     }
 
-    &.icon-badge-add {
+    &.icon-badge-bold {
       font-weight: bold;
-      right: -3px;
-    }
-
-    &.icon-badge-gear {
-      right: -1px;
     }
   }
 }
