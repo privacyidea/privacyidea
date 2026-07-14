@@ -128,7 +128,7 @@
         @if (Array.isArray(item.value) && item.value.length > 1) {
           <app-detail-field-row [label]="item.label">
             <ng-container fieldValue>
-              <ul class="value-list">
+              <ul class="value-list padding-top-8">
                 @if (isExpanded(item.key)) {
                   @for (val of item.value; track val) {
                     <li>{{ val }}</li>
