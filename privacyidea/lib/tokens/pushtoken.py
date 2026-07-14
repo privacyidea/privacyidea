@@ -115,7 +115,7 @@ KNOWN_DECLINE_REASONS = frozenset(r.value for r in PushDeclineReason)
 # challenge (see _build_smartphone_data). A newer app intersects these with its
 # own to decide which fields it may add to its signed answer; an app that does
 # not find a capability falls back to legacy behaviour.
-SERVER_PUSH_CAPABILITIES = {PushCapability.DECLINE_REASON.value: True}
+SERVER_PUSH_CAPABILITIES = {PushCapability.DECLINE_REASON: True}
 
 # Seconds an answered challenge stays redeemable after the smartphone answered.
 # The challenge validity is the window the smartphone has to answer; the

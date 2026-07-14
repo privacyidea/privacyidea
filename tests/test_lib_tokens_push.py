@@ -2043,9 +2043,9 @@ class PushCapabilitiesTestCase(MyTestCase):
     The signing uses the rfc8785 (JCS) standard."""
 
     def test_01_server_advertises_decline_reason(self):
-        # the enum value is the exact key advertised, mapped to an enabled toggle
-        self.assertEqual("decline_reason", PushCapability.DECLINE_REASON.value)
-        self.assertDictEqual({PushCapability.DECLINE_REASON.value: True}, SERVER_PUSH_CAPABILITIES)
+        # the member is its string value and is the advertised key
+        self.assertEqual("decline_reason", PushCapability.DECLINE_REASON)
+        self.assertDictEqual({PushCapability.DECLINE_REASON: True}, SERVER_PUSH_CAPABILITIES)
 
     def test_02_signed_bytes_reference_vector(self):
         # The exact bytes signed for capabilities_signature. Pins the wrapper

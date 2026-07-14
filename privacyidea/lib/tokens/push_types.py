@@ -43,13 +43,11 @@ class PushCapability(str, Enum):
     to its signed answer. An absent capability means the app falls back to
     legacy behaviour. Adding a feature is appending a member.
 
-    ``__str__`` returns the value so members interpolate to their string form,
-    matching :class:`PushDeclineReason`.
+    Members are ``str``, so they serialise to their value and compare as their
+    value without ``.value``. Add a ``__str__`` returning ``self.value`` (see
+    :class:`PushDeclineReason`) only if a member ever needs string interpolation.
     """
     DECLINE_REASON = "decline_reason"
-
-    def __str__(self) -> str:
-        return self.value
 
 
 class PushAction:
