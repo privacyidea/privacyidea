@@ -88,7 +88,8 @@ def get_authentication_log():
 
     :query page: page number, 1-indexed (default 1).
     :query page_size: entries per page (default 15).
-    :query sort_column: column to sort by (id, timestamp, event_type, realm, username, source_ip, serial).
+    :query sort_column: column to sort by (id, timestamp, event_type, resolver, uid, realm, username, source_ip,
+        client_label, serial, transaction_id, previous_transaction_id).
     :query sort_order: ``asc`` or ``desc`` (default ``desc``).
     :query start_time: only entries at/after this ISO 8601 timestamp.
     :query end_time: only entries at/before this ISO 8601 timestamp.
