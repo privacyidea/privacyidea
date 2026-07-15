@@ -41,7 +41,7 @@ describe("formatLocalDateTime", () => {
     expect(formatLocalDateTime(epoch)).toBe(expectedLocalDateTime(2026, 6, 1, 10, 30, 45));
   });
 
-  it("formats a date-only/time-free ISO string (interpreted as local midnight)", () => {
+  it("formats an ISO string without a UTC offset (interpreted as local time)", () => {
     expect(formatLocalDateTime("2026-01-05T00:05:09")).toBe(expectedLocalDateTime(2026, 0, 5, 0, 5, 9));
   });
 

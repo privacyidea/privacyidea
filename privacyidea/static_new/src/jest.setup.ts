@@ -91,15 +91,17 @@ if (typeof globalThis.structuredClone !== "function") {
   globalThis.structuredClone = (<T>(value: T): T => deserialize(serialize(value)) as T) as typeof structuredClone;
 }
 
-// Pin the default Intl locale so date/number formatting is deterministic across
-// dev machines and CI, regardless of the runtime's OS/LANG settings. Production
-// code keeps calling Intl.*(undefined, ...) to honor the real user's browser locale.
+// Pin the default Intl locale so date formatting is deterministic across dev machines
+// and CI, regardless of the runtime's OS/LANG settings. Production code keeps calling
+// Intl.DateTimeFormat(undefined, ...) to honor the real user's browser locale.
 const RealDateTimeFormat = Intl.DateTimeFormat;
 function PatchedDateTimeFormat(locales?: Intl.LocalesArgument, options?: Intl.DateTimeFormatOptions) {
   return new RealDateTimeFormat(locales ?? "en-US", options);
 }
 // Keeps static members like supportedLocalesOf available after the patch.
 Object.setPrototypeOf(PatchedDateTimeFormat, RealDateTimeFormat);
+// Keeps `instanceof Intl.DateTimeFormat` and RealDateTimeFormat.prototype usage working.
+PatchedDateTimeFormat.prototype = RealDateTimeFormat.prototype;
 Intl.DateTimeFormat = PatchedDateTimeFormat as typeof Intl.DateTimeFormat;
 
 Object.defineProperty(window, "matchMedia", {

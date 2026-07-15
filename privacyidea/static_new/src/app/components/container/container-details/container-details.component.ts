@@ -69,6 +69,7 @@ import { RealmService, RealmServiceInterface } from "@services/realm/realm.servi
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
+import { formatLocalDateTime } from "@utils/date-format.utils";
 
 type ContainerDetailGroup = "status" | "container";
 
@@ -87,9 +88,7 @@ const CONTAINER_TIMESTAMP_KEYS = ["last_authentication", "last_synchronization"]
 
 export function formatContainerTimestamp(value: string | undefined): string | undefined {
   if (value === undefined || value === "") return undefined;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date);
+  return formatLocalDateTime(value);
 }
 
 const containerUserDetailsKeyMap = [
