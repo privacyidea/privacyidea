@@ -60,7 +60,7 @@ export class PolicyPanelEditComponent {
   readonly activeTab = signal<PolicyTab>("actions");
 
   readonly tabValues: PolicyTab[] = ["actions", "conditions"];
-  readonly tabLabels = [$localize`ACTIONS`, $localize`CONDITIONS`];
+  readonly tabLabels = [$localize`Actions`, $localize`Conditions`];
 
   /**
    * Puffer for local changes.

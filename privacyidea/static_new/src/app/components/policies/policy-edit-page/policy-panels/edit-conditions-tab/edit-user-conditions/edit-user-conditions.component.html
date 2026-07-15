@@ -24,6 +24,8 @@
   </h2>
 
   <app-multi-select-only
+    class="margin-bottom-16"
+    fieldClass="input-width-xl"
     label="Select Realms"
     [items]="availableRealms()"
     [selectedItems]="selectedRealms()"
@@ -32,6 +34,8 @@
   </app-multi-select-only>
 
   <app-multi-select-only
+    class="margin-bottom-16"
+    fieldClass="input-width-xl"
     label="Select Resolvers"
     [items]="availableResolvers()"
     [selectedItems]="selectedResolvers()"
@@ -76,7 +80,8 @@
 
   <div class="user-input-container">
     <mat-form-field
-      class="add-user-input"
+      subscriptSizing="dynamic"
+      class="input-width-l"
       appearance="outline">
       <mat-label i18n>Add User</mat-label>
       <input
@@ -88,7 +93,7 @@
       }
     </mat-form-field>
     <button
-      class="input-attached-button"
+      mat-icon-button
       [disabled]="!userSignal().trim() || userField().errors().length > 0"
       (click)="addUser(userSignal())">
       <mat-icon>add</mat-icon>

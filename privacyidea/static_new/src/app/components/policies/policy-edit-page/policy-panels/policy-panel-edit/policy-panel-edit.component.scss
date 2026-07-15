@@ -19,7 +19,7 @@
     flex-wrap: nowrap;
     gap: var(--half-global-gap);
     justify-content: center;
-    padding: var(--half-global-padding) 32px;
+    padding: var(--half-global-padding) var(--double-global-padding);
   }
 
   .name-priority-row {

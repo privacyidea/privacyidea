@@ -25,6 +25,8 @@
   </h2>
 
   <app-multi-select-only
+    class="margin-bottom-16"
+    fieldClass="input-width-xl"
     label="privacyIDEA Nodes"
     [items]="availablePinodesList()"
     [selectedItems]="selectedPinodes()"
@@ -34,7 +36,7 @@
   <div class="flex-row-stretch">
     <mat-form-field
       appearance="outline"
-      class="flex-grow-1">
+      class="input-width-l margin-bottom-16">
       <mat-label i18n>Valid time</mat-label>
       <input
         matInput
@@ -53,7 +55,7 @@
 
     <mat-form-field
       appearance="outline"
-      class="flex-grow-1">
+      class="input-width-l margin-bottom-16">
       <mat-label i18n>Client</mat-label>
       <input
         matInput
@@ -127,8 +129,9 @@
 
   <div class="user-agent-input-container">
     <mat-form-field
+      subscriptSizing="dynamic"
       appearance="outline"
-      class="input-width-m">
+      class="input-width-l">
       <mat-label i18n>User Agent</mat-label>
       <mat-select
         #uaSelect
@@ -160,10 +163,10 @@
         }
       </mat-select>
     </mat-form-field>
-    <div class="gap-div-8px"></div>
     <mat-form-field
+      subscriptSizing="dynamic"
       appearance="outline"
-      class="add-user-agent-input flex-grow-1">
+      class="add-user-agent-input input-width-l">
       <mat-label i18n>Add Custom User Agent</mat-label>
       <input
         matInput
@@ -175,7 +178,7 @@
     </mat-form-field>
 
     <button
-      class="input-attached-button"
+      mat-icon-button
       [disabled]="!addUserAgentSignal().trim() || addUserAgentField().errors().length > 0"
       (click)="addUserAgent()">
       <mat-icon>add</mat-icon>

@@ -89,7 +89,7 @@
   @if (showAddConditionForm()) {
     <div class="new-condition-form">
       <div class="form-row">
-        <mat-form-field appearance="outline">
+        <mat-form-field appearance="outline" class="margin-bottom-16">
           <mat-label i18n>Section</mat-label>
           <mat-select
             [value]="conditionSection()"
@@ -100,7 +100,7 @@
           </mat-select>
         </mat-form-field>
 
-        <mat-form-field appearance="outline">
+        <mat-form-field appearance="outline" class="margin-bottom-16">
           <mat-label i18n>If Data Missing</mat-label>
           <mat-select
             [value]="conditionHandleMissingData()"
@@ -112,7 +112,7 @@
         </mat-form-field>
       </div>
       <div class="form-row">
-        <mat-form-field appearance="outline">
+        <mat-form-field appearance="outline" class="margin-bottom-16">
           <mat-label i18n>Key</mat-label>
           @if (availableKeys().length > 0) {
             <input
@@ -137,7 +137,7 @@
           }
         </mat-form-field>
 
-        <mat-form-field appearance="outline">
+        <mat-form-field appearance="outline" class="margin-bottom-16">
           <mat-label i18n>Comparator</mat-label>
           <mat-select
             [value]="conditionComparator()"
@@ -148,7 +148,7 @@
           </mat-select>
         </mat-form-field>
 
-        <mat-form-field appearance="outline">
+        <mat-form-field appearance="outline" class="margin-bottom-16">
           <mat-label i18n>Value</mat-label>
           <input
             matInput
