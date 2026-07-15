@@ -95,9 +95,12 @@ if (typeof globalThis.structuredClone !== "function") {
 // dev machines and CI, regardless of the runtime's OS/LANG settings. Production
 // code keeps calling Intl.*(undefined, ...) to honor the real user's browser locale.
 const RealDateTimeFormat = Intl.DateTimeFormat;
-Intl.DateTimeFormat = function (locales?: Intl.LocalesArgument, options?: Intl.DateTimeFormatOptions) {
+function PatchedDateTimeFormat(locales?: Intl.LocalesArgument, options?: Intl.DateTimeFormatOptions) {
   return new RealDateTimeFormat(locales ?? "en-US", options);
-} as typeof Intl.DateTimeFormat;
+}
+// Keeps static members like supportedLocalesOf available after the patch.
+Object.setPrototypeOf(PatchedDateTimeFormat, RealDateTimeFormat);
+Intl.DateTimeFormat = PatchedDateTimeFormat as typeof Intl.DateTimeFormat;
 
 Object.defineProperty(window, "matchMedia", {
   writable: true,

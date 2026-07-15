@@ -18,17 +18,23 @@
  **/
 
 // Matches server-supplied "YYYY-MM-DD HH:mm:ss[.fraction][offset]" timestamps that use a
-// space instead of "T", or a fractional-seconds part longer than the 3 digits (milliseconds)
-// the Date Time String Format allows. Both are only reliably parsed by new Date() on some
-// engines, so normalize to a spec-conformant ISO string before parsing.
+// space instead of "T", a fractional-seconds part longer than the 3 digits (milliseconds)
+// the Date Time String Format allows, or an offset without a colon. All three are only
+// reliably parsed by new Date() on some engines, so normalize to a spec-conformant ISO
+// string before parsing.
 const LOOSE_ISO_DATE_TIME_REGEX = /^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}:\d{2})(\.\d+)?(Z|[+-]\d{2}:?\d{2})?$/;
+const DATE_ONLY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
-function normalizeDateTimeString(value: string): string {
+// Normalizes a server timestamp to a spec-conformant ISO string new Date() parses consistently,
+// and treats a bare date as local midnight instead of JavaScript's UTC-midnight default.
+export function normalizeDateTimeString(value: string): string {
+  if (DATE_ONLY_REGEX.test(value)) return `${value}T00:00:00`;
   const match = LOOSE_ISO_DATE_TIME_REGEX.exec(value);
   if (!match) return value;
   const [, datePart, timePart, fraction, offset] = match;
   const milliseconds = fraction ? `.${fraction.slice(1, 4).padEnd(3, "0")}` : "";
-  return `${datePart}T${timePart}${milliseconds}${offset ?? ""}`;
+  const normalizedOffset = offset && offset.length === 5 ? `${offset.slice(0, 3)}:${offset.slice(3)}` : offset;
+  return `${datePart}T${timePart}${milliseconds}${normalizedOffset ?? ""}`;
 }
 
 let localDateTimeFormatter: Intl.DateTimeFormat | undefined;

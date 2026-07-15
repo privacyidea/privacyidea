@@ -17,6 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { normalizeDateTimeString } from "@app/utils/date-format.utils";
+
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 /**
@@ -39,12 +41,13 @@ export function expectedLocalDateTime(
 }
 
 /**
- * Same as expectedLocalDateTime, but reads the local-time components straight off a Date/
- * parseable value via the plain Date getters (not Intl), for use with values that come in as
- * a UTC-anchored ISO string or epoch rather than fixed local components.
+ * Same as expectedLocalDateTime, but computes the local-time components from a raw value —
+ * a server timestamp, a UTC-anchored ISO string, a bare date, or an epoch — rather than
+ * fixed local components.
  */
 export function expectedLocalDateTimeFromInput(value: string | number | Date): string {
-  const date = value instanceof Date ? value : new Date(value);
+  const normalized = typeof value === "string" ? normalizeDateTimeString(value) : value;
+  const date = normalized instanceof Date ? normalized : new Date(normalized);
   return expectedLocalDateTime(
     date.getFullYear(),
     date.getMonth(),

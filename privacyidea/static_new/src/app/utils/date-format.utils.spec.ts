@@ -68,4 +68,32 @@ describe("formatLocalDateTime", () => {
       formatLocalDateTime("2026-01-05T10:30:45.123+02:00")
     );
   });
+
+  it("formats a positive UTC offset without a colon the same as its colon equivalent", () => {
+    expect(formatLocalDateTime("2026-01-05T10:30:45+0200")).toBe(formatLocalDateTime("2026-01-05T10:30:45+02:00"));
+  });
+
+  it("formats a negative UTC offset without a colon the same as its colon equivalent", () => {
+    expect(formatLocalDateTime("2026-01-05T10:30:45-0500")).toBe(formatLocalDateTime("2026-01-05T10:30:45-05:00"));
+  });
+
+  it("formats a 'Z' offset the same as its explicit +00:00 equivalent", () => {
+    expect(formatLocalDateTime("2026-01-05T10:30:45Z")).toBe(formatLocalDateTime("2026-01-05T10:30:45+00:00"));
+  });
+
+  it("treats a bare date (no time part) as local midnight, not UTC midnight", () => {
+    expect(formatLocalDateTime("2026-01-31")).toBe(expectedLocalDateTime(2026, 0, 31, 0, 0, 0));
+  });
+
+  it("does not shift a bare date to the previous day the way UTC-midnight parsing would west of UTC", () => {
+    expect(formatLocalDateTime("2026-01-31")).not.toBe(expectedLocalDateTime(2026, 0, 30, 23, 0, 0));
+  });
+
+  it("returns the raw value for a bare date with an invalid calendar day instead of throwing", () => {
+    expect(formatLocalDateTime("2026-13-45")).toBe("2026-13-45");
+  });
+
+  it("returns the raw value for a non-date string unaffected by the offset/date-only handling", () => {
+    expect(formatLocalDateTime("not-a-date")).toBe("not-a-date");
+  });
 });
