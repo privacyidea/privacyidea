@@ -28,7 +28,9 @@ from privacyidea.lib.conditional_access.authentication_event_types import AuthEv
 from privacyidea.lib.conditional_access.engine import (
     AccessDecision,
     LockoutAction,
+    LockoutTarget,
     count_user_events,
+    count_distinct_users_for_ip,
     evaluate_access_decision,
     evaluate_lockout_policies,
     is_user_locked,
@@ -58,7 +60,8 @@ from .conditional_access_lockout_base import LockoutTestCase
 class LockoutEngineTestCase(LockoutTestCase):
 
     def _make_policy(self, *, name, counter_type, window=3600, enabled=True, dry_run=False,
-                     priority=1, stages=((3, 1, LockoutAction.LOCK_USER, 600),)):
+                     priority=1, target=LockoutTarget.USER,
+                     stages=((3, 1, LockoutAction.LOCK_USER, 600),)):
         """
         Build a policy with its stages and one action per stage.
 
@@ -67,7 +70,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         counter_types = counter_type if isinstance(counter_type, (list, tuple)) else [counter_type]
         policy = LockoutPolicy(name=name, counter_types_to_track=[str(t) for t in counter_types],
                                time_window_seconds=window, enabled=enabled, dry_run=dry_run,
-                               priority=priority)
+                               priority=priority, target=str(target))
         db.session.add(policy)
         db.session.commit()
         made_stages = []
@@ -82,6 +85,58 @@ class LockoutEngineTestCase(LockoutTestCase):
             made_stages.append(stage)
         return policy, made_stages
 
+    # --- count_distinct_users_for_ip (spraying signal) ------------------------
+
+    def test_count_distinct_users_for_ip_counts_users_not_rows(self):
+        ip = "10.0.0.1"
+        # 3 users, 2 failures each from the same IP -> 3 distinct users, not 6 rows.
+        self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3, per_user=2)
+        self.assertEqual(3, count_distinct_users_for_ip(ip, [AuthEventType.PASSWORD_FAIL], 300))
+
+    def test_count_distinct_users_for_ip_filters_ip_and_type(self):
+        self._seed_ip_events("10.0.0.1", AuthEventType.PASSWORD_FAIL, n_users=4)
+        # A different IP and a different event type must not contribute.
+        self._seed_ip_events("10.0.0.2", AuthEventType.PASSWORD_FAIL, n_users=5)
+        self._seed_ip_events("10.0.0.1", AuthEventType.MFA_FAIL, n_users=7)
+        self.assertEqual(4, count_distinct_users_for_ip("10.0.0.1", [AuthEventType.PASSWORD_FAIL], 300))
+
+    def test_count_distinct_users_for_ip_window_boundary(self):
+        ip = "10.0.0.1"
+        now = utc_now()
+        self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=2, timestamp=now)
+        self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3,
+                             timestamp=now - timedelta(seconds=7200))
+        self.assertEqual(2, count_distinct_users_for_ip(ip, [AuthEventType.PASSWORD_FAIL], 300, window_end=now))
+
+    # --- source_ip target evaluation (spraying) -------------------------------
+
+    def test_spraying_policy_blocks_ip(self):
+        ip = "203.0.113.7"
+        self._make_policy(name="spray", counter_type=AuthEventType.PASSWORD_FAIL, window=300,
+                          target=LockoutTarget.SOURCE_IP,
+                          stages=((20, 1, LockoutAction.BLOCK_IP, {"duration_seconds": 3600}),))
+        self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=20)
+        self.assertFalse(is_ip_blocked(ip))
+        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip=ip)
+        self.assertTrue(is_ip_blocked(ip))
+
+    def test_spraying_policy_below_threshold_does_not_block(self):
+        ip = "203.0.113.8"
+        self._make_policy(name="spray", counter_type=AuthEventType.PASSWORD_FAIL, window=300,
+                          target=LockoutTarget.SOURCE_IP,
+                          stages=((20, 1, LockoutAction.BLOCK_IP, {"duration_seconds": 3600}),))
+        self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=19)
+        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip=ip)
+        self.assertFalse(is_ip_blocked(ip))
+
+    def test_spraying_policy_without_source_ip_is_skipped(self):
+        self._make_policy(name="spray", counter_type=AuthEventType.PASSWORD_FAIL, window=300,
+                          target=LockoutTarget.SOURCE_IP,
+                          stages=((1, 1, LockoutAction.BLOCK_IP, {"duration_seconds": 3600}),))
+        self._seed_ip_events("203.0.113.9", AuthEventType.PASSWORD_FAIL, n_users=5)
+        # No source IP on the current request -> the IP-targeted policy cannot act.
+        self.assertEqual([], evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip=None))
+
     # --- count_user_events ----------------------------------------------------
 
     def test_count_user_events_window_boundary(self):
@@ -90,10 +145,10 @@ class LockoutEngineTestCase(LockoutTestCase):
         self._seed_events(AuthEventType.MFA_FAIL, 1, timestamp=now - timedelta(seconds=7200))
         # Only the two recent events fall inside the 1h window.
         self.assertEqual(2, count_user_events(self.user.resolver, self.user.uid, self.user.realm,
-                                              AuthEventType.MFA_FAIL, 3600, now=now))
+                                              [AuthEventType.MFA_FAIL], 3600, window_end=now))
         # Widening the window picks up the old one as well.
         self.assertEqual(3, count_user_events(self.user.resolver, self.user.uid, self.user.realm,
-                                              AuthEventType.MFA_FAIL, 100000, now=now))
+                                              [AuthEventType.MFA_FAIL], 100000, window_end=now))
 
     def test_count_user_events_excludes_future_rows(self):
         now = utc_now()
@@ -102,16 +157,16 @@ class LockoutEngineTestCase(LockoutTestCase):
         # explicitly historical `now`) must not be counted: the window ends at `now`.
         self._seed_events(AuthEventType.MFA_FAIL, 1, timestamp=now + timedelta(seconds=60))
         self.assertEqual(2, count_user_events(self.user.resolver, self.user.uid, self.user.realm,
-                                              AuthEventType.MFA_FAIL, 3600, now=now))
+                                              [AuthEventType.MFA_FAIL], 3600, window_end=now))
 
     def test_count_user_events_filters_event_type_and_user(self):
         self._seed_events(AuthEventType.MFA_FAIL, 2)
         self._seed_events(AuthEventType.PIN_FAIL, 5)
         self.assertEqual(2, count_user_events(self.user.resolver, self.user.uid, self.user.realm,
-                                              AuthEventType.MFA_FAIL, 3600))
+                                              [AuthEventType.MFA_FAIL], 3600))
         # A different user identity is not counted.
         self.assertEqual(0, count_user_events("other", "999", self.user.realm,
-                                              AuthEventType.MFA_FAIL, 3600))
+                                              [AuthEventType.MFA_FAIL], 3600))
 
     def test_count_user_events_since_last_success_floors_at_login(self):
         now = utc_now()
@@ -119,18 +174,18 @@ class LockoutEngineTestCase(LockoutTestCase):
         self._seed_events(AuthEventType.MFA_FAIL, 2, timestamp=now - timedelta(seconds=300))
         self._seed_events(AuthEventType.LOGIN_SUCCESS, 1, timestamp=now - timedelta(seconds=200))
         self._seed_events(AuthEventType.MFA_FAIL, 1, timestamp=now - timedelta(seconds=100))
-        args = (self.user.resolver, self.user.uid, self.user.realm, AuthEventType.MFA_FAIL, 3600)
+        args = (self.user.resolver, self.user.uid, self.user.realm, [AuthEventType.MFA_FAIL], 3600)
         # Without the reset, all three failures are in the window.
-        self.assertEqual(3, count_user_events(*args, now=now))
+        self.assertEqual(3, count_user_events(*args, window_end=now))
         # With the reset, only the failure after the successful login counts.
-        self.assertEqual(1, count_user_events(*args, now=now, since_last_success=True))
+        self.assertEqual(1, count_user_events(*args, window_end=now, since_last_success=True))
 
     def test_count_user_events_since_last_success_no_login_counts_all(self):
         now = utc_now()
         self._seed_events(AuthEventType.MFA_FAIL, 3, timestamp=now - timedelta(seconds=100))
         # No LOGIN_SUCCESS in the window -> the floor does not apply, count is unchanged.
         self.assertEqual(3, count_user_events(self.user.resolver, self.user.uid, self.user.realm,
-                                              AuthEventType.MFA_FAIL, 3600, now=now,
+                                              [AuthEventType.MFA_FAIL], 3600, window_end=now,
                                               since_last_success=True))
 
     def test_count_user_events_since_last_success_ignores_login_outside_window(self):
@@ -139,7 +194,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         self._seed_events(AuthEventType.LOGIN_SUCCESS, 1, timestamp=now - timedelta(seconds=7200))
         self._seed_events(AuthEventType.MFA_FAIL, 3, timestamp=now - timedelta(seconds=100))
         self.assertEqual(3, count_user_events(self.user.resolver, self.user.uid, self.user.realm,
-                                              AuthEventType.MFA_FAIL, 3600, now=now,
+                                              [AuthEventType.MFA_FAIL], 3600, window_end=now,
                                               since_last_success=True))
 
     def test_count_user_events_combined_types(self):
@@ -151,9 +206,8 @@ class LockoutEngineTestCase(LockoutTestCase):
         args = (self.user.resolver, self.user.uid, self.user.realm)
         self.assertEqual(5, count_user_events(
             *args, [AuthEventType.PASSWORD_FAIL, AuthEventType.TOKEN_ONLY_FAIL], 3600))
-        # A single-element list matches the scalar form.
+        # A single-element list counts just that type.
         self.assertEqual(2, count_user_events(*args, [AuthEventType.PASSWORD_FAIL], 3600))
-        self.assertEqual(2, count_user_events(*args, AuthEventType.PASSWORD_FAIL, 3600))
 
     # --- is_user_locked -------------------------------------------------------
 

@@ -161,6 +161,8 @@ def create_policy():
     :jsonparam enabled: whether the policy is evaluated (default true).
     :jsonparam dry_run: log-only mode, nothing is enforced (default false).
     :jsonparam priority: evaluation priority, higher first (default 1).
+    :jsonparam target: the identity the policy counts and acts on - ``user``
+        (per-user brute force) or ``source_ip`` (password spraying). Required.
     :status 200: the id of the new policy in ``result.value``
     :status 400: invalid or missing parameter
     """
@@ -175,7 +177,8 @@ def create_policy():
         stages=_get_json_param(params, "stages", required=True),
         enabled=is_true(enabled) if enabled is not None else True,
         dry_run=is_true(dry_run) if dry_run is not None else False,
-        priority=get_optional(params, "priority", default=1))
+        priority=get_optional(params, "priority", default=1),
+        target=get_required(params, "target"))
     g.audit_object.log({"success": True, "info": f"created policy '{name}' (id {policy_id})"})
     return send_result(policy_id)
 
@@ -192,7 +195,9 @@ def update_policy(policy_id):
     sending ``{"enabled": true}`` / ``{"enabled": false}``.
 
     Requires the admin policy action :ref:`policy_lockout_policy_write`.
-    Parameters are as for creating a policy, all optional.
+    Parameters are as for creating a policy, all optional. ``target`` may be
+    changed, but the resulting target/action combination must stay compatible
+    (otherwise a 400).
 
     :status 200: the id of the updated policy in ``result.value``
     :status 400: invalid parameter
@@ -210,7 +215,8 @@ def update_policy(policy_id):
         stages=_get_json_param(params, "stages"),
         enabled=is_true(enabled) if enabled is not None else None,
         dry_run=is_true(dry_run) if dry_run is not None else None,
-        priority=get_optional(params, "priority"))
+        priority=get_optional(params, "priority"),
+        target=get_optional(params, "target"))
     g.audit_object.log({"success": True,
                         "info": f"updated policy {policy_id} "
                                 f"({', '.join(changed_fields) or 'no fields'})"})

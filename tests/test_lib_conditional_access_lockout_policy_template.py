@@ -27,7 +27,9 @@ from privacyidea.lib.conditional_access.authentication_event_types import AuthEv
 from privacyidea.lib.conditional_access.engine import (
     LockoutAction,
     evaluate_lockout_policies,
+    get_ip_block,
     get_user_lockout,
+    is_ip_blocked,
     is_user_locked,
 )
 from privacyidea.lib.conditional_access.lockout_policy import create_lockout_policy, get_lockout_policy
@@ -283,3 +285,45 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
         self._seed_events(AuthEventType.PASSWORD_FAIL, 10, timestamp=now)
         evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, now=now)
         self.assertFalse(is_user_locked(self.user, now=now), "user locked on untracked event type")
+
+    # --- password spraying template (source_ip target) ------------------------
+
+    def test_password_spraying_blocks_ip_after_distinct_users(self):
+        now = utc_now()
+        ip = "203.0.113.20"
+        self._create("password_spraying")
+        self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=20, timestamp=now)
+        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip=ip, now=now)
+        status = get_ip_block(ip, now=now)
+        self.assertIsNotNone(status, "IP not blocked")
+        self.assertFalse(status.permanent, "block is permanent, expected timed")
+        self.assertEqual(3600, status.seconds_remaining, "wrong block duration")
+
+    def test_password_spraying_below_threshold_not_blocked(self):
+        now = utc_now()
+        ip = "203.0.113.21"
+        self._create("password_spraying")
+        self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=19, timestamp=now)
+        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip=ip, now=now)
+        self.assertFalse(is_ip_blocked(ip, now=now), "IP blocked below the distinct-user threshold")
+
+    def test_password_spraying_combines_password_and_pin(self):
+        # The template tracks PASSWORD_FAIL and PIN_FAIL together: 12 + 8 = 20
+        # distinct users reach the threshold although neither type alone does.
+        now = utc_now()
+        ip = "203.0.113.22"
+        self._create("password_spraying")
+        self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=12, timestamp=now)
+        self._seed_ip_events(ip, AuthEventType.PIN_FAIL, n_users=8, timestamp=now, start=12)
+        evaluate_lockout_policies(self.user, AuthEventType.PIN_FAIL, source_ip=ip, now=now)
+        self.assertTrue(is_ip_blocked(ip, now=now), "IP not blocked on combined distinct-user count")
+
+    def test_password_spraying_counts_distinct_users_not_events(self):
+        # Many failures from only a few users must not trip the per-IP detection:
+        # 5 users x 10 failures = 50 rows but only 5 distinct users (< 20).
+        now = utc_now()
+        ip = "203.0.113.23"
+        self._create("password_spraying")
+        self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=5, per_user=10, timestamp=now)
+        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip=ip, now=now)
+        self.assertFalse(is_ip_blocked(ip, now=now), "IP blocked on event count instead of distinct users")

@@ -35,7 +35,7 @@ from dataclasses import dataclass
 
 from privacyidea.lib import lazy_gettext
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
-from privacyidea.lib.conditional_access.engine import LockoutAction
+from privacyidea.lib.conditional_access.engine import LockoutAction, LockoutTarget
 from privacyidea.lib.log import log_with
 
 log = logging.getLogger(__name__)
@@ -65,6 +65,7 @@ PASSWORD_BRUTEFORCE = LockoutPolicyTemplate(
         "enabled": True,
         "dry_run": False,
         "priority": 1,
+        "target": LockoutTarget.USER,
         "counter_types_to_track": [AuthEventType.PASSWORD_FAIL,
                                    AuthEventType.PIN_FAIL],
         "stages": [
@@ -84,6 +85,7 @@ MFA_BRUTEFORCE = LockoutPolicyTemplate(
         "enabled": True,
         "dry_run": False,
         "priority": 1,
+        "target": LockoutTarget.USER,
         "counter_types_to_track": [AuthEventType.MFA_FAIL],
         "stages": [
             {"failure_threshold": 3, "priority": 1,
@@ -102,6 +104,7 @@ MFA_BRUTEFORCE = LockoutPolicyTemplate(
                                "{client_ip} tripped policy {policy}: {count}/{threshold} "
                                "{event_type} events. Time: {time}.")}},
              ]},
+
             {"failure_threshold": 10, "priority": 3,
              "actions": [
                  {"action_type": LockoutAction.PERMANENT_LOCK_USER.value},
@@ -117,8 +120,28 @@ MFA_BRUTEFORCE = LockoutPolicyTemplate(
         ],
     })
 
+PASSWORD_SPRAYING = LockoutPolicyTemplate(
+    key="password_spraying",
+    description=lazy_gettext("Block a source IP that fails first-factor authentication (wrong password "
+                             "or PIN) against many different users in a short time (password spraying / "
+                             "credential stuffing)."),
+    policy={
+        "name": "Password Spraying",
+        "time_window_seconds": 300,
+        "enabled": True,
+        "dry_run": False,
+        "priority": 1,
+        "target": LockoutTarget.SOURCE_IP,
+        "counter_types_to_track": [AuthEventType.PASSWORD_FAIL, AuthEventType.PIN_FAIL],
+        "stages": [
+            {"failure_threshold": 20, "priority": 1,
+             "actions": [{"action_type": LockoutAction.BLOCK_IP,
+                          "action_value": {"duration_seconds": 3600}}]},
+        ],
+    })
+
 # The shipped catalog. Add a template by defining a constant and listing it here.
-_TEMPLATES = (PASSWORD_BRUTEFORCE, MFA_BRUTEFORCE)
+_TEMPLATES = (PASSWORD_BRUTEFORCE, MFA_BRUTEFORCE, PASSWORD_SPRAYING)
 
 
 @log_with(log)

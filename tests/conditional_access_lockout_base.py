@@ -76,6 +76,18 @@ class LockoutTestCase(MyTestCase):
                 realm=user.realm, timestamp=timestamp))
         db.session.commit()
 
+    def _seed_ip_events(self, source_ip, event_type, n_users, per_user=1, timestamp=None, start=0):
+        """Seed *n_users* distinct users (``spray<start>``..), each with *per_user* rows, all from
+        *source_ip* (the password-spraying shape: one IP hitting many users). *start* offsets the
+        user index so several calls can seed non-overlapping users."""
+        timestamp = timestamp if timestamp is not None else utc_now()
+        for i in range(start, start + n_users):
+            for _ in range(per_user):
+                db.session.add(AuthenticationLog(
+                    event_type=str(event_type), resolver=self.user.resolver, uid=f"spray{i}",
+                    realm=self.user.realm, source_ip=source_ip, timestamp=timestamp))
+        db.session.commit()
+
     def _state(self, user=None):
         user = user or self.user
         return db.session.get(UserLockoutState, (user.resolver, user.uid, user.realm))

@@ -19,7 +19,9 @@
 Tests for the conditional-access lockout-policy CRUD layer
 (:mod:`privacyidea.lib.conditional_access.lockout_policy`).
 """
-from privacyidea.lib.conditional_access.lockout_policy import (create_lockout_policy,
+from privacyidea.lib.conditional_access.engine import LockoutAction, LockoutTarget
+from privacyidea.lib.conditional_access.lockout_policy import (_ACTIONS_BY_TARGET,
+                                                               create_lockout_policy,
                                                                delete_lockout_policy,
                                                                enable_lockout_policy,
                                                                get_lockout_policy,
@@ -199,3 +201,14 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         enable_lockout_policy(policy_id)
         self.assertTrue(get_lockout_policy(policy_id)["enabled"])
         self.assertRaises(ResourceNotFoundError, enable_lockout_policy, 424242)
+
+    def test_08_actions_by_target_is_exhaustive(self):
+        # Guard the manual registration in _ACTIONS_BY_TARGET so a newly added enum
+        # option is not silently forgotten: every LockoutTarget must have an entry
+        # (a missing key would KeyError at validation), and every LockoutAction must
+        # be allowed on at least one target (else it is unusable on any policy).
+        self.assertSetEqual(set(LockoutTarget), set(_ACTIONS_BY_TARGET),
+                            "a LockoutTarget is missing from _ACTIONS_BY_TARGET")
+        covered = set().union(*_ACTIONS_BY_TARGET.values())
+        self.assertSetEqual(set(LockoutAction), covered,
+                            "a LockoutAction is not assignable to any target")
