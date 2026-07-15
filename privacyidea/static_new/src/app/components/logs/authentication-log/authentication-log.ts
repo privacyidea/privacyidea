@@ -35,6 +35,7 @@ import { MatInput } from "@angular/material/input";
 import { MatMenuModule } from "@angular/material/menu";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { MatPaginator, PageEvent } from "@angular/material/paginator";
+import { MatSliderModule } from "@angular/material/slider";
 import {
   MatCell,
   MatCellDef,
@@ -171,11 +172,11 @@ function computePeriodStart(period: string): string {
   }
 }
 
-// Converts an ISO 8601 string to the format required by <input type="datetime-local">.
-// Input: ISO 8601, e.g. "2026-06-02T10:00:00.000Z". Output: "2026-06-02T10:00".
-function toDatetimeLocal(isoString: string): string {
-  return formatDate(isoString, "yyyy-MM-ddTHH:mm", "en-US");
-}
+// The custom-range slider has a fixed number of positions (its resolution); the time span they cover is dynamic
+// (sliderWindowMs) and follows the selected preset. It defaults to the widest preset (1 year).
+const RANGE_SLIDER_STEPS = 200;
+const MS_PER_DAY = 86_400_000;
+const DEFAULT_SLIDER_WINDOW_MS = 365 * MS_PER_DAY;
 
 // Converts an ISO 8601 string to the human-readable format shown in the active-filter chip.
 // Input: ISO 8601, e.g. "2026-06-02T10:00:00.000Z". Output: "2026-06-02 10:00:00 +00:00".
@@ -230,6 +231,7 @@ const FILTER_TOOLTIPS: Record<string, string> = {
     MatDividerModule,
     MatIconModule,
     MatMenuModule,
+    MatSliderModule,
     MatTooltipModule
   ],
   templateUrl: "./authentication-log.html",
@@ -241,6 +243,8 @@ export class AuthenticationLog {
   readonly scrollableColumnKeys = ["serial", "other_info"];
   // Client filter: show the friendly user-agent name, filter by its identifier prefix (a trailing "*" is applied by
   // the multi-select component since client_label stores the full user-agent string incl. version).
+  // REVIEW: once selected, the shared filter input shows the raw stored value (e.g. `client_label: privacyIDEA-Keycloak*`)
+  // rather than the friendly name the user picked; consider mapping it back for display.
   readonly clientLabelOptions: readonly MultiSelectFilterOption[] = USER_AGENT_PRESETS.map((preset) => ({
     label: preset.displayName,
     value: preset.identifier
@@ -292,14 +296,26 @@ export class AuthenticationLog {
   readonly showSourceIpMenu = computed(() => this.sourceIpOptions().length > 0);
 
   readonly timePresets = TIME_PRESETS;
+  // Highlighted preset button. Component-local: it reflects the last preset the user clicked, not the underlying
+  // timestamp filter, so it is cleared whenever a custom range or a clear is applied.
   readonly selectedPreset = signal<string | null>(null);
-  readonly fromInputValue = computed(() => {
-    const s = this.authenticationLogService.timestampFrom();
-    return s ? toDatetimeLocal(s) : "";
-  });
-  readonly toInputValue = computed(() => {
-    const e = this.authenticationLogService.timestampTo();
-    return e ? toDatetimeLocal(e) : "";
+
+  readonly rangeSliderSteps = RANGE_SLIDER_STEPS;
+  // The time span the slider covers (its zoom level): a preset's duration, or the default window after a clear.
+  readonly sliderWindowMs = signal(DEFAULT_SLIDER_WINDOW_MS);
+  // Thumb positions (0 = start of the window .. RANGE_SLIDER_STEPS = now), derived from the active time filter
+  // (relative to sliderWindowMs). Writable during a drag; each recomputes on the next timestamp/window change.
+  readonly rangeStart = linkedSignal(() => this.isoToSliderPos(this.authenticationLogService.timestampFrom(), 0));
+  readonly rangeEnd = linkedSignal(() =>
+    this.isoToSliderPos(this.authenticationLogService.timestampTo(), RANGE_SLIDER_STEPS)
+  );
+  // Human-readable from/to for the range summary line; the end thumb at its maximum reads as "now".
+  readonly rangeSummaryFrom = computed(() =>
+    formatDate(this.sliderPosToIso(this.rangeStart(), false)!, "yyyy-MM-dd HH:mm", "en-US")
+  );
+  readonly rangeSummaryTo = computed(() => {
+    const iso = this.sliderPosToIso(this.rangeEnd(), true);
+    return iso ? formatDate(iso, "yyyy-MM-dd HH:mm", "en-US") : $localize`now`;
   });
 
   constructor() {
@@ -375,66 +391,86 @@ export class AuthenticationLog {
     this.tableUtilsService.onSortButtonClick(columnKey, this.sort, { active: "timestamp", direction: "" });
   }
 
+  // Clears both the text and the time filter, bound to the input's clear (X) button. The time filter lives in its own
+  // signals, so it must be cleared alongside the text.
+  clearAllFilters(): void {
+    this.clearTimeFilter();
+    this.authenticationLogService.clearFilter();
+  }
+
   selectTimePreset(key: string): void {
     this.selectedPreset.set(key);
     const startIso = computePeriodStart(key);
-    this.authenticationLogService.timestampFrom.set(startIso);
-    this.authenticationLogService.timestampTo.set(null);
-    this.authenticationLogService.authenticationLogFilter.set(
-      this.authenticationLogService
-        .authenticationLogFilter()
-        .removeKey("end_time")
-        .addEntry("start_time", toFilterDisplay(startIso))
-    );
+    // Zoom the slider window to this preset's span; the thumbs then sit at its edges (start = oldest, end = now).
+    this.sliderWindowMs.set(Date.now() - new Date(startIso).getTime());
+    this.applyTimeRange(startIso, null);
   }
 
   clearTimeFilter(): void {
     this.selectedPreset.set(null);
-    this.authenticationLogService.timestampFrom.set(null);
-    this.authenticationLogService.timestampTo.set(null);
-    this.authenticationLogService.authenticationLogFilter.set(
-      this.authenticationLogService.authenticationLogFilter().removeKey("start_time").removeKey("end_time")
-    );
+    this.sliderWindowMs.set(DEFAULT_SLIDER_WINDOW_MS);
+    this.applyTimeRange(null, null);
   }
 
-  onFromChange(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const value = input.value;
-    this.selectedPreset.set(null);
-    if (!value) {
-      this.authenticationLogService.timestampFrom.set(null);
-      this.authenticationLogService.authenticationLogFilter.set(
-        this.authenticationLogService.authenticationLogFilter().removeKey("start_time")
-      );
-      return;
-    }
-
-    const iso = new Date(value).toISOString();
-    input.value = toDatetimeLocal(iso);
-    this.authenticationLogService.timestampFrom.set(iso);
-    this.authenticationLogService.authenticationLogFilter.set(
-      this.authenticationLogService.authenticationLogFilter().addEntry("start_time", toFilterDisplay(iso))
-    );
+  // Update the thumb position live while dragging (labels only, no reload); commitTimeRange applies it on release.
+  onRangeStartInput(pos: number): void {
+    this.rangeStart.set(pos);
   }
 
-  onToChange(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const value = input.value;
-    this.selectedPreset.set(null);
-    if (!value) {
-      this.authenticationLogService.timestampTo.set(null);
-      this.authenticationLogService.authenticationLogFilter.set(
-        this.authenticationLogService.authenticationLogFilter().removeKey("end_time")
-      );
-      return;
-    }
+  onRangeEndInput(pos: number): void {
+    this.rangeEnd.set(pos);
+  }
 
-    const iso = new Date(value).toISOString();
-    input.value = toDatetimeLocal(iso);
-    this.authenticationLogService.timestampTo.set(iso);
-    this.authenticationLogService.authenticationLogFilter.set(
-      this.authenticationLogService.authenticationLogFilter().addEntry("end_time", toFilterDisplay(iso))
-    );
+  // Apply the slider's current [start, end] thumbs as the time filter, on thumb release / keyboard commit.
+  commitTimeRange(): void {
+    this.selectedPreset.set(null);
+    this.applyTimeRange(this.sliderPosToIso(this.rangeStart(), false), this.sliderPosToIso(this.rangeEnd(), true));
+  }
+
+  // Thumb value indicator. The format tracks the window's zoom so the label is useful at every span: time-of-day for
+  // short windows, day for medium, month for the widest. The precise from/to is always shown in the summary line.
+  readonly formatSliderThumb = (pos: number): string => {
+    const iso = this.sliderPosToIso(pos, false)!;
+    const windowMs = this.sliderWindowMs();
+    if (windowMs <= 3 * MS_PER_DAY) {
+      return formatDate(iso, "HH:mm", "en-US");
+    }
+    if (windowMs <= 100 * MS_PER_DAY) {
+      return formatDate(iso, "MMM d", "en-US");
+    }
+    return formatDate(iso, "MMM", "en-US");
+  };
+
+  // Single writer of the time filter: set timestampFrom/To (the source of truth for the API params) and mirror them
+  // into the filter text as start_time/end_time chips. A null bound removes its chip and its API param.
+  private applyTimeRange(fromIso: string | null, toIso: string | null): void {
+    this.authenticationLogService.timestampFrom.set(fromIso);
+    this.authenticationLogService.timestampTo.set(toIso);
+    let filter = this.authenticationLogService.authenticationLogFilter();
+    filter = fromIso ? filter.addEntry("start_time", toFilterDisplay(fromIso)) : filter.removeKey("start_time");
+    filter = toIso ? filter.addEntry("end_time", toFilterDisplay(toIso)) : filter.removeKey("end_time");
+    this.authenticationLogService.authenticationLogFilter.set(filter);
+  }
+
+  // Map a slider position (0 = start of the window, max = now) to an ISO timestamp, spread linearly over the current
+  // sliderWindowMs. The end thumb at its maximum means "up to now" -> null (no upper bound, so no end_time param).
+  private sliderPosToIso(pos: number, isEnd: boolean): string | null {
+    if (isEnd && pos >= RANGE_SLIDER_STEPS) {
+      return null;
+    }
+    const windowMs = this.sliderWindowMs();
+    return new Date(Date.now() - windowMs + (pos / RANGE_SLIDER_STEPS) * windowMs).toISOString();
+  }
+
+  // Inverse of sliderPosToIso: place an ISO timestamp on the slider axis (relative to the current window), clamped to
+  // the visible range. A null bound falls back to the given edge (start -> oldest, end -> now).
+  private isoToSliderPos(iso: string | null, fallback: number): number {
+    if (!iso) {
+      return fallback;
+    }
+    const windowMs = this.sliderWindowMs();
+    const fraction = 1 - (Date.now() - new Date(iso).getTime()) / windowMs;
+    return Math.min(RANGE_SLIDER_STEPS, Math.max(0, Math.round(fraction * RANGE_SLIDER_STEPS)));
   }
 
   // Predefined-value filters (event_type, realm) hold one or more comma-separated values the API splits as CSV.

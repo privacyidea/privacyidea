@@ -94,18 +94,54 @@
 }
 
 .time-filter-custom-range {
-  padding: 8px 12px 12px 12px;
+  // Fixed width drives the (uncapped) menu panel width; box-sizing keeps padding inside it.
+  box-sizing: border-box;
+  width: 280px;
+  padding: 12px 16px;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  // Pinned to the bottom of the scrollable menu; the preset list scrolls above it. Opaque background + top border
+  // keep it readable over the content behind.
+  position: sticky;
+  bottom: 0;
+  background-color: var(--mat-sys-surface-container);
+  border-top: 1px solid var(--mat-sys-outline-variant);
 
-  .mat-form-field {
+  .time-range-slider {
     width: 100%;
+    // No side margin, so the slider spans the full block width.
+    margin: 0;
+    // Value hint as a horizontal rounded label sized to its content, so the date/time text (e.g. "Jul 15", "13:45")
+    // fits. Tokens inherit into the slider's internal value indicator across the component boundary.
+    --mat-slider-value-indicator-width: auto;
+    --mat-slider-value-indicator-height: 40px;
+    --mat-slider-value-indicator-padding: 0 10px;
+    --mat-slider-value-indicator-border-radius: 6px;
+    --mat-slider-value-indicator-container-transform: translateX(-50%);
+    --mat-slider-value-indicator-text-transform: none;
+    --mat-slider-value-indicator-transform-origin: center bottom;
   }
 
   .custom-range-label {
     font-size: 12px;
     text-transform: uppercase;
     color: var(--mat-sys-on-surface-variant);
+  }
+
+  .range-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    color: var(--mat-sys-on-surface-variant);
+    white-space: nowrap;
+  }
+
+  .range-summary-sep {
+    font-weight: bold;
+    font-size: 20px;
   }
 }

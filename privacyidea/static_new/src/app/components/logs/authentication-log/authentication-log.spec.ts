@@ -336,20 +336,66 @@ describe("AuthenticationLog", () => {
       expect(service.authenticationLogFilter().hasKey("end_time")).toBe(false);
     });
 
-    it("onFromChange preserves user time on subsequent changes", () => {
-      component.onFromChange({ target: { value: "2026-06-01T10:00" } } as unknown as Event);
-      component.onFromChange({ target: { value: "2026-06-02T14:30" } } as unknown as Event);
-      const from = new Date(service.timestampFrom()!);
-      expect(from.getDate()).toBe(2);
-      expect(from.getHours()).toBe(14);
-      expect(from.getMinutes()).toBe(30);
+    it("clearAllFilters clears both the text filter and the time filter", () => {
+      // A time filter lives in its own signals; clearing the text alone used to leave it silently active.
+      service.authenticationLogFilter.set(service.authenticationLogFilter().copyWith({ value: "username: alice" }));
+      component.selectTimePreset("7d");
+      expect(service.timestampFrom()).not.toBeNull();
+
+      component.clearAllFilters();
+
+      expect(service.timestampFrom()).toBeNull();
+      expect(service.timestampTo()).toBeNull();
+      expect(component.selectedPreset()).toBeNull();
+      expect(service.authenticationLogFilter().value).toBe("");
+      expect(service.authenticationLogFilter().hasKey("start_time")).toBe(false);
+      expect(service.authenticationLogFilter().hasKey("end_time")).toBe(false);
     });
 
-    it("onFromChange clears from and removes key from filter text when value is empty", () => {
-      component.onFromChange({ target: { value: "2026-06-01T10:00" } } as unknown as Event);
-      component.onFromChange({ target: { value: "" } } as unknown as Event);
-      expect(service.timestampFrom()).toBeNull();
-      expect(service.authenticationLogFilter().hasKey("start_time")).toBe(false);
+    it("commitTimeRange applies the slider thumbs as an ordered start/end within the window", () => {
+      const steps = component.rangeSliderSteps;
+      // Start thumb just inside the oldest edge, end thumb just below "now".
+      component.onRangeStartInput(1);
+      component.onRangeEndInput(steps - 1);
+      component.commitTimeRange();
+
+      const from = new Date(service.timestampFrom()!).getTime();
+      const to = new Date(service.timestampTo()!).getTime();
+      expect(from).toBeLessThan(to);
+      expect(component.selectedPreset()).toBeNull();
+      expect(service.authenticationLogFilter().hasKey("start_time")).toBe(true);
+      expect(service.authenticationLogFilter().hasKey("end_time")).toBe(true);
+    });
+
+    it("commitTimeRange with the end thumb at max leaves the upper bound open (no end_time)", () => {
+      component.onRangeStartInput(10);
+      component.onRangeEndInput(component.rangeSliderSteps);
+      component.commitTimeRange();
+
+      expect(service.timestampFrom()).not.toBeNull();
+      expect(service.timestampTo()).toBeNull();
+      expect(service.authenticationLogFilter().hasKey("start_time")).toBe(true);
+      expect(service.authenticationLogFilter().hasKey("end_time")).toBe(false);
+    });
+
+    it("the slider window and thumbs adjust to the selected preset", () => {
+      component.selectTimePreset("1h");
+      // The window shrinks to ~1 hour and the thumbs span the whole window (start at 0, end at now).
+      expect(component.rangeStart()).toBe(0);
+      expect(component.rangeEnd()).toBe(component.rangeSliderSteps);
+      expect(component.sliderWindowMs()).toBeGreaterThan(0);
+      expect(component.sliderWindowMs()).toBeLessThanOrEqual(3_600_000 + 1000);
+
+      // A wider preset yields a wider window, so short ranges get finer resolution under short presets.
+      component.selectTimePreset("30d");
+      expect(component.sliderWindowMs()).toBeGreaterThan(29 * 86_400_000);
+    });
+
+    it("clearTimeFilter resets the slider window to the default", () => {
+      component.selectTimePreset("1h");
+      expect(component.sliderWindowMs()).toBeLessThan(86_400_000);
+      component.clearTimeFilter();
+      expect(component.sliderWindowMs()).toBe(365 * 86_400_000);
     });
   });
 

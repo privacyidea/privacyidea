@@ -26,7 +26,7 @@
         class="authentication-log-table-filter">
         <mat-label i18n>Filter Authentication Log ...</mat-label>
         <app-clearable-input
-          (clearButtonClick)="authenticationLogService.clearFilter()"
+          (clearButtonClick)="clearAllFilters()"
           [showClearButton]="authenticationLogService.authenticationLogFilter().isNotEmpty">
           <input
             #filterHTMLInputElement
@@ -154,41 +154,51 @@
                         <mat-divider />
                         @for (preset of timePresets; track preset.key) {
                           <button
-                            (click)="selectTimePreset(preset.key)"
+                            (click)="$event.stopPropagation(); selectTimePreset(preset.key)"
                             [class.selected-preset]="selectedPreset() === preset.key"
                             mat-menu-item>
                             <span>{{ preset.label }}</span>
                           </button>
                         }
-                        <mat-divider />
-                        <div class="time-filter-custom-range">
+                        <!-- Pinned to the bottom of the (scrollable) menu; stopPropagation keeps the menu open and lets
+                             the slider own pointer drags and arrow keys. The handlers are containment guards, not an
+                             interactive control, so the element is intentionally not focusable. -->
+                        <!-- eslint-disable-next-line @angular-eslint/template/interactive-supports-focus -->
+                        <div
+                          class="time-filter-custom-range"
+                          (click)="$event.stopPropagation()"
+                          (mousedown)="$event.stopPropagation()"
+                          (keydown)="$event.stopPropagation()">
                           <span
                             class="custom-range-label"
                             i18n>Custom Range</span>
-                          <mat-form-field subscriptSizing="dynamic">
-                            <mat-label i18n>From</mat-label>
+                          <mat-slider
+                            class="time-range-slider"
+                            [min]="0"
+                            [max]="rangeSliderSteps"
+                            step="1"
+                            discrete
+                            [displayWith]="formatSliderThumb">
                             <input
-                              (click)="$event.stopPropagation()"
-                              (mousedown)="$event.stopPropagation()"
-                              (keydown.arrowdown)="$event.stopPropagation()"
-                              (keydown.arrowup)="$event.stopPropagation()"
-                              (change)="onFromChange($event)"
-                              [value]="fromInputValue()"
-                              matInput
-                              type="datetime-local" />
-                          </mat-form-field>
-                          <mat-form-field subscriptSizing="dynamic">
-                            <mat-label i18n>To</mat-label>
+                              matSliderStartThumb
+                              aria-label="Range start"
+                              i18n-aria-label
+                              [value]="rangeStart()"
+                              (valueChange)="onRangeStartInput($event)"
+                              (change)="commitTimeRange()" />
                             <input
-                              (click)="$event.stopPropagation()"
-                              (mousedown)="$event.stopPropagation()"
-                              (keydown.arrowdown)="$event.stopPropagation()"
-                              (keydown.arrowup)="$event.stopPropagation()"
-                              (change)="onToChange($event)"
-                              [value]="toInputValue()"
-                              matInput
-                              type="datetime-local" />
-                          </mat-form-field>
+                              matSliderEndThumb
+                              aria-label="Range end"
+                              i18n-aria-label
+                              [value]="rangeEnd()"
+                              (valueChange)="onRangeEndInput($event)"
+                              (change)="commitTimeRange()" />
+                          </mat-slider>
+                          <div class="range-summary">
+                            <span>{{ rangeSummaryFrom() }}</span>
+                            <span class="range-summary-sep">→</span>
+                            <span>{{ rangeSummaryTo() }}</span>
+                          </div>
                         </div>
                       </mat-menu>
                     } @else {
