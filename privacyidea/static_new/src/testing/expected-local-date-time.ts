@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { normalizeDateTimeString } from "@app/utils/date-format.utils";
+import { normalizeDateTimeString } from "@utils/date-format.utils";
 
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -48,6 +48,7 @@ export function expectedLocalDateTime(
 export function expectedLocalDateTimeFromInput(value: string | number | Date): string {
   const normalized = typeof value === "string" ? normalizeDateTimeString(value) : value;
   const date = normalized instanceof Date ? normalized : new Date(normalized);
+  if (Number.isNaN(date.getTime())) return String(value);
   return expectedLocalDateTime(
     date.getFullYear(),
     date.getMonth(),

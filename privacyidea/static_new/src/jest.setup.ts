@@ -96,7 +96,8 @@ if (typeof globalThis.structuredClone !== "function") {
 // Intl.DateTimeFormat(undefined, ...) to honor the real user's browser locale.
 const RealDateTimeFormat = Intl.DateTimeFormat;
 function PatchedDateTimeFormat(locales?: Intl.LocalesArgument, options?: Intl.DateTimeFormatOptions) {
-  return new RealDateTimeFormat(locales ?? "en-US", options);
+  const isEmptyList = Array.isArray(locales) && locales.length === 0;
+  return new RealDateTimeFormat(locales == null || isEmptyList ? "en-US" : locales, options);
 }
 // Keeps static members like supportedLocalesOf available after the patch.
 Object.setPrototypeOf(PatchedDateTimeFormat, RealDateTimeFormat);
