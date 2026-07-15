@@ -172,28 +172,40 @@
                           <span
                             class="custom-range-label"
                             i18n>Custom Range</span>
-                          <mat-slider
-                            class="time-range-slider"
-                            [min]="0"
-                            [max]="rangeSliderSteps"
-                            step="1"
-                            discrete
-                            [displayWith]="formatSliderThumb">
-                            <input
-                              matSliderStartThumb
-                              aria-label="Range start"
-                              i18n-aria-label
-                              [value]="rangeStart()"
-                              (valueChange)="onRangeStartInput($event)"
-                              (change)="commitTimeRange()" />
-                            <input
-                              matSliderEndThumb
-                              aria-label="Range end"
-                              i18n-aria-label
-                              [value]="rangeEnd()"
-                              (valueChange)="onRangeEndInput($event)"
-                              (change)="commitTimeRange()" />
-                          </mat-slider>
+                          <div class="slider-with-histogram">
+                            <!-- Activity behind the slider; decorative, hidden from assistive tech. -->
+                            <div
+                              class="activity-histogram"
+                              [attr.aria-hidden]="true">
+                              @for (bar of activityHistogram(); track $index) {
+                                <div
+                                  class="activity-bar"
+                                  [style.height.%]="bar * 100"></div>
+                              }
+                            </div>
+                            <mat-slider
+                              class="time-range-slider"
+                              [min]="0"
+                              [max]="rangeSliderSteps"
+                              step="1"
+                              discrete
+                              [displayWith]="formatSliderThumb">
+                              <input
+                                matSliderStartThumb
+                                aria-label="Range start"
+                                i18n-aria-label
+                                [value]="rangeStart()"
+                                (valueChange)="onRangeStartInput($event)"
+                                (change)="commitTimeRange()" />
+                              <input
+                                matSliderEndThumb
+                                aria-label="Range end"
+                                i18n-aria-label
+                                [value]="rangeEnd()"
+                                (valueChange)="onRangeEndInput($event)"
+                                (change)="commitTimeRange()" />
+                            </mat-slider>
+                          </div>
                           <div class="range-summary">
                             <span>{{ rangeSummaryFrom() }}</span>
                             <span class="range-summary-sep">→</span>

@@ -318,6 +318,26 @@ export class AuthenticationLog {
     return iso ? formatDate(iso, "yyyy-MM-dd HH:mm", "en-US") : $localize`now`;
   });
 
+  // Activity histogram drawn behind the slider: the loaded entries' timestamps bucketed across the slider window,
+  // each bar normalized (0..1) to the busiest bucket. Reflects the current page only, so it is an indication of
+  // activity, not the full total.
+  readonly activityBinCount = 48;
+  readonly activityHistogram = computed<number[]>(() => {
+    const bins = new Array<number>(this.activityBinCount).fill(0);
+    const windowMs = this.sliderWindowMs();
+    const start = Date.now() - windowMs;
+    for (const entry of this.dataSource().data) {
+      const t = entry.timestamp ? new Date(entry.timestamp).getTime() : NaN;
+      const fraction = (t - start) / windowMs;
+      if (fraction < 0 || fraction > 1) {
+        continue;
+      }
+      bins[Math.min(this.activityBinCount - 1, Math.floor(fraction * this.activityBinCount))]++;
+    }
+    const max = Math.max(1, ...bins);
+    return bins.map((count) => count / max);
+  });
+
   constructor() {
     // Load known clients for the source-IP options (no-op without the `clienttype` right; the resource gates on it).
     this.clientsService.requestClientsForAutocomplete();

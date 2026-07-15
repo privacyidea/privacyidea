@@ -108,7 +108,32 @@
   background-color: var(--mat-sys-surface-container);
   border-top: 1px solid var(--mat-sys-outline-variant);
 
+  .slider-with-histogram {
+    position: relative;
+  }
+
+  // Activity bars sit behind the slider track. Inset horizontally to roughly align with the track's usable span.
+  .activity-histogram {
+    position: absolute;
+    inset: 8px 12px;
+    display: flex;
+    align-items: flex-end;
+    gap: 1px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .activity-bar {
+    flex: 1 1 0;
+    min-height: 1px;
+    background-color: var(--mat-sys-primary);
+    opacity: 0.4;
+    border-radius: 1px 1px 0 0;
+  }
+
   .time-range-slider {
+    position: relative;
+    z-index: 1;
     width: 100%;
     // No side margin, so the slider spans the full block width.
     margin: 0;
