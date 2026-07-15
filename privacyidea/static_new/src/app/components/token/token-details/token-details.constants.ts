@@ -16,6 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { formatLocalDateTime } from "@utils/date-format.utils";
+
 export const TIMESTAMP_INFO_KEYS = ["creation_date", "assignment_date", "last_auth"] as const;
 export const USER_TIMESTAMP_INFO_KEYS = ["assignment_date"] as const;
 
@@ -41,9 +43,7 @@ export const tokenDetailsKeyMap: { key: string; label: string; group: TokenDetai
 
 export function formatTokenTimestamp(value: string | undefined): string | undefined {
   if (value === undefined || value === "") return undefined;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date);
+  return formatLocalDateTime(value);
 }
 
 export const tokenDetailsRightsMap = [

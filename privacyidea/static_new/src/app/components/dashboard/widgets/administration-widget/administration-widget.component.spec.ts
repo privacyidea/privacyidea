@@ -23,6 +23,7 @@ import { Audit, AuditData, AuditService } from "@services/audit/audit.service";
 import { AuthService } from "@services/auth/auth.service";
 import { MockAuditService } from "@testing/mock-services/mock-audit-service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { expectedLocalDateTimeFromInput } from "@testing/expected-local-date-time";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { of, Subject } from "rxjs";
 import { AdministrationWidgetComponent } from "./administration-widget.component";
@@ -103,6 +104,9 @@ describe("AdministrationWidgetComponent", () => {
     expect(rows.length).toBe(2);
     expect(rows[0].textContent).toContain("admin");
     expect(rows[1].textContent).toContain("alice");
+
+    const dateCell = rows[0].querySelector("td");
+    expect(dateCell.textContent.trim()).toBe(expectedLocalDateTimeFromInput("2026-01-02 10:00:00"));
   });
 
   it("should keep at most 5 rows after merging all areas", () => {
