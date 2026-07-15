@@ -839,6 +839,12 @@ body.self-service-layout {
   padding-bottom: 0;
 }
 
+// Highlight the active preset. Global (not component SCSS) because the menu renders in the CDK overlay.
+.time-preset-menu .selected-preset.mat-mdc-menu-item {
+  background-color: var(--mat-sys-primary-container);
+  color: var(--mat-sys-on-primary-container);
+}
+
 // Must live in global styles: the mat-menu panel renders in the CDK overlay, outside the component's DOM. Component
 // SCSS with Emulated encapsulation adds [_ngcontent-xxx] to selectors, which becomes unreliable across the overlay
 // boundary when mat-menu is nested inside @for/@if.

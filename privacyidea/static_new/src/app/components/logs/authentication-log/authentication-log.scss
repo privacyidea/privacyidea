@@ -88,11 +88,6 @@
   }
 }
 
-.time-preset-menu .selected-preset.mat-mdc-menu-item {
-  background-color: var(--mat-sys-secondary-container);
-  color: var(--mat-sys-on-secondary-container);
-}
-
 .time-filter-custom-range {
   // Fixed width drives the (uncapped) menu panel width; box-sizing keeps padding inside it.
   box-sizing: border-box;
