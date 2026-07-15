@@ -70,6 +70,17 @@ describe("AuthenticationLogService", () => {
   const flushEventTypes = () =>
     httpMock.match((r) => r.url.endsWith("/eventtypes")).forEach((r) => r.flush(MockPiResponse.fromValue([])));
 
+  // The oldest-entry resource (page_size=1, timestamp asc) loads under the same gate as the log page; flush it where a
+  // test only asserts the page request.
+  const flushOldest = () =>
+    httpMock
+      .match((r) => r.url.endsWith("/authenticationlog/") && r.params.get("page_size") === "1")
+      .forEach((r) => r.flush(emptyPage()));
+
+  // Matches the main log-page request (page_size=100), not the single-entry oldest probe.
+  const isPageRequest = (r: { url: string; params: { get(k: string): string | null } }) =>
+    r.url.endsWith("/authenticationlog/") && r.params.get("page_size") !== "1";
+
   it("filterParams keeps known keys verbatim and drops unknown/empty ones", () => {
     expect(service.filterParams()).toEqual({});
 
@@ -121,7 +132,7 @@ describe("AuthenticationLogService", () => {
     service.authenticationLogResource.reload();
     TestBed.tick();
 
-    const req = httpMock.expectOne((r) => r.url.endsWith("/authenticationlog/"));
+    const req = httpMock.expectOne(isPageRequest);
     expect(req.request.method).toBe("GET");
     expect(req.request.params.get("page")).toBe("1");
     expect(req.request.params.get("page_size")).toBe("100");
@@ -131,6 +142,7 @@ describe("AuthenticationLogService", () => {
     expect(req.request.params.get("serial")).toBe("PISP0001");
 
     req.flush(emptyPage());
+    flushOldest();
     flushEventTypes();
     await Promise.resolve();
     TestBed.tick();
@@ -141,9 +153,10 @@ describe("AuthenticationLogService", () => {
     service.authenticationLogResource.reload();
     TestBed.tick();
 
-    const req = httpMock.expectOne((r) => r.url.endsWith("/authenticationlog/"));
+    const req = httpMock.expectOne(isPageRequest);
     expect(req.request.params.get("page")).toBe("3");
     req.flush(emptyPage());
+    flushOldest();
     flushEventTypes();
     await Promise.resolve();
     TestBed.tick();
@@ -155,10 +168,11 @@ describe("AuthenticationLogService", () => {
     service.authenticationLogResource.reload();
     TestBed.tick();
 
-    const req = httpMock.expectOne((r) => r.url.endsWith("/authenticationlog/"));
+    const req = httpMock.expectOne(isPageRequest);
     expect(req.request.params.get("start_time")).toBe("2026-01-01T00:00:00+00:00");
     expect(req.request.params.get("end_time")).toBe("2026-06-01T00:00:00+00:00");
     req.flush(emptyPage());
+    flushOldest();
     flushEventTypes();
     await Promise.resolve();
     TestBed.tick();

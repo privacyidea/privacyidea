@@ -38,6 +38,7 @@ export class MockAuthenticationLogService implements AuthenticationLogServiceInt
   timestampFrom = signal<string | null>(null);
   timestampTo = signal<string | null>(null);
   canRead = computed(() => true);
+  oldestTimestamp = signal<string | null>(null);
   authenticationLogResource = new MockHttpResourceRef<PiResponse<AuthenticationLogPage> | undefined>(
     MockPiResponse.fromValue<AuthenticationLogPage>({
       auth_logs: [],

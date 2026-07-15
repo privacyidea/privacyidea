@@ -99,6 +99,7 @@ export interface AuthenticationLogServiceInterface {
   authenticationLogResource: HttpResourceRef<PiResponse<AuthenticationLogPage> | undefined>;
   eventTypesResource: HttpResourceRef<PiResponse<AuthenticationLogEventType[]> | undefined>;
   eventTypes: () => AuthenticationLogEventType[];
+  oldestTimestamp: () => string | null;
 
   clearFilter(): void;
 
@@ -196,6 +197,24 @@ export class AuthenticationLogService implements AuthenticationLogServiceInterfa
   });
 
   eventTypes = computed<AuthenticationLogEventType[]>(() => this.eventTypesResource.value()?.result?.value ?? []);
+
+  // The single oldest entry (timestamp ascending), used to size the time slider's default window down to the first
+  // recorded event. Gated like the log itself (route + read right).
+  oldestEntryResource = httpResource<PiResponse<AuthenticationLogPage>>(() => {
+    if (!this.contentService.onAuthenticationLog() || !this.canRead()) {
+      return undefined;
+    }
+    return {
+      url: this.authenticationLogBaseUrl,
+      method: "GET",
+      headers: this.authService.getHeaders(),
+      params: { page: 1, page_size: 1, sort_column: "timestamp", sort_order: "asc" }
+    };
+  });
+
+  oldestTimestamp = computed<string | null>(
+    () => this.oldestEntryResource.value()?.result?.value?.auth_logs?.[0]?.timestamp ?? null
+  );
 
   clearFilter(): void {
     this.authenticationLogFilter.set(this.authenticationLogFilter().copyWith({ value: "" }));
