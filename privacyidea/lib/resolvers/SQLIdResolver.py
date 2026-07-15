@@ -46,7 +46,8 @@ import hashlib
 from privacyidea.lib.pooling import get_engine
 from privacyidea.lib.lifecycle import register_finalizer
 from privacyidea.lib.utils import (is_true, censor_connect_string,
-                                   convert_column_to_unicode)
+                                   convert_column_to_unicode, escape_sql_like,
+                                   convert_wildcard_to_sql_like, SQL_LIKE_ESCAPE)
 from privacyidea.lib.error import ParameterError, ResolverError
 from privacyidea.lib.metrics import track_resolver_op
 
@@ -328,7 +329,7 @@ class IdResolver (UserIdResolver):
             return column == int(userId)
 
         # otherwise we cast the column to string (in case of postgres UUIDs)
-        return cast(column, String).like(userId)
+        return cast(column, String).like(escape_sql_like(str(userId)), escape=SQL_LIKE_ESCAPE)
 
     @track_resolver_op("get_username")
     def getUsername(self, userId):
@@ -358,7 +359,9 @@ class IdResolver (UserIdResolver):
         try:
             conditions = []
             column = self.map.get("username")
-            conditions.append(self.TABLE.columns[column].like(LoginName))
+            # The login name is resolved literally: '%'/'_' must not act as wildcards (SQL LIKE treats '*' as a literal
+            # already).
+            conditions.append(self.TABLE.columns[column].like(escape_sql_like(LoginName), escape=SQL_LIKE_ESCAPE))
             conditions = self._append_where_filter(conditions, self.TABLE,
                                                    self.where)
             filter_condition = and_(*conditions)
@@ -437,9 +440,9 @@ class IdResolver (UserIdResolver):
                                  f"in column mapping.")
         for key, value in search_dict.items():
             column = self.map.get(key)
-            value = value.replace("*", "%")
             if column in self.TABLE.columns:
-                conditions.append(self.TABLE.columns[column].like(value))
+                conditions.append(self.TABLE.columns[column].like(
+                    convert_wildcard_to_sql_like(value), escape=SQL_LIKE_ESCAPE))
             else:
                 # This is a configuration error, the mapping does not correspond with the table definition
                 log.error(f"Mapped column ('{column}') is not available in the database "

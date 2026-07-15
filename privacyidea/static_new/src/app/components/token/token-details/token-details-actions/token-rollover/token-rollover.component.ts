@@ -232,5 +232,4 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
 
     this.openLastStepDialog(response);
   }
-
 }

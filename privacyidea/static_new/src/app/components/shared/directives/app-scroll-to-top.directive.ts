@@ -62,7 +62,6 @@ export class ScrollToTopDirective implements OnDestroy {
     this.renderer.addClass(icon, "material-icons");
     this.renderer.addClass(icon, "scroll-to-top-fab-icon");
     this.renderer.setProperty(icon, "innerHTML", "keyboard_arrow_upward");
-
     this.renderer.appendChild(this.button, icon);
 
     this.renderer.setStyle(this.button, "position", "sticky");
@@ -71,7 +70,6 @@ export class ScrollToTopDirective implements OnDestroy {
     this.renderer.setStyle(this.button, "order", "999");
     this.renderer.setStyle(this.button, "aspect-ratio", "1");
     this.renderer.setStyle(this.button, "display", "none");
-    this.renderer.setStyle(this.button, "margin-right", "64px");
 
     // Keep it pinned to the right regardless of whether the host lays its
     // children out with flexbox (align-self) or grid (justify-self).
