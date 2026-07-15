@@ -301,8 +301,14 @@ export class AuthenticationLog {
   readonly selectedPreset = signal<string | null>(null);
 
   readonly rangeSliderSteps = RANGE_SLIDER_STEPS;
-  // The time span the slider covers (its zoom level): a preset's duration, or the default window after a clear.
-  readonly sliderWindowMs = signal(DEFAULT_SLIDER_WINDOW_MS);
+  // Default window: from the oldest recorded entry up to now, falling back to the widest preset until it loads.
+  readonly defaultSliderWindowMs = computed(() => {
+    const oldest = this.authenticationLogService.oldestTimestamp();
+    return oldest ? Math.max(MS_PER_DAY, Date.now() - new Date(oldest).getTime()) : DEFAULT_SLIDER_WINDOW_MS;
+  });
+  // The time span the slider covers (its zoom level): a preset's duration, or the default window (see above) which it
+  // tracks until a preset overrides it.
+  readonly sliderWindowMs = linkedSignal(() => this.defaultSliderWindowMs());
   // Thumb positions (0 = start of the window .. RANGE_SLIDER_STEPS = now), derived from the active time filter
   // (relative to sliderWindowMs). Writable during a drag; each recomputes on the next timestamp/window change.
   readonly rangeStart = linkedSignal(() => this.isoToSliderPos(this.authenticationLogService.timestampFrom(), 0));
@@ -428,7 +434,7 @@ export class AuthenticationLog {
 
   clearTimeFilter(): void {
     this.selectedPreset.set(null);
-    this.sliderWindowMs.set(DEFAULT_SLIDER_WINDOW_MS);
+    this.sliderWindowMs.set(this.defaultSliderWindowMs());
     this.applyTimeRange(null, null);
   }
 
