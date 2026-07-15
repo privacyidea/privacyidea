@@ -43,51 +43,19 @@ from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_co
 from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
 from privacyidea.lib.user import User
 from privacyidea.models import Admin, db
-from privacyidea.models.authentication_log import AuthenticationLog
 from privacyidea.models.lockout_policy import (
     BlockList,
     LockoutPolicy,
-    LockoutPolicyCounterType,
     LockoutPolicyStage,
     LockoutStageAction,
     UserLockoutState,
 )
 from privacyidea.models.utils import utc_now
 from . import smtpmock
-from .base import MyTestCase
+from .conditional_access_lockout_base import LockoutTestCase
 
 
-class LockoutEngineTestCase(MyTestCase):
-
-    def setUp(self):
-        self.setUp_user_realms()
-        # "cornelius" resolves to a non-empty uid in the test resolver ("root" has an
-        # empty uid there), so it is a fully resolved (resolver, uid, realm) identity.
-        self.user = User("cornelius", self.realm1, self.resolvername1)
-        self._clear()
-
-    def tearDown(self):
-        self._clear()
-        super().tearDown()
-
-    @staticmethod
-    def _clear():
-        for model in (UserLockoutState, BlockList, LockoutStageAction, LockoutPolicyStage,
-                      LockoutPolicyCounterType, LockoutPolicy, AuthenticationLog):
-            db.session.query(model).delete()
-        db.session.commit()
-
-    # --- fixtures -------------------------------------------------------------
-
-    def _seed_events(self, event_type, count, timestamp=None, user=None):
-        """Insert *count* authentication-log rows for *user* with an explicit timestamp."""
-        user = user or self.user
-        timestamp = timestamp if timestamp is not None else utc_now()
-        for _ in range(count):
-            db.session.add(AuthenticationLog(
-                event_type=str(event_type), resolver=user.resolver, uid=user.uid,
-                realm=user.realm, timestamp=timestamp))
-        db.session.commit()
+class LockoutEngineTestCase(LockoutTestCase):
 
     def _make_policy(self, *, name, counter_type, window=3600, enabled=True, dry_run=False,
                      priority=1, stages=((3, 1, LockoutAction.LOCK_USER, 600),)):
@@ -113,13 +81,6 @@ class LockoutEngineTestCase(MyTestCase):
             db.session.commit()
             made_stages.append(stage)
         return policy, made_stages
-
-    def _state(self, user=None):
-        user = user or self.user
-        return db.session.get(UserLockoutState, (user.resolver, user.uid, user.realm))
-
-    def _block(self, ip):
-        return db.session.get(BlockList, ip)
 
     # --- count_user_events ----------------------------------------------------
 

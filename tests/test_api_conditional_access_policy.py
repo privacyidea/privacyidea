@@ -114,6 +114,25 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         res = self._request("policy", method="POST", json_data=self._policy_body(name="Dup"))
         self.assertEqual(400, res.status_code, res.json)
 
+    # --- GET /template (read templates) ----------------------------------------
+
+    def test_list_templates_returns_full_catalog(self):
+        res = self._request("template")
+        self.assertEqual(200, res.status_code, res.json)
+        catalog = {entry["key"]: entry for entry in res.json["result"]["value"]}
+        self.assertIn("password_bruteforce", catalog)
+        mfa = catalog["mfa_bruteforce"]
+        self.assertTrue(mfa["description"].strip())
+        self.assertEqual("MFA Brute-Force Lockout (Progressive)", mfa["policy"]["name"])
+        self.assertListEqual([str(AuthEventType.MFA_FAIL)], mfa["policy"]["counter_types_to_track"])
+        self.assertEqual(3, len(mfa["policy"]["stages"]))
+
+    def test_template_policy_posts_verbatim(self):
+        # the real client flow: fetch the catalog once, POST a template's policy
+        catalog = {entry["key"]: entry for entry in self._request("template").json["result"]["value"]}
+        res = self._request("policy", method="POST", json_data=catalog["password_bruteforce"]["policy"])
+        self.assertEqual(200, res.status_code, res.json)
+
     # --- GET /policy and /policy/<id> (read) -----------------------------------
 
     def test_get_single_returns_full_policy(self):

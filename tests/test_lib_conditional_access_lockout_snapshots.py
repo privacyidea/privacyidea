@@ -47,20 +47,16 @@ from privacyidea.lib.conditional_access.engine import (
     is_ip_blocked,
 )
 from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
-from privacyidea.lib.user import User
 from privacyidea.models import db
-from privacyidea.models.authentication_log import AuthenticationLog
 from privacyidea.models.lockout_policy import (
     BlockList,
     LockoutPolicy,
-    LockoutPolicyCounterType,
     LockoutPolicyStage,
     LockoutStageAction,
-    UserLockoutState,
 )
 from privacyidea.models.utils import utc_now
 from . import smtpmock
-from .base import MyTestCase
+from .conditional_access_lockout_base import LockoutTestCase
 
 EMAIL_ADMIN_VALUE = {
     "smtp_identifier": "localtest",
@@ -73,7 +69,7 @@ EMAIL_ADMIN_VALUE = {
 }
 
 
-class _LockoutSnapshotBase(MyTestCase):
+class _LockoutSnapshotBase(LockoutTestCase):
     """
     Shared fixtures for the lockout-configuration snapshots. Subclasses set
     :attr:`SNAPSHOT` to the list of policy rows to materialise in setUp.
@@ -84,23 +80,8 @@ class _LockoutSnapshotBase(MyTestCase):
     SNAPSHOT: list = []
 
     def setUp(self):
-        self.setUp_user_realms()
-        # "cornelius" resolves to a non-empty uid in the test resolver, i.e. a
-        # fully resolved (resolver, uid, realm) identity the engine acts on.
-        self.user = User("cornelius", self.realm1, self.resolvername1)
-        self._clear()
+        super().setUp()
         self._build_snapshot()
-
-    def tearDown(self):
-        self._clear()
-        super().tearDown()
-
-    @staticmethod
-    def _clear():
-        for model in (UserLockoutState, BlockList, LockoutStageAction, LockoutPolicyStage,
-                      LockoutPolicyCounterType, LockoutPolicy, AuthenticationLog):
-            db.session.query(model).delete()
-        db.session.commit()
 
     def _build_snapshot(self):
         for row in self.SNAPSHOT:
@@ -118,20 +99,6 @@ class _LockoutSnapshotBase(MyTestCase):
                                               action_type=str(row["action"]),
                                               action_value=row["value"]))
             db.session.commit()
-
-    # --- fixtures -------------------------------------------------------------
-
-    def _seed_events(self, event_type, count, timestamp=None):
-        timestamp = timestamp if timestamp is not None else utc_now()
-        for _ in range(count):
-            db.session.add(AuthenticationLog(
-                event_type=str(event_type), resolver=self.user.resolver, uid=self.user.uid,
-                realm=self.user.realm, timestamp=timestamp))
-        db.session.commit()
-
-    def _state(self):
-        return db.session.get(UserLockoutState,
-                              (self.user.resolver, self.user.uid, self.user.realm))
 
     def _enabled_policy_names(self):
         return {p.name for p in LockoutPolicy.query.filter_by(enabled=True)}

@@ -39,6 +39,7 @@ from privacyidea.lib.conditional_access.lockout_policy import (list_lockout_poli
                                                                create_lockout_policy,
                                                                update_lockout_policy,
                                                                delete_lockout_policy)
+from privacyidea.lib.conditional_access.lockout_policy_template import list_lockout_policy_templates
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.params import get_optional, get_required
@@ -117,6 +118,25 @@ def get_policy(policy_id):
     policy = get_lockout_policy(_int_policy_id(policy_id))
     g.audit_object.log({"success": True, "info": f"policy {policy_id}"})
     return send_result(policy)
+
+
+@conditional_access_blueprint.route('template', methods=['GET'])
+@prepolicy(check_base_action, request, PolicyAction.LOCKOUT_POLICY_READ)
+@log_with(log)
+def list_templates():
+    """
+    Return the whole shipped lockout policy template catalog in one call. Each
+    entry is ``{"key", "description", "policy"}`` where ``policy`` is a payload
+    ready to be prefilled, edited and POSTed to
+    :http:post:`/conditionalaccess/policy`.
+
+    Requires the admin policy action :ref:`policy_lockout_policy_read`.
+
+    :status 200: the list of template entries in ``result.value``
+    """
+    templates = list_lockout_policy_templates()
+    g.audit_object.log({"success": True, "info": f"{len(templates)} templates"})
+    return send_result(templates)
 
 
 @conditional_access_blueprint.route('policy', methods=['POST'])
