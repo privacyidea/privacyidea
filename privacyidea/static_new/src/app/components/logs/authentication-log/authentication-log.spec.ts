@@ -257,6 +257,18 @@ describe("AuthenticationLog", () => {
     expect(service.timestampTo()).toBe("2026-06-02T12:00:00.000Z");
   });
 
+  it("floors the leftmost slider position to the oldest entry's second (so a sub-second entry is not excluded)", () => {
+    // A sub-second oldest timestamp: the start must floor to its whole second so the entry stays >= start_time.
+    service.oldestTimestamp.set("2020-01-01T00:00:00.123456Z");
+    fixture.detectChanges();
+    // Drag start fully left, end fully right, then commit: start floors to the second, end is open ("now").
+    component.rangeStart.set(0);
+    component.rangeEnd.set(component.rangeSliderSteps);
+    component.commitTimeRange();
+    expect(service.timestampFrom()).toBe("2020-01-01T00:00:00.000Z");
+    expect(service.timestampTo()).toBeNull();
+  });
+
   it("setFilterValues stores a multi-value selection as CSV", () => {
     component.setFilterValues("event_type", ["LOGIN_SUCCESS", "MFA_FAIL"]);
     expect(service.authenticationLogFilter().getValueOfKey("event_type")).toBe("LOGIN_SUCCESS,MFA_FAIL");

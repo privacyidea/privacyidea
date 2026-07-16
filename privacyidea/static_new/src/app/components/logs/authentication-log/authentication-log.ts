@@ -328,10 +328,13 @@ export class AuthenticationLog {
   readonly selectedPreset = signal<string | null>(null);
 
   readonly rangeSliderSteps = RANGE_SLIDER_STEPS;
+  // A single "now" anchor for the slider window's right edge. Sampled once (refreshed when a preset/clear starts a new
+  // window) so the duration-based math below reads a stable now.
+  private readonly nowAnchorMs = signal(Date.now());
   // Default window: from the oldest recorded entry up to now, falling back to the widest preset until it loads.
   readonly defaultSliderWindowMs = computed(() => {
     const oldest = this.authenticationLogService.oldestTimestamp();
-    return oldest ? Math.max(MS_PER_DAY, Date.now() - new Date(oldest).getTime()) : DEFAULT_SLIDER_WINDOW_MS;
+    return oldest ? Math.max(MS_PER_DAY, this.nowAnchorMs() - new Date(oldest).getTime()) : DEFAULT_SLIDER_WINDOW_MS;
   });
   // The time span the slider covers (its zoom level): a preset's duration, or the default window (see above) which it
   // tracks until a preset overrides it.
@@ -358,7 +361,7 @@ export class AuthenticationLog {
   readonly activityHistogram = computed<number[]>(() => {
     const bins = new Array<number>(this.activityBinCount).fill(0);
     const windowMs = this.sliderWindowMs();
-    const start = Date.now() - windowMs;
+    const start = this.nowAnchorMs() - windowMs;
     for (const entry of this.dataSource().data) {
       const t = entry.timestamp ? new Date(entry.timestamp).getTime() : NaN;
       const fraction = (t - start) / windowMs;
@@ -485,14 +488,18 @@ export class AuthenticationLog {
   }
 
   selectTimePreset(key: string): void {
+    // Re-anchor "now" so the preset's window (and the leftmost thumb) is measured from the current moment.
+    this.nowAnchorMs.set(Date.now());
     this.selectedPreset.set(key);
     const startIso = computePeriodStart(key);
     // Zoom the slider window to this preset's span; the thumbs then sit at its edges (start = oldest, end = now).
-    this.sliderWindowMs.set(Date.now() - new Date(startIso).getTime());
+    this.sliderWindowMs.set(this.nowAnchorMs() - new Date(startIso).getTime());
     this.applyTimeRange(startIso, null);
   }
 
   clearTimeFilter(): void {
+    // Re-anchor "now" so the default window is recomputed from the current moment (see defaultSliderWindowMs).
+    this.nowAnchorMs.set(Date.now());
     this.selectedPreset.set(null);
     this.sliderWindowMs.set(this.defaultSliderWindowMs());
     this.applyTimeRange(null, null);
@@ -545,7 +552,12 @@ export class AuthenticationLog {
       return null;
     }
     const windowMs = this.sliderWindowMs();
-    return new Date(Date.now() - windowMs + (pos / RANGE_SLIDER_STEPS) * windowMs).toISOString();
+    const ms = this.nowAnchorMs() - windowMs + (pos / RANGE_SLIDER_STEPS) * windowMs;
+    // Emit whole-second precision to match the seconds shown in the chip/summary: a sub-second value looks identical
+    // to the display yet silently mismatches an entry (which carries sub-second precision). Floor the inclusive start
+    // so a boundary entry stays >= it (includes the oldest); ceil the inclusive end so it stays <= it.
+    const seconds = isEnd ? Math.ceil(ms / 1000) : Math.floor(ms / 1000);
+    return new Date(seconds * 1000).toISOString();
   }
 
   // Inverse of sliderPosToIso: place an ISO timestamp on the slider axis (relative to the current window), clamped to
@@ -555,7 +567,7 @@ export class AuthenticationLog {
       return fallback;
     }
     const windowMs = this.sliderWindowMs();
-    const fraction = 1 - (Date.now() - new Date(iso).getTime()) / windowMs;
+    const fraction = 1 - (this.nowAnchorMs() - new Date(iso).getTime()) / windowMs;
     return Math.min(RANGE_SLIDER_STEPS, Math.max(0, Math.round(fraction * RANGE_SLIDER_STEPS)));
   }
 
