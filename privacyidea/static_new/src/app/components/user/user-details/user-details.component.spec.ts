@@ -16,14 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ElementRef } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { BehaviorSubject, map, of } from "rxjs";
+import { of, throwError } from "rxjs";
 
-import { BreakpointObserver } from "@angular/cdk/layout";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { MatAutocompleteTrigger } from "@angular/material/autocomplete";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { UserDetailsComponent } from "./user-details.component";
 
 import { MatDialog } from "@angular/material/dialog";
@@ -34,10 +32,11 @@ import { AuthService } from "@services/auth/auth.service";
 import { ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
+import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { TokenDetails, TokenService } from "@services/token/token.service";
-import { UserService } from "@services/user/user.service";
+import { UserData, UserService } from "@services/user/user.service";
 import {
   MockAuditService,
   MockContainerService,
@@ -61,8 +60,8 @@ describe("UserDetailsComponent", () => {
   let tokenServiceMock: MockTokenService;
   let dialogServiceMock: MockDialogService;
   let pendingChangesService: MockPendingChangesService;
+  let notificationServiceMock: MockNotificationService;
   let dialogMock: MockMatDialog;
-  let breakpointSubject: BehaviorSubject<Record<string, boolean>>;
 
   const mockUserData = {
     username: "alice",
@@ -81,23 +80,12 @@ describe("UserDetailsComponent", () => {
     TestBed.resetTestingModule();
 
     dialogMock = new MockMatDialog();
-    breakpointSubject = new BehaviorSubject<Record<string, boolean>>({
-      "(max-width: 1000px)": false,
-      "(max-width: 1240px)": false
-    });
 
     await TestBed.configureTestingModule({
       imports: [UserDetailsComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        {
-          provide: BreakpointObserver,
-          useValue: {
-            observe: (query: string) =>
-              breakpointSubject.pipe(map((b) => ({ matches: b[query] || false, breakpoints: {} })))
-          }
-        },
         {
           provide: ActivatedRoute,
           useValue: {
@@ -113,9 +101,9 @@ describe("UserDetailsComponent", () => {
         { provide: TableUtilsService, useClass: MockTableUtilsService },
         { provide: DialogService, useClass: MockDialogService },
         { provide: PendingChangesService, useClass: MockPendingChangesService },
+        { provide: NotificationService, useClass: MockNotificationService },
         { provide: MatDialog, useValue: dialogMock },
-        MockLocalService,
-        MockNotificationService
+        MockLocalService
       ]
     }).compileComponents();
     jest.useFakeTimers();
@@ -125,6 +113,7 @@ describe("UserDetailsComponent", () => {
     userServiceMock = TestBed.inject(UserService) as unknown as MockUserService;
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
     pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
+    notificationServiceMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
 
     component = fixture.componentInstance;
     fixture.detectChanges();
@@ -157,13 +146,11 @@ describe("UserDetailsComponent", () => {
     fixture.detectChanges();
 
     expect(component.tokenDataSource().data.map((t) => t.serial)).toEqual(["T-1", "T-2"]);
-    expect(component.total()).toBe(2);
 
     tokenServiceMock.tokenResource.value.set(undefined);
     fixture.detectChanges();
 
     expect(component.tokenDataSource().data.map((t) => t.serial)).toEqual(["T-1", "T-2"]);
-    expect(component.total()).toBe(2);
   });
 
   it("switches key mode between input/select as expected", () => {
@@ -265,29 +252,32 @@ describe("UserDetailsComponent", () => {
     expect(reloadTokenSpy).toHaveBeenCalledTimes(1);
   });
 
-  it("onPageEvent updates service page size/index and opens autocomplete panel", () => {
-    const focus = jest.fn();
-    component.filterHTMLInputElement = { nativeElement: { focus } } as unknown as ElementRef<HTMLInputElement>;
-    const openPanel = jest.fn();
-    component.tokenAutoTrigger = { openPanel } as unknown as MatAutocompleteTrigger;
+  it("enrollNewToken sets the user selection filter and navigates to token enrollment", () => {
+    userServiceMock.detailsUser.set({ username: "Alice", realm: "realm1" });
+    const navigateSpy = jest.spyOn(component["router"], "navigateByUrl").mockResolvedValue(true);
 
-    component.onPageEvent({ pageIndex: 2, pageSize: 25, length: 100 });
-    expect(tokenServiceMock.eventPageSize()).toBe(25);
-    expect(tokenServiceMock.pageIndex()).toBe(2);
+    component.enrollNewToken();
 
-    jest.runOnlyPendingTimers();
-    expect(focus).toHaveBeenCalledTimes(1);
-    expect(openPanel).toHaveBeenCalledTimes(1);
+    expect(userServiceMock.selectionFilter()).toBe("Alice");
+    expect(navigateSpy).toHaveBeenCalledWith(ROUTE_PATHS.TOKENS_ENROLLMENT);
   });
 
-  it("should not include custom user attributes in detailsEntries", () => {
+  it("createNewContainer sets the user selection filter and navigates to container create", () => {
+    userServiceMock.detailsUser.set({ username: "Alice", realm: "realm1" });
+    const navigateSpy = jest.spyOn(component["router"], "navigateByUrl").mockResolvedValue(true);
+
+    component.createNewContainer();
+
+    expect(userServiceMock.selectionFilter()).toBe("Alice");
+    expect(navigateSpy).toHaveBeenCalledWith(ROUTE_PATHS.CONTAINERS_CREATE);
+  });
+
+  it("detailsEntries lists the user data attributes and excludes the editable flag", () => {
     userServiceMock.user.set({
       username: "alice",
       givenname: "Alice",
       surname: "Smith",
       email: "alice@example.com",
-      custom1: "customValue1",
-      custom2: "customValue2",
       editable: false,
       userid: "u123",
       resolver: "default",
@@ -296,22 +286,42 @@ describe("UserDetailsComponent", () => {
       phone: ""
     });
 
-    userServiceMock.userAttributesList.set([
-      { key: "custom1", value: "customValue1" },
-      { key: "custom2", value: "customValue2" }
-    ]);
-
     const entries = component.detailsEntries();
     const keys = entries.map((e) => e.key);
 
-    expect(keys).not.toContain("custom1");
-    expect(keys).not.toContain("custom2");
+    expect(keys).not.toContain("editable");
     expect(keys).toContain("username");
     expect(keys).toContain("givenname");
     expect(keys).toContain("surname");
     expect(keys).toContain("email");
     expect(keys).toContain("userid");
     expect(keys).toContain("resolver");
+  });
+
+  it("detailsEntries falls back to the raw key label and dash placeholder for unmapped or nullish attributes", () => {
+    userServiceMock.user.set({
+      ...mockUserData,
+      groups: undefined
+    });
+
+    const entries = component.detailsEntries();
+    const groupsEntry = entries.find((e) => e.key === "groups");
+
+    expect(groupsEntry?.label).toBe("groups");
+    expect(groupsEntry?.value).toBe("-");
+  });
+
+  it("detailsEntries returns an empty list when userData is not set", () => {
+    userServiceMock.user.set(undefined as unknown as UserData);
+
+    expect(component.detailsEntries()).toEqual([]);
+  });
+
+  it("str stringifies values and normalizes null/undefined to an empty string", () => {
+    expect(component["str"](null)).toBe("");
+    expect(component["str"](undefined)).toBe("");
+    expect(component["str"](0)).toBe("0");
+    expect(component["str"]("abc")).toBe("abc");
   });
 
   it("editUser enables inline edit mode with the user data", () => {
@@ -371,6 +381,21 @@ describe("UserDetailsComponent", () => {
       component.editUser();
       component.onUpdateEditedUser({ ...component.editedUserData(), description: undefined });
       expect(component.editIsDirty()).toBe(false);
+    });
+
+    it("editIsDirty falls back to an empty object when userData is missing", () => {
+      component.editMode.set(true);
+      component.editedUserData.set({ username: "alice" });
+      component.userData.set(undefined as unknown as typeof mockUserData);
+
+      expect(component.editIsDirty()).toBe(true);
+    });
+
+    it("editIsDirty treats keys missing from the original user data as empty strings", () => {
+      component.editUser();
+      component.editedUserData.set({ ...component.editedUserData(), extraField: "new-value" });
+
+      expect(component.editIsDirty()).toBe(true);
     });
 
     it("cancelEdit without changes exits edit mode without opening any dialog", () => {
@@ -496,6 +521,32 @@ describe("UserDetailsComponent", () => {
       expect(result).toBe(false);
       expect(component.editMode()).toBe(true);
     });
+
+    it("pending-changes save logs and shows a notification when editUser throws an Error", async () => {
+      const errorSpy = jest.spyOn(console, "error").mockImplementation();
+      const fn = getSaveFn();
+      component.editUser();
+      userServiceMock.editUser = jest.fn().mockReturnValue(throwError(() => new Error("network down")));
+
+      const result = await fn();
+
+      expect(errorSpy).toHaveBeenCalledWith("Failed to save user edits", expect.any(Error));
+      expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to save user edits. network down");
+      expect(result).toBe(false);
+      expect(component.editMode()).toBe(true);
+    });
+
+    it("pending-changes save shows a stringified notification when editUser throws a non-Error value", async () => {
+      const fn = getSaveFn();
+      component.editUser();
+      userServiceMock.editUser = jest.fn().mockReturnValue(throwError(() => "boom"));
+
+      const result = await fn();
+
+      expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to save user edits. boom");
+      expect(result).toBe(false);
+      expect(component.editMode()).toBe(true);
+    });
   });
 
   it("toggleExpanded flips expansion state per key", () => {
@@ -512,32 +563,6 @@ describe("UserDetailsComponent", () => {
     component.toggleExpanded("groups");
     expect(component.isExpanded("groups")).toBe(false);
     expect(component.isExpanded("other")).toBe(true);
-  });
-
-  it("should adjust colCount based on breakpoints", () => {
-    expect(component.colCount()).toBe(3);
-
-    breakpointSubject.next({ "(max-width: 1000px)": false, "(max-width: 1240px)": true });
-    expect(component.colCount()).toBe(2);
-
-    breakpointSubject.next({ "(max-width: 1000px)": true, "(max-width: 1240px)": true });
-    expect(component.colCount()).toBe(1);
-  });
-
-  it("should split detailsColumns according to colCount", () => {
-    userServiceMock.user.set(mockUserData);
-    const totalEntries = component.detailsEntries().length;
-
-    expect(component.colCount()).toBe(3);
-    let columns = component.detailsColumns();
-    expect(columns.length).toBe(3);
-    expect(columns.flat().length).toBe(totalEntries);
-
-    breakpointSubject.next({ "(max-width: 1000px)": true, "(max-width: 1240px)": true });
-    expect(component.colCount()).toBe(1);
-    columns = component.detailsColumns();
-    expect(columns.length).toBe(1);
-    expect(columns[0].length).toBe(totalEntries);
   });
 
   describe("pending changes", () => {

@@ -26,5 +26,5 @@
 }
 
 .tokens-table {
-  @include widget.stat-table(var(--global-padding));
+  @include widget.stat-table;
 }
