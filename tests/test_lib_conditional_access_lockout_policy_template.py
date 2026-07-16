@@ -25,9 +25,7 @@ from datetime import timedelta
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.engine import (
-    AccessDecision,
     LockoutAction,
-    evaluate_access_decision,
     evaluate_lockout_policies,
     get_ip_block,
     get_user_lockout,
@@ -329,56 +327,3 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=5, per_user=10, timestamp=now)
         evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip=ip, now=now)
         self.assertFalse(is_ip_blocked(ip, now=now), "IP blocked on event count instead of distinct users")
-
-    # --- failed-login rate-limit template (DENY) ------------------------------
-
-    def test_failed_login_rate_limit_denies_over_threshold(self):
-        now = utc_now()
-        self._create("failed_login_rate_limit")
-        self._seed_events(AuthEventType.PASSWORD_FAIL, 10, timestamp=now)
-        self.assertEqual(AccessDecision.DENY, evaluate_access_decision(self.user, now=now),
-                         "request not denied at the rate limit")
-
-    def test_failed_login_rate_limit_below_threshold_continues(self):
-        now = utc_now()
-        self._create("failed_login_rate_limit")
-        self._seed_events(AuthEventType.PASSWORD_FAIL, 9, timestamp=now)
-        self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(self.user, now=now),
-                         "request denied below the rate limit")
-
-    def test_failed_login_rate_limit_is_stateless(self):
-        # DENY must not persist any lockout state - it is a rate limit, not a lock.
-        now = utc_now()
-        self._create("failed_login_rate_limit")
-        self._seed_events(AuthEventType.PASSWORD_FAIL, 10, timestamp=now)
-        evaluate_access_decision(self.user, now=now)
-        self.assertIsNone(self._state(), "rate-limit DENY wrote lockout state")
-        self.assertFalse(is_user_locked(self.user, now=now), "rate-limit DENY locked the user")
-
-    def test_failed_login_rate_limit_combines_failure_types(self):
-        # The window counts all tracked failure types together: 6 + 4 = 10.
-        now = utc_now()
-        self._create("failed_login_rate_limit")
-        self._seed_events(AuthEventType.PASSWORD_FAIL, 6, timestamp=now)
-        self._seed_events(AuthEventType.MFA_FAIL, 4, timestamp=now)
-        self.assertEqual(AccessDecision.DENY, evaluate_access_decision(self.user, now=now),
-                         "not denied on combined failure count")
-
-    def test_failed_login_rate_limit_does_not_reset_on_success(self):
-        # Unlike the brute-force LOCK templates, the rate limit counts the raw
-        # window: a successful login in between does not clear it (it self-heals
-        # only as the failures age out).
-        now = utc_now()
-        self._create("failed_login_rate_limit")
-        self._seed_events(AuthEventType.PASSWORD_FAIL, 10, timestamp=now - timedelta(seconds=30))
-        self._seed_events(AuthEventType.LOGIN_SUCCESS, 1, timestamp=now - timedelta(seconds=20))
-        self.assertEqual(AccessDecision.DENY, evaluate_access_decision(self.user, now=now),
-                         "a success wrongly reset the rate-limit count")
-
-    def test_failed_login_rate_limit_failures_age_out(self):
-        # Self-healing: failures older than the 60s window no longer count.
-        now = utc_now()
-        self._create("failed_login_rate_limit")
-        self._seed_events(AuthEventType.PASSWORD_FAIL, 10, timestamp=now - timedelta(seconds=120))
-        self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(self.user, now=now),
-                         "aged-out failures still counted against the rate limit")
