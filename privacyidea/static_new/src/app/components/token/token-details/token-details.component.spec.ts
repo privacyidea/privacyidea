@@ -18,7 +18,7 @@
  **/
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { signal } from "@angular/core";
+import { ElementRef, signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { EditableElement } from "@components/shared/edit-buttons/edit-buttons.component";
 import { of, throwError } from "rxjs";
@@ -593,10 +593,10 @@ describe("TokenDetailsComponent", () => {
       grid.appendChild(cardEl(rect(200, 0, 400))); // second row -> ignored
 
       const container = makeContainer();
-      (component as any).scrollContainer = { nativeElement: container };
-      (component as any).detailsGrid = { nativeElement: grid };
+      component.scrollContainer = { nativeElement: container } as ElementRef<HTMLElement>;
+      component["detailsGrid"] = { nativeElement: grid } as ElementRef<HTMLElement>;
 
-      (component as any).fitWidthToTopRow();
+      component["fitWidthToTopRow"]();
 
       // span = max right (1200) - min left (0) = 1200; + 2 * 16 padding = 1232.
       expect(container.style.width).toBe("1232px");
@@ -605,10 +605,10 @@ describe("TokenDetailsComponent", () => {
     it("clears the fixed width when there are no measurable cards", () => {
       const container = makeContainer();
       container.style.width = "500px";
-      (component as any).scrollContainer = { nativeElement: container };
-      (component as any).detailsGrid = { nativeElement: document.createElement("div") };
+      component.scrollContainer = { nativeElement: container } as ElementRef<HTMLElement>;
+      component["detailsGrid"] = { nativeElement: document.createElement("div") } as ElementRef<HTMLElement>;
 
-      (component as any).fitWidthToTopRow();
+      component["fitWidthToTopRow"]();
 
       expect(container.style.width).toBe("");
     });
@@ -616,10 +616,10 @@ describe("TokenDetailsComponent", () => {
     it("does nothing when the grid reference is missing", () => {
       const container = makeContainer();
       container.style.width = "300px";
-      (component as any).scrollContainer = { nativeElement: container };
-      (component as any).detailsGrid = undefined;
+      component.scrollContainer = { nativeElement: container } as ElementRef<HTMLElement>;
+      component["detailsGrid"] = undefined;
 
-      expect(() => (component as any).fitWidthToTopRow()).not.toThrow();
+      expect(() => component["fitWidthToTopRow"]()).not.toThrow();
       expect(container.style.width).toBe("300px");
     });
 
@@ -630,9 +630,11 @@ describe("TokenDetailsComponent", () => {
           cb(0);
           return 1;
         });
-      const fitSpy = jest.spyOn(component as any, "fitWidthToTopRow").mockImplementation(() => {});
+      const fitSpy = jest
+        .spyOn(component as unknown as { fitWidthToTopRow: () => void }, "fitWidthToTopRow")
+        .mockReturnValue(undefined);
 
-      (component as any).scheduleFit();
+      component["scheduleFit"]();
 
       expect(fitSpy).toHaveBeenCalledTimes(1);
       rafSpy.mockRestore();
