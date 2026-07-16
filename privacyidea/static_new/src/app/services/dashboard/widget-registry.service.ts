@@ -25,6 +25,7 @@ import { NotificationDeliveryWidgetComponent } from "@components/dashboard/widge
 import { PoliciesWidgetComponent } from "@components/dashboard/widgets/policies-widget/policies-widget.component";
 import { ResolverTimingWidgetComponent } from "@components/dashboard/widgets/resolver-timing-widget/resolver-timing-widget.component";
 import { SubscriptionsWidgetComponent } from "@components/dashboard/widgets/subscriptions-widget/subscriptions-widget.component";
+import { TokenTypesWidgetComponent } from "@components/dashboard/widgets/token-types-widget/token-types-widget.component";
 import { TokensWidgetComponent } from "@components/dashboard/widgets/tokens-widget/tokens-widget.component";
 import { WidgetComponentType } from "@models/dashboard";
 
@@ -40,6 +41,7 @@ export interface WidgetRegistryServiceInterface {
 export class WidgetRegistryService implements WidgetRegistryServiceInterface {
   public readonly widgetTypes: WidgetComponentType[] = [
     TokensWidgetComponent,
+    TokenTypesWidgetComponent,
     AuthenticationsWidgetComponent,
     AdministrationWidgetComponent,
     PoliciesWidgetComponent,

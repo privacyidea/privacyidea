@@ -92,7 +92,8 @@ def get_users():
     queries the union. With neither parameter all resolvers across all
     realms are queried.
 
-    :query realm: query every resolver in this realm.
+    :query realm: query every resolver in this realm. Several realms may be
+        given as a comma-separated list.
     :query resolver: query this resolver.
     :query user / username: filter by login name; supports the ``*``
         wildcard.
@@ -146,6 +147,10 @@ def get_users():
        }
     """
     realm = get_optional(request.all_data, "realm")
+    # realmadmin may have injected a list of realms for a multi-realm admin.
+    # Normalise to a comma-separated string so the audit info stays scalar.
+    if isinstance(realm, list):
+        realm = ",".join(realm)
     search_parameters = dict(request.all_data)
     requested_attributes = request.all_data.get("attributes")
     if requested_attributes:

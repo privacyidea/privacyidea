@@ -35,7 +35,9 @@ interface CacheEntry<T> {
 }
 
 export interface DashboardDataStoreInterface {
-  load<T>(key: string, factory: () => Observable<T>): DashboardDataRef<T>;
+  load<T>(key: string, factory: () => Observable<T>, options?: { once?: boolean }): DashboardDataRef<T>;
+
+  peek<T>(key: string): DashboardDataRef<T> | null;
 
   invalidate(key?: string): void;
 
@@ -46,11 +48,33 @@ export interface DashboardDataStoreInterface {
 export class DashboardDataStore implements DashboardDataStoreInterface {
   private readonly entries = new Map<string, CacheEntry<unknown>>();
 
-  load<T>(key: string, factory: () => Observable<T>): DashboardDataRef<T> {
+  load<T>(key: string, factory: () => Observable<T>, options?: { once?: boolean }): DashboardDataRef<T> {
     const entry = this.entryFor<T>(key);
-    entry.factory = factory;
-    this.startFetch(entry);
+    if (options?.once && entry.value() !== undefined) {
+      return entry;
+    }
+    if (!entry.inFlight) {
+      entry.inFlight = true;
+      entry.error.set(false);
+      entry.revalidating.set(true);
+      entry.subscription = factory()
+        .pipe(
+          finalize(() => {
+            entry.revalidating.set(false);
+            entry.inFlight = false;
+            entry.subscription = undefined;
+          })
+        )
+        .subscribe({
+          next: (value) => entry.value.set(value),
+          error: () => entry.error.set(true)
+        });
+    }
     return entry;
+  }
+
+  peek<T>(key: string): DashboardDataRef<T> | null {
+    return (this.entries.get(key) as CacheEntry<T> | undefined) ?? null;
   }
 
   refreshAll(): void {

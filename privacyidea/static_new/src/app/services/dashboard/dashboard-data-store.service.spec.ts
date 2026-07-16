@@ -187,4 +187,15 @@ describe("DashboardDataStore", () => {
 
     expect(factory).toHaveBeenCalledTimes(1);
   });
+
+  it("does not refetch when once is set and a value is already cached", () => {
+    const factory = jest.fn(() => of(1));
+    const ref1 = store.load("k", factory);
+
+    const ref2 = store.load("k", factory, { once: true });
+
+    expect(factory).toHaveBeenCalledTimes(1);
+    expect(ref2).toBe(ref1);
+    expect(ref2.value()).toBe(1);
+  });
 });

@@ -16,52 +16,41 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div
-  class="detail-field-key"
-  i18n>
-  Status
-</div>
-<div class="detail-field-value">
-  <div class="value-row">
-    <div class="value-content">
-      @if (isEditing()) {
-        <mat-form-field
-          class="input-width-m height-52"
-          subscriptSizing="dynamic">
-          <mat-label i18n>Select States</mat-label>
-          <mat-select
-            [value]="selectedStates()"
-            (selectionChange)="onStatesChange($event.value)"
-            appAutofocus
-            multiple>
-            @for (option of containerStateOptions; track option.value) {
-              <mat-option [value]="option.value">{{ option.label }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-      } @else {
-        <div class="flex-row gap-8 flex-wrap">
-          @for (state of states(); track state) {
-            <span
-              [ngClass]="[tableUtilsService.getSpanClassForState(state, false)]"
-              class="font-14">
-              {{ tableUtilsService.getDisplayTextForState(state) }}
-            </span>
-          }
-        </div>
-      }
-    </div>
-    <div class="value-edit">
-      @if (editable()) {
-        <app-edit-buttons
-          [element]="editButtonsElement"
-          [toggleEdit]="toggle"
-          [saveEdit]="commit"
-          [cancelEdit]="cancel"
-          [shouldHideEdit]="blockEditing()"
-          [isEditingUser]="false"
-          [isEditingInfo]="false"></app-edit-buttons>
-      }
-    </div>
-  </div>
-</div>
+<app-detail-field-row
+  label="States"
+  i18n-label
+  [isEditing]="field.isEditing()">
+  <ng-container fieldValue>
+    @if (field.isEditing()) {
+      <app-details-multi-select-cell
+        selectLabel="Select States"
+        i18n-selectLabel
+        [options]="containerStateOptions"
+        [selected]="selectedStates()"
+        (selectionChange)="onStatesChange($event)" />
+    } @else {
+      <div class="flex-row gap-8 flex-wrap">
+        @for (state of states(); track state) {
+          <span
+            [ngClass]="[tableUtilsService.getSpanClassForState(state, false)]"
+            class="font-14">
+            {{ tableUtilsService.getDisplayTextForState(state) }}
+          </span>
+        }
+      </div>
+    }
+  </ng-container>
+  <ng-container fieldEdit>
+    @if (editable()) {
+      <app-edit-buttons
+        [element]="field.editButtonsElement"
+        [toggleEdit]="field.toggle"
+        [saveEdit]="field.commit"
+        [cancelEdit]="field.cancel"
+        [shouldHideEdit]="blockEditing()"
+        [isEditingUser]="false"
+        [isEditingInfo]="false">
+      </app-edit-buttons>
+    }
+  </ng-container>
+</app-detail-field-row>
