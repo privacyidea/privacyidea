@@ -287,7 +287,7 @@ def is_ip_never_block(source_ip: str | None) -> bool:
     """
     Return whether *source_ip* must never be blocked by the conditional-access
     engine: it is loopback (built-in) or matches the ``CONDITIONAL_ACCESS_NEVER_BLOCK``
-    system config. A falsy or unparseable IP is treated as never-block as well —
+    system config. A falsy or unparsable IP is treated as never-block as well —
     fail safe: never block an address the engine cannot positively identify.
     """
     if not source_ip:
