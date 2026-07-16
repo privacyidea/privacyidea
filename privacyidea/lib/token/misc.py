@@ -113,8 +113,10 @@ def get_dynamic_policy_definitions(scope: str | None = None) -> dict:
 
 def regenerate_enroll_url(serial: str, request: Request, g: Any) -> str | None:
     """
-    Returns the enroll URL for a token with the given serial number that is already enrolled.
-    Loads the configurations from the policies and performs a rollover to generate a new enroll URL.
+    Performs a rollover for the token with the given serial number and returns the new enroll URL.
+    Loads the configurations from the policies.
+
+    Returns None if the token type does not support enrollment URLs.
     """
     token = get_one_token(serial=serial)
     token_owner = token.user or User()
