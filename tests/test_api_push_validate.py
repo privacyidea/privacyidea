@@ -37,7 +37,7 @@ from privacyidea.lib.tokens.pushtoken import (PushAction, strip_pem_headers, POL
                                               DEFAULT_CHALLENGE_TEXT, PushMode)
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import to_bytes, to_unicode, AUTH_RESPONSE
-from privacyidea.models import Challenge
+from privacyidea.models import db, Challenge
 from privacyidea.models.authentication_log import AuthenticationLog
 from privacyidea.models.utils import utc_now
 from . import ldap3mock
