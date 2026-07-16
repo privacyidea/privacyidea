@@ -106,12 +106,13 @@ def _create_token_query(tokentype: str | None = None, token_type_list: list[str]
                 TokenRealm.realm_id == select(Realm.id).where(
                     func.lower(Realm.name) == realm.lower()).scalar_subquery())
 
-    if allowed_realms is not None:
-        sql_query = sql_query.where(
-            TokenRealm.realm_id.in_(
-                select(Realm.id).where(func.lower(Realm.name).in_(allowed_realms))
-            )
+if allowed_realms is not None:
+    allowed_realms_lc = [r.lower() for r in allowed_realms]
+    sql_query = sql_query.where(
+        TokenRealm.realm_id.in_(
+            select(Realm.id).where(func.lower(Realm.name).in_(allowed_realms_lc))
         )
+    )
 
     # Filtering by tokentype
     if tokentype and tokentype.strip("*"):
