@@ -91,6 +91,7 @@
           <th
             *matHeaderCellDef
             aria-label="{{ column.label }} Header"
+            i18n-aria-label
             mat-header-cell>
             <div class="flex ali-center">
               <div class="header-label">
@@ -242,6 +243,7 @@
           <td
             *matCellDef="let element"
             aria-label="{{ column.label }} Cell"
+            i18n-aria-label
             mat-cell>
             <div
               [class.cell-scroll]="scrollableColumnKeys.includes(column.key)"
@@ -261,6 +263,7 @@
                       <a
                         (click)="contentService.tokenSelected(serial)"
                         aria-label="{{ column.label }} Link"
+                        i18n-aria-label
                         routerLink="/token">
                         {{ serial }}
                       </a>
@@ -282,6 +285,7 @@
                           $event.preventDefault(); contentService.userSelected(element.username, element.realm)
                         "
                         aria-label="{{ column.label }} Link"
+                        i18n-aria-label
                         role="button"
                         tabindex="0">
                         {{ element.username }}
@@ -307,6 +311,7 @@
                     <app-copyable [copyText]="element.realm">
                       <a
                         aria-label="{{ column.label }} Link"
+                        i18n-aria-label
                         routerLink="/users/realms">
                         {{ element.realm }}
                       </a>
@@ -318,7 +323,8 @@
                     <app-copyable [copyText]="element.resolver">
                       <a
                         [routerLink]="['/users/resolvers/details', element.resolver]"
-                        aria-label="{{ column.label }} Link">
+                        aria-label="{{ column.label }} Link"
+                        i18n-aria-label>
                         {{ element.resolver }}
                       </a>
                       <app-filter-value-button
