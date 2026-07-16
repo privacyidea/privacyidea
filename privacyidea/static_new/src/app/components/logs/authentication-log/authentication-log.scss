@@ -33,6 +33,16 @@
   white-space: normal;
 }
 
+.cell-scroll-info {
+  max-width: 30rem;
+  overflow-wrap: break-word;
+}
+
+.info-list {
+  margin: 4px;
+  padding-left: 8px;
+}
+
 .header-label {
   display: flex;
   flex-direction: column;

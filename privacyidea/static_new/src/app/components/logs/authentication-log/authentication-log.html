@@ -243,7 +243,9 @@
             *matCellDef="let element"
             aria-label="{{ column.label }} Cell"
             mat-cell>
-            <div [class.cell-scroll]="scrollableColumnKeys.includes(column.key)">
+            <div
+              [class.cell-scroll]="scrollableColumnKeys.includes(column.key)"
+              [class.cell-scroll-info]="column.key === 'other_info'">
               @switch (column.key) {
                 @case ("timestamp") {
                   <span>{{ element.timestamp | date: "yyyy-MM-dd HH:mm:ss" }}</span>
@@ -328,10 +330,25 @@
                   }
                 }
                 @case ("other_info") {
-                  @let info = formatInfo(element.other_info);
-                  @if (info) {
-                    <app-copyable [copyText]="info">
-                      <span>{{ info }}</span>
+                  @let entries = infoEntries(element.other_info);
+                  @if (entries.length) {
+                    <app-copyable [copyText]="formatInfo(element.other_info)">
+                      <ul class="info-list">
+                        @for (entry of entries; track entry.key) {
+                          <li>
+                            @if (entry.children) {
+                              {{ entry.key }}:
+                              <ul class="info-list">
+                                @for (child of entry.children; track child.key) {
+                                  <li>{{ child.key }}: {{ child.value }}</li>
+                                }
+                              </ul>
+                            } @else {
+                              {{ entry.key }}: {{ entry.value }}
+                            }
+                          </li>
+                        }
+                      </ul>
                     </app-copyable>
                   }
                 }

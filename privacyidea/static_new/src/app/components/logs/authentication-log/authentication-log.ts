@@ -197,6 +197,14 @@ const FILTER_TOOLTIPS: Record<string, string> = {
   previous_transaction_id: $localize`Filter by this previous transaction ID`
 };
 
+// A rendered other_info row: a leaf carries `value`; a one-level-nested dict carries `children` (rendered as a
+// sub-list) instead. Nesting deeper than one level is folded into the leaf value as compact JSON.
+interface InfoEntry {
+  key: string;
+  value?: string;
+  children?: { key: string; value: string }[];
+}
+
 @Component({
   selector: "app-authentication-log",
   imports: [
@@ -553,6 +561,28 @@ export class AuthenticationLog {
 
   formatInfo(value: AuthenticationLogEntry["other_info"]): string {
     return value ? JSON.stringify(value) : "";
+  }
+
+  // Render other_info as "key: value" rows. Scalars show as-is and arrays as a comma-separated list. A nested object
+  // (e.g. the `truncated` overflow key) becomes a one-level sub-list; anything deeper is compact JSON.
+  infoEntries(value: AuthenticationLogEntry["other_info"]): InfoEntry[] {
+    if (!value) return [];
+    return Object.entries(value).map(([key, raw]) =>
+      this.isPlainObject(raw)
+        ? { key, children: Object.entries(raw).map(([k, v]) => ({ key: k, value: this.formatInfoValue(v) })) }
+        : { key, value: this.formatInfoValue(raw) }
+    );
+  }
+
+  private formatInfoValue(value: unknown): string {
+    if (value === null || value === undefined) return "";
+    if (Array.isArray(value)) return value.map((entry) => this.formatInfoValue(entry)).join(", ");
+    if (typeof value === "object") return JSON.stringify(value);
+    return String(value);
+  }
+
+  private isPlainObject(value: unknown): value is Record<string, unknown> {
+    return typeof value === "object" && value !== null && !Array.isArray(value);
   }
 
   // Badge for an admin principal, or null for a regular user / unknown value so the template renders nothing.

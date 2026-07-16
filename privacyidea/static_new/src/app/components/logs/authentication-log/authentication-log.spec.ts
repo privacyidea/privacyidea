@@ -216,6 +216,29 @@ describe("AuthenticationLog", () => {
     expect(component.formatInfo(null)).toBe("");
   });
 
+  it("infoEntries renders key/value rows, CSV arrays, a sub-list for nested dicts and JSON for deeper nesting", () => {
+    expect(component.infoEntries(null)).toEqual([]);
+    expect(
+      component.infoEntries({
+        serial: "TOTP001",
+        roles: ["admin", "user"],
+        truncated: { username: "abc", deep: { x: 1 } },
+        n: 3
+      })
+    ).toEqual([
+      { key: "serial", value: "TOTP001" },
+      { key: "roles", value: "admin, user" },
+      {
+        key: "truncated",
+        children: [
+          { key: "username", value: "abc" },
+          { key: "deep", value: '{"x":1}' }
+        ]
+      },
+      { key: "n", value: "3" }
+    ]);
+  });
+
   it("setFilterValues stores a multi-value selection as CSV", () => {
     component.setFilterValues("event_type", ["LOGIN_SUCCESS", "MFA_FAIL"]);
     expect(service.authenticationLogFilter().getValueOfKey("event_type")).toBe("LOGIN_SUCCESS,MFA_FAIL");
