@@ -32,14 +32,6 @@ $button-low-contrast-variant: linear-gradient(
   var(--mat-sys-surface-container-highest)
 );
 
-$icon-badge-notch-mask: radial-gradient(
-  circle at calc(100% - var(--icon-badge-size) / 2) calc(100% - var(--icon-badge-size) / 2),
-  transparent 0%,
-  transparent calc(var(--icon-badge-mask-size) / 2 + 0.5px),
-  black calc(var(--icon-badge-mask-size) / 2 + 1px),
-  black calc(var(--icon-badge-mask-size) / 2 + 7px)
-);
-
 @mixin button-base($height, $width, $background-color, $border-color, $color) {
   height: $height;
   width: $width;
@@ -396,64 +388,58 @@ $icon-badge-notch-mask: radial-gradient(
 
 .icon-badge {
   --mat-menu-item-spacing: 0;
-  --icon-badge-size: 12px;
-  --icon-badge-icon-size: var(--icon-badge-size);
-  --icon-badge-mask-size: var(--icon-badge-size);
   position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   vertical-align: middle;
 
-  &:has(.icon-badge-large) {
-    --icon-badge-size: 16px;
+  // Per-instance adjustments: some base icons need the badge nudged in or the
+  // glyph sized down. Apply these modifiers on the .icon-badge container.
+  &.icon-badge-right-2 {
+    --icon-badge-right: -2px;
   }
 
-  &:has(.icon-badge-small) {
-    --icon-badge-size: 12px;
+  &.icon-badge-right-3 {
+    --icon-badge-right: -3px;
   }
 
-  &:has(.icon-badge-icon-large) {
-    --icon-badge-icon-size: 18px;
+  &.icon-badge-glyph-small {
+    --icon-badge-font-size: 12px;
   }
 
-  &:has(.icon-badge-mask-small) {
-    --icon-badge-mask-size: 10px;
-  }
-
-  > .mat-icon:not(.icon-badge-overlay) {
-    -webkit-mask-image: $icon-badge-notch-mask;
-    mask-image: $icon-badge-notch-mask;
-  }
-
-  > .mat-icon[class*="mdi--"]:not(.icon-badge-overlay) {
-    -webkit-mask-image: var(--svg), $icon-badge-notch-mask;
-    -webkit-mask-composite: source-in;
-    -webkit-mask-origin: content-box, border-box;
-    -webkit-mask-clip: content-box, border-box;
-    mask-image: var(--svg), $icon-badge-notch-mask;
-    mask-composite: intersect;
-    mask-origin: content-box, border-box;
-    mask-clip: content-box, border-box;
-  }
-
+  // Small circular badge overlaid on the bottom-right corner of the base icon.
+  // The glyph is centered inside the circle; the solid background sits on top of
+  // the base icon (no cut-out). Offset defaults come from --icon-badge-right /
+  // --icon-badge-bottom, overridden by the modifiers above.
   .icon-badge-overlay {
     position: absolute;
     z-index: 1;
-    bottom: 0px;
-    right: 0px;
+    right: var(--icon-badge-right, -4px);
+    bottom: var(--icon-badge-bottom, -1px);
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    border-radius: 50%;
+    background-color: var(--mat-sys-surface-container-lowest);
+    color: inherit;
 
     &.mat-icon {
-      width: var(--icon-badge-size) !important;
-      height: var(--icon-badge-size) !important;
-      font-size: var(--icon-badge-icon-size) !important;
+      width: 14px;
+      height: 14px;
+      font-size: var(--icon-badge-font-size, 14px);
     }
 
     &.icon-badge-bold {
       font-weight: bold;
+    }
+
+    // Larger glyph for the numeric/graphic count badges (e.g. the tokens
+    // dashboard widget) while keeping the circular badge shape.
+    &.icon-badge-icon-large.mat-icon {
+      width: 16px;
+      height: 16px;
+      font-size: 17px;
     }
   }
 }

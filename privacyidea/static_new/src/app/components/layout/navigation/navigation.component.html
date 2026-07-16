@@ -431,7 +431,7 @@
       <a class="sub-nav-active">
         <span class="icon-badge">
           <mat-icon class="padding-right-4">gavel</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-large">settings</mat-icon>
+          <mat-icon class="icon-badge-overlay">settings</mat-icon>
         </span>
         <span i18n>Details</span>
       </a>
@@ -439,9 +439,9 @@
     <a
       [ngClass]="contentService.routeUrl() === ROUTE_PATHS.POLICIES_NEW ? 'sub-nav-active' : ''"
       [routerLink]="[ROUTE_PATHS.POLICIES_NEW]">
-      <span class="icon-badge">
+      <span class="icon-badge icon-badge-right-3">
         <mat-icon class="padding-right-4">gavel</mat-icon>
-        <mat-icon class="icon-badge-overlay icon-badge-large icon-badge-mask-small icon-badge-bold">add</mat-icon>
+        <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
       </span>
       <span i18n>Create</span>
     </a>
