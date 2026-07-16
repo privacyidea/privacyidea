@@ -25,6 +25,8 @@
   </h2>
 
   <app-multi-select-only
+    class="margin-bottom-16"
+    fieldClass="input-width-xl"
     label="Admin Realms"
     [items]="realmService.adminRealmOptions()"
     [selectedItems]="selectedAdminrealm()"
@@ -49,7 +51,8 @@
 
   <div class="admin-input-container">
     <mat-form-field
-      class="add-admin-input"
+      subscriptSizing="dynamic"
+      class="input-width-l"
       appearance="outline">
       <mat-label i18n>Admin Name</mat-label>
       <input
@@ -63,7 +66,7 @@
     </mat-form-field>
 
     <button
-      class="input-attached-button"
+      mat-icon-button
       [disabled]="!adminSignal().trim() || adminField().errors().length > 0"
       (click)="addAdmin(adminSignal())">
       <mat-icon>add</mat-icon>

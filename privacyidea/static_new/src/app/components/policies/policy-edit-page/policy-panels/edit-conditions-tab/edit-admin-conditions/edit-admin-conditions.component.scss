@@ -28,10 +28,7 @@
 .admin-input-container {
   align-items: center;
   display: flex;
-}
-
-.add-admin-input {
-  flex-grow: 1;
+  gap: var(--half-global-gap);
 }
 
 .remove-admin-btn {
