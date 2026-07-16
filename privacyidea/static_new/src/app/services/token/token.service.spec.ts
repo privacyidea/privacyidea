@@ -35,7 +35,7 @@ import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { MockContentService, MockPiResponse, MockRealmService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
-import { BulkResult, TokenGroups, Tokens, TokenService } from "./token.service";
+import { BulkResult, TokenCountParams, TokenGroups, Tokens, TokenService } from "./token.service";
 
 class MockNotificationService {
   success = jest.fn();
@@ -132,6 +132,41 @@ describe("TokenService", () => {
         error: (err) => {
           expect(err).toBe(error);
           expect(notificationService.error).toHaveBeenCalledWith("Failed to toggle active. boom");
+          done();
+        }
+      });
+    });
+
+    it("does not notify when notify=false but still propagates error", (done) => {
+      const error = new HttpErrorResponse({
+        error: { result: { error: { message: "boom" } } },
+        status: 500
+      });
+      postSpy.mockReturnValue(throwError(() => error));
+
+      tokenService.toggleActive("HOTP1", true, false).subscribe({
+        next: () => {
+          fail("expected error");
+        },
+        error: (err) => {
+          expect(err).toBe(error);
+          expect(notificationService.error).not.toHaveBeenCalled();
+          done();
+        }
+      });
+    });
+
+    it("falls back to an empty message when the error has no result message", (done) => {
+      const error = new HttpErrorResponse({ error: {}, status: 500 });
+      postSpy.mockReturnValue(throwError(() => error));
+
+      tokenService.toggleActive("HOTP1", true).subscribe({
+        next: () => {
+          fail("expected error");
+        },
+        error: (err) => {
+          expect(err).toBe(error);
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to toggle active. ");
           done();
         }
       });
@@ -265,6 +300,52 @@ describe("TokenService", () => {
     });
   });
 
+  describe("getTokenCount()", () => {
+    it("always sends pagesize=0 when called without filters", () => {
+      getSpy.mockReturnValue(of(MockPiResponse.fromValue({ count: 0 })));
+
+      tokenService.getTokenCount().subscribe();
+
+      expect(getSpy).toHaveBeenCalledWith(tokenService.tokenBaseUrl, {
+        headers: authService.getHeaders(),
+        params: { pagesize: 0 }
+      });
+    });
+
+    it("preserves provided filters while forcing pagesize=0", () => {
+      getSpy.mockReturnValue(of(MockPiResponse.fromValue({ count: 1 })));
+
+      tokenService
+        .getTokenCount({ type: "hotp", assigned: "False", infokey: "tokenkind", infovalue: "hardware" })
+        .subscribe();
+
+      expect(getSpy).toHaveBeenCalledWith(tokenService.tokenBaseUrl, {
+        headers: authService.getHeaders(),
+        params: {
+          type: "hotp",
+          assigned: "False",
+          infokey: "tokenkind",
+          infovalue: "hardware",
+          pagesize: 0
+        }
+      });
+    });
+
+    it("does not allow overriding pagesize even when passed via an unsafe cast", () => {
+      getSpy.mockReturnValue(of(MockPiResponse.fromValue({ count: 2 })));
+
+      tokenService.getTokenCount({ serial: "S1", pagesize: 25 } as unknown as TokenCountParams).subscribe();
+
+      expect(getSpy).toHaveBeenCalledWith(tokenService.tokenBaseUrl, {
+        headers: authService.getHeaders(),
+        params: {
+          serial: "S1",
+          pagesize: 0
+        }
+      });
+    });
+  });
+
   describe("pollTokenRolloutState()", () => {
     it("emits error once and stops polling when request fails", async () => {
       jest.useFakeTimers();
@@ -351,6 +432,18 @@ describe("TokenService", () => {
       expect(req.request.params.get("type")).toBe("*hotp*");
       expect(req.request.params.has("description")).toBe(false);
       expect(req.request.params.has("rollout_state")).toBe(false);
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("normalizes assigned/active boolean filters to backend format True/False", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.tokenFilter.set(new FilterValue({ value: "assigned: false active: true serial: OTP" }));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("assigned")).toBe("False");
+      expect(req.request.params.get("active")).toBe("True");
+      expect(req.request.params.get("serial")).toBe("*OTP*");
       req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
     });
   });
@@ -755,6 +848,35 @@ describe("TokenService", () => {
         }
       });
     });
+
+    it("does not notify when notify=false but still propagates error", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "uu" } } },
+        status: 500
+      });
+      postSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.unassignUser("SER", false).subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.error).not.toHaveBeenCalled();
+          done();
+        }
+      });
+    });
+
+    it("falls back to an empty message when the error has no result message", (done) => {
+      const boom = new HttpErrorResponse({ error: {}, status: 500 });
+      postSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.unassignUser("SER").subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to unassign user. ");
+          done();
+        }
+      });
+    });
   });
 
   describe("assignUser()", () => {
@@ -787,6 +909,35 @@ describe("TokenService", () => {
         error: (e) => {
           expect(e).toBe(boom);
           expect(notificationService.error).toHaveBeenCalledWith("Failed to reset fail count. rf");
+          done();
+        }
+      });
+    });
+
+    it("does not notify when notify=false but still propagates error", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "rf" } } },
+        status: 500
+      });
+      postSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.resetFailCount("SER", false).subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.error).not.toHaveBeenCalled();
+          done();
+        }
+      });
+    });
+
+    it("falls back to an empty message when the error has no result message", (done) => {
+      const boom = new HttpErrorResponse({ error: {}, status: 500 });
+      postSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.resetFailCount("SER").subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to reset fail count. ");
           done();
         }
       });

@@ -7,6 +7,7 @@ import time
 from base64 import b32encode
 
 import mock
+from flask import Flask
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
@@ -20,6 +21,7 @@ from privacyidea.lib.conditional_access.authentication_event_types import AuthEv
 from privacyidea.lib.conditional_access.engine import is_user_locked, LockoutAction
 from privacyidea.models.lockout_policy import (LockoutPolicy, LockoutPolicyStage, LockoutStageAction,
                                                LockoutPolicyCounterType, UserLockoutState)
+from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_config
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
 from privacyidea.lib.realm import set_realm, set_default_realm, delete_realm
@@ -28,8 +30,9 @@ from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
 from privacyidea.lib.token import (get_tokens, init_token, remove_token,
                                    get_one_token, enable_token)
-from privacyidea.lib.tokenclass import ClientMode
+from privacyidea.lib.tokenclass import ClientMode, ChallengeSession
 from privacyidea.lib.tokenrolloutstate import RolloutState
+from privacyidea.lib.tokens.push_types import PushDeclineReason
 from privacyidea.lib.tokens.pushtoken import (PushAction, strip_pem_headers, POLL_ONLY,
                                               DEFAULT_CHALLENGE_TEXT, PushMode)
 from privacyidea.lib.user import User
@@ -39,7 +42,7 @@ from privacyidea.models.authentication_log import AuthenticationLog
 from privacyidea.models.utils import utc_now
 from . import ldap3mock
 from .authlog_utils import assert_authentication_log, assert_authentication_log_entry
-from .base import MyApiTestCase
+from .base import MyApiTestCase, force_expire_challenges
 
 PWFILE = "tests/testdata/passwords"
 HOSTSFILE = "tests/testdata/hosts"
@@ -70,17 +73,19 @@ class _PushSmartphoneAnswer(threading.Thread):
         push_wait times out)
     """
 
-    def __init__(self, app, private_key, serial, mode="accept"):
+    def __init__(self, app: Flask, private_key: rsa.RSAPrivateKey, serial: str,
+                 mode: str = "accept", decline_reason: str | None = None) -> None:
         super().__init__()
         self.app = app
         self.private_key = private_key
         self.serial = serial
         self.mode = mode
+        self.decline_reason = decline_reason
         self.nonce = None
         self.transaction_id = None
         self.response = None
 
-    def run(self):
+    def run(self) -> None:
         nonce = None
         for _ in range(50):
             timestamp = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
@@ -107,6 +112,8 @@ class _PushSmartphoneAnswer(threading.Thread):
         sign_data = f"{nonce}|{self.serial}"
         if self.mode == "decline":
             sign_data += "|decline"
+            if self.decline_reason:
+                sign_data += f"|{self.decline_reason}"
         elif self.mode == "fail":
             # Sign data the server will not reconstruct, so the signature check fails
             sign_data = f"{nonce}|{self.serial}_wrong"
@@ -114,13 +121,15 @@ class _PushSmartphoneAnswer(threading.Thread):
         data = {"serial": self.serial, "signature": b32encode(answer_sig)}
         if self.mode == "decline":
             data["decline"] = "1"
+            if self.decline_reason:
+                data["decline_reason"] = self.decline_reason
         with self.app.test_request_context('/ttype/push', method='POST', data=data):
             self.response = self.app.full_dispatch_request().json
 
 
-class PushAPITestCase(MyApiTestCase):
+class PushTokenTestMixin:
     """
-    test the api.validate endpoints
+    Shared fixtures for push token API tests
     """
 
     server_private_key = rsa.generate_private_key(public_exponent=65537,
@@ -147,6 +156,27 @@ class PushAPITestCase(MyApiTestCase):
     # The smartphone sends the public key in URLsafe and without the ----BEGIN header
     smartphone_public_key_pem_urlsafe = strip_pem_headers(smartphone_public_key_pem).replace("+", "-").replace("/", "_")
     serial_push = "PIPU001"
+
+    def _enroll_push_token(self) -> None:
+        """Enroll a push token for "selfservice" (the two smartphone-side steps)."""
+        with self.app.test_request_context('/token/init', method='POST',
+                                           data={"type": "push", "pin": "push_pin",
+                                                 "user": "selfservice", "realm": self.realm1,
+                                                 "serial": self.serial_push, "genkey": 1},
+                                           headers={'Authorization': self.at}):
+            enrollment_credential = self.app.full_dispatch_request().json["detail"]["enrollment_credential"]
+        with self.app.test_request_context('/ttype/push', method='POST',
+                                           data={"enrollment_credential": enrollment_credential,
+                                                 "serial": self.serial_push,
+                                                 "pubkey": self.smartphone_public_key_pem_urlsafe,
+                                                 "fbtoken": "firebaseT"}):
+            self.assertEqual(200, self.app.full_dispatch_request().status_code)
+
+
+class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
+    """
+    test the api.validate endpoints
+    """
 
     def test_00_create_realms(self):
         self.setUp_user_realms()
@@ -589,6 +619,219 @@ class PushAPITestCase(MyApiTestCase):
 
         # Cleanup
         delete_policy("pol_passthru")
+        delete_policy("pol_multienroll")
+        delete_policy("pol_push2")
+        remove_token(serial)
+        delete_realm("ldaprealm")
+        delete_resolver("catchall")
+
+    def _setup_multichallenge_push_enrollment(self):
+        """Configure LDAP passthru + ENROLL_VIA_MULTICHALLENGE=push. Returns nothing;
+        the caller is responsible for _teardown_multichallenge_push_enrollment()."""
+        from .test_api_validate import LDAPDirectory
+
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        params = {'LDAPURI': 'ldap://localhost',
+                  'LDAPBASE': 'o=test',
+                  'BINDDN': 'cn=manager,ou=example,o=test',
+                  'BINDPW': 'ldaptest',
+                  'LOGINNAMEATTRIBUTE': 'cn',
+                  'LDAPSEARCHFILTER': '(cn=*)',
+                  'USERINFO': '{ "username": "cn",'
+                              '"phone" : "telephoneNumber", '
+                              '"mobile" : "mobile"'
+                              ', "email" : "mail", '
+                              '"surname" : "sn", '
+                              '"givenname" : "givenName" }',
+                  'UIDTYPE': 'DN',
+                  "resolver": "catchall",
+                  "type": "ldapresolver"}
+        r = save_resolver(params)
+        self.assertTrue(r > 0)
+        set_realm("ldaprealm", resolvers=[{'name': "catchall"}])
+        set_default_realm("ldaprealm")
+
+        set_policy("pol_passthru", scope=SCOPE.AUTH, action=PolicyAction.PASSTHRU)
+        set_policy("pol_tokenlabel", scope=SCOPE.ENROLL, action=f"{PolicyAction.TOKENLABEL}=Pushy")
+        set_policy("pol_multienroll", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE}=push")
+        set_policy("pol_push2", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.FIREBASE_CONFIG}={self.firebase_config_name},"
+                          f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL},"
+                          f"{PushAction.SSL_VERIFY}=1,"
+                          f"{PushAction.TTL}={TTL}")
+        r = set_smsgateway(self.firebase_config_name,
+                           'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
+                           "myFB", FB_CONFIG_VALS)
+        self.assertTrue(r > 0)
+
+    def _teardown_multichallenge_push_enrollment(self, serial=None):
+        delete_policy("pol_passthru")
+        delete_policy("pol_tokenlabel")
+        delete_policy("pol_multienroll")
+        delete_policy("pol_push2")
+        if serial:
+            remove_token(serial)
+        delete_realm("ldaprealm")
+        delete_resolver("catchall")
+
+    def _enroll_and_answer_push(self):
+        """Trigger a multichallenge push enrollment and let the smartphone answer it
+        (rollout step 2). Returns (serial, transaction_id) with the enrollment
+        challenge marked answered (otp_valid set)."""
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "alice", "pass": "alicepw"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            detail = res.json.get("detail")
+            transaction_id = detail.get("transaction_id")
+            serial = detail.get("serial")
+
+        # The smartphone finalizes the rollout, which marks the challenge as answered
+        tok = get_one_token(serial=serial)
+        enrollment_credential = tok.get_tokeninfo("enrollment_credential")
+        with self.app.test_request_context('/ttype/push',
+                                           method='POST',
+                                           data={"enrollment_credential": enrollment_credential,
+                                                 "serial": serial,
+                                                 "pubkey": self.smartphone_public_key_pem_urlsafe,
+                                                 "fbtoken": "firebaseT"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+        return serial, transaction_id
+
+    @ldap3mock.activate
+    def test_10a_finalize_enroll_push_within_grace(self):
+        # An enrollment challenge answered by the smartphone (otp_valid set during the
+        # rollout) can be finalized by the application after the original challenge
+        # validity has passed: answering extends the expiration by the finalize grace,
+        # so the pending /validate/check still succeeds. The user may take longer than
+        # the challenge validity to scan the QR and confirm.
+        set_privacyidea_config("PushChallengeValidityTime", 120)
+        set_privacyidea_config("PushChallengeFinalizeGrace", 300)
+        self._setup_multichallenge_push_enrollment()
+
+        serial, transaction_id = self._enroll_and_answer_push()
+
+        # The challenge is answered (otp_valid flipped to 1) and answering pushed the
+        # expiration out by the finalize grace, so it is still valid well beyond the
+        # 120s answer window - which is what lets the (possibly delayed) finalize succeed.
+        chal = get_challenges(serial=serial, transaction_id=transaction_id)[0]
+        self.assertTrue(chal.get_otp_status()[1])
+        self.assertTrue(chal.is_valid())
+        self.assertGreater((chal.expiration - utc_now()).total_seconds(), 200)
+
+        # The application finalizes via /validate/check with empty pass: succeeds
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "alice",
+                                                 "transaction_id": transaction_id,
+                                                 "pass": ""}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("value"), res.json)
+            self.assertEqual(result.get("authentication"), "ACCEPT", res.json)
+
+        self._teardown_multichallenge_push_enrollment(serial)
+        delete_privacyidea_config("PushChallengeValidityTime")
+        delete_privacyidea_config("PushChallengeFinalizeGrace")
+
+    @ldap3mock.activate
+    def test_10a2_finalize_enroll_push_after_grace_fails(self):
+        # Once the finalize window (validity + grace) has elapsed, the answered
+        # enrollment challenge can no longer be redeemed: a late /validate/check must
+        # not complete the authentication. (The token itself is already enrolled - the
+        # smartphone registered in step 2 - but this login is not finalized.)
+        # Identical in both backends.
+        self._setup_multichallenge_push_enrollment()
+
+        serial, transaction_id = self._enroll_and_answer_push()
+
+        # Simulate a finalize arriving after the whole finalize window elapsed.
+        force_expire_challenges(transaction_id)
+        self.assertFalse(get_challenges(serial=serial, transaction_id=transaction_id)[0].is_valid())
+
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "alice",
+                                                 "transaction_id": transaction_id,
+                                                 "pass": ""}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            self.assertFalse(res.json.get("result").get("value"), res.json)
+
+        self._teardown_multichallenge_push_enrollment(serial)
+
+    @ldap3mock.activate
+    def test_10b_finalize_enroll_push_before_smartphone_confirms(self):
+        # Regression test: while the enrollment challenge is still pending (the
+        # smartphone has not confirmed the rollout yet, so otp_valid is unset), a
+        # /validate/check poll must not authenticate. The pending enrollment
+        # challenge must be skipped, not treated as answered.
+        from .test_api_validate import LDAPDirectory
+
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        params = {'LDAPURI': 'ldap://localhost',
+                  'LDAPBASE': 'o=test',
+                  'BINDDN': 'cn=manager,ou=example,o=test',
+                  'BINDPW': 'ldaptest',
+                  'LOGINNAMEATTRIBUTE': 'cn',
+                  'LDAPSEARCHFILTER': '(cn=*)',
+                  'USERINFO': '{ "username": "cn",'
+                              '"phone" : "telephoneNumber", '
+                              '"mobile" : "mobile"'
+                              ', "email" : "mail", '
+                              '"surname" : "sn", '
+                              '"givenname" : "givenName" }',
+                  'UIDTYPE': 'DN',
+                  "resolver": "catchall",
+                  "type": "ldapresolver"}
+        r = save_resolver(params)
+        self.assertTrue(r > 0)
+        set_realm("ldaprealm", resolvers=[{'name': "catchall"}])
+        set_default_realm("ldaprealm")
+
+        set_policy("pol_passthru", scope=SCOPE.AUTH, action=PolicyAction.PASSTHRU)
+        set_policy("pol_tokenlabel", scope=SCOPE.ENROLL, action=f"{PolicyAction.TOKENLABEL}=Pushy")
+        set_policy("pol_multienroll", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE}=push")
+        set_policy("pol_push2", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.FIREBASE_CONFIG}={self.firebase_config_name},"
+                          f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL},"
+                          f"{PushAction.SSL_VERIFY}=1,"
+                          f"{PushAction.TTL}={TTL}")
+        r = set_smsgateway(self.firebase_config_name,
+                           'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
+                           "myFB", FB_CONFIG_VALS)
+        self.assertTrue(r > 0)
+
+        # Trigger the enrollment challenge
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "alice", "pass": "alicepw"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            detail = res.json.get("detail")
+            transaction_id = detail.get("transaction_id")
+            serial = detail.get("serial")
+
+        # The enrollment challenge exists but the smartphone has not finalized the
+        # rollout, so it is not answered yet.
+        chal = get_challenges(serial=serial, transaction_id=transaction_id)[0]
+        self.assertEqual(chal.get_session(), ChallengeSession.ENROLLMENT)
+        self.assertFalse(chal.get_otp_status()[1])
+
+        # check_challenge_response must skip the still-unanswered enrollment
+        # challenge (rather than treat it as answered) and report no match.
+        token = get_one_token(serial=serial)
+        otp_counter = token.check_challenge_response(options={"transaction_id": transaction_id})
+        self.assertEqual(otp_counter, -1)
+
+        # Cleanup
+        delete_policy("pol_passthru")
+        delete_policy("pol_tokenlabel")
         delete_policy("pol_multienroll")
         delete_policy("pol_push2")
         remove_token(serial)
@@ -1944,25 +2187,11 @@ class PushAPITestCase(MyApiTestCase):
         delete_policy("push_mode_code_to_phone")
         delete_policy("push_wait")
 
-    def _enroll_push_token(self):
-        """Enroll a push token for "selfservice" (the two smartphone-side steps)."""
-        with self.app.test_request_context('/token/init', method='POST',
-                                           data={"type": "push", "pin": "push_pin",
-                                                 "user": "selfservice", "realm": self.realm1,
-                                                 "serial": self.serial_push, "genkey": 1},
-                                           headers={'Authorization': self.at}):
-            enrollment_credential = self.app.full_dispatch_request().json["detail"]["enrollment_credential"]
-        with self.app.test_request_context('/ttype/push', method='POST',
-                                           data={"enrollment_credential": enrollment_credential,
-                                                 "serial": self.serial_push,
-                                                 "pubkey": self.smartphone_public_key_pem_urlsafe,
-                                                 "fbtoken": "firebaseT"}):
-            self.assertEqual(200, self.app.full_dispatch_request().status_code)
-
-    def _start_smartphone_answer(self, mode="accept"):
+    def _start_smartphone_answer(self, mode: str = "accept",
+                                 decline_reason: str | None = None) -> "_PushSmartphoneAnswer":
         """Start and return a :class:`_PushSmartphoneAnswer` thread for the pending push_wait
         challenge. After ``join()`` its ``response`` holds the JSON of the answer POST."""
-        thread = _PushSmartphoneAnswer(self.app, self.smartphone_private_key, self.serial_push, mode)
+        thread = _PushSmartphoneAnswer(self.app, self.smartphone_private_key, self.serial_push, mode, decline_reason)
         thread.start()
         return thread
 
@@ -2013,27 +2242,34 @@ class PushAPITestCase(MyApiTestCase):
     def test_22_push_wait_declined(self):
         """
         Push with push_wait, declined: the smartphone declines while /validate/check is blocking.
-        The wait loop does not short-circuit on a decline, so it runs to timeout and rejects; the
-        challenge is still cleaned up.
+        The wait loop short-circuits on the decline (well before the timeout) and reports DECLINED
+        with challenge_status "declined"; the challenge is cleaned up.
         """
         self.setUp_user_realms()
         user = User("selfservice", self.realm1)
         set_policy("push_config", scope=SCOPE.ENROLL,
                    action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
                           f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
-        set_policy("push_wait", scope=SCOPE.AUTH, action=f"{PushAction.WAIT}=3")
+        # A long timeout so that returning quickly proves the loop broke early on the decline.
+        set_policy("push_wait", scope=SCOPE.AUTH, action=f"{PushAction.WAIT}=20")
         self._enroll_push_token()
 
         clear_log()
         smartphone = self._start_smartphone_answer("decline")
         try:
+            start_time = time.monotonic()
             with self.app.test_request_context('/validate/check', method='POST',
                                                data={"user": "selfservice", "pass": "push_pin"}):
                 res = self.app.full_dispatch_request()
+                elapsed_time = time.monotonic() - start_time
                 self.assertEqual(200, res.status_code, res)
                 result = res.json.get("result")
                 self.assertFalse(result.get("value"), res.json)
-                self.assertEqual(AUTH_RESPONSE.REJECT, result.get("authentication"), res.json)
+                # The decline short-circuits the wait: DECLINED, not a timeout REJECT
+                self.assertEqual(AUTH_RESPONSE.DECLINED, result.get("authentication"), res.json)
+                self.assertEqual("declined", res.json["detail"].get("challenge_status"), res.json)
+                # Returned well before the 20s timeout
+                self.assertLess(elapsed_time, 15, f"push_wait did not short-circuit on decline ({elapsed_time}s)")
         finally:
             smartphone.join()
 
@@ -2047,6 +2283,41 @@ class PushAPITestCase(MyApiTestCase):
         # The decline (valid signature) was accepted by the server
         self.assertTrue(smartphone.response["result"]["value"], smartphone.response)
         # The declined push_wait challenge is cleaned up
+        self.assertEqual([], get_challenges(serial=self.serial_push))
+
+        remove_token(self.serial_push)
+        delete_policy("push_config")
+        delete_policy("push_wait")
+
+    def test_22a_push_wait_cancelled(self):
+        """
+        Push with push_wait, cancelled (user aborted their own request): the smartphone sends
+        decline_reason=cancelled.
+        The wait loop short-circuits and reports DECLINED with challenge_status "cancelled" so the
+        two events can be told apart downstream.
+        """
+        self.setUp_user_realms()
+        set_policy("push_config", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        set_policy("push_wait", scope=SCOPE.AUTH, action=f"{PushAction.WAIT}=20")
+        self._enroll_push_token()
+
+        smartphone = self._start_smartphone_answer("decline", decline_reason=PushDeclineReason.CANCELLED)
+        try:
+            start_time = time.monotonic()
+            with self.app.test_request_context('/validate/check', method='POST',
+                                               data={"user": "selfservice", "pass": "push_pin"}):
+                res = self.app.full_dispatch_request()
+                elapsed_time = time.monotonic() - start_time
+                self.assertEqual(200, res.status_code, res)
+                self.assertFalse(res.json["result"].get("value"), res.json)
+                self.assertEqual(AUTH_RESPONSE.DECLINED, res.json["result"].get("authentication"), res.json)
+                self.assertEqual("cancelled", res.json["detail"].get("challenge_status"), res.json)
+                self.assertLess(elapsed_time, 15, f"push_wait did not short-circuit on cancel ({elapsed_time}s)")
+        finally:
+            smartphone.join()
+
+        self.assertTrue(smartphone.response["result"]["value"], smartphone.response)
         self.assertEqual([], get_challenges(serial=self.serial_push))
 
         remove_token(self.serial_push)
@@ -2240,3 +2511,296 @@ class PushAPITestCase(MyApiTestCase):
             self.assertFalse(_push_token_owner(""))
             # Unresolvable serial -> get_one_token raises -> empty user.
             self.assertFalse(_push_token_owner("NO_SUCH_SERIAL_XYZ"))
+
+
+class PushDeclineReasonTestCase(PushTokenTestMixin, MyApiTestCase):
+    """
+    Tests for the push decline_reason feature (cancelled vs unknown_trigger) and
+    the open-challenge guard in _handle_auth_response. The push_wait reaction to
+    a decline lives with the push_wait tests in PushAPITestCase.
+    """
+
+    def _setup_standard_push(self) -> None:
+        """Enroll a standard (poll-only) push token for "selfservice"."""
+        set_policy("push_config", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
+                          f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        self._enroll_push_token()
+
+    def _trigger_challenge(self) -> tuple[str, str]:
+        """Trigger a standard push challenge and return (transaction_id, nonce)."""
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "selfservice", "pass": "push_pin"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            transaction_id = res.json["detail"]["transaction_id"]
+        challenge = get_challenges(serial=self.serial_push, transaction_id=transaction_id)[0]
+        return transaction_id, challenge.challenge
+
+    def _sign(self, data: str) -> bytes:
+        """Sign ``data`` with the smartphone key and return the b32-encoded signature."""
+        signature = self.smartphone_private_key.sign(data.encode("utf8"), padding.PKCS1v15(), hashes.SHA256())
+        return b32encode(signature)
+
+    def _post_decline(self, nonce: str, sign_suffix: str, request_data: dict) -> dict:
+        """POST a decline to /ttype/push. ``sign_suffix`` is appended to the signed
+        payload; ``request_data`` is merged into the POST body (serial + signature added)."""
+        signature = self._sign(f"{nonce}|{self.serial_push}|decline{sign_suffix}")
+        data = {"serial": self.serial_push, "signature": signature, "decline": "1"}
+        data.update(request_data)
+        with self.app.test_request_context('/ttype/push', method='POST', data=data):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            return res.json
+
+    def _poll_status(self, transaction_id: str) -> str:
+        """Return the challenge_status reported by /validate/polltransaction."""
+        with self.app.test_request_context('/validate/polltransaction', method='GET',
+                                           query_string={"transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            return res.json["detail"]["challenge_status"]
+
+    def test_01_decline_reason_cancelled(self):
+        """A signed decline with decline_reason=cancelled sets the CANCELLED session,
+        polltransaction reports 'cancelled', the challenge stays (reportable, not deleted)
+        and the pending /validate/check is rejected."""
+        self.setUp_user_realms()
+        self._setup_standard_push()
+        transaction_id, nonce = self._trigger_challenge()
+
+        result = self._post_decline(nonce, f"|{PushDeclineReason.CANCELLED}",
+                                    {"decline_reason": PushDeclineReason.CANCELLED})
+        self.assertTrue(result["result"]["value"], result)
+
+        challenge = get_challenges(serial=self.serial_push, transaction_id=transaction_id)[0]
+        self.assertEqual(ChallengeSession.CANCELLED, challenge.get_session(), challenge)
+        # The row is kept so the outcome stays reportable
+        self.assertEqual("cancelled", self._poll_status(transaction_id))
+
+        # The pending /validate/check is rejected
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "selfservice", "pass": "x",
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertFalse(res.json["result"]["value"], res.json)
+            self.assertEqual(AUTH_RESPONSE.REJECT, res.json["result"]["authentication"], res.json)
+
+        remove_token(self.serial_push)
+        delete_policy("push_config")
+
+    def test_02_decline_reason_unknown_trigger(self):
+        """
+        A signed decline with decline_reason=unknown_trigger keeps the DECLINED session,
+        polltransaction reports 'declined' and the pending /validate/check is rejected.
+        """
+        self.setUp_user_realms()
+        self._setup_standard_push()
+        transaction_id, nonce = self._trigger_challenge()
+
+        result = self._post_decline(nonce, f"|{PushDeclineReason.UNKNOWN_TRIGGER}",
+                                    {"decline_reason": PushDeclineReason.UNKNOWN_TRIGGER})
+        self.assertTrue(result["result"]["value"], result)
+
+        challenge = get_challenges(serial=self.serial_push, transaction_id=transaction_id)[0]
+        self.assertEqual(ChallengeSession.DECLINED, challenge.get_session(), challenge)
+        self.assertEqual("declined", self._poll_status(transaction_id))
+
+        # The pending /validate/check is rejected
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "selfservice", "pass": "x",
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertFalse(res.json["result"]["value"], res.json)
+            self.assertEqual(AUTH_RESPONSE.REJECT, res.json["result"]["authentication"], res.json)
+
+        remove_token(self.serial_push)
+        delete_policy("push_config")
+
+    def test_03_decline_no_reason(self):
+        """
+        An earlier app version declines with a signature over '...|decline' and no decline_reason.
+        The signature still verifies and the decline maps to the DECLINED session.
+        """
+        self.setUp_user_realms()
+        self._setup_standard_push()
+        transaction_id, nonce = self._trigger_challenge()
+
+        # No reason: signed payload is exactly "{nonce}|{serial}|decline"
+        result = self._post_decline(nonce, "", {})
+        self.assertTrue(result["result"]["value"], result)
+
+        challenge = get_challenges(serial=self.serial_push, transaction_id=transaction_id)[0]
+        self.assertEqual(ChallengeSession.DECLINED, challenge.get_session(), challenge)
+        self.assertEqual("declined", self._poll_status(transaction_id))
+
+        remove_token(self.serial_push)
+        delete_policy("push_config")
+
+    def test_04_decline_reason_downgrade_rejected(self):
+        """
+        A MITM cannot downgrade the reason: because the reason is part of the signed
+        payload, a signature computed without it (or with a different one) fails when the
+        request carries a mismatching decline_reason. The challenge stays open.
+        """
+        self.setUp_user_realms()
+        self._setup_standard_push()
+        transaction_id, nonce = self._trigger_challenge()
+
+        # Signature over "...|decline" (no reason), but request claims cancelled -> mismatch
+        result = self._post_decline(nonce, "", {"decline_reason": PushDeclineReason.CANCELLED})
+        self.assertFalse(result["result"]["value"], result)
+
+        # Signature over "...|decline|unknown_trigger", but request claims cancelled -> mismatch
+        result = self._post_decline(nonce, f"|{PushDeclineReason.UNKNOWN_TRIGGER}",
+                                    {"decline_reason": PushDeclineReason.CANCELLED})
+        self.assertFalse(result["result"]["value"], result)
+
+        # The challenge was neither declined nor cancelled: still open
+        challenge = get_challenges(serial=self.serial_push, transaction_id=transaction_id)[0]
+        self.assertNotIn(challenge.get_session(),
+                         (ChallengeSession.DECLINED, ChallengeSession.CANCELLED), challenge)
+        self.assertTrue(challenge.is_open(), challenge)
+        self.assertEqual("pending", self._poll_status(transaction_id))
+
+        remove_token(self.serial_push)
+        delete_policy("push_config")
+
+    def test_05_polling_get_skips_cancelled(self):
+        """After a cancel, the smartphone polling GET no longer offers the challenge."""
+        self.setUp_user_realms()
+        self._setup_standard_push()
+        transaction_id, nonce = self._trigger_challenge()
+        self._post_decline(nonce, f"|{PushDeclineReason.CANCELLED}", {"decline_reason": PushDeclineReason.CANCELLED})
+
+        timestamp = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
+        poll_signature = self._sign(f"{self.serial_push}|{timestamp}")
+        with self.app.test_request_context('/ttype/push', method='GET',
+                                           query_string={"serial": self.serial_push,
+                                                         "timestamp": timestamp,
+                                                         "signature": poll_signature}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            # The cancelled challenge is not returned to the smartphone
+            self.assertListEqual([], res.json["result"]["value"], res.json)
+
+        remove_token(self.serial_push)
+        delete_policy("push_config")
+
+    def test_06_is_open_guard_no_reanswer(self):
+        """
+        The open-challenge guard makes _handle_auth_response idempotent: replaying an
+        approve signature on an already-answered challenge, and answering an already-refused
+        challenge, are both no-ops.
+        """
+        self.setUp_user_realms()
+        self._setup_standard_push()
+
+        # (a) Answer once, then replay the same approve signature.
+        transaction_id, nonce = self._trigger_challenge()
+        approve_signature = self._sign(f"{nonce}|{self.serial_push}")
+        with self.app.test_request_context('/ttype/push', method='POST',
+                                           data={"serial": self.serial_push, "signature": approve_signature}):
+            self.assertTrue(self.app.full_dispatch_request().json["result"]["value"])
+        challenge = get_challenges(serial=self.serial_push, transaction_id=transaction_id)[0]
+        self.assertTrue(challenge.otp_valid, challenge)
+        received_after_first = challenge.get_otp_status()[0]
+        # Replay: the challenge is already answered -> guard skips it -> no match
+        with self.app.test_request_context('/ttype/push', method='POST',
+                                           data={"serial": self.serial_push, "signature": approve_signature}):
+            self.assertFalse(self.app.full_dispatch_request().json["result"]["value"])
+        challenge = get_challenges(serial=self.serial_push, transaction_id=transaction_id)[0]
+        self.assertEqual(received_after_first, challenge.get_otp_status()[0], challenge)
+
+        # (b) A refused challenge cannot be flipped to answered by a valid approve signature.
+        transaction_id, nonce = self._trigger_challenge()
+        self._post_decline(nonce, f"|{PushDeclineReason.UNKNOWN_TRIGGER}",
+                           {"decline_reason": PushDeclineReason.UNKNOWN_TRIGGER})
+        approve_signature = self._sign(f"{nonce}|{self.serial_push}")
+        with self.app.test_request_context('/ttype/push', method='POST',
+                                           data={"serial": self.serial_push, "signature": approve_signature}):
+            self.assertFalse(self.app.full_dispatch_request().json["result"]["value"])
+        challenge = get_challenges(serial=self.serial_push, transaction_id=transaction_id)[0]
+        self.assertEqual(ChallengeSession.DECLINED, challenge.get_session(), challenge)
+        self.assertFalse(challenge.otp_valid, challenge)
+
+        remove_token(self.serial_push)
+        delete_policy("push_config")
+
+    def test_07_is_open_guard_expired(self):
+        """An expired challenge is not answerable at the /ttype/push endpoint either."""
+        self.setUp_user_realms()
+        self._setup_standard_push()
+        transaction_id, nonce = self._trigger_challenge()
+        force_expire_challenges(transaction_id)
+
+        approve_signature = self._sign(f"{nonce}|{self.serial_push}")
+        with self.app.test_request_context('/ttype/push', method='POST',
+                                           data={"serial": self.serial_push, "signature": approve_signature}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertFalse(res.json["result"]["value"], res.json)
+
+        challenge = get_challenges(serial=self.serial_push, transaction_id=transaction_id)[0]
+        self.assertFalse(challenge.otp_valid, challenge)
+
+        remove_token(self.serial_push)
+        delete_policy("push_config")
+
+    def test_08_code_to_phone_no_regeneration_on_replay(self):
+        """Replaying the confirm signature on an already-confirmed code_to_phone challenge
+        must not regenerate (and leak) a fresh display_code."""
+        self.setUp_user_realms()
+        set_policy("push_config", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        set_policy("push_mode_code_to_phone", scope=SCOPE.AUTH,
+                   action=f"{PushAction.PUSH_CODE_TO_PHONE}=1")
+        self._enroll_push_token()
+        transaction_id, nonce = self._trigger_challenge()
+
+        confirm_signature = self._sign(f"{nonce}|{self.serial_push}")
+        with self.app.test_request_context('/ttype/push', method='POST',
+                                           data={"serial": self.serial_push, "signature": confirm_signature}):
+            res = self.app.full_dispatch_request()
+            first_code = res.json["detail"]["display_code"]
+            self.assertTrue(first_code)
+
+        # Replay the exact same confirm signature
+        with self.app.test_request_context('/ttype/push', method='POST',
+                                           data={"serial": self.serial_push, "signature": confirm_signature}):
+            res = self.app.full_dispatch_request()
+            # The already-confirmed challenge is skipped: no new code is generated or leaked
+            self.assertFalse(res.json["result"]["value"], res.json)
+            self.assertNotIn("display_code", res.json.get("detail") or {})
+
+        # The stored display_code is unchanged
+        challenge = get_challenges(serial=self.serial_push, transaction_id=transaction_id)[0]
+        self.assertEqual(first_code, challenge.get_data().get("display_code"), challenge)
+
+        remove_token(self.serial_push)
+        delete_policy("push_config")
+        delete_policy("push_mode_code_to_phone")
+
+    def test_09_decline_reason_unknown_logs_and_declines(self):
+        """
+        A signed but unrecognized decline_reason still declines (the refusal always takes
+        effect) and is logged as app/server vocabulary drift.
+        """
+        self.setUp_user_realms()
+        self._setup_standard_push()
+        transaction_id, nonce = self._trigger_challenge()
+
+        with LogCapture(level=logging.INFO) as log_capture:
+            result = self._post_decline(nonce, "|totally_unknown", {"decline_reason": "totally_unknown"})
+            self.assertTrue(result["result"]["value"], result)
+            log_capture.check_present(("privacyidea.lib.tokens.pushtoken", "INFO",
+                              "Unknown push decline_reason 'totally_unknown' for token "
+                              f"{self.serial_push}; recording as a plain decline."))
+
+        # Falls back to a plain decline
+        challenge = get_challenges(serial=self.serial_push, transaction_id=transaction_id)[0]
+        self.assertEqual(ChallengeSession.DECLINED, challenge.get_session(), challenge)
+        self.assertEqual("declined", self._poll_status(transaction_id))
+
+        remove_token(self.serial_push)
+        delete_policy("push_config")

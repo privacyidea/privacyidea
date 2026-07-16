@@ -113,12 +113,12 @@
                 }
                 @case ("startdate") {
                   <span>
-                    {{ element[column.key].split(".")[0].replace("T", " ") }}
+                    {{ element[column.key] | localDateTime }}
                   </span>
                 }
                 @case ("date") {
                   <span>
-                    {{ element[column.key].split(".")[0].replace("T", " ") }}
+                    {{ element[column.key] | localDateTime }}
                   </span>
                 }
                 @case ("policies") {

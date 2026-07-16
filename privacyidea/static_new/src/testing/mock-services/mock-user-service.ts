@@ -29,6 +29,10 @@ export class MockUserService implements UserServiceInterface {
   userAttributesList = signal<{ key: string; value: string }[]>([]);
   userAttributesResource: HttpResourceRef<PiResponse<Record<string, string>, unknown> | undefined> =
     new MockHttpResourceRef(MockPiResponse.fromValue({}));
+  internalAttributes: Signal<Record<string, string>> = signal({});
+  internalAttributesList = signal<{ key: string; value: string }[]>([]);
+  internalAttributesResource: HttpResourceRef<PiResponse<Record<string, string>, unknown> | undefined> =
+    new MockHttpResourceRef(MockPiResponse.fromValue({}));
   attributePolicy: Signal<UserAttributePolicy> = signal<UserAttributePolicy>({
     delete: ["department", "attr2", "attr1"],
     set: { "*": ["2", "1"], city: ["*"], department: ["sales", "finance"] }

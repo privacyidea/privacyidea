@@ -38,7 +38,7 @@ import time
 from sqlalchemy import select, update
 
 from privacyidea.lib import lazy_gettext
-from privacyidea.lib.crypto import is_censored, encryptPassword, decryptPassword
+from privacyidea.lib.crypto import is_censored, censor_dict, encryptPassword, decryptPassword
 from privacyidea.lib.error import ConfigAdminError
 from privacyidea.lib.metrics import inc, observe
 from privacyidea.lib.utils import fetch_one_resource, get_module_class
@@ -431,34 +431,37 @@ def send_sms_identifier(identifier, phone, message):
     return result
 
 
-def list_smsgateways(identifier=None, id=None, gwtype=None):
-    """
-    This returns a list of all sms gateways matching the criterion.
-    If no identifier or server is provided, it will return a list of all sms
-    gateway definitions.
+@register_export('smsgateway')
+def export_smsgateway(name=None, censor=False):
+    """ Export given or all sms gateway configuration
 
-    :param identifier: The identifier or the name of the SMSGateway definition.
-        As the identifier is unique, providing an identifier will return a
-        list with either one or no sms gateway
-    :type identifier: basestring
-    :param id: The id of the sms gateway in the database
-    :type id: basestring
-    :return: dict of SMSGateway configurations with gateway identifiers as keys.
+    :param censor: If True, secret option and header values are replaced with
+        the ``__CENSORED__`` placeholder instead of being returned in clear
+        text. A value counts as secret when it is stored encrypted (marked via
+        the explicit ``secret.option.<key>`` / ``secret.header.<key>`` flag) or
+        when its key name looks sensitive (e.g. contains ``PASSWORD`` or
+        ``SECRET``). Censoring by the stored encryption state is what catches
+        secrets whose key name gives no hint - the name heuristic alone would
+        leak them.
     """
     res = {}
-    for gw in get_smsgateway(identifier=identifier, id=id, gwtype=gwtype):
-        res[gw.identifier] = gw.as_dict()
-        res[gw.identifier].pop('name')
-        res[gw.identifier].pop('id')
-
-    return res
-
-
-@register_export('smsgateway')
-def export_smsgateway(name=None):
-    """ Export given or all sms gateway configuration """
-    res = list_smsgateways(identifier=name)
-
+    for gw in get_smsgateway(identifier=name):
+        gateway = gw.as_dict()
+        gateway.pop('name')
+        gateway.pop('id')
+        if censor:
+            encrypted_keys = {"option": set(), "header": set()}
+            for option in gw.options:
+                if option.Encrypted:
+                    # Type is "header" for headers, "option" or empty for options
+                    # (mirrors SMSGateway._get_options_by_type).
+                    encrypted_keys["header" if option.Type == "header" else "option"].add(option.Key)
+            for section, option_type in (("options", "option"), ("headers", "header")):
+                values = gateway.get(section, {})
+                secret_keys = [key for key in values
+                               if _is_sensitive_key(key) or key in encrypted_keys[option_type]]
+                gateway[section] = censor_dict(values, secret_keys)
+        res[gw.identifier] = gateway
     return res
 
 
