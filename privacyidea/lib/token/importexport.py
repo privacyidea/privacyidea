@@ -26,7 +26,7 @@ class TokenImportResult:
 
 @dataclass(frozen=True)
 class TokenExportResult:
-    successful_tokens: list[str]  # The serialized tokens for which the export succeeded
+    successful_tokens: list[dict]  # The serialized tokens for which the export succeeded
     failed_tokens: list[str]  # The serial of tokens for which the export failed
 
 
