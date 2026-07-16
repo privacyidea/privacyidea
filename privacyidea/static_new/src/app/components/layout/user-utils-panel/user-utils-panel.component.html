@@ -60,7 +60,11 @@
     class="session-timer"
     i18n-matTooltip
     matTooltip="Time until session expires">
-    {{ sessionTimerService.remainingTime() | date: sessionTimeFormat() : "UTC" }}
+    @if (sessionOverOneDay()) {
+      {{ sessionDaysText() }}
+    } @else {
+      {{ sessionTimerService.remainingTime() | date: sessionTimeFormat() : "UTC" }}
+    }
   </div>
   <button
     (click)="logout()"
