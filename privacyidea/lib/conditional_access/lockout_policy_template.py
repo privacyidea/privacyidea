@@ -140,8 +140,32 @@ PASSWORD_SPRAYING = LockoutPolicyTemplate(
         ],
     })
 
+FAILED_LOGIN_RATE_LIMIT = LockoutPolicyTemplate(
+    key="failed_login_rate_limit",
+    description=lazy_gettext("Reject further authentication once a user exceeds a number of failed login "
+                             "attempts in a short window (per-user rate limit). The rejection is stateless "
+                             "and lifts on its own as the failures age out - no lasting lock."),
+    policy={
+        "name": "Failed Login Rate Limit",
+        "time_window_seconds": 60,
+        "enabled": True,
+        "dry_run": False,
+        "priority": 1,
+        "target": LockoutTarget.USER,
+        # The terminal per-request failure classifications
+        "counter_types_to_track": [AuthEventType.PASSWORD_FAIL, AuthEventType.PIN_FAIL,
+                                   AuthEventType.TOKEN_ONLY_FAIL, AuthEventType.MFA_FAIL,
+                                   AuthEventType.CHALLENGE_ANSWERED_FAIL],
+        # DENY is a stateless pre-auth decision: it rejects while the user is over the limit and
+        # self-heals as failures leave the window - rate-limiting, not a durable lockout.
+        "stages": [
+            {"failure_threshold": 10, "priority": 1,
+             "actions": [{"action_type": LockoutAction.DENY}]},
+        ],
+    })
+
 # The shipped catalog. Add a template by defining a constant and listing it here.
-_TEMPLATES = (PASSWORD_BRUTEFORCE, MFA_BRUTEFORCE, PASSWORD_SPRAYING)
+_TEMPLATES = (PASSWORD_BRUTEFORCE, MFA_BRUTEFORCE, PASSWORD_SPRAYING, FAILED_LOGIN_RATE_LIMIT)
 
 
 @log_with(log)
