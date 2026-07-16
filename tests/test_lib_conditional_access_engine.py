@@ -806,6 +806,46 @@ class LockoutEngineTestCase(LockoutTestCase):
         self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
         self.assertEqual(AccessDecision.DENY, evaluate_access_decision(self.user))
 
+    # --- evaluate_access_decision, source-IP target ---------------------------
+
+    def test_access_decision_source_ip_deny(self):
+        # An IP that sprayed >= threshold distinct users is denied pre-auth.
+        ip = "203.0.113.30"
+        self._make_policy(name="ipdeny", counter_type=AuthEventType.PASSWORD_FAIL,
+                          target=LockoutTarget.SOURCE_IP, stages=((3, 1, LockoutAction.DENY, None),))
+        self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3)
+        self.assertEqual(AccessDecision.DENY, evaluate_access_decision(self.user, source_ip=ip))
+
+    def test_access_decision_source_ip_deny_for_unresolved_user(self):
+        # IP decisions fire regardless of whether the current user resolved -
+        # that is the point of an IP-scoped DENY (spraying/enumeration).
+        ip = "203.0.113.31"
+        self._make_policy(name="ipdeny", counter_type=AuthEventType.PASSWORD_FAIL,
+                          target=LockoutTarget.SOURCE_IP, stages=((3, 1, LockoutAction.DENY, None),))
+        self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3)
+        self.assertEqual(AccessDecision.DENY, evaluate_access_decision(User(), source_ip=ip))
+
+    def test_access_decision_source_ip_below_threshold_continues(self):
+        ip = "203.0.113.32"
+        self._make_policy(name="ipdeny", counter_type=AuthEventType.PASSWORD_FAIL,
+                          target=LockoutTarget.SOURCE_IP, stages=((3, 1, LockoutAction.DENY, None),))
+        self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=2)
+        self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(self.user, source_ip=ip))
+
+    def test_access_decision_source_ip_never_block_is_exempt(self):
+        # A never-block IP (loopback) is never denied by an IP policy, mirroring BLOCK_IP.
+        ip = "127.0.0.1"
+        self._make_policy(name="ipdeny", counter_type=AuthEventType.PASSWORD_FAIL,
+                          target=LockoutTarget.SOURCE_IP, stages=((3, 1, LockoutAction.DENY, None),))
+        self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=5)
+        self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(self.user, source_ip=ip))
+
+    def test_access_decision_source_ip_without_ip_continues(self):
+        self._make_policy(name="ipdeny", counter_type=AuthEventType.PASSWORD_FAIL,
+                          target=LockoutTarget.SOURCE_IP, stages=((3, 1, LockoutAction.DENY, None),))
+        self._seed_ip_events("203.0.113.33", AuthEventType.PASSWORD_FAIL, n_users=5)
+        self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(self.user, source_ip=None))
+
     # --- _lock_duration_seconds -----------------------------------------------
 
     def test_lock_duration_parsing(self):

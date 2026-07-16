@@ -441,45 +441,55 @@ def evaluate_access_decision(user: "User", source_ip: str | None = None,
     yields a decision wins, so a higher-priority ALLOW overrides a lower-priority
     DENY and vice versa. ``dry_run`` policies are logged but never enforced.
 
-    Like the rest of the engine the decision is keyed on the resolved
-    ``(resolver, uid, realm)`` user, so an unresolved user (unknown login,
-    local admin) is never denied here. ``source_ip`` is accepted for signature
-    symmetry with :func:`evaluate_lockout_policies` but is not evaluated:
-    IP-scoped decisions (e.g. against password spraying) are not implemented.
+    Both targets decide here: a ``user`` policy is keyed on the resolved
+    ``(resolver, uid, realm)`` user (an unresolved user - unknown login, local
+    admin - is never decided by a user policy), while a ``source_ip`` policy is
+    keyed on *source_ip* and therefore applies even when the user is unresolved
+    (the spraying/enumeration case). A never-block source IP is exempt from an IP
+    ``DENY``, mirroring the ``BLOCK_IP`` allowlist.
 
-    :param user: the authenticating user; an unresolved user yields ``CONTINUE``
-    :param source_ip: the resolved client IP (reserved for IP-scoped decisions)
+    :param user: the authenticating user; only ``user``-target policies need it
+    :param source_ip: the resolved client IP; ``source_ip``-target policies decide on it
     :param now: the reference time; defaults to :func:`utc_now`
     :return: the :class:`AccessDecision` for this request
     """
-    if not _resolved(user):
-        return AccessDecision.CONTINUE
     now = _naive_utc(now) if now is not None else utc_now()
-    # Only user-targeted policies decide here: ALLOW/DENY are user-keyed and the
-    # pre-auth path does per-user counting, so source-IP policies (spraying) are
-    # skipped - they act post-response via evaluate_lockout_policies instead.
     policies = db.session.scalars(
         select(LockoutPolicy)
-        .where(LockoutPolicy.enabled.is_(True),
-               LockoutPolicy.target == LockoutTarget.USER.value)
+        .where(LockoutPolicy.enabled.is_(True))
         .order_by(LockoutPolicy.priority.desc())
     ).all()
     for policy in policies:
-        decision = _policy_access_decision(policy, user, now)
+        decision = _policy_access_decision(policy, user, source_ip, now)
         if decision is not None:
             return decision
     return AccessDecision.CONTINUE
 
 
-def _policy_access_decision(policy: LockoutPolicy, user: "User",
+def _policy_access_decision(policy: LockoutPolicy, user: "User", source_ip: str | None,
                             now: datetime) -> "AccessDecision | None":
     """
     The ALLOW/DENY decision a single policy contributes pre-auth, or ``None`` if
-    this policy does not decide the request (no stage met, the met stage carries
-    only lockout-style actions, or the policy is in dry-run).
+    this policy does not decide the request (wrong/absent subject, no stage met,
+    the met stage carries only lockout-style actions, or the policy is in dry-run).
     """
-    count = count_user_events(user.resolver, user.uid, user.realm,
-                              policy.counter_types_to_track, policy.time_window_seconds, window_end=now)
+    if policy.target == LockoutTarget.SOURCE_IP:
+        # IP-scoped: decide on the source IP regardless of user resolution. A
+        # never-block IP is never denied by an IP policy (mirrors the BLOCK_IP
+        # allowlist), so it contributes no decision.
+        if not source_ip or is_ip_never_block(source_ip):
+            return None
+        count = count_distinct_users_for_ip(source_ip, policy.counter_types_to_track,
+                                            policy.time_window_seconds, window_end=now)
+        subject_label = f"source IP {source_ip}"
+    else:
+        # User-scoped: keyed on the resolved user, so an unresolved user is never
+        # decided by a user policy.
+        if not _resolved(user):
+            return None
+        count = count_user_events(user.resolver, user.uid, user.realm,
+                                  policy.counter_types_to_track, policy.time_window_seconds, window_end=now)
+        subject_label = repr(user)
     triggered_stage = next((stage for stage in policy.stages
                             if count >= stage.failure_threshold), None)
     if triggered_stage is None:
@@ -491,10 +501,10 @@ def _policy_access_decision(policy: LockoutPolicy, user: "User",
         return None
     types = _types_label(policy.counter_types_to_track)
     if policy.dry_run:
-        log.info(f"[dry-run] policy {policy.name!r} would return {decision} for {user!r}: "
+        log.info(f"[dry-run] policy {policy.name!r} would return {decision} for {subject_label}: "
                  f"{count} event(s) of {types} in {policy.time_window_seconds}s.")
         return None
-    log.info(f"Policy {policy.name!r} returns access decision {decision} for {user!r}: "
+    log.info(f"Policy {policy.name!r} returns access decision {decision} for {subject_label}: "
              f"{count} event(s) of {types} in {policy.time_window_seconds}s.")
     return decision
 

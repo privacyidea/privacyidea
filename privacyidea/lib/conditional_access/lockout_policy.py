@@ -162,15 +162,15 @@ def _validate_positive_int(value, field: str) -> int:
 
 
 # The actions each target may carry. A user-targeted policy locks/notifies the
-# user (and may decide the request via ALLOW/DENY); a source-IP policy blocks
-# the IP or alerts the admin - LOCK_USER/EMAIL_USER would have no user to act on,
-# and ALLOW/DENY are user-keyed pre-auth decisions not evaluated for IP targets.
+# user; a source-IP policy blocks the IP or alerts the admin - LOCK_USER /
+# EMAIL_USER would have no user to act on. Both targets may decide the request
+# pre-auth via ALLOW/DENY (keyed on the user, resp. the source IP).
 _ACTIONS_BY_TARGET = {
     LockoutTarget.USER: {LockoutAction.LOCK_USER, LockoutAction.PERMANENT_LOCK_USER,
                          LockoutAction.EMAIL_USER, LockoutAction.EMAIL_ADMIN,
                          LockoutAction.DENY, LockoutAction.ALLOW},
     LockoutTarget.SOURCE_IP: {LockoutAction.BLOCK_IP, LockoutAction.PERMANENT_BLOCK_IP,
-                              LockoutAction.EMAIL_ADMIN},
+                              LockoutAction.EMAIL_ADMIN, LockoutAction.DENY, LockoutAction.ALLOW},
 }
 
 

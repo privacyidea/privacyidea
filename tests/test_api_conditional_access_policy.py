@@ -139,6 +139,15 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         res = self._request("policy", method="POST", json_data=self._policy_body(target="planet"))
         self.assertEqual(400, res.status_code, res.json)
 
+    def test_create_source_ip_deny_is_allowed(self):
+        # ALLOW/DENY are valid on a source_ip policy (IP-scoped pre-auth decision).
+        body = self._policy_body(name="IP deny", target="source_ip",
+                                 counter_types_to_track=[str(AuthEventType.PASSWORD_FAIL)],
+                                 stages=[{"failure_threshold": 20,
+                                          "actions": [{"action_type": str(LockoutAction.DENY)}]}])
+        res = self._request("policy", method="POST", json_data=body)
+        self.assertEqual(200, res.status_code, res.json)
+
     def test_create_incompatible_action_for_target_is_400(self):
         # LOCK_USER (the default body's action) is not allowed under a source_ip policy.
         body = self._policy_body(name="Bad", target="source_ip",
