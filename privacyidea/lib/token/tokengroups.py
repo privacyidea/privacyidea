@@ -6,8 +6,6 @@ import logging
 
 from sqlalchemy import select
 
-from privacyidea.lib import _
-from privacyidea.lib.error import (ResourceNotFoundError)
 from privacyidea.models import (db, TokenTokengroup, Tokengroup)
 
 from privacyidea.lib.token.query import get_one_token
@@ -50,7 +48,7 @@ def unassign_tokengroup(serial: str, tokengroup: str | None = None, tokengroup_i
     :param serial: The serial number of the token
     :param tokengroup: The name of the tokengroup
     :param tokengroup_id: alternatively the id of the tokengroup
-    :return: True
+    :return: True in case of success
     """
     tokenobject = get_one_token(serial=serial)
     return tokenobject.delete_tokengroup(tokengroup, tokengroup_id)
