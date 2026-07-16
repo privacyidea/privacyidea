@@ -250,7 +250,7 @@ describe("AuthenticationLog", () => {
     fixture.detectChanges();
     expect(service.timestampFrom()).toBeNull();
 
-    // An unparseable (in-progress) edit is ignored rather than clearing an active filter.
+    // An unparsable (in-progress) edit is ignored rather than clearing an active filter.
     service.timestampTo.set("2026-06-02T12:00:00.000Z");
     service.authenticationLogFilter.set(new FilterValue().addEntry("end_time", "2026-99-99 99:99:99 +00:00"));
     fixture.detectChanges();

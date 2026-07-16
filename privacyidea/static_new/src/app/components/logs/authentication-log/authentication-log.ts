@@ -186,7 +186,7 @@ function toFilterDisplay(isoString: string): string {
 }
 
 // Inverse of toFilterDisplay for the editable start_time/end_time chips: parse the mirrored display, plain ISO, or a
-// partial datetime the user typed into an ISO string. Returns null for an empty or unparseable value.
+// partial datetime the user typed into an ISO string. Returns null for an empty or unparsable value.
 function parseFilterTimestamp(value: string | null | undefined): string | null {
   const trimmed = (value ?? "").trim();
   if (!trimmed) {
@@ -383,7 +383,7 @@ export class AuthenticationLog {
   }
 
   // Drive the time filter from the start_time/end_time entries in the filter text. Guards keep re-mirroring the signal
-  // into the chip from looping and leave an unparseable, in-progress edit untouched instead of clearing an active
+  // into the chip from looping and leave an unparsable, in-progress edit untouched instead of clearing an active
   // filter; removing or emptying an entry clears its bound.
   private syncTimeFilterFromText(): void {
     const map = this.authenticationLogService.authenticationLogFilter().filterMap;
