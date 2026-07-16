@@ -20,6 +20,7 @@ import { DatePipe, formatDate, NgClass } from "@angular/common";
 import {
   Component,
   computed,
+  effect,
   ElementRef,
   inject,
   linkedSignal,
@@ -182,6 +183,24 @@ const DEFAULT_SLIDER_WINDOW_MS = 365 * MS_PER_DAY;
 // Input: ISO 8601, e.g. "2026-06-02T10:00:00.000Z". Output: "2026-06-02 10:00:00 +00:00".
 function toFilterDisplay(isoString: string): string {
   return formatDate(isoString, "yyyy-MM-dd HH:mm:ss ZZZZZ", "en-US");
+}
+
+// Inverse of toFilterDisplay for the editable start_time/end_time chips: parse the mirrored display, plain ISO, or a
+// partial datetime the user typed into an ISO string. Returns null for an empty or unparseable value.
+function parseFilterTimestamp(value: string | null | undefined): string | null {
+  const trimmed = (value ?? "").trim();
+  if (!trimmed) {
+    return null;
+  }
+  // Normalize the mirrored "yyyy-MM-dd HH:mm:ss +00:00" form to ISO (space->T, drop the space before the offset),
+  // then fall back to the raw text so plain ISO input still parses.
+  for (const candidate of [trimmed.replace(" ", "T").replace(/\s+(?=[+\-Z])/, ""), trimmed]) {
+    const date = new Date(candidate);
+    if (!isNaN(date.getTime())) {
+      return date.toISOString();
+    }
+  }
+  return null;
 }
 
 // Full, independently-translatable tooltip per column that has an inline filter button. Kept as complete sentences
@@ -355,6 +374,39 @@ export class AuthenticationLog {
   constructor() {
     // Load known clients for the source-IP options (no-op without the `clienttype` right; the resource gates on it).
     this.clientsService.requestClientsForAutocomplete();
+    // Keep the time filter in sync with edits made directly to the start_time/end_time entries in the main filter
+    // text (the slider/presets write the same signals via applyTimeRange).
+    effect(() => this.syncTimeFilterFromText());
+  }
+
+  // Drive the time filter from the start_time/end_time entries in the filter text. Guards keep re-mirroring the signal
+  // into the chip from looping and leave an unparseable, in-progress edit untouched instead of clearing an active
+  // filter; removing or emptying an entry clears its bound.
+  private syncTimeFilterFromText(): void {
+    const map = this.authenticationLogService.authenticationLogFilter().filterMap;
+    this.syncBoundFromText(map, "start_time", this.authenticationLogService.timestampFrom);
+    this.syncBoundFromText(map, "end_time", this.authenticationLogService.timestampTo);
+  }
+
+  private syncBoundFromText(map: Map<string, string>, key: string, bound: WritableSignal<string | null>): void {
+    const current = bound();
+    const chip = map.get(key);
+    // Chip still equals what we mirrored out of the signal -> the user did not edit it; nothing to do.
+    if ((chip ?? "") === (current ? toFilterDisplay(current) : "")) {
+      return;
+    }
+    if (!chip || !chip.trim()) {
+      if (current !== null) {
+        bound.set(null);
+        this.selectedPreset.set(null);
+      }
+      return;
+    }
+    const parsed = parseFilterTimestamp(chip);
+    if (parsed && parsed !== current) {
+      bound.set(parsed);
+      this.selectedPreset.set(null);
+    }
   }
 
   @ViewChild("filterHTMLInputElement", { static: false })

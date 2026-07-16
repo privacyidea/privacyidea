@@ -239,6 +239,24 @@ describe("AuthenticationLog", () => {
     ]);
   });
 
+  it("editing start_time/end_time in the filter text drives the time filter", () => {
+    // A valid edit parses into the timestamp signal (explicit offset -> timezone-independent).
+    service.authenticationLogFilter.set(new FilterValue().addEntry("start_time", "2026-06-02 10:00:00 +00:00"));
+    fixture.detectChanges();
+    expect(service.timestampFrom()).toBe("2026-06-02T10:00:00.000Z");
+
+    // Removing the entry clears its bound.
+    service.authenticationLogFilter.set(new FilterValue());
+    fixture.detectChanges();
+    expect(service.timestampFrom()).toBeNull();
+
+    // An unparseable (in-progress) edit is ignored rather than clearing an active filter.
+    service.timestampTo.set("2026-06-02T12:00:00.000Z");
+    service.authenticationLogFilter.set(new FilterValue().addEntry("end_time", "2026-99-99 99:99:99 +00:00"));
+    fixture.detectChanges();
+    expect(service.timestampTo()).toBe("2026-06-02T12:00:00.000Z");
+  });
+
   it("setFilterValues stores a multi-value selection as CSV", () => {
     component.setFilterValues("event_type", ["LOGIN_SUCCESS", "MFA_FAIL"]);
     expect(service.authenticationLogFilter().getValueOfKey("event_type")).toBe("LOGIN_SUCCESS,MFA_FAIL");
