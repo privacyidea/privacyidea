@@ -1267,6 +1267,10 @@ class TokenTestCase(MyTestCase):
         # if realm is not contained in allowed_realms, the query does not find any token
         tokens = get_tokens_paginate(realm=self.realm2, allowed_realms=[self.realm1])["tokens"]
         self.assertEqual(0, len(tokens))
+        # if realm IS contained in allowed_realms, the token should be found
+        tokens = get_tokens_paginate(realm=self.realm2, allowed_realms=[self.realm1, self.realm2])["tokens"]
+        self.assertEqual(1, len(tokens))
+        self.assertEqual(token.get_serial(), tokens[0]["serial"])
         # filter for a user which is not contained in the allowed realms, but the token itself is
         tokens = get_tokens_paginate(user=User(login="hans", realm=self.realm2), allowed_realms=[self.realm1])["tokens"]
         self.assertEqual(1, len(tokens))

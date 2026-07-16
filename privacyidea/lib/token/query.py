@@ -90,58 +90,28 @@ def _create_token_query(tokentype: str | None = None, token_type_list: list[str]
     if should_join_token_owner:
         sql_query = sql_query.outerjoin(TokenOwner, Token.id == TokenOwner.token_id)
 
-        # Filtering by realm and allowed_realms with exclusion logic
-        if realm and realm.strip("*") and allowed_realms is not None:
-            # Step 1: Find all realms that should be excluded (the intersection)
-            # This subquery finds all token_ids that are in both the specified realm
-            # and one of the allowed_realms.
-            realm_id_subquery = select(Realm.id).where(
-                func.lower(Realm.name) == realm.lower()
-            )
-            allowed_realms_ids = select(Realm.id).where(
-                func.lower(Realm.name).in_([r.lower() for r in allowed_realms])
-            )
-
-            excluded_token_ids = (
-                select(TokenRealm.token_id)
-                .where(TokenRealm.realm_id.in_(realm_id_subquery))
-                .intersect(
-                    select(TokenRealm.token_id)
-                    .where(TokenRealm.realm_id.in_(allowed_realms_ids))
-                )
-            )
-
-            # Step 2: Apply the filters, excluding the intersection
+    # Filtering by realm and allowed_realms
+    if realm and realm.strip("*"):
+        if "*" in realm:
             sql_query = sql_query.where(
-                and_(
-                    TokenRealm.realm_id.in_(realm_id_subquery),
-                    TokenRealm.realm_id.in_(allowed_realms_ids),
-                    Token.id.notin_(excluded_token_ids)
+                TokenRealm.realm_id.in_(
+                    select(Realm.id).where(
+                        func.lower(Realm.name).like(
+                            convert_wildcard_to_sql_like(realm.lower()),
+                            escape=SQL_LIKE_ESCAPE))
                 )
             )
         else:
-            # Fallback to existing logic if the specific condition is not met
-            if realm and realm.strip("*"):
-                if "*" in realm:
-                    sql_query = sql_query.where(
-                        TokenRealm.realm_id.in_(
-                            select(Realm.id).where(
-                                func.lower(Realm.name).like(
-                                    convert_wildcard_to_sql_like(realm.lower()),
-                                    escape=SQL_LIKE_ESCAPE))
-                        )
-                    )
-                else:
-                    sql_query = sql_query.where(
-                        TokenRealm.realm_id == select(Realm.id).where(
-                            func.lower(Realm.name) == realm.lower()).scalar_subquery())
+            sql_query = sql_query.where(
+                TokenRealm.realm_id == select(Realm.id).where(
+                    func.lower(Realm.name) == realm.lower()).scalar_subquery())
 
-            if allowed_realms is not None:
-                sql_query = sql_query.where(
-                    TokenRealm.realm_id.in_(
-                        select(Realm.id).where(func.lower(Realm.name).in_(allowed_realms))
-                    )
-                )
+    if allowed_realms is not None:
+        sql_query = sql_query.where(
+            TokenRealm.realm_id.in_(
+                select(Realm.id).where(func.lower(Realm.name).in_(allowed_realms))
+            )
+        )
 
     # Filtering by tokentype
     if tokentype and tokentype.strip("*"):
