@@ -562,6 +562,83 @@ describe("TokenDetailsComponent", () => {
     observerCallback!(entryAt(-10, null), observer);
     expect(header.classList.contains("is-sticky")).toBe(false);
   });
+
+  describe("fitWidthToTopRow", () => {
+    const rect = (top: number, left: number, right: number): DOMRect =>
+      ({ top, left, right, bottom: top + 100, width: right - left, height: 100, x: left, y: top }) as DOMRect;
+
+    const cardEl = (r: DOMRect, hasBox = true): HTMLElement => {
+      const el = document.createElement("div");
+      el.getBoundingClientRect = () => r;
+      el.getClientRects = () => (hasBox ? [r] : []) as unknown as DOMRectList;
+      return el;
+    };
+
+    const makeContainer = (): HTMLElement => {
+      const el = document.createElement("div");
+      el.style.padding = "16px";
+      el.style.borderWidth = "0px";
+      el.style.borderStyle = "solid";
+      return el;
+    };
+
+    it("fixes the container width to the rendered top-row span plus padding", () => {
+      const grid = document.createElement("div");
+      grid.appendChild(cardEl(rect(0, 0, 400))); // first row
+      grid.appendChild(cardEl(rect(0, 416, 1000))); // first row
+      // display:contents wrapper (no box of its own) with a first-row child.
+      const wrapper = cardEl(rect(0, 0, 0), false);
+      wrapper.appendChild(cardEl(rect(0, 1016, 1200)));
+      grid.appendChild(wrapper);
+      grid.appendChild(cardEl(rect(200, 0, 400))); // second row -> ignored
+
+      const container = makeContainer();
+      (component as any).scrollContainer = { nativeElement: container };
+      (component as any).detailsGrid = { nativeElement: grid };
+
+      (component as any).fitWidthToTopRow();
+
+      // span = max right (1200) - min left (0) = 1200; + 2 * 16 padding = 1232.
+      expect(container.style.width).toBe("1232px");
+    });
+
+    it("clears the fixed width when there are no measurable cards", () => {
+      const container = makeContainer();
+      container.style.width = "500px";
+      (component as any).scrollContainer = { nativeElement: container };
+      (component as any).detailsGrid = { nativeElement: document.createElement("div") };
+
+      (component as any).fitWidthToTopRow();
+
+      expect(container.style.width).toBe("");
+    });
+
+    it("does nothing when the grid reference is missing", () => {
+      const container = makeContainer();
+      container.style.width = "300px";
+      (component as any).scrollContainer = { nativeElement: container };
+      (component as any).detailsGrid = undefined;
+
+      expect(() => (component as any).fitWidthToTopRow()).not.toThrow();
+      expect(container.style.width).toBe("300px");
+    });
+
+    it("scheduleFit runs the fit on the next animation frame", () => {
+      const rafSpy = jest
+        .spyOn(window, "requestAnimationFrame")
+        .mockImplementation((cb: FrameRequestCallback) => {
+          cb(0);
+          return 1;
+        });
+      const fitSpy = jest.spyOn(component as any, "fitWidthToTopRow").mockImplementation(() => {});
+
+      (component as any).scheduleFit();
+
+      expect(fitSpy).toHaveBeenCalledTimes(1);
+      rafSpy.mockRestore();
+      fitSpy.mockRestore();
+    });
+  });
 });
 
 describe("TokenDetailsComponent linkedSignal computations", () => {
