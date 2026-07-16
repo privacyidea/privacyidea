@@ -26,10 +26,12 @@ from datetime import timedelta
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs
 from privacyidea.lib.conditional_access.engine import LockoutAction, is_user_locked, is_ip_blocked
+from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
 from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
 from privacyidea.lib.token import init_token, remove_token, get_tokens
 from privacyidea.lib.user import User
-from privacyidea.models import db
+from privacyidea.models import db, Challenge
 from privacyidea.models.authentication_log import AuthenticationLog
 from privacyidea.models.lockout_policy import (
     BlockList,
@@ -70,26 +72,26 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         super().tearDown()
 
     @staticmethod
-    def _clear():
+    def _clear() -> None:
         for model in (UserLockoutState, BlockList, LockoutStageAction, LockoutPolicyStage,
                       LockoutPolicyCounterType, LockoutPolicy, AuthenticationLog):
             db.session.query(model).delete()
         db.session.commit()
 
-    def _check(self, data, remote_addr=None):
+    def _check(self, data: dict, remote_addr: str | None = None) -> dict:
         kwargs = {"environ_base": {"REMOTE_ADDR": remote_addr}} if remote_addr else {}
         with self.app.test_request_context('/validate/check', method='POST', data=data, **kwargs):
             response = self.app.full_dispatch_request()
             self.assertEqual(200, response.status_code, response)
             return response.json
 
-    def _lock_user(self, lock_expires_at):
+    def _lock_user(self, lock_expires_at) -> None:
         db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid,
                                         realm=self.user.realm, is_locked=True,
                                         lock_expires_at=lock_expires_at))
         db.session.commit()
 
-    def _make_lock_policy(self, *, counter_type, threshold, duration, window=3600):
+    def _make_lock_policy(self, *, counter_type, threshold: int, duration: int, window: int = 3600) -> None:
         policy = LockoutPolicy(name="ca_lock", counter_types_to_track=_counter_types(counter_type),
                                time_window_seconds=window, enabled=True, priority=1)
         db.session.add(policy)
@@ -102,7 +104,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
                                           action_value=duration))
         db.session.commit()
 
-    def _make_block_ip_policy(self, *, counter_type, threshold, duration, window=3600):
+    def _make_block_ip_policy(self, *, counter_type, threshold: int, duration: int, window: int = 3600) -> None:
         policy = LockoutPolicy(name="ca_blockip", counter_types_to_track=_counter_types(counter_type),
                                time_window_seconds=window, enabled=True, priority=1)
         db.session.add(policy)
@@ -115,7 +117,8 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
                                           action_value=duration))
         db.session.commit()
 
-    def _make_decision_policy(self, *, name, counter_type, threshold, action, priority=1, window=3600):
+    def _make_decision_policy(self, *, name: str, counter_type, threshold: int, action,
+                              priority: int = 1, window: int = 3600) -> None:
         policy = LockoutPolicy(name=name, counter_types_to_track=_counter_types(counter_type),
                                time_window_seconds=window, enabled=True, priority=priority)
         db.session.add(policy)
@@ -127,7 +130,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
                                           action_value=None))
         db.session.commit()
 
-    def _failcount(self):
+    def _failcount(self) -> int:
         return get_tokens(serial=self.serial)[0].token.failcount
 
     # --- pre-check ------------------------------------------------------------
@@ -182,17 +185,17 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertEqual(logs_before, len(get_authentication_logs()))
 
     def test_lockout_write_does_not_corrupt_transaction(self):
-        # Regression: _evaluate_lockout_policies wrapped the engine (which commits
+        # Regression: conditional_access_posteval wrapped the engine (which commits
         # its own writes) in db.session.begin_nested() + commit. Under SQLAlchemy
         # 2.x the engine's first inner commit closes the transaction, so the next
         # DB operation still inside the savepoint context raised InvalidRequestError
         # ("Can't operate on closed transaction inside context manager") on every
-        # request that wrote more than once. The finally swallowed it as a warning.
+        # request that wrote more than once. The helper swallowed it as a warning.
         # Two policies tripping in one request force that second write; assert the
-        # validate logger stays quiet through the full /validate/check flow.
+        # post-eval helper's logger stays quiet through the full /validate/check flow.
         self._make_lock_policy(counter_type=AuthEventType.MFA_FAIL, threshold=3, duration=600)
         self._make_block_ip_policy(counter_type=AuthEventType.MFA_FAIL, threshold=3, duration=900)
-        with self.assertNoLogs("privacyidea.api.validate", level="WARNING"):
+        with self.assertNoLogs("privacyidea.api.lib.utils", level="WARNING"):
             for _ in range(3):
                 body = self._check({"user": "cornelius", "pass": "pin000000"},
                                    remote_addr="203.0.113.9")
@@ -442,6 +445,132 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
             self.assertFalse(body["result"]["value"], body)
         self.assertEqual(3, len(get_authentication_logs()))
         self.assertFalse(is_user_locked(self.user))
+
+    # --- /validate/triggerchallenge -------------------------------------------
+
+    def _trigger_challenge(self, remote_addr: str | None = None) -> dict:
+        if not getattr(self, "at", None):
+            self.authenticate()
+        kwargs = {"environ_base": {"REMOTE_ADDR": remote_addr}} if remote_addr else {}
+        with self.app.test_request_context('/validate/triggerchallenge', method='POST',
+                                           data={"user": "cornelius"},
+                                           headers={"Authorization": self.at}, **kwargs):
+            response = self.app.full_dispatch_request()
+            self.assertEqual(200, response.status_code, response)
+            return response.json
+
+    def test_triggerchallenge_locked_user_rejected(self):
+        self._lock_user(utc_now() + timedelta(seconds=600))
+        body = self._trigger_challenge()
+        # Generic failure (no challenge triggered) and no token logic ran.
+        self.assertFalse(body["result"]["value"], body)
+        self.assertFalse(body.get("detail"), body)
+        # The pre-check rejects before classification, so it writes no log row and,
+        # crucially, no challenge is created in the DB even though no transaction id
+        # is returned.
+        self.assertEqual(0, len(get_authentication_logs()))
+        self.assertEqual(0, db.session.query(Challenge).count())
+
+    def test_triggerchallenge_blocked_ip_rejected(self):
+        db.session.add(BlockList(ip="203.0.113.7", is_blocked=True,
+                                 block_expires_at=utc_now() + timedelta(seconds=600)))
+        db.session.commit()
+        body = self._trigger_challenge(remote_addr="203.0.113.7")
+        self.assertFalse(body["result"]["value"], body)
+        self.assertEqual(0, len(get_authentication_logs()))
+
+    def test_triggerchallenge_denied_by_policy_rejected(self):
+        # A default-deny policy (threshold 0) rejects every request pre-auth.
+        self._make_decision_policy(name="ca_deny", counter_type=AuthEventType.PIN_FAIL,
+                                   threshold=0, action=LockoutAction.DENY)
+        body = self._trigger_challenge()
+        self.assertFalse(body["result"]["value"], body)
+        self.assertEqual(0, len(get_authentication_logs()))
+
+    def test_triggerchallenge_no_token_event_feeds_engine(self):
+        # With no challenge-capable token, triggering classifies NO_TOKEN; a policy
+        # tracking NO_TOKEN locks the user via the post-eval seam.
+        remove_token(self.serial)
+        self._make_lock_policy(counter_type=AuthEventType.NO_TOKEN, threshold=1, duration=600)
+        self.assertFalse(is_user_locked(self.user))
+        body = self._trigger_challenge()
+        self.assertEqual(0, body["result"]["value"], body)
+        self.assertListEqual([AuthEventType.NO_TOKEN],
+                             [entry.event_type for entry in get_authentication_logs()])
+        self.assertTrue(is_user_locked(self.user))
+
+    # --- /validate/polltransaction --------------------------------------------
+
+    def _poll(self, transaction_id: str, remote_addr: str | None = None) -> dict:
+        kwargs = {"environ_base": {"REMOTE_ADDR": remote_addr}} if remote_addr else {}
+        with self.app.test_request_context(f'/validate/polltransaction/{transaction_id}',
+                                           method='GET', **kwargs):
+            response = self.app.full_dispatch_request()
+            self.assertEqual(200, response.status_code, response)
+            return response.json
+
+    def _create_hotp_challenge(self) -> str:
+        """Trigger a real challenge for cornelius' HOTP token (owned by cornelius)
+        via /validate/check and return its transaction_id."""
+        set_policy(name="ca_cr", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
+        try:
+            body = self._check({"user": "cornelius", "pass": "pin"})
+            self.assertEqual("CHALLENGE", body["result"]["authentication"], body)
+            return body["detail"]["transaction_id"]
+        finally:
+            delete_policy("ca_cr")
+
+    def test_polltransaction_blocked_ip_rejected(self):
+        db.session.add(BlockList(ip="203.0.113.7", is_blocked=True,
+                                 block_expires_at=utc_now() + timedelta(seconds=600)))
+        db.session.commit()
+        # The IP-block pre-check fires regardless of whether the transaction exists.
+        body = self._poll("9" * 20, remote_addr="203.0.113.7")
+        self.assertFalse(body["result"]["value"], body)
+        # Generic reject: no challenge_status detail is leaked.
+        self.assertFalse(body.get("detail"), body)
+
+    def test_polltransaction_locked_owner_rejected(self):
+        transaction_id = self._create_hotp_challenge()
+        self._lock_user(utc_now() + timedelta(seconds=600))
+        # The poll resolves the challenge's token owner (cornelius), who is locked.
+        body = self._poll(transaction_id)
+        self.assertFalse(body["result"]["value"], body)
+        self.assertFalse(body.get("detail"), body)
+
+    def test_polltransaction_does_not_write_authentication_log(self):
+        # Polling must not write an authentication-log row: the smartphone's answer
+        # is logged at /ttype/push, so logging here too would double-count. Only the
+        # trigger row from creating the challenge should exist.
+        transaction_id = self._create_hotp_challenge()
+        logs_before = len(get_authentication_logs())
+        body = self._poll(transaction_id)
+        self.assertEqual("pending", body["detail"]["challenge_status"], body)
+        self.assertEqual(logs_before, len(get_authentication_logs()))
+
+    # The /ttype/push authentication-path pre-check (locked owner / blocked IP
+    # rejected, enrollment NOT gated) is covered end-to-end with real signed push
+    # answers in tests/test_api_push_validate.py (test_18e / test_18f), since the
+    # pre-check now lives in the push token's _api_endpoint_post auth branch.
+
+    # --- serial-only lock-evasion (resolve owner before the pre-check) ---------
+
+    def test_locked_user_rejected_via_serial(self):
+        # A serial-only request (no user= parameter) is gated on the token owner:
+        # the owner is resolved from the serial before the pre-check, so a locked
+        # user is rejected even without a user parameter.
+        # Confirm the credentials are valid first, so the rejection is provably the lock.
+        body = self._check({"serial": self.serial, "pass": "pin755224"})
+        self.assertTrue(body["result"]["value"], body)
+        logs_after_success = len(get_authentication_logs())
+
+        self._lock_user(utc_now() + timedelta(seconds=600))
+        body = self._check({"serial": self.serial, "pass": "pin755224"})
+        self.assertFalse(body["result"]["value"], body)
+        self.assertFalse(body.get("detail"), body)
+        # Rejected before any token work: no new log row and the fail counter is unmoved.
+        self.assertEqual(logs_after_success, len(get_authentication_logs()))
+        self.assertEqual(0, self._failcount())
 
 
 class ConditionalAccessAuthTestCase(MyApiTestCase):

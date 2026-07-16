@@ -419,3 +419,36 @@ class UtilsTestCase(MyApiTestCase):
         self.assertEqual(get_optional(params, "b"), "")
         self.assertIsNone(get_optional(params, "c"))
         self.assertEqual(get_optional(params, "c", default="default_val"), "default_val")
+
+class ConditionalAccessPostevalTestCase(MyApiTestCase):
+    """
+    Direct tests for the error-handling branch of
+    :func:`privacyidea.api.lib.utils.conditional_access_posteval`. The engine is
+    exercised end-to-end elsewhere; this pins the invariant that a failure inside
+    the post-response policy evaluation is swallowed and never breaks the
+    already-completed response.
+    """
+
+    def test_01_engine_error_is_swallowed(self):
+        from flask import g
+        from privacyidea.api.lib.utils import conditional_access_posteval
+        from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+        with self.app.test_request_context('/validate/check', method='POST'):
+            g.client_ip = "10.0.0.9"
+            with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies",
+                            side_effect=RuntimeError("engine boom")):
+                # The engine blows up, but the helper must return normally.
+                self.assertIsNone(conditional_access_posteval(User(), AuthEventType.PIN_FAIL))
+
+    def test_02_rollback_error_is_also_swallowed(self):
+        from flask import g
+        from privacyidea.api.lib.utils import conditional_access_posteval
+        from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+        with self.app.test_request_context('/validate/check', method='POST'):
+            g.client_ip = "10.0.0.9"
+            with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies",
+                            side_effect=RuntimeError("engine boom")), \
+                 mock.patch("privacyidea.models.db.session.rollback",
+                            side_effect=RuntimeError("rollback boom")):
+                # Even a failing rollback in the cleanup path is swallowed.
+                self.assertIsNone(conditional_access_posteval(User(), AuthEventType.PIN_FAIL))

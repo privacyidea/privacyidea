@@ -227,6 +227,8 @@ class PolicyAction:
     PASSKEY_LOGIN = "passkey_login"
     HIDE_VERSION = "hide_version"
     AUTHENTICATION_LOG_READ = "authentication_log_read"
+    LOCKOUT_POLICY_READ = "lockout_policy_read"
+    LOCKOUT_POLICY_WRITE = "lockout_policy_write"
 
 
 class PasskeyLoginButtonOptions:

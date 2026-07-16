@@ -41,6 +41,7 @@ from .cache import (ChallengeDTO, evict_challenge, evict_transaction,
 from .log import log_with
 from .policies.actions import PolicyAction
 from .sqlutils import delete_matching_rows
+from .utils import SQL_LIKE_ESCAPE, convert_wildcard_to_sql_like
 from ..models import Challenge, db
 from ..models.utils import utc_now
 from privacyidea.models.utils import clob_to_varchar
@@ -208,12 +209,14 @@ def _create_challenge_query(serial: str = None, transaction_id: str = None) -> S
     stmt = select(Challenge)
     if serial is not None and serial.strip("*"):
         if "*" in serial:
-            stmt = stmt.where(Challenge.serial.like(serial.replace("*", "%")))
+            stmt = stmt.where(Challenge.serial.like(
+                convert_wildcard_to_sql_like(serial), escape=SQL_LIKE_ESCAPE))
         else:
             stmt = stmt.where(Challenge.serial == serial)
     if transaction_id is not None and transaction_id.strip("*"):
         if "*" in transaction_id:
-            stmt = stmt.where(Challenge.transaction_id.like(transaction_id.replace("*", "%")))
+            stmt = stmt.where(Challenge.transaction_id.like(
+                convert_wildcard_to_sql_like(transaction_id), escape=SQL_LIKE_ESCAPE))
         else:
             stmt = stmt.where(Challenge.transaction_id == transaction_id)
     return stmt

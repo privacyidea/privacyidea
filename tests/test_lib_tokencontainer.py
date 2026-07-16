@@ -1106,6 +1106,30 @@ class TokenContainerManagementTestCase(MyTestCase):
         template = get_template_obj(template_params["name"])
         template.delete()
 
+    def test_28a_get_all_containers_like_escaping(self):
+        # SQL LIKE metacharacters (_ and %) in filter values must be matched
+        # literally; only the '*' wildcard should expand. Explicit serials give a
+        # deterministic order (get_all_containers sorts by serial ascending).
+        init_container({"type": "generic", "container_serial": "CONTESCA",
+                        "description": "disc_ount 50%"})
+        init_container({"type": "generic", "container_serial": "CONTESCB",
+                        "description": "discXount 50Y"})
+
+        # '_' is literal, so "disc_ount*" matches only CONTESCA, not "discXount ..."
+        result = get_all_containers(description="disc_ount*", pagesize=15)
+        self.assertListEqual(["CONTESCA"], [container.serial for container in result["containers"]], result)
+
+        # '%' is literal, so "*50%*" matches only the container whose description contains "50%"
+        result = get_all_containers(description="*50%*", pagesize=15)
+        self.assertListEqual(["CONTESCA"], [container.serial for container in result["containers"]], result)
+
+        # '*' still expands as a wildcard and matches both, ordered by serial
+        result = get_all_containers(description="disc*ount*", pagesize=15)
+        self.assertListEqual(["CONTESCA", "CONTESCB"], [container.serial for container in result["containers"]], result)
+
+        for serial in ["CONTESCA", "CONTESCB"]:
+            find_container_by_serial(serial).delete()
+
     def test_29_gen_serial(self):
         # Test class prefix
         serial = _gen_serial(container_type="non_existing_type")

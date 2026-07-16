@@ -17,12 +17,18 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { EditableField } from "@components/shared/details-shared/field-editing/editable-field";
 import { DetailFieldComponent } from "./detail-field.component";
-import { DetailsEditRegistry } from "../details-edit-registry.service";
+import { DetailsEditRegistry } from "../field-editing/details-edit-registry.service";
+
+interface DetailFieldInternals {
+  field: EditableField;
+}
 
 describe("DetailFieldComponent", () => {
   let fixture: ComponentFixture<DetailFieldComponent>;
   let component: DetailFieldComponent;
+  let internals: DetailFieldInternals;
   let registry: DetailsEditRegistry;
 
   beforeEach(() => {
@@ -32,64 +38,67 @@ describe("DetailFieldComponent", () => {
     });
     fixture = TestBed.createComponent(DetailFieldComponent);
     component = fixture.componentInstance;
+    internals = component as unknown as DetailFieldInternals;
     registry = TestBed.inject(DetailsEditRegistry);
     fixture.componentRef.setInput("label", "Max Count");
     fixture.componentRef.setInput("editable", true);
     fixture.componentRef.setInput("editValue", "15");
-    component.ngOnInit();
+    fixture.detectChanges();
   });
 
   it("registers with the registry and starts not editing", () => {
-    expect(component.isEditing()).toBe(false);
+    expect(internals.field.isEditing()).toBe(false);
     expect(registry.anyEditing()).toBe(false);
   });
 
   it("toggle loads the edit buffer and flips registry aggregation", () => {
-    (component as unknown as { toggle: () => void }).toggle();
-    expect(component.isEditing()).toBe(true);
+    internals.field.toggle();
+    expect(internals.field.isEditing()).toBe(true);
     expect(component.draft()).toBe("15");
     expect(registry.anyEditing()).toBe(true);
   });
 
-  it("commit persists the draft via the save callback and exits editing", () => {
+  it("commit persists the draft via the save callback and exits editing", async () => {
     const saveSpy = jest.fn();
     fixture.componentRef.setInput("save", saveSpy);
 
-    (component as unknown as { toggle: () => void }).toggle();
+    internals.field.toggle();
     component.draft.set("20");
-    (component as unknown as { commit: () => void }).commit();
+    await internals.field.commit();
 
     expect(saveSpy).toHaveBeenCalledWith("20");
-    expect(component.isEditing()).toBe(false);
+    expect(internals.field.isEditing()).toBe(false);
   });
 
   it("registry.saveAll drives the field's save while editing", async () => {
     const saveSpy = jest.fn();
     fixture.componentRef.setInput("save", saveSpy);
 
-    (component as unknown as { toggle: () => void }).toggle();
+    internals.field.toggle();
     component.draft.set("99");
     await registry.saveAll();
 
     expect(saveSpy).toHaveBeenCalledWith("99");
-    expect(component.isEditing()).toBe(false);
+    expect(internals.field.isEditing()).toBe(false);
   });
 
   it("cancel exits editing without saving", () => {
     const saveSpy = jest.fn();
     fixture.componentRef.setInput("save", saveSpy);
 
-    (component as unknown as { toggle: () => void }).toggle();
-    (component as unknown as { cancel: () => void }).cancel();
+    internals.field.toggle();
+    internals.field.cancel();
 
-    expect(component.isEditing()).toBe(false);
+    expect(internals.field.isEditing()).toBe(false);
     expect(saveSpy).not.toHaveBeenCalled();
   });
 
   it("unregisters on destroy", () => {
-    (component as unknown as { toggle: () => void }).toggle();
+    internals.field.toggle();
     expect(registry.anyEditing()).toBe(true);
-    component.ngOnDestroy();
+
+    fixture.destroy();
+
     expect(registry.anyEditing()).toBe(false);
   });
 });

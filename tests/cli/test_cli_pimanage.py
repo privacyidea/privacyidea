@@ -18,6 +18,8 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 import contextlib
 import datetime as dt
+import json
+import os
 import pathlib
 import tempfile
 
@@ -31,6 +33,7 @@ from privacyidea.lib.lifecycle import call_finalizers
 from privacyidea.lib.resolver import (save_resolver, delete_resolver,
                                       get_resolver_list)
 from privacyidea.models import db, Challenge, AuthenticationLog
+from privacyidea.models.lockout_policy import BlockList, UserLockoutState
 from privacyidea.models.utils import utc_now
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from .base import CliTestCase
@@ -606,36 +609,164 @@ class TestPIManageConfigExport:
         assert "privacyIDEA_version" in out_text
         assert "periodictask" not in out_text
 
+    def test_pimanage_config_export_censor(self, app, tmp_path):
+        # With --censor secrets are replaced with the __CENSORED__ placeholder
+        from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
+        outfile = tmp_path / "censor.json"
+        runner = app.test_cli_runner()
+        with app.app_context():
+            add_smtpserver("censor_smtp", server="mail.example", password="supersecret")
+
+        # without --censor the password is exported in clear text
+        result = runner.invoke(pi_manage, ["config", "export", "-t", "smtpserver", "-o", outfile])
+        assert not result.exception
+        assert "supersecret" in outfile.read_text()
+
+        # with --censor the password is replaced and no longer present in clear text
+        result = runner.invoke(pi_manage, ["config", "export", "-t", "smtpserver", "--censor", "-o", outfile])
+        assert not result.exception
+        censored_text = outfile.read_text()
+        assert "supersecret" not in censored_text
+        assert "__CENSORED__" in censored_text
+
+        with app.app_context():
+            delete_smtpserver("censor_smtp")
+
+    def test_pimanage_config_export_censor_all_types(self, app, tmp_path):
+        # --censor with the default (all types) must not break: exporters that
+        # do not support censoring (no secrets) are simply called without it.
+        outfile = tmp_path / "all.json"
+        runner = app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["config", "export", "--censor", "-o", outfile])
+        assert not result.exception, result.output
+        out_text = outfile.read_text()
+        assert "privacyIDEA_version" in out_text
+        # the stderr note about same-instance-only re-import is shown
+        assert "__CENSORED__" in result.output
+
 
 class TestPIManageConfigImport:
-    """Test import functions of pi-manage"""
+    """Test import functions of pi-manage.
 
-    @pytest.mark.skip(reason="This test always fails in the complete testsuite")
-    def test_pimanage_config_import(self, app, tmp_path):
-        # TODO: Somehow this test fails when run in combination with other tests
-        #  We will have to investigate more but for now we just skip it.
-        # Import the given resolver
-        infile = tmp_path / "infile.txt"
-        infile.write_text("{'resolver': {'testresolver': {'type': 'passwdresolver', "
-                          "'resolvername': 'testresolver', 'data': {'fileName': 'tests/testdata/passwords'}}}}")
-        # Check, that the resolver is not configured
-        with app.app_context():
-            res_dict = get_resolver_list()
-            assert "testresolver" not in res_dict
+    Reads the data from a file (``-i``) instead of <stdin>, because the click
+    test runner does not connect its simulated input to the ``sys.stdin``
+    default bound at decoration time. Uses uniquely named objects and cleans up,
+    so the tests do not depend on (or leak) global configuration state.
+    """
 
+    def test_01_import_resolver_success(self, app, tmp_path):
+        infile = tmp_path / "resolver.json"
+        infile.write_text(json.dumps({"resolver": {"cliimpresolver": {
+            "type": "passwdresolver", "resolvername": "cliimpresolver",
+            "data": {"fileName": "tests/testdata/passwords"}}}}))
         runner = app.test_cli_runner()
-        result = runner.invoke(pi_manage, ["config", "import", "-i", infile])
-        assert not result.exception
-        assert "Unable to determine version of exported data." in result.output
-        assert "Please make sure that the imported configuration works as expected." in result.output
+        result = runner.invoke(pi_manage, ["config", "import", "-i", str(infile)])
+        assert result.exit_code == 0, result.output
+        # the version-warning message (note: the exact wording contains "the")
+        assert "Unable to determine the version of exported data." in result.output
         assert "Importing configuration type 'resolver'." in result.output
         assert "Could not successfully import data of type resolver" not in result.output
-        print(result.output)
         with app.app_context():
             res_dict = get_resolver_list()
-            assert "testresolver" in res_dict
-            assert res_dict["testresolver"]["type"] == "passwdresolver"
-            assert res_dict["testresolver"]["data"] == {'fileName': 'tests/testdata/passwords'}
+            assert "cliimpresolver" in res_dict
+            assert res_dict["cliimpresolver"]["type"] == "passwdresolver"
+            delete_resolver("cliimpresolver")
+
+    def test_02_import_unknown_format_exits(self, app, tmp_path):
+        infile = tmp_path / "garbage.txt"
+        # unbalanced brackets are rejected by all of json, yaml and python
+        infile.write_text("{[}")
+        runner = app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["config", "import", "-i", str(infile)])
+        assert result.exit_code == 1, result.output
+        assert "Could not determine input format" in result.output
+
+    def test_03_import_failure_exits_nonzero_with_hint(self, app, tmp_path):
+        # A policy with an action that does not exist in this version fails. The
+        # import must exit non-zero (regression) and suggest --skip-invalid.
+        infile = tmp_path / "badpolicy.json"
+        infile.write_text(json.dumps({"policy": [
+            {"name": "clibadpol", "scope": "admin", "action": {"enrollU2F": True}}]}))
+        runner = app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["config", "import", "-i", str(infile)])
+        assert result.exit_code == 1, result.output
+        assert "Could not successfully import data of type policy" in result.output
+        assert "Failed configuration types: policy" in result.output
+        assert "--skip-invalid" in result.output
+
+    def test_04_import_failure_is_partial(self, app, tmp_path):
+        # A bad policy must not prevent a valid policy in the same file from
+        # being imported.
+        infile = tmp_path / "mixed.json"
+        infile.write_text(json.dumps({"policy": [
+            {"name": "clibadpol2", "scope": "admin", "action": {"enrollU2F": True}},
+            {"name": "cligoodpol", "scope": "admin", "action": {"enable": True}}]}))
+        runner = app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["config", "import", "-i", str(infile)])
+        assert result.exit_code == 1, result.output
+        from privacyidea.lib.policy import PolicyClass, delete_policy
+        with app.app_context():
+            names = [p["name"] for p in PolicyClass().match_policies()]
+            assert "cligoodpol" in names
+            assert "clibadpol2" not in names
+            delete_policy("cligoodpol")
+
+    def test_05_import_skip_invalid(self, app, tmp_path):
+        # With --skip-invalid the invalid action is dropped and the policy is
+        # imported with its remaining valid actions; exit code is 0.
+        infile = tmp_path / "skip.json"
+        infile.write_text(json.dumps({"policy": [
+            {"name": "climixedpol", "scope": "admin",
+             "action": {"enrollU2F": True, "disable": True}}]}))
+        runner = app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["config", "import", "-i", str(infile), "--skip-invalid"])
+        assert result.exit_code == 0, result.output
+        from privacyidea.lib.policy import PolicyClass, delete_policy
+        with app.app_context():
+            pols = {p["name"]: p["action"] for p in PolicyClass().match_policies()}
+            assert "climixedpol" in pols
+            assert "disable" in pols["climixedpol"]
+            assert "enrollU2F" not in pols["climixedpol"]
+            delete_policy("climixedpol")
+
+    def test_06_censor_roundtrip_same_instance(self, app, tmp_path):
+        # A censored export re-imported into the SAME instance keeps the stored
+        # secret unchanged (the placeholder means "keep existing").
+        from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver, list_smtpservers
+        outfile = tmp_path / "censored.json"
+        runner = app.test_cli_runner()
+        with app.app_context():
+            add_smtpserver("cliroundtrip", server="mail.example", password="keepmesecret")
+        # export censored
+        result = runner.invoke(pi_manage, ["config", "export", "-t", "smtpserver", "--censor", "-o", outfile])
+        assert result.exit_code == 0, result.output
+        assert "keepmesecret" not in outfile.read_text()
+        # re-import the censored export
+        result = runner.invoke(pi_manage, ["config", "import", "-i", str(outfile)])
+        assert result.exit_code == 0, result.output
+        with app.app_context():
+            # the original secret must be preserved, not overwritten with the placeholder
+            assert list_smtpservers("cliroundtrip")["cliroundtrip"]["password"] == "keepmesecret"
+            delete_smtpserver("cliroundtrip")
+
+    def test_07_yaml_format_roundtrip(self, app, tmp_path):
+        # Export as YAML restricted to one object (-n), then re-import it. The
+        # import auto-detects the YAML format.
+        outfile = tmp_path / "cfg.yaml"
+        runner = app.test_cli_runner()
+        with app.app_context():
+            save_resolver({"resolver": "cliyamlres", "type": "passwdresolver",
+                           "fileName": "tests/testdata/passwords"})
+        result = runner.invoke(pi_manage, ["config", "export", "-t", "resolver",
+                                           "-n", "cliyamlres", "-f", "yaml", "-o", outfile])
+        assert result.exit_code == 0, result.output
+        with app.app_context():
+            delete_resolver("cliyamlres")
+        result = runner.invoke(pi_manage, ["config", "import", "-i", str(outfile)])
+        assert result.exit_code == 0, result.output
+        with app.app_context():
+            assert "cliyamlres" in get_resolver_list()
+            delete_resolver("cliyamlres")
 
 
 class PIManageChallengeTestCase(CliTestCase):
@@ -702,6 +833,98 @@ class PIManageChallengeTestCase(CliTestCase):
         self.assertIn("entries deleted", res.output, res)
 
 
+class PIManageConfigCRUDTestCase(CliTestCase):
+    """CLI coverage for the config sub-commands that manage resolvers,
+    policies, events, the authentication cache and realm defaults."""
+
+    def test_01_resolver_create_and_list(self):
+        runner = self.app.test_cli_runner()
+        # 'resolver create' reads the parameters from a file holding a python dict
+        with tempfile.NamedTemporaryFile("w", suffix=".conf", delete=False) as conf_file:
+            conf_file.write("{'fileName': 'tests/testdata/passwords'}")
+            conf_path = conf_file.name
+        try:
+            result = runner.invoke(pi_manage, ["config", "resolver", "create",
+                                               "cliresolver", "passwdresolver", conf_path])
+            self.assertEqual(result.exit_code, 0, result.output)
+            result = runner.invoke(pi_manage, ["config", "resolver", "list"])
+            self.assertIn("cliresolver", result.output)
+            self.assertIn("passwdresolver", result.output)
+            # verbose listing must not break (it censors bindpw/password)
+            result = runner.invoke(pi_manage, ["config", "resolver", "list", "-v"])
+            self.assertEqual(result.exit_code, 0, result.output)
+        finally:
+            delete_resolver("cliresolver")
+            os.unlink(conf_path)
+
+    def test_02_policy_crud(self):
+        runner = self.app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["config", "policy", "create", "clipol", "admin", "enable"])
+        self.assertEqual(result.exit_code, 0, result.output)
+        result = runner.invoke(pi_manage, ["config", "policy", "list"])
+        self.assertIn("clipol", result.output)
+        result = runner.invoke(pi_manage, ["config", "policy", "disable", "clipol"])
+        self.assertIn("disabled", result.output.lower(), result.output)
+        result = runner.invoke(pi_manage, ["config", "policy", "enable", "clipol"])
+        self.assertIn("enabled", result.output.lower(), result.output)
+        result = runner.invoke(pi_manage, ["config", "policy", "delete", "clipol"])
+        self.assertIn("deleted", result.output.lower(), result.output)
+
+    def test_03_policy_enable_unknown(self):
+        runner = self.app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["config", "policy", "enable", "nosuchpolicy"])
+        self.assertIn("Could not enable policy", result.output, result.output)
+
+    def test_04_event_list(self):
+        runner = self.app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["config", "event", "list"])
+        self.assertEqual(result.exit_code, 0, result.output)
+        self.assertIn("Active", result.output)
+
+    def test_05_authcache_cleanup(self):
+        runner = self.app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["config", "authcache", "cleanup"])
+        self.assertEqual(result.exit_code, 0, result.output)
+        self.assertIn("entries deleted from authcache", result.output)
+
+    def test_06_realm_set_and_clear_default(self):
+        save_resolver({"resolver": "defresolver", "type": "passwdresolver", "fileName": PWFILE})
+        runner = self.app.test_cli_runner()
+        runner.invoke(pi_manage, ["config", "realm", "create", "defrealm", "defresolver"])
+        result = runner.invoke(pi_manage, ["config", "realm", "set_default", "defrealm"])
+        self.assertIn("set as default", result.output.lower(), result.output)
+        result = runner.invoke(pi_manage, ["config", "realm", "clear_default"])
+        self.assertIn("cleared default realm", result.output.lower(), result.output)
+        runner.invoke(pi_manage, ["config", "realm", "delete", "defrealm"])
+        delete_resolver("defresolver")
+
+    def test_07_deprecated_aliases_warn(self):
+        runner = self.app.test_cli_runner()
+        for alias in ("importer", "exporter"):
+            result = runner.invoke(pi_manage, ["config", alias, "-h"])
+            self.assertEqual(result.exit_code, 0, result.output)
+            self.assertIn("deprecated", result.output.lower(), result.output)
+
+    def test_08_policy_create_from_file(self):
+        # 'policy create' with -f reads a python dict; the file values take
+        # precedence over the (still required) positional CLI arguments.
+        runner = self.app.test_cli_runner()
+        with tempfile.NamedTemporaryFile("w", suffix=".pol", delete=False) as pol_file:
+            pol_file.write("{'name': 'clifilepol', 'scope': 'admin', 'action': 'enable'}")
+            pol_path = pol_file.name
+        try:
+            result = runner.invoke(pi_manage, ["config", "policy", "create",
+                                               "ignored", "admin", "enable", "-f", pol_path])
+            self.assertEqual(result.exit_code, 0, result.output)
+            result = runner.invoke(pi_manage, ["config", "policy", "list"])
+            self.assertIn("clifilepol", result.output)
+            self.assertNotIn("ignored", result.output)
+        finally:
+            from privacyidea.lib.policy import delete_policy
+            delete_policy("clifilepol")
+            os.unlink(pol_path)
+
+
 class PIManageAuthLogTestCase(CliTestCase):
     """
     Tests for ``pi-manage authlog cleanup``.
@@ -762,3 +985,143 @@ class PIManageAuthLogTestCase(CliTestCase):
         res = runner.invoke(pi_manage, ["authlog", "cleanup"])
         self.assertNotEqual(res.exit_code, 0, res.output)
         self.assertIn("--age", res.output, res)
+
+
+class PIManageConditionalAccessTestCase(CliTestCase):
+    """
+    Tests for ``pi-manage conditionalaccess`` — the escape hatch for clearing
+    locked users and blocked IPs from the command line.
+    """
+
+    def tearDown(self):
+        BlockList.query.delete()
+        UserLockoutState.query.delete()
+        db.session.commit()
+        super().tearDown()
+
+    def test_01_help_lists_subcommands(self):
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["conditionalaccess"])
+        self.assertIn("list-blocked-ips", res.output, res)
+        self.assertIn("unblock-ip", res.output, res)
+        self.assertIn("list-locked-users", res.output, res)
+        self.assertIn("unlock-user", res.output, res)
+
+    def test_02_list_and_unblock_ip(self):
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["conditionalaccess", "list-blocked-ips"])
+        self.assertIn("No blocked IPs.", res.output, res)
+
+        db.session.add(BlockList(ip="203.0.113.7", is_blocked=True,
+                                 block_expires_at=utc_now() + dt.timedelta(seconds=600),
+                                 reason="brute force"))
+        db.session.commit()
+
+        res = runner.invoke(pi_manage, ["conditionalaccess", "list-blocked-ips"])
+        self.assertIn("203.0.113.7", res.output, res)
+        self.assertIn("brute force", res.output, res)
+
+        res = runner.invoke(pi_manage, ["conditionalaccess", "unblock-ip", "203.0.113.7"])
+        self.assertIn("Removed the block for IP 203.0.113.7.", res.output, res)
+        self.assertIsNone(BlockList.query.filter_by(ip="203.0.113.7").first())
+
+    def test_03_unblock_missing_ip(self):
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["conditionalaccess", "unblock-ip", "203.0.113.9"])
+        self.assertEqual(res.exit_code, 0, res.output)
+        self.assertIn("No block found for IP 203.0.113.9.", res.output, res)
+
+    def test_04_list_and_unlock_by_id(self):
+        runner = self.app.test_cli_runner()
+        db.session.add(UserLockoutState(resolver="reso1", uid="42", realm="realm1", is_locked=True,
+                                        lock_expires_at=utc_now() + dt.timedelta(seconds=600)))
+        db.session.commit()
+
+        res = runner.invoke(pi_manage, ["conditionalaccess", "list-locked-users"])
+        self.assertIn("uid=42", res.output, res)
+        self.assertIn("realm=realm1", res.output, res)
+
+        res = runner.invoke(pi_manage, ["conditionalaccess", "unlock-by-id",
+                                        "--resolver", "reso1", "--uid", "42", "--realm", "realm1"])
+        self.assertIn("Unlocked", res.output, res)
+        self.assertIsNone(UserLockoutState.query.filter_by(resolver="reso1", uid="42",
+                                                           realm="realm1").first())
+
+    def test_05_clear_blocks(self):
+        runner = self.app.test_cli_runner()
+        for ip in ("203.0.113.7", "203.0.113.8"):
+            db.session.add(BlockList(ip=ip, is_blocked=True,
+                                     block_expires_at=utc_now() + dt.timedelta(seconds=600)))
+        db.session.commit()
+
+        res = runner.invoke(pi_manage, ["conditionalaccess", "clear-blocks", "--yes"])
+        self.assertIn("Removed 2 IP block(s).", res.output, res)
+        self.assertEqual(0, BlockList.query.count())
+
+    def test_06_unlock_user_unresolvable(self):
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["conditionalaccess", "unlock-user", "ghost", "--realm", "nope"])
+        self.assertEqual(res.exit_code, 0, res.output)
+        self.assertIn("could not be resolved", res.output, res)
+
+    def test_07_list_locks_empty(self):
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["conditionalaccess", "list-locked-users"])
+        self.assertIn("No locked users.", res.output, res)
+
+    def test_08_unlock_by_id_missing(self):
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["conditionalaccess", "unlock-by-id",
+                                        "--resolver", "reso1", "--uid", "999", "--realm", "realm1"])
+        self.assertEqual(res.exit_code, 0, res.output)
+        self.assertIn("No lock found", res.output, res)
+
+    def test_09_clear_locks(self):
+        runner = self.app.test_cli_runner()
+        for uid in ("1", "2", "3"):
+            db.session.add(UserLockoutState(resolver="reso1", uid=uid, realm="realm1", is_locked=True,
+                                            lock_expires_at=utc_now() + dt.timedelta(seconds=600)))
+        db.session.commit()
+        res = runner.invoke(pi_manage, ["conditionalaccess", "clear-locks", "--yes"])
+        self.assertIn("Removed 3 user lock(s).", res.output, res)
+        self.assertEqual(0, UserLockoutState.query.count())
+
+    def test_09b_clear_locks_by_realm(self):
+        runner = self.app.test_cli_runner()
+        db.session.add(UserLockoutState(resolver="reso1", uid="1", realm="realm1", is_locked=True,
+                                        lock_expires_at=utc_now() + dt.timedelta(seconds=600)))
+        db.session.add(UserLockoutState(resolver="reso2", uid="2", realm="realm2", is_locked=True,
+                                        lock_expires_at=utc_now() + dt.timedelta(seconds=600)))
+        db.session.commit()
+        res = runner.invoke(pi_manage, ["conditionalaccess", "clear-locks", "--realm", "realm1", "--yes"])
+        self.assertIn("Removed 1 user lock(s) in realm 'realm1'.", res.output, res)
+        # Only the realm1 lock was removed; realm2 is untouched.
+        self.assertEqual(0, UserLockoutState.query.filter_by(realm="realm1").count())
+        self.assertEqual(1, UserLockoutState.query.filter_by(realm="realm2").count())
+
+    def test_10_unlock_user_resolvable(self):
+        from privacyidea.lib.user import User
+        from privacyidea.lib.realm import delete_realm
+        save_resolver({"resolver": "resolver1", "type": "passwdresolver", "fileName": PWFILE})
+        runner = self.app.test_cli_runner()
+        runner.invoke(pi_manage, ["config", "realm", "create", "realm1", "resolver1"])
+        try:
+            user = User("cornelius", "realm1")
+            self.assertTrue(user.exist(), "test fixture user cornelius must resolve")
+            # A resolvable user with no lock -> "No lock found".
+            res = runner.invoke(pi_manage, ["conditionalaccess", "unlock-user", "cornelius",
+                                            "--realm", "realm1"])
+            self.assertIn("No lock found for user cornelius@realm1.", res.output, res)
+            # Lock the resolved user, then unlock them by login/realm.
+            db.session.add(UserLockoutState(resolver=user.resolver, uid=user.uid, realm=user.realm,
+                                            is_locked=True,
+                                            lock_expires_at=utc_now() + dt.timedelta(seconds=600)))
+            db.session.commit()
+            res = runner.invoke(pi_manage, ["conditionalaccess", "unlock-user", "cornelius",
+                                            "--realm", "realm1"])
+            self.assertIn("Unlocked user cornelius@realm1.", res.output, res)
+            self.assertIsNone(UserLockoutState.query.filter_by(
+                resolver=user.resolver, uid=user.uid, realm=user.realm).first())
+        finally:
+            delete_realm("realm1")
+            delete_resolver("resolver1")

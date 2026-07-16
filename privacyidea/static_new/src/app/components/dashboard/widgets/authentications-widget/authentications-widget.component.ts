@@ -67,6 +67,7 @@ export class AuthenticationsWidgetComponent extends DashboardWidget implements O
   private readonly store = inject(DashboardDataStore);
 
   private readonly dataRef = signal<DashboardDataRef<AuthenticationResponses> | null>(null);
+  override readonly partialLoading = computed(() => this.dataRef()?.revalidating() ?? false);
 
   readonly counts = computed<AuthenticationCounts>(() => {
     const results = this.dataRef()?.value();
@@ -95,6 +96,11 @@ export class AuthenticationsWidgetComponent extends DashboardWidget implements O
         this.state.set("loading");
       }
     });
+  }
+
+  override reload(): void {
+    this.store.invalidate("dashboard:authentications");
+    this.ngOnInit();
   }
 
   ngOnInit(): void {

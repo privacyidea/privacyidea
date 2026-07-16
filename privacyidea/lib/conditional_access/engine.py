@@ -16,7 +16,9 @@
 # SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
+import ipaddress
 import logging
+import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
@@ -252,6 +254,52 @@ def is_user_locked(user: "User", now: datetime | None = None) -> bool:
     return get_user_lockout(user, now=now) is not None
 
 
+# Built-in never-block networks: blocking loopback would lock out a same-host
+# reverse proxy — and when OVERRIDECLIENT is unset every client is seen as that
+# proxy — turning one BLOCK_IP action into a self-inflicted outage. Admins extend
+# this via the CONDITIONAL_ACCESS_NEVER_BLOCK system config (proxy / load-balancer
+# / NAT / management CIDRs).
+_DEFAULT_NEVER_BLOCK_NETWORKS = ("127.0.0.0/8", "::1/128")
+
+
+def _never_block_networks() -> "list[ipaddress._BaseNetwork]":
+    """
+    The never-block networks: the built-in loopback defaults plus the CIDRs (or
+    bare IPs) configured in the ``CONDITIONAL_ACCESS_NEVER_BLOCK`` system config.
+    Invalid config entries are logged and ignored rather than breaking the engine.
+    """
+    # Lazy import: config is loaded very early in app startup; importing it at
+    # module load would risk an import-order cycle.
+    from privacyidea.lib.config import get_from_config, SYSCONF
+    networks = [ipaddress.ip_network(cidr) for cidr in _DEFAULT_NEVER_BLOCK_NETWORKS]
+    configured = get_from_config(SYSCONF.CONDITIONAL_ACCESS_NEVER_BLOCK) or ""
+    for entry in re.split(r"[,\s]+", configured.strip()):
+        if not entry:
+            continue
+        try:
+            networks.append(ipaddress.ip_network(entry, strict=False))
+        except ValueError:
+            log.warning(f"Ignoring invalid network {entry!r} in {SYSCONF.CONDITIONAL_ACCESS_NEVER_BLOCK}.")
+    return networks
+
+
+def is_ip_never_block(source_ip: str | None) -> bool:
+    """
+    Return whether *source_ip* must never be blocked by the conditional-access
+    engine: it is loopback (built-in) or matches the ``CONDITIONAL_ACCESS_NEVER_BLOCK``
+    system config. A falsy or unparsable IP is treated as never-block as well —
+    fail safe: never block an address the engine cannot positively identify.
+    """
+    if not source_ip:
+        return True
+    try:
+        ip = ipaddress.ip_address(source_ip)
+    except ValueError:
+        log.warning(f"Could not parse source IP {source_ip!r}; treating it as never-block.")
+        return True
+    return any(ip in network for network in _never_block_networks())
+
+
 def get_ip_block(source_ip: str | None, now: datetime | None = None) -> "RestrictionStatus | None":
     """
     Return information about *source_ip*'s **current** block by the ``BLOCK_IP``
@@ -277,6 +325,10 @@ def get_ip_block(source_ip: str | None, now: datetime | None = None) -> "Restric
         return None
     state = db.session.get(BlockList, source_ip)
     if not state or not state.is_blocked:
+        return None
+    # A block row exists; honor the never-block allowlist so adding an IP to it
+    # immediately stops enforcing any (e.g. stale or mistaken) block on that IP.
+    if is_ip_never_block(source_ip):
         return None
     if state.block_expires_at is None:
         # Permanent block; only an admin reset clears it.
@@ -816,7 +868,14 @@ def _upsert_ip_block(source_ip: str, *, block_expires_at: datetime | None, stage
     defensive (a failure is logged and rolled back so that blocking an IP can
     never break the authentication response that already completed) and an
     existing **permanent** block is never downgraded to a timed one.
+
+    Never-block IPs (loopback and the ``CONDITIONAL_ACCESS_NEVER_BLOCK`` config)
+    are skipped: blocking shared infrastructure (a reverse proxy, NAT egress, or
+    a load balancer) would lock out everyone behind it.
     """
+    if is_ip_never_block(source_ip):
+        log.info(f"Not blocking IP {source_ip!r}: it is on the conditional-access never-block list.")
+        return
     try:
         state = db.session.get(BlockList, source_ip)
         if state is None:

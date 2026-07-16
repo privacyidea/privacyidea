@@ -23,6 +23,7 @@ from webauthn.helpers.structs import AttestationConveyancePreference
 
 from privacyidea.config import TestingConfig
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs
 from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.framework import get_app_config_value
@@ -33,6 +34,9 @@ from privacyidea.lib.tokens.webauthn import CoseAlgorithm
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import AUTH_RESPONSE
 from privacyidea.models import db
+from privacyidea.models.authentication_log import AuthenticationLog
+from privacyidea.models.lockout_policy import UserLockoutState
+from privacyidea.models.utils import utc_now
 from tests.authlog_utils import assert_authentication_log, assert_authentication_log_entry
 from tests.base import MyApiTestCase, OverrideConfigTestCase
 from tests.passkey_base import PasskeyTestBase
@@ -1558,6 +1562,35 @@ class PasskeyAPITest(PasskeyAPITestBase):
 
         remove_token(serial)
         remove_token(other_token.get_serial())
+
+    def test_26_locked_owner_rejected_before_token_work(self):
+        """A locked passkey owner is rejected at /validate/check by the
+        conditional-access pre-check. The request is username-less, so the owner is
+        resolved from the credential_id before any token work runs — closing the
+        credential/serial lock-evasion gap. Generic failure, no auth-log row."""
+        serial = self._enroll_static_passkey()
+        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid,
+                                        realm=self.user.realm, is_locked=True,
+                                        lock_expires_at=utc_now() + timedelta(seconds=600)))
+        db.session.commit()
+        db.session.query(AuthenticationLog).delete()
+        db.session.commit()
+        try:
+            with self.app.test_request_context('/validate/check', method='POST',
+                                               data={"credential_id": self.credential_id,
+                                                     "transaction_id": "1" * 20},
+                                               headers={"Origin": self.expected_origin}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+                self.assertFalse(res.json["result"]["value"], res.json)
+                # Generic reject: no reason leaked in the detail.
+                self.assertFalse(res.json.get("detail"), res.json)
+            # The pre-check rejects before classification -> no authentication-log row.
+            self.assertEqual(0, len(get_authentication_logs()))
+        finally:
+            db.session.query(UserLockoutState).delete()
+            db.session.commit()
+            remove_token(serial)
 
 
 class PasskeyAuthAPITest(PasskeyAPITestBase, OverrideConfigTestCase):
