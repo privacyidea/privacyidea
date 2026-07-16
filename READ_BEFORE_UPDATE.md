@@ -2,6 +2,15 @@
 ## Update from 3.13 to 3.14
 
 
+* **Search wildcard change** — Audit-log, token, and user (SQL resolver) searches now treat `*` as the
+  **only** wildcard. Literal `%` and `_` in a search value are now matched literally instead of acting as
+  SQL `LIKE`/`ILIKE` wildcards. If you have saved filters, integrations, or scripts that used `%` as a
+  wildcard — for example an audit filter `action="%/token/init"` or `serial="OATH%"`, or a token search
+  `serial="OATH%"` — replace the `%` with `*` (`action="*/token/init"`, `serial="OATH*"`). Queries that
+  relied on `%` or `_` as wildcards will otherwise return no results, because those characters now only
+  match themselves. This makes search behaviour consistent (`*` everywhere) and prevents user-supplied
+  input from unintentionally broadening a query.
+
 * A new admin policy action `cancelchallenge` has been added. Cancelling an active challenge via
   `DELETE /token/challenges/transaction/<transaction_id>` previously required the `getchallenges`
   right; it now requires the new, write-scoped `cancelchallenge` right. Admins who should only be
@@ -112,6 +121,14 @@
   "fully enrolled" will silently stop matching after the migration. Update any such conditions to
   use `enrolled` instead. You can find affected event handlers in the WebUI under *Config -> Events*
   by reviewing handlers whose conditions reference `rollout_state`.
+
+* Realm-restricted admins with the `userlist` right now see users from **all** realms granted to
+  them, not just one. Previously, when such an admin called `GET /user/` without an explicit `realm`
+  parameter, only the users of a single realm were returned (the first realm of the first matching
+  `userlist` policy), even when the admin was authorized for several realms — whether through one
+  policy listing multiple realms or through multiple policies. The endpoint now returns the union of
+  users across every granted realm. If you have admins that should stay scoped to a single realm,
+  review their `userlist` policies to confirm they grant only the intended realms.
 
 * Resolvers within a realm that share the same priority are now sorted **alphabetically by name**.
   Previously, the order was undefined and depended on the database insertion order, which could

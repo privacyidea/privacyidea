@@ -35,8 +35,9 @@ import time
 import traceback
 from base64 import b32decode
 from binascii import Error as BinasciiError
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from typing import Any
+from typing import Any, TYPE_CHECKING
 from urllib.parse import quote
 
 from cryptography.exceptions import InvalidSignature
@@ -70,15 +71,21 @@ from privacyidea.lib.policy import (SCOPE, GROUP, Match,
 from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway, create_sms_instance
 from privacyidea.lib.token import get_one_token, init_token, create_challenge
 from privacyidea.lib.tokenclass import (TokenClass, AuthenticationMode, ClientMode,
-                                        ChallengeSession)
+                                        ChallengeSession, CHALLENGE_REFUSAL_STATUS)
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.push_types import (PushMode, PushPresenceOptions,
                                                PushAction, PushAllowPolling,
+                                               PushDeclineReason,
                                                CODE_TO_PHONE_DISPLAY_CODE_LENGTH)
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import create_img, b32encode_and_unicode
 from privacyidea.lib.utils import prepare_result, to_bytes, is_true, create_tag_dict
 from privacyidea.models import Token, db
+from privacyidea.models.utils import utc_now
+
+if TYPE_CHECKING:
+    from privacyidea.lib.cache import ChallengeDTO
+    from privacyidea.models import Challenge
 
 log = logging.getLogger(__name__)
 
@@ -106,6 +113,35 @@ AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC = list(string.ascii_uppercase)
 AVAILABLE_PRESENCE_OPTIONS_NUMERIC = [f'{x:02}' for x in range(100)]
 ALLOWED_NUMBER_OF_OPTIONS = list(range(2, 11))
 DEFAULT_NUMBER_OF_PRESENCE_OPTIONS = 3
+# The decline reasons this server version understands. A signed but unrecognized
+# reason still declines, but is logged as app/server vocabulary drift.
+KNOWN_DECLINE_REASONS = frozenset(r.value for r in PushDeclineReason)
+
+# Seconds an answered challenge stays redeemable after the smartphone answered.
+# The challenge validity is the window the smartphone has to answer; the
+# authenticating client then still has to poll /validate/check to finalize,
+# which happens after the answer. This bounded finalize window lets that poll
+# read the recorded answer while preventing an answered challenge from being
+# redeemed indefinitely later. Overridable via 'PushChallengeFinalizeGrace'.
+DEFAULT_CHALLENGE_FINALIZE_GRACE = 300
+
+
+def extend_finalize_window(challenge: "Challenge | ChallengeDTO") -> None:
+    """
+    Extend an answered challenge's expiration so the client's finalize/poll
+    call can still read the recorded answer.
+
+    The smartphone must answer within the original challenge validity (the
+    answer window; the answering endpoint still gates on ``is_open()``). Once
+    answered, the expiration is pushed out by the finalize grace so the answer
+    stays readable in both backends - the DB janitor keys on ``expiration`` and
+    the Redis cache key TTL follows ``expiration`` - and becomes inert once the
+    grace elapses. The expiration is only ever moved forward (never shortened),
+    mirroring the Redis ``expire(gt=True)`` semantics so both backends agree
+    regardless of how the grace compares to the remaining validity.
+    """
+    grace = int(get_from_config("PushChallengeFinalizeGrace", DEFAULT_CHALLENGE_FINALIZE_GRACE))
+    challenge.expiration = max(challenge.expiration, utc_now() + timedelta(seconds=grace))
 
 
 def strip_pem_headers(key: str) -> str:
@@ -311,6 +347,16 @@ def _load_public_key(pubkey_pem: str) -> Any:
                  "-----END PUBLIC KEY-----"
 
     return serialization.load_pem_public_key(to_bytes(pubkey_pem), default_backend())
+
+
+@dataclass
+class _PushChallengeState:
+    """
+    Outcome of scanning a transaction's push challenges once
+    (see PushTokenClass._scan_challenge_response).
+    """
+    otp_counter: int = -1
+    refused_status: str | None = None  # "declined" | "cancelled" | None
 
 
 class PushTokenClass(TokenClass):
@@ -720,6 +766,10 @@ class PushTokenClass(TokenClass):
             if (challenges and challenges[0].is_valid()
                     and challenges[0].get_session() == ChallengeSession.ENROLLMENT):
                 challenges[0].set_otp_status(True)
+                # The smartphone registered within the answer window; extend the
+                # expiration so the pending /validate/check can finalize the
+                # enrollment even though scanning and confirming took some time.
+                extend_finalize_window(challenges[0])
                 # Explicit save commits the DB-backed Challenge - the DTO
                 # auto-saves itself, but Challenge.set_otp_status is just
                 # an in-memory mutation. Without this commit, a later
@@ -733,11 +783,31 @@ class PushTokenClass(TokenClass):
         details = token.get_init_detail(init_detail_dict)
         return True, details
 
+    @staticmethod
+    def _challenge_answerable(challenge: "Challenge | ChallengeDTO", challenge_data: dict | str) -> bool:
+        """
+        Whether the smartphone may still act on this challenge.
+
+        It must be open in the generic sense (not expired, not already answered,
+        not refused) and - for code_to_phone - the smartphone must not have already
+        confirmed. code_to_phone keeps ``otp_valid`` False until the user submits the
+        display_code, so ``is_open()`` alone cannot tell that the smartphone step is
+        done; a replayed confirm would otherwise regenerate (and leak) a fresh
+        display_code.
+        """
+        if not challenge.is_open():
+            return False
+        if (isinstance(challenge_data, dict) and challenge_data.get("mode") == PushMode.CODE_TO_PHONE
+                and challenge_data.get("smartphone_confirmed")):
+            return False
+        return True
+
     @classmethod
     def _handle_auth_response(cls, serial: str, request_data: dict) -> tuple[bool, dict]:
         log.debug("Handling the authentication response from the smartphone.")
         signature = get_optional(request_data, "signature")
         decline = is_true(get_optional(request_data, "decline", default=False))
+        decline_reason = get_optional(request_data, "decline_reason")
         presence_answer = get_optional(request_data, "presence_answer")
 
         token = get_one_token(serial=serial, tokentype="push")
@@ -751,10 +821,19 @@ class PushTokenClass(TokenClass):
         if challenges:
             # There are valid challenges, so we check this signature
             for challenge in challenges:
+                challenge_data = challenge.get_data()
+                # Only act on a challenge the smartphone can still answer (valid, not declined, not answered)
+                if not cls._challenge_answerable(challenge, challenge_data):
+                    continue
                 # Re-construct the signature data and then verify the signature
                 sign_data = f"{challenge.challenge}|{serial}"
                 if decline:
                     sign_data += "|decline"
+                    # The reason is part of the signed payload only when present,
+                    # so old apps (decline without a reason) still verify and a
+                    # MITM cannot downgrade "unknown_trigger" into "cancelled".
+                    if decline_reason:
+                        sign_data += f"|{decline_reason}"
                 if presence_answer:
                     sign_data += f"|{presence_answer}"
                 try:
@@ -767,13 +846,22 @@ class PushTokenClass(TokenClass):
                     signature_verified = True
                     matched_transaction_id = challenge.transaction_id
                     if decline:
-                        challenge.set_session(ChallengeSession.DECLINED)
+                        # A decline always takes effect. An absent reason (legacy apps) is a plain
+                        # decline; a present-but-unrecognized reason is a signed value this
+                        # server version does not know yet (app/server skew) - still a plain
+                        # decline, but logged so the vocabulary drift is visible.
+                        if decline_reason == PushDeclineReason.CANCELLED:
+                            challenge.set_session(ChallengeSession.CANCELLED)
+                        else:
+                            if decline_reason and decline_reason not in KNOWN_DECLINE_REASONS:
+                                log.info(f"Unknown push decline_reason {decline_reason!r} for token {serial}; "
+                                         "recording as a plain decline.")
+                            challenge.set_session(ChallengeSession.DECLINED)
                     else:
                         # Verify the presence_answer which is stored in the challenge data (json).
                         # Legacy format: the correct choice is stored as the last entry in the data (str)separated by
                         # a comma. Make sure that the presence_answer is given if it is set in the challenge so that
                         # a response with a valid signature but no presence_answer does not pass!
-                        challenge_data = challenge.get_data()
                         if (isinstance(challenge_data, dict) and
                                 challenge_data.get("mode") == PushMode.REQUIRE_PRESENCE and presence_answer):
                             correct_answer = challenge_data.get("correct_answer")
@@ -814,6 +902,13 @@ class PushTokenClass(TokenClass):
                                 DEFAULT_MOBILE_TEXT_CODE_TO_PHONE)
                         else:
                             challenge.set_otp_status(True)
+                    if result:
+                        # The smartphone answered (accepted, declined or - for
+                        # code_to_phone - confirmed) within the answer window.
+                        # Extend the expiration so the client can still finalize.
+                        # A failed presence answer leaves result False, keeping
+                        # the original validity so the user can retry.
+                        extend_finalize_window(challenge)
                     # Explicit save commits the DB-backed Challenge - the
                     # DTO auto-saves itself, but Challenge.set_* mutators
                     # are in-memory only. Without this commit, the verify
@@ -1036,31 +1131,25 @@ class PushTokenClass(TokenClass):
             open_challenges = []
             db_challenges = get_challenges(serial=serial)
             for challenge in db_challenges:
-                if challenge.get_session() == ChallengeSession.DECLINED:
+                challenge_data = challenge.get_data()
+                # Only offer challenges the smartphone can still answer - same invariant
+                # the answer endpoint enforces (open, and for code_to_phone not already
+                # confirmed). This skips expired, answered, declined and cancelled ones.
+                if not cls._challenge_answerable(challenge, challenge_data):
                     continue
-                # check if the challenge is active and not already answered
-                _, answered = challenge.get_otp_status()
-                if not answered and challenge.is_valid():
-                    # Check if the challenge has mode set to require_presence or code_to_phone. This will
-                    # change what we need to return to the smartphone.
-                    challenge_data = challenge.get_data()
-                    presence_options = None
-                    if isinstance(challenge_data, dict):
-                        if challenge_data.get("mode") == PushMode.REQUIRE_PRESENCE:
-                            presence_options = challenge_data.get("options")
-                        elif challenge_data.get("mode") == PushMode.CODE_TO_PHONE:
-                            if challenge_data.get("smartphone_confirmed"):
-                                # Smartphone already confirmed this challenge, skip it
-                                continue
-                            # code_to_phone step 1: present as standard challenge for the smartphone
-                            # to confirm. No display_code is sent.
-                    elif isinstance(challenge_data, str) and challenge_data:
-                        # Legacy handling, when require_presence was a string of options with the correct one at the end
-                        presence_options = challenge_data.split(",")[:-1]
-                    # then return the necessary smartphone data to answer the challenge
-                    smartphone_data = _build_smartphone_data(token, challenge.challenge, registration_url, private_key,
-                                                             options, presence_options)
-                    open_challenges.append(smartphone_data)
+                # The mode determines what we return to the smartphone. code_to_phone step 1
+                # is presented as a standard challenge (no display_code, no presence options).
+                presence_options = None
+                if isinstance(challenge_data, dict):
+                    if challenge_data.get("mode") == PushMode.REQUIRE_PRESENCE:
+                        presence_options = challenge_data.get("options")
+                elif isinstance(challenge_data, str) and challenge_data:
+                    # Legacy handling, when require_presence was a string of options with the correct one at the end
+                    presence_options = challenge_data.split(",")[:-1]
+                # then return the necessary smartphone data to answer the challenge
+                smartphone_data = _build_smartphone_data(token, challenge.challenge, registration_url, private_key,
+                                                         options, presence_options)
+                open_challenges.append(smartphone_data)
             # return the challenges as a list in the result value
             result = open_challenges
         except (ResourceNotFoundError, ParameterError,
@@ -1116,7 +1205,15 @@ class PushTokenClass(TokenClass):
 
               serial=<token serial>
               decline=1
-              signature=<signature over {challenge}|{serial}|decline
+              decline_reason=<unknown_trigger|cancelled>   (optional)
+              signature=<signature over {challenge}|{serial}|decline[|{decline_reason}]
+
+          ``decline_reason`` distinguishes the two decline events for the
+          authentication log: ``unknown_trigger`` (the user did not trigger this
+          request) maps to the ``challenge_declined`` session, ``cancelled`` (the
+          user triggered it but aborted) to the ``challenge_cancelled`` session.
+          It is signed only when present, so declines from older apps (no
+          reason) keep working and map to ``challenge_declined``.
 
         - In some cases the Firebase service changes the token of a device. This
           needs to be communicated to privacyIDEA through this endpoint
@@ -1365,12 +1462,21 @@ class PushTokenClass(TokenClass):
                                    serial=self.token.serial, transaction_id=transaction_id)
 
                 # Standard / require_presence: wait for the challenge to be answered
-                start_time = time.time()
+                start_time = time.monotonic()
+                challenge_status = None
                 while True:
                     db.session.commit()
-                    otp_counter = self.check_challenge_response(options={"transaction_id": transaction_id})
-                    elapsed_time = time.time() - start_time
-                    if otp_counter >= 0 or elapsed_time > waiting or elapsed_time < 0:
+                    # One scan yields both the answer state and, if the smartphone refused, the reason -
+                    # so we do not re-query the challenges just to detect a decline/cancel.
+                    state = self._scan_challenge_response(transaction_id)
+                    otp_counter = state.otp_counter
+                    if state.refused_status:
+                        # A refused challenge is terminal - the user will not answer it, so stop
+                        # waiting instead of blocking until the timeout, and carry the reason out.
+                        challenge_status = state.refused_status
+                        break
+                    elapsed_time = time.monotonic() - start_time
+                    if otp_counter >= 0 or elapsed_time > waiting:
                         break
                     time.sleep(POLL_INTERVAL - (elapsed_time % POLL_INTERVAL))
 
@@ -1389,6 +1495,11 @@ class PushTokenClass(TokenClass):
                 if transaction_id:
                     delete_challenges(serial=self.token.serial, transaction_id=transaction_id)
 
+                # Surface a refusal so the coarse outcome becomes DECLINED (both reasons) with
+                # challenge_status carrying the fine distinction, mirroring the polling flow.
+                if challenge_status:
+                    reply = {"challenge_status": challenge_status}
+
         elif code_to_phone_enabled and options.get("transaction_id"):
             # Step 2 of code_to_phone: the user submits the display_code shown after
             # the smartphone confirmed. Delegate entirely to check_challenge_response,
@@ -1401,6 +1512,73 @@ class PushTokenClass(TokenClass):
 
         return pin_match, otp_counter, reply
 
+    def _scan_challenge_response(self, transaction_id: str | None, passw: str = None) -> _PushChallengeState:
+        """
+        Scan a transaction's challenges once and return the otp_counter together with the refusal
+        status (declined / cancelled) if the smartphone refused. check_challenge_response wraps this
+        for the generic ``int`` contract; the push_wait loop reads the refusal directly so it can
+        break early without a second query.
+
+        For the code_to_phone mode this is a 2-step process:
+        1. Wait for the smartphone to confirm (smartphone_confirmed becomes True in the challenge data).
+        2. After confirmation, a display_code is stored in the challenge data. The client must send this
+           display_code via /validate/check. The display_code is only used for synchronization, the
+           security lies in the smartphone confirmation.
+        """
+        state = _PushChallengeState()
+        challenges = get_challenges(serial=self.token.serial, transaction_id=transaction_id)
+        for challenge in challenges:
+            # Nothing is finalized on an expired challenge. The smartphone answers within the
+            # original validity (the answer window); answering pushes the expiration out by the
+            # finalize grace (extend_finalize_window), so a still-answerable or freshly-answered
+            # challenge - enrollment included - is valid here. Once the grace elapses the challenge
+            # is inert in both backends (Redis evicts the key; the DB row may linger but is_valid()
+            # rejects it), closing the window in which a stale answer could be redeemed.
+            if not challenge.is_valid():
+                continue
+            session = challenge.get_session()
+            # An enrollment challenge already answered by the smartphone (otp_valid was set during
+            # the rollout in _handle_enrollment_step2) finalizes the authentication.
+            if session == ChallengeSession.ENROLLMENT:
+                _, status = challenge.get_otp_status()
+                if status is True:
+                    state.otp_counter = 1
+                    return state
+                continue
+
+            # A refused challenge is terminal; record the reason for the push_wait early break.
+            refused_status = CHALLENGE_REFUSAL_STATUS.get(session)
+            if refused_status:
+                state.refused_status = refused_status
+                continue
+
+            data = challenge.get_data()
+            if isinstance(data, dict) and data.get("mode") == PushMode.CODE_TO_PHONE:
+                if not data.get("smartphone_confirmed"):
+                    # Step 1 not completed yet; smartphone has not confirmed.
+                    log.debug("code_to_phone: waiting for smartphone confirmation.")
+                    return state
+                # Step 2: smartphone has confirmed, check the display_code
+                display_code = data.get("display_code", "")
+                if display_code and display_code == passw:
+                    state.otp_counter = 1
+                    return state
+                elif passw is not None:
+                    log.debug("Received the wrong display code for push code_to_phone!")
+                    self.inc_failcount()
+                    return state
+                else:
+                    # No passw provided yet (e.g. during polling)
+                    return state
+            else:
+                _, status = challenge.get_otp_status()
+                if status is True:
+                    # create a positive response
+                    state.otp_counter = 1
+                    # do not delete the challenge yet, that is the job of the calling context
+                    break
+        return state
+
     @check_token_locked
     def check_challenge_response(self, user: User = None, passw: str = None, options: dict = None) -> int:
         """
@@ -1408,62 +1586,20 @@ class PushTokenClass(TokenClass):
         is standard or require_presence. In this case, the passw parameter does not matter because the challenge
         has been answered by the smartphone, and we just check if that has happened correctly.
 
-        If the mode of the challenge is code_to_phone, this is a 2-step process:
-        1. Wait for the smartphone to confirm (smartphone_confirmed becomes True in the challenge data).
-        2. After confirmation, a display_code is stored in the challenge data. The client must send this
-           display_code via /validate/check. The display_code is only used for synchronization, the security
-           lies in the smartphone confirmation.
+        The actual scan lives in :meth:`_scan_challenge_response` (which also handles the code_to_phone
+        2-step process); this wrapper keeps the generic ``int`` contract used by the auth flow.
 
         :param user: the requesting user
-        :type user: User object
         :param passw: the password (pin+otp)
-        :type passw: string
         :param options: additional arguments from the request, which could
                         be token specific. Usually "transaction_id"
-        :type options: dict
         :return: return otp_counter. If -1, challenge does not match
-        :rtype: int
         """
         options = options or {}
-        otp_counter = -1
-
-        transaction_id = options.get('transaction_id')
+        transaction_id = options.get('transaction_id') or options.get('state')
         if transaction_id is None:
-            transaction_id = options.get('state')
-
-        if transaction_id is not None:
-            challenges = get_challenges(serial=self.token.serial, transaction_id=transaction_id)
-
-            for challenge in challenges:
-                # Check that the challenge is not expired
-                if challenge.is_valid():
-                    data = challenge.get_data()
-
-                    if isinstance(data, dict) and data.get("mode") == PushMode.CODE_TO_PHONE:
-                        if not data.get("smartphone_confirmed"):
-                            # Step 1 not completed yet; smartphone has not confirmed.
-                            log.debug("code_to_phone: waiting for smartphone confirmation.")
-                            return -1
-                        # Step 2: smartphone has confirmed, check the display_code
-                        display_code = data.get("display_code", "")
-                        if display_code and display_code == passw:
-                            return 1
-                        elif passw is not None:
-                            log.debug("Received the wrong display code for push code_to_phone!")
-                            self.inc_failcount()
-                            return -1
-                        else:
-                            # No passw provided yet (e.g. during polling)
-                            return -1
-                    else:
-                        _, status = challenge.get_otp_status()
-                        if status is True:
-                            # create a positive response
-                            otp_counter = 1
-                            # do not delete the challenge yet, that is the job of the calling context
-                            break
-
-        return otp_counter
+            return -1
+        return self._scan_challenge_response(transaction_id, passw).otp_counter
 
     @classmethod
     def enroll_via_validate(cls, g: Any, content: dict, user_obj: User, message: str = None) -> None:

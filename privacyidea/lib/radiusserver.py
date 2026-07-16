@@ -44,7 +44,7 @@ from sqlalchemy import select
 from privacyidea.lib import _
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
-                                    FAILED_TO_DECRYPT_PASSWORD, CENSORED)
+                                    FAILED_TO_DECRYPT_PASSWORD, CENSORED, censor_dict)
 from privacyidea.lib.error import (ConfigAdminError, PrivacyIDEAError,
                                    ResourceNotFoundError)
 from privacyidea.lib.log import log_with
@@ -361,9 +361,17 @@ def delete_radius(identifier):
 
 
 @register_export('radiusserver')
-def export_radiusserver(name=None):
-    """ Export given or all radiusserver configuration """
-    return list_radiusservers(identifier=name)
+def export_radiusserver(name=None, censor=False):
+    """ Export given or all radiusserver configuration
+
+    :param censor: If True, the RADIUS secret is replaced with the
+        ``__CENSORED__`` placeholder instead of being returned in clear text.
+    """
+    res = list_radiusservers(identifier=name)
+    if censor:
+        for identifier, server in res.items():
+            res[identifier] = censor_dict(server, ("secret",))
+    return res
 
 
 @register_import('radiusserver')
@@ -373,7 +381,15 @@ def import_radiusserver(data, name=None):
     for res_name, res_data in data.items():
         if name and name != res_name:
             continue
-        res_data['secret'] = res_data.pop('password')
+        # Copy before normalizing so the caller's dict is left untouched.
+        res_data = dict(res_data)
+        # Current exports provide the RADIUS secret under the 'secret' key, but
+        # config files written by older privacyIDEA versions use the legacy
+        # 'password' key. Map it onto 'secret' (what add_radius() expects) so
+        # those files still import instead of raising a TypeError.
+        legacy_secret = res_data.pop("password", None)
+        if legacy_secret is not None and "secret" not in res_data:
+            res_data["secret"] = legacy_secret
         rid = add_radius(res_name, **res_data)
-        log.info(f'Import of smtpserver "{res_name!s}" finished,'
+        log.info(f'Import of radiusserver "{res_name!s}" finished,'
                  f' id: {rid!s}')

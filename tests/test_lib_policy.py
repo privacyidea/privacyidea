@@ -25,7 +25,8 @@ from privacyidea.lib.policy import (set_policy, delete_policy, delete_policies,
                                     delete_all_policies,
                                     get_action_values_from_options, Match, MatchingError,
                                     get_allowed_custom_attributes, convert_action_dict_to_python_dict,
-                                    set_policy_conditions, validate_actions, get_policies)
+                                    set_policy_conditions, validate_actions, get_policies,
+                                    import_policy, export_policy, filter_invalid_actions)
 from privacyidea.lib.realm import (set_realm, delete_realm, get_realms, get_ordered_resolvers)
 from privacyidea.lib.resolver import (save_resolver, get_resolver_list,
                                       delete_resolver)
@@ -319,6 +320,80 @@ class PolicyTestCase(MyTestCase):
         self.assertTrue(_check_policy_name("pol1", policies), policies)
         self.assertTrue(_check_policy_name("pol2", policies), policies)
         self.assertTrue(_check_policy_name("pol3", policies), policies)
+
+    def test_06a_import_policy_registry_roundtrip(self):
+        # The registry-based exporter/importer pair used by
+        # `pi-manage config export/import` must round-trip a valid policy.
+        set_policy("rtpol", scope=SCOPE.ADMIN, action="enable")
+        exported = export_policy(name="rtpol")
+        delete_policy("rtpol")
+        self.assertFalse(_check_policy_name("rtpol", PolicyClass().match_policies()))
+        import_policy(exported)
+        self.assertTrue(_check_policy_name("rtpol", PolicyClass().match_policies()))
+        delete_policy("rtpol")
+
+    def test_06b_import_policy_registry_partial_failure(self):
+        # The registry-based importer must import each policy independently. A
+        # policy referencing an action that does not exist in this version
+        # (e.g. a removed token type) must not prevent the remaining policies
+        # from being imported, and the failure must surface as a PolicyError.
+        valid_policy = {"name": "importok", "scope": SCOPE.ADMIN,
+                        "action": "enable", "active": True}
+        invalid_policy = {"name": "importbad", "scope": SCOPE.ADMIN,
+                          "action": "this_action_does_not_exist_xyz", "active": True}
+        # The invalid policy comes first to prove the loop does not abort on it
+        self.assertRaises(PolicyError, import_policy, [invalid_policy, valid_policy])
+        policies = PolicyClass().match_policies()
+        self.assertTrue(_check_policy_name("importok", policies), policies)
+        self.assertFalse(_check_policy_name("importbad", policies), policies)
+        delete_policy("importok")
+
+    def test_06c_import_policy_skip_invalid(self):
+        # With skip_invalid the importer drops actions that are not valid for
+        # the scope and imports the remainder. A policy left without any valid
+        # action is skipped without raising.
+        mixed = {"name": "mixedpol", "scope": SCOPE.ADMIN,
+                 "action": {"enable": True, "this_action_is_gone": True}}
+        only_invalid = {"name": "deadpol", "scope": SCOPE.ADMIN,
+                        "action": {"also_gone": True}}
+        # Must not raise although both policies contain invalid actions
+        import_policy([mixed, only_invalid], skip_invalid=True)
+        policies = PolicyClass().match_policies()
+        self.assertTrue(_check_policy_name("mixedpol", policies), policies)
+        self.assertFalse(_check_policy_name("deadpol", policies), policies)
+        # the surviving policy kept only the valid action
+        mixedpol = [p for p in policies if p["name"] == "mixedpol"][0]
+        self.assertIn("enable", mixedpol["action"], mixedpol)
+        self.assertNotIn("this_action_is_gone", mixedpol["action"], mixedpol)
+        delete_policy("mixedpol")
+
+    def test_06d_filter_invalid_actions(self):
+        # filter_invalid_actions accepts both a comma-separated string and a dict
+        cleaned, dropped = filter_invalid_actions(SCOPE.ADMIN, "enable, this_action_is_gone")
+        self.assertIn("enable", cleaned)
+        self.assertNotIn("this_action_is_gone", cleaned)
+        self.assertEqual(dropped, ["this_action_is_gone"])
+        cleaned, dropped = filter_invalid_actions(SCOPE.ADMIN, {"disable": True, "gone": True})
+        self.assertEqual(set(cleaned.keys()), {"disable"})
+        self.assertEqual(dropped, ["gone"])
+
+    def test_06e_import_policy_skip_invalid_all_dropped(self):
+        # A policy whose only actions are invalid is skipped (no valid action
+        # remains) without raising when skip_invalid is set.
+        only_invalid = {"name": "alldeadpol", "scope": SCOPE.ADMIN,
+                        "action": {"gone1": True, "gone2": True}}
+        import_policy([only_invalid], skip_invalid=True)
+        self.assertFalse(_check_policy_name("alldeadpol", PolicyClass().match_policies()))
+
+    def test_06f_import_policy_skip_invalid_keeps_actionless_policy(self):
+        # A policy that has no actions has nothing invalid to drop, so
+        # skip_invalid must import it just like a plain import would rather than
+        # skipping it: the flag only removes invalid actions / skips policies
+        # that were emptied by dropping, never a policy that was empty to start.
+        actionless = {"name": "emptyactpol", "scope": SCOPE.ADMIN, "action": {}}
+        import_policy([actionless], skip_invalid=True)
+        self.assertTrue(PolicyClass().list_policies(name="emptyactpol"))
+        delete_policy("emptyactpol")
 
     def test_07_client_policies(self):
         delete_policy(name="pol2a")

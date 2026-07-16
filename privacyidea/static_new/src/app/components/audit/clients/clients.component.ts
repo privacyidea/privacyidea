@@ -47,6 +47,7 @@ import { MatTooltip } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { LocalDateTimePipe } from "@components/shared/pipes/local-date-time.pipe";
 import { StringUtils } from "@utils/string.utils";
 import { filter } from "rxjs";
 
@@ -103,7 +104,8 @@ interface FlattenedClientRow {
     MatIconButton,
     MatTooltip,
     MatIcon,
-    ClearableInputComponent
+    ClearableInputComponent,
+    LocalDateTimePipe
   ]
 })
 export class ClientsComponent {

@@ -21,6 +21,7 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_object
 from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.utils import SQL_LIKE_ESCAPE, convert_wildcard_to_sql_like
 from privacyidea.lib.user import User
 from privacyidea.models import (db, Token, Realm, TokenRealm, TokenInfo, TokenOwner, TokenContainer,
                                 TokenContainerToken)
@@ -124,7 +125,10 @@ def _create_token_query(tokentype: str | None = None, token_type_list: list[str]
                 if "*" in realm:
                     sql_query = sql_query.where(
                         TokenRealm.realm_id.in_(
-                            select(Realm.id).where(func.lower(Realm.name).like(realm.lower().replace("*", "%")))
+                            select(Realm.id).where(
+                                func.lower(Realm.name).like(
+                                    convert_wildcard_to_sql_like(realm.lower()),
+                                    escape=SQL_LIKE_ESCAPE))
                         )
                     )
                 else:
@@ -143,7 +147,7 @@ def _create_token_query(tokentype: str | None = None, token_type_list: list[str]
     if tokentype and tokentype.strip("*"):
         if "*" in tokentype:
             sql_query = sql_query.where(
-                Token.tokentype.like(tokentype.lower().replace("*", "%"))
+                Token.tokentype.like(convert_wildcard_to_sql_like(tokentype.lower()), escape=SQL_LIKE_ESCAPE)
             )
         else:
             sql_query = sql_query.where(
@@ -161,7 +165,7 @@ def _create_token_query(tokentype: str | None = None, token_type_list: list[str]
         if "*" in description:
             sql_query = sql_query.where(
                 func.lower(Token.description).like(
-                    description.lower().replace("*", "%")
+                    convert_wildcard_to_sql_like(description.lower()), escape=SQL_LIKE_ESCAPE
                 )
             )
         else:
@@ -179,7 +183,7 @@ def _create_token_query(tokentype: str | None = None, token_type_list: list[str]
     # Filtering by serial
     if serial_wildcard and serial_wildcard.strip("*"):
         sql_query = sql_query.where(
-            Token.serial.like(serial_wildcard.replace("*", "%"))
+            Token.serial.like(convert_wildcard_to_sql_like(serial_wildcard), escape=SQL_LIKE_ESCAPE)
         )
 
     if serial_exact:
@@ -228,7 +232,7 @@ def _create_token_query(tokentype: str | None = None, token_type_list: list[str]
         if "*" in rollout_state:
             sql_query = sql_query.where(
                 func.lower(Token.rollout_state).like(
-                    rollout_state.lower().replace("*", "%")
+                    convert_wildcard_to_sql_like(rollout_state.lower()), escape=SQL_LIKE_ESCAPE
                 )
             )
         else:
