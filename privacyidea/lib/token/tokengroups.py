@@ -12,9 +12,7 @@ from privacyidea.models import (db, TokenTokengroup, Tokengroup)
 
 from privacyidea.lib.token.query import get_one_token
 
-
 log = logging.getLogger(__name__)
-
 
 
 def set_tokengroups(serial: str, tokengroups: list[str] | None = None, add: bool = False) -> None:
@@ -42,10 +40,7 @@ def assign_tokengroup(serial: str, tokengroup: str | None = None, tokengroup_id:
     :return: True
     """
     tokenobject = get_one_token(serial=serial)
-    try:
-        return tokenobject.add_tokengroup(tokengroup, tokengroup_id)
-    except Exception:
-        raise ResourceNotFoundError(_("The tokengroup does not exist."))
+    return tokenobject.add_tokengroup(tokengroup, tokengroup_id)
 
 
 def unassign_tokengroup(serial: str, tokengroup: str | None = None, tokengroup_id: int | None = None) -> bool:
@@ -57,11 +52,8 @@ def unassign_tokengroup(serial: str, tokengroup: str | None = None, tokengroup_i
     :param tokengroup_id: alternatively the id of the tokengroup
     :return: True
     """
-    try:
-        tokenobject = get_one_token(serial=serial)
-        return tokenobject.delete_tokengroup(tokengroup, tokengroup_id)
-    except Exception:
-        raise ResourceNotFoundError(_("The tokengroup does not exist."))
+    tokenobject = get_one_token(serial=serial)
+    return tokenobject.delete_tokengroup(tokengroup, tokengroup_id)
 
 
 def list_tokengroups(tokengroup: str | None = None) -> list[TokenTokengroup]:
