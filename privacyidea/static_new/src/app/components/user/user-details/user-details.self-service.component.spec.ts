@@ -16,47 +16,39 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { BreakpointObserver } from "@angular/cdk/layout";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { ActivatedRoute } from "@angular/router";
+import { ActivatedRoute, Router } from "@angular/router";
+import { AuthService } from "@services/auth/auth.service";
 import { UserData, UserService } from "@services/user/user.service";
 import { MockUserService } from "@testing/mock-services";
-import { BehaviorSubject, map, of } from "rxjs";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { of } from "rxjs";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { UserDetailsSelfServiceComponent } from "./user-details.self-service.component";
 
 describe("UserDetailsSelfServiceComponent", () => {
   let component: UserDetailsSelfServiceComponent;
   let fixture: ComponentFixture<UserDetailsSelfServiceComponent>;
   let userServiceMock: MockUserService;
-  let breakpointSubject: BehaviorSubject<Record<string, boolean>>;
+  let router: Router;
 
   beforeEach(async () => {
-    breakpointSubject = new BehaviorSubject<Record<string, boolean>>({
-      "(max-width: 1000px)": false,
-      "(max-width: 1240px)": false
-    });
-
     await TestBed.configureTestingModule({
       imports: [UserDetailsSelfServiceComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        {
-          provide: BreakpointObserver,
-          useValue: {
-            observe: (query: string) =>
-              breakpointSubject.pipe(map((b) => ({ matches: b[query] || false, breakpoints: {} })))
-          }
-        },
         { provide: ActivatedRoute, useValue: { params: of({}) } },
-        { provide: UserService, useClass: MockUserService }
+        { provide: UserService, useClass: MockUserService },
+        { provide: AuthService, useClass: MockAuthService }
       ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(UserDetailsSelfServiceComponent);
     userServiceMock = TestBed.inject(UserService) as unknown as MockUserService;
+    router = TestBed.inject(Router);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
@@ -65,14 +57,16 @@ describe("UserDetailsSelfServiceComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("colCount adjusts to breakpoints", () => {
-    expect(component.colCount()).toBe(3);
+  it("enrollNewToken navigates to token enrollment", () => {
+    const navigateSpy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
+    component.enrollNewToken();
+    expect(navigateSpy).toHaveBeenCalledWith(ROUTE_PATHS.TOKENS_ENROLLMENT);
+  });
 
-    breakpointSubject.next({ "(max-width: 1000px)": false, "(max-width: 1240px)": true });
-    expect(component.colCount()).toBe(2);
-
-    breakpointSubject.next({ "(max-width: 1000px)": true, "(max-width: 1240px)": true });
-    expect(component.colCount()).toBe(1);
+  it("createNewContainer navigates to container create", () => {
+    const navigateSpy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
+    component.createNewContainer();
+    expect(navigateSpy).toHaveBeenCalledWith(ROUTE_PATHS.CONTAINERS_CREATE);
   });
 
   it("detailsEntries lists known keys in defined order, excluding 'editable'", () => {
@@ -162,9 +156,6 @@ describe("UserDetailsSelfServiceComponent", () => {
   it("returns no entries when user data is empty/null", () => {
     userServiceMock.user.set(null as unknown as UserData);
     expect(component.detailsEntries()).toEqual([]);
-    const cols = component.detailsColumns();
-    expect(cols.length).toBe(component.colCount());
-    expect(cols.flat().length).toBe(0);
   });
 
   it("exposes labels for every key in detailOrder", () => {
@@ -186,8 +177,8 @@ describe("UserDetailsSelfServiceComponent", () => {
 
     const host: HTMLElement = fixture.nativeElement;
     expect(host.querySelector(".details-header h3")?.textContent).toContain("Your Details");
-    const labels = host.querySelectorAll(".label");
-    const values = host.querySelectorAll(".value");
+    const labels = host.querySelectorAll(".detail-field-label");
+    const values = host.querySelectorAll(".detail-field-value");
     expect(labels.length).toBe(component.detailsEntries().length);
     expect(values.length).toBe(component.detailsEntries().length);
     expect(host.textContent).toContain("alice");
@@ -202,7 +193,7 @@ describe("UserDetailsSelfServiceComponent", () => {
     fixture.detectChanges();
 
     const host: HTMLElement = fixture.nativeElement;
-    const ul = host.querySelector(".value ul");
+    const ul = host.querySelector(".detail-field-value ul");
     expect(ul).toBeTruthy();
     expect(ul!.querySelectorAll("li").length).toBe(1);
 
@@ -213,29 +204,22 @@ describe("UserDetailsSelfServiceComponent", () => {
     toggle.click();
     fixture.detectChanges();
 
-    expect(host.querySelector(".value ul")!.querySelectorAll("li").length).toBe(2);
+    expect(host.querySelector(".detail-field-value ul")!.querySelectorAll("li").length).toBe(2);
     expect(host.querySelector(".value-toggle")!.getAttribute("aria-expanded")).toBe("true");
   });
 
-  it("detailsColumns splits entries according to colCount", () => {
-    userServiceMock.user.set({
-      username: "a",
-      givenname: "b",
-      surname: "c",
-      email: "d",
-      phone: "e",
-      mobile: "f"
-    } as unknown as UserData);
+  it("toggleExpanded collapses an already expanded key", () => {
+    component.toggleExpanded("email");
+    expect(component.isExpanded("email")).toBe(true);
 
-    expect(component.colCount()).toBe(3);
-    let columns = component.detailsColumns();
-    expect(columns.length).toBe(3);
-    expect(columns.flat().length).toBe(component.detailsEntries().length);
+    component.toggleExpanded("email");
+    expect(component.isExpanded("email")).toBe(false);
+  });
 
-    breakpointSubject.next({ "(max-width: 1000px)": true, "(max-width: 1240px)": true });
-    expect(component.colCount()).toBe(1);
-    columns = component.detailsColumns();
-    expect(columns.length).toBe(1);
-    expect(columns[0].length).toBe(component.detailsEntries().length);
+  it("str returns an empty string for null/undefined and stringifies other values", () => {
+    expect(component["str"](null)).toBe("");
+    expect(component["str"](undefined)).toBe("");
+    expect(component["str"]("alice")).toBe("alice");
+    expect(component["str"](42)).toBe("42");
   });
 });

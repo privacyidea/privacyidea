@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Injectable, Signal, signal, WritableSignal } from "@angular/core";
-import { finalize, Observable, Subscription, take } from "rxjs";
+import { finalize, Observable, Subscription } from "rxjs";
 
 export interface DashboardDataRef<T> {
   readonly value: Signal<T | undefined>;
@@ -34,7 +34,9 @@ interface CacheEntry<T> {
 }
 
 export interface DashboardDataStoreInterface {
-  load<T>(key: string, factory: () => Observable<T>): DashboardDataRef<T>;
+  load<T>(key: string, factory: () => Observable<T>, options?: { once?: boolean }): DashboardDataRef<T>;
+
+  peek<T>(key: string): DashboardDataRef<T> | null;
 
   invalidate(key?: string): void;
 }
@@ -43,15 +45,17 @@ export interface DashboardDataStoreInterface {
 export class DashboardDataStore implements DashboardDataStoreInterface {
   private readonly entries = new Map<string, CacheEntry<unknown>>();
 
-  load<T>(key: string, factory: () => Observable<T>): DashboardDataRef<T> {
+  load<T>(key: string, factory: () => Observable<T>, options?: { once?: boolean }): DashboardDataRef<T> {
     const entry = this.entryFor<T>(key);
+    if (options?.once && entry.value() !== undefined) {
+      return entry;
+    }
     if (!entry.inFlight) {
       entry.inFlight = true;
       entry.error.set(false);
       entry.revalidating.set(true);
       entry.subscription = factory()
         .pipe(
-          take(1),
           finalize(() => {
             entry.revalidating.set(false);
             entry.inFlight = false;
@@ -64,6 +68,10 @@ export class DashboardDataStore implements DashboardDataStoreInterface {
         });
     }
     return entry;
+  }
+
+  peek<T>(key: string): DashboardDataRef<T> | null {
+    return (this.entries.get(key) as CacheEntry<T> | undefined) ?? null;
   }
 
   invalidate(key?: string): void {

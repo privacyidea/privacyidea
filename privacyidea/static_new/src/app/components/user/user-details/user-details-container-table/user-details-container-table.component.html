@@ -17,34 +17,46 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
-  aria-label="User Details Container Table" class="user-details-container-table-layout" i18n-aria-label>
+  aria-label="User Details Container Table"
+  class="user-details-container-table-layout"
+  i18n-aria-label>
   <div class="details-header">
     <h4 i18n>Containers of User</h4>
     <h4 class="username-header">&nbsp;{{ userService.detailsUser().username }}</h4>
     <h4>:</h4>
   </div>
-  <div class="flex-row filter-paginator-container">
-    <mat-form-field
-      class="user-details-container-table-filter" subscriptSizing="dynamic">
-      <mat-label i18n>Filter Containers...</mat-label>
-      <app-clearable-input
-        (clearButtonClick)="filterValue = ''; dataSource.filter = ''; filterInput.value = ''"
-        [showClearButton]="filterValue.length > 0">
-        <input
-          #filterInput
-          (input)="handleFilterInput($event)"
-          aria-label="Filter Input"
-          i18n-aria-label
-          i18n-placeholder
-          matInput
-          placeholder="Filter across all columns." />
-      </app-clearable-input>
-    </mat-form-field>
-    <mat-paginator
-      [pageSizeOptions]="pageSizeOptions()"
-      [pageSize]="pageSize"
-      class="flex-just-start"
-      showFirstLastButtons></mat-paginator>
+  <div class="flex-row gap-8 margin-bottom-16">
+    <ng-content></ng-content>
+    @if (authService.actionAllowed("container_delete")) {
+      <button
+        (click)="deleteSelected()"
+        [disabled]="selection().length === 0"
+        class="action-button-delete-secondary button-width-l"
+        mat-stroked-button>
+        <mat-icon>delete_sweep</mat-icon>
+        <span i18n>Delete</span>
+      </button>
+    }
+    @if (authService.actionAllowed("container_unassign_user")) {
+      <button
+        (click)="unassignSelected()"
+        [disabled]="selection().length === 0"
+        class="action-button-secondary button-width-l"
+        mat-stroked-button>
+        <mat-icon>person_remove</mat-icon>
+        <span i18n>Unassign</span>
+      </button>
+    }
+    @if (authService.actionAllowed("container_state")) {
+      <button
+        (click)="toggleActiveSelected()"
+        [disabled]="selection().length === 0"
+        class="action-button-secondary button-width-l"
+        mat-stroked-button>
+        <mat-icon>toggle_on</mat-icon>
+        <span i18n>(De)activate</span>
+      </button>
+    }
   </div>
   <div class="table-wrapper">
     <table
@@ -53,10 +65,35 @@
       class="user-details-container-table"
       i18n-aria-label
       mat-table>
+      <ng-container matColumnDef="select">
+        <th
+          *matHeaderCellDef
+          class="table-checkbox"
+          mat-header-cell>
+          <mat-checkbox
+            (change)="$event ? toggleAllRows() : null"
+            [checked]="isAllSelected()"
+            [disabled]="dataSource.data.length === 0"
+            [indeterminate]="selection().length > 0 && !isAllSelected()" />
+        </th>
+        <td
+          *matCellDef="let row"
+          class="table-checkbox"
+          mat-cell>
+          <mat-checkbox
+            (change)="$event ? toggleRow(row) : null"
+            (click)="$event.stopPropagation()"
+            [checked]="selection().includes(row)"
+            [disabled]="dataSource.data.length === 0" />
+        </td>
+      </ng-container>
+
       @for (column of columnsKeyMap; track column) {
         <ng-container [matColumnDef]="column.key">
           <th
-            *matHeaderCellDef attr.aria-label="{{ column.label }} Header" mat-header-cell>
+            *matHeaderCellDef
+            attr.aria-label="{{ column.label }} Header"
+            mat-header-cell>
             <div class="flex ali-center">
               {{ column.label }}
               <div class="margin-left-16 flex">
@@ -91,15 +128,24 @@
                   </app-copyable>
                 }
                 @case ("states") {
-                  <span
-                    (click)="handleStateClick(element)"
-                    (keydown.enter)="handleStateClick(element)"
-                    [matTooltip]="tableUtilsService.getTooltipForColumn('states', element)"
-                    [ngClass]="tableUtilsService.getSpanClassForState(element.states?.[0], true)"
-                    role="button"
-                    tabindex="0">
-                    {{ tableUtilsService.getDisplayTextForState(element.states?.[0]) }}
-                  </span>
+                  @if (authService.actionAllowed("container_state")) {
+                    <span
+                      (click)="handleStateClick(element)"
+                      (keydown.enter)="handleStateClick(element)"
+                      (keydown.space)="$event.preventDefault(); handleStateClick(element)"
+                      [matTooltip]="tableUtilsService.getTooltipForColumn('states', element)"
+                      [ngClass]="tableUtilsService.getSpanClassForState(element.states?.[0], true)"
+                      role="button"
+                      tabindex="0">
+                      {{ tableUtilsService.getDisplayTextForState(element.states?.[0]) }}
+                    </span>
+                  } @else {
+                    <span
+                      [matTooltip]="tableUtilsService.getTooltipForColumn('states', element)"
+                      [ngClass]="tableUtilsService.getSpanClassForState(element.states?.[0], false)">
+                      {{ tableUtilsService.getDisplayTextForState(element.states?.[0]) }}
+                    </span>
+                  }
                 }
                 @case ("realms") {
                   <div [ngClass]="{ 'realm-list': (element.realms?.length || 0) > 1 }">
@@ -118,13 +164,16 @@
       }
 
       <tr
-        *matHeaderRowDef="displayedColumns" mat-header-row></tr>
+        *matHeaderRowDef="displayedColumns"
+        mat-header-row></tr>
       <tr
-        *matRowDef="let row; columns: displayedColumns" mat-row></tr>
+        *matRowDef="let row; columns: displayedColumns"
+        mat-row></tr>
 
       <tr *matNoDataRow>
         <td
-          [attr.colspan]="displayedColumns.length" i18n>
+          [attr.colspan]="displayedColumns.length"
+          i18n>
           No data matching the filter.
         </td>
       </tr>

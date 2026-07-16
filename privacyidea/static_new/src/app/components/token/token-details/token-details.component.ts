@@ -62,7 +62,7 @@ import { TokenDetails, TokenService, TokenServiceInterface, TokenTypeKey } from 
 import { NgClass } from "@angular/common";
 import { MatIcon } from "@angular/material/icon";
 import { ROUTE_PATHS } from "@app/route_paths";
-import { DetailsEditRegistry } from "@components/shared/details-shared/details-edit-registry.service";
+import { DetailsEditRegistry } from "@components/shared/details-shared/field-editing/details-edit-registry.service";
 import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
 import { OverflowNavDirective } from "@components/shared/directives/overflow-nav/overflow-nav.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";

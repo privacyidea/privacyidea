@@ -34,7 +34,7 @@
           </p>
           <app-selector-buttons
             class="flex-1"
-            [values]="allPolicyScopes"
+            [values]="allPolicyScopes()"
             [initialValue]="policy().scope"
             [allowDeselect]="true"
             (selected)="selectActionScope($event)"

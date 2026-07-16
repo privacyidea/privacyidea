@@ -44,7 +44,8 @@ from privacyidea.lib.machine import is_offline_token
 from privacyidea.lib.token import (get_tokens_from_serial_or_user, get_tokens,
                                    convert_token_objects_to_dicts, init_token)
 from privacyidea.lib.user import User
-from privacyidea.lib.utils import hexlify_and_unicode, parse_timedelta
+from privacyidea.lib.utils import (hexlify_and_unicode, parse_timedelta, SQL_LIKE_ESCAPE,
+                                   convert_wildcard_to_sql_like)
 from privacyidea.models import (TokenContainer, TokenContainerOwner, Token, TokenContainerToken,
                                 Realm, TokenContainerTemplate, TokenContainerInfo, TokenContainerStates, db)
 
@@ -220,7 +221,8 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
 
     if serial and serial.strip("*"):
         if "*" in serial:
-            stmt = stmt.where(TokenContainer.serial.ilike(serial.replace("*", "%")))
+            stmt = stmt.where(TokenContainer.serial.ilike(
+                convert_wildcard_to_sql_like(serial), escape=SQL_LIKE_ESCAPE))
         else:
             stmt = stmt.where(func.upper(TokenContainer.serial) == serial.upper())
 
@@ -234,13 +236,15 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
             stmt = stmt.where(func.lower(TokenContainer.type).in_([t.lower() for t in type_values]))
     elif ctype and ctype.strip("*"):
         if "*" in ctype:
-            stmt = stmt.where(TokenContainer.type.ilike(ctype.replace("*", "%")))
+            stmt = stmt.where(TokenContainer.type.ilike(
+                convert_wildcard_to_sql_like(ctype), escape=SQL_LIKE_ESCAPE))
         else:
             stmt = stmt.where(func.upper(TokenContainer.type) == ctype.upper())
 
     if token_serial and token_serial.strip("*"):
         if "*" in token_serial:
-            stmt = stmt.where(TokenContainer.tokens.any(Token.serial.ilike(token_serial.replace("*", "%"))))
+            stmt = stmt.where(TokenContainer.tokens.any(Token.serial.ilike(
+                convert_wildcard_to_sql_like(token_serial), escape=SQL_LIKE_ESCAPE)))
         else:
             stmt = stmt.join(TokenContainer.tokens, isouter=True).where(
                 func.upper(Token.serial) == token_serial.upper()
@@ -252,7 +256,8 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
 
         if "*" in realm:
             # Use the input parameter 'realm' for the wildcard filter
-            stmt = stmt.where(realm1.name.ilike(realm.replace("*", "%")))
+            stmt = stmt.where(realm1.name.ilike(
+                convert_wildcard_to_sql_like(realm), escape=SQL_LIKE_ESCAPE))
         else:
             # Use the input parameter 'realm' for the exact match filter
             stmt = stmt.where(func.lower(realm1.name) == realm.lower())
@@ -268,7 +273,8 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
     if resolver and resolver.strip("*"):
         if "*" in resolver:
             stmt = stmt.where(TokenContainer.owners.any(
-                TokenContainerOwner.resolver.ilike(resolver.replace("*", "%"))
+                TokenContainerOwner.resolver.ilike(
+                    convert_wildcard_to_sql_like(resolver), escape=SQL_LIKE_ESCAPE)
             ))
         else:
             stmt = stmt.where(TokenContainer.owners.any(
@@ -278,7 +284,8 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
     if template and template.strip("*"):
         if "*" in template:
             stmt = stmt.where(TokenContainer.template.has(
-                TokenContainerTemplate.name.ilike(template.replace("*", "%"))
+                TokenContainerTemplate.name.ilike(
+                    convert_wildcard_to_sql_like(template), escape=SQL_LIKE_ESCAPE)
             ))
         else:
             stmt = stmt.where(TokenContainer.template.has(
@@ -287,7 +294,8 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
 
     if description and description.strip("*"):
         if "*" in description:
-            stmt = stmt.where(TokenContainer.description.ilike(description.replace("*", "%")))
+            stmt = stmt.where(TokenContainer.description.ilike(
+                convert_wildcard_to_sql_like(description), escape=SQL_LIKE_ESCAPE))
         else:
             stmt = stmt.where(func.lower(TokenContainer.description) == description.lower())
 
@@ -304,10 +312,12 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
             conditions = []
 
             if key and key.strip("*"):
-                conditions.append(TokenContainerInfo.key.ilike(key.replace("*", "%")))
+                conditions.append(TokenContainerInfo.key.ilike(
+                    convert_wildcard_to_sql_like(key), escape=SQL_LIKE_ESCAPE))
 
             if value and value.strip("*"):
-                conditions.append(func.lower(TokenContainerInfo.value).ilike(value.replace("*", "%").lower()))
+                conditions.append(func.lower(TokenContainerInfo.value).ilike(
+                    convert_wildcard_to_sql_like(value.lower()), escape=SQL_LIKE_ESCAPE))
 
             # If there are conditions, apply them with `and_`
             if conditions:
@@ -328,7 +338,8 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
     if state and state.strip("*"):
         if "*" in state:
             stmt = stmt.where(TokenContainer.states.any(
-                TokenContainerStates.state.ilike(state.replace("*", "%"))
+                TokenContainerStates.state.ilike(
+                    convert_wildcard_to_sql_like(state), escape=SQL_LIKE_ESCAPE)
             ))
         else:
             stmt = stmt.where(TokenContainer.states.any(
