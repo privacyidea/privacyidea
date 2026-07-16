@@ -63,19 +63,42 @@ describe("WidgetFrameComponent", () => {
   });
 
   it("should resolve the widget type for the instance type", () => {
-    expect(component['widgetType']()?.type).toBe("tokens");
+    expect(component["widgetType"]()?.type).toBe("tokens");
   });
 
   it("should resolve the component to render", () => {
-    expect(component['component']()).toBe(TokensWidgetComponent);
+    expect(component["component"]()).toBe(TokensWidgetComponent);
   });
 
   it("should pass the instance through to the outlet inputs", () => {
-    expect(component['outletInputs']()).toEqual({ instance: tokensInstance });
+    expect(component["outletInputs"]()).toEqual({ instance: tokensInstance });
   });
 
   it("should render the widget title", () => {
-    expect(fixture.nativeElement.querySelector(".widget-title").textContent).toContain("Tokens");
+    expect(fixture.nativeElement.querySelector(".widget-title").textContent).toContain("Token Usage");
+  });
+
+  it("should show a reload button when the widget is not loading", () => {
+    expect(fixture.nativeElement.querySelector(".widget-reload")).not.toBeNull();
+    expect(fixture.nativeElement.querySelector(".widget-loading")).toBeNull();
+  });
+
+  it("should hide reload and header spinner while initial loading is active", () => {
+    const widget = component["outlet"]()?.componentInstance as TokensWidgetComponent;
+    widget.state.set("loading");
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector(".widget-loading")).toBeNull();
+    expect(fixture.nativeElement.querySelector(".widget-reload")).toBeNull();
+  });
+
+  it("should reload the rendered widget when the reload button is clicked", () => {
+    const widget = component["outlet"]()?.componentInstance as TokensWidgetComponent;
+    const reloadSpy = jest.spyOn(widget, "reload");
+
+    fixture.nativeElement.querySelector(".widget-reload").click();
+
+    expect(reloadSpy).toHaveBeenCalled();
   });
 
   it("should hide the remove button in view mode", () => {
@@ -90,7 +113,7 @@ describe("WidgetFrameComponent", () => {
 
   it("should remove the widget from the layout when remove is triggered", () => {
     const removeSpy = jest.spyOn(layoutService, "removeWidget");
-    component['remove']();
+    component["remove"]();
     expect(removeSpy).toHaveBeenCalledWith("w1");
   });
 
@@ -114,7 +137,7 @@ describe("WidgetFrameComponent", () => {
     });
 
     it("should report the widget type as pinned", () => {
-      expect(component['pinned']()).toBe(true);
+      expect(component["pinned"]()).toBe(true);
     });
 
     it("should not offer a remove button in edit mode", () => {

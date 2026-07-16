@@ -21,7 +21,8 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideRouter } from "@angular/router";
 import { DashboardWidget, WidgetInstance } from "@models/dashboard";
 import { AuthService } from "@services/auth/auth.service";
-import { TokenService } from "@services/token/token.service";
+import { DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
+import { TokenCountParams, TokenService } from "@services/token/token.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockTokenService } from "@testing/mock-services/mock-token-service";
 import { of } from "rxjs";
@@ -63,7 +64,7 @@ describe("TokensWidgetComponent", () => {
     authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["tokenlist"] });
 
     tokenMock = TestBed.inject(TokenService) as unknown as MockTokenService;
-    tokenMock.getTokenCount.mockImplementation((params: Record<string, string | number>) => {
+    tokenMock.getTokenCount.mockImplementation((params: TokenCountParams = {}) => {
       const { infokey, infovalue, assigned } = params;
       if (infokey === "tokenkind" && infovalue === "hardware" && assigned === "False") {
         return of(makeCountResponse(3));
@@ -101,28 +102,127 @@ describe("TokensWidgetComponent", () => {
   });
 
   it("should override the static size constraints", () => {
-    expect(TokensWidgetComponent.defaultSize).toEqual({ cols: 6, rows: 8 });
+    expect(TokensWidgetComponent.defaultSize).toEqual({ cols: 6, rows: 5 });
     expect(TokensWidgetComponent.minSize).toEqual({ cols: 4, rows: 5 });
     expect(TokensWidgetComponent.maxSize).toEqual({ cols: 12, rows: 9 });
   });
 
   it("should render the token count rows when the right is granted", () => {
-    const text = fixture.nativeElement.textContent;
-    expect(text).toContain("Total");
-    expect(text).toContain("Hardware");
-    expect(text).toContain("Software");
-    expect(text).toContain("Unassigned Hardware");
-    expect(text).toContain("Unassigned Software");
+    const labels = Array.from(fixture.nativeElement.querySelectorAll("td:first-child")).map((td) =>
+      (td as Element).textContent?.trim()
+    );
+    expect(labels).toContain("Total");
+    expect(labels).toContain("Hardware");
+    expect(labels).toContain("Software");
+    expect(labels).toContain("Unassigned Hardware");
+    expect(labels).toContain("Unassigned Software");
   });
 
   it("should display the fetched counts", () => {
-    const cells = fixture.nativeElement.querySelectorAll("td:last-child");
-    const values = Array.from(cells).map((td: Element) => td.textContent?.trim());
+    const cells = fixture.nativeElement.querySelectorAll("td:last-child") as NodeListOf<Element>;
+    const values = Array.from(cells).map((td) => td.textContent?.trim());
     expect(values).toContain("100");
     expect(values).toContain("12");
     expect(values).toContain("25");
     expect(values).toContain("3");
     expect(values).toContain("7");
+  });
+
+  it("should hide the Hardware/Software rows when the count is 0 or equals the total", () => {
+    const store = TestBed.inject(DashboardDataStore);
+    store.invalidate();
+    tokenMock.getTokenCount.mockImplementation((params: TokenCountParams = {}) => {
+      const { infokey, infovalue } = params;
+      if (infokey === "tokenkind" && infovalue === "hardware") {
+        return of(makeCountResponse(0));
+      }
+      if (infokey === "tokenkind" && infovalue === "software") {
+        return of(makeCountResponse(17));
+      }
+      return of(makeCountResponse(17));
+    });
+
+    const fixture2 = TestBed.createComponent(TokensWidgetComponent);
+    fixture2.componentRef.setInput("instance", instance);
+    fixture2.detectChanges();
+
+    const labels = Array.from(fixture2.nativeElement.querySelectorAll("td:first-child")).map((td) =>
+      (td as Element).textContent?.trim()
+    );
+    expect(labels).toContain("Total");
+    expect(labels).not.toContain("Hardware");
+    expect(labels).not.toContain("Software");
+    fixture2.destroy();
+  });
+
+  it("should render 0 counts as plain text, not as a link", () => {
+    const store = TestBed.inject(DashboardDataStore);
+    store.invalidate();
+    tokenMock.getTokenCount.mockImplementation(() => of(makeCountResponse(0)));
+
+    const fixture2 = TestBed.createComponent(TokensWidgetComponent);
+    fixture2.componentRef.setInput("instance", instance);
+    fixture2.detectChanges();
+
+    expect(fixture2.nativeElement.querySelector("a")).toBeNull();
+    fixture2.destroy();
+  });
+
+  it("should set a tokenkind preset filter when a kind count is clicked", () => {
+    component.showKind("hardware");
+    const filter = tokenMock.presetFilter();
+    expect(filter?.getValueOfKey("infokey")).toBe("tokenkind");
+    expect(filter?.getValueOfKey("infovalue")).toBe("hardware");
+    expect(filter?.getValueOfKey("assigned")).toBeUndefined();
+  });
+
+  it("should add assigned=False to the preset filter for unassigned counts", () => {
+    component.showKind("software", true);
+    const filter = tokenMock.presetFilter();
+    expect(filter?.getValueOfKey("infovalue")).toBe("software");
+    expect(filter?.getValueOfKey("assigned")).toBe("False");
+  });
+
+  it("should set an empty preset filter when the total is clicked", () => {
+    component.showAllTokens();
+    expect(tokenMock.presetFilter()?.isEmpty).toBe(true);
+  });
+
+  it("should show a single combined 'Unassigned' row when only one token kind exists", () => {
+    const store = TestBed.inject(DashboardDataStore);
+    store.invalidate();
+    tokenMock.getTokenCount.mockImplementation((params: TokenCountParams = {}) => {
+      const { infokey, infovalue, assigned } = params;
+      if (infokey === "tokenkind" && infovalue === "hardware") {
+        return of(makeCountResponse(0));
+      }
+      if (infokey === "tokenkind" && infovalue === "software" && assigned === "False") {
+        return of(makeCountResponse(13));
+      }
+      if (infokey === "tokenkind" && infovalue === "software") {
+        return of(makeCountResponse(17));
+      }
+      return of(makeCountResponse(17));
+    });
+
+    const fixture2 = TestBed.createComponent(TokensWidgetComponent);
+    fixture2.componentRef.setInput("instance", instance);
+    fixture2.detectChanges();
+
+    const labels = Array.from(fixture2.nativeElement.querySelectorAll("td:first-child")).map((td) =>
+      (td as Element).textContent?.trim()
+    );
+    expect(labels).toContain("Unassigned");
+    expect(labels).not.toContain("Unassigned Hardware");
+    expect(labels).not.toContain("Unassigned Software");
+    fixture2.destroy();
+  });
+
+  it("should set an assigned=False preset filter (without a kind) for the combined Unassigned row", () => {
+    component.showUnassigned();
+    const filter = tokenMock.presetFilter();
+    expect(filter?.getValueOfKey("assigned")).toBe("False");
+    expect(filter?.getValueOfKey("infokey")).toBeUndefined();
   });
 
   it("should render nothing when tokenlist right is missing", async () => {

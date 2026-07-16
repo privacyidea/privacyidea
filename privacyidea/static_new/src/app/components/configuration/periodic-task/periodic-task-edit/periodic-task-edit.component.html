@@ -71,7 +71,7 @@
         >
         @if (editTask().last_update) {
           <span>
-            {{ editTask().last_update | date: "yyyy-MM-dd HH:mm" }}
+            {{ editTask().last_update | localDateTime }}
           </span>
         } @else {
           <span i18n>Never</span>
@@ -89,7 +89,7 @@
               <li>
                 {{ entry[0] }}:
                 @if (isDateValue(entry[1])) {
-                  {{ entry[1] | date: "yyyy-MM-dd HH:mm" }}
+                  {{ entry[1] | localDateTime }}
                 } @else {
                   {{ entry[1] }}
                 }

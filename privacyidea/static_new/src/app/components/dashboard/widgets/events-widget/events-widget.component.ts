@@ -54,6 +54,7 @@ export class EventsWidgetComponent extends DashboardWidget implements OnInit {
   private readonly store = inject(DashboardDataStore);
 
   private readonly dataRef = signal<DashboardDataRef<PiResponse<EventHandler[]>> | null>(null);
+  override readonly partialLoading = computed(() => this.dataRef()?.revalidating() ?? false);
 
   readonly events = computed<EventPartition>(() => {
     const all = this.dataRef()?.value()?.result?.value ?? [];
@@ -85,6 +86,11 @@ export class EventsWidgetComponent extends DashboardWidget implements OnInit {
         this.state.set("loading");
       }
     });
+  }
+
+  override reload(): void {
+    this.store.invalidate("dashboard:events");
+    this.ngOnInit();
   }
 
   ngOnInit(): void {

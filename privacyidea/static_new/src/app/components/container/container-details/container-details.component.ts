@@ -48,7 +48,7 @@ import { ContainerDetailsUserComponent } from "@components/container/container-d
 import { ContainerDetailsTokenTableComponent } from "@components/container/container-details/container-details-token-table/container-details-token-table.component";
 import { ContainerAddTokenComponent } from "@components/shared/container-add-token/container-add-token.component";
 import { DetailFieldComponent } from "@components/shared/details-shared/detail-field/detail-field.component";
-import { DetailsEditRegistry } from "@components/shared/details-shared/details-edit-registry.service";
+import { DetailsEditRegistry } from "@components/shared/details-shared/field-editing/details-edit-registry.service";
 import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
 import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
@@ -69,6 +69,7 @@ import { RealmService, RealmServiceInterface } from "@services/realm/realm.servi
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
+import { formatLocalDateTime } from "@utils/date-format.utils";
 
 type ContainerDetailGroup = "status" | "container";
 
@@ -87,9 +88,7 @@ const CONTAINER_TIMESTAMP_KEYS = ["last_authentication", "last_synchronization"]
 
 export function formatContainerTimestamp(value: string | undefined): string | undefined {
   if (value === undefined || value === "") return undefined;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date);
+  return formatLocalDateTime(value);
 }
 
 const containerUserDetailsKeyMap = [

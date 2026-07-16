@@ -178,7 +178,7 @@ $description-width: 18rem;
   }
 
   #{$filter-class} {
-    max-width: 932px;
+    max-width: var(--input-width-xxl);
     min-width: 300px;
     width: 100%;
     flex: 7 1;
@@ -485,7 +485,7 @@ th:nth-child(even) {
     background: var(--mat-sys-surface-variant);
   }
 
-  .detail-field-key {
+  .detail-field-label {
     display: flex;
     align-items: center;
     padding: 0 12px;
@@ -511,6 +511,7 @@ th:nth-child(even) {
   .value-content {
     flex: 1 1 auto;
     min-width: 0;
+    overflow-wrap: anywhere;
   }
 
   .value-edit {
