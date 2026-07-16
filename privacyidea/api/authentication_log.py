@@ -17,8 +17,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 import logging
-from datetime import datetime, timezone
-
 from dateutil.parser import isoparse
 from flask import Blueprint, request, g
 
@@ -26,14 +24,16 @@ from privacyidea.api.auth import user_required
 from privacyidea.api.lib.prepolicy import prepolicy, check_base_action
 from privacyidea.api.lib.utils import send_result
 from privacyidea.lib.auth import ROLE
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, outcome_of
 from privacyidea.lib.conditional_access.authentication_log import (get_authentication_logs_paginate,
                                                                    AuthenticationLogVisibilityScope,
+                                                                   AuthLogUserRole,
                                                                    DEFAULT_PAGE_SIZE)
 from privacyidea.lib.log import log_with
 from privacyidea.lib.params import get_optional
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.helper import get_authentication_log_visibility_scopes
-from privacyidea.lib.utils import parse_timedelta, is_true
+from privacyidea.lib.utils import is_true
 
 log = logging.getLogger(__name__)
 
@@ -88,11 +88,11 @@ def get_authentication_log():
 
     :query page: page number, 1-indexed (default 1).
     :query page_size: entries per page (default 15).
-    :query sort_column: column to sort by (id, timestamp, event_type, realm, username, source_ip, serial).
+    :query sort_column: column to sort by (id, timestamp, event_type, resolver, uid, realm, username, source_ip,
+        client_label, serial, transaction_id, previous_transaction_id).
     :query sort_order: ``asc`` or ``desc`` (default ``desc``).
-    :query timelimit: only entries newer than now minus this delta (e.g. ``1d``, ``2h``). Overrides ``start``.
-    :query start: only entries at/after this ISO 8601 timestamp.
-    :query end: only entries at/before this ISO 8601 timestamp.
+    :query start_time: only entries at/after this ISO 8601 timestamp.
+    :query end_time: only entries at/before this ISO 8601 timestamp.
     :query case_insensitive: if set, plain (non-wildcard) filter values match case-insensitively (wildcard values
         always match case-insensitively).
     :status 200: paginated result in ``result.value`` with ``auth_logs``, ``count``, ``current``, ``prev``, ``next``.
@@ -100,29 +100,31 @@ def get_authentication_log():
     params = request.all_data
     filters = {name: _split_csv(get_optional(params, name)) for name in _FILTER_PARAMS}
 
-    timelimit = get_optional(params, "timelimit")
-    if timelimit:
-        start_timestamp = datetime.now(timezone.utc) - parse_timedelta(timelimit)
-    else:
-        start = get_optional(params, "start")
-        start_timestamp = isoparse(start) if start else None
-    end = get_optional(params, "end")
-    end_timestamp = isoparse(end) if end else None
+    start_time = get_optional(params, "start_time")
+    start_time = isoparse(start_time) if start_time else None
+    end_time = get_optional(params, "end_time")
+    end_time = isoparse(end_time) if end_time else None
 
     visibility_scopes = get_authentication_log_visibility_scopes(PolicyAction.AUTHENTICATION_LOG_READ)
-    # A scoped admin always also sees their own entries (username + realm), added to the policy scope as an extra OR
-    # alternative. (A user already sees only their own entries, so this is irrelevant for them.)
+    # A scoped admin always also sees their own entries, added to the policy scope as an extra OR alternative.
+    # (A user already sees only their own entries, so this is irrelevant for them.)
     if g.logged_in_user["role"] == ROLE.ADMIN and visibility_scopes is not None:
         own_realm = g.logged_in_user.get("realm")
         own_username = g.logged_in_user.get("username")
-        if own_realm and own_username:
+        if own_username and not own_realm:
+            # no realm -> local admin
+            visibility_scopes = visibility_scopes + [
+                AuthenticationLogVisibilityScope(realms=[], resolvers=[], usernames=[own_username],
+                                                 user_roles=[str(AuthLogUserRole.ADMIN_INTERNAL)])]
+        elif own_username and own_realm:
+            # username + realm -> external admin
             visibility_scopes = visibility_scopes + [
                 AuthenticationLogVisibilityScope(realms=[own_realm], resolvers=[], usernames=[own_username])]
 
     result = get_authentication_logs_paginate(
         **filters,
-        start_timestamp=start_timestamp,
-        end_timestamp=end_timestamp,
+        start_time=start_time,
+        end_time=end_time,
         case_insensitive=is_true(get_optional(params, "case_insensitive")),
         visibility_scopes=visibility_scopes,
         page=_positive_int(get_optional(params, "page"), default=1),
@@ -132,3 +134,24 @@ def get_authentication_log():
 
     g.audit_object.log({"success": True})
     return send_result(result.to_dict())
+
+
+@authentication_log_blueprint.route("/eventtypes", methods=["GET"])
+@user_required
+@prepolicy(check_base_action, request, PolicyAction.AUTHENTICATION_LOG_READ)
+@log_with(log)
+def get_authentication_log_event_types():
+    """
+    Return the list of all defined authentication-log event types with their outcome.
+
+    Requires the policy action :ref:`policy_authentication_log_read` (in the admin or user scope, like the log read
+    endpoint). The list is the authoritative set of :class:`AuthEventType` values, each with its
+    :class:`AuthEventOutcome` (``success`` / ``failure`` / ``pending``), exposed so the WebUI does not have to
+    redefine it. It does not depend on the caller or on any logged data.
+
+    :status 200: ``result.value`` is a list of ``{"name", "outcome"}`` objects, in definition order.
+    """
+    event_types = [{"name": str(event_type), "outcome": str(outcome_of(event_type))}
+                   for event_type in AuthEventType]
+    g.audit_object.log({"success": True})
+    return send_result(event_types)

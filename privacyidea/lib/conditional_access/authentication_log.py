@@ -16,7 +16,7 @@
 # SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 
@@ -32,14 +32,21 @@ from privacyidea.lib.sqlutils import delete_matching_rows
 log = logging.getLogger(__name__)
 
 # Columns that may be used to sort a paginated authentication-log query, keyed by the name accepted from the API.
+# Every scalar column is sortable; ``other_info`` is excluded because it is a JSON column whose ordering is not
+# meaningful and not portable across databases.
 SORTABLE_COLUMNS: dict[str, InstrumentedAttribute] = {
     "id": AuthenticationLog.id,
     "timestamp": AuthenticationLog.timestamp,
     "event_type": AuthenticationLog.event_type,
+    "resolver": AuthenticationLog.resolver,
+    "uid": AuthenticationLog.uid,
     "realm": AuthenticationLog.realm,
     "username": AuthenticationLog.username,
     "source_ip": AuthenticationLog.source_ip,
+    "client_label": AuthenticationLog.client_label,
     "serial": AuthenticationLog.serial,
+    "transaction_id": AuthenticationLog.transaction_id,
+    "previous_transaction_id": AuthenticationLog.previous_transaction_id,
 }
 DEFAULT_PAGE_SIZE = 15
 
@@ -73,11 +80,16 @@ class AuthenticationLogVisibilityScope:
 
     *username_case_insensitive* mirrors the originating policy's ``user_case_insensitive`` option and forces a
     case-insensitive match on the ``usernames`` dimension only; realm and resolver always match case-sensitively.
+
+    *user_roles* restricts to entries of those :class:`AuthLogUserRole` values. It is not derived from policy scoping
+    (policies do not scope by role); it is used to express a principal's own entries -- a local/internal admin has no
+    realm, so their own entries are matched by username plus ``user_role=admin-internal`` instead of by realm.
     """
     realms: list[str]
     resolvers: list[str]
     usernames: list[str]
     username_case_insensitive: bool = False
+    user_roles: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -347,8 +359,8 @@ def _filter_conditions(resolver: str | list[str] | None = None,
                        transaction_id: str | list[str] | None = None,
                        previous_transaction_id: str | list[str] | None = None,
                        client_label: str | list[str] | None = None,
-                       start_timestamp: datetime | None = None,
-                       end_timestamp: datetime | None = None,
+                       start_time: datetime | None = None,
+                       end_time: datetime | None = None,
                        case_insensitive: bool = False) -> list:
     """
     Build the list of SQLAlchemy ``where`` conditions for the provided filters (``None`` means no filter on that
@@ -374,10 +386,10 @@ def _filter_conditions(resolver: str | list[str] | None = None,
     }
     conditions = [condition for column, value in match_filters.items()
                   if (condition := _match_condition(column, value, case_insensitive)) is not None]
-    if start_timestamp is not None:
-        conditions.append(AuthenticationLog.timestamp >= _naive_utc(start_timestamp))
-    if end_timestamp is not None:
-        conditions.append(AuthenticationLog.timestamp <= _naive_utc(end_timestamp))
+    if start_time is not None:
+        conditions.append(AuthenticationLog.timestamp >= _naive_utc(start_time))
+    if end_time is not None:
+        conditions.append(AuthenticationLog.timestamp <= _naive_utc(end_time))
     return conditions
 
 
@@ -416,6 +428,8 @@ def _visibility_condition(scopes: list[AuthenticationLogVisibilityScope]) -> Col
                                                                               for name in scope.usernames]))
             else:
                 dimensions.append(AuthenticationLog.username.in_(scope.usernames))
+        if scope.user_roles:
+            dimensions.append(AuthenticationLog.user_role.in_([str(role) for role in scope.user_roles]))
         if dimensions:
             scope_conditions.append(and_(*dimensions))
     if not scope_conditions:
@@ -434,8 +448,8 @@ def get_authentication_logs(resolver: str | list[str] | None = None,
                             transaction_id: str | list[str] | None = None,
                             previous_transaction_id: str | list[str] | None = None,
                             client_label: str | list[str] | None = None,
-                            start_timestamp: datetime | None = None,
-                            end_timestamp: datetime | None = None) -> list[AuthenticationLog]:
+                            start_time: datetime | None = None,
+                            end_time: datetime | None = None) -> list[AuthenticationLog]:
     """
     Return authentication log entries matching all provided filter criteria, ordered by id (i.e. chronologically).
     All parameters are optional; omitting a parameter means no filtering on that field. Each scalar filter accepts a
@@ -446,7 +460,7 @@ def get_authentication_logs(resolver: str | list[str] | None = None,
                                     event_type=event_type,
                                     source_ip=source_ip, serial=serial, transaction_id=transaction_id,
                                     previous_transaction_id=previous_transaction_id, client_label=client_label,
-                                    start_timestamp=start_timestamp, end_timestamp=end_timestamp)
+                                    start_time=start_time, end_time=end_time)
     stmt = select(AuthenticationLog).where(*conditions).order_by(AuthenticationLog.id)
     return db.session.scalars(stmt).all()
 
@@ -462,8 +476,8 @@ def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
                                      transaction_id: str | list[str] | None = None,
                                      previous_transaction_id: str | list[str] | None = None,
                                      client_label: str | list[str] | None = None,
-                                     start_timestamp: datetime | None = None,
-                                     end_timestamp: datetime | None = None,
+                                     start_time: datetime | None = None,
+                                     end_time: datetime | None = None,
                                      visibility_scopes: list[AuthenticationLogVisibilityScope] | None = None,
                                      case_insensitive: bool = False,
                                      page: int = 1,
@@ -474,8 +488,8 @@ def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
     Return a single page of authentication log entries matching the given filters.
 
     The filter parameters -- ``resolver``, ``uid``, ``realm``, ``username``, ``user_role``, ``event_type``,
-    ``source_ip``, ``serial``, ``transaction_id``, ``previous_transaction_id``, ``client_label``,
-    ``start_timestamp`` and ``end_timestamp`` -- behave
+    ``source_ip``, ``serial``, ``transaction_id``, ``previous_transaction_id``, ``client_label``, ``start_time`` and
+    ``end_time`` -- behave
     exactly like :func:`get_authentication_logs`. The remaining parameters control visibility scoping and pagination:
 
     :param visibility_scopes: restrict the result to entries matching any of these scopes
@@ -493,7 +507,7 @@ def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
                                     event_type=event_type,
                                     source_ip=source_ip, serial=serial, transaction_id=transaction_id,
                                     previous_transaction_id=previous_transaction_id, client_label=client_label,
-                                    start_timestamp=start_timestamp, end_timestamp=end_timestamp,
+                                    start_time=start_time, end_time=end_time,
                                     case_insensitive=case_insensitive)
     if visibility_scopes is not None:
         conditions.append(_visibility_condition(visibility_scopes))
@@ -532,18 +546,17 @@ def delete_authentication_logs(resolver: str | list[str] | None = None,
                                transaction_id: str | list[str] | None = None,
                                previous_transaction_id: str | list[str] | None = None,
                                client_label: str | list[str] | None = None,
-                               start_timestamp: datetime | None = None,
-                               end_timestamp: datetime | None = None,
+                               start_time: datetime | None = None,
+                               end_time: datetime | None = None,
                                visibility_scopes: list[AuthenticationLogVisibilityScope] | None = None,
                                chunk_size: int | None = None) -> int:
     """
     Delete all authentication log entries matching the given filters and return the number deleted.
 
     The filter parameters -- ``resolver``, ``uid``, ``realm``, ``username``, ``user_role``, ``event_type``,
-    ``source_ip``, ``serial``, ``transaction_id``, ``previous_transaction_id``, ``client_label``,
-    ``start_timestamp`` and ``end_timestamp`` -- behave
-    exactly like :func:`get_authentication_logs` (to delete entries older than a point in time, pass
-    ``end_timestamp``). The caller must pass at least one filter: with no filter this would delete the entire log,
+    ``source_ip``, ``serial``, ``transaction_id``, ``previous_transaction_id``, ``client_label``, ``start_time`` and
+    ``end_time`` -- behave exactly like :func:`get_authentication_logs` (to delete entries older than a point in time,
+    pass ``end_time``). The caller must pass at least one filter: with no filter this would delete the entire log,
     which this function refuses.
 
     :param visibility_scopes: restrict the deletion to entries matching any of these scopes
@@ -555,7 +568,7 @@ def delete_authentication_logs(resolver: str | list[str] | None = None,
                                     event_type=event_type,
                                     source_ip=source_ip, serial=serial, transaction_id=transaction_id,
                                     previous_transaction_id=previous_transaction_id, client_label=client_label,
-                                    start_timestamp=start_timestamp, end_timestamp=end_timestamp)
+                                    start_time=start_time, end_time=end_time)
     # Guard on the caller's filters before adding the visibility restriction, so a scoped admin also cannot wipe a
     # whole scope with an unfiltered request.
     if not conditions:

@@ -28,6 +28,10 @@ import { LanguageSwitcherComponent } from "@components/shared/language-switcher/
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ThemeSwitcherComponent } from "@components/shared/theme-switcher/theme-switcher.component";
 import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
+import {
+  AuthenticationLogService,
+  AuthenticationLogServiceInterface
+} from "@services/authentication-log/authentication-log.service";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { CaConnectorService, CaConnectorServiceInterface } from "@services/ca-connector/ca-connector.service";
 import { ClientsService, ClientsServiceInterface } from "@services/clients/clients.service";
@@ -91,6 +95,7 @@ export class UserUtilsPanelComponent {
   protected readonly documentationService: DocumentationServiceInterface = inject(DocumentationService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly auditService: AuditServiceInterface = inject(AuditService);
+  private readonly authenticationLogService: AuthenticationLogServiceInterface = inject(AuthenticationLogService);
   private readonly clientsService: ClientsServiceInterface = inject(ClientsService);
   private readonly policyService: PolicyServiceInterface = inject(PolicyService);
   private readonly subscriptionService = inject(SubscriptionService);
@@ -222,6 +227,9 @@ export class UserUtilsPanelComponent {
         break;
       case ROUTE_PATHS.AUDIT:
         this.auditService.auditResource.reload();
+        break;
+      case ROUTE_PATHS.AUTHENTICATION_LOG:
+        this.authenticationLogService.authenticationLogResource.reload();
         break;
       case ROUTE_PATHS.CLIENTS:
         this.clientsService.clientsResource.reload();

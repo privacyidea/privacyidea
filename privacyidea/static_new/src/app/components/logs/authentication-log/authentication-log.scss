@@ -1,0 +1,177 @@
+@use "styles";
+@use "table";
+
+.authentication-log-table-container {
+  @include styles.main-component-style;
+  max-height: var(--table-max-height);
+  @include table.base-table-structure(
+    ".authentication-log-table",
+    ".authentication-log-table-filter",
+    ".table-scroll-container"
+  );
+  // Flex column so the filter row + paginator stay pinned and only the
+  // .table-scroll-region (flex: 1 1 auto, overflow: auto) scrolls — both
+  // vertically (with a sticky header row) and horizontally, as one unit.
+  // overflow: hidden hands scrolling to that inner region.
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  // Keep columns on a single line so the table grows past the region width
+  // (rather than wrapping to fit) and the region scrolls horizontally.
+  .authentication-log-table {
+    th,
+    td {
+      white-space: nowrap;
+    }
+  }
+}
+
+.cell-scroll {
+  max-height: 120px;
+  overflow-y: auto;
+  white-space: normal;
+}
+
+.cell-scroll-info {
+  max-width: 30rem;
+  overflow-wrap: break-word;
+}
+
+.info-list {
+  margin: 4px;
+  padding-left: 8px;
+}
+
+.header-label {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.header-hint {
+  font-size: 0.75rem;
+  color: var(--mat-sys-on-surface-variant);
+  white-space: nowrap;
+}
+
+.filter-with-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 7 1;
+  min-width: 300px;
+}
+
+.role-badge {
+  display: inline-block;
+  padding: 0 6px;
+  border-radius: var(--border-radius);
+  font-size: 0.75rem;
+  line-height: 1.6;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.role-badge-admin-internal {
+  background-color: var(--mat-sys-primary-container);
+  color: var(--mat-sys-on-primary-container);
+}
+
+.role-badge-admin-external {
+  background-color: var(--mat-sys-surface-container-highest);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// Reveal the inline cell actions (filter + copy) only while the row is hovered or holds focus, to keep dense rows
+// calm. Both buttons live in child components and expose a `--*-button-opacity` hook; custom properties inherit
+// across the encapsulation boundary, so we drive their visibility from the row without reaching into them.
+// :focus-within keeps the actions reachable for keyboard/AT users.
+.authentication-log-table tr.mat-mdc-row {
+  --copy-button-opacity: 0;
+  --filter-button-opacity: 0;
+
+  &:hover,
+  &:focus-within {
+    --copy-button-opacity: 1;
+    --filter-button-opacity: 1;
+  }
+}
+
+.time-filter-custom-range {
+  // Fixed width drives the (uncapped) menu panel width; box-sizing keeps padding inside it.
+  box-sizing: border-box;
+  width: 280px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  // Pinned to the bottom of the scrollable menu; the preset list scrolls above it. Opaque background + top border
+  // keep it readable over the content behind.
+  position: sticky;
+  bottom: 0;
+  background-color: var(--mat-sys-surface-container);
+  border-top: 1px solid var(--mat-sys-outline-variant);
+
+  .slider-with-histogram {
+    position: relative;
+  }
+
+  // Activity bars sit behind the slider track. Inset horizontally to roughly align with the track's usable span.
+  .activity-histogram {
+    position: absolute;
+    inset: 8px 12px;
+    display: flex;
+    align-items: flex-end;
+    gap: 1px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .activity-bar {
+    flex: 1 1 0;
+    min-height: 1px;
+    background-color: var(--mat-sys-primary);
+    opacity: 0.4;
+    border-radius: 1px 1px 0 0;
+  }
+
+  .time-range-slider {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    // No side margin, so the slider spans the full block width.
+    margin: 0;
+    // Value hint as a horizontal rounded label sized to its content, so the date/time text (e.g. "Jul 15", "13:45")
+    // fits. Tokens inherit into the slider's internal value indicator across the component boundary.
+    --mat-slider-value-indicator-width: auto;
+    --mat-slider-value-indicator-height: 40px;
+    --mat-slider-value-indicator-padding: 0 10px;
+    --mat-slider-value-indicator-border-radius: 6px;
+    --mat-slider-value-indicator-container-transform: translateX(-50%);
+    --mat-slider-value-indicator-text-transform: none;
+    --mat-slider-value-indicator-transform-origin: center bottom;
+  }
+
+  .custom-range-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    color: var(--mat-sys-on-surface-variant);
+  }
+
+  .range-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    color: var(--mat-sys-on-surface-variant);
+    white-space: nowrap;
+  }
+
+  .range-summary-sep {
+    font-weight: bold;
+    font-size: 20px;
+  }
+}

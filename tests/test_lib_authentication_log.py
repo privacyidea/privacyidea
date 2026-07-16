@@ -307,17 +307,17 @@ class AuthenticationLogTestCase(MyTestCase):
                                            realm="r1")
 
         # only the past entry
-        results = get_authentication_logs(end_timestamp=now)
+        results = get_authentication_logs(end_time=now)
         self.assertEqual(1, len(results))
         self.assertEqual(id1, results[0].id)
 
         # only the future entry
-        results = get_authentication_logs(start_timestamp=now)
+        results = get_authentication_logs(start_time=now)
         self.assertEqual(1, len(results))
         self.assertEqual(id2, results[0].id)
 
         # both entries
-        results = get_authentication_logs(start_timestamp=past, end_timestamp=future)
+        results = get_authentication_logs(start_time=past, end_time=future)
         self.assertEqual(2, len(results))
 
     def test_create_user_unknown_event(self):
@@ -681,6 +681,19 @@ class AuthenticationLogPaginateTestCase(MyTestCase):
                                                  username_case_insensitive=True)
         restricted = get_authentication_logs_paginate(visibility_scopes=[scope])
         self.assertEqual(2, restricted.count)
+
+    def test_visibility_scope_user_roles_dimension(self):
+        # The user_roles dimension is AND-ed with the others; it lets a local admin's own entries be matched by
+        # username + admin-internal, so a same-named user entry is excluded.
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, username="testadmin",
+                                 user_role=AuthLogUserRole.ADMIN_INTERNAL)
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, realm="realm1", username="testadmin",
+                                 user_role=AuthLogUserRole.USER)
+        scope = AuthenticationLogVisibilityScope(realms=[], resolvers=[], usernames=["testadmin"],
+                                                 user_roles=[str(AuthLogUserRole.ADMIN_INTERNAL)])
+        restricted = get_authentication_logs_paginate(visibility_scopes=[scope])
+        self.assertEqual(1, restricted.count)
+        self.assertEqual(str(AuthLogUserRole.ADMIN_INTERNAL), restricted.auth_logs[0].user_role)
 
     def test_to_dict_shape_and_iso_timestamp(self):
         self._create(1)

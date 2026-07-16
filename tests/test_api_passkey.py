@@ -157,7 +157,7 @@ class PasskeyAPITestBase(MyApiTestCase, PasskeyTestBase):
                 self.assertEqual(self.rp_id, passkey["rpId"])
             # /validate/initialize logs exactly the bootstrapped challenge (no user yet)
             auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED],
-                                                     transaction_id=passkey["transaction_id"])
+                                                         transaction_id=passkey["transaction_id"])
             assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED],
                                             transaction_id=passkey["transaction_id"])
             return passkey
@@ -249,7 +249,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self._assert_result_value_true(res.json)
             self.assertNotIn("auth_items", res.json)
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.LOGIN_SUCCESS],
-                                                 transaction_id=transaction_id)
+                                                     transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED],
                                         transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.LOGIN_SUCCESS], user=self.user, serials={serial},
@@ -284,7 +284,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertIn("authentication", res.json["result"])
             self.assertEqual("REJECT", res.json["result"]["authentication"])
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.MFA_FAIL],
-                                                 transaction_id=transaction_id)
+                                                     transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED],
                                         transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.MFA_FAIL], user=self.user, serials=None,
@@ -312,7 +312,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertNotIn(PolicyAction.ENROLL_VIA_MULTICHALLENGE, detail)
             self.assertNotIn(PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL, detail)
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.LOGIN_SUCCESS],
-                                                 transaction_id=transaction_id)
+                                                     transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED],
                                         transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.LOGIN_SUCCESS], user=self.user, serials={serial},
@@ -388,7 +388,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
                 self.assertIn("client_mode", challenge)
                 self.assertEqual("webauthn", challenge["client_mode"])
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED],
-                                                 transaction_id=transaction_id)
+                                                     transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED], user=self.user,
                                         serials={serial}, transaction_id=transaction_id)
 
@@ -412,7 +412,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertNotIn("auth_items", res.json)
         # Triggered via PIN on /validate/check, then answered successfully
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.LOGIN_SUCCESS],
-                                                 transaction_id=transaction_id)
+                                                     transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED], user=self.user,
                                         serials={serial}, transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.LOGIN_SUCCESS], user=self.user, serials={serial},
@@ -456,7 +456,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertFalse(result["status"])
         # Answering with a mismatched serial fails verification -> MFA_FAIL
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.MFA_FAIL],
-                                                 transaction_id=transaction_id)
+                                                     transaction_id=transaction_id)
         # The challenge was triggered via PIN before the serial was renamed
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED], user=self.user,
                                         serials={serial}, transaction_id=transaction_id)
@@ -588,7 +588,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
             credential_id = token.token.get_otpkey().getKey().decode("utf-8")
             self.assertEqual(credential_id, response["credentialId"])
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.LOGIN_SUCCESS],
-                                                 transaction_id=transaction_id)
+                                                     transaction_id=transaction_id)
         # The challenge was triggered via /validate/initialize (no user, no source IP)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED],
                                         transaction_id=transaction_id)
@@ -805,7 +805,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         # LOGIN_SUCCESS. (The initial spass authentication also logged LOGIN_SUCCESS, but with no transaction_id,
         # because the enroll challenge is created by a postpolicy after that log is written.)
         auth_log_entries = assert_authentication_log([AuthEventType.ENROLLMENT_TRIGGERED, AuthEventType.LOGIN_SUCCESS],
-                                                 transaction_id=transaction_id)
+                                                     transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.ENROLLMENT_TRIGGERED], user=self.user,
                                         serials={passkey_serial}, transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.LOGIN_SUCCESS], user=self.user,
@@ -855,7 +855,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         # /auth success: the CHALLENGE_TRIGGERED row comes from /validate/initialize (no user/serial yet); the
         # LOGIN_SUCCESS row carries the user and the passkey serial, matching the audit log above.
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.LOGIN_SUCCESS],
-                                                 transaction_id=transaction_id)
+                                                     transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED],
                                         transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.LOGIN_SUCCESS], user=self.user,
@@ -879,7 +879,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
             res = self.app.full_dispatch_request()
             self._verify_auth_fail_with_error(res, 4031)
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.MFA_FAIL],
-                                                 transaction_id=transaction_id)
+                                                     transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED],
                                         transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.MFA_FAIL], user=self.user,
@@ -900,7 +900,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
             res = self.app.full_dispatch_request()
             self._verify_auth_fail_with_error(res, 4031)
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.MFA_FAIL],
-                                                 transaction_id=transaction_id)
+                                                     transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED],
                                         transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.MFA_FAIL], user=self.user,
@@ -929,7 +929,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
             res = self.app.full_dispatch_request()
             self._assert_result_value_true(res.json)
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.LOGIN_SUCCESS],
-                                                 transaction_id=transaction_id)
+                                                     transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED],
                                         transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.LOGIN_SUCCESS], user=self.user,
@@ -1017,12 +1017,13 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertIn("link", mc[0])
         # The passkey CHALLENGE_TRIGGERED is logged under the passkey transaction.
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED],
-                                                 transaction_id=passkey_transaction_id)
+                                                     transaction_id=passkey_transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED],
                                         transaction_id=passkey_transaction_id)
         # The successful passkey answer turned into an enrollment challenge, so its row was reclassified to
         # ENROLLMENT_TRIGGERED and re-pointed at the enrolled token + enrollment transaction.
-        auth_log_entries = assert_authentication_log([AuthEventType.ENROLLMENT_TRIGGERED], transaction_id=enroll_transaction_id)
+        auth_log_entries = assert_authentication_log([AuthEventType.ENROLLMENT_TRIGGERED],
+                                                     transaction_id=enroll_transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.ENROLLMENT_TRIGGERED], user=self.user,
                                         serials={evm_serial}, transaction_id=enroll_transaction_id,
                                         previous_transaction_id=passkey_transaction_id)
@@ -1037,7 +1038,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertIn("Cancelled enrollment via multichallenge", j.get("detail", {}).get("message"), "")
         # check auth log
         auth_log_entries = assert_authentication_log([AuthEventType.ENROLLMENT_TRIGGERED, AuthEventType.LOGIN_SUCCESS],
-                                                   transaction_id=enroll_transaction_id)
+                                                     transaction_id=enroll_transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.LOGIN_SUCCESS], user=self.user,
                                         transaction_id=enroll_transaction_id)
         remove_token(serial)
@@ -1085,10 +1086,11 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertEqual("smartphone", mc[0]["type"])
             self.assertIn("link", mc[0])
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED],
-                                                 transaction_id=passkey_challenge["transaction_id"])
+                                                     transaction_id=passkey_challenge["transaction_id"])
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED],
                                         transaction_id=passkey_challenge["transaction_id"])
-        auth_log_entries = assert_authentication_log([AuthEventType.ENROLLMENT_TRIGGERED], transaction_id=transaction_id)
+        auth_log_entries = assert_authentication_log([AuthEventType.ENROLLMENT_TRIGGERED],
+                                                     transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.ENROLLMENT_TRIGGERED], user=self.user,
                                         serials={evm_serial}, transaction_id=transaction_id,
                                         previous_transaction_id=passkey_challenge["transaction_id"])
@@ -1103,7 +1105,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertIn("Cancelled enrollment via multichallenge", j.get("detail", {}).get("message"), "")
         # Check auth log entries
         auth_log_entries = assert_authentication_log([AuthEventType.ENROLLMENT_TRIGGERED, AuthEventType.LOGIN_SUCCESS],
-                                                   transaction_id=transaction_id)
+                                                     transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.LOGIN_SUCCESS], user=self.user,
                                         transaction_id=transaction_id)
 
@@ -1146,10 +1148,11 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertEqual("hotp", mc[0]["type"])
             self.assertIn("link", mc[0])
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED],
-                                                 transaction_id=passkey_challenge["transaction_id"])
+                                                     transaction_id=passkey_challenge["transaction_id"])
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED],
                                         transaction_id=passkey_challenge["transaction_id"])
-        auth_log_entries = assert_authentication_log([AuthEventType.ENROLLMENT_TRIGGERED], transaction_id=transaction_id)
+        auth_log_entries = assert_authentication_log([AuthEventType.ENROLLMENT_TRIGGERED],
+                                                     transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.ENROLLMENT_TRIGGERED], user=self.user,
                                         serials={evm_serial}, transaction_id=transaction_id,
                                         previous_transaction_id=passkey_challenge["transaction_id"])
@@ -1314,7 +1317,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         # The user owns this passkey but it is disabled -> NO_USABLE_TOKEN (consistent with check_token_list;
         # NO_TOKEN is reserved for a user who has no token at all).
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.NO_USABLE_TOKEN],
-                                                 transaction_id=transaction_id)
+                                                     transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED],
                                         transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.NO_USABLE_TOKEN], user=self.user,
@@ -1362,7 +1365,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertFalse(result["value"])
         # A disabled token on /auth is an owned-but-unusable token -> NO_USABLE_TOKEN (not NO_TOKEN).
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.NO_USABLE_TOKEN],
-                                                 transaction_id=transaction_id)
+                                                     transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED],
                                         transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.NO_USABLE_TOKEN], user=self.user,
@@ -1409,8 +1412,11 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertEqual(303, result["error"]["code"])
             self.assertEqual("The authentication method is not available.", result["error"]["message"])
         # The challenge was triggered; the answer is blocked by policy before a token outcome
-        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED], transaction_id=transaction_id)
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.NO_USABLE_TOKEN],
+                                                     transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED],
+                                        transaction_id=transaction_id)
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.NO_USABLE_TOKEN],
                                         transaction_id=transaction_id)
 
         remove_token(serial)

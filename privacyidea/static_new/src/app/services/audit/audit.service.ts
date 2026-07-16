@@ -21,7 +21,7 @@ import { HttpClient, HttpParams, httpResource, HttpResourceRef } from "@angular/
 import { computed, effect, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
 import { PiResponse } from "@app/app.component";
-import { AuditDownloadDialogComponent } from "@components/audit/audit-download-dialog/audit-download-dialog.component";
+import { AuditDownloadDialogComponent } from "@components/logs/audit/audit-download-dialog/audit-download-dialog.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { environment } from "@env/environment";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
