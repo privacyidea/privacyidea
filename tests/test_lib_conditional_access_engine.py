@@ -708,6 +708,34 @@ class LockoutEngineTestCase(LockoutTestCase):
         evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip="203.0.113.7")
         self.assertTrue(is_ip_blocked("203.0.113.7"))
 
+    # --- multiple policies on one request -------------------------------------
+
+    def test_multiple_policies_fire_together(self):
+        # Several enabled policies tracking the same type trip on one evaluation:
+        # a per-user timed lock (threshold 5), a timed IP block and a permanent IP
+        # block (both threshold 7). All apply on the same request, and the
+        # permanent block wins over the timed one regardless of the order the
+        # policies are evaluated (cross-policy, same request).
+        self._make_policy(name="lock", counter_type=AuthEventType.PIN_FAIL, priority=10,
+                          stages=((5, 1, LockoutAction.LOCK_USER, 60),))
+        self._make_policy(name="blocktimed", counter_type=AuthEventType.PIN_FAIL, priority=10,
+                          stages=((7, 1, LockoutAction.BLOCK_IP, 60),))
+        self._make_policy(name="blockperm", counter_type=AuthEventType.PIN_FAIL, priority=4,
+                          stages=((7, 1, LockoutAction.PERMANENT_BLOCK_IP, None),))
+        self._seed_events(AuthEventType.PIN_FAIL, 7)
+        evaluate_lockout_policies(self.user, AuthEventType.PIN_FAIL, source_ip="203.0.113.50")
+        # user locked with a timeout
+        state = self._state()
+        self.assertIsNotNone(state)
+        self.assertTrue(state.is_locked)
+        self.assertIsNotNone(state.lock_expires_at)
+        # IP blocked permanently: the timed block did not downgrade the permanent one
+        block = self._block("203.0.113.50")
+        self.assertIsNotNone(block)
+        self.assertTrue(block.is_blocked)
+        self.assertIsNone(block.block_expires_at)
+        self.assertTrue(is_ip_blocked("203.0.113.50"))
+
     # --- evaluate_access_decision (ALLOW / DENY) ------------------------------
 
     def test_access_decision_no_policies_is_continue(self):

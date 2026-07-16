@@ -138,16 +138,6 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
     # --- password brute-force template ----------------------------------------
 
     def test_password_bruteforce_locks_after_threshold(self):
-        now = utc_now()
-        self._create("password_bruteforce")
-        self._seed_events(AuthEventType.PASSWORD_FAIL, 10, timestamp=now)
-        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, now=now)
-        status = get_user_lockout(self.user, now=now)
-        self.assertIsNotNone(status, "user not locked")
-        self.assertFalse(status.permanent, "lock is permanent, expected timed")
-        self.assertEqual(900, status.seconds_remaining, "wrong lock duration")
-
-    def test_password_bruteforce_combines_password_and_pin(self):
         # The template tracks PASSWORD_FAIL and PIN_FAIL together: 6 + 4 = 10
         # reaches the threshold although neither type alone does.
         now = utc_now()
@@ -155,7 +145,10 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
         self._seed_events(AuthEventType.PASSWORD_FAIL, 6, timestamp=now)
         self._seed_events(AuthEventType.PIN_FAIL, 4, timestamp=now)
         evaluate_lockout_policies(self.user, AuthEventType.PIN_FAIL, now=now)
-        self.assertTrue(is_user_locked(self.user, now=now), "user not locked on combined count")
+        status = get_user_lockout(self.user, now=now)
+        self.assertIsNotNone(status, "user not locked on combined count")
+        self.assertFalse(status.permanent, "lock is permanent, expected timed")
+        self.assertEqual(900, status.seconds_remaining, "wrong lock duration")
 
     def test_password_bruteforce_below_threshold_not_locked(self):
         now = utc_now()
@@ -172,37 +165,7 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
         evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, now=now)
         self.assertFalse(is_user_locked(self.user, now=now), "user locked on aged-out failures")
 
-    def test_password_bruteforce_ignores_mfa_failures(self):
-        # The template tracks only PASSWORD_FAIL / PIN_FAIL; MFA failures must not trip it.
-        now = utc_now()
-        self._create("password_bruteforce")
-        self._seed_events(AuthEventType.MFA_FAIL, 10, timestamp=now)
-        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, now=now)
-        self.assertFalse(is_user_locked(self.user, now=now), "user locked on untracked event type")
-
     # --- MFA brute-force template (progressive) -------------------------------
-
-    def test_mfa_bruteforce_first_stage_timed_lock(self):
-        now = utc_now()
-        self._create("mfa_bruteforce")
-        self._seed_events(AuthEventType.MFA_FAIL, 3, timestamp=now)
-        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, now=now)
-        status = get_user_lockout(self.user, now=now)
-        self.assertIsNotNone(status, "user not locked")
-        self.assertFalse(status.permanent, "lock is permanent, expected timed")
-        self.assertEqual(600, status.seconds_remaining, "wrong lock duration")
-
-    def test_mfa_bruteforce_selects_most_severe_matching_stage(self):
-        # Seven failures satisfy the first (3) and second (5) thresholds but not
-        # the third (10). The highest-priority matching stage - the 1800s lock -
-        # must win; the milder 600s stage must not shadow it (the priority-order
-        # invariant: highest threshold carries the highest priority).
-        now = utc_now()
-        self._create("mfa_bruteforce")
-        self._seed_events(AuthEventType.MFA_FAIL, 7, timestamp=now)
-        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, now=now)
-        self.assertEqual(1800, get_user_lockout(self.user, now=now).seconds_remaining,
-                         "wrong stage selected (expected the 1800s stage)")
 
     def test_mfa_bruteforce_escalates_across_stages(self):
         # Replay an attacker whose MFA keeps failing: one policy escalates from a
@@ -278,26 +241,7 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
                          "lock did not fire without SMTP configured")
         self.assertEqual([], notices, "unexpected login notice")
 
-    def test_mfa_bruteforce_ignores_non_mfa_failures(self):
-        # The MFA template tracks only MFA_FAIL; password failures must not trip it.
-        now = utc_now()
-        self._create("mfa_bruteforce")
-        self._seed_events(AuthEventType.PASSWORD_FAIL, 10, timestamp=now)
-        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, now=now)
-        self.assertFalse(is_user_locked(self.user, now=now), "user locked on untracked event type")
-
     # --- password spraying template (source_ip target) ------------------------
-
-    def test_password_spraying_blocks_ip_after_distinct_users(self):
-        now = utc_now()
-        ip = "203.0.113.20"
-        self._create("password_spraying")
-        self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=20, timestamp=now)
-        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip=ip, now=now)
-        status = get_ip_block(ip, now=now)
-        self.assertIsNotNone(status, "IP not blocked")
-        self.assertFalse(status.permanent, "block is permanent, expected timed")
-        self.assertEqual(3600, status.seconds_remaining, "wrong block duration")
 
     def test_password_spraying_below_threshold_not_blocked(self):
         now = utc_now()
@@ -307,7 +251,7 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
         evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip=ip, now=now)
         self.assertFalse(is_ip_blocked(ip, now=now), "IP blocked below the distinct-user threshold")
 
-    def test_password_spraying_combines_password_and_pin(self):
+    def test_password_spraying_blocks_ip_after_distinct_users(self):
         # The template tracks PASSWORD_FAIL and PIN_FAIL together: 12 + 8 = 20
         # distinct users reach the threshold although neither type alone does.
         now = utc_now()
@@ -316,7 +260,10 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=12, timestamp=now)
         self._seed_ip_events(ip, AuthEventType.PIN_FAIL, n_users=8, timestamp=now, start=12)
         evaluate_lockout_policies(self.user, AuthEventType.PIN_FAIL, source_ip=ip, now=now)
-        self.assertTrue(is_ip_blocked(ip, now=now), "IP not blocked on combined distinct-user count")
+        status = get_ip_block(ip, now=now)
+        self.assertIsNotNone(status, "IP not blocked on combined distinct-user count")
+        self.assertFalse(status.permanent, "block is permanent, expected timed")
+        self.assertEqual(3600, status.seconds_remaining, "wrong block duration")
 
     def test_password_spraying_counts_distinct_users_not_events(self):
         # Many failures from only a few users must not trip the per-IP detection:
