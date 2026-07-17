@@ -226,7 +226,7 @@ def _validate_counter_types(counter_types) -> list[str]:
 def _validate_stages(stages) -> list[StageDefinition]:
     """
     Validate the stage definitions: a non-empty list of dicts, each with a
-    unique positive ``failure_threshold``, an optional positive ``priority``
+    unique non-negative ``failure_threshold``, an optional positive ``priority``
     (default 1) and a list of actions whose ``action_type`` is a valid
     :class:`LockoutAction`. ``action_value`` may be any JSON-serializable value
     (its action-specific interpretation happens in the engine); unknown keys in
@@ -247,7 +247,11 @@ def _validate_stages(stages) -> list[StageDefinition]:
         unknown = set(stage) - allowed_stage_keys - {"id"}
         if unknown:
             raise ParameterError(f"Unknown stage key(s): {', '.join(sorted(unknown))}.")
-        threshold = _validate_positive_int(stage.get("failure_threshold"), "failure_threshold")
+        # A threshold of 0 always matches (e.g. an ALLOW allowlist / default-allow
+        # stage); higher thresholds fire at count >= threshold. So 0 is valid.
+        threshold = stage.get("failure_threshold")
+        if isinstance(threshold, bool) or not isinstance(threshold, int) or threshold < 0:
+            raise ParameterError("'failure_threshold' must be a non-negative integer.")
         if threshold in thresholds:
             raise ParameterError(f"Duplicate failure_threshold {threshold}: thresholds must be unique within a policy.")
         thresholds.add(threshold)
@@ -314,14 +318,15 @@ def get_lockout_policy(policy_id: int) -> dict:
 
 @log_with(log)
 def create_lockout_policy(name: str, time_window_seconds: int, counter_types_to_track: list[str],
-                          stages: list[dict], enabled: bool = True, dry_run: bool = False,
-                          priority: int = 1, target: str = "user") -> int:
+                          stages: list[dict], target: str, enabled: bool = True,
+                          dry_run: bool = False, priority: int = 1) -> int:
     """
     Create a lockout policy with its stages and actions in one transaction.
 
     See the module docstring for the parameter shapes; everything is validated
     here and a :class:`ParameterError` is raised on any invalid input before
-    anything is written.
+    anything is written. ``target`` is required (no silent default) so the
+    target/action compatibility is always a deliberate choice.
 
     :return: the id of the new policy
     """

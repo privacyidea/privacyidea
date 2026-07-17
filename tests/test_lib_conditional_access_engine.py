@@ -41,6 +41,7 @@ from privacyidea.lib.conditional_access.engine import (
     _safe_format,
     _resolve_admin_recipients,
 )
+from privacyidea.lib.conditional_access.lockout_policy import create_lockout_policy
 from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_config, SYSCONF
 from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
 from privacyidea.lib.user import User
@@ -63,27 +64,23 @@ class LockoutEngineTestCase(LockoutTestCase):
                      priority=1, target=LockoutTarget.USER,
                      stages=((3, 1, LockoutAction.LOCK_USER, 600),)):
         """
-        Build a policy with its stages and one action per stage.
+        Create a policy through the real CRUD path (:func:`create_lockout_policy`)
+        and return ``(policy, stages)`` re-fetched from the DB.
 
         :param stages: iterable of (failure_threshold, stage_priority, action_type, action_value)
         """
         counter_types = counter_type if isinstance(counter_type, (list, tuple)) else [counter_type]
-        policy = LockoutPolicy(name=name, counter_types_to_track=[str(t) for t in counter_types],
-                               time_window_seconds=window, enabled=enabled, dry_run=dry_run,
-                               priority=priority, target=str(target))
-        db.session.add(policy)
-        db.session.commit()
-        made_stages = []
-        for threshold, stage_priority, action_type, action_value in stages:
-            stage = LockoutPolicyStage(policy_id=policy.id, failure_threshold=threshold,
-                                       priority=stage_priority)
-            db.session.add(stage)
-            db.session.commit()
-            db.session.add(LockoutStageAction(stage_id=stage.id, action_type=str(action_type),
-                                              action_value=action_value))
-            db.session.commit()
-            made_stages.append(stage)
-        return policy, made_stages
+        stage_dicts = [
+            {"failure_threshold": threshold, "priority": stage_priority,
+             "actions": [{"action_type": action_type, "action_value": action_value}]}
+            for threshold, stage_priority, action_type, action_value in stages
+        ]
+        policy_id = create_lockout_policy(
+            name=name, time_window_seconds=window,
+            counter_types_to_track=[str(t) for t in counter_types],
+            stages=stage_dicts, target=target, enabled=enabled, dry_run=dry_run, priority=priority)
+        policy = db.session.get(LockoutPolicy, policy_id)
+        return policy, list(policy.stages)
 
     # --- count_distinct_users_for_ip (spraying signal) ------------------------
 
@@ -518,8 +515,19 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertIsNone(self._state())
 
     def test_unknown_action_type_skipped(self):
-        self._make_policy(name="weird", counter_type=AuthEventType.MFA_FAIL,
-                          stages=((3, 1, "TELEPORT_USER", None),))
+        # A corrupt/legacy row with an unknown action type must be skipped by the
+        # engine, not raise. The CRUD rejects such a value, so this invalid state
+        # is built directly (simulating a bad DB row) rather than via the lib.
+        policy = LockoutPolicy(name="weird", counter_types_to_track=["MFA_FAIL"],
+                               time_window_seconds=3600, enabled=True, dry_run=False,
+                               priority=1, target=str(LockoutTarget.USER))
+        db.session.add(policy)
+        db.session.commit()
+        stage = LockoutPolicyStage(policy_id=policy.id, failure_threshold=3, priority=1)
+        db.session.add(stage)
+        db.session.commit()
+        db.session.add(LockoutStageAction(stage_id=stage.id, action_type="TELEPORT_USER", action_value=None))
+        db.session.commit()
         self._seed_events(AuthEventType.MFA_FAIL, 3)
         # Unknown action types are logged and skipped, not raised.
         evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
@@ -563,8 +571,8 @@ class LockoutEngineTestCase(LockoutTestCase):
     def test_block_ip_action_skips_never_block_ip(self):
         # A BLOCK_IP action must never write a block for a never-block IP (loopback).
         self._make_policy(name="blockloop", counter_type=AuthEventType.PASSWORD_FAIL,
-                          stages=((3, 1, LockoutAction.BLOCK_IP, 900),))
-        self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
+                          target=LockoutTarget.SOURCE_IP, stages=((3, 1, LockoutAction.BLOCK_IP, 900),))
+        self._seed_ip_events("127.0.0.1", AuthEventType.PASSWORD_FAIL, n_users=3)
         evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip="127.0.0.1")
         self.assertEqual(0, db.session.query(BlockList).count())
         self.assertFalse(is_ip_blocked("127.0.0.1"))
@@ -586,12 +594,13 @@ class LockoutEngineTestCase(LockoutTestCase):
     # --- BLOCK_IP action ------------------------------------------------------
 
     def test_block_ip_action_blocks_source_ip(self):
+        ip = "203.0.113.7"
         _, stages = self._make_policy(
             name="blockip", counter_type=AuthEventType.PASSWORD_FAIL,
-            stages=((3, 1, LockoutAction.BLOCK_IP, 900),))
-        self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
-        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip="203.0.113.7")
-        block = self._block("203.0.113.7")
+            target=LockoutTarget.SOURCE_IP, stages=((3, 1, LockoutAction.BLOCK_IP, 900),))
+        self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3)
+        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip=ip)
+        block = self._block(ip)
         self.assertIsNotNone(block)
         self.assertTrue(block.is_blocked)
         self.assertIsNotNone(block.block_expires_at)
@@ -599,114 +608,108 @@ class LockoutEngineTestCase(LockoutTestCase):
         # The originating stage and policy name are recorded for de-dup / auditing.
         self.assertEqual(stages[0].id, block.last_stage_triggered)
         self.assertEqual("blockip", block.reason)
-        self.assertTrue(is_ip_blocked("203.0.113.7"))
+        self.assertTrue(is_ip_blocked(ip))
         # A BLOCK_IP-only stage writes no user lock.
         self.assertIsNone(self._state())
 
     def test_block_ip_action_without_source_ip_skipped(self):
-        # No source IP for the request -> the action is logged and skipped, not raised.
+        # No source IP on the request -> the source-IP policy cannot act; skipped, not raised.
         self._make_policy(name="blocknoip", counter_type=AuthEventType.PASSWORD_FAIL,
-                          stages=((3, 1, LockoutAction.BLOCK_IP, 900),))
-        self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
+                          target=LockoutTarget.SOURCE_IP, stages=((3, 1, LockoutAction.BLOCK_IP, 900),))
+        self._seed_ip_events("203.0.113.7", AuthEventType.PASSWORD_FAIL, n_users=3)
         evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip=None)
         self.assertEqual(0, db.session.query(BlockList).count())
 
     def test_block_ip_action_invalid_duration_skipped(self):
+        ip = "203.0.113.7"
         self._make_policy(name="blockbaddur", counter_type=AuthEventType.PASSWORD_FAIL,
-                          stages=((3, 1, LockoutAction.BLOCK_IP, None),))
-        self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
-        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip="203.0.113.7")
-        self.assertIsNone(self._block("203.0.113.7"))
+                          target=LockoutTarget.SOURCE_IP, stages=((3, 1, LockoutAction.BLOCK_IP, None),))
+        self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3)
+        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip=ip)
+        self.assertIsNone(self._block(ip))
 
     def test_block_ip_does_not_downgrade_permanent_block(self):
+        ip = "203.0.113.7"
         # Pre-existing permanent block (block_expires_at is None).
-        db.session.add(BlockList(ip="203.0.113.7", is_blocked=True, block_expires_at=None))
+        db.session.add(BlockList(ip=ip, is_blocked=True, block_expires_at=None))
         db.session.commit()
         self._make_policy(name="blocktimed", counter_type=AuthEventType.PASSWORD_FAIL,
-                          stages=((3, 1, LockoutAction.BLOCK_IP, 900),))
-        self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
-        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip="203.0.113.7")
+                          target=LockoutTarget.SOURCE_IP, stages=((3, 1, LockoutAction.BLOCK_IP, 900),))
+        self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3)
+        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip=ip)
         # The permanent block must remain permanent (block_expires_at stays None).
-        self.assertIsNone(self._block("203.0.113.7").block_expires_at)
-        self.assertTrue(is_ip_blocked("203.0.113.7"))
+        self.assertIsNone(self._block(ip).block_expires_at)
+        self.assertTrue(is_ip_blocked(ip))
 
     def test_permanent_block_ip_action(self):
+        ip = "203.0.113.7"
         # Mirror of PERMANENT_LOCK_USER: a permanent IP block (block_expires_at None).
         self._make_policy(name="permblock", counter_type=AuthEventType.PASSWORD_FAIL,
+                          target=LockoutTarget.SOURCE_IP,
                           stages=((3, 1, LockoutAction.PERMANENT_BLOCK_IP, None),))
-        self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
-        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip="203.0.113.7")
-        block = self._block("203.0.113.7")
+        self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3)
+        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip=ip)
+        block = self._block(ip)
         self.assertIsNotNone(block)
         self.assertTrue(block.is_blocked)
         self.assertIsNone(block.block_expires_at)
-        self.assertTrue(is_ip_blocked("203.0.113.7"))
+        self.assertTrue(is_ip_blocked(ip))
 
     def test_permanent_block_ip_ignores_action_value(self):
+        ip = "203.0.113.7"
         # action_value is irrelevant for the permanent variant: even a "valid"
         # duration does not make it timed.
         self._make_policy(name="permblockdur", counter_type=AuthEventType.PASSWORD_FAIL,
+                          target=LockoutTarget.SOURCE_IP,
                           stages=((3, 1, LockoutAction.PERMANENT_BLOCK_IP, 900),))
-        self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
-        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip="203.0.113.7")
-        self.assertIsNone(self._block("203.0.113.7").block_expires_at)
+        self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3)
+        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip=ip)
+        self.assertIsNone(self._block(ip).block_expires_at)
 
     def test_permanent_block_ip_without_source_ip_skipped(self):
         # Like BLOCK_IP, a request with no source IP is logged and skipped, not raised.
         self._make_policy(name="permblocknoip", counter_type=AuthEventType.PASSWORD_FAIL,
+                          target=LockoutTarget.SOURCE_IP,
                           stages=((3, 1, LockoutAction.PERMANENT_BLOCK_IP, None),))
-        self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
+        self._seed_ip_events("203.0.113.7", AuthEventType.PASSWORD_FAIL, n_users=3)
         evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip=None)
         self.assertEqual(0, db.session.query(BlockList).count())
 
-    def test_block_ip_and_lock_user_combined(self):
-        # A stage can both lock the user and block the source IP in one trigger.
-        _, stages = self._make_policy(
-            name="lockandblock", counter_type=AuthEventType.PASSWORD_FAIL,
-            stages=((3, 1, LockoutAction.LOCK_USER, 600),))
-        db.session.add(LockoutStageAction(
-            stage_id=stages[0].id, action_type=str(LockoutAction.BLOCK_IP), action_value=900))
-        db.session.commit()
-        self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
-        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip="203.0.113.7")
-        self.assertTrue(self._state().is_locked)
-        self.assertTrue(is_ip_blocked("203.0.113.7"))
-
     def test_block_ip_dedup_suppresses_repeat_within_window(self):
         # An IP-blocking stage de-dups on its BlockList row: a repeat trigger
-        # within the window must not re-run the action. Regression: BLOCK_IP-only
-        # stages had no de-dup at all (de-dup keyed solely on UserLockoutState),
-        # so every in-window failure kept refreshing the block.
+        # within the window must not re-run the action.
+        ip = "203.0.113.7"
         self._make_policy(name="blockip", counter_type=AuthEventType.PASSWORD_FAIL,
-                          stages=((3, 1, LockoutAction.BLOCK_IP, 900),))
-        self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
-        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip="203.0.113.7")
+                          target=LockoutTarget.SOURCE_IP, stages=((3, 1, LockoutAction.BLOCK_IP, 900),))
+        self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3)
+        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip=ip)
         # Tamper with the expiry, then re-evaluate within the window: the de-dup
         # must skip the action and leave our sentinel untouched.
         sentinel = utc_now() + timedelta(seconds=99999)
-        block = self._block("203.0.113.7")
+        block = self._block(ip)
         block.block_expires_at = sentinel
         db.session.commit()
-        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip="203.0.113.7")
-        self.assertEqual(sentinel, self._block("203.0.113.7").block_expires_at)
+        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip=ip)
+        self.assertEqual(sentinel, self._block(ip).block_expires_at)
 
     def test_block_ip_dedup_does_not_survive_block_expiry(self):
         # Mirror of test_dedup_does_not_survive_lock_expiry for the IP dimension:
         # an expired block ends the incident, so the next failure re-fires and
         # refreshes the block.
+        ip = "203.0.113.7"
         self._make_policy(name="blockip", counter_type=AuthEventType.PASSWORD_FAIL,
-                          stages=((3, 1, LockoutAction.BLOCK_IP, 900),))
-        self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
-        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip="203.0.113.7")
+                          target=LockoutTarget.SOURCE_IP, stages=((3, 1, LockoutAction.BLOCK_IP, 900),))
+        self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3)
+        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip=ip)
         # The block runs out while the failures are still in the window.
-        block = self._block("203.0.113.7")
+        block = self._block(ip)
         block.block_expires_at = utc_now() - timedelta(seconds=10)
         db.session.commit()
-        self.assertFalse(is_ip_blocked("203.0.113.7"))
-        # The next failure re-fires the same stage and must re-block the IP.
-        self._seed_events(AuthEventType.PASSWORD_FAIL, 1)
-        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip="203.0.113.7")
-        self.assertTrue(is_ip_blocked("203.0.113.7"))
+        self.assertFalse(is_ip_blocked(ip))
+        # A further distinct user re-fires the same stage and must re-block the IP.
+        self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=1, start=3)
+        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip=ip)
+        self.assertTrue(is_ip_blocked(ip))
 
     def test_source_ip_policy_fires_for_unresolved_user(self):
         # A source-IP policy must still act when the current request's user is
@@ -727,30 +730,35 @@ class LockoutEngineTestCase(LockoutTestCase):
     # --- multiple policies on one request -------------------------------------
 
     def test_multiple_policies_fire_together(self):
-        # Several enabled policies tracking the same type trip on one evaluation:
-        # a per-user timed lock (threshold 5), a timed IP block and a permanent IP
-        # block (both threshold 7). All apply on the same request, and the
-        # permanent block wins over the timed one regardless of the order the
-        # policies are evaluated (cross-policy, same request).
+        # Several enabled policies of different targets trip on one request: a
+        # per-user timed lock (user target, threshold 5) plus a timed and a
+        # permanent IP block (source_ip target, threshold 7). All apply, and the
+        # permanent block wins over the timed one regardless of evaluation order
+        # (cross-policy, same request).
+        ip = "203.0.113.50"
         self._make_policy(name="lock", counter_type=AuthEventType.PIN_FAIL, priority=10,
                           stages=((5, 1, LockoutAction.LOCK_USER, 60),))
         self._make_policy(name="blocktimed", counter_type=AuthEventType.PIN_FAIL, priority=10,
-                          stages=((7, 1, LockoutAction.BLOCK_IP, 60),))
+                          target=LockoutTarget.SOURCE_IP, stages=((7, 1, LockoutAction.BLOCK_IP, 60),))
         self._make_policy(name="blockperm", counter_type=AuthEventType.PIN_FAIL, priority=4,
+                          target=LockoutTarget.SOURCE_IP,
                           stages=((7, 1, LockoutAction.PERMANENT_BLOCK_IP, None),))
-        self._seed_events(AuthEventType.PIN_FAIL, 7)
-        evaluate_lockout_policies(self.user, AuthEventType.PIN_FAIL, source_ip="203.0.113.50")
+        # 5 failures for the current user (trips the per-user lock) plus 7 distinct
+        # users from the IP (trips both IP-block policies).
+        self._seed_events(AuthEventType.PIN_FAIL, 5)
+        self._seed_ip_events(ip, AuthEventType.PIN_FAIL, n_users=7)
+        evaluate_lockout_policies(self.user, AuthEventType.PIN_FAIL, source_ip=ip)
         # user locked with a timeout
         state = self._state()
         self.assertIsNotNone(state)
         self.assertTrue(state.is_locked)
         self.assertIsNotNone(state.lock_expires_at)
         # IP blocked permanently: the timed block did not downgrade the permanent one
-        block = self._block("203.0.113.50")
+        block = self._block(ip)
         self.assertIsNotNone(block)
         self.assertTrue(block.is_blocked)
         self.assertIsNone(block.block_expires_at)
-        self.assertTrue(is_ip_blocked("203.0.113.50"))
+        self.assertTrue(is_ip_blocked(ip))
 
     # --- evaluate_access_decision (ALLOW / DENY) ------------------------------
 
