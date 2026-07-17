@@ -153,6 +153,12 @@ describe("FilterValueGeneric", () => {
       expect(res.getFilterOfKey("search_term")).toBeNull();
       expect(res.filterMap.get("standalone")).toBeDefined();
     });
+
+    it("should expose standalone words as freeTextTerms and exclude keyword filters", () => {
+      const res = filter.setByString("alpha beta name:carol");
+      expect(res.freeTextTerms).toEqual(["alpha", "beta"]);
+      expect(new FilterValueGeneric<PolicyMock>({ availableFilters: [] }).freeTextTerms).toEqual([]);
+    });
   });
 
   describe("4. Filtering Logic & Item Processing", () => {
