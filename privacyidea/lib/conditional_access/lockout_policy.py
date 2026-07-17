@@ -31,6 +31,7 @@ A policy is passed around as a plain dict::
         "enabled": True,
         "dry_run": False,
         "priority": 1,
+        "count_mode": "PER_REQUEST",
         "counter_types_to_track": ["PIN_FAIL", "MFA_FAIL"],
         "stages": [
             {
@@ -44,20 +45,21 @@ A policy is passed around as a plain dict::
         ],
     }
 
-``counter_types_to_track`` values must be
-:class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthEventType`
-names and ``action_type`` values must be
-:class:`~privacyidea.lib.conditional_access.engine.LockoutAction` names; anything
-else is a :class:`~privacyidea.lib.error.ParameterError` (fail-closed - a typo
-must not silently create a policy that never matches or an action that never
-fires).
+``count_mode`` (default ``PER_REQUEST``) is a
+:class:`~privacyidea.lib.conditional_access.authentication_event_types.CountMode` name and decides whether the tracked
+counters are counted per ``authentication_log`` row (``PER_REQUEST``) or per whole authentication attempt
+(``PER_ATTEMPT``); both modes track the same vocabulary. ``counter_types_to_track`` values must be
+:class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthEventType` names and ``action_type`` values
+must be :class:`~privacyidea.lib.conditional_access.engine.LockoutAction` names; anything else is a
+:class:`~privacyidea.lib.error.ParameterError` (fail-closed - a typo must not silently create a policy that never
+matches or an action that never fires).
 """
 import logging
 from dataclasses import dataclass, field
 
 from sqlalchemy import select
 
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
 from privacyidea.lib.conditional_access.engine import LockoutAction
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError
 from privacyidea.lib.log import log_with
@@ -160,14 +162,29 @@ def _validate_positive_int(value, field: str) -> int:
     return value
 
 
+def _validate_count_mode(count_mode) -> str:
+    """
+    Validate the policy's :class:`CountMode` and return its canonical string value.
+
+    Accepts either a mode string (from the API) or a :class:`CountMode` member (the CRUD default) and normalizes both
+    to the plain string stored on the model, so the stored value's type does not depend on the caller. The enum is
+    the single source of truth for which modes are valid.
+    """
+    try:
+        return CountMode(count_mode).value
+    except ValueError:
+        valid_modes = ", ".join(mode.value for mode in CountMode)
+        raise ParameterError(f"Unknown count_mode '{count_mode}'. Valid modes: {valid_modes}.")
+
+
 def _validate_counter_types(counter_types) -> list[str]:
     """
-    Validate the tracked counter types: a non-empty list of
-    :class:`AuthEventType` values.
+    Validate the tracked counter types: a non-empty list of :class:`AuthEventType` values. The same vocabulary
+    applies in both :class:`CountMode`\\ s - the mode changes only whether these events are counted per log row or
+    per whole attempt, not what may be tracked.
 
-    A counter type repeated in the list is de-duplicated (order preserved)
-    rather than rejected - tracking the same event type twice has no effect on
-    evaluation, so a copy-paste duplicate should not fail the whole request.
+    A counter type repeated in the list is de-duplicated (order preserved) rather than rejected - tracking the same
+    event type twice has no effect on evaluation, so a copy-paste duplicate should not fail the whole request.
     """
     if not isinstance(counter_types, list) or not counter_types:
         raise ParameterError("'counter_types_to_track' must be a non-empty list of authentication event types.")
@@ -274,7 +291,7 @@ def get_lockout_policy(policy_id: int) -> dict:
 @log_with(log)
 def create_lockout_policy(name: str, time_window_seconds: int, counter_types_to_track: list[str],
                           stages: list[dict], enabled: bool = True, dry_run: bool = False,
-                          priority: int = 1) -> int:
+                          priority: int = 1, count_mode: str = CountMode.PER_REQUEST) -> int:
     """
     Create a lockout policy with its stages and actions in one transaction.
 
@@ -287,12 +304,13 @@ def create_lockout_policy(name: str, time_window_seconds: int, counter_types_to_
     name = _validate_name(name)
     time_window_seconds = _validate_positive_int(time_window_seconds, "time_window_seconds")
     priority = _validate_positive_int(priority, "priority")
+    count_mode = _validate_count_mode(count_mode)
     counter_types = _validate_counter_types(counter_types_to_track)
     stage_defs = _validate_stages(stages)
 
     policy = LockoutPolicy(name=name, time_window_seconds=time_window_seconds,
                            enabled=bool(enabled), dry_run=bool(dry_run), priority=priority,
-                           counter_types_to_track=counter_types,
+                           count_mode=count_mode, counter_types_to_track=counter_types,
                            stages=_build_stages(stage_defs))
     db.session.add(policy)
     db.session.commit()
@@ -305,7 +323,8 @@ def update_lockout_policy(policy_id: int, name: str | None = None,
                           time_window_seconds: int | None = None,
                           counter_types_to_track: list[str] | None = None,
                           stages: list[dict] | None = None, enabled: bool | None = None,
-                          dry_run: bool | None = None, priority: int | None = None) -> tuple[int, list[str]]:
+                          dry_run: bool | None = None, priority: int | None = None,
+                          count_mode: str | None = None) -> tuple[int, list[str]]:
     """
     Update a lockout policy. Only the given (non-``None``) fields are changed.
 
@@ -333,6 +352,8 @@ def update_lockout_policy(policy_id: int, name: str | None = None,
         time_window_seconds = _validate_positive_int(time_window_seconds, "time_window_seconds")
     if priority is not None:
         priority = _validate_positive_int(priority, "priority")
+    if count_mode is not None:
+        count_mode = _validate_count_mode(count_mode)
     if counter_types_to_track is not None:
         counter_types_to_track = _validate_counter_types(counter_types_to_track)
     if stages is not None:
@@ -354,6 +375,9 @@ def update_lockout_policy(policy_id: int, name: str | None = None,
     if dry_run is not None:
         policy.dry_run = bool(dry_run)
         changed_fields.append("dry_run")
+    if count_mode is not None:
+        policy.count_mode = count_mode
+        changed_fields.append("count_mode")
     if counter_types_to_track is not None:
         policy.counter_types_to_track = counter_types_to_track
         changed_fields.append("counter_types_to_track")

@@ -131,6 +131,24 @@ def outcome_of(event_type: AuthEventType) -> AuthEventOutcome:
     return EVENT_TYPE_OUTCOME[event_type]
 
 
+class CountMode(str, Enum):
+    """
+    How a conditional-access policy counts the tracked :class:`AuthEventType`\\ s against its stage thresholds.
+
+    :attr:`PER_REQUEST` counts individual ``authentication_log`` rows. :attr:`PER_ATTEMPT` counts whole
+    authentication *attempts*: the rows sharing one ``attempt_id`` are collapsed into a single attempt, so a
+    multi-request challenge / multichallenge login counts once. Both modes track the same vocabulary
+    (:class:`AuthEventType` names); the mode only changes the unit that is counted.
+
+    ``str``/``Enum`` (not ``StrEnum``) for Python 3.10, like :class:`AuthEventType`.
+    """
+    PER_REQUEST = "PER_REQUEST"
+    PER_ATTEMPT = "PER_ATTEMPT"
+
+    def __str__(self) -> str:
+        return self.value
+
+
 # Request-level precedence, highest signal first.
 REQUEST_EVENT_PRECEDENCE: list[AuthEventType] = [
     AuthEventType.NOT_AUTHORIZED,

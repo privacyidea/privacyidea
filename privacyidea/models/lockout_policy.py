@@ -32,6 +32,7 @@ from sqlalchemy import (
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from privacyidea.lib.conditional_access.authentication_event_types import CountMode
 from privacyidea.models import db
 from privacyidea.models.utils import MethodsMixin, utc_now
 
@@ -63,6 +64,9 @@ class LockoutPolicy(MethodsMixin, db.Model):
     # but no action is enforced.
     dry_run: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     priority: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    # How the tracked counters are counted against the stage thresholds: per authentication_log row
+    # ("PER_REQUEST", the default) or per whole authentication attempt ("PER_ATTEMPT").
+    count_mode: Mapped[str] = mapped_column(Unicode(20), default=CountMode.PER_REQUEST, nullable=False)
 
     stages: Mapped[list["LockoutPolicyStage"]] = relationship(
         "LockoutPolicyStage",

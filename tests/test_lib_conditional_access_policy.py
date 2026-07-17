@@ -19,6 +19,7 @@
 Tests for the conditional-access lockout-policy CRUD layer
 (:mod:`privacyidea.lib.conditional_access.lockout_policy`).
 """
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
 from privacyidea.lib.conditional_access.lockout_policy import (create_lockout_policy,
                                                                delete_lockout_policy,
                                                                enable_lockout_policy,
@@ -67,6 +68,7 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         self.assertTrue(policy["enabled"])
         self.assertFalse(policy["dry_run"])
         self.assertEqual(3, policy["priority"])
+        self.assertEqual(CountMode.PER_REQUEST, policy["count_mode"])
         self.assertEqual(["PIN_FAIL", "MFA_FAIL"], policy["counter_types_to_track"])
         self.assertEqual(2, len(policy["stages"]))
         # stages are ordered by stage priority desc (evaluation order)
@@ -116,6 +118,28 @@ class LockoutPolicyCrudTestCase(MyTestCase):
                           [_stage(actions=[{"action_type": "LOCK_USER", "bogus": 1}])])
         # nothing invalid was persisted
         self.assertEqual(1, db.session.query(LockoutPolicy).count())
+
+    def test_02c_count_mode_per_attempt(self):
+        # PER_ATTEMPT tracks the same AuthEventType vocabulary; only the counting unit differs.
+        policy_id = create_lockout_policy("RateLimit", 60, [AuthEventType.MFA_FAIL, AuthEventType.LOGIN_SUCCESS],
+                                          [_stage(10)], count_mode=CountMode.PER_ATTEMPT)
+        policy = get_lockout_policy(policy_id)
+        self.assertEqual(CountMode.PER_ATTEMPT, policy["count_mode"])
+        self.assertEqual([AuthEventType.MFA_FAIL, AuthEventType.LOGIN_SUCCESS], policy["counter_types_to_track"])
+
+    def test_02d_count_mode_validation(self):
+        # Only PER_REQUEST / PER_ATTEMPT are valid; the counter vocabulary is shared, so there is no mode/value rule.
+        self.assertRaises(ParameterError, create_lockout_policy, "P", 600, [AuthEventType.PIN_FAIL], [_stage()],
+                          count_mode="SOMETHING")
+        self.assertEqual(0, db.session.query(LockoutPolicy).count())
+
+    def test_02e_update_count_mode(self):
+        # Switching the mode alone is allowed (the vocabulary is shared); the tracked counters are untouched.
+        policy_id = create_lockout_policy("Switch", 600, [AuthEventType.PIN_FAIL], [_stage()])
+        update_lockout_policy(policy_id, count_mode=CountMode.PER_ATTEMPT)
+        policy = get_lockout_policy(policy_id)
+        self.assertEqual(CountMode.PER_ATTEMPT, policy["count_mode"])
+        self.assertEqual([AuthEventType.PIN_FAIL], policy["counter_types_to_track"])
 
     def test_02b_duplicate_counter_types_are_deduplicated(self):
         # A repeated counter type is silently de-duplicated (order preserved),

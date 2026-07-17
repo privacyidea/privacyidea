@@ -96,6 +96,7 @@ def upgrade():
         sa.Column('enabled', sa.Boolean(), nullable=False),
         sa.Column('dry_run', sa.Boolean(), nullable=False),
         sa.Column('priority', sa.Integer(), nullable=False),
+        sa.Column('count_mode', sa.Unicode(length=20), nullable=False),
         sa.PrimaryKeyConstraint('id'),
         sa.UniqueConstraint('name'),
     )
