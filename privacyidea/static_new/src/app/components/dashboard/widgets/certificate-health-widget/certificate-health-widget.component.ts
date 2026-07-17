@@ -63,6 +63,11 @@ export class CertificateHealthWidgetComponent extends DashboardWidget implements
     });
   }
 
+  override reload(): void {
+    this.store.invalidate("dashboard:certificate-health");
+    this.ngOnInit();
+  }
+
   ngOnInit(): void {
     this.dataRef.set(this.store.load("dashboard:certificate-health", () => this.systemService.getCertificateHealth()));
   }

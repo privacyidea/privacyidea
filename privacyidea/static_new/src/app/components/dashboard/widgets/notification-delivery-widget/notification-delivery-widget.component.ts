@@ -113,6 +113,11 @@ export class NotificationDeliveryWidgetComponent extends DashboardWidget impleme
     });
   }
 
+  override reload(): void {
+    this.store.invalidate("dashboard:notification-delivery");
+    this.ngOnInit();
+  }
+
   ngOnInit(): void {
     this.dataRef.set(
       this.store.load("dashboard:notification-delivery", () =>

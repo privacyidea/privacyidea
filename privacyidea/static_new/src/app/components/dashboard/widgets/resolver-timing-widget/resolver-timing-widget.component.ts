@@ -90,6 +90,11 @@ export class ResolverTimingWidgetComponent extends DashboardWidget implements On
     });
   }
 
+  override reload(): void {
+    this.store.invalidate("dashboard:resolver-timing");
+    this.ngOnInit();
+  }
+
   ngOnInit(): void {
     this.dataRef.set(this.store.load("dashboard:resolver-timing", () => this.systemService.getResolverTiming()));
   }
