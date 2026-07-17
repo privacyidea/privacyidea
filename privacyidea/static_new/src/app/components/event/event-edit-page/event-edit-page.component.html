@@ -37,7 +37,6 @@
           [disableRipple]="true"
           [disabled]="!authService.actionAllowed('eventhandling_write')"
           i18n-matTooltip
-          labelPosition="before"
           matTooltip="Toggle Active Status">
           @if (editEvent().active) {
             <span i18n>Active</span>
@@ -46,18 +45,18 @@
           }
         </mat-slide-toggle>
         <button
+          (click)="$event.stopPropagation(); cancelEdit()"
+          class="action-button-secondary button-width-s"
+          mat-stroked-button>
+          <span i18n>Cancel</span>
+        </button>
+        <button
           (click)="$event.stopPropagation(); saveEvent()"
           [disabled]="!canSave()"
           class="action-button-primary button-width-s"
           mat-stroked-button>
           <mat-icon>save</mat-icon>
           <span i18n>Save</span>
-        </button>
-        <button
-          (click)="$event.stopPropagation(); cancelEdit()"
-          class="action-button-secondary button-width-s"
-          mat-stroked-button>
-          <span i18n>Cancel</span>
         </button>
       </div>
     </div>
