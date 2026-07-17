@@ -388,7 +388,7 @@ def update_lockout_policy(policy_id: int, name: str | None = None,
         counter_types_to_track = _validate_counter_types(counter_types_to_track)
     if stages is not None:
         stages = _validate_stages(stages)
-    # target and stages must stay mutually compatible .
+    # target and stages must stay mutually compatible.
     if lockout_target is not None or stages is not None:
         effective_target = lockout_target if lockout_target is not None else LockoutTarget(policy.target)
         effective_stages = stages if stages is not None else policy.stages

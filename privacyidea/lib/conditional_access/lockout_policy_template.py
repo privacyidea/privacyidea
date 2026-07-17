@@ -107,8 +107,8 @@ MFA_BRUTEFORCE = LockoutPolicyTemplate(
 
             {"failure_threshold": 10, "priority": 3,
              "actions": [
-                 {"action_type": LockoutAction.PERMANENT_LOCK_USER.value},
-                 {"action_type": LockoutAction.EMAIL_ADMIN.value,
+                 {"action_type": LockoutAction.PERMANENT_LOCK_USER},
+                 {"action_type": LockoutAction.EMAIL_ADMIN,
                   "action_value": {
                       "smtp_identifier": "",
                       "recipient_group": "internal_admins",
