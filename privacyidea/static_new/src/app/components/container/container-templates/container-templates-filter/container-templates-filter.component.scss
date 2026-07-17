@@ -20,9 +20,7 @@
 @use "styles";
 @use "table";
 
-.full-width {
-  width: 100%;
-
+mat-form-field {
   input {
     caret-color: var(--pi-primary, #1976d2);
     font-family: inherit;
