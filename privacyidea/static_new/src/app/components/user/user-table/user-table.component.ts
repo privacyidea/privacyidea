@@ -126,11 +126,24 @@ export class UserTableComponent {
     return this.basePageSizeOptions;
   });
 
+  // Keyword-less search terms, applied client-side across all columns of the fully-loaded user list.
+  // Keyword segments (e.g. "username: root") keep going to the server via UserService.filterParams.
+  readonly freeTextTerms = computed<string[]>(() =>
+    this.userService
+      .apiUserFilter()
+      .freeText.toLowerCase()
+      .split(/\s+/)
+      .filter(Boolean)
+  );
+
   totalLength: WritableSignal<number> = linkedSignal({
-    source: () => (this.userService.usersResource.hasValue() ? this.userService.usersResource.value() : undefined),
-    computation: (userResource, previous) => {
-      if (userResource) {
-        return userResource.result?.value?.length ?? 0;
+    source: () => ({
+      userRes: this.userService.usersResource.hasValue() ? this.userService.usersResource.value() : undefined,
+      freeTextTerms: this.freeTextTerms()
+    }),
+    computation: (source, previous) => {
+      if (source.userRes) {
+        return this.applyFreeText(source.userRes.result?.value ?? [], source.freeTextTerms).length;
       }
       return previous?.value ?? 0;
     }
@@ -145,11 +158,15 @@ export class UserTableComponent {
   usersDataSource: WritableSignal<MatTableDataSource<UserData>> = linkedSignal({
     source: () => ({
       userRes: this.userService.usersResource.hasValue() ? this.userService.usersResource.value() : undefined,
-      sort: this.sort()
+      sort: this.sort(),
+      freeTextTerms: this.freeTextTerms()
     }),
     computation: (src, prev) => {
-      const data = src.userRes?.result?.value ?? prev?.value?.data ?? this.emptyResource();
-      const sorted = this.clientsideSortUserData([...data], this.sort());
+      // Skeleton rows (emptyResource) are shown while loading and must not be filtered.
+      const data = src.userRes
+        ? this.applyFreeText(src.userRes.result?.value ?? [], src.freeTextTerms)
+        : (prev?.value?.data ?? this.emptyResource());
+      const sorted = this.clientsideSortUserData([...data], src.sort);
       const ds = new MatTableDataSource(sorted);
       ds.paginator = this.paginator;
       return ds;
@@ -192,6 +209,21 @@ export class UserTableComponent {
         maxHeight: "100vh"
       });
     }
+  }
+
+  // Keeps users where every free-text term appears in at least one column (AND across terms,
+  // OR across columns), mirroring the keyword-less search on the policy list.
+  private applyFreeText(data: UserData[], terms: string[]): UserData[] {
+    if (!terms.length) return data;
+    return data.filter((user) =>
+      terms.every((term) =>
+        this.columnKeys.some((key) =>
+          String(user[key as keyof UserData] ?? "")
+            .toLowerCase()
+            .includes(term)
+        )
+      )
+    );
   }
 
   private clientsideSortUserData(data: UserData[], s: Sort): UserData[] {

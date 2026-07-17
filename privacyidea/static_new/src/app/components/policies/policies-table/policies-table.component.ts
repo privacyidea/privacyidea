@@ -210,26 +210,53 @@ export class PoliciesTableComponent {
   }
 }
 
+function matchesPriority(priority: number, val: string): boolean {
+  try {
+    if (val.startsWith(">=")) return priority >= parseInt(val.substring(2), 10);
+    if (val.startsWith("<=")) return priority <= parseInt(val.substring(2), 10);
+    if (val.startsWith(">")) return priority > parseInt(val.substring(1), 10);
+    if (val.startsWith("<")) return priority < parseInt(val.substring(1), 10);
+    if (val.startsWith("!=")) return priority !== parseInt(val.substring(2), 10);
+    if (val.startsWith("=")) return priority === parseInt(val.substring(1), 10);
+    return priority === parseInt(val, 10);
+  } catch {
+    return false;
+  }
+}
+
+function matchesActions(item: PolicyDetail, term: string): boolean {
+  if (!item.action) return false;
+  return Object.entries(item.action).some(
+    ([name, value]) => name.toLowerCase().includes(term) || String(value).toLowerCase().includes(term)
+  );
+}
+
+function matchesConditions(item: PolicyDetail, term: string): boolean {
+  const listFields = [
+    item.adminrealm,
+    item.adminuser,
+    item.realm,
+    item.user,
+    item.pinode,
+    item.client,
+    item.user_agents
+  ];
+  if (listFields.some((list) => list?.some((entry) => entry.toLowerCase().includes(term)))) return true;
+  return Boolean(
+    item.time?.toLowerCase().includes(term) ||
+      item.conditions?.some((cond) => cond.some((c) => String(c).toLowerCase().includes(term)))
+  );
+}
+
 const policyFilterOptions: FilterOption<PolicyDetail>[] = [
   new FilterOption<PolicyDetail>({
     key: "priority",
     label: $localize`Priority`,
     matches: (item, filter) => {
       const val = filter.getFilterOfKey("priority");
-      if (!val) return true;
-      const priority = item.priority;
-      try {
-        if (val.startsWith(">=")) return priority >= parseInt(val.substring(2), 10);
-        if (val.startsWith("<=")) return priority <= parseInt(val.substring(2), 10);
-        if (val.startsWith(">")) return priority > parseInt(val.substring(1), 10);
-        if (val.startsWith("<")) return priority < parseInt(val.substring(1), 10);
-        if (val.startsWith("!=")) return priority !== parseInt(val.substring(2), 10);
-        if (val.startsWith("=")) return priority === parseInt(val.substring(1), 10);
-        return priority === parseInt(val, 10);
-      } catch {
-        return false;
-      }
-    }
+      return !val || matchesPriority(item.priority, val);
+    },
+    globalMatches: (item, term) => String(item.priority).includes(term)
   }),
   new FilterOption<PolicyDetail>({
     key: "active",
@@ -247,7 +274,8 @@ const policyFilterOptions: FilterOption<PolicyDetail>[] = [
     matches: (item, filter) => {
       const v = filter.getFilterOfKey("active")?.toLowerCase();
       return v === "true" ? item.active === true : v === "false" ? item.active === false : true;
-    }
+    },
+    globalMatches: (item, term) => String(item.active).includes(term)
   }),
   new FilterOption<PolicyDetail>({
     key: "name",
@@ -255,7 +283,8 @@ const policyFilterOptions: FilterOption<PolicyDetail>[] = [
     matches: (item, filter) => {
       const val = filter.getFilterOfKey("name");
       return !val || item.name.toLowerCase().includes(val.toLowerCase());
-    }
+    },
+    globalMatches: (item, term) => item.name.toLowerCase().includes(term)
   }),
   new FilterOption<PolicyDetail>({
     key: "scope",
@@ -263,39 +292,34 @@ const policyFilterOptions: FilterOption<PolicyDetail>[] = [
     matches: (item, filter) => {
       const val = filter.getFilterOfKey("scope");
       return !val || item.scope.toLowerCase().includes(val.toLowerCase());
-    }
+    },
+    globalMatches: (item, term) => item.scope.toLowerCase().includes(term)
+  }),
+  new FilterOption<PolicyDetail>({
+    key: "description",
+    label: $localize`Description`,
+    matches: (item, filter) => {
+      const val = filter.getFilterOfKey("description");
+      return !val || (item.description?.toLowerCase().includes(val.toLowerCase()) ?? false);
+    },
+    globalMatches: (item, term) => item.description?.toLowerCase().includes(term) ?? false
   }),
   new FilterOption<PolicyDetail>({
     key: "actions",
     label: $localize`Actions`,
     matches: (item, filter) => {
       const val = filter.getFilterOfKey("actions")?.toLowerCase();
-      if (!val || !item.action) return true;
-      return Object.entries(item.action).some(
-        ([n, v]) => n.toLowerCase().includes(val) || String(v).toLowerCase().includes(val)
-      );
-    }
+      return !val || matchesActions(item, val);
+    },
+    globalMatches: (item, term) => matchesActions(item, term)
   }),
   new FilterOption<PolicyDetail>({
     key: "conditions",
     label: $localize`Conditions`,
     matches: (item, filter) => {
       const val = filter.getFilterOfKey("conditions")?.toLowerCase();
-      if (!val) return true;
-      const fields = [
-        item.adminrealm,
-        item.adminuser,
-        item.realm,
-        item.user,
-        item.pinode,
-        item.client,
-        item.user_agents
-      ];
-      if (fields.some((l) => l?.some((e) => e.toLowerCase().includes(val)))) return true;
-      return (
-        item.time?.toLowerCase().includes(val) ||
-        item.conditions?.some((cond) => cond.some((c) => String(c).toLowerCase().includes(val)))
-      );
-    }
+      return !val || matchesConditions(item, val);
+    },
+    globalMatches: (item, term) => matchesConditions(item, term)
   })
 ];

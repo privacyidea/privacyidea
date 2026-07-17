@@ -45,7 +45,9 @@ describe("FilterValueGeneric", () => {
           (item as unknown as Record<string, unknown>)[key]?.toString().toLowerCase().includes(val.toLowerCase()) ??
           false
         );
-      }
+      },
+      globalMatches: (item, term) =>
+        (item as unknown as Record<string, unknown>)[key]?.toString().toLowerCase().includes(term) ?? false
     });
   };
 
@@ -195,6 +197,33 @@ describe("FilterValueGeneric", () => {
       const f = filter.setValueOfKey("scope", "admin");
       expect(() => f.filterItems(broken)).not.toThrow();
       expect(f.filterItems(broken).length).toBe(0);
+    });
+
+    it("should match a keyword-less term across all columns (OR)", () => {
+      const res = filter.setByString("user").filterItems(data);
+      expect(res.map((p) => p.name)).toEqual(["P2"]);
+    });
+
+    it("should AND keyword-less terms with keyword filters", () => {
+      const res = filter.setByString("admin active:true").filterItems(data);
+      expect(res.map((p) => p.name)).toEqual(["P1"]);
+    });
+
+    it("should require every keyword-less term to match somewhere (AND across terms)", () => {
+      expect(filter.setByString("admin r1").filterItems(data).map((p) => p.name)).toEqual(["P1", "P3"]);
+      expect(filter.setByString("admin r2").filterItems(data)).toEqual([]);
+    });
+  });
+
+  describe("4b. Free-text search without global matchers configured", () => {
+    it("should treat keyword-less terms as no-ops when no column opts into global search", () => {
+      const plain = new FilterValueGeneric<PolicyMock>({
+        availableFilters: [
+          new FilterOption<PolicyMock>({ key: "name", label: "Name", matches: () => true })
+        ]
+      });
+      const items = [{ name: "A" }, { name: "B" }] as PolicyMock[];
+      expect(plain.setByString("anything").filterItems(items).length).toBe(2);
     });
   });
 

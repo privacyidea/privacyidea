@@ -96,7 +96,25 @@ export class FilterValueGeneric<T> {
 
   // --- Public API ---
   public matches(item: T): boolean {
-    return this.allFilters.every((filter) => filter.matches(item, this));
+    return this.allFilters.every((filter) => {
+      // A standalone word (no keyword) is stored as a DummyFilterOption with a null value.
+      // Treat it as a keyword-less free-text term matched across all searchable columns.
+      if (filter instanceof DummyFilterOption && filter.value === null) {
+        return this.matchesFreeText(item, filter.key);
+      }
+      return filter.matches(item, this);
+    });
+  }
+
+  /**
+   * Matches a keyword-less search term against every column that opts into global search via
+   * FilterOption.globalMatches (OR across columns). If no column opts in, free-text is a no-op.
+   */
+  private matchesFreeText(item: T, term: string): boolean {
+    const normalized = term.toLowerCase();
+    const searchable = Array.from(this.availableFilters.values()).filter((option) => option.globalMatches);
+    if (searchable.length === 0) return true;
+    return searchable.some((option) => option.globalMatches!(item, normalized));
   }
 
   public filterItems(unfiltered: T[]): T[] {
