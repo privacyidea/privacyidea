@@ -31,6 +31,7 @@ import { MatTooltipModule } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
 import { FilterOption } from "@core/models/filter_value_generic/filter-option";
 import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -60,7 +61,8 @@ import { ViewConditionsColumnComponent } from "./view-conditions-column/view-con
     MatTooltipModule,
     PolicyFilterComponent,
     ViewConditionsColumnComponent,
-    CopyButtonComponent
+    CopyButtonComponent,
+    HighlightPipe
   ],
   templateUrl: "./policies-table.component.html",
   styleUrl: "./policies-table.component.scss"
@@ -92,6 +94,22 @@ export class PoliciesTableComponent {
   readonly filter = signal<FilterValueGeneric<PolicyDetail>>(
     new FilterValueGeneric({ availableFilters: policyFilterOptions })
   );
+
+  // Terms to visually highlight per dense column: the keyword-less search terms plus that column's
+  // own keyword value. Short columns (name/scope/priority/active) are not highlighted on purpose.
+  readonly highlightTerms = computed(() => {
+    const filter = this.filter();
+    const freeText = filter.freeTextTerms;
+    const withKeyword = (key: string): string[] => {
+      const value = filter.getFilterOfKey(key);
+      return value ? [...freeText, value] : freeText;
+    };
+    return {
+      description: withKeyword("description"),
+      actions: withKeyword("actions"),
+      conditions: withKeyword("conditions")
+    };
+  });
 
   readonly emptyResource = linkedSignal({
     source: () => this.policyService.allPolicies(),

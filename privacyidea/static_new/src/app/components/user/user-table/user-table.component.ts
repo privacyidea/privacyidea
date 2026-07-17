@@ -17,11 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import {
+  afterNextRender,
   Component,
   computed,
   ElementRef,
   inject,
   linkedSignal,
+  OnDestroy,
   signal,
   ViewChild,
   WritableSignal
@@ -105,7 +107,7 @@ const columnKeysMap = [
   templateUrl: "./user-table.component.html",
   styleUrl: "./user-table.component.scss"
 })
-export class UserTableComponent {
+export class UserTableComponent implements OnDestroy {
   protected readonly columnKeysMap = columnKeysMap;
   readonly columnKeys: string[] = this.columnKeysMap.map((column) => column.key);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
@@ -172,6 +174,16 @@ export class UserTableComponent {
       return ds;
     }
   });
+
+  constructor() {
+    // Autofocus the filter so the user can type immediately on entering the page.
+    afterNextRender(() => this.filterInput?.nativeElement.focus());
+  }
+
+  ngOnDestroy(): void {
+    // Do not carry a stale (and invisible) filter over to the next visit of the page.
+    this.userService.resetFilter();
+  }
 
   toggleFilter(filterKeyword: string): void {
     const newValue = this.tableUtilsService.toggleKeywordInFilter({

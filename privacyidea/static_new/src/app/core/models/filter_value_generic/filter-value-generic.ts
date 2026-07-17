@@ -86,6 +86,16 @@ export class FilterValueGeneric<T> {
       .join(" ");
   }
 
+  /**
+   * The keyword-less search terms: standalone words entered without a column keyword. Used to
+   * highlight where a free-text match occurred across columns.
+   */
+  get freeTextTerms(): string[] {
+    return Array.from(this.filterMap.values())
+      .filter((option) => option instanceof DummyFilterOption && option.value === null)
+      .map((option) => option.key);
+  }
+
   get apiFilterString(): string {
     return Array.from([...this.filterMap.values(), ...this.hiddenFilterMap.values()])
       .filter((option) => !(option instanceof DummyFilterOption))
