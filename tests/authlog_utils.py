@@ -33,7 +33,7 @@ from privacyidea.lib.conditional_access.authentication_log import get_authentica
 from privacyidea.lib.policy import set_policy, SCOPE, PolicyAction
 from privacyidea.lib.token import init_token, remove_token, get_tokens
 from privacyidea.lib.user import User
-from privacyidea.models import AuthenticationLog, db
+from privacyidea.models import AuthenticationLog, Audit, db
 from privacyidea.models.utils import utc_now
 from .base import MyApiTestCase
 
@@ -57,17 +57,28 @@ class AuthLogTestCase(MyApiTestCase):
         init_token({"serial": self.serial, "type": "hotp", "otpkey": self.otpkey, "pin": self.pin},
                    user=self.user)
         self._clear_log()
+        self._clear_audit_log()
 
     def tearDown(self) -> None:
         for serial in (self.serial, self.second_serial):
             if get_tokens(serial=serial):
                 remove_token(serial)
         self._clear_log()
+        self._clear_audit_log()
         super().tearDown()
 
     @staticmethod
     def _clear_log() -> None:
         db.session.query(AuthenticationLog).delete()
+        db.session.commit()
+
+    @staticmethod
+    def _clear_audit_log() -> None:
+        # Cleared only at the test boundary (setUp/tearDown), never mid-test: the classic AUTHMAXFAIL /
+        # AUTHMAXSUCCESS policies count from the audit log over a time window, so leftover entries from a preceding
+        # test (methods run alphabetically, sharing one audit table) would make those counts order-dependent. It must
+        # not be cleared inside a test (unlike _clear_log), where those very entries are what the policy counts.
+        db.session.query(Audit).delete()
         db.session.commit()
 
     @staticmethod
@@ -132,7 +143,7 @@ class AuthLogEntries(dict):
         return super().__getitem__(event_type)
 
 
-def assert_authentication_log(event_types, transaction_id=None):
+def assert_authentication_log(event_types, transaction_id=None, same_attempt=True):
     """
     Assert that the authentication log holds exactly the given ordered list of event types, and return the entries.
 
@@ -141,10 +152,18 @@ def assert_authentication_log(event_types, transaction_id=None):
     type occurs more than once, assert a specific occurrence via ``.all[i]`` — indexing a duplicated type by name
     raises rather than silently returning one of them.
 
+    ``attempt_id`` is validated here rather than per entry (:func:`assert_authentication_log_entry`), because its
+    value is a server-minted random id that a test cannot know up front. Every entry must carry one, and — since the
+    entries asserted together normally belong to one logical authentication attempt (one flow, which may span several
+    transaction_ids in multichallenge) — they must all share it. This is the end-to-end proof that attempt chaining
+    holds across requests. Tests that deliberately assert rows from *several* attempts pass ``same_attempt=False``.
+
     :param event_types: the expected AuthEventType values, ordered by creation
     :param transaction_id: if given, only entries of that transaction are checked
         (correlates a triggered challenge with its answer); otherwise all entries are
         checked (clear the log before the request for an exact match)
+    :param same_attempt: assert all entries share one non-null ``attempt_id`` (default). Set ``False`` when the
+        asserted entries span more than one attempt (only presence is checked then).
     :return: an :class:`AuthLogEntries` (a dict of event type -> entry, plus the ordered ``.all`` list)
     """
     if transaction_id is not None:
@@ -152,6 +171,10 @@ def assert_authentication_log(event_types, transaction_id=None):
     else:
         entries = get_authentication_logs()
     assert [entry.event_type for entry in entries] == event_types
+    # Every row is auto-assigned an attempt_id (see resolve_attempt_id).
+    assert all(entry.attempt_id is not None for entry in entries)
+    if same_attempt and entries:
+        assert len({entry.attempt_id for entry in entries}) == 1
     return AuthLogEntries(entries)
 
 
@@ -163,7 +186,10 @@ def assert_authentication_log_entry(entry: AuthenticationLog, user: User = None,
     """
     Assert a single authentication-log entry carries the expected attributes.
 
-    Every column of the authentication_log table is checked. The nullable columns default to their database default
+    The server-minted ``attempt_id`` is not checked here (its value is not knowable per entry); it is validated at the
+    flow level in :func:`assert_authentication_log` (presence on every row, and shared across one attempt).
+
+    Every other column of the authentication_log table is checked. The nullable columns default to their database default
     (None), so a column that is not passed is asserted to be empty — this enforces that a row carries *only* the data
     it should and no leftover values. The auto-populated id and timestamp are checked for presence. The non-nullable
     event_type is covered by the ordered list in :func:`assert_authentication_log`.

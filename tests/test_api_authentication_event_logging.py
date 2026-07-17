@@ -287,6 +287,35 @@ class _AuthLogContractTests(_ContractHost):
                                         user=self.user, serials={self.serial},
                                         transaction_id=transaction_id)
 
+    # --- attempt_id: grouping the rows of one logical authentication attempt ---
+    # Note: single-flow grouping (trigger+answer, multichallenge, ...) is asserted automatically by
+    # assert_authentication_log (same_attempt=True) in every flow test above. These two cover what that does not:
+    # a genuinely multi-attempt log, and a wrong-then-right retry on one challenge.
+
+    def test_attempt_id_distinct_for_separate_attempts(self):
+        # Two independent single-request logins are two attempts and get two different attempt_ids.
+        self._assert_succeeded(self._authenticate(f"{self.pin}755224"))
+        self._assert_succeeded(self._authenticate(f"{self.pin}287082"))
+        first, second = assert_authentication_log([AuthEventType.LOGIN_SUCCESS, AuthEventType.LOGIN_SUCCESS],
+                                                  same_attempt=False).all
+        self.assertNotEqual(first.attempt_id, second.attempt_id)
+
+    def test_attempt_id_groups_challenge_retry(self):
+        # A wrong answer followed by the correct one on the same challenge is still one attempt: the trigger, the
+        # wrong answer and the success share one attempt_id (a later success does not start a new attempt).
+        # assert_authentication_log (same_attempt default) asserts the shared id across all three rows.
+        self._enable_challenge_response()
+        try:
+            transaction_id = self._trigger_challenge()
+            self._assert_failed(self._authenticate("000000", transaction_id=transaction_id))
+            self._assert_succeeded(self._authenticate("755224", transaction_id=transaction_id))
+        finally:
+            delete_policy("authlog_cr")
+        assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
+                                   AuthEventType.CHALLENGE_ANSWERED_FAIL,
+                                   AuthEventType.LOGIN_SUCCESS],
+                                  transaction_id=transaction_id)
+
     # --- Authorization policies (NOT_AUTHORIZED) ---
 
     def test_authmaxfail_logs_not_authorized(self):
@@ -389,6 +418,8 @@ class _AuthLogContractTests(_ContractHost):
             delete_policy("authlog_question_number")
             remove_token(questionnaire_serial)
 
+        # The attempt spans two transaction_ids linked by previous_transaction_id; assert_authentication_log verifies
+        # all three rows still share one attempt_id (recovered across the transaction change).
         entries = assert_authentication_log([
             AuthEventType.CHALLENGE_TRIGGERED,
             AuthEventType.CHALLENGE_CONTINUED,

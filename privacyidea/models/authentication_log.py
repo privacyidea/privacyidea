@@ -63,8 +63,12 @@ authentication_log_column_length = {
     "source_ip": 50,
     "client_label": 1024,
     "serial": 1024,
-    "transaction_id": 1024,
-    "previous_transaction_id": 1024,
+    # transaction_id (and previous_transaction_id / attempt_id) originate in the challenge table, whose
+    # transaction_id is Unicode(64), so a real value never exceeds 64 here either. Keeping it at 64 lets
+    # ix_authlog_transaction be a plain full index within the MySQL/MariaDB utf8mb4 key limit.
+    "transaction_id": 64,
+    "previous_transaction_id": 64,
+    "attempt_id": 64,
 }
 
 
@@ -80,6 +84,7 @@ class AuthenticationLog(MethodsMixin, db.Model):
     __table_args__ = (
         Index("ix_authlog_user_event_time", "resolver", "uid", "realm", "event_type", "timestamp"),
         Index("ix_authlog_ip_event_time", "source_ip", "event_type", "timestamp"),
+        Index("ix_authlog_transaction", "transaction_id"),
     )
     id: Mapped[int] = mapped_column(BigIntegerType, Sequence("authentication_log_seq", data_type=BigInteger),
                                     primary_key=True)
@@ -101,6 +106,8 @@ class AuthenticationLog(MethodsMixin, db.Model):
         _case_sensitive_unicode(authentication_log_column_length["transaction_id"]))
     previous_transaction_id: Mapped[str | None] = mapped_column(
         _case_sensitive_unicode(authentication_log_column_length["previous_transaction_id"]))
+    attempt_id: Mapped[str | None] = mapped_column(
+        _case_sensitive_unicode(authentication_log_column_length["attempt_id"]))
     other_info: Mapped[dict | None] = mapped_column(JSON)
 
     @property

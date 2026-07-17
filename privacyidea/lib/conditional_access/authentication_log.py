@@ -47,6 +47,7 @@ SORTABLE_COLUMNS: dict[str, InstrumentedAttribute] = {
     "serial": AuthenticationLog.serial,
     "transaction_id": AuthenticationLog.transaction_id,
     "previous_transaction_id": AuthenticationLog.previous_transaction_id,
+    "attempt_id": AuthenticationLog.attempt_id,
 }
 DEFAULT_PAGE_SIZE = 15
 
@@ -186,6 +187,7 @@ def log_authentication_event(event_type: AuthEventType,
                              source_ip: str | None = None,
                              client_label: str | None = None,
                              serial: str | None = None,
+                             attempt_id: str | None = None,
                              other_info: dict | None = None) -> int | None:
     """
     Create a new authentication log entry and return its id.
@@ -206,6 +208,7 @@ def log_authentication_event(event_type: AuthEventType,
         "source_ip": source_ip,
         "client_label": client_label,
         "serial": serial,
+        "attempt_id": attempt_id,
     }
     stored: dict[str, str | None] = {}
     overflow: dict[str, str] = {}
@@ -231,6 +234,25 @@ def log_authentication_event(event_type: AuthEventType,
         db.session.rollback()
         return None
     return entry_id
+
+
+def get_attempt_id_for_transaction(transaction_id: str) -> str | None:
+    """
+    Look up the ``attempt_id`` of a previous authentication-log entry by its ``transaction_id``.
+
+    When answering a challenge the request carries the ``transaction_id`` of the challenge that was triggered earlier.
+    The trigger request already wrote an authentication-log row with both ``transaction_id`` and ``attempt_id``, so a
+    simple lookup recovers the attempt grouping without storing anything in the challenge itself.
+
+    Returns ``None`` if no matching row is found (e.g. the challenge was triggered before the ``attempt_id`` feature
+    was deployed, or the trigger row was not written).
+    """
+    stmt = (select(AuthenticationLog.attempt_id)
+            .where(AuthenticationLog.transaction_id == transaction_id,
+                   AuthenticationLog.attempt_id.is_not(None))
+            .order_by(AuthenticationLog.id.desc())
+            .limit(1))
+    return db.session.scalar(stmt)
 
 
 def delete_authentication_log_event(event_id: int) -> None:

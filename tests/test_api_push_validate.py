@@ -2409,8 +2409,11 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
         # No challenge was resurrected by the late answer
         self.assertEqual([], get_challenges(serial=self.serial_push))
 
+        # Two separate attempts: the timed-out trigger (abandoned), and the orphaned late answer, which found no
+        # challenge and so carries no transaction_id to correlate back — it is its own attempt, not the trigger's.
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
-                                                      AuthEventType.CHALLENGE_ANSWERED_FAIL])
+                                                      AuthEventType.CHALLENGE_ANSWERED_FAIL],
+                                                     same_attempt=False)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED], user=user,
                                         serials={self.serial_push}, transaction_id=smartphone.transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_ANSWERED_FAIL], user=user,
