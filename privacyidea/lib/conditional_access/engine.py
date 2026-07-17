@@ -545,7 +545,8 @@ def evaluate_lockout_policies(user: "User", event_type, source_ip: str | None = 
     function itself only guards individual DB writes (see
     :func:`_upsert_user_lockout_state`).
 
-    :param user: the authenticating user; ignored unless fully resolved
+    :param user: the authenticating user; ``user``-target policies need it
+        resolved, ``source_ip``-target policies act on the IP regardless
     :param event_type: the classified outcome of the request
         (:class:`AuthEventType`)
     :param source_ip: the resolved client IP; the ``BLOCK_IP`` action blocks it
@@ -554,9 +555,6 @@ def evaluate_lockout_policies(user: "User", event_type, source_ip: str | None = 
         produced by executed actions (empty if nothing was triggered/notified)
     """
     if not event_type:
-        return []
-    if not _resolved(user):
-        log.debug(f"Skipping lockout evaluation for unresolved user {user!r}.")
         return []
     now = _naive_utc(now) if now is not None else utc_now()
     event_type = str(event_type)
@@ -608,6 +606,11 @@ def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
         count = count_distinct_users_for_ip(source_ip, policy.counter_types_to_track, window, window_end=now)
         subject_label = f"source IP {source_ip}"
     else:
+        if not _resolved(user):
+            # A user-target policy is keyed on the resolved (resolver, uid, realm)
+            # user, so an unresolved user (unknown login, local admin) is never
+            # locked. Source-IP policies above still run for such requests.
+            return []
         # The lock counts consecutive failures since the user's last completed login:
         # a successful authentication clears the slate, so a legitimate user is not
         # re-locked by stale pre-login failures on their next single typo. (The DENY

@@ -708,6 +708,22 @@ class LockoutEngineTestCase(LockoutTestCase):
         evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip="203.0.113.7")
         self.assertTrue(is_ip_blocked("203.0.113.7"))
 
+    def test_source_ip_policy_fires_for_unresolved_user(self):
+        # A source-IP policy must still act when the current request's user is
+        # unresolved (unknown username) - that is the spraying/enumeration case.
+        # A user-target policy in the same run stays a no-op for the unknown user.
+        ip = "203.0.113.60"
+        self._make_policy(name="spray", counter_type=AuthEventType.PASSWORD_FAIL, window=300,
+                          target=LockoutTarget.SOURCE_IP,
+                          stages=((3, 1, LockoutAction.BLOCK_IP, {"duration_seconds": 3600}),))
+        self._make_policy(name="userlock", counter_type=AuthEventType.PASSWORD_FAIL,
+                          stages=((3, 1, LockoutAction.LOCK_USER, 60),))
+        self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3)
+        evaluate_lockout_policies(User(), AuthEventType.PASSWORD_FAIL, source_ip=ip)
+        self.assertTrue(is_ip_blocked(ip), "source-IP policy did not fire for an unresolved user")
+        self.assertEqual(0, db.session.query(UserLockoutState).count(),
+                         "user policy wrote lock state for an unresolved user")
+
     # --- multiple policies on one request -------------------------------------
 
     def test_multiple_policies_fire_together(self):
