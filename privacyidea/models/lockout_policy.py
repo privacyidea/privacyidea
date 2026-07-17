@@ -64,7 +64,7 @@ class LockoutPolicy(MethodsMixin, db.Model):
     dry_run: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     priority: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     # The identity this policy counts and acts on: "user" or "source_ip".
-    target: Mapped[str] = mapped_column(Unicode(100), default="user", nullable=False)
+    target: Mapped[str] = mapped_column(Unicode(100), nullable=False)
 
     stages: Mapped[list["LockoutPolicyStage"]] = relationship(
         "LockoutPolicyStage",
