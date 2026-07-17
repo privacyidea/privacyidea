@@ -35,6 +35,7 @@
 .resolver-timing-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 
   th,
   td {
@@ -45,6 +46,11 @@
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 0;
+  }
+
+  th:nth-child(2),
+  td:nth-child(2) {
+    width: 24%;
   }
 
   th {

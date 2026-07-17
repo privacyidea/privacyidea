@@ -34,7 +34,7 @@
         @for (row of rows(); track row.resolver + row.op) {
           <tr>
             <td>{{ row.resolver }}</td>
-            <td>{{ row.op }}</td>
+            <td>{{ row.op !== null ? row.op : "—" }}</td>
             <td>{{ row.count }}</td>
             <td>{{ row.avgMs !== null ? row.avgMs : "—" }}</td>
             <td><span [class]="badgeClass(row)">{{ row.p95Ms !== null ? row.p95Ms : "—" }}</span></td>
