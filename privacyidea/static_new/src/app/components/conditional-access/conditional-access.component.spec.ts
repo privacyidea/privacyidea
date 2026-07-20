@@ -23,14 +23,25 @@ import { provideRouter, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService } from "@services/auth/auth.service";
 import { ConditionalAccessPolicyService, LockoutPolicy } from "@services/conditional-access/conditional-access-policy.service";
+import { DialogService } from "@services/dialog/dialog.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
-import { MockAuthService, MockConditionalAccessPolicyService, MockTableUtilsService } from "@testing/mock-services";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import {
+  MockAuthService,
+  MockConditionalAccessPolicyService,
+  MockDialogService,
+  MockTableUtilsService
+} from "@testing/mock-services";
+import { Subject } from "rxjs";
+import { ConditionalAccessToggleAction } from "./conditional-access-toggle-dialog/conditional-access-toggle-dialog.component";
 import { ConditionalAccessComponent } from "./conditional-access.component";
 
 describe("ConditionalAccessComponent", () => {
   let component: ConditionalAccessComponent;
   let fixture: ComponentFixture<ConditionalAccessComponent>;
   let policyServiceMock: MockConditionalAccessPolicyService;
+  let dialogServiceMock: MockDialogService;
+  let dialogClosed: Subject<ConditionalAccessToggleAction | undefined>;
   let router: Router;
 
   const samplePolicy: LockoutPolicy = {
@@ -53,12 +64,18 @@ describe("ConditionalAccessComponent", () => {
         provideRouter([]),
         { provide: ConditionalAccessPolicyService, useClass: MockConditionalAccessPolicyService },
         { provide: AuthService, useClass: MockAuthService },
-        { provide: TableUtilsService, useClass: MockTableUtilsService }
+        { provide: TableUtilsService, useClass: MockTableUtilsService },
+        { provide: DialogService, useClass: MockDialogService }
       ]
     }).compileComponents();
 
     policyServiceMock = TestBed.inject(ConditionalAccessPolicyService) as unknown as MockConditionalAccessPolicyService;
     policyServiceMock.policies.set([samplePolicy]);
+    dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
+    dialogClosed = new Subject();
+    const dialogRefMock = new MockMatDialogRef();
+    dialogRefMock.afterClosed.mockReturnValue(dialogClosed);
+    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
 
     fixture = TestBed.createComponent(ConditionalAccessComponent);
     router = TestBed.inject(Router);
@@ -189,34 +206,66 @@ describe("ConditionalAccessComponent", () => {
   });
 
   describe("bulk (de)activate / dry run", () => {
-    // one enabled, one disabled: toggling must flip each to its opposite state
     const enabledPolicy: LockoutPolicy = { ...samplePolicy, id: 1, enabled: true };
     const disabledPolicy: LockoutPolicy = { ...samplePolicy, id: 2, name: "Second", enabled: false };
 
-    it("should flip the enabled state of every selected policy and clear the selection", () => {
+    function emitAction(action: ConditionalAccessToggleAction | undefined): void {
+      dialogClosed.next(action);
+      dialogClosed.complete();
+    }
+
+    it("should open the (de)activate dialog and flip each policy on 'toggle'", () => {
       component.policySelection.set([enabledPolicy, disabledPolicy]);
       component.toggleEnabledSelected();
+      expect(dialogServiceMock.openDialog).toHaveBeenCalled();
+      emitAction("toggle");
       expect(policyServiceMock.disablePolicy).toHaveBeenCalledWith(1);
       expect(policyServiceMock.enablePolicy).toHaveBeenCalledWith(2);
       expect(component.policySelection().length).toBe(0);
     });
 
-    it("should flip dry_run on every selected policy and clear the selection", () => {
+    it("should force-enable every policy on 'activate'", () => {
+      component.policySelection.set([enabledPolicy, disabledPolicy]);
+      component.toggleEnabledSelected();
+      emitAction("activate");
+      expect(policyServiceMock.enablePolicy).toHaveBeenCalledWith(1);
+      expect(policyServiceMock.enablePolicy).toHaveBeenCalledWith(2);
+      expect(policyServiceMock.disablePolicy).not.toHaveBeenCalled();
+    });
+
+    it("should force-deactivate every policy on 'deactivate'", () => {
+      component.policySelection.set([enabledPolicy, disabledPolicy]);
+      component.toggleEnabledSelected();
+      emitAction("deactivate");
+      expect(policyServiceMock.disablePolicy).toHaveBeenCalledWith(1);
+      expect(policyServiceMock.disablePolicy).toHaveBeenCalledWith(2);
+      expect(policyServiceMock.enablePolicy).not.toHaveBeenCalled();
+    });
+
+    it("should do nothing when the dialog is dismissed", () => {
+      component.policySelection.set([enabledPolicy]);
+      component.toggleEnabledSelected();
+      emitAction(undefined);
+      expect(policyServiceMock.enablePolicy).not.toHaveBeenCalled();
+      expect(policyServiceMock.disablePolicy).not.toHaveBeenCalled();
+      expect(component.policySelection().length).toBe(1);
+    });
+
+    it("should flip dry_run through the dialog on 'toggle'", () => {
       const dryRunOff: LockoutPolicy = { ...samplePolicy, id: 1, dry_run: false };
       const dryRunOn: LockoutPolicy = { ...samplePolicy, id: 2, name: "Second", dry_run: true };
       component.policySelection.set([dryRunOff, dryRunOn]);
       component.toggleDryRunSelected();
+      emitAction("toggle");
       expect(policyServiceMock.savePolicy).toHaveBeenCalledWith(expect.objectContaining({ id: 1, dry_run: true }));
       expect(policyServiceMock.savePolicy).toHaveBeenCalledWith(expect.objectContaining({ id: 2, dry_run: false }));
       expect(component.policySelection().length).toBe(0);
     });
 
-    it("should do nothing when nothing is selected", () => {
+    it("should not open a dialog when nothing is selected", () => {
       component.toggleEnabledSelected();
       component.toggleDryRunSelected();
-      expect(policyServiceMock.enablePolicy).not.toHaveBeenCalled();
-      expect(policyServiceMock.disablePolicy).not.toHaveBeenCalled();
-      expect(policyServiceMock.savePolicy).not.toHaveBeenCalled();
+      expect(dialogServiceMock.openDialog).not.toHaveBeenCalled();
     });
   });
 });

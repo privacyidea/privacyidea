@@ -36,7 +36,12 @@ import {
   ConditionalAccessPolicyServiceInterface,
   LockoutPolicy
 } from "@services/conditional-access/conditional-access-policy.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import {
+  ConditionalAccessToggleAction,
+  ConditionalAccessToggleDialogComponent
+} from "./conditional-access-toggle-dialog/conditional-access-toggle-dialog.component";
 
 @Component({
   selector: "app-conditional-access",
@@ -64,6 +69,7 @@ export class ConditionalAccessComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
+  private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly router = inject(Router);
 
   filterString = signal<string>("");
@@ -148,19 +154,42 @@ export class ConditionalAccessComponent {
     }
   }
 
+  // Resolve the target boolean for a row from the chosen dialog action: "activate"
+  // forces on, "deactivate" forces off, "toggle" flips the row's current state.
+  private resolveToggle(action: ConditionalAccessToggleAction, current: boolean): boolean {
+    return action === "activate" ? true : action === "deactivate" ? false : !current;
+  }
+
   toggleEnabledSelected(): void {
     const selected = this.policySelection();
     if (selected.length === 0) {
       return;
     }
-    selected.forEach((policy) => {
-      if (policy.enabled) {
-        this.policyService.disablePolicy(policy.id);
-      } else {
-        this.policyService.enablePolicy(policy.id);
-      }
-    });
-    this.policySelection.set([]);
+    this.dialogService
+      .openDialog({
+        component: ConditionalAccessToggleDialogComponent,
+        data: {
+          title: $localize`(De)activate Selected Policies`,
+          intro: $localize`The following policies will be toggled:`,
+          onWord: $localize`enabled`,
+          offWord: $localize`disabled`,
+          items: selected.map((policy) => ({ label: policy.name, state: policy.enabled }))
+        }
+      })
+      .afterClosed()
+      .subscribe((action: ConditionalAccessToggleAction | undefined) => {
+        if (!action) {
+          return;
+        }
+        selected.forEach((policy) => {
+          if (this.resolveToggle(action, policy.enabled)) {
+            this.policyService.enablePolicy(policy.id);
+          } else {
+            this.policyService.disablePolicy(policy.id);
+          }
+        });
+        this.policySelection.set([]);
+      });
   }
 
   toggleDryRunSelected(): void {
@@ -168,8 +197,27 @@ export class ConditionalAccessComponent {
     if (selected.length === 0) {
       return;
     }
-    selected.forEach((policy) => this.policyService.savePolicy({ ...policy, dry_run: !policy.dry_run }));
-    this.policySelection.set([]);
+    this.dialogService
+      .openDialog({
+        component: ConditionalAccessToggleDialogComponent,
+        data: {
+          title: $localize`Toggle Dry Run For Selected Policies`,
+          intro: $localize`The dry-run mode of the following policies will be toggled:`,
+          onWord: $localize`dry-run`,
+          offWord: $localize`enforce`,
+          items: selected.map((policy) => ({ label: policy.name, state: policy.dry_run }))
+        }
+      })
+      .afterClosed()
+      .subscribe((action: ConditionalAccessToggleAction | undefined) => {
+        if (!action) {
+          return;
+        }
+        selected.forEach((policy) =>
+          this.policyService.savePolicy({ ...policy, dry_run: this.resolveToggle(action, policy.dry_run) })
+        );
+        this.policySelection.set([]);
+      });
   }
 
   onCreatePolicy(): void {
