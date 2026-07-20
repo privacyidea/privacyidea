@@ -90,12 +90,20 @@ class LdapMachineResolver(BaseMachineResolver):
             self.i_am_bound = True
 
     @staticmethod
-    def _get_entry(entry_attribute, entries):
-        if isinstance(entries.get(entry_attribute), list):
-            entry = entries.get(entry_attribute)[0]
-        else:
-            entry = entries.get(entry_attribute)
-        return entry
+    def _get_entries(entry_attribute: str | None, entries: dict) -> list:
+        """Return all values of an attribute as a list ([] if unset/missing)."""
+        if not entry_attribute:
+            return []
+        value = entries.get(entry_attribute)
+        if value is None:
+            return []
+        return value if isinstance(value, list) else [value]
+
+    @staticmethod
+    def _get_entry(entry_attribute: str | None, entries: dict) -> str | None:
+        """Return the first value of an attribute, or None if it is unset."""
+        values = LdapMachineResolver._get_entries(entry_attribute, entries)
+        return values[0] if values else None
 
     @staticmethod
     def _create_ldap_filter(search_filter,
@@ -149,8 +157,9 @@ class LdapMachineResolver(BaseMachineResolver):
 
         return ldap_filter
 
-    def get_machines(self, machine_id=None, hostname=None, ip=None, any=None,
-                     substring=False) -> list[Machine]:
+    def get_machines(self, machine_id: str | None = None, hostname: str | None = None,
+                     ip: str | None = None, any: str | None = None,
+                     substring: bool = False) -> list[Machine]:
         """
         Return matching machines.
 
@@ -158,9 +167,7 @@ class LdapMachineResolver(BaseMachineResolver):
         :param hostname: can be matched as substring
         :param ip: cannot be matched as substring
         :param substring: Whether the filtering should be a substring matching
-        :type substring: bool
         :param any: a substring that matches EITHER hostname, machineid or ip
-        :type any: basestring
         :return: list of Machine Objects
         """
         machines = []
@@ -202,27 +209,29 @@ class LdapMachineResolver(BaseMachineResolver):
 
             # returns a list of Machine objects
             for entry in self.connection.response:
+                if entry.get("type") != "searchResEntry":
+                    continue
                 dn = entry.get("dn")
-                attributes = entry.get("attributes")
+                attributes = entry.get("attributes") or {}
 
-                if entry.get("type") == "searchResEntry":
-                    machine = {}
+                if self.id_attribute.lower() == "dn":
+                    machineid = dn
+                else:
+                    machineid = self._get_entry(self.id_attribute, attributes)
+                if not machineid:
+                    log.warning(f"Skipping LDAP machine object without id attribute {self.id_attribute!s}: {dn!s}")
+                    continue
 
-                    if self.id_attribute.lower() == "dn":
-                        machine['machineid'] = dn
-                    else:
-                        machine['machineid'] = self._get_entry(self.id_attribute, attributes)
+                hostnames = self._get_entries(self.hostname_attribute, attributes)
+                machine_ip = self._get_entry(self.ip_attribute, attributes)
+                if machine_ip:
+                    try:
+                        machine_ip = netaddr.IPAddress(machine_ip)
+                    except (netaddr.AddrFormatError, ValueError):
+                        log.warning(f"Invalid IP address {machine_ip!r} for machine {dn!s}")
+                        machine_ip = None
 
-                    machine['hostname'] = self._get_entry(self.hostname_attribute, attributes)
-                    machine['ip'] = self._get_entry(self.ip_attribute, attributes)
-
-                    if machine['ip']:
-                        machine['ip'] = netaddr.IPAddress(machine['ip'])
-
-                    machines.append(Machine(self.name,
-                                            machine['machineid'],
-                                            hostname=machine['hostname'],
-                                            ip=machine['ip']))
+                machines.append(Machine(self.name, machineid, hostname=hostnames, ip=machine_ip))
         except Exception as exx:  # pragma: no cover
             log.error(f"Error during fetching LDAP objects: {exx!r}")
             log.debug(f"{traceback.format_exc()!s}")
