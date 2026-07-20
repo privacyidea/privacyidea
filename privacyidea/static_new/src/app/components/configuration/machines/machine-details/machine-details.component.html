@@ -25,8 +25,8 @@
         i18n>
         Details for Machine:
       </h3>
-      <app-copyable [copyText]="machine.hostname[0]">
-        <h3 class="h3-color margin-0">{{ machine.hostname }}</h3>
+      <app-copyable [copyText]="machine.hostname.join(', ')">
+        <h3 class="h3-color margin-0">{{ machine.hostname.join(", ") }}</h3>
       </app-copyable>
     </div>
 
@@ -37,8 +37,8 @@
           i18n
           >Hostname:</span
         >
-        <app-copyable [copyText]="machine.hostname[0]">
-          <span class="value">{{ machine.hostname }}</span>
+        <app-copyable [copyText]="machine.hostname.join(', ')">
+          <span class="value">{{ machine.hostname.join(", ") }}</span>
         </app-copyable>
       </div>
       <div class="detail-row">
