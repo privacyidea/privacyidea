@@ -119,6 +119,28 @@ class LockoutEngineTestCase(LockoutTestCase):
                              timestamp=now - timedelta(seconds=7200))
         self.assertEqual(2, count_distinct_users_for_ip(ip, [AuthEventType.PASSWORD_FAIL], 300, window_end=now))
 
+    def test_count_distinct_users_for_ip_counts_unknown_usernames(self):
+        # Enumeration / credential stuffing: many *nonexistent* usernames from one IP never resolve
+        # (resolver/uid/realm are NULL), so keying on the identity tuple would collapse them all to one.
+        # Keying on the attempted username counts each guess as a distinct targeted account.
+        ip = "10.0.0.9"
+        self._seed_ip_unknown_events(ip, AuthEventType.USER_UNKNOWN, [f"guess{i}" for i in range(8)])
+        self.assertEqual(8, count_distinct_users_for_ip(ip, [AuthEventType.USER_UNKNOWN], 300))
+
+    def test_count_distinct_users_for_ip_mixes_resolved_and_unknown(self):
+        # Real victims and guessed accounts add up into one "distinct targeted accounts" signal.
+        ip = "10.0.0.10"
+        self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3)
+        self._seed_ip_unknown_events(ip, AuthEventType.PASSWORD_FAIL, ["ghost1", "ghost2"])
+        self.assertEqual(5, count_distinct_users_for_ip(ip, [AuthEventType.PASSWORD_FAIL], 300))
+
+    def test_count_distinct_users_for_ip_userless_rows_collapse(self):
+        # A request with no user at all (e.g. an initial usernameless passkey auth) has a NULL username
+        # and must not inflate the signal: any number of such rows collapses into a single group.
+        ip = "10.0.0.11"
+        self._seed_ip_unknown_events(ip, AuthEventType.CHALLENGE_ANSWERED_FAIL, [None, None, None, None])
+        self.assertEqual(1, count_distinct_users_for_ip(ip, [AuthEventType.CHALLENGE_ANSWERED_FAIL], 300))
+
     # --- source_ip target evaluation (spraying) -------------------------------
 
     def test_spraying_policy_blocks_ip(self):

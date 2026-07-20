@@ -78,14 +78,28 @@ class LockoutTestCase(MyTestCase):
 
     def _seed_ip_events(self, source_ip, event_type, n_users, per_user=1, timestamp=None, start=0):
         """Seed *n_users* distinct users (``spray<start>``..), each with *per_user* rows, all from
-        *source_ip* (the password-spraying shape: one IP hitting many users). *start* offsets the
-        user index so several calls can seed non-overlapping users."""
+        *source_ip* (the password-spraying shape: one IP hitting many users). Each user carries a
+        distinct ``username`` (as a resolved row does in production), which is the key
+        :func:`count_distinct_users_for_ip` counts on. *start* offsets the user index so several calls
+        can seed non-overlapping users."""
         timestamp = timestamp if timestamp is not None else utc_now()
         for i in range(start, start + n_users):
             for _ in range(per_user):
                 db.session.add(AuthenticationLog(
                     event_type=str(event_type), resolver=self.user.resolver, uid=f"spray{i}",
-                    realm=self.user.realm, source_ip=source_ip, timestamp=timestamp))
+                    realm=self.user.realm, username=f"spray{i}", source_ip=source_ip, timestamp=timestamp))
+        db.session.commit()
+
+    def _seed_ip_unknown_events(self, source_ip, event_type, usernames, timestamp=None):
+        """Seed one unresolved ``USER_UNKNOWN``-style row per attempted *usernames* from *source_ip*:
+        resolver/uid/realm are ``None`` (the user never resolved) and only the tried ``username`` is
+        recorded, the enumeration / credential-stuffing shape. A ``None`` entry seeds a fully
+        userless row (e.g. an initial usernameless passkey request)."""
+        timestamp = timestamp if timestamp is not None else utc_now()
+        for username in usernames:
+            db.session.add(AuthenticationLog(
+                event_type=str(event_type), resolver=None, uid=None, realm=None,
+                username=username, source_ip=source_ip, timestamp=timestamp))
         db.session.commit()
 
     def _state(self, user=None):

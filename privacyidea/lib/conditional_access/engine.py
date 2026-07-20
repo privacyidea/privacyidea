@@ -231,21 +231,33 @@ def count_user_events(resolver: str, uid: str, realm: str,
 def count_distinct_users_for_ip(source_ip: str, event_types: list[str],
                                 window_seconds: int, window_end: datetime | None = None) -> int:
     """
-    Count the number of **distinct users** (``(resolver, uid, realm)`` tuples)
-    that produced any of *event_types* from *source_ip* within the sliding window
-    ``[window_end - window_seconds, window_end]``. This is the password-spraying
-    signal: one source IP failing against many different users, where per-user
-    counting never trips because each user only sees a failure or two.
+    Count the number of **distinct accounts** a single *source_ip* targeted with any of *event_types* within the
+    sliding window ``[window_end - window_seconds, window_end]``. This is the password-spraying / enumeration signal:
+    one source IP hitting many different accounts, where per-user counting never trips because each account only sees a
+    failure or two.
 
-    Unlike :func:`count_user_events` there is **no** ``since_last_success`` reset:
-    a successful login by one user must not clear a spraying signal aggregated
-    across all users of the IP.
+    An account is keyed by the ``(username, realm, resolver)`` triple - the **attempted** login, not the internal
+    ``uid`` - so it counts the same for a resolved user and for an unresolved one: an attacker guessing thousands of
+    *nonexistent* usernames (credential stuffing / user enumeration) is counted as thousands of distinct accounts,
+    whereas keying on ``(resolver, uid, realm)`` would collapse every unresolved attempt into the single
+    ``(NULL, NULL, NULL)`` identity and never trip. A request that carries no user at all (e.g. an initial
+    usernameless passkey authentication) has a ``NULL`` username and collapses into a single group - harmless, since
+    those are not an account-targeting signal.
 
-    A portable ``COUNT(*)`` over a ``SELECT DISTINCT`` subquery is used. The
-    ``WHERE`` matches ``ix_authlog_ip_event_time`` (source_ip, event_type,
-    timestamp) so the subquery is an index range scan.
+    Known limitation: a serial-only authentication against a token that has *no user assigned* also produces a
+    ``NULL``-username row, so brute-forcing many such userless tokens from one IP collapses into that same single
+    group and is not seen here. That is deliberate - there is no account being targeted: a single userless token is
+    bounded by its own fail counter, and the many-tokens case is raw volume, left to generic rate-limiting rather
+    than to this distinct-account signal.
 
-    :param source_ip: the client IP whose distinct victims are counted
+    Unlike :func:`count_user_events` there is **no** ``since_last_success`` reset: a successful login by one account
+    must not clear a spraying signal aggregated across all accounts of the IP.
+
+    A portable ``COUNT(*)`` over a ``SELECT DISTINCT`` subquery is used. The ``WHERE`` matches
+    ``ix_authlog_ip_event_time`` (source_ip, event_type, timestamp) so the subquery is an index range scan; the
+    ``DISTINCT`` over the three account columns is a cheap sort/hash over that small per-IP result set.
+
+    :param source_ip: the client IP whose distinct targeted accounts are counted
     :param event_types: the list of :class:`AuthEventType` values to
         count; rows matching any of them contribute
     :param window_seconds: width of the look-back window in seconds
@@ -253,19 +265,19 @@ def count_distinct_users_for_ip(source_ip: str, event_types: list[str],
         The engine passes the single reference instant captured for the whole
         evaluation so this count shares it with the de-dup window and the new
         block's expiry.
-    :return: the number of distinct users
+    :return: the number of distinct targeted accounts
     """
     window_end = _naive_utc(window_end) if window_end is not None else utc_now()
     window_start = window_end - timedelta(seconds=window_seconds)
     type_values = [str(t) for t in event_types]
-    distinct_users = (select(AuthenticationLog.resolver, AuthenticationLog.uid, AuthenticationLog.realm)
-                      .where(AuthenticationLog.source_ip == source_ip,
-                             AuthenticationLog.event_type.in_(type_values),
-                             AuthenticationLog.timestamp >= window_start,
-                             AuthenticationLog.timestamp <= window_end)
-                      .distinct()
-                      .subquery())
-    return db.session.scalar(select(func.count()).select_from(distinct_users)) or 0
+    distinct_accounts = (select(AuthenticationLog.username, AuthenticationLog.realm, AuthenticationLog.resolver)
+                         .where(AuthenticationLog.source_ip == source_ip,
+                                AuthenticationLog.event_type.in_(type_values),
+                                AuthenticationLog.timestamp >= window_start,
+                                AuthenticationLog.timestamp <= window_end)
+                         .distinct()
+                         .subquery())
+    return db.session.scalar(select(func.count()).select_from(distinct_accounts)) or 0
 
 
 def _count_matching_attempts(rows: list[AuthenticationLog], tracked_types: set[str]) -> int:
