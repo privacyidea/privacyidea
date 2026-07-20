@@ -51,6 +51,22 @@
   @if (authService.actionAllowed("conditional_access_write")) {
     <div class="flex-row margin-bottom-16 gap-8">
       <button
+        (click)="toggleEnabledSelected()"
+        [disabled]="policySelection().length === 0"
+        class="action-button-secondary button-width-m"
+        mat-stroked-button>
+        <mat-icon>toggle_on</mat-icon>
+        <span i18n>(De)activate</span>
+      </button>
+      <button
+        (click)="toggleDryRunSelected()"
+        [disabled]="policySelection().length === 0"
+        class="action-button-secondary button-width-m"
+        mat-stroked-button>
+        <mat-icon>biotech</mat-icon>
+        <span i18n>Toggle Dry Run</span>
+      </button>
+      <button
         (click)="deleteSelected()"
         [disabled]="policySelection().length === 0"
         class="action-button-delete-secondary button-width-m"

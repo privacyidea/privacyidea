@@ -148,6 +148,30 @@ export class ConditionalAccessComponent {
     }
   }
 
+  toggleEnabledSelected(): void {
+    const selected = this.policySelection();
+    if (selected.length === 0) {
+      return;
+    }
+    selected.forEach((policy) => {
+      if (policy.enabled) {
+        this.policyService.disablePolicy(policy.id);
+      } else {
+        this.policyService.enablePolicy(policy.id);
+      }
+    });
+    this.policySelection.set([]);
+  }
+
+  toggleDryRunSelected(): void {
+    const selected = this.policySelection();
+    if (selected.length === 0) {
+      return;
+    }
+    selected.forEach((policy) => this.policyService.savePolicy({ ...policy, dry_run: !policy.dry_run }));
+    this.policySelection.set([]);
+  }
+
   onCreatePolicy(): void {
     this.router.navigateByUrl(ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_NEW);
   }

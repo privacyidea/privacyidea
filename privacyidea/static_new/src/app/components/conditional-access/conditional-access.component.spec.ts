@@ -187,4 +187,36 @@ describe("ConditionalAccessComponent", () => {
       expect(component.policySelection().length).toBe(1);
     });
   });
+
+  describe("bulk (de)activate / dry run", () => {
+    // one enabled, one disabled: toggling must flip each to its opposite state
+    const enabledPolicy: LockoutPolicy = { ...samplePolicy, id: 1, enabled: true };
+    const disabledPolicy: LockoutPolicy = { ...samplePolicy, id: 2, name: "Second", enabled: false };
+
+    it("should flip the enabled state of every selected policy and clear the selection", () => {
+      component.policySelection.set([enabledPolicy, disabledPolicy]);
+      component.toggleEnabledSelected();
+      expect(policyServiceMock.disablePolicy).toHaveBeenCalledWith(1);
+      expect(policyServiceMock.enablePolicy).toHaveBeenCalledWith(2);
+      expect(component.policySelection().length).toBe(0);
+    });
+
+    it("should flip dry_run on every selected policy and clear the selection", () => {
+      const dryRunOff: LockoutPolicy = { ...samplePolicy, id: 1, dry_run: false };
+      const dryRunOn: LockoutPolicy = { ...samplePolicy, id: 2, name: "Second", dry_run: true };
+      component.policySelection.set([dryRunOff, dryRunOn]);
+      component.toggleDryRunSelected();
+      expect(policyServiceMock.savePolicy).toHaveBeenCalledWith(expect.objectContaining({ id: 1, dry_run: true }));
+      expect(policyServiceMock.savePolicy).toHaveBeenCalledWith(expect.objectContaining({ id: 2, dry_run: false }));
+      expect(component.policySelection().length).toBe(0);
+    });
+
+    it("should do nothing when nothing is selected", () => {
+      component.toggleEnabledSelected();
+      component.toggleDryRunSelected();
+      expect(policyServiceMock.enablePolicy).not.toHaveBeenCalled();
+      expect(policyServiceMock.disablePolicy).not.toHaveBeenCalled();
+      expect(policyServiceMock.savePolicy).not.toHaveBeenCalled();
+    });
+  });
 });
