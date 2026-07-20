@@ -51,21 +51,31 @@ jobs:
           echo "Building ${image}:docker-update and :sha-${GITHUB_SHA::7}"
 
       - name: Log in to GHCR
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+        # Values are passed through env (not interpolated into the script) so
+        # they are runtime data, never spliced into the shell source.
+        env:
+          ACTOR: ${{ github.actor }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "$TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
 
       - name: Build image
         # Same Dockerfile and repo-root context the compose stack builds from.
         # A moving "docker-update" tag for convenience, plus an immutable
         # "sha-<short>" tag to pin a specific build.
+        env:
+          IMAGE: ${{ steps.meta.outputs.image }}
+          SHA_TAG: ${{ steps.meta.outputs.sha_tag }}
         run: |
           docker build \
             -f deploy/docker/Dockerfile \
-            -t "${{ steps.meta.outputs.image }}:docker-update" \
-            -t "${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.sha_tag }}" \
+            -t "$IMAGE:docker-update" \
+            -t "$IMAGE:$SHA_TAG" \
             .
 
       - name: Push image
-        run: docker push --all-tags "${{ steps.meta.outputs.image }}"
+        env:
+          IMAGE: ${{ steps.meta.outputs.image }}
+        run: docker push --all-tags "$IMAGE"
 
       - name: Log out of GHCR
         if: always()
