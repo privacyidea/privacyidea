@@ -530,6 +530,7 @@ class AuthenticationLogDBTestCase(MyTestCase):
                 username="testuser", user_role=AuthLogUserRole.ADMIN_EXTERNAL, source_ip="192.168.1.1",
                 client_label="vpn",
                 serial="TOK001", transaction_id="txn-123", previous_transaction_id="txn-prev",
+                attempt_id="attempt-123",
                 other_info={"key": "value"}
             )
 
@@ -538,7 +539,7 @@ class AuthenticationLogDBTestCase(MyTestCase):
 
         expected_keys = {"id", "resolver", "uid", "realm", "username", "user_role", "event_type", "timestamp",
                          "source_ip", "client_label", "serial", "transaction_id", "previous_transaction_id",
-                         "other_info"}
+                         "attempt_id", "other_info"}
         self.assertSetEqual(expected_keys, set(auth_log_dict.keys()))
         self.assertEqual(event_id, auth_log_dict["id"])
         self.assertEqual("res1", auth_log_dict["resolver"])
@@ -554,6 +555,7 @@ class AuthenticationLogDBTestCase(MyTestCase):
         self.assertEqual("TOK001", auth_log_dict["serial"])
         self.assertEqual("txn-123", auth_log_dict["transaction_id"])
         self.assertEqual("txn-prev", auth_log_dict["previous_transaction_id"])
+        self.assertEqual("attempt-123", auth_log_dict["attempt_id"])
         self.assertEqual({"key": "value"}, auth_log_dict["other_info"])
 
 
