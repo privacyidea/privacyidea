@@ -41,6 +41,9 @@
           <mat-hint i18n>Press enter to apply the filter</mat-hint>
         }
       </mat-form-field>
+      <app-filter-hint
+        [example]="'type: hotp userid: 1000'"
+        [keywords]="tokenService.apiFilter.concat(tokenService.advancedApiFilter)" />
       <button
         [matMenuTriggerFor]="advancedFilterMenu"
         class="filter-button"
@@ -87,9 +90,9 @@
                           [matMenuTriggerData]="{ keyword: apiFilterKeyMap[column.key] }"
                           [matMenuTriggerFor]="realmMenu"
                           class="filter-button"
-                          i18n-matTooltip
+                          [matTooltip]="filterColumnTooltip(column.label, apiFilterKeyMap[column.key])"
                           mat-icon-button
-                          matTooltip="Filter by {{ column.label }}">
+                          matTooltipClass="filter-hint-tooltip">
                           <mat-icon class="keyword-button-icon margin-left-0"> filter_list</mat-icon>
                         </button>
                       } @else if (apiFilterKeyMap[column.key] === "type") {
@@ -97,18 +100,18 @@
                           [matMenuTriggerData]="{ keyword: apiFilterKeyMap[column.key] }"
                           [matMenuTriggerFor]="typeMenu"
                           class="filter-button"
-                          i18n-matTooltip
+                          [matTooltip]="filterColumnTooltip(column.label, apiFilterKeyMap[column.key])"
                           mat-icon-button
-                          matTooltip="Filter by {{ column.label }}">
+                          matTooltipClass="filter-hint-tooltip">
                           <mat-icon class="keyword-button-icon margin-left-0"> filter_list</mat-icon>
                         </button>
                       } @else {
                         <button
                           (click)="onKeywordClick(apiFilterKeyMap[column.key])"
                           class="filter-button"
-                          i18n-matTooltip
+                          [matTooltip]="filterColumnTooltip(column.label, apiFilterKeyMap[column.key])"
                           mat-icon-button
-                          matTooltip="Filter by {{ column.label }}">
+                          matTooltipClass="filter-hint-tooltip">
                           <mat-icon class="keyword-button-icon margin-left-0">
                             {{ getFilterIconName(apiFilterKeyMap[column.key]) }}
                           </mat-icon>
@@ -304,7 +307,11 @@
 <mat-menu #advancedFilterMenu="matMenu">
   @for (keyword of advancedApiFilter; track keyword) {
     <button
-      (click)="onKeywordClick(keyword)" mat-menu-item>
+      (click)="onKeywordClick(keyword)"
+      [matTooltip]="filterColumnTooltip(keyword, keyword)"
+      mat-menu-item
+      matTooltipClass="filter-hint-tooltip"
+      matTooltipPosition="right">
       <mat-icon class="margin-right-16">{{ getFilterIconName(keyword) }}</mat-icon>
       {{ keyword }}
     </button>

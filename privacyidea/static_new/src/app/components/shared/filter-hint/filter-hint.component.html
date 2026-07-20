@@ -16,25 +16,13 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div class="filter-paginator-container">
-  <mat-form-field
-    class="width-100"
-    subscriptSizing="dynamic">
-    <mat-label i18n>Filter Policies...</mat-label>
-    <app-clearable-input
-      (clearButtonClick)="clearFilter()"
-      [showClearButton]="!isEmpty()">
-      <input
-        #filterHTMLInputElement
-        (input)="onFilterChange($event)"
-        [value]="filter().rawValue"
-        aria-label="Filter Input"
-        i18n-aria-label
-        i18n-placeholder
-        matInput
-        placeholder="Example query: 'scope: enrollment, active: true'" />
-    </app-clearable-input>
-  </mat-form-field>
-  <app-filter-hint
-    [example]="'scope: enrollment, active: true'" />
-</div>
+<button
+  [matTooltip]="hintText()"
+  aria-label="Filter help"
+  class="filter-hint-button"
+  i18n-aria-label
+  mat-icon-button
+  matTooltipClass="filter-hint-tooltip"
+  type="button">
+  <mat-icon>help_outline</mat-icon>
+</button>

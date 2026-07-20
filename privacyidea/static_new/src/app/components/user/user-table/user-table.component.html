@@ -37,6 +37,9 @@
             placeholder="Example query: 'username: root'" />
         </app-clearable-input>
       </mat-form-field>
+      <app-filter-hint
+        [example]="'username: root'"
+        [keywords]="userService.apiFilterOptions" />
       <mat-paginator
         [length]="totalLength()"
         [pageSizeOptions]="pageSizeOptions()"

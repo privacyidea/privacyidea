@@ -20,13 +20,14 @@
 import { AfterViewInit, Component, ElementRef, Input, input, output, signal, viewChild } from "@angular/core";
 import { MatInputModule } from "@angular/material/input";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { FilterHintComponent } from "@components/shared/filter-hint/filter-hint.component";
 import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
 import { PolicyDetail } from "@services/policies/policies.service";
 
 @Component({
   selector: "app-policy-filter",
   standalone: true,
-  imports: [MatInputModule, ClearableInputComponent],
+  imports: [MatInputModule, ClearableInputComponent, FilterHintComponent],
   templateUrl: "./policy-filter.component.html",
   styleUrl: "./policy-filter.component.scss"
 })

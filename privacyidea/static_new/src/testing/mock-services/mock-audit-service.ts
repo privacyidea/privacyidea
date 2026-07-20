@@ -28,6 +28,9 @@ export class MockAuditService implements AuditServiceInterface {
   apiFilterKeyMap: Record<string, string> = {};
   apiFilter = ["user", "success"];
   advancedApiFilter = ["machineid", "resolver"];
+  exactMatchKeys = new Set<string>();
+  caseSensitiveKeys = new Set<string>();
+  booleanKeys = new Set<string>();
   auditFilter = signal(new FilterValue());
   filterParams: Signal<Record<string, string>> = signal({});
   pageSize = linkedSignal({ source: this.auditFilter, computation: () => 10 });

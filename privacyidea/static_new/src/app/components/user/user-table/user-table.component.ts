@@ -54,6 +54,7 @@ import { Sort } from "@angular/material/sort";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { FilterHintComponent } from "@components/shared/filter-hint/filter-hint.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
@@ -94,6 +95,7 @@ const columnKeysMap = [
     MatHeaderCellDef,
     ScrollToTopDirective,
     ClearableInputComponent,
+    FilterHintComponent,
     CopyableComponent,
     UserTableActionsComponent,
     RouterLink,

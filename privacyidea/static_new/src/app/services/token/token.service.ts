@@ -108,6 +108,15 @@ const apiFilterKeyMap: Record<string, string> = {
 
 const hiddenApiFilter = ["type_list"];
 
+// Keywords that are matched exactly against the backend; every other keyword is
+// wrapped with `*value*` and matched as a substring (see `_filterParams`).
+const exactMatchKeys = new Set(["user", "infokey", "infovalue", "active", "assigned", "container_serial", "realm"]);
+// Keywords the backend matches case-sensitively. All other text keywords use
+// func.lower() (see privacyidea/lib/token/query.py); keep this in sync with it.
+const caseSensitiveKeys = new Set(["serial"]);
+// Keywords that take a true/false value instead of a text pattern.
+const booleanKeys = new Set(["active", "assigned"]);
+
 export interface Tokens {
   count: number;
   current: number;
@@ -275,6 +284,9 @@ export interface TokenServiceInterface {
   defaultSizeOptions: number[];
   apiFilter: string[];
   advancedApiFilter: string[];
+  exactMatchKeys: Set<string>;
+  caseSensitiveKeys: Set<string>;
+  booleanKeys: Set<string>;
   sort: WritableSignal<Sort>;
   pageIndex: WritableSignal<number>;
   tokenResource: HttpResourceRef<PiResponse<Tokens> | undefined>;
@@ -378,7 +390,7 @@ export class TokenService implements TokenServiceInterface {
   readonly tokenSerial = this.contentService.tokenSerial;
   private readonly _filterParams = computed<Record<string, string>>(() => {
     const allowed = [...this.apiFilter, ...this.advancedApiFilter, ...this.hiddenApiFilter, "infokey", "infovalue"];
-    const plainKeys = new Set(["user", "infokey", "infovalue", "active", "assigned", "container_serial", "realm"]);
+    const plainKeys = exactMatchKeys;
     const entries = [
       ...Array.from(this.tokenFilter().filterMap.entries()),
       ...Array.from(this.tokenFilter().hiddenFilterMap.entries())
@@ -602,6 +614,9 @@ export class TokenService implements TokenServiceInterface {
   tokenIsRevoked = signal(true);
   readonly defaultSizeOptions = [5, 10, 25, 50];
   readonly apiFilter = apiFilter;
+  readonly exactMatchKeys = exactMatchKeys;
+  readonly caseSensitiveKeys = caseSensitiveKeys;
+  readonly booleanKeys = booleanKeys;
   readonly advancedApiFilter = advancedApiFilter;
 
   sort = signal({ active: "serial", direction: "asc" } as Sort);

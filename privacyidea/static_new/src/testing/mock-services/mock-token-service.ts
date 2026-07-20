@@ -104,6 +104,9 @@ export class MockTokenService implements TokenServiceInterface {
   defaultSizeOptions: number[] = [10, 25, 50];
   apiFilter: string[] = [];
   advancedApiFilter: string[] = [];
+  exactMatchKeys = new Set<string>();
+  caseSensitiveKeys = new Set<string>();
+  booleanKeys = new Set<string>();
   sort = signal<Sort>({ active: "serial", direction: "asc" });
   readonly pageIndex = signal(0);
   readonly tokenResource = new MockHttpResourceRef<PiResponse<Tokens> | undefined>(undefined);

@@ -41,6 +41,8 @@ import { MatMenuModule } from "@angular/material/menu";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { ContainerTableActionsComponent } from "@components/container/container-table/container-table-actions/container-table-actions.component";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { FilterHintComponent } from "@components/shared/filter-hint/filter-hint.component";
+import { filterColumnHint } from "@utils/filter-hint.utils";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
@@ -61,6 +63,7 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
     MatCheckboxModule,
     ScrollToTopDirective,
     ClearableInputComponent,
+    FilterHintComponent,
     ContainerTableActionsComponent,
     MatIconModule,
     MatButtonModule,
@@ -202,6 +205,14 @@ export class ContainerTableComponent {
   getFilterIconName(keyword: string): string {
     const isSelected = this.isFilterSelected(keyword, this.containerService.containerFilter());
     return isSelected ? "filter_alt_off" : "filter_alt";
+  }
+
+  filterColumnTooltip(label: string, keyword: string): string {
+    return filterColumnHint(label, {
+      exactMatch: this.containerService.exactMatchKeys.has(keyword),
+      caseSensitive: this.containerService.caseSensitiveKeys.has(keyword),
+      isBoolean: this.containerService.booleanKeys.has(keyword)
+    });
   }
 
   onKeywordClick(filterKeyword: string): void {

@@ -35,6 +35,10 @@
           placeholder="Example query: 'action: GET success: false'" />
       </app-clearable-input>
     </mat-form-field>
+    <app-filter-hint
+      [caseSensitive]="true"
+      [example]="'action: GET success: false'"
+      [keywords]="auditService.apiFilter" />
     <mat-paginator
       (page)="onPageEvent($event)"
       [length]="totalLength()"
@@ -70,7 +74,11 @@
               )) {
                 <div class="margin-left-16">
                   <button
-                    (click)="onKeywordClick(apiFilterKeyMap[column.key])" class="filter-button" mat-icon-button>
+                    (click)="onKeywordClick(apiFilterKeyMap[column.key])"
+                    [matTooltip]="filterColumnTooltip(column.label, apiFilterKeyMap[column.key])"
+                    class="filter-button"
+                    mat-icon-button
+                    matTooltipClass="filter-hint-tooltip">
                     <mat-icon class="keyword-button-icon margin-left-0">
                       {{ getFilterIconName(column.key) }}
                     </mat-icon>

@@ -45,6 +45,8 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { FilterHintComponent } from "@components/shared/filter-hint/filter-hint.component";
+import { filterColumnHint } from "@utils/filter-hint.utils";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
@@ -80,6 +82,7 @@ const columnKeysMap = [
     MatIconModule,
     ScrollToTopDirective,
     ClearableInputComponent,
+    FilterHintComponent,
     CopyableComponent,
     TokenTableActionsComponent,
     MatIconButton,
@@ -280,6 +283,14 @@ export class TokenTableComponent {
 
   isFilterSelected(filter: string, inputValue: FilterValue): boolean {
     return inputValue.hasKey(filter);
+  }
+
+  filterColumnTooltip(label: string, keyword: string): string {
+    return filterColumnHint(label, {
+      exactMatch: this.tokenService.exactMatchKeys.has(keyword),
+      caseSensitive: this.tokenService.caseSensitiveKeys.has(keyword),
+      isBoolean: this.tokenService.booleanKeys.has(keyword)
+    });
   }
 
   getFilterIconName(keyword: string): string {
