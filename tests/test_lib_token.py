@@ -2131,9 +2131,19 @@ class TokenTestCase(MyTestCase):
         ]
         result = import_tokens(tokens_data, update_existing_tokens=True)
         self.assertEqual(len(result.failed_tokens), 1)
-        self.assertEqual(result.failed_tokens[0], 'token with missing serial')
+        self.assertIsNone(result.failed_tokens[0])
         self.assertEqual(len(result.successful_tokens), 0)
         self.assertEqual(len(result.updated_tokens), 0)
+
+        # Several serial-less entries each yield their own None entry, so the
+        # failure count stays accurate and the placeholders never masquerade as serials
+        tokens_data = [
+            {"type": "hotp", "otpkey": self.otpkey, "description": "No serial 1"},
+            {"type": "hotp", "otpkey": self.otpkey, "description": "No serial 2"},
+            {"type": "hotp", "otpkey": self.otpkey, "description": "No serial 3"},
+        ]
+        result = import_tokens(tokens_data, update_existing_tokens=True)
+        self.assertEqual(result.failed_tokens, [None, None, None])
 
     def test_65_import_tokens_missing_type(self):
         """Test that a token entry without a type is recorded as failed and does not crash."""
@@ -2226,3 +2236,45 @@ class TokenTestCase(MyTestCase):
         self.assertIn("NEWTOKEN001", result.failed_tokens)
         # The newly created token SHOULD be deleted on failure
         self.assertEqual(get_tokens(serial="NEWTOKEN001"), [])
+
+    def test_69_import_update_existing_token_without_type(self):
+        """Test that updating an existing token succeeds even when the entry omits a type."""
+        existing = init_token(param={'serial': "UPDATE001",
+                                     'type': 'hotp',
+                                     'otpkey': self.otpkey,
+                                     "otplen": '6',
+                                     "description": "Original description"})
+        db.session.commit()
+
+        # An update entry that carries no "type" key: type is only required to create a token
+        update_data = [
+            {"serial": "UPDATE001", "otpkey": self.otpkey, "description": "Updated description"}
+        ]
+        result = import_tokens(update_data, update_existing_tokens=True)
+
+        # The update must succeed, not be reported as failed for a missing type
+        self.assertEqual(result.failed_tokens, [])
+        self.assertIn("UPDATE001", result.updated_tokens)
+        tokens = get_tokens(serial="UPDATE001")
+        self.assertEqual(len(tokens), 1)
+        self.assertEqual(tokens[0].token.description, "Updated description")
+
+        # Clean up
+        existing.delete_token()
+
+    def test_70_import_new_token_deleted_when_tokenclass_object_fails(self):
+        """Test that a create-time failure after the DB row is saved does not leave an orphan row."""
+        self.assertEqual(get_tokens(serial="ORPHAN001"), [])
+
+        token_data = [
+            {"serial": "ORPHAN001", "type": "hotp", "otpkey": self.otpkey}
+        ]
+
+        # Fail right after db_token.save(), while building the token class object
+        with mock.patch("privacyidea.lib.token.importexport.create_tokenclass_object",
+                        side_effect=Exception("Could not build token class")):
+            result = import_tokens(token_data, update_existing_tokens=True)
+
+        self.assertIn("ORPHAN001", result.failed_tokens)
+        # The persisted row must have been rolled back, not left orphaned
+        self.assertEqual(get_tokens(serial="ORPHAN001"), [])
