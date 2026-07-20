@@ -1,3 +1,8 @@
+Version 3.13.4
+
+  Enhancements:
+  * Updated grpcio to 1.81.1 for compatibility with Python 3.14 on Ubuntu 26.04.
+
 Version 3.13.3
 
   Fixes:
