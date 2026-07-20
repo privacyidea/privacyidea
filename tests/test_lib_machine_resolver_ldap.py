@@ -4,6 +4,8 @@
 This test file tests the LDAP machine resolver in
 lib/machines/ldap.py
 """
+import netaddr
+
 from .base import MyTestCase
 from privacyidea.lib.machines.ldap import LdapMachineResolver
 from privacyidea.lib.machines.base import MachineResolverError
@@ -167,3 +169,82 @@ class LdapMachineTestCase(MyTestCase):
         for _, kwargs in ldap3mock.get_server_mock().call_args_list:
             self.assertIsNotNone(kwargs['tls'])
             self.assertTrue(kwargs['use_ssl'])
+
+    @ldap3mock.activate
+    def test_10_hostname_is_a_list_and_optional(self):
+        directory = [{"dn": "cn=admin,ou=example,o=test",
+                      "attributes": {"cn": "admin", "userPassword": "secret"}},
+                     {"dn": "cn=multi,ou=example,o=test",
+                      "attributes": {"cn": "multi",
+                                     "objectClass": "computer",
+                                     "dNSHostName": ["multi.example.test",
+                                                     "alias.example.test"]}},
+                     {"dn": "cn=nohost,ou=example,o=test",
+                      "attributes": {"cn": "nohost",
+                                     "objectClass": "computer",
+                                     "dNSHostName": []}}]
+        ldap3mock.setLDAPDirectory(directory)
+        # Use a fresh resolver: self.mreso caches its bound connection (and
+        # thus the directory) from an earlier test.
+        resolver = LdapMachineResolver("myResolver", config=MYCONFIG)
+        machines = resolver.get_machines()
+        # A machine without a hostname is still returned, not dropped.
+        self.assertEqual(2, len(machines))
+        by_id = {m.id: m for m in machines}
+
+        # All values of a multi-valued attribute are returned.
+        multi = by_id["cn=multi,ou=example,o=test"]
+        self.assertListEqual(["multi.example.test", "alias.example.test"], multi.hostname)
+        self.assertTrue(multi.has_hostname("alias.example.test"))
+
+        # A missing hostname is represented as an empty list.
+        nohost = by_id["cn=nohost,ou=example,o=test"]
+        self.assertListEqual([], nohost.hostname)
+
+    @ldap3mock.activate
+    def test_11_invalid_ip_does_not_drop_machine(self):
+        directory = [{"dn": "cn=admin,ou=example,o=test",
+                      "attributes": {"cn": "admin", "userPassword": "secret"}},
+                     {"dn": "cn=goodip,ou=example,o=test",
+                      "attributes": {"cn": "goodip",
+                                     "objectClass": "computer",
+                                     "dNSHostName": "goodip.example.test",
+                                     "iPAddress": "1.2.3.4"}},
+                     {"dn": "cn=badip,ou=example,o=test",
+                      "attributes": {"cn": "badip",
+                                     "objectClass": "computer",
+                                     "dNSHostName": "badip.example.test",
+                                     "iPAddress": "not-an-ip"}}]
+        ldap3mock.setLDAPDirectory(directory)
+        config = MYCONFIG.copy()
+        config["IPATTRIBUTE"] = "iPAddress"
+        resolver = LdapMachineResolver("myResolver", config=config)
+        machines = resolver.get_machines()
+        # An unparsable ip is dropped, but the machine is still returned.
+        self.assertEqual(2, len(machines))
+        by_id = {m.id: m for m in machines}
+        self.assertEqual(netaddr.IPAddress("1.2.3.4"),
+                         by_id["cn=goodip,ou=example,o=test"].ip)
+        self.assertIsNone(by_id["cn=badip,ou=example,o=test"].ip)
+
+    @ldap3mock.activate
+    def test_12_skip_machine_without_id_attribute(self):
+        directory = [{"dn": "cn=admin,ou=example,o=test",
+                      "attributes": {"cn": "admin", "userPassword": "secret"}},
+                     {"dn": "cn=withid,ou=example,o=test",
+                      "attributes": {"cn": "withid",
+                                     "objectClass": "computer",
+                                     "objectSid": "S-1-5-21-100",
+                                     "dNSHostName": "withid.example.test"}},
+                     {"dn": "cn=noid,ou=example,o=test",
+                      "attributes": {"cn": "noid",
+                                     "objectClass": "computer",
+                                     "dNSHostName": "noid.example.test"}}]
+        ldap3mock.setLDAPDirectory(directory)
+        config = MYCONFIG.copy()
+        config["IDATTRIBUTE"] = "objectSid"
+        resolver = LdapMachineResolver("myResolver", config=config)
+        machines = resolver.get_machines()
+        # The entry lacking the configured id attribute is skipped.
+        self.assertEqual(1, len(machines))
+        self.assertEqual("S-1-5-21-100", machines[0].id)
