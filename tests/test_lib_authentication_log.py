@@ -273,6 +273,19 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertEqual(1, len(results))
         self.assertEqual("txn-a", results[0].transaction_id)
 
+    def test_get_authentication_logs_filter_by_attempt_id(self):
+        # Two requests of the same attempt share an attempt_id; a third belongs to another attempt.
+        log_authentication_event(event_type=AuthEventType.CHALLENGE_TRIGGERED, attempt_id="att-a",
+                                 resolver="res1", uid="u1", realm="r1")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, attempt_id="att-a",
+                                 resolver="res1", uid="u1", realm="r1")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, attempt_id="att-b",
+                                 resolver="res1", uid="u1", realm="r1")
+
+        results = get_authentication_logs(attempt_id="att-a")
+        self.assertEqual(2, len(results))
+        self.assertSetEqual({"att-a"}, {entry.attempt_id for entry in results})
+
     def test_get_authentication_logs_combined_filters(self):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1")
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u2", realm="r1")
