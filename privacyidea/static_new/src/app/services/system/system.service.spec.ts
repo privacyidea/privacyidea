@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { provideHttpClient } from "@angular/common/http";
+import { HttpHeaders, provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
@@ -245,6 +245,109 @@ describe("SystemService", () => {
 
       expect(service.radiusServerResource.hasValue()).toEqual(false);
       expect(service.radiusServers()).toEqual([]);
+    });
+  });
+
+  describe("imperative HTTP methods", () => {
+    const base = `${environment.proxyUrl}/system/`;
+
+    beforeEach(() => {
+      authService.getHeaders.mockReturnValue(new HttpHeaders({ Authorization: "test-token" }));
+    });
+
+    it("getResolverTiming defaults since_seconds to 3600 and forwards the response", () => {
+      const mockResponse = MockPiResponse.fromValue([]);
+      let res: unknown;
+      service.getResolverTiming().subscribe((r) => (res = r));
+
+      const req = httpMock.expectOne((r) => r.url === `${base}health/resolver_timing`);
+      expect(req.request.method).toBe("GET");
+      expect(req.request.params.get("since_seconds")).toBe("3600");
+      expect(req.request.headers.get("Authorization")).toBe("test-token");
+
+      req.flush(mockResponse);
+      expect(res).toEqual(mockResponse);
+    });
+
+    it("getResolverTiming sends a custom since_seconds value", () => {
+      service.getResolverTiming(600).subscribe();
+
+      const req = httpMock.expectOne((r) => r.url === `${base}health/resolver_timing`);
+      expect(req.request.params.get("since_seconds")).toBe("600");
+      req.flush(MockPiResponse.fromValue([]));
+    });
+
+    it("getNotificationDelivery defaults since_seconds to 3600 and forwards the response", () => {
+      const mockResponse = MockPiResponse.fromValue({ push: [], sms: [], email: [], since_seconds: 3600 });
+      let res: unknown;
+      service.getNotificationDelivery().subscribe((r) => (res = r));
+
+      const req = httpMock.expectOne((r) => r.url === `${base}health/notification_delivery`);
+      expect(req.request.method).toBe("GET");
+      expect(req.request.params.get("since_seconds")).toBe("3600");
+      expect(req.request.headers.get("Authorization")).toBe("test-token");
+
+      req.flush(mockResponse);
+      expect(res).toEqual(mockResponse);
+    });
+
+    it("getNotificationDelivery sends a custom since_seconds value", () => {
+      service.getNotificationDelivery(120).subscribe();
+
+      const req = httpMock.expectOne((r) => r.url === `${base}health/notification_delivery`);
+      expect(req.request.params.get("since_seconds")).toBe("120");
+      req.flush(MockPiResponse.fromValue({ push: [], sms: [], email: [], since_seconds: 120 }));
+    });
+
+    it("getCertificateHealth issues a GET to health/certificates", () => {
+      service.getCertificateHealth().subscribe();
+
+      const req = httpMock.expectOne(`${base}health/certificates`);
+      expect(req.request.method).toBe("GET");
+      expect(req.request.headers.get("Authorization")).toBe("test-token");
+      req.flush(MockPiResponse.fromValue([]));
+    });
+
+    it("saveSystemConfig posts the config to setConfig", () => {
+      const config = { key1: "value1" };
+      service.saveSystemConfig(config).subscribe();
+
+      const req = httpMock.expectOne(`${base}setConfig`);
+      expect(req.request.method).toBe("POST");
+      expect(req.request.body).toEqual(config);
+      expect(req.request.headers.get("Authorization")).toBe("test-token");
+      req.flush(MockPiResponse.fromValue({ key1: "insert" }));
+    });
+
+    it("deleteSystemConfig deletes the url-encoded key", () => {
+      service.deleteSystemConfig("some key/with slash").subscribe();
+
+      const req = httpMock.expectOne(`${base}${encodeURIComponent("some key/with slash")}`);
+      expect(req.request.method).toBe("DELETE");
+      req.flush(MockPiResponse.fromValue(true));
+    });
+
+    it("deleteUserCache deletes user-cache", () => {
+      service.deleteUserCache().subscribe();
+
+      const req = httpMock.expectOne(`${base}user-cache`);
+      expect(req.request.method).toBe("DELETE");
+      req.flush(MockPiResponse.fromValue({ status: true, deleted: 3 }));
+    });
+
+    it("getDocumentation requests documentation as text", () => {
+      let res: unknown;
+      service.getDocumentation().subscribe((r) => (res = r));
+
+      const req = httpMock.expectOne(`${base}documentation`);
+      expect(req.request.method).toBe("GET");
+      expect(req.request.responseType).toBe("text");
+      req.flush("plain docs");
+      expect(res).toBe("plain docs");
+    });
+
+    afterEach(() => {
+      httpMock.verify();
     });
   });
 });

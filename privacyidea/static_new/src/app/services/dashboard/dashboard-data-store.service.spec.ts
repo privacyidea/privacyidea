@@ -178,6 +178,28 @@ describe("DashboardDataStore", () => {
     expect(eventsRef.value()).toBe("a");
   });
 
+  it("refreshAll() raises error(), retains the stale value and resets revalidating/in-flight on failure", () => {
+    const factory = jest.fn(() => of(1));
+    const ref = store.load("k", factory);
+    expect(ref.value()).toBe(1);
+    expect(ref.error()).toBe(false);
+
+    factory.mockReturnValueOnce(throwError(() => new Error("boom")));
+    store.refreshAll();
+
+    expect(ref.error()).toBe(true);
+    // stale value survives the failed refresh, revalidating is cleared via finalize
+    expect(ref.value()).toBe(1);
+    expect(ref.revalidating()).toBe(false);
+
+    // in-flight was reset by finalize, so the next refresh runs the factory again
+    factory.mockReturnValueOnce(of(2));
+    store.refreshAll();
+    expect(factory).toHaveBeenCalledTimes(3);
+    expect(ref.value()).toBe(2);
+    expect(ref.error()).toBe(false);
+  });
+
   it("refreshAll() does not restart an entry that is still in flight", () => {
     const subject = new Subject<number>();
     const factory = jest.fn(() => subject.asObservable());

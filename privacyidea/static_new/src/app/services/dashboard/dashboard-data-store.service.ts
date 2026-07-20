@@ -50,6 +50,7 @@ export class DashboardDataStore implements DashboardDataStoreInterface {
 
   load<T>(key: string, factory: () => Observable<T>, options?: { once?: boolean }): DashboardDataRef<T> {
     const entry = this.entryFor<T>(key);
+    entry.factory = factory;
     if (options?.once && entry.value() !== undefined) {
       return entry;
     }
