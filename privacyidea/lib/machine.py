@@ -29,6 +29,7 @@ tokens and webservice!
 import logging
 import re
 
+import netaddr
 from sqlalchemy import select
 
 from privacyidea.lib.applications.base import get_auth_item, get_machine_application_class_dict
@@ -88,11 +89,11 @@ def get_machines(hostname=None, ip=None, id=None, resolver=None, any=None,
     return all_machines
 
 
-def get_hostname(ip):
+def get_hostname(ip: netaddr.IPAddress) -> str:
     """
     Return a hostname for a given IP address
+
     :param ip: IP address
-    :type ip: IPAddress
     :return: hostname
     """
     machines = get_machines(ip=ip)
@@ -100,11 +101,9 @@ def get_hostname(ip):
         raise Exception(f"Can not get unique ID for IP={ip!r}. "
                         "More than one machine found.")
     if len(machines) == 1:
-        # There is only one machine in the list and we get its ID
-        hostname = machines[0].hostname
-        # return the first hostname
-        if isinstance(hostname, list):
-            hostname = hostname[0]
+        # There is only one machine in the list and we return its first hostname
+        hostnames = machines[0].hostname
+        hostname = hostnames[0] if hostnames else ""
     else:
         raise Exception(f"There is no machine with IP={ip!r}")
     return hostname
@@ -399,10 +398,11 @@ def list_machine_tokens(hostname=None, machine_id=None, resolver_name=None, seri
 
 
 @log_with(log)
-def list_token_machines(serial):
+def list_token_machines(serial: str) -> list[dict]:
     """
     This method returns the machines for a given token
 
+    :param serial: The serial number of the token
     :return: returns a list of machines and apps
     """
     res = []
@@ -424,12 +424,9 @@ def list_token_machines(serial):
 
         # Try to determine the hostname
         machines = get_machines(id=machine.machine_id, resolver=resolver_name)
-        if len(machines) == 1:
-            # There is only one machine in the list and we get its ID
-            hostname = machines[0].hostname
-            # return the first hostname
-            if isinstance(hostname, list):
-                hostname = hostname[0]
+        if len(machines) == 1 and machines[0].hostname:
+            # There is only one machine in the list and we use its first hostname
+            hostname = machines[0].hostname[0]
 
         res.append({"machine_id": machine.machine_id or ANY_MACHINE,
                     "hostname": hostname,
