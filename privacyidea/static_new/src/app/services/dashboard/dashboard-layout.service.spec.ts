@@ -52,13 +52,14 @@ describe("DashboardLayoutService", () => {
   describe("initialisation", () => {
     it("should fall back to the default layout when persistence is empty", () => {
       build();
-      expect(service.widgets()).toHaveLength(6);
+      expect(service.widgets()).toHaveLength(7);
       expect(service.widgets().map((widget) => widget.type).sort()).toEqual([
         "administration",
         "authentications",
         "events",
         "policies",
         "subscriptions",
+        "token-types",
         "tokens"
       ]);
     });
@@ -281,13 +282,14 @@ describe("DashboardLayoutService", () => {
       service.removeWidget(service.widgets().find((widget) => widget.type === "events")!.id);
       service.resetLayout();
 
-      expect(service.widgets()).toHaveLength(6);
+      expect(service.widgets()).toHaveLength(7);
       expect(service.widgets().map((widget) => widget.type).sort()).toEqual([
         "administration",
         "authentications",
         "events",
         "policies",
         "subscriptions",
+        "token-types",
         "tokens"
       ]);
     });
@@ -295,7 +297,7 @@ describe("DashboardLayoutService", () => {
     it("should persist the reset layout", () => {
       service.removeWidget(service.widgets().find((widget) => widget.type === "events")!.id);
       service.resetLayout();
-      expect(persistence.load()).toHaveLength(6);
+      expect(persistence.load()).toHaveLength(7);
     });
   });
 

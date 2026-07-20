@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Directive, input, signal, Type } from "@angular/core";
+import { computed, Directive, input, signal, Type } from "@angular/core";
 import { PolicyAction } from "@services/auth/policy-actions";
 
 export const DASHBOARD_COLUMNS = 24;
@@ -25,6 +25,7 @@ export type WidgetState = "loading" | "ready" | "denied" | "error";
 
 export type WidgetTypeId =
   | "tokens"
+  | "token-types"
   | "authentications"
   | "administration"
   | "policies"
@@ -47,16 +48,21 @@ export interface WidgetInstance extends WidgetSize {
 export abstract class DashboardWidget {
   readonly instance = input<WidgetInstance>();
   readonly state = signal<WidgetState>("loading");
+  readonly loading = computed(() => this.state() === "loading");
+  readonly partialLoading = computed(() => false);
 
   static readonly type: WidgetTypeId;
   static readonly title: string = "";
   static readonly icon: string = "";
+  static readonly headerIcon: Type<unknown> | null = null;
   static readonly defaultSize: WidgetSize = { cols: 3, rows: 3 };
   static readonly minSize: WidgetSize = { cols: 3, rows: 3 };
   static readonly maxSize: WidgetSize = { cols: DASHBOARD_COLUMNS, rows: Number.POSITIVE_INFINITY };
   static readonly pinned: boolean = false;
   static readonly fixedPosition: { x: number; y: number } | null = null;
   static readonly requiredAction: PolicyAction | null = null;
+
+  abstract reload(): void;
 }
 
 export type WidgetComponentType = typeof DashboardWidget & Type<DashboardWidget>;

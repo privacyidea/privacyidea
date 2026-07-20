@@ -309,7 +309,8 @@ export class ContainerService implements ContainerServiceInterface {
     }
     return String(assigned).trim() !== "";
   });
-  private pollingTimeoutId: ReturnType<typeof setTimeout> | undefined;  containerDetail = computed(() => {
+  private pollingTimeoutId: ReturnType<typeof setTimeout> | undefined;
+  containerDetail = computed(() => {
     const details = this.containerDetails();
     const serial = this.containerSerial();
     if (!details || !serial) {
@@ -382,25 +383,20 @@ export class ContainerService implements ContainerServiceInterface {
       pagesize: this.pageSize(),
       ...params
     });
-  }  selectedContainerSerial: WritableSignal<string | null> = linkedSignal({
+  }
+  selectedContainerSerial: WritableSignal<string | null> = linkedSignal({
     source: () => this.contentService.onTokensEnrollment(),
     computation: (onTokensEnrollment, previous) => {
       return onTokensEnrollment ? (previous?.value ?? "") : "";
     }
   });
 
-
-
-
-
   sort = signal<Sort>({ active: "serial", direction: "asc" });
-
 
   containerFilter: WritableSignal<FilterValue> = linkedSignal({
     source: this.contentService.routeUrl,
     computation: () => new FilterValue()
   });
-
 
   filterParams = computed<Record<string, string>>(() => {
     const allowed = [...this.apiFilter, ...this.advancedApiFilter];
@@ -428,12 +424,10 @@ export class ContainerService implements ContainerServiceInterface {
     return params;
   });
 
-
   pageSize = linkedSignal({
     source: () => ({ filter: this.containerFilter(), size: this.eventPageSize() }),
     computation: ({ size }): number => (size > 0 ? size : 10)
   });
-
 
   pageIndex = linkedSignal({
     source: () => ({
@@ -443,7 +437,6 @@ export class ContainerService implements ContainerServiceInterface {
     }),
     computation: () => 0
   });
-
 
   containerResource = httpResource<PiResponse<ContainerDetails>>(() => {
     // Do not load containers if the action is not allowed.
@@ -508,9 +501,12 @@ export class ContainerService implements ContainerServiceInterface {
     }
 
     const token = this.tokenService.tokenDetailResource.value()?.result?.value?.tokens?.[0];
+    // A single value maps to the `type` query param, multiple to `type_list` (see filterParams above).
+    const typeParam: Record<string, string> =
+      compatibleTypes.length === 1 ? { type: compatibleTypes[0] } : { type_list: compatibleTypes.join(",") };
     const params: Record<string, string | number | boolean> = {
       no_token: 1,
-      type: compatibleTypes.join(","),
+      ...typeParam,
       ...this.serialFilterParam(),
       ...(this.filterContainersByTokenOwner() && token?.username && { user: token.username }),
       ...(this.filterContainersByTokenOwner() &&
@@ -750,12 +746,14 @@ export class ContainerService implements ContainerServiceInterface {
   unassignUser(containerSerial: string, username: string, userRealm: string): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post<
-        PiResponse<boolean>
-      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/unassign`, {
-        user: username,
-        realm: userRealm
-      }, { headers })
+      .post<PiResponse<boolean>>(
+        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/unassign`,
+        {
+          user: username,
+          realm: userRealm
+        },
+        { headers }
+      )
       .pipe(
         catchError((error) => {
           console.error("Failed to unassign user.", error);
@@ -769,12 +767,14 @@ export class ContainerService implements ContainerServiceInterface {
   assignUser(args: { containerSerial: string; username: string; userRealm: string }): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post<
-        PiResponse<boolean>
-      >(`${this.containerBaseUrl}${encodeURIComponent(args.containerSerial)}/assign`, {
-        user: args.username,
-        realm: args.userRealm
-      }, { headers })
+      .post<PiResponse<boolean>>(
+        `${this.containerBaseUrl}${encodeURIComponent(args.containerSerial)}/assign`,
+        {
+          user: args.username,
+          realm: args.userRealm
+        },
+        { headers }
+      )
       .pipe(
         catchError((error) => {
           console.error("Failed to assign user.", error);
@@ -1030,7 +1030,6 @@ export class ContainerService implements ContainerServiceInterface {
     this.isPollingActive.set(true);
     this.pollingTrigger.update((count) => count + 1);
   }
-
 
   async compareWithTemplate() {
     const serial = this.containerSerial();

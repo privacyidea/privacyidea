@@ -17,21 +17,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass } from "@angular/common";
-import {
-  AfterViewInit,
-  Component,
-  effect,
-  ElementRef,
-  inject,
-  linkedSignal,
-  signal,
-  ViewChild,
-  WritableSignal
-} from "@angular/core";
-import { MatIconButton } from "@angular/material/button";
+import { Component, effect, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { MatButton, MatIconButton } from "@angular/material/button";
+import { MatCheckbox } from "@angular/material/checkbox";
 import { MatIcon } from "@angular/material/icon";
-import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
-import { MatPaginator } from "@angular/material/paginator";
 import { Sort } from "@angular/material/sort";
 import {
   MatCell,
@@ -48,8 +37,8 @@ import {
   MatTableDataSource
 } from "@angular/material/table";
 import { MatTooltip } from "@angular/material/tooltip";
-import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
   ContainerDetailData,
@@ -57,21 +46,18 @@ import {
   ContainerServiceInterface
 } from "@services/container/container.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
+import { forkJoin } from "rxjs";
 
 @Component({
   selector: "app-user-details-container-table",
   imports: [
     CopyableComponent,
-    ClearableInputComponent,
     MatHeaderRowDef,
     MatRowDef,
     MatNoDataRow,
-    MatFormField,
-    MatLabel,
-    MatInput,
-    MatPaginator,
     MatTable,
     MatHeaderCellDef,
     MatColumnDef,
@@ -82,34 +68,31 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
     MatTooltip,
     MatHeaderRow,
     MatRow,
-    MatFormField,
-    MatLabel,
     MatIcon,
-    MatIconButton
+    MatIconButton,
+    MatButton,
+    MatCheckbox
   ],
   templateUrl: "./user-details-container-table.component.html",
   styleUrl: "./user-details-container-table.component.scss"
 })
-export class UserDetailsContainerTableComponent implements AfterViewInit {
+export class UserDetailsContainerTableComponent {
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly userService: UserServiceInterface = inject(UserService);
+  private readonly dialogService: DialogServiceInterface = inject(DialogService);
 
   readonly columnsKeyMap = this.tableUtilsService.pickColumns("serial", "type", "states", "description", "realms");
   readonly columnKeys = [...this.tableUtilsService.getColumnKeys(this.columnsKeyMap)];
-  displayedColumns: string[] = this.columnsKeyMap.map((c) => c.key);
+
+  get displayedColumns(): string[] {
+    return ["select", ...this.columnsKeyMap.map((c) => c.key)];
+  }
 
   dataSource = new MatTableDataSource<ContainerDetailData>([]);
-  filterValue = "";
   sort = signal({ active: "serial", direction: "asc" } as Sort);
-
-  pageSize = 10;
-  pageSizeOptions = this.tableUtilsService.pageSizeOptions;
-
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
-  @ViewChild("filterInput", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
 
   userContainers: WritableSignal<ContainerDetailData[]> = linkedSignal({
     source: () => ({
@@ -127,7 +110,17 @@ export class UserDetailsContainerTableComponent implements AfterViewInit {
     }
   });
 
+  selection: WritableSignal<ContainerDetailData[]> = linkedSignal({
+    source: () =>
+      this.containerService.userContainersResource.hasValue()
+        ? this.containerService.userContainersResource.value()
+        : undefined,
+    computation: () => []
+  });
+
   constructor() {
+    (this.dataSource as unknown as { _sort: WritableSignal<Sort> })._sort = this.sort;
+
     effect(() => {
       const base = this.userContainers();
       this.dataSource.data = this.clientsideSortContainerData(base, this.sort());
@@ -139,30 +132,69 @@ export class UserDetailsContainerTableComponent implements AfterViewInit {
     });
   }
 
-  ngAfterViewInit(): void {
-    this.dataSource.paginator = this.paginator;
-    (this.dataSource as unknown as { _sort: WritableSignal<Sort> })._sort = this.sort;
-
-    this.dataSource.filterPredicate = (row: ContainerDetailData, filter: string) => {
-      const currentState = (row.states?.[0] ?? "").toString();
-      const realmsJoined = (row.realms ?? []).join(" ");
-      const haystack = [row.serial, row.type, row.description ?? "", currentState, realmsJoined]
-        .join(" ")
-        .toLowerCase();
-
-      return haystack.includes(filter);
-    };
+  isAllSelected() {
+    return this.selection().length === this.dataSource.data.length && this.dataSource.data.length > 0;
   }
 
-  handleFilterInput($event: Event): void {
-    const raw = ($event.target as HTMLInputElement).value ?? "";
-    const normalised = raw.trim().toLowerCase();
-    this.filterValue = normalised;
-    this.dataSource.filter = normalised;
+  toggleAllRows() {
+    if (this.isAllSelected()) {
+      this.selection.set([]);
+    } else {
+      this.selection.set([...this.dataSource.data]);
+    }
   }
 
-  onPageSizeChange(size: number) {
-    this.pageSize = size;
+  toggleRow(row: ContainerDetailData) {
+    const current = this.selection();
+    if (current.includes(row)) {
+      this.selection.set(current.filter((r) => r !== row));
+    } else {
+      this.selection.set([...current, row]);
+    }
+  }
+
+  deleteSelected() {
+    const selected = this.selection();
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
+        data: {
+          title: $localize`Delete Containers`,
+          items: selected.map((container) => container.serial),
+          itemType: "container",
+          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
+        }
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (result) {
+            forkJoin(selected.map((container) => this.containerService.deleteContainer(container.serial))).subscribe({
+              next: () => this.containerService.userContainersResource.reload()
+            });
+          }
+        }
+      });
+  }
+
+  unassignSelected() {
+    const selected = this.selection();
+    const username = this.userService.detailsUser().username;
+    const realm = this.userService.selectedUserRealm();
+    forkJoin(
+      selected.map((container) => this.containerService.unassignUser(container.serial, username, realm))
+    ).subscribe({
+      next: () => this.containerService.userContainersResource.reload()
+    });
+  }
+
+  toggleActiveSelected() {
+    const selected = this.selection();
+    forkJoin(
+      selected.map((container) => this.containerService.toggleActive(container.serial, container.states))
+    ).subscribe({
+      next: () => this.containerService.userContainersResource.reload()
+    });
   }
 
   handleStateClick(element: ContainerDetailData) {
