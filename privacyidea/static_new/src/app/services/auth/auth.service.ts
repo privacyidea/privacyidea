@@ -25,6 +25,7 @@ import { PiResponse } from "@app/app.component";
 import { AUTH_DATA_STORAGE_KEY, BEARER_TOKEN_STORAGE_KEY } from "@core/constants";
 import { environment } from "@env/environment";
 import { PolicyAction } from "@services/auth/policy-actions";
+import { DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { LocalService, LocalServiceInterface } from "@services/local/local.service";
 import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
 import { tokenTypes } from "@utils/token.utils";
@@ -400,6 +401,7 @@ export class AuthService implements AuthServiceInterface {
     this.jwtData.set(null);
     this.clearStoredSession();
     this.authenticationAccepted.set(false);
+    this.dashboardDataStore.invalidate();
     this.router.navigate(["login"]);
   }
 
@@ -455,6 +457,7 @@ export class AuthService implements AuthServiceInterface {
   private readonly localService: LocalServiceInterface = inject(LocalService);
   private readonly http = inject(HttpClient);
   private readonly versioningService: VersioningServiceInterface = inject(VersioningService);
+  private readonly dashboardDataStore = inject(DashboardDataStore);
   decodeJwtPayload(token: string): JwtData | null {
     try {
       const parts = token.split(".");

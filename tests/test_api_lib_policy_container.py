@@ -1128,3 +1128,29 @@ class PrePolicyContainerTestCase(PrePolicyHelperMixin, MyApiTestCase):
         delete_policy("hotp_genkey")
         delete_policy("motp_genkey")
         delete_policy("applspec_genkey")
+
+    def test_87_force_server_generate_key_without_any_policy(self):
+        # force_server_generate is an opt-in enforcement toggle: with no policy at all in
+        # the scope, server-side key generation is not forced, for a user or an admin.
+        for policy in PolicyClass().list_policies():
+            delete_policy(policy["name"])
+        self.assertEqual([], PolicyClass().list_policies(active=True))
+
+        builder = EnvironBuilder(method='POST', headers={})
+        request = Request(builder.get_environ())
+        request.all_data = {"type": "hotp"}
+
+        # No user policies at all
+        g.logged_in_user = {"username": "hans", "realm": self.realm1,
+                            "resolver": self.resolvername1, "role": "user"}
+        request.User = User("hans", self.realm1)
+        g.policies = {}
+        force_server_generate_key(request)
+        self.assertFalse(g.policies.get(f"hotp_{PolicyAction.FORCE_SERVER_GENERATE}"))
+
+        # No admin policies at all
+        g.logged_in_user = {"username": self.testadmin, "realm": "", "role": "admin"}
+        request.User = User()
+        g.policies = {}
+        force_server_generate_key(request)
+        self.assertFalse(g.policies.get(f"hotp_{PolicyAction.FORCE_SERVER_GENERATE}"))

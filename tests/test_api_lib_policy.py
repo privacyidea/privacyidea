@@ -1867,6 +1867,45 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         delete_policy("preferred_client_mode")
         delete_policy("challenge")
 
+    def test_22b_preferred_client_mode_without_any_auth_policy(self):
+        """
+        With no policy at all in the AUTH scope, the opt-in client_mode_per_user toggle is
+        off, so the per-user preferred client mode is not applied and the default is used.
+        """
+        builder = EnvironBuilder(method='POST', data={}, headers=Headers({"user_agent": "privacyidea-cp"}))
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        request = Request(env)
+        request.all_data = {}
+        self.setUp_user_realms()
+        user = User("hans", self.realm1)
+        request.User = user
+
+        # Ensure there is no policy at all
+        for policy in PolicyClass().list_policies():
+            delete_policy(policy["name"])
+        g.policy_object = PolicyClass()
+        self.assertEqual([], g.policy_object.list_policies(active=True))
+
+        response_data = {"jsonrpc": "2.0",
+                         "result": {"status": True, "value": True},
+                         "version": "privacyIDEA test",
+                         "detail": {"multi_challenge": [
+                             {"client_mode": "interactive", "type": "hotp", "transaction_id": "", "serial": "",
+                              "message": ""},
+                             {"client_mode": "poll", "type": "push", "transaction_id": "", "serial": "",
+                              "message": ""},
+                         ]}}
+        response = jsonify(response_data)
+        # The user prefers "push" (client mode "poll"); with the toggle off this preference
+        # is ignored and the preferred mode stays the multi_challenge default "interactive".
+        user.set_internal_attribute(InternalUserAttributes.LAST_USED_TOKEN, {"privacyidea-cp": "push"})
+
+        preferred_client_mode(request, response)
+        response_details = response.json["detail"]
+        self.assertEqual("interactive", response_details.get("preferred_client_mode"))
+
     def test_23_enroll_via_multichallenge_smartphone_is_triggered(self):
         """
         Here we only test that the enroll_via_multichallenge is triggered correctly for different scenarios

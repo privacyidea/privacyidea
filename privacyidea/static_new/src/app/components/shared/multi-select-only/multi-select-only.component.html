@@ -19,7 +19,7 @@
 
 <mat-form-field
   appearance="fill"
-  class="full-width"
+  [class]="fieldClass()"
   [matTooltip]="tooltipText()"
   [matTooltipDisabled]="!isDisabled()"
   [subscriptSizing]="subscriptSizing()">

@@ -223,6 +223,22 @@ describe("ContainerCreateComponent", () => {
     expect(containerServiceMock.containerSerial()).toBe("C-001");
   });
 
+  it("createContainer: forces empty user and still sets realm when onlyAddToRealm is enabled", () => {
+    containerServiceMock.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
+    component.userAssignmentComponent.userFilter.set("someuser");
+    component.userAssignmentComponent.onlyAddToRealm.set(true);
+
+    component.createContainer();
+
+    expect(containerServiceMock.createContainer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "generic",
+        user: "",
+        realm: userService.selectedUserRealm()
+      })
+    );
+  });
+
   it("shows snack if createContainer returns no serial", () => {
     containerServiceMock.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
     (containerServiceMock.createContainer as jest.Mock).mockReturnValueOnce(
@@ -494,6 +510,24 @@ describe("ContainerCreateComponent", () => {
       const result = await fn();
       expect(result).toBe(true);
       expect(containerServiceMock.createContainer).toHaveBeenCalled();
+    });
+
+    it("save forces empty user when onlyAddToRealm is enabled", async () => {
+      containerServiceMock.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
+      component.validInput = true;
+      component.userAssignmentComponent.userFilter.set("someuser");
+      component.userAssignmentComponent.onlyAddToRealm.set(true);
+
+      const fn = (pendingChangesService.registerSave as jest.Mock).mock.calls[0][0] as () => Promise<boolean>;
+      const result = await fn();
+
+      expect(result).toBe(true);
+      expect(containerServiceMock.createContainer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          user: "",
+          realm: userService.selectedUserRealm()
+        })
+      );
     });
 
     it("save returns false when createContainer throws", async () => {

@@ -24,6 +24,7 @@ import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { NotificationService } from "@services/notification/notification.service";
 import { TokenService } from "@services/token/token.service";
 import { MockNotificationService, MockTokenService } from "@testing/mock-services";
+import { expectedLocalDateTimeFromInput } from "@testing/expected-local-date-time";
 import { Observable, Subject } from "rxjs";
 import { LostTokenComponent } from "./lost-token.component";
 
@@ -119,5 +120,17 @@ describe("LostTokenComponent", () => {
 
     expect(dialogRefMock.close).toHaveBeenCalledTimes(1);
     expect(tokenSerial()).toBe("NEW-999");
+  });
+
+  it("renders end_date as local date/time, not the raw response string", () => {
+    isLost.set(false);
+    tokenSerial.set("SER-123");
+    component.lostToken();
+    fixture.detectChanges();
+
+    const text = fixture.nativeElement.textContent;
+    expect(component.lostTokenData?.end_date).toBe("2025-01-31");
+    expect(text).toContain(expectedLocalDateTimeFromInput("2025-01-31"));
+    expect(text).not.toContain("2025-01-31");
   });
 });

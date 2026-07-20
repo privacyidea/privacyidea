@@ -31,7 +31,7 @@
       <tbody>
         @for (entry of entries(); track entry.number) {
           <tr>
-            <td>{{ entry.date | date: "y-MM-d HH:mm" }}</td>
+            <td>{{ entry.date | localDateTime }}</td>
             <td>{{ entry.administrator }}</td>
             <td>{{ entry.action }}</td>
             <td>{{ entry.action_detail }}</td>

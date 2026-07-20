@@ -22,10 +22,11 @@ import { provideRouter } from "@angular/router";
 import { PiResponse } from "@app/app.component";
 import { DashboardWidget, WidgetInstance } from "@models/dashboard";
 import { AuthService } from "@services/auth/auth.service";
+import { DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { EventHandler, EventService } from "@services/event/event.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockEventService } from "@testing/mock-services/mock-event-service";
-import { of } from "rxjs";
+import { of, Subject } from "rxjs";
 import { EventsWidgetComponent } from "./events-widget.component";
 
 function makeEventsResponse(events: { id: number; name: string; active: boolean }[]): PiResponse<EventHandler[]> {
@@ -121,8 +122,8 @@ describe("EventsWidgetComponent", () => {
   });
 
   it("should display the correct active and inactive counts", () => {
-    const cells = fixture.nativeElement.querySelectorAll("td:last-child");
-    const values = Array.from(cells).map((td: Element) => td.textContent?.trim());
+    const cells: Element[] = Array.from(fixture.nativeElement.querySelectorAll("td:last-child"));
+    const values = cells.map((td) => td.textContent?.trim());
     expect(values).toContain("2");
     expect(values).toContain("1");
   });
@@ -149,5 +150,40 @@ describe("EventsWidgetComponent", () => {
 
     expect(fixture2.nativeElement.querySelector("table")).toBeNull();
     fixture2.destroy();
+  });
+
+  it("should set the state to loading while the request is still in flight", () => {
+    TestBed.inject(DashboardDataStore).invalidate();
+    eventMock.getEventHandlers.mockReturnValue(new Subject().asObservable());
+
+    const fixture2 = TestBed.createComponent(EventsWidgetComponent);
+    fixture2.componentRef.setInput("instance", instance);
+    fixture2.detectChanges();
+
+    expect(fixture2.componentInstance.state()).toBe("loading");
+    fixture2.destroy();
+  });
+
+  it("should set the state to error when the request fails", () => {
+    TestBed.inject(DashboardDataStore).invalidate();
+    const subject = new Subject();
+    eventMock.getEventHandlers.mockReturnValue(subject.asObservable());
+
+    const fixture2 = TestBed.createComponent(EventsWidgetComponent);
+    fixture2.componentRef.setInput("instance", instance);
+    fixture2.detectChanges();
+    subject.error(new Error("boom"));
+    fixture2.detectChanges();
+
+    expect(fixture2.componentInstance.state()).toBe("error");
+    fixture2.destroy();
+  });
+
+  it("should invalidate the cache and reload on reload()", () => {
+    eventMock.getEventHandlers.mockClear();
+
+    component.reload();
+
+    expect(eventMock.getEventHandlers).toHaveBeenCalledTimes(1);
   });
 });

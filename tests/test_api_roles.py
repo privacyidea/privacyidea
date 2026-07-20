@@ -160,6 +160,103 @@ class APIAuthTestCase(MyApiTestCase):
 
         delete_policy("realmadmin")
 
+    def test_03b_realmadmin_get_user_multi_realm_single_policy(self):
+        """A single policy granting userlist on multiple realms should return
+        users from all those realms when GET /user/ is called without an
+        explicit realm parameter."""
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        self.setUp_user_realm3()
+        # Grant testadmin userlist on realm1 AND realm3
+        set_policy(name="realmadmin_multi", scope=SCOPE.ADMIN,
+                   action=PolicyAction.USERLIST,
+                   realm=[self.realm1, self.realm3],
+                   user="testadmin")
+
+        with self.app.test_request_context('/user/',
+                                           method='GET',
+                                           data={},
+                                           headers={'Authorization':
+                                                        self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json.get("result")
+            realms_in_result = set(u.get("realm") for u in result.get("value"))
+            # Users from both realm1 and realm3 must appear
+            self.assertIn(self.realm1, realms_in_result)
+            self.assertIn(self.realm3, realms_in_result)
+            # But realm2 must NOT appear
+            self.assertNotIn(self.realm2, realms_in_result)
+
+        delete_policy("realmadmin_multi")
+
+    def test_03c_realmadmin_get_user_multi_policy(self):
+        """Multiple policies granting userlist on different realms should be
+        unioned — users from all granted realms should be returned."""
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        self.setUp_user_realm3()
+        # Two separate policies, each granting one realm
+        set_policy(name="realmadmin_pol1", scope=SCOPE.ADMIN,
+                   action=PolicyAction.USERLIST,
+                   realm=self.realm1,
+                   user="testadmin")
+        set_policy(name="realmadmin_pol2", scope=SCOPE.ADMIN,
+                   action=PolicyAction.USERLIST,
+                   realm=self.realm3,
+                   user="testadmin")
+
+        with self.app.test_request_context('/user/',
+                                           method='GET',
+                                           data={},
+                                           headers={'Authorization':
+                                                        self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json.get("result")
+            realms_in_result = set(u.get("realm") for u in result.get("value"))
+            self.assertIn(self.realm1, realms_in_result)
+            self.assertIn(self.realm3, realms_in_result)
+            self.assertNotIn(self.realm2, realms_in_result)
+
+        # Remove the restrictive admin policies so the audit log is readable.
+        delete_policy("realmadmin_pol1")
+        delete_policy("realmadmin_pol2")
+
+        # The audit info must record the realms as a plain scalar, not a
+        # Python list-repr, even when several realms are in scope.
+        audit_entry = self.find_most_recent_audit_entry(action="GET /user/")
+        self.assertNotIn("[", audit_entry.get("info", ""), audit_entry)
+        self.assertIn(self.realm1, audit_entry.get("info", ""))
+        self.assertIn(self.realm3, audit_entry.get("info", ""))
+
+    def test_03d_realmadmin_no_realm_in_policy_means_all(self):
+        """A policy with no realm restriction should leave the realm
+        parameter unset so the endpoint queries all realms."""
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        self.setUp_user_realm3()
+        # Policy with no realm → all realms
+        set_policy(name="realmadmin_all", scope=SCOPE.ADMIN,
+                   action=PolicyAction.USERLIST,
+                   user="testadmin")
+
+        with self.app.test_request_context('/user/',
+                                           method='GET',
+                                           data={},
+                                           headers={'Authorization':
+                                                        self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json.get("result")
+            realms_in_result = set(u.get("realm") for u in result.get("value"))
+            # All three realms should be present
+            self.assertIn(self.realm1, realms_in_result)
+            self.assertIn(self.realm2, realms_in_result)
+            self.assertIn(self.realm3, realms_in_result)
+
+        delete_policy("realmadmin_all")
+
     def test_04_auth_timelimit_maxfail(self):
         # Test with local admin
         set_policy(name="policy", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXFAIL}=2/20s")

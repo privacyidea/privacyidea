@@ -64,7 +64,6 @@ export class PolicyActionItemComponent {
     if (!detail || actionValue === undefined || actionValue === "") return false;
     return this.policyService.actionValueIsValid(detail, actionValue);
   });
-  readonly selectActionByName = output<string>();
   readonly actionAdd = output<{ name: string; value: string | number | boolean | undefined }>();
 
   currentAction = linkedSignal({

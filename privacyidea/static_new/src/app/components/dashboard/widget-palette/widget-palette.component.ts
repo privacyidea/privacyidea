@@ -16,6 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { NgComponentOutlet } from "@angular/common";
 import { Component, computed, inject, Signal } from "@angular/core";
 import { MatButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
@@ -27,7 +28,7 @@ import { WidgetRegistryService, WidgetRegistryServiceInterface } from "@services
 @Component({
   selector: "app-widget-palette",
   standalone: true,
-  imports: [MatButton, MatIcon, MatMenu, MatMenuItem, MatMenuTrigger],
+  imports: [MatButton, MatIcon, MatMenu, MatMenuItem, MatMenuTrigger, NgComponentOutlet],
   templateUrl: "./widget-palette.component.html",
   styleUrl: "./widget-palette.component.scss"
 })
