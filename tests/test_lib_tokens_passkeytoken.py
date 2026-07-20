@@ -543,3 +543,27 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         self.assertEqual(64, len(resolved.encode("utf-8")))
 
         remove_token(serial)
+
+    def test_15_resolve_display_name_tags_user_info_unavailable(self):
+        """
+        If reading the user info fails (e.g. the resolver is unavailable), tag resolution must not break: the
+        built-in tags still resolve and resolver attribute tags fall back to an empty string.
+        """
+        token = self._initialize_registration().token
+        serial = token.get_serial()
+
+        class BrokenUser:
+            login = "hans"
+            realm = "realm1"
+            resolver = "resolver1"
+
+            @property
+            def info(self):
+                raise Exception("resolver unavailable")
+
+        broken_user = BrokenUser()
+        self.assertEqual("hans@realm1", token._resolve_display_name_tags("{user}@{realm}", broken_user))
+        # A resolver attribute that cannot be read falls back to an empty string
+        self.assertEqual("", token._resolve_display_name_tags("{givenname}", broken_user))
+
+        remove_token(serial)
