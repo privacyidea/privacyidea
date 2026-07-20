@@ -1260,21 +1260,49 @@ class TokenTestCase(MyTestCase):
         container.delete()
         token_in_container.delete_token()
 
-        # filter for realm
+        # filter for realm combined with allowed_realms (realm-scoped admin)
         self.setUp_user_realm2()
-        token = init_token({"type": "hotp", "genkey": True}, user=User("hans", self.realm2))
-        token.set_realms([self.realm1, self.realm2])
-        # if realm is not contained in allowed_realms, the query does not find any token
+        # token_both is a member of realm1 AND realm2
+        token_both = init_token({"type": "hotp", "genkey": True}, user=User("hans", self.realm2))
+        token_both.set_realms([self.realm1, self.realm2])
+        # An admin restricted to realm1 filtering by realm2 still sees the token:
+        # the realm filter and the allowed_realms restriction are independent
+        # membership tests, and the token satisfies both (in realm2, and in the
+        # allowed realm1).
         tokens = get_tokens_paginate(realm=self.realm2, allowed_realms=[self.realm1])["tokens"]
-        self.assertEqual(0, len(tokens))
-        # if realm IS contained in allowed_realms, the token should be found
-        tokens = get_tokens_paginate(realm=self.realm2, allowed_realms=[self.realm1, self.realm2])["tokens"]
         self.assertEqual(1, len(tokens))
-        self.assertEqual(token.get_serial(), tokens[0]["serial"])
+        self.assertEqual(token_both.get_serial(), tokens[0]["serial"])
+        # The token is counted once, not once per matching realm membership
+        result = get_tokens_paginate(realm=self.realm2, allowed_realms=[self.realm1, self.realm2])
+        self.assertEqual(1, len(result["tokens"]))
+        self.assertEqual(token_both.get_serial(), result["tokens"][0]["serial"])
+        self.assertEqual(len(result["tokens"]), result["count"])
+        # A token that is not in any allowed realm is not returned
+        token_r2 = init_token({"type": "hotp", "genkey": True})
+        token_r2.set_realms([self.realm2])
+        serials = [t["serial"] for t in get_tokens_paginate(realm=self.realm2,
+                                                             allowed_realms=[self.realm1])["tokens"]]
+        self.assertNotIn(token_r2.get_serial(), serials)
         # filter for a user which is not contained in the allowed realms, but the token itself is
         tokens = get_tokens_paginate(user=User(login="hans", realm=self.realm2), allowed_realms=[self.realm1])["tokens"]
         self.assertEqual(1, len(tokens))
-        token.delete_token()
+        # Wildcard realm combined with allowed_realms: the token matches both
+        # realm memberships, but is still counted and returned exactly once
+        result = get_tokens_paginate(realm="*realm*", allowed_realms=[self.realm1, self.realm2])
+        serials = [t["serial"] for t in result["tokens"]]
+        self.assertEqual(1, serials.count(token_both.get_serial()))
+        self.assertEqual(len(result["tokens"]), result["count"])
+        # allowed_realms alone (no realm filter) restricts to the allowed realms
+        serials = [t["serial"] for t in get_tokens_paginate(allowed_realms=[self.realm1])["tokens"]]
+        self.assertIn(token_both.get_serial(), serials)
+        self.assertNotIn(token_r2.get_serial(), serials)
+        # realm and allowed_realms matching is case-insensitive
+        tokens = get_tokens_paginate(realm=self.realm2.upper(),
+                                     allowed_realms=[self.realm1.upper()])["tokens"]
+        self.assertEqual(1, len(tokens))
+        self.assertEqual(token_both.get_serial(), tokens[0]["serial"])
+        token_both.delete_token()
+        token_r2.delete_token()
 
         # Realm-only filter (no login in the user object)
         # A User with empty login but a realm set should filter by realm without raising.

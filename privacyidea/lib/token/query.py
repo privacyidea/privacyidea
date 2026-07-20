@@ -74,43 +74,37 @@ def _create_token_query(tokentype: str | None = None, token_type_list: list[str]
     sql_query = select(Token)
 
     # Conditional Joins at the top to avoid re-joining
-    should_join_token_realm = (bool(realm and realm.strip("*")) or
-                               allowed_realms is not None)
     should_join_token_owner = (bool(userid and userid.strip("*")) or
                                bool(resolver and resolver.strip("*")) or
                                bool(user) or
                                assigned is not None or
                                not all_nodes)
 
-    if should_join_token_realm:
-        sql_query = sql_query.outerjoin(TokenRealm, TokenRealm.token_id == Token.id)
-
     if should_join_token_owner:
         sql_query = sql_query.outerjoin(TokenOwner, Token.id == TokenOwner.token_id)
 
-    # Filtering by realm and allowed_realms
+    # Filtering by realm and allowed_realms.
+    # A token can belong to several realms, so each filter is an independent
+    # "is the token a member of one of these realms" test expressed as a
+    # Token.id IN (...) subquery. Keeping the checks orthogonal ensures a token
+    # that is in an allowed realm and in the queried realm is returned even when
+    # those are different realms, and avoids duplicate rows that would otherwise
+    # inflate the paginated count.
     if realm and realm.strip("*"):
         if "*" in realm:
-            sql_query = sql_query.where(
-                TokenRealm.realm_id.in_(
-                    select(Realm.id).where(
-                        func.lower(Realm.name).like(
-                            convert_wildcard_to_sql_like(realm.lower()),
-                            escape=SQL_LIKE_ESCAPE))
-                )
-            )
+            realm_ids = select(Realm.id).where(
+                func.lower(Realm.name).like(
+                    convert_wildcard_to_sql_like(realm.lower()), escape=SQL_LIKE_ESCAPE))
         else:
-            sql_query = sql_query.where(
-                TokenRealm.realm_id == select(Realm.id).where(
-                    func.lower(Realm.name) == realm.lower()).scalar_subquery())
+            realm_ids = select(Realm.id).where(func.lower(Realm.name) == realm.lower())
+        sql_query = sql_query.where(
+            Token.id.in_(select(TokenRealm.token_id).where(TokenRealm.realm_id.in_(realm_ids))))
 
     if allowed_realms is not None:
-        allowed_realms_lc = [r.lower() for r in allowed_realms]
+        allowed_realm_ids = select(Realm.id).where(
+            func.lower(Realm.name).in_([r.lower() for r in allowed_realms]))
         sql_query = sql_query.where(
-            TokenRealm.realm_id.in_(
-                select(Realm.id).where(func.lower(Realm.name).in_(allowed_realms_lc))
-            )
-        )
+            Token.id.in_(select(TokenRealm.token_id).where(TokenRealm.realm_id.in_(allowed_realm_ids))))
 
     # Filtering by tokentype
     if tokentype and tokentype.strip("*"):
