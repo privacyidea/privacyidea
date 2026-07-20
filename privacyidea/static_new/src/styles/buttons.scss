@@ -519,6 +519,7 @@ $icon-badge-notch-mask: radial-gradient(
 }
 
 .mat-mdc-outlined-button {
+  --mat-button-outlined-container-shape: var(--border-radius);
   border-radius: var(--border-radius);
   padding: var(--half-global-padding) var(--global-padding);
   border: 1px solid var(--mat-sys-outline);
@@ -693,62 +694,6 @@ $icon-badge-notch-mask: radial-gradient(
   }
 }
 
-.input-attached-button {
-  height: 58px;
-  width: 26px;
-  margin-bottom: 19px;
-  padding: 0;
-  border: none;
-  background-color: var(--mat-sys-surface-container-high);
-  border-radius: 0 var(--three-quarters-global-padding) var(--three-quarters-global-padding) 0 !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  transition: background-color 0.2s ease-in-out;
-  flex-shrink: 0;
-
-  &:hover:not(:disabled) {
-    background-color: var(--mat-sys-primary-base-hover);
-    color: var(--mat-sys-on-primary);
-    font-weight: 600;
-    cursor: pointer;
-  }
-
-  .small-icon-button {
-    width: 36px !important;
-    height: 36px !important;
-    padding: 0px !important;
-    display: inline-flex !important;
-    align-items: center;
-    justify-content: center;
-
-    & > *[role="img"] {
-      width: 18px;
-      height: 18px;
-    }
-  }
-
-  svg {
-    width: 18px;
-    height: 18px;
-  }
-
-  .mat-mdc-button-touch-target {
-    width: 36px !important;
-    height: 36px !important;
-  }
-
-  svg {
-    width: 18px;
-    height: 18px;
-  }
-
-  .mat-mdc-button-touch-target {
-    width: 36px !important;
-    height: 36px !important;
-  }
-}
-
 .text-button {
   background: none !important;
   border: none !important;
@@ -805,22 +750,27 @@ mat-icon {
   align-items: center !important;
 }
 
+.button-width-xs {
+  width: var(--button-width-xs);
+  min-width: var(--button-width-xs);
+}
+
 .button-width-s {
-  width: 120px;
-  min-width: 120px;
+  width: var(--button-width-s);
+  min-width: var(--button-width-s);
 }
 
 .button-width-m {
-  width: 180px;
-  min-width: 180px;
+  width: var(--button-width-m);
+  min-width: var(--button-width-m);
 }
 
 .button-width-l {
-  width: 240px;
-  min-width: 240px;
+  width: var(--button-width-l);
+  min-width: var(--button-width-l);
 }
 
 .button-width-xl {
-  width: 340px;
-  min-width: 340px;
+  width: var(--button-width-xl);
+  min-width: var(--button-width-xl);
 }
