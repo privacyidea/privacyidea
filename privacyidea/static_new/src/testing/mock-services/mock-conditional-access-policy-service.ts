@@ -34,6 +34,8 @@ export class MockConditionalAccessPolicyService implements ConditionalAccessPoli
 
   deleteWithConfirmDialog = jest.fn(async (): Promise<void> => Promise.resolve());
 
+  deleteSelectedWithConfirmDialog = jest.fn(async (): Promise<boolean> => Promise.resolve(true));
+
   enablePolicy = jest.fn(async (): Promise<void> => Promise.resolve());
 
   disablePolicy = jest.fn(async (): Promise<void> => Promise.resolve());

@@ -104,11 +104,6 @@ describe("ConditionalAccessComponent", () => {
     expect(policyServiceMock.enablePolicy).toHaveBeenCalledWith(1);
   });
 
-  it("should call deleteWithConfirmDialog on delete", async () => {
-    await component.onDeletePolicy(samplePolicy);
-    expect(policyServiceMock.deleteWithConfirmDialog).toHaveBeenCalledWith(samplePolicy);
-  });
-
   it("should join all stage thresholds for display", () => {
     const multiStage: LockoutPolicy = {
       ...samplePolicy,
@@ -120,77 +115,58 @@ describe("ConditionalAccessComponent", () => {
     expect(component.thresholdDisplay(multiStage)).toBe("3, 5");
   });
 
-  describe("inline editing", () => {
-    it("should enter edit mode with a working copy that does not mutate the source", () => {
-      component.startEdit(samplePolicy);
-      expect(component.isEditing(samplePolicy)).toBe(true);
-      component.setEditName("Changed");
-      expect(component.editBuffer()?.name).toBe("Changed");
-      expect(samplePolicy.name).toBe("Brute Force");
+  describe("selection", () => {
+    const otherPolicy: LockoutPolicy = { ...samplePolicy, id: 2, name: "Second" };
+
+    beforeEach(() => {
+      policyServiceMock.policies.set([samplePolicy, otherPolicy]);
     });
 
-    it("should cancel edit mode without saving", () => {
-      component.startEdit(samplePolicy);
-      component.cancelEdit();
-      expect(component.isEditing(samplePolicy)).toBe(false);
-      expect(component.editBuffer()).toBeNull();
-      expect(policyServiceMock.savePolicy).not.toHaveBeenCalled();
+    it("should toggle a single row on and off", () => {
+      component.toggleRow(samplePolicy);
+      expect(component.isSelected(samplePolicy)).toBe(true);
+      component.toggleRow(samplePolicy);
+      expect(component.isSelected(samplePolicy)).toBe(false);
     });
 
-    it("should edit scalar fields and the single-stage threshold", () => {
-      component.startEdit(samplePolicy);
-      component.setEditPriority("7");
-      component.setEditTimeWindow("900");
-      component.setEditCounterTypes(["MFA_FAIL"]);
-      component.setEditThreshold("9");
-      const buffer = component.editBuffer();
-      expect(buffer?.priority).toBe(7);
-      expect(buffer?.time_window_seconds).toBe(900);
-      expect(buffer?.counter_types_to_track).toEqual(["MFA_FAIL"]);
-      expect(buffer?.stages[0].failure_threshold).toBe(9);
-      expect(component.canSaveEdit()).toBe(true);
+    it("should select and clear all rows", () => {
+      expect(component.isAllSelected()).toBe(false);
+      component.toggleAllRows();
+      expect(component.isAllSelected()).toBe(true);
+      expect(component.policySelection().length).toBe(2);
+      component.toggleAllRows();
+      expect(component.policySelection().length).toBe(0);
     });
 
-    it("should not treat a multi-stage policy as inline-threshold editable", () => {
-      component.startEdit({
-        ...samplePolicy,
-        stages: [
-          { failure_threshold: 3, priority: 1, actions: [] },
-          { failure_threshold: 5, priority: 2, actions: [] }
-        ]
-      });
-      expect(component.editIsSingleStage()).toBe(false);
-      // threshold edits are ignored for multi-stage policies
-      component.setEditThreshold("9");
-      expect(component.editBuffer()?.stages[0].failure_threshold).toBe(3);
+    it("should not report all-selected when there are no rows", () => {
+      policyServiceMock.policies.set([]);
+      expect(component.isAllSelected()).toBe(false);
+    });
+  });
+
+  describe("delete selected", () => {
+    const otherPolicy: LockoutPolicy = { ...samplePolicy, id: 2, name: "Second" };
+
+    it("should do nothing when nothing is selected", async () => {
+      await component.deleteSelected();
+      expect(policyServiceMock.deleteSelectedWithConfirmDialog).not.toHaveBeenCalled();
     });
 
-    it("should block saving with an invalid buffer", () => {
-      component.startEdit(samplePolicy);
-      component.setEditName("   ");
-      expect(component.canSaveEdit()).toBe(false);
-      component.setEditName("Ok");
-      component.setEditCounterTypes([]);
-      expect(component.canSaveEdit()).toBe(false);
+    it("should delete the selected rows and clear the selection", async () => {
+      component.policySelection.set([samplePolicy, otherPolicy]);
+      await component.deleteSelected();
+      expect(policyServiceMock.deleteSelectedWithConfirmDialog).toHaveBeenCalledWith([
+        { id: 1, name: "Brute Force" },
+        { id: 2, name: "Second" }
+      ]);
+      expect(component.policySelection().length).toBe(0);
     });
 
-    it("should persist the buffer and leave edit mode on save", async () => {
-      component.startEdit(samplePolicy);
-      component.setEditName("Renamed");
-      await component.saveEdit();
-      expect(policyServiceMock.savePolicy).toHaveBeenCalledWith(
-        expect.objectContaining({ id: 1, name: "Renamed" })
-      );
-      expect(component.editBuffer()).toBeNull();
-      expect(component.isEditing(samplePolicy)).toBe(false);
-    });
-
-    it("should stay in edit mode when the save fails", async () => {
-      policyServiceMock.savePolicy.mockResolvedValueOnce(undefined);
-      component.startEdit(samplePolicy);
-      await component.saveEdit();
-      expect(component.isEditing(samplePolicy)).toBe(true);
-      expect(component.editBuffer()).not.toBeNull();
+    it("should keep the selection when the delete is cancelled", async () => {
+      policyServiceMock.deleteSelectedWithConfirmDialog.mockResolvedValueOnce(false);
+      component.policySelection.set([samplePolicy]);
+      await component.deleteSelected();
+      expect(component.policySelection().length).toBe(1);
     });
   });
 });

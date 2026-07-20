@@ -136,6 +136,8 @@ export interface ConditionalAccessPolicyServiceInterface {
 
   deleteWithConfirmDialog(policy: { id: number; name: string }): Promise<void>;
 
+  deleteSelectedWithConfirmDialog(policies: { id: number; name: string }[]): Promise<boolean>;
+
   enablePolicy(id: number): Promise<void>;
 
   disablePolicy(id: number): Promise<void>;
@@ -229,6 +231,38 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
       return;
     }
     await this.deletePolicy(policy.id);
+  }
+
+  async deleteSelectedWithConfirmDialog(policies: { id: number; name: string }[]): Promise<boolean> {
+    if (policies.length === 0) {
+      return false;
+    }
+    const confirmed = await this.dialogService.confirm({
+      title: $localize`Delete Conditional-Access Policies`,
+      message: $localize`Do you really want to delete ${policies.length} selected policies?`,
+      confirmButtonText: $localize`Delete`
+    });
+    if (!confirmed) {
+      return false;
+    }
+    const headers = this.authService.getHeaders();
+    try {
+      await Promise.all(
+        policies.map((policy) =>
+          lastValueFrom(this.http.delete<PiResponse<number>>(`${this.baseUrl}/${policy.id}`, { headers }))
+        )
+      );
+      this.notificationService.success($localize`Successfully deleted ${policies.length} conditional-access policies.`);
+      this.policiesResource.reload();
+      return true;
+    } catch (error) {
+      const httpError = error as HttpErrorResponse;
+      const body = httpError.error as PiResponse<number> | undefined;
+      const message = body?.result?.error?.message || "";
+      this.notificationService.error($localize`Failed to delete conditional-access policies. ` + message);
+      this.policiesResource.reload();
+      return false;
+    }
   }
 
   async enablePolicy(id: number): Promise<void> {

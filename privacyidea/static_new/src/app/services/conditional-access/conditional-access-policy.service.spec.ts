@@ -206,6 +206,36 @@ describe("ConditionalAccessPolicyService", () => {
     });
   });
 
+  describe("deleteSelectedWithConfirmDialog", () => {
+    it("should return false without asking when the list is empty", async () => {
+      const result = await service.deleteSelectedWithConfirmDialog([]);
+      expect(result).toBe(false);
+      expect(dialogServiceMock.confirm).not.toHaveBeenCalled();
+    });
+
+    it("should delete every selected policy when confirmed", async () => {
+      dialogServiceMock.confirm.mockResolvedValue(true);
+      const promise = service.deleteSelectedWithConfirmDialog([
+        { id: 1, name: "Brute Force" },
+        { id: 2, name: "Second" }
+      ]);
+      await Promise.resolve(); // let confirm() resolve before the delete requests are issued
+
+      httpMock.expectOne(`${service.baseUrl}/1`).flush(MockPiResponse.fromValue(1));
+      httpMock.expectOne(`${service.baseUrl}/2`).flush(MockPiResponse.fromValue(2));
+
+      expect(await promise).toBe(true);
+    });
+
+    it("should not issue requests when not confirmed", async () => {
+      dialogServiceMock.confirm.mockResolvedValue(false);
+      const result = await service.deleteSelectedWithConfirmDialog([{ id: 1, name: "Brute Force" }]);
+
+      expect(result).toBe(false);
+      httpMock.expectNone(`${service.baseUrl}/1`);
+    });
+  });
+
   describe("enablePolicy / disablePolicy", () => {
     it("should PATCH to enable", async () => {
       const promise = service.enablePolicy(1);
