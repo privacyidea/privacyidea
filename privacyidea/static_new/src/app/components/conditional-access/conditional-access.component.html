@@ -184,6 +184,20 @@
       </td>
     </ng-container>
 
+    <ng-container matColumnDef="actions">
+      <th
+        *matHeaderCellDef
+        i18n
+        mat-header-cell>
+        Actions
+      </th>
+      <td
+        *matCellDef="let policy"
+        mat-cell>
+        {{ actionsDisplay(policy) }}
+      </td>
+    </ng-container>
+
     <ng-container matColumnDef="enabled">
       <th
         *matHeaderCellDef
@@ -237,7 +251,7 @@
       class="mat-row">
       <td
         class="mat-cell"
-        colspan="9"
+        colspan="10"
         i18n>
         No conditional-access policies found.
       </td>

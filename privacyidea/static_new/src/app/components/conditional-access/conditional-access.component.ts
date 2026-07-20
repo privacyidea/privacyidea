@@ -85,6 +85,7 @@ export class ConditionalAccessComponent {
     "counter_types_to_track",
     "stages",
     "threshold",
+    "actions",
     "enabled",
     "dry_run"
   ];
@@ -102,6 +103,10 @@ export class ConditionalAccessComponent {
 
   thresholdDisplay(policy: LockoutPolicy): string {
     return policy.stages.map((stage) => stage.failure_threshold).join(", ");
+  }
+
+  actionsDisplay(policy: LockoutPolicy): string {
+    return policy.stages.flatMap((stage) => stage.actions.map((action) => action.action_type)).join(", ");
   }
 
   isAllSelected(): boolean {

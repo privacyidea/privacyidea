@@ -115,6 +115,24 @@ describe("ConditionalAccessComponent", () => {
     expect(component.thresholdDisplay(multiStage)).toBe("3, 5");
   });
 
+  it("should list every action type across all stages", () => {
+    const policy: LockoutPolicy = {
+      ...samplePolicy,
+      stages: [
+        { failure_threshold: 3, priority: 1, actions: [{ action_type: "LOCK_USER", action_value: 60 }] },
+        {
+          failure_threshold: 5,
+          priority: 2,
+          actions: [
+            { action_type: "EMAIL_ADMIN", action_value: null },
+            { action_type: "BLOCK_IP", action_value: 60 }
+          ]
+        }
+      ]
+    };
+    expect(component.actionsDisplay(policy)).toBe("LOCK_USER, EMAIL_ADMIN, BLOCK_IP");
+  });
+
   describe("selection", () => {
     const otherPolicy: LockoutPolicy = { ...samplePolicy, id: 2, name: "Second" };
 
