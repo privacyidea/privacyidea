@@ -17,9 +17,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject } from "@angular/core";
+import { Component, computed, inject, signal } from "@angular/core";
 import { MatTooltip } from "@angular/material/tooltip";
-import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { AuthService, AuthServiceInterface, LogLevel } from "@services/auth/auth.service";
+
+type DebugState = "normal" | "debug" | "debug-passwords";
 
 @Component({
   selector: "app-debug-notice",
@@ -29,7 +31,36 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
   styleUrl: "./debug-notice.component.scss"
 })
 export class DebugNoticeComponent {
+  private static readonly DISMISSED_KEY = "piDebugBannerDismissed";
+
   private readonly authService: AuthServiceInterface = inject(AuthService);
 
-  readonly visible = computed(() => this.authService.isDebug() && this.authService.role() === "admin");
+  readonly dismissed = signal(this.readDismissed());
+  readonly debugState = computed<DebugState>(() => {
+    const level = this.authService.logLevel();
+    if (level <= LogLevel.NotSet || level > LogLevel.Debug) {
+      return "normal";
+    }
+    return level < LogLevel.Debug ? "debug-passwords" : "debug";
+  });
+  readonly visible = computed(
+    () => this.debugState() !== "normal" && this.authService.role() === "admin" && !this.dismissed()
+  );
+
+  dismiss(): void {
+    this.dismissed.set(true);
+    try {
+      sessionStorage.setItem(DebugNoticeComponent.DISMISSED_KEY, "1");
+    } catch {
+      /* private mode etc. - in-memory only */
+    }
+  }
+
+  private readDismissed(): boolean {
+    try {
+      return sessionStorage.getItem(DebugNoticeComponent.DISMISSED_KEY) === "1";
+    } catch {
+      return false;
+    }
+  }
 }

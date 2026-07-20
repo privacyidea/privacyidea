@@ -1233,50 +1233,6 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         self.assertTrue(container_wizard["registration"])
         delete_policy("container_wizard")
 
-    def test_13_get_webui_settings_is_debug(self):
-        self.setUp_user_realms()
-
-        builder = EnvironBuilder(method="POST", data={}, headers={})
-        env = builder.get_environ()
-        req = Request(env)
-        req.User = User("cornelius", self.realm1)
-        req.all_data = {}
-
-        user_response = {"jsonrpc": "2.0",
-                         "result": {"status": True,
-                                    "value": {"role": "user",
-                                              "username": "cornelius",
-                                              "realm": self.realm1}},
-                         "version": "privacyIDEA test",
-                         "id": 1}
-        admin_response = {"jsonrpc": "2.0",
-                          "result": {"status": True,
-                                     "value": {"role": "admin",
-                                               "username": "cornelius",
-                                               "realm": ""}},
-                          "version": "privacyIDEA test",
-                          "id": 1}
-
-        self.assertFalse(current_app.debug)
-        resp = jsonify(admin_response)
-        new_response = get_webui_settings(req, resp)
-        self.assertFalse(new_response.json["result"]["value"]["is_debug"])
-
-        old_debug = current_app.config.get("DEBUG")
-        current_app.config["DEBUG"] = True
-        try:
-            resp = jsonify(user_response)
-            new_response = get_webui_settings(req, resp)
-            self.assertNotIn("is_debug", new_response.json["result"]["value"])
-            resp = jsonify(admin_response)
-            new_response = get_webui_settings(req, resp)
-            self.assertTrue(new_response.json["result"]["value"]["is_debug"])
-        finally:
-            if old_debug is None:
-                current_app.config.pop("DEBUG", None)
-            else:
-                current_app.config["DEBUG"] = old_debug
-
     def test_16_init_token_defaults(self):
         g.logged_in_user = {"username": "cornelius",
                             "realm": "",

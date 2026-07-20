@@ -856,8 +856,6 @@ def get_webui_settings(request, response):
         content["result"]["value"]["container_wizard"] = container_wizard
 
         if role == ROLE.ADMIN:
-            content["result"]["value"]["is_debug"] = bool(current_app.debug)
-
             # Add a support mailto, for administrators with systemwrite rights.
             subscriptions = get_subscription("privacyidea")
             if len(subscriptions) == 1:

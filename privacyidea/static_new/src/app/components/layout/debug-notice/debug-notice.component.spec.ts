@@ -18,7 +18,7 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { AuthService } from "@services/auth/auth.service";
+import { AuthService, LogLevel } from "@services/auth/auth.service";
 import { MockAuthService } from "@testing/mock-services";
 import { DebugNoticeComponent } from "./debug-notice.component";
 
@@ -44,38 +44,61 @@ describe("DebugNoticeComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("is hidden when the server is not running in debug mode", () => {
-    mockAuthService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, is_debug: false, role: "admin" });
+  it("is hidden when the backend log level is not DEBUG", () => {
+    mockAuthService.logLevel.set(LogLevel.Info);
+    mockAuthService.role.set("admin");
     fixture.detectChanges();
 
     expect(component.visible()).toBe(false);
     expect(fixture.nativeElement.querySelector(".debug-ribbon")).toBeNull();
   });
 
-  it("is hidden for a self-service user even in debug mode", () => {
-    mockAuthService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, is_debug: true, role: "user" });
+  it("is hidden for a self-service user even when the log level is DEBUG", () => {
+    mockAuthService.logLevel.set(LogLevel.Debug);
+    mockAuthService.role.set("user");
     fixture.detectChanges();
 
     expect(component.visible()).toBe(false);
   });
 
-  it("is shown for an admin when the server is running in debug mode", () => {
-    mockAuthService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, is_debug: true, role: "admin" });
+  it("is shown for an admin when the backend log level is DEBUG", () => {
+    mockAuthService.logLevel.set(LogLevel.Debug);
+    mockAuthService.role.set("admin");
     fixture.detectChanges();
 
     expect(component.visible()).toBe(true);
     expect(fixture.nativeElement.querySelector(".debug-ribbon")).toBeTruthy();
   });
 
-  it("stays shown after being clicked, since it cannot be dismissed", () => {
-    mockAuthService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, is_debug: true, role: "admin" });
-    fixture.detectChanges();
-
-    const ribbon: HTMLElement = fixture.nativeElement.querySelector(".debug-ribbon");
-    ribbon.click();
+  it("escalates to the passwords variant, which also implies debug logging", () => {
+    mockAuthService.logLevel.set(LogLevel.Debug - 1);
+    mockAuthService.role.set("admin");
     fixture.detectChanges();
 
     expect(component.visible()).toBe(true);
-    expect(fixture.nativeElement.querySelector(".debug-ribbon")).toBeTruthy();
+    expect(fixture.nativeElement.querySelector(".debug-ribbon-text-passwords")).toBeTruthy();
+  });
+
+  it("does not show the passwords variant for plain debug logging", () => {
+    mockAuthService.logLevel.set(LogLevel.Debug);
+    mockAuthService.role.set("admin");
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector(".debug-ribbon-text")).toBeTruthy();
+    expect(fixture.nativeElement.querySelector(".debug-ribbon-text-passwords")).toBeNull();
+  });
+
+  it("is dismissed when clicked", () => {
+    mockAuthService.logLevel.set(LogLevel.Debug);
+    mockAuthService.role.set("admin");
+    fixture.detectChanges();
+
+    const ribbonText: HTMLElement = fixture.nativeElement.querySelector(".debug-ribbon-text");
+    ribbonText.click();
+    fixture.detectChanges();
+
+    expect(component.dismissed()).toBe(true);
+    expect(component.visible()).toBe(false);
+    expect(fixture.nativeElement.querySelector(".debug-ribbon")).toBeNull();
   });
 });

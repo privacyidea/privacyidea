@@ -17,11 +17,19 @@
   padding: 4px 0;
   transform: rotate(-45deg);
   font-size: 0.8rem;
-  background-color: var(--red-base);
-  color: white;
+  background-color: var(--yellow-base);
+  color: var(--grey-dark);
   text-align: center;
   font-weight: bold;
   text-transform: uppercase;
   box-shadow: var(--mat-sys-level2);
   pointer-events: auto;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.debug-ribbon-text-passwords {
+  background-color: var(--red-base);
+  color: var(--grey-light);
 }

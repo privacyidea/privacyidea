@@ -26,7 +26,12 @@ import { AUTH_DATA_STORAGE_KEY, BEARER_TOKEN_STORAGE_KEY } from "@core/constants
 import { LocalService } from "@services/local/local.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { VersioningService } from "@services/version/version.service";
-import { MockLocalService, MockNotificationService, MockRouter, MockVersioningService } from "@testing/mock-services";
+import {
+  MockLocalService,
+  MockNotificationService,
+  MockRouter,
+  MockVersioningService
+} from "@testing/mock-services";
 import { AuthData, AuthResponse, AuthService, JwtData } from "./auth.service";
 
 const b64url = (obj: object) =>
@@ -258,8 +263,7 @@ describe("AuthService", () => {
         type: "",
         registration: false,
         template: null
-      },
-      is_debug: false
+      }
     });
     expect(authService.isAuthenticated()).toBe(true);
 
@@ -385,8 +389,7 @@ describe("AuthService", () => {
           logout_redirect_url: "",
           require_description: [],
           rss_age: 0,
-          container_wizard: { enabled: false, type: "generic", registration: false, template: null },
-          is_debug: false
+          container_wizard: { enabled: false, type: "generic", registration: false, template: null }
         }
       }
     };

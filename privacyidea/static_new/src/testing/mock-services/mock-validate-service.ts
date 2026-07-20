@@ -62,7 +62,6 @@ export class MockAuthData implements AuthData {
     registration: false,
     template: null
   };
-  is_debug = false;
   versionnumber = "";
 }
 

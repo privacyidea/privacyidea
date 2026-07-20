@@ -33,6 +33,15 @@ import { catchError, Observable, tap, throwError } from "rxjs";
 
 export type AuthResponse = PiResponse<AuthData, AuthDetail>;
 
+export enum LogLevel {
+  NotSet = 0,
+  Debug = 10,
+  Info = 20,
+  Warning = 30,
+  Error = 40,
+  Critical = 50
+}
+
 export interface ContainerWizardConfig {
   enabled: boolean;
   type: string;
@@ -77,7 +86,6 @@ export interface AuthData {
   require_description: string[];
   rss_age: number;
   container_wizard: ContainerWizardConfig;
-  is_debug?: boolean;
 }
 
 export interface JwtData {
@@ -234,7 +242,6 @@ export interface AuthServiceInterface {
     template: string | null;
   }>;
   readonly isSelfServiceUser: Signal<boolean>;
-  readonly isDebug: Signal<boolean>;
 
   // Methods
   getHeaders(): HttpHeaders;
@@ -286,7 +293,7 @@ export class AuthService implements AuthServiceInterface {
   });
   readonly logoutTimeS = computed(() => this.authData()?.logout_time || null);
   readonly isAuthenticated = computed(() => this.authenticationAccepted() && !!this.authData());
-  readonly logLevel = computed(() => this.authData()?.log_level || 0);
+  readonly logLevel = computed(() => this.authData()?.log_level || LogLevel.NotSet);
   readonly menus = computed(() => this.authData()?.menus || []);
   readonly realm = computed(() => this.jwtData()?.realm || this.authData()?.realm || "");
   readonly rights = computed(() => this.jwtData()?.rights || this.authData()?.rights || []);
@@ -347,7 +354,6 @@ export class AuthService implements AuthServiceInterface {
       }
   );
   readonly isSelfServiceUser = computed(() => this.role() === "user");
-  readonly isDebug = computed(() => this.authData()?.is_debug || false);
 
   constructor() {
     this.restoreSession();

@@ -17,18 +17,39 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 @if (visible()) {
-  <div
-    class="debug-ribbon"
-    role="status"
-    aria-label="privacyIDEA is running in debug mode. Disable it in production environments."
-    i18n-aria-label>
-    <span
-      class="debug-ribbon-text"
-      matTooltip="privacyIDEA is running in debug mode. Disable it in production environments."
-      matTooltipPosition="right"
-      i18n-matTooltip
-      i18n>
-      Debug
-    </span>
-  </div>
+  @if (debugState() === "debug-passwords") {
+    <div
+      class="debug-ribbon"
+      role="alert"
+      aria-label="privacyIDEA is running in DEBUG mode with PASSWORDS being written to the log file. You can change the debug level in pi.cfg. Afterwards be sure to remove the logfile!"
+      i18n-aria-label>
+      <button
+        type="button"
+        class="debug-ribbon-text debug-ribbon-text-passwords"
+        matTooltip="privacyIDEA is running in DEBUG mode with PASSWORDS being written to the log file. You can change the debug level in pi.cfg. Afterwards be sure to remove the logfile! Click to dismiss."
+        matTooltipPosition="right"
+        i18n-matTooltip
+        (click)="dismiss()"
+        i18n>
+        Passwords
+      </button>
+    </div>
+  } @else {
+    <div
+      class="debug-ribbon"
+      role="status"
+      aria-label="privacyIDEA is running in DEBUG mode. You can change the debug level in pi.cfg."
+      i18n-aria-label>
+      <button
+        type="button"
+        class="debug-ribbon-text"
+        matTooltip="privacyIDEA is running in DEBUG mode. You can change the debug level in pi.cfg. Click to dismiss."
+        matTooltipPosition="right"
+        i18n-matTooltip
+        (click)="dismiss()"
+        i18n>
+        Debug
+      </button>
+    </div>
+  }
 }
