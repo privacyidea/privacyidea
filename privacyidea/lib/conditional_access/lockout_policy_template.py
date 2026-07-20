@@ -34,7 +34,7 @@ import logging
 from dataclasses import dataclass
 
 from privacyidea.lib import lazy_gettext
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
 from privacyidea.lib.conditional_access.engine import LockoutAction, LockoutTarget
 from privacyidea.lib.log import log_with
 
@@ -132,6 +132,7 @@ PASSWORD_SPRAYING = LockoutPolicyTemplate(
         "dry_run": False,
         "priority": 1,
         "target": LockoutTarget.SOURCE_IP,
+        "count_mode": CountMode.DISTINCT_USERS,
         "counter_types_to_track": [AuthEventType.PASSWORD_FAIL, AuthEventType.PIN_FAIL],
         "stages": [
             {"failure_threshold": 20, "priority": 1,

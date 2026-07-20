@@ -133,17 +133,25 @@ def outcome_of(event_type: AuthEventType) -> AuthEventOutcome:
 
 class CountMode(str, Enum):
     """
-    How a conditional-access policy counts the tracked :class:`AuthEventType`\\ s against its stage thresholds.
+    How a conditional-access policy counts the tracked :class:`AuthEventType`\\ s against its stage thresholds. The
+    valid modes depend on the policy target (see ``_COUNT_MODES_BY_TARGET`` in the CRUD layer): the volume modes are
+    for a ``user`` target, :attr:`DISTINCT_USERS` for a ``source_ip`` target.
 
     :attr:`PER_REQUEST` counts individual ``authentication_log`` rows. :attr:`PER_ATTEMPT` counts whole
     authentication *attempts*: the rows sharing one ``attempt_id`` are collapsed into a single attempt, so a
-    multi-request challenge / multichallenge login counts once. Both modes track the same vocabulary
+    multi-request challenge / multichallenge login counts once. Both are volume modes and track the same vocabulary
     (:class:`AuthEventType` names); the mode only changes the unit that is counted.
+
+    :attr:`DISTINCT_USERS` counts the number of distinct accounts a subject targeted rather than the volume of events
+    -- the password-spraying / enumeration signal for a ``source_ip`` policy (one IP hitting many accounts). It is the
+    only mode for a ``source_ip`` target, so a source-IP policy's ``count_mode`` states this explicitly instead of
+    carrying a volume mode that would not apply.
 
     ``str``/``Enum`` (not ``StrEnum``) for Python 3.10, like :class:`AuthEventType`.
     """
     PER_REQUEST = "PER_REQUEST"
     PER_ATTEMPT = "PER_ATTEMPT"
+    DISTINCT_USERS = "DISTINCT_USERS"
 
     def __str__(self) -> str:
         return self.value

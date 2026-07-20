@@ -46,10 +46,11 @@ A policy is passed around as a plain dict::
         ],
     }
 
-``count_mode`` (default ``PER_REQUEST``) is a
-:class:`~privacyidea.lib.conditional_access.authentication_event_types.CountMode` name and decides whether the tracked
-counters are counted per ``authentication_log`` row (``PER_REQUEST``) or per whole authentication attempt
-(``PER_ATTEMPT``); both modes track the same vocabulary. ``counter_types_to_track`` values must be
+``count_mode`` is a :class:`~privacyidea.lib.conditional_access.authentication_event_types.CountMode` name whose valid
+values depend on the target (see ``_COUNT_MODES_BY_TARGET``): a ``user`` policy counts its event volume per
+``authentication_log`` row (``PER_REQUEST``) or per whole authentication attempt (``PER_ATTEMPT``), a ``source_ip``
+policy counts distinct targeted accounts (``DISTINCT_USERS``). When omitted it defaults to the target's default
+(``PER_REQUEST`` for ``user``, ``DISTINCT_USERS`` for ``source_ip``). ``counter_types_to_track`` values must be
 :class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthEventType` names and ``action_type`` values
 must be :class:`~privacyidea.lib.conditional_access.engine.LockoutAction` names; anything else is a
 :class:`~privacyidea.lib.error.ParameterError` (fail-closed - a typo must not silently create a policy that never
@@ -203,19 +204,42 @@ def _validate_target_actions(stage_defs: list["StageDefinition"], target: "Locko
                              f"Allowed: {', '.join(sorted(allowed))}.")
 
 
-def _validate_count_mode(count_mode) -> str:
-    """
-    Validate the policy's :class:`CountMode` and return its canonical string value.
+# The count modes each target may use, and the default when the caller does not specify one. A ``user`` target counts
+# its own event volume (per request or per whole attempt); a ``source_ip`` target counts distinct targeted accounts
+# (spraying / enumeration), so ``count_mode`` states that explicitly rather than carrying a volume mode that would not
+# apply. Mirrors the per-target ``_ACTIONS_BY_TARGET`` registration.
+_COUNT_MODES_BY_TARGET = {
+    LockoutTarget.USER: {CountMode.PER_REQUEST, CountMode.PER_ATTEMPT},
+    LockoutTarget.SOURCE_IP: {CountMode.DISTINCT_USERS},
+}
+_DEFAULT_COUNT_MODE_BY_TARGET = {
+    LockoutTarget.USER: CountMode.PER_REQUEST,
+    LockoutTarget.SOURCE_IP: CountMode.DISTINCT_USERS,
+}
 
-    Accepts either a mode string (from the API) or a :class:`CountMode` member (the CRUD default) and normalizes both
-    to the plain string stored on the model, so the stored value's type does not depend on the caller. The enum is
-    the single source of truth for which modes are valid.
+
+def _validate_count_mode(count_mode, target: "LockoutTarget") -> str:
     """
+    Validate the policy's :class:`CountMode` for *target* and return its canonical string value.
+
+    A ``None`` *count_mode* yields the target's default (see :data:`_DEFAULT_COUNT_MODE_BY_TARGET`), so a caller need
+    not know which mode a target expects. Otherwise the mode must be a known :class:`CountMode` (accepted as either a
+    mode string from the API or a member) *and* allowed for *target* (see :data:`_COUNT_MODES_BY_TARGET`) - e.g.
+    ``DISTINCT_USERS`` on a ``user`` policy, or a volume mode on a ``source_ip`` policy, is rejected. Both accepted
+    forms normalize to the plain string stored on the model, so the stored value's type does not depend on the caller.
+    """
+    if count_mode is None:
+        return _DEFAULT_COUNT_MODE_BY_TARGET[target].value
     try:
-        return CountMode(count_mode).value
+        mode = CountMode(count_mode)
     except ValueError:
         valid_modes = ", ".join(mode.value for mode in CountMode)
         raise ParameterError(f"Unknown count_mode '{count_mode}'. Valid modes: {valid_modes}.")
+    allowed = _COUNT_MODES_BY_TARGET[target]
+    if mode not in allowed:
+        raise ParameterError(f"count_mode '{mode}' is not allowed for target '{target}'. "
+                             f"Allowed: {', '.join(sorted(m.value for m in allowed))}.")
+    return mode.value
 
 
 def _validate_counter_types(counter_types) -> list[str]:
@@ -336,14 +360,15 @@ def get_lockout_policy(policy_id: int) -> dict:
 @log_with(log)
 def create_lockout_policy(name: str, time_window_seconds: int, counter_types_to_track: list[str],
                           stages: list[dict], target: str, enabled: bool = True,
-                          dry_run: bool = False, priority: int = 1, count_mode: str = CountMode.PER_REQUEST) -> int:
+                          dry_run: bool = False, priority: int = 1, count_mode: str | None = None) -> int:
     """
     Create a lockout policy with its stages and actions in one transaction.
 
     See the module docstring for the parameter shapes; everything is validated
     here and a :class:`ParameterError` is raised on any invalid input before
     anything is written. ``target`` is required (no silent default) so the
-    target/action compatibility is always a deliberate choice.
+    target/action compatibility is always a deliberate choice. ``count_mode``
+    defaults to the target's default when not given (see :func:`_validate_count_mode`).
 
     :return: the id of the new policy
     """
@@ -351,7 +376,7 @@ def create_lockout_policy(name: str, time_window_seconds: int, counter_types_to_
     time_window_seconds = _validate_positive_int(time_window_seconds, "time_window_seconds")
     priority = _validate_positive_int(priority, "priority")
     lockout_target = _validate_target(target)
-    count_mode = _validate_count_mode(count_mode)
+    count_mode = _validate_count_mode(count_mode, lockout_target)
     counter_types = _validate_counter_types(counter_types_to_track)
     stage_defs = _validate_stages(stages)
     _validate_target_actions(stage_defs, lockout_target)
@@ -407,8 +432,6 @@ def update_lockout_policy(policy_id: int, name: str | None = None,
     if priority is not None:
         priority = _validate_positive_int(priority, "priority")
     lockout_target = _validate_target(target) if target is not None else None
-    if count_mode is not None:
-        count_mode = _validate_count_mode(count_mode)
     if counter_types_to_track is not None:
         counter_types_to_track = _validate_counter_types(counter_types_to_track)
     if stages is not None:
@@ -418,6 +441,14 @@ def update_lockout_policy(policy_id: int, name: str | None = None,
         effective_target = lockout_target if lockout_target is not None else LockoutTarget(policy.target)
         effective_stages = stages if stages is not None else policy.stages
         _validate_target_actions(effective_stages, effective_target)
+    # target and count_mode must stay mutually compatible: switching the target can invalidate the stored mode (e.g.
+    # a user policy's PER_REQUEST is not valid once it becomes a source_ip policy), so validate the effective pair.
+    if lockout_target is not None or count_mode is not None:
+        effective_target = lockout_target if lockout_target is not None else LockoutTarget(policy.target)
+        effective_mode = count_mode if count_mode is not None else policy.count_mode
+        validated_mode = _validate_count_mode(effective_mode, effective_target)
+        if count_mode is not None:
+            count_mode = validated_mode
 
     changed_fields = []
     if name is not None:

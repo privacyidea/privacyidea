@@ -77,7 +77,7 @@ class LockoutEngineTestCase(LockoutTestCase):
 
     def _make_policy(self, *, name: str, counter_type, window: int = 3600, enabled: bool = True,
                      dry_run: bool = False, priority: int = 1, target: LockoutTarget = LockoutTarget.USER,
-                     count_mode: CountMode = CountMode.PER_REQUEST,
+                     count_mode: CountMode | None = None,
                      stages: Sequence[StageDefinition] = (
                              StageDefinition(3, 1, [StageActionDefinition(LockoutAction.LOCK_USER, 600)]),)):
         """
@@ -85,8 +85,13 @@ class LockoutEngineTestCase(LockoutTestCase):
         :func:`_build_stages`. Builds the ORM rows directly (not through ``create_lockout_policy``) so engine tests
         can also construct deliberately invalid policies (e.g. an unknown action type) that the CRUD would reject.
 
+        ``count_mode`` defaults to the target's default (``DISTINCT_USERS`` for source_ip, else ``PER_REQUEST``),
+        mirroring the CRUD default.
+
         :param stages: the :class:`StageDefinition` specs to create
         """
+        if count_mode is None:
+            count_mode = CountMode.DISTINCT_USERS if target == LockoutTarget.SOURCE_IP else CountMode.PER_REQUEST
         counter_types = counter_type if isinstance(counter_type, (list, tuple)) else [counter_type]
         policy = LockoutPolicy(name=name, counter_types_to_track=[str(t) for t in counter_types],
                                time_window_seconds=window, enabled=enabled, dry_run=dry_run,

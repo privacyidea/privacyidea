@@ -28,7 +28,7 @@ import json
 
 from werkzeug.test import TestResponse
 
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
 from privacyidea.lib.conditional_access.engine import LockoutAction
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
@@ -165,17 +165,19 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         self.assertEqual(400, res.status_code, res.json)
 
     def test_patch_change_target_with_compatible_stages(self):
-        # target may change as long as the new target/action combination is
-        # compatible: flip a user policy to source_ip while swapping in BLOCK_IP.
+        # target may change as long as the new target/action AND target/count_mode combinations are compatible:
+        # flip a user policy to source_ip while swapping in BLOCK_IP and the source_ip count_mode.
         policy_id = self._create_policy()
         res = self._request(f"policy/{policy_id}", method="PATCH",
                             json_data={"target": "source_ip",
+                                       "count_mode": str(CountMode.DISTINCT_USERS),
                                        "stages": [{"failure_threshold": 20,
                                                    "actions": [{"action_type": str(LockoutAction.BLOCK_IP),
                                                                 "action_value": {"duration_seconds": 60}}]}]})
         self.assertEqual(200, res.status_code, res.json)
-        self.assertEqual("source_ip",
-                         self._request(f"policy/{policy_id}").json["result"]["value"]["target"])
+        result = self._request(f"policy/{policy_id}").json["result"]["value"]
+        self.assertEqual("source_ip", result["target"])
+        self.assertEqual(str(CountMode.DISTINCT_USERS), result["count_mode"])
 
     def test_patch_change_target_incompatible_with_stages_is_400(self):
         # flipping to source_ip while the existing LOCK_USER stage remains is rejected

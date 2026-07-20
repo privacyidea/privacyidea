@@ -34,7 +34,6 @@ from flask import Blueprint, request, g
 
 from privacyidea.api.lib.prepolicy import prepolicy, check_base_action
 from privacyidea.api.lib.utils import send_result
-from privacyidea.lib.conditional_access.authentication_event_types import CountMode
 from privacyidea.lib.conditional_access.lockout_policy import (list_lockout_policies,
                                                                get_lockout_policy,
                                                                create_lockout_policy,
@@ -153,8 +152,11 @@ def create_policy():
     :jsonparam time_window_seconds: sliding window (in seconds) over which the
         tracked failures are counted. Required, positive integer.
     :jsonparam count_mode: how the tracked counters are counted against the
-        thresholds - ``PER_REQUEST`` (per authentication_log row, the default) or
-        ``PER_ATTEMPT`` (per whole authentication attempt). Optional.
+        thresholds; valid values depend on ``target`` - a ``user`` policy uses
+        ``PER_REQUEST`` (per authentication_log row) or ``PER_ATTEMPT`` (per whole
+        authentication attempt), a ``source_ip`` policy uses ``DISTINCT_USERS``
+        (distinct targeted accounts). Optional; defaults to the target's default
+        (``PER_REQUEST`` for ``user``, ``DISTINCT_USERS`` for ``source_ip``).
     :jsonparam counter_types_to_track: non-empty list of authentication event
         types (e.g. ``["PIN_FAIL", "MFA_FAIL"]``) counted together against the
         stage thresholds. Required.
@@ -182,7 +184,7 @@ def create_policy():
         enabled=is_true(enabled) if enabled is not None else True,
         dry_run=is_true(dry_run) if dry_run is not None else False,
         priority=get_optional(params, "priority", default=1),
-        count_mode=get_optional(params, "count_mode", default=CountMode.PER_REQUEST),
+        count_mode=get_optional(params, "count_mode"),
         target=get_required(params, "target"))
     g.audit_object.log({"success": True, "info": f"created policy '{name}' (id {policy_id})"})
     return send_result(policy_id)
