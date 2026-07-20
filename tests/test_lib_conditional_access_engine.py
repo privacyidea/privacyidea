@@ -21,6 +21,7 @@ Unit tests for the conditional-access lockout policy engine
 pre-check lock test, and the policy-evaluation workflow (stage selection,
 de-duplication, dry-run, and the LOCK_USER / PERMANENT_LOCK_USER actions).
 """
+from collections.abc import Sequence
 from datetime import datetime, timedelta
 from email import message_from_string
 
@@ -40,6 +41,8 @@ from privacyidea.lib.conditional_access.engine import (
     _safe_format,
     _resolve_admin_recipients,
 )
+from privacyidea.lib.conditional_access.lockout_policy import (StageDefinition, StageActionDefinition,
+                                                               _build_stages)
 from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_config, SYSCONF
 from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
 from privacyidea.lib.user import User
@@ -103,31 +106,24 @@ class LockoutEngineTestCase(MyTestCase):
                 realm=user.realm, timestamp=timestamp, attempt_id=attempt_id))
         db.session.commit()
 
-    def _make_policy(self, *, name, counter_type, window=3600, enabled=True, dry_run=False,
-                     priority=1, count_mode=CountMode.PER_REQUEST,
-                     stages=((3, 1, LockoutAction.LOCK_USER, 600),)):
+    def _make_policy(self, *, name: str, counter_type, window: int = 3600, enabled: bool = True,
+                     dry_run: bool = False, priority: int = 1, count_mode: CountMode = CountMode.PER_REQUEST,
+                     stages: Sequence[StageDefinition] = (
+                             StageDefinition(3, 1, [StageActionDefinition(LockoutAction.LOCK_USER, 600)]),)):
         """
-        Build a policy with its stages and one action per stage.
+        Build a policy with its stages and actions from :class:`StageDefinition` specs — the same shape the
+        ``create_lockout_policy`` path validates into — persisted via the production :func:`_build_stages`.
 
-        :param stages: iterable of (failure_threshold, stage_priority, action_type, action_value)
+        :param stages: the :class:`StageDefinition` specs to create
         """
         counter_types = counter_type if isinstance(counter_type, (list, tuple)) else [counter_type]
+        stage_objs = _build_stages(list(stages))
         policy = LockoutPolicy(name=name, counter_types_to_track=[str(t) for t in counter_types],
                                time_window_seconds=window, enabled=enabled, dry_run=dry_run,
-                               priority=priority, count_mode=str(count_mode))
+                               priority=priority, count_mode=str(count_mode), stages=stage_objs)
         db.session.add(policy)
         db.session.commit()
-        made_stages = []
-        for threshold, stage_priority, action_type, action_value in stages:
-            stage = LockoutPolicyStage(policy_id=policy.id, failure_threshold=threshold,
-                                       priority=stage_priority)
-            db.session.add(stage)
-            db.session.commit()
-            db.session.add(LockoutStageAction(stage_id=stage.id, action_type=str(action_type),
-                                              action_value=action_value))
-            db.session.commit()
-            made_stages.append(stage)
-        return policy, made_stages
+        return policy, stage_objs
 
     def _state(self, user=None):
         user = user or self.user
@@ -250,7 +246,7 @@ class LockoutEngineTestCase(MyTestCase):
         self._seed_attempt("a1", [AuthEventType.MFA_FAIL, AuthEventType.CHALLENGE_CONTINUED])
         # Progressed then failed the next challenge -> a failure.
         self._seed_attempt("a2", [AuthEventType.CHALLENGE_CONTINUED, AuthEventType.MFA_FAIL])
-        self.assertEqual(1, self._count_attempts([AuthEventType.MFA_FAIL]))          # only a2
+        self.assertEqual(1, self._count_attempts([AuthEventType.MFA_FAIL]))  # only a2
         self.assertEqual(1, self._count_attempts([AuthEventType.CHALLENGE_CONTINUED]))  # only a1
 
     def test_count_attempts_combined_types_and_window(self):
@@ -431,8 +427,8 @@ class LockoutEngineTestCase(MyTestCase):
         # priority 2 -> threshold 15 (severe), priority 1 -> threshold 5.
         _, stages = self._make_policy(
             name="tiers", counter_type=AuthEventType.MFA_FAIL,
-            stages=((15, 2, LockoutAction.LOCK_USER, 1800),
-                    (5, 1, LockoutAction.LOCK_USER, 600)))
+            stages=(StageDefinition(15, 2, [StageActionDefinition(LockoutAction.LOCK_USER, 1800)]),
+                    StageDefinition(5, 1, [StageActionDefinition(LockoutAction.LOCK_USER, 600)])))
         severe_stage, mild_stage = stages[0], stages[1]
 
         self._seed_events(AuthEventType.MFA_FAIL, 6)
@@ -544,7 +540,7 @@ class LockoutEngineTestCase(MyTestCase):
 
     def test_permanent_lock_action(self):
         self._make_policy(name="perm", counter_type=AuthEventType.MFA_FAIL,
-                          stages=((3, 1, LockoutAction.PERMANENT_LOCK_USER, None),))
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.PERMANENT_LOCK_USER)]),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
         evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
         state = self._state()
@@ -568,14 +564,14 @@ class LockoutEngineTestCase(MyTestCase):
 
     def test_invalid_duration_action_skipped(self):
         self._make_policy(name="baddur", counter_type=AuthEventType.MFA_FAIL,
-                          stages=((3, 1, LockoutAction.LOCK_USER, None),))
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.LOCK_USER)]),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
         evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
         self.assertIsNone(self._state())
 
     def test_unknown_action_type_skipped(self):
         self._make_policy(name="weird", counter_type=AuthEventType.MFA_FAIL,
-                          stages=((3, 1, "TELEPORT_USER", None),))
+                          stages=(StageDefinition(3, 1, [StageActionDefinition("TELEPORT_USER")]),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
         # Unknown action types are logged and skipped, not raised.
         evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
@@ -619,7 +615,7 @@ class LockoutEngineTestCase(MyTestCase):
     def test_block_ip_action_skips_never_block_ip(self):
         # A BLOCK_IP action must never write a block for a never-block IP (loopback).
         self._make_policy(name="blockloop", counter_type=AuthEventType.PASSWORD_FAIL,
-                          stages=((3, 1, LockoutAction.BLOCK_IP, 900),))
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.BLOCK_IP, 900)]),))
         self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
         evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip="127.0.0.1")
         self.assertEqual(0, db.session.query(BlockList).count())
@@ -644,7 +640,7 @@ class LockoutEngineTestCase(MyTestCase):
     def test_block_ip_action_blocks_source_ip(self):
         _, stages = self._make_policy(
             name="blockip", counter_type=AuthEventType.PASSWORD_FAIL,
-            stages=((3, 1, LockoutAction.BLOCK_IP, 900),))
+            stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.BLOCK_IP, 900)]),))
         self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
         evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip="203.0.113.7")
         block = self._block("203.0.113.7")
@@ -662,14 +658,14 @@ class LockoutEngineTestCase(MyTestCase):
     def test_block_ip_action_without_source_ip_skipped(self):
         # No source IP for the request -> the action is logged and skipped, not raised.
         self._make_policy(name="blocknoip", counter_type=AuthEventType.PASSWORD_FAIL,
-                          stages=((3, 1, LockoutAction.BLOCK_IP, 900),))
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.BLOCK_IP, 900)]),))
         self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
         evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip=None)
         self.assertEqual(0, db.session.query(BlockList).count())
 
     def test_block_ip_action_invalid_duration_skipped(self):
         self._make_policy(name="blockbaddur", counter_type=AuthEventType.PASSWORD_FAIL,
-                          stages=((3, 1, LockoutAction.BLOCK_IP, None),))
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.BLOCK_IP)]),))
         self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
         evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip="203.0.113.7")
         self.assertIsNone(self._block("203.0.113.7"))
@@ -679,7 +675,7 @@ class LockoutEngineTestCase(MyTestCase):
         db.session.add(BlockList(ip="203.0.113.7", is_blocked=True, block_expires_at=None))
         db.session.commit()
         self._make_policy(name="blocktimed", counter_type=AuthEventType.PASSWORD_FAIL,
-                          stages=((3, 1, LockoutAction.BLOCK_IP, 900),))
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.BLOCK_IP, 900)]),))
         self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
         evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip="203.0.113.7")
         # The permanent block must remain permanent (block_expires_at stays None).
@@ -689,7 +685,7 @@ class LockoutEngineTestCase(MyTestCase):
     def test_permanent_block_ip_action(self):
         # Mirror of PERMANENT_LOCK_USER: a permanent IP block (block_expires_at None).
         self._make_policy(name="permblock", counter_type=AuthEventType.PASSWORD_FAIL,
-                          stages=((3, 1, LockoutAction.PERMANENT_BLOCK_IP, None),))
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.PERMANENT_BLOCK_IP)]),))
         self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
         evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip="203.0.113.7")
         block = self._block("203.0.113.7")
@@ -702,7 +698,8 @@ class LockoutEngineTestCase(MyTestCase):
         # action_value is irrelevant for the permanent variant: even a "valid"
         # duration does not make it timed.
         self._make_policy(name="permblockdur", counter_type=AuthEventType.PASSWORD_FAIL,
-                          stages=((3, 1, LockoutAction.PERMANENT_BLOCK_IP, 900),))
+                          stages=(
+                              StageDefinition(3, 1, [StageActionDefinition(LockoutAction.PERMANENT_BLOCK_IP, 900)]),))
         self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
         evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip="203.0.113.7")
         self.assertIsNone(self._block("203.0.113.7").block_expires_at)
@@ -710,7 +707,7 @@ class LockoutEngineTestCase(MyTestCase):
     def test_permanent_block_ip_without_source_ip_skipped(self):
         # Like BLOCK_IP, a request with no source IP is logged and skipped, not raised.
         self._make_policy(name="permblocknoip", counter_type=AuthEventType.PASSWORD_FAIL,
-                          stages=((3, 1, LockoutAction.PERMANENT_BLOCK_IP, None),))
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.PERMANENT_BLOCK_IP)]),))
         self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
         evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip=None)
         self.assertEqual(0, db.session.query(BlockList).count())
@@ -719,7 +716,7 @@ class LockoutEngineTestCase(MyTestCase):
         # A stage can both lock the user and block the source IP in one trigger.
         _, stages = self._make_policy(
             name="lockandblock", counter_type=AuthEventType.PASSWORD_FAIL,
-            stages=((3, 1, LockoutAction.LOCK_USER, 600),))
+            stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.LOCK_USER, 600)]),))
         db.session.add(LockoutStageAction(
             stage_id=stages[0].id, action_type=str(LockoutAction.BLOCK_IP), action_value=900))
         db.session.commit()
@@ -734,7 +731,7 @@ class LockoutEngineTestCase(MyTestCase):
         # stages had no de-dup at all (de-dup keyed solely on UserLockoutState),
         # so every in-window failure kept refreshing the block.
         self._make_policy(name="blockip", counter_type=AuthEventType.PASSWORD_FAIL,
-                          stages=((3, 1, LockoutAction.BLOCK_IP, 900),))
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.BLOCK_IP, 900)]),))
         self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
         evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip="203.0.113.7")
         # Tamper with the expiry, then re-evaluate within the window: the de-dup
@@ -751,7 +748,7 @@ class LockoutEngineTestCase(MyTestCase):
         # an expired block ends the incident, so the next failure re-fires and
         # refreshes the block.
         self._make_policy(name="blockip", counter_type=AuthEventType.PASSWORD_FAIL,
-                          stages=((3, 1, LockoutAction.BLOCK_IP, 900),))
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.BLOCK_IP, 900)]),))
         self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
         evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip="203.0.113.7")
         # The block runs out while the failures are still in the window.
@@ -771,7 +768,7 @@ class LockoutEngineTestCase(MyTestCase):
 
     def test_access_decision_deny_when_threshold_met(self):
         self._make_policy(name="deny", counter_type=AuthEventType.PASSWORD_FAIL,
-                          stages=((3, 1, LockoutAction.DENY, None),))
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.DENY)]),))
         self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
         self.assertEqual(AccessDecision.DENY, evaluate_access_decision(self.user))
         # DENY is stateless: it persists no lockout state.
@@ -779,7 +776,7 @@ class LockoutEngineTestCase(MyTestCase):
 
     def test_access_decision_below_threshold_is_continue(self):
         self._make_policy(name="deny", counter_type=AuthEventType.PASSWORD_FAIL,
-                          stages=((3, 1, LockoutAction.DENY, None),))
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.DENY)]),))
         self._seed_events(AuthEventType.PASSWORD_FAIL, 2)
         self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(self.user))
 
@@ -787,7 +784,7 @@ class LockoutEngineTestCase(MyTestCase):
         # A PER_ATTEMPT policy counts whole attempts: two multi-row failed challenge attempts are 2, not the 4
         # rows they span, so a threshold of 3 is NOT met (a PER_REQUEST policy over the same rows would deny).
         self._make_policy(name="deny", counter_type=AuthEventType.MFA_FAIL, count_mode=CountMode.PER_ATTEMPT,
-                          stages=((3, 1, LockoutAction.DENY, None),))
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.DENY)]),))
         self._seed_attempt("a1", [AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.MFA_FAIL])
         self._seed_attempt("a2", [AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.MFA_FAIL])
         self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(self.user))
@@ -800,7 +797,7 @@ class LockoutEngineTestCase(MyTestCase):
         # crosses the threshold of 3, so the request is denied.
         self._make_policy(name="deny",
                           counter_type=[AuthEventType.PASSWORD_FAIL, AuthEventType.MFA_FAIL],
-                          stages=((3, 1, LockoutAction.DENY, None),))
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.DENY)]),))
         self._seed_events(AuthEventType.PASSWORD_FAIL, 2)
         self._seed_events(AuthEventType.MFA_FAIL, 2)
         self.assertEqual(AccessDecision.DENY, evaluate_access_decision(self.user))
@@ -811,7 +808,7 @@ class LockoutEngineTestCase(MyTestCase):
         # only as the failures age out). Pins the "lock only" reset scope.
         now = utc_now()
         self._make_policy(name="deny", counter_type=AuthEventType.PASSWORD_FAIL,
-                          stages=((3, 1, LockoutAction.DENY, None),))
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.DENY)]),))
         self._seed_events(AuthEventType.PASSWORD_FAIL, 3, timestamp=now - timedelta(seconds=300))
         self._seed_events(AuthEventType.LOGIN_SUCCESS, 1, timestamp=now - timedelta(seconds=200))
         # The three pre-login failures still trigger DENY despite the login.
@@ -820,57 +817,55 @@ class LockoutEngineTestCase(MyTestCase):
     def test_access_decision_allow_threshold_zero_is_default_allow(self):
         # A stage with threshold 0 always matches -> default allow, no events needed.
         self._make_policy(name="allow", counter_type=AuthEventType.PASSWORD_FAIL,
-                          stages=((0, 1, LockoutAction.ALLOW, None),))
+                          stages=(StageDefinition(0, 1, [StageActionDefinition(LockoutAction.ALLOW)]),))
         self.assertEqual(AccessDecision.ALLOW, evaluate_access_decision(self.user))
 
     def test_access_decision_higher_priority_allow_overrides_deny(self):
         # An ALLOW policy at higher priority wins over a lower-priority DENY.
         self._make_policy(name="deny", counter_type=AuthEventType.PASSWORD_FAIL, priority=1,
-                          stages=((3, 1, LockoutAction.DENY, None),))
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.DENY)]),))
         self._make_policy(name="allow", counter_type=AuthEventType.PASSWORD_FAIL, priority=10,
-                          stages=((0, 1, LockoutAction.ALLOW, None),))
+                          stages=(StageDefinition(0, 1, [StageActionDefinition(LockoutAction.ALLOW)]),))
         self._seed_events(AuthEventType.PASSWORD_FAIL, 5)
         self.assertEqual(AccessDecision.ALLOW, evaluate_access_decision(self.user))
 
     def test_access_decision_higher_priority_deny_overrides_allow(self):
         self._make_policy(name="allow", counter_type=AuthEventType.PASSWORD_FAIL, priority=1,
-                          stages=((0, 1, LockoutAction.ALLOW, None),))
+                          stages=(StageDefinition(0, 1, [StageActionDefinition(LockoutAction.ALLOW)]),))
         self._make_policy(name="deny", counter_type=AuthEventType.PASSWORD_FAIL, priority=10,
-                          stages=((3, 1, LockoutAction.DENY, None),))
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.DENY)]),))
         self._seed_events(AuthEventType.PASSWORD_FAIL, 5)
         self.assertEqual(AccessDecision.DENY, evaluate_access_decision(self.user))
 
     def test_access_decision_ignores_lockout_only_stage(self):
         # A LOCK_USER stage is a post-response side effect, not a pre-auth decision.
         self._make_policy(name="lock", counter_type=AuthEventType.PASSWORD_FAIL,
-                          stages=((3, 1, LockoutAction.LOCK_USER, 600),))
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.LOCK_USER, 600)]),))
         self._seed_events(AuthEventType.PASSWORD_FAIL, 5)
         self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(self.user))
 
     def test_access_decision_dry_run_not_enforced(self):
         self._make_policy(name="drydeny", counter_type=AuthEventType.PASSWORD_FAIL, dry_run=True,
-                          stages=((3, 1, LockoutAction.DENY, None),))
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.DENY)]),))
         self._seed_events(AuthEventType.PASSWORD_FAIL, 5)
         self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(self.user))
 
     def test_access_decision_disabled_policy_skipped(self):
         self._make_policy(name="offdeny", counter_type=AuthEventType.PASSWORD_FAIL, enabled=False,
-                          stages=((3, 1, LockoutAction.DENY, None),))
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.DENY)]),))
         self._seed_events(AuthEventType.PASSWORD_FAIL, 5)
         self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(self.user))
 
     def test_access_decision_unresolved_user_is_continue(self):
         self._make_policy(name="allow", counter_type=AuthEventType.PASSWORD_FAIL,
-                          stages=((0, 1, LockoutAction.ALLOW, None),))
+                          stages=(StageDefinition(0, 1, [StageActionDefinition(LockoutAction.ALLOW)]),))
         self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(User()))
 
     def test_access_decision_both_actions_on_stage_denies(self):
         # A stage misconfigured with both ALLOW and DENY fails closed (DENY wins).
-        _, stages = self._make_policy(name="both", counter_type=AuthEventType.PASSWORD_FAIL,
-                                      stages=((3, 1, LockoutAction.ALLOW, None),))
-        db.session.add(LockoutStageAction(stage_id=stages[0].id,
-                                          action_type=str(LockoutAction.DENY), action_value=None))
-        db.session.commit()
+        self._make_policy(name="both", counter_type=AuthEventType.PASSWORD_FAIL,
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.ALLOW),
+                                                         StageActionDefinition(LockoutAction.DENY)]),))
         self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
         self.assertEqual(AccessDecision.DENY, evaluate_access_decision(self.user))
 
@@ -893,10 +888,10 @@ class LockoutEngineTestCase(MyTestCase):
         try:
             self._make_policy(
                 name="mailuser", counter_type=AuthEventType.MFA_FAIL,
-                stages=((3, 1, LockoutAction.EMAIL_USER,
-                         {"smtp_identifier": "lockoutmail",
-                          "subject": "Locked: {username}",
-                          "body": "{username}@{realm} locked after {count} failures."}),))
+                stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.EMAIL_USER,
+                                                                     {"smtp_identifier": "lockoutmail",
+                                                                      "subject": "Locked: {username}",
+                                                                      "body": "{username}@{realm} locked after {count} failures."})]),))
             self._seed_events(AuthEventType.MFA_FAIL, 3)
             evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, source_ip="10.0.0.9")
 
@@ -924,11 +919,11 @@ class LockoutEngineTestCase(MyTestCase):
         try:
             self._make_policy(
                 name="mailadmin", counter_type=AuthEventType.MFA_FAIL,
-                stages=((3, 1, LockoutAction.EMAIL_ADMIN,
-                         {"smtp_identifier": "lockoutmail",
-                          "recipient_group": "internal_admins",
-                          "subject": "{username} locked",
-                          "body": "{count} failures in realm {realm}."}),))
+                stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.EMAIL_ADMIN,
+                                                                     {"smtp_identifier": "lockoutmail",
+                                                                      "recipient_group": "internal_admins",
+                                                                      "subject": "{username} locked",
+                                                                      "body": "{count} failures in realm {realm}."})]),))
             self._seed_events(AuthEventType.MFA_FAIL, 3)
             evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
             # Both admins with an email are notified in one message; the email-less admin is skipped.
@@ -947,10 +942,10 @@ class LockoutEngineTestCase(MyTestCase):
         try:
             self._make_policy(
                 name="mailadmin2", counter_type=AuthEventType.MFA_FAIL,
-                stages=((3, 1, LockoutAction.EMAIL_ADMIN,
-                         {"smtp_identifier": "lockoutmail",
-                          "recipient_group": "soc@example.com, ciso@example.com",
-                          "subject": "alert", "body": "alert"}),))
+                stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.EMAIL_ADMIN,
+                                                                     {"smtp_identifier": "lockoutmail",
+                                                                      "recipient_group": "soc@example.com, ciso@example.com",
+                                                                      "subject": "alert", "body": "alert"})]),))
             self._seed_events(AuthEventType.MFA_FAIL, 3)
             evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
             self.assertEqual(["soc@example.com", "ciso@example.com"], smtpmock.get_sent_recipient())
@@ -965,7 +960,8 @@ class LockoutEngineTestCase(MyTestCase):
         try:
             self._make_policy(
                 name="mailbad", counter_type=AuthEventType.MFA_FAIL,
-                stages=((3, 1, LockoutAction.EMAIL_USER, {"smtp_identifier": "lockoutmail"}),))
+                stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.EMAIL_USER,
+                                                                     {"smtp_identifier": "lockoutmail"})]),))
             self._seed_events(AuthEventType.MFA_FAIL, 3)
             evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
             self.assertIsNone(smtpmock.get_sent_message())
@@ -978,7 +974,7 @@ class LockoutEngineTestCase(MyTestCase):
         # LOCK_USER write intact.
         _, stages = self._make_policy(
             name="lockandmail", counter_type=AuthEventType.MFA_FAIL,
-            stages=((3, 1, LockoutAction.LOCK_USER, 600),))
+            stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.LOCK_USER, 600)]),))
         db.session.add(LockoutStageAction(
             stage_id=stages[0].id, action_type=str(LockoutAction.EMAIL_USER),
             action_value={"smtp_identifier": "does-not-exist", "subject": "x", "body": "x"}))
@@ -998,9 +994,10 @@ class LockoutEngineTestCase(MyTestCase):
         try:
             self._make_policy(
                 name="mailnotice", counter_type=AuthEventType.MFA_FAIL,
-                stages=((3, 1, LockoutAction.EMAIL_ADMIN,
-                         {"smtp_identifier": "lockoutmail", "recipient_group": "soc@example.com",
-                          "subject": "s", "body": "b"}),))
+                stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.EMAIL_ADMIN,
+                                                                     {"smtp_identifier": "lockoutmail",
+                                                                      "recipient_group": "soc@example.com",
+                                                                      "subject": "s", "body": "b"})]),))
             self._seed_events(AuthEventType.MFA_FAIL, 3)
             notices = evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
             self.assertEqual(["Your administrator has been notified by email."], notices)
@@ -1015,9 +1012,10 @@ class LockoutEngineTestCase(MyTestCase):
         try:
             self._make_policy(
                 name="mailnotice2", counter_type=AuthEventType.MFA_FAIL,
-                stages=((3, 1, LockoutAction.EMAIL_USER,
-                         {"smtp_identifier": "lockoutmail", "subject": "s", "body": "b",
-                          "login_notice": "We emailed {username} about {count} failures."}),))
+                stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.EMAIL_USER,
+                                                                     {"smtp_identifier": "lockoutmail", "subject": "s",
+                                                                      "body": "b",
+                                                                      "login_notice": "We emailed {username} about {count} failures."})]),))
             self._seed_events(AuthEventType.MFA_FAIL, 3)
             self.assertEqual(["We emailed cornelius about 3 failures."],
                              evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL))
@@ -1027,7 +1025,7 @@ class LockoutEngineTestCase(MyTestCase):
     def test_no_login_notice_for_non_email_action(self):
         # A LOCK_USER-only stage locks the user but produces no login-screen notice.
         self._make_policy(name="lockonly", counter_type=AuthEventType.MFA_FAIL,
-                          stages=((3, 1, LockoutAction.LOCK_USER, 600),))
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.LOCK_USER, 600)]),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
         self.assertEqual([], evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL))
         self.assertTrue(self._state().is_locked)
