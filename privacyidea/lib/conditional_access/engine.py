@@ -27,7 +27,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import func, select
 
 from privacyidea.lib import _
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
 from privacyidea.lib.conditional_access.authentication_log import _naive_utc
 from privacyidea.models import (AuthenticationLog, BlockList, LockoutPolicy, LockoutPolicyCounterType,
                                  LockoutStageAction, UserLockoutState, db)
@@ -208,6 +208,102 @@ def count_user_events(resolver: str, uid: str, realm: str,
                    AuthenticationLog.timestamp >= window_start,
                    AuthenticationLog.timestamp <= now))
     return db.session.scalar(stmt) or 0
+
+
+def _count_matching_attempts(rows: list[AuthenticationLog], tracked_types: set[str]) -> int:
+    """
+    Reduce authentication-log rows to one representative event per attempt and count the attempts whose
+    representative is in *tracked_types*.
+
+    All rows sharing an ``attempt_id`` are one authentication attempt. Its representative — the event that classifies
+    the whole attempt — is :attr:`AuthEventType.LOGIN_SUCCESS` if the attempt ever logged in (a completed success is
+    terminal: a later stray answer replayed on the same, now-answered challenge maps to the same ``attempt_id`` but
+    must not undo the success), otherwise the **latest** event by row ``id``. Row ``id`` is the insertion order, which
+    orders the multichallenge steps correctly independent of event type — e.g. a wrong answer *then* a continue reads
+    as in-progress (latest = the continue), while a continue *then* a wrong answer reads as failed (latest = the fail),
+    which an event-type ranking could not distinguish.
+
+    Comparisons rely on :class:`AuthEventType` being a ``str`` subclass, so the stored ``event_type`` strings match
+    the enum members directly — no conversion needed.
+
+    :param rows: the authentication-log rows of the attempts to reduce
+    :param tracked_types: the event types a representative must be in to count the attempt
+    :return: the number of attempts whose representative event is in *tracked_types*
+    """
+    latest: dict[str, AuthenticationLog] = {}
+    succeeded: set[str] = set()
+    # First pass: aggregate every row into its attempt — the attempt's latest (highest-id) row and whether it succeeded.
+    for row in rows:
+        if row.event_type == AuthEventType.LOGIN_SUCCESS:
+            succeeded.add(row.attempt_id)
+        current = latest.get(row.attempt_id)
+        if current is None or row.id > current.id:
+            latest[row.attempt_id] = row
+    matches = 0
+    # Second pass: over the distinct attempts, resolve each representative event and count the ones that match.
+    for attempt_id, row in latest.items():
+        representative = AuthEventType.LOGIN_SUCCESS if attempt_id in succeeded else row.event_type
+        if representative in tracked_types:
+            matches += 1
+    return matches
+
+
+def count_user_attempts(resolver: str, uid: str, realm: str, event_types: list[str],
+                        window_seconds: int, now: datetime | None = None) -> int:
+    """
+    Count whole authentication *attempts* (not individual ``authentication_log`` rows) for one user identity whose
+    representative event matches *event_types*, within a sliding time window ending *now*. This is the
+    :attr:`~privacyidea.lib.conditional_access.authentication_event_types.CountMode.PER_ATTEMPT` counterpart of
+    :func:`count_user_events`, so a multi-request challenge / multichallenge login counts once.
+
+    All in-window rows of the user are fetched (every event type, not just the tracked ones — a non-tracked
+    ``LOGIN_SUCCESS`` must be able to supersede a tracked failure), grouped by ``attempt_id`` and reduced to one
+    representative event (see :func:`_count_matching_attempts`); the attempts whose representative is in *event_types*
+    are counted. The ``WHERE`` (resolver, uid, realm, timestamp) matches the ``ix_authlog_user_time`` index. The rows
+    are the small in-window set for one user, so fetching the full :class:`AuthenticationLog` objects (rather than a
+    tuple of columns) is negligible and keeps the reduction working on named attributes.
+
+    :param resolver: resolver name of the user
+    :param uid: resolver-local user id
+    :param realm: realm name of the user
+    :param event_types: the event types an attempt's representative must match (a list; may hold a single entry)
+    :param window_seconds: width of the look-back window in seconds
+    :param now: window end; defaults to :func:`utc_now`. An aware value is normalized to naive UTC.
+    :return: the number of matching attempts
+    """
+    now = _naive_utc(now) if now is not None else utc_now()
+    window_start = now - timedelta(seconds=window_seconds)
+    tracked = set(event_types)
+    rows = db.session.scalars(
+        select(AuthenticationLog)
+        .where(AuthenticationLog.resolver == resolver,
+               AuthenticationLog.uid == uid,
+               AuthenticationLog.realm == realm,
+               AuthenticationLog.timestamp >= window_start,
+               AuthenticationLog.timestamp <= now)).all()
+    return _count_matching_attempts(rows, tracked)
+
+
+def _policy_count(policy: LockoutPolicy, user: "User", now: datetime,
+                  since_last_success: bool = False) -> int:
+    """
+    Count the user's events (``PER_REQUEST``) or attempts (``PER_ATTEMPT``) for *policy* over its window, per the
+    policy's :attr:`~privacyidea.models.lockout_policy.LockoutPolicy.count_mode`.
+
+    :param policy: the policy whose ``time_window_seconds`` and ``counter_types_to_track`` are counted over
+    :param user: the resolved user to count for
+    :param now: the window end (reference time)
+    :param since_last_success: True to floor the count at the user's last ``LOGIN_SUCCESS`` in the
+        window. Ignored for ``PER_ATTEMPT``, whose reduction already resolves success-supersedes-failure within an
+        attempt (a per-attempt "since last successful attempt" floor is not implemented yet).
+    :return: the event count (``PER_REQUEST``) or the attempt count (``PER_ATTEMPT``)
+    """
+    if policy.count_mode == CountMode.PER_ATTEMPT:
+        return count_user_attempts(user.resolver, user.uid, user.realm,
+                                   policy.counter_types_to_track, policy.time_window_seconds, now=now)
+    return count_user_events(user.resolver, user.uid, user.realm,
+                             policy.counter_types_to_track, policy.time_window_seconds,
+                             now=now, since_last_success=since_last_success)
 
 
 def get_user_lockout(user: "User", now: datetime | None = None) -> "RestrictionStatus | None":
@@ -416,8 +512,7 @@ def _policy_access_decision(policy: LockoutPolicy, user: "User",
     this policy does not decide the request (no stage met, the met stage carries
     only lockout-style actions, or the policy is in dry-run).
     """
-    count = count_user_events(user.resolver, user.uid, user.realm,
-                              policy.counter_types_to_track, policy.time_window_seconds, now=now)
+    count = _policy_count(policy, user, now)
     triggered_stage = next((stage for stage in policy.stages
                             if count >= stage.failure_threshold), None)
     if triggered_stage is None:
@@ -531,10 +626,8 @@ def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
     # decision deliberately does not reset on success — see _policy_access_decision.)
     # The count is the *combined* total over all of the policy's tracked types,
     # not just the current request's event_type, so a policy tracking several
-    # failure types trips on their sum.
-    count = count_user_events(user.resolver, user.uid, user.realm,
-                              policy.counter_types_to_track, window,
-                              now=now, since_last_success=True)
+    # failure types trips on their sum. PER_ATTEMPT policies count whole attempts instead (see _policy_count).
+    count = _policy_count(policy, user, now, since_last_success=True)
 
     # Stages are ordered highest-priority first by the relationship; the first
     # stage whose threshold is met wins, so the most severe matching stage is

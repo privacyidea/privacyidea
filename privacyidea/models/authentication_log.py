@@ -85,6 +85,9 @@ class AuthenticationLog(MethodsMixin, db.Model):
         Index("ix_authlog_user_event_time", "resolver", "uid", "realm", "event_type", "timestamp"),
         Index("ix_authlog_ip_event_time", "source_ip", "event_type", "timestamp"),
         Index("ix_authlog_transaction", "transaction_id"),
+        # PER_ATTEMPT counting (count_user_attempts) range-scans a user's rows by time with no event_type predicate,
+        # so it needs timestamp right after the user columns.
+        Index("ix_authlog_user_time", "resolver", "uid", "realm", "timestamp"),
     )
     id: Mapped[int] = mapped_column(BigIntegerType, Sequence("authentication_log_seq", data_type=BigInteger),
                                     primary_key=True)

@@ -21,14 +21,15 @@ Unit tests for the conditional-access lockout policy engine
 pre-check lock test, and the policy-evaluation workflow (stage selection,
 de-duplication, dry-run, and the LOCK_USER / PERMANENT_LOCK_USER actions).
 """
-from datetime import timedelta
+from datetime import datetime, timedelta
 from email import message_from_string
 
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
 from privacyidea.lib.conditional_access.engine import (
     AccessDecision,
     LockoutAction,
     count_user_events,
+    count_user_attempts,
     evaluate_access_decision,
     evaluate_lockout_policies,
     is_user_locked,
@@ -79,7 +80,8 @@ class LockoutEngineTestCase(MyTestCase):
 
     # --- fixtures -------------------------------------------------------------
 
-    def _seed_events(self, event_type, count, timestamp=None, user=None):
+    def _seed_events(self, event_type: AuthEventType, count: int,
+                     timestamp: datetime | None = None, user: User | None = None) -> None:
         """Insert *count* authentication-log rows for *user* with an explicit timestamp."""
         user = user or self.user
         timestamp = timestamp if timestamp is not None else utc_now()
@@ -89,8 +91,21 @@ class LockoutEngineTestCase(MyTestCase):
                 realm=user.realm, timestamp=timestamp))
         db.session.commit()
 
+    def _seed_attempt(self, attempt_id: str, event_types: list[AuthEventType],
+                      timestamp: datetime | None = None, user: User | None = None) -> None:
+        """Insert one row per event type (in order) sharing *attempt_id*; row ids increase with insertion order,
+        so the last event type has the highest id (the 'latest' event of the attempt)."""
+        user = user or self.user
+        timestamp = timestamp if timestamp is not None else utc_now()
+        for event_type in event_types:
+            db.session.add(AuthenticationLog(
+                event_type=str(event_type), resolver=user.resolver, uid=user.uid,
+                realm=user.realm, timestamp=timestamp, attempt_id=attempt_id))
+        db.session.commit()
+
     def _make_policy(self, *, name, counter_type, window=3600, enabled=True, dry_run=False,
-                     priority=1, stages=((3, 1, LockoutAction.LOCK_USER, 600),)):
+                     priority=1, count_mode=CountMode.PER_REQUEST,
+                     stages=((3, 1, LockoutAction.LOCK_USER, 600),)):
         """
         Build a policy with its stages and one action per stage.
 
@@ -99,7 +114,7 @@ class LockoutEngineTestCase(MyTestCase):
         counter_types = counter_type if isinstance(counter_type, (list, tuple)) else [counter_type]
         policy = LockoutPolicy(name=name, counter_types_to_track=[str(t) for t in counter_types],
                                time_window_seconds=window, enabled=enabled, dry_run=dry_run,
-                               priority=priority)
+                               priority=priority, count_mode=str(count_mode))
         db.session.add(policy)
         db.session.commit()
         made_stages = []
@@ -193,6 +208,62 @@ class LockoutEngineTestCase(MyTestCase):
         # A single-element list matches the scalar form.
         self.assertEqual(2, count_user_events(*args, [AuthEventType.PASSWORD_FAIL], 3600))
         self.assertEqual(2, count_user_events(*args, AuthEventType.PASSWORD_FAIL, 3600))
+
+    # --- count_user_attempts --------------------------------------------------
+
+    def _count_attempts(self, event_types: list[AuthEventType], window: int = 3600,
+                        now: datetime | None = None) -> int:
+        return count_user_attempts(self.user.resolver, self.user.uid, self.user.realm,
+                                   event_types, window, now=now)
+
+    def test_count_attempts_multi_row_attempt_counts_once(self):
+        # A challenge attempt spanning several rows is one attempt: its representative is the latest event.
+        self._seed_attempt("a1", [AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.MFA_FAIL])
+        self.assertEqual(1, self._count_attempts([AuthEventType.MFA_FAIL]))
+        # The trigger event is not the representative (a later failure superseded it).
+        self.assertEqual(0, self._count_attempts([AuthEventType.CHALLENGE_TRIGGERED]))
+
+    def test_count_attempts_distinct_attempts(self):
+        self._seed_attempt("a1", [AuthEventType.MFA_FAIL])
+        self._seed_attempt("a2", [AuthEventType.PIN_FAIL, AuthEventType.MFA_FAIL])
+        # Two separate attempts, both ending in MFA_FAIL.
+        self.assertEqual(2, self._count_attempts([AuthEventType.MFA_FAIL]))
+
+    def test_count_attempts_login_success_absorbs_retry(self):
+        # A wrong answer then a correct one on the same attempt is a success, not a failure.
+        self._seed_attempt("a1", [AuthEventType.MFA_FAIL, AuthEventType.LOGIN_SUCCESS])
+        self.assertEqual(0, self._count_attempts([AuthEventType.MFA_FAIL]))
+        self.assertEqual(1, self._count_attempts([AuthEventType.LOGIN_SUCCESS]))
+
+    def test_count_attempts_login_success_absorbs_later_stray(self):
+        # A stray answer replayed after the attempt already logged in (same attempt_id, higher id) must not
+        # flip the success to a failure.
+        self._seed_attempt("a1", [AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.LOGIN_SUCCESS,
+                                  AuthEventType.CHALLENGE_ANSWERED_FAIL])
+        self.assertEqual(1, self._count_attempts([AuthEventType.LOGIN_SUCCESS]))
+        self.assertEqual(0, self._count_attempts([AuthEventType.CHALLENGE_ANSWERED_FAIL]))
+
+    def test_count_attempts_multichallenge_order_by_id(self):
+        # Same event types, opposite order: the representative is the latest event (by row id), which an
+        # event-type ranking could not tell apart.
+        # Wrong answer then progressed (continue) -> in progress, not a failure.
+        self._seed_attempt("a1", [AuthEventType.MFA_FAIL, AuthEventType.CHALLENGE_CONTINUED])
+        # Progressed then failed the next challenge -> a failure.
+        self._seed_attempt("a2", [AuthEventType.CHALLENGE_CONTINUED, AuthEventType.MFA_FAIL])
+        self.assertEqual(1, self._count_attempts([AuthEventType.MFA_FAIL]))          # only a2
+        self.assertEqual(1, self._count_attempts([AuthEventType.CHALLENGE_CONTINUED]))  # only a1
+
+    def test_count_attempts_combined_types_and_window(self):
+        now = utc_now()
+        self._seed_attempt("a1", [AuthEventType.MFA_FAIL], timestamp=now)
+        self._seed_attempt("a2", [AuthEventType.PIN_FAIL], timestamp=now)
+        self._seed_attempt("a3", [AuthEventType.MFA_FAIL], timestamp=now - timedelta(seconds=7200))
+        # Both failure types counted together, and only the two inside the 1h window.
+        self.assertEqual(2, self._count_attempts([AuthEventType.MFA_FAIL, AuthEventType.PIN_FAIL],
+                                                 window=3600, now=now))
+        # A different user is not counted.
+        self.assertEqual(0, count_user_attempts("other", "999", self.user.realm,
+                                                [AuthEventType.MFA_FAIL], 3600, now=now))
 
     # --- is_user_locked -------------------------------------------------------
 
@@ -711,6 +782,18 @@ class LockoutEngineTestCase(MyTestCase):
                           stages=((3, 1, LockoutAction.DENY, None),))
         self._seed_events(AuthEventType.PASSWORD_FAIL, 2)
         self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(self.user))
+
+    def test_access_decision_per_attempt_counts_attempts_not_rows(self):
+        # A PER_ATTEMPT policy counts whole attempts: two multi-row failed challenge attempts are 2, not the 4
+        # rows they span, so a threshold of 3 is NOT met (a PER_REQUEST policy over the same rows would deny).
+        self._make_policy(name="deny", counter_type=AuthEventType.MFA_FAIL, count_mode=CountMode.PER_ATTEMPT,
+                          stages=((3, 1, LockoutAction.DENY, None),))
+        self._seed_attempt("a1", [AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.MFA_FAIL])
+        self._seed_attempt("a2", [AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.MFA_FAIL])
+        self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(self.user))
+        # A third failed attempt reaches the threshold of 3 attempts.
+        self._seed_attempt("a3", [AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.MFA_FAIL])
+        self.assertEqual(AccessDecision.DENY, evaluate_access_decision(self.user))
 
     def test_access_decision_denies_on_combined_count(self):
         # The pre-auth decision also counts all tracked types together: 2 + 2 = 4

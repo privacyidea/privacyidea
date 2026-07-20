@@ -101,6 +101,9 @@ def upgrade():
         # Serves the attempt_id recovery lookup by transaction_id (see get_attempt_id_for_transaction).
         op.create_index('ix_authlog_transaction', 'authentication_log',
                         ['transaction_id'])
+        # Serves PER_ATTEMPT counting (count_user_attempts): a user's rows range-scanned by time, no event_type.
+        op.create_index('ix_authlog_user_time', 'authentication_log',
+                        ['resolver', 'uid', 'realm', 'timestamp'])
 
     except (OperationalError, ProgrammingError) as ex:
         if "already exists" in str(ex.orig).lower():
@@ -127,6 +130,7 @@ def downgrade():
             batch_op.drop_index('ix_authlog_user_event_time')
             batch_op.drop_index('ix_authlog_ip_event_time')
             batch_op.drop_index('ix_authlog_transaction')
+            batch_op.drop_index('ix_authlog_user_time')
 
         op.drop_table('authentication_log')
         bind = op.get_bind()
