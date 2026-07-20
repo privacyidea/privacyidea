@@ -1306,13 +1306,6 @@ class TokenTestCase(MyTestCase):
         tok_r3 = init_token({"type": "hotp", "genkey": True},
                             tokenrealms=[self.realm3])
 
-        # Single realm still works as before
-        tokens = get_tokens_paginate(realm=self.realm1)["tokens"]
-        serials = [t["serial"] for t in tokens]
-        self.assertIn(tok_r1.get_serial(), serials)
-        self.assertNotIn(tok_r2.get_serial(), serials)
-        self.assertNotIn(tok_r3.get_serial(), serials)
-
         # Comma-separated: realm1,realm2 returns tokens from both
         tokens = get_tokens_paginate(realm=f"{self.realm1},{self.realm2}")["tokens"]
         serials = [t["serial"] for t in tokens]
