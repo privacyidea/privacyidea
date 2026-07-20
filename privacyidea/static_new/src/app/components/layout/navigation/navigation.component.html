@@ -261,13 +261,19 @@
     </a>
     @if (contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
       <a class="sub-nav-active">
-        <mat-icon>privacy_tip</mat-icon>
+        <span class="icon-badge">
+          <mat-icon class="padding-right-4">shield</mat-icon>
+          <mat-icon class="icon-badge-overlay">settings</mat-icon>
+        </span>
         <span i18n>Details</span>
       </a>
     }
     @if (contentService.routeUrl() === ROUTE_PATHS.TOKENS_ENROLLMENT) {
       <a class="sub-nav-active">
-        <mat-icon>add_moderator</mat-icon>
+        <span class="icon-badge">
+          <mat-icon class="padding-right-6">shield</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+        </span>
         <span i18n>Enrollment</span>
       </a>
     }
@@ -318,13 +324,19 @@
     </a>
     @if (contentService.routeUrl().startsWith(ROUTE_PATHS.CONTAINERS_DETAILS)) {
       <a class="sub-nav-active">
-        <mat-icon>source</mat-icon>
+        <span class="icon-badge">
+          <mat-icon class="padding-right-4">folder</mat-icon>
+          <mat-icon class="icon-badge-overlay">settings</mat-icon>
+        </span>
         <span i18n>Details</span>
       </a>
     }
     @if (contentService.routeUrl() === ROUTE_PATHS.CONTAINERS_CREATE) {
       <a class="sub-nav-active">
-        <mat-icon>create_new_folder</mat-icon>
+        <span class="icon-badge">
+          <mat-icon class="padding-right-6">folder</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+        </span>
         <span i18n>Create</span>
       </a>
     }
@@ -368,7 +380,10 @@
         href="javascript:void(0)"
         class="sub-nav-active"
         data-overflow-child>
-        <mat-icon>manage_accounts</mat-icon>
+        <span class="icon-badge">
+          <mat-icon class="padding-right-4">person</mat-icon>
+          <mat-icon class="icon-badge-overlay">settings</mat-icon>
+        </span>
         <span i18n>User Details</span>
       </a>
     }
@@ -376,7 +391,10 @@
       <a
         class="sub-nav-active"
         data-overflow-child>
-        <mat-icon>person_add</mat-icon>
+        <span class="icon-badge">
+          <mat-icon class="padding-right-6">person</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+        </span>
         <span i18n>Create User</span>
       </a>
     }
