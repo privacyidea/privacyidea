@@ -165,7 +165,8 @@ def import_token(serial: str, token_dict: dict, tokenrealms: list | None = None)
     return token
 
 
-@log_with(log, hide_args_keywords={0: ['pin', 'otpkey']})
+@log_with(log, hide_args_keywords={0: ['pin', 'otpkey', 'password', 'radius.secret',
+                                       'enrollment_credential', 'sshkey']})
 def init_token(param: dict, user: User = None, tokenrealms: list[str] = None, tokenkind: str = None) -> TokenClass:
     """
     Create a new token or update an existing token with the specified parameters.
