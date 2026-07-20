@@ -11,6 +11,7 @@ from threading import Timer
 import mock
 import responses
 import rfc8785
+from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
@@ -42,7 +43,7 @@ from privacyidea.lib.tokens.pushtoken import (PushTokenClass, PushAction,
                                               AVAILABLE_PRESENCE_OPTIONS_NUMERIC,
                                               PushAllowPolling, POLLING_ALLOWED, POLL_ONLY,
                                               PushPresenceOptions, strip_pem_headers,
-                                              SERVER_PUSH_CAPABILITIES)
+                                              SERVER_PUSH_CAPABILITIES, _build_smartphone_data)
 from privacyidea.lib.user import (User)
 from privacyidea.lib.utils import to_bytes, b32encode_and_unicode, to_unicode, AUTH_RESPONSE
 from privacyidea.models import Token, Challenge, db
@@ -2036,6 +2037,38 @@ class PushTokenTestCase(MyTestCase):
 
         # Clean up
         remove_token(pushtoken.token.serial)
+
+    def test_23_capabilities_signature_rejects_tampering(self):
+        # The capabilities advertisement carries a detached signature that a
+        # capability-aware app checks by re-canonicalising {capabilities, nonce}
+        # from the parsed structure. These assertions pin the two guarantees the
+        # app relies on: the signature is bound to the challenge nonce, and it
+        # covers the advertised value.
+        token = self._create_push_token()
+        nonce = "TESTNONCEAAAA1111"
+        smartphone_data = _build_smartphone_data(token, nonce, REGISTRATION_URL,
+                                                 self.server_private_key_pem, options={})
+        server_public_key = serialization.load_pem_public_key(to_bytes(self.server_public_key_pem), default_backend())
+        signature = b32decode(smartphone_data["capabilities_signature"])
+        capabilities = json.loads(smartphone_data["capabilities"])
+
+        # The advertised capabilities verify against their own nonce.
+        good_input = rfc8785.dumps({"capabilities": capabilities, "nonce": nonce})
+        server_public_key.verify(signature, good_input, padding.PKCS1v15(), hashes.SHA256())
+
+        # A signature bound to this nonce cannot be replayed onto another challenge.
+        replayed_input = rfc8785.dumps({"capabilities": capabilities, "nonce": "OTHERNONCEBBBB2222"})
+        self.assertRaises(InvalidSignature, server_public_key.verify, signature, replayed_input,
+                          padding.PKCS1v15(), hashes.SHA256())
+
+        # Flipping the advertised capability value invalidates the signature.
+        tampered = dict(capabilities)
+        tampered[PushCapability.DECLINE_REASON] = False
+        tampered_input = rfc8785.dumps({"capabilities": tampered, "nonce": nonce})
+        self.assertRaises(InvalidSignature, server_public_key.verify, signature, tampered_input,
+                          padding.PKCS1v15(), hashes.SHA256())
+
+        remove_token(token.get_serial())
 
 
 class PushCapabilitiesTestCase(MyTestCase):

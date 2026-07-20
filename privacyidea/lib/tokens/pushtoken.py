@@ -115,7 +115,15 @@ KNOWN_DECLINE_REASONS = frozenset(r.value for r in PushDeclineReason)
 # challenge (see _build_smartphone_data). A newer app intersects these with its
 # own to decide which fields it may add to its signed answer; an app that does
 # not find a capability falls back to legacy behaviour.
+# This is a one-way, additive advertisement: the fields are appended to the
+# challenge and older apps ignore what they do not know, so it needs no payload
+# version bump. It is deliberately a detached second signature to keep the main
+# signature byte-identical for those apps. The app does not yet report its own
+# capabilities back, so the server cannot tailor the payload per token; folding
+# this into a single signed payload with two-way negotiation is future work.
 SERVER_PUSH_CAPABILITIES = {PushCapability.DECLINE_REASON: True}
+# The advertised set is invariant, so serialise it once for the wire field.
+SERVER_PUSH_CAPABILITIES_JSON = json.dumps(SERVER_PUSH_CAPABILITIES)
 
 # Seconds an answered challenge stays redeemable after the smartphone answered.
 # The challenge validity is the window the smartphone has to answer; the
@@ -334,9 +342,8 @@ def _build_smartphone_data(token: TokenClass, challenge: str, registration_url: 
     # signed answer (e.g. decline_reason); older apps ignore these unknown fields. The detached signature keeps the
     # main signature above unchanged for older apps; it covers the nonce so it cannot be replayed onto another
     # challenge, over canonical JSON (RFC 8785 / JCS) that the app re-canonicalises from the parsed structure.
-    capabilities = dict(SERVER_PUSH_CAPABILITIES)
-    smartphone_data["capabilities"] = json.dumps(capabilities)
-    capabilities_sign_input = rfc8785.dumps({"capabilities": capabilities, "nonce": challenge})
+    smartphone_data["capabilities"] = SERVER_PUSH_CAPABILITIES_JSON
+    capabilities_sign_input = rfc8785.dumps({"capabilities": SERVER_PUSH_CAPABILITIES, "nonce": challenge})
     capabilities_signature = private_key.sign(capabilities_sign_input,
                                               padding.PKCS1v15(),
                                               hashes.SHA256())
