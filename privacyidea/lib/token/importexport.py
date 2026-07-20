@@ -5,23 +5,22 @@
 import logging
 from dataclasses import dataclass
 
-
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
 from privacyidea.models import (Token)
 
 from privacyidea.lib.token.query import create_tokenclass_object, get_one_token
 
-
 log = logging.getLogger(__name__)
-
 
 
 @dataclass(frozen=True)
 class TokenImportResult:
     successful_tokens: list[str]
     updated_tokens: list[str]
-    failed_tokens: list[str]
+    # Serials of tokens that could not be imported. A None entry marks a malformed
+    # source entry that had no serial to report.
+    failed_tokens: list[str | None]
 
 
 @dataclass(frozen=True)
@@ -63,19 +62,37 @@ def import_tokens(tokens: list[dict], update_existing_tokens: bool = True,
 
     for token_info_dict in tokens:
         serial = token_info_dict.get("serial")
+
+        # Validate serial early
+        if not serial:
+            log.error("Token entry is missing a serial number. Skipping.")
+            # No serial to report for this entry; None marks a malformed entry in the result
+            failed_tokens.append(None)
+            continue
+
         existing_token = get_one_token(serial=serial, silent_fail=True)
         # We check if there is no existing token or if we want to update existing tokens
         if not existing_token or update_existing_tokens:
+            created = False
             # We create a new token, if there is no existing token
             if not existing_token:
+                # A type is only required when creating a new token; updates may omit it
+                token_type = token_info_dict.get("type")
+                if not token_type:
+                    log.error(f"Token entry for serial {serial} is missing a type. Skipping.")
+                    failed_tokens.append(serial)
+                    continue
                 try:
-                    token_type = token_info_dict.get("type")
                     db_token = Token(serial, tokentype=token_type.lower())
                     db_token.save()
+                    created = True
                     token = create_tokenclass_object(db_token)
                 except Exception as e:
                     log.error(f"Could not create token {serial}: {e}")
                     failed_tokens.append(serial)
+                    # Remove the row if it was already persisted before the failure
+                    if created:
+                        db_token.delete()
                     continue
             # We use the existing token and update it
             else:
@@ -93,14 +110,16 @@ def import_tokens(tokens: list[dict], update_existing_tokens: bool = True,
                     log.error(f"Could not assign user to token {serial}: {e}. "
                               f"The token will not be imported.")
                     failed_tokens.append(serial)
-                    token.delete_token()
+                    if created:
+                        token.delete_token()
                     continue
             try:
                 token.import_token(token_info_dict)
             except Exception as e:
                 log.exception(f"Could not import token {serial}: {e}")
                 failed_tokens.append(serial)
-                token.delete_token()
+                if created:
+                    token.delete_token()
                 continue
 
             if not existing_token:
