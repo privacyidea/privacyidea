@@ -620,7 +620,7 @@
 
 @if (activeSection() === "external_services") {
   <mat-toolbar
-    class="secondary-toolbar"
+    class="secondary-toolbar icon-badge-right-2"
     appOverflowNav>
     <ng-container *ngTemplateOutlet="footerText"></ng-container>
     @if (authService.actionAllowed("smtpserver_read")) {
@@ -637,7 +637,7 @@
         data-overflow-child>
         <span class="icon-badge">
           <mat-icon class="padding-right-4">email</mat-icon>
-          <mat-icon class="icon-badge-overlay">settings</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-right-1">settings</mat-icon>
         </span>
         <span i18n>SMTP Details</span>
       </a>
@@ -667,7 +667,7 @@
         data-overflow-child>
         <span class="icon-badge">
           <mat-icon class="padding-right-4">vpn_lock</mat-icon>
-          <mat-icon class="icon-badge-overlay">settings</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-right-1">settings</mat-icon>
         </span>
         <span i18n>RADIUS Details</span>
       </a>
@@ -697,7 +697,7 @@
         data-overflow-child>
         <span class="icon-badge">
           <mat-icon class="padding-right-4">sms</mat-icon>
-          <mat-icon class="icon-badge-overlay">settings</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-right-1">settings</mat-icon>
         </span>
         <span i18n>SMS Gateway Details</span>
       </a>
@@ -727,7 +727,7 @@
         data-overflow-child>
         <span class="icon-badge">
           <mat-icon class="padding-right-2">assured_workload</mat-icon>
-          <mat-icon class="icon-badge-overlay">settings</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-right-1">settings</mat-icon>
         </span>
         <span i18n>CA Connector Details</span>
       </a>
@@ -757,7 +757,7 @@
         data-overflow-child>
         <span class="icon-badge">
           <mat-icon class="mdi--pi-logo padding-right-4"></mat-icon>
-          <mat-icon class="icon-badge-overlay">settings</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-right-1">settings</mat-icon>
         </span>
         <span i18n>PrivacyIDEA Server Details</span>
       </a>
@@ -787,7 +787,7 @@
         data-overflow-child>
         <span class="icon-badge">
           <mat-icon class="padding-right-4">local_police</mat-icon>
-          <mat-icon class="icon-badge-overlay">settings</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-right-1">settings</mat-icon>
         </span>
         <span i18n>Tokengroup Details</span>
       </a>
@@ -817,7 +817,7 @@
         data-overflow-child>
         <span class="icon-badge">
           <mat-icon class="padding-right-4">storage</mat-icon>
-          <mat-icon class="icon-badge-overlay">settings</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-right-1">settings</mat-icon>
         </span>
         <span i18n>Service ID Details</span>
       </a>
