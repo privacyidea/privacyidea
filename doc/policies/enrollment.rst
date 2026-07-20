@@ -751,14 +751,18 @@ In addition, every attribute the user's resolver provides can be used as a tag, 
 ``{surname}``, ``{email}`` or ``{mobile}`` for an LDAP resolver (the available attributes depend on the resolver
 configuration). The built-in tags above take precedence over resolver attributes with the same name.
 
-For example, the value ``{user}@{realm}`` results in a display name like ``nils@realm1``, and
-``{givenname} {surname}`` in ``Nils Behlen``.
+For example, if the user ``alice`` in the realm ``example`` has the given name ``Alice`` and the surname
+``Miller``, the value ``{user}@{realm}`` results in a display name of ``alice@example`` and
+``{givenname} {surname}`` in ``Alice Miller``.
 
 Unknown tags and tags whose value is empty (for example an attribute that the resolver does not return) are
 replaced with an empty string. Static text and braces that do not form a valid tag are kept unchanged.
 
-.. note:: Authenticators may truncate the display name, so the resolved value is limited to 64 bytes. Keep the
-    template short enough that the resolved name stays within this limit.
+.. note:: The resolved display name is truncated to 64 bytes, because authenticators may not store longer
+    display names (and may truncate them at an arbitrary position otherwise). Note that this limit is in bytes,
+    not characters: since the value is encoded as UTF-8, non-ASCII characters (e.g. accented letters or umlauts)
+    take up more than one byte, so the effective number of characters may be lower than 64. Keep the template
+    short enough that the resolved name stays within this limit.
 
 .. _policy_webauthn_enroll_req:
 

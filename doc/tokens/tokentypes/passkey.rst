@@ -53,8 +53,8 @@ The display name of the passkey that the authenticator shows during registration
 policy :ref:`policy_passkey_user_display_name`. If the policy is not set, the login name of the user is used.
 The policy value supports tags such as ``{user}`` (login name), ``{realm}``, ``{resolver}`` and ``{serial}``, as
 well as any attribute the user's resolver provides (e.g. ``{givenname}``, ``{surname}``, ``{email}`` for LDAP).
-A value like ``{user}@{realm}`` results in a display name such as ``nils@realm1``. See the policy for details on
-the available tags and the 64 byte length limit.
+A value like ``{user}@{realm}`` results in a display name such as ``alice@example``. See the policy for details
+on the available tags and the 64 byte length limit.
 
 Attestation
 ~~~~~~~~~~~
