@@ -17,18 +17,15 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-@use "styles";
-@use "table";
+import { Pipe, PipeTransform } from "@angular/core";
+import { formatLocalDateTime } from "@utils/date-format.utils";
 
-mat-form-field {
-  input {
-    caret-color: var(--pi-primary, #1976d2);
-    font-family: inherit;
-    font-size: 14px;
+@Pipe({
+  name: "localDateTime",
+  standalone: true
+})
+export class LocalDateTimePipe implements PipeTransform {
+  transform(value: string | number | Date | null | undefined): string {
+    return formatLocalDateTime(value);
   }
-}
-
-app-clearable-input {
-  width: 100%;
-  display: block;
 }
