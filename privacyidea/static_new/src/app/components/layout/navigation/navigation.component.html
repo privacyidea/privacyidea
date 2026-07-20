@@ -265,10 +265,8 @@
         <span i18n>Details</span>
       </a>
     }
-    @if (authService.tokenEnrollmentAllowed()) {
-      <a
-        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS_ENROLLMENT ? 'sub-nav-active' : ''"
-        [routerLink]="[ROUTE_PATHS.TOKENS_ENROLLMENT]">
+    @if (contentService.routeUrl() === ROUTE_PATHS.TOKENS_ENROLLMENT) {
+      <a class="sub-nav-active">
         <mat-icon>add_moderator</mat-icon>
         <span i18n>Enrollment</span>
       </a>
@@ -324,10 +322,8 @@
         <span i18n>Details</span>
       </a>
     }
-    @if (authService.actionAllowed("container_create")) {
-      <a
-        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CONTAINERS_CREATE ? 'sub-nav-active' : ''"
-        [routerLink]="[ROUTE_PATHS.CONTAINERS_CREATE]">
+    @if (contentService.routeUrl() === ROUTE_PATHS.CONTAINERS_CREATE) {
+      <a class="sub-nav-active">
         <mat-icon>create_new_folder</mat-icon>
         <span i18n>Create</span>
       </a>
@@ -436,15 +432,15 @@
         <span i18n>Details</span>
       </a>
     }
-    <a
-      [ngClass]="contentService.routeUrl() === ROUTE_PATHS.POLICIES_NEW ? 'sub-nav-active' : ''"
-      [routerLink]="[ROUTE_PATHS.POLICIES_NEW]">
-      <span class="icon-badge icon-badge-right-3">
-        <mat-icon class="padding-right-4">gavel</mat-icon>
-        <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
-      </span>
-      <span i18n>Create</span>
-    </a>
+    @if (contentService.routeUrl() === ROUTE_PATHS.POLICIES_NEW) {
+      <a class="sub-nav-active">
+        <span class="icon-badge icon-badge-right-3">
+          <mat-icon class="padding-right-4">gavel</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+        </span>
+        <span i18n>Create</span>
+      </a>
+    }
     <ng-container *ngTemplateOutlet="supportDocs"></ng-container>
   </mat-toolbar>
 }
