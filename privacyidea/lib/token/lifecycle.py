@@ -97,10 +97,10 @@ def gen_serial(tokentype: str, prefix: str = None) -> str:
                 h_serial = hexlify_and_unicode(os.urandom(h_len)).upper()[0:h_len]
             return f"{prefix!s}{num_str!s}{h_serial!s}"
 
-    # now search the number of tokens of tokenytype in the token database
+    # now search the number of tokens of tokentype in the token database
     session = db.session
     tokennum = session.execute(
-        select(func.count()).select_from(Token).where(Token.tokentype == tokentype)
+        select(func.count()).select_from(Token).where(Token.tokentype == tokentype.lower())
     ).scalar_one()
 
     # Now create the serial
