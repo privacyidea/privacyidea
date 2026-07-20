@@ -26,8 +26,9 @@ class TokenImportResult:
 
 @dataclass(frozen=True)
 class TokenExportResult:
-    successful_tokens: list[dict]  # Exported token dicts for which the export succeeded
-    failed_tokens: list[str]  # The serial of tokens for which the export failed
+    """Result of a bulk token export operation."""
+    successful_tokens: list[dict]  # List of token dicts as returned by TokenClass.export_token()
+    failed_tokens: list[str]  # List of serial numbers of tokens for which the export failed
 
 
 def export_tokens(tokens: list[TokenClass], export_user: bool = True) -> TokenExportResult:
