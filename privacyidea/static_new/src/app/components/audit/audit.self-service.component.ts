@@ -42,6 +42,7 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { LocalDateTimePipe } from "@components/shared/pipes/local-date-time.pipe";
 import { AuditComponent } from "./audit.component";
 
 @Component({
@@ -70,7 +71,8 @@ import { AuditComponent } from "./audit.component";
     MatIcon,
     ScrollToTopDirective,
     ClearableInputComponent,
-    ScrollEdgesDirective
+    ScrollEdgesDirective,
+    LocalDateTimePipe
   ],
   templateUrl: "./audit.self-service.component.html",
   styleUrl: "./audit.component.scss"

@@ -184,4 +184,11 @@ describe("MachineDetailsComponent", () => {
     component.ngOnDestroy();
     expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
   });
+
+  it("renders a multi-valued hostname as a comma-joined string", () => {
+    component.data.set({ id: 2, hostname: ["a.example", "b.example"], ip: "1.1.1.1", resolver_name: "res1" });
+    fixture.detectChanges();
+    const title: HTMLElement = fixture.nativeElement.querySelector(".machine-title .h3-color");
+    expect(title.textContent?.trim()).toBe("a.example, b.example");
+  });
 });
