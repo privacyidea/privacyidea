@@ -37,10 +37,7 @@
 .user-input-container {
   align-items: center;
   display: flex;
-}
-
-.add-user-input {
-  flex-grow: 1;
+  gap: var(--half-global-gap);
 }
 
 .remove-user-btn {
