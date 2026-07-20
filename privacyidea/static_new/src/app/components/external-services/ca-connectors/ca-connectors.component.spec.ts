@@ -104,7 +104,8 @@ describe("CaConnectorsComponent", () => {
 
   it("should delete connector after confirmation", () => {
     const connector = caConnectorServiceMock.caConnectors()[0];
-    component.deleteConnector(connector);
+    component.selection.set([connector]);
+    component.deleteSelected();
     expect(dialogServiceMock.openDialog).toHaveBeenCalled();
     confirmClosed.next(true);
     confirmClosed.complete();
