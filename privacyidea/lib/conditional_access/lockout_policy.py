@@ -31,6 +31,7 @@ A policy is passed around as a plain dict::
         "enabled": True,
         "dry_run": False,
         "priority": 1,
+        "target": "user",
         "count_mode": "PER_REQUEST",
         "counter_types_to_track": ["PIN_FAIL", "MFA_FAIL"],
         "stages": [
@@ -60,7 +61,7 @@ from dataclasses import dataclass, field
 from sqlalchemy import select
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
-from privacyidea.lib.conditional_access.engine import LockoutAction
+from privacyidea.lib.conditional_access.engine import LockoutAction, LockoutTarget
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError
 from privacyidea.lib.log import log_with
 from privacyidea.models import db
@@ -162,6 +163,46 @@ def _validate_positive_int(value, field: str) -> int:
     return value
 
 
+# The actions each target may carry. A user-targeted policy locks/notifies the
+# user; a source-IP policy blocks the IP or alerts the admin - LOCK_USER /
+# EMAIL_USER would have no user to act on. Both targets may decide the request
+# pre-auth via ALLOW/DENY (keyed on the user, resp. the source IP).
+_ACTIONS_BY_TARGET = {
+    LockoutTarget.USER: {LockoutAction.LOCK_USER, LockoutAction.PERMANENT_LOCK_USER,
+                         LockoutAction.EMAIL_USER, LockoutAction.EMAIL_ADMIN,
+                         LockoutAction.DENY, LockoutAction.ALLOW},
+    LockoutTarget.SOURCE_IP: {LockoutAction.BLOCK_IP, LockoutAction.PERMANENT_BLOCK_IP,
+                              LockoutAction.EMAIL_ADMIN, LockoutAction.DENY, LockoutAction.ALLOW},
+}
+
+
+def _validate_target(target) -> "LockoutTarget":
+    """
+    Validate the policy target and return the matching :class:`LockoutTarget`
+    member (accepts either ``"user"`` or ``LockoutTarget.USER``). Persisting the
+    member to the ``Unicode`` column stores its value; the follow-up validation
+    consumes the member directly.
+    """
+    try:
+        return LockoutTarget(target)
+    except ValueError:
+        valid = ", ".join(sorted(t.value for t in LockoutTarget))
+        raise ParameterError(f"Unknown target '{target}'. Valid targets: {valid}.")
+
+
+def _validate_target_actions(stage_defs: list["StageDefinition"], target: "LockoutTarget") -> None:
+    """
+    Reject any stage action that is not allowed for *target* (see
+    :data:`_ACTIONS_BY_TARGET`) - e.g. ``LOCK_USER`` on a ``source_ip`` policy.
+    """
+    allowed = _ACTIONS_BY_TARGET[target]
+    invalid = sorted({action.action_type for stage in stage_defs for action in stage.actions
+                      if action.action_type not in allowed})
+    if invalid:
+        raise ParameterError(f"Action(s) {', '.join(invalid)} are not allowed for target '{target}'. "
+                             f"Allowed: {', '.join(sorted(allowed))}.")
+
+
 def _validate_count_mode(count_mode) -> str:
     """
     Validate the policy's :class:`CountMode` and return its canonical string value.
@@ -202,7 +243,7 @@ def _validate_counter_types(counter_types) -> list[str]:
 def _validate_stages(stages) -> list[StageDefinition]:
     """
     Validate the stage definitions: a non-empty list of dicts, each with a
-    unique positive ``failure_threshold``, an optional positive ``priority``
+    unique non-negative ``failure_threshold``, an optional positive ``priority``
     (default 1) and a list of actions whose ``action_type`` is a valid
     :class:`LockoutAction`. ``action_value`` may be any JSON-serializable value
     (its action-specific interpretation happens in the engine); unknown keys in
@@ -223,7 +264,11 @@ def _validate_stages(stages) -> list[StageDefinition]:
         unknown = set(stage) - allowed_stage_keys - {"id"}
         if unknown:
             raise ParameterError(f"Unknown stage key(s): {', '.join(sorted(unknown))}.")
-        threshold = _validate_positive_int(stage.get("failure_threshold"), "failure_threshold")
+        # A threshold of 0 always matches (e.g. an ALLOW allowlist / default-allow
+        # stage); higher thresholds fire at count >= threshold. So 0 is valid.
+        threshold = stage.get("failure_threshold")
+        if isinstance(threshold, bool) or not isinstance(threshold, int) or threshold < 0:
+            raise ParameterError("'failure_threshold' must be a non-negative integer.")
         if threshold in thresholds:
             raise ParameterError(f"Duplicate failure_threshold {threshold}: thresholds must be unique within a policy.")
         thresholds.add(threshold)
@@ -290,28 +335,31 @@ def get_lockout_policy(policy_id: int) -> dict:
 
 @log_with(log)
 def create_lockout_policy(name: str, time_window_seconds: int, counter_types_to_track: list[str],
-                          stages: list[dict], enabled: bool = True, dry_run: bool = False,
-                          priority: int = 1, count_mode: str = CountMode.PER_REQUEST) -> int:
+                          stages: list[dict], target: str, enabled: bool = True,
+                          dry_run: bool = False, priority: int = 1, count_mode: str = CountMode.PER_REQUEST) -> int:
     """
     Create a lockout policy with its stages and actions in one transaction.
 
     See the module docstring for the parameter shapes; everything is validated
     here and a :class:`ParameterError` is raised on any invalid input before
-    anything is written.
+    anything is written. ``target`` is required (no silent default) so the
+    target/action compatibility is always a deliberate choice.
 
     :return: the id of the new policy
     """
     name = _validate_name(name)
     time_window_seconds = _validate_positive_int(time_window_seconds, "time_window_seconds")
     priority = _validate_positive_int(priority, "priority")
+    lockout_target = _validate_target(target)
     count_mode = _validate_count_mode(count_mode)
     counter_types = _validate_counter_types(counter_types_to_track)
     stage_defs = _validate_stages(stages)
+    _validate_target_actions(stage_defs, lockout_target)
 
     policy = LockoutPolicy(name=name, time_window_seconds=time_window_seconds,
                            enabled=bool(enabled), dry_run=bool(dry_run), priority=priority,
-                           count_mode=count_mode, counter_types_to_track=counter_types,
-                           stages=_build_stages(stage_defs))
+                           target=lockout_target, counter_types_to_track=counter_types,
+                           count_mode=count_mode, stages=_build_stages(stage_defs))
     db.session.add(policy)
     db.session.commit()
     log.info(f"Created lockout policy '{name}' (id {policy.id}).")
@@ -324,7 +372,7 @@ def update_lockout_policy(policy_id: int, name: str | None = None,
                           counter_types_to_track: list[str] | None = None,
                           stages: list[dict] | None = None, enabled: bool | None = None,
                           dry_run: bool | None = None, priority: int | None = None,
-                          count_mode: str | None = None) -> tuple[int, list[str]]:
+                          target: str | None = None, count_mode: str | None = None) -> tuple[int, list[str]]:
     """
     Update a lockout policy. Only the given (non-``None``) fields are changed.
 
@@ -334,6 +382,12 @@ def update_lockout_policy(policy_id: int, name: str | None = None,
     ``user_lockout_state``/``block_list`` to ``NULL`` (FK ``SET NULL``), which
     simply re-arms the de-dup for the edited policy; existing locks and blocks
     themselves stay in force.
+
+    ``target`` may be changed, but the resulting ``(target, stages)`` combination
+    must stay action-compatible (e.g. a ``source_ip`` policy cannot carry
+    ``LOCK_USER``); an incompatible change raises :class:`ParameterError`.
+    Existing locks/blocks written before the change are timed and expire on their
+    own, so no stale state is left enforced.
 
     All fields are validated before anything is written.
 
@@ -352,12 +406,18 @@ def update_lockout_policy(policy_id: int, name: str | None = None,
         time_window_seconds = _validate_positive_int(time_window_seconds, "time_window_seconds")
     if priority is not None:
         priority = _validate_positive_int(priority, "priority")
+    lockout_target = _validate_target(target) if target is not None else None
     if count_mode is not None:
         count_mode = _validate_count_mode(count_mode)
     if counter_types_to_track is not None:
         counter_types_to_track = _validate_counter_types(counter_types_to_track)
     if stages is not None:
         stages = _validate_stages(stages)
+    # target and stages must stay mutually compatible.
+    if lockout_target is not None or stages is not None:
+        effective_target = lockout_target if lockout_target is not None else LockoutTarget(policy.target)
+        effective_stages = stages if stages is not None else policy.stages
+        _validate_target_actions(effective_stages, effective_target)
 
     changed_fields = []
     if name is not None:
@@ -369,6 +429,9 @@ def update_lockout_policy(policy_id: int, name: str | None = None,
     if priority is not None:
         policy.priority = priority
         changed_fields.append("priority")
+    if lockout_target is not None:
+        policy.target = lockout_target
+        changed_fields.append("target")
     if enabled is not None:
         policy.enabled = bool(enabled)
         changed_fields.append("enabled")
