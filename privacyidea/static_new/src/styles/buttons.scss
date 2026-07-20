@@ -330,6 +330,10 @@ $button-low-contrast-variant: linear-gradient(
     font-size: 20px;
   }
 
+  .icon-badge .mat-icon.notranslate.material-icons.icon-badge-overlay {
+    font-size: 14px;
+  }
+
   &:disabled {
     cursor: not-allowed;
     opacity: 0.5;

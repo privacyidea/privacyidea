@@ -114,15 +114,15 @@
   justify-content: center;
   vertical-align: middle;
 
-  // Small circular badge overlaid on the bottom-right corner of the base icon.
+  // Small circular badge pinned to the bottom-right corner of the base icon.
   // The glyph is centered inside the circle; the solid background sits on top of
-  // the base icon (no cut-out). Offset defaults come from --icon-badge-right /
-  // --icon-badge-bottom, overridden by the icon-badge-right-* modifiers below.
+  // the base icon (no cut-out). Horizontal placement is controlled by the base
+  // icon's padding-right-* class (the badge sits flush at the padded edge).
   .icon-badge-overlay {
     position: absolute;
     z-index: 1;
-    right: var(--icon-badge-right, -4px);
-    bottom: var(--icon-badge-bottom, -1px);
+    right: 0;
+    bottom: -1px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -150,21 +150,8 @@
   }
 }
 
-// Per-instance badge adjustments. These set inheritable custom properties, so
-// they work applied on the .icon-badge itself or on an ancestor (e.g. a nav
-// section) to nudge / resize every badge inside it.
-.icon-badge-right-1 {
-  --icon-badge-right: -1px;
-}
-
-.icon-badge-right-2 {
-  --icon-badge-right: -2px;
-}
-
-.icon-badge-right-3 {
-  --icon-badge-right: -3px;
-}
-
+// Per-instance badge adjustment: shrink the overlay glyph. Sets an inheritable
+// custom property, so it works on the .icon-badge itself or on an ancestor.
 .icon-badge-glyph-small {
   --icon-badge-font-size: 12px;
 }

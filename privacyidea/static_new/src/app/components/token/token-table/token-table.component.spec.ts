@@ -18,6 +18,7 @@
  **/
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { provideRouter } from "@angular/router";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatDialog } from "@angular/material/dialog";
 import { ROUTE_PATHS } from "@app/route_paths";
@@ -76,6 +77,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        provideRouter([]),
         { provide: TokenService, useClass: MockTokenService },
         { provide: TableUtilsService, useClass: MockTableUtilsService },
         { provide: ContentService, useClass: MockContentService },
