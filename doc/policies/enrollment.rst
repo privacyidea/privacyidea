@@ -748,7 +748,7 @@ The value supports tags of the form ``{tagname}`` for replacement. The following
 * ``{serial}`` – the serial number of the passkey token
 
 In addition, every attribute the user's resolver provides can be used as a tag, for example ``{givenname}``,
-``{surname}``, ``{email}`` or ``{mobile}`` for an LDAP resolver (the available attributes depend on the resolver
+``{surname}``, ``{email}`` or ``{mobile}`` (the available attributes depend on the resolver type and
 configuration). The built-in tags above take precedence over resolver attributes with the same name.
 
 For example, if the user ``alice`` in the realm ``example`` has the given name ``Alice`` and the surname
