@@ -233,7 +233,9 @@ IP_FAILED_RATE_LIMITING = LockoutPolicyTemplate(
         "name": "Per-IP Failed-Attempt Rate Limit (Distinct Accounts)",
         "time_window_seconds": 300,
         "enabled": True,
-        "dry_run": False,
+        # Dry-run by default: the right distinct-account threshold depends on the environment (number of users, whether
+        # a NAT/CGNAT/VPN egress is shared), so an admin should watch the logged decisions and tune it before enforcing.
+        "dry_run": True,
         "priority": 1,
         "target": LockoutTarget.SOURCE_IP,
         # For an IP, "attempts" is the number of DISTINCT accounts (attempted usernames) it targeted - the fan-out

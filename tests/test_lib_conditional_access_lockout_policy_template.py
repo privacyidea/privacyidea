@@ -153,11 +153,13 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
     (aged-out failures, a successful login in between, an untracked event type).
     """
 
-    def _create(self, key, configure_email=False):
+    def _create(self, key, configure_email=False, enforce=False):
         """
         Instantiate the shipped template *key* as a real policy. With
         *configure_email* the blank ``smtp_identifier`` the template leaves for
-        the admin is filled in, so the EMAIL_ADMIN actions actually send.
+        the admin is filled in, so the EMAIL_ADMIN actions actually send. With
+        *enforce* a template shipped as ``dry_run`` is turned on (simulating an
+        admin who reviewed and enabled it), so the enforcement path can be tested.
         """
         policy = next(entry["policy"] for entry in list_lockout_policy_templates()
                       if entry["key"] == key)
@@ -166,6 +168,8 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
                 for action in stage["actions"]:
                     if action["action_type"] in (LockoutAction.EMAIL_ADMIN, LockoutAction.EMAIL_USER):
                         action["action_value"]["smtp_identifier"] = "lockoutmail"
+        if enforce:
+            policy["dry_run"] = False
         return create_lockout_policy(**policy)
 
     # --- password brute-force template ----------------------------------------
@@ -312,23 +316,34 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
         self._seed_attempts(AuthEventType.LOGIN_SUCCESS, 50, timestamp=now, start=9)
         self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(self.user, now=now))
 
-    # --- per-IP failed-attempt rate limit (distinct accounts, DENY) -----------
+    # --- per-IP failed-attempt rate limit (distinct accounts, DENY) - ships dry-run ---
 
-    def test_ip_failed_rate_limiting_denies_after_distinct_failed_accounts(self):
-        # Distinct accounts the IP failed against, real or probed: 10 wrong-password real users + 10 unknown-username
-        # probes = 20 distinct accounts reach the threshold (enumeration folds into the failed fan-out signal).
+    def test_ip_failed_rate_limiting_ships_dry_run(self):
+        # Like the all-outcomes IP template, the failed-fan-out threshold is environment-dependent, so it ships
+        # dry-run: even well past the threshold it enforces nothing until an admin reviews and enables it.
+        now = utc_now()
+        ip = "203.0.113.43"
+        policy_id = self._create("ip_failed_rate_limiting")
+        self.assertTrue(get_lockout_policy(policy_id)["dry_run"], "ip_failed_rate_limiting must ship as dry-run")
+        self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=25, timestamp=now)
+        self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(self.user, source_ip=ip, now=now))
+
+    def test_ip_failed_rate_limiting_denies_after_distinct_failed_accounts_when_enforced(self):
+        # Once an admin enables enforcement: distinct accounts the IP failed against, real or probed, are counted -
+        # 10 wrong-password real users + 10 unknown-username probes = 20 distinct accounts reach the threshold
+        # (enumeration folds into the failed fan-out signal).
         now = utc_now()
         ip = "203.0.113.40"
-        self._create("ip_failed_rate_limiting")
+        self._create("ip_failed_rate_limiting", enforce=True)
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=10, timestamp=now)
         self._seed_ip_unknown_events(ip, AuthEventType.USER_UNKNOWN,
                                      [f"ghost{i}" for i in range(10)], timestamp=now)
         self.assertEqual(AccessDecision.DENY, evaluate_access_decision(self.user, source_ip=ip, now=now))
 
-    def test_ip_failed_rate_limiting_below_threshold_continues(self):
+    def test_ip_failed_rate_limiting_below_threshold_continues_when_enforced(self):
         now = utc_now()
         ip = "203.0.113.41"
-        self._create("ip_failed_rate_limiting")
+        self._create("ip_failed_rate_limiting", enforce=True)
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=19, timestamp=now)
         self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(self.user, source_ip=ip, now=now))
 
