@@ -41,7 +41,7 @@
           mat-stroked-button>
           <span i18n>Cancel</span>
         </button>
-        @if (!isNewPolicy() && authService.actionAllowed("conditional_access_write")) {
+        @if (!isNewPolicy() && authService.actionAllowed("lockout_policy_write")) {
           <button
             (click)="$event.stopPropagation(); deletePolicy()"
             class="action-button-delete-secondary button-width-s"
@@ -64,7 +64,7 @@
             (change)="toggleEnabled($event.checked)"
             [checked]="editPolicy().enabled"
             [disableRipple]="true"
-            [disabled]="!authService.actionAllowed('conditional_access_write')"
+            [disabled]="!authService.actionAllowed('lockout_policy_write')"
             i18n-matTooltip
             matTooltip="Toggle Enabled">
             @if (editPolicy().enabled) {

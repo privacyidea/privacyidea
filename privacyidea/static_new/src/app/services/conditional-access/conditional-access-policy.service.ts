@@ -154,7 +154,7 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
   readonly baseUrl = environment.proxyUrl + "/conditionalaccess/policy";
 
   readonly policiesResource = httpResource<PiResponse<LockoutPolicy[]>>(() => {
-    if (!this.authService.actionAllowed("conditional_access_read")) {
+    if (!this.authService.actionAllowed("lockout_policy_read")) {
       return undefined;
     }
     if (!this.contentService.onConditionalAccess()) {

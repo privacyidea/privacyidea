@@ -48,7 +48,7 @@
       showFirstLastButtons />
   </div>
 
-  @if (authService.actionAllowed("conditional_access_write")) {
+  @if (authService.actionAllowed("lockout_policy_write")) {
     <div class="flex-row margin-bottom-16 gap-8">
       <button
         (click)="onCreatePolicy()"
@@ -239,7 +239,7 @@
           (click)="onToggleEnabled(policy); $event.stopPropagation()"
           [checked]="policy.enabled"
           [disableRipple]="true"
-          [disabled]="!authService.actionAllowed('conditional_access_write')"
+          [disabled]="!authService.actionAllowed('lockout_policy_write')"
           i18n-matTooltip
           matTooltip="Toggle Enabled" />
       </td>
@@ -259,7 +259,7 @@
           (click)="onToggleDryRun(policy); $event.stopPropagation()"
           [checked]="policy.dry_run"
           [disableRipple]="true"
-          [disabled]="!authService.actionAllowed('conditional_access_write')"
+          [disabled]="!authService.actionAllowed('lockout_policy_write')"
           i18n-matTooltip
           matTooltip="Toggle Dry Run (evaluate but do not enforce)" />
       </td>
