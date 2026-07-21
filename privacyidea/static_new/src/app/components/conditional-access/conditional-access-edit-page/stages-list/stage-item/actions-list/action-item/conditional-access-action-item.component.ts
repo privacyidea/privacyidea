@@ -37,7 +37,7 @@ const ACTION_DESCRIPTIONS: Record<LockoutActionType, string> = {
   PERMANENT_BLOCK_IP: $localize`Block the request's source IP until an administrator unblocks it.`,
   EMAIL_ADMIN: $localize`Send a notification email to an admin recipient group.`,
   EMAIL_USER: $localize`Send a notification email to the affected user.`,
-  ALLOW: $localize`Allow the request and skip lower-priority policies; threshold 0 always allows.`,
+  ALLOW: $localize`Allow the request and skip any lower-priority policies.`,
   DENY: $localize`Reject the request; it clears itself as failures age out of the window.`
 };
 
