@@ -2,7 +2,7 @@
 #
 # This Action will scan dependency manifest files that change as part of a Pull Request,
 # surfacing known-vulnerable versions of the packages declared or updated in the PR.
-# PRs introducing known-vulnerable packages will be blocked from merging.
+# Runs in warn-only mode: findings are reported on the PR but do not block merging.
 #
 # Source repository: https://github.com/actions/dependency-review-action
 
