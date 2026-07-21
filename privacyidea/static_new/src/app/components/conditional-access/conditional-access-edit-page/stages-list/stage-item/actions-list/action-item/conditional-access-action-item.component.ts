@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, input, linkedSignal, output } from "@angular/core";
+import { Component, computed, input, output } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
@@ -29,10 +29,90 @@ import {
   LockoutStageAction
 } from "@services/conditional-access/conditional-access-policy.service";
 
-// action_value is an arbitrary JSON payload whose shape depends on action_type (e.g. a lock
-// duration for LOCK_USER, an SMTP identifier + template for EMAIL_ADMIN). Rather than building a
-// bespoke sub-form per action type, it is edited as raw JSON here -- this mirrors the flexibility
-// the backend already grants (privacyidea/lib/conditional_access/lockout_policy.py stores it as-is).
+// One-line explanation of what each action does, shown under the action select.
+const ACTION_DESCRIPTIONS: Record<LockoutActionType, string> = {
+  LOCK_USER: $localize`Temporarily lock the user out for the duration below.`,
+  PERMANENT_LOCK_USER: $localize`Lock the user out until an administrator unlocks them.`,
+  BLOCK_IP: $localize`Temporarily block the request's source IP for the duration below.`,
+  PERMANENT_BLOCK_IP: $localize`Block the request's source IP until an administrator unblocks it.`,
+  EMAIL_ADMIN: $localize`Send a notification email to an admin recipient group.`,
+  EMAIL_USER: $localize`Send a notification email to the affected user.`,
+  ALLOW: $localize`Explicitly allow the request and stop evaluating lower-priority policies. A threshold of 0 makes it a permanent allowlist exception.`,
+  DENY: $localize`Reject the request without locking anything; it clears on its own as failures age out of the window.`
+};
+
+// How a given action type's action_value is edited:
+// - "duration": a single integer (seconds), stored as a plain number.
+// - "email": a JSON object with the fields listed in EMAIL_FIELDS.
+// - "none": the action takes no value (stored as null).
+type ActionValueMode = "duration" | "email" | "none";
+
+interface EmailField {
+  key: string;
+  label: string;
+  kind: "text" | "textarea" | "select";
+  options?: readonly string[];
+  onlyAdmin?: boolean;
+  rows?: number;
+  hint?: string;
+}
+
+// Order matters for layout: the three short fields come first so they share one
+// wrapping row, then the wide subject/body textareas flow onto their own rows.
+const EMAIL_FIELDS: readonly EmailField[] = [
+  {
+    key: "smtp_identifier",
+    label: $localize`SMTP server identifier`,
+    kind: "text",
+    hint: $localize`Name of a configured SMTP server.`
+  },
+  {
+    key: "recipient_group",
+    label: $localize`Recipient group`,
+    kind: "text",
+    onlyAdmin: true,
+    hint: $localize`Admin group to notify, e.g. internal_admins.`
+  },
+  { key: "mimetype", label: $localize`MIME type`, kind: "select", options: ["plain", "html"] },
+  {
+    key: "subject",
+    label: $localize`Subject`,
+    kind: "textarea",
+    rows: 2,
+    hint: $localize`Plain text with {placeholders} — see the list below.`
+  },
+  {
+    key: "body",
+    label: $localize`Body`,
+    kind: "textarea",
+    rows: 4,
+    hint: $localize`Supports {placeholders} — see the list below.`
+  }
+];
+
+// The {tag} substitutions available in the subject/body, matching the render
+// context the engine builds (privacyidea/lib/conditional_access/engine.py).
+export interface EmailPlaceholder {
+  tag: string;
+  description: string;
+}
+
+const EMAIL_PLACEHOLDERS: readonly EmailPlaceholder[] = [
+  { tag: "{username}", description: $localize`Login name of the affected user` },
+  { tag: "{realm}", description: $localize`Realm of the user` },
+  { tag: "{resolver}", description: $localize`Resolver of the user` },
+  { tag: "{client_ip}", description: $localize`IP address the request came from` },
+  { tag: "{count}", description: $localize`Number of matching events in the time window` },
+  { tag: "{threshold}", description: $localize`The stage's failure threshold` },
+  { tag: "{event_type}", description: $localize`The tracked event type that tripped the stage` },
+  { tag: "{stage_id}", description: $localize`ID of the stage that triggered` },
+  { tag: "{policy}", description: $localize`Name of the policy` },
+  { tag: "{time}", description: $localize`Time the policy tripped (UTC)` },
+  { tag: "{email}", description: $localize`Email address of the user` },
+  { tag: "{givenname}", description: $localize`Given name of the user` },
+  { tag: "{surname}", description: $localize`Surname of the user` }
+];
+
 @Component({
   selector: "app-conditional-access-action-item",
   standalone: true,
@@ -46,45 +126,85 @@ export class ConditionalAccessActionItemComponent {
   readonly removeAction = output<void>();
 
   readonly allActionTypes = ALL_LOCKOUT_ACTIONS;
+  readonly emailPlaceholders = EMAIL_PLACEHOLDERS;
 
-  readonly actionValueText = linkedSignal(() => ConditionalAccessActionItemComponent.formatValue(this.action().action_value));
-  readonly jsonError = computed<string | null>(() => {
-    const text = this.actionValueText().trim();
-    if (!text) {
-      return null;
-    }
-    try {
-      JSON.parse(text);
-      return null;
-    } catch {
-      return $localize`Invalid JSON.`;
-    }
+  readonly actionDescription = computed<string>(() => ACTION_DESCRIPTIONS[this.action().action_type]);
+
+  readonly valueMode = computed<ActionValueMode>(() =>
+    ConditionalAccessActionItemComponent.modeFor(this.action().action_type)
+  );
+
+  readonly emailFields = computed<EmailField[]>(() => {
+    const isAdmin = this.action().action_type === "EMAIL_ADMIN";
+    return EMAIL_FIELDS.filter((field) => isAdmin || !field.onlyAdmin);
   });
 
-  private static formatValue(value: unknown): string {
-    if (value === null || value === undefined) {
-      return "";
+  private static modeFor(actionType: LockoutActionType): ActionValueMode {
+    if (actionType === "LOCK_USER" || actionType === "BLOCK_IP") {
+      return "duration";
     }
-    return JSON.stringify(value, null, 2);
+    if (actionType === "EMAIL_ADMIN" || actionType === "EMAIL_USER") {
+      return "email";
+    }
+    return "none";
+  }
+
+  private emailValue(): Record<string, unknown> {
+    const value = this.action().action_value;
+    return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+  }
+
+  durationValue(): string {
+    const value = this.action().action_value;
+    if (typeof value === "number") {
+      return String(value);
+    }
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+      const record = value as Record<string, unknown>;
+      const nested = record["duration_seconds"] ?? record["duration"];
+      return nested == null ? "" : String(nested);
+    }
+    return "";
+  }
+
+  emailFieldValue(key: string): string {
+    const value = this.emailValue()[key];
+    if (value == null) {
+      return key === "mimetype" ? "plain" : "";
+    }
+    return String(value);
   }
 
   onActionTypeChange(actionType: LockoutActionType): void {
-    this.updateAction.emit({ action_type: actionType });
+    // A value shaped for the old mode is meaningless in a different one, so reset
+    // it when the mode changes (e.g. switching an email object to a duration).
+    if (ConditionalAccessActionItemComponent.modeFor(actionType) !== this.valueMode()) {
+      this.updateAction.emit({ action_type: actionType, action_value: null });
+    } else {
+      this.updateAction.emit({ action_type: actionType });
+    }
   }
 
-  onActionValueInput(text: string): void {
-    this.actionValueText.set(text);
+  onDurationInput(text: string): void {
     const trimmed = text.trim();
     if (!trimmed) {
       this.updateAction.emit({ action_value: null });
       return;
     }
-    try {
-      const parsed = JSON.parse(trimmed);
-      this.updateAction.emit({ action_value: parsed });
-    } catch {
-      // Invalid JSON while typing: keep the last valid action_value, surface jsonError instead.
+    const parsed = parseInt(trimmed, 10);
+    this.updateAction.emit({ action_value: Number.isNaN(parsed) ? null : parsed });
+  }
+
+  onEmailFieldInput(key: string, value: string): void {
+    const next = { ...this.emailValue() };
+    // mimetype always carries a value (defaults to "plain"); other empty fields
+    // are dropped so the stored object stays minimal.
+    if (value === "" && key !== "mimetype") {
+      delete next[key];
+    } else {
+      next[key] = value;
     }
+    this.updateAction.emit({ action_value: Object.keys(next).length > 0 ? next : null });
   }
 
   onRemoveAction(): void {

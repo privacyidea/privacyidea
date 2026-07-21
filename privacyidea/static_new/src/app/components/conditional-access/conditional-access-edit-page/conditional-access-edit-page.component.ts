@@ -104,7 +104,15 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   counterTypesValid = computed(() => this.editPolicy().counter_types_to_track.length > 0);
   stagesValid = computed(() => {
     const stages = this.editPolicy().stages;
-    return stages.length > 0 && stages.every((stage) => stage.failure_threshold >= 1 && stage.priority >= 1);
+    // Priority is not edited here; it is derived from the threshold on save.
+    return stages.length > 0 && stages.every((stage) => stage.failure_threshold >= 1);
+  });
+  // Only the highest-priority stage whose threshold is met ever fires, so two stages
+  // sharing a threshold would leave one permanently dead; the backend rejects it too
+  // (uq_lockout_stage_policy_threshold), so block it here.
+  stageThresholdsUnique = computed(() => {
+    const thresholds = this.editPolicy().stages.map((stage) => stage.failure_threshold);
+    return new Set(thresholds).size === thresholds.length;
   });
 
   hasChanges = computed(() => JSON.stringify(this.policy()) !== JSON.stringify(this.editPolicy()));
@@ -114,7 +122,8 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
       this.timeWindowValid() &&
       this.priorityValid() &&
       this.counterTypesValid() &&
-      this.stagesValid()
+      this.stagesValid() &&
+      this.stageThresholdsUnique()
   );
 
   nameTouched = signal(false);
@@ -207,8 +216,16 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   }
 
   savePolicy(): Promise<boolean> {
+    // Stage priority is not user-editable: only the highest matching threshold should
+    // fire, so derive each stage's priority from its (unique) failure_threshold — a
+    // higher threshold gets a higher priority and therefore wins when several match.
+    const policy = this.editPolicy();
+    const payload = {
+      ...policy,
+      stages: policy.stages.map((stage) => ({ ...stage, priority: stage.failure_threshold }))
+    };
     return new Promise((resolve) => {
-      this.policyService.savePolicy(this.editPolicy()).then((id) => {
+      this.policyService.savePolicy(payload).then((id) => {
         if (id !== undefined) {
           this.pendingChangesService.clearAllRegistrations();
           this.router.navigateByUrl(ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS);

@@ -45,13 +45,6 @@ export class ConditionalAccessStageItemComponent {
     }
   }
 
-  onPriorityInput(value: string): void {
-    const parsed = parseInt(value, 10);
-    if (!isNaN(parsed) && parsed >= 1) {
-      this.updateStage.emit({ priority: parsed });
-    }
-  }
-
   onActionsChange(actions: LockoutStageAction[]): void {
     this.updateStage.emit({ actions });
   }

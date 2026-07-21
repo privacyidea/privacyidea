@@ -146,6 +146,21 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
     expect(component.stagesValid()).toBe(false);
   });
 
+  it("should block saving when two stages share a failure threshold", () => {
+    component.onStagesChange([
+      { failure_threshold: 5, priority: 2, actions: [] },
+      { failure_threshold: 5, priority: 1, actions: [] }
+    ]);
+    expect(component.stageThresholdsUnique()).toBe(false);
+    expect(component.canSave()).toBe(false);
+    // distinct thresholds are fine
+    component.onStagesChange([
+      { failure_threshold: 5, priority: 2, actions: [] },
+      { failure_threshold: 10, priority: 1, actions: [] }
+    ]);
+    expect(component.stageThresholdsUnique()).toBe(true);
+  });
+
   it("should update time_window_seconds for valid input only", () => {
     component.onTimeWindowInput("120");
     expect(component.editPolicy().time_window_seconds).toBe(120);
@@ -189,6 +204,20 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
     const result = await component.savePolicy();
     expect(result).toBe(true);
     expect(routerMock.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS);
+  });
+
+  it("should derive each stage's priority from its threshold on save", async () => {
+    policyServiceMock.savePolicy.mockResolvedValueOnce(1);
+    component.onStagesChange([
+      { failure_threshold: 5, priority: 1, actions: [] },
+      { failure_threshold: 10, priority: 1, actions: [] }
+    ]);
+    await component.savePolicy();
+    const payload = policyServiceMock.savePolicy.mock.calls.at(-1)![0];
+    expect(payload.stages).toEqual([
+      { failure_threshold: 5, priority: 5, actions: [] },
+      { failure_threshold: 10, priority: 10, actions: [] }
+    ]);
   });
 
   it("should resolve false and not navigate when save fails", async () => {

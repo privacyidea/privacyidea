@@ -3,7 +3,13 @@
 .edit-policy-layout {
   @include styles.main-component-style;
   max-height: var(--table-max-height);
-  max-width: 904px;
+  max-width: 968px;
+
+  // Keep every form-field hint/error subscript on a 16px baseline: one wrapped
+  // line is 16px, two are 32px, and so on. The custom property inherits past
+  // Angular's view encapsulation, so it also applies to the stage/action fields
+  // in the child components below.
+  --mat-form-field-subscript-text-line-height: 16px;
 }
 
 .header-row {
@@ -27,4 +33,20 @@
 
 .ca-stages-error {
   color: var(--mat-sys-error, #b3261e);
+}
+
+.ca-section-hint {
+  margin: 0 0 8px;
+  max-width: 968px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// Full-width note inside the (flex-wrap) fields row, e.g. the extended
+// explanation of the policy Priority. Breaks onto its own line and wraps
+// across the width so long text stays within a couple of rows.
+.ca-field-note {
+  flex-basis: 100%;
+  margin: 0;
+  max-width: 968px;
+  color: var(--mat-sys-on-surface-variant);
 }

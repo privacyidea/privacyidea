@@ -24,7 +24,10 @@ describe("ConditionalAccessActionItemComponent", () => {
   let component: ConditionalAccessActionItemComponent;
   let fixture: ComponentFixture<ConditionalAccessActionItemComponent>;
 
-  const action: LockoutStageAction = { action_type: "LOCK_USER", action_value: { lock_duration_seconds: 600 } };
+  function setAction(action: LockoutStageAction): void {
+    fixture.componentRef.setInput("action", action);
+    fixture.detectChanges();
+  }
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -32,43 +35,91 @@ describe("ConditionalAccessActionItemComponent", () => {
     }).compileComponents();
 
     fixture = TestBed.createComponent(ConditionalAccessActionItemComponent);
-    fixture.componentRef.setInput("action", action);
     component = fixture.componentInstance;
-    fixture.detectChanges();
+    setAction({ action_type: "LOCK_USER", action_value: 600 });
   });
 
   it("should create", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should format the initial action_value as pretty JSON", () => {
-    expect(component.actionValueText()).toBe(JSON.stringify(action.action_value, null, 2));
+  it("should describe every action type", () => {
+    for (const type of ["LOCK_USER", "PERMANENT_LOCK_USER", "BLOCK_IP", "ALLOW", "DENY", "EMAIL_USER"] as const) {
+      setAction({ action_type: type, action_value: null });
+      expect(component.actionDescription().length).toBeGreaterThan(0);
+    }
   });
 
-  it("should emit updateAction on action type change", () => {
-    const spy = jest.spyOn(component.updateAction, "emit");
-    component.onActionTypeChange("PERMANENT_LOCK_USER");
-    expect(spy).toHaveBeenCalledWith({ action_type: "PERMANENT_LOCK_USER" });
+  it("should classify the value mode from the action type", () => {
+    setAction({ action_type: "LOCK_USER", action_value: 600 });
+    expect(component.valueMode()).toBe("duration");
+    setAction({ action_type: "EMAIL_ADMIN", action_value: {} });
+    expect(component.valueMode()).toBe("email");
+    setAction({ action_type: "ALLOW", action_value: null });
+    expect(component.valueMode()).toBe("none");
   });
 
-  it("should emit the parsed value for valid JSON input", () => {
-    const spy = jest.spyOn(component.updateAction, "emit");
-    component.onActionValueInput('{"lock_duration_seconds": 30}');
-    expect(spy).toHaveBeenCalledWith({ action_value: { lock_duration_seconds: 30 } });
-    expect(component.jsonError()).toBeNull();
+  describe("duration", () => {
+    it("should read a plain-number duration", () => {
+      setAction({ action_type: "LOCK_USER", action_value: 600 });
+      expect(component.durationValue()).toBe("600");
+    });
+
+    it("should read a nested duration_seconds", () => {
+      setAction({ action_type: "LOCK_USER", action_value: { duration_seconds: 30 } });
+      expect(component.durationValue()).toBe("30");
+    });
+
+    it("should emit the parsed integer on input and null when cleared", () => {
+      const spy = jest.spyOn(component.updateAction, "emit");
+      component.onDurationInput("45");
+      expect(spy).toHaveBeenCalledWith({ action_value: 45 });
+      component.onDurationInput("");
+      expect(spy).toHaveBeenCalledWith({ action_value: null });
+    });
   });
 
-  it("should emit null action_value for empty input", () => {
-    const spy = jest.spyOn(component.updateAction, "emit");
-    component.onActionValueInput("");
-    expect(spy).toHaveBeenCalledWith({ action_value: null });
+  describe("email", () => {
+    it("should include recipient_group only for EMAIL_ADMIN", () => {
+      setAction({ action_type: "EMAIL_ADMIN", action_value: {} });
+      expect(component.emailFields().map((f) => f.key)).toContain("recipient_group");
+      setAction({ action_type: "EMAIL_USER", action_value: {} });
+      expect(component.emailFields().map((f) => f.key)).not.toContain("recipient_group");
+    });
+
+    it("should default the mimetype to plain when unset", () => {
+      setAction({ action_type: "EMAIL_ADMIN", action_value: {} });
+      expect(component.emailFieldValue("mimetype")).toBe("plain");
+      expect(component.emailFieldValue("subject")).toBe("");
+    });
+
+    it("should merge a field into the value object", () => {
+      const spy = jest.spyOn(component.updateAction, "emit");
+      setAction({ action_type: "EMAIL_ADMIN", action_value: { subject: "Hi" } });
+      component.onEmailFieldInput("body", "Hello {user}");
+      expect(spy).toHaveBeenCalledWith({ action_value: { subject: "Hi", body: "Hello {user}" } });
+    });
+
+    it("should drop an emptied non-mimetype field", () => {
+      const spy = jest.spyOn(component.updateAction, "emit");
+      setAction({ action_type: "EMAIL_ADMIN", action_value: { subject: "Hi", body: "x" } });
+      component.onEmailFieldInput("body", "");
+      expect(spy).toHaveBeenCalledWith({ action_value: { subject: "Hi" } });
+    });
   });
 
-  it("should surface a JSON error and not emit for invalid input", () => {
+  it("should reset the value when the type changes to another mode", () => {
     const spy = jest.spyOn(component.updateAction, "emit");
-    component.onActionValueInput("{not json");
-    expect(spy).not.toHaveBeenCalled();
-    expect(component.jsonError()).not.toBeNull();
+    setAction({ action_type: "EMAIL_ADMIN", action_value: { subject: "Hi" } });
+    component.onActionTypeChange("LOCK_USER");
+    expect(spy).toHaveBeenCalledWith({ action_type: "LOCK_USER", action_value: null });
+  });
+
+  it("should keep the value when the type stays in the same mode", () => {
+    const spy = jest.spyOn(component.updateAction, "emit");
+    setAction({ action_type: "LOCK_USER", action_value: 600 });
+    component.onActionTypeChange("BLOCK_IP");
+    expect(spy).toHaveBeenCalledWith({ action_type: "BLOCK_IP" });
   });
 
   it("should emit removeAction", () => {

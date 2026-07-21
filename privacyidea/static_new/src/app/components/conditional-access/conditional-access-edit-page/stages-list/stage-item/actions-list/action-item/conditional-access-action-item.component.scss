@@ -1,11 +1,73 @@
 .ca-action-item {
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
+  flex-direction: column;
   gap: 8px;
   padding: 8px 0;
 }
 
+// Header row: the action-type select on the left and the remove button pinned
+// to the right, so the delete control sits at the top-right of the action.
+.ca-action-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+// Holds the per-action-type value fields (duration, or the several email
+// fields), wrapping them so they flow below the header.
+.ca-action-value {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+
 .ca-remove-button {
   margin-top: 4px;
+}
+
+// Full-width description of the selected action type. Placed here (rather than as
+// a field hint) so long text — e.g. the ALLOW/DENY explanations — wraps across the
+// component width instead of stacking many rows under the narrow action select.
+.ca-action-hint {
+  margin: 0;
+  max-width: 900px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// Collapsible reference of the {tag} placeholders usable in subject/body.
+.ca-placeholder-help {
+  flex-basis: 100%;
+  color: var(--mat-sys-on-surface-variant);
+
+  summary {
+    cursor: pointer;
+    font-weight: 500;
+  }
+
+  .ca-placeholder-intro {
+    margin: 8px 0;
+  }
+
+  .ca-placeholder-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    column-gap: 16px;
+    row-gap: 4px;
+
+    li {
+      display: contents;
+    }
+
+    code {
+      font-family: monospace;
+      color: var(--mat-sys-on-surface);
+    }
+  }
 }

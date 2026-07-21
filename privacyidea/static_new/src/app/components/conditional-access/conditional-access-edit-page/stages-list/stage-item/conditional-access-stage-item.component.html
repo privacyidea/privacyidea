@@ -27,12 +27,15 @@
       <mat-icon>delete</mat-icon>
     </button>
   </div>
+  <p class="ca-stage-hint" i18n>
+    Runs the actions below once this many tracked events occur within the policy's time window.
+  </p>
 
   <div class="ca-stage-fields">
     <mat-form-field
       appearance="fill"
       subscriptSizing="dynamic"
-      class="input-width-s">
+      class="input-width-m">
       <mat-label i18n>Failure threshold</mat-label>
       <input
         matInput
@@ -40,19 +43,7 @@
         min="1"
         [value]="stage().failure_threshold"
         (input)="onFailureThresholdInput($any($event.target).value)" />
-    </mat-form-field>
-
-    <mat-form-field
-      appearance="fill"
-      subscriptSizing="dynamic"
-      class="input-width-s">
-      <mat-label i18n>Stage priority</mat-label>
-      <input
-        matInput
-        type="number"
-        min="1"
-        [value]="stage().priority"
-        (input)="onPriorityInput($any($event.target).value)" />
+      <mat-hint i18n>Number of tracked events that trigger this stage.</mat-hint>
     </mat-form-field>
   </div>
 

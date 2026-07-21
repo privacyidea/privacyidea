@@ -60,12 +60,6 @@ describe("ConditionalAccessStageItemComponent", () => {
     expect(spy).not.toHaveBeenCalled();
   });
 
-  it("should emit updateStage for a valid priority", () => {
-    const spy = jest.spyOn(component.updateStage, "emit");
-    component.onPriorityInput("3");
-    expect(spy).toHaveBeenCalledWith({ priority: 3 });
-  });
-
   it("should emit updateStage when actions change", () => {
     const spy = jest.spyOn(component.updateStage, "emit");
     component.onActionsChange([]);

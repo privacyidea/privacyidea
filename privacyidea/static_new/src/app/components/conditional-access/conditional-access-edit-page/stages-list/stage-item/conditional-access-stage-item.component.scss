@@ -15,6 +15,11 @@
   font-weight: 500;
 }
 
+.ca-stage-hint {
+  margin: 0 0 12px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
 .ca-stage-fields {
   display: flex;
   flex-wrap: wrap;

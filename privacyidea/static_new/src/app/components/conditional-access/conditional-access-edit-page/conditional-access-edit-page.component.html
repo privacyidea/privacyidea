@@ -118,7 +118,7 @@
 
       <mat-form-field
         appearance="fill"
-        class="input-width-xl"
+        class="input-width-xl margin-bottom-32"
         subscriptSizing="dynamic">
         <mat-label i18n>Tracked event types</mat-label>
         <mat-select
@@ -148,12 +148,29 @@
         @if (!priorityValid()) {
           <mat-error i18n>Must be at least 1.</mat-error>
         }
+        <mat-hint i18n>Order across policies — highest first.</mat-hint>
       </mat-form-field>
+
+      <p class="ca-field-note" i18n>
+        Priority decides how this policy ranks against the others: for an allow/deny decision the
+        highest-priority matching policy wins, while lock, block and email policies all run
+        regardless of priority.
+      </p>
     </div>
 
-    <h4 i18n>Stages</h4>
+    <h4 i18n>Stages &amp; actions</h4>
+    <p class="ca-section-hint" i18n>
+      A stage fires when the tracked events reach its failure threshold within the time window, and
+      then runs its actions (lock the user, block the IP, send an email, allow or deny). Add several
+      stages to escalate — but only one stage of this policy fires per evaluation: when several
+      thresholds are met at once, only the stage with the highest met threshold runs and the rest are
+      skipped. Other policies are evaluated on their own (see the policy Priority above).
+    </p>
     @if (!stagesValid()) {
       <p class="ca-stages-error" i18n>At least one stage is required, and every stage needs a threshold and priority of at least 1.</p>
+    }
+    @if (!stageThresholdsUnique()) {
+      <p class="ca-stages-error" i18n>Each stage must have a different failure threshold.</p>
     }
     <app-conditional-access-stages-list
       [stages]="editPolicy().stages"

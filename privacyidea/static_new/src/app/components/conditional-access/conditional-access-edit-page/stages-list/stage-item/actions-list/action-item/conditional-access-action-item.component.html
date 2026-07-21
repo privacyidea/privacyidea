@@ -17,43 +17,122 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="ca-action-item">
-  <mat-form-field
-    appearance="fill"
-    subscriptSizing="dynamic"
-    class="input-width-s">
-    <mat-label i18n>Action</mat-label>
-    <mat-select
-      [value]="action().action_type"
-      (selectionChange)="onActionTypeChange($event.value)">
-      @for (actionType of allActionTypes; track actionType) {
-        <mat-option [value]="actionType">{{ actionType }}</mat-option>
+  <div class="ca-action-header">
+    <mat-form-field
+      appearance="fill"
+      subscriptSizing="dynamic"
+      class="input-width-l">
+      <mat-label i18n>Action</mat-label>
+      <mat-select
+        [value]="action().action_type"
+        (selectionChange)="onActionTypeChange($event.value)">
+        @for (actionType of allActionTypes; track actionType) {
+          <mat-option [value]="actionType">{{ actionType }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <button
+      mat-icon-button
+      class="ca-remove-button"
+      aria-label="Remove action"
+      i18n-aria-label
+      (click)="onRemoveAction()">
+      <mat-icon>delete</mat-icon>
+    </button>
+  </div>
+
+  <p class="ca-action-hint">{{ actionDescription() }}</p>
+
+  <div class="ca-action-value">
+    @switch (valueMode()) {
+      @case ("duration") {
+        <mat-form-field
+          appearance="fill"
+          subscriptSizing="dynamic"
+          class="input-width-l">
+          <mat-label i18n>Duration (seconds)</mat-label>
+          <input
+            matInput
+            type="number"
+            min="1"
+            [value]="durationValue()"
+            (input)="onDurationInput($any($event.target).value)" />
+          <mat-hint i18n>How long the lock or block lasts, in seconds.</mat-hint>
+        </mat-form-field>
       }
-    </mat-select>
-  </mat-form-field>
+      @case ("email") {
+        @for (field of emailFields(); track field.key) {
+          @switch (field.kind) {
+            @case ("textarea") {
+              <mat-form-field
+                appearance="fill"
+                subscriptSizing="dynamic"
+                class="input-width-xxl">
+                <mat-label>{{ field.label }}</mat-label>
+                <textarea
+                  matInput
+                  [rows]="field.rows ?? 4"
+                  [value]="emailFieldValue(field.key)"
+                  (input)="onEmailFieldInput(field.key, $any($event.target).value)"></textarea>
+                @if (field.hint) {
+                  <mat-hint>{{ field.hint }}</mat-hint>
+                }
+              </mat-form-field>
+            }
+            @case ("select") {
+              <mat-form-field
+                appearance="fill"
+                subscriptSizing="dynamic"
+                class="input-width-l">
+                <mat-label>{{ field.label }}</mat-label>
+                <mat-select
+                  [value]="emailFieldValue(field.key)"
+                  (selectionChange)="onEmailFieldInput(field.key, $event.value)">
+                  @for (option of field.options; track option) {
+                    <mat-option [value]="option">{{ option }}</mat-option>
+                  }
+                </mat-select>
+                @if (field.hint) {
+                  <mat-hint>{{ field.hint }}</mat-hint>
+                }
+              </mat-form-field>
+            }
+            @default {
+              <mat-form-field
+                appearance="fill"
+                subscriptSizing="dynamic"
+                class="input-width-l">
+                <mat-label>{{ field.label }}</mat-label>
+                <input
+                  matInput
+                  [value]="emailFieldValue(field.key)"
+                  (input)="onEmailFieldInput(field.key, $any($event.target).value)" />
+                @if (field.hint) {
+                  <mat-hint>{{ field.hint }}</mat-hint>
+                }
+              </mat-form-field>
+            }
+          }
+        }
 
-  <mat-form-field
-    appearance="fill"
-    subscriptSizing="dynamic"
-    class="input-width-xl ca-action-value">
-    <mat-label i18n>Action value (JSON)</mat-label>
-    <textarea
-      matInput
-      rows="3"
-      i18n-placeholder
-      placeholder="e.g. {{ '{' }}&quot;lock_duration_seconds&quot;: 600{{ '}' }}"
-      [value]="actionValueText()"
-      (input)="onActionValueInput($any($event.target).value)"></textarea>
-    @if (jsonError()) {
-      <mat-error>{{ jsonError() }}</mat-error>
+        <details class="ca-placeholder-help">
+          <summary i18n>Available placeholders for subject and body</summary>
+          <p
+            class="ca-placeholder-intro"
+            i18n>
+            Placeholders are replaced when the email is sent. Unknown placeholders are left as-is.
+          </p>
+          <ul class="ca-placeholder-list">
+            @for (placeholder of emailPlaceholders; track placeholder.tag) {
+              <li>
+                <code>{{ placeholder.tag }}</code>
+                <span>{{ placeholder.description }}</span>
+              </li>
+            }
+          </ul>
+        </details>
+      }
     }
-  </mat-form-field>
-
-  <button
-    mat-icon-button
-    class="ca-remove-button"
-    aria-label="Remove action"
-    i18n-aria-label
-    (click)="onRemoveAction()">
-    <mat-icon>delete</mat-icon>
-  </button>
+  </div>
 </div>
