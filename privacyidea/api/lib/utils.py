@@ -129,8 +129,9 @@ def resolve_attempt_id(request: Request | None, transaction_id: str | None = Non
     """
     request_transaction_id = None
     if request is not None:
-        request_transaction_id = (get_optional(request.all_data, "transaction_id")
-                                  or get_optional(request.all_data, "state"))
+        request_data = getattr(request, "all_data", {})
+        request_transaction_id = (get_optional(request_data, "transaction_id")
+                                  or get_optional(request_data, "state"))
     lookup_transaction_id = request_transaction_id or transaction_id
     if lookup_transaction_id:
         existing = get_attempt_id_for_transaction(lookup_transaction_id)
