@@ -51,6 +51,16 @@
   @if (authService.actionAllowed("conditional_access_write")) {
     <div class="flex-row margin-bottom-16 gap-8">
       <button
+        (click)="onCreatePolicy()"
+        class="action-button-primary button-width-l"
+        mat-stroked-button>
+        <span class="icon-badge">
+          <mat-icon class="padding-right-3">security</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+        </span>
+        <span i18n>New Conditional Access</span>
+      </button>
+      <button
         (click)="toggleEnabledSelected()"
         [disabled]="policySelection().length === 0"
         class="action-button-secondary button-width-m"

@@ -442,7 +442,7 @@
       [ngClass]="contentService.routeUrl() === ROUTE_PATHS.POLICIES ? 'sub-nav-active' : ''"
       [routerLink]="[ROUTE_PATHS.POLICIES]">
       <mat-icon>gavel</mat-icon>
-      <span i18n>Overview</span>
+      <span i18n>Policies</span>
     </a>
     @if (contentService.routeUrl().startsWith(ROUTE_PATHS.POLICIES_DETAILS)) {
       <a class="sub-nav-active">
@@ -459,9 +459,10 @@
           <mat-icon class="padding-right-6">gavel</mat-icon>
           <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
-        <span i18n>Create</span>
+        <span i18n>Create Policy</span>
       </a>
-      <a
+    }
+    <a
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS]">
         <mat-icon>security</mat-icon>
@@ -476,16 +477,15 @@
           <span i18n>Conditional Access Details</span>
         </a>
       }
-      <a
-        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_NEW ? 'sub-nav-active' : ''"
-        [routerLink]="[ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_NEW]">
-      <span class="icon-badge">
-        <mat-icon class="margin-right-2">security</mat-icon>
-        <mat-icon class="icon-badge-overlay icon-badge-add">add</mat-icon>
-      </span>
-        <span i18n>Create Conditional Access</span>
-      </a>
-    }
+      @if (contentService.routeUrl() === ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_NEW) {
+        <a class="sub-nav-active">
+          <span class="icon-badge">
+            <mat-icon class="margin-right-2">security</mat-icon>
+            <mat-icon class="icon-badge-overlay icon-badge-add">add</mat-icon>
+          </span>
+          <span i18n>New Conditional Access</span>
+        </a>
+      }
     <ng-container *ngTemplateOutlet="supportDocs"></ng-container>
   </mat-toolbar>
 }
