@@ -17,23 +17,30 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
-  aria-label="User Resolver Editor" class="user-new-resolver-layout" i18n-aria-label>
+  aria-label="User Resolver Editor"
+  class="user-new-resolver-layout"
+  i18n-aria-label>
   <div
-    #scrollContainer appScrollToTop class="user-new-resolver-container">
+    #scrollContainer
+    appScrollToTop
+    class="user-new-resolver-container">
     @if (isEditMode()) {
       <h3
-        class="margin-8" i18n>
+        class="margin-8"
+        i18n>
         Edit User Source
       </h3>
     } @else {
       <h3
-        class="margin-8" i18n>
+        class="margin-8"
+        i18n>
         Create User Source
       </h3>
     }
 
     <div
-      #leftColumn class="flex-row margin-bottom-0 margin-left-16 margin-top-16 container-template-fix">
+      #leftColumn
+      class="flex-row margin-bottom-0 margin-left-16 margin-top-16 container-template-fix">
       <mat-form-field class="input-width-l">
         <mat-label i18n>Resolver Name</mat-label>
         <mat-hint>
@@ -47,14 +54,18 @@
           (clearButtonClick)="resolverNameModel.update(m => ({ ...m, resolverName: '' }))"
           [showClearButton]="!isEditMode() && !!resolverNameModel().resolverName">
           <input
-            [formField]="resolverNameForm.resolverName" matInput placeholder="resolver1" />
+            [formField]="resolverNameForm.resolverName"
+            matInput
+            placeholder="resolver1" />
         </app-clearable-input>
-        @if (resolverNameForm.resolverName().errors().some(e => e.kind === 'required') && resolverNameForm.resolverName().touched()) {
-          <mat-error i18n>
-            Resolver name is <strong>required</strong> .
-          </mat-error>
+        @if (
+          resolverNameForm.resolverName().errors().some(e => e.kind === 'required') && resolverNameForm.resolverName().touched()
+        ) {
+          <mat-error i18n> Resolver name is <strong>required</strong> . </mat-error>
         }
-        @if (resolverNameForm.resolverName().errors().some(e => e.kind === 'pattern') && resolverNameForm.resolverName().touched()) {
+        @if (
+          resolverNameForm.resolverName().errors().some(e => e.kind === 'pattern') && resolverNameForm.resolverName().touched()
+        ) {
           <mat-error i18n>
             Resolver name contains <strong>invalid characters</strong> . Only alphanumeric characters, dots, underscores
             and hyphens are allowed.
@@ -65,7 +76,9 @@
       <mat-form-field class="input-width-l resolver-type-select">
         <mat-label i18n>Type</mat-label>
         <mat-select
-          (selectionChange)="onTypeChange($event.value)" [disabled]="isEditMode()" [value]="resolverType()">
+          (selectionChange)="onTypeChange($event.value)"
+          [disabled]="isEditMode()"
+          [value]="resolverType()">
           <mat-option [value]="'ldapresolver'">LDAP</mat-option>
           <mat-option [value]="'sqlresolver'">SQL</mat-option>
           <mat-option [value]="'httpresolver'">HTTP</mat-option>
@@ -78,14 +91,16 @@
     </div>
 
     <div
-      [appStickyHeader]="scrollContainer" class="sticky-header">
+      [appStickyHeader]="scrollContainer"
+      class="sticky-header">
       <div class="sticky-controls ali-center">
         @if (resolverType() !== "passwdresolver") {
           @if (["entraidresolver", "keycloakresolver", "httpresolver"].includes(resolverType())) {
             <mat-form-field class="input-width-s">
               <mat-label i18n>Test Username</mat-label>
               <app-clearable-input
-                (clearButtonClick)="testUsername.set('')" [showClearButton]="!!testUsername()">
+                (clearButtonClick)="testUsername.set('')"
+                [showClearButton]="!!testUsername()">
                 <input
                   (input)="testUsername.set($any($event.target).value)"
                   [value]="testUsername()"
@@ -97,7 +112,8 @@
             <mat-form-field class="input-width-s">
               <mat-label i18n>Test User ID</mat-label>
               <app-clearable-input
-                (clearButtonClick)="testUserId.set('')" [showClearButton]="!!testUserId()">
+                (clearButtonClick)="testUserId.set('')"
+                [showClearButton]="!!testUserId()">
                 <input
                   (input)="testUserId.set($any($event.target).value)"
                   [value]="testUserId()"
@@ -128,12 +144,17 @@
           </button>
         }
         <button
-          (click)="onCancel()" class="action-button-secondary button-width-s" mat-stroked-button>
+          (click)="onCancel()"
+          class="action-button-secondary button-width-s"
+          mat-stroked-button>
           <span i18n>Cancel</span>
         </button>
 
         <button
-          (click)="onSave()" [disabled]="!canSave" class="action-button-primary button-width-s" mat-stroked-button>
+          (click)="onSave()"
+          [disabled]="!canSave"
+          class="action-button-primary button-width-s"
+          mat-stroked-button>
           <mat-icon>save</mat-icon>
           <span i18n>Save</span>
         </button>
@@ -153,15 +174,18 @@
     }
     @if (resolverType() === "httpresolver") {
       <app-http-resolver
-        [data]="$any(formData)" [type]="resolverType()" />
+        [data]="$any(formData)"
+        [type]="resolverType()" />
     }
     @if (resolverType() === "entraidresolver") {
       <app-entraid-resolver
-        [data]="$any(formData)" [type]="resolverType()" />
+        [data]="$any(formData)"
+        [type]="resolverType()" />
     }
     @if (resolverType() === "keycloakresolver") {
       <app-keycloak-resolver
-        [data]="$any(formData)" [type]="resolverType()" />
+        [data]="$any(formData)"
+        [type]="resolverType()" />
     }
   </div>
 </div>

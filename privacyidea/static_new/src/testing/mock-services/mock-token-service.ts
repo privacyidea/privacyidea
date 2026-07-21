@@ -21,6 +21,7 @@ import { Sort } from "@angular/material/sort";
 import { PiResponse } from "@app/app.component";
 import { EnrollmentResponse, EnrollmentResponseDetail } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { FilterValue } from "@core/models/filter_value/filter_value";
+import { FilterCaseNote } from "@utils/filter-hint.utils";
 import {
   BulkResult,
   LostTokenResponse,
@@ -105,8 +106,9 @@ export class MockTokenService implements TokenServiceInterface {
   apiFilter: string[] = [];
   advancedApiFilter: string[] = [];
   exactMatchKeys = new Set<string>();
-  caseSensitiveKeys = new Set<string>();
   booleanKeys = new Set<string>();
+  caseNotes: Record<string, FilterCaseNote> = {};
+  unsupportedKeys = new Set<string>();
   sort = signal<Sort>({ active: "serial", direction: "asc" });
   readonly pageIndex = signal(0);
   readonly tokenResource = new MockHttpResourceRef<PiResponse<Tokens> | undefined>(undefined);

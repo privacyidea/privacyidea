@@ -26,19 +26,19 @@
         (clearButtonClick)="auditService.clearFilter()" [showClearButton]="auditService.auditFilter().isNotEmpty">
         <input
           #filterHTMLInputElement
+          [appFilterAutocomplete]="auditService.apiFilter"
           (input)="auditService.handleFilterInput($event)"
           [value]="auditService.auditFilter().value"
           aria-label="Filter Input"
           i18n-aria-label
           i18n-placeholder
           matInput
+          [matTooltip]="filterHint"
+          matTooltipClass="filter-hint-tooltip"
           placeholder="Example query: 'action: GET success: false'" />
       </app-clearable-input>
+      <mat-hint class="filter-keyword-hint">{{ filterKeywordHintText }}</mat-hint>
     </mat-form-field>
-    <app-filter-hint
-      [caseSensitive]="true"
-      [example]="'action: GET success: false'"
-      [keywords]="auditService.apiFilter" />
     <mat-paginator
       (page)="onPageEvent($event)"
       [length]="totalLength()"

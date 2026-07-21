@@ -16,35 +16,66 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { filterColumnHint, filterMatchHint } from "./filter-hint.utils";
+import { filterColumnHint, filterInputHint, filterKeywordHint } from "./filter-hint.utils";
 
-describe("filterMatchHint", () => {
-  it("describes exact matching", () => {
-    expect(filterMatchHint(true)).toContain("exact");
+describe("filterInputHint", () => {
+  it("only states what the placeholder does not already show", () => {
+    expect(filterInputHint()).toBe(
+      'Quote values with spaces or colons: description: "note: 2fa"\nWildcard: *\nCase-insensitive'
+    );
   });
 
-  it("describes substring matching", () => {
-    expect(filterMatchHint(false)).toContain("any part");
+  it("hedges the case note where the backend does not normalise case", () => {
+    expect(filterInputHint({ mayBeCaseSensitive: true })).toBe(
+      'Quote values with spaces or colons: description: "note: 2fa"\nWildcard: *\nMostly case-insensitive'
+    );
+  });
+});
+
+describe("filterKeywordHint", () => {
+  it("lists the accepted keywords", () => {
+    expect(filterKeywordHint(["serial", "type"])).toBe("Keywords: serial, type");
+  });
+
+  it("stays empty without keywords", () => {
+    expect(filterKeywordHint([])).toBe("");
   });
 });
 
 describe("filterColumnHint", () => {
-  it("shows the label and match mode with case for text keywords", () => {
-    const hint = filterColumnHint("Serial", { exactMatch: false, caseSensitive: true, isBoolean: false });
-    expect(hint).toContain("Filter by Serial");
-    expect(hint).toContain("any part");
-    expect(hint).toContain("Case-sensitive.");
+  it("stays bare when the keyword has no deviation to report", () => {
+    expect(filterColumnHint("Description", { exactMatch: false, isBoolean: false })).toBe("Filter by Description");
   });
 
-  it("marks case-insensitive text keywords", () => {
-    const hint = filterColumnHint("Description", { exactMatch: false, caseSensitive: false, isBoolean: false });
-    expect(hint).toContain("Case-insensitive.");
+  it("names exact matching only where it applies", () => {
+    expect(filterColumnHint("Realm", { exactMatch: true, isBoolean: false })).toBe("Filter by Realm\nexact match");
   });
 
-  it("describes boolean keywords as true/false and omits match/case", () => {
-    const hint = filterColumnHint("Active", { exactMatch: false, caseSensitive: false, isBoolean: true });
-    expect(hint).toContain("true or false");
-    expect(hint).not.toContain("Case-");
-    expect(hint).not.toContain("any part");
+  it("hedges keywords the database decides on", () => {
+    expect(filterColumnHint("Serial", { exactMatch: false, isBoolean: false, caseNote: "usually-insensitive" })).toBe(
+      "Filter by Serial\nusually case-insensitive"
+    );
+  });
+
+  it("warns about keywords that are usually case-sensitive", () => {
+    expect(filterColumnHint("infokey", { exactMatch: true, isBoolean: false, caseNote: "usually-sensitive" })).toBe(
+      "Filter by infokey\nexact match, usually case-sensitive"
+    );
+  });
+
+  it("states plain case sensitivity", () => {
+    expect(filterColumnHint("x", { exactMatch: false, isBoolean: false, caseNote: "sensitive" })).toBe(
+      "Filter by x\ncase-sensitive"
+    );
+  });
+
+  it("describes boolean keywords as true/false only", () => {
+    expect(filterColumnHint("Active", { exactMatch: false, isBoolean: true })).toBe("Filter by Active\ntrue or false");
+  });
+
+  it("marks unsupported keywords and drops every other detail", () => {
+    expect(filterColumnHint("userid", { exactMatch: false, isBoolean: false, isUnsupported: true })).toBe(
+      "Filter by userid\ncurrently not supported"
+    );
   });
 });

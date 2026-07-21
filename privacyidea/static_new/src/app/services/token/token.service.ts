@@ -37,6 +37,7 @@ import { NotificationService, NotificationServiceInterface } from "@services/not
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { parseBooleanValue } from "@utils/parse-boolean-value";
 import { StringUtils } from "@utils/string.utils";
+import { FilterCaseNote } from "@utils/filter-hint.utils";
 import { tokenTypes } from "@utils/token.utils";
 import {
   catchError,
@@ -111,11 +112,20 @@ const hiddenApiFilter = ["type_list"];
 // Keywords that are matched exactly against the backend; every other keyword is
 // wrapped with `*value*` and matched as a substring (see `_filterParams`).
 const exactMatchKeys = new Set(["user", "infokey", "infovalue", "active", "assigned", "container_serial", "realm"]);
-// Keywords the backend matches case-sensitively. All other text keywords use
-// func.lower() (see privacyidea/lib/token/query.py); keep this in sync with it.
-const caseSensitiveKeys = new Set(["serial"]);
 // Keywords that take a true/false value instead of a text pattern.
 const booleanKeys = new Set(["active", "assigned"]);
+// Keywords that deviate from the mostly case-insensitive matching of this filter.
+// `serial` is a raw LIKE (SQLite/MySQL fold case, PostgreSQL does not), the tokeninfo
+// keys are a raw equality comparison (only MySQL with a _ci collation folds case).
+const caseNotes: Record<string, FilterCaseNote> = {
+  serial: "usually-insensitive",
+  "infokey & infovalue": "usually-sensitive",
+  infokey: "usually-sensitive",
+  infovalue: "usually-sensitive"
+};
+// Keywords the backend accepts but never applies: the filter clauses were removed
+// in 78c0cc621 and not restored. Re-enable once the backend filters them again.
+const unsupportedKeys = new Set(["userid", "resolver"]);
 
 export interface Tokens {
   count: number;
@@ -285,8 +295,9 @@ export interface TokenServiceInterface {
   apiFilter: string[];
   advancedApiFilter: string[];
   exactMatchKeys: Set<string>;
-  caseSensitiveKeys: Set<string>;
   booleanKeys: Set<string>;
+  caseNotes: Record<string, FilterCaseNote>;
+  unsupportedKeys: Set<string>;
   sort: WritableSignal<Sort>;
   pageIndex: WritableSignal<number>;
   tokenResource: HttpResourceRef<PiResponse<Tokens> | undefined>;
@@ -615,8 +626,9 @@ export class TokenService implements TokenServiceInterface {
   readonly defaultSizeOptions = [5, 10, 25, 50];
   readonly apiFilter = apiFilter;
   readonly exactMatchKeys = exactMatchKeys;
-  readonly caseSensitiveKeys = caseSensitiveKeys;
   readonly booleanKeys = booleanKeys;
+  readonly caseNotes = caseNotes;
+  readonly unsupportedKeys = unsupportedKeys;
   readonly advancedApiFilter = advancedApiFilter;
 
   sort = signal({ active: "serial", direction: "asc" } as Sort);

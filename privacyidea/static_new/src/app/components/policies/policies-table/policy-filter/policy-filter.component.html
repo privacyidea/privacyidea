@@ -26,15 +26,17 @@
       [showClearButton]="!isEmpty()">
       <input
         #filterHTMLInputElement
+        [appFilterAutocomplete]="filterKeywords()"
         (input)="onFilterChange($event)"
         [value]="filter().rawValue"
         aria-label="Filter Input"
         i18n-aria-label
         i18n-placeholder
         matInput
+        [matTooltip]="filterHint"
+        matTooltipClass="filter-hint-tooltip"
         placeholder="Example query: 'scope: enrollment, active: true'" />
     </app-clearable-input>
+    <mat-hint class="filter-keyword-hint">{{ filterKeywordHintText() }}</mat-hint>
   </mat-form-field>
-  <app-filter-hint
-    [example]="'scope: enrollment, active: true'" />
 </div>

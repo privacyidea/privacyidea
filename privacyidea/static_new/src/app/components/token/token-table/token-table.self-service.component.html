@@ -17,11 +17,17 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
-  #scrollContainer appScrollToTop aria-label="Token Table" class="token-table-layout" i18n-aria-label>
+  #scrollContainer
+  appScrollToTop
+  aria-label="Token Table"
+  class="token-table-layout"
+  i18n-aria-label>
   <div
-    [appStickyHeader]="scrollContainer" class="filter-paginator-container sticky-header">
+    [appStickyHeader]="scrollContainer"
+    class="filter-paginator-container sticky-header">
     <h3
-      class="selfservice-paginator-label" i18n>
+      class="selfservice-paginator-label"
+      i18n>
       Your Tokens
     </h3>
     <mat-paginator
@@ -33,13 +39,20 @@
       showFirstLastButtons />
   </div>
   <div
-    appScrollEdges class="table-scroll-region">
+    appScrollEdges
+    class="table-scroll-region">
     <table
-      [dataSource]="tokenDataSource()" aria-label="Token Data Table" class="token-table" i18n-aria-label mat-table>
+      [dataSource]="tokenDataSource()"
+      aria-label="Token Data Table"
+      class="token-table"
+      i18n-aria-label
+      mat-table>
       @for (column of columnKeysMapSelfService(); track column) {
         <ng-container [matColumnDef]="column.key">
           <th
-            *matHeaderCellDef attr.aria-label="{{ column.label }} Header" mat-header-cell>
+            *matHeaderCellDef
+            attr.aria-label="{{ column.label }} Header"
+            mat-header-cell>
             <div class="flex ali-center">
               {{ column.label }}
               <div class="margin-left-16 flex">
@@ -56,7 +69,10 @@
             </div>
           </th>
           <td
-            *matCellDef="let element; let row" attr.aria-label="{{ column.label }} Cell" class="max-width-300" mat-cell>
+            *matCellDef="let element; let row"
+            attr.aria-label="{{ column.label }} Cell"
+            class="max-width-300"
+            mat-cell>
             <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
               @switch (column.key) {
                 @case ("serial") {
@@ -129,21 +145,28 @@
                 @case ("revoke") {
                   @if (!element.revoked) {
                     <button
-                      (click)="revokeToken(element.serial)" i18n-matTooltip mat-icon-button matTooltip="Revoke Token">
+                      (click)="revokeToken(element.serial)"
+                      i18n-matTooltip
+                      mat-icon-button
+                      matTooltip="Revoke Token">
                       <mat-icon> undo</mat-icon>
                     </button>
                   }
                 }
                 @case ("delete") {
                   <button
-                    (click)="deleteToken(element.serial)" i18n-matTooltip mat-icon-button matTooltip="Delete Token">
+                    (click)="deleteToken(element.serial)"
+                    i18n-matTooltip
+                    mat-icon-button
+                    matTooltip="Delete Token">
                     <mat-icon> delete</mat-icon>
                   </button>
                 }
                 @default {
                   @if (tableUtilsService.isLink(column.key)) {
                     <a
-                      attr.aria-label="{{ column.label }} Link" href="#">
+                      attr.aria-label="{{ column.label }} Link"
+                      href="#">
                       {{ element[column.key] }}
                     </a>
                   } @else {
@@ -163,11 +186,19 @@
         i18n-aria-label
         mat-header-row></tr>
       <tr
-        *matRowDef="let row; columns: columnKeysSelfService" aria-label="Data Row" i18n-aria-label mat-row></tr>
+        *matRowDef="let row; columns: columnKeysSelfService"
+        aria-label="Data Row"
+        i18n-aria-label
+        mat-row></tr>
       <tr
-        *matNoDataRow aria-label="No Data Row" i18n-aria-label>
+        *matNoDataRow
+        aria-label="No Data Row"
+        i18n-aria-label>
         <td
-          [attr.colspan]="columnKeysSelfService.length" aria-label="No Data Cell" i18n i18n-aria-label>
+          [attr.colspan]="columnKeysSelfService.length"
+          aria-label="No Data Cell"
+          i18n
+          i18n-aria-label>
           No data matching the filter.
         </td>
       </tr>

@@ -17,17 +17,20 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { AfterViewInit, Component, ElementRef, Input, input, output, signal, viewChild } from "@angular/core";
+import { AfterViewInit, Component, computed, ElementRef, Input, input, output, signal, viewChild } from "@angular/core";
 import { MatInputModule } from "@angular/material/input";
+import { MatTooltipModule } from "@angular/material/tooltip";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { FilterHintComponent } from "@components/shared/filter-hint/filter-hint.component";
+import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
 import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
 import { PolicyDetail } from "@services/policies/policies.service";
+import { filterInputHint, filterKeywordHint } from "@utils/filter-hint.utils";
 
 @Component({
   selector: "app-policy-filter",
   standalone: true,
-  imports: [MatInputModule, ClearableInputComponent, FilterHintComponent],
+  imports: [
+    FilterAutocompleteDirective,MatInputModule, ClearableInputComponent, MatTooltipModule],
   templateUrl: "./policy-filter.component.html",
   styleUrl: "./policy-filter.component.scss"
 })
@@ -42,12 +45,15 @@ export class PolicyFilterComponent implements AfterViewInit {
   }
 
   unfilteredPolicies = input<PolicyDetail[]>([]);
+  readonly filterHint = filterInputHint();
 
   readonly filterChange = output<FilterValueGeneric<PolicyDetail>>();
   readonly inputElement = viewChild.required<ElementRef<HTMLInputElement>>("filterHTMLInputElement");
 
   // Internal state for filtering logic
   readonly filter = signal<FilterValueGeneric<PolicyDetail>>(new FilterValueGeneric({ availableFilters: [] }));
+  readonly filterKeywords = computed(() => [...this.filter().availableFilters.keys()]);
+  readonly filterKeywordHintText = computed(() => filterKeywordHint(this.filterKeywords()));
   readonly isEmpty = signal(true);
 
   // The raw string bound to the input [value]

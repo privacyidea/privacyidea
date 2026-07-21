@@ -17,33 +17,79 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-/**
- * Human readable hint describing how a single filter keyword matches its value.
- * Exact-match keywords compare the whole value; all others match substrings via
- * an automatically applied `*value*` wildcard.
- */
-export function filterMatchHint(exactMatch: boolean): string {
-  return exactMatch ? $localize`Matches the exact value.` : $localize`Matches any part of the value.`;
+export interface FilterInputHintOptions {
+  supportsKeywords?: boolean;
+  /** Some keywords are matched without normalising case, so the database or resolver decides. */
+  mayBeCaseSensitive?: boolean;
 }
+
+/**
+ * Tooltip for a filter input: what the placeholder does not already show.
+ * Per-keyword details belong on the column filter icons.
+ */
+export function filterInputHint(options: FilterInputHintOptions = {}): string {
+  const lines: string[] = [];
+  if (options.supportsKeywords ?? true) {
+    lines.push($localize`Quote values with spaces or colons: description: "note: 2fa"`);
+  }
+  lines.push($localize`Wildcard: *`);
+  lines.push(options.mayBeCaseSensitive ? $localize`Mostly case-insensitive` : $localize`Case-insensitive`);
+  return lines.join("\n");
+}
+
+/**
+ * Hint below a filter input: the keywords the filter accepts. Shown as static
+ * text so the keywords are readable without hovering the input.
+ */
+export function filterKeywordHint(keywords: string[]): string {
+  if (!keywords.length) {
+    return "";
+  }
+  return $localize`Keywords: ${keywords.join(", ")}`;
+}
+
+/**
+ * How a keyword deviates from its filter's overall case behaviour.
+ * "usually-*" means the database or resolver decides.
+ */
+export type FilterCaseNote = "usually-insensitive" | "usually-sensitive" | "sensitive";
 
 export interface FilterKeywordSemantics {
   exactMatch: boolean;
-  caseSensitive: boolean;
   isBoolean: boolean;
+  isUnsupported?: boolean;
+  caseNote?: FilterCaseNote;
 }
 
 /**
- * Tooltip for a column filter icon: the "Filter by X" title plus a per-keyword
- * description of how the value is matched. Boolean keywords take a true/false
- * value and ignore wildcards and case entirely.
+ * Tooltip for a column filter icon: the "Filter by X" title plus a short,
+ * comma separated summary of how the value is matched.
  */
 export function filterColumnHint(label: string, semantics: FilterKeywordSemantics): string {
-  const lines = [$localize`Filter by ${label}`];
-  if (semantics.isBoolean) {
-    lines.push($localize`Enter true or false.`);
-    return lines.join("\n");
+  const title = $localize`Filter by ${label}`;
+  if (semantics.isUnsupported) {
+    return `${title}\n` + $localize`currently not supported`;
   }
-  lines.push(filterMatchHint(semantics.exactMatch));
-  lines.push(semantics.caseSensitive ? $localize`Case-sensitive.` : $localize`Case-insensitive.`);
-  return lines.join("\n");
+  if (semantics.isBoolean) {
+    return `${title}\n` + $localize`true or false`;
+  }
+  const parts: string[] = [];
+  if (semantics.exactMatch) {
+    parts.push($localize`exact match`);
+  }
+  if (semantics.caseNote) {
+    parts.push(caseNoteText(semantics.caseNote));
+  }
+  return parts.length ? `${title}\n${parts.join(", ")}` : title;
+}
+
+function caseNoteText(note: FilterCaseNote): string {
+  switch (note) {
+    case "sensitive":
+      return $localize`case-sensitive`;
+    case "usually-sensitive":
+      return $localize`usually case-sensitive`;
+    default:
+      return $localize`usually case-insensitive`;
+  }
 }

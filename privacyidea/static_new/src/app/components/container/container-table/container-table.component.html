@@ -32,6 +32,7 @@
           [showClearButton]="containerService.containerFilter().isNotEmpty">
           <input
             #filterHTMLInputElement
+            [appFilterAutocomplete]="filterKeywords"
             (input)="containerService.handleFilterInput($event)"
             [value]="containerService.containerFilter().filterString"
             aria-label="Filter Input"
@@ -39,12 +40,12 @@
             i18n-placeholder
             id="container-filter-input"
             matInput
+            [matTooltip]="filterHint"
+            matTooltipClass="filter-hint-tooltip"
             placeholder="Example query: 'type: generic'" />
         </app-clearable-input>
+        <mat-hint class="filter-keyword-hint">{{ filterKeywordHintText }}</mat-hint>
       </mat-form-field>
-      <app-filter-hint
-        [example]="'type: generic'"
-        [keywords]="containerService.apiFilter.concat(containerService.advancedApiFilter)" />
       <mat-paginator
         (page)="onPageEvent($event)"
         [length]="total()"
@@ -54,7 +55,9 @@
         showFirstLastButtons />
     </div>
     <app-container-table-actions />
-    <div class="table-scroll-region" appScrollEdges>
+    <div
+      class="table-scroll-region"
+      appScrollEdges>
       <table
         [dataSource]="containerDataSource()"
         aria-label="Container Data Table"

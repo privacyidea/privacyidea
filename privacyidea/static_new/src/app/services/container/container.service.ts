@@ -42,9 +42,6 @@ const advancedApiFilter = ["token_serial", "template", "assigned"];
 // Keywords that are matched exactly against the backend; every other keyword is
 // wrapped with `*value*` and matched as a substring (see `filterParams`).
 const exactMatchKeys = new Set(["user", "type", "state", "assigned"]);
-// Container filtering uses ilike throughout (privacyidea/lib/container.py), so no
-// keyword is case-sensitive.
-const caseSensitiveKeys = new Set<string>();
 // Keywords that take a true/false value instead of a text pattern.
 const booleanKeys = new Set(["assigned"]);
 
@@ -204,7 +201,6 @@ export interface ContainerServiceInterface {
   apiFilter: string[];
   advancedApiFilter: string[];
   exactMatchKeys: Set<string>;
-  caseSensitiveKeys: Set<string>;
   booleanKeys: Set<string>;
   stopPolling$: Subject<void>;
   containerBaseUrl: string;
@@ -297,7 +293,6 @@ export class ContainerService implements ContainerServiceInterface {
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
   readonly exactMatchKeys = exactMatchKeys;
-  readonly caseSensitiveKeys = caseSensitiveKeys;
   readonly booleanKeys = booleanKeys;
   stopPolling$ = new Subject<void>();
   containerBaseUrl = environment.proxyUrl + "/container/";

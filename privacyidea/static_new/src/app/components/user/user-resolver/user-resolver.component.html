@@ -17,15 +17,20 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
-  aria-label="User Resolvers Layout" class="user-resolver-layout" i18n-aria-label>
+  aria-label="User Resolvers Layout"
+  class="user-resolver-layout"
+  i18n-aria-label>
   <div
-    appScrollToTop class="user-sources-table-container">
+    appScrollToTop
+    class="user-sources-table-container">
     <div class="filter-paginator-container input-width-xl">
       <mat-form-field
-        class="table-filter" subscriptSizing="dynamic">
+        class="table-filter"
+        subscriptSizing="dynamic">
         <mat-label i18n>Filter Resolvers...</mat-label>
         <app-clearable-input
-          (clearButtonClick)="resetFilter()" [showClearButton]="filterString().length > 0">
+          (clearButtonClick)="resetFilter()"
+          [showClearButton]="filterString().length > 0">
           <input
             #filterHTMLInputElement
             (input)="onFilterInput(filterHTMLInputElement.value)"
@@ -40,17 +45,27 @@
     </div>
     <app-resolver-table-actions />
     <table
-      [dataSource]="resolversDataSource()" aria-label="Resolvers Table" class="user-sources-table" mat-table matSort>
+      [dataSource]="resolversDataSource()"
+      aria-label="Resolvers Table"
+      class="user-sources-table"
+      mat-table
+      matSort>
       <ng-container matColumnDef="resolvername">
         <th
-          *matHeaderCellDef mat-header-cell mat-sort-header>
+          *matHeaderCellDef
+          mat-header-cell
+          mat-sort-header>
           <span i18n>Name</span>
         </th>
         <td
-          *matCellDef="let element" mat-cell>
+          *matCellDef="let element"
+          mat-cell>
           <div class="name-actions-container">
             <a
-              (click)="onEditResolver(element)" (keydown.enter)="onEditResolver(element)" role="button" tabindex="0">
+              (click)="onEditResolver(element)"
+              (keydown.enter)="onEditResolver(element)"
+              role="button"
+              tabindex="0">
               {{ element.resolvername }}
             </a>
             <div class="actions-buttons">
@@ -86,25 +101,34 @@
 
       <ng-container matColumnDef="type">
         <th
-          *matHeaderCellDef mat-header-cell mat-sort-header>
+          *matHeaderCellDef
+          mat-header-cell
+          mat-sort-header>
           <span i18n>Type</span>
         </th>
         <td
-          *matCellDef="let element" mat-cell>
+          *matCellDef="let element"
+          mat-cell>
           {{ element.type }}
         </td>
       </ng-container>
 
       <tr
-        *matHeaderRowDef="columnKeys" mat-header-row></tr>
+        *matHeaderRowDef="columnKeys"
+        mat-header-row></tr>
 
       <tr
-        *matRowDef="let row; columns: columnKeys" mat-row></tr>
+        *matRowDef="let row; columns: columnKeys"
+        mat-row></tr>
 
       <tr
-        *matNoDataRow mat-no-data-row>
+        *matNoDataRow
+        mat-no-data-row>
         <td
-          [attr.colspan]="columnKeys.length" aria-label="No Data Cell" i18n i18n-aria-label>
+          [attr.colspan]="columnKeys.length"
+          aria-label="No Data Cell"
+          i18n
+          i18n-aria-label>
           No data matching the filter.
         </td>
       </tr>

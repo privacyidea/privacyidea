@@ -28,7 +28,11 @@
       [innerHTML]="preTopHtml?.sanitized"
       class="margin-top-16"></div>
   } @else {
-    <h3 class="margin-8" i18n>Enroll {{ tokenType().name }} Token</h3>
+    <h3
+      class="margin-8"
+      i18n>
+      Enroll {{ tokenType().name }} Token
+    </h3>
   }
   <form
     class="margin-left-16"
@@ -44,7 +48,8 @@
       </button>
       <button
         (click)="reopenEnrollmentDialog()"
-        matTooltip="Reopen enrollment dialog" i18n-matTooltip
+        matTooltip="Reopen enrollment dialog"
+        i18n-matTooltip
         [ngClass]="{ hidden: !canReopenEnrollmentDialog() }"
         mat-icon-button
         type="button">
@@ -63,16 +68,11 @@
           matInput
           placeholder="Enter description"
           rows="3"></textarea>
-        <mat-hint align="end">{{ description().length }} / {{ tokenService.maxDescriptionLength }}
-        </mat-hint>
+        <mat-hint align="end">{{ description().length }} / {{ tokenService.maxDescriptionLength }} </mat-hint>
         @if (descriptionForm().errors().some(e => e.kind === 'required') && descriptionForm().touched()) {
-          <mat-error i18n>
-            Description is <strong>required</strong>.
-          </mat-error>
+          <mat-error i18n> Description is <strong>required</strong>. </mat-error>
         } @else if (descriptionForm().errors().some(e => e.kind === 'maxlength') && descriptionForm().touched()) {
-          <mat-error i18n>
-            Description cannot exceed <strong>80 characters</strong>.
-          </mat-error>
+          <mat-error i18n> Description cannot exceed <strong>80 characters</strong>. </mat-error>
         }
       </mat-form-field>
     }

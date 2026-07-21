@@ -21,7 +21,7 @@ import { Component } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { MatCardModule } from "@angular/material/card";
-import { MatFormField, MatLabel } from "@angular/material/form-field";
+import { MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatPaginator } from "@angular/material/paginator";
@@ -40,7 +40,7 @@ import {
 } from "@angular/material/table";
 import { RouterLink } from "@angular/router";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { FilterHintComponent } from "@components/shared/filter-hint/filter-hint.component";
+import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
@@ -50,9 +50,11 @@ import { AuditComponent } from "./audit.component";
 @Component({
   selector: "app-audit-self-service",
   imports: [
+    FilterAutocompleteDirective,
     MatCardModule,
     MatCell,
     MatFormField,
+    MatHint,
     MatInput,
     MatPaginator,
     MatHeaderCellDef,
@@ -74,7 +76,6 @@ import { AuditComponent } from "./audit.component";
     MatIcon,
     ScrollToTopDirective,
     ClearableInputComponent,
-    FilterHintComponent,
     ScrollEdgesDirective,
     LocalDateTimePipe
   ],

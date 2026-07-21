@@ -123,7 +123,6 @@ export interface AuditServiceInterface {
   apiFilter: string[];
   advancedApiFilter: string[];
   exactMatchKeys: Set<string>;
-  caseSensitiveKeys: Set<string>;
   booleanKeys: Set<string>;
   auditFilter: WritableSignal<FilterValue>;
   filterParams: () => Record<string, string>;
@@ -154,9 +153,6 @@ export class AuditService implements AuditServiceInterface {
   readonly advancedApiFilter = advancedApiFilter;
   // Audit filtering always wraps values with `*value*`; no keyword is matched exactly.
   readonly exactMatchKeys = new Set<string>();
-  // Audit LogEntry columns are matched with a plain `like` (privacyidea/lib/auditmodules/sqlaudit.py),
-  // so every keyword is case-sensitive.
-  readonly caseSensitiveKeys = new Set<string>([...apiFilter, ...advancedApiFilter]);
   // Keywords that take a true/false value instead of a text pattern.
   readonly booleanKeys = new Set(["success"]);
   auditFilter = signal(new FilterValue());
