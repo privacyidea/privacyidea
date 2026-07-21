@@ -667,6 +667,15 @@ def get_auth_token():
             else:
                 g.audit_object.log({"user": user.login})
 
+            # A username that matches a local DB admin (verify_db_admin above already rejected the password) with no
+            # user of that name in the (default) realm can only be that admin failing with a wrong password. Classify
+            # it as an internal-admin password failure.
+            if local_admin_exist and not user_auth and not user.exist():
+                auth_event_type = AuthEventType.PASSWORD_FAIL
+                internal_admin = True
+                # local admins do not have any user attributes, login name is logged separately
+                user = User()
+
             if not user_auth and "multi_challenge" in details and len(details["multi_challenge"]) > 0:
                 # Do not return user data in case of a challenge request.
                 log_authentication(auth_event_type, request, user=user, serial=serials,
