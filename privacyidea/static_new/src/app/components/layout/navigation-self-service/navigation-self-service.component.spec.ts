@@ -42,6 +42,7 @@ import { NotificationService } from "@services/notification/notification.service
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { PeriodicTaskService } from "@services/periodic-task/periodic-task.service";
 import { PolicyService } from "@services/policies/policies.service";
+import { ConditionalAccessPolicyService } from "@services/conditional-access/conditional-access-policy.service";
 import { PrivacyideaServerService } from "@services/privacyidea-server/privacyidea-server.service";
 import { RadiusServerService } from "@services/radius-server/radius-server.service";
 import { RealmService } from "@services/realm/realm.service";
@@ -73,6 +74,7 @@ import {
   MockNotificationService,
   MockPendingChangesService,
   MockPeriodicTaskService,
+  MockConditionalAccessPolicyService,
   MockPolicyService,
   MockPrivacyideaServerService,
   MockRadiusService,
@@ -135,6 +137,7 @@ describe("NavigationSelfServiceComponent", () => {
         { provide: AuthenticationLogService, useClass: MockAuthenticationLogService },
         { provide: ClientsService, useClass: MockClientsService },
         { provide: PolicyService, useClass: MockPolicyService },
+        { provide: ConditionalAccessPolicyService, useClass: MockConditionalAccessPolicyService },
         { provide: SubscriptionService, useClass: MockSubscriptionService },
         { provide: MachineResolverService, useClass: MockMachineResolverService },
         { provide: ContainerTemplateService, useClass: MockContainerTemplateService },
