@@ -4,12 +4,6 @@
   @include styles.main-component-style;
   max-height: var(--table-max-height);
   max-width: 968px;
-
-  // Keep every form-field hint/error subscript on a 16px baseline: one wrapped
-  // line is 16px, two are 32px, and so on. The custom property inherits past
-  // Angular's view encapsulation, so it also applies to the stage/action fields
-  // in the child components below.
-  --mat-form-field-subscript-text-line-height: 16px;
 }
 
 .header-row {
