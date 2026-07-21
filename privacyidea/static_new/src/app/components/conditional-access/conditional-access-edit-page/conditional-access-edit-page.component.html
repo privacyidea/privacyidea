@@ -35,30 +35,6 @@
       [appStickyHeader]="scrollContainer"
       class="header-row sticky-header">
       <div class="action-buttons">
-        @if (!isNewPolicy()) {
-          <mat-slide-toggle
-            (change)="toggleEnabled($event.checked)"
-            [checked]="editPolicy().enabled"
-            [disableRipple]="true"
-            [disabled]="!authService.actionAllowed('conditional_access_write')"
-            i18n-matTooltip
-            labelPosition="before"
-            matTooltip="Toggle Enabled">
-            @if (editPolicy().enabled) {
-              <span i18n>Enabled</span>
-            } @else {
-              <span i18n>Disabled</span>
-            }
-          </mat-slide-toggle>
-        }
-        <button
-          (click)="$event.stopPropagation(); savePolicy()"
-          [disabled]="!canSave()"
-          class="action-button-primary button-width-s"
-          mat-stroked-button>
-          <mat-icon>save</mat-icon>
-          <span i18n>Save</span>
-        </button>
         <button
           (click)="$event.stopPropagation(); cancelEdit()"
           class="action-button-secondary button-width-s"
@@ -75,13 +51,44 @@
             <span i18n>Delete</span>
           </button>
         }
+        <button
+          (click)="$event.stopPropagation(); savePolicy()"
+          [disabled]="!canSave()"
+          class="action-button-primary button-width-s"
+          mat-stroked-button>
+          <mat-icon>save</mat-icon>
+          <span i18n>Save</span>
+        </button>
+        @if (!isNewPolicy()) {
+          <mat-slide-toggle
+            (change)="toggleEnabled($event.checked)"
+            [checked]="editPolicy().enabled"
+            [disableRipple]="true"
+            [disabled]="!authService.actionAllowed('conditional_access_write')"
+            i18n-matTooltip
+            matTooltip="Toggle Enabled">
+            @if (editPolicy().enabled) {
+              <span i18n>Enabled</span>
+            } @else {
+              <span i18n>Disabled</span>
+            }
+          </mat-slide-toggle>
+        }
+        <mat-slide-toggle
+          (change)="toggleDryRun($event.checked)"
+          [checked]="editPolicy().dry_run"
+          [disableRipple]="true"
+          i18n-matTooltip
+          matTooltip="Toggle Dry Run (evaluate but do not enforce)">
+          <span i18n>Dry run</span>
+        </mat-slide-toggle>
       </div>
     </div>
 
     <div class="edit-policy-fields">
       <mat-form-field
         appearance="fill"
-        class="input-width-l"
+        class="input-width-xl"
         subscriptSizing="dynamic">
         <mat-label i18n>Name</mat-label>
         <input
@@ -111,23 +118,7 @@
 
       <mat-form-field
         appearance="fill"
-        class="input-width-s"
-        subscriptSizing="dynamic">
-        <mat-label i18n>Priority</mat-label>
-        <input
-          matInput
-          type="number"
-          min="1"
-          [value]="editPolicy().priority"
-          (input)="onPriorityInput($any($event.target).value)" />
-        @if (!priorityValid()) {
-          <mat-error i18n>Must be at least 1.</mat-error>
-        }
-      </mat-form-field>
-
-      <mat-form-field
-        appearance="fill"
-        class="input-width-l"
+        class="input-width-xl"
         subscriptSizing="dynamic">
         <mat-label i18n>Tracked event types</mat-label>
         <mat-select
@@ -143,12 +134,21 @@
         }
       </mat-form-field>
 
-      <mat-slide-toggle
-        (change)="toggleDryRun($event.checked)"
-        [checked]="editPolicy().dry_run"
-        [disableRipple]="true">
-        <span i18n>Dry run (evaluate but do not enforce)</span>
-      </mat-slide-toggle>
+      <mat-form-field
+        appearance="fill"
+        class="input-width-s"
+        subscriptSizing="dynamic">
+        <mat-label i18n>Priority</mat-label>
+        <input
+          matInput
+          type="number"
+          min="1"
+          [value]="editPolicy().priority"
+          (input)="onPriorityInput($any($event.target).value)" />
+        @if (!priorityValid()) {
+          <mat-error i18n>Must be at least 1.</mat-error>
+        }
+      </mat-form-field>
     </div>
 
     <h4 i18n>Stages</h4>

@@ -59,17 +59,17 @@
             </button>
           } @else {
             <button
+              (click)="cancelEdit()"
+              class="action-button-secondary button-width-s"
+              mat-stroked-button>
+              <span i18n>Cancel</span>
+            </button>
+            <button
               (click)="saveEdit()"
               class="action-button-primary button-width-s"
               mat-stroked-button>
               <mat-icon>save</mat-icon>
               <span i18n>Save</span>
-            </button>
-            <button
-              (click)="cancelEdit()"
-              class="action-button-secondary button-width-s"
-              mat-stroked-button>
-              <span i18n>Cancel</span>
             </button>
           }
         }
