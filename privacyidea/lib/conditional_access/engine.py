@@ -280,7 +280,8 @@ def count_distinct_users_for_ip(source_ip: str, event_types: list[str],
     return db.session.scalar(select(func.count()).select_from(distinct_accounts)) or 0
 
 
-def _count_matching_attempts(rows: list[AuthenticationLog], tracked_types: set[str]) -> int:
+def _count_matching_attempts(rows: list[AuthenticationLog], tracked_types: set[str],
+                             since_last_success: bool = False) -> int:
     """
     Reduce authentication-log rows to one representative event per attempt and count the attempts whose
     representative is in *tracked_types*.
@@ -298,28 +299,35 @@ def _count_matching_attempts(rows: list[AuthenticationLog], tracked_types: set[s
 
     :param rows: the authentication-log rows of the attempts to reduce
     :param tracked_types: the event types a representative must be in to count the attempt
+    :param since_last_success: only count attempts whose latest row is newer than the last ``LOGIN_SUCCESS`` row
     :return: the number of attempts whose representative event is in *tracked_types*
     """
     latest: dict[str, AuthenticationLog] = {}
     succeeded: set[str] = set()
-    # First pass: aggregate every row into its attempt — the attempt's latest (highest-id) row and whether it succeeded.
+    last_success_id = -1
+    # First pass: aggregate every row into its attempt — the attempt's latest (highest-id) row, whether it succeeded,
+    # and the newest LOGIN_SUCCESS row id (the reset point for since_last_success).
     for row in rows:
         if row.event_type == AuthEventType.LOGIN_SUCCESS:
             succeeded.add(row.attempt_id)
+            last_success_id = max(last_success_id, row.id)
         current = latest.get(row.attempt_id)
         if current is None or row.id > current.id:
             latest[row.attempt_id] = row
+    cutoff_id = last_success_id if since_last_success else -1
     matches = 0
-    # Second pass: over the distinct attempts, resolve each representative event and count the ones that match.
+    # Second pass: over the distinct attempts, resolve each representative event and count the ones that match — and,
+    # when flooring, only those whose latest row is newer than the last successful login.
     for attempt_id, row in latest.items():
         representative = AuthEventType.LOGIN_SUCCESS if attempt_id in succeeded else row.event_type
-        if representative in tracked_types:
+        if representative in tracked_types and row.id > cutoff_id:
             matches += 1
     return matches
 
 
 def count_user_attempts(resolver: str, uid: str, realm: str, event_types: list[str],
-                        window_seconds: int, window_end: datetime | None = None) -> int:
+                        window_seconds: int, window_end: datetime | None = None,
+                        since_last_success: bool = False) -> int:
     """
     Count whole authentication *attempts* (not individual ``authentication_log`` rows) for one user identity whose
     representative event matches *event_types*, within a sliding time window ``[window_end - window_seconds,
@@ -341,6 +349,8 @@ def count_user_attempts(resolver: str, uid: str, realm: str, event_types: list[s
     :param window_seconds: width of the look-back window in seconds
     :param window_end: the instant the window ends; defaults to :func:`utc_now`. An aware value is normalized to
         naive UTC.
+    :param since_last_success: only count attempts after the user's most recent completed login in the window (a
+        successful login resets the counter); see :func:`_count_matching_attempts`
     :return: the number of matching attempts
     """
     window_end = _naive_utc(window_end) if window_end is not None else utc_now()
@@ -353,7 +363,7 @@ def count_user_attempts(resolver: str, uid: str, realm: str, event_types: list[s
                AuthenticationLog.realm == realm,
                AuthenticationLog.timestamp >= window_start,
                AuthenticationLog.timestamp <= window_end)).all()
-    return _count_matching_attempts(rows, tracked)
+    return _count_matching_attempts(rows, tracked, since_last_success=since_last_success)
 
 
 def _policy_count(policy: LockoutPolicy, user: "User", window_end: datetime,
@@ -366,14 +376,16 @@ def _policy_count(policy: LockoutPolicy, user: "User", window_end: datetime,
     :param policy: the policy whose ``time_window_seconds`` and ``counter_types_to_track`` are counted over
     :param user: the resolved user to count for
     :param window_end: the instant the window ends (reference time)
-    :param since_last_success: True to floor the count at the user's last ``LOGIN_SUCCESS`` in the
-        window. Ignored for ``PER_ATTEMPT``, whose reduction already resolves success-supersedes-failure within an
-        attempt (a per-attempt "since last successful attempt" floor is not implemented yet).
+    :param since_last_success: True to floor the count at the user's last completed login in the window (a successful
+        login resets the counter). Applies to both user modes — ``PER_REQUEST`` floors at the last ``LOGIN_SUCCESS``
+        row, ``PER_ATTEMPT`` at the last successful attempt. (Source-IP ``DISTINCT_USERS`` deliberately never resets,
+        which is why it is a separate mode and does not go through here.)
     :return: the event count (``PER_REQUEST``) or the attempt count (``PER_ATTEMPT``)
     """
     if policy.count_mode == CountMode.PER_ATTEMPT:
         return count_user_attempts(user.resolver, user.uid, user.realm,
-                                   policy.counter_types_to_track, policy.time_window_seconds, window_end=window_end)
+                                   policy.counter_types_to_track, policy.time_window_seconds,
+                                   window_end=window_end, since_last_success=since_last_success)
     return count_user_events(user.resolver, user.uid, user.realm,
                              policy.counter_types_to_track, policy.time_window_seconds,
                              window_end=window_end, since_last_success=since_last_success)

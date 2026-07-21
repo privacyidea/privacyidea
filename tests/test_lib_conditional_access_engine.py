@@ -250,9 +250,10 @@ class LockoutEngineTestCase(LockoutTestCase):
     # --- count_user_attempts --------------------------------------------------
 
     def _count_attempts(self, event_types: list[AuthEventType], window: int = 3600,
-                        window_end: datetime | None = None) -> int:
+                        window_end: datetime | None = None, since_last_success: bool = False) -> int:
         return count_user_attempts(self.user.resolver, self.user.uid, self.user.realm,
-                                   event_types, window, window_end=window_end)
+                                   event_types, window, window_end=window_end,
+                                   since_last_success=since_last_success)
 
     def test_count_attempts_multi_row_attempt_counts_once(self):
         # A challenge attempt spanning several rows is one attempt: its representative is the latest event.
@@ -302,6 +303,22 @@ class LockoutEngineTestCase(LockoutTestCase):
         # A different user is not counted.
         self.assertEqual(0, count_user_attempts("other", "999", self.user.realm,
                                                 [AuthEventType.MFA_FAIL], 3600, window_end=now))
+
+    def test_count_attempts_since_last_success_resets(self):
+        # A successful attempt floors the per-attempt count: only failed attempts after the last completed login
+        # count, so a good login clears the slate (the per-attempt counterpart of count_user_events' reset).
+        self._seed_attempt("a1", [AuthEventType.MFA_FAIL])
+        self._seed_attempt("a2", [AuthEventType.LOGIN_SUCCESS])
+        self._seed_attempt("a3", [AuthEventType.MFA_FAIL])
+        self.assertEqual(1, self._count_attempts([AuthEventType.MFA_FAIL], since_last_success=True))
+        # Without the reset, both failed attempts (before and after the success) count.
+        self.assertEqual(2, self._count_attempts([AuthEventType.MFA_FAIL], since_last_success=False))
+
+    def test_count_attempts_since_last_success_no_success_counts_all(self):
+        # With no successful attempt in the window the floor is inert: all failed attempts count.
+        self._seed_attempt("a1", [AuthEventType.MFA_FAIL])
+        self._seed_attempt("a2", [AuthEventType.MFA_FAIL])
+        self.assertEqual(2, self._count_attempts([AuthEventType.MFA_FAIL], since_last_success=True))
 
     # --- is_user_locked -------------------------------------------------------
 
