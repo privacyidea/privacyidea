@@ -150,8 +150,8 @@
             class="select-search-input" />
         </div>
 
-        @for (ua of filteredUserAgentPresets(); track ua.key) {
-          <mat-option [value]="ua.key">{{ ua.label }}</mat-option>
+        @for (ua of filteredUserAgentPresets(); track ua.identifier) {
+          <mat-option [value]="ua.identifier">{{ ua.displayName }}</mat-option>
         }
 
         @if (filteredUserAgentPresets().length === 0) {
