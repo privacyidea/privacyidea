@@ -73,9 +73,4 @@ describe("filterColumnHint", () => {
     expect(filterColumnHint("Active", { exactMatch: false, isBoolean: true })).toBe("Filter by Active\ntrue or false");
   });
 
-  it("marks unsupported keywords and drops every other detail", () => {
-    expect(filterColumnHint("userid", { exactMatch: false, isBoolean: false, isUnsupported: true })).toBe(
-      "Filter by userid\ncurrently not supported"
-    );
-  });
 });

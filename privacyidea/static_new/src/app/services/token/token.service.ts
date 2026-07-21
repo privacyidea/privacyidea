@@ -121,8 +121,9 @@ const caseNotes: Record<string, FilterCaseNote> = {
   serial: "usually-insensitive",
   "infokey & infovalue": "usually-sensitive"
 };
-// Keywords the backend accepts but never applies: the filter clauses were removed
-// in 78c0cc621 and not restored. Re-enable once the backend filters them again.
+// TODO: temporary. The backend accepts these keywords but never applies them, because
+// the filter clauses were removed in 78c0cc621 and not restored. Once they either work
+// again or are dropped, remove this set along with the whole "unsupported" mechanism.
 const unsupportedKeys = new Set(["userid", "resolver"]);
 
 export interface Tokens {

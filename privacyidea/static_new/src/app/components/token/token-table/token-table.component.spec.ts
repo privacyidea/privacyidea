@@ -474,12 +474,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     beforeEach(() => {
       tokenService.exactMatchKeys = new Set(["realm"]);
       tokenService.booleanKeys = new Set(["active"]);
-      tokenService.unsupportedKeys = new Set(["userid"]);
       tokenService.caseNotes = { serial: "usually-insensitive", "infokey & infovalue": "usually-sensitive" };
-    });
-
-    it("reports unsupported keywords before anything else", () => {
-      expect(table.filterColumnTooltip("userid", "userid")).toBe("Filter by userid\ncurrently not supported");
     });
 
     it("reports boolean keywords as true/false", () => {

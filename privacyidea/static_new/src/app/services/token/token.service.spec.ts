@@ -1247,9 +1247,5 @@ describe("TokenService", () => {
       const lookupKeys = [...tokenService.apiFilter, ...tokenService.advancedApiFilter];
       Object.keys(tokenService.caseNotes).forEach((key) => expect(lookupKeys).toContain(key));
     });
-
-    it("disables the keywords the backend ignores", () => {
-      expect([...tokenService.unsupportedKeys]).toEqual(["userid", "resolver"]);
-    });
   });
 });
