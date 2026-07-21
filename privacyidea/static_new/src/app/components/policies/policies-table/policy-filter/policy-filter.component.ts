@@ -29,8 +29,7 @@ import { filterInputHint, filterKeywordHint } from "@utils/filter-hint.utils";
 @Component({
   selector: "app-policy-filter",
   standalone: true,
-  imports: [
-    FilterAutocompleteDirective,MatInputModule, ClearableInputComponent, MatTooltipModule],
+  imports: [FilterAutocompleteDirective, MatInputModule, ClearableInputComponent, MatTooltipModule],
   templateUrl: "./policy-filter.component.html",
   styleUrl: "./policy-filter.component.scss"
 })

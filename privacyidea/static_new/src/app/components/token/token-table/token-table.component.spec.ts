@@ -469,4 +469,36 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     table.onItemSelected("type", "");
     expect(tokenService.tokenFilter().hasKey("type")).toBe(false);
   });
+
+  describe("filterColumnTooltip", () => {
+    beforeEach(() => {
+      tokenService.exactMatchKeys = new Set(["realm"]);
+      tokenService.booleanKeys = new Set(["active"]);
+      tokenService.unsupportedKeys = new Set(["userid"]);
+      tokenService.caseNotes = { serial: "usually-insensitive", "infokey & infovalue": "usually-sensitive" };
+    });
+
+    it("reports unsupported keywords before anything else", () => {
+      expect(table.filterColumnTooltip("userid", "userid")).toBe("Filter by userid\ncurrently not supported");
+    });
+
+    it("reports boolean keywords as true/false", () => {
+      expect(table.filterColumnTooltip("Active", "active")).toBe("Filter by Active\ntrue or false");
+    });
+
+    it("passes the exact-match flag through", () => {
+      expect(table.filterColumnTooltip("Realm", "realm")).toBe("Filter by Realm\nexact match");
+    });
+
+    it("passes the per-keyword case note through", () => {
+      expect(table.filterColumnTooltip("Serial", "serial")).toBe("Filter by Serial\nusually case-insensitive");
+      expect(table.filterColumnTooltip("infokey & infovalue", "infokey & infovalue")).toBe(
+        "Filter by infokey & infovalue\nusually case-sensitive"
+      );
+    });
+
+    it("stays bare for keywords without any deviation", () => {
+      expect(table.filterColumnTooltip("Description", "description")).toBe("Filter by Description");
+    });
+  });
 });
