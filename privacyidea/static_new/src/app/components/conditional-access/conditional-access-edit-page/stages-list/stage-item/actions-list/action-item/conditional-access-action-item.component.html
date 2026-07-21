@@ -116,21 +116,30 @@
           }
         }
 
-        <details class="ca-placeholder-help">
+        <details class="ca-placeholder-help margin-top-16">
           <summary i18n>Available placeholders for subject and body</summary>
-          <p
-            class="ca-placeholder-intro"
-            i18n>
-            Placeholders are replaced when the email is sent. Unknown placeholders are left as-is.
-          </p>
-          <ul class="ca-placeholder-list">
-            @for (placeholder of emailPlaceholders; track placeholder.tag) {
-              <li>
-                <code>{{ placeholder.tag }}</code>
-                <span>{{ placeholder.description }}</span>
-              </li>
-            }
-          </ul>
+          <div class="margin-left-16">
+            <p
+              class="ca-placeholder-intro"
+              i18n>
+              Placeholders are replaced when the email is sent. Unknown placeholders are left as-is.
+            </p>
+            <ul class="ca-placeholder-list">
+              @for (placeholder of emailPlaceholders; track placeholder.tag) {
+                <li>
+                  <code>{{ placeholder.tag }}</code>
+                  <span>{{ placeholder.description }}</span>
+                </li>
+              }
+            </ul>
+            <p
+              class="ca-placeholder-intro"
+              i18n>
+              Add <code>!r</code> before the closing brace to insert the value's quoted form, e.g. <code>{{ '{' }}
+              policy!r{{ '}' }}</code> renders <code>'Brute Force PIN Lockout'</code> instead of <code>Brute Force PIN
+                                                                                                       Lockout</code>.
+            </p>
+          </div>
         </details>
       }
     }
