@@ -29,14 +29,6 @@
   margin-top: 4px;
 }
 
-// Full-width description of the selected action type. Placed here (rather than as
-// a field hint) so long text — e.g. the ALLOW/DENY explanations — wraps across the
-// component width instead of stacking many rows under the narrow action select.
-.ca-action-hint {
-  margin: 0;
-  max-width: 900px;
-  color: var(--mat-sys-on-surface-variant);
-}
 
 // Collapsible reference of the {tag} placeholders usable in subject/body.
 .ca-placeholder-help {

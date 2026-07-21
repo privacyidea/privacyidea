@@ -37,8 +37,8 @@ const ACTION_DESCRIPTIONS: Record<LockoutActionType, string> = {
   PERMANENT_BLOCK_IP: $localize`Block the request's source IP until an administrator unblocks it.`,
   EMAIL_ADMIN: $localize`Send a notification email to an admin recipient group.`,
   EMAIL_USER: $localize`Send a notification email to the affected user.`,
-  ALLOW: $localize`Explicitly allow the request and stop evaluating lower-priority policies. A threshold of 0 makes it a permanent allowlist exception.`,
-  DENY: $localize`Reject the request without locking anything; it clears on its own as failures age out of the window.`
+  ALLOW: $localize`Allow the request and skip lower-priority policies; threshold 0 always allows.`,
+  DENY: $localize`Reject the request; it clears itself as failures age out of the window.`
 };
 
 // How a given action type's action_value is edited:

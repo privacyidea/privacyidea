@@ -30,6 +30,7 @@
           <mat-option [value]="actionType">{{ actionType }}</mat-option>
         }
       </mat-select>
+      <mat-hint>{{ actionDescription() }}</mat-hint>
     </mat-form-field>
 
     <button
@@ -41,8 +42,6 @@
       <mat-icon>delete</mat-icon>
     </button>
   </div>
-
-  <p class="ca-action-hint">{{ actionDescription() }}</p>
 
   <div class="ca-action-value">
     @switch (valueMode()) {
