@@ -158,16 +158,16 @@
       </p>
     </div>
 
-    <h4 i18n>Stages &amp; actions</h4>
+    <h4 i18n>Stages &amp; Actions</h4>
     <p class="ca-section-hint" i18n>
       A stage fires when the tracked events reach its failure threshold within the time window, and
       then runs its actions (lock the user, block the IP, send an email, allow or deny). Add several
-      stages to escalate — but only one stage of this policy fires per evaluation: when several
-      thresholds are met at once, only the stage with the highest met threshold runs and the rest are
-      skipped. Other policies are evaluated on their own (see the policy Priority above).
+      stages with increasing thresholds to escalate — only one stage of this policy runs per
+      evaluation: the one with the highest threshold the count has reached. Other policies are
+      evaluated on their own (see the policy Priority above).
     </p>
     @if (!stagesValid()) {
-      <p class="ca-stages-error" i18n>At least one stage is required, and every stage needs a threshold and priority of at least 1.</p>
+      <p class="ca-stages-error" i18n>At least one stage is required, and every stage needs a threshold of at least 1.</p>
     }
     @if (!stageThresholdsUnique()) {
       <p class="ca-stages-error" i18n>Each stage must have a different failure threshold.</p>
