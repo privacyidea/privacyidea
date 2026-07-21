@@ -20,11 +20,13 @@
 import { inject } from "@angular/core";
 import { Routes } from "@angular/router";
 import { dashboardGuard } from "@app/guards/dashboard.guard";
+import { logsLandingRedirect } from "@app/routing/landing-redirects";
 import { pendingChangesGuard } from "@app/guards/pending-changes.guard";
 import { AuthService } from "@services/auth/auth.service";
-import { AuditComponent } from "@components/audit/audit.component";
+import { AuditComponent } from "@components/logs/audit/audit.component";
 import { DashboardComponent } from "@components/dashboard/dashboard.component";
-import { ClientsComponent } from "@components/audit/clients/clients.component";
+import { ClientsComponent } from "@components/logs/clients/clients.component";
+import { AuthenticationLog } from "@components/logs/authentication-log/authentication-log";
 import { MachineDetailsComponent } from "@components/configuration/machines/machine-details/machine-details.component";
 import { MachinesComponent } from "@components/configuration/machines/machines.component";
 import { PeriodicTaskEditComponent } from "@components/configuration/periodic-task/periodic-task-edit/periodic-task-edit.component";
@@ -189,9 +191,11 @@ export const routes: Routes = [
     ]
   },
   {
-    path: "audit",
+    path: "logs",
     children: [
-      { path: "", component: AuditComponent },
+      { path: "", pathMatch: "full", redirectTo: logsLandingRedirect },
+      { path: "audit", component: AuditComponent },
+      { path: "authentication-log", component: AuthenticationLog },
       { path: "clients", component: ClientsComponent }
     ]
   },

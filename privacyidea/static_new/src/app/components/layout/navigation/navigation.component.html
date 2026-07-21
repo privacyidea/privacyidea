@@ -109,16 +109,14 @@
         An open-source project
         <a
           href="https://netknights.it/"
-          target="_blank"
-          >maintained by NetKnights
+          target="_blank">maintained by NetKnights
         </a>
       </div>
       <div i18n>
         in collaboration with
         <a
           href="https://github.com/privacyidea/privacyidea"
-          target="_blank"
-          >community contributors
+          target="_blank">community contributors
         </a>
       </div>
     </div>
@@ -204,8 +202,7 @@
   </span>
   <span
     class="beta-badge margin-right-16"
-    i18n
-    >Beta
+    i18n>Beta
   </span>
 </ng-template>
 
@@ -261,15 +258,19 @@
     </a>
     @if (contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
       <a class="sub-nav-active">
-        <mat-icon>privacy_tip</mat-icon>
+        <span class="icon-badge">
+          <mat-icon class="padding-right-4">shield</mat-icon>
+          <mat-icon class="icon-badge-overlay">settings</mat-icon>
+        </span>
         <span i18n>Details</span>
       </a>
     }
-    @if (authService.tokenEnrollmentAllowed()) {
-      <a
-        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS_ENROLLMENT ? 'sub-nav-active' : ''"
-        [routerLink]="[ROUTE_PATHS.TOKENS_ENROLLMENT]">
-        <mat-icon>add_moderator</mat-icon>
+    @if (contentService.routeUrl() === ROUTE_PATHS.TOKENS_ENROLLMENT) {
+      <a class="sub-nav-active">
+        <span class="icon-badge">
+          <mat-icon class="padding-right-6">shield</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+        </span>
         <span i18n>Enrollment</span>
       </a>
     }
@@ -320,15 +321,19 @@
     </a>
     @if (contentService.routeUrl().startsWith(ROUTE_PATHS.CONTAINERS_DETAILS)) {
       <a class="sub-nav-active">
-        <mat-icon>source</mat-icon>
+        <span class="icon-badge">
+          <mat-icon class="padding-right-4">folder</mat-icon>
+          <mat-icon class="icon-badge-overlay">settings</mat-icon>
+        </span>
         <span i18n>Details</span>
       </a>
     }
-    @if (authService.actionAllowed("container_create")) {
-      <a
-        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CONTAINERS_CREATE ? 'sub-nav-active' : ''"
-        [routerLink]="[ROUTE_PATHS.CONTAINERS_CREATE]">
-        <mat-icon>create_new_folder</mat-icon>
+    @if (contentService.routeUrl() === ROUTE_PATHS.CONTAINERS_CREATE) {
+      <a class="sub-nav-active">
+        <span class="icon-badge">
+          <mat-icon class="padding-right-6">folder</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+        </span>
         <span i18n>Create</span>
       </a>
     }
@@ -372,7 +377,10 @@
         href="javascript:void(0)"
         class="sub-nav-active"
         data-overflow-child>
-        <mat-icon>manage_accounts</mat-icon>
+        <span class="icon-badge">
+          <mat-icon class="padding-right-4">person</mat-icon>
+          <mat-icon class="icon-badge-overlay">settings</mat-icon>
+        </span>
         <span i18n>User Details</span>
       </a>
     }
@@ -380,7 +388,10 @@
       <a
         class="sub-nav-active"
         data-overflow-child>
-        <mat-icon>person_add</mat-icon>
+        <span class="icon-badge">
+          <mat-icon class="padding-right-6">person</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+        </span>
         <span i18n>Create User</span>
       </a>
     }
@@ -394,7 +405,10 @@
       <a
         class="sub-nav-active"
         data-overflow-child>
-        <mat-icon class="ms--database"></mat-icon>
+        <span class="icon-badge">
+          <mat-icon class="ms--database padding-right-4"></mat-icon>
+          <mat-icon class="icon-badge-overlay">settings</mat-icon>
+        </span>
         <span i18n>Resolver Details</span>
       </a>
     }
@@ -402,7 +416,10 @@
       <a
         class="sub-nav-active"
         data-overflow-child>
-        <mat-icon>add</mat-icon>
+        <span class="icon-badge">
+          <mat-icon class="ms--database padding-right-6"></mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+        </span>
         <span i18n>Create Resolver</span>
       </a>
     }
@@ -431,44 +448,44 @@
       <a class="sub-nav-active">
         <span class="icon-badge">
           <mat-icon class="padding-right-4">gavel</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-large">settings</mat-icon>
+          <mat-icon class="icon-badge-overlay">settings</mat-icon>
         </span>
         <span i18n>Details</span>
       </a>
     }
-    <a
-      [ngClass]="contentService.routeUrl() === ROUTE_PATHS.POLICIES_NEW ? 'sub-nav-active' : ''"
-      [routerLink]="[ROUTE_PATHS.POLICIES_NEW]">
-      <span class="icon-badge">
-        <mat-icon class="padding-right-4">gavel</mat-icon>
-        <mat-icon class="icon-badge-overlay icon-badge-large icon-badge-mask-small icon-badge-bold">add</mat-icon>
-      </span>
-      <span i18n>Create</span>
-    </a>
-    <a
-      [ngClass]="contentService.routeUrl() === ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS ? 'sub-nav-active' : ''"
-      [routerLink]="[ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS]">
-      <mat-icon>security</mat-icon>
-      <span i18n>Conditional Access</span>
-    </a>
-    @if (contentService.routeUrl().startsWith(ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_DETAILS)) {
+    @if (contentService.routeUrl() === ROUTE_PATHS.POLICIES_NEW) {
       <a class="sub-nav-active">
+        <span class="icon-badge">
+          <mat-icon class="padding-right-6">gavel</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+        </span>
+        <span i18n>Create</span>
+      </a>
+      <a
+        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS ? 'sub-nav-active' : ''"
+        [routerLink]="[ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS]">
+        <mat-icon>security</mat-icon>
+        <span i18n>Conditional Access</span>
+      </a>
+      @if (contentService.routeUrl().startsWith(ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_DETAILS)) {
+        <a class="sub-nav-active">
         <span class="icon-badge">
           <mat-icon class="margin-right-5">security</mat-icon>
           <mat-icon class="icon-badge-overlay icon-badge-gear">settings</mat-icon>
         </span>
-        <span i18n>Conditional Access Details</span>
-      </a>
-    }
-    <a
-      [ngClass]="contentService.routeUrl() === ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_NEW ? 'sub-nav-active' : ''"
-      [routerLink]="[ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_NEW]">
+          <span i18n>Conditional Access Details</span>
+        </a>
+      }
+      <a
+        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_NEW ? 'sub-nav-active' : ''"
+        [routerLink]="[ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_NEW]">
       <span class="icon-badge">
         <mat-icon class="margin-right-2">security</mat-icon>
         <mat-icon class="icon-badge-overlay icon-badge-add">add</mat-icon>
       </span>
-      <span i18n>Create Conditional Access</span>
-    </a>
+        <span i18n>Create Conditional Access</span>
+      </a>
+    }
     <ng-container *ngTemplateOutlet="supportDocs"></ng-container>
   </mat-toolbar>
 }
@@ -488,7 +505,7 @@
   </mat-toolbar>
 }
 
-@if (activeSection() === "audit") {
+@if (activeSection() === "logs") {
   <mat-toolbar
     class="secondary-toolbar"
     appOverflowNav>
@@ -497,8 +514,16 @@
       <a
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.AUDIT ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.AUDIT]">
-        <mat-icon>list_alt</mat-icon>
-        <span i18n>Log</span>
+        <mat-icon class="mdi--list-search"></mat-icon>
+        <span i18n>Audit Log</span>
+      </a>
+    }
+    @if (authService.actionAllowed("authentication_log_read")) {
+      <a
+        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.AUTHENTICATION_LOG ? 'sub-nav-active' : ''"
+        [routerLink]="[ROUTE_PATHS.AUTHENTICATION_LOG]">
+        <mat-icon class="mdi--list-lock"></mat-icon>
+        <span i18n>Authentication Log</span>
       </a>
     }
     @if (authService.actionAllowed("clienttype")) {
@@ -544,7 +569,10 @@
       <a
         class="sub-nav-active"
         data-overflow-child>
-        <mat-icon>point_of_sale</mat-icon>
+        <span class="icon-badge">
+          <mat-icon class="padding-right-4">point_of_sale</mat-icon>
+          <mat-icon class="icon-badge-overlay">settings</mat-icon>
+        </span>
         <span i18n>Machine Details</span>
       </a>
     }
@@ -561,7 +589,7 @@
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon>lan</mat-icon>
+          <mat-icon class="padding-right-4">lan</mat-icon>
           <mat-icon class="icon-badge-overlay">settings</mat-icon>
         </span>
         <span i18n>Machine Resolver Details</span>
@@ -572,7 +600,7 @@
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon>lan</mat-icon>
+          <mat-icon class="padding-right-6">lan</mat-icon>
           <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
         <span i18n>Create Machine Resolver</span>
@@ -602,7 +630,7 @@
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon class="padding-right-2">flag</mat-icon>
+          <mat-icon class="padding-right-6">flag</mat-icon>
           <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
         <span i18n>Create Event</span>
@@ -621,7 +649,7 @@
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon>event_repeat</mat-icon>
+          <mat-icon class="padding-right-3">event_repeat</mat-icon>
           <mat-icon class="icon-badge-overlay">settings</mat-icon>
         </span>
         <span i18n>Periodic Task Details</span>
@@ -632,7 +660,7 @@
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon>event_repeat</mat-icon>
+          <mat-icon class="padding-right-2">event_repeat</mat-icon>
           <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
         <span i18n>Create Periodic Task</span>
@@ -671,7 +699,7 @@
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon class="padding-right-2">email</mat-icon>
+          <mat-icon class="padding-right-6">email</mat-icon>
           <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
         <span i18n>Create SMTP Server</span>
@@ -701,7 +729,7 @@
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon class="padding-right-2">vpn_lock</mat-icon>
+          <mat-icon class="padding-right-6">vpn_lock</mat-icon>
           <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
         <span i18n>Create RADIUS Server</span>
@@ -731,7 +759,7 @@
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon class="padding-right-2">sms</mat-icon>
+          <mat-icon class="padding-right-6">sms</mat-icon>
           <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
         <span i18n>Create SMS Gateway</span>
@@ -750,7 +778,7 @@
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon class="padding-right-2">assured_workload</mat-icon>
+          <mat-icon class="padding-right-4">assured_workload</mat-icon>
           <mat-icon class="icon-badge-overlay">settings</mat-icon>
         </span>
         <span i18n>CA Connector Details</span>
@@ -761,7 +789,7 @@
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon class="padding-right-2">assured_workload</mat-icon>
+          <mat-icon class="padding-right-6">assured_workload</mat-icon>
           <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
         <span i18n>Create CA Connector</span>
@@ -791,7 +819,7 @@
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon class="mdi--pi-logo padding-right-2"></mat-icon>
+          <mat-icon class="mdi--pi-logo padding-right-6"></mat-icon>
           <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
         <span i18n>Create PrivacyIDEA Server</span>
@@ -821,7 +849,7 @@
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon class="padding-right-2">local_police</mat-icon>
+          <mat-icon class="padding-right-6">local_police</mat-icon>
           <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
         <span i18n>Create Tokengroup</span>
@@ -851,7 +879,7 @@
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon class="padding-right-2">storage</mat-icon>
+          <mat-icon class="padding-right-6">storage</mat-icon>
           <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
         <span i18n>Create Service ID</span>

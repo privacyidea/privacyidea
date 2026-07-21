@@ -85,6 +85,52 @@ class AuthEventType(str, Enum):
         return self.value
 
 
+class AuthEventOutcome(str, Enum):
+    """
+    Outcome class of an :class:`AuthEventType`: did the authentication ``SUCCESS`` (succeed), ``FAILURE`` (fail/get
+    denied), or is it ``PENDING`` (still in flight -- a challenge was sent/continued/approved out of band, or an
+    enrollment was triggered).
+
+    This is a domain classification, not a presentation/severity choice: it lets callers group events by result --
+    e.g. a conditional-access policy condition selecting all failed events, or the WebUI coloring a row -- without
+    enumerating each event type. ``str``/``Enum`` (not ``StrEnum``) for 3.10 compatibility, like :class:`AuthEventType`.
+    """
+    SUCCESS = "success"
+    FAILURE = "failure"
+    PENDING = "pending"
+
+    def __str__(self) -> str:
+        return self.value
+
+
+# Outcome of each event type. Every AuthEventType must be classified here; EventTypeOutcomeTestCase asserts
+# completeness so a new event type cannot be added without giving it an outcome.
+EVENT_TYPE_OUTCOME: dict[AuthEventType, AuthEventOutcome] = {
+    AuthEventType.LOGIN_SUCCESS: AuthEventOutcome.SUCCESS,
+    AuthEventType.CHALLENGE_TRIGGERED: AuthEventOutcome.PENDING,
+    AuthEventType.CHALLENGE_CONTINUED: AuthEventOutcome.PENDING,
+    AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND: AuthEventOutcome.PENDING,
+    AuthEventType.ENROLLMENT_TRIGGERED: AuthEventOutcome.PENDING,
+    AuthEventType.NOT_AUTHORIZED: AuthEventOutcome.FAILURE,
+    AuthEventType.PASSWORD_FAIL: AuthEventOutcome.FAILURE,
+    AuthEventType.PIN_FAIL: AuthEventOutcome.FAILURE,
+    AuthEventType.TOKEN_ONLY_FAIL: AuthEventOutcome.FAILURE,
+    AuthEventType.MFA_FAIL: AuthEventOutcome.FAILURE,
+    AuthEventType.USER_UNKNOWN: AuthEventOutcome.FAILURE,
+    AuthEventType.NO_TOKEN: AuthEventOutcome.FAILURE,
+    AuthEventType.NO_USABLE_TOKEN: AuthEventOutcome.FAILURE,
+    AuthEventType.CHALLENGE_ANSWERED_FAIL: AuthEventOutcome.FAILURE,
+    AuthEventType.CHALLENGE_DECLINED: AuthEventOutcome.FAILURE,
+    AuthEventType.ENROLLMENT_CANCELED_FAIL: AuthEventOutcome.FAILURE,
+    AuthEventType.UNKNOWN_FAIL_REASON: AuthEventOutcome.FAILURE,
+}
+
+
+def outcome_of(event_type: AuthEventType) -> AuthEventOutcome:
+    """Return the :class:`AuthEventOutcome` of *event_type* (see :data:`EVENT_TYPE_OUTCOME`)."""
+    return EVENT_TYPE_OUTCOME[event_type]
+
+
 # Request-level precedence, highest signal first.
 REQUEST_EVENT_PRECEDENCE: list[AuthEventType] = [
     AuthEventType.NOT_AUTHORIZED,

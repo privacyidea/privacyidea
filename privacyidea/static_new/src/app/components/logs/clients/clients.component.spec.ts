@@ -19,7 +19,7 @@
 
 import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { ClientsComponent } from "@components/audit/clients/clients.component";
+import { ClientsComponent } from "@components/logs/clients/clients.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuditService } from "@services/audit/audit.service";
 import { AuthService } from "@services/auth/auth.service";

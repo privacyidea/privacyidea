@@ -26,6 +26,7 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { NavigationSelfServiceButtonComponent } from "@components/layout/navigation-self-service/navigation-self-service-button/navigation-self-service-button.component";
 import { NavigationSelfServiceComponent } from "@components/layout/navigation-self-service/navigation-self-service.component";
 import { AuditService } from "@services/audit/audit.service";
+import { AuthenticationLogService } from "@services/authentication-log/authentication-log.service";
 import { AuthService } from "@services/auth/auth.service";
 import { CaConnectorService } from "@services/ca-connector/ca-connector.service";
 import { ClientsService } from "@services/clients/clients.service";
@@ -58,6 +59,7 @@ import { UserService } from "@services/user/user.service";
 import { VersioningService } from "@services/version/version.service";
 import {
   MockAuditService,
+  MockAuthenticationLogService,
   MockCaConnectorService,
   MockChallengesService,
   MockClientsService,
@@ -95,7 +97,6 @@ describe("NavigationSelfServiceComponent", () => {
   let component: NavigationSelfServiceComponent;
   let fixture: ComponentFixture<NavigationSelfServiceComponent>;
   let authServiceMock: MockAuthService;
-  let userServiceMock: MockUserService;
   let contentServiceMock: MockContentService;
 
   beforeAll(() => {
@@ -131,6 +132,7 @@ describe("NavigationSelfServiceComponent", () => {
         { provide: VersioningService, useClass: MockVersioningService },
         { provide: DocumentationService, useClass: MockDocumentationService },
         { provide: AuditService, useClass: MockAuditService },
+        { provide: AuthenticationLogService, useClass: MockAuthenticationLogService },
         { provide: ClientsService, useClass: MockClientsService },
         { provide: PolicyService, useClass: MockPolicyService },
         { provide: SubscriptionService, useClass: MockSubscriptionService },
@@ -157,7 +159,6 @@ describe("NavigationSelfServiceComponent", () => {
     }).compileComponents();
 
     authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
-    userServiceMock = TestBed.inject(UserService) as unknown as MockUserService;
     contentServiceMock = TestBed.inject(ContentService) as unknown as MockContentService;
 
     (authServiceMock.actionAllowed as jest.Mock).mockReturnValue(true);
@@ -173,14 +174,13 @@ describe("NavigationSelfServiceComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("exposes ROUTE_PATHS and the user signal from UserService", () => {
+  it("exposes ROUTE_PATHS", () => {
     expect((component as unknown as { ROUTE_PATHS: typeof ROUTE_PATHS }).ROUTE_PATHS).toBe(ROUTE_PATHS);
-    expect(component.userData).toBe(userServiceMock.user);
   });
 
   it("renders the username button as a routerLink anchor when not on user-details route", () => {
-    userServiceMock.user.set({ ...userServiceMock.user(), username: "alice" });
-    userServiceMock.selectedUserRealm.set("realm1");
+    authServiceMock.username.set("alice");
+    authServiceMock.realm.set("realm1");
     contentServiceMock.routeUrl.set("/tokens");
 
     fixture.detectChanges();
@@ -195,8 +195,8 @@ describe("NavigationSelfServiceComponent", () => {
   });
 
   it("renders a disabled username div (no anchor) when on user-details self-service route", () => {
-    userServiceMock.user.set({ ...userServiceMock.user(), username: "alice" });
-    userServiceMock.selectedUserRealm.set("realm1");
+    authServiceMock.username.set("alice");
+    authServiceMock.realm.set("realm1");
     contentServiceMock.routeUrl.set(ROUTE_PATHS.USERS_DETAILS);
 
     fixture.detectChanges();
@@ -210,8 +210,8 @@ describe("NavigationSelfServiceComponent", () => {
   });
 
   it("falls back to '-' when username or realm are empty", () => {
-    userServiceMock.user.set({ ...userServiceMock.user(), username: "" });
-    userServiceMock.selectedUserRealm.set("");
+    authServiceMock.username.set("");
+    authServiceMock.realm.set("");
     contentServiceMock.routeUrl.set("/tokens");
 
     fixture.detectChanges();

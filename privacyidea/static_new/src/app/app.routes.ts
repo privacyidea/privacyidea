@@ -23,6 +23,7 @@ import { LoginComponent } from "./components/login/login.component";
 import { adminMatch, AuthGuard, loginGuard, selfServiceMatch } from "./guards/auth.guard";
 import { ApplicationService } from "@services/application/application.service";
 import { AuditService } from "@services/audit/audit.service";
+import { AuthenticationLogService } from "@services/authentication-log/authentication-log.service";
 import { CaConnectorService } from "@services/ca-connector/ca-connector.service";
 import { ChallengesService } from "@services/token/challenges/challenges.service";
 import { ClientsService } from "@services/clients/clients.service";
@@ -64,6 +65,7 @@ export const routes: Routes = [
     providers: [
       ApplicationService,
       AuditService,
+      AuthenticationLogService,
       CaConnectorService,
       ChallengesService,
       ClientsService,

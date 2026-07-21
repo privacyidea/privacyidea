@@ -27,6 +27,7 @@ and send it back to the authentication endpoint.
 This code is tested in tests/test_lib_tokens_push
 """
 
+import json
 import logging
 import random
 import secrets
@@ -40,6 +41,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, TYPE_CHECKING
 from urllib.parse import quote
 
+import rfc8785
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
@@ -75,7 +77,7 @@ from privacyidea.lib.tokenclass import (TokenClass, AuthenticationMode, ClientMo
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.push_types import (PushMode, PushPresenceOptions,
                                                PushAction, PushAllowPolling,
-                                               PushDeclineReason,
+                                               PushDeclineReason, PushCapability,
                                                CODE_TO_PHONE_DISPLAY_CODE_LENGTH)
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import create_img, b32encode_and_unicode
@@ -116,6 +118,20 @@ DEFAULT_NUMBER_OF_PRESENCE_OPTIONS = 3
 # The decline reasons this server version understands. A signed but unrecognized
 # reason still declines, but is logged as app/server vocabulary drift.
 KNOWN_DECLINE_REASONS = frozenset(r.value for r in PushDeclineReason)
+
+# The optional push features this server advertises to the smartphone in every
+# challenge (see _build_smartphone_data). A newer app intersects these with its
+# own to decide which fields it may add to its signed answer; an app that does
+# not find a capability falls back to legacy behaviour.
+# This is a one-way, additive advertisement: the fields are appended to the
+# challenge and older apps ignore what they do not know, so it needs no payload
+# version bump. It is deliberately a detached second signature to keep the main
+# signature byte-identical for those apps. The app does not yet report its own
+# capabilities back, so the server cannot tailor the payload per token; folding
+# this into a single signed payload with two-way negotiation is future work.
+SERVER_PUSH_CAPABILITIES = {PushCapability.DECLINE_REASON: True}
+# The advertised set is invariant, so serialise it once for the wire field.
+SERVER_PUSH_CAPABILITIES_JSON = json.dumps(SERVER_PUSH_CAPABILITIES)
 
 # Seconds an answered challenge stays redeemable after the smartphone answered.
 # The challenge validity is the window the smartphone has to answer; the
@@ -329,6 +345,17 @@ def _build_smartphone_data(token: TokenClass, challenge: str, registration_url: 
                                  padding.PKCS1v15(),
                                  hashes.SHA256())
     smartphone_data["signature"] = b32encode_and_unicode(signature)
+
+    # Advertise the optional features this server understands so a newer app knows which fields it may add to its
+    # signed answer (e.g. decline_reason); older apps ignore these unknown fields. The detached signature keeps the
+    # main signature above unchanged for older apps; it covers the nonce so it cannot be replayed onto another
+    # challenge, over canonical JSON (RFC 8785 / JCS) that the app re-canonicalises from the parsed structure.
+    smartphone_data["capabilities"] = SERVER_PUSH_CAPABILITIES_JSON
+    capabilities_sign_input = rfc8785.dumps({"capabilities": SERVER_PUSH_CAPABILITIES, "nonce": challenge})
+    capabilities_signature = private_key.sign(capabilities_sign_input,
+                                              padding.PKCS1v15(),
+                                              hashes.SHA256())
+    smartphone_data["capabilities_signature"] = b32encode_and_unicode(capabilities_signature)
     return smartphone_data
 
 

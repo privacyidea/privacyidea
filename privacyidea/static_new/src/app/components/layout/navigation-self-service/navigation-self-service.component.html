@@ -20,7 +20,7 @@
   @if (contentService.onUserDetailsSelfService() || !authService.actionAllowed("userlist")) {
     <div class="username-button disabled">
       <mat-icon>account_circle</mat-icon>
-      <span class="username">{{ userData().username || "-" }} &#64; {{ userService.selectedUserRealm() || "-" }}</span>
+      <span class="username">{{ authService.username() || "-" }} &#64; {{ authService.realm() || "-" }}</span>
     </div>
   } @else {
     <a
@@ -28,7 +28,7 @@
       class="username-button"
       mat-ripple>
       <mat-icon>account_circle</mat-icon>
-      <span class="username">{{ userData().username || "-" }} &#64; {{ userService.selectedUserRealm() || "-" }}</span>
+      <span class="username">{{ authService.username() || "-" }} &#64; {{ authService.realm() || "-" }}</span>
     </a>
   }
 
@@ -91,6 +91,13 @@
         key="{{ this.ROUTE_PATHS.AUDIT }}"
         matIconName="receipt_long"
         title="Audit Log" />
+    }
+    @if (authService.rights().includes("authentication_log_read")) {
+      <app-navigation-self-service-button
+        i18n-title
+        key="{{ this.ROUTE_PATHS.AUTHENTICATION_LOG }}"
+        matIconClass="mdi--list-lock"
+        title="Authentication Log" />
     }
   }
 </div>
