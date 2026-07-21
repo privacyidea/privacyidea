@@ -26,7 +26,8 @@ from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import (set_privacyidea_config,
                                     get_inc_fail_count_on_false_pin,
                                     delete_privacyidea_config, SYSCONF)
-from privacyidea.lib.container import init_container, find_container_by_serial, create_container_template
+from privacyidea.lib.container import (init_container, find_container_by_serial, create_container_template,
+                                       delete_container_by_serial, delete_container_template)
 from privacyidea.lib.error import Error
 from privacyidea.lib.event import delete_event
 from privacyidea.lib.event import set_event
@@ -897,3 +898,117 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
             self.assertEqual(AUTH_RESPONSE.ACCEPT, result.get("authentication"))
+
+        # Cleanup
+        delete_policy("enroll_via_multichallenge")
+        delete_policy("registration")
+        for token in container.tokens:
+            remove_token(token.get_serial())
+        delete_container_by_serial(serial)
+        delete_container_template("test")
+
+    @ldap3mock.activate
+    def test_09_cancel_enroll_HOTP(self):
+        # Init LDAP
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        # create realm
+        set_realm("ldaprealm", resolvers=[{'name': "catchall"}])
+        set_default_realm("ldaprealm")
+
+        # passthru + enroll a HOTP token via multichallenge, but make the enrollment optional so it can be cancelled
+        set_policy("pol_passthru", scope=SCOPE.AUTH, action=PolicyAction.PASSTHRU)
+        set_policy("pol_multienroll", scope=SCOPE.AUTH,
+                   action="{0!s}=hotp".format(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
+        set_policy("pol_multienroll_optional", scope=SCOPE.AUTH,
+                   action="{0!s}=true".format(PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL))
+
+        # Authenticate via passthru, which triggers the enrollment challenge
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "alice",
+                                                 "pass": "alicepw"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"))
+            self.assertFalse(result.get("value"))
+            self.assertEqual("CHALLENGE", result.get("authentication"))
+            detail = res.json.get("detail")
+            transaction_id = detail.get("transaction_id")
+            self.assertTrue(detail.get(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
+            self.assertTrue(detail.get(PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL))
+            serial = detail.get("serial")
+            self.assertTrue(serial)
+
+        # The rollout token and the challenge exist before the cancellation
+        self.assertEqual(1, len(get_tokens(serial=serial)))
+        self.assertEqual(1, len(get_challenges(transaction_id=transaction_id)))
+
+        # Cancel the enrollment instead of answering the challenge
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"transaction_id": transaction_id,
+                                                 "cancel_enrollment": True}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"))
+            self.assertTrue(result.get("value"))
+            self.assertIn("Cancelled enrollment via multichallenge", res.json.get("detail").get("message"))
+
+        # The rollout token and the challenge have been removed
+        self.assertEqual(0, len(get_tokens(serial=serial)))
+        self.assertEqual(0, len(get_challenges(transaction_id=transaction_id)))
+
+        # Cleanup
+        delete_policy("pol_passthru")
+        delete_policy("pol_multienroll")
+        delete_policy("pol_multienroll_optional")
+
+    @ldap3mock.activate
+    def test_10_cancel_enroll_HOTP_not_allowed(self):
+        # Init LDAP
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        # create realm
+        set_realm("ldaprealm", resolvers=[{'name': "catchall"}])
+        set_default_realm("ldaprealm")
+
+        # passthru + enroll a HOTP token via multichallenge, but without the optional flag the enrollment is mandatory
+        set_policy("pol_passthru", scope=SCOPE.AUTH, action=PolicyAction.PASSTHRU)
+        set_policy("pol_multienroll", scope=SCOPE.AUTH,
+                   action="{0!s}=hotp".format(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
+
+        # Authenticate via passthru, which triggers the enrollment challenge
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "alice",
+                                                 "pass": "alicepw"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertEqual("CHALLENGE", result.get("authentication"))
+            detail = res.json.get("detail")
+            transaction_id = detail.get("transaction_id")
+            self.assertTrue(detail.get(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
+            self.assertFalse(detail.get(PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL))
+            serial = detail.get("serial")
+
+        # Trying to cancel a mandatory enrollment is treated like a wrong OTP: REJECT, token and challenge stay
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"transaction_id": transaction_id,
+                                                 "cancel_enrollment": True}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertFalse(result.get("value"))
+            self.assertEqual("REJECT", result.get("authentication"))
+            self.assertIn("Failed to cancel enrollment", res.json.get("detail").get("message"))
+
+        # The rollout token still exists because the enrollment was not cancelled
+        self.assertEqual(1, len(get_tokens(serial=serial)))
+
+        # Cleanup
+        delete_policy("pol_passthru")
+        delete_policy("pol_multienroll")
+        remove_token(serial)

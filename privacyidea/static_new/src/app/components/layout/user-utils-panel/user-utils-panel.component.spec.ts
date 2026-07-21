@@ -308,6 +308,32 @@ describe("UserUtilsPanelComponent", () => {
     });
   });
 
+  describe("session time over a day", () => {
+    it("sessionOverOneDay is false below a day and true at/above a day", () => {
+      sessionTimerService.remainingTime.set(24 * 60 * 60 * 1000 - 1);
+      expect(component.sessionOverOneDay()).toBe(false);
+
+      sessionTimerService.remainingTime.set(24 * 60 * 60 * 1000);
+      expect(component.sessionOverOneDay()).toBe(true);
+    });
+
+    it("sessionOverOneDay defaults to false when remainingTime is undefined", () => {
+      sessionTimerService.remainingTime.set(undefined);
+      expect(component.sessionOverOneDay()).toBe(false);
+    });
+
+    it("sessionDaysText shows only the days when there are no whole hours", () => {
+      sessionTimerService.remainingTime.set(24 * 60 * 60 * 1000);
+      expect(component.sessionDaysText()).toBe("1\u202Fd");
+    });
+
+    it("sessionDaysText appends whole hours (without minutes) when present", () => {
+      // 2 days, 5 hours, 30 minutes -> minutes are dropped.
+      sessionTimerService.remainingTime.set((2 * 24 + 5) * 60 * 60 * 1000 + 30 * 60 * 1000);
+      expect(component.sessionDaysText()).toBe("2\u202Fd 5\u202Fh");
+    });
+  });
+
   describe("logout", () => {
     it("calls authService.logout if no pending changes", async () => {
       pendingChangesService.hasChangesMockValue = false;

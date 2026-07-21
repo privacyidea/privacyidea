@@ -1260,17 +1260,49 @@ class TokenTestCase(MyTestCase):
         container.delete()
         token_in_container.delete_token()
 
-        # filter for realm
+        # filter for realm combined with allowed_realms (realm-scoped admin)
         self.setUp_user_realm2()
-        token = init_token({"type": "hotp", "genkey": True}, user=User("hans", self.realm2))
-        token.set_realms([self.realm1, self.realm2])
-        # if realm is not contained in allowed_realms, the query does not find any token
+        # token_both is a member of realm1 AND realm2
+        token_both = init_token({"type": "hotp", "genkey": True}, user=User("hans", self.realm2))
+        token_both.set_realms([self.realm1, self.realm2])
+        # An admin restricted to realm1 filtering by realm2 still sees the token:
+        # the realm filter and the allowed_realms restriction are independent
+        # membership tests, and the token satisfies both (in realm2, and in the
+        # allowed realm1).
         tokens = get_tokens_paginate(realm=self.realm2, allowed_realms=[self.realm1])["tokens"]
-        self.assertEqual(0, len(tokens))
+        self.assertEqual(1, len(tokens))
+        self.assertEqual(token_both.get_serial(), tokens[0]["serial"])
+        # The token is counted once, not once per matching realm membership
+        result = get_tokens_paginate(realm=self.realm2, allowed_realms=[self.realm1, self.realm2])
+        self.assertEqual(1, len(result["tokens"]))
+        self.assertEqual(token_both.get_serial(), result["tokens"][0]["serial"])
+        self.assertEqual(len(result["tokens"]), result["count"])
+        # A token that is not in any allowed realm is not returned
+        token_r2 = init_token({"type": "hotp", "genkey": True})
+        token_r2.set_realms([self.realm2])
+        serials = [t["serial"] for t in get_tokens_paginate(realm=self.realm2,
+                                                             allowed_realms=[self.realm1])["tokens"]]
+        self.assertNotIn(token_r2.get_serial(), serials)
         # filter for a user which is not contained in the allowed realms, but the token itself is
         tokens = get_tokens_paginate(user=User(login="hans", realm=self.realm2), allowed_realms=[self.realm1])["tokens"]
         self.assertEqual(1, len(tokens))
-        token.delete_token()
+        # Wildcard realm combined with allowed_realms: the token matches both
+        # realm memberships, but is still counted and returned exactly once
+        result = get_tokens_paginate(realm="*realm*", allowed_realms=[self.realm1, self.realm2])
+        serials = [t["serial"] for t in result["tokens"]]
+        self.assertEqual(1, serials.count(token_both.get_serial()))
+        self.assertEqual(len(result["tokens"]), result["count"])
+        # allowed_realms alone (no realm filter) restricts to the allowed realms
+        serials = [t["serial"] for t in get_tokens_paginate(allowed_realms=[self.realm1])["tokens"]]
+        self.assertIn(token_both.get_serial(), serials)
+        self.assertNotIn(token_r2.get_serial(), serials)
+        # realm and allowed_realms matching is case-insensitive
+        tokens = get_tokens_paginate(realm=self.realm2.upper(),
+                                     allowed_realms=[self.realm1.upper()])["tokens"]
+        self.assertEqual(1, len(tokens))
+        self.assertEqual(token_both.get_serial(), tokens[0]["serial"])
+        token_both.delete_token()
+        token_r2.delete_token()
 
         # Realm-only filter (no login in the user object)
         # A User with empty login but a realm set should filter by realm without raising.
@@ -2123,3 +2155,158 @@ class TokenTestCase(MyTestCase):
         updated_tokens = import_tokens(exported_tokens, update_existing_tokens=False, assign_to_user=True)
         self.assertEqual(hotptoken.token.first_owner, None)
         self.assertEqual(totptoken.token.first_owner, None)
+
+    def test_64_import_tokens_missing_serial(self):
+        """Test that a token entry without a serial is recorded as failed and does not crash."""
+        tokens_data = [
+            {"type": "hotp", "otpkey": self.otpkey, "otplen": 6, "description": "No serial"}
+        ]
+        result = import_tokens(tokens_data, update_existing_tokens=True)
+        self.assertEqual(len(result.failed_tokens), 1)
+        self.assertIsNone(result.failed_tokens[0])
+        self.assertEqual(len(result.successful_tokens), 0)
+        self.assertEqual(len(result.updated_tokens), 0)
+
+        # Several serial-less entries each yield their own None entry, so the
+        # failure count stays accurate and the placeholders never masquerade as serials
+        tokens_data = [
+            {"type": "hotp", "otpkey": self.otpkey, "description": "No serial 1"},
+            {"type": "hotp", "otpkey": self.otpkey, "description": "No serial 2"},
+            {"type": "hotp", "otpkey": self.otpkey, "description": "No serial 3"},
+        ]
+        result = import_tokens(tokens_data, update_existing_tokens=True)
+        self.assertEqual(result.failed_tokens, [None, None, None])
+
+    def test_65_import_tokens_missing_type(self):
+        """Test that a token entry without a type is recorded as failed and does not crash."""
+        tokens_data = [
+            {"serial": "NOTYPE001", "otpkey": self.otpkey, "otplen": 6, "description": "No type"}
+        ]
+        result = import_tokens(tokens_data, update_existing_tokens=True)
+        self.assertEqual(len(result.failed_tokens), 1)
+        self.assertEqual(result.failed_tokens[0], "NOTYPE001")
+        self.assertEqual(len(result.successful_tokens), 0)
+        self.assertEqual(len(result.updated_tokens), 0)
+        # Ensure no token was created
+        self.assertEqual(get_tokens(serial="NOTYPE001"), [])
+
+    def test_66_import_existing_token_not_deleted_on_import_failure(self):
+        """Test that a pre-existing token is NOT deleted when import_token fails during update."""
+        # Create a token that already exists
+        existing = init_token(param={'serial': "EXISTING001",
+                                     'type': 'hotp',
+                                     'otpkey': self.otpkey,
+                                     "otplen": '6',
+                                     "description": "Pre-existing token"})
+        db.session.commit()
+
+        # Craft import data that will fail during import_token (invalid data)
+        bad_token_data = [
+            {"serial": "EXISTING001", "type": "hotp", "otpkey": None}
+        ]
+
+        # Mock the import_token method on the token to raise an exception
+        with mock.patch.object(type(existing), "import_token", side_effect=Exception("Import failed")):
+            result = import_tokens(bad_token_data, update_existing_tokens=True)
+
+        # The token should be in failed list
+        self.assertIn("EXISTING001", result.failed_tokens)
+        # The pre-existing token must NOT have been deleted
+        tokens = get_tokens(serial="EXISTING001")
+        self.assertEqual(len(tokens), 1)
+        self.assertEqual(tokens[0].token.description, "Pre-existing token")
+
+        # Clean up
+        existing.delete_token()
+
+    def test_67_import_existing_token_not_deleted_on_user_assign_failure(self):
+        """Test that a pre-existing token is NOT deleted when add_user fails during update."""
+        self.setUp_user_realms()
+        # Create a token that already exists
+        existing = init_token(param={'serial': "EXISTING002",
+                                     'type': 'hotp',
+                                     'otpkey': self.otpkey,
+                                     "otplen": '6',
+                                     "description": "Pre-existing token 2"})
+        db.session.commit()
+
+        # Craft import data with a user that will fail assignment
+        bad_token_data = [
+            {"serial": "EXISTING002", "type": "hotp", "otpkey": self.otpkey,
+             "user": {"login": "nonexistent_user", "resolver": "bad_resolver",
+                      "realm": "bad_realm", "uid": "999"}}
+        ]
+
+        with mock.patch.object(type(existing), "add_user", side_effect=Exception("User lookup failed")):
+            result = import_tokens(bad_token_data, update_existing_tokens=True, assign_to_user=True)
+
+        # The token should be in failed list
+        self.assertIn("EXISTING002", result.failed_tokens)
+        # The pre-existing token must NOT have been deleted
+        tokens = get_tokens(serial="EXISTING002")
+        self.assertEqual(len(tokens), 1)
+        self.assertEqual(tokens[0].token.description, "Pre-existing token 2")
+
+        # Clean up
+        existing.delete_token()
+
+    def test_68_import_new_token_deleted_on_failure(self):
+        """Test that a newly created token IS deleted when import_token fails."""
+        # Make sure this token does NOT exist yet
+        self.assertEqual(get_tokens(serial="NEWTOKEN001"), [])
+
+        token_data = [
+            {"serial": "NEWTOKEN001", "type": "hotp", "otpkey": self.otpkey}
+        ]
+
+        # Patch import_token to fail after creation
+        with mock.patch("privacyidea.lib.tokens.hotptoken.HotpTokenClass.import_token",
+                        side_effect=Exception("Import failed")):
+            result = import_tokens(token_data, update_existing_tokens=True)
+
+        # The token should be in failed list
+        self.assertIn("NEWTOKEN001", result.failed_tokens)
+        # The newly created token SHOULD be deleted on failure
+        self.assertEqual(get_tokens(serial="NEWTOKEN001"), [])
+
+    def test_69_import_update_existing_token_without_type(self):
+        """Test that updating an existing token succeeds even when the entry omits a type."""
+        existing = init_token(param={'serial': "UPDATE001",
+                                     'type': 'hotp',
+                                     'otpkey': self.otpkey,
+                                     "otplen": '6',
+                                     "description": "Original description"})
+        db.session.commit()
+
+        # An update entry that carries no "type" key: type is only required to create a token
+        update_data = [
+            {"serial": "UPDATE001", "otpkey": self.otpkey, "description": "Updated description"}
+        ]
+        result = import_tokens(update_data, update_existing_tokens=True)
+
+        # The update must succeed, not be reported as failed for a missing type
+        self.assertEqual(result.failed_tokens, [])
+        self.assertIn("UPDATE001", result.updated_tokens)
+        tokens = get_tokens(serial="UPDATE001")
+        self.assertEqual(len(tokens), 1)
+        self.assertEqual(tokens[0].token.description, "Updated description")
+
+        # Clean up
+        existing.delete_token()
+
+    def test_70_import_new_token_deleted_when_tokenclass_object_fails(self):
+        """Test that a create-time failure after the DB row is saved does not leave an orphan row."""
+        self.assertEqual(get_tokens(serial="ORPHAN001"), [])
+
+        token_data = [
+            {"serial": "ORPHAN001", "type": "hotp", "otpkey": self.otpkey}
+        ]
+
+        # Fail right after db_token.save(), while building the token class object
+        with mock.patch("privacyidea.lib.token.importexport.create_tokenclass_object",
+                        side_effect=Exception("Could not build token class")):
+            result = import_tokens(token_data, update_existing_tokens=True)
+
+        self.assertIn("ORPHAN001", result.failed_tokens)
+        # The persisted row must have been rolled back, not left orphaned
+        self.assertEqual(get_tokens(serial="ORPHAN001"), [])
