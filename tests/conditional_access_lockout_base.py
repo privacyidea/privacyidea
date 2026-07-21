@@ -76,6 +76,19 @@ class LockoutTestCase(MyTestCase):
                 realm=user.realm, timestamp=timestamp))
         db.session.commit()
 
+    def _seed_attempts(self, event_type, count, timestamp=None, user=None, start=0):
+        """Insert *count* single-row authentication attempts for *user* (default: the test user), each with its own
+        ``attempt_id`` (``att<start>``..). This is the PER_ATTEMPT shape where every attempt is one request, so the
+        engine counts *count* distinct attempts (unlike :func:`_seed_events`, whose rows share a null attempt_id and
+        collapse to one attempt under PER_ATTEMPT). *start* offsets the index so several calls stay non-overlapping."""
+        user = user or self.user
+        timestamp = timestamp if timestamp is not None else utc_now()
+        for i in range(start, start + count):
+            db.session.add(AuthenticationLog(
+                event_type=str(event_type), resolver=user.resolver, uid=user.uid,
+                realm=user.realm, timestamp=timestamp, attempt_id=f"att{i}"))
+        db.session.commit()
+
     def _seed_ip_events(self, source_ip, event_type, n_users, per_user=1, timestamp=None, start=0):
         """Seed *n_users* distinct users (``spray<start>``..), each with *per_user* rows, all from
         *source_ip* (the password-spraying shape: one IP hitting many users). Each user carries a

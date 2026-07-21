@@ -120,6 +120,67 @@ MFA_BRUTEFORCE = LockoutPolicyTemplate(
         ],
     })
 
+# The authentication-failure event types the failed-attempt rate limits count. Explicit and curated on purpose -
+# deliberately NOT derived from the FAILURE outcome class - because a "FAILURE" outcome does not by itself mean a
+# type belongs in an authentication rate limit: a new failure type must be a conscious decision, never silently
+# pulled in.
+_USER_AUTH_FAILURES = [
+    AuthEventType.PASSWORD_FAIL,
+    AuthEventType.PIN_FAIL,
+    AuthEventType.TOKEN_ONLY_FAIL,
+    AuthEventType.MFA_FAIL,
+    AuthEventType.CHALLENGE_ANSWERED_FAIL,
+    AuthEventType.CHALLENGE_DECLINED,
+    AuthEventType.NO_TOKEN,
+    AuthEventType.NO_USABLE_TOKEN,
+    AuthEventType.UNKNOWN_FAIL_REASON,
+]
+# The per-IP failed set is the per-user set plus USER_UNKNOWN: a source IP failing against many *distinct* accounts
+# includes probing non-existent usernames (enumeration), which a per-user target cannot see.
+_IP_AUTH_FAILURES = _USER_AUTH_FAILURES + [AuthEventType.USER_UNKNOWN]
+
+USER_RATE_LIMITING = LockoutPolicyTemplate(
+    key="user_rate_limiting",
+    description=lazy_gettext("Rate-limit a single user's authentication: once too many attempts happen in a short "
+                             "window, further attempts are briefly denied. Counts every attempt - successful, failed "
+                             "or abandoned - and never locks the account (the denial lifts as the window drains)."),
+    policy={
+        "name": "Per-User Rate Limit",
+        "time_window_seconds": 60,
+        "enabled": True,
+        "dry_run": False,
+        "priority": 1,
+        "target": LockoutTarget.USER,
+        # PER_ATTEMPT so a multichallenge / push login counts as one attempt; every AuthEventType is tracked so
+        # successes and abandoned (pending) attempts count too - this caps the request rate, it does not lock.
+        "count_mode": CountMode.PER_ATTEMPT,
+        "counter_types_to_track": list(AuthEventType),
+        "stages": [
+            {"failure_threshold": 20, "priority": 1,
+             "actions": [{"action_type": LockoutAction.DENY}]},
+        ],
+    })
+
+USER_FAILED_RATE_LIMITING = LockoutPolicyTemplate(
+    key="user_failed_rate_limiting",
+    description=lazy_gettext("Rate-limit a single user's failed authentication attempts: after too many failures in "
+                             "a short window, further attempts are briefly denied. Successful logins are not counted, "
+                             "so a busy legitimate user is unaffected - only a guessing burst is throttled."),
+    policy={
+        "name": "Per-User Failed-Attempt Rate Limit",
+        "time_window_seconds": 60,
+        "enabled": True,
+        "dry_run": False,
+        "priority": 1,
+        "target": LockoutTarget.USER,
+        "count_mode": CountMode.PER_ATTEMPT,
+        "counter_types_to_track": list(_USER_AUTH_FAILURES),
+        "stages": [
+            {"failure_threshold": 10, "priority": 1,
+             "actions": [{"action_type": LockoutAction.DENY}]},
+        ],
+    })
+
 PASSWORD_SPRAYING = LockoutPolicyTemplate(
     key="password_spraying",
     description=lazy_gettext("Block a source IP that fails first-factor authentication (wrong password "
@@ -141,8 +202,74 @@ PASSWORD_SPRAYING = LockoutPolicyTemplate(
         ],
     })
 
+USER_ENUMERATION = LockoutPolicyTemplate(
+    key="user_enumeration",
+    description=lazy_gettext("Block a source IP that probes many different non-existent usernames in a short "
+                             "time (user enumeration)."),
+    policy={
+        "name": "User Enumeration",
+        "time_window_seconds": 300,
+        "enabled": True,
+        "dry_run": False,
+        "priority": 1,
+        "target": LockoutTarget.SOURCE_IP,
+        # DISTINCT_USERS keys on the attempted username, so each probed non-existent login counts as a distinct
+        # targeted account - the enumeration signal, and NAT-safe (fan-out, not raw request volume).
+        "count_mode": CountMode.DISTINCT_USERS,
+        "counter_types_to_track": [AuthEventType.USER_UNKNOWN],
+        "stages": [
+            {"failure_threshold": 10, "priority": 1,
+             "actions": [{"action_type": LockoutAction.BLOCK_IP,
+                          "action_value": {"duration_seconds": 3600}}]},
+        ],
+    })
+
+IP_FAILED_RATE_LIMITING = LockoutPolicyTemplate(
+    key="ip_failed_rate_limiting",
+    description=lazy_gettext("Rate-limit a source IP that fails authentication against many different accounts in a "
+                             "short window (credential stuffing, spraying or user enumeration): further requests from "
+                             "that IP are briefly denied."),
+    policy={
+        "name": "Per-IP Failed-Attempt Rate Limit (Distinct Accounts)",
+        "time_window_seconds": 300,
+        "enabled": True,
+        "dry_run": False,
+        "priority": 1,
+        "target": LockoutTarget.SOURCE_IP,
+        # For an IP, "attempts" is the number of DISTINCT accounts (attempted usernames) it targeted - the fan-out
+        # signal, never raw request volume, so a busy shared egress is judged only by how many accounts it fails on.
+        "count_mode": CountMode.DISTINCT_USERS,
+        "counter_types_to_track": list(_IP_AUTH_FAILURES),
+        "stages": [
+            {"failure_threshold": 20, "priority": 1,
+             "actions": [{"action_type": LockoutAction.DENY}]},
+        ],
+    })
+
+IP_RATE_LIMITING = LockoutPolicyTemplate(
+    key="ip_rate_limiting",
+    description=lazy_gettext("Rate-limit a source IP by how many different accounts it authenticates as in a short "
+                             "window, regardless of success."),
+    policy={
+        "name": "Per-IP Rate Limit (Distinct Accounts)",
+        "time_window_seconds": 300,
+        "enabled": True,
+        # Dry-run by default: this is the one IP template that counts successes, so a legitimate shared-egress IP can
+        # trip it. It logs the decision it *would* make and enforces nothing until an admin turns dry_run off.
+        "dry_run": True,
+        "priority": 1,
+        "target": LockoutTarget.SOURCE_IP,
+        "count_mode": CountMode.DISTINCT_USERS,
+        "counter_types_to_track": list(AuthEventType),
+        "stages": [
+            {"failure_threshold": 30, "priority": 1,
+             "actions": [{"action_type": LockoutAction.DENY}]},
+        ],
+    })
+
 # The shipped catalog. Add a template by defining a constant and listing it here.
-_TEMPLATES = (PASSWORD_BRUTEFORCE, MFA_BRUTEFORCE, PASSWORD_SPRAYING)
+_TEMPLATES = (PASSWORD_BRUTEFORCE, MFA_BRUTEFORCE, USER_RATE_LIMITING, USER_FAILED_RATE_LIMITING,
+              PASSWORD_SPRAYING, USER_ENUMERATION, IP_FAILED_RATE_LIMITING, IP_RATE_LIMITING)
 
 
 @log_with(log)

@@ -23,9 +23,12 @@ sends after prefilling from a template).
 """
 from datetime import timedelta
 
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventOutcome,
+                                                                           outcome_of)
 from privacyidea.lib.conditional_access.engine import (
+    AccessDecision,
     LockoutAction,
+    evaluate_access_decision,
     evaluate_lockout_policies,
     get_ip_block,
     get_user_lockout,
@@ -66,6 +69,12 @@ class LockoutPolicyTemplateTestCase(MyTestCase):
         catalog = {entry["key"]: entry for entry in list_lockout_policy_templates()}
         self.assertIn("password_bruteforce", catalog, "template missing from catalog")
         self.assertIn("mfa_bruteforce", catalog, "template missing from catalog")
+        self.assertIn("password_spraying", catalog, "template missing from catalog")
+        self.assertIn("user_enumeration", catalog, "template missing from catalog")
+        self.assertIn("user_rate_limiting", catalog, "template missing from catalog")
+        self.assertIn("user_failed_rate_limiting", catalog, "template missing from catalog")
+        self.assertIn("ip_failed_rate_limiting", catalog, "template missing from catalog")
+        self.assertIn("ip_rate_limiting", catalog, "template missing from catalog")
         # every entry carries a non-empty description and a policy dict
         for key, entry in catalog.items():
             self.assertTrue(entry["description"].strip(), f"{key}: empty description")
@@ -105,6 +114,30 @@ class LockoutPolicyTemplateTestCase(MyTestCase):
         second = self._policy("password_bruteforce")
         self.assertEqual("Password Brute-Force", second["name"], "catalog name was mutated")
         self.assertTrue(second["stages"], "catalog stages were mutated")
+
+    def test_failed_rate_limit_failure_set_is_exhaustively_classified(self):
+        # The failed-attempt rate-limit templates use explicit, curated failure lists (not a dynamic derivation), so a
+        # new failure event type is never silently pulled into a throttle. This guard fails when a FAILURE-outcome
+        # type is neither counted by the per-user failed template nor listed as deliberately excluded here (with the
+        # reason), forcing whoever adds it to decide - add it to _USER_AUTH_FAILURES or exclude it here.
+        user_excluded = {
+            AuthEventType.NOT_AUTHORIZED,           # authorization denial, not an authentication failure
+            AuthEventType.USER_UNKNOWN,             # inert for a user target; the per-IP set counts it (enumeration)
+            AuthEventType.ENROLLMENT_CANCELED_FAIL,  # enrollment housekeeping, not a credential attempt
+        }
+        all_failures = {event_type.value for event_type in AuthEventType
+                        if outcome_of(event_type) == AuthEventOutcome.FAILURE}
+        user_counted = {str(t) for t in self._policy("user_failed_rate_limiting")["counter_types_to_track"]}
+        ip_counted = {str(t) for t in self._policy("ip_failed_rate_limiting")["counter_types_to_track"]}
+        excluded_values = {event_type.value for event_type in user_excluded}
+        self.assertTrue(user_counted <= all_failures, "user failed rate-limit counts a non-failure event type")
+        self.assertSetEqual(all_failures, user_counted | excluded_values,
+                            "a new FAILURE event type must be added to _USER_AUTH_FAILURES or excluded in this test")
+        self.assertSetEqual(set(), user_counted & excluded_values, "an event type is both counted and excluded")
+        # The per-IP failed set is exactly the per-user set plus USER_UNKNOWN: distinct unknown usernames from one IP
+        # are the enumeration signal, which a per-user target cannot see.
+        self.assertSetEqual(user_counted | {AuthEventType.USER_UNKNOWN.value}, ip_counted,
+                            "the IP failed rate-limit set must be the user set plus USER_UNKNOWN")
 
     def test_template_keys_are_unique(self):
         keys = [entry["key"] for entry in list_lockout_policy_templates()]
@@ -240,6 +273,109 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
         self.assertEqual(1800, get_user_lockout(self.user, now=now).seconds_remaining,
                          "lock did not fire without SMTP configured")
         self.assertEqual([], notices, "unexpected login notice")
+
+    # --- per-user rate limit (all attempts, DENY) -----------------------------
+
+    def test_user_rate_limiting_denies_after_threshold_any_outcome(self):
+        # Counts every attempt regardless of outcome: 10 successes + 5 failures + 5 abandoned = 20 attempts reach the
+        # threshold, so the next request is denied pre-auth (DENY, never a lock).
+        now = utc_now()
+        self._create("user_rate_limiting")
+        self._seed_attempts(AuthEventType.LOGIN_SUCCESS, 10, timestamp=now, start=0)
+        self._seed_attempts(AuthEventType.MFA_FAIL, 5, timestamp=now, start=10)
+        self._seed_attempts(AuthEventType.CHALLENGE_TRIGGERED, 5, timestamp=now, start=15)
+        self.assertEqual(AccessDecision.DENY, evaluate_access_decision(self.user, now=now))
+        self.assertFalse(is_user_locked(self.user, now=now), "a rate limit must not lock the account")
+
+    def test_user_rate_limiting_below_threshold_continues(self):
+        now = utc_now()
+        self._create("user_rate_limiting")
+        self._seed_attempts(AuthEventType.LOGIN_SUCCESS, 19, timestamp=now)
+        self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(self.user, now=now))
+
+    # --- per-user failed-attempt rate limit (DENY) ----------------------------
+
+    def test_user_failed_rate_limiting_denies_after_failed_threshold(self):
+        # 5 wrong passwords + 5 wrong challenge answers = 10 failed attempts reach the threshold.
+        now = utc_now()
+        self._create("user_failed_rate_limiting")
+        self._seed_attempts(AuthEventType.PASSWORD_FAIL, 5, timestamp=now, start=0)
+        self._seed_attempts(AuthEventType.CHALLENGE_ANSWERED_FAIL, 5, timestamp=now, start=5)
+        self.assertEqual(AccessDecision.DENY, evaluate_access_decision(self.user, now=now))
+
+    def test_user_failed_rate_limiting_ignores_successful_attempts(self):
+        # Successful attempts reduce to LOGIN_SUCCESS (not a tracked failure type), so a busy successful client is
+        # never throttled: 9 failures stay below the threshold no matter how many successful logins occur alongside.
+        now = utc_now()
+        self._create("user_failed_rate_limiting")
+        self._seed_attempts(AuthEventType.MFA_FAIL, 9, timestamp=now, start=0)
+        self._seed_attempts(AuthEventType.LOGIN_SUCCESS, 50, timestamp=now, start=9)
+        self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(self.user, now=now))
+
+    # --- per-IP failed-attempt rate limit (distinct accounts, DENY) -----------
+
+    def test_ip_failed_rate_limiting_denies_after_distinct_failed_accounts(self):
+        # Distinct accounts the IP failed against, real or probed: 10 wrong-password real users + 10 unknown-username
+        # probes = 20 distinct accounts reach the threshold (enumeration folds into the failed fan-out signal).
+        now = utc_now()
+        ip = "203.0.113.40"
+        self._create("ip_failed_rate_limiting")
+        self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=10, timestamp=now)
+        self._seed_ip_unknown_events(ip, AuthEventType.USER_UNKNOWN,
+                                     [f"ghost{i}" for i in range(10)], timestamp=now)
+        self.assertEqual(AccessDecision.DENY, evaluate_access_decision(self.user, source_ip=ip, now=now))
+
+    def test_ip_failed_rate_limiting_below_threshold_continues(self):
+        now = utc_now()
+        ip = "203.0.113.41"
+        self._create("ip_failed_rate_limiting")
+        self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=19, timestamp=now)
+        self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(self.user, source_ip=ip, now=now))
+
+    # --- per-IP rate limit (all outcomes, distinct accounts) - ships dry-run ---
+
+    def test_ip_rate_limiting_ships_dry_run_and_does_not_enforce(self):
+        # This template counts successes too, so it ships dry_run=True: even well past the threshold it only logs the
+        # would-be decision and enforces nothing (CONTINUE), so a legitimate shared-egress IP is never blocked.
+        now = utc_now()
+        ip = "203.0.113.42"
+        policy_id = self._create("ip_rate_limiting")
+        self.assertTrue(get_lockout_policy(policy_id)["dry_run"], "ip_rate_limiting must ship as dry-run")
+        self._seed_ip_events(ip, AuthEventType.LOGIN_SUCCESS, n_users=35, timestamp=now)
+        self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(self.user, source_ip=ip, now=now))
+
+    # --- user enumeration template (source_ip target) -------------------------
+
+    def test_user_enumeration_blocks_ip_after_distinct_unknown_usernames(self):
+        now = utc_now()
+        ip = "203.0.113.30"
+        self._create("user_enumeration")
+        self._seed_ip_unknown_events(ip, AuthEventType.USER_UNKNOWN,
+                                     [f"ghost{i}" for i in range(10)], timestamp=now)
+        evaluate_lockout_policies(self.user, AuthEventType.USER_UNKNOWN, source_ip=ip, now=now)
+        status = get_ip_block(ip, now=now)
+        self.assertIsNotNone(status, "IP not blocked after distinct unknown usernames")
+        self.assertFalse(status.permanent, "block is permanent, expected timed")
+        self.assertEqual(3600, status.seconds_remaining, "wrong block duration")
+
+    def test_user_enumeration_below_threshold_not_blocked(self):
+        now = utc_now()
+        ip = "203.0.113.31"
+        self._create("user_enumeration")
+        self._seed_ip_unknown_events(ip, AuthEventType.USER_UNKNOWN,
+                                     [f"ghost{i}" for i in range(9)], timestamp=now)
+        evaluate_lockout_policies(self.user, AuthEventType.USER_UNKNOWN, source_ip=ip, now=now)
+        self.assertFalse(is_ip_blocked(ip, now=now), "IP blocked below the distinct-unknown-username threshold")
+
+    def test_user_enumeration_repeated_unknown_username_is_one_distinct(self):
+        # Many probes of the *same* nonexistent username are one distinct account, so they must not trip the block
+        # (the signal is fan-out across accounts, not raw volume against one).
+        now = utc_now()
+        ip = "203.0.113.32"
+        self._create("user_enumeration")
+        self._seed_ip_unknown_events(ip, AuthEventType.USER_UNKNOWN, ["ghost"] * 30, timestamp=now)
+        evaluate_lockout_policies(self.user, AuthEventType.USER_UNKNOWN, source_ip=ip, now=now)
+        self.assertFalse(is_ip_blocked(ip, now=now), "IP blocked on repeated same-username volume")
 
     # --- password spraying template (source_ip target) ------------------------
 
