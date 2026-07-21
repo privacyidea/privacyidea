@@ -348,18 +348,16 @@
 
 <mat-menu #advancedFilterMenu="matMenu">
   @for (keyword of advancedApiFilter; track keyword) {
-    <span
+    <button
+      (click)="onKeywordClick(keyword)"
+      [attr.aria-disabled]="isUnsupportedKeyword(keyword)"
+      [class.unsupported-filter-item]="isUnsupportedKeyword(keyword)"
       [matTooltip]="filterColumnTooltip(keyword, keyword)"
-      class="advanced-filter-item"
+      mat-menu-item
       matTooltipClass="filter-hint-tooltip"
       matTooltipPosition="right">
-      <button
-        (click)="onKeywordClick(keyword)"
-        [disabled]="isUnsupportedKeyword(keyword)"
-        mat-menu-item>
-        <mat-icon class="margin-right-16">{{ getFilterIconName(keyword) }}</mat-icon>
-        {{ keyword }}
-      </button>
-    </span>
+      <mat-icon class="margin-right-16">{{ getFilterIconName(keyword) }}</mat-icon>
+      {{ keyword }}
+    </button>
   }
 </mat-menu>

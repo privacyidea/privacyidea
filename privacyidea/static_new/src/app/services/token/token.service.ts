@@ -119,9 +119,7 @@ const booleanKeys = new Set(["active", "assigned"]);
 // keys are a raw equality comparison (only MySQL with a _ci collation folds case).
 const caseNotes: Record<string, FilterCaseNote> = {
   serial: "usually-insensitive",
-  "infokey & infovalue": "usually-sensitive",
-  infokey: "usually-sensitive",
-  infovalue: "usually-sensitive"
+  "infokey & infovalue": "usually-sensitive"
 };
 // Keywords the backend accepts but never applies: the filter clauses were removed
 // in 78c0cc621 and not restored. Re-enable once the backend filters them again.

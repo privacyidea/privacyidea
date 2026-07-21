@@ -317,6 +317,9 @@ export class TokenTableComponent {
   }
 
   onKeywordClick(filterKeyword: string): void {
+    if (this.isUnsupportedKeyword(filterKeyword)) {
+      return;
+    }
     this.toggleFilter(filterKeyword);
     const inputElement = this.filterInput?.nativeElement;
     if (inputElement) {
