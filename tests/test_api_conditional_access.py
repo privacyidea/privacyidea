@@ -307,8 +307,8 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         # behaviour (per the chosen design): attempts made WHILE the user is
         # temp-locked are rejected at the pre-check and never counted, so the
         # escalation only happens once the lock expires and the user fails again.
-        # A higher policy priority does NOT preempt the temp lock - both policies
-        # fire when both thresholds are met.
+        # A policy's priority does NOT preempt the temp lock - lock/block policies
+        # both fire when both thresholds are met, regardless of priority.
         self._make_lock_policy(counter_type=AuthEventType.MFA_FAIL, threshold=2, duration=60)
         policy = LockoutPolicy(name="ca_permblock", counter_types_to_track=_counter_types(AuthEventType.MFA_FAIL),
                                time_window_seconds=3600, enabled=True, priority=99)
@@ -379,12 +379,12 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertTrue(body["result"]["value"], body)
 
     def test_allow_overrides_lower_priority_deny(self):
-        # A higher-priority ALLOW exception lets a valid login through despite a
-        # lower-priority DENY whose threshold is met.
+        # A higher-precedence ALLOW exception (lower priority number) lets a valid
+        # login through despite a DENY with a higher number whose threshold is met.
         self._make_decision_policy(name="ca_deny", counter_type=AuthEventType.MFA_FAIL,
-                                   threshold=3, action=LockoutAction.DENY, priority=1)
+                                   threshold=3, action=LockoutAction.DENY, priority=10)
         self._make_decision_policy(name="ca_allow", counter_type=AuthEventType.MFA_FAIL,
-                                   threshold=0, action=LockoutAction.ALLOW, priority=10)
+                                   threshold=0, action=LockoutAction.ALLOW, priority=1)
         for _ in range(3):
             self._check({"user": "cornelius", "pass": "pin000000"})
         # The DENY threshold is met, but the higher-priority ALLOW wins -> valid auth succeeds.
@@ -404,7 +404,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         # maximum-priority default-allow exception cannot unlock a locked user.
         self._lock_user(utc_now() + timedelta(seconds=600))
         self._make_decision_policy(name="ca_allow", counter_type=AuthEventType.MFA_FAIL,
-                                   threshold=0, action=LockoutAction.ALLOW, priority=10)
+                                   threshold=0, action=LockoutAction.ALLOW, priority=1)
         body = self._check({"user": "cornelius", "pass": "pin755224"})
         self.assertFalse(body["result"]["value"], body)
         self.assertFalse(body.get("detail"), body)
@@ -418,7 +418,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
                                  block_expires_at=utc_now() + timedelta(seconds=600)))
         db.session.commit()
         self._make_decision_policy(name="ca_allow", counter_type=AuthEventType.MFA_FAIL,
-                                   threshold=0, action=LockoutAction.ALLOW, priority=10)
+                                   threshold=0, action=LockoutAction.ALLOW, priority=1)
         body = self._check({"user": "cornelius", "pass": "pin755224"}, remote_addr="203.0.113.7")
         self.assertFalse(body["result"]["value"], body)
         self.assertEqual(0, len(get_authentication_logs()))
@@ -819,7 +819,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         # maximum-priority default-allow exception cannot unlock a locked user.
         self._lock_user()
         self._make_decision_policy(name="ca_allow", threshold=0,
-                                   action=LockoutAction.ALLOW, priority=10)
+                                   action=LockoutAction.ALLOW, priority=1)
         res = self._auth("cornelius", "test")
         self.assertEqual(401, res.status_code, res)
         self.assertIn("account", res.json["result"]["error"]["message"].lower(), res.json)

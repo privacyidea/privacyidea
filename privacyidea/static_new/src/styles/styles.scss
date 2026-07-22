@@ -86,6 +86,24 @@ body {
   --elevation-5: var(--mat-elevation-5);
   --elevation-8: var(--mat-elevation-8);
 
+  // Inset-shadow scale for recessed "well" surfaces, the inward counterpart of the
+  // --elevation-* scale (higher number = deeper recess). --inset-shadow-5 is the
+  // deep dashboard recess; --inset-shadow-3 is a shallower step between it and flat.
+  // Each level pairs with an --inset-surface-* background tone that sits between the
+  // surrounding grey and a card's white, so the recess reads correctly.
+  --inset-shadow-5:
+    inset 0 3px 5px -1px var(--dashboard-shadow-color),
+    inset 0 5px 8px 0 var(--dashboard-shadow-color),
+    inset 0 1px 14px 0 var(--dashboard-shadow-color);
+  --inset-shadow-3:
+    inset 0 2px 4px -1px var(--dashboard-shadow-color),
+    inset 0 1px 6px 0 var(--dashboard-shadow-color);
+  --inset-surface-5: var(--mat-sys-surface-container-low);
+  // Midpoint of the surrounding grey (surface-container, #e6e6e6 in light mode) and
+  // the card white (surface-container-lowest, #fafafa): #f0f0f0.
+  --inset-surface-3: color-mix(in srgb, var(--mat-sys-surface-container) 50%,
+    var(--mat-sys-surface-container-lowest) 50%);
+
   --double-global-padding: calc(var(--global-padding) * 2);
   --global-padding: 16px;
   --three-quarters-global-padding: calc(var(--global-padding) * 0.75);
@@ -289,6 +307,10 @@ body.self-service-layout {
 
 .blue-base {
   color: var(--mat-sys-primary);
+}
+
+.h3-color {
+  color: var(--mat-sys-primary-dark);
 }
 
 .ali-center {

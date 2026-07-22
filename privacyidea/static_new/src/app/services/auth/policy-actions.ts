@@ -38,6 +38,8 @@ export type PolicyAction =
   | "challenge_text_header"
   | "challenge_text_footer"
   | "getchallenges"
+  | "lockout_policy_read"
+  | "lockout_policy_write"
   | "copytokenpin"
   | "copytokenuser"
   | "default_tokentype"

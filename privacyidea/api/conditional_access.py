@@ -34,6 +34,8 @@ from flask import Blueprint, request, g
 
 from privacyidea.api.lib.prepolicy import prepolicy, check_base_action
 from privacyidea.api.lib.utils import send_result
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.engine import LockoutAction
 from privacyidea.lib.conditional_access.lockout_policy import (list_lockout_policies,
                                                                get_lockout_policy,
                                                                create_lockout_policy,
@@ -77,6 +79,42 @@ def _int_policy_id(policy_id) -> int:
         return int(policy_id)
     except (TypeError, ValueError):
         raise ParameterError(f"Invalid policy id '{policy_id}'.")
+
+
+@conditional_access_blueprint.route('eventtypes', methods=['GET'])
+@prepolicy(check_base_action, request, PolicyAction.LOCKOUT_POLICY_READ)
+@log_with(log)
+def list_event_types():
+    """
+    Return the authoritative list of authentication event types a policy can
+    track (the :class:`AuthEventType` values), so the WebUI does not duplicate
+    the list and automatically picks up newly added types.
+
+    Requires the admin policy action :ref:`policy_lockout_policy_read`.
+
+    :status 200: list of event-type name strings in ``result.value``, in definition order
+    """
+    event_types = [event_type.value for event_type in AuthEventType]
+    g.audit_object.log({"success": True, "info": f"{len(event_types)} event types"})
+    return send_result(event_types)
+
+
+@conditional_access_blueprint.route('actiontypes', methods=['GET'])
+@prepolicy(check_base_action, request, PolicyAction.LOCKOUT_POLICY_READ)
+@log_with(log)
+def list_action_types():
+    """
+    Return the authoritative list of stage action types (the
+    :class:`LockoutAction` values), so the WebUI does not duplicate the list and
+    automatically picks up newly added actions.
+
+    Requires the admin policy action :ref:`policy_lockout_policy_read`.
+
+    :status 200: list of action-type name strings in ``result.value``, in definition order
+    """
+    action_types = [action.value for action in LockoutAction]
+    g.audit_object.log({"success": True, "info": f"{len(action_types)} action types"})
+    return send_result(action_types)
 
 
 @conditional_access_blueprint.route('policy', methods=['GET'])

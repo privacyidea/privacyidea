@@ -105,7 +105,8 @@ describe("TokengroupsComponent", () => {
 
   it("should delete group after confirmation", () => {
     const group = tokengroupServiceMock.tokengroups()[0];
-    component.deleteTokengroup(group);
+    component.selection.set([group]);
+    component.deleteSelected();
     expect(dialogServiceMock.openDialog).toHaveBeenCalled();
     confirmClosed.next("discard");
     confirmClosed.complete();

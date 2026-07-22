@@ -19,6 +19,7 @@
 
 import { Component, computed, ElementRef, inject, signal, ViewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
+import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
@@ -50,6 +51,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
     MatSortModule,
     MatIconModule,
     MatButtonModule,
+    MatCheckboxModule,
     MatTooltipModule,
     ScrollToTopDirective,
     MatFormField,
@@ -78,7 +80,9 @@ export class PrivacyideaServersComponent {
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef;
 
-  displayedColumns: string[] = ["identifier", "url", "tls", "description", "actions"];
+  displayedColumns: string[] = ["select", "identifier", "url", "tls", "description"];
+
+  selection = signal<PrivacyideaServer[]>([]);
 
   privacyideaDataSource = computed(() => {
     const servers = this.privacyideaServerService.remoteServerOptions();
@@ -96,24 +100,57 @@ export class PrivacyideaServersComponent {
     }
   }
 
-  deleteServer(server: PrivacyideaServer): void {
+
+  isAllSelected(): boolean {
+    const rows = this.privacyideaDataSource().data;
+    return rows.length > 0 && this.selection().length === rows.length;
+  }
+
+  toggleAllRows(): void {
+    if (this.isAllSelected()) {
+      this.selection.set([]);
+    } else {
+      this.selection.set([...this.privacyideaDataSource().data]);
+    }
+  }
+
+  toggleRow(row: PrivacyideaServer): void {
+    const current = this.selection();
+    if (current.includes(row)) {
+      this.selection.set(current.filter((selected) => selected !== row));
+    } else {
+      this.selection.set([...current, row]);
+    }
+  }
+
+  isSelected(row: PrivacyideaServer): boolean {
+    return this.selection().includes(row);
+  }
+
+  deleteSelected(): void {
+    const selected = this.selection();
+    if (selected.length === 0) {
+      return;
+    }
     this.dialogService
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Delete privacyIDEA Server`,
-          items: [server.identifier],
+          title: $localize`Delete privacyIDEA Servers`,
+          items: selected.map((row) => row.identifier),
           itemType: "privacyidea-server",
           confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
-      .subscribe({
-        next: (result) => {
-          if (result) this.privacyideaServerService.deletePrivacyideaServer(server.identifier);
+      .subscribe((result) => {
+        if (result) {
+          selected.forEach((row) => this.privacyideaServerService.deletePrivacyideaServer(row.identifier));
+          this.selection.set([]);
         }
       });
   }
+
 
   onFilterInput(value: string): void {
     const trimmed = (value ?? "").trim();

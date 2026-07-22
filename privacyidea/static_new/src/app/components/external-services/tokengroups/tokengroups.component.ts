@@ -18,6 +18,7 @@
  **/
 import { Component, computed, ElementRef, inject, signal, ViewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
+import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatIconModule } from "@angular/material/icon";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { MatPaginator } from "@angular/material/paginator";
@@ -44,6 +45,7 @@ import { Tokengroup, TokengroupService, TokengroupServiceInterface } from "@serv
     MatSortModule,
     MatIconModule,
     MatButtonModule,
+    MatCheckboxModule,
     MatTooltipModule,
     ScrollToTopDirective,
     MatFormField,
@@ -73,7 +75,9 @@ export class TokengroupsComponent {
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef;
 
-  displayedColumns: string[] = ["id", "groupname", "description", "actions"];
+  displayedColumns: string[] = ["select", "id", "groupname", "description"];
+
+  selection = signal<Tokengroup[]>([]);
 
   tokengroupDataSource = computed(() => {
     const groups = this.tokengroupService.tokengroups();
@@ -91,13 +95,44 @@ export class TokengroupsComponent {
     this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_DETAILS + group.groupname);
   }
 
-  deleteTokengroup(group: Tokengroup): void {
+
+  isAllSelected(): boolean {
+    const rows = this.tokengroupDataSource().data;
+    return rows.length > 0 && this.selection().length === rows.length;
+  }
+
+  toggleAllRows(): void {
+    if (this.isAllSelected()) {
+      this.selection.set([]);
+    } else {
+      this.selection.set([...this.tokengroupDataSource().data]);
+    }
+  }
+
+  toggleRow(row: Tokengroup): void {
+    const current = this.selection();
+    if (current.includes(row)) {
+      this.selection.set(current.filter((selected) => selected !== row));
+    } else {
+      this.selection.set([...current, row]);
+    }
+  }
+
+  isSelected(row: Tokengroup): boolean {
+    return this.selection().includes(row);
+  }
+
+  deleteSelected(): void {
+    const selected = this.selection();
+    if (selected.length === 0) {
+      return;
+    }
     this.dialogService
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Delete Tokengroup`,
-          items: [group.groupname],
+          title: $localize`Delete Token Groups`,
+          items: selected.map((row) => row.groupname),
           itemType: "tokengroup",
           confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
         }
@@ -105,10 +140,12 @@ export class TokengroupsComponent {
       .afterClosed()
       .subscribe((result) => {
         if (result) {
-          this.tokengroupService.deleteTokengroup(group.groupname);
+          selected.forEach((row) => this.tokengroupService.deleteTokengroup(row.groupname));
+          this.selection.set([]);
         }
       });
   }
+
 
   onFilterInput(value: string): void {
     const trimmed = (value ?? "").trim();
