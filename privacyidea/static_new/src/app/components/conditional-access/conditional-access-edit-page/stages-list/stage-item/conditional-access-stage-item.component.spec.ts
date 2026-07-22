@@ -37,7 +37,6 @@ describe("ConditionalAccessStageItemComponent", () => {
 
     fixture = TestBed.createComponent(ConditionalAccessStageItemComponent);
     fixture.componentRef.setInput("stage", stage);
-    fixture.componentRef.setInput("stageNumber", 1);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
@@ -70,5 +69,21 @@ describe("ConditionalAccessStageItemComponent", () => {
     const spy = jest.spyOn(component.removeStage, "emit");
     component.onRemoveStage();
     expect(spy).toHaveBeenCalled();
+  });
+
+  it("should emit a trimmed name, or null when blank", () => {
+    const spy = jest.spyOn(component.updateStage, "emit");
+    component.onNameInput("  Warn user  ");
+    expect(spy).toHaveBeenCalledWith({ name: "Warn user" });
+    component.onNameInput("   ");
+    expect(spy).toHaveBeenCalledWith({ name: null });
+  });
+
+  it("should toggle name editing", () => {
+    expect(component.editingName()).toBe(false);
+    component.startEditingName();
+    expect(component.editingName()).toBe(true);
+    component.stopEditingName();
+    expect(component.editingName()).toBe(false);
   });
 });

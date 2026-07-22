@@ -234,3 +234,9 @@ mat-icon {
   // run never leaks into an ancestor's scrollable overflow.
   overflow: hidden;
 }
+
+// Space the badge off the button's label text.
+.mdc-button__label .icon-badge {
+  margin-right: 8px;
+}
+

@@ -89,6 +89,7 @@ class StageDefinition:
     """
     failure_threshold: int
     priority: int
+    name: str | None = None
     actions: list[StageActionDefinition] = field(default_factory=list)
 
 
@@ -107,6 +108,7 @@ def lockout_policy_to_dict(policy: LockoutPolicy) -> dict:
     result["stages"] = [
         {
             "id": stage.id,
+            "name": stage.name,
             "failure_threshold": stage.failure_threshold,
             "priority": stage.priority,
             "actions": [
@@ -160,6 +162,24 @@ def _validate_positive_int(value, field: str) -> int:
     return value
 
 
+def _validate_stage_name(name) -> str | None:
+    """
+    Validate the optional stage name. ``None`` or an empty/blank string means
+    "no name" and returns ``None``; a non-empty value must be a string within
+    the length limit.
+    """
+    if name is None:
+        return None
+    if not isinstance(name, str):
+        raise ParameterError("The stage name must be a string.")
+    name = name.strip()
+    if not name:
+        return None
+    if len(name) > MAX_NAME_LENGTH:
+        raise ParameterError(f"The stage name must not exceed {MAX_NAME_LENGTH} characters.")
+    return name
+
+
 def _validate_counter_types(counter_types) -> list[str]:
     """
     Validate the tracked counter types: a non-empty list of
@@ -196,7 +216,7 @@ def _validate_stages(stages) -> list[StageDefinition]:
     if not isinstance(stages, list) or not stages:
         raise ParameterError("'stages' must be a non-empty list of stage definitions.")
     valid_actions = {action.value for action in LockoutAction}
-    allowed_stage_keys = {"failure_threshold", "priority", "actions"}
+    allowed_stage_keys = {"name", "failure_threshold", "priority", "actions"}
     allowed_action_keys = {"action_type", "action_value"}
     normalized = []
     thresholds = set()
@@ -210,6 +230,7 @@ def _validate_stages(stages) -> list[StageDefinition]:
         if threshold in thresholds:
             raise ParameterError(f"Duplicate failure_threshold {threshold}: thresholds must be unique within a policy.")
         thresholds.add(threshold)
+        name = _validate_stage_name(stage.get("name"))
         priority = _validate_positive_int(stage.get("priority", 1), "priority")
         actions = stage.get("actions", [])
         if not isinstance(actions, list):
@@ -228,7 +249,7 @@ def _validate_stages(stages) -> list[StageDefinition]:
             normalized_actions.append(StageActionDefinition(action_type=action_type,
                                                             action_value=action.get("action_value")))
         normalized.append(StageDefinition(failure_threshold=threshold, priority=priority,
-                                          actions=normalized_actions))
+                                          name=name, actions=normalized_actions))
     return normalized
 
 
@@ -238,6 +259,7 @@ def _build_stages(stage_defs: list[StageDefinition]) -> list[LockoutPolicyStage]
     """
     return [
         LockoutPolicyStage(
+            name=stage.name,
             failure_threshold=stage.failure_threshold,
             priority=stage.priority,
             actions=[LockoutStageAction(action_type=action.action_type, action_value=action.action_value)

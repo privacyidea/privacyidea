@@ -53,7 +53,7 @@
         }
         <button
           (click)="$event.stopPropagation(); savePolicy()"
-          [disabled]="!canSave()"
+          [disabled]="!canSave() || !hasChanges()"
           class="action-button-primary button-width-s"
           mat-stroked-button>
           <mat-icon>save</mat-icon>
@@ -148,7 +148,7 @@
         @if (!priorityValid()) {
           <mat-error i18n>Must be at least 1.</mat-error>
         }
-        <mat-hint i18n>Order across policies — highest first.</mat-hint>
+        <mat-hint i18n>Order across policies, highest first.</mat-hint>
       </mat-form-field>
 
       <p class="ca-field-note" i18n>

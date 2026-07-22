@@ -97,6 +97,7 @@ export interface LockoutStageAction {
 
 export interface LockoutPolicyStage {
   id?: number;
+  name?: string | null;
   failure_threshold: number;
   priority: number;
   actions: LockoutStageAction[];

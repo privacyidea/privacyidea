@@ -79,14 +79,14 @@ const EMAIL_FIELDS: readonly EmailField[] = [
     label: $localize`Subject`,
     kind: "textarea",
     rows: 2,
-    hint: $localize`Plain text with {placeholders} — see the list below.`
+    hint: $localize`Plain text with {placeholders}. See the list below.`
   },
   {
     key: "body",
     label: $localize`Body`,
     kind: "textarea",
     rows: 4,
-    hint: $localize`Supports {placeholders} — see the list below.`
+    hint: $localize`Supports {placeholders}. See the list below.`
   }
 ];
 

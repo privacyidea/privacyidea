@@ -132,6 +132,8 @@ class LockoutPolicyStage(MethodsMixin, db.Model):
     id: Mapped[int] = mapped_column(Integer, Sequence("lockoutpolicystage_seq"), primary_key=True)
     policy_id: Mapped[int] = mapped_column(
         Integer, ForeignKey('lockout_policies.id', ondelete='CASCADE'), nullable=False)
+    # Optional human-readable label for the stage (e.g. "Warn", "Lock 10 min").
+    name: Mapped[str | None] = mapped_column(Unicode(255), nullable=True)
     failure_threshold: Mapped[int] = mapped_column(Integer, nullable=False)
     priority: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
 

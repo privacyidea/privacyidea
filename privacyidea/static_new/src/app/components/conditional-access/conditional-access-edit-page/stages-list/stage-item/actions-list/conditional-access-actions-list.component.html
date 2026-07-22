@@ -19,7 +19,7 @@
 <div class="ca-actions-list">
   <p class="ca-actions-list-label" i18n>Actions to run when this stage triggers</p>
   @if (actions().length === 0) {
-    <p class="ca-actions-list-empty" i18n>No actions yet — add one below, e.g. lock the user or notify an admin.</p>
+    <p class="ca-actions-list-empty" i18n>No actions yet. Add one below, e.g. lock the user or notify an admin.</p>
   }
   @for (action of actions(); track $index) {
     <app-conditional-access-action-item

@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, input, output } from "@angular/core";
+import { Component, input, output, signal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
@@ -34,9 +34,25 @@ import { ConditionalAccessActionsListComponent } from "./actions-list/conditiona
 })
 export class ConditionalAccessStageItemComponent {
   readonly stage = input.required<LockoutPolicyStage>();
-  readonly stageNumber = input.required<number>();
   readonly updateStage = output<Partial<LockoutPolicyStage>>();
   readonly removeStage = output<void>();
+
+  // A saved stage (with an id) shows its name as text plus an edit button; an
+  // unsaved stage has no id and stays in the name input until the policy is saved.
+  readonly editingName = signal(false);
+
+  onNameInput(value: string): void {
+    const trimmed = value.trim();
+    this.updateStage.emit({ name: trimmed || null });
+  }
+
+  startEditingName(): void {
+    this.editingName.set(true);
+  }
+
+  stopEditingName(): void {
+    this.editingName.set(false);
+  }
 
   onFailureThresholdInput(value: string): void {
     const parsed = parseInt(value, 10);
