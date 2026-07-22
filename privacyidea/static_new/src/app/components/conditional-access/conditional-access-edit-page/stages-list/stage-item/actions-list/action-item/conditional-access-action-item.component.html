@@ -26,7 +26,7 @@
       <mat-select
         [value]="action().action_type"
         (selectionChange)="onActionTypeChange($event.value)">
-        @for (actionType of allActionTypes; track actionType) {
+        @for (actionType of policyService.actionTypes(); track actionType) {
           <mat-option [value]="actionType">{{ actionType }}</mat-option>
         }
       </mat-select>

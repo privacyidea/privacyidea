@@ -101,6 +101,8 @@ describe("ConditionalAccessPolicyService", () => {
       const req = httpMock.expectOne(service.baseUrl);
       expect(req.request.method).toBe("GET");
       req.flush(MockPiResponse.fromValue([samplePolicy]));
+      httpMock.expectOne(service.eventTypesUrl).flush(MockPiResponse.fromValue([]));
+      httpMock.expectOne(service.actionTypesUrl).flush(MockPiResponse.fromValue([]));
       await Promise.resolve();
 
       expect(service.policies()).toEqual([samplePolicy]);
@@ -112,9 +114,34 @@ describe("ConditionalAccessPolicyService", () => {
 
       const req = httpMock.expectOne(service.baseUrl);
       req.flush(MockPiResponse.fromError({ message: "denied" }), { status: 403, statusText: "Forbidden" });
+      httpMock.expectOne(service.eventTypesUrl).flush(MockPiResponse.fromValue([]));
+      httpMock.expectOne(service.actionTypesUrl).flush(MockPiResponse.fromValue([]));
       await Promise.resolve();
 
       expect(service.policies()).toEqual([]);
+    });
+  });
+
+  describe("constant lists", () => {
+    it("should load event types and action types from the backend", async () => {
+      contentServiceMock.onConditionalAccess = signal(true);
+      TestBed.tick();
+
+      httpMock.expectOne(service.baseUrl).flush(MockPiResponse.fromValue([]));
+      httpMock.expectOne(service.eventTypesUrl).flush(MockPiResponse.fromValue(["PIN_FAIL", "MFA_FAIL"]));
+      httpMock.expectOne(service.actionTypesUrl).flush(MockPiResponse.fromValue(["LOCK_USER", "ALLOW"]));
+      await Promise.resolve();
+
+      expect(service.eventTypes()).toEqual(["PIN_FAIL", "MFA_FAIL"]);
+      expect(service.actionTypes()).toEqual(["LOCK_USER", "ALLOW"]);
+    });
+
+    it("should not fetch the lists without the read right", () => {
+      authServiceMock.actionAllowed.mockReturnValue(false);
+      contentServiceMock.onConditionalAccess = signal(true);
+      TestBed.tick();
+      httpMock.expectNone(service.eventTypesUrl);
+      httpMock.expectNone(service.actionTypesUrl);
     });
   });
 

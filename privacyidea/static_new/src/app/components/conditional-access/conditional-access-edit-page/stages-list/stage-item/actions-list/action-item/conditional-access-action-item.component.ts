@@ -17,14 +17,15 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, input, output } from "@angular/core";
+import { Component, computed, inject, input, output } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 import {
-  ALL_LOCKOUT_ACTIONS,
+  ConditionalAccessPolicyService,
+  ConditionalAccessPolicyServiceInterface,
   LockoutActionType,
   LockoutStageAction
 } from "@services/conditional-access/conditional-access-policy.service";
@@ -121,14 +122,15 @@ const EMAIL_PLACEHOLDERS: readonly EmailPlaceholder[] = [
   styleUrl: "./conditional-access-action-item.component.scss"
 })
 export class ConditionalAccessActionItemComponent {
+  protected readonly policyService: ConditionalAccessPolicyServiceInterface = inject(ConditionalAccessPolicyService);
+
   readonly action = input.required<LockoutStageAction>();
   readonly updateAction = output<Partial<LockoutStageAction>>();
   readonly removeAction = output<void>();
 
-  readonly allActionTypes = ALL_LOCKOUT_ACTIONS;
   readonly emailPlaceholders = EMAIL_PLACEHOLDERS;
 
-  readonly actionDescription = computed<string>(() => ACTION_DESCRIPTIONS[this.action().action_type]);
+  readonly actionDescription = computed<string>(() => ACTION_DESCRIPTIONS[this.action().action_type] ?? "");
 
   readonly valueMode = computed<ActionValueMode>(() =>
     ConditionalAccessActionItemComponent.modeFor(this.action().action_type)

@@ -27,7 +27,12 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { lastValueFrom } from "rxjs";
 
-// Mirrors privacyidea.lib.conditional_access.authentication_error_codes.AuthEventType
+// The set of event/action types the UI offers is fetched from the backend at runtime (see
+// eventTypesResource / actionTypesResource) so a newly added type shows up without a WebUI change.
+// These string-literal unions stay as a compile-time safety net for the per-type UI logic (e.g. the
+// ACTION_DESCRIPTIONS record and the value-mode handling keyed by action type): the value strings
+// mirror privacyidea.lib.conditional_access.authentication_event_types.AuthEventType and
+// privacyidea.lib.conditional_access.engine.LockoutAction.
 export type AuthEventType =
   | "NOT_AUTHORIZED"
   | "PASSWORD_FAIL"
@@ -47,27 +52,6 @@ export type AuthEventType =
   | "ENROLLMENT_CANCELED_FAIL"
   | "UNKNOWN_FAIL_REASON";
 
-export const ALL_AUTH_EVENT_TYPES: AuthEventType[] = [
-  "NOT_AUTHORIZED",
-  "PASSWORD_FAIL",
-  "PIN_FAIL",
-  "TOKEN_ONLY_FAIL",
-  "MFA_FAIL",
-  "USER_UNKNOWN",
-  "NO_TOKEN",
-  "NO_USABLE_TOKEN",
-  "LOGIN_SUCCESS",
-  "CHALLENGE_CONTINUED",
-  "CHALLENGE_TRIGGERED",
-  "CHALLENGE_ANSWERED_OUT_OF_BAND",
-  "CHALLENGE_ANSWERED_FAIL",
-  "CHALLENGE_DECLINED",
-  "ENROLLMENT_TRIGGERED",
-  "ENROLLMENT_CANCELED_FAIL",
-  "UNKNOWN_FAIL_REASON"
-];
-
-// Mirrors privacyidea.lib.conditional_access.engine.LockoutAction
 export type LockoutActionType =
   | "LOCK_USER"
   | "PERMANENT_LOCK_USER"
@@ -77,17 +61,6 @@ export type LockoutActionType =
   | "PERMANENT_BLOCK_IP"
   | "ALLOW"
   | "DENY";
-
-export const ALL_LOCKOUT_ACTIONS: LockoutActionType[] = [
-  "LOCK_USER",
-  "PERMANENT_LOCK_USER",
-  "EMAIL_ADMIN",
-  "EMAIL_USER",
-  "BLOCK_IP",
-  "PERMANENT_BLOCK_IP",
-  "ALLOW",
-  "DENY"
-];
 
 export interface LockoutStageAction {
   id?: number;
@@ -130,6 +103,10 @@ export const EMPTY_LOCKOUT_POLICY: LockoutPolicySaveParams = {
 export interface ConditionalAccessPolicyServiceInterface {
   readonly policiesResource: HttpResourceRef<PiResponse<LockoutPolicy[]> | undefined>;
   readonly policies: Signal<LockoutPolicy[]>;
+  readonly eventTypesResource: HttpResourceRef<PiResponse<string[]> | undefined>;
+  readonly eventTypes: Signal<AuthEventType[]>;
+  readonly actionTypesResource: HttpResourceRef<PiResponse<string[]> | undefined>;
+  readonly actionTypes: Signal<LockoutActionType[]>;
 
   savePolicy(policy: LockoutPolicySaveParams): Promise<number | undefined>;
 
@@ -153,6 +130,8 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
   private readonly http = inject(HttpClient);
 
   readonly baseUrl = environment.proxyUrl + "/conditionalaccess/policy";
+  readonly eventTypesUrl = environment.proxyUrl + "/conditionalaccess/eventtypes";
+  readonly actionTypesUrl = environment.proxyUrl + "/conditionalaccess/actiontypes";
 
   readonly policiesResource = httpResource<PiResponse<LockoutPolicy[]>>(() => {
     if (!this.authService.actionAllowed("lockout_policy_read")) {
@@ -174,6 +153,38 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
     }
     return [];
   });
+
+  // The trackable authentication event types and the stage action types are served by the backend
+  // (the authoritative enums) so the editor's selects cover newly added types without a WebUI change.
+  readonly eventTypesResource = httpResource<PiResponse<string[]>>(() => {
+    if (!this.authService.actionAllowed("lockout_policy_read") || !this.contentService.onConditionalAccess()) {
+      return undefined;
+    }
+    return {
+      url: this.eventTypesUrl,
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
+  });
+
+  readonly eventTypes: Signal<AuthEventType[]> = computed(
+    () => (this.eventTypesResource.value()?.result?.value ?? []) as AuthEventType[]
+  );
+
+  readonly actionTypesResource = httpResource<PiResponse<string[]>>(() => {
+    if (!this.authService.actionAllowed("lockout_policy_read") || !this.contentService.onConditionalAccess()) {
+      return undefined;
+    }
+    return {
+      url: this.actionTypesUrl,
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
+  });
+
+  readonly actionTypes: Signal<LockoutActionType[]> = computed(
+    () => (this.actionTypesResource.value()?.result?.value ?? []) as LockoutActionType[]
+  );
 
   constructor() {
     effect(() => {

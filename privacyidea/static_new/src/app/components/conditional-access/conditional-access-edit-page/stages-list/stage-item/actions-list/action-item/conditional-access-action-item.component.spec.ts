@@ -17,7 +17,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { LockoutStageAction } from "@services/conditional-access/conditional-access-policy.service";
+import {
+  ConditionalAccessPolicyService,
+  LockoutStageAction
+} from "@services/conditional-access/conditional-access-policy.service";
+import { MockConditionalAccessPolicyService } from "@testing/mock-services/mock-conditional-access-policy-service";
 import { ConditionalAccessActionItemComponent } from "./conditional-access-action-item.component";
 
 describe("ConditionalAccessActionItemComponent", () => {
@@ -31,7 +35,8 @@ describe("ConditionalAccessActionItemComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ConditionalAccessActionItemComponent]
+      imports: [ConditionalAccessActionItemComponent],
+      providers: [{ provide: ConditionalAccessPolicyService, useClass: MockConditionalAccessPolicyService }]
     }).compileComponents();
 
     fixture = TestBed.createComponent(ConditionalAccessActionItemComponent);

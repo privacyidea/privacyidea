@@ -141,7 +141,7 @@
           multiple
           [value]="editPolicy().counter_types_to_track"
           (selectionChange)="onCounterTypesChange($event.value)">
-          @for (eventType of allAuthEventTypes; track eventType) {
+          @for (eventType of policyService.eventTypes(); track eventType) {
             <mat-option [value]="eventType">{{ eventType }}</mat-option>
           }
         </mat-select>

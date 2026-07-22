@@ -33,7 +33,6 @@ import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-t
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
-  ALL_AUTH_EVENT_TYPES,
   ConditionalAccessPolicyService,
   ConditionalAccessPolicyServiceInterface,
   EMPTY_LOCKOUT_POLICY,
@@ -76,7 +75,6 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   protected readonly policyService: ConditionalAccessPolicyServiceInterface = inject(ConditionalAccessPolicyService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
-  protected readonly allAuthEventTypes = ALL_AUTH_EVENT_TYPES;
   private readonly pendingChangesService = inject(PendingChangesService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);

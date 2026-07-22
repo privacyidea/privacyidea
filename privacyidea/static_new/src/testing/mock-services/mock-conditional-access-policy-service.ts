@@ -18,7 +18,9 @@
  **/
 import { signal } from "@angular/core";
 import {
+  AuthEventType,
   ConditionalAccessPolicyServiceInterface,
+  LockoutActionType,
   LockoutPolicy
 } from "@services/conditional-access/conditional-access-policy.service";
 import { MockHttpResourceRef, MockPiResponse } from "@testing/mock-services/mock-utils";
@@ -27,6 +29,14 @@ export class MockConditionalAccessPolicyService implements ConditionalAccessPoli
   policiesResource = new MockHttpResourceRef(MockPiResponse.fromValue<LockoutPolicy[]>([]));
 
   policies = signal<LockoutPolicy[]>([]);
+
+  eventTypesResource = new MockHttpResourceRef(MockPiResponse.fromValue<string[]>([]));
+
+  eventTypes = signal<AuthEventType[]>([]);
+
+  actionTypesResource = new MockHttpResourceRef(MockPiResponse.fromValue<string[]>([]));
+
+  actionTypes = signal<LockoutActionType[]>([]);
 
   savePolicy = jest.fn(async (): Promise<number | undefined> => Promise.resolve(1));
 
