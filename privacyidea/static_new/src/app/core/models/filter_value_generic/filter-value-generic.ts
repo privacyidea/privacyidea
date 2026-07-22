@@ -159,6 +159,16 @@ export class FilterValueGeneric<T> {
     return this._copyWith({ filterMap: newFilterMap });
   }
 
+  /**
+   * Adds a free-text term. Unlike addKey, it is always stored as a cross-column DummyFilterOption,
+   * even when the term equals a registered key — so a bare word never becomes a match-all no-op.
+   */
+  public addFreeText(term: string): FilterValueGeneric<T> {
+    const newFilterMap = new Map(this.filterMap);
+    newFilterMap.set(term, new DummyFilterOption({ key: term }));
+    return this._copyWith({ filterMap: newFilterMap });
+  }
+
   public addOption(option: FilterOption<T>): FilterValueGeneric<T> {
     const newFilterMap = new Map(this.filterMap);
     return this._copyWith({ filterMap: newFilterMap.set(option.key, option) });
@@ -207,7 +217,8 @@ export class FilterValueGeneric<T> {
     const newMap = parseToMap(rawValue.trim().toLocaleLowerCase());
     let instance: FilterValueGeneric<T> = this._copyWith({ filterMap: new Map() });
     newMap.forEach((value, key) => {
-      instance = instance.setValueOfKey(key, value);
+      // A null value marks a standalone word (no `key:`): add it as free text, not a keyword filter.
+      instance = value === null ? instance.addFreeText(key) : instance.setValueOfKey(key, value);
     });
     return instance;
   }

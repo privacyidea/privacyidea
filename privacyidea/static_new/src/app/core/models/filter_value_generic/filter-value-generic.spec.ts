@@ -219,6 +219,12 @@ describe("FilterValueGeneric", () => {
       expect(filter.setByString("admin r1").filterItems(data).map((p) => p.name)).toEqual(["P1", "P3"]);
       expect(filter.setByString("admin r2").filterItems(data)).toEqual([]);
     });
+
+    it("should treat a bare word equal to a column key as free text, not a match-all keyword no-op", () => {
+      // "scope" is a registered key; as a bare word it must still search columns, no row holds "scope".
+      expect(filter.setByString("scope").filterItems(data)).toEqual([]);
+      expect(filter.addFreeText("admin").filterItems(data).map((p) => p.name)).toEqual(["P1", "P3"]);
+    });
   });
 
   describe("4b. Free-text search without global matchers configured", () => {

@@ -60,6 +60,8 @@ import { CopyableComponent } from "@components/shared/copyable/copyable.componen
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { UserNewResolverComponent } from "@components/user/user-new-resolver/user-new-resolver.component";
+import { FilterOption } from "@core/models/filter_value_generic/filter-option";
+import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
 import { ResolverService } from "@services/resolver/resolver.service";
 import { UserTableActionsComponent } from "./user-table-actions/user-table-actions.component";
 
@@ -74,6 +76,20 @@ const columnKeysMap = [
   { key: "description", label: $localize`Description` },
   { key: "resolver", label: $localize`Resolver` }
 ];
+
+// Per-column predicates for the free-text search: a term matches if it is a substring of any column.
+const userFilterOptions: FilterOption<UserData>[] = columnKeysMap.map(
+  (column) =>
+    new FilterOption<UserData>({
+      key: column.key,
+      label: column.label,
+      matches: () => true,
+      globalMatches: (item, term) =>
+        String(item[column.key as keyof UserData] ?? "")
+          .toLowerCase()
+          .includes(term)
+    })
+);
 
 @Component({
   selector: "app-user-table",
@@ -127,6 +143,9 @@ export class UserTableComponent implements OnDestroy {
     }
     return this.basePageSizeOptions;
   });
+
+  // Empty base; free-text terms are layered on per query to reuse the shared FilterValueGeneric model.
+  private readonly freeTextFilter = new FilterValueGeneric<UserData>({ availableFilters: userFilterOptions });
 
   // Keyword-less search terms, applied client-side across all columns of the fully-loaded user list.
   // Keyword segments (e.g. "username: root") keep going to the server via UserService.filterParams.
@@ -223,19 +242,11 @@ export class UserTableComponent implements OnDestroy {
     }
   }
 
-  // Keeps users where every free-text term appears in at least one column (AND across terms,
-  // OR across columns), mirroring the keyword-less search on the policy list.
+  // Keeps users where every term matches at least one column (AND across terms, OR across columns).
   private applyFreeText(data: UserData[], terms: string[]): UserData[] {
     if (!terms.length) return data;
-    return data.filter((user) =>
-      terms.every((term) =>
-        this.columnKeys.some((key) =>
-          String(user[key as keyof UserData] ?? "")
-            .toLowerCase()
-            .includes(term)
-        )
-      )
-    );
+    const filter = terms.reduce((acc, term) => acc.addFreeText(term), this.freeTextFilter);
+    return filter.filterItems(data);
   }
 
   private clientsideSortUserData(data: UserData[], s: Sort): UserData[] {
