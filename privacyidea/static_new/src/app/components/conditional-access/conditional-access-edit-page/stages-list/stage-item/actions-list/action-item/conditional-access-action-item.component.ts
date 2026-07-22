@@ -19,6 +19,7 @@
 
 import { Component, computed, inject, input, output } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
+import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
@@ -117,7 +118,7 @@ const EMAIL_PLACEHOLDERS: readonly EmailPlaceholder[] = [
 @Component({
   selector: "app-conditional-access-action-item",
   standalone: true,
-  imports: [MatButtonModule, MatFormFieldModule, MatIconModule, MatInputModule, MatSelectModule],
+  imports: [MatButtonModule, MatExpansionModule, MatFormFieldModule, MatIconModule, MatInputModule, MatSelectModule],
   templateUrl: "./conditional-access-action-item.component.html",
   styleUrl: "./conditional-access-action-item.component.scss"
 })

@@ -19,6 +19,7 @@
 
 import { Component, input, output } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
+import { MatExpansionModule } from "@angular/material/expansion";
 import { MatIconModule } from "@angular/material/icon";
 import { LockoutStageAction } from "@services/conditional-access/conditional-access-policy.service";
 import {
@@ -30,7 +31,7 @@ const NEW_ACTION: LockoutStageAction = { action_type: "LOCK_USER", action_value:
 @Component({
   selector: "app-conditional-access-actions-list",
   standalone: true,
-  imports: [MatButtonModule, MatIconModule, ConditionalAccessActionItemComponent],
+  imports: [MatButtonModule, MatExpansionModule, MatIconModule, ConditionalAccessActionItemComponent],
   templateUrl: "./conditional-access-actions-list.component.html",
   styleUrl: "./conditional-access-actions-list.component.scss"
 })

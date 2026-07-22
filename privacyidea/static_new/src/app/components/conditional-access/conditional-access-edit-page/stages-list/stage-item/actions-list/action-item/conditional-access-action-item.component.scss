@@ -1,32 +1,29 @@
-.ca-action-item {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 8px 0;
+// Each action is a collapsible panel: the header shows the action type and its
+// one-line description, the body holds the type select and value fields.
+.ca-action-item.mat-expansion-panel {
+  --mat-expansion-container-background-color: var(--mat-sys-surface-container-lowest);
 }
 
-// Header row: the action-type select on the left and the remove button pinned
-// to the right, so the delete control sits at the top-right of the action.
-.ca-action-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+.ca-action-panel-description {
+  align-items: center;
   gap: 8px;
-  width: 100%;
+  justify-content: space-between;
+}
+
+.ca-action-desc-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 // Holds the per-action-type value fields (duration, or the several email
-// fields), wrapping them so they flow below the header.
+// fields), wrapping them so they flow below the type select.
 .ca-action-value {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
   gap: 16px;
   min-width: 0;
-}
-
-.ca-remove-button {
-  margin-top: 4px;
 }
 
 

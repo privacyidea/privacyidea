@@ -20,12 +20,15 @@
   <p class="ca-actions-list-label" i18n>Actions to run when this stage triggers</p>
   @if (actions().length === 0) {
     <p class="ca-actions-list-empty" i18n>No actions yet. Add one below, e.g. lock the user or notify an admin.</p>
-  }
-  @for (action of actions(); track $index) {
-    <app-conditional-access-action-item
-      [action]="action"
-      (updateAction)="onUpdateAction($index, $event)"
-      (removeAction)="onRemoveAction($index)" />
+  } @else {
+    <mat-accordion multi>
+      @for (action of actions(); track $index) {
+        <app-conditional-access-action-item
+          [action]="action"
+          (updateAction)="onUpdateAction($index, $event)"
+          (removeAction)="onRemoveAction($index)" />
+      }
+    </mat-accordion>
   }
 </div>
 <div class="ca-add-button-row">

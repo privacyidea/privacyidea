@@ -1,13 +1,11 @@
 .ca-stage-item {
-  // Recessed panel matching the dashboard container: a subtle surface with the
-  // same triple inset shadow, so each stage reads as a "well" holding its card.
-  background: var(--mat-sys-surface-container-low);
+  // Recessed panel one step shallower than the dashboard well: the mid inset-shadow
+  // level over a surface tone halfway between the surrounding grey and the card white,
+  // so each stage reads as a "well" holding its card without the full dashboard depth.
+  background: var(--inset-surface-3);
   border-radius: var(--border-radius);
   padding: 16px;
-  box-shadow:
-    inset 0 3px 5px -1px var(--dashboard-shadow-color),
-    inset 0 5px 8px 0 var(--dashboard-shadow-color),
-    inset 0 1px 14px 0 var(--dashboard-shadow-color);
+  box-shadow: var(--inset-shadow-3);
 }
 
 .ca-stage-header {

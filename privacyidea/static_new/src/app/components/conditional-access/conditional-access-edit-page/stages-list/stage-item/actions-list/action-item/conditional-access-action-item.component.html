@@ -16,32 +16,37 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div class="ca-action-item">
-  <div class="ca-action-header">
-    <mat-form-field
-      appearance="fill"
-      subscriptSizing="dynamic"
-      class="input-width-l">
-      <mat-label i18n>Action</mat-label>
-      <mat-select
-        [value]="action().action_type"
-        (selectionChange)="onActionTypeChange($event.value)">
-        @for (actionType of policyService.actionTypes(); track actionType) {
-          <mat-option [value]="actionType">{{ actionType }}</mat-option>
-        }
-      </mat-select>
-      <mat-hint>{{ actionDescription() }}</mat-hint>
-    </mat-form-field>
+<mat-expansion-panel
+  class="ca-action-item"
+  [expanded]="!action().id">
+  <mat-expansion-panel-header>
+    <mat-panel-title>{{ action().action_type }}</mat-panel-title>
+    <mat-panel-description class="ca-action-panel-description">
+      <span class="ca-action-desc-text">{{ actionDescription() }}</span>
+      <button
+        mat-icon-button
+        aria-label="Remove action"
+        i18n-aria-label
+        (click)="$event.stopPropagation(); onRemoveAction()">
+        <mat-icon>delete</mat-icon>
+      </button>
+    </mat-panel-description>
+  </mat-expansion-panel-header>
 
-    <button
-      mat-icon-button
-      class="ca-remove-button"
-      aria-label="Remove action"
-      i18n-aria-label
-      (click)="onRemoveAction()">
-      <mat-icon>delete</mat-icon>
-    </button>
-  </div>
+  <mat-form-field
+    appearance="fill"
+    subscriptSizing="dynamic"
+    class="input-width-l">
+    <mat-label i18n>Action</mat-label>
+    <mat-select
+      [value]="action().action_type"
+      (selectionChange)="onActionTypeChange($event.value)">
+      @for (actionType of policyService.actionTypes(); track actionType) {
+        <mat-option [value]="actionType">{{ actionType }}</mat-option>
+      }
+    </mat-select>
+    <mat-hint>{{ actionDescription() }}</mat-hint>
+  </mat-form-field>
 
   <div class="ca-action-value">
     @switch (valueMode()) {
@@ -143,4 +148,4 @@
       }
     }
   </div>
-</div>
+</mat-expansion-panel>
