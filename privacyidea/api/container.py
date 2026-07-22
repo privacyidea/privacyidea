@@ -29,7 +29,7 @@ from privacyidea.api.lib.prepolicy import (check_base_action, prepolicy, check_u
                                            check_container_register_rollover, container_registration_config,
                                            smartphone_config, check_client_container_action, hide_tokeninfo,
                                            check_client_container_disabled_action, hide_container_info)
-from privacyidea.api.lib.utils import map_error_to_code, send_error, send_result
+from privacyidea.api.lib.utils import map_error_to_code, send_error, send_result, to_list_param
 from privacyidea.lib.params import get_optional, get_required, get_required_one_of
 from privacyidea.lib.container import (find_container_by_serial, init_container, get_container_classes_descriptions,
                                        get_container_token_types, get_all_containers, add_container_info,
@@ -90,18 +90,6 @@ The endpoints fall in three audiences:
   cryptographic signature over a server-issued challenge that the
   device generated during registration.
 """
-
-
-def _split_csv_or_list(value):
-    """
-    Accept either a JSON list or a comma-separated string and return a
-    list of stripped string entries. Used by endpoints that historically
-    only accepted the comma-separated form so that JSON callers can pass
-    a native list without a 500.
-    """
-    if isinstance(value, list):
-        return [str(item).strip() for item in value]
-    return [item.strip() for item in str(value).split(",")]
 
 
 @container_blueprint.route('/', methods=['GET'])
@@ -175,7 +163,7 @@ def list_containers():
     ctype_exact = None
     ctype_list = get_optional(param, "type_list")
     if ctype_list:
-        ctype_exact = _split_csv_or_list(ctype_list)
+        ctype_exact = to_list_param(ctype_list)
     token_serial = get_optional(param, "token_serial")
     template = get_optional(param, "template")
     realm = get_optional(param, "container_realm")
@@ -652,7 +640,7 @@ def set_states(container_serial):
         set, in ``result.value``.
     """
     states_value = get_required(request.all_data, "states", allow_empty=False)
-    states = _split_csv_or_list(states_value)
+    states = to_list_param(states_value)
     res = set_container_states(container_serial, states)
 
     # Audit log
@@ -722,7 +710,7 @@ def set_realms(container_serial):
     """
     # Get parameters
     container_realms = get_required(request.all_data, "realms", allow_empty=True)
-    realm_list = _split_csv_or_list(container_realms)
+    realm_list = to_list_param(container_realms)
     allowed_realms = getattr(request, "pi_allowed_realms", None)
 
     # Set realms

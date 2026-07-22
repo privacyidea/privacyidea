@@ -87,6 +87,22 @@ NO_UNQUOTE_USER_AGENTS = {
 SESSION_KEY_LENGTH = 32
 
 
+def to_list_param(value):
+    """
+    Normalize a request parameter that may arrive as a JSON list or a comma-separated
+    string into a list of stripped string entries. ``None`` (parameter not supplied)
+    yields ``None``.
+
+    Unlike :func:`privacyidea.lib.utils.to_list`, this splits a comma-separated string
+    into its entries rather than wrapping the whole string as a single-element list.
+    """
+    if value is None:
+        return None
+    if isinstance(value, (list, tuple)):
+        return [str(item).strip() for item in value]
+    return [item.strip() for item in str(value).split(",")]
+
+
 def send_result(obj, rid=1, details=None, **kwargs) -> Response:
     """
     sendResult - return a json result document
