@@ -45,6 +45,14 @@ import { PendingChangesService } from "@services/pending-changes/pending-changes
 import { deepCopy } from "@utils/deep-copy.utils";
 import { ConditionalAccessStagesListComponent } from "./stages-list/conditional-access-stages-list.component";
 
+type TimeUnit = "seconds" | "minutes" | "hours";
+
+const TIME_UNIT_FACTORS: Record<TimeUnit, number> = {
+  seconds: 1,
+  minutes: 60,
+  hours: 3600
+};
+
 @Component({
   selector: "app-conditional-access-edit-page",
   standalone: true,
@@ -130,6 +138,11 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   showNameError = computed(() => this.nameTouched() && !this.policyForm().valid());
   nameTooLong = computed(() => this.policyForm.name().errors().some((e) => e.kind === "maxlength"));
 
+  // The time window is stored in seconds; the editor lets the user pick a coarser unit
+  // and enter a plain number, which is converted to seconds on the way into editPolicy.
+  timeWindowUnit = signal<TimeUnit>("seconds");
+  timeWindowValue = signal<number>(EMPTY_LOCKOUT_POLICY.time_window_seconds);
+
   constructor() {
     this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
       const id = params.get("id");
@@ -140,12 +153,14 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
         if (found) {
           this.policy.set(deepCopy(found));
           this.editPolicy.set(deepCopy(found));
+          this.syncTimeWindowFromSeconds(found.time_window_seconds);
         }
       } else {
         this.isNewPolicy.set(true);
         this.editPolicyId = null;
         this.policy.set(deepCopy(EMPTY_LOCKOUT_POLICY));
         this.editPolicy.set(deepCopy(EMPTY_LOCKOUT_POLICY));
+        this.syncTimeWindowFromSeconds(EMPTY_LOCKOUT_POLICY.time_window_seconds);
       }
     });
 
@@ -157,6 +172,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
         if (found) {
           this.policy.set(deepCopy(found));
           this.editPolicy.set(deepCopy(found));
+          this.syncTimeWindowFromSeconds(found.time_window_seconds);
         }
       }
     });
@@ -185,8 +201,27 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   onTimeWindowInput(value: string): void {
     const parsed = parseInt(value, 10);
     if (!isNaN(parsed) && parsed >= 1) {
-      this.updateEditPolicy({ time_window_seconds: parsed });
+      this.timeWindowValue.set(parsed);
+      this.updateEditPolicy({ time_window_seconds: parsed * TIME_UNIT_FACTORS[this.timeWindowUnit()] });
     }
+  }
+
+  onTimeWindowUnitChange(unit: TimeUnit): void {
+    this.timeWindowUnit.set(unit);
+    this.updateEditPolicy({ time_window_seconds: this.timeWindowValue() * TIME_UNIT_FACTORS[unit] });
+  }
+
+  // Pick the coarsest unit that divides the stored seconds evenly, so a saved window shows
+  // as e.g. "10 minutes" rather than "600 seconds", and set the value shown in that unit.
+  private syncTimeWindowFromSeconds(seconds: number): void {
+    let unit: TimeUnit = "seconds";
+    if (seconds % TIME_UNIT_FACTORS.hours === 0) {
+      unit = "hours";
+    } else if (seconds % TIME_UNIT_FACTORS.minutes === 0) {
+      unit = "minutes";
+    }
+    this.timeWindowUnit.set(unit);
+    this.timeWindowValue.set(seconds / TIME_UNIT_FACTORS[unit]);
   }
 
   onPriorityInput(value: string): void {

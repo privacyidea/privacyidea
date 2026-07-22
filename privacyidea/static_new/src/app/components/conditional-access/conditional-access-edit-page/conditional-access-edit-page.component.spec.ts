@@ -161,11 +161,20 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
     expect(component.stageThresholdsUnique()).toBe(true);
   });
 
-  it("should update time_window_seconds for valid input only", () => {
+  it("should update time_window_seconds for valid input only, converting by unit", () => {
+    component.onTimeWindowUnitChange("seconds");
     component.onTimeWindowInput("120");
     expect(component.editPolicy().time_window_seconds).toBe(120);
     component.onTimeWindowInput("0");
     expect(component.editPolicy().time_window_seconds).toBe(120);
+  });
+
+  it("should convert the entered value to seconds using the selected unit", () => {
+    component.onTimeWindowUnitChange("minutes");
+    component.onTimeWindowInput("10");
+    expect(component.editPolicy().time_window_seconds).toBe(600);
+    component.onTimeWindowUnitChange("hours");
+    expect(component.editPolicy().time_window_seconds).toBe(36000);
   });
 
   it("should update priority for valid input only", () => {

@@ -105,16 +105,31 @@
       <mat-form-field
         appearance="fill"
         class="input-width-s">
-        <mat-label i18n>Time window (seconds)</mat-label>
+        <mat-label i18n>Time window</mat-label>
         <input
           matInput
           type="number"
           min="1"
-          [value]="editPolicy().time_window_seconds"
+          [value]="timeWindowValue()"
           (input)="onTimeWindowInput($any($event.target).value)" />
         @if (!timeWindowValid()) {
-          <mat-error i18n>Must be at least 1 second.</mat-error>
+          <mat-error i18n>Must be at least 1.</mat-error>
+        } @else if (timeWindowUnit() !== "seconds") {
+          <mat-hint i18n>= {{ editPolicy().time_window_seconds }} seconds</mat-hint>
         }
+      </mat-form-field>
+
+      <mat-form-field
+        appearance="fill"
+        class="input-width-s">
+        <mat-label i18n>Unit</mat-label>
+        <mat-select
+          [value]="timeWindowUnit()"
+          (selectionChange)="onTimeWindowUnitChange($event.value)">
+          <mat-option value="seconds" i18n>Seconds</mat-option>
+          <mat-option value="minutes" i18n>Minutes</mat-option>
+          <mat-option value="hours" i18n>Hours</mat-option>
+        </mat-select>
       </mat-form-field>
 
       <mat-form-field

@@ -3,7 +3,7 @@
 .edit-policy-layout {
   @include styles.main-component-style;
   max-height: var(--table-max-height);
-  max-width: 982px;
+  max-width: 1008px;
 }
 
 .header-row {
@@ -48,7 +48,7 @@
 
 .ca-section-hint {
   margin: 0 0 16px;
-  max-width: 982px;
+  max-width: 1008px;
   color: var(--mat-sys-on-surface-variant);
 }
 
@@ -58,6 +58,6 @@
 .ca-field-note {
   flex-basis: 100%;
   margin: 0;
-  max-width: 982px;
+  max-width: 1008px;
   color: var(--mat-sys-on-surface-variant);
 }
