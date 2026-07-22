@@ -26,7 +26,12 @@ proxy IP) can recover from the command line.
 import click
 from flask.cli import AppGroup
 
-from privacyidea.lib.user import User
+from privacyidea.lib.conditional_access.lockout_state import (list_blocklist,
+                                                              list_locked_users,
+                                                              purge_expired_blocklist,
+                                                              purge_expired_user_lockouts,
+                                                              remove_blocklist_entry,
+                                                              unlock_user_by_id, unlock_user_by_username)
 from privacyidea.models import db
 from privacyidea.models.lockout_policy import BlockList, UserLockoutState
 
@@ -40,25 +45,23 @@ def _format_expiry(expires_at):
 
 @conditional_access_cli.command("list-blocked-ips", help="List the currently blocked IPs.")
 def list_blocked_ips():
-    rows = BlockList.query.filter_by(is_blocked=True).all()
-    if not rows:
+    entries = list_blocklist()
+    if not entries:
         click.echo("No blocked IPs.")
         return
-    click.echo(f"{len(rows)} blocked IP(s):")
-    for row in rows:
-        click.echo(f"  {row.ip}\texpires={_format_expiry(row.block_expires_at)}\treason={row.reason or ''}")
+    click.echo(f"{len(entries)} blocked IP(s):")
+    for entry in entries:
+        click.echo(f"  {entry['identifier']}\texpires={_format_expiry(entry['block_expires_at'])}"
+                   f"\treason={entry['reason'] or ''}")
 
 
 @conditional_access_cli.command("unblock-ip", help="Remove the block for a single IP.")
 @click.argument("ip")
 def unblock_ip(ip):
-    row = BlockList.query.filter_by(ip=ip).first()
-    if not row:
+    if remove_blocklist_entry(ip):
+        click.echo(f"Removed the block for IP {ip}.")
+    else:
         click.echo(f"No block found for IP {ip}.")
-        return
-    db.session.delete(row)
-    db.session.commit()
-    click.echo(f"Removed the block for IP {ip}.")
 
 
 @conditional_access_cli.command("clear-blocks", help="Remove ALL IP blocks.")
@@ -69,35 +72,35 @@ def clear_blocks():
     click.echo(f"Removed {count} IP block(s).")
 
 
+@conditional_access_cli.command("purge-expired-blocks",
+                                help="Remove only stale IP blocks (expired or lifted); keep the ones "
+                                     "still in force.")
+def purge_expired_blocks():
+    count = purge_expired_blocklist()
+    click.echo(f"Removed {count} stale IP block(s).")
+
+
 @conditional_access_cli.command("list-locked-users", help="List the currently locked users.")
-def list_locked_users():
-    rows = UserLockoutState.query.filter_by(is_locked=True).all()
-    if not rows:
+def list_locked_users_cmd():
+    users = list_locked_users()
+    if not users:
         click.echo("No locked users.")
         return
-    click.echo(f"{len(rows)} locked user(s):")
-    for row in rows:
-        click.echo(f"  resolver={row.resolver}\tuid={row.uid}\trealm={row.realm}\t"
-                   f"expires={_format_expiry(row.lock_expires_at)}")
+    click.echo(f"{len(users)} locked user(s):")
+    for user in users:
+        click.echo(f"  resolver={user['resolver']}\tuid={user['uid']}\trealm={user['realm']}\t"
+                   f"expires={_format_expiry(user['lock_expires_at'])}")
 
 
 @conditional_access_cli.command("unlock-user", help="Remove the lock for a single user.")
 @click.argument("login")
 @click.option("--realm", required=True, help="The realm of the user.")
 @click.option("--resolver", help="The resolver of the user (only needed to disambiguate).")
-def unlock_user(login, realm, resolver):
-    user = User(login=login, realm=realm, resolver=resolver or "")
-    if user.is_empty() or not user.exist():
-        click.echo(f"User {login}@{realm} could not be resolved. Use 'list-locked-users' and "
-                   f"'unlock-by-id' if the user no longer exists in the resolver.")
-        return
-    row = UserLockoutState.query.filter_by(resolver=user.resolver, uid=user.uid, realm=user.realm).first()
-    if not row:
+def unlock_user_cmd(login, realm, resolver):
+    if unlock_user_by_username(login, realm, resolver):
+        click.echo(f"Unlocked user {login}@{realm}.")
+    else:
         click.echo(f"No lock found for user {login}@{realm}.")
-        return
-    db.session.delete(row)
-    db.session.commit()
-    click.echo(f"Unlocked user {login}@{realm}.")
 
 
 @conditional_access_cli.command("unlock-by-id",
@@ -107,13 +110,10 @@ def unlock_user(login, realm, resolver):
 @click.option("--uid", required=True)
 @click.option("--realm", required=True)
 def unlock_by_id(resolver, uid, realm):
-    row = UserLockoutState.query.filter_by(resolver=resolver, uid=uid, realm=realm).first()
-    if not row:
+    if unlock_user_by_id(resolver, uid, realm):
+        click.echo(f"Unlocked (resolver={resolver}, uid={uid}, realm={realm}).")
+    else:
         click.echo(f"No lock found for (resolver={resolver}, uid={uid}, realm={realm}).")
-        return
-    db.session.delete(row)
-    db.session.commit()
-    click.echo(f"Unlocked (resolver={resolver}, uid={uid}, realm={realm}).")
 
 
 @conditional_access_cli.command("clear-locks",
@@ -128,3 +128,11 @@ def clear_locks(realm):
     db.session.commit()
     scope = f" in realm '{realm}'" if realm else ""
     click.echo(f"Removed {count} user lock(s){scope}.")
+
+
+@conditional_access_cli.command("purge-expired-locks",
+                                help="Remove only stale user locks (expired or unlocked); keep the ones "
+                                     "still in force.")
+def purge_expired_locks():
+    count = purge_expired_user_lockouts()
+    click.echo(f"Removed {count} stale user lock(s).")

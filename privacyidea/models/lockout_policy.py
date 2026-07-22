@@ -33,7 +33,7 @@ from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from privacyidea.models import db
-from privacyidea.models.utils import MethodsMixin, utc_now
+from privacyidea.models.utils import MethodsMixin, utc_now, case_sensitive_unicode
 
 log = logging.getLogger(__name__)
 
@@ -179,9 +179,13 @@ class UserLockoutState(MethodsMixin, db.Model):
     both for auditing and so a stage's actions are not fired twice (de-dup).
     """
     __tablename__ = 'user_lockout_state'
-    resolver: Mapped[str] = mapped_column(Unicode(120), primary_key=True)
-    uid: Mapped[str] = mapped_column(Unicode(320), primary_key=True)
-    realm: Mapped[str] = mapped_column(Unicode(255), primary_key=True)
+    resolver: Mapped[str] = mapped_column(case_sensitive_unicode(120), primary_key=True)
+    uid: Mapped[str] = mapped_column(case_sensitive_unicode(320), primary_key=True)
+    realm: Mapped[str] = mapped_column(case_sensitive_unicode(255), primary_key=True)
+    # Denormalized login captured at lock time (the primary key is uid-based). It lets the management
+    # views display and filter by name, and lets a user-scoped read policy be enforced in SQL, without a
+    # live resolver lookup (which would also fail for a since-deleted user).
+    username: Mapped[str | None] = mapped_column(case_sensitive_unicode(255), nullable=True)
     is_locked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     lock_expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     # SET NULL on delete: keep the lockout state row if its stage is removed.
