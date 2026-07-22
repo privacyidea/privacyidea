@@ -41,6 +41,16 @@
       i18n-matTooltip>
       <mat-icon>receipt_long</mat-icon>
     </button>
+    @if (authService.actionAllowed("authentication_log_read")) {
+      <button
+        (click)="showUserAuthenticationLog()"
+        [routerLink]="[ROUTE_PATHS.AUTHENTICATION_LOG]"
+        mat-icon-button
+        matTooltip="Show authentication log of user"
+        i18n-matTooltip>
+        <mat-icon class="mdi--list-lock"></mat-icon>
+      </button>
+    }
   </div>
 
   <div class="flex-column">

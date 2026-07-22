@@ -29,6 +29,7 @@ import { ActivatedRoute } from "@angular/router";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { AuditService } from "@services/audit/audit.service";
 import { AuthService } from "@services/auth/auth.service";
+import { AuthenticationLogService } from "@services/authentication-log/authentication-log.service";
 import { ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
@@ -39,6 +40,7 @@ import { TokenDetails, TokenService } from "@services/token/token.service";
 import { UserData, UserService } from "@services/user/user.service";
 import {
   MockAuditService,
+  MockAuthenticationLogService,
   MockContainerService,
   MockContentService,
   MockDialogService,
@@ -62,6 +64,8 @@ describe("UserDetailsComponent", () => {
   let pendingChangesService: MockPendingChangesService;
   let notificationServiceMock: MockNotificationService;
   let dialogMock: MockMatDialog;
+  let authenticationLogServiceMock: MockAuthenticationLogService;
+  let authServiceMock: MockAuthService;
 
   const mockUserData = {
     username: "alice",
@@ -95,6 +99,7 @@ describe("UserDetailsComponent", () => {
         { provide: UserService, useClass: MockUserService },
         { provide: TokenService, useClass: MockTokenService },
         { provide: AuditService, useClass: MockAuditService },
+        { provide: AuthenticationLogService, useClass: MockAuthenticationLogService },
         { provide: ContainerService, useClass: MockContainerService },
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContentService, useClass: MockContentService },
@@ -114,6 +119,8 @@ describe("UserDetailsComponent", () => {
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
     pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
     notificationServiceMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+    authenticationLogServiceMock = TestBed.inject(AuthenticationLogService) as unknown as MockAuthenticationLogService;
+    authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
 
     component = fixture.componentInstance;
     fixture.detectChanges();
@@ -226,6 +233,27 @@ describe("UserDetailsComponent", () => {
     component.showUserAuditLog();
 
     expect(auditServiceMock.auditFilter().value).toBe("user: Alice");
+  });
+
+  it("showUserAuthenticationLog sets username and realm filter for the current user", () => {
+    userServiceMock.detailsUser.set({ username: "Alice", realm: "realm1" });
+
+    component.showUserAuthenticationLog();
+
+    expect(authenticationLogServiceMock.authenticationLogFilter().getValueOfKey("username")).toBe("Alice");
+    expect(authenticationLogServiceMock.authenticationLogFilter().getValueOfKey("realm")).toBe("realm1");
+  });
+
+  it("shows the auth-log header link only when authentication_log_read is allowed", () => {
+    expect(fixture.nativeElement.querySelector(".details-header mat-icon.mdi--list-lock")).toBeNull();
+
+    authServiceMock.authData.set({
+      ...MockAuthService.MOCK_AUTH_DATA,
+      rights: ["authentication_log_read"]
+    });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector(".details-header mat-icon.mdi--list-lock")).not.toBeNull();
   });
 
   it("assignUserToToken opens PIN dialog and assigns user to token, then reloads resources", () => {

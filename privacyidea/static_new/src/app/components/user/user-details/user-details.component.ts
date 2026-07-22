@@ -55,6 +55,10 @@ import { UserDetailsEditComponent } from "@components/user/user-details-edit/use
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import {
+  AuthenticationLogService,
+  AuthenticationLogServiceInterface
+} from "@services/authentication-log/authentication-log.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
@@ -102,6 +106,7 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly auditService: AuditServiceInterface = inject(AuditService);
+  private readonly authenticationLogService: AuthenticationLogServiceInterface = inject(AuthenticationLogService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   private router = inject(Router);
@@ -329,6 +334,12 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
 
   showUserAuditLog() {
     this.auditService.auditFilter.set(new FilterValue({ value: `user: ${this.userService.detailsUser().username}` }));
+  }
+
+  showUserAuthenticationLog() {
+    const user = this.userService.detailsUser();
+    const authLogFilter = new FilterValue().addEntry("username", user.username).addEntry("realm", user.realm);
+    this.authenticationLogService.authenticationLogFilter.set(authLogFilter);
   }
 
   editMode = signal(false);
