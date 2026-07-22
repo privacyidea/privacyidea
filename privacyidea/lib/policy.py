@@ -195,7 +195,8 @@ from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import (check_time_in_range, check_pin_contents,
                                    fetch_one_resource, is_true, check_ip_in_policy,
-                                   determine_logged_in_userparams, parse_string_to_dict)
+                                   determine_logged_in_userparams, parse_string_to_dict,
+                                   SQL_LIKE_ESCAPE, convert_wildcard_to_sql_like)
 from privacyidea.lib.utils.compare import COMPARATOR_DESCRIPTIONS
 from privacyidea.lib.utils.export import (register_import, register_export)
 from .log import log_with
@@ -203,6 +204,7 @@ from .policies.actions import PolicyAction, PasskeyLoginButtonOptions
 from .policies.conditions import PolicyConditionClass, ConditionCheck, ConditionSection
 from .policies.evaluators import EVALUATOR_FUNCTIONS
 from ..models import (Policy, db, save_config_timestamp, PolicyDescription, PolicyCondition)
+from ..models.policy import parse_action_string
 
 log = logging.getLogger(__name__)
 
@@ -1154,6 +1156,12 @@ def remove_wildcards_and_negations(value_list: list[str]) -> list[str]:
     return raw_values
 
 
+def _allowed_actions_for_scope(scope: str) -> set:
+    """Return the set of action names defined for the given scope (static + dynamic)."""
+    from .token import get_dynamic_policy_definitions
+    return set(get_static_policy_definitions(scope) | get_dynamic_policy_definitions(scope))
+
+
 def validate_actions(scope: str, action: str | dict) -> bool:
     """
     Check if the given actions are valid for the given scope.
@@ -1162,26 +1170,14 @@ def validate_actions(scope: str, action: str | dict) -> bool:
     :param action: The policy actions
     :return: True if all actions are valid, raises a Parameter Error otherwise
     """
-    from .token import get_dynamic_policy_definitions
-    policy_definitions_static = get_static_policy_definitions(scope)
-    policy_definitions_dynamic = get_dynamic_policy_definitions(scope)
-    policy_definitions = policy_definitions_static | policy_definitions_dynamic
-    allowed_actions = set(policy_definitions.keys())
-    actions = {}
+    allowed_actions = _allowed_actions_for_scope(scope)
     if isinstance(action, dict):
-        action_keys = list(action.keys())
-        actions = action
+        actions = dict(action)
     elif isinstance(action, str):
-        # This is similarly implemented in models.py in Policy.get(), but with the actual code structure there is no
-        # possibility to use the same function without mixing up the layers
-        for x in re.split(r'(?<!\\),', action or ""):
-            action_tmp = x.strip().split("=", 1)
-            action_key = action_tmp[0]
-            action_value = action_tmp[1] if len(action_tmp) == 2 else True
-            actions[action_key] = action_value
-        action_keys = list(actions.keys())
+        actions = parse_action_string(action)
     else:
         raise ParameterError(f"Invalid actions type {type(action)}. Must be a string or a dictionary.")
+    action_keys = list(actions.keys())
 
     raw_actions = remove_wildcards_and_negations(action_keys)
     invalid_actions = list(set(raw_actions) - allowed_actions)
@@ -1217,18 +1213,12 @@ def filter_invalid_actions(scope: str, action: str | dict) -> tuple[dict, list]:
         scope and ``dropped_actions`` is the list of action keys that were
         removed because they are not valid for the scope.
     """
-    from .token import get_dynamic_policy_definitions
-    policy_definitions = get_static_policy_definitions(scope) | get_dynamic_policy_definitions(scope)
-    allowed_actions = set(policy_definitions.keys())
+    allowed_actions = _allowed_actions_for_scope(scope)
 
-    # Parse the action into a {key: value} dict, mirroring validate_actions()
     if isinstance(action, dict):
         actions = dict(action)
     elif isinstance(action, str):
-        actions = {}
-        for x in re.split(r'(?<!\\),', action or ""):
-            action_tmp = x.strip().split("=", 1)
-            actions[action_tmp[0]] = action_tmp[1] if len(action_tmp) == 2 else True
+        actions = parse_action_string(action)
     else:
         return {}, []
 
@@ -1326,8 +1316,8 @@ def get_policies(active: bool | None = None, name: str | None = None, scope: str
     for attribute, value in filter_options.items():
         if value is not None:
             if "*" in value:
-                value = value.replace("*", "%")
-                stmt = stmt.filter(getattr(Policy, attribute).ilike(value))
+                stmt = stmt.filter(getattr(Policy, attribute).ilike(
+                    convert_wildcard_to_sql_like(value), escape=SQL_LIKE_ESCAPE))
             else:
                 stmt = stmt.filter(getattr(Policy, attribute) == value)
 
@@ -3327,6 +3317,25 @@ class Match:
         """
         return bool(self.policies(write_to_audit_log=write_to_audit_log))
 
+    def enforced(self, write_to_audit_log: bool = True) -> bool:
+        """
+        Return True if at least one policy matches, i.e. the matched action is
+        actively configured.
+
+        This is an intention-revealing alias for :py:meth:`any` meant for
+        *opt-in* enforcement/feature toggles: a feature is only enforced if a
+        policy explicitly turns it on. Use this instead of :py:meth:`allowed`
+        whenever the result is stored as a feature flag rather than used as a
+        permission gate, because :py:meth:`allowed` is fail-open (it returns
+        True when the whole scope is unconfigured) and would enable the feature
+        by default.
+
+        :param write_to_audit_log: If True, write the list of matching policies
+            to the audit log
+        :return: True or False
+        """
+        return self.any(write_to_audit_log=write_to_audit_log)
+
     def action_values(self, unique, allow_white_space_in_action=False, write_to_audit_log=True):
         """
         Return a dictionary of action values extracted from the matching policies.
@@ -3363,6 +3372,17 @@ class Match:
         This is the case
          * *either* if there are no active policies defined in the matched scope
          * *or* the action is explicitly allowed by a policy in the matched scope
+
+        This method is **fail-open**: it returns True when the whole scope is
+        unconfigured. It is therefore only correct for *permission gates* -
+        checks whose result is immediately used to deny an action (typically
+        ``if not match.allowed(): raise PolicyError(...)``).
+
+        Do **not** capture the result into a feature flag or enforcement toggle.
+        For an *opt-in* toggle (a feature that should stay off unless a policy
+        turns it on) use :py:meth:`enforced` / :py:meth:`any` instead, otherwise
+        the feature would be enabled by default on any system without policies
+        in the matched scope.
 
         Example usage::
 
@@ -3683,7 +3703,10 @@ def import_policy(data, name=None, skip_invalid=False):
                 log.warning(f'Policy "{policy_name}": dropping actions not valid '
                             f'for this version: {dropped}')
                 res_data['action'] = cleaned
-            if not cleaned:
+            # Only skip when dropping actions emptied the policy. A policy that
+            # had no actions to begin with has nothing invalid and must import
+            # just like a plain (non-skip_invalid) import would.
+            if not cleaned and dropped:
                 log.warning(f'Skipping policy "{policy_name}": no valid actions '
                             f'remain after dropping {dropped}.')
                 skipped.append(policy_name)

@@ -41,6 +41,9 @@ export class MultiSelectOnlyComponent<T = string | number> {
 
   readonly subscriptSizing = input<"dynamic" | "fixed">("fixed");
 
+  /** Width utility class applied to the form field (e.g. "input-width-xl"). Defaults to filling the host. */
+  readonly fieldClass = input<string>("width-100");
+
   // Outputs
   readonly selectionChange = output<T[]>();
 

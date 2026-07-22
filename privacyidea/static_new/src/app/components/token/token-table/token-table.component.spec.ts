@@ -18,20 +18,27 @@
  **/
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { provideRouter } from "@angular/router";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatDialog } from "@angular/material/dialog";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { AuditService } from "@services/audit/audit.service";
 import { AuthService, JwtData } from "@services/auth/auth.service";
 import { ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
+import { FilterValue } from "@core/models/filter_value/filter_value";
 import { DialogService } from "@services/dialog/dialog.service";
+import { DocumentationService } from "@services/documentation/documentation.service";
 import { RealmService } from "@services/realm/realm.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { TokenDetails, TokenService } from "@services/token/token.service";
 import { PageEvent } from "@angular/material/paginator";
 import { Sort } from "@angular/material/sort";
 import {
+  MockAuditService,
   MockContainerService,
   MockContentService,
+  MockDocumentationService,
   MockLocalService,
   MockNotificationService,
   MockRealmService,
@@ -58,6 +65,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
   let tokenService: MockTokenService;
   let authServiceMock: MockAuthService;
   let tableUtilsService: MockTableUtilsService;
+  let contentServiceMock: MockContentService;
 
   beforeAll(() => {
     jest.spyOn(console, "warn").mockReturnValue();
@@ -69,10 +77,13 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        provideRouter([]),
         { provide: TokenService, useClass: MockTokenService },
         { provide: TableUtilsService, useClass: MockTableUtilsService },
         { provide: ContentService, useClass: MockContentService },
         { provide: DialogService, useClass: MockDialogService },
+        { provide: DocumentationService, useClass: MockDocumentationService },
+        { provide: AuditService, useClass: MockAuditService },
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContainerService, useClass: MockContainerService },
         { provide: MatDialog, useClass: MatDialogMock },
@@ -88,6 +99,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
     authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
     tableUtilsService = TestBed.inject(TableUtilsService) as unknown as MockTableUtilsService;
+    contentServiceMock = TestBed.inject(ContentService) as unknown as MockContentService;
 
     tokenService.toggleActive.mockReturnValue(of({}));
     tokenService.resetFailCount.mockReturnValue(of(null));
@@ -299,5 +311,162 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     // custom page size should still be included if selected pageSize changes
     component.pageSize.set(10);
     expect(component.pageSizeOptions()).toEqual(customOptions);
+  });
+
+  it("applies and clears a preset filter once the tokens list becomes active", () => {
+    const preset = new FilterValue().addEntry("type", "hotp");
+    tokenService.presetFilter.set(preset);
+
+    contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS);
+    tableFixture.detectChanges();
+
+    expect(tokenService.presetFilter()).toBeNull();
+    expect(tokenService.tokenFilter()).toBe(preset);
+  });
+
+  it("does not touch the current filter when there is no preset filter to apply", () => {
+    const currentFilter = tokenService.tokenFilter();
+
+    contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS);
+    tableFixture.detectChanges();
+
+    expect(tokenService.presetFilter()).toBeNull();
+    expect(tokenService.tokenFilter()).toBe(currentFilter);
+  });
+
+  it("shows a hint while user:/realm: filter syntax is typed but not yet applied", () => {
+    authServiceMock.jwtData.set({ ...authServiceMock.jwtData(), rights: ["tokenlist"] } as JwtData);
+    tableFixture.detectChanges();
+
+    table.onFilterInput({ target: { value: "user: bob" } } as unknown as Event);
+    tableFixture.detectChanges();
+    expect(tableFixture.nativeElement.textContent).toContain("Press enter to apply the filter");
+
+    table.onFilterInput({ target: { value: "realm: default" } } as unknown as Event);
+    tableFixture.detectChanges();
+    expect(tableFixture.nativeElement.textContent).toContain("Press enter to apply the filter");
+
+    table.onFilterInput({ target: { value: "" } } as unknown as Event);
+    tableFixture.detectChanges();
+    expect(tableFixture.nativeElement.textContent).not.toContain("Press enter to apply the filter");
+  });
+
+  it("tokenDataSource/totalLength fall back to empty/zero on resource error", () => {
+    tokenService.tokenResource.error.set(new Error("boom"));
+    tableFixture.detectChanges();
+
+    expect(table.tokenDataSource().data).toEqual([]);
+    expect(table.totalLength()).toBe(0);
+  });
+
+  it("totalLength starts at 0 before any value has ever loaded", () => {
+    expect(table.totalLength()).toBe(0);
+  });
+
+  it("toggleFilter uses the boolean toggler for 'active' and the keyword toggler otherwise", () => {
+    const booleanResult = new FilterValue().addEntry("active", "true");
+    tableUtilsService.toggleBooleanInFilter.mockReturnValue(booleanResult);
+    table.toggleFilter("active");
+    expect(tableUtilsService.toggleBooleanInFilter).toHaveBeenCalledWith({
+      keyword: "active",
+      currentValue: expect.any(FilterValue)
+    });
+    expect(tokenService.tokenFilter()).toBe(booleanResult);
+
+    const keywordResult = new FilterValue().addEntry("description", "foo");
+    tableUtilsService.toggleKeywordInFilter.mockReturnValue(keywordResult);
+    table.toggleFilter("description");
+    expect(tableUtilsService.toggleKeywordInFilter).toHaveBeenCalledWith({
+      keyword: "description",
+      currentValue: expect.any(FilterValue)
+    });
+    expect(tokenService.tokenFilter()).toBe(keywordResult);
+  });
+
+  it("toggleFilter adds the default realm when a user filter without a realm is set", () => {
+    tableUtilsService.toggleKeywordInFilter.mockReturnValue(new FilterValue().addEntry("user", "bob"));
+
+    table.toggleFilter("user");
+
+    const result = tokenService.tokenFilter();
+    expect(result.getValueOfKey("user")).toBe("bob");
+    expect(result.getValueOfKey("realm")).toBe("realm1");
+  });
+
+  it("toggleFilter does not override an already-present realm on a user filter", () => {
+    tableUtilsService.toggleKeywordInFilter.mockReturnValue(
+      new FilterValue().addEntry("user", "bob").addEntry("realm", "sub")
+    );
+
+    table.toggleFilter("user");
+
+    expect(tokenService.tokenFilter().getValueOfKey("realm")).toBe("sub");
+  });
+
+  it("isFilterSelected reports whether a keyword is present in a filter value", () => {
+    const filter = new FilterValue().addEntry("active", "true");
+    expect(table.isFilterSelected("active", filter)).toBe(true);
+    expect(table.isFilterSelected("description", filter)).toBe(false);
+  });
+
+  it("getFilterIconName reflects the active/assigned boolean state and generic selection state", () => {
+    tokenService.tokenFilter.set(new FilterValue());
+    expect(table.getFilterIconName("active")).toBe("filter_alt");
+
+    tokenService.tokenFilter.set(new FilterValue().addEntry("active", "true"));
+    expect(table.getFilterIconName("active")).toBe("screen_rotation_alt");
+
+    tokenService.tokenFilter.set(new FilterValue().addEntry("assigned", "false"));
+    expect(table.getFilterIconName("assigned")).toBe("filter_alt_off");
+
+    tokenService.tokenFilter.set(new FilterValue());
+    expect(table.getFilterIconName("description")).toBe("filter_alt");
+
+    tokenService.tokenFilter.set(new FilterValue().addEntry("description", "foo"));
+    expect(table.getFilterIconName("description")).toBe("filter_alt_off");
+  });
+
+  it("onKeywordClick toggles the filter, focuses the input, and positions the cursor after 'user:'", async () => {
+    authServiceMock.jwtData.set({ ...authServiceMock.jwtData(), rights: ["tokenlist"] } as JwtData);
+    tableUtilsService.toggleKeywordInFilter.mockReturnValue(new FilterValue().addEntry("user", "bob"));
+    tableFixture.detectChanges();
+
+    const focusSpy = jest.spyOn(table.filterInput.nativeElement, "focus");
+    const setSelectionRangeSpy = jest.spyOn(table.filterInput.nativeElement, "setSelectionRange");
+    table.filterInput.nativeElement.value = "user: bob ";
+
+    table.onKeywordClick("user");
+
+    expect(tableUtilsService.toggleKeywordInFilter).toHaveBeenCalled();
+    expect(focusSpy).toHaveBeenCalled();
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(setSelectionRangeSpy).toHaveBeenCalledWith(6, 6);
+  });
+
+  it("onKeywordClick does not schedule cursor positioning for non-user keywords", async () => {
+    authServiceMock.jwtData.set({ ...authServiceMock.jwtData(), rights: ["tokenlist"] } as JwtData);
+    tableUtilsService.toggleKeywordInFilter.mockReturnValue(new FilterValue().addEntry("description", "foo"));
+    tableFixture.detectChanges();
+
+    const setSelectionRangeSpy = jest.spyOn(table.filterInput.nativeElement, "setSelectionRange");
+
+    table.onKeywordClick("description");
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(setSelectionRangeSpy).not.toHaveBeenCalled();
+  });
+
+  it("onItemSelected adds or removes a filter entry and focuses the input", () => {
+    authServiceMock.jwtData.set({ ...authServiceMock.jwtData(), rights: ["tokenlist"] } as JwtData);
+    tableFixture.detectChanges();
+    const focusSpy = jest.spyOn(table.filterInput.nativeElement, "focus");
+
+    table.onItemSelected("type", "hotp");
+    expect(tokenService.tokenFilter().getValueOfKey("type")).toBe("hotp");
+    expect(focusSpy).toHaveBeenCalled();
+
+    table.onItemSelected("type", "");
+    expect(tokenService.tokenFilter().hasKey("type")).toBe(false);
   });
 });

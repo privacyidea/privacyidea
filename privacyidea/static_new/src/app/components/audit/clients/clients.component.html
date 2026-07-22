@@ -66,9 +66,7 @@
               mat-cell>
               <div class="data-table-cell">
                 @if (column.key === "lastseen") {
-                  <!-- Format lastseen as date/time -->{{
-                    client.lastseen ? (client.lastseen | date: "yyyy-MM-dd HH:mm:ss z" : "UTC") : ""
-                  }}
+                  {{ client.lastseen | localDateTime }}
                 } @else {
                   {{ client[column.key] }}
                 }

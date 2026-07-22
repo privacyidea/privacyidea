@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { DatePipe } from "@angular/common";
 import {
   Component,
   computed,
@@ -47,6 +46,7 @@ import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
+import { LocalDateTimePipe } from "@components/shared/pipes/local-date-time.pipe";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
@@ -90,7 +90,7 @@ import { firstValueFrom } from "rxjs";
     FormField,
     ClearableInputComponent,
     CopyButtonComponent,
-    DatePipe
+    LocalDateTimePipe
   ],
   templateUrl: "./periodic-task-edit.component.html",
   styleUrl: "./periodic-task-edit.component.scss"

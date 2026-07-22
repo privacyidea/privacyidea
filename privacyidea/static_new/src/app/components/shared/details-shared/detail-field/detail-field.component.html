@@ -16,29 +16,28 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div class="detail-field-key">{{ label() }}</div>
-<div class="detail-field-value">
-  <div class="value-row">
-    <div class="value-content">
-      <app-details-default-value-cell
-        [(value)]="draft"
-        [isEditing]="isEditing()"
-        [isNumber]="number()"
-        [divClass]="divClass()"
-        [spanClass]="spanClass()"
-        [displayText]="displayText()" />
-    </div>
-    <div class="value-edit">
-      @if (editable()) {
-        <app-edit-buttons
-          [element]="editButtonsElement"
-          [toggleEdit]="toggle"
-          [saveEdit]="commit"
-          [cancelEdit]="cancel"
-          [shouldHideEdit]="blockEditing()"
-          [isEditingUser]="false"
-          [isEditingInfo]="false"></app-edit-buttons>
-      }
-    </div>
-  </div>
-</div>
+<app-detail-field-row
+  [label]="label()"
+  [isEditing]="field.isEditing()">
+  <ng-container fieldValue>
+    <app-details-default-value-cell
+      [(value)]="draft"
+      [isEditing]="field.isEditing()"
+      [isNumber]="number()"
+      [divClass]="divClass()"
+      [spanClass]="spanClass()"
+      [displayText]="displayText()" />
+  </ng-container>
+  <ng-container fieldEdit>
+    @if (editable()) {
+      <app-edit-buttons
+        [element]="field.editButtonsElement"
+        [toggleEdit]="field.toggle"
+        [saveEdit]="field.commit"
+        [cancelEdit]="field.cancel"
+        [shouldHideEdit]="blockEditing()"
+        [isEditingUser]="false"
+        [isEditingInfo]="false"></app-edit-buttons>
+    }
+  </ng-container>
+</app-detail-field-row>

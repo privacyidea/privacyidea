@@ -35,14 +35,18 @@ $font-size-default: 14px;
   &.utils {
     display: flex;
     flex-direction: row;
+    flex-wrap: wrap;
     justify-content: space-around;
     align-items: center;
   }
 
+  // Break the timer onto its own full-width row so its text never overflows the
+  // fixed-width panel next to the action buttons.
   .session-timer {
-    width: auto;
-    text-align: right;
-    white-space: break-spaces;
+    flex-basis: 100%;
+    width: 100%;
+    text-align: center;
+    white-space: nowrap;
   }
 }
 

@@ -385,6 +385,16 @@ class PolicyTestCase(MyTestCase):
         import_policy([only_invalid], skip_invalid=True)
         self.assertFalse(_check_policy_name("alldeadpol", PolicyClass().match_policies()))
 
+    def test_06f_import_policy_skip_invalid_keeps_actionless_policy(self):
+        # A policy that has no actions has nothing invalid to drop, so
+        # skip_invalid must import it just like a plain import would rather than
+        # skipping it: the flag only removes invalid actions / skips policies
+        # that were emptied by dropping, never a policy that was empty to start.
+        actionless = {"name": "emptyactpol", "scope": SCOPE.ADMIN, "action": {}}
+        import_policy([actionless], skip_invalid=True)
+        self.assertTrue(PolicyClass().list_policies(name="emptyactpol"))
+        delete_policy("emptyactpol")
+
     def test_07_client_policies(self):
         delete_policy(name="pol2a")
         set_policy(name="pol1", scope=SCOPE.CONTAINER, client="172.16.0.3, 172.16.0.4/24")

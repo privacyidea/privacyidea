@@ -19,10 +19,12 @@
 
 import { Component, computed, input } from "@angular/core";
 import { MatIconModule } from "@angular/material/icon";
+import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
 import {
   AdditionalCondition,
   COMPARATOR_OPTIONS,
   ComparatorOptionKey,
+  getUserAgentLabel,
   HANDLE_MISSING_DATA_OPTIONS,
   HandleMissingDataOptionKey,
   PolicyDetail,
@@ -34,12 +36,13 @@ import { ViewConditionSectionComponent } from "./view-condition-section/view-con
 @Component({
   selector: "app-view-conditions-column",
   standalone: true,
-  imports: [MatIconModule, ViewConditionSectionComponent],
+  imports: [MatIconModule, ViewConditionSectionComponent, HighlightPipe],
   templateUrl: "./view-conditions-column.component.html",
   styleUrl: "./view-conditions-column.component.scss"
 })
 export class ViewConditionsColumnComponent {
   policy = input.required<PolicyDetail>();
+  readonly highlightTerms = input<string[]>([]);
 
   // Admin Conditions
   selectedAdmins = computed(() => this.policy().adminuser || []);
@@ -55,7 +58,7 @@ export class ViewConditionsColumnComponent {
   selectedPinodes = computed<string[]>(() => this.policy().pinode || []);
   selectedValidTime = computed(() => this.policy().time || "");
   selectedClient = computed(() => this.policy().client || []);
-  selectedUserAgents = computed(() => this.policy().user_agents || []);
+  selectedUserAgents = computed(() => (this.policy().user_agents || []).map(getUserAgentLabel));
 
   // Additional Conditions
   additionalConditions = computed<AdditionalCondition[]>(() => this.policy().conditions || []);

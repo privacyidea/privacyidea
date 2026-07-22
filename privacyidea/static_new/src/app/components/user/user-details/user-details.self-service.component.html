@@ -17,48 +17,80 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
-  appScrollToTop aria-label="User Details" class="details-container" i18n-aria-label>
+  appScrollToTop
+  aria-label="User Details"
+  class="details-container"
+  i18n-aria-label>
   <div class="details-header">
     <h3 i18n>Your Details</h3>
   </div>
 
-  <div class="user-details">
-    @for (col of detailsColumns(); track $index) {
-      <div class="user-details-column">
-        @for (item of col; track item.key) {
-          <div class="flex-row label-value-row gap-16">
-            <div class="label">{{ item.label }}:</div>
-            @if (Array.isArray(item.value) && item.value.length > 1) {
-              <div class="value">
-                <ul class="value-list">
-                  @if (isExpanded(item.key)) {
-                    @for (val of item.value; track val) {
-                      <li>{{ val }}</li>
-                    }
-                  } @else {
-                    <li>{{ item.value[0] }}</li>
+  <app-details-card
+    class="details-card--user-info"
+    title="Attributes"
+    i18n-title>
+    <div class="details-field-list">
+      @for (item of detailsEntries(); track item.key) {
+        @if (Array.isArray(item.value) && item.value.length > 1) {
+          <app-detail-field-row [label]="item.label">
+            <ng-container fieldValue>
+              <ul class="value-list">
+                @if (isExpanded(item.key)) {
+                  @for (val of item.value; track val) {
+                    <li>{{ val }}</li>
                   }
-                </ul>
-                <button
-                  (click)="toggleExpanded(item.key)"
-                  [attr.aria-expanded]="isExpanded(item.key)"
-                  class="value-toggle"
-                  type="button">
-                  @if (isExpanded(item.key)) {
-                    <mat-icon>expand_less</mat-icon>
-                    <span i18n>Show less</span>
-                  } @else {
-                    <mat-icon>expand_more</mat-icon>
-                    <span i18n>Show {{ item.value.length - 1 }} more</span>
-                  }
-                </button>
-              </div>
-            } @else {
-              <div class="value">{{ item.value }}</div>
-            }
-          </div>
+                } @else {
+                  <li>{{ item.value[0] }}</li>
+                }
+              </ul>
+              <button
+                (click)="toggleExpanded(item.key)"
+                [attr.aria-expanded]="isExpanded(item.key)"
+                class="value-toggle"
+                type="button">
+                @if (isExpanded(item.key)) {
+                  <mat-icon>expand_less</mat-icon>
+                  <span i18n>Show less</span>
+                } @else {
+                  <mat-icon>expand_more</mat-icon>
+                  <span i18n>Show {{ item.value.length - 1 }} more</span>
+                }
+              </button>
+            </ng-container>
+          </app-detail-field-row>
+        } @else {
+          <app-detail-field
+            [label]="item.label"
+            [displayText]="str(item.value)" />
         }
-      </div>
+      }
+    </div>
+  </app-details-card>
+
+  <div class="flex gap-8 margin-top-16">
+    @if (authService.tokenEnrollmentAllowed()) {
+      <button
+        (click)="enrollNewToken()"
+        class="action-button-primary button-width-l"
+        mat-stroked-button>
+        <span class="icon-badge">
+          <mat-icon class="padding-right-3">shield</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+        </span>
+        <span i18n>Enroll new token</span>
+      </button>
+    }
+    @if (authService.actionAllowed("container_create")) {
+      <button
+        (click)="createNewContainer()"
+        class="action-button-primary button-width-l"
+        mat-stroked-button>
+        <span class="icon-badge">
+          <mat-icon class="padding-right-3">folder</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+        </span>
+        <span i18n>Create new container</span>
+      </button>
     }
   </div>
 </div>

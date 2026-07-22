@@ -233,6 +233,29 @@ class SMSTestCase(MyTestCase):
         self.assertEqual(plain["expgw"]["options"]["PASSWORD"], "smspw")
         delete_smsgateway("expgw")
 
+    def test_06_export_censor_explicit_secret_option(self):
+        # A value marked secret via secret_options / secret_headers is stored
+        # encrypted even when its key name carries no PASSWORD/SECRET hint. Such
+        # a value must still be censored on export - otherwise a "censored"
+        # export leaks it in clear text.
+        from privacyidea.lib.smsprovider.SMSProvider import (set_smsgateway,
+                                                             export_smsgateway,
+                                                             delete_smsgateway)
+        from privacyidea.lib.crypto import CENSORED
+        provider_module = "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider"
+        set_smsgateway("expgw2", provider_module,
+                       options={"apitoken": "SUPERSECRET", "URL": "http://example.com"},
+                       headers={"X-Auth": "headertoken", "X-Plain": "ok"},
+                       secret_options={"apitoken"},
+                       secret_headers={"X-Auth"})
+        censored = export_smsgateway(censor=True)
+        self.assertEqual(CENSORED, censored["expgw2"]["options"]["apitoken"])
+        self.assertEqual(CENSORED, censored["expgw2"]["headers"]["X-Auth"])
+        # non-secret values are still returned as stored
+        self.assertEqual("http://example.com", censored["expgw2"]["options"]["URL"])
+        self.assertEqual("ok", censored["expgw2"]["headers"]["X-Plain"])
+        delete_smsgateway("expgw2")
+
 
 class SmtpSMSTestCase(MyTestCase):
     missing_config = {"MAILSERVER": "localhost:25"}

@@ -632,6 +632,11 @@ Configure the endpoint to retrieve a list of users from the user store. The abov
 request as search parameters if they are available in the request. You can also use the attributes as tags
 (``{username}``, ``{userid}``, ``{surname}``, ``{givenname}``).
 
+.. note:: The user listing response must return the ``username`` for each user. privacyIDEA uses the username to
+   deduplicate users across the resolvers of a realm. If the listing does not return the username, all users of the
+   resolver are treated as the same user and only a single user is returned for that resolver. This applies even when
+   the username is not among the requested attributes, as it is always fetched internally for deduplication.
+
 **Get User by ID**
 
 Configure the endpoint to retrieve a single user for the UID. For example, privacyIDEA only stores the UID of the token
