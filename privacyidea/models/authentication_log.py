@@ -18,34 +18,11 @@
 
 from datetime import datetime, timezone
 
-from sqlalchemy import BigInteger, Unicode, DateTime, JSON, Index, Sequence
-from sqlalchemy.dialects import mysql
+from sqlalchemy import BigInteger, DateTime, JSON, Index, Sequence
 from sqlalchemy.orm import mapped_column, Mapped
 
 from privacyidea.models import db
-from privacyidea.models.utils import MethodsMixin, utc_now, BigIntegerType
-
-
-def _case_sensitive_unicode(length: int):
-    """
-    A ``Unicode`` column pinned to a case-sensitive collation on MySQL/MariaDB.
-
-    All string columns of the authentication log use this so that matching is **case-sensitive by default on every
-    backend**, giving one uniform rule: an unflagged query matches case-sensitively, and the ``case_insensitive``
-    filter flag / the ``user_case_insensitive`` policy option opt into case-insensitive matching via ``LOWER()``.
-
-    The security-critical reason is the visibility boundary (realm/resolver/username, see
-    :func:`privacyidea.lib.conditional_access.authentication_log._visibility_condition`), which matches these columns
-    by equality: on MySQL/MariaDB the server-default collation is typically case-insensitive (``*_ci``), which would
-    make that authorization boundary fail open (an admin scoped to resolver ``res`` or user ``alice`` would also see a
-    distinct ``Res`` / ``Alice``). The remaining columns are pinned too, both for consistency and because they hold
-    exact identifiers (serial, transaction id, uid, ...) for which case-sensitive matching is the correct semantic.
-
-    ``utf8mb4_bin`` makes equality case-sensitive on MySQL/MariaDB; SQLite, PostgreSQL and Oracle already compare
-    case-sensitively by default. The migration declares the same collation on the table columns.
-    """
-    return Unicode(length).with_variant(mysql.VARCHAR(length, charset="utf8mb4", collation="utf8mb4_bin"),
-                                        "mysql", "mariadb")
+from privacyidea.models.utils import MethodsMixin, utc_now, BigIntegerType, case_sensitive_unicode
 
 # Maximum length of the string columns. The lib layer truncates values to these lengths before insert (see
 # privacyidea.lib.conditional_access.authentication_log._truncate), so a value can never overflow a column.
@@ -83,24 +60,24 @@ class AuthenticationLog(MethodsMixin, db.Model):
     )
     id: Mapped[int] = mapped_column(BigIntegerType, Sequence("authentication_log_seq", data_type=BigInteger),
                                     primary_key=True)
-    resolver: Mapped[str | None] = mapped_column(_case_sensitive_unicode(authentication_log_column_length["resolver"]))
-    uid: Mapped[str | None] = mapped_column(_case_sensitive_unicode(authentication_log_column_length["uid"]))
-    realm: Mapped[str | None] = mapped_column(_case_sensitive_unicode(authentication_log_column_length["realm"]))
-    username: Mapped[str | None] = mapped_column(_case_sensitive_unicode(authentication_log_column_length["username"]))
+    resolver: Mapped[str | None] = mapped_column(case_sensitive_unicode(authentication_log_column_length["resolver"]))
+    uid: Mapped[str | None] = mapped_column(case_sensitive_unicode(authentication_log_column_length["uid"]))
+    realm: Mapped[str | None] = mapped_column(case_sensitive_unicode(authentication_log_column_length["realm"]))
+    username: Mapped[str | None] = mapped_column(case_sensitive_unicode(authentication_log_column_length["username"]))
     user_role: Mapped[str | None] = mapped_column(
-        _case_sensitive_unicode(authentication_log_column_length["user_role"]))
+        case_sensitive_unicode(authentication_log_column_length["user_role"]))
     event_type: Mapped[str] = mapped_column(
-        _case_sensitive_unicode(authentication_log_column_length["event_type"]), nullable=False)
+        case_sensitive_unicode(authentication_log_column_length["event_type"]), nullable=False)
     timestamp: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
     source_ip: Mapped[str | None] = mapped_column(
-        _case_sensitive_unicode(authentication_log_column_length["source_ip"]))
+        case_sensitive_unicode(authentication_log_column_length["source_ip"]))
     client_label: Mapped[str | None] = mapped_column(
-        _case_sensitive_unicode(authentication_log_column_length["client_label"]))
-    serial: Mapped[str | None] = mapped_column(_case_sensitive_unicode(authentication_log_column_length["serial"]))
+        case_sensitive_unicode(authentication_log_column_length["client_label"]))
+    serial: Mapped[str | None] = mapped_column(case_sensitive_unicode(authentication_log_column_length["serial"]))
     transaction_id: Mapped[str | None] = mapped_column(
-        _case_sensitive_unicode(authentication_log_column_length["transaction_id"]))
+        case_sensitive_unicode(authentication_log_column_length["transaction_id"]))
     previous_transaction_id: Mapped[str | None] = mapped_column(
-        _case_sensitive_unicode(authentication_log_column_length["previous_transaction_id"]))
+        case_sensitive_unicode(authentication_log_column_length["previous_transaction_id"]))
     other_info: Mapped[dict | None] = mapped_column(JSON)
 
     @property
