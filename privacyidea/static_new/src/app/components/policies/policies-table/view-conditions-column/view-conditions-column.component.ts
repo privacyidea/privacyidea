@@ -19,6 +19,7 @@
 
 import { Component, computed, input } from "@angular/core";
 import { MatIconModule } from "@angular/material/icon";
+import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
 import {
   AdditionalCondition,
   COMPARATOR_OPTIONS,
@@ -35,12 +36,13 @@ import { ViewConditionSectionComponent } from "./view-condition-section/view-con
 @Component({
   selector: "app-view-conditions-column",
   standalone: true,
-  imports: [MatIconModule, ViewConditionSectionComponent],
+  imports: [MatIconModule, ViewConditionSectionComponent, HighlightPipe],
   templateUrl: "./view-conditions-column.component.html",
   styleUrl: "./view-conditions-column.component.scss"
 })
 export class ViewConditionsColumnComponent {
   policy = input.required<PolicyDetail>();
+  readonly highlightTerms = input<string[]>([]);
 
   // Admin Conditions
   selectedAdmins = computed(() => this.policy().adminuser || []);

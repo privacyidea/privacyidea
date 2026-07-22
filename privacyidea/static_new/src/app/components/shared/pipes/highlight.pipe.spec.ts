@@ -77,4 +77,24 @@ describe("HighlightPipe", () => {
     const result = pipe.transform("normal text", "<script>alert(1)</script>");
     expect(result).toBe("normal text");
   });
+
+  it("should highlight any of multiple search terms", () => {
+    const result = pipe.transform("alpha beta gamma", ["alpha", "gamma"]);
+    expect(result).toBe('<span class="highlight">alpha</span> beta <span class="highlight">gamma</span>');
+  });
+
+  it("should ignore empty entries in the term array", () => {
+    const result = pipe.transform("alpha beta", ["", "beta"]);
+    expect(result).toBe('alpha <span class="highlight">beta</span>');
+  });
+
+  it("should return escaped HTML when the term array is empty or only empties", () => {
+    expect(pipe.transform("Hello <b>x</b>", [])).toBe("Hello &lt;b&gt;x&lt;/b&gt;");
+    expect(pipe.transform("Hello <b>x</b>", ["", ""])).toBe("Hello &lt;b&gt;x&lt;/b&gt;");
+  });
+
+  it("should prefer the longer term when matches overlap", () => {
+    const result = pipe.transform("enroll", ["en", "enroll"]);
+    expect(result).toBe('<span class="highlight">enroll</span>');
+  });
 });
