@@ -1139,7 +1139,7 @@ class TokenClass:
         db.session.execute(statement)
         db.session.commit()
 
-    def delete_tokengroup(self, tokengroup: str = None, tokengroup_id: int = None):
+    def delete_tokengroup(self, tokengroup: str = None, tokengroup_id: int = None) -> bool:
         """
         Removes a token group from a token.
         You either need to specify the name or the ID of the tokengroup. If none of them is given, all token groups
@@ -1158,10 +1158,11 @@ class TokenClass:
             if not tokengroup_db:
                 log.warning("Tokengroup %s does not exist. Cannot remove it from token %s.", tokengroup,
                             self.get_serial())
-                raise ResourceNotFoundError(f"Tokengroup {tokengroup} does not exist.")
+                raise ResourceNotFoundError(_("Tokengroup {0!s} does not exist.").format(tokengroup))
             statement = statement.where(TokenTokengroup.tokengroup_id == tokengroup_db.id)
         db.session.execute(statement)
         db.session.commit()
+        return True
 
     @check_token_locked
     def set_count_auth_success_max(self, count):

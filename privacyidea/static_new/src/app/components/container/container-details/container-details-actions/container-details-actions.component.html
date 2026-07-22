@@ -37,7 +37,10 @@
         (click)="enrollTokenInContainer()"
         class="action-button-primary button-width-l"
         mat-stroked-button>
-        <mat-icon>add_moderator</mat-icon>
+        <span class="icon-badge">
+          <mat-icon class="padding-right-3">shield</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+        </span>
         <span i18n>Enroll Token</span>
       </button>
       @if (containerService.containerDetail()?.template && authService.actionAllowed("container_template_list")) {

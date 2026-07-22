@@ -73,7 +73,10 @@
         (click)="enrollNewToken()"
         class="action-button-primary button-width-l"
         mat-stroked-button>
-        <mat-icon>add_moderator</mat-icon>
+        <span class="icon-badge">
+          <mat-icon class="padding-right-3">shield</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+        </span>
         <span i18n>Enroll new token</span>
       </button>
     }
@@ -82,7 +85,10 @@
         (click)="createNewContainer()"
         class="action-button-primary button-width-l"
         mat-stroked-button>
-        <mat-icon>create_new_folder</mat-icon>
+        <span class="icon-badge">
+          <mat-icon class="padding-right-3">folder</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+        </span>
         <span i18n>Create new container</span>
       </button>
     }
