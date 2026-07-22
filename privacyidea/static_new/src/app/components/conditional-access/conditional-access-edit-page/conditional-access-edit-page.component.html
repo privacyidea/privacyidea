@@ -24,10 +24,10 @@
   i18n-aria-label>
   <div class="edit-policy-container">
     <h3 class="margin-8 flex-row flex-nowrap ali-center">
-      {{ title() }}
+      <span class="ca-policy-title-text">{{ title() }}</span>
       @if (!isNewPolicy()) {
         <span>:&nbsp;</span>
-        <span class="h3-color">{{ editPolicy().name }}</span>
+        <span class="h3-color ca-policy-name">{{ editPolicy().name }}</span>
       }
     </h3>
 
@@ -88,22 +88,23 @@
     <div class="edit-policy-fields">
       <mat-form-field
         appearance="fill"
-        class="input-width-xl"
-        subscriptSizing="dynamic">
+        class="input-width-xl">
         <mat-label i18n>Name</mat-label>
         <input
           matInput
           [formField]="policyForm.name"
           (blur)="nameTouched.set(true)" />
-        @if (showNameError()) {
-          <mat-error i18n>Name is required (max. 255 characters).</mat-error>
+        <mat-hint align="end">{{ editPolicy().name.length }} / 255</mat-hint>
+        @if (showNameError() && nameTooLong()) {
+          <mat-error i18n>Name must not exceed 255 characters.</mat-error>
+        } @else if (showNameError()) {
+          <mat-error i18n>Name is required.</mat-error>
         }
       </mat-form-field>
 
       <mat-form-field
         appearance="fill"
-        class="input-width-s"
-        subscriptSizing="dynamic">
+        class="input-width-s">
         <mat-label i18n>Time window (seconds)</mat-label>
         <input
           matInput

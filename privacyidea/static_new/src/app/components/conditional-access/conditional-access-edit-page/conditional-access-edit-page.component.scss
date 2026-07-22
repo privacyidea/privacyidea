@@ -11,6 +11,23 @@
   align-items: center;
 }
 
+// The static title text keeps its size and never wraps; the policy name after
+// it is the part that shrinks and ellipsizes.
+.ca-policy-title-text {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+// The policy name in the title shrinks within the flex h3 and ellipsizes
+// before it would overflow the available width.
+.ca-policy-name {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .action-buttons {
   display: flex;
   align-items: center;

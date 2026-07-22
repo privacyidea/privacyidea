@@ -25,12 +25,6 @@ import { ConditionalAccessStageItemComponent } from "./stage-item/conditional-ac
 
 const NEW_STAGE: LockoutPolicyStage = { failure_threshold: 1, priority: 1, actions: [] };
 
-// Stages (and their nested actions) are edited via a plain parent-owns-array/child-emits-partial
-// composition, not Angular Signal Forms: applyEach() (the Signal Forms array API) is
-// @experimental, has no push/remove primitive (form() does not copy the model, so the array must
-// be mutated on the underlying signal directly), and has zero precedent anywhere in this codebase.
-// This mirrors the same codebase's existing solution for an equivalent nested-array editing
-// problem (added-actions-list / policy-action-item-edit in the Policies feature).
 @Component({
   selector: "app-conditional-access-stages-list",
   standalone: true,

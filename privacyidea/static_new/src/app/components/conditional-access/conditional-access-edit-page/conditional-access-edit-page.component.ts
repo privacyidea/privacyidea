@@ -128,6 +128,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
 
   nameTouched = signal(false);
   showNameError = computed(() => this.nameTouched() && !this.policyForm().valid());
+  nameTooLong = computed(() => this.policyForm.name().errors().some((e) => e.kind === "maxlength"));
 
   constructor() {
     this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
