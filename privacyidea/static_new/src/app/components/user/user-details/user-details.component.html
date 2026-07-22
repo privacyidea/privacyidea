@@ -289,6 +289,29 @@
               }
             </app-details-card>
           }
+
+          @if (authService.actionAllowed("user_lockout_read")) {
+            <app-details-card
+              class="details-card--user-info"
+              title="User Lockout State"
+              i18n-title>
+              <span
+                [ngClass]="lockoutStateClass()">
+                {{ lockoutStatusText() }}
+              </span>
+              @if (authService.actionAllowed("user_lockout_reset") && isUserLocked()) {
+                <div class="margin-top-8">
+                  <button
+                    (click)="resetUserLockout()"
+                    class="action-button-secondary"
+                    mat-stroked-button>
+                    <mat-icon>lock_open</mat-icon>
+                    <span i18n>Unlock</span>
+                  </button>
+                </div>
+              }
+            </app-details-card>
+          }
         </div>
       }
     </div>

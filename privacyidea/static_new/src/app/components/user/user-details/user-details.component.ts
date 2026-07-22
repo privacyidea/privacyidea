@@ -56,6 +56,10 @@ import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
+  ConditionalAccessStateService,
+  ConditionalAccessStateServiceInterface
+} from "@services/conditional-access-state/conditional-access-state.service";
+import {
   AuthenticationLogService,
   AuthenticationLogServiceInterface
 } from "@services/authentication-log/authentication-log.service";
@@ -68,6 +72,7 @@ import { filter, firstValueFrom } from "rxjs";
 import { UserDetailsContainerTableComponent } from "./user-details-container-table/user-details-container-table.component";
 import { UserDetailsPinDialogComponent } from "./user-details-pin-dialog/user-details-pin-dialog.component";
 import { UserDetailsTokenTableComponent } from "./user-details-token-table/user-details-token-table.component";
+import { formatLocalDateTime } from "@utils/date-format.utils";
 
 @Component({
   selector: "app-user-details",
@@ -107,6 +112,8 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly auditService: AuditServiceInterface = inject(AuditService);
   private readonly authenticationLogService: AuthenticationLogServiceInterface = inject(AuthenticationLogService);
+  protected readonly conditionalAccessStateService: ConditionalAccessStateServiceInterface =
+    inject(ConditionalAccessStateService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   private router = inject(Router);
@@ -149,7 +156,8 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
     () =>
       this.canSetCustomAttribute() ||
       this.userService.userAttributesList().length > 0 ||
-      this.authService.actionAllowed("get_user_internal_attributes")
+      this.authService.actionAllowed("get_user_internal_attributes") ||
+      this.authService.actionAllowed("user_lockout_read")
   );
   expandedKeys = signal<Set<string>>(new Set<string>());
   addKeyInput = signal<string>("");
@@ -201,6 +209,25 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
     const entries = this.detailsEntries();
     const half = Math.ceil(entries.length / 2);
     return [entries.slice(0, half), entries.slice(half)];
+  });
+  lockoutStatus = this.conditionalAccessStateService.userLockoutStatus;
+  isUserLocked = computed(() => this.lockoutStatus()?.is_locked ?? false);
+  isPermanentLocked = computed(() => this.lockoutStatus()?.permanent ?? false);
+  lockoutStateClass = computed(() =>
+    this.isPermanentLocked() ? "highlight-false" : this.isUserLocked() ? "highlight-warning" : "highlight-true"
+  );
+  lockoutStatusText = computed(() => {
+    const status = this.lockoutStatus();
+    if (!status?.is_locked) {
+      return $localize`Unlocked`;
+    }
+    if (status.permanent) {
+      return $localize`Locked permanently`;
+    }
+    if (status.lock_expires_at) {
+      return $localize`Locked until ${formatLocalDateTime(status.lock_expires_at)}`;
+    }
+    return $localize`Locked`;
   });
 
   ngOnInit(): void {
@@ -332,14 +359,52 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
     this.router.navigateByUrl(ROUTE_PATHS.CONTAINERS_CREATE).then();
   }
 
-  showUserAuditLog() {
+  public showUserAuditLog() {
     this.auditService.auditFilter.set(new FilterValue({ value: `user: ${this.userService.detailsUser().username}` }));
   }
 
-  showUserAuthenticationLog() {
+  public showUserAuthenticationLog() {
     const user = this.userService.detailsUser();
     const authLogFilter = new FilterValue().addEntry("username", user.username).addEntry("realm", user.realm);
     this.authenticationLogService.authenticationLogFilter.set(authLogFilter);
+  }
+
+  resetUserLockout() {
+    const lockoutStatus = this.lockoutStatus();
+    if (!lockoutStatus?.is_locked) {
+      return;
+    }
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
+        data: {
+          title: $localize`Reset User Lockout`,
+          items: [`${lockoutStatus.username}@${lockoutStatus.realm}`],
+          itemType: "user",
+          confirmAction: { label: $localize`Reset lockout`, value: true, type: "confirm" }
+        }
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (!result) {
+            return;
+          }
+          this.conditionalAccessStateService
+            .resetUserLockout({
+              resolver: lockoutStatus.resolver,
+              uid: lockoutStatus.uid,
+              realm: lockoutStatus.realm
+            })
+            .subscribe({
+              next: (success) => {
+                if (success) {
+                  this.conditionalAccessStateService.userLockoutResource.reload();
+                }
+              }
+            });
+        }
+      });
   }
 
   editMode = signal(false);
@@ -416,6 +481,11 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
   }
 
   protected readonly Array = Array;
+
+  private formatTimestamp(value: string): string {
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleString();
+  }
 
   protected str(value: unknown): string {
     return value === null || value === undefined ? "" : String(value);

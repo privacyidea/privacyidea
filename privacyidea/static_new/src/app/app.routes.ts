@@ -24,6 +24,7 @@ import { adminMatch, AuthGuard, loginGuard, selfServiceMatch } from "./guards/au
 import { ApplicationService } from "@services/application/application.service";
 import { AuditService } from "@services/audit/audit.service";
 import { AuthenticationLogService } from "@services/authentication-log/authentication-log.service";
+import { ConditionalAccessStateService } from "@services/conditional-access-state/conditional-access-state.service";
 import { CaConnectorService } from "@services/ca-connector/ca-connector.service";
 import { ChallengesService } from "@services/token/challenges/challenges.service";
 import { ClientsService } from "@services/clients/clients.service";
@@ -65,6 +66,7 @@ export const routes: Routes = [
       ApplicationService,
       AuditService,
       AuthenticationLogService,
+      ConditionalAccessStateService,
       CaConnectorService,
       ChallengesService,
       ClientsService,
