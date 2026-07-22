@@ -850,6 +850,7 @@ def _upsert_user_lockout_state(user: "User", *, is_locked: bool,
         elif state.is_locked and state.lock_expires_at is None and lock_expires_at is not None:
             log.info(f"Not downgrading the existing permanent lock for {user!r} to a timed lock.")
             return
+        state.username = user.login
         state.is_locked = is_locked
         state.lock_expires_at = lock_expires_at
         state.last_stage_triggered = stage_id

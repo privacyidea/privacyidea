@@ -41,6 +41,16 @@
       i18n-matTooltip>
       <mat-icon>receipt_long</mat-icon>
     </button>
+    @if (authService.actionAllowed("authentication_log_read")) {
+      <button
+        (click)="showUserAuthenticationLog()"
+        [routerLink]="[ROUTE_PATHS.AUTHENTICATION_LOG]"
+        mat-icon-button
+        matTooltip="Show authentication log of user"
+        i18n-matTooltip>
+        <mat-icon class="mdi--list-lock"></mat-icon>
+      </button>
+    }
   </div>
 
   <div class="flex-column">
@@ -276,6 +286,29 @@
                 </div>
               } @else {
                 <p i18n>No internal attributes found.</p>
+              }
+            </app-details-card>
+          }
+
+          @if (authService.actionAllowed("user_lockout_read")) {
+            <app-details-card
+              class="details-card--user-info"
+              title="User Lockout State"
+              i18n-title>
+              <span
+                [ngClass]="lockoutStateClass()">
+                {{ lockoutStatusText() }}
+              </span>
+              @if (authService.actionAllowed("user_lockout_reset") && isUserLocked()) {
+                <div class="margin-top-8">
+                  <button
+                    (click)="resetUserLockout()"
+                    class="action-button-secondary"
+                    mat-stroked-button>
+                    <mat-icon>lock_open</mat-icon>
+                    <span i18n>Unlock</span>
+                  </button>
+                </div>
               }
             </app-details-card>
           }

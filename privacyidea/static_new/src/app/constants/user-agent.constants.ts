@@ -19,7 +19,7 @@
 
 /**
  * A known privacyIDEA client user agent: a friendly `displayName` shown in the UI, plus the `identifier` that
- * actually prefixes the user-agent string the plugin sends.
+ * actually prefixes the user-agent string the plugin sends (typically the prefix before "/" in the User-Agent header).
  */
 export interface UserAgentPreset {
   displayName: string;
@@ -39,3 +39,8 @@ export const USER_AGENT_PRESETS: readonly UserAgentPreset[] = [
   { displayName: "privacyIDEA Authenticator", identifier: "privacyIDEA-App" },
   { displayName: "privacyIDEA WebUI", identifier: "privacyIDEA-WebUI" }
 ];
+
+// Resolves a user-agent identifier to its friendly display name, falling back to the raw identifier if unknown.
+export function getUserAgentLabel(identifier: string): string {
+  return USER_AGENT_PRESETS.find((preset) => preset.identifier === identifier)?.displayName ?? identifier;
+}

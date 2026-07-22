@@ -29,6 +29,8 @@ import { ActivatedRoute } from "@angular/router";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { AuditService } from "@services/audit/audit.service";
 import { AuthService } from "@services/auth/auth.service";
+import { AuthenticationLogService } from "@services/authentication-log/authentication-log.service";
+import { ConditionalAccessStateService } from "@services/conditional-access-state/conditional-access-state.service";
 import { ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
@@ -39,6 +41,8 @@ import { TokenDetails, TokenService } from "@services/token/token.service";
 import { UserData, UserService } from "@services/user/user.service";
 import {
   MockAuditService,
+  MockAuthenticationLogService,
+  MockConditionalAccessStateService,
   MockContainerService,
   MockContentService,
   MockDialogService,
@@ -62,6 +66,9 @@ describe("UserDetailsComponent", () => {
   let pendingChangesService: MockPendingChangesService;
   let notificationServiceMock: MockNotificationService;
   let dialogMock: MockMatDialog;
+  let authenticationLogServiceMock: MockAuthenticationLogService;
+  let authServiceMock: MockAuthService;
+  let conditionalAccessStateServiceMock: MockConditionalAccessStateService;
 
   const mockUserData = {
     username: "alice",
@@ -95,6 +102,8 @@ describe("UserDetailsComponent", () => {
         { provide: UserService, useClass: MockUserService },
         { provide: TokenService, useClass: MockTokenService },
         { provide: AuditService, useClass: MockAuditService },
+        { provide: AuthenticationLogService, useClass: MockAuthenticationLogService },
+        { provide: ConditionalAccessStateService, useClass: MockConditionalAccessStateService },
         { provide: ContainerService, useClass: MockContainerService },
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContentService, useClass: MockContentService },
@@ -114,6 +123,11 @@ describe("UserDetailsComponent", () => {
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
     pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
     notificationServiceMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+    authenticationLogServiceMock = TestBed.inject(AuthenticationLogService) as unknown as MockAuthenticationLogService;
+    authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+    conditionalAccessStateServiceMock = TestBed.inject(
+      ConditionalAccessStateService
+    ) as unknown as MockConditionalAccessStateService;
 
     component = fixture.componentInstance;
     fixture.detectChanges();
@@ -226,6 +240,27 @@ describe("UserDetailsComponent", () => {
     component.showUserAuditLog();
 
     expect(auditServiceMock.auditFilter().value).toBe("user: Alice");
+  });
+
+  it("showUserAuthenticationLog sets username and realm filter for the current user", () => {
+    userServiceMock.detailsUser.set({ username: "Alice", realm: "realm1" });
+
+    component.showUserAuthenticationLog();
+
+    expect(authenticationLogServiceMock.authenticationLogFilter().getValueOfKey("username")).toBe("Alice");
+    expect(authenticationLogServiceMock.authenticationLogFilter().getValueOfKey("realm")).toBe("realm1");
+  });
+
+  it("shows the auth-log header link only when authentication_log_read is allowed", () => {
+    expect(fixture.nativeElement.querySelector(".details-header mat-icon.mdi--list-lock")).toBeNull();
+
+    authServiceMock.authData.set({
+      ...MockAuthService.MOCK_AUTH_DATA,
+      rights: ["authentication_log_read"]
+    });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector(".details-header mat-icon.mdi--list-lock")).not.toBeNull();
   });
 
   it("assignUserToToken opens PIN dialog and assigns user to token, then reloads resources", () => {
@@ -623,5 +658,51 @@ describe("UserDetailsComponent", () => {
       component.ngOnDestroy();
       expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
     });
+  });
+
+  it("shows lockout state card with 'Unlocked' status when user_lockout_read is allowed", () => {
+    authServiceMock.authData.set({
+      ...MockAuthService.MOCK_AUTH_DATA,
+      rights: ["user_lockout_read"]
+    });
+    conditionalAccessStateServiceMock.setUserLockoutStatus(null);
+
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain("User Lockout");
+    expect(fixture.nativeElement.textContent).toContain("Unlocked");
+  });
+
+  it("shows reset lockout action for locked users and triggers reset + reload after confirmation", () => {
+    authServiceMock.authData.set({
+      ...MockAuthService.MOCK_AUTH_DATA,
+      rights: ["user_lockout_read", "user_lockout_reset"]
+    });
+    conditionalAccessStateServiceMock.setUserLockoutStatus({
+      resolver: "resolver1",
+      uid: "uid-123",
+      realm: "realm1",
+      username: "Alice",
+      permanent: false,
+      lock_expires_at: "2030-01-01T10:00:00Z",
+      seconds_remaining: 120,
+      is_locked: true,
+      last_updated: "2030-01-01T09:58:00Z"
+    });
+    dialogServiceMock.openDialog = jest.fn().mockReturnValue({
+      afterClosed: () => of(true)
+    });
+
+    const reloadSpy = jest.spyOn(conditionalAccessStateServiceMock.userLockoutResource, "reload");
+
+    fixture.detectChanges();
+    component.resetUserLockout();
+
+    expect(conditionalAccessStateServiceMock.resetUserLockout).toHaveBeenCalledWith({
+      resolver: "resolver1",
+      uid: "uid-123",
+      realm: "realm1"
+    });
+    expect(reloadSpy).toHaveBeenCalledTimes(1);
   });
 });

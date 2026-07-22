@@ -19,11 +19,11 @@
 
 import { Component, computed, input } from "@angular/core";
 import { MatIconModule } from "@angular/material/icon";
+import { getUserAgentLabel } from "@constants/user-agent.constants";
 import {
   AdditionalCondition,
   COMPARATOR_OPTIONS,
   ComparatorOptionKey,
-  getUserAgentLabel,
   HANDLE_MISSING_DATA_OPTIONS,
   HandleMissingDataOptionKey,
   PolicyDetail,

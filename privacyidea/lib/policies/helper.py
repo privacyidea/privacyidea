@@ -157,22 +157,24 @@ def get_admin_audit_params() -> dict:
     return admin_params
 
 
-def get_authentication_log_visibility_scopes(
-        action: str = PolicyAction.AUTHENTICATION_LOG_READ) -> list["AuthenticationLogVisibilityScope"] | None:
+def get_policy_visibility_scopes(action: str) -> list["AuthenticationLogVisibilityScope"] | None:
     """
-    Determine which authentication-log entries the logged-in principal may act on for the given action.
+    Determine the visibility boundary for *action*: which records the logged-in principal may act on, expressed as
+    realm / resolver / user scopes. Used to constrain list/read endpoints — the authentication log
+    (``authentication_log_read``), the conditional-access lockout state (``user_lockout_read``), etc. — to only the
+    entries a scoped admin is allowed to see.
 
     A **user** may only ever act on their own entries, so a single scope built from the logged-in user's realm and
     username is returned (never ``None``).
 
     For an **admin** the scopes are derived from the target scoping (realm, resolver, user) of that action's
     policies: one scope per scoping policy, combined OR across policies and AND across the dimensions a single policy
-    sets (see ``get_authentication_logs_paginate``). ``None`` (no restriction) is returned if no policy of this action
-    is scoped, or if any applicable policy has no target scope at all (such a policy grants access to all entries).
-    adminrealm, adminuser and policy conditions need no handling here: ``Match.admin(...).policies()`` already
-    returns only the policies applicable to the current admin and request.
+    sets. ``None`` (no restriction) is returned if no policy of this action is scoped, or if any applicable policy
+    has no target scope at all (such a policy grants access to all entries). adminrealm, adminuser and policy
+    conditions need no handling here: ``Match.admin(...).policies()`` already returns only the policies applicable to
+    the current admin and request.
 
-    :param action: the action whose scoping to read (``authentication_log_read``)
+    :param action: the policy action whose scoping to read (e.g. ``authentication_log_read``, ``user_lockout_read``)
     :return: a list of :class:`AuthenticationLogVisibilityScope`, or ``None`` for unrestricted access
     """
     from privacyidea.lib.auth import ROLE

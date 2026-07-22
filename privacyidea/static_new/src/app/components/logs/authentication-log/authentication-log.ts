@@ -60,7 +60,7 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
 import { MultiSelectFilterComponent } from "@components/shared/multi-select-filter/multi-select-filter.component";
 import { MultiSelectFilterOption } from "@components/shared/multi-select-filter/multi-select-filter-option";
 import { MultiSelectMenuComponent } from "@components/shared/multi-select-filter/multi-select-menu/multi-select-menu.component";
-import { USER_AGENT_PRESETS } from "@core/constants/user-agents";
+import { USER_AGENT_PRESETS } from "@constants/user-agent.constants";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ClientsService, ClientsServiceInterface } from "@services/clients/clients.service";
 import {

@@ -14,6 +14,7 @@ Create Date: 2026-06-08 00:00:00.000000
 """
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy.dialects import mysql
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
 # revision identifiers, used by Alembic.
@@ -23,6 +24,21 @@ branch_labels = None
 depends_on = None
 
 TABLES = ['user_lockout_state']
+
+
+def _unicode_case_sensitive(length):
+    """
+    A case-sensitive string column type (mirrors models.authentication_log._case_sensitive_unicode).
+
+    The identity columns (resolver/uid/realm/username) are the user-lockout visibility boundary: a
+    user-scoped read policy filters on them. On MySQL/MariaDB the server-default collation is typically
+    case-insensitive (*_ci), which would make that boundary match case-insensitively -- a fail-open
+    authorization risk. Pinning to utf8mb4_bin makes matching case-sensitive; SQLite, PostgreSQL and Oracle
+    already compare case-sensitively by default. Kept self-contained here so the migration stays a stable
+    snapshot.
+    """
+    return sa.Unicode(length).with_variant(mysql.VARCHAR(length, charset="utf8mb4", collation="utf8mb4_bin"),
+                                           "mysql", "mariadb")
 
 
 def _create_table(table_name, *columns):
@@ -39,9 +55,10 @@ def _create_table(table_name, *columns):
 def upgrade():
     _create_table(
         'user_lockout_state',
-        sa.Column('resolver', sa.Unicode(length=120), nullable=False),
-        sa.Column('uid', sa.Unicode(length=320), nullable=False),
-        sa.Column('realm', sa.Unicode(length=255), nullable=False),
+        sa.Column('resolver', _unicode_case_sensitive(120), nullable=False),
+        sa.Column('uid', _unicode_case_sensitive(320), nullable=False),
+        sa.Column('realm', _unicode_case_sensitive(255), nullable=False),
+        sa.Column('username', _unicode_case_sensitive(255), nullable=True),
         sa.Column('is_locked', sa.Boolean(), nullable=False),
         sa.Column('lock_expires_at', sa.DateTime(), nullable=True),
         sa.Column('last_stage_triggered', sa.Integer(), nullable=True),
