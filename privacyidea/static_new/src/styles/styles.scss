@@ -863,12 +863,6 @@ body.self-service-layout {
   max-height: 400px;
 }
 
-// Widen the app-info-hint tooltips so a two-sentence explanation stays readable
-// (the overlay renders outside component scope, so this lives in the global sheet).
-.info-hint-tooltip .mdc-tooltip__surface {
-  max-width: 320px;
-}
-
 // Panel class set by the shared app-multi-select-filter component. Its options can be long, so let the menu grow to
 // fit instead of truncating at the default 280px.
 // REVIEW: `none` removes the ceiling entirely, so a pathologically long option could produce a very wide menu;
