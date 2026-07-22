@@ -24,6 +24,7 @@ import { ClientsDict, ClientsService } from "@services/clients/clients.service";
 import { PolicyService } from "@services/policies/policies.service";
 import { SystemService } from "@services/system/system.service";
 import { MockClientsService, MockPolicyService, MockSystemService } from "@testing/mock-services";
+import { USER_AGENT_PRESETS } from "@constants/user-agent.constants";
 
 describe("EditEnvironmentConditionsComponent", () => {
   let component: EditEnvironmentConditionsComponent;
@@ -283,7 +284,7 @@ describe("EditEnvironmentConditionsComponent", () => {
     it("does nothing when every preset is already selected", () => {
       fixture.componentRef.setInput("policy", {
         name: "test-policy",
-        user_agents: component.userAgentOptions.map((o) => o.key)
+        user_agents: USER_AGENT_PRESETS.map((o) => o.identifier)
       });
       fixture.detectChanges();
       const spy = jest.spyOn(component.policyEdit, "emit");
