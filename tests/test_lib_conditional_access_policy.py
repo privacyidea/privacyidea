@@ -126,10 +126,11 @@ class LockoutPolicyCrudTestCase(MyTestCase):
                          get_lockout_policy(policy_id)["counter_types_to_track"])
 
     def test_03_list_and_order(self):
+        # Listed by ascending priority number (lowest number = highest precedence).
         create_lockout_policy("Low", 600, ["PIN_FAIL"], [_stage()], priority=1)
         create_lockout_policy("High", 600, ["PIN_FAIL"], [_stage()], priority=9, enabled=False)
         policies = list_lockout_policies()
-        self.assertEqual(["High", "Low"], [p["name"] for p in policies])
+        self.assertEqual(["Low", "High"], [p["name"] for p in policies])
         enabled_only = list_lockout_policies(enabled=True)
         self.assertEqual(["Low"], [p["name"] for p in enabled_only])
         disabled_only = list_lockout_policies(enabled=False)

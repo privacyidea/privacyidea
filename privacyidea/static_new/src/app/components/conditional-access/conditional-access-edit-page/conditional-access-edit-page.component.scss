@@ -52,12 +52,3 @@
   color: var(--mat-sys-on-surface-variant);
 }
 
-// Full-width note inside the (flex-wrap) fields row, e.g. the extended
-// explanation of the policy Priority. Breaks onto its own line and wraps
-// across the width so long text stays within a couple of rows.
-.ca-field-note {
-  flex-basis: 100%;
-  margin: 0;
-  max-width: 1008px;
-  color: var(--mat-sys-on-surface-variant);
-}

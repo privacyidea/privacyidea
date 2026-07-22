@@ -30,6 +30,7 @@ import { MatTooltipModule } from "@angular/material/tooltip";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
@@ -66,6 +67,7 @@ const TIME_UNIT_FACTORS: Record<TimeUnit, number> = {
     MatTooltipModule,
     ScrollToTopDirective,
     StickyHeaderDirective,
+    InfoHintComponent,
     ConditionalAccessStagesListComponent
   ],
   templateUrl: "./conditional-access-edit-page.component.html",

@@ -49,7 +49,8 @@ class LockoutPolicy(MethodsMixin, db.Model):
     (assignable as a plain list). Their events are counted **together** (a single
     combined count over all listed types) against the stage thresholds. Admins
     can define multiple policies (e.g. "Admin Policy" vs "Default User Policy");
-    policies are evaluated highest ``priority`` first.
+    policies are evaluated by ascending ``priority`` (a lower number means higher
+    precedence, matching privacyIDEA's policy engine).
 
     The actual thresholds and reactions live in the related
     :class:`LockoutPolicyStage` and :class:`LockoutStageAction` rows.

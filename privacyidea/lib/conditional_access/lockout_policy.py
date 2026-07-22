@@ -271,12 +271,13 @@ def _build_stages(stage_defs: list[StageDefinition]) -> list[LockoutPolicyStage]
 @log_with(log)
 def list_lockout_policies(enabled: bool | None = None) -> list[dict]:
     """
-    Return all lockout policies as dicts, highest priority first (the engine's
-    evaluation order), name as tie-breaker.
+    Return all lockout policies as dicts, lowest priority number first (the
+    engine's evaluation order: a lower number means higher precedence, matching
+    privacyIDEA's policy engine), name as tie-breaker.
 
     :param enabled: if given, only return policies with this enabled state
     """
-    stmt = select(LockoutPolicy).order_by(LockoutPolicy.priority.desc(), LockoutPolicy.name)
+    stmt = select(LockoutPolicy).order_by(LockoutPolicy.priority.asc(), LockoutPolicy.name)
     if enabled is not None:
         stmt = stmt.where(LockoutPolicy.enabled == enabled)
     policies = db.session.scalars(stmt).all()

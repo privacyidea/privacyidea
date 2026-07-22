@@ -161,17 +161,17 @@
           min="1"
           [value]="editPolicy().priority"
           (input)="onPriorityInput($any($event.target).value)" />
+        <app-info-hint
+          matSuffix
+          i18n-text
+          text="Priority decides how this policy ranks against the others: a lower number means higher precedence, so for an allow/deny decision the matching policy with the lowest priority number wins, while lock, block and email policies all run regardless of priority."
+          ariaLabel="About priority"
+          i18n-ariaLabel />
         @if (!priorityValid()) {
           <mat-error i18n>Must be at least 1.</mat-error>
         }
-        <mat-hint i18n>Order across policies, highest first.</mat-hint>
+        <mat-hint i18n>Order across policies, lowest first.</mat-hint>
       </mat-form-field>
-
-      <p class="ca-field-note" i18n>
-        Priority decides how this policy ranks against the others: for an allow/deny decision the
-        highest-priority matching policy wins, while lock, block and email policies all run
-        regardless of priority.
-      </p>
     </div>
 
     <h4 i18n>Stages &amp; Actions</h4>
