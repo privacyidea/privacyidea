@@ -3150,6 +3150,35 @@ class ValidateAPITestCase(MyApiTestCase):
         delete_policy("hide_status")
         remove_token("spass_status")
 
+    def test_44_hide_auth_error_status_is_defensive(self):
+        """
+        A failure while evaluating the hardening policy must not turn the error
+        response into a 500. get_auth_error_status_code falls back to the mapped
+        status code when the policy backend raises.
+        """
+        from privacyidea.lib.policy import PolicyClass
+        self.setUp_user_realms()
+        set_default_realm(self.realm1)
+        set_policy(name="hide_status", scope=SCOPE.HARDENING,
+                   action=PolicyAction.HIDE_AUTH_ERROR_STATUS)
+
+        original_list_policies = PolicyClass.list_policies
+
+        def raise_for_hardening(self, *args, **kwargs):
+            if kwargs.get("scope") == SCOPE.HARDENING:
+                raise Exception("policy backend unavailable")
+            return original_list_policies(self, *args, **kwargs)
+
+        # An unknown user fails with HTTP 400; with the hardening evaluation
+        # raising, the response falls back to 400 instead of a 500.
+        with mock.patch.object(PolicyClass, "list_policies", raise_for_hardening):
+            with self.app.test_request_context('/validate/check', method="POST",
+                                               data={"user": "unknown", "pass": "1234"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(400, res.status_code, res.json)
+
+        delete_policy("hide_status")
+
     def _assert_unspecific_message_with_401(self, response):
         self.assertEqual(401, response.status_code, response.json)
         result = response.json.get("result")
