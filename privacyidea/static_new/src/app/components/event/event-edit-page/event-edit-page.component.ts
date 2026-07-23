@@ -106,6 +106,7 @@ export class EventEditPageComponent implements OnDestroy {
     this.isNewEvent() ? $localize`Create New Event Handler` : $localize`Edit Event Handler`
   );
   hasChanges = signal(false);
+  eventLoaded = computed(() => this.isNewEvent() || this.editEvent() !== EMPTY_EVENT);
   selectedEvents = linkedSignal(() => this.event().event);
   validConditionsDefinition = computed(() => {
     if (!this.editEvent().conditions) return true;
@@ -119,7 +120,7 @@ export class EventEditPageComponent implements OnDestroy {
     const validity: Record<string, boolean> = {};
     validity["events"] = this.editEvent().event.length > 0;
     validity["action"] = !!this.editEvent().action && this.validOptions();
-    validity["name"] = this.editEvent().name !== "" && /^[a-zA-Z0-9._-]*$/.test(this.editEvent().name);
+    validity["name"] = this.editEvent().name !== "" && /^[a-zA-Z0-9._\- ]*$/.test(this.editEvent().name);
     validity["handlerModule"] =
       this.eventService.selectedHandlerModule() !== null && this.eventService.selectedHandlerModule() !== "";
     validity["position"] = this.editEvent().position !== null && this.editEvent().position !== "";
