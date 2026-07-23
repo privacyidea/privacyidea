@@ -48,10 +48,14 @@ jobs:
       - name: Install osv-scanner
         env:
           OSV_SCANNER_VERSION: v2.3.5
+          # SHA256 of osv-scanner_linux_amd64 for the version above, from the
+          # release's osv-scanner_SHA256SUMS. Bump alongside OSV_SCANNER_VERSION.
+          OSV_SCANNER_SHA256: bb30c580afe5e757d3e959f4afd08a4795ea505ef84c46962b9a738aa573b41b
         run: |
           set -euo pipefail
           curl -sSL -o osv-scanner \
             "https://github.com/google/osv-scanner/releases/download/${OSV_SCANNER_VERSION}/osv-scanner_linux_amd64"
+          echo "${OSV_SCANNER_SHA256}  osv-scanner" | sha256sum -c -
           chmod +x osv-scanner
           sudo mv osv-scanner /usr/local/bin/osv-scanner
           osv-scanner --version

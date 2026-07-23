@@ -58,7 +58,8 @@ def check_max_auth_fail(user: User, user_search_dict: dict, check_validate_check
         fail_count = g.audit_object.get_count(search_dict, success=False, timedelta=time_delta)
         log.debug(f"Checking users timelimit {list(max_fail_dict)[0]}: {fail_count} failed authentications with "
                   "/validate/check")
-    search_dict = {"action": "*/auth"}
+    # Exclude challenge-trigger entries from the count, as for */validate/check above.
+    search_dict = {"action": "*/auth", "authentication": f"!{AUTH_RESPONSE.CHALLENGE}"}
     search_dict.update(user_search_dict)
     fail_auth_count = g.audit_object.get_count(search_dict, success=False, timedelta=time_delta)
     log.debug(f"Checking users timelimit {list(max_fail_dict)[0]}: {fail_auth_count} failed authentications with "

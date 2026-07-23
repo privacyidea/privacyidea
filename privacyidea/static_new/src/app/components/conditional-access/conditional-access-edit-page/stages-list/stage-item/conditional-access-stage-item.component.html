@@ -1,0 +1,93 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div class="ca-stage-item">
+  <div class="ca-stage-header margin-left-8">
+    <div class="ca-stage-name">
+      @if (!stage().id || editingName()) {
+        <mat-form-field
+          appearance="fill"
+          subscriptSizing="dynamic"
+          class="ca-stage-name-field input-width-m margin-bottom-16">
+          <mat-label i18n>Stage name</mat-label>
+          <input
+            matInput
+            type="text"
+            maxlength="255"
+            [value]="stage().name ?? ''"
+            (input)="onNameInput($any($event.target).value)"
+            (keydown.enter)="stopEditingName()" />
+        </mat-form-field>
+        @if (stage().id) {
+          <button
+            mat-icon-button
+            class="ca-stage-name-action"
+            aria-label="Done editing name"
+            i18n-aria-label
+            (click)="stopEditingName()">
+            <mat-icon>check</mat-icon>
+          </button>
+        }
+      } @else {
+        @if (stage().name) {
+          <span class="ca-stage-title-name">{{ stage().name }}</span>
+        } @else {
+          <span class="ca-stage-title-name ca-stage-title-name--empty" i18n>Unnamed stage</span>
+        }
+        <button
+          mat-icon-button
+          class="ca-stage-name-action"
+          aria-label="Edit stage name"
+          i18n-aria-label
+          (click)="startEditingName()">
+          <mat-icon>edit</mat-icon>
+        </button>
+      }
+    </div>
+    <button
+      mat-icon-button
+      aria-label="Remove stage"
+      i18n-aria-label
+      (click)="onRemoveStage()">
+      <mat-icon>delete</mat-icon>
+    </button>
+  </div>
+  <p class="ca-stage-hint" i18n>
+    Runs the actions below once this many tracked events occur within the policy's time window.
+  </p>
+
+  <div class="ca-stage-fields margin-left-8">
+    <mat-form-field
+      appearance="fill"
+      subscriptSizing="dynamic"
+      class="input-width-m">
+      <mat-label i18n>Failure threshold</mat-label>
+      <input
+        matInput
+        type="number"
+        min="1"
+        [value]="stage().failure_threshold"
+        (input)="onFailureThresholdInput($any($event.target).value)" />
+      <mat-hint i18n>Number of tracked events that trigger this stage.</mat-hint>
+    </mat-form-field>
+  </div>
+
+  <app-conditional-access-actions-list
+    [actions]="stage().actions"
+    (actionsChange)="onActionsChange($event)" />
+</div>

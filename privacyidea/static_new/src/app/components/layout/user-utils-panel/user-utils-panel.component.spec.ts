@@ -43,6 +43,7 @@ import { NotificationService } from "@services/notification/notification.service
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { PeriodicTaskService } from "@services/periodic-task/periodic-task.service";
 import { PolicyService } from "@services/policies/policies.service";
+import { ConditionalAccessPolicyService } from "@services/conditional-access/conditional-access-policy.service";
 import { PrivacyideaServerService } from "@services/privacyidea-server/privacyidea-server.service";
 import { RadiusServerService } from "@services/radius-server/radius-server.service";
 import { RealmService } from "@services/realm/realm.service";
@@ -75,6 +76,7 @@ import {
   MockNotificationService,
   MockPendingChangesService,
   MockPeriodicTaskService,
+  MockConditionalAccessPolicyService,
   MockPolicyService,
   MockPrivacyideaServerService,
   MockRadiusService,
@@ -149,6 +151,7 @@ describe("UserUtilsPanelComponent", () => {
         { provide: AuthenticationLogService, useClass: MockAuthenticationLogService },
         { provide: ClientsService, useClass: MockClientsService },
         { provide: PolicyService, useClass: MockPolicyService },
+        { provide: ConditionalAccessPolicyService, useClass: MockConditionalAccessPolicyService },
         { provide: SubscriptionService, useClass: MockSubscriptionService },
         { provide: MachineResolverService, useClass: MockMachineResolverService },
         { provide: ContainerTemplateService, useClass: MockContainerTemplateService },
@@ -225,6 +228,24 @@ describe("UserUtilsPanelComponent", () => {
       expect(tokenService.tokenResource.reload).toHaveBeenCalled();
       expect(tokenService.userTokenResource.reload).toHaveBeenCalled();
       expect(containerService.userContainersResource.reload).toHaveBeenCalled();
+    });
+
+    it("refreshes the conditional-access page", () => {
+      const caService = TestBed.inject(
+        ConditionalAccessPolicyService
+      ) as unknown as MockConditionalAccessPolicyService;
+      content.routeUrl.set(ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS);
+      component.refreshPage();
+      expect(caService.policiesResource.reload).toHaveBeenCalled();
+    });
+
+    it("refreshes the conditional-access details page", () => {
+      const caService = TestBed.inject(
+        ConditionalAccessPolicyService
+      ) as unknown as MockConditionalAccessPolicyService;
+      content.routeUrl.set(`${ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_DETAILS}5`);
+      component.refreshPage();
+      expect(caService.policiesResource.reload).toHaveBeenCalled();
     });
 
     it("refreshes tokens route", () => {

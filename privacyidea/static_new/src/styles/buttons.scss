@@ -373,6 +373,11 @@ $button-low-contrast-variant: linear-gradient(
   }
 
   &:not([disabled]) {
+    // Set the rest background here (not only at the top level) so it wins over
+    // Material's transparent outlined-button background; otherwise a stroked
+    // action button shows its container through and looks darker on a non-white
+    // surface (e.g. the recessed stage well) than on the white page.
+    background-color: $bg;
     color: $color;
     @if $border {
       border-color: $color;

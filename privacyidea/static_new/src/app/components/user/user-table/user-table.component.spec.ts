@@ -20,9 +20,10 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
 import { ActivatedRoute } from "@angular/router";
+import { FilterValue } from "@core/models/filter_value/filter_value";
 import { ContentService } from "@services/content/content.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
-import { UserService } from "@services/user/user.service";
+import { UserData, UserService } from "@services/user/user.service";
 import {
   MockContentService,
   MockLocalService,
@@ -31,6 +32,7 @@ import {
   MockTableUtilsService,
   MockUserService
 } from "@testing/mock-services";
+import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { of } from "rxjs";
 import { UserTableComponent } from "./user-table.component";
 import { ResolverService } from "@services/resolver/resolver.service";
@@ -81,6 +83,48 @@ describe("UserTableComponent", () => {
 
     expect(mockUserService.detailsUser().username).toBe("alice");
     expect(mockUserService.detailsUser().realm).toBe("themis");
+  });
+
+  describe("keyword-less client-side search", () => {
+    const users = [
+      { username: "alice", email: "alice@acme.test", givenname: "Alice" },
+      { username: "bob", email: "bob@other.test", givenname: "Bob" }
+    ] as UserData[];
+
+    beforeEach(() => {
+      mockUserService.usersResource.set(MockPiResponse.fromValue(users) as never);
+    });
+
+    // Read the data signal directly rather than running full template change detection: the
+    // template's clear-button binding reads the live input value and trips checkNoChanges in tests.
+    const namesFor = (rawFilter: string) => {
+      mockUserService.apiUserFilter.set(new FilterValue({ value: rawFilter }));
+      return component.usersDataSource().data.map((u) => u.username);
+    };
+
+    it("derives free-text terms from the keyword-less part of the filter", () => {
+      mockUserService.apiUserFilter.set(new FilterValue({ value: "alice username: bob" }));
+      expect(component.freeTextTerms()).toEqual(["alice"]);
+
+      mockUserService.apiUserFilter.set(new FilterValue({ value: "username: bob" }));
+      expect(component.freeTextTerms()).toEqual([]);
+    });
+
+    it("filters the loaded users across all columns for a bare term", () => {
+      expect(namesFor("acme")).toEqual(["alice"]); // matches email
+      expect(namesFor("bob")).toEqual(["bob"]); // matches username
+      expect(component.totalLength()).toBe(1);
+    });
+
+    it("does not client-filter when only column keywords are used", () => {
+      expect(namesFor("username: bob")).toEqual(["alice", "bob"]);
+    });
+
+    it("resets the filter when leaving the page", () => {
+      mockUserService.apiUserFilter.set(new FilterValue({ value: "alice" }));
+      component.ngOnDestroy();
+      expect(mockUserService.resetFilter).toHaveBeenCalled();
+    });
   });
 
   it("pageSizeOptions should add custom page size if not included in default options", () => {

@@ -1,0 +1,24 @@
+.ca-actions-list {
+  // Plain container (no card): just the section header above the action accordion.
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.ca-actions-list-label {
+  font-weight: 500;
+  margin: 16px 0 8px 8px;
+}
+
+.ca-actions-list-empty {
+  color: var(--mat-sys-on-surface-variant);
+  font-style: italic;
+  margin: 4px 0 0 8px;
+}
+
+.ca-add-button-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+}

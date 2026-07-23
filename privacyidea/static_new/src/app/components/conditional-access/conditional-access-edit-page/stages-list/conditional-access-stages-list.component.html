@@ -1,0 +1,39 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div class="ca-stages-list gap-16">
+  @if (stages().length === 0) {
+    <p class="ca-stages-list-empty" i18n>No stages defined yet. A policy needs at least one stage to take effect.</p>
+  }
+  @for (stage of stages(); track $index) {
+    <app-conditional-access-stage-item
+      [stage]="stage"
+      (updateStage)="onUpdateStage($index, $event)"
+      (removeStage)="onRemoveStage($index)" />
+  }
+  <div class="ca-add-button-row">
+    <button
+      mat-stroked-button
+      type="button"
+      class="action-button-secondary button-width-m"
+      (click)="onAddStage()">
+      <mat-icon>add</mat-icon>
+      <span i18n>Add Stage</span>
+    </button>
+  </div>
+</div>

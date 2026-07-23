@@ -143,6 +143,22 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         self.assertListEqual([policy_id],
                              [p["id"] for p in self._request("policy?enabled=false").json["result"]["value"]])
 
+    # --- GET /eventtypes and /actiontypes (constant lists) ---------------------
+
+    def test_list_event_types(self):
+        res = self._request("eventtypes")
+        self.assertEqual(200, res.status_code, res.json)
+        values = res.json["result"]["value"]
+        self.assertListEqual([event_type.value for event_type in AuthEventType], values)
+        self.assertIn(str(AuthEventType.PIN_FAIL), values)
+
+    def test_list_action_types(self):
+        res = self._request("actiontypes")
+        self.assertEqual(200, res.status_code, res.json)
+        values = res.json["result"]["value"]
+        self.assertListEqual([action.value for action in LockoutAction], values)
+        self.assertIn(str(LockoutAction.LOCK_USER), values)
+
     # --- PATCH /policy/<id> (update) -------------------------------------------
 
     def test_patch_renames_and_replaces_stages(self):

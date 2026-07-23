@@ -28,6 +28,7 @@ import { ConditionalAccessStateService } from "@services/conditional-access-stat
 import { CaConnectorService } from "@services/ca-connector/ca-connector.service";
 import { ChallengesService } from "@services/token/challenges/challenges.service";
 import { ClientsService } from "@services/clients/clients.service";
+import { ConditionalAccessPolicyService } from "@services/conditional-access/conditional-access-policy.service";
 import { ContainerService } from "@services/container/container.service";
 import { ContainerTemplateService } from "@services/container-template/container-template.service";
 import { ContentService } from "@services/content/content.service";
@@ -70,6 +71,7 @@ export const routes: Routes = [
       CaConnectorService,
       ChallengesService,
       ClientsService,
+      ConditionalAccessPolicyService,
       ContainerService,
       ContainerTemplateService,
       ContentService,

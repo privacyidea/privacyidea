@@ -113,7 +113,7 @@
                         (keydown.space)="$event.stopPropagation(); $event.preventDefault(); editPolicy(policy)"
                         tabindex="0"
                         role="button"
-                        class="flex ali-center bold">
+                        class="flex ali-center">
                         {{ policy.name }}
                       </a>
                       <app-copy-button [copyText]="policy.name" />
@@ -126,28 +126,28 @@
                   {{ policy.scope?.toLowerCase() }}
                 }
                 @case ("description") {
-                  {{ policy.description }}
+                  <span [innerHTML]="policy.description ?? '' | highlight: highlightTerms().description"></span>
                 }
                 @case ("actions") {
                   @if (policy.action) {
                     <app-view-action-column
                       [actions]="policy.action"
+                      [highlightTerms]="highlightTerms().actions"
                       [scope]="policy.scope" />
                   }
                 }
                 @case ("conditions") {
-                  <app-view-conditions-column [policy]="policy" />
+                  <app-view-conditions-column
+                    [highlightTerms]="highlightTerms().conditions"
+                    [policy]="policy" />
                 }
                 @case ("active") {
                   <div class="flex just-center">
-                    <mat-icon
-                      (click)="$event.stopPropagation(); togglePolicyActive(policy)"
-                      [class.active-icon]="policy.active"
-                      [class.inactive-icon]="!policy.active"
-                      [matTooltip]="policy.active ? 'Deactivate policy' : 'Activate policy'"
-                      class="clickable-icon">
-                      check_circle
-                    </mat-icon>
+                    <mat-slide-toggle
+                      (click)="togglePolicyActive(policy); $event.stopPropagation()"
+                      [checked]="policy.active"
+                      [disableRipple]="true"
+                      [matTooltip]="policy.active ? 'Deactivate policy' : 'Activate policy'" />
                   </div>
                 }
                 @default {

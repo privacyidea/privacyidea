@@ -105,7 +105,8 @@ describe("ServiceIdsComponent", () => {
 
   it("should delete service ID after confirmation", async () => {
     const serviceId = serviceIdServiceMock.serviceIds()[0];
-    component.deleteServiceId(serviceId);
+    component.selection.set([serviceId]);
+    component.deleteSelected();
     expect(dialogServiceMock.openDialog).toHaveBeenCalled();
     confirmClosed.next(true);
     confirmClosed.complete();

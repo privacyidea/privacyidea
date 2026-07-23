@@ -1,0 +1,27 @@
+@use "styles";
+@use "table";
+
+.conditional-access-container {
+  @include styles.main-component-style;
+  @include table.base-table-structure(
+    ".conditional-access-table",
+    ".conditional-access-table-filter",
+    ".table-scroll-container"
+  );
+  max-height: var(--table-max-height);
+}
+
+.actions-container {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 16px;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+// Narrow, centered checkbox column for row selection.
+.ca-checkbox-cell {
+  width: 48px;
+  text-align: center;
+}
