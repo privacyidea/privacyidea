@@ -24,14 +24,22 @@
       <table class="delivery-table">
         <thead>
           <tr>
-            <th i18n>Gateway</th>
-            <th i18n>OK</th>
-            <th i18n>Failed</th>
-            <th i18n>Error</th>
+            <th>
+              <app-table-sort-header key="key" [sortState]="pushSort" label="Gateway" i18n-label />
+            </th>
+            <th matTooltip="Successful deliveries within the last hour." i18n-matTooltip>
+              <app-table-sort-header key="ok" [sortState]="pushSort" label="OK" i18n-label [hasHintTooltip]="true" />
+            </th>
+            <th matTooltip="Failed deliveries within the last hour." i18n-matTooltip>
+              <app-table-sort-header key="failed" [sortState]="pushSort" label="Failed" i18n-label [hasHintTooltip]="true" />
+            </th>
+            <th matTooltip="Delivery errors within the last hour." i18n-matTooltip>
+              <app-table-sort-header key="error" [sortState]="pushSort" label="Error" i18n-label [hasHintTooltip]="true" />
+            </th>
           </tr>
         </thead>
         <tbody>
-          @for (entry of sections().push; track entry.key) {
+          @for (entry of pushRows(); track entry.key) {
             <tr>
               <td>{{ entry.key }}</td>
               <td>{{ entry.ok }}</td>
@@ -48,14 +56,22 @@
       <table class="delivery-table">
         <thead>
           <tr>
-            <th i18n>Gateway</th>
-            <th i18n>OK</th>
-            <th i18n>Failed</th>
-            <th i18n>Error</th>
+            <th>
+              <app-table-sort-header key="key" [sortState]="smsSort" label="Gateway" i18n-label />
+            </th>
+            <th matTooltip="Successful deliveries within the last hour." i18n-matTooltip>
+              <app-table-sort-header key="ok" [sortState]="smsSort" label="OK" i18n-label [hasHintTooltip]="true" />
+            </th>
+            <th matTooltip="Failed deliveries within the last hour." i18n-matTooltip>
+              <app-table-sort-header key="failed" [sortState]="smsSort" label="Failed" i18n-label [hasHintTooltip]="true" />
+            </th>
+            <th matTooltip="Delivery errors within the last hour." i18n-matTooltip>
+              <app-table-sort-header key="error" [sortState]="smsSort" label="Error" i18n-label [hasHintTooltip]="true" />
+            </th>
           </tr>
         </thead>
         <tbody>
-          @for (entry of sections().sms; track entry.key) {
+          @for (entry of smsRows(); track entry.key) {
             <tr>
               <td>{{ entry.key }}</td>
               <td>{{ entry.ok }}</td>
@@ -72,14 +88,22 @@
       <table class="delivery-table">
         <thead>
           <tr>
-            <th i18n>Identifier</th>
-            <th i18n>OK</th>
-            <th i18n>Failed</th>
-            <th i18n>Error</th>
+            <th>
+              <app-table-sort-header key="key" [sortState]="emailSort" label="Identifier" i18n-label />
+            </th>
+            <th matTooltip="Successful deliveries within the last hour." i18n-matTooltip>
+              <app-table-sort-header key="ok" [sortState]="emailSort" label="OK" i18n-label [hasHintTooltip]="true" />
+            </th>
+            <th matTooltip="Failed deliveries within the last hour." i18n-matTooltip>
+              <app-table-sort-header key="failed" [sortState]="emailSort" label="Failed" i18n-label [hasHintTooltip]="true" />
+            </th>
+            <th matTooltip="Delivery errors within the last hour." i18n-matTooltip>
+              <app-table-sort-header key="error" [sortState]="emailSort" label="Error" i18n-label [hasHintTooltip]="true" />
+            </th>
           </tr>
         </thead>
         <tbody>
-          @for (entry of sections().email; track entry.key) {
+          @for (entry of emailRows(); track entry.key) {
             <tr>
               <td>{{ entry.key }}</td>
               <td>{{ entry.ok }}</td>
@@ -92,7 +116,7 @@
     }
 
     @if (sections().push.length === 0 && sections().sms.length === 0 && sections().email.length === 0) {
-      <p i18n>No deliveries in this window.</p>
+      <p i18n>No notification deliveries in the last hour.</p>
     }
   </div>
 </app-widget-state>

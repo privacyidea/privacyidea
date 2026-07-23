@@ -17,9 +17,16 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, effect, inject, OnInit, signal } from "@angular/core";
+import { MatTooltip } from "@angular/material/tooltip";
+import { RouterLink } from "@angular/router";
 import { PiResponse } from "@app/app.component";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { TableSortHeaderComponent } from "@components/dashboard/widgets/table-sort/table-sort-header.component";
+import { TableSort } from "@components/dashboard/widgets/table-sort/table-sort";
 import { WidgetStateComponent } from "@components/dashboard/widgets/widget-state/widget-state.component";
+import { TruncationTooltipDirective } from "@components/shared/directives/truncation-tooltip.directive";
 import { DashboardWidget, WidgetSize } from "@models/dashboard";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DashboardDataRef, DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { Resolvers, ResolverService, ResolverServiceInterface } from "@services/resolver/resolver.service";
 import { ResolverTimingEntry, SystemService, SystemServiceInterface } from "@services/system/system.service";
@@ -47,7 +54,7 @@ function toMs(seconds: number | null | undefined): number | null {
 @Component({
   selector: "app-resolver-timing-widget",
   standalone: true,
-  imports: [WidgetStateComponent],
+  imports: [MatTooltip, WidgetStateComponent, TruncationTooltipDirective, RouterLink, TableSortHeaderComponent],
   templateUrl: "./resolver-timing-widget.component.html",
   styleUrl: "./resolver-timing-widget.component.scss"
 })
@@ -55,13 +62,16 @@ export class ResolverTimingWidgetComponent extends DashboardWidget implements On
   static override readonly type = "resolver-timing";
   static override readonly title = $localize`Resolver Timing`;
   static override readonly icon = "speed";
-  static override readonly defaultSize: WidgetSize = { cols: 10, rows: 5 };
-  static override readonly minSize: WidgetSize = { cols: 6, rows: 4 };
+  static override readonly defaultSize: WidgetSize = { cols: 12, rows: 6 };
+  static override readonly minSize: WidgetSize = { cols: 10, rows: 4 };
   static override readonly maxSize: WidgetSize = { cols: 18, rows: 10 };
 
   private readonly systemService: SystemServiceInterface = inject(SystemService);
   private readonly resolverService: ResolverServiceInterface = inject(ResolverService);
+  private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly store = inject(DashboardDataStore);
+
+  readonly resolverLinkAllowed = computed(() => this.authService.actionAllowed("resolverread"));
 
   private readonly dataRef = signal<DashboardDataRef<ResolverTimingResponses> | null>(null);
 
@@ -96,6 +106,17 @@ export class ResolverTimingWidgetComponent extends DashboardWidget implements On
     return [...activeRows, ...idleRows].sort((a, b) => (b.p95Ms ?? b.maxMs ?? 0) - (a.p95Ms ?? a.maxMs ?? 0));
   });
 
+  readonly sort = new TableSort<ResolverTimingRow, "resolver" | "op" | "count" | "avgMs" | "p95Ms" | "maxMs">({
+    resolver: (row) => row.resolver,
+    op: (row) => row.op,
+    count: (row) => row.count,
+    avgMs: (row) => row.avgMs,
+    p95Ms: (row) => row.p95Ms,
+    maxMs: (row) => row.maxMs
+  });
+
+  readonly sortedRows = computed<ResolverTimingRow[]>(() => this.sort.apply(this.rows()));
+
   constructor() {
     super();
     effect(() => {
@@ -103,12 +124,14 @@ export class ResolverTimingWidgetComponent extends DashboardWidget implements On
       if (!ref) {
         return;
       }
+      if (ref.error()) {
+        this.state.set("error");
+        return;
+      }
       const value = ref.value();
       if (value !== undefined) {
         const ok = value.timing.result?.status === true && value.resolvers.result?.status === true;
         this.state.set(ok ? "ready" : "error");
-      } else if (ref.error()) {
-        this.state.set("error");
       } else {
         this.state.set("loading");
       }
@@ -133,6 +156,10 @@ export class ResolverTimingWidgetComponent extends DashboardWidget implements On
         })
       )
     );
+  }
+
+  protected resolverLink(row: ResolverTimingRow): string | null {
+    return this.resolverLinkAllowed() ? ROUTE_PATHS.USERS_RESOLVERS_DETAILS + row.resolver : null;
   }
 
   protected badgeClass(row: ResolverTimingRow): string {

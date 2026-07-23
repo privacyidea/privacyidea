@@ -45,6 +45,8 @@ h4 {
   width: 100%;
   border-collapse: collapse;
 
+  @include widget.sortable-headers;
+
   th,
   td {
     text-align: left;

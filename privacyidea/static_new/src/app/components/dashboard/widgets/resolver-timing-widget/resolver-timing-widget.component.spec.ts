@@ -20,9 +20,12 @@ import { provideZonelessChangeDetection } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideRouter } from "@angular/router";
 import { PiResponse } from "@app/app.component";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { DashboardWidget, WidgetInstance } from "@models/dashboard";
+import { AuthService } from "@services/auth/auth.service";
 import { Resolver, Resolvers, ResolverService } from "@services/resolver/resolver.service";
 import { ResolverTimingEntry, SystemService } from "@services/system/system.service";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
 import { MockSystemService } from "@testing/mock-services/mock-system-service";
 import { of } from "rxjs";
@@ -50,6 +53,7 @@ describe("ResolverTimingWidgetComponent", () => {
   let component: ResolverTimingWidgetComponent;
   let systemMock: MockSystemService;
   let resolverMock: MockResolverService;
+  let authMock: MockAuthService;
 
   const instance: WidgetInstance = { id: "resolver-timing-1", type: "resolver-timing", x: 0, y: 0, cols: 10, rows: 5 };
 
@@ -60,9 +64,13 @@ describe("ResolverTimingWidgetComponent", () => {
         provideZonelessChangeDetection(),
         provideRouter([]),
         { provide: SystemService, useClass: MockSystemService },
-        { provide: ResolverService, useClass: MockResolverService }
+        { provide: ResolverService, useClass: MockResolverService },
+        { provide: AuthService, useClass: MockAuthService }
       ]
     }).compileComponents();
+
+    authMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+    authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["resolverread"] });
 
     systemMock = TestBed.inject(SystemService) as unknown as MockSystemService;
     systemMock.getResolverTiming.mockReturnValue(
@@ -121,8 +129,8 @@ describe("ResolverTimingWidgetComponent", () => {
   });
 
   it("should override the static size constraints", () => {
-    expect(ResolverTimingWidgetComponent.defaultSize).toEqual({ cols: 10, rows: 5 });
-    expect(ResolverTimingWidgetComponent.minSize).toEqual({ cols: 6, rows: 4 });
+    expect(ResolverTimingWidgetComponent.defaultSize).toEqual({ cols: 12, rows: 6 });
+    expect(ResolverTimingWidgetComponent.minSize).toEqual({ cols: 10, rows: 4 });
     expect(ResolverTimingWidgetComponent.maxSize).toEqual({ cols: 18, rows: 10 });
   });
 
@@ -131,6 +139,21 @@ describe("ResolverTimingWidgetComponent", () => {
     expect(rows.length).toBe(2);
     expect(rows[0].textContent).toContain("ldapresolver");
     expect(rows[1].textContent).toContain("sqlresolver");
+  });
+
+  it("should link the resolver name to the resolver details when resolverread is allowed", () => {
+    const link: HTMLAnchorElement = fixture.nativeElement.querySelector("tbody tr:first-child td a");
+    expect(link.textContent?.trim()).toBe("ldapresolver");
+    expect(link.getAttribute("href")).toBe(ROUTE_PATHS.USERS_RESOLVERS_DETAILS + "ldapresolver");
+  });
+
+  it("should render the resolver name as plain text without resolverread", async () => {
+    authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: [] });
+    await fixture.whenStable();
+
+    const firstCell: HTMLElement = fixture.nativeElement.querySelector("tbody tr:first-child td");
+    expect(firstCell.querySelector("a")).toBeNull();
+    expect(firstCell.textContent?.trim()).toBe("ldapresolver");
   });
 
   it("should convert seconds to rounded milliseconds", () => {

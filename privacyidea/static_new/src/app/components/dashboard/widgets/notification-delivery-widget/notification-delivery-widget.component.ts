@@ -17,21 +17,19 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, effect, inject, OnInit, signal } from "@angular/core";
+import { MatTooltip } from "@angular/material/tooltip";
 import { PiResponse } from "@app/app.component";
+import { TableSortHeaderComponent } from "@components/dashboard/widgets/table-sort/table-sort-header.component";
+import { TableSort } from "@components/dashboard/widgets/table-sort/table-sort";
 import { WidgetStateComponent } from "@components/dashboard/widgets/widget-state/widget-state.component";
 import { DashboardWidget, WidgetSize } from "@models/dashboard";
 import { DashboardDataRef, DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
-import { SmsGateway, SmsGatewayService, SmsGatewayServiceInterface } from "@services/sms-gateway/sms-gateway.service";
-import { SmtpServers, SmtpService, SmtpServiceInterface } from "@services/smtp/smtp.service";
 import {
   NotificationChannelEntry,
   NotificationDeliveryHealth,
   SystemService,
   SystemServiceInterface
 } from "@services/system/system.service";
-import { forkJoin } from "rxjs";
-
-const FIREBASE_PROVIDER_MODULE = "privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider";
 
 interface NotificationDeliverySections {
   push: NotificationChannelEntry[];
@@ -39,24 +37,25 @@ interface NotificationDeliverySections {
   email: NotificationChannelEntry[];
 }
 
-interface NotificationDeliveryResponses {
-  delivery: PiResponse<NotificationDeliveryHealth>;
-  gateways: PiResponse<SmsGateway[]>;
-  smtp: PiResponse<SmtpServers>;
+type NotificationDeliveryColumn = "key" | "ok" | "failed" | "error";
+
+function createSort(): TableSort<NotificationChannelEntry, NotificationDeliveryColumn> {
+  return new TableSort<NotificationChannelEntry, NotificationDeliveryColumn>({
+    key: (entry) => entry.key,
+    ok: (entry) => entry.ok,
+    failed: (entry) => entry.failed,
+    error: (entry) => entry.error
+  });
 }
 
-function mergeConfigured(names: string[], entries: NotificationChannelEntry[]): NotificationChannelEntry[] {
-  const byKey = new Map(entries.map((entry) => [entry.key, entry]));
-  const configured = names.map((name) => byKey.get(name) ?? { key: name, ok: 0, failed: 0, error: 0, total: 0 });
-  const configuredNames = new Set(names);
-  const unconfigured = entries.filter((entry) => !configuredNames.has(entry.key));
-  return [...configured, ...unconfigured].sort((a, b) => b.total - a.total);
+function withDeliveries(entries: NotificationChannelEntry[] | undefined): NotificationChannelEntry[] {
+  return (entries ?? []).filter((entry) => entry.total > 0).sort((a, b) => b.total - a.total);
 }
 
 @Component({
   selector: "app-notification-delivery-widget",
   standalone: true,
-  imports: [WidgetStateComponent],
+  imports: [MatTooltip, WidgetStateComponent, TableSortHeaderComponent],
   templateUrl: "./notification-delivery-widget.component.html",
   styleUrl: "./notification-delivery-widget.component.scss"
 })
@@ -69,27 +68,27 @@ export class NotificationDeliveryWidgetComponent extends DashboardWidget impleme
   static override readonly maxSize: WidgetSize = { cols: 16, rows: 12 };
 
   private readonly systemService: SystemServiceInterface = inject(SystemService);
-  private readonly smsGatewayService: SmsGatewayServiceInterface = inject(SmsGatewayService);
-  private readonly smtpService: SmtpServiceInterface = inject(SmtpService);
   private readonly store = inject(DashboardDataStore);
 
-  private readonly dataRef = signal<DashboardDataRef<NotificationDeliveryResponses> | null>(null);
+  private readonly dataRef = signal<DashboardDataRef<PiResponse<NotificationDeliveryHealth>> | null>(null);
 
   readonly sections = computed<NotificationDeliverySections>(() => {
-    const value = this.dataRef()?.value();
-    const delivery = value?.delivery.result?.value;
-    const gateways = value?.gateways.result?.value ?? [];
-    const smtpIdentifiers = Object.keys(value?.smtp.result?.value ?? {});
-
-    const pushNames = gateways.filter((gateway) => gateway.providermodule === FIREBASE_PROVIDER_MODULE).map((g) => g.name);
-    const smsNames = gateways.filter((gateway) => gateway.providermodule !== FIREBASE_PROVIDER_MODULE).map((g) => g.name);
+    const delivery = this.dataRef()?.value()?.result?.value;
 
     return {
-      push: mergeConfigured(pushNames, delivery?.push ?? []),
-      sms: mergeConfigured(smsNames, delivery?.sms ?? []),
-      email: mergeConfigured(smtpIdentifiers, delivery?.email ?? [])
+      push: withDeliveries(delivery?.push),
+      sms: withDeliveries(delivery?.sms),
+      email: withDeliveries(delivery?.email)
     };
   });
+
+  readonly pushSort = createSort();
+  readonly smsSort = createSort();
+  readonly emailSort = createSort();
+
+  readonly pushRows = computed<NotificationChannelEntry[]>(() => this.pushSort.apply(this.sections().push));
+  readonly smsRows = computed<NotificationChannelEntry[]>(() => this.smsSort.apply(this.sections().sms));
+  readonly emailRows = computed<NotificationChannelEntry[]>(() => this.emailSort.apply(this.sections().email));
 
   constructor() {
     super();
@@ -98,15 +97,13 @@ export class NotificationDeliveryWidgetComponent extends DashboardWidget impleme
       if (!ref) {
         return;
       }
+      if (ref.error()) {
+        this.state.set("error");
+        return;
+      }
       const value = ref.value();
       if (value !== undefined) {
-        const ok =
-          value.delivery.result?.status === true &&
-          value.gateways.result?.status === true &&
-          value.smtp.result?.status === true;
-        this.state.set(ok ? "ready" : "error");
-      } else if (ref.error()) {
-        this.state.set("error");
+        this.state.set(value.result?.status === true ? "ready" : "error");
       } else {
         this.state.set("loading");
       }
@@ -120,20 +117,11 @@ export class NotificationDeliveryWidgetComponent extends DashboardWidget impleme
 
   ngOnInit(): void {
     this.dataRef.set(
-      this.store.load("dashboard:notification-delivery", () =>
-        forkJoin({
-          delivery: this.systemService.getNotificationDelivery(),
-          gateways: this.smsGatewayService.listSmsGateways(),
-          smtp: this.smtpService.listSmtpServers()
-        })
-      )
+      this.store.load("dashboard:notification-delivery", () => this.systemService.getNotificationDelivery())
     );
   }
 
   protected badgeClass(entry: NotificationChannelEntry): string {
-    if (entry.total === 0) {
-      return "highlight-disabled";
-    }
     if (entry.error > 0) {
       return "highlight-false";
     }

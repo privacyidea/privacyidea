@@ -21,16 +21,11 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideRouter } from "@angular/router";
 import { PiResponse } from "@app/app.component";
 import { DashboardWidget, WidgetInstance } from "@models/dashboard";
-import { SmsGateway, SmsGatewayService } from "@services/sms-gateway/sms-gateway.service";
-import { SmtpServers, SmtpService } from "@services/smtp/smtp.service";
+import { DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { NotificationDeliveryHealth, SystemService } from "@services/system/system.service";
-import { MockSmsGatewayService } from "@testing/mock-services/mock-sms-gateway-service";
-import { MockSmtpService } from "@testing/mock-services/mock-smtp-service";
 import { MockSystemService } from "@testing/mock-services/mock-system-service";
-import { of } from "rxjs";
+import { of, throwError } from "rxjs";
 import { NotificationDeliveryWidgetComponent } from "./notification-delivery-widget.component";
-
-const FIREBASE_PROVIDER_MODULE = "privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider";
 
 function makeResponse<T>(value: T): PiResponse<T> {
   return {
@@ -45,16 +40,10 @@ function makeResponse<T>(value: T): PiResponse<T> {
   };
 }
 
-function makeGateway(name: string, providermodule: string): SmsGateway {
-  return { name, providermodule, options: {}, headers: {} };
-}
-
 describe("NotificationDeliveryWidgetComponent", () => {
   let fixture: ComponentFixture<NotificationDeliveryWidgetComponent>;
   let component: NotificationDeliveryWidgetComponent;
   let systemMock: MockSystemService;
-  let smsGatewayMock: MockSmsGatewayService;
-  let smtpMock: MockSmtpService;
 
   const instance: WidgetInstance = {
     id: "notification-delivery-1",
@@ -78,29 +67,12 @@ describe("NotificationDeliveryWidgetComponent", () => {
       providers: [
         provideZonelessChangeDetection(),
         provideRouter([]),
-        { provide: SystemService, useClass: MockSystemService },
-        { provide: SmsGatewayService, useClass: MockSmsGatewayService },
-        { provide: SmtpService, useClass: MockSmtpService }
+        { provide: SystemService, useClass: MockSystemService }
       ]
     }).compileComponents();
 
     systemMock = TestBed.inject(SystemService) as unknown as MockSystemService;
     systemMock.getNotificationDelivery.mockReturnValue(of(makeResponse(deliveryHealth)));
-
-    smsGatewayMock = TestBed.inject(SmsGatewayService) as unknown as MockSmsGatewayService;
-    smsGatewayMock.listSmsGateways.mockReturnValue(
-      of(
-        makeResponse<SmsGateway[]>([
-          makeGateway("firebase1", FIREBASE_PROVIDER_MODULE),
-          makeGateway("gw1", "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider")
-        ])
-      )
-    );
-
-    smtpMock = TestBed.inject(SmtpService) as unknown as MockSmtpService;
-    smtpMock.listSmtpServers.mockReturnValue(
-      of(makeResponse<SmtpServers>({ smtp1: { identifier: "smtp1" } as SmtpServers[string] }))
-    );
 
     fixture = TestBed.createComponent(NotificationDeliveryWidgetComponent);
     component = fixture.componentInstance;
@@ -147,14 +119,18 @@ describe("NotificationDeliveryWidgetComponent", () => {
     expect(badges[2].className).toBe("highlight-false");
   });
 
-  it("should include a configured gateway with no recorded deliveries as a zero-count row", () => {
-    smsGatewayMock.listSmsGateways.mockReturnValue(
+  it("should omit a channel entry without recorded deliveries", () => {
+    systemMock.getNotificationDelivery.mockReturnValue(
       of(
-        makeResponse<SmsGateway[]>([
-          makeGateway("firebase1", FIREBASE_PROVIDER_MODULE),
-          makeGateway("gw1", "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider"),
-          makeGateway("gw-untested", "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider")
-        ])
+        makeResponse<NotificationDeliveryHealth>({
+          push: [{ key: "firebase1", ok: 10, failed: 0, error: 0, total: 10 }],
+          sms: [
+            { key: "gw1", ok: 5, failed: 2, error: 0, total: 7 },
+            { key: "gw-untested", ok: 0, failed: 0, error: 0, total: 0 }
+          ],
+          email: [{ key: "smtp1", ok: 3, failed: 0, error: 1, total: 4 }],
+          since_seconds: 3600
+        })
       )
     );
 
@@ -163,30 +139,22 @@ describe("NotificationDeliveryWidgetComponent", () => {
     untestedFixture.detectChanges();
 
     const text = untestedFixture.nativeElement.textContent;
-    expect(text).toContain("gw-untested");
-    const badges: HTMLElement[] = Array.from(
-      untestedFixture.nativeElement.querySelectorAll(".delivery-table tbody tr")
-    );
-    const untestedRow = badges.find((row) => row.textContent?.includes("gw-untested"));
-    expect(untestedRow?.querySelector("td:last-child span")?.className).toBe("highlight-disabled");
+    expect(text).toContain("gw1");
+    expect(text).not.toContain("gw-untested");
     untestedFixture.destroy();
   });
 
-  it("should hide a channel's heading and table when it has neither configured gateways nor recorded deliveries", () => {
+  it("should hide a channel's heading and table when it has no recorded deliveries", () => {
     systemMock.getNotificationDelivery.mockReturnValue(
       of(
         makeResponse<NotificationDeliveryHealth>({
           push: [{ key: "firebase1", ok: 10, failed: 0, error: 0, total: 10 }],
-          sms: [],
+          sms: [{ key: "gw1", ok: 0, failed: 0, error: 0, total: 0 }],
           email: [],
           since_seconds: 3600
         })
       )
     );
-    smsGatewayMock.listSmsGateways.mockReturnValue(
-      of(makeResponse<SmsGateway[]>([makeGateway("firebase1", FIREBASE_PROVIDER_MODULE)]))
-    );
-    smtpMock.listSmtpServers.mockReturnValue(of(makeResponse<SmtpServers>({})));
 
     const partialFixture = TestBed.createComponent(NotificationDeliveryWidgetComponent);
     partialFixture.componentRef.setInput("instance", instance);
@@ -199,19 +167,27 @@ describe("NotificationDeliveryWidgetComponent", () => {
     partialFixture.destroy();
   });
 
+  it("should set the state to error when a refresh fails while cached data is still present", () => {
+    expect(component.state()).toBe("ready");
+
+    systemMock.getNotificationDelivery.mockReturnValue(throwError(() => new Error("boom")));
+    TestBed.inject(DashboardDataStore).refreshAll();
+    fixture.detectChanges();
+
+    expect(component.state()).toBe("error");
+  });
+
   it("should show a single fallback message instead of any section when all channels are empty", () => {
     systemMock.getNotificationDelivery.mockReturnValue(
       of(makeResponse<NotificationDeliveryHealth>({ push: [], sms: [], email: [], since_seconds: 3600 }))
     );
-    smsGatewayMock.listSmsGateways.mockReturnValue(of(makeResponse<SmsGateway[]>([])));
-    smtpMock.listSmtpServers.mockReturnValue(of(makeResponse<SmtpServers>({})));
 
     const emptyFixture = TestBed.createComponent(NotificationDeliveryWidgetComponent);
     emptyFixture.componentRef.setInput("instance", instance);
     emptyFixture.detectChanges();
 
     expect(emptyFixture.nativeElement.querySelector("table")).toBeNull();
-    expect(emptyFixture.nativeElement.textContent).toContain("No deliveries in this window.");
+    expect(emptyFixture.nativeElement.textContent).toContain("No notification deliveries in the last hour.");
     emptyFixture.destroy();
   });
 });

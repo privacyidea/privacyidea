@@ -25,7 +25,7 @@ import { DashboardDataStore } from "@services/dashboard/dashboard-data-store.ser
 import { TokenCountParams, TokenService, TokenTypeKey } from "@services/token/token.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockTokenService } from "@testing/mock-services/mock-token-service";
-import { of, Subject } from "rxjs";
+import { of, Subject, throwError } from "rxjs";
 import { TokenTypesWidgetComponent } from "./token-types-widget.component";
 
 function makeCountResponse(count: number) {
@@ -285,6 +285,98 @@ describe("TokenTypesWidgetComponent", () => {
     fixture2.detectChanges();
 
     expect(fixture2.componentInstance.state()).toBe("error");
+    fixture2.destroy();
+  });
+
+  it("should show an unknown count for a failing type without dropping the other types", () => {
+    const store = TestBed.inject(DashboardDataStore);
+    store.invalidate();
+    tokenMock.getTokenCount.mockImplementation((params: TokenCountParams = {}) =>
+      params.type === "totp"
+        ? throwError(() => new Error("boom"))
+        : of(makeCountResponse(COUNTS_BY_TYPE[params.type ?? ""] ?? 0))
+    );
+
+    const fixture2 = TestBed.createComponent(TokenTypesWidgetComponent);
+    fixture2.componentRef.setInput("instance", instance);
+    fixture2.detectChanges();
+
+    expect(fixture2.componentInstance.typeCounts()).toEqual([
+      { key: "hotp", name: "HOTP", count: 55 },
+      { key: "totp", name: "TOTP", count: null }
+    ]);
+    expect(fixture2.componentInstance.state()).toBe("ready");
+    expect(fixture2.nativeElement.textContent).toContain("unknown");
+    fixture2.destroy();
+  });
+
+  it("should stop the partial loading indicator once nothing is in flight anymore", () => {
+    const store = TestBed.inject(DashboardDataStore);
+    store.invalidate();
+    tokenMock.getTokenCount.mockImplementation((params: TokenCountParams = {}) =>
+      params.type === "totp"
+        ? throwError(() => new Error("boom"))
+        : of(makeCountResponse(COUNTS_BY_TYPE[params.type ?? ""] ?? 0))
+    );
+
+    const fixture2 = TestBed.createComponent(TokenTypesWidgetComponent);
+    fixture2.componentRef.setInput("instance", instance);
+    fixture2.detectChanges();
+
+    expect(fixture2.componentInstance.loadingMore()).toBe(false);
+    expect(fixture2.componentInstance.partialLoading()).toBe(false);
+    fixture2.destroy();
+  });
+
+  it("should keep the previous count marked as stale when a manual reload fails", () => {
+    tokenMock.getTokenCount.mockImplementation((params: TokenCountParams = {}) =>
+      params.type === "totp"
+        ? throwError(() => new Error("boom"))
+        : of(makeCountResponse(COUNTS_BY_TYPE[params.type ?? ""] ?? 0))
+    );
+
+    component.reload();
+    fixture.detectChanges();
+
+    expect(component.typeCounts()).toEqual([
+      { key: "hotp", name: "HOTP", count: 55 },
+      { key: "totp", name: "TOTP", count: 12, stale: true }
+    ]);
+    expect(fixture.nativeElement.querySelector(".stale-marker")).not.toBeNull();
+  });
+
+  it("should retry a type that previously failed on the next load", () => {
+    const store = TestBed.inject(DashboardDataStore);
+    store.invalidate();
+    tokenMock.getTokenCount.mockImplementation((params: TokenCountParams = {}) =>
+      params.type === "totp"
+        ? throwError(() => new Error("boom"))
+        : of(makeCountResponse(COUNTS_BY_TYPE[params.type ?? ""] ?? 0))
+    );
+
+    const fixture1 = TestBed.createComponent(TokenTypesWidgetComponent);
+    fixture1.componentRef.setInput("instance", instance);
+    fixture1.detectChanges();
+    fixture1.destroy();
+
+    tokenMock.getTokenCount.mockClear();
+    tokenMock.getTokenCount.mockImplementation((params: TokenCountParams = {}) =>
+      of(makeCountResponse(COUNTS_BY_TYPE[params.type ?? ""] ?? 0))
+    );
+
+    const fixture2 = TestBed.createComponent(TokenTypesWidgetComponent);
+    fixture2.componentRef.setInput("instance", instance);
+    fixture2.detectChanges();
+
+    const retriedTypes = tokenMock.getTokenCount.mock.calls
+      .map(([params]) => (params as TokenCountParams | undefined)?.type)
+      .filter((type): type is TokenTypeKey => type !== undefined);
+
+    expect(retriedTypes).toEqual(expect.arrayContaining(["hotp", "totp"]));
+    expect(fixture2.componentInstance.typeCounts()).toEqual([
+      { key: "hotp", name: "HOTP", count: 55 },
+      { key: "totp", name: "TOTP", count: 12 }
+    ]);
     fixture2.destroy();
   });
 });

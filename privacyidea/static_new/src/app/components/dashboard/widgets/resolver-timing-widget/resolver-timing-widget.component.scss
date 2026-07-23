@@ -37,6 +37,8 @@
   border-collapse: collapse;
   table-layout: fixed;
 
+  @include widget.sortable-headers;
+
   th,
   td {
     text-align: left;
@@ -50,7 +52,7 @@
 
   th:nth-child(2),
   td:nth-child(2) {
-    width: 24%;
+    width: 18%;
   }
 
   th {

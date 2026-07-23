@@ -17,34 +17,35 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-@mixin host {
-  display: flex;
+:host {
+  display: inline-flex;
   align-items: center;
+  gap: var(--quarter-global-padding);
+  max-width: 100%;
+}
+
+.sort-header-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sort-button.mat-mdc-icon-button.mat-mdc-button-base {
+  --mdc-icon-button-state-layer-size: 24px;
+  --mat-icon-button-state-layer-size: 24px;
+  --mdc-icon-button-icon-size: 20px;
+  height: 24px;
+  width: 24px;
+  min-width: 24px;
+  padding: 0;
+  flex: none;
   justify-content: center;
-  height: 100%;
-}
 
-@mixin sortable-headers {
-  th {
-    padding-block: 0;
-    white-space: nowrap;
-  }
-}
-
-@mixin stat-table($padding-block: var(--quarter-global-padding)) {
-  width: 100%;
-  border-collapse: collapse;
-
-  td {
-    padding: $padding-block var(--global-padding);
-
-    &:nth-child(2) {
-      text-align: center;
-      font-weight: 600;
-    }
+  .mat-icon {
+    justify-content: center;
   }
 
-  tr:not(:last-child) td {
-    border-bottom: 1px solid var(--mat-sys-outline-variant);
+  .mat-mdc-button-touch-target {
+    height: 24px;
+    width: 24px;
   }
 }

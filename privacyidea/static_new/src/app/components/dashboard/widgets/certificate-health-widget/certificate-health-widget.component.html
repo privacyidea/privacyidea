@@ -22,19 +22,40 @@
     <table class="cert-health-table">
       <thead>
         <tr>
-          <th i18n>Source</th>
-          <th i18n>Name</th>
-          <th i18n>Days left</th>
-          <th i18n>Status</th>
+          <th>
+            <app-table-sort-header key="source" [sortState]="sort" label="Source" i18n-label />
+          </th>
+          <th>
+            <app-table-sort-header key="name" [sortState]="sort" label="Name" i18n-label />
+          </th>
+          <th>
+            <app-table-sort-header key="daysRemaining" [sortState]="sort" label="Days left" i18n-label />
+          </th>
+          <th>
+            <app-table-sort-header key="status" [sortState]="sort" label="Status" i18n-label />
+          </th>
         </tr>
       </thead>
       <tbody>
-        @for (entry of entries(); track entry.source + entry.name) {
+        @for (entry of sortedEntries(); track entry.source + entry.name) {
           <tr>
-            <td>{{ entry.source }}</td>
-            <td>{{ entry.name }}</td>
-            <td>{{ entry.days_remaining !== null ? entry.days_remaining : "—" }}</td>
-            <td><span [class]="badgeClass(entry.status)">{{ entry.status }}</span></td>
+            <td [appTruncationTooltip]="entry.source">{{ entry.source }}</td>
+            <td [appTruncationTooltip]="entry.name">
+              @if (resolverLink(entry); as link) {
+                <a [routerLink]="link">{{ entry.name }}</a>
+              } @else {
+                {{ entry.name }}
+              }
+            </td>
+            <td
+              [matTooltip]="entry.not_after ? (entry.not_after | date: 'medium') : ''"
+              [matTooltipDisabled]="!entry.not_after"
+            >
+              {{ entry.days_remaining !== null ? entry.days_remaining : "—" }}
+            </td>
+            <td>
+              <span [class]="badgeClass(entry.status)">{{ entry.status }}</span>
+            </td>
           </tr>
         } @empty {
           <tr>

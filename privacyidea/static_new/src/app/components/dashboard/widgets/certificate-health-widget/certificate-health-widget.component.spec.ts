@@ -20,8 +20,11 @@ import { provideZonelessChangeDetection } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideRouter } from "@angular/router";
 import { PiResponse } from "@app/app.component";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { DashboardWidget, WidgetInstance } from "@models/dashboard";
+import { AuthService } from "@services/auth/auth.service";
 import { CertificateHealthEntry, SystemService } from "@services/system/system.service";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockSystemService } from "@testing/mock-services/mock-system-service";
 import { of } from "rxjs";
 import { CertificateHealthWidgetComponent } from "./certificate-health-widget.component";
@@ -43,6 +46,7 @@ describe("CertificateHealthWidgetComponent", () => {
   let fixture: ComponentFixture<CertificateHealthWidgetComponent>;
   let component: CertificateHealthWidgetComponent;
   let systemMock: MockSystemService;
+  let authMock: MockAuthService;
 
   const instance: WidgetInstance = { id: "cert-health-1", type: "certificate-health", x: 0, y: 0, cols: 8, rows: 5 };
 
@@ -52,9 +56,13 @@ describe("CertificateHealthWidgetComponent", () => {
       providers: [
         provideZonelessChangeDetection(),
         provideRouter([]),
-        { provide: SystemService, useClass: MockSystemService }
+        { provide: SystemService, useClass: MockSystemService },
+        { provide: AuthService, useClass: MockAuthService }
       ]
     }).compileComponents();
+
+    authMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+    authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["resolverread"] });
 
     systemMock = TestBed.inject(SystemService) as unknown as MockSystemService;
     systemMock.getCertificateHealth.mockReturnValue(
@@ -125,6 +133,50 @@ describe("CertificateHealthWidgetComponent", () => {
     );
     expect(badges[0].className).toBe("highlight-true");
     expect(badges[1].className).toBe("highlight-false");
+  });
+
+  it("should link resolver-based entries to the resolver details when resolverread is allowed", () => {
+    const links: HTMLAnchorElement[] = Array.from(fixture.nativeElement.querySelectorAll("tbody td a"));
+    expect(links.length).toBe(2);
+    expect(links[0].getAttribute("href")).toBe(ROUTE_PATHS.USERS_RESOLVERS_DETAILS + "ldap1");
+    expect(links[1].getAttribute("href")).toBe(ROUTE_PATHS.USERS_RESOLVERS_DETAILS + "kc1");
+  });
+
+  it("should render the name as plain text without resolverread", async () => {
+    authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: [] });
+    await fixture.whenStable();
+
+    expect(fixture.nativeElement.querySelectorAll("tbody td a").length).toBe(0);
+    const nameCell: HTMLElement = fixture.nativeElement.querySelector("tbody tr:first-child td:nth-child(2)");
+    expect(nameCell.textContent?.trim()).toBe("ldap1");
+  });
+
+  it("should not link entries that do not originate from a resolver", () => {
+    systemMock.getCertificateHealth.mockReturnValue(
+      of(
+        makeResponse([
+          {
+            source: "privacyidea-server-file",
+            name: "/etc/privacyidea/server.pem",
+            host: "/etc/privacyidea/server.pem",
+            tls_mode: "file",
+            subject: "CN=server",
+            issuer: "CN=ca",
+            not_after: "2027-01-01T00:00:00Z",
+            days_remaining: 180,
+            error: null,
+            status: "ok"
+          }
+        ])
+      )
+    );
+
+    const serverFixture = TestBed.createComponent(CertificateHealthWidgetComponent);
+    serverFixture.componentRef.setInput("instance", instance);
+    serverFixture.detectChanges();
+
+    expect(serverFixture.nativeElement.querySelectorAll("tbody td a").length).toBe(0);
+    serverFixture.destroy();
   });
 
   it("should show a fallback message when there are no certificates to monitor", () => {
