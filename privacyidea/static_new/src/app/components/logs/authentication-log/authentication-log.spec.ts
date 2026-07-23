@@ -159,11 +159,15 @@ describe("AuthenticationLog", () => {
     ]);
   });
 
-  it("shows the More Filter button for an admin and hides it in self-service", () => {
-    expect(fixture.nativeElement.querySelector('button[aria-label="More Filter"]')).not.toBeNull();
+  it("shows the User Role filter button for an admin and hides it in self-service", () => {
+    const userRoleButton = () =>
+      Array.from(fixture.nativeElement.querySelectorAll<HTMLButtonElement>(".actions-container button")).find(
+        (button) => button.textContent?.includes("User Role")
+      );
+    expect(userRoleButton()).toBeTruthy();
     authService.role.set("user");
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('button[aria-label="More Filter"]')).toBeNull();
+    expect(userRoleButton()).toBeFalsy();
   });
 
   it("userRoleBadge flags only admins; regular users and unknown values get no badge", () => {
@@ -344,47 +348,114 @@ describe("AuthenticationLog", () => {
   });
 
   describe("time filter", () => {
-    it("selectTimePreset sets from to a past ISO string, clears to and selectedPreset switches", () => {
-      const before = Date.now();
-      component.selectTimePreset("1h");
-      const after = Date.now();
+    it("onRangeStartDateChange sets start_time to the start of the chosen local day and keeps the end open", () => {
+      component.onRangeStartDateChange(new Date(2026, 5, 2)); // 2026-06-02, local
 
       const from = service.timestampFrom();
       expect(from).not.toBeNull();
-      const fromMs = new Date(from!).getTime();
-      // Should be ~1 hour before now (within a 1-second tolerance either side).
-      expect(fromMs).toBeGreaterThanOrEqual(before - 3_600_000 - 1000);
-      expect(fromMs).toBeLessThanOrEqual(after - 3_600_000 + 1000);
+      const fromDate = new Date(from!);
+      // Inclusive start: local midnight of the chosen day.
+      expect(fromDate.getHours()).toBe(0);
+      expect(fromDate.getMinutes()).toBe(0);
+      expect(fromDate.getSeconds()).toBe(0);
       expect(service.timestampTo()).toBeNull();
-      expect(component.selectedPreset()).toBe("1h");
       expect(service.authenticationLogFilter().hasKey("start_time")).toBe(true);
       expect(service.authenticationLogFilter().hasKey("end_time")).toBe(false);
       // Filter display value includes local UTC offset (e.g. +00:00, +02:00).
       expect(service.authenticationLogFilter().getValueOfKey("start_time")).toMatch(/( [+-]\d{2}:\d{2}| Z)$/);
     });
 
-    it("selectTimePreset('3m') subtracts 3 calendar months", () => {
-      const before = new Date();
-      component.selectTimePreset("3m");
-      const after = new Date();
+    it("onRangeEndDateChange sets end_time to the end of the chosen local day and keeps the start bound", () => {
+      component.onRangeStartDateChange(new Date(2026, 5, 2));
+      component.onRangeEndDateChange(new Date(2026, 5, 5));
 
-      const from = new Date(service.timestampFrom()!);
-      const expectedMin = new Date(before);
-      expectedMin.setMonth(expectedMin.getMonth() - 3);
-      const expectedMax = new Date(after);
-      expectedMax.setMonth(expectedMax.getMonth() - 3);
-
-      expect(from.getTime()).toBeGreaterThanOrEqual(expectedMin.getTime() - 1000);
-      expect(from.getTime()).toBeLessThanOrEqual(expectedMax.getTime() + 1000);
+      expect(service.timestampFrom()).not.toBeNull();
+      const to = new Date(service.timestampTo()!);
+      // Inclusive end: local 23:59:59 of the chosen day.
+      expect(to.getHours()).toBe(23);
+      expect(to.getMinutes()).toBe(59);
+      expect(to.getSeconds()).toBe(59);
+      expect(service.authenticationLogFilter().hasKey("start_time")).toBe(true);
+      expect(service.authenticationLogFilter().hasKey("end_time")).toBe(true);
     });
 
-    it("clearTimeFilter resets from, to, selectedPreset and removes keys from filter text", () => {
-      component.selectTimePreset("7d");
+    it("selecting a single day zooms the slider window to that 24h span (thumbs at the extremes)", () => {
+      const day = new Date(2026, 5, 2);
+      component.onRangeStartDateChange(day);
+      component.onRangeEndDateChange(day);
+
+      // The window now spans just the selected day, so the from/to thumbs sit at the very edges of the track.
+      expect(component.rangeStart()).toBe(0);
+      expect(component.rangeEnd()).toBe(component.rangeSliderSteps);
+      // Window span is one local day (00:00:00 -> 23:59:59), i.e. within a second of 24 hours.
+      const span = component.windowEndMs() - component.windowStartMs();
+      expect(span).toBeGreaterThan(23 * 3_600_000);
+      expect(span).toBeLessThanOrEqual(86_400_000);
+      // The end thumb at its max now maps to the concrete day-end, not an open "now" bound.
+      expect(service.timestampTo()).not.toBeNull();
+    });
+
+    it("dateRangeLabel is the neutral default, a matched preset name, or the custom fallback", () => {
+      expect(component.dateRangeLabel()).toBe("Date range");
+
+      // A start ~1 year ago with an open end reads as the "Last year" preset.
+      const yearAgo = new Date();
+      yearAgo.setDate(yearAgo.getDate() - 365);
+      component.onRangeStartDateChange(yearAgo);
+      expect(component.dateRangeLabel()).toBe("Last year");
+
+      // A bounded historical range that does not end near now is a plain custom range.
+      component.onRangeStartDateChange(new Date(2020, 0, 1));
+      component.onRangeEndDateChange(new Date(2020, 0, 15));
+      expect(component.dateRangeLabel()).toBe("Custom range");
+    });
+
+    it("narrowing the slider keeps the picker range at the window min/max", () => {
+      component.onRangeStartDateChange(new Date(2026, 5, 1));
+      component.onRangeEndDateChange(new Date(2026, 5, 5));
+      const startBefore = component.rangePickerStart()!.getTime();
+      const endBefore = component.rangePickerEnd()!.getTime();
+
+      // Narrow the selection with the slider thumbs and commit.
+      component.onRangeStartInput(50);
+      component.onRangeEndInput(150);
+      component.commitTimeRange();
+
+      // The picker still reflects the window bounds, unchanged by the slider...
+      expect(component.rangePickerStart()!.getTime()).toBe(startBefore);
+      expect(component.rangePickerEnd()!.getTime()).toBe(endBefore);
+      // ...while the actual filter narrowed inside that window.
+      expect(new Date(service.timestampFrom()!).getTime()).toBeGreaterThan(startBefore);
+      expect(new Date(service.timestampTo()!).getTime()).toBeLessThan(endBefore);
+    });
+
+    it("clearing a picker field (null) drops that bound and keeps the other", () => {
+      component.onRangeStartDateChange(new Date(2026, 5, 2));
+      component.onRangeEndDateChange(new Date(2026, 5, 5));
+      component.onRangeStartDateChange(null);
+
+      expect(service.timestampFrom()).toBeNull();
+      expect(service.timestampTo()).not.toBeNull();
+      expect(service.authenticationLogFilter().hasKey("start_time")).toBe(false);
+      expect(service.authenticationLogFilter().hasKey("end_time")).toBe(true);
+    });
+
+    it("rangePickerStart/End mirror the active time filter as Dates", () => {
+      expect(component.rangePickerStart()).toBeNull();
+      expect(component.rangePickerEnd()).toBeNull();
+
+      component.onRangeStartDateChange(new Date(2026, 5, 2));
+
+      expect(component.rangePickerStart()).toBeInstanceOf(Date);
+      expect(component.rangePickerEnd()).toBeNull();
+    });
+
+    it("clearTimeFilter resets from, to and removes keys from filter text", () => {
+      component.onRangeStartDateChange(new Date(2026, 5, 2));
       component.clearTimeFilter();
 
       expect(service.timestampFrom()).toBeNull();
       expect(service.timestampTo()).toBeNull();
-      expect(component.selectedPreset()).toBeNull();
       expect(service.authenticationLogFilter().hasKey("start_time")).toBe(false);
       expect(service.authenticationLogFilter().hasKey("end_time")).toBe(false);
     });
@@ -392,14 +463,13 @@ describe("AuthenticationLog", () => {
     it("clearAllFilters clears both the text filter and the time filter", () => {
       // A time filter lives in its own signals; clearing the text alone used to leave it silently active.
       service.authenticationLogFilter.set(service.authenticationLogFilter().copyWith({ value: "username: alice" }));
-      component.selectTimePreset("7d");
+      component.onRangeStartDateChange(new Date(2026, 5, 2));
       expect(service.timestampFrom()).not.toBeNull();
 
       component.clearAllFilters();
 
       expect(service.timestampFrom()).toBeNull();
       expect(service.timestampTo()).toBeNull();
-      expect(component.selectedPreset()).toBeNull();
       expect(service.authenticationLogFilter().value).toBe("");
       expect(service.authenticationLogFilter().hasKey("start_time")).toBe(false);
       expect(service.authenticationLogFilter().hasKey("end_time")).toBe(false);
@@ -415,7 +485,6 @@ describe("AuthenticationLog", () => {
       const from = new Date(service.timestampFrom()!).getTime();
       const to = new Date(service.timestampTo()!).getTime();
       expect(from).toBeLessThan(to);
-      expect(component.selectedPreset()).toBeNull();
       expect(service.authenticationLogFilter().hasKey("start_time")).toBe(true);
       expect(service.authenticationLogFilter().hasKey("end_time")).toBe(true);
     });
@@ -429,26 +498,6 @@ describe("AuthenticationLog", () => {
       expect(service.timestampTo()).toBeNull();
       expect(service.authenticationLogFilter().hasKey("start_time")).toBe(true);
       expect(service.authenticationLogFilter().hasKey("end_time")).toBe(false);
-    });
-
-    it("the slider window and thumbs adjust to the selected preset", () => {
-      component.selectTimePreset("1h");
-      // The window shrinks to ~1 hour and the thumbs span the whole window (start at 0, end at now).
-      expect(component.rangeStart()).toBe(0);
-      expect(component.rangeEnd()).toBe(component.rangeSliderSteps);
-      expect(component.sliderWindowMs()).toBeGreaterThan(0);
-      expect(component.sliderWindowMs()).toBeLessThanOrEqual(3_600_000 + 1000);
-
-      // A wider preset yields a wider window, so short ranges get finer resolution under short presets.
-      component.selectTimePreset("30d");
-      expect(component.sliderWindowMs()).toBeGreaterThan(29 * 86_400_000);
-    });
-
-    it("clearTimeFilter resets the slider window to the default", () => {
-      component.selectTimePreset("1h");
-      expect(component.sliderWindowMs()).toBeLessThan(86_400_000);
-      component.clearTimeFilter();
-      expect(component.sliderWindowMs()).toBe(365 * 86_400_000);
     });
   });
 

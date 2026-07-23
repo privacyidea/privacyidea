@@ -63,6 +63,30 @@
   min-width: 300px;
 }
 
+// Action row under the filter/paginator: the date-range picker and user-role selection plus the inline custom-range
+// slider.
+.actions-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  margin-bottom: 16px;
+}
+
+// The date-range button and its (hidden) connected range input share a box so the picker overlay anchors to the
+// button. The input carries the picker's model only; it is not shown or interacted with directly.
+.date-range-trigger {
+  position: relative;
+}
+
+.date-range-hidden-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .role-badge {
   display: inline-block;
   padding: 0 6px;
@@ -98,23 +122,24 @@
   }
 }
 
+// Inline in the action row: grows to take the leftover width so the slider stays usable, within sensible bounds.
 .time-filter-custom-range {
-  // Fixed width drives the (uncapped) menu panel width; box-sizing keeps padding inside it.
   box-sizing: border-box;
-  width: 280px;
-  padding: 12px 16px;
+  width: 100%;
+  height: 40px;
+  margin-top: -16px;
+  max-width: 300px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  // Pinned to the bottom of the scrollable menu; the preset list scrolls above it. Opaque background + top border
-  // keep it readable over the content behind.
-  position: sticky;
-  bottom: 0;
-  background-color: var(--mat-sys-surface-container);
-  border-top: 1px solid var(--mat-sys-outline-variant);
 
   .slider-with-histogram {
     position: relative;
+  }
+
+  .custom-range-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    color: var(--mat-sys-on-surface-variant);
   }
 
   // Activity bars sit behind the slider track. Inset horizontally to roughly align with the track's usable span.
@@ -153,18 +178,12 @@
     --mat-slider-value-indicator-transform-origin: center bottom;
   }
 
-  .custom-range-label {
-    font-size: 12px;
-    text-transform: uppercase;
-    color: var(--mat-sys-on-surface-variant);
-  }
-
   .range-summary {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 8px;
+    justify-content: space-around;
     font-size: 12px;
+    height: 12px;
     font-variant-numeric: tabular-nums;
     color: var(--mat-sys-on-surface-variant);
     white-space: nowrap;

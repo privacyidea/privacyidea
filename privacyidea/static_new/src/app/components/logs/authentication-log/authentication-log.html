@@ -42,32 +42,6 @@
                        if it contains colons or spaces.
         </mat-hint>
       </mat-form-field>
-      <!-- Filters without their own table column live behind a "More Filter" menu next to the input. -->
-      @if (!authService.isSelfServiceUser()) {
-        <button
-          [matMenuTriggerFor]="moreFiltersMenu"
-          aria-label="More Filter"
-          class="margin-bottom-16"
-          i18n-aria-label
-          i18n-matTooltip
-          mat-icon-button
-          matTooltip="More Filter">
-          <mat-icon>filter_list</mat-icon>
-        </button>
-        <mat-menu #moreFiltersMenu="matMenu">
-          <button
-            mat-menu-item
-            [matMenuTriggerFor]="userRoleMenu.matMenu">
-            <span i18n>User Role</span>
-          </button>
-        </mat-menu>
-        <app-multi-select-menu
-          #userRoleMenu
-          [options]="userRoleOptions"
-          [selected]="selectedFilterValues('user_role')"
-          (selectionChange)="setFilterValues('user_role', $event)" />
-
-      }
     </div>
     <mat-paginator
       (page)="onPageEvent($event)"
@@ -76,6 +50,101 @@
       [pageSizeOptions]="pageSizeOptions()"
       [pageSize]="authenticationLogService.pageSize()"
       showFirstLastButtons />
+  </div>
+  <!-- Filters that have no table column of their own live in the action row under the filter input. -->
+  <div class="actions-container">
+    @if (!authService.isSelfServiceUser()) {
+      <button
+        [matMenuTriggerFor]="userRoleMenu.matMenu"
+        class="action-button-secondary button-width-m"
+        i18n-matTooltip
+        mat-stroked-button
+        matTooltip="Filter by User Role">
+        <mat-icon>filter_list</mat-icon>
+        <span i18n>User Role</span>
+        <mat-icon iconPositionEnd>arrow_drop_down</mat-icon>
+      </button>
+      <app-multi-select-menu
+        #userRoleMenu
+        [options]="userRoleOptions"
+        [selected]="selectedFilterValues('user_role')"
+        (selectionChange)="setFilterValues('user_role', $event)" />
+    }
+    <!-- Date-range button: opens the range picker, whose selection sets the start/end of the custom range (below). The
+         connected range input is visually hidden and only holds the picker's model + anchors its overlay to the button. -->
+    <div class="date-range-trigger">
+      <button
+        (click)="rangePicker.open()"
+        class="action-button-secondary button-width-m"
+        i18n-matTooltip
+        mat-stroked-button
+        matTooltip="Filter by Date Range">
+        <mat-icon>date_range</mat-icon>
+        <span>{{ dateRangeLabel() }}</span>
+        <mat-icon iconPositionEnd>arrow_drop_down</mat-icon>
+      </button>
+      <mat-date-range-input
+        [rangePicker]="rangePicker"
+        class="date-range-hidden-input">
+        <input
+          matStartDate
+          (dateChange)="onRangeStartDateChange($event.value)"
+          [value]="rangePickerStart()"
+          aria-label="Start date"
+          i18n-aria-label />
+        <input
+          matEndDate
+          (dateChange)="onRangeEndDateChange($event.value)"
+          [value]="rangePickerEnd()"
+          aria-label="End date"
+          i18n-aria-label />
+      </mat-date-range-input>
+      <mat-date-range-picker
+        #rangePicker
+        panelClass="auth-log-datepicker" />
+    </div>
+    <!-- Custom range slider, shown inline (not behind a trigger) so the range is always adjustable. -->
+    <div class="time-filter-custom-range margin-left-8">
+      <div class="slider-with-histogram">
+        <!-- Activity behind the slider; decorative, hidden from assistive tech. -->
+        <div
+          class="activity-histogram"
+          [attr.aria-hidden]="true">
+          @for (bar of activityHistogram(); track $index) {
+            <div
+              class="activity-bar"
+              [style.height.%]="bar * 100"></div>
+          }
+        </div>
+        <mat-slider
+          class="time-range-slider"
+          [min]="0"
+          [max]="rangeSliderSteps"
+          step="1"
+          discrete
+          [displayWith]="formatSliderThumb">
+          <input
+            matSliderStartThumb
+            aria-label="Range start"
+            i18n-aria-label
+            [value]="rangeStart()"
+            (valueChange)="onRangeStartInput($event)"
+            (change)="commitTimeRange()" />
+          <input
+            matSliderEndThumb
+            aria-label="Range end"
+            i18n-aria-label
+            [value]="rangeEnd()"
+            (valueChange)="onRangeEndInput($event)"
+            (change)="commitTimeRange()" />
+        </mat-slider>
+      </div>
+      <div class="range-summary">
+        <span>{{ rangeSummaryFrom() }}</span>
+        <span class="range-summary-sep">→</span>
+        <span>{{ rangeSummaryTo() }}</span>
+      </div>
+    </div>
   </div>
   <div
     appScrollEdges
@@ -134,86 +203,6 @@
                         [selected]="selectedFilterValues('source_ip')"
                         (selectionChange)="setFilterValues('source_ip', $event)"
                         (addCustom)="onAddCustomFilter('source_ip')" />
-                    } @else if (column.key === "timestamp") {
-                      <button
-                        [matMenuTriggerFor]="timePresetMenu"
-                        class="filter-button"
-                        matTooltip="Filter by Time Period"
-                        i18n-matTooltip
-                        mat-icon-button>
-                        <mat-icon class="keyword-button-icon margin-left-0">filter_list</mat-icon>
-                      </button>
-                      <mat-menu
-                        #timePresetMenu="matMenu"
-                        class="time-preset-menu">
-                        <button
-                          (click)="clearTimeFilter()"
-                          mat-menu-item>
-                          <mat-icon>filter_alt_off</mat-icon>
-                          <span i18n>Clear Filter</span>
-                        </button>
-                        <mat-divider />
-                        @for (preset of timePresets; track preset.key) {
-                          <button
-                            (click)="$event.stopPropagation(); selectTimePreset(preset.key)"
-                            [class.selected-preset]="selectedPreset() === preset.key"
-                            mat-menu-item>
-                            <span>{{ preset.label }}</span>
-                          </button>
-                        }
-                        <!-- Pinned to the bottom of the (scrollable) menu; stopPropagation keeps the menu open and lets
-                             the slider own pointer drags and arrow keys. The handlers are containment guards, not an
-                             interactive control, so the element is intentionally not focusable. -->
-                        <!-- eslint-disable-next-line @angular-eslint/template/interactive-supports-focus -->
-                        <div
-                          class="time-filter-custom-range"
-                          (click)="$event.stopPropagation()"
-                          (mousedown)="$event.stopPropagation()"
-                          (keydown)="$event.stopPropagation()">
-                          <span
-                            class="custom-range-label"
-                            i18n>Custom Range</span>
-                          <div class="slider-with-histogram">
-                            <!-- Activity behind the slider; decorative, hidden from assistive tech. -->
-                            <div
-                              class="activity-histogram"
-                              [attr.aria-hidden]="true">
-                              @for (bar of activityHistogram(); track $index) {
-                                <div
-                                  class="activity-bar"
-                                  [style.height.%]="bar * 100"></div>
-                              }
-                            </div>
-                            <mat-slider
-                              class="time-range-slider"
-                              [min]="0"
-                              [max]="rangeSliderSteps"
-                              step="1"
-                              discrete
-                              [displayWith]="formatSliderThumb">
-                              <input
-                                matSliderStartThumb
-                                aria-label="Range start"
-                                i18n-aria-label
-                                [value]="rangeStart()"
-                                (valueChange)="onRangeStartInput($event)"
-                                (change)="commitTimeRange()" />
-                              <input
-                                matSliderEndThumb
-                                aria-label="Range end"
-                                i18n-aria-label
-                                [value]="rangeEnd()"
-                                (valueChange)="onRangeEndInput($event)"
-                                (change)="commitTimeRange()" />
-                            </mat-slider>
-                          </div>
-                          <div class="range-summary">
-                            <span>{{ rangeSummaryFrom() }}</span>
-                            <span class="range-summary-sep">→</span>
-                            <span>{{ rangeSummaryTo() }}</span>
-                          </div>
-                        </div>
-                      </mat-menu>
                     } @else {
                       <button
                         (click)="onKeywordClick(column.key)"
