@@ -879,16 +879,16 @@ mat-chip.mat-mdc-chip {
   }
 }
 
-// The authentication-log date-range picker renders in the CDK overlay; panelClass scopes these tweaks to it so other
-// datepickers keep their default look.
-.auth-log-datepicker.mat-datepicker-content {
+// The authentication-log date-range picker renders in the CDK overlay; panelClass lands on the <mat-calendar>, so we
+// scope the content container via :has() and the calendar directly. Other datepickers keep their default look.
+.mat-datepicker-content:has(.mat-calendar.auth-log-datepicker) {
   background-color: var(--mat-datepicker-calendar-container-background-color, var(--mat-sys-surface-container-lowest));
   border-radius: var(--border-radius);
   border: 1px solid var(--mat-sys-surface-container-highest);
+}
 
-  .mat-calendar {
-    border-radius: var(--border-radius);
-  }
+.mat-calendar.auth-log-datepicker {
+  border-radius: var(--border-radius);
 }
 
 .mat-drawer-backdrop {
