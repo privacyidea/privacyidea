@@ -871,40 +871,23 @@ body.self-service-layout {
   max-width: none;
 }
 
-// Width follows the content (the fixed-width slider block); height is bounded so the preset list scrolls while the
-// slider stays pinned. Background matches the pinned slider block so there is no seam over the scrolling content.
-.time-preset-menu.mat-mdc-menu-panel {
-  max-width: none;
-  max-height: 420px;
-  background-color: var(--mat-sys-surface-container);
-}
-
-// Width matches the slider block; a uniform margin insets the content and no bottom padding keeps the pinned slider
-// flush. Scoped to this menu so other menus keep sizing to their content.
-.time-preset-menu .mat-mdc-menu-content {
-  width: 280px;
-  margin: 12px;
-  padding-bottom: 0;
-}
-
-// Highlight the active preset. Global (not component SCSS) because the menu renders in the CDK overlay.
-.time-preset-menu .selected-preset.mat-mdc-menu-item {
-  background-color: var(--mat-sys-primary-container);
-  color: var(--mat-sys-on-primary-container);
-}
-
-// Must live in global styles: the mat-menu panel renders in the CDK overlay, outside the component's DOM. Component
-// SCSS with Emulated encapsulation adds [_ngcontent-xxx] to selectors, which becomes unreliable across the overlay
-// boundary when mat-menu is nested inside @for/@if.
-.time-preset-menu {
-  --mat-menu-divider-color: var(--mat-sys-outline-variant);
-}
-
 mat-chip.mat-mdc-chip {
   &.clickable-chip {
     .mdc-evolution-chip__action--presentational {
       cursor: pointer !important;
     }
+  }
+}
+
+// The authentication-log date-range picker renders in the CDK overlay; panelClass scopes these tweaks to it so other
+// datepickers keep their default look.
+.auth-log-datepicker.mat-datepicker-content {
+  background-color: var(--mat-datepicker-calendar-container-background-color, var(--mat-sys-surface-container-lowest));
+  border-radius: var(--border-radius);
+  border: 1px solid var(--mat-sys-surface-container-highest);
+
+  .mat-calendar {
+    border-radius: var(--border-radius);
   }
 }
 
