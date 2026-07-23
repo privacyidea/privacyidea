@@ -6,7 +6,7 @@ import logging
 from sqlalchemy import select
 from testfixtures import log_capture
 
-from privacyidea.lib.error import (PrivacyIDEAError, ResourceNotFoundError)
+from privacyidea.lib.error import (PrivacyIDEAError, ResourceNotFoundError, ParameterError)
 from privacyidea.lib.token import (list_tokengroups,
                                    init_token,
                                    remove_token, get_one_token, assign_tokengroup, unassign_tokengroup,
@@ -64,7 +64,7 @@ class TokenGroupTestCase(MyTestCase):
         self.assertIn(expected_message, actual_messages, msg=f"Available log messages: {actual_messages}")
 
         # Test a missing group information
-        self.assertRaises(ResourceNotFoundError, assign_tokengroup, "s1")
+        self.assertRaises(ParameterError, assign_tokengroup, "s1")
 
         # list tokengroup assignments
         grouplist = list_tokengroups()

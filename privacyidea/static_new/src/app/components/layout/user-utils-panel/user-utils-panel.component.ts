@@ -145,6 +145,19 @@ export class UserUtilsPanelComponent {
     return "H'\u202Fh' mm'\u202Fmin'";
   });
 
+  // Once more than a day remains, the DatePipe format above can no longer
+  // represent the duration, so show days (and any whole hours) without minutes.
+  sessionOverOneDay = computed(() => (this.sessionTimerService.remainingTime() ?? 0) >= 86_400_000);
+
+  sessionDaysText = computed(() => {
+    const ms = this.sessionTimerService.remainingTime() ?? 0;
+    const days = Math.floor(ms / 86_400_000);
+    const hours = Math.floor((ms % 86_400_000) / 3_600_000);
+    // Non-breaking half space (U+202F) between number and unit, matching the
+    // hour/minute format above.
+    return hours > 0 ? `${days}\u202Fd ${hours}\u202Fh` : `${days}\u202Fd`;
+  });
+
   localNode = computed(() => this.authService.showNode());
 
   profileTooltip = computed(() => {

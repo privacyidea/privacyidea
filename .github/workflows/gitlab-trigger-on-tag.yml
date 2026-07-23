@@ -37,7 +37,7 @@ jobs:
           GITHUB_TAG: ${{ github.ref_name }}
           GITHUB_REPO_URL: https://github.com/${{ github.repository }}.git
         run: |
-          curl -X POST "$GITLAB_TRIGGER_URL" \
+          curl --fail -X POST "$GITLAB_TRIGGER_URL" \
             -F token="$GITLAB_TRIGGER_TOKEN" \
             -F ref=main \
             -F variables[GITHUB_TAG]="$GITHUB_TAG" \
