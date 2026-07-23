@@ -20,6 +20,19 @@
   <div
     appOverflowNav
     class="flex-row margin-bottom-16 gap-8">
+    @if (authService.actionAllowed("policywrite")) {
+      <button
+        (click)="createNewPolicy()"
+        class="action-button-primary button-width-l create-policy-button"
+        mat-stroked-button>
+        <span class="icon-badge">
+          <mat-icon class="padding-right-4">gavel</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+        </span>
+        <span i18n>Create Policy</span>
+      </button>
+    }
+
     @if (authService.actionAllowed("policydelete")) {
       <button
         (click)="deleteSelectedPolicies()"

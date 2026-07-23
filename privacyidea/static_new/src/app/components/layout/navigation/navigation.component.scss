@@ -145,7 +145,7 @@ $breakpoint-compact: 1822px;
   // Plain navigation links/buttons render as flat nav buttons. Action buttons
   // (e.g. the dashboard edit controls) keep their own filled/outlined styling.
   a:not(.overflow-more-btn),
-  button:not(.overflow-more-btn):not([class*="action-button"]) {
+  button:not(.overflow-more-btn):not([class*="action-button"]):not([class*="mdc-icon-button"]) {
     @include nav-button-base;
     justify-content: center;
     text-decoration: none;
@@ -269,10 +269,6 @@ $breakpoint-compact: 1822px;
 
     .footer-icons {
       display: flex;
-    }
-
-    button span {
-      font-size: 12px;
     }
 
     .docs-button-full {

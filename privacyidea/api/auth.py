@@ -667,8 +667,21 @@ def get_auth_token():
             else:
                 g.audit_object.log({"user": user.login})
 
+            # A username that matches a local DB admin (verify_db_admin above already rejected the password) with no
+            # user of that name in the (default) realm can only be that admin failing with a wrong password. Classify
+            # it as an internal-admin password failure.
+            if local_admin_exist and not user_auth and not user.exist():
+                auth_event_type = AuthEventType.PASSWORD_FAIL
+                internal_admin = True
+                # local admins do not have any user attributes, login name is logged separately
+                user = User()
+
             if not user_auth and "multi_challenge" in details and len(details["multi_challenge"]) > 0:
                 # Do not return user data in case of a challenge request.
+                # Mark the audit entry as CHALLENGE so check_max_auth_fail does
+                # not count it as a failure (mirrors _finalize_auth_response()
+                # in validate.py).
+                g.audit_object.log({"authentication": AUTH_RESPONSE.CHALLENGE})
                 log_authentication(auth_event_type, request, user=user, serial=serials,
                                    transaction_id=details.get("transaction_id"),
                                    previous_transaction_id=_previous_transaction_id(details))
@@ -726,7 +739,7 @@ def get_auth_token():
         raise AuthError(message, id=Error.AUTHENTICATE_WRONG_CREDENTIALS,
                         details=details)
     else:
-        g.audit_object.log({"success": True})
+        g.audit_object.log({"success": True, "authentication": AUTH_RESPONSE.ACCEPT})
         request.User = user
 
     # If the HSM is not ready, we need to create the nonce in another way!

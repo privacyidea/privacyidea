@@ -808,18 +808,19 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertEqual(AccessDecision.ALLOW, evaluate_access_decision(self.user))
 
     def test_access_decision_higher_priority_allow_overrides_deny(self):
-        # An ALLOW policy at higher priority wins over a lower-priority DENY.
-        self._make_policy(name="deny", counter_type=AuthEventType.PASSWORD_FAIL, priority=1,
+        # An ALLOW policy at higher precedence (lower priority number) wins over a
+        # DENY with a higher number.
+        self._make_policy(name="deny", counter_type=AuthEventType.PASSWORD_FAIL, priority=10,
                           stages=((3, 1, LockoutAction.DENY, None),))
-        self._make_policy(name="allow", counter_type=AuthEventType.PASSWORD_FAIL, priority=10,
+        self._make_policy(name="allow", counter_type=AuthEventType.PASSWORD_FAIL, priority=1,
                           stages=((0, 1, LockoutAction.ALLOW, None),))
         self._seed_events(AuthEventType.PASSWORD_FAIL, 5)
         self.assertEqual(AccessDecision.ALLOW, evaluate_access_decision(self.user))
 
     def test_access_decision_higher_priority_deny_overrides_allow(self):
-        self._make_policy(name="allow", counter_type=AuthEventType.PASSWORD_FAIL, priority=1,
+        self._make_policy(name="allow", counter_type=AuthEventType.PASSWORD_FAIL, priority=10,
                           stages=((0, 1, LockoutAction.ALLOW, None),))
-        self._make_policy(name="deny", counter_type=AuthEventType.PASSWORD_FAIL, priority=10,
+        self._make_policy(name="deny", counter_type=AuthEventType.PASSWORD_FAIL, priority=1,
                           stages=((3, 1, LockoutAction.DENY, None),))
         self._seed_events(AuthEventType.PASSWORD_FAIL, 5)
         self.assertEqual(AccessDecision.DENY, evaluate_access_decision(self.user))

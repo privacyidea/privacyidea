@@ -31,6 +31,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
+from privacyidea.lib.challenge_types import is_challenge_open
 from privacyidea.lib.crypto import get_rand_digit_str, encryptPassword, decryptPassword
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import convert_column_to_unicode
@@ -52,7 +53,7 @@ class Challenge(MethodsMixin, db.Model):
     session: Mapped[str | None] = mapped_column(Unicode(512), default='', quote=True, name="session")
     # The token serial number
     serial: Mapped[str | None] = mapped_column(Unicode(40), default='', index=True)
-    timestamp: Mapped[datetime | None] = mapped_column(DateTime, default=utc_now(), index=True)
+    timestamp: Mapped[datetime | None] = mapped_column(DateTime, default=utc_now, index=True)
     expiration: Mapped[datetime | None] = mapped_column(DateTime, index=True)
     received_count: Mapped[int | None] = mapped_column(Integer, default=0)
     otp_valid: Mapped[bool | None] = mapped_column(Boolean, default=False)
@@ -103,6 +104,18 @@ class Challenge(MethodsMixin, db.Model):
         if self.timestamp <= c_now < self.expiration:
             return True
         return False
+
+    def is_open(self) -> bool:
+        """
+        Returns true if the challenge can still be answered: it is not expired,
+        has not been answered yet, and has not been refused (declined or
+        cancelled). This is the guard the answering endpoints use before
+        mutating a challenge.
+
+        :return: True if the challenge is still open
+        :rtype: bool
+        """
+        return is_challenge_open(self.is_valid(), self.otp_valid, self.get_session())
 
     def set_data(self, data):
         """

@@ -1,0 +1,194 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div
+  #scrollContainer
+  appScrollToTop
+  aria-label="Conditional-Access Policy Editor"
+  class="edit-policy-layout"
+  i18n-aria-label>
+  <div class="edit-policy-container">
+    <h3 class="margin-8 flex-row flex-nowrap ali-center">
+      <span class="ca-policy-title-text">{{ title() }}</span>
+      @if (!isNewPolicy()) {
+        <span>:&nbsp;</span>
+        <span class="h3-color ca-policy-name">{{ editPolicy().name }}</span>
+      }
+    </h3>
+
+    <div
+      [appStickyHeader]="scrollContainer"
+      class="header-row sticky-header">
+      <div class="action-buttons">
+        <button
+          (click)="$event.stopPropagation(); cancelEdit()"
+          class="action-button-secondary button-width-s"
+          mat-stroked-button>
+          <span i18n>Cancel</span>
+        </button>
+        @if (!isNewPolicy() && authService.actionAllowed("lockout_policy_write")) {
+          <button
+            (click)="$event.stopPropagation(); deletePolicy()"
+            class="action-button-delete-secondary button-width-s"
+            color="warn"
+            mat-stroked-button>
+            <mat-icon>delete</mat-icon>
+            <span i18n>Delete</span>
+          </button>
+        }
+        <button
+          (click)="$event.stopPropagation(); savePolicy()"
+          [disabled]="!canSave() || !hasChanges()"
+          class="action-button-primary button-width-s"
+          mat-stroked-button>
+          <mat-icon>save</mat-icon>
+          <span i18n>Save</span>
+        </button>
+        @if (!isNewPolicy()) {
+          <mat-slide-toggle
+            (change)="toggleEnabled($event.checked)"
+            [checked]="editPolicy().enabled"
+            [disableRipple]="true"
+            [disabled]="!authService.actionAllowed('lockout_policy_write')"
+            i18n-matTooltip
+            matTooltip="Toggle Enabled">
+            @if (editPolicy().enabled) {
+              <span i18n>Enabled</span>
+            } @else {
+              <span i18n>Disabled</span>
+            }
+          </mat-slide-toggle>
+        }
+        <mat-slide-toggle
+          (change)="toggleDryRun($event.checked)"
+          [checked]="editPolicy().dry_run"
+          [disableRipple]="true"
+          i18n-matTooltip
+          matTooltip="Toggle Dry Run (evaluate but do not enforce)">
+          <span i18n>Dry run</span>
+        </mat-slide-toggle>
+      </div>
+    </div>
+
+    <div class="edit-policy-fields">
+      <mat-form-field
+        appearance="fill"
+        class="input-width-xl">
+        <mat-label i18n>Name</mat-label>
+        <input
+          matInput
+          [formField]="policyForm.name"
+          (blur)="nameTouched.set(true)" />
+        <mat-hint align="end">{{ editPolicy().name.length }} / 255</mat-hint>
+        @if (showNameError() && nameTooLong()) {
+          <mat-error i18n>Name must not exceed 255 characters.</mat-error>
+        } @else if (showNameError()) {
+          <mat-error i18n>Name is required.</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field
+        appearance="fill"
+        class="input-width-s">
+        <mat-label i18n>Time window</mat-label>
+        <input
+          matInput
+          type="number"
+          min="1"
+          [value]="timeWindowValue()"
+          (input)="onTimeWindowInput($any($event.target).value)" />
+        @if (!timeWindowValid()) {
+          <mat-error i18n>Must be at least 1.</mat-error>
+        } @else if (timeWindowUnit() !== "seconds") {
+          <mat-hint i18n>= {{ editPolicy().time_window_seconds }} seconds</mat-hint>
+        }
+      </mat-form-field>
+
+      <mat-form-field
+        appearance="fill"
+        class="input-width-s">
+        <mat-label i18n>Unit</mat-label>
+        <mat-select
+          [value]="timeWindowUnit()"
+          (selectionChange)="onTimeWindowUnitChange($event.value)">
+          <mat-option value="seconds" i18n>Seconds</mat-option>
+          <mat-option value="minutes" i18n>Minutes</mat-option>
+          <mat-option value="hours" i18n>Hours</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field
+        appearance="fill"
+        class="input-width-xl margin-bottom-32"
+        subscriptSizing="dynamic">
+        <mat-label i18n>Tracked event types</mat-label>
+        <mat-select
+          multiple
+          [value]="editPolicy().counter_types_to_track"
+          (selectionChange)="onCounterTypesChange($event.value)">
+          @for (eventType of policyService.eventTypes(); track eventType) {
+            <mat-option [value]="eventType">{{ eventType }}</mat-option>
+          }
+        </mat-select>
+        @if (!counterTypesValid()) {
+          <mat-error i18n>Select at least one event type.</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field
+        appearance="fill"
+        class="input-width-s ca-priority-field"
+        subscriptSizing="dynamic">
+        <mat-label i18n>Priority</mat-label>
+        <input
+          matInput
+          type="number"
+          min="1"
+          [value]="editPolicy().priority"
+          (input)="onPriorityInput($any($event.target).value)" />
+        <app-info-hint
+          matSuffix
+          i18n-text
+          text="Priority decides how this policy ranks against the others: a lower number means higher precedence, so for an allow/deny decision the matching policy with the lowest priority number wins, while lock, block and email policies all run regardless of priority."
+          ariaLabel="About priority"
+          i18n-ariaLabel />
+        @if (!priorityValid()) {
+          <mat-error i18n>Must be at least 1.</mat-error>
+        }
+        <mat-hint i18n>Order across policies, lowest first.</mat-hint>
+      </mat-form-field>
+    </div>
+
+    <h4 i18n>Stages &amp; Actions</h4>
+    <p class="ca-section-hint" i18n>
+      A stage fires when the tracked events reach its failure threshold within the time window, and
+      then runs its actions. Add several stages with increasing thresholds to escalate. Only one stage of this policy runs per
+      evaluation: the one with the highest threshold the count has reached. Other policies are
+      evaluated on their own (see the policy Priority above).
+    </p>
+    @if (!stagesValid()) {
+      <p class="ca-stages-error" i18n>At least one stage is required, and every stage needs a threshold of at least 1.</p>
+    }
+    @if (!stageThresholdsUnique()) {
+      <p class="ca-stages-error" i18n>Each stage must have a different failure threshold.</p>
+    }
+    <app-conditional-access-stages-list
+      [stages]="editPolicy().stages"
+      (stagesChange)="onStagesChange($event)" />
+  </div>
+</div>

@@ -46,6 +46,18 @@ export class FilterValue {
     return this._value;
   }
 
+  /**
+   * The keyword-less remainder of the filter string: the raw input with all recognized
+   * `key: value` segments removed. Used for client-side free-text search across all columns
+   * on fully-loaded (non-paginated) tables. Empty when the input is purely keyword-based.
+   */
+  get freeText(): string {
+    return this._value
+      .replace(new RegExp(PAIR_RE_SRC, "g"), "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
   set setString(newValue: string) {
     this._value = newValue;
   }
@@ -126,7 +138,7 @@ export class FilterValue {
    * Converts the map to the normalized string format and updates _value.
    */
   public setFromMap(map: Map<string, string>): void {
-    const needsQuoting = (v: string) => /[\s"']/.test(v);
+    const needsQuoting = (v: string) => /[\s"':]/.test(v);
     const quoteAndEscape = (v: string) => `"${v.replace(/\\/g, "\\\\").replace(/"/g, "\\\"")}"`; // double-quote strategy
 
     const entries: string[] = [];

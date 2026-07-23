@@ -101,6 +101,7 @@ export class RealmService implements RealmServiceInterface {
       this.contentService.onTokensImport() ||
       this.contentService.onPolicies() ||
       this.contentService.onUserRealms() ||
+      this.contentService.onAuthenticationLog() ||
       this.contentService.onAnyContainerTemplatesRoute()
     );
   });

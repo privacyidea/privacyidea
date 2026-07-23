@@ -345,7 +345,7 @@ def is_ip_never_block(source_ip: str | None) -> bool:
     """
     Return whether *source_ip* must never be blocked by the conditional-access
     engine: it is loopback (built-in) or matches the ``CONDITIONAL_ACCESS_NEVER_BLOCK``
-    system config. A falsy or unparseable IP is treated as never-block as well —
+    system config. A falsy or unparsable IP is treated as never-block as well —
     fail safe: never block an address the engine cannot positively identify.
     """
     if not source_ip:
@@ -437,9 +437,11 @@ def evaluate_access_decision(user: "User", source_ip: str | None = None,
     A stage with ``failure_threshold`` 0 always matches, so an ``ALLOW`` stage at
     threshold 0 acts as a default-allow / allowlist exception.
 
-    Policies are evaluated highest ``priority`` first and the first one that
-    yields a decision wins, so a higher-priority ALLOW overrides a lower-priority
-    DENY and vice versa. ``dry_run`` policies are logged but never enforced.
+    Policies are evaluated by ascending ``priority`` (a lower number means higher
+    precedence, matching privacyIDEA's policy engine) and the first one that
+    yields a decision wins, so an ALLOW with a lower priority number overrides a
+    DENY with a higher number and vice versa. ``dry_run`` policies are logged but
+    never enforced.
 
     Both targets decide here: a ``user`` policy is keyed on the resolved
     ``(resolver, uid, realm)`` user (an unresolved user - unknown login, local
@@ -457,7 +459,7 @@ def evaluate_access_decision(user: "User", source_ip: str | None = None,
     policies = db.session.scalars(
         select(LockoutPolicy)
         .where(LockoutPolicy.enabled.is_(True))
-        .order_by(LockoutPolicy.priority.desc())
+        .order_by(LockoutPolicy.priority.asc())
     ).all()
     for policy in policies:
         decision = _policy_access_decision(policy, user, source_ip, now)
@@ -568,7 +570,7 @@ def evaluate_lockout_policies(user: "User", event_type, source_ip: str | None = 
         .join(LockoutPolicy.counter_types)
         .where(LockoutPolicy.enabled.is_(True),
                LockoutPolicyCounterType.counter_type == event_type)
-        .order_by(LockoutPolicy.priority.desc())
+        .order_by(LockoutPolicy.priority.asc())
     ).all()
     notices: list[str] = []
     for policy in policies:

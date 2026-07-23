@@ -4,14 +4,13 @@
 .policy-action-item {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: var(--global-gap);
   min-height: 52px;
-  padding: 8px 16px;
-  margin: 4px 0;
+  padding: var(--half-global-padding) var(--global-padding);
+  margin: var(--quarter-global-padding) 0;
   border-radius: var(--border-radius);
   border: 1px solid color-mix(in srgb, var(--mat-sys-outline-variant), transparent 50%);
   background-color: var(--mat-sys-surface-container-low);
-  font-weight: 500;
   box-sizing: border-box;
   width: 100%;
 }
@@ -39,17 +38,11 @@
 }
 
 .detail-input {
-  flex: 0 0 auto;
+  flex: 0 0 var(--input-width-l);
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
-
-  .flex-1,
-  .flex-2 {
-    flex: 1;
-    min-width: 0;
-  }
+  gap: max(0px, calc(var(--input-width-l) - var(--input-width-m) - var(--button-width-xs)));
 }
 
 // Fixed-width value slot. Always reserved (even when empty) so the description
@@ -59,6 +52,12 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
+
+  .flex-1,
+  .flex-2 {
+    flex: 1;
+    min-width: 0;
+  }
 }
 
 .action-value-input,

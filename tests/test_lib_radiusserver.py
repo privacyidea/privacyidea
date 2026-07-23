@@ -156,3 +156,42 @@ class RADIUSServerTestCase(MyTestCase):
             self.assertTrue(lc.records[0].message.startswith("Unable to verify Message-Authenticator "
                                                              "Attribute in response:"))
         delete_radius("myserver")
+
+    def test_09_export_import_roundtrip_and_censor(self):
+        from privacyidea.lib.radiusserver import (export_radiusserver, import_radiusserver,
+                                                  list_radiusservers)
+        from privacyidea.lib.crypto import CENSORED
+        add_radius(identifier="exprad", server="1.2.3.4", secret="radsecret", dictionary=DICT_FILE)
+        # censored export replaces the secret
+        censored = export_radiusserver(censor=True)
+        self.assertEqual(censored["exprad"]["secret"], CENSORED)
+        # clear-text export contains the secret and round-trips through import
+        # (regression: import used to KeyError on a 'password' key the export
+        # never produced)
+        exported = export_radiusserver()
+        self.assertEqual(exported["exprad"]["secret"], "radsecret")
+        delete_radius("exprad")
+        import_radiusserver(exported)
+        servers = list_radiusservers()
+        self.assertIn("exprad", servers)
+        self.assertEqual(servers["exprad"]["secret"], "radsecret")
+        delete_radius("exprad")
+
+    def test_10_import_legacy_password_key(self):
+        from privacyidea.lib.radiusserver import import_radiusserver, list_radiusservers
+        # Config files exported by older privacyIDEA versions serialize the RADIUS
+        # secret under the legacy 'password' key. Importing them must still work
+        # (the secret is mapped onto the 'secret' key add_radius() expects).
+        legacy_export = {"legacyrad": {"server": "1.2.3.4",
+                                       "port": 1812,
+                                       "dictionary": DICT_FILE,
+                                       "description": "",
+                                       "password": "legacysecret",
+                                       "timeout": 5,
+                                       "retries": 3,
+                                       "options": {}}}
+        import_radiusserver(legacy_export)
+        servers = list_radiusservers()
+        self.assertIn("legacyrad", servers)
+        self.assertEqual("legacysecret", servers["legacyrad"]["secret"])
+        delete_radius("legacyrad")

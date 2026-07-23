@@ -53,12 +53,13 @@ def check_max_auth_fail(user: User, user_search_dict: dict, check_validate_check
     if check_validate_check:
         # Local admins can not authenticate at validate/check, no need to search the audit log for it
         # at validate/check users and admins are not distinguished: always search for user
-        search_dict = {"action": "%/validate/check", "authentication": f"!{AUTH_RESPONSE.CHALLENGE}",
-                       "user": user.login, "realm": user_search_dict.get("realm", "%")}
+        search_dict = {"action": "*/validate/check", "authentication": f"!{AUTH_RESPONSE.CHALLENGE}",
+                       "user": user.login, "realm": user_search_dict.get("realm", "*")}
         fail_count = g.audit_object.get_count(search_dict, success=False, timedelta=time_delta)
         log.debug(f"Checking users timelimit {list(max_fail_dict)[0]}: {fail_count} failed authentications with "
                   "/validate/check")
-    search_dict = {"action": "%/auth"}
+    # Exclude challenge-trigger entries from the count, as for */validate/check above.
+    search_dict = {"action": "*/auth", "authentication": f"!{AUTH_RESPONSE.CHALLENGE}"}
     search_dict.update(user_search_dict)
     fail_auth_count = g.audit_object.get_count(search_dict, success=False, timedelta=time_delta)
     log.debug(f"Checking users timelimit {list(max_fail_dict)[0]}: {fail_auth_count} failed authentications with "
@@ -91,12 +92,12 @@ def check_max_auth_success(user: User, user_search_dict: dict, check_validate_ch
     # Check the successful authentications for this user
     success_count = 0
     if check_validate_check:
-        search_dict = {"action": "%/validate/check"}
+        search_dict = {"action": "*/validate/check"}
         search_dict.update(user_search_dict)
         success_count = g.audit_object.get_count(search_dict, success=True, timedelta=time_delta)
         log.debug(f"Checking users timelimit {list(max_success_dict)[0]}: {success_count} successful "
                   "authentications with /validate/check")
-    search_dict = {"action": "%/auth"}
+    search_dict = {"action": "*/auth"}
     search_dict.update(user_search_dict)
     success_auth_count = g.audit_object.get_count(search_dict,
                                                   success=True, timedelta=time_delta)
@@ -172,7 +173,7 @@ def get_authentication_log_visibility_scopes(
     adminrealm, adminuser and policy conditions need no handling here: ``Match.admin(...).policies()`` already
     returns only the policies applicable to the current admin and request.
 
-    :param action: the action whose scoping to read (``authentication_log_read`` or ``authentication_log_delete``)
+    :param action: the action whose scoping to read (``authentication_log_read``)
     :return: a list of :class:`AuthenticationLogVisibilityScope`, or ``None`` for unrestricted access
     """
     from privacyidea.lib.auth import ROLE

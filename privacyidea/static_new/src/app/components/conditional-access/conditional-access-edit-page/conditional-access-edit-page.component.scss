@@ -1,0 +1,54 @@
+@use "styles";
+
+.edit-policy-layout {
+  @include styles.main-component-style;
+  max-height: var(--table-max-height);
+  max-width: 1008px;
+}
+
+.header-row {
+  display: flex;
+  align-items: center;
+}
+
+// The static title text keeps its size and never wraps; the policy name after
+// it is the part that shrinks and ellipsizes.
+.ca-policy-title-text {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+// The policy name in the title shrinks within the flex h3 and ellipsizes
+// before it would overflow the available width.
+.ca-policy-name {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.edit-policy-fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin: 16px 0;
+}
+
+.ca-stages-error {
+  color: var(--mat-sys-error, #b3261e);
+}
+
+.ca-section-hint {
+  margin: 0 0 16px;
+  max-width: 1008px;
+  color: var(--mat-sys-on-surface-variant);
+}
+

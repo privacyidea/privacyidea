@@ -44,7 +44,7 @@ jobs:
     outputs:
       min: ${{ steps.load.outputs.min }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
       - id: load
@@ -86,12 +86,12 @@ jobs:
           --health-retries=10
 
     steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       with:
         persist-credentials: false
 
     - name: Set up Python ${{ needs.versions.outputs.min }}
-      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+      uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
       with:
         python-version: ${{ needs.versions.outputs.min }}
         cache: 'pip'
@@ -104,14 +104,25 @@ jobs:
         pip install -r tests/requirements.txt
         pip install PyMySQL
 
+    - name: Determine pytest-xdist worker count
+      # Derive the worker count once and reuse it for both the per-worker
+      # database pre-creation and the pytest -n flag, so the two can never drift
+      # (pre-creating fewer databases than workers leaves late workers with no
+      # database). Cap at 8: each xdist worker gets its own Redis logical DB
+      # (tests/conftest.py) and Redis has only 16 (0-15), so 8 stays well within
+      # range and covers typical GH runners (2-4 cores) with headroom.
+      run: |
+        WORKERS=$(nproc)
+        if [ "$WORKERS" -gt 8 ]; then WORKERS=8; fi
+        echo "WORKERS=$WORKERS" >> "$GITHUB_ENV"
+
     - name: Pre-create per-worker databases
       # pytest-xdist workers append a _gw<N> suffix to TEST_DATABASE_URL and use
       # the matching Redis logical DB index (see tests/conftest.py).
       # db.create_all() creates tables inside an existing database — the
-      # databases themselves must be pre-created. Eight covers typical GH
-      # runners (2-4 cores) with room to spare.
+      # databases themselves must be pre-created.
       run: |
-        for i in $(seq 0 7); do
+        for i in $(seq 0 $((WORKERS - 1))); do
           mysql -h 127.0.0.1 -u root -proot -e \
             "CREATE DATABASE privacyidea_test_gw$i; \
              GRANT ALL ON privacyidea_test_gw$i.* TO 'privacyidea'@'%';"
@@ -130,11 +141,9 @@ jobs:
         PYTHONWARNINGS: "once::DeprecationWarning"
       run: |
         pip freeze
-        # Cap workers at 16: each xdist worker gets its own Redis logical DB
-        # (tests/conftest.py) and Redis has only 16 (0-15). conftest fails fast
-        # above that, so don't let a larger runner spawn more than 16 workers.
-        WORKERS=$(nproc)
-        if [ "$WORKERS" -gt 16 ]; then WORKERS=16; fi
+        # WORKERS is derived once in the "Determine pytest-xdist worker count"
+        # step (capped at 8, within Redis's 16 logical DBs) and reused here so
+        # the -n flag can never exceed the number of pre-created databases.
         # --dist=loadfile keeps all tests in one file on one worker, preserving
         # the intra-file ordering the unittest-style suite currently relies on.
         # Collect coverage: this job is the ONLY one that exercises the Redis
@@ -145,7 +154,7 @@ jobs:
 
     - name: Codecov upload
       if: ${{ steps.pytest_run.outcome == 'success' }}
-      uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
+      uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
       with:
         files: ./coverage.xml
         # Upload under the same `backend` flag as the MariaDB job. The `backend`
@@ -167,7 +176,7 @@ jobs:
       contents: read # for actions/checkout to reach the local composite action
       issues: write
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
       - uses: ./.github/actions/notify-nightly-failure

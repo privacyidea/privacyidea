@@ -123,7 +123,7 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
     const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
     (authService.actionAllowed as jest.Mock).mockReturnValue(true);
 
-    // Set active section to "audit" (index 6 in primaryNavItems)
+    // Set active section to "logs" (index 6 in primaryNavItems)
     contentService.routeUrl.set(ROUTE_PATHS.AUDIT);
 
     // Set visible count to 3
@@ -136,12 +136,12 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
     // Audit is at index 6. 6 >= 3 is true.
     // Visible should be [items[0], items[1], items[6]]
     expect(visible.length).toBe(3);
-    expect(visible[2].section).toBe("audit");
+    expect(visible[2].section).toBe("logs");
 
     // Overflow should contain items that were displaced or were already there
     // Indices: 2, 3, 5, 7, 8 (users, policies, subscription, external, config)
     expect(overflow.length).toBe(5);
-    expect(overflow.some((item) => item.section === "audit")).toBe(false);
+    expect(overflow.some((item) => item.section === "logs")).toBe(false);
     expect(overflow[0].section).toBe("users");
   });
 
@@ -305,9 +305,9 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
       expect(component.activeSection()).toBe("subscription");
     });
 
-    it("should detect 'audit' for audit route", () => {
+    it("should detect 'logs' for logs route", () => {
       contentService.routeUrl.set(ROUTE_PATHS.AUDIT);
-      expect(component.activeSection()).toBe("audit");
+      expect(component.activeSection()).toBe("logs");
     });
 
     it("should detect 'external_services' for external services route", () => {

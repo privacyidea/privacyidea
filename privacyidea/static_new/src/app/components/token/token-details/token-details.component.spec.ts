@@ -18,7 +18,7 @@
  **/
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { signal } from "@angular/core";
+import { ElementRef, signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { EditableElement } from "@components/shared/edit-buttons/edit-buttons.component";
 import { of, throwError } from "rxjs";
@@ -27,14 +27,14 @@ import { MatDialog } from "@angular/material/dialog";
 import { ActivatedRoute, Router } from "@angular/router";
 import { PiResponse } from "@app/app.component";
 import { AuditService } from "@services/audit/audit.service";
-import { AuthService, AuthResponse } from "@services/auth/auth.service";
+import { AuthResponse, AuthService } from "@services/auth/auth.service";
 import { ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
 import { MachineService, TokenApplication } from "@services/machine/machine.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { RealmService } from "@services/realm/realm.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
-import { TokenService, TokenTypeKey, TokenInfo, TokenDetails, Tokens } from "@services/token/token.service";
+import { TokenDetails, TokenInfo, Tokens, TokenService, TokenTypeKey } from "@services/token/token.service";
 import { UserService } from "@services/user/user.service";
 import { ValidateService } from "@services/validate/validate.service";
 import {
@@ -118,7 +118,12 @@ describe("TokenDetailsComponent", () => {
       { keyMap: { key: "info", label: "Info" }, value: { key1: "value1" }, isEditing: signal(false) }
     ]);
     component.tokenDetailData = signal([
-      { keyMap: { key: "container_serial", label: "Container" }, value: "container1", isEditing: signal(false) }
+      {
+        keyMap: {
+          key: "container_serial", label: "Container",
+          group: "identity"
+        }, value: "container1", isEditing: signal(false)
+      }
     ]);
 
     fixture.detectChanges();
@@ -129,7 +134,7 @@ describe("TokenDetailsComponent", () => {
   });
 
   it("renders the token serial in the header", () => {
-    const header = fixture.nativeElement.querySelector(".details-header .serial");
+    const header = fixture.nativeElement.querySelector(".details-header .h3-color");
     expect(header.textContent).toContain("Mock serial");
   });
 
@@ -561,6 +566,85 @@ describe("TokenDetailsComponent", () => {
 
     observerCallback!(entryAt(-10, null), observer);
     expect(header.classList.contains("is-sticky")).toBe(false);
+  });
+
+  describe("fitWidthToTopRow", () => {
+    const rect = (top: number, left: number, right: number): DOMRect =>
+      ({ top, left, right, bottom: top + 100, width: right - left, height: 100, x: left, y: top }) as DOMRect;
+
+    const cardEl = (r: DOMRect, hasBox = true): HTMLElement => {
+      const el = document.createElement("div");
+      el.getBoundingClientRect = () => r;
+      el.getClientRects = () => (hasBox ? [r] : []) as unknown as DOMRectList;
+      return el;
+    };
+
+    const makeContainer = (): HTMLElement => {
+      const el = document.createElement("div");
+      el.style.padding = "16px";
+      el.style.borderWidth = "0px";
+      el.style.borderStyle = "solid";
+      return el;
+    };
+
+    it("fixes the container width to the rendered top-row span plus padding", () => {
+      const grid = document.createElement("div");
+      grid.appendChild(cardEl(rect(0, 0, 400))); // first row
+      grid.appendChild(cardEl(rect(0, 416, 1000))); // first row
+      // display:contents wrapper (no box of its own) with a first-row child.
+      const wrapper = cardEl(rect(0, 0, 0), false);
+      wrapper.appendChild(cardEl(rect(0, 1016, 1200)));
+      grid.appendChild(wrapper);
+      grid.appendChild(cardEl(rect(200, 0, 400))); // second row -> ignored
+
+      const container = makeContainer();
+      component.scrollContainer = { nativeElement: container } as ElementRef<HTMLElement>;
+      component["detailsGrid"] = { nativeElement: grid } as ElementRef<HTMLElement>;
+
+      component["fitWidthToTopRow"]();
+
+      // span = max right (1200) - min left (0) = 1200; + 2 * 16 padding = 1232.
+      expect(container.style.width).toBe("1232px");
+    });
+
+    it("clears the fixed width when there are no measurable cards", () => {
+      const container = makeContainer();
+      container.style.width = "500px";
+      component.scrollContainer = { nativeElement: container } as ElementRef<HTMLElement>;
+      component["detailsGrid"] = { nativeElement: document.createElement("div") } as ElementRef<HTMLElement>;
+
+      component["fitWidthToTopRow"]();
+
+      expect(container.style.width).toBe("");
+    });
+
+    it("does nothing when the grid reference is missing", () => {
+      const container = makeContainer();
+      container.style.width = "300px";
+      component.scrollContainer = { nativeElement: container } as ElementRef<HTMLElement>;
+      component["detailsGrid"] = undefined;
+
+      expect(() => component["fitWidthToTopRow"]()).not.toThrow();
+      expect(container.style.width).toBe("300px");
+    });
+
+    it("scheduleFit runs the fit on the next animation frame", () => {
+      const rafSpy = jest
+        .spyOn(window, "requestAnimationFrame")
+        .mockImplementation((cb: FrameRequestCallback) => {
+          cb(0);
+          return 1;
+        });
+      const fitSpy = jest
+        .spyOn(component as unknown as { fitWidthToTopRow: () => void }, "fitWidthToTopRow")
+        .mockReturnValue(undefined);
+
+      component["scheduleFit"]();
+
+      expect(fitSpy).toHaveBeenCalledTimes(1);
+      rafSpy.mockRestore();
+      fitSpy.mockRestore();
+    });
   });
 });
 
