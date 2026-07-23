@@ -18,11 +18,12 @@
  **/
 
 import { Component, input } from "@angular/core";
+import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
 
 @Component({
   selector: "app-view-condition-section",
   standalone: true,
-  imports: [],
+  imports: [HighlightPipe],
   templateUrl: "./view-condition-section.component.html",
   styleUrls: ["./view-condition-section.component.scss"]
 })
@@ -30,4 +31,5 @@ export class ViewConditionSectionComponent {
   readonly label = input.required<string>();
   readonly values = input.required<string[]>();
   readonly marker = input<string>();
+  readonly highlightTerms = input<string[]>([]);
 }

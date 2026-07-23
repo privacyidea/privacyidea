@@ -483,13 +483,17 @@ def get_auth_token():
 
             if not user_auth and "multi_challenge" in details and len(details["multi_challenge"]) > 0:
                 # Do not return user data in case of a challenge request.
+                # Mark the audit entry as CHALLENGE so check_max_auth_fail does
+                # not count it as a failure (mirrors _finalize_auth_response()
+                # in validate.py).
+                g.audit_object.log({"authentication": AUTH_RESPONSE.CHALLENGE})
                 return send_result(False, rid=2, details=details)
 
     if not admin_auth and not user_auth:
         raise AuthError(_("Authentication failure. Wrong credentials"), id=Error.AUTHENTICATE_WRONG_CREDENTIALS,
                         details=details or {})
     else:
-        g.audit_object.log({"success": True})
+        g.audit_object.log({"success": True, "authentication": AUTH_RESPONSE.ACCEPT})
         request.User = user
 
     # If the HSM is not ready, we need to create the nonce in another way!

@@ -58,7 +58,6 @@ OAUTH_URL = "otpauth://hotp/OATH0001D8B6?secret=GQROHTUPBAK5N6T2HBUK4IP42R56E" \
 
 
 class UserNotificationTestCase(PristineSqliteFixtures, MyTestCase):
-
     pristine_fixtures = ["tests/testdata/testuser.sqlite"]
 
     def test_01_basefunctions(self):
@@ -1708,3 +1707,248 @@ class UserNotificationTestCase(PristineSqliteFixtures, MyTestCase):
             self.assertTrue(call_args[0][0].startswith("Failed to write notification file:"))
 
         os.remove("tests/testdata/testOATH123456.txt")
+
+    @smtpmock.activate
+    def test_23_empty_admin_realm_no_fanout(self):
+        """
+        Test that an empty/None admin realm in "To admin realm" does NOT
+        fan out notifications to all users. The handler should short-circuit
+        without attempting to send any email: it returns True (no-op default),
+        no SMTP send is attempted (sent_recipient stays None).
+        """
+        # setup realms
+        self.setUp_user_realms()
+
+        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False)
+        self.assertTrue(r > 0)
+
+        smtpmock.setdata(response={"recp@example.com": (200, "OK")},
+                         support_tls=False)
+
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        audit_object.audit_data["serial"] = "123456"
+
+        g.logged_in_user = {"username": "testadmin",
+                            "role": "admin",
+                            "realm": ""}
+        g.audit_object = audit_object
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SomeSerial",
+                        "user": "cornelius"}
+        req.User = User("cornelius", self.realm1)
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+
+        # --- Case 1: "To admin realm" set to empty string ---
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {
+                       "options": {"body": "test body",
+                                   "emailconfig": "myserver",
+                                   "To": NOTIFY_TYPE.ADMIN_REALM,
+                                   "To " + NOTIFY_TYPE.ADMIN_REALM: ""}}}
+
+        un_handler = UserNotificationEventHandler()
+        res = un_handler.do("sendmail", options=options)
+        # Handler returns True (default, short-circuited before send)
+        self.assertTrue(res)
+        # No SMTP send was attempted
+        self.assertIsNone(smtpmock.get_sent_recipient())
+        self.assertIsNone(smtpmock.get_sent_message())
+        # The skipped send is surfaced via run_details so it lands in the audit
+        self.assertIn("No admin realm configured", un_handler.run_details)
+
+        # --- Case 2: "To admin realm" key missing entirely (None) ---
+        smtpmock.setdata(response={"recp@example.com": (200, "OK")},
+                         support_tls=False)
+
+        options_none = {"g": g,
+                        "request": req,
+                        "response": resp,
+                        "handler_def": {
+                            "options": {"body": "test body",
+                                        "emailconfig": "myserver",
+                                        "To": NOTIFY_TYPE.ADMIN_REALM}}}
+
+        un_handler = UserNotificationEventHandler()
+        res = un_handler.do("sendmail", options=options_none)
+        # Handler returns True (default, short-circuited before send)
+        self.assertTrue(res)
+        # No SMTP send was attempted
+        self.assertIsNone(smtpmock.get_sent_recipient())
+        self.assertIsNone(smtpmock.get_sent_message())
+        # The skipped send is surfaced via run_details so it lands in the audit
+        self.assertIn("No admin realm configured", un_handler.run_details)
+
+    @smtpmock.activate
+    def test_24_empty_reply_to_admin_realm_no_fanout(self):
+        """
+        Test that an empty/None admin realm in "reply_to admin realm" does NOT
+        fan out reply-to addresses to all users in all realms.
+        The SMTP layer falls back reply_to to the sender when reply_to is
+        falsy, so we assert that Reply-To equals the configured sender (not a
+        comma-separated list of realm user emails).
+        """
+        # setup realms
+        self.setUp_user_realms()
+
+        # Use a known sender so we can assert the fallback
+        smtp_sender = "noreply@example.com"
+        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False,
+                           sender=smtp_sender)
+        self.assertTrue(r > 0)
+
+        smtpmock.setdata(response={"recp@example.com": (200, "OK")},
+                         support_tls=False)
+
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        audit_object.audit_data["serial"] = "123456"
+
+        g.logged_in_user = {"username": "testadmin",
+                            "role": "admin",
+                            "realm": ""}
+        g.audit_object = audit_object
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SomeSerial",
+                        "user": "cornelius"}
+        req.User = User("cornelius", self.realm1)
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+
+        # Send to tokenowner but with reply_to set to an empty admin realm
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {
+                       "options": {"body": "test body",
+                                   "emailconfig": "myserver",
+                                   "To": NOTIFY_TYPE.TOKENOWNER,
+                                   "reply_to": NOTIFY_TYPE.ADMIN_REALM,
+                                   "reply_to " + NOTIFY_TYPE.ADMIN_REALM: ""}}}
+
+        un_handler = UserNotificationEventHandler()
+        with mock.patch("logging.Logger.warning") as mock_log:
+            res = un_handler.do("sendmail", options=options)
+            self.assertTrue(res)
+            mock_log.assert_any_call(
+                "No admin realm specified for ADMIN_REALM reply-to. "
+                "Reply-To will fall back to the SMTP sender address.")
+
+        # Parse the sent email and check the Reply-To header
+        msg = smtpmock.get_sent_message()
+        self.assertIsNotNone(msg)
+        parsed = email.message_from_string(msg)
+        reply_to_val = parsed.get("Reply-To", "")
+
+        # Reply-To must be the sender fallback, NOT a comma-separated list of realm users
+        self.assertEqual(reply_to_val, smtp_sender)
+        # Must not contain any comma (i.e. no multi-recipient fanout)
+        self.assertNotIn(",", reply_to_val)
+        # Must not contain realm1 user emails
+        self.assertNotIn("user@localhost.localdomain", reply_to_val)
+
+    def test_25_admin_realm_option_required(self):
+        """
+        Test that the "To admin realm" and "reply_to admin realm" sub-options
+        are marked as required in the action definition. The UI template
+        (config.events.details.html) uses ng-required with a visibleIf guard
+        so this is only enforced when the field is actually shown.
+        """
+        actions = UserNotificationEventHandler().actions
+        sendmail_opts = actions["sendmail"]
+
+        to_key = "To " + NOTIFY_TYPE.ADMIN_REALM
+        self.assertIn(to_key, sendmail_opts)
+        self.assertTrue(sendmail_opts[to_key].get("required"),
+                        f"'{to_key}' should be marked required")
+
+        reply_to_key = "reply_to " + NOTIFY_TYPE.ADMIN_REALM
+        self.assertIn(reply_to_key, sendmail_opts)
+        self.assertTrue(sendmail_opts[reply_to_key].get("required"),
+                        f"'{reply_to_key}' should be marked required")
+
+    @smtpmock.activate
+    def test_26_reply_to_admin_realm_with_valid_realm(self):
+        """
+        Test that when reply_to is set to ADMIN_REALM with a valid realm,
+        the Reply-To header is populated with the comma-separated email
+        addresses of all users in that realm who have an email.
+        """
+        # setup realms
+        self.setUp_user_realms()
+
+        smtp_sender = "noreply@example.com"
+        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False,
+                           sender=smtp_sender)
+        self.assertTrue(r > 0)
+
+        smtpmock.setdata(response={"recp@example.com": (200, "OK")},
+                         support_tls=False)
+
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        audit_object.audit_data["serial"] = "123456"
+
+        g.logged_in_user = {"username": "testadmin",
+                            "role": "admin",
+                            "realm": ""}
+        g.audit_object = audit_object
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SomeSerial",
+                        "user": "cornelius"}
+        req.User = User("cornelius", self.realm1)
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+
+        # Send to tokenowner with reply_to set to a valid admin realm
+        # realm1 has cornelius with email user@localhost.localdomain
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {
+                       "options": {"body": "test body",
+                                   "emailconfig": "myserver",
+                                   "To": NOTIFY_TYPE.TOKENOWNER,
+                                   "reply_to": NOTIFY_TYPE.ADMIN_REALM,
+                                   "reply_to " + NOTIFY_TYPE.ADMIN_REALM: "realm1"}}}
+
+        un_handler = UserNotificationEventHandler()
+        res = un_handler.do("sendmail", options=options)
+        self.assertTrue(res)
+
+        # Parse the sent email and verify Reply-To contains realm1 user emails
+        msg = smtpmock.get_sent_message()
+        self.assertIsNotNone(msg)
+        parsed = email.message_from_string(msg)
+        reply_to_val = parsed.get("Reply-To", "")
+
+        # Reply-To must contain the realm user's email, NOT the sender fallback
+        self.assertIn("user@localhost.localdomain", reply_to_val)
+        self.assertNotEqual(reply_to_val, smtp_sender)

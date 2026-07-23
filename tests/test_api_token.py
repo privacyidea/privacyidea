@@ -4707,7 +4707,7 @@ class APITokengroupTestCase(MyApiTestCase):
             result = res.json['result']
             self.assertFalse(result.get("status"))
             self.assertEqual(result.get("error").get("code"), 601)
-            self.assertEqual(result.get("error").get("message"), "The tokengroup does not exist.")
+            self.assertEqual('The tokengroup does not exist.', result.get("error").get("message"))
 
         # Delete a non-existing tokengroup from the token
         with self.app.test_request_context('/token/group/{0!s}/gaga'.format(serial),
@@ -4718,6 +4718,6 @@ class APITokengroupTestCase(MyApiTestCase):
             result = res.json['result']
             self.assertFalse(result.get("status"))
             self.assertEqual(result.get("error").get("code"), 601)
-            self.assertEqual(result.get("error").get("message"), "The tokengroup does not exist.")
+            self.assertEqual('Tokengroup gaga does not exist.', result.get("error").get("message"))
 
         remove_token(serial)
