@@ -120,6 +120,18 @@ describe("UserTableComponent", () => {
       expect(namesFor("username: bob")).toEqual(["alice", "bob"]);
     });
 
+    it("keeps the last count and rows while the users resource has no value (loading)", () => {
+      mockUserService.apiUserFilter.set(new FilterValue({ value: "bob" }));
+      expect(component.totalLength()).toBe(1);
+      expect(component.usersDataSource().data.map((u) => u.username)).toEqual(["bob"]);
+
+      // Simulate a reload where the resource temporarily has no value: free-text filtering is
+      // skipped and the previously computed count and rows are retained.
+      mockUserService.usersResource.set(undefined as never);
+      expect(component.totalLength()).toBe(1);
+      expect(component.usersDataSource().data.map((u) => u.username)).toEqual(["bob"]);
+    });
+
     it("resets the filter when leaving the page", () => {
       mockUserService.apiUserFilter.set(new FilterValue({ value: "alice" }));
       component.ngOnDestroy();

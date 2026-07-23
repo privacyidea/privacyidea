@@ -43,7 +43,7 @@ export class HighlightPipe implements PipeTransform {
     let highlighted = "";
     let lastIndex = 0;
     for (const match of value.matchAll(regex)) {
-      const start = match.index ?? 0;
+      const start = match.index!;
       highlighted += this.escapeHtml(value.slice(lastIndex, start));
       highlighted += `<span class="highlight">${this.escapeHtml(match[0])}</span>`;
       lastIndex = start + match[0].length;
