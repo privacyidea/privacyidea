@@ -27,6 +27,7 @@ import { AuditComponent } from "@components/logs/audit/audit.component";
 import { DashboardComponent } from "@components/dashboard/dashboard.component";
 import { ClientsComponent } from "@components/logs/clients/clients.component";
 import { AuthenticationLog } from "@components/logs/authentication-log/authentication-log";
+import { LockedUsersComponent } from "@components/logs/locked-users/locked-users.component";
 import { MachineDetailsComponent } from "@components/configuration/machines/machine-details/machine-details.component";
 import { MachinesComponent } from "@components/configuration/machines/machines.component";
 import { PeriodicTaskEditComponent } from "@components/configuration/periodic-task/periodic-task-edit/periodic-task-edit.component";
@@ -183,7 +184,8 @@ export const routes: Routes = [
       { path: "", pathMatch: "full", redirectTo: logsLandingRedirect },
       { path: "audit", component: AuditComponent },
       { path: "authentication-log", component: AuthenticationLog },
-      { path: "clients", component: ClientsComponent }
+      { path: "clients", component: ClientsComponent },
+      { path: "locked-users", component: LockedUsersComponent }
     ]
   },
   {

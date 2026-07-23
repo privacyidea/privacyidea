@@ -1,0 +1,61 @@
+@use "styles";
+@use "table";
+
+.locked-users-table-container {
+  @include styles.main-component-style;
+  max-height: var(--table-max-height);
+  @include table.base-table-structure(
+    ".locked-users-table",
+    ".locked-users-table-filter",
+    ".table-scroll-container"
+  );
+  // Flex column so the title/description, filter+paginator row and the actions
+  // stay pinned and only the .table-scroll-region (flex: 1 1 auto, overflow: auto)
+  // scrolls. overflow: hidden hands scrolling to that inner region.
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.table-checkbox {
+  width: 48px;
+}
+
+// Column header: label plus its filter/sort control(s) on one row.
+.header-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+// Keep the username and its fast-filter button on one row.
+.username-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+// Placeholder shown in the Lock Expiry column for permanent locks (no expiry).
+.lock-date {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.sort-button {
+  width: 24px;
+  height: 24px;
+  line-height: 24px;
+}
+
+// Username navigates via (click); make it read as a link.
+a[role="button"] {
+  cursor: pointer;
+}
+

@@ -46,7 +46,8 @@ export const logsLandingRedirect: RedirectFunction = firstAllowedRedirect(
   [
     ["auditlog", "audit"],
     ["authentication_log_read", "authentication-log"],
-    ["clienttype", "clients"]
+    ["clienttype", "clients"],
+    ["user_lockout_read", "locked-users"]
   ],
   "audit"
 );

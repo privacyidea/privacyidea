@@ -16,10 +16,14 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { computed } from "@angular/core";
+import { computed, signal } from "@angular/core";
+import { Sort } from "@angular/material/sort";
 import { PiResponse } from "@app/app.component";
+import { FilterValue } from "@core/models/filter_value/filter_value";
 import {
   ConditionalAccessStateServiceInterface,
+  LockedUsersPage,
+  LockedUserEntry,
   ResetUserLockoutRequest,
   UserLockoutStatus
 } from "@services/conditional-access-state/conditional-access-state.service";
@@ -40,11 +44,39 @@ export class MockConditionalAccessStateService implements ConditionalAccessState
 
   resetUserLockout = jest.fn().mockImplementation((_: ResetUserLockoutRequest): Observable<boolean> => of(true));
 
+  lockedUsersFilter = signal(new FilterValue());
+  lockedUsersFilterParams = computed<Record<string, string>>(() => ({}));
+  lockedUsersSort = signal<Sort>({ active: "last_updated", direction: "desc" });
+  lockedUsersPageSize = signal(15);
+  lockedUsersPageIndex = signal(1);
+
+  lockedUsersResource = new MockHttpResourceRef<PiResponse<LockedUsersPage> | undefined>(
+    MockPiResponse.fromValue<LockedUsersPage>({ locked_users: [], count: 0, current: 1, prev: null, next: null })
+  );
+
+  purgeUserLockouts = jest.fn().mockImplementation((): Observable<number> => of(0));
+
   setUserLockoutStatus(value: UserLockoutStatus | null): void {
     this.userLockoutResource.set(MockPiResponse.fromValue<UserLockoutStatus | null>(value));
   }
 
   setUserLockoutResourceUndefined(): void {
     this.userLockoutResource.set(undefined);
+  }
+
+  setLockedUsers(entries: LockedUserEntry[]): void {
+    this.lockedUsersResource.set(
+      MockPiResponse.fromValue<LockedUsersPage>({
+        locked_users: entries,
+        count: entries.length,
+        current: 1,
+        prev: null,
+        next: null
+      })
+    );
+  }
+
+  setLockedUsersResourceUndefined(): void {
+    this.lockedUsersResource.set(undefined);
   }
 }

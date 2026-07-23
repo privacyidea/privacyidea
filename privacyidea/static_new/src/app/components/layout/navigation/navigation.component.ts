@@ -251,7 +251,7 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
         case "subscription":
           return this.authService.actionAllowed("managesubscription");
         case "logs":
-          return this.authService.oneActionAllowed(["auditlog", "authentication_log_read", "clienttype"]);
+          return this.authService.oneActionAllowed(["auditlog", "authentication_log_read", "clienttype", "user_lockout_read"]);
         case "external_services":
           return this.authService.oneActionAllowed([
             "smtpserver_read",

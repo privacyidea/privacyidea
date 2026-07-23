@@ -35,6 +35,7 @@ export class MockContentService implements ContentServiceInterface {
   onAudit = computed(() => this.routeUrl() === ROUTE_PATHS.AUDIT);
   onAuthenticationLog = computed(() => this.routeUrl() === ROUTE_PATHS.AUTHENTICATION_LOG);
   onClients = computed(() => this.routeUrl() === ROUTE_PATHS.CLIENTS);
+  onLockedUsers = computed(() => this.routeUrl() === ROUTE_PATHS.LOCKED_USERS);
   onTokens = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS);
   onUsers = computed(() => this.routeUrl() === ROUTE_PATHS.USERS);
   onPolicies = computed(() => this.routeUrl() === ROUTE_PATHS.POLICIES);
