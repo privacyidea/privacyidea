@@ -228,18 +228,23 @@ export class PoliciesTableComponent {
   }
 }
 
+// Split a priority filter into its comparison operator and numeric operand.
+// The operand is parsed strictly: anything that is not a whole number (e.g.
+// ">10x") yields NaN, so a partially-numeric value does not silently match.
+const PRIORITY_OPERATORS: readonly [string, (a: number, b: number) => boolean][] = [
+  [">=", (a, b) => a >= b],
+  ["<=", (a, b) => a <= b],
+  ["!=", (a, b) => a !== b],
+  [">", (a, b) => a > b],
+  ["<", (a, b) => a < b],
+  ["=", (a, b) => a === b]
+];
+
 function matchesPriority(priority: number, val: string): boolean {
-  try {
-    if (val.startsWith(">=")) return priority >= parseInt(val.substring(2), 10);
-    if (val.startsWith("<=")) return priority <= parseInt(val.substring(2), 10);
-    if (val.startsWith(">")) return priority > parseInt(val.substring(1), 10);
-    if (val.startsWith("<")) return priority < parseInt(val.substring(1), 10);
-    if (val.startsWith("!=")) return priority !== parseInt(val.substring(2), 10);
-    if (val.startsWith("=")) return priority === parseInt(val.substring(1), 10);
-    return priority === parseInt(val, 10);
-  } catch {
-    return false;
-  }
+  const [prefix, compare] = PRIORITY_OPERATORS.find(([p]) => val.startsWith(p)) ?? ["", (a: number, b: number) => a === b];
+  const rest = val.substring(prefix.length).trim();
+  if (!/^-?\d+$/.test(rest)) return false;
+  return compare(priority, Number(rest));
 }
 
 function matchesActions(item: PolicyDetail, term: string): boolean {
