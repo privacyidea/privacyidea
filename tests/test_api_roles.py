@@ -1550,6 +1550,61 @@ class APISelfserviceTestCase(MyApiTestCase):
 
         delete_policy("pol_time")
 
+    def test_47_auth_timelimit_maxfail_webui_challenge_response(self):
+        # The two-step WebUI login (login_mode=privacyIDEA with a challenge
+        # response token) must not count the challenge-trigger step (correct
+        # password, challenge is returned) as a failed authentication.
+        self.setUp_user_realm2()
+        user = User("timelimituser", realm=self.realm2)
+        pin = "spass"
+        token = init_token({"type": "hotp", "genkey": True, "pin": pin}, user=user)
+        set_policy(name="pol_time1", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXFAIL}=3/20s")
+        set_policy(name="pol_loginmode", scope=SCOPE.WEBUI,
+                   action="{}={}".format(PolicyAction.LOGINMODE, LOGINMODE.PRIVACYIDEA))
+        set_policy(name="challenge_response", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
+        self.app_context.g.audit_object.clear()
+
+        # Use up all but one allowed failure with wrong passwords
+        for _ in range(2):
+            with self.app.test_request_context('/auth',
+                                               method='POST',
+                                               data={"username": "timelimituser@" + self.realm2,
+                                                     "password": "wrong"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 401)
+
+        # The correct PIN triggers the challenge (first step of the WebUI login)
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "timelimituser@" + self.realm2,
+                                                 "password": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json.get("result")
+            self.assertTrue(result["status"], result)
+            self.assertFalse(result["value"], result)
+            self.assertEqual(result.get("authentication"), "CHALLENGE")
+            transaction_id = res.json.get("detail").get("transaction_id")
+
+        # Answering the challenge with the correct OTP value must succeed:
+        # the challenge-trigger entry does not count as a failed authentication.
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "timelimituser@" + self.realm2,
+                                                 "password": token.get_otp()[2],
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res.json)
+            result = res.json.get("result")
+            self.assertTrue(result["status"], result)
+            self.assertTrue(result["value"], result)
+
+        delete_policy("pol_time1")
+        delete_policy("pol_loginmode")
+        delete_policy("challenge_response")
+        token.delete_token()
+
 
 class PolicyConditionsTestCase(MyApiTestCase):
     @ldap3mock.activate
