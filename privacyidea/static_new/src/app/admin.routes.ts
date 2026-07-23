@@ -20,11 +20,13 @@
 import { inject } from "@angular/core";
 import { Routes } from "@angular/router";
 import { dashboardGuard } from "@app/guards/dashboard.guard";
+import { logsLandingRedirect } from "@app/routing/landing-redirects";
 import { pendingChangesGuard } from "@app/guards/pending-changes.guard";
 import { AuthService } from "@services/auth/auth.service";
-import { AuditComponent } from "@components/audit/audit.component";
+import { AuditComponent } from "@components/logs/audit/audit.component";
 import { DashboardComponent } from "@components/dashboard/dashboard.component";
-import { ClientsComponent } from "@components/audit/clients/clients.component";
+import { ClientsComponent } from "@components/logs/clients/clients.component";
+import { AuthenticationLog } from "@components/logs/authentication-log/authentication-log";
 import { MachineDetailsComponent } from "@components/configuration/machines/machine-details/machine-details.component";
 import { MachinesComponent } from "@components/configuration/machines/machines.component";
 import { PeriodicTaskEditComponent } from "@components/configuration/periodic-task/periodic-task-edit/periodic-task-edit.component";
@@ -52,6 +54,8 @@ import { MachineResolverDetailsComponent } from "@components/machine-resolver/ma
 import { MachineResolverComponent } from "@components/machine-resolver/machine-resolver.component";
 import { PolicyEditPageComponent } from "@components/policies/policy-edit-page/policy-edit-page.component";
 import { PoliciesTableComponent } from "@components/policies/policies-table/policies-table.component";
+import { ConditionalAccessComponent } from "@components/conditional-access/conditional-access.component";
+import { ConditionalAccessEditPageComponent } from "@components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component";
 import { ChallengesTableComponent } from "@components/token/challenges-table/challenges-table.component";
 import { ContainerCreateComponent } from "@components/container/container-create/container-create.component";
 import { ContainerDetailsComponent } from "@components/container/container-details/container-details.component";
@@ -132,7 +136,18 @@ export const routes: Routes = [
     children: [
       { path: "", component: PoliciesTableComponent },
       { path: "new", component: PolicyEditPageComponent, canDeactivate: [pendingChangesGuard] },
-      { path: "details/:name", component: PolicyEditPageComponent, canDeactivate: [pendingChangesGuard] }
+      { path: "details/:name", component: PolicyEditPageComponent, canDeactivate: [pendingChangesGuard] },
+      { path: "conditional-access", component: ConditionalAccessComponent },
+      {
+        path: "conditional-access/new",
+        component: ConditionalAccessEditPageComponent,
+        canDeactivate: [pendingChangesGuard]
+      },
+      {
+        path: "conditional-access/details/:id",
+        component: ConditionalAccessEditPageComponent,
+        canDeactivate: [pendingChangesGuard]
+      }
     ]
   },
   {
@@ -176,9 +191,11 @@ export const routes: Routes = [
     ]
   },
   {
-    path: "audit",
+    path: "logs",
     children: [
-      { path: "", component: AuditComponent },
+      { path: "", pathMatch: "full", redirectTo: logsLandingRedirect },
+      { path: "audit", component: AuditComponent },
+      { path: "authentication-log", component: AuthenticationLog },
       { path: "clients", component: ClientsComponent }
     ]
   },

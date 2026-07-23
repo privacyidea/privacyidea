@@ -316,6 +316,7 @@ class SYSCONF:
     SPLITATSIGN = "splitAtSign"
     INCFAILCOUNTER = "IncFailCountOnFalsePin"
     RESET_FAILCOUNTER_ON_PIN_ONLY = "ResetFailcounterOnPIN"
+    CONDITIONAL_ACCESS_NEVER_BLOCK = "ConditionalAccessNeverBlock"
 
 
 # @cache.cached(key_prefix="allConfig")

@@ -26,7 +26,7 @@
     <ng-container>
       <h3 i18n>Details for User:</h3>
       <app-copyable [copyText]="userService.detailsUser().username">
-        <h3 class="username-header">&nbsp;{{ userService.detailsUser().username }}</h3>
+        <h3 class="h3-color">&nbsp;{{ userService.detailsUser().username }}</h3>
       </app-copyable>
       <h3 i18n>&nbsp;in Realm</h3>
       <app-copyable [copyText]="userService.selectedUserRealm()">
@@ -59,17 +59,17 @@
             </button>
           } @else {
             <button
+              (click)="cancelEdit()"
+              class="action-button-secondary button-width-s"
+              mat-stroked-button>
+              <span i18n>Cancel</span>
+            </button>
+            <button
               (click)="saveEdit()"
               class="action-button-primary button-width-s"
               mat-stroked-button>
               <mat-icon>save</mat-icon>
               <span i18n>Save</span>
-            </button>
-            <button
-              (click)="cancelEdit()"
-              class="action-button-secondary button-width-s"
-              mat-stroked-button>
-              <span i18n>Cancel</span>
             </button>
           }
         }

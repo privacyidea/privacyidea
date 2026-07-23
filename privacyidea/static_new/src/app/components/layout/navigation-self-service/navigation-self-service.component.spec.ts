@@ -26,6 +26,7 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { NavigationSelfServiceButtonComponent } from "@components/layout/navigation-self-service/navigation-self-service-button/navigation-self-service-button.component";
 import { NavigationSelfServiceComponent } from "@components/layout/navigation-self-service/navigation-self-service.component";
 import { AuditService } from "@services/audit/audit.service";
+import { AuthenticationLogService } from "@services/authentication-log/authentication-log.service";
 import { AuthService } from "@services/auth/auth.service";
 import { CaConnectorService } from "@services/ca-connector/ca-connector.service";
 import { ClientsService } from "@services/clients/clients.service";
@@ -41,6 +42,7 @@ import { NotificationService } from "@services/notification/notification.service
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { PeriodicTaskService } from "@services/periodic-task/periodic-task.service";
 import { PolicyService } from "@services/policies/policies.service";
+import { ConditionalAccessPolicyService } from "@services/conditional-access/conditional-access-policy.service";
 import { PrivacyideaServerService } from "@services/privacyidea-server/privacyidea-server.service";
 import { RadiusServerService } from "@services/radius-server/radius-server.service";
 import { RealmService } from "@services/realm/realm.service";
@@ -58,6 +60,7 @@ import { UserService } from "@services/user/user.service";
 import { VersioningService } from "@services/version/version.service";
 import {
   MockAuditService,
+  MockAuthenticationLogService,
   MockCaConnectorService,
   MockChallengesService,
   MockClientsService,
@@ -71,6 +74,7 @@ import {
   MockNotificationService,
   MockPendingChangesService,
   MockPeriodicTaskService,
+  MockConditionalAccessPolicyService,
   MockPolicyService,
   MockPrivacyideaServerService,
   MockRadiusService,
@@ -130,8 +134,10 @@ describe("NavigationSelfServiceComponent", () => {
         { provide: VersioningService, useClass: MockVersioningService },
         { provide: DocumentationService, useClass: MockDocumentationService },
         { provide: AuditService, useClass: MockAuditService },
+        { provide: AuthenticationLogService, useClass: MockAuthenticationLogService },
         { provide: ClientsService, useClass: MockClientsService },
         { provide: PolicyService, useClass: MockPolicyService },
+        { provide: ConditionalAccessPolicyService, useClass: MockConditionalAccessPolicyService },
         { provide: SubscriptionService, useClass: MockSubscriptionService },
         { provide: MachineResolverService, useClass: MockMachineResolverService },
         { provide: ContainerTemplateService, useClass: MockContainerTemplateService },

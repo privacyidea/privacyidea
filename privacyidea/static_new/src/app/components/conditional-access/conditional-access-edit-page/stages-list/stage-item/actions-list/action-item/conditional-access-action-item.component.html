@@ -1,0 +1,151 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<mat-expansion-panel
+  class="ca-action-item"
+  [expanded]="!action().id">
+  <mat-expansion-panel-header>
+    <mat-panel-title>{{ action().action_type }}</mat-panel-title>
+    <mat-panel-description class="ca-action-panel-description">
+      <span class="ca-action-desc-text">{{ actionDescription() }}</span>
+      <button
+        mat-icon-button
+        aria-label="Remove action"
+        i18n-aria-label
+        (click)="$event.stopPropagation(); onRemoveAction()">
+        <mat-icon>delete</mat-icon>
+      </button>
+    </mat-panel-description>
+  </mat-expansion-panel-header>
+
+  <mat-form-field
+    appearance="fill"
+    subscriptSizing="dynamic"
+    class="input-width-l margin-bottom-16">
+    <mat-label i18n>Action</mat-label>
+    <mat-select
+      [value]="action().action_type"
+      (selectionChange)="onActionTypeChange($event.value)">
+      @for (actionType of policyService.actionTypes(); track actionType) {
+        <mat-option [value]="actionType">{{ actionType }}</mat-option>
+      }
+    </mat-select>
+    <mat-hint>{{ actionDescription() }}</mat-hint>
+  </mat-form-field>
+
+  <div class="ca-action-value">
+    @switch (valueMode()) {
+      @case ("duration") {
+        <mat-form-field
+          appearance="fill"
+          subscriptSizing="dynamic"
+          class="input-width-l">
+          <mat-label i18n>Duration (seconds)</mat-label>
+          <input
+            matInput
+            type="number"
+            min="1"
+            [value]="durationValue()"
+            (input)="onDurationInput($any($event.target).value)" />
+          <mat-hint i18n>How long the lock or block lasts, in seconds.</mat-hint>
+        </mat-form-field>
+      }
+      @case ("email") {
+        @for (field of emailFields(); track field.key) {
+          @switch (field.kind) {
+            @case ("textarea") {
+              <mat-form-field
+                appearance="fill"
+                subscriptSizing="dynamic"
+                class="input-width-xxl">
+                <mat-label>{{ field.label }}</mat-label>
+                <textarea
+                  matInput
+                  [rows]="field.rows ?? 4"
+                  [value]="emailFieldValue(field.key)"
+                  (input)="onEmailFieldInput(field.key, $any($event.target).value)"></textarea>
+                @if (field.hint) {
+                  <mat-hint>{{ field.hint }}</mat-hint>
+                }
+              </mat-form-field>
+            }
+            @case ("select") {
+              <mat-form-field
+                appearance="fill"
+                subscriptSizing="dynamic"
+                class="input-width-l">
+                <mat-label>{{ field.label }}</mat-label>
+                <mat-select
+                  [value]="emailFieldValue(field.key)"
+                  (selectionChange)="onEmailFieldInput(field.key, $event.value)">
+                  @for (option of field.options; track option) {
+                    <mat-option [value]="option">{{ option }}</mat-option>
+                  }
+                </mat-select>
+                @if (field.hint) {
+                  <mat-hint>{{ field.hint }}</mat-hint>
+                }
+              </mat-form-field>
+            }
+            @default {
+              <mat-form-field
+                appearance="fill"
+                subscriptSizing="dynamic"
+                class="input-width-l">
+                <mat-label>{{ field.label }}</mat-label>
+                <input
+                  matInput
+                  [value]="emailFieldValue(field.key)"
+                  (input)="onEmailFieldInput(field.key, $any($event.target).value)" />
+                @if (field.hint) {
+                  <mat-hint>{{ field.hint }}</mat-hint>
+                }
+              </mat-form-field>
+            }
+          }
+        }
+
+        <details class="ca-placeholder-help margin-top-16">
+          <summary i18n>Available placeholders for subject and body</summary>
+          <div class="margin-left-16">
+            <p
+              class="ca-placeholder-intro"
+              i18n>
+              Placeholders are replaced when the email is sent. Unknown placeholders are left as-is.
+            </p>
+            <ul class="ca-placeholder-list">
+              @for (placeholder of emailPlaceholders; track placeholder.tag) {
+                <li>
+                  <code>{{ placeholder.tag }}</code>
+                  <span>{{ placeholder.description }}</span>
+                </li>
+              }
+            </ul>
+            <p
+              class="ca-placeholder-intro"
+              i18n>
+              Add <code>!r</code> before the closing brace to insert the value's quoted form, e.g. <code>{{ '{' }}
+              policy!r{{ '}' }}</code> renders <code>'Brute Force PIN Lockout'</code> instead of <code>Brute Force PIN
+                                                                                                       Lockout</code>.
+            </p>
+          </div>
+        </details>
+      }
+    }
+  </div>
+</mat-expansion-panel>

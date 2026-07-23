@@ -19,6 +19,7 @@
 
 import { Component, computed, ElementRef, inject, signal, ViewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
+import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
@@ -50,6 +51,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
     MatSortModule,
     MatIconModule,
     MatButtonModule,
+    MatCheckboxModule,
     MatTooltipModule,
     ScrollToTopDirective,
     MatFormField,
@@ -78,7 +80,9 @@ export class RadiusServersComponent {
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef;
 
-  displayedColumns: string[] = ["identifier", "server", "dictionary", "description", "actions"];
+  displayedColumns: string[] = ["select", "identifier", "server", "dictionary", "description"];
+
+  selection = signal<RadiusServer[]>([]);
 
   radiusDataSource = computed(() => {
     const servers = this.radiusService.radiusServers();
@@ -96,24 +100,57 @@ export class RadiusServersComponent {
     this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS_DETAILS + server.identifier);
   }
 
-  deleteServer(server: RadiusServer): void {
+
+  isAllSelected(): boolean {
+    const rows = this.radiusDataSource().data;
+    return rows.length > 0 && this.selection().length === rows.length;
+  }
+
+  toggleAllRows(): void {
+    if (this.isAllSelected()) {
+      this.selection.set([]);
+    } else {
+      this.selection.set([...this.radiusDataSource().data]);
+    }
+  }
+
+  toggleRow(row: RadiusServer): void {
+    const current = this.selection();
+    if (current.includes(row)) {
+      this.selection.set(current.filter((selected) => selected !== row));
+    } else {
+      this.selection.set([...current, row]);
+    }
+  }
+
+  isSelected(row: RadiusServer): boolean {
+    return this.selection().includes(row);
+  }
+
+  deleteSelected(): void {
+    const selected = this.selection();
+    if (selected.length === 0) {
+      return;
+    }
     this.dialogService
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Delete RADIUS Server`,
-          items: [server.identifier],
+          title: $localize`Delete RADIUS Servers`,
+          items: selected.map((row) => row.identifier),
           itemType: "radius-server",
           confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
-      .subscribe({
-        next: (result) => {
-          if (result) this.radiusService.deleteRadiusServer(server.identifier);
+      .subscribe((result) => {
+        if (result) {
+          selected.forEach((row) => this.radiusService.deleteRadiusServer(row.identifier));
+          this.selection.set([]);
         }
       });
   }
+
 
   onFilterInput(value: string): void {
     const trimmed = (value ?? "").trim();

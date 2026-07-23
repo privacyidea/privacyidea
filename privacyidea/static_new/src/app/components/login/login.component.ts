@@ -100,6 +100,8 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
   });
   authMessage = signal<string[]>([]); // messages returned from the auth endpoint
   errorMessage = signal<string>("");
+  // Conditional-access restriction kind used to color the message. Empty for ordinary errors.
+  errorRestriction = signal<"temporary" | "permanent" | "">("");
 
   showOtpField = signal<boolean>(false);
   pushTriggered = signal<boolean>(false);
@@ -177,6 +179,7 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
       this.stopPushPolling();
       this.authMessage.set([]);
       this.errorMessage.set("");
+      this.errorRestriction.set("");
       params.transaction_id = this.transactionId;
     } else {
       this.resetChallengeState();
@@ -262,6 +265,7 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
       catchError((err) => {
         if (err.name === "TimeoutError") {
           this.errorMessage.set("Polling for push notification timed out. Please try again.");
+          this.errorRestriction.set("");
         } else {
           // The error is already handled by the service, just log it here.
           console.error("Error during push polling:", err);
@@ -299,6 +303,7 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
     this.stopPushPolling();
     this.authMessage.set([]);
     this.errorMessage.set("");
+    this.errorRestriction.set("");
     this.pushTriggered.set(false);
     this.webAuthnTriggered.set(null);
     this.transactionId = "";
@@ -354,6 +359,7 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
         )?.message ||
         defaultMessages[context];
       this.errorMessage.set(message);
+      this.errorRestriction.set("");
     }
   }
 
@@ -365,6 +371,8 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
     };
     const message = err.error?.result?.error?.message || err?.message || defaultMessages[context];
     this.errorMessage.set(message);
+    const restriction = err.error?.detail?.restriction;
+    this.errorRestriction.set(restriction === "permanent" || restriction === "temporary" ? restriction : "");
 
     if (context === "password") {
       this.password.set("");

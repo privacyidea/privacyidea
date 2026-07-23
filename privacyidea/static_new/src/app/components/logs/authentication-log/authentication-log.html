@@ -1,0 +1,403 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div
+  appScrollToTop
+  class="authentication-log-table-container">
+  <div class="filter-paginator-container">
+    <div class="filter-with-actions">
+      <mat-form-field
+        subscriptSizing="dynamic"
+        class="authentication-log-table-filter">
+        <mat-label i18n>Filter Authentication Log ...</mat-label>
+        <app-clearable-input
+          (clearButtonClick)="clearAllFilters()"
+          [showClearButton]="authenticationLogService.authenticationLogFilter().isNotEmpty">
+          <input
+            #filterHTMLInputElement
+            (input)="authenticationLogService.handleFilterInput($event)"
+            [value]="authenticationLogService.authenticationLogFilter().value"
+            aria-label="Filter Input"
+            i18n-aria-label
+            i18n-placeholder
+            matInput
+            placeholder="Example query: 'username: alice event_type: LOGIN_SUCCESS'" />
+        </app-clearable-input>
+        <mat-hint i18n>The search is case-insensitive. Use * as a wildcard. Wrap the filter value in quotation marks
+                       if it contains colons or spaces.
+        </mat-hint>
+      </mat-form-field>
+      <!-- Filters without their own table column live behind a "More Filter" menu next to the input. -->
+      @if (!authService.isSelfServiceUser()) {
+        <button
+          [matMenuTriggerFor]="moreFiltersMenu"
+          aria-label="More Filter"
+          class="margin-bottom-16"
+          i18n-aria-label
+          i18n-matTooltip
+          mat-icon-button
+          matTooltip="More Filter">
+          <mat-icon>filter_list</mat-icon>
+        </button>
+        <mat-menu #moreFiltersMenu="matMenu">
+          <button
+            mat-menu-item
+            [matMenuTriggerFor]="userRoleMenu.matMenu">
+            <span i18n>User Role</span>
+          </button>
+        </mat-menu>
+        <app-multi-select-menu
+          #userRoleMenu
+          [options]="userRoleOptions"
+          [selected]="selectedFilterValues('user_role')"
+          (selectionChange)="setFilterValues('user_role', $event)" />
+
+      }
+    </div>
+    <mat-paginator
+      (page)="onPageEvent($event)"
+      [length]="totalLength()"
+      [pageIndex]="authenticationLogService.pageIndex() - 1"
+      [pageSizeOptions]="pageSizeOptions()"
+      [pageSize]="authenticationLogService.pageSize()"
+      showFirstLastButtons />
+  </div>
+  <div
+    appScrollEdges
+    class="table-scroll-region">
+    <table
+      [dataSource]="dataSource()"
+      aria-label="Authentication Log Data Table"
+      class="authentication-log-table"
+      i18n-aria-label
+      mat-table>
+      @for (column of visibleColumns(); track column.key) {
+        <ng-container [matColumnDef]="column.key">
+          <th
+            *matHeaderCellDef
+            aria-label="{{ column.label }} Header"
+            i18n-aria-label
+            mat-header-cell>
+            <div class="flex ali-center">
+              <div class="header-label">
+                {{ column.label }}
+                @if (column.key === "timestamp") {
+                  <span
+                    class="header-hint"
+                    i18n>(local time)</span>
+                }
+              </div>
+              @if (column.filterable || column.sortable) {
+                <div class="margin-left-16 flex ali-center">
+                  @if (column.filterable) {
+                    @if (column.key === "event_type") {
+                      <app-multi-select-filter
+                        [label]="column.label"
+                        [options]="eventTypeOptions()"
+                        [selected]="selectedFilterValues('event_type')"
+                        (selectionChange)="setFilterValues('event_type', $event)" />
+                    } @else if (column.key === "realm") {
+                      <app-multi-select-filter
+                        [label]="column.label"
+                        [options]="realmService.realmOptions()"
+                        [selected]="selectedFilterValues('realm')"
+                        (selectionChange)="setFilterValues('realm', $event)" />
+                    } @else if (column.key === "client_label") {
+                      <app-multi-select-filter
+                        [label]="column.label"
+                        [options]="clientLabelOptions"
+                        [valueSuffix]="'*'"
+                        [allowCustom]="true"
+                        [selected]="selectedFilterValues('client_label')"
+                        (selectionChange)="setFilterValues('client_label', $event)"
+                        (addCustom)="onAddCustomFilter('client_label')" />
+                    } @else if (column.key === "source_ip" && showSourceIpMenu()) {
+                      <app-multi-select-filter
+                        [label]="column.label"
+                        [options]="sourceIpOptions()"
+                        [allowCustom]="true"
+                        [selected]="selectedFilterValues('source_ip')"
+                        (selectionChange)="setFilterValues('source_ip', $event)"
+                        (addCustom)="onAddCustomFilter('source_ip')" />
+                    } @else if (column.key === "timestamp") {
+                      <button
+                        [matMenuTriggerFor]="timePresetMenu"
+                        class="filter-button"
+                        matTooltip="Filter by Time Period"
+                        i18n-matTooltip
+                        mat-icon-button>
+                        <mat-icon class="keyword-button-icon margin-left-0">filter_list</mat-icon>
+                      </button>
+                      <mat-menu
+                        #timePresetMenu="matMenu"
+                        class="time-preset-menu">
+                        <button
+                          (click)="clearTimeFilter()"
+                          mat-menu-item>
+                          <mat-icon>filter_alt_off</mat-icon>
+                          <span i18n>Clear Filter</span>
+                        </button>
+                        <mat-divider />
+                        @for (preset of timePresets; track preset.key) {
+                          <button
+                            (click)="$event.stopPropagation(); selectTimePreset(preset.key)"
+                            [class.selected-preset]="selectedPreset() === preset.key"
+                            mat-menu-item>
+                            <span>{{ preset.label }}</span>
+                          </button>
+                        }
+                        <!-- Pinned to the bottom of the (scrollable) menu; stopPropagation keeps the menu open and lets
+                             the slider own pointer drags and arrow keys. The handlers are containment guards, not an
+                             interactive control, so the element is intentionally not focusable. -->
+                        <!-- eslint-disable-next-line @angular-eslint/template/interactive-supports-focus -->
+                        <div
+                          class="time-filter-custom-range"
+                          (click)="$event.stopPropagation()"
+                          (mousedown)="$event.stopPropagation()"
+                          (keydown)="$event.stopPropagation()">
+                          <span
+                            class="custom-range-label"
+                            i18n>Custom Range</span>
+                          <div class="slider-with-histogram">
+                            <!-- Activity behind the slider; decorative, hidden from assistive tech. -->
+                            <div
+                              class="activity-histogram"
+                              [attr.aria-hidden]="true">
+                              @for (bar of activityHistogram(); track $index) {
+                                <div
+                                  class="activity-bar"
+                                  [style.height.%]="bar * 100"></div>
+                              }
+                            </div>
+                            <mat-slider
+                              class="time-range-slider"
+                              [min]="0"
+                              [max]="rangeSliderSteps"
+                              step="1"
+                              discrete
+                              [displayWith]="formatSliderThumb">
+                              <input
+                                matSliderStartThumb
+                                aria-label="Range start"
+                                i18n-aria-label
+                                [value]="rangeStart()"
+                                (valueChange)="onRangeStartInput($event)"
+                                (change)="commitTimeRange()" />
+                              <input
+                                matSliderEndThumb
+                                aria-label="Range end"
+                                i18n-aria-label
+                                [value]="rangeEnd()"
+                                (valueChange)="onRangeEndInput($event)"
+                                (change)="commitTimeRange()" />
+                            </mat-slider>
+                          </div>
+                          <div class="range-summary">
+                            <span>{{ rangeSummaryFrom() }}</span>
+                            <span class="range-summary-sep">→</span>
+                            <span>{{ rangeSummaryTo() }}</span>
+                          </div>
+                        </div>
+                      </mat-menu>
+                    } @else {
+                      <button
+                        (click)="onKeywordClick(column.key)"
+                        class="filter-button"
+                        mat-icon-button>
+                        <mat-icon class="keyword-button-icon margin-left-0">
+                          {{ getFilterIconName(column.key) }}
+                        </mat-icon>
+                      </button>
+                    }
+                  }
+                  @if (column.sortable) {
+                    <button
+                      (click)="onSortClick(column.key)"
+                      class="sort-button"
+                      i18n-matTooltip
+                      mat-icon-button
+                      matTooltip="Sort by {{ column.label }}"
+                      type="button">
+                      <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+          </th>
+          <td
+            *matCellDef="let element"
+            aria-label="{{ column.label }} Cell"
+            i18n-aria-label
+            mat-cell>
+            <div
+              [class.cell-scroll]="scrollableColumnKeys.includes(column.key)"
+              [class.cell-scroll-info]="column.key === 'other_info'">
+              @switch (column.key) {
+                @case ("timestamp") {
+                  <span>{{ element.timestamp | date: "yyyy-MM-dd HH:mm:ss" }}</span>
+                }
+                @case ("event_type") {
+                  <span [ngClass]="getEventTypeClass(element[column.key])">
+                    {{ element[column.key] }}
+                  </span>
+                }
+                @case ("serial") {
+                  @for (serial of splitSerials(element.serial); track serial) {
+                    <app-copyable [copyText]="serial">
+                      <a
+                        (click)="contentService.tokenSelected(serial)"
+                        aria-label="{{ column.label }} Link"
+                        i18n-aria-label
+                        routerLink="/token">
+                        {{ serial }}
+                      </a>
+                      <app-filter-value-button
+                        class="margin-left-8"
+                        [label]="filterTooltip('serial')"
+                        [value]="serial"
+                        (filterValue)="addFilterValue('serial', '*' + $event + '*')" />
+                    </app-copyable>
+                  }
+                }
+                @case ("username") {
+                  @if (element.username) {
+                    <app-copyable [copyText]="element.username">
+                      <a
+                        (click)="contentService.userSelected(element.username, element.realm)"
+                        (keydown.enter)="contentService.userSelected(element.username, element.realm)"
+                        (keydown.space)="
+                          $event.preventDefault(); contentService.userSelected(element.username, element.realm)
+                        "
+                        aria-label="{{ column.label }} Link"
+                        i18n-aria-label
+                        role="button"
+                        tabindex="0">
+                        {{ element.username }}
+                      </a>
+                      <app-filter-value-button
+                        class="margin-left-8"
+                        [label]="filterTooltip('username')"
+                        [value]="element.username"
+                        (filterValue)="addFilterValue('username', $event)" />
+                    </app-copyable>
+                    @let roleBadge = userRoleBadge(element.user_role);
+                    @if (roleBadge) {
+                      <span
+                        class="role-badge {{ roleBadge.class }}"
+                        [matTooltip]="roleBadge.tooltip">
+                        {{ roleBadge.label }}
+                      </span>
+                    }
+                  }
+                }
+                @case ("realm") {
+                  @if (element.realm) {
+                    <app-copyable [copyText]="element.realm">
+                      <a
+                        aria-label="{{ column.label }} Link"
+                        i18n-aria-label
+                        routerLink="/users/realms">
+                        {{ element.realm }}
+                      </a>
+                    </app-copyable>
+                  }
+                }
+                @case ("resolver") {
+                  @if (element.resolver) {
+                    <app-copyable [copyText]="element.resolver">
+                      <a
+                        [routerLink]="['/users/resolvers/details', element.resolver]"
+                        aria-label="{{ column.label }} Link"
+                        i18n-aria-label>
+                        {{ element.resolver }}
+                      </a>
+                      <app-filter-value-button
+                        class="margin-left-8"
+                        [label]="filterTooltip('resolver')"
+                        [value]="element.resolver"
+                        (filterValue)="addFilterValue('resolver', $event)" />
+                    </app-copyable>
+                  }
+                }
+                @case ("other_info") {
+                  @let entries = infoEntries(element.other_info);
+                  @if (entries.length) {
+                    <app-copyable [copyText]="formatInfo(element.other_info)">
+                      <ul class="info-list">
+                        @for (entry of entries; track entry.key) {
+                          <li>
+                            @if (entry.children) {
+                              {{ entry.key }}:
+                              <ul class="info-list">
+                                @for (child of entry.children; track child.key) {
+                                  <li>{{ child.key }}: {{ child.value }}</li>
+                                }
+                              </ul>
+                            } @else {
+                              {{ entry.key }}: {{ entry.value }}
+                            }
+                          </li>
+                        }
+                      </ul>
+                    </app-copyable>
+                  }
+                }
+                @default {
+                  @if (element[column.key]) {
+                    <app-copyable [copyText]="element[column.key]">
+                      <span>{{ element[column.key] }}</span>
+                      @if (showInlineCellFilter(column.key)) {
+                        <app-filter-value-button
+                          class="margin-left-8"
+                          [label]="filterTooltip(column.key)"
+                          [value]="element[column.key]"
+                          (filterValue)="addFilterValue(column.key, $event)" />
+                      }
+                    </app-copyable>
+                  }
+                }
+              }
+            </div>
+          </td>
+        </ng-container>
+      }
+      <tr
+        *matHeaderRowDef="visibleColumnKeys(); sticky: true"
+        aria-label="Header Row"
+        i18n-aria-label
+        mat-header-row></tr>
+      <tr
+        *matRowDef="let row; columns: visibleColumnKeys()"
+        aria-label="Data Row"
+        i18n-aria-label
+        mat-row></tr>
+      <tr
+        *matNoDataRow
+        aria-label="No Data Row"
+        i18n-aria-label>
+        <td
+          [attr.colspan]="visibleColumnKeys().length"
+          aria-label="No Data Cell"
+          i18n-aria-label>
+          {{ noDataText() }}
+        </td>
+      </tr>
+    </table>
+  </div>
+</div>

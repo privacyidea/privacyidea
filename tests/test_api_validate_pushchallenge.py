@@ -1,67 +1,21 @@
 # SPDX-FileCopyrightText: 2024 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 import datetime
-import json
-import logging
-import re
-import time
 from base64 import b32encode
-from datetime import timezone
-from urllib.parse import quote
 
-import mock
-import responses
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
-from dateutil.tz import tzlocal
 from passlib.hash import argon2
-from testfixtures import Replace, test_datetime
-from testfixtures import log_capture
 
-from privacyidea.lib import _
-from privacyidea.lib.applications.offline import REFILLTOKEN_LENGTH
-from privacyidea.lib.authcache import _hash_password
-from privacyidea.lib.challenge import get_challenges
-from privacyidea.lib.config import (set_privacyidea_config,
-                                    get_inc_fail_count_on_false_pin,
-                                    delete_privacyidea_config, SYSCONF)
-from privacyidea.lib.container import init_container, find_container_by_serial, create_container_template
-from privacyidea.lib.error import Error
-from privacyidea.lib.event import delete_event
-from privacyidea.lib.event import set_event
-from privacyidea.lib.machine import attach_token, detach_token
-from privacyidea.lib.machineresolver import save_resolver as save_machine_resolver
-from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.policy import SCOPE, set_policy, delete_policy, AUTHORIZED
-from privacyidea.lib.radiusserver import add_radius
-from privacyidea.lib.realm import set_realm, set_default_realm, delete_realm
-from privacyidea.lib.resolver import save_resolver, get_resolver_list, delete_resolver
-from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
-from privacyidea.lib.token import (get_tokens, init_token, remove_token,
-                                   reset_token, enable_token, revoke_token,
-                                   set_pin, get_one_token, unassign_token)
-from privacyidea.lib.tokenclass import (ClientMode, FAILCOUNTER_EXCEEDED,
-                                        FAILCOUNTER_CLEAR_TIMEOUT, DATE_FORMAT,
-                                        AUTH_DATE_FORMAT)
-from privacyidea.lib.tokens.passwordtoken import DEFAULT_LENGTH as DEFAULT_LENGTH_PW
-from privacyidea.lib.tokens.pushtoken import PushAction, POLL_ONLY, strip_pem_headers
-from privacyidea.lib.tokens.registrationtoken import DEFAULT_LENGTH as DEFAULT_LENGTH_REG
-from privacyidea.lib.tokens.registrationtoken import RegistrationTokenClass
-from privacyidea.lib.tokens.smstoken import SmsTokenClass
-from privacyidea.lib.tokens.totptoken import HotpTokenClass
-from privacyidea.lib.tokens.yubikeytoken import YubikeyTokenClass
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
+from privacyidea.lib.token import (remove_token)
+from privacyidea.lib.tokens.pushtoken import PushAction, strip_pem_headers
 from privacyidea.lib.user import (User)
-from privacyidea.lib.users.internal_user_attributes import InternalUserAttributes
-from privacyidea.lib.utils import AUTH_RESPONSE
 from privacyidea.lib.utils import to_unicode
-from privacyidea.models import (Token, Policy, Challenge, AuthCache, db, TokenOwner, Realm, CustomUserAttribute,
-                                NodeName)
-from . import smtpmock, ldap3mock, radiusmock
+from .authlog_utils import assert_authentication_log, assert_authentication_log_entry
 from .base import MyApiTestCase
-from .test_lib_tokencontainer import MockSmartphone
-
-from .api_validate_common import LDAPDirectory, OTPs, HOSTSFILE, DICT_FILE, setup_sms_gateway
 
 
 class PushChallengeTags(MyApiTestCase):
@@ -155,7 +109,14 @@ class PushChallengeTags(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             detail = res.json.get("detail")
+            transaction_id = detail.get("transaction_id")
             self.assertEqual("Please confirm the authentication on your mobile device!", detail.get("message"))
+
+        # The PIN step created the push challenge -> CHALLENGE_TRIGGERED for the user and token
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED], transaction_id=transaction_id)
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED],
+                                        user=User(self.user, self.realm1), serials={serial},
+                                        transaction_id=transaction_id)
 
         # We do poll only, so we need to poll
         ts = datetime.datetime.utcnow().isoformat()

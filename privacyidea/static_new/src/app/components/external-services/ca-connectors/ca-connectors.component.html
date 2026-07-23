@@ -56,12 +56,43 @@
       </span>
       <span i18n>Create CA Connector</span>
     </button>
+    <button
+      (click)="deleteSelected()"
+      [disabled]="selection().length === 0"
+      class="action-button-delete-secondary button-width-l"
+      mat-stroked-button>
+      <mat-icon>delete_sweep</mat-icon>
+      <span i18n>Delete</span>
+    </button>
+
   </div>
   <table
     [dataSource]="caConnectorDataSource()"
     class="ca-connectors-table"
     mat-table
     matSort>
+    <ng-container matColumnDef="select">
+      <th
+        *matHeaderCellDef
+        class="table-checkbox"
+        mat-header-cell>
+        <mat-checkbox
+          (change)="$event ? toggleAllRows() : null"
+          [checked]="isAllSelected()"
+          [disabled]="totalLength() === 0"
+          [indeterminate]="selection().length > 0 && !isAllSelected()" />
+      </th>
+      <td
+        *matCellDef="let row"
+        class="table-checkbox"
+        mat-cell>
+        <mat-checkbox
+          (change)="$event ? toggleRow(row) : null"
+          (click)="$event.stopPropagation()"
+          [checked]="isSelected(row)" />
+      </td>
+    </ng-container>
+
     <ng-container matColumnDef="connectorname">
       <th
         *matHeaderCellDef
@@ -98,29 +129,6 @@
         *matCellDef="let connector"
         mat-cell>
         {{ connector.type }}
-      </td>
-    </ng-container>
-
-    <ng-container matColumnDef="actions">
-      <th
-        *matHeaderCellDef
-        i18n
-        mat-header-cell>
-        Actions
-      </th>
-      <td
-        *matCellDef="let connector"
-        mat-cell>
-        <div class="flex just-center">
-          <button
-            (click)="deleteConnector(connector)"
-            color="warn"
-            i18n-matTooltip
-            mat-icon-button
-            matTooltip="Delete">
-            <mat-icon>delete</mat-icon>
-          </button>
-        </div>
       </td>
     </ng-container>
 

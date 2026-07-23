@@ -59,30 +59,18 @@ absent, malformed or expired.
 This API is distinct from :ref:`rest_validate`, which checks OTP
 values for end users.
 """
-from flask_babel import _
 import copy
-
-from flask import (Blueprint, request, current_app, g)
-import jwt
-from functools import wraps
+import logging
+import threading
+import traceback
 from datetime import (datetime, timezone)
+from functools import wraps
+
+import jwt
+from flask import (Blueprint, request, current_app, g)
+from flask_babel import _
 
 from privacyidea.api.lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
-from privacyidea.lib.error import AuthError, Error
-from privacyidea.lib.crypto import geturandom, init_hsm
-from privacyidea.lib.audit import getAudit
-from privacyidea.lib.auth import (check_webui_user, ROLE, verify_db_admin,
-                                  db_admin_exists)
-from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
-from privacyidea.lib.framework import get_app_config_value
-from privacyidea.lib.fido2.challenge import verify_fido2_challenge
-from privacyidea.lib.fido2.util import get_fido2_token_by_credential_id
-from privacyidea.lib.policies.helper import get_jwt_validity
-from privacyidea.lib.user import User, split_user, log_used_user
-from privacyidea.lib.policy import PolicyClass, REMOTE_USER
-from privacyidea.lib.policydecorators import reset_all_user_tokens_active, reset_token_failcounters
-from privacyidea.lib.token import get_tokens
-from privacyidea.lib.realm import get_default_realm, realm_is_defined
 from privacyidea.api.lib.postpolicy import (postpolicy, add_user_detail_to_response, check_tokentype,
                                             check_tokeninfo, check_serial, no_detail_on_success,
                                             get_webui_settings, hide_specific_error_message)
@@ -91,15 +79,33 @@ from privacyidea.api.lib.prepolicy import (is_remote_user_allowed, prepolicy,
                                            fido2_auth, increase_failcounter_on_challenge,
                                            disabled_token_types, auth_timelimit, load_challenge_text)
 from privacyidea.api.lib.utils import (send_result, get_all_params, INTERNAL_OPTION_KEYS,
-                                       verify_auth_token, get_optional, get_required,
+                                       verify_auth_token, get_optional, get_required, log_authentication,
                                        get_auth_token_from_request, logged_in_user_from_token)
+from privacyidea.lib.audit import getAudit
+from privacyidea.lib.auth import (check_webui_user, ROLE, verify_db_admin,
+                                  db_admin_exists)
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
+                                                                           LOG_TRANSACTION_ID_KEY)
+from privacyidea.lib.conditional_access.engine import (get_user_lockout, get_ip_block,
+                                                       evaluate_lockout_policies,
+                                                       evaluate_access_decision, AccessDecision,
+                                                       RestrictionStatus)
+from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_object, get_privacyidea_node
+from privacyidea.lib.crypto import geturandom, init_hsm
+from privacyidea.lib.error import AuthError, Error, ResourceNotFoundError
+from privacyidea.lib.event import event, EventConfiguration
+from privacyidea.lib.fido2.challenge import verify_fido2_challenge
+from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
+from privacyidea.lib.fido2.util import get_fido2_token_by_credential_id
+from privacyidea.lib.framework import get_app_config_value
+from privacyidea.lib.policies.helper import get_jwt_validity
+from privacyidea.lib.policy import PolicyClass, REMOTE_USER
+from privacyidea.lib.policydecorators import reset_all_user_tokens_active, reset_token_failcounters
+from privacyidea.lib.realm import get_default_realm, realm_is_defined
+from privacyidea.lib.token import get_tokens
+from privacyidea.lib.user import User, split_user, log_used_user
 from privacyidea.lib.utils import (get_client_ip, hexlify_and_unicode, to_unicode, get_plugin_info_from_useragent,
                                    AUTH_RESPONSE)
-from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_object, get_privacyidea_node
-from privacyidea.lib.event import event, EventConfiguration
-import logging
-import traceback
-import threading
 
 log = logging.getLogger(__name__)
 
@@ -168,6 +174,137 @@ def before_request():
         token = get_fido2_token_by_credential_id(credential_id)
         if token:
             request.User = token.user
+
+
+def _lockout_error_message(lockout: RestrictionStatus) -> str:
+    """
+    Build the user-facing message for a login rejected by the conditional-access
+    lockout. *lockout* is the :class:`RestrictionStatus` returned by
+    :func:`~privacyidea.lib.conditional_access.engine.get_user_lockout`: a
+    permanent lock points the user at the administrator, a timed lock states the
+    approximate remaining time (rounded up to whole minutes, at least one).
+    """
+    if lockout.permanent:
+        return _("Your account has been permanently locked. Please contact your administrator.")
+    minutes = max(1, -(-lockout.seconds_remaining // 60))
+    return _("Your account is temporarily locked due to too many failed login attempts. "
+             "Please try again in about {minutes} minute(s).").format(minutes=minutes)
+
+
+def _blocked_ip_error_message(client_ip: str | None, block: RestrictionStatus) -> str:
+    """
+    Build the user-facing message for a login rejected because the source IP is
+    blocked by a conditional-access ``BLOCK_IP`` action. *block* is the
+    :class:`RestrictionStatus` returned by
+    :func:`~privacyidea.lib.conditional_access.engine.get_ip_block`:
+    a permanent block points the user at the administrator, a timed block states
+    the approximate remaining time (rounded up to whole minutes, at least one).
+    """
+    if block.permanent:
+        return _("Authentication failure. Your IP ({ip}) has been permanently blocked. "
+                 "Please contact your administrator.").format(ip=client_ip)
+    minutes = max(1, -(-block.seconds_remaining // 60))
+    return _("Authentication failure. Your IP ({ip}) has been blocked. "
+             "Please try again in about {minutes} minute(s).").format(ip=client_ip, minutes=minutes)
+
+
+def _restriction_kind(state: RestrictionStatus) -> str:
+    """
+    Classify a lock/block as ``"permanent"`` or ``"temporary"`` for the WebUI.
+
+    Surfaced in the rejection's ``detail`` so the login screen can style a
+    permanent (only-an-admin-can-clear-it) restriction differently from a
+    recoverable timed one. It is a coarse hint, not the specific message, and is
+    dropped when the ``hide_specific_error_message`` policy is active (see
+    :func:`~privacyidea.api.before_after.auth_error`), so it never leaks more than
+    the message itself would.
+    """
+    return "permanent" if state.permanent else "temporary"
+
+
+def _binding_restriction(lockout: RestrictionStatus | None, ip_block: RestrictionStatus | None) -> str | None:
+    """
+    When both a user lockout and a source-IP block are in force, decide which one
+    to report to the user. The binding constraint is the one that lasts longest (a
+    permanent restriction outranks any timed one), so that is what we surface:
+    telling a permanently-blocked user to "try again in 1 minute" because a shorter
+    user lock also happens to be active would be misleading. This is exactly the
+    case when a temporary lock escalates into a permanent IP block on the same
+    request. On a tie the user lock wins, matching the lock-before-block order of
+    the pre-check.
+
+    :param lockout: the :class:`RestrictionStatus` from :func:`get_user_lockout`, or ``None``
+    :param ip_block: the :class:`RestrictionStatus` from :func:`get_ip_block`, or ``None``
+    :return: ``"lock"`` or ``"block"`` for the restriction to report, or ``None``
+        if neither is in force
+    """
+
+    def _remaining(state: RestrictionStatus | None) -> float | None:
+        if not state:
+            return None
+        return float("inf") if state.permanent else state.seconds_remaining
+
+    lock_rem = _remaining(lockout)
+    block_rem = _remaining(ip_block)
+    if lock_rem is None and block_rem is None:
+        return None
+    if block_rem is not None and (lock_rem is None or block_rem > lock_rem):
+        return "block"
+    return "lock"
+
+
+def _conditional_access_precheck(user: User) -> None:
+    """
+    Reject an /auth login pre-auth (before any credential check) when conditional-
+    access policies forbid it. Raises :class:`AuthError` when the request must be
+    rejected and returns ``None`` otherwise.
+
+    A currently-locked user or a blocked source IP is rejected first. The rejection
+    states the restriction (how long it lasts, or that it is permanent) so the user
+    understands why login fails; an admin who prefers not to reveal it can enable
+    the hide_specific_error_message policy, which the AuthError handler applies to
+    this message. An unresolved user / local DB admin has no (resolver, uid, realm)
+    identity tuple and is therefore never locked. When both apply (e.g. a temporary
+    lock that escalated into a permanent IP block), the longer-lasting one is
+    surfaced so we never tell a permanently-blocked user to "try again in a minute".
+
+    The pre-auth conditional-access DENY decision is evaluated after the lock/block
+    pre-checks so an ALLOW cannot override them. A DENY rejects this single login
+    with a message stating it was a conditional-access decision (the policy is not
+    named); like the lock/block messages it is maskable via the
+    hide_specific_error_message policy. ALLOW / CONTINUE fall through silently.
+    """
+    lockout = get_user_lockout(user)
+    ip_block = get_ip_block(g.client_ip)
+    restriction = _binding_restriction(lockout, ip_block)
+    if restriction == "block":
+        log.info(f"Rejecting /auth login from blocked IP {g.client_ip!r}.")
+        g.audit_object.log({"info": "Rejected: source IP is blocked"})
+        raise AuthError(_blocked_ip_error_message(g.client_ip, ip_block),
+                        id=Error.AUTHENTICATE_WRONG_CREDENTIALS,
+                        details={"restriction": _restriction_kind(ip_block)})
+    if restriction == "lock":
+        log.info(f"Rejecting /auth login for locked user {user!r}.")
+        g.audit_object.log({"info": "Rejected: account is temporarily locked"})
+        raise AuthError(_lockout_error_message(lockout),
+                        id=Error.AUTHENTICATE_WRONG_CREDENTIALS,
+                        details={"restriction": _restriction_kind(lockout)})
+    if evaluate_access_decision(user, g.client_ip) == AccessDecision.DENY:
+        log.info(f"Denying /auth login for {user!r} by conditional-access policy.")
+        g.audit_object.log({"info": "Rejected: denied by conditional-access policy"})
+        raise AuthError(_("Authentication failure. Access has been denied by a conditional-access policy."),
+                        id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
+
+
+def _previous_transaction_id(details: dict) -> str | None:
+    """
+    The answered-challenge transaction_id to link from this login's authentication-log row, when answering one
+    challenge immediately created a fresh one (CHALLENGE_CONTINUED); otherwise None. Mirrors /validate/check: the
+    newly-created challenge transaction_id lives in *details*, the answered one in the request, and they differ.
+    """
+    request_txn = get_optional(request.all_data, "transaction_id")
+    details_txn = details.get("transaction_id")
+    return request_txn if (details_txn and request_txn and details_txn != request_txn) else None
 
 
 @jwtauth.route('', methods=['POST'])
@@ -280,10 +417,19 @@ def get_auth_token():
     #  information like the role (local / external admin) would be helpful
     user = request.User or User()
     g.audit_object.log({"user": user.login, "realm": user.realm})
+    # Conditional-access pre-check: reject a locked user, a blocked source IP, or a
+    # policy DENY decision before any credential check (see the helper for details).
+    _conditional_access_precheck(user)
     username = get_optional(request.all_data, "username")
     password = get_optional(request.all_data, "password")
     realm_param = get_optional(request.all_data, "realm")
     details = {}
+    auth_event_type = None
+    # A token can deliberately suppress its terminal event (push_wait timeout)
+    terminal_event_suppressed = False
+    serials = None
+    # Log-only transaction_id (push_wait success): correlates the terminal row without being exposed in the response.
+    log_transaction_id = None
     # Passkey login
     credential_id = get_optional(request.all_data, "credential_id")
     passkey_login_enabled = get_app_config_value("WEBUI_PASSKEY_LOGIN_ENABLED", True)
@@ -295,6 +441,7 @@ def get_auth_token():
         transaction_id: str = get_required(request.all_data, "transaction_id")
         token = get_fido2_token_by_credential_id(credential_id)
         if not token:
+            log_authentication(AuthEventType.NO_TOKEN, request, user=user, transaction_id=transaction_id)
             raise AuthError(_("Authentication failure. The passkey is not registered."),
                             id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
         if not token.is_active():
@@ -304,45 +451,65 @@ def get_auth_token():
                                 "authentication": AUTH_RESPONSE.REJECT,
                                 "serial": token.get_serial(),
                                 "token_type": token.get_type()})
+            # The user owns this passkey but it is disabled -> NO_USABLE_TOKEN
+            log_authentication(AuthEventType.NO_USABLE_TOKEN, request, user=token.user, transaction_id=transaction_id)
             return send_result(False, rid=2, details={"message": "Token is disabled"})
 
         if not token.user:
+            log_authentication(AuthEventType.USER_UNKNOWN, request, transaction_id=transaction_id)
             raise AuthError(_("Authentication failure. Token has no user."),
                             id=Error.AUTHENTICATE_MISSING_USERNAME)
         if token.get_type() in request.all_data.get("disabled_token_types", []):
+            log_authentication(AuthEventType.NO_TOKEN, request, user=token.user, transaction_id=transaction_id)
             raise AuthError(
                 _("Authentication failure. The token type {token_type} is disabled.").format(
                     token_type=token.get_type()),
                 id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
         if not check_last_auth_policy(g, token):
             log.debug(f"Last authentication policy check failed for token {token.get_serial()}.")
+            log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=token.user,
+                               transaction_id=transaction_id)
             raise AuthError(
                 _("Authentication failure. Last authentication policy check failed for token {serial}").format(
                     serial=token.get_serial()), id=Error.AUTHENTICATE_MISSING_RIGHT)
 
         # TODO For the WebUI login, always require user_verification so that it is a 2FA
         request.all_data.update({FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: "required"})
-        passkey_login_result = verify_fido2_challenge(transaction_id, token, request.all_data)
+        try:
+            passkey_login_result = verify_fido2_challenge(transaction_id, token, request.all_data)
+        except (ResourceNotFoundError, AuthError):
+            # The challenge could not be verified (e.g. answered for the wrong serial or expired).
+            # It propagates as a failure response, so log the failed attempt here.
+            log_authentication(AuthEventType.MFA_FAIL, request, user=token.user, transaction_id=transaction_id)
+            raise
         if passkey_login_result.success > 0:
             user = token.user
             login_name = user.login
             realm = user.realm
             username = user.login
             passkey_login_success = True
+            auth_event_type = AuthEventType.LOGIN_SUCCESS
+            # Record the passkey serial for the authentication log
+            serials = token.get_serial()
             # Passkey login bypasses check_token_list, so the reset_all_user_tokens
             # policy is applied explicitly here (mirrors the /validate FIDO2 path).
             if reset_all_user_tokens_active(g, user):
                 reset_token_failcounters(get_tokens(user=user))
         else:
+            log_authentication(AuthEventType.MFA_FAIL, request, user=token.user, transaction_id=transaction_id)
             raise AuthError(_("Authentication failure using passkey."), id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
     # End passkey login
     else:
         # The realm parameter has precedence! Check if it exists
         if realm_param and not realm_is_defined(realm_param):
+            log_authentication(AuthEventType.USER_UNKNOWN, request, user=user, serial=details.get("serial"),
+                               transaction_id=details.get("transaction_id"))
             raise AuthError(_("Authentication failure. Unknown realm:") + f" {realm_param}.",
                             id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
 
         if username is None:
+            log_authentication(AuthEventType.USER_UNKNOWN, request, user=user, serial=details.get("serial"),
+                               transaction_id=details.get("transaction_id"))
             raise AuthError(_("Authentication failure. Missing Username"), id=Error.AUTHENTICATE_MISSING_USERNAME)
 
         if not user or not user.realm:
@@ -371,6 +538,8 @@ def get_auth_token():
     # Verify the password
     admin_auth = False
     user_auth = False
+    # record for the auth log if it is an internal or external admin
+    internal_admin = False
 
     if passkey_login_success:
         authtype = "pi"
@@ -400,6 +569,7 @@ def get_auth_token():
         if db_admin_exists(username):
             role = ROLE.ADMIN
             admin_auth = True
+            internal_admin = True
             g.audit_object.log({"success": True, "user": "", "administrator": username, "info": "internal admin"})
             user = User()
         else:
@@ -410,14 +580,17 @@ def get_auth_token():
                 if user.realm in superuser_realms:
                     role = ROLE.ADMIN
                     admin_auth = True
+        auth_event_type = AuthEventType.LOGIN_SUCCESS if admin_auth or user_auth else AuthEventType.USER_UNKNOWN
 
     elif verify_db_admin(username, password):
         role = ROLE.ADMIN
         admin_auth = True
+        internal_admin = True
         log.info(f"Local admin '{username}' successfully logged in.")
         # This admin is not in the default realm!
         realm = ""
         user = User()
+        auth_event_type = AuthEventType.LOGIN_SUCCESS
         g.audit_object.log({"success": True,
                             "user": "",
                             "realm": "",
@@ -427,6 +600,7 @@ def get_auth_token():
     else:
         # The user could not be identified against the admin database, so we do the rest of the check
         if password is None:
+            auth_event_type = AuthEventType.PASSWORD_FAIL
             g.audit_object.add_to_log({"info": 'Missing parameter "password"'}, add_with_comma=True)
         else:
             local_admin_exist = g.get("resolved_user", {}).get("is_local_admin", False)
@@ -457,10 +631,22 @@ def get_auth_token():
             user_auth, role, details = check_webui_user(user, password, options=options,
                                                         superuser_realms=superuser_realms)
             details = details or {}
+            # Classification stashed by the lib layer: captured for the authentication log and
+            # popped so it is never returned to the client. A present-but-None value means a token suppressed its
+            # terminal event (push_wait timeout); absent means nothing classified the request.
+            terminal_event_suppressed = AUTH_EVENT_TYPE_KEY in details and details[AUTH_EVENT_TYPE_KEY] is None
+            auth_event_type = details.pop(AUTH_EVENT_TYPE_KEY, None)
+            # Pop the log-only transaction_id (push_wait success) so it is never returned to the client, mirroring
+            # /validate/check. It stands in for the challenge transaction_id the response does not carry.
+            log_transaction_id = details.pop(LOG_TRANSACTION_ID_KEY, None)
             if 'multi_challenge' in details:
                 serials = ",".join([challenge_info["serial"] for challenge_info in details["multi_challenge"]])
                 token_types = ",".join([challenge_info["type"] for challenge_info in details["multi_challenge"]
                                         if challenge_info.get("type")])
+                # The lib distinguishes an initial challenge (CHALLENGE_TRIGGERED) from a continuation that answered
+                # one challenge and created the next (CHALLENGE_CONTINUED). Keep the latter; only default to TRIGGERED.
+                if auth_event_type != AuthEventType.CHALLENGE_CONTINUED:
+                    auth_event_type = AuthEventType.CHALLENGE_TRIGGERED
             else:
                 serials = details.get('serial')
                 token_types = details.get('type')
@@ -481,17 +667,77 @@ def get_auth_token():
             else:
                 g.audit_object.log({"user": user.login})
 
+            # A username that matches a local DB admin (verify_db_admin above already rejected the password) with no
+            # user of that name in the (default) realm can only be that admin failing with a wrong password. Classify
+            # it as an internal-admin password failure.
+            if local_admin_exist and not user_auth and not user.exist():
+                auth_event_type = AuthEventType.PASSWORD_FAIL
+                internal_admin = True
+                # local admins do not have any user attributes, login name is logged separately
+                user = User()
+
             if not user_auth and "multi_challenge" in details and len(details["multi_challenge"]) > 0:
                 # Do not return user data in case of a challenge request.
                 # Mark the audit entry as CHALLENGE so check_max_auth_fail does
                 # not count it as a failure (mirrors _finalize_auth_response()
                 # in validate.py).
                 g.audit_object.log({"authentication": AUTH_RESPONSE.CHALLENGE})
+                log_authentication(auth_event_type, request, user=user, serial=serials,
+                                   transaction_id=details.get("transaction_id"),
+                                   previous_transaction_id=_previous_transaction_id(details))
                 return send_result(False, rid=2, details=details)
 
+    # Authentication log
+    if auth_event_type is None and not terminal_event_suppressed:
+        # Nothing along the way classified this request. A successful login that no handler labelled is a
+        # LOGIN_SUCCESS; an unclassified failure is logged as UNKNOWN_FAIL_REASON (not PASSWORD_FAIL, which would
+        # misattribute it to a wrong userstore password and skew password-failure lockout counters), mirroring
+        # /validate/check. A deliberately suppressed terminal event (push_wait) keeps auth_event_type None, so
+        # log_authentication below is a no-op and no row is added over the one the token already wrote.
+        auth_event_type = AuthEventType.LOGIN_SUCCESS if (
+                admin_auth or user_auth) else AuthEventType.UNKNOWN_FAIL_REASON
+    log_authentication(auth_event_type, request, user=user, serial=serials or details.get("serial"),
+                       transaction_id=(get_optional(request.all_data, "transaction_id")
+                                       or details.get("transaction_id") or log_transaction_id),
+                       previous_transaction_id=_previous_transaction_id(details), username=login_name,
+                       internal_admin=internal_admin)
+
+    # Feed the classified outcome to the lockout engine (after the log row is written so the
+    # count includes it). It writes lockout state for the next request and returns any
+    # user-facing notices produced by executed actions (e.g. "an email was sent"), which we
+    # surface on the rejection below just like the lockout message. It must never break this
+    # login response.
+    lockout_notices = []
+    try:
+        lockout_notices = evaluate_lockout_policies(user, auth_event_type, source_ip=g.client_ip) or []
+    except Exception as ex:
+        log.warning(f"Conditional-access policy evaluation failed: {ex!r}")
+
     if not admin_auth and not user_auth:
-        raise AuthError(_("Authentication failure. Wrong credentials"), id=Error.AUTHENTICATE_WRONG_CREDENTIALS,
-                        details=details or {})
+        # If this very request tripped a stage that locked the user or blocked its source
+        # IP, lead with that instead of the generic "Wrong credentials" — the lock/block
+        # is in force now, so that is the more useful thing to tell the user.
+        lockout = get_user_lockout(user)
+        ip_block = get_ip_block(g.client_ip)
+        restriction = _binding_restriction(lockout, ip_block)
+        details = details or {}
+        if restriction == "block":
+            message = _blocked_ip_error_message(g.client_ip, ip_block)
+            details["restriction"] = _restriction_kind(ip_block)
+        elif restriction == "lock":
+            message = _lockout_error_message(lockout)
+            details["restriction"] = _restriction_kind(lockout)
+        else:
+            message = _("Authentication failure. Wrong credentials")
+        if lockout_notices:
+            # Append the notice(s) to the message (not an extra detail key) so the
+            # hide_specific_error_message policy masks them, and the login screen shows
+            # them in error.message exactly as it shows a lockout rejection. The result reads
+            # e.g. "Your account is temporarily locked ... in about 10 minute(s). Your
+            # administrator has been notified by email."
+            message = message.rstrip(".") + ". " + " ".join(lockout_notices)
+        raise AuthError(message, id=Error.AUTHENTICATE_WRONG_CREDENTIALS,
+                        details=details)
     else:
         g.audit_object.log({"success": True, "authentication": AUTH_RESPONSE.ACCEPT})
         request.User = user

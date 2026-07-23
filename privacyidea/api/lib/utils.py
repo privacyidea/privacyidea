@@ -22,7 +22,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from flask_babel import _
+import functools
 import json
 import logging
 import re
@@ -33,11 +33,12 @@ from copy import copy
 from urllib.parse import unquote
 
 import jwt
-from flask import (jsonify,
-                   current_app, request, Response)
+from flask import jsonify, current_app, Response, Request, request, g, has_request_context
+from flask_babel import _
 
-from privacyidea.lib.utils import (prepare_result, get_version, to_unicode,
-                                   get_plugin_info_from_useragent)
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.authentication_log import log_authentication_event, AuthLogUserRole
+from privacyidea.lib.user import User
 # Re-exported from privacyidea.lib.params for backwards-compatibility with
 # callers that import these names from privacyidea.api.lib.utils.
 from privacyidea.lib.params import (  # noqa: F401
@@ -50,6 +51,7 @@ from privacyidea.lib.params import (  # noqa: F401
 )
 # check_policy_name lives in lib/policy; re-exported here for backward compatibility
 from privacyidea.lib.policy import check_policy_name  # noqa: F401
+from privacyidea.lib.utils import prepare_result, get_version, to_unicode, get_plugin_info_from_useragent
 from ...lib.error import (PolicyError, ResourceNotFoundError,
                           PrivacyIDEAError, AuthError, Error)
 from ...lib.log import log_with
@@ -83,7 +85,6 @@ NO_UNQUOTE_USER_AGENTS = {
 }
 
 SESSION_KEY_LENGTH = 32
-
 
 
 def send_result(obj, rid=1, details=None, **kwargs) -> Response:
@@ -230,6 +231,188 @@ def getLowerParams(param):
             lval = param[key]
             ret[lkey] = lval
     return ret
+
+
+def _determine_user_role(user: User | None, internal_admin: bool) -> AuthLogUserRole:
+    """
+    Classify the authenticating principal for the authentication log. A local database admin is only knowable at the
+    caller (``/auth`` via ``verify_db_admin``/``db_admin_exists``) and is signalled by *internal_admin*. Otherwise a
+    user whose realm is a configured ``SUPERUSER_REALM`` is an external (admin-realm) admin; everyone else is a
+    regular user. The superuser realms are only readable inside an app context, so outside one the principal is
+    treated as a regular user (the only events logged outside a request are user token flows, e.g. push_wait).
+    """
+    if internal_admin:
+        return AuthLogUserRole.ADMIN_INTERNAL
+    if user and user.realm and has_request_context():
+        superuser_realms = [realm.lower() for realm in current_app.config.get("SUPERUSER_REALM", [])]
+        if user.realm.lower() in superuser_realms:
+            return AuthLogUserRole.ADMIN_EXTERNAL
+    return AuthLogUserRole.USER
+
+
+def log_authentication(event_type: AuthEventType | None, request: Request | None = None, user: User | None = None,
+                       serial: str | None = None, transaction_id: str | None = None,
+                       previous_transaction_id: str | None = None, username: str | None = None,
+                       internal_admin: bool = False) -> int | None:
+    """
+    Write one authentication_log entry for the current request.
+
+    This is the single API-layer persistence point: the lib layer classifies
+    the outcome and the views call this to record it. ``source_ip`` uses the
+    same client-IP resolution as the audit log; ``client_label`` is the
+    ``client_id`` parameter if supplied, otherwise the User-Agent header.
+
+    The ``(resolver, uid, realm)`` identity tuple is only written for a resolved
+    user; an unresolvable user (e.g. USER_UNKNOWN) is logged with resolver and uid
+    None while realm and username are still captured from the User object.
+
+    ``username`` overrides the login name derived from the User object. It is needed for
+    local administrators, who have no User object (the login name is not stored there) but
+    whose login name should still be recorded.
+
+    Some requests identify a token but not its user (e.g. the smartphone ``/ttype/push`` confirm carries only the
+    serial). In that case the token owner is resolved from the serial, so a row that names a single token always also
+    records that token's user, keeping the log symmetric.
+
+    ``source_ip`` (from ``g``) and ``client_label`` (from ``request``) are only read inside a request context, so the
+    lib layer can record an event from outside a view (e.g. push_wait). Worst case those two columns are empty; the
+    event itself is never lost.
+
+    ``user_role`` records whether the principal is a regular user or an admin (see :class:`AuthLogUserRole`). Pass
+    ``internal_admin=True`` for a local database admin (``/auth`` only); an admin-realm admin is detected from the
+    user's realm, so the caller need not flag it.
+    """
+    if not event_type:
+        log.debug("Not logging authentication event, because no event type is given.")
+        return
+    client_label = None
+    source_ip = None
+    if has_request_context():
+        source_ip = g.client_ip
+        if request is not None:
+            client_label = get_optional(request.all_data, "client_id") or (request.user_agent.string or None)
+    # TODO: replace by user function (after related PR is merged)
+    resolved = bool(user and user.resolver)
+    if not resolved and serial and "," not in serial:
+        # The request carried a single serial but no (resolved) user. Resolve the token owner so the user is logged
+        # alongside the serial. A failure here must not break the logging, so it is swallowed.
+        try:
+            from privacyidea.lib.token import get_one_token
+            token = get_one_token(serial=serial, silent_fail=True)
+            if token is not None and token.user and token.user.resolver:
+                user = token.user
+                resolved = True
+        except Exception as ex:
+            log.debug(f"Could not resolve the token owner for the authentication log: {ex!r}")
+    return log_authentication_event(
+        event_type=event_type,
+        transaction_id=transaction_id,
+        previous_transaction_id=previous_transaction_id,
+        resolver=user.resolver if resolved else None,
+        uid=user.uid if resolved else None,
+        realm=(user.realm or None) if user else None,
+        username=username or ((user.login or None) if user else None),
+        user_role=_determine_user_role(user, internal_admin),
+        source_ip=source_ip,
+        client_label=client_label,
+        serial=serial,
+    )
+
+
+def conditional_access_precheck(user) -> "Response | None":
+    """
+    Reject a request pre-auth (before any token logic and before the failcounter /
+    max_auth checks) when conditional-access policies forbid it. Returns a generic
+    failure :class:`~flask.Response` to be returned to the client, or ``None`` to
+    continue with the normal flow.
+
+    The rejection is deliberately generic and leaks no reason: the machine-facing
+    API response never reveals that the user is locked, the source IP is blocked,
+    or a policy denied access — the real reason is recorded only in the audit log.
+
+    A currently-locked user is rejected first, then a source IP blocked by a
+    ``BLOCK_IP`` action. The pre-auth conditional-access DENY decision is evaluated
+    last, after the lock/block pre-checks (so an ALLOW cannot override them); a
+    DENY rejects this single request without persisting state, while
+    ALLOW / CONTINUE fall through. ``g.client_ip`` is the source IP checked.
+    """
+    # Imported lazily: this module is loaded early, while the engine pulls in the
+    # ORM models, so a module-level import would risk an import-order cycle.
+    from privacyidea.lib.conditional_access.engine import (is_user_locked, is_ip_blocked,
+                                                           evaluate_access_decision, AccessDecision)
+    if is_user_locked(user):
+        log.info(f"Rejecting authentication for locked user {user!r}.")
+        g.audit_object.log({"success": False,
+                            "info": "Rejected: account is temporarily locked"})
+        return send_result(False, rid=2, details={})
+    if is_ip_blocked(g.client_ip):
+        log.info(f"Rejecting authentication from blocked IP {g.client_ip!r}.")
+        g.audit_object.log({"success": False,
+                            "info": "Rejected: source IP is blocked"})
+        return send_result(False, rid=2, details={})
+    if evaluate_access_decision(user, g.client_ip) == AccessDecision.DENY:
+        log.info(f"Denying authentication for {user!r} by conditional-access policy.")
+        g.audit_object.log({"success": False,
+                            "info": "Rejected: denied by conditional-access policy"})
+        return send_result(False, rid=2, details={})
+    return None
+
+
+def conditional_access_gate(identity_resolver=None):
+    """
+    View decorator that runs :func:`conditional_access_precheck` before the
+    decorated endpoint body (and, when placed above them, before the endpoint's
+    pre-policies). If the pre-check rejects the request, its generic-failure
+    response is returned immediately and the endpoint never runs.
+
+    :param identity_resolver: an optional zero-argument callable returning the
+        :class:`~privacyidea.lib.user.User` the pre-check should gate on. When
+        omitted, ``request.User`` is used. Endpoints that must resolve the
+        identity differently (a serial/credential-id request, or a transaction
+        owner) pass their own resolver.
+    """
+    def decorator(wrapped_function):
+        @functools.wraps(wrapped_function)
+        def wrapper(*args, **kwargs):
+            user = identity_resolver() if identity_resolver is not None else request.User
+            rejection = conditional_access_precheck(user)
+            if rejection is not None:
+                return rejection
+            return wrapped_function(*args, **kwargs)
+        return wrapper
+    return decorator
+
+
+def conditional_access_posteval(user, event_type) -> None:
+    """
+    Run the conditional-access policy engine for this request's classified
+    *event_type*, after the authentication-log row for it has been written (so a
+    failure count over the log includes the just-written event). ``g.client_ip``
+    is passed as the source IP for ``BLOCK_IP`` actions.
+
+    This only produces side effects that the NEXT inbound request consults (it
+    writes lockout state); it must never alter or break the response that already
+    completed, so every error is swallowed.
+    """
+    from privacyidea.lib.conditional_access.engine import evaluate_lockout_policies
+    from privacyidea.models import db
+    try:
+        # The engine commits its own writes (and rolls them back on failure), so
+        # this caller must NOT wrap them in a transaction. Wrapping in
+        # db.session.begin_nested() and then committing breaks under SQLAlchemy 2.x:
+        # the engine's inner commit closes the transaction, so leaving the savepoint
+        # context raises InvalidRequestError ("Can't operate on closed transaction
+        # inside context manager") — which this caller would silently swallow.
+        evaluate_lockout_policies(user, event_type, source_ip=g.client_ip)
+    except Exception as ex:
+        log.warning(f"Conditional-access policy evaluation failed: {ex!r}")
+        # A failure may leave the session in an aborted state; clear it so request
+        # teardown can proceed cleanly. Guard the rollback so this helper never
+        # raises (it must never break the already-completed response).
+        try:
+            db.session.rollback()
+        except Exception:
+            pass
 
 
 def check_unquote(request, data):

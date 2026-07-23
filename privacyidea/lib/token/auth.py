@@ -9,9 +9,12 @@ from typing import TYPE_CHECKING
 from privacyidea.lib import _
 from privacyidea.lib.challengeresponsedecorators import (generic_challenge_response_reset_pin,
                                                          generic_challenge_response_resync)
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
+                                                                           NO_FIRST_FACTOR_KEY, reduce_request_events,
+                                                                           SUPPRESS_TERMINAL_EVENT_KEY)
 from privacyidea.lib.config import (get_from_config,
                                     get_inc_fail_count_on_false_pin, SYSCONF)
-from privacyidea.lib.error import (TokenAdminError)
+from privacyidea.lib.error import (TokenAdminError, Error)
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policydecorators import (libpolicy,
@@ -170,6 +173,8 @@ def check_user_pass(user: User, passw: str, options: dict | None = None) -> tupl
         # The user has no tokens assigned
         res = False
         reply_dict["message"] = _("The user has no tokens assigned")
+        reply_dict[AUTH_EVENT_TYPE_KEY] = (
+            AuthEventType.USER_UNKNOWN if not user or user.is_empty() else AuthEventType.NO_TOKEN)
     else:
         token_object = token_objects[0]
         res, reply_dict = check_token_list(token_objects, passw,
@@ -275,6 +280,17 @@ def weigh_token_type(token_obj: TokenClass) -> int:
         return ord(token_obj.type[0])
 
 
+def _token_event(token: TokenClass, default_event: AuthEventType) -> AuthEventType:
+    """
+    Return the outcome a token classified for itself, if any, else *default_event*.
+
+    A policy decorator (e.g. ``auth_otppin`` marking a wrong userstore password as PASSWORD_FAIL) records its more
+    specific reason in ``token.auth_details[AUTH_EVENT_TYPE_KEY]``; this lets such a token override the default reason
+    the orchestrator derived from the (pin_match, otp_count) tuple.
+    """
+    return token.auth_details.get(AUTH_EVENT_TYPE_KEY) or default_event
+
+
 @log_with(log, hide_args=[1])
 @libpolicy(reset_all_user_tokens)
 @libpolicy(generic_challenge_response_reset_pin)
@@ -318,6 +334,11 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
     invalid_token_list = []
     valid_token_list = []
     messages = []
+    # Per-token outcomes for the authentication log
+    request_events: list[AuthEventType] = []
+    # Set when a token logged its own outcome and no terminal event should be added (push_wait timeout).
+    terminal_event_suppressed = False
+    num_all_tokens = len(token_object_list)
 
     # Remove locked tokens from token_object_list
     if len(token_object_list) > 0:
@@ -325,7 +346,8 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
 
         if len(token_object_list) == 0:
             # If there is no unlocked token left.
-            raise TokenAdminError(_("This action is not possible, since the token is locked"), id=1007)
+            raise TokenAdminError(_("This action is not possible, since the token is locked"),
+                                  id=Error.TOKEN_LOCKED)
 
     # Remove disabled token types from token_object_list
     if PolicyAction.DISABLED_TOKEN_TYPES in options and options[PolicyAction.DISABLED_TOKEN_TYPES]:
@@ -355,6 +377,7 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
                 # This is a transaction_id, that either never existed or has expired or is not for this token.
                 # We add this to the invalid_token_list
                 invalid_token_list.append(token_object)
+                request_events.append(AuthEventType.CHALLENGE_ANSWERED_FAIL)
         elif token_object.is_challenge_request(passw, user=user, options=options):
             # This is a challenge request
             challenge_request_token_list.append(token_object)
@@ -375,16 +398,31 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
                 repl = repl or {}
                 reply_dict.update(repl)
                 if otp_count >= 0:
-                    # This is a successful authentication
+                    # This is a successful authentication. LOGIN_SUCCESS is classified
+                    # once, later, in the final valid_token_list block (which re-checks
+                    # check_all before confirming success), so it is deliberately not
+                    # appended here as well - it would be a redundant duplicate.
                     valid_token_list.append(token_object)
                 elif pin_match:
-                    # The PIN of the token matches
+                    # The PIN (first factor) of the token matches, but the OTP did not. For logging check if a pin was
+                    # required / checked at all.
                     pin_matching_token_list.append(token_object)
+                    if token_object.auth_details.get(SUPPRESS_TERMINAL_EVENT_KEY):
+                        # The token logged its own outcome (push_wait timeout); do not add a terminal event on top.
+                        terminal_event_suppressed = True
+                    else:
+                        default_event = (AuthEventType.TOKEN_ONLY_FAIL
+                                         if token_object.auth_details.get(NO_FIRST_FACTOR_KEY)
+                                         else AuthEventType.MFA_FAIL)
+                        request_events.append(_token_event(token_object, default_event))
                 else:
-                    # Nothing matches at all
+                    # Nothing matches at all: a wrong first factor (PIN_FAIL, or PASSWORD_FAIL with otppin=userstore).
+                    # This stays PIN_FAIL even with otppin=none, if a pin was given unexpectedly
                     invalid_token_list.append(token_object)
+                    request_events.append(_token_event(token_object, AuthEventType.PIN_FAIL))
             else:
                 invalid_token_list.append(token_object)
+                request_events.append(AuthEventType.PIN_FAIL)
                 log.info(f"Skipping authentication try for token {token_object.get_serial()}"
                          f" because policy force_challenge_response is set.")
 
@@ -432,6 +470,7 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
 
                 # The token is active and the auth counters are ok.
                 res = True
+                request_events.append(AuthEventType.LOGIN_SUCCESS)
                 if not reply_dict.get("type"):
                     reply_dict["type"] = token_obj.token.tokentype
                 if reply_dict["type"] != token_obj.token.tokentype:
@@ -494,11 +533,13 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
                         create_challenges_from_tokens([token_object], reply_dict, options)
                         further_challenge = True
                         res = False
+                        request_events.append(AuthEventType.CHALLENGE_CONTINUED)
                     else:
                         # This was the last successful challenge, so
                         # reset the fail counter of the challenge response token
                         token_object.reset()
                         token_object.post_success()
+                        request_events.append(_token_event(token_object, AuthEventType.LOGIN_SUCCESS))
 
                     # Clean up all challenges with this transaction_id from
                     # both Redis (when active) and the DB.
@@ -513,6 +554,7 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
             for token_obj in challenge_response_token_list:
                 if not token_obj.is_outofband():
                     token_obj.inc_failcount()
+                request_events.append(AuthEventType.CHALLENGE_ANSWERED_FAIL)
             if not matching_challenge:
                 if len(challenge_response_token_list) == 1:
                     reply_dict["serial"] = challenge_response_token_list[0].token.serial
@@ -533,6 +575,7 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
                 if is_true(options.get("increase_failcounter_on_challenge")):
                     token_obj.inc_failcount()
             create_challenges_from_tokens(active_challenge_token, reply_dict, options)
+            request_events.append(AuthEventType.CHALLENGE_TRIGGERED)
 
     elif pin_matching_token_list:
         # We did not find a valid token and no challenge.
@@ -576,6 +619,17 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
     else:
         # There is no suitable token for authentication
         reply_dict["message"] = _("No suitable token found for authentication.")
+
+    # Classify the request outcome for the authentication log by reducing the per-token events collected during the
+    # walk to the single highest-precedence one. If no token contributed an event, the user either owns tokens that
+    # were all unusable (revoked, disabled, disabled type, max-fail exceeded, out of validity) -> NO_USABLE_TOKEN, or
+    # owns no token at all -> NO_TOKEN.
+    reduced_event = reduce_request_events(request_events)
+    # When a token suppressed its terminal event (push_wait timeout), leave the classification empty instead of
+    # falling back, so no terminal row is logged on top of the one the token logged itself.
+    if reduced_event is None and not terminal_event_suppressed:
+        reduced_event = AuthEventType.NO_USABLE_TOKEN if num_all_tokens else AuthEventType.NO_TOKEN
+    reply_dict[AUTH_EVENT_TYPE_KEY] = reduced_event
 
     return res, reply_dict
 

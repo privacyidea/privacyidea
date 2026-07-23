@@ -124,6 +124,7 @@
     "container_rollover": true,
     "container_template_create": true,
     "container_template_delete": true,
-    "container_template_list": true
+    "container_template_list": true,
+    "authentication_log_read": true
   }
 }

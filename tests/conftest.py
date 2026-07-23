@@ -127,6 +127,9 @@ def _force_read_committed_on_mysql(dbapi_connection, connection_record):
             cursor.close()
 
 
+# Enable rich assert diffs for the plain asserts in the auth-log helper module.
+pytest.register_assert_rewrite("tests.authlog_utils")
+
 from privacyidea.lib.caconnector import save_caconnector
 
 
