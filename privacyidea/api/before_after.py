@@ -82,7 +82,7 @@ from privacyidea.api.lib.postpolicy import postrequest, sign_response, hide_vers
 from ..lib.error import (PrivacyIDEAError,
                          AuthError, UserError,
                          PolicyError, ResourceNotFoundError)
-from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent
+from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent, AUTH_RESPONSE
 from privacyidea.lib.user import User
 import datetime
 import threading
@@ -504,6 +504,12 @@ def after_request(response):
 def auth_error(error):
     if "audit_object" in g:
         message = ''
+
+        if request.blueprint == "jwtauth" and request.path.endswith("/auth"):
+            # Mark failed logins as REJECT like _finalize_auth_response() in
+            # validate.py does, so the "!CHALLENGE" filter in check_max_auth_fail
+            # matches them (SQL "!=" does not match NULL).
+            g.audit_object.log({"authentication": AUTH_RESPONSE.REJECT})
 
         if hasattr(error, 'message'):
             message = error.message
