@@ -109,12 +109,17 @@ const apiFilterKeyMap: Record<string, string> = {
 
 const hiddenApiFilter = ["type_list"];
 
-// Keywords that are matched exactly against the backend; every other keyword is
-// wrapped with `*value*` and matched as a substring (see `_filterParams`).
-const exactMatchKeys = new Set(["user", "infokey", "infovalue", "active", "assigned", "container_serial", "realm"]);
-// Keywords that take a true/false value instead of a text pattern.
+const exactMatchKeys = new Set([
+  "user",
+  "infokey",
+  "infovalue",
+  "infokey & infovalue",
+  "active",
+  "assigned",
+  "container_serial",
+  "realm"
+]);
 const booleanKeys = new Set(["active", "assigned"]);
-// Keywords that deviate from the mostly case-insensitive matching of this filter.
 // `serial` is a raw LIKE (SQLite/MySQL fold case, PostgreSQL does not), the tokeninfo
 // keys are a raw equality comparison (only MySQL with a _ci collation folds case).
 const caseNotes: Record<string, FilterCaseNote> = {

@@ -36,13 +36,10 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { StringUtils } from "@utils/string.utils";
 import { catchError, forkJoin, lastValueFrom, Observable, of, Subject, throwError } from "rxjs";
 
-const apiFilter = ["container_serial", "type", "description", "container_realm", "state"];
+const apiFilter = ["container_serial", "type", "description", "user", "container_realm", "state"];
 const advancedApiFilter = ["token_serial", "template", "assigned"];
 
-// Keywords that are matched exactly against the backend; every other keyword is
-// wrapped with `*value*` and matched as a substring (see `filterParams`).
 const exactMatchKeys = new Set(["user", "type", "state", "assigned"]);
-// Keywords that take a true/false value instead of a text pattern.
 const booleanKeys = new Set(["assigned"]);
 
 // Filter keywords, a single value maps to the `type` query param, multiple to `type_list`.

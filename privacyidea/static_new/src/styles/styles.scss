@@ -841,8 +841,6 @@ body.self-service-layout {
   max-height: 400px;
 }
 
-// white-space and text-align are inherited, so they reach the tooltip surface
-// without depending on its class name. Only max-width has to target it directly.
 .filter-hint-tooltip {
   white-space: pre-line;
   text-align: left;

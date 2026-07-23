@@ -19,14 +19,9 @@
 
 export interface FilterInputHintOptions {
   supportsKeywords?: boolean;
-  /** Some keywords are matched without normalising case, so the database or resolver decides. */
   mayBeCaseSensitive?: boolean;
 }
 
-/**
- * Tooltip for a filter input: what the placeholder does not already show.
- * Per-keyword details belong on the column filter icons.
- */
 export function filterInputHint(options: FilterInputHintOptions = {}): string {
   const lines: string[] = [];
   if (options.supportsKeywords ?? true) {
@@ -37,10 +32,6 @@ export function filterInputHint(options: FilterInputHintOptions = {}): string {
   return lines.join("\n");
 }
 
-/**
- * Hint below a filter input: the keywords the filter accepts. Shown as static
- * text so the keywords are readable without hovering the input.
- */
 export function filterKeywordHint(keywords: string[]): string {
   if (!keywords.length) {
     return "";
@@ -48,10 +39,6 @@ export function filterKeywordHint(keywords: string[]): string {
   return $localize`Keywords: ${keywords.join(", ")}`;
 }
 
-/**
- * How a keyword deviates from its filter's overall case behaviour.
- * "usually-*" means the database or resolver decides.
- */
 export type FilterCaseNote = "usually-insensitive" | "usually-sensitive" | "sensitive";
 
 export interface FilterKeywordSemantics {
@@ -61,10 +48,6 @@ export interface FilterKeywordSemantics {
   caseNote?: FilterCaseNote;
 }
 
-/**
- * Tooltip for a column filter icon: the "Filter by X" title plus a short,
- * comma separated summary of how the value is matched.
- */
 export function filterColumnHint(label: string, semantics: FilterKeywordSemantics): string {
   const title = $localize`Filter by ${label}`;
   if (semantics.isUnsupported) {

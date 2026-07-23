@@ -151,9 +151,7 @@ export class AuditService implements AuditServiceInterface {
   readonly apiFilterKeyMap = apiFilterKeyMap;
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
-  // Audit filtering always wraps values with `*value*`; no keyword is matched exactly.
   readonly exactMatchKeys = new Set<string>();
-  // Keywords that take a true/false value instead of a text pattern.
   readonly booleanKeys = new Set(["success"]);
   auditFilter = signal(new FilterValue());
   filterParams = computed<Record<string, string>>(() => {
