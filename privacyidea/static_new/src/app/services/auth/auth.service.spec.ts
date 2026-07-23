@@ -26,7 +26,12 @@ import { AUTH_DATA_STORAGE_KEY, BEARER_TOKEN_STORAGE_KEY } from "@core/constants
 import { LocalService } from "@services/local/local.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { VersioningService } from "@services/version/version.service";
-import { MockLocalService, MockNotificationService, MockRouter, MockVersioningService } from "@testing/mock-services";
+import {
+  MockLocalService,
+  MockNotificationService,
+  MockRouter,
+  MockVersioningService
+} from "@testing/mock-services";
 import { AuthData, AuthResponse, AuthService, JwtData } from "./auth.service";
 
 const b64url = (obj: object) =>
