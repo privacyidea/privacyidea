@@ -21,6 +21,7 @@ import { Sort } from "@angular/material/sort";
 import { PiResponse } from "@app/app.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import {
+  BlocklistEntry,
   ConditionalAccessStateServiceInterface,
   LockedUsersPage,
   LockedUserEntry,
@@ -56,6 +57,14 @@ export class MockConditionalAccessStateService implements ConditionalAccessState
 
   purgeUserLockouts = jest.fn().mockImplementation((): Observable<number> => of(0));
 
+  // Blocklist — flat list
+  blocklistResource = new MockHttpResourceRef<PiResponse<BlocklistEntry[]> | undefined>(
+    MockPiResponse.fromValue<BlocklistEntry[]>([])
+  );
+
+  removeBlocklistEntry = jest.fn().mockImplementation((_: BlocklistEntry): Observable<boolean> => of(true));
+  purgeBlocklist = jest.fn().mockImplementation((): Observable<number> => of(0));
+
   setUserLockoutStatus(value: UserLockoutStatus | null): void {
     this.userLockoutResource.set(MockPiResponse.fromValue<UserLockoutStatus | null>(value));
   }
@@ -78,5 +87,13 @@ export class MockConditionalAccessStateService implements ConditionalAccessState
 
   setLockedUsersResourceUndefined(): void {
     this.lockedUsersResource.set(undefined);
+  }
+
+  setBlocklistEntries(entries: BlocklistEntry[]): void {
+    this.blocklistResource.set(MockPiResponse.fromValue<BlocklistEntry[]>(entries));
+  }
+
+  setBlocklistResourceUndefined(): void {
+    this.blocklistResource.set(undefined);
   }
 }

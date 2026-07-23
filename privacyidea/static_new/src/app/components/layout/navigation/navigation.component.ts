@@ -30,10 +30,7 @@ import { environment } from "@env/environment";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ConfigService, ConfigServiceInterface } from "@services/config/config.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
-import {
-  DashboardLayoutService,
-  DashboardLayoutServiceInterface
-} from "@services/dashboard/dashboard-layout.service";
+import { DashboardLayoutService, DashboardLayoutServiceInterface } from "@services/dashboard/dashboard-layout.service";
 import { DocumentationService, DocumentationServiceInterface } from "@services/documentation/documentation.service";
 import { EventService, EventServiceInterface } from "@services/event/event.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
@@ -251,7 +248,13 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
         case "subscription":
           return this.authService.actionAllowed("managesubscription");
         case "logs":
-          return this.authService.oneActionAllowed(["auditlog", "authentication_log_read", "clienttype", "user_lockout_read"]);
+          return this.authService.oneActionAllowed([
+            "auditlog",
+            "authentication_log_read",
+            "clienttype",
+            "user_lockout_read",
+            "blocklist_read"
+          ]);
         case "external_services":
           return this.authService.oneActionAllowed([
             "smtpserver_read",

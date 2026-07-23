@@ -521,6 +521,14 @@
         <span i18n>Locked Users</span>
       </a>
     }
+    @if (authService.actionAllowed("blocklist_read")) {
+      <a
+        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.BLOCKLIST ? 'sub-nav-active' : ''"
+        [routerLink]="[ROUTE_PATHS.BLOCKLIST]">
+        <mat-icon>block</mat-icon>
+        <span i18n>Blocklist</span>
+      </a>
+    }
     <ng-container *ngTemplateOutlet="supportDocs"></ng-container>
   </mat-toolbar>
 }

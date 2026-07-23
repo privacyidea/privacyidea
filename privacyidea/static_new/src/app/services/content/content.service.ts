@@ -40,6 +40,7 @@ export interface ContentServiceInterface {
   onAuthenticationLog: Signal<boolean>;
   onClients: Signal<boolean>;
   onLockedUsers: Signal<boolean>;
+  onBlocklist: Signal<boolean>;
   onTokens: Signal<boolean>;
   onUsers: Signal<boolean>;
   onPolicies: Signal<boolean>;
@@ -118,6 +119,7 @@ export class ContentService implements ContentServiceInterface {
   onAuthenticationLog = computed(() => this.routeUrl() === ROUTE_PATHS.AUTHENTICATION_LOG);
   onClients = computed(() => this.routeUrl() === ROUTE_PATHS.CLIENTS);
   onLockedUsers = computed(() => this.routeUrl() === ROUTE_PATHS.LOCKED_USERS);
+  onBlocklist = computed(() => this.routeUrl() === ROUTE_PATHS.BLOCKLIST);
   onTokens = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS);
   onUsers = computed(() => this.routeUrl() === ROUTE_PATHS.USERS);
   onPolicies = computed(() => this.routeUrl().startsWith(ROUTE_PATHS.POLICIES));

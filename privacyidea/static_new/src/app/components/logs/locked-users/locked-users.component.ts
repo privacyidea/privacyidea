@@ -164,8 +164,6 @@ export class LockedUsersComponent {
     if (row.permanent) {
       return $localize`Permanent`;
     }
-    // "Temporary" (not "Locked") — every row here is locked; the distinction from a permanent lock is
-    // that this one lifts on its own at the expiry shown in the Lock Expiry column.
     return this.isExpired(row) ? $localize`Expired` : $localize`Temporary`;
   }
 

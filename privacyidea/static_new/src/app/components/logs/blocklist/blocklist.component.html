@@ -1,0 +1,258 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+ -->
+<div
+  appScrollToTop
+  class="blocklist-table-container">
+  <h3 i18n>Blocklist</h3>
+
+  <div
+    class="margin-bottom-16"
+    i18n>
+    This is a list of entries (e.g. IP addresses) currently blocked by the conditional-access engine.
+  </div>
+
+  <div class="filter-container">
+    <mat-form-field
+      class="blocklist-table-filter"
+      subscriptSizing="dynamic">
+      <mat-label i18n>Filter Blocklist ...</mat-label>
+      <app-clearable-input
+        (clearButtonClick)="clearFilter()"
+        [showClearButton]="filterText.length > 0">
+         <input
+           (input)="handleFilterInput($event)"
+           [value]="filterText"
+           aria-label="Filter Input"
+           i18n-aria-label
+           i18n-placeholder
+           matInput
+           placeholder="IP, state, reason, ..." />
+      </app-clearable-input>
+      <mat-hint i18n>Search across all columns (case-insensitive).</mat-hint>
+    </mat-form-field>
+  </div>
+
+  <div class="toolbar">
+    @if (authService.actionAllowed("blocklist_reset")) {
+      <button
+        (click)="removeSelected()"
+        [disabled]="selection().length === 0"
+        class="action-button-secondary button-width-m"
+        i18n-matTooltip
+        mat-stroked-button
+        matTooltip="Unblock selected blocklist entries">
+        <mat-icon>lock_open</mat-icon>
+        <span i18n>Unblock</span>
+      </button>
+      <button
+        (click)="cleanUpExpired()"
+        class="action-button-delete-secondary button-width-m"
+        i18n-matTooltip
+        mat-stroked-button
+        matTooltip="Delete all expired blocklist entries from the database">
+        <mat-icon>delete_sweep</mat-icon>
+        <span i18n>Clean Up Expired</span>
+      </button>
+    }
+  </div>
+
+  <div
+    appScrollEdges
+    class="table-scroll-region">
+    <table
+      [dataSource]="dataSource()"
+      aria-label="Blocklist Table"
+      class="blocklist-table"
+      i18n-aria-label
+      mat-table>
+
+      <!-- Selection column -->
+      <ng-container matColumnDef="select">
+        <th
+          *matHeaderCellDef
+          class="table-checkbox"
+          mat-header-cell>
+          <mat-checkbox
+            (change)="toggleAllRows()"
+            [checked]="isAllSelected()"
+            [disabled]="dataSource().data.length === 0"
+            [indeterminate]="selection().length > 0 && !isAllSelected()" />
+        </th>
+        <td
+          *matCellDef="let row"
+          class="table-checkbox"
+          mat-cell>
+          <mat-checkbox
+            (change)="toggleRow(row)"
+            [checked]="selection().includes(row)" />
+        </td>
+      </ng-container>
+
+      <!-- Identifier (IP) column -->
+      <ng-container matColumnDef="identifier">
+        <th
+          *matHeaderCellDef
+          mat-header-cell
+          i18n>
+          <div class="header-cell">
+            <span>Identifier</span>
+            <button
+              (click)="onSortEvent('identifier')"
+              class="sort-button"
+              mat-icon-button
+              type="button">
+              <mat-icon>{{ getSortIcon("identifier") }}</mat-icon>
+            </button>
+          </div>
+        </th>
+        <td
+          *matCellDef="let row"
+          mat-cell>
+          <span>{{ row.identifier }}</span>
+        </td>
+      </ng-container>
+
+       <!-- State column -->
+       <ng-container matColumnDef="state">
+         <th
+           *matHeaderCellDef
+           mat-header-cell>
+           <div class="header-cell">
+             <span i18n>State</span>
+             <button
+               (click)="onSortEvent('state')"
+               class="sort-button"
+               mat-icon-button
+               type="button">
+               <mat-icon>{{ getSortIcon("state") }}</mat-icon>
+             </button>
+           </div>
+         </th>
+         <td
+           *matCellDef="let row"
+           mat-cell>
+           <span [ngClass]="blockStateClass(row)">
+             {{ blockState(row) | titlecase }}
+           </span>
+         </td>
+       </ng-container>
+
+      <!-- Expiry column -->
+      <ng-container matColumnDef="block_expires_at">
+        <th
+          *matHeaderCellDef
+          mat-header-cell
+          i18n>
+          <div class="header-cell">
+            <span>Expiry</span>
+            <button
+              (click)="onSortEvent('block_expires_at')"
+              class="sort-button"
+              mat-icon-button
+              type="button">
+              <mat-icon>{{ getSortIcon("block_expires_at") }}</mat-icon>
+            </button>
+          </div>
+        </th>
+        <td
+          *matCellDef="let row"
+          mat-cell>
+          @if (row.permanent) {
+            <span>&mdash;</span>
+          } @else {
+            <span>
+              {{ row.block_expires_at | date: "yyyy-MM-dd HH:mm:ss" }}
+            </span>
+          }
+        </td>
+      </ng-container>
+
+      <!-- Reason column -->
+      <ng-container matColumnDef="reason">
+        <th
+          *matHeaderCellDef
+          mat-header-cell
+          i18n>
+          <div class="header-cell">
+            <span>Reason</span>
+            <button
+              (click)="onSortEvent('reason')"
+              class="sort-button"
+              mat-icon-button
+              type="button">
+              <mat-icon>{{ getSortIcon("reason") }}</mat-icon>
+            </button>
+          </div>
+        </th>
+        <td
+          *matCellDef="let row"
+          mat-cell>
+          <span>{{ row.reason }}</span>
+        </td>
+      </ng-container>
+
+      <!-- Last updated column -->
+      <ng-container matColumnDef="last_updated">
+        <th
+          *matHeaderCellDef
+          mat-header-cell
+          i18n>
+          <div class="header-cell">
+            <span>Last Updated</span>
+            <button
+              (click)="onSortEvent('last_updated')"
+              class="sort-button"
+              mat-icon-button
+              type="button">
+              <mat-icon>{{ getSortIcon("last_updated") }}</mat-icon>
+            </button>
+          </div>
+        </th>
+        <td
+          *matCellDef="let row"
+          mat-cell>
+          <span>
+            {{ row.last_updated | date: "yyyy-MM-dd HH:mm:ss" }}
+          </span>
+        </td>
+      </ng-container>
+
+      <tr
+        *matHeaderRowDef="displayedColumns"
+        mat-header-row></tr>
+      <tr
+        *matRowDef="let _row; columns: displayedColumns"
+        mat-row></tr>
+
+      <tr
+        *matNoDataRow
+        aria-label="No Data Row"
+        i18n-aria-label>
+        <td
+          [attr.colspan]="displayedColumns.length"
+          aria-label="No Data Cell"
+          i18n
+          i18n-aria-label>
+          No blocklist entries found.
+        </td>
+      </tr>
+    </table>
+  </div>
+</div>
+

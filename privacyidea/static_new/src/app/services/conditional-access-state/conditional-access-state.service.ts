@@ -91,6 +91,16 @@ export interface LockedUsersPage {
   next: number | null;
 }
 
+export interface BlocklistEntry {
+  identifier: string;
+  permanent: boolean;
+  block_expires_at: string | null;
+  seconds_remaining: number | null;
+  is_blocked: boolean;
+  reason: string | null;
+  last_updated: string;
+}
+
 export interface ConditionalAccessStateServiceInterface {
   userLockoutResource: HttpResourceRef<PiResponse<UserLockoutStatus | null> | undefined>;
   userLockoutStatus: Signal<UserLockoutStatus | null>;
@@ -102,6 +112,9 @@ export interface ConditionalAccessStateServiceInterface {
   lockedUsersPageIndex: WritableSignal<number>;
   lockedUsersResource: HttpResourceRef<PiResponse<LockedUsersPage> | undefined>;
   purgeUserLockouts(): Observable<number>;
+  blocklistResource: HttpResourceRef<PiResponse<BlocklistEntry[]> | undefined>;
+  removeBlocklistEntry(entry: BlocklistEntry): Observable<boolean>;
+  purgeBlocklist(): Observable<number>;
 }
 
 @Injectable()
@@ -115,6 +128,7 @@ export class ConditionalAccessStateService implements ConditionalAccessStateServ
   private readonly conditionalAccessBaseUrl = environment.proxyUrl + "/conditionalaccess/";
 
   private readonly canReadUserLockout = computed(() => this.authService.actionAllowed("user_lockout_read"));
+  private readonly canReadBlocklist = computed(() => this.authService.actionAllowed("blocklist_read"));
 
   constructor() {
     effect(() => {
@@ -122,6 +136,9 @@ export class ConditionalAccessStateService implements ConditionalAccessStateServ
     });
     effect(() => {
       this.notificationService.handleResourceError(this.lockedUsersResource.error(), "locked users");
+    });
+    effect(() => {
+      this.notificationService.handleResourceError(this.blocklistResource.error(), "blocklist");
     });
   }
 
@@ -239,6 +256,53 @@ export class ConditionalAccessStateService implements ConditionalAccessStateServ
           console.error("Failed to purge user lockouts.", error);
           const message = error.error?.result?.error?.message || "";
           this.notificationService.error($localize`Failed to purge expired user lockouts. ` + message);
+          return of(0);
+        })
+      );
+  }
+
+  // --- Blocklist ---
+
+  blocklistResource = httpResource<PiResponse<BlocklistEntry[]>>(() => {
+    if (!this.contentService.onBlocklist() || !this.canReadBlocklist()) {
+      return undefined;
+    }
+    return {
+      url: this.conditionalAccessBaseUrl + "blocklist",
+      method: "GET",
+      headers: this.authService.getHeaders(),
+      params: {}
+    };
+  });
+
+  removeBlocklistEntry(entry: BlocklistEntry): Observable<boolean> {
+    return this.http
+      .delete<PiResponse<boolean>>(
+        this.conditionalAccessBaseUrl + "blocklist/" + encodeURIComponent(entry.identifier),
+        { headers: this.authService.getHeaders() }
+      )
+      .pipe(
+        map((response) => response.result?.value ?? false),
+        catchError((error) => {
+          console.error("Failed to remove blocklist entry.", error);
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.error($localize`Failed to remove blocklist entry. ` + message);
+          return of(false);
+        })
+      );
+  }
+
+  purgeBlocklist(): Observable<number> {
+    return this.http
+      .post<PiResponse<number>>(this.conditionalAccessBaseUrl + "blocklist/purge", null, {
+        headers: this.authService.getHeaders()
+      })
+      .pipe(
+        map((response) => response.result?.value ?? 0),
+        catchError((error) => {
+          console.error("Failed to purge blocklist.", error);
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.error($localize`Failed to purge expired blocklist entries. ` + message);
           return of(0);
         })
       );
