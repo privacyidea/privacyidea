@@ -301,6 +301,12 @@ describe("PoliciesTableComponent", () => {
       expect(filterBy("priority: 10")).toEqual(["enroll-hotp"]);
     });
 
+    it("rejects partially-numeric priority operands instead of silently matching", () => {
+      expect(filterBy("priority: >10x")).toEqual([]);
+      expect(filterBy("priority: abc")).toEqual([]);
+      expect(filterBy("priority: >=")).toEqual([]);
+    });
+
     it("matches with the active keyword", () => {
       expect(filterBy("active: true")).toEqual(["enroll-hotp"]);
       expect(filterBy("active: false")).toEqual(["auth-totp"]);

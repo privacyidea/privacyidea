@@ -234,6 +234,8 @@ def set_event(name=None, event=None, handlermodule=None, action=None, conditions
     existing_event_handler = db.session.scalars(stmt_exists).one_or_none()
 
     if existing_event_handler:
+        if name is not None:
+            existing_event_handler.name = name
         if event is not None:
             existing_event_handler.event = event
         if handlermodule is not None:
