@@ -61,7 +61,7 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { UserNewResolverComponent } from "@components/user/user-new-resolver/user-new-resolver.component";
 import { FilterOption } from "@core/models/filter_value_generic/filter-option";
-import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
+import { FilterValueGeneric, parseFilterTokens } from "@core/models/filter_value_generic/filter-value-generic";
 import { ResolverService } from "@services/resolver/resolver.service";
 import { UserTableActionsComponent } from "./user-table-actions/user-table-actions.component";
 
@@ -149,25 +149,25 @@ export class UserTableComponent implements OnDestroy {
 
   // Keyword-less search terms, applied client-side across all columns of the fully-loaded user list.
   // Keyword segments (e.g. "username: root") keep going to the server via UserService.filterParams.
+  // Both sides parse the raw filter string with the same shared tokenizer so they agree on what is a
+  // keyword value and what is a standalone free-text word.
   readonly freeTextTerms = computed<string[]>(() =>
-    this.userService
-      .apiUserFilter()
-      .freeText.toLowerCase()
-      .split(/\s+/)
-      .filter(Boolean)
+    parseFilterTokens(this.userService.apiUserFilter().filterString.toLowerCase())
+      .filter((token) => token.value === null)
+      .map((token) => token.key)
   );
 
+  // Free-text-filtered users, computed once and shared by both the row list and the total count so the
+  // full list is not filtered twice per change.
+  private readonly filteredUsers = computed<UserData[] | undefined>(() => {
+    const userRes = this.userService.usersResource.hasValue() ? this.userService.usersResource.value() : undefined;
+    if (!userRes) return undefined;
+    return this.applyFreeText(userRes.result?.value ?? [], this.freeTextTerms());
+  });
+
   totalLength: WritableSignal<number> = linkedSignal({
-    source: () => ({
-      userRes: this.userService.usersResource.hasValue() ? this.userService.usersResource.value() : undefined,
-      freeTextTerms: this.freeTextTerms()
-    }),
-    computation: (source, previous) => {
-      if (source.userRes) {
-        return this.applyFreeText(source.userRes.result?.value ?? [], source.freeTextTerms).length;
-      }
-      return previous?.value ?? 0;
-    }
+    source: () => this.filteredUsers(),
+    computation: (filtered, previous) => (filtered ? filtered.length : (previous?.value ?? 0))
   });
   emptyResource: WritableSignal<UserData[]> = linkedSignal({
     source: this.userService.pageSize,
@@ -178,15 +178,12 @@ export class UserTableComponent implements OnDestroy {
   });
   usersDataSource: WritableSignal<MatTableDataSource<UserData>> = linkedSignal({
     source: () => ({
-      userRes: this.userService.usersResource.hasValue() ? this.userService.usersResource.value() : undefined,
-      sort: this.sort(),
-      freeTextTerms: this.freeTextTerms()
+      filtered: this.filteredUsers(),
+      sort: this.sort()
     }),
     computation: (src, prev) => {
       // Skeleton rows (emptyResource) are shown while loading and must not be filtered.
-      const data = src.userRes
-        ? this.applyFreeText(src.userRes.result?.value ?? [], src.freeTextTerms)
-        : (prev?.value?.data ?? this.emptyResource());
+      const data = src.filtered ?? (prev?.value?.data ?? this.emptyResource());
       const sorted = this.clientsideSortUserData([...data], src.sort);
       const ds = new MatTableDataSource(sorted);
       ds.paginator = this.paginator;

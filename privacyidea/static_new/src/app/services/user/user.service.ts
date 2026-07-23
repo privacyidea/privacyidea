@@ -26,6 +26,7 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
 import { PiResponse } from "@app/app.component";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { FilterValue } from "@core/models/filter_value/filter_value";
+import { parseFilterTokens } from "@core/models/filter_value_generic/filter-value-generic";
 import { environment } from "@env/environment";
 import { NotificationService } from "@services/notification/notification.service";
 import { StringUtils } from "@utils/string.utils";
@@ -171,13 +172,16 @@ export class UserService implements UserServiceInterface {
 
   filterParams = computed<Record<string, string>>(() => {
     const allowedFilters = [...this.apiFilterOptions, ...this.advancedApiFilterOptions];
-    const entries = Array.from(this.apiUserFilter().filterMap.entries())
-      .filter(([key]) => allowedFilters.includes(key))
-      .map(([key, value]) => {
-        const v = (value ?? "").toString().trim();
-        return [key, v ? `*${v}*` : v] as const;
+    // Parse with the single-token grammar so only the first word after a `key:` is sent as the
+    // server filter; any trailing words are standalone free-text terms (value === null) and are
+    // filtered client-side across all columns instead of being appended to the keyword value.
+    const entries = parseFilterTokens(this.apiUserFilter().filterString)
+      .filter((token) => token.value !== null && allowedFilters.includes(token.key))
+      .map((token) => {
+        const value = (token.value ?? "").toString().trim();
+        return [token.key, value ? `*${value}*` : value] as const;
       })
-      .filter(([, v]) => StringUtils.validFilterValue(v));
+      .filter(([, value]) => StringUtils.validFilterValue(value));
     return Object.fromEntries(entries) as Record<string, string>;
   });
   readonly apiFilterOptions = apiFilter;

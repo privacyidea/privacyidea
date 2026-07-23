@@ -352,21 +352,20 @@ describe("UserService", () => {
     });
   });
 
-  it("should not include empty filter values in filterParams", () => {
-    userService.apiUserFilter.set({
-      filterMap: new Map([
-        ["username", ""],
-        ["email", "alice@test"],
-        ["givenname", "   "],
-        ["surname", "*"]
-      ])
-    } as Partial<FilterValue> as FilterValue);
+  it("should not include empty or wildcard-only filter values in filterParams", () => {
+    userService.apiUserFilter.set(new FilterValue({ value: "username: email: alice@test surname:*" }));
 
     const params = userService.filterParams();
     expect(params).not.toHaveProperty("username");
-    expect(params).not.toHaveProperty("givenname");
     expect(params).toHaveProperty("email", "*alice@test*");
     expect(params).not.toHaveProperty("surname");
+  });
+
+  it("sends only the first word after a keyword to the server; trailing words are not appended", () => {
+    userService.apiUserFilter.set(new FilterValue({ value: "username: root smith" }));
+
+    const params = userService.filterParams();
+    expect(params).toHaveProperty("username", "*root*");
   });
 
   describe("editableAttributesResource / attributePolicy", () => {

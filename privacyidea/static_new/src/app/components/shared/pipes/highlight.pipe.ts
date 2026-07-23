@@ -37,7 +37,18 @@ export class HighlightPipe implements PipeTransform {
       .join("|");
     // g - global (all occurrences), i - case-insensitive
     const regex = new RegExp(alternation, "gi");
-    const highlighted = this.escapeHtml(value).replace(regex, (match) => `<span class="highlight">${match}</span>`);
+    // Match against the raw value and HTML-escape the matched and unmatched pieces separately. Escaping
+    // the whole string first would let the regex match inside generated entities (e.g. searching "&"
+    // hitting the "&" of "&amp;"), corrupting the output and failing to match terms with HTML metacharacters.
+    let highlighted = "";
+    let lastIndex = 0;
+    for (const match of value.matchAll(regex)) {
+      const start = match.index ?? 0;
+      highlighted += this.escapeHtml(value.slice(lastIndex, start));
+      highlighted += `<span class="highlight">${this.escapeHtml(match[0])}</span>`;
+      lastIndex = start + match[0].length;
+    }
+    highlighted += this.escapeHtml(value.slice(lastIndex));
     return this.sanitizer.sanitize(SecurityContext.HTML, highlighted);
   }
 
