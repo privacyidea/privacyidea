@@ -194,6 +194,15 @@ _ACTIONS_BY_TARGET = {
 }
 
 
+def get_actions_by_target() -> dict[str, list[str]]:
+    """
+    The stage actions each target permits, as ``{target_value: [action_value, ...]}``
+    (see :data:`_ACTIONS_BY_TARGET`).
+    """
+    return {target.value: sorted(action.value for action in actions)
+            for target, actions in _ACTIONS_BY_TARGET.items()}
+
+
 def _validate_target(target) -> "LockoutTarget":
     """
     Validate the policy target and return the matching :class:`LockoutTarget`
