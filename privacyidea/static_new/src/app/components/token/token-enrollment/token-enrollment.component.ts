@@ -385,7 +385,8 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
       username: enrollmentArgs.data.user,
       userRealm: enrollmentArgs.data.realm,
       onlyAddToRealm: enrollmentArgs.data.onlyAddToRealm ?? false,
-      rollover: false
+      rollover: false,
+      showEnrollData: strategy.showEnrollDataInLastStep
     });
 
     // Complete enrollment

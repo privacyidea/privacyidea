@@ -91,6 +91,10 @@ describe("EnrollPushComponent", () => {
     expect(component).toBeTruthy();
   });
 
+  it("does not show the enrollment data in the last step dialog", () => {
+    expect(component.showEnrollDataInLastStep).toBe(false);
+  });
+
   it("buildEnrollmentArgs returns a push-typed payload bound to the push mapper", () => {
     const args = component.buildEnrollmentArgs({ realm: "r", username: "u" } as TokenEnrollmentData);
     expect(args).not.toBeNull();

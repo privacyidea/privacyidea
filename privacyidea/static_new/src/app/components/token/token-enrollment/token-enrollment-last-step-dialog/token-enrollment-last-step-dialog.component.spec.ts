@@ -79,6 +79,38 @@ describe("TokenEnrollmentLastStepDialogComponent", () => {
     expect(component.title()).toBe("Token Successfully Enrolled");
   });
 
+  it("should render the enrollment data when showEnrollData is not set", () => {
+    expect(fixture.nativeElement.querySelector("app-token-enrollment-data")).toBeTruthy();
+  });
+
+  it("should not render the QR code when showEnrollData is false", () => {
+    mockDialogData.showEnrollData = false;
+    mockDialogData.tokenType = "push";
+    mockDialogData.response!.detail = {
+      type: "push",
+      serial: "PIPU0001",
+      pushurl: {
+        description: "Push URL",
+        img: "data:image/png;base64,qr",
+        value: "otpauth://pipush/PIPU0001"
+      }
+    };
+    fixture.destroy();
+    fixture = TestBed.createComponent(TokenEnrollmentLastStepDialogComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector("app-token-enrollment-data")).toBeNull();
+    expect(fixture.nativeElement.querySelector("img")).toBeNull();
+    expect(fixture.nativeElement.querySelector("app-token-enrolled-text")).toBeTruthy();
+    expect(component.title()).toBe("Token Successfully Enrolled");
+    expect(
+      Array.from(fixture.nativeElement.querySelectorAll("button")).some((button) =>
+        (button as HTMLButtonElement).textContent?.includes("Close")
+      )
+    ).toBe(true);
+  });
+
   it("should render title for rollover", () => {
     mockDialogData.rollover = true;
     fixture = TestBed.createComponent(TokenEnrollmentLastStepDialogComponent);

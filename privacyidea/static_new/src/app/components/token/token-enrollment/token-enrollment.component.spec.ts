@@ -365,6 +365,56 @@ describe("TokenEnrollmentComponent", () => {
         );
       });
 
+      it("Strategy with showEnrollDataInLastStep false hides the enroll data in the last step dialog", async () => {
+        tokenService.selectedTokenType.set({ key: "push", name: "Push", info: "", text: "" });
+        const enrollmentArgsGetterFn = jest.fn().mockReturnValue({
+          data: { type: "push" },
+          mapper: jest.fn().mockReturnValue({ type: "push" }) as unknown as TokenApiPayloadMapper<TokenEnrollmentData>
+        });
+        installStrategy(component, {
+          buildEnrollmentArgs: enrollmentArgsGetterFn,
+          showEnrollDataInLastStep: false
+        });
+
+        const enrollResponse = {
+          result: { status: true },
+          detail: { serial: "PIPU0001", rollout_state: "enrolled", pushurl: { img: "img", value: "url" } }
+        };
+        tokenService.enrollToken.mockReturnValueOnce(of(enrollResponse));
+
+        await component.enrollToken();
+
+        expect(component.enrolledDialogData()?.showEnrollData).toBe(false);
+        expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+          expect.objectContaining({
+            component: TokenEnrollmentLastStepDialogComponent,
+            data: expect.objectContaining({ showEnrollData: false })
+          })
+        );
+      });
+
+      it("Strategy with showEnrollDataInLastStep true keeps the enroll data in the last step dialog", async () => {
+        tokenService.selectedTokenType.set({ key: "totp", name: "TOTP", info: "", text: "" });
+        const enrollmentArgsGetterFn = jest.fn().mockReturnValue({
+          data: { type: "totp" },
+          mapper: jest.fn().mockReturnValue({ type: "totp" }) as unknown as TokenApiPayloadMapper<TokenEnrollmentData>
+        });
+        installStrategy(component, {
+          buildEnrollmentArgs: enrollmentArgsGetterFn,
+          showEnrollDataInLastStep: true
+        });
+
+        const enrollResponse = {
+          result: { status: true },
+          detail: { serial: "TOTP0123456", googleurl: { img: "", value: "" } }
+        };
+        tokenService.enrollToken.mockReturnValueOnce(of(enrollResponse));
+
+        await component.enrollToken();
+
+        expect(component.enrolledDialogData()?.showEnrollData).toBe(true);
+      });
+
       it("handles clickEnroll rejection by showing error snack", async () => {
         tokenService.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
         component.setPin.set("1111");

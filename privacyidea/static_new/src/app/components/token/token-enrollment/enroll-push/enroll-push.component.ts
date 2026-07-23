@@ -56,6 +56,8 @@ export class EnrollPushComponent extends EnrollTokenBase<PushEnrollmentData> {
 
   firstStepDialogRef: MatDialogRef<AbstractDialogComponent, boolean> | null = null;
 
+  override readonly showEnrollDataInLastStep: boolean = false;
+
   buildEnrollmentArgs(basicOptions: TokenEnrollmentData): EnrollmentArgs<PushEnrollmentData> | null {
     const enrollmentData: PushEnrollmentData = {
       ...basicOptions,
