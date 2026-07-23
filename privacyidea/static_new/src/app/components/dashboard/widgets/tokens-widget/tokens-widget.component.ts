@@ -59,7 +59,7 @@ export class TokensWidgetComponent extends DashboardWidget implements OnInit {
   static override readonly icon = "shield";
   static override readonly headerIcon = TokensWidgetIconComponent;
   static override readonly defaultSize: WidgetSize = { cols: 6, rows: 5 };
-  static override readonly minSize: WidgetSize = { cols: 4, rows: 5 };
+  static override readonly minSize: WidgetSize = { cols: 4, rows: 3 };
   static override readonly maxSize: WidgetSize = { cols: 12, rows: 9 };
 
   protected readonly routePaths = ROUTE_PATHS;
@@ -109,11 +109,13 @@ export class TokensWidgetComponent extends DashboardWidget implements OnInit {
       if (!ref) {
         return;
       }
+      if (ref.error()) {
+        this.state.set("error");
+        return;
+      }
       const value = ref.value();
       if (value !== undefined) {
         this.state.set(Object.values(value).every((response) => response.result?.status === true) ? "ready" : "error");
-      } else if (ref.error()) {
-        this.state.set("error");
       } else {
         this.state.set("loading");
       }

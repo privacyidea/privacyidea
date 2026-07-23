@@ -30,7 +30,10 @@ export type WidgetTypeId =
   | "administration"
   | "policies"
   | "events"
-  | "subscriptions";
+  | "subscriptions"
+  | "certificate-health"
+  | "resolver-timing"
+  | "notification-delivery";
 
 export interface WidgetSize {
   cols: number;

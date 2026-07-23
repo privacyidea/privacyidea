@@ -150,6 +150,66 @@ describe("DashboardDataStore", () => {
     expect(factory).toHaveBeenCalledTimes(2);
   });
 
+  it("refreshAll() is a no-op on an empty store", () => {
+    expect(() => store.refreshAll()).not.toThrow();
+  });
+
+  it("refreshAll() re-invokes the factory of every tracked key and keeps the stale value visible meanwhile", () => {
+    const tokensFactory = jest.fn(() => of(1));
+    const eventsFactory = jest.fn(() => of("a"));
+    const tokensRef = store.load("dashboard:tokens", tokensFactory);
+    const eventsRef = store.load("dashboard:events", eventsFactory);
+
+    const subject = new Subject<number>();
+    tokensFactory.mockReturnValue(subject.asObservable());
+
+    store.refreshAll();
+
+    expect(tokensFactory).toHaveBeenCalledTimes(2);
+    expect(eventsFactory).toHaveBeenCalledTimes(2);
+    // old value stays visible while the refresh is in flight
+    expect(tokensRef.value()).toBe(1);
+    expect(tokensRef.revalidating()).toBe(true);
+
+    subject.next(2);
+    subject.complete();
+    expect(tokensRef.value()).toBe(2);
+    expect(tokensRef.revalidating()).toBe(false);
+    expect(eventsRef.value()).toBe("a");
+  });
+
+  it("refreshAll() raises error(), retains the stale value and resets revalidating/in-flight on failure", () => {
+    const factory = jest.fn(() => of(1));
+    const ref = store.load("k", factory);
+    expect(ref.value()).toBe(1);
+    expect(ref.error()).toBe(false);
+
+    factory.mockReturnValueOnce(throwError(() => new Error("boom")));
+    store.refreshAll();
+
+    expect(ref.error()).toBe(true);
+    // stale value survives the failed refresh, revalidating is cleared via finalize
+    expect(ref.value()).toBe(1);
+    expect(ref.revalidating()).toBe(false);
+
+    // in-flight was reset by finalize, so the next refresh runs the factory again
+    factory.mockReturnValueOnce(of(2));
+    store.refreshAll();
+    expect(factory).toHaveBeenCalledTimes(3);
+    expect(ref.value()).toBe(2);
+    expect(ref.error()).toBe(false);
+  });
+
+  it("refreshAll() does not restart an entry that is still in flight", () => {
+    const subject = new Subject<number>();
+    const factory = jest.fn(() => subject.asObservable());
+    store.load("k", factory);
+
+    store.refreshAll();
+
+    expect(factory).toHaveBeenCalledTimes(1);
+  });
+
   it("does not refetch when once is set and a value is already cached", () => {
     const factory = jest.fn(() => of(1));
     const ref1 = store.load("k", factory);

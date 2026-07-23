@@ -37,6 +37,51 @@ export interface DeleteUserCacheResult {
   deleted: number;
 }
 
+export type CertificateStatus = "ok" | "warning" | "critical" | "expired" | "error";
+
+export interface CertificateHealthEntry {
+  source: string;
+  name: string;
+  host: string | null;
+  tls_mode: string | null;
+  subject: string | null;
+  issuer: string | null;
+  not_after: string | null;
+  days_remaining: number | null;
+  error: string | null;
+  status: CertificateStatus;
+}
+
+export interface ResolverTimingEntry {
+  labels: { resolver: string; resolver_type: string; op: string };
+  count: number;
+  avg: number | null;
+  p50: number | null;
+  p95: number | null;
+  max: number | null;
+  buckets: [number, number][];
+}
+
+export interface NotificationChannelEntry {
+  key: string;
+  ok: number;
+  failed: number;
+  error: number;
+  total: number;
+  avg?: number;
+  p50?: number;
+  p95?: number;
+  max?: number;
+  duration_count?: number;
+}
+
+export interface NotificationDeliveryHealth {
+  push: NotificationChannelEntry[];
+  sms: NotificationChannelEntry[];
+  email: NotificationChannelEntry[];
+  since_seconds: number;
+}
+
 /**
  * Frontend-supplied default values that accompany the system config response.
  * Backend `GET /system/` returns `result.value` as `Record<string, string>`;
@@ -90,6 +135,12 @@ export interface SystemServiceInterface {
   deleteUserCache(): Observable<PiResponse<DeleteUserCacheResult>>;
 
   getDocumentation(): Observable<string>;
+
+  getCertificateHealth(): Observable<PiResponse<CertificateHealthEntry[]>>;
+
+  getResolverTiming(sinceSeconds?: number): Observable<PiResponse<ResolverTimingEntry[]>>;
+
+  getNotificationDelivery(sinceSeconds?: number): Observable<PiResponse<NotificationDeliveryHealth>>;
 }
 
 @Injectable()
@@ -218,6 +269,26 @@ export class SystemService implements SystemServiceInterface {
     return this.http.get(`${this.systemBaseUrl}documentation`, {
       headers: this.authService.getHeaders(),
       responseType: "text"
+    });
+  }
+
+  getCertificateHealth(): Observable<PiResponse<CertificateHealthEntry[]>> {
+    return this.http.get<PiResponse<CertificateHealthEntry[]>>(`${this.systemBaseUrl}health/certificates`, {
+      headers: this.authService.getHeaders()
+    });
+  }
+
+  getResolverTiming(sinceSeconds = 3600): Observable<PiResponse<ResolverTimingEntry[]>> {
+    return this.http.get<PiResponse<ResolverTimingEntry[]>>(`${this.systemBaseUrl}health/resolver_timing`, {
+      headers: this.authService.getHeaders(),
+      params: { since_seconds: sinceSeconds }
+    });
+  }
+
+  getNotificationDelivery(sinceSeconds = 3600): Observable<PiResponse<NotificationDeliveryHealth>> {
+    return this.http.get<PiResponse<NotificationDeliveryHealth>>(`${this.systemBaseUrl}health/notification_delivery`, {
+      headers: this.authService.getHeaders(),
+      params: { since_seconds: sinceSeconds }
     });
   }
 }

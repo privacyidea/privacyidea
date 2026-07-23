@@ -1,0 +1,122 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+<app-widget-state [state]="state()">
+  <div class="table-container">
+    @if (sections().push.length > 0) {
+      <h4 i18n>Push</h4>
+      <table class="delivery-table">
+        <thead>
+          <tr>
+            <th>
+              <app-table-sort-header key="key" [sortState]="pushSort" label="Gateway" i18n-label />
+            </th>
+            <th matTooltip="Successful deliveries within the last hour." i18n-matTooltip>
+              <app-table-sort-header key="ok" [sortState]="pushSort" label="OK" i18n-label [hasHintTooltip]="true" />
+            </th>
+            <th matTooltip="Failed deliveries within the last hour." i18n-matTooltip>
+              <app-table-sort-header key="failed" [sortState]="pushSort" label="Failed" i18n-label [hasHintTooltip]="true" />
+            </th>
+            <th matTooltip="Delivery errors within the last hour." i18n-matTooltip>
+              <app-table-sort-header key="error" [sortState]="pushSort" label="Error" i18n-label [hasHintTooltip]="true" />
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (entry of pushRows(); track entry.key) {
+            <tr>
+              <td>{{ entry.key }}</td>
+              <td>{{ entry.ok }}</td>
+              <td>{{ entry.failed }}</td>
+              <td><span [class]="badgeClass(entry)">{{ entry.error }}</span></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+
+    @if (sections().sms.length > 0) {
+      <h4 i18n>SMS</h4>
+      <table class="delivery-table">
+        <thead>
+          <tr>
+            <th>
+              <app-table-sort-header key="key" [sortState]="smsSort" label="Gateway" i18n-label />
+            </th>
+            <th matTooltip="Successful deliveries within the last hour." i18n-matTooltip>
+              <app-table-sort-header key="ok" [sortState]="smsSort" label="OK" i18n-label [hasHintTooltip]="true" />
+            </th>
+            <th matTooltip="Failed deliveries within the last hour." i18n-matTooltip>
+              <app-table-sort-header key="failed" [sortState]="smsSort" label="Failed" i18n-label [hasHintTooltip]="true" />
+            </th>
+            <th matTooltip="Delivery errors within the last hour." i18n-matTooltip>
+              <app-table-sort-header key="error" [sortState]="smsSort" label="Error" i18n-label [hasHintTooltip]="true" />
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (entry of smsRows(); track entry.key) {
+            <tr>
+              <td>{{ entry.key }}</td>
+              <td>{{ entry.ok }}</td>
+              <td>{{ entry.failed }}</td>
+              <td><span [class]="badgeClass(entry)">{{ entry.error }}</span></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+
+    @if (sections().email.length > 0) {
+      <h4 i18n>Email</h4>
+      <table class="delivery-table">
+        <thead>
+          <tr>
+            <th>
+              <app-table-sort-header key="key" [sortState]="emailSort" label="Identifier" i18n-label />
+            </th>
+            <th matTooltip="Successful deliveries within the last hour." i18n-matTooltip>
+              <app-table-sort-header key="ok" [sortState]="emailSort" label="OK" i18n-label [hasHintTooltip]="true" />
+            </th>
+            <th matTooltip="Failed deliveries within the last hour." i18n-matTooltip>
+              <app-table-sort-header key="failed" [sortState]="emailSort" label="Failed" i18n-label [hasHintTooltip]="true" />
+            </th>
+            <th matTooltip="Delivery errors within the last hour." i18n-matTooltip>
+              <app-table-sort-header key="error" [sortState]="emailSort" label="Error" i18n-label [hasHintTooltip]="true" />
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (entry of emailRows(); track entry.key) {
+            <tr>
+              <td>{{ entry.key }}</td>
+              <td>{{ entry.ok }}</td>
+              <td>{{ entry.failed }}</td>
+              <td><span [class]="badgeClass(entry)">{{ entry.error }}</span></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+
+    @if (sections().push.length === 0 && sections().sms.length === 0 && sections().email.length === 0) {
+      <p i18n>No notification deliveries in the last hour.</p>
+    }
+  </div>
+</app-widget-state>

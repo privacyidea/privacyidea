@@ -23,7 +23,7 @@ import { environment } from "@env/environment";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
-import { lastValueFrom } from "rxjs";
+import { lastValueFrom, Observable } from "rxjs";
 
 export interface SmtpServer {
   identifier: string;
@@ -54,6 +54,8 @@ export interface SmtpServiceInterface {
   testSmtpServer(params: SmtpServer & { recipient: string }): Promise<boolean>;
 
   deleteSmtpServer(identifier: string): Promise<void>;
+
+  listSmtpServers(): Observable<PiResponse<SmtpServers>>;
 }
 
 @Injectable()
@@ -147,5 +149,10 @@ export class SmtpService implements SmtpServiceInterface {
     }
   }
 
+  listSmtpServers(): Observable<PiResponse<SmtpServers>> {
+    return this.http.get<PiResponse<SmtpServers>>(this.smtpServerBaseUrl, {
+      headers: this.authService.getHeaders()
+    });
+  }
 }
 

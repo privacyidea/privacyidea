@@ -202,7 +202,7 @@ describe("DashboardComponent", () => {
     it("should clamp an undersized stored widget up to its min for display", () => {
       const tiny: WidgetInstance = { id: "x", type: "tokens", x: 0, y: 0, cols: 1, rows: 1 };
       expect(component['effectiveCols'](tiny)).toBe(4);
-      expect(component['effectiveRows'](tiny)).toBe(5);
+      expect(component['effectiveRows'](tiny)).toBe(3);
     });
 
     it("should clamp display width to the field's right edge", () => {
@@ -241,12 +241,12 @@ describe("DashboardComponent", () => {
       expect(component['resizePreview']()?.cols).toBe(12);
     });
 
-    it("should clamp the height down to the effective minimum (tokens: 5 rows)", () => {
+    it("should clamp the height down to the effective minimum (tokens: 3 rows)", () => {
       const widget = firstWidget();
       component['onResizeStart'](widget, "s", pointerEvent({ clientY: 1000 }));
       component['onResizeMove'](pointerEvent({ clientY: 0 }));
 
-      expect(component['resizePreview']()?.rows).toBe(5);
+      expect(component['resizePreview']()?.rows).toBe(3);
     });
 
     it("should clamp the height up to the widget's max (tokens: 9 rows)", () => {

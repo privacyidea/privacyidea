@@ -1,0 +1,68 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+<app-widget-state [state]="state()">
+  <div class="table-container">
+    <table class="cert-health-table">
+      <thead>
+        <tr>
+          <th>
+            <app-table-sort-header key="source" [sortState]="sort" label="Source" i18n-label />
+          </th>
+          <th>
+            <app-table-sort-header key="name" [sortState]="sort" label="Name" i18n-label />
+          </th>
+          <th>
+            <app-table-sort-header key="daysRemaining" [sortState]="sort" label="Days left" i18n-label />
+          </th>
+          <th>
+            <app-table-sort-header key="status" [sortState]="sort" label="Status" i18n-label />
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (entry of sortedEntries(); track entry.source + entry.name) {
+          <tr>
+            <td [appTruncationTooltip]="entry.source">{{ entry.source }}</td>
+            <td [appTruncationTooltip]="entry.name">
+              @if (resolverLink(entry); as link) {
+                <a [routerLink]="link">{{ entry.name }}</a>
+              } @else {
+                {{ entry.name }}
+              }
+            </td>
+            <td
+              [matTooltip]="entry.not_after ? (entry.not_after | date: 'medium') : ''"
+              [matTooltipDisabled]="!entry.not_after"
+            >
+              {{ entry.days_remaining !== null ? entry.days_remaining : "—" }}
+            </td>
+            <td>
+              <span [class]="badgeClass(entry.status)">{{ entry.status }}</span>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="4" i18n>No certificates to monitor.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</app-widget-state>

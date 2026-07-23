@@ -30,7 +30,27 @@
                 >{{ type.name }}</a
               >
             </td>
-            <td>{{ type.count }}</td>
+            <td>
+              @if (type.count === null) {
+                <span
+                  class="count-unknown"
+                  i18n>
+                  unknown
+                </span>
+              } @else if (type.stale) {
+                <span class="count-stale">
+                  {{ type.count }}
+                  <mat-icon
+                    class="stale-marker"
+                    matTooltip="Could not be refreshed, showing the previous value."
+                    i18n-matTooltip>
+                    history
+                  </mat-icon>
+                </span>
+              } @else {
+                {{ type.count }}
+              }
+            </td>
           </tr>
         }
       </tbody>

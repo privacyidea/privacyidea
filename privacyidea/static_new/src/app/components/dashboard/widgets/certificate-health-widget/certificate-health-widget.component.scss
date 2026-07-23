@@ -32,11 +32,32 @@
   width: 100%;
 }
 
-.admin-table {
+.cert-health-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 
   @include widget.sortable-headers;
+
+  th:nth-child(1),
+  td:nth-child(1) {
+    width: 26%;
+  }
+
+  th:nth-child(2),
+  td:nth-child(2) {
+    width: 34.75%;
+  }
+
+  th:nth-child(3),
+  td:nth-child(3) {
+    width: 21.75%;
+  }
+
+  th:nth-child(4),
+  td:nth-child(4) {
+    width: 17.5%;
+  }
 
   th,
   td {
@@ -46,7 +67,6 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 0;
   }
 
   th {

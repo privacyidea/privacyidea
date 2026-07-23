@@ -16,17 +16,36 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { signal } from "@angular/core";
-import { PiResponse } from "@app/app.component";
-import { SmtpServer, SmtpServers } from "@services/smtp/smtp.service";
-import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
-import { of } from "rxjs";
 
-export class MockSmtpService {
-  smtpServerResource = new MockHttpResourceRef<PiResponse<SmtpServers> | undefined>(undefined);
-  smtpServers = signal<SmtpServer[]>([]);
-  postSmtpServer = jest.fn(async (): Promise<void> => Promise.resolve());
-  testSmtpServer = jest.fn(async (): Promise<boolean> => Promise.resolve(true));
-  deleteSmtpServer = jest.fn(async (): Promise<void> => Promise.resolve());
-  listSmtpServers = jest.fn().mockReturnValue(of(MockPiResponse.fromValue<SmtpServers>({})));
+:host {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--quarter-global-padding);
+  max-width: 100%;
+}
+
+.sort-header-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sort-button.mat-mdc-icon-button.mat-mdc-button-base {
+  --mdc-icon-button-state-layer-size: 24px;
+  --mat-icon-button-state-layer-size: 24px;
+  --mdc-icon-button-icon-size: 20px;
+  height: 24px;
+  width: 24px;
+  min-width: 24px;
+  padding: 0;
+  flex: none;
+  justify-content: center;
+
+  .mat-icon {
+    justify-content: center;
+  }
+
+  .mat-mdc-button-touch-target {
+    height: 24px;
+    width: 24px;
+  }
 }

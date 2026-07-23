@@ -17,34 +17,50 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-@mixin host {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+@use "../widget";
+
+:host {
+  @include widget.host;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.table-container {
+  box-sizing: border-box;
+  overflow: auto;
   height: 100%;
+  width: 100%;
 }
 
-@mixin sortable-headers {
-  th {
-    padding-block: 0;
-    white-space: nowrap;
-  }
-}
-
-@mixin stat-table($padding-block: var(--quarter-global-padding)) {
+.resolver-timing-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 
+  @include widget.sortable-headers;
+
+  th,
   td {
-    padding: $padding-block var(--global-padding);
-
-    &:nth-child(2) {
-      text-align: center;
-      font-weight: 600;
-    }
+    text-align: left;
+    padding: calc(var(--global-padding) / 2) var(--global-padding);
+    border-bottom: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 0;
   }
 
-  tr:not(:last-child) td {
-    border-bottom: 1px solid var(--mat-sys-outline-variant);
+  th:nth-child(2),
+  td:nth-child(2) {
+    width: 18%;
+  }
+
+  th {
+    font-weight: 600;
+    opacity: 0.7;
+  }
+
+  tr:last-child td {
+    border-bottom: none;
   }
 }
