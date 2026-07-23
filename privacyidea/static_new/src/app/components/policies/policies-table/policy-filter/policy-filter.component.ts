@@ -17,7 +17,18 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { AfterViewInit, Component, computed, ElementRef, Input, input, output, signal, viewChild } from "@angular/core";
+import {
+  afterNextRender,
+  AfterViewInit,
+  Component,
+  computed,
+  ElementRef,
+  Input,
+  input,
+  output,
+  signal,
+  viewChild
+} from "@angular/core";
 import { MatInputModule } from "@angular/material/input";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
@@ -59,6 +70,11 @@ export class PolicyFilterComponent implements AfterViewInit {
   public lastFilter: FilterValueGeneric<PolicyDetail> | null = null;
 
   private _viewInitialized = false;
+
+  constructor() {
+    // Autofocus the filter so the user can type immediately on entering the page.
+    afterNextRender(() => this.focusInput());
+  }
 
   /**
    * Manually updates the filter state.

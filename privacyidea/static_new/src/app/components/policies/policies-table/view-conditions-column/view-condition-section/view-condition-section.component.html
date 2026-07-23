@@ -6,9 +6,7 @@
   </span>
   <div class="conditions-chips-container">
     @for (value of values(); track value) {
-      <div>
-        {{ value }}
-      </div>
+      <div [innerHTML]="value | highlight: highlightTerms()"></div>
     }
     @if (marker()) {
       <div class="marker-chip">
