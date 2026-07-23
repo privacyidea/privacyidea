@@ -12,7 +12,7 @@ from privacyidea.config import TestingConfig
 from privacyidea.lib.auth import create_db_admin
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import set_privacyidea_config, SYSCONF
-from privacyidea.lib.error import ResourceNotFoundError
+from privacyidea.lib.error import ResourceNotFoundError, Error
 from privacyidea.lib.event import set_event, delete_event
 from privacyidea.lib.eventhandler.base import CONDITION
 from privacyidea.lib.policies.actions import PolicyAction
@@ -1301,7 +1301,7 @@ class AuthApiTestCase(MyApiTestCase):
         self.assertEqual(401, response.status_code, response)
         result = response.json.get("result")
         error = result.get("error")
-        self.assertEqual(4031, error.get("code"))
+        self.assertEqual(Error.AUTHENTICATE, error.get("code"))
         self.assertEqual("Authentication failed.", error.get("message"))
         self.assertEqual(2, len(error))
         detail = response.json.get("detail")
