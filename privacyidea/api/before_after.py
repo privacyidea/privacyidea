@@ -79,7 +79,7 @@ from .serviceid import serviceid_blueprint
 from .healthcheck import healthz_blueprint
 from .info import info_blueprint
 from privacyidea.api.lib.postpolicy import postrequest, sign_response, hide_version
-from ..lib.error import (PrivacyIDEAError,
+from ..lib.error import (PrivacyIDEAError, Error,
                          AuthError, UserError,
                          PolicyError, ResourceNotFoundError)
 from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent, AUTH_RESPONSE
@@ -524,8 +524,12 @@ def auth_error(error):
                                       user_object=request.User if hasattr(request, 'User') else None).any()
             if hide_message:
                 error.message = _("Authentication failed.")
-                error.details["message"] = error.message
-                error.details.pop("loginmode", None)
+                # Remap to the generic AUTHENTICATE id, so a masked failure is
+                # indistinguishable from any other unspecified auth failure.
+                error.id = Error.AUTHENTICATE
+                # Replace the details completely, so future additions to the
+                # details cannot accidentally leak information either.
+                error.details = {"message": error.message}
 
         g.audit_object.add_to_log({"info": message}, add_with_comma=True)
 
