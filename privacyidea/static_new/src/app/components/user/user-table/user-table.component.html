@@ -74,9 +74,9 @@
                     <button
                       (click)="onFilterClick(column.key)"
                       class="filter-button"
-                      i18n-matTooltip
                       mat-icon-button
-                      matTooltip="Filter by {{ column.label }}"
+                      [matTooltip]="filterColumnTooltip(column.label)"
+                      matTooltipClass="filter-hint-tooltip"
                       type="button">
                       <mat-icon class="keyword-button-icon margin-left-0">
                         {{ getFilterIconName(column.key) }}

@@ -21,13 +21,13 @@ import { filterColumnHint, filterInputHint, filterKeywordHint } from "./filter-h
 describe("filterInputHint", () => {
   it("only states what the placeholder does not already show", () => {
     expect(filterInputHint()).toBe(
-      'Quote values with spaces or colons: description: "note: 2fa"\nWildcard: *\nCase-insensitive'
+      'Quote values with spaces or colons: description: "note: 2fa"\nWildcard: * where partial match is supported\nCase-insensitive'
     );
   });
 
   it("hedges the case note where the backend does not normalise case", () => {
     expect(filterInputHint({ mayBeCaseSensitive: true })).toBe(
-      'Quote values with spaces or colons: description: "note: 2fa"\nWildcard: *\nMostly case-insensitive'
+      'Quote values with spaces or colons: description: "note: 2fa"\nWildcard: * where partial match is supported\nMostly case-insensitive'
     );
   });
 });
@@ -43,8 +43,10 @@ describe("filterKeywordHint", () => {
 });
 
 describe("filterColumnHint", () => {
-  it("stays bare when the keyword has no deviation to report", () => {
-    expect(filterColumnHint("Description", { exactMatch: false, isBoolean: false })).toBe("Filter by Description");
+  it("names partial matching where the value is wrapped in wildcards", () => {
+    expect(filterColumnHint("Description", { exactMatch: false, isBoolean: false })).toBe(
+      "Filter by Description\npartial match"
+    );
   });
 
   it("names exact matching only where it applies", () => {
@@ -53,7 +55,7 @@ describe("filterColumnHint", () => {
 
   it("hedges keywords the database decides on", () => {
     expect(filterColumnHint("Serial", { exactMatch: false, isBoolean: false, caseNote: "usually-insensitive" })).toBe(
-      "Filter by Serial\nusually case-insensitive"
+      "Filter by Serial\npartial match, usually case-insensitive"
     );
   });
 
@@ -65,7 +67,7 @@ describe("filterColumnHint", () => {
 
   it("states plain case sensitivity", () => {
     expect(filterColumnHint("x", { exactMatch: false, isBoolean: false, caseNote: "sensitive" })).toBe(
-      "Filter by x\ncase-sensitive"
+      "Filter by x\npartial match, case-sensitive"
     );
   });
 

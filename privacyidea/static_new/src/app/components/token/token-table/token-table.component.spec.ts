@@ -486,14 +486,16 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     });
 
     it("passes the per-keyword case note through", () => {
-      expect(table.filterColumnTooltip("Serial", "serial")).toBe("Filter by Serial\nusually case-insensitive");
+      expect(table.filterColumnTooltip("Serial", "serial")).toBe(
+        "Filter by Serial\npartial match, usually case-insensitive"
+      );
       expect(table.filterColumnTooltip("infokey & infovalue", "infokey & infovalue")).toBe(
-        "Filter by infokey & infovalue\nusually case-sensitive"
+        "Filter by infokey & infovalue\npartial match, usually case-sensitive"
       );
     });
 
-    it("stays bare for keywords without any deviation", () => {
-      expect(table.filterColumnTooltip("Description", "description")).toBe("Filter by Description");
+    it("names partial matching for keywords without further deviation", () => {
+      expect(table.filterColumnTooltip("Description", "description")).toBe("Filter by Description\npartial match");
     });
   });
 });

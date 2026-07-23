@@ -32,7 +32,7 @@ export function filterInputHint(options: FilterInputHintOptions = {}): string {
   if (options.supportsKeywords ?? true) {
     lines.push($localize`Quote values with spaces or colons: description: "note: 2fa"`);
   }
-  lines.push($localize`Wildcard: *`);
+  lines.push($localize`Wildcard: * where partial match is supported`);
   lines.push(options.mayBeCaseSensitive ? $localize`Mostly case-insensitive` : $localize`Case-insensitive`);
   return lines.join("\n");
 }
@@ -74,13 +74,11 @@ export function filterColumnHint(label: string, semantics: FilterKeywordSemantic
     return `${title}\n` + $localize`true or false`;
   }
   const parts: string[] = [];
-  if (semantics.exactMatch) {
-    parts.push($localize`exact match`);
-  }
+  parts.push(semantics.exactMatch ? $localize`exact match` : $localize`partial match`);
   if (semantics.caseNote) {
     parts.push(caseNoteText(semantics.caseNote));
   }
-  return parts.length ? `${title}\n${parts.join(", ")}` : title;
+  return `${title}\n${parts.join(", ")}`;
 }
 
 function caseNoteText(note: FilterCaseNote): string {

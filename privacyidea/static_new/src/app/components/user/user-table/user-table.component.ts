@@ -45,7 +45,7 @@ import {
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { UserData, UserService, UserServiceInterface } from "@services/user/user.service";
-import { filterInputHint, filterKeywordHint } from "@utils/filter-hint.utils";
+import { filterColumnHint, filterInputHint, filterKeywordHint } from "@utils/filter-hint.utils";
 
 import { NgClass } from "@angular/common";
 import { MatIconButton } from "@angular/material/button";
@@ -216,6 +216,10 @@ export class UserTableComponent implements OnDestroy {
       currentValue: this.userService.apiUserFilter()
     });
     this.userService.apiUserFilter.set(newValue);
+  }
+
+  filterColumnTooltip(label: string): string {
+    return filterColumnHint(label, { exactMatch: false, isBoolean: false, caseNote: "usually-insensitive" });
   }
 
   isFilterSelected(filter: string): boolean {

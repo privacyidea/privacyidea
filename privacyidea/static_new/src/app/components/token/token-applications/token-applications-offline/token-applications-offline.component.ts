@@ -26,6 +26,8 @@ import { MatPaginatorModule } from "@angular/material/paginator";
 import { MatFormField, MatLabel } from "@angular/material/select";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTabsModule } from "@angular/material/tabs";
+import { MatTooltipModule } from "@angular/material/tooltip";
+import { MatHint } from "@angular/material/form-field";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { TokenApplicationsActionsComponent } from "@components/token/token-applications/token-applications-actions/token-applications-actions.component";
@@ -33,6 +35,7 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { MachineService, MachineServiceInterface, TokenApplication } from "@services/machine/machine.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { filterColumnHint, filterInputHint, filterKeywordHint } from "@utils/filter-hint.utils";
 
 @Component({
   selector: "app-token-applications-offline",
@@ -49,7 +52,9 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
     ClearableInputComponent,
     MatIconModule,
     MatButtonModule,
-    TokenApplicationsActionsComponent
+    TokenApplicationsActionsComponent,
+    MatTooltipModule,
+    MatHint
   ],
   templateUrl: "./token-applications-offline.component.html",
   styleUrls: ["./token-applications-offline.component.scss"]
@@ -65,6 +70,8 @@ export class TokenApplicationsOfflineComponent {
   length = computed(() => this.machineService.tokenApplications()?.length ?? 0);
   displayedColumns: string[] = this.columnsKeyMap.map((column) => column.key);
   sort = this.machineService.sort;
+  readonly filterHint = filterInputHint({ mayBeCaseSensitive: true });
+  readonly filterKeywordHintText = filterKeywordHint(this.machineService.offlineApiFilter);
 
   dataSource = computed(() => {
     const data = this.machineService.tokenApplications();
@@ -78,6 +85,10 @@ export class TokenApplicationsOfflineComponent {
 
   getObjectStrings(options: object) {
     return Object.entries(options).map(([key, value]) => `${key}: ${value}`);
+  }
+
+  filterColumnTooltip(label: string, keyword: string): string {
+    return filterColumnHint(label, { exactMatch: keyword !== "serial", isBoolean: false });
   }
 
   getFilterIconName(keyword: string): string {
