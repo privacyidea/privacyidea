@@ -368,6 +368,13 @@ describe("UserService", () => {
     expect(params).toHaveProperty("username", "*root*");
   });
 
+  it("normalizes keyword case so mixed-case keys still produce a server filter", () => {
+    userService.apiUserFilter.set(new FilterValue({ value: "UserName: root" }));
+
+    const params = userService.filterParams();
+    expect(params).toHaveProperty("username", "*root*");
+  });
+
   describe("editableAttributesResource / attributePolicy", () => {
     it("attributePolicy falls back to default when resource empty", () => {
       expect(userService.attributePolicy()).toEqual({ delete: [], set: {} });

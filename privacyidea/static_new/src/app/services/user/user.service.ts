@@ -176,12 +176,15 @@ export class UserService implements UserServiceInterface {
     // server filter; any trailing words are standalone free-text terms (value === null) and are
     // filtered client-side across all columns instead of being appended to the keyword value.
     const entries = parseFilterTokens(this.apiUserFilter().filterString)
-      .filter((token) => token.value !== null && allowedFilters.includes(token.key))
+      .filter((token) => token.value !== null)
       .map((token) => {
+        // Normalize the keyword to lower case so mixed-case input (e.g. "UserName:") still matches
+        // the allowed-filter list and the emitted API param key stays canonical.
+        const key = token.key.toLowerCase();
         const value = (token.value ?? "").toString().trim();
-        return [token.key, value ? `*${value}*` : value] as const;
+        return [key, value ? `*${value}*` : value] as const;
       })
-      .filter(([, value]) => StringUtils.validFilterValue(value));
+      .filter(([key, value]) => allowedFilters.includes(key) && StringUtils.validFilterValue(value));
     return Object.fromEntries(entries) as Record<string, string>;
   });
   readonly apiFilterOptions = apiFilter;
