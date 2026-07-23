@@ -139,11 +139,25 @@ def _create_token_query(tokentype: str | None = None, token_type_list: list[str]
                             func.lower(Realm.name) == realm.lower()).scalar_subquery())
 
             if realm_list:
+                # Separate wildcard entries from exact entries
+                exact_realms = [r.lower() for r in realm_list if "*" not in r]
+                wildcard_realms = [r for r in realm_list if "*" in r]
+
+                realm_conditions = []
+                if exact_realms:
+                    realm_conditions.append(
+                        func.lower(Realm.name).in_(exact_realms)
+                    )
+                for wr in wildcard_realms:
+                    realm_conditions.append(
+                        func.lower(Realm.name).like(
+                            convert_wildcard_to_sql_like(wr.lower()),
+                            escape=SQL_LIKE_ESCAPE)
+                    )
+
                 sql_query = sql_query.where(
                     TokenRealm.realm_id.in_(
-                        select(Realm.id).where(
-                            func.lower(Realm.name).in_([r.lower() for r in realm_list])
-                        )
+                        select(Realm.id).where(or_(*realm_conditions))
                     )
                 )
 
@@ -553,8 +567,9 @@ def get_tokens_paginate(tokentype: str | None = None, token_type_list: list[str]
 
     :param tokentype:
     :param token_type_list: A list of token types
-    :param realm: A realm the token is assigned to, a wildcard pattern, or a comma-separated list of exact realm names
-        (if allowed_realms is not None, it must contain this realm, otherwise no matching tokens will be found)
+    :param realm: A realm the token is assigned to, a wildcard pattern, or a comma-separated list of realm names
+        (each entry may contain ``*`` wildcards). If allowed_realms is not None, it must contain this realm,
+        otherwise no matching tokens will be found.
     :param assigned: Returns assigned (True) or not assigned (False) tokens
     :type assigned: bool
     :param user: The user, whose token should be displayed
@@ -594,7 +609,7 @@ def get_tokens_paginate(tokentype: str | None = None, token_type_list: list[str]
         serial_list = serial.replace(" ", "").split(",")
         serial = None
     realm_list = None
-    if realm and "*" not in realm and "," in realm:
+    if realm and "," in realm:
         realm_list = realm.replace(" ", "").split(",")
         realm = None
     session: Session = db.session

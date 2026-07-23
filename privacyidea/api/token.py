@@ -661,8 +661,9 @@ def list_api():
         callers.
     :query tokenrealm: filter to tokens that belong to this realm
         (independent of the user's realm). Substring match via ``*``;
-        comma-separated list of exact realm names also supported
-        (e.g. ``realm1,realm2,realm3``).
+        comma-separated list of realm names also supported, where each
+        entry may contain wildcards
+        (e.g. ``realm1,realm2,realm3`` or ``staff*,students*``).
     :query description: filter by description.
     :query assigned: ``True`` or ``False`` to limit to assigned or
         unassigned tokens.

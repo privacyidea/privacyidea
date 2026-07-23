@@ -1333,6 +1333,20 @@ class TokenTestCase(MyTestCase):
         self.assertIn(tok_r2.get_serial(), serials)
         self.assertIn(tok_r3.get_serial(), serials)
 
+        # Comma-separated with wildcards in individual entries
+        tokens = get_tokens_paginate(realm="realm1,realm3*")["tokens"]
+        serials = [t["serial"] for t in tokens]
+        self.assertIn(tok_r1.get_serial(), serials)
+        self.assertNotIn(tok_r2.get_serial(), serials)
+        self.assertIn(tok_r3.get_serial(), serials)
+
+        # All wildcards in comma-separated list
+        tokens = get_tokens_paginate(realm="realm1*,realm2*")["tokens"]
+        serials = [t["serial"] for t in tokens]
+        self.assertIn(tok_r1.get_serial(), serials)
+        self.assertIn(tok_r2.get_serial(), serials)
+        self.assertNotIn(tok_r3.get_serial(), serials)
+
         tok_r1.delete_token()
         tok_r2.delete_token()
         tok_r3.delete_token()
