@@ -43,6 +43,7 @@ describe("ConditionalAccessPolicyService", () => {
     enabled: true,
     dry_run: false,
     priority: 1,
+    target: "user",
     counter_types_to_track: ["PIN_FAIL"],
     stages: [{ id: 1, failure_threshold: 5, priority: 1, actions: [{ id: 1, action_type: "LOCK_USER", action_value: { lock_duration_seconds: 600 } }] }]
   };
@@ -103,6 +104,8 @@ describe("ConditionalAccessPolicyService", () => {
       req.flush(MockPiResponse.fromValue([samplePolicy]));
       httpMock.expectOne(service.eventTypesUrl).flush(MockPiResponse.fromValue([]));
       httpMock.expectOne(service.actionTypesUrl).flush(MockPiResponse.fromValue([]));
+      httpMock.expectOne(service.targetsUrl).flush(MockPiResponse.fromValue({}));
+      httpMock.expectOne(service.templatesUrl).flush(MockPiResponse.fromValue([]));
       await Promise.resolve();
 
       expect(service.policies()).toEqual([samplePolicy]);
@@ -116,6 +119,8 @@ describe("ConditionalAccessPolicyService", () => {
       req.flush(MockPiResponse.fromError({ message: "denied" }), { status: 403, statusText: "Forbidden" });
       httpMock.expectOne(service.eventTypesUrl).flush(MockPiResponse.fromValue([]));
       httpMock.expectOne(service.actionTypesUrl).flush(MockPiResponse.fromValue([]));
+      httpMock.expectOne(service.targetsUrl).flush(MockPiResponse.fromValue({}));
+      httpMock.expectOne(service.templatesUrl).flush(MockPiResponse.fromValue([]));
       await Promise.resolve();
 
       expect(service.policies()).toEqual([]);
@@ -130,6 +135,8 @@ describe("ConditionalAccessPolicyService", () => {
       httpMock.expectOne(service.baseUrl).flush(MockPiResponse.fromValue([]));
       httpMock.expectOne(service.eventTypesUrl).flush(MockPiResponse.fromValue(["PIN_FAIL", "MFA_FAIL"]));
       httpMock.expectOne(service.actionTypesUrl).flush(MockPiResponse.fromValue(["LOCK_USER", "ALLOW"]));
+      httpMock.expectOne(service.targetsUrl).flush(MockPiResponse.fromValue({}));
+      httpMock.expectOne(service.templatesUrl).flush(MockPiResponse.fromValue([]));
       await Promise.resolve();
 
       expect(service.eventTypes()).toEqual(["PIN_FAIL", "MFA_FAIL"]);

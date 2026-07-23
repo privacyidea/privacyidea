@@ -22,7 +22,10 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ActivatedRoute, convertToParamMap, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService } from "@services/auth/auth.service";
-import { ConditionalAccessPolicyService, LockoutPolicy } from "@services/conditional-access/conditional-access-policy.service";
+import {
+  ConditionalAccessPolicyService,
+  LockoutPolicy
+} from "@services/conditional-access/conditional-access-policy.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import {
@@ -141,8 +144,13 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
     expect(component.canSave()).toBe(false);
   });
 
-  it("should become invalid when a stage has a zero threshold", () => {
+  it("should stay valid when a stage has a zero threshold (an allow/deny allowlist stage)", () => {
     component.onStagesChange([{ failure_threshold: 0, priority: 1, actions: [] }]);
+    expect(component.stagesValid()).toBe(true);
+  });
+
+  it("should become invalid when a stage has a negative threshold", () => {
+    component.onStagesChange([{ failure_threshold: -1, priority: 1, actions: [] }]);
     expect(component.stagesValid()).toBe(false);
   });
 
@@ -300,5 +308,36 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
   it("should not offer delete for a new (unsaved) policy", async () => {
     await component.deletePolicy();
     expect(policyServiceMock.deleteWithConfirmDialog).not.toHaveBeenCalled();
+  });
+
+  it("should prefill from a template and clear back to empty on clear template", () => {
+    policyServiceMock.templates.set([
+      {
+        key: "password_bruteforce",
+        description: "Lock a user after repeated wrong passwords.",
+        policy: {
+          name: "Password Brute-Force",
+          time_window_seconds: 900,
+          enabled: true,
+          dry_run: false,
+          priority: 1,
+          target: "user",
+          counter_types_to_track: ["PASSWORD_FAIL"],
+          stages: [{ failure_threshold: 10, priority: 1, actions: [{ action_type: "LOCK_USER", action_value: null }] }]
+        }
+      }
+    ]);
+
+    component.applyTemplate("password_bruteforce");
+    expect(component.editPolicy().name).toBe("Password Brute-Force");
+    expect(component.editPolicy().stages.length).toBe(1);
+    expect(component.selectedTemplateKey()).toBe("password_bruteforce");
+
+    // The clear button resets the prefill back to the empty policy.
+    component.clearTemplateSelection();
+    expect(component.editPolicy().name).toBe("");
+    expect(component.editPolicy().stages).toEqual([]);
+    expect(component.editPolicy().counter_types_to_track).toEqual([]);
+    expect(component.selectedTemplateKey()).toBeNull();
   });
 });
