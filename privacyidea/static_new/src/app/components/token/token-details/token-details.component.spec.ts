@@ -27,14 +27,14 @@ import { MatDialog } from "@angular/material/dialog";
 import { ActivatedRoute, Router } from "@angular/router";
 import { PiResponse } from "@app/app.component";
 import { AuditService } from "@services/audit/audit.service";
-import { AuthService, AuthResponse } from "@services/auth/auth.service";
+import { AuthResponse, AuthService } from "@services/auth/auth.service";
 import { ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
 import { MachineService, TokenApplication } from "@services/machine/machine.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { RealmService } from "@services/realm/realm.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
-import { TokenService, TokenTypeKey, TokenInfo, TokenDetails, Tokens } from "@services/token/token.service";
+import { TokenDetails, TokenInfo, Tokens, TokenService, TokenTypeKey } from "@services/token/token.service";
 import { UserService } from "@services/user/user.service";
 import { ValidateService } from "@services/validate/validate.service";
 import {
@@ -118,7 +118,12 @@ describe("TokenDetailsComponent", () => {
       { keyMap: { key: "info", label: "Info" }, value: { key1: "value1" }, isEditing: signal(false) }
     ]);
     component.tokenDetailData = signal([
-      { keyMap: { key: "container_serial", label: "Container" }, value: "container1", isEditing: signal(false) }
+      {
+        keyMap: {
+          key: "container_serial", label: "Container",
+          group: "identity"
+        }, value: "container1", isEditing: signal(false)
+      }
     ]);
 
     fixture.detectChanges();
@@ -129,7 +134,7 @@ describe("TokenDetailsComponent", () => {
   });
 
   it("renders the token serial in the header", () => {
-    const header = fixture.nativeElement.querySelector(".details-header .serial");
+    const header = fixture.nativeElement.querySelector(".details-header .h3-color");
     expect(header.textContent).toContain("Mock serial");
   });
 

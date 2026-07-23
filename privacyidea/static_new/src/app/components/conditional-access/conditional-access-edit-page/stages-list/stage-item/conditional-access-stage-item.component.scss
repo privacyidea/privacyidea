@@ -1,0 +1,63 @@
+.ca-stage-item {
+  // Recessed panel one step shallower than the dashboard well: the mid inset-shadow
+  // level over a surface tone halfway between the surrounding grey and the card white,
+  // so each stage reads as a "well" holding its card without the full dashboard depth.
+  background: var(--inset-surface-3);
+  border-radius: var(--border-radius);
+  padding: 16px;
+  box-shadow: var(--inset-shadow-3);
+}
+
+.ca-stage-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.ca-stage-name {
+  align-items: center;
+  display: flex;
+  flex: 1 1 auto;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ca-stage-name-field {
+  flex: 1 1 auto;
+}
+
+.ca-stage-title-name {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.ca-stage-title-name--empty {
+  color: var(--mat-sys-on-surface-variant);
+  font-style: italic;
+  font-weight: 400;
+}
+
+// Edit/confirm affordances stay hidden until the stage card is hovered, keeping
+// the header uncluttered; focus keeps them reachable via the keyboard.
+.ca-stage-name-action {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.ca-stage-item:hover .ca-stage-name-action,
+.ca-stage-name-action:focus-visible {
+  opacity: 1;
+}
+
+.ca-stage-hint {
+  margin: 0 0 16px 8px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.ca-stage-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 8px;
+}

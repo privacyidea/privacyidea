@@ -1,0 +1,16 @@
+@use "styles";
+
+.ca-stages-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.ca-stages-list-empty {
+  color: rgba(0, 0, 0, 0.6);
+  font-style: italic;
+}
+
+.ca-add-button-row {
+  display: flex;
+  justify-content: center;
+}

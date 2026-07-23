@@ -115,6 +115,7 @@ def upgrade():
         'lockout_policy_stages',
         _id_column(is_postgres, 'lockoutpolicystage_seq'),
         sa.Column('policy_id', sa.Integer(), nullable=False),
+        sa.Column('name', sa.Unicode(length=255), nullable=True),
         sa.Column('failure_threshold', sa.Integer(), nullable=False),
         sa.Column('priority', sa.Integer(), nullable=False),
         sa.ForeignKeyConstraint(['policy_id'], ['lockout_policies.id'], ondelete='CASCADE'),

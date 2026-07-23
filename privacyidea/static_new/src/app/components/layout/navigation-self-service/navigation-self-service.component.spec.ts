@@ -42,6 +42,7 @@ import { NotificationService } from "@services/notification/notification.service
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { PeriodicTaskService } from "@services/periodic-task/periodic-task.service";
 import { PolicyService } from "@services/policies/policies.service";
+import { ConditionalAccessPolicyService } from "@services/conditional-access/conditional-access-policy.service";
 import { PrivacyideaServerService } from "@services/privacyidea-server/privacyidea-server.service";
 import { RadiusServerService } from "@services/radius-server/radius-server.service";
 import { RealmService } from "@services/realm/realm.service";
@@ -73,6 +74,7 @@ import {
   MockNotificationService,
   MockPendingChangesService,
   MockPeriodicTaskService,
+  MockConditionalAccessPolicyService,
   MockPolicyService,
   MockPrivacyideaServerService,
   MockRadiusService,
@@ -97,7 +99,6 @@ describe("NavigationSelfServiceComponent", () => {
   let component: NavigationSelfServiceComponent;
   let fixture: ComponentFixture<NavigationSelfServiceComponent>;
   let authServiceMock: MockAuthService;
-  let userServiceMock: MockUserService;
   let contentServiceMock: MockContentService;
 
   beforeAll(() => {
@@ -136,6 +137,7 @@ describe("NavigationSelfServiceComponent", () => {
         { provide: AuthenticationLogService, useClass: MockAuthenticationLogService },
         { provide: ClientsService, useClass: MockClientsService },
         { provide: PolicyService, useClass: MockPolicyService },
+        { provide: ConditionalAccessPolicyService, useClass: MockConditionalAccessPolicyService },
         { provide: SubscriptionService, useClass: MockSubscriptionService },
         { provide: MachineResolverService, useClass: MockMachineResolverService },
         { provide: ContainerTemplateService, useClass: MockContainerTemplateService },
@@ -160,7 +162,6 @@ describe("NavigationSelfServiceComponent", () => {
     }).compileComponents();
 
     authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
-    userServiceMock = TestBed.inject(UserService) as unknown as MockUserService;
     contentServiceMock = TestBed.inject(ContentService) as unknown as MockContentService;
 
     (authServiceMock.actionAllowed as jest.Mock).mockReturnValue(true);
@@ -176,14 +177,13 @@ describe("NavigationSelfServiceComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("exposes ROUTE_PATHS and the user signal from UserService", () => {
+  it("exposes ROUTE_PATHS", () => {
     expect((component as unknown as { ROUTE_PATHS: typeof ROUTE_PATHS }).ROUTE_PATHS).toBe(ROUTE_PATHS);
-    expect(component.userData).toBe(userServiceMock.user);
   });
 
   it("renders the username button as a routerLink anchor when not on user-details route", () => {
-    userServiceMock.user.set({ ...userServiceMock.user(), username: "alice" });
-    userServiceMock.selectedUserRealm.set("realm1");
+    authServiceMock.username.set("alice");
+    authServiceMock.realm.set("realm1");
     contentServiceMock.routeUrl.set("/tokens");
 
     fixture.detectChanges();
@@ -198,8 +198,8 @@ describe("NavigationSelfServiceComponent", () => {
   });
 
   it("renders a disabled username div (no anchor) when on user-details self-service route", () => {
-    userServiceMock.user.set({ ...userServiceMock.user(), username: "alice" });
-    userServiceMock.selectedUserRealm.set("realm1");
+    authServiceMock.username.set("alice");
+    authServiceMock.realm.set("realm1");
     contentServiceMock.routeUrl.set(ROUTE_PATHS.USERS_DETAILS);
 
     fixture.detectChanges();
@@ -213,8 +213,8 @@ describe("NavigationSelfServiceComponent", () => {
   });
 
   it("falls back to '-' when username or realm are empty", () => {
-    userServiceMock.user.set({ ...userServiceMock.user(), username: "" });
-    userServiceMock.selectedUserRealm.set("");
+    authServiceMock.username.set("");
+    authServiceMock.realm.set("");
     contentServiceMock.routeUrl.set("/tokens");
 
     fixture.detectChanges();

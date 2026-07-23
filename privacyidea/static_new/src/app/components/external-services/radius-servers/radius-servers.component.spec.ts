@@ -106,7 +106,8 @@ describe("RadiusServersComponent", () => {
   it("should delete server after confirmation", () => {
     const server = radiusServiceMock.radiusServers()[0];
 
-    component.deleteServer(server);
+    component.selection.set([server]);
+    component.deleteSelected();
 
     expect(dialogServiceMock.openDialog).toHaveBeenCalled();
     confirmClosed.next(true);

@@ -57,6 +57,10 @@ import {
 import { PeriodicTaskService } from "@services/periodic-task/periodic-task.service";
 import { PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
 import {
+  ConditionalAccessPolicyService,
+  ConditionalAccessPolicyServiceInterface
+} from "@services/conditional-access/conditional-access-policy.service";
+import {
   PrivacyideaServerService,
   PrivacyideaServerServiceInterface
 } from "@services/privacyidea-server/privacyidea-server.service";
@@ -98,6 +102,8 @@ export class UserUtilsPanelComponent {
   private readonly authenticationLogService: AuthenticationLogServiceInterface = inject(AuthenticationLogService);
   private readonly clientsService: ClientsServiceInterface = inject(ClientsService);
   private readonly policyService: PolicyServiceInterface = inject(PolicyService);
+  private readonly conditionalAccessPolicyService: ConditionalAccessPolicyServiceInterface =
+    inject(ConditionalAccessPolicyService);
   private readonly subscriptionService = inject(SubscriptionService);
   private readonly machineResolverService: MachineResolverServiceInterface = inject(MachineResolverService);
   private readonly containerTemplateService: ContainerTemplateServiceInterface = inject(ContainerTemplateService);
@@ -148,6 +154,19 @@ export class UserUtilsPanelComponent {
     }
     // show hours and minutes
     return "H'\u202Fh' mm'\u202Fmin'";
+  });
+
+  // Once more than a day remains, the DatePipe format above can no longer
+  // represent the duration, so show days (and any whole hours) without minutes.
+  sessionOverOneDay = computed(() => (this.sessionTimerService.remainingTime() ?? 0) >= 86_400_000);
+
+  sessionDaysText = computed(() => {
+    const ms = this.sessionTimerService.remainingTime() ?? 0;
+    const days = Math.floor(ms / 86_400_000);
+    const hours = Math.floor((ms % 86_400_000) / 3_600_000);
+    // Non-breaking half space (U+202F) between number and unit, matching the
+    // hour/minute format above.
+    return hours > 0 ? `${days}\u202Fd ${hours}\u202Fh` : `${days}\u202Fd`;
   });
 
   localNode = computed(() => this.authService.showNode());
@@ -205,6 +224,12 @@ export class UserUtilsPanelComponent {
       this.tokenService.tokenResource.reload();
       this.tokenService.userTokenResource.reload();
       this.containerService.userContainersResource.reload();
+      return;
+    } else if (this.contentService.onConditionalAccess()) {
+      // Covers the conditional-access list, edit and new pages, which all read
+      // from the same policies resource (its dynamic details URL is not an exact
+      // route match, so it is handled here rather than in the switch below).
+      this.conditionalAccessPolicyService.policiesResource.reload();
       return;
     }
 

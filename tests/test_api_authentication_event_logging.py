@@ -29,6 +29,7 @@ from typing import TYPE_CHECKING
 from flask import Response
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, AUTH_EVENT_TYPE_KEY
+from privacyidea.lib.auth import create_db_admin, delete_db_admin
 from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs, AuthLogUserRole
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, PolicyAction, AUTHORIZED
 from privacyidea.lib.realm import set_realm, delete_realm
@@ -809,13 +810,25 @@ class AuthEndpointAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
 
     # --- /auth-only cases ---
 
-    def test_auth_endpoint_logs_login(self):
-        # A wrong /auth login (local admin) falls through to userstore auth against the default realm, so realm1 is
-        # recorded. The testadmin user does not exist in realm1's resolver, so resolver and uid are absent.
+    def test_auth_endpoint_logs_failed_local_admin(self):
+        # A local admin with a wrong password is recorded as the internal admin failing (PASSWORD_FAIL,
+        # admin-internal role, its login as username, no realm/resolver/uid)
         self._auth({"username": self.testadmin, "password": "wrong"}, status=401)
         entries = assert_authentication_log([AuthEventType.PASSWORD_FAIL])
-        assert_authentication_log_entry(entries[AuthEventType.PASSWORD_FAIL],
-                                        user=User(self.testadmin, self.realm1))
+        assert_authentication_log_entry(entries[AuthEventType.PASSWORD_FAIL], user=User(self.testadmin),
+                                        user_role=AuthLogUserRole.ADMIN_INTERNAL)
+
+    def test_auth_endpoint_failed_login_prefers_realm_user_over_local_admin(self):
+        # Edge case: a username that is BOTH a local admin and a user in the default realm. A wrong password is
+        # attributed to the realm user (resolved identity, regular role), not the internal admin
+        create_db_admin(self.username, "twin@test.tld", "adminpw")
+        try:
+            self._auth({"username": self.username, "password": "wrong"}, status=401)
+            entries = assert_authentication_log([AuthEventType.PASSWORD_FAIL])
+            assert_authentication_log_entry(entries[AuthEventType.PASSWORD_FAIL],
+                                            user=User(self.username, self.realm1))
+        finally:
+            delete_db_admin(self.username)
 
     def test_logs_local_admin_username(self):
         # A successful internal-admin login records the admin's login name as the username and the admin-internal role;

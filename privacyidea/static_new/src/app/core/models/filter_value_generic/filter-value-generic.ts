@@ -86,6 +86,16 @@ export class FilterValueGeneric<T> {
       .join(" ");
   }
 
+  /**
+   * The keyword-less search terms: standalone words entered without a column keyword. Used to
+   * highlight where a free-text match occurred across columns.
+   */
+  get freeTextTerms(): string[] {
+    return Array.from(this.filterMap.values())
+      .filter((option) => option instanceof DummyFilterOption && option.value === null)
+      .map((option) => option.key);
+  }
+
   get apiFilterString(): string {
     return Array.from([...this.filterMap.values(), ...this.hiddenFilterMap.values()])
       .filter((option) => !(option instanceof DummyFilterOption))
@@ -96,7 +106,25 @@ export class FilterValueGeneric<T> {
 
   // --- Public API ---
   public matches(item: T): boolean {
-    return this.allFilters.every((filter) => filter.matches(item, this));
+    return this.allFilters.every((filter) => {
+      // A standalone word (no keyword) is stored as a DummyFilterOption with a null value.
+      // Treat it as a keyword-less free-text term matched across all searchable columns.
+      if (filter instanceof DummyFilterOption && filter.value === null) {
+        return this.matchesFreeText(item, filter.key);
+      }
+      return filter.matches(item, this);
+    });
+  }
+
+  /**
+   * Matches a keyword-less search term against every column that opts into global search via
+   * FilterOption.globalMatches (OR across columns). If no column opts in, free-text is a no-op.
+   */
+  private matchesFreeText(item: T, term: string): boolean {
+    const normalized = term.toLowerCase();
+    const searchable = Array.from(this.availableFilters.values()).filter((option) => option.globalMatches);
+    if (searchable.length === 0) return true;
+    return searchable.some((option) => option.globalMatches!(item, normalized));
   }
 
   public filterItems(unfiltered: T[]): T[] {
@@ -128,6 +156,16 @@ export class FilterValueGeneric<T> {
     } else {
       newFilterMap.set(key, optionFromMap);
     }
+    return this._copyWith({ filterMap: newFilterMap });
+  }
+
+  /**
+   * Adds a free-text term. Unlike addKey, it is always stored as a cross-column DummyFilterOption,
+   * even when the term equals a registered key — so a bare word never becomes a match-all no-op.
+   */
+  public addFreeText(term: string): FilterValueGeneric<T> {
+    const newFilterMap = new Map(this.filterMap);
+    newFilterMap.set(term, new DummyFilterOption({ key: term }));
     return this._copyWith({ filterMap: newFilterMap });
   }
 
@@ -179,7 +217,8 @@ export class FilterValueGeneric<T> {
     const newMap = parseToMap(rawValue.trim().toLocaleLowerCase());
     let instance: FilterValueGeneric<T> = this._copyWith({ filterMap: new Map() });
     newMap.forEach((value, key) => {
-      instance = instance.setValueOfKey(key, value);
+      // A null value marks a standalone word (no `key:`): add it as free text, not a keyword filter.
+      instance = value === null ? instance.addFreeText(key) : instance.setValueOfKey(key, value);
     });
     return instance;
   }

@@ -219,4 +219,106 @@ describe("PoliciesTableComponent", () => {
 
     expect(noDataCell.attributes["colspan"]).toBe(expectedColspan.toString());
   });
+
+  describe("filter matching and highlighting", () => {
+    const richPolicies: PolicyDetail[] = [
+      {
+        name: "enroll-hotp",
+        priority: 10,
+        scope: "enrollment",
+        active: true,
+        description: "handles hotp tokens",
+        action: { tokentype: "hotp", max_count: "5" },
+        realm: ["sales"],
+        user: ["alice"],
+        adminrealm: [],
+        adminuser: [],
+        pinode: [],
+        client: ["10.0.0.1"],
+        user_agents: [],
+        time: "",
+        conditions: []
+      } as unknown as PolicyDetail,
+      {
+        name: "auth-totp",
+        priority: 20,
+        scope: "authentication",
+        active: false,
+        description: "totp only",
+        action: { tokentype: "totp" },
+        realm: ["support"],
+        user: [],
+        adminrealm: [],
+        adminuser: [],
+        pinode: [],
+        client: [],
+        user_agents: [],
+        time: "Mon-Fri: 08:00-17:00",
+        conditions: [["userinfo", "department", "==", "it", true, "raise_error"]]
+      } as unknown as PolicyDetail
+    ];
+
+    beforeEach(() => {
+      mockPolicyService.allPolicies.set(richPolicies);
+      fixture.detectChanges();
+    });
+
+    const filterBy = (value: string) => {
+      component.filter.set(component.filter().setByString(value));
+      fixture.detectChanges();
+      return component.policiesListFiltered().map((p) => p.name);
+    };
+
+    it("matches a keyword-less term across all columns", () => {
+      expect(filterBy("hotp")).toEqual(["enroll-hotp"]); // action value
+      expect(filterBy("sales")).toEqual(["enroll-hotp"]); // condition (realm)
+      expect(filterBy("only")).toEqual(["auth-totp"]); // description
+      expect(filterBy("enrollment")).toEqual(["enroll-hotp"]); // scope
+    });
+
+    it("matches with the actions keyword on names and values", () => {
+      expect(filterBy("actions: max_count")).toEqual(["enroll-hotp"]);
+      expect(filterBy("actions: totp")).toEqual(["auth-totp"]);
+    });
+
+    it("matches with the conditions keyword across condition fields", () => {
+      expect(filterBy("conditions: support")).toEqual(["auth-totp"]);
+      expect(filterBy("conditions: department")).toEqual(["auth-totp"]);
+      expect(filterBy("conditions: 10.0.0.1")).toEqual(["enroll-hotp"]);
+    });
+
+    it("matches with the description keyword", () => {
+      expect(filterBy("description: handles")).toEqual(["enroll-hotp"]);
+    });
+
+    it("supports priority comparison operators", () => {
+      expect(filterBy("priority: >=20")).toEqual(["auth-totp"]);
+      expect(filterBy("priority: <=10")).toEqual(["enroll-hotp"]);
+      expect(filterBy("priority: >15")).toEqual(["auth-totp"]);
+      expect(filterBy("priority: <15")).toEqual(["enroll-hotp"]);
+      expect(filterBy("priority: !=10")).toEqual(["auth-totp"]);
+      expect(filterBy("priority: =20")).toEqual(["auth-totp"]);
+      expect(filterBy("priority: 10")).toEqual(["enroll-hotp"]);
+    });
+
+    it("matches with the active keyword", () => {
+      expect(filterBy("active: true")).toEqual(["enroll-hotp"]);
+      expect(filterBy("active: false")).toEqual(["auth-totp"]);
+    });
+
+    it("combines a keyword-less term with a column keyword (AND)", () => {
+      expect(filterBy("hotp scope: enrollment")).toEqual(["enroll-hotp"]);
+      expect(filterBy("hotp scope: authentication")).toEqual([]);
+    });
+
+    it("exposes highlight terms for the dense columns", () => {
+      component.filter.set(component.filter().setByString("hotp actions: max_count"));
+      fixture.detectChanges();
+
+      const terms = component.highlightTerms();
+      expect(terms.actions).toEqual(["hotp", "max_count"]);
+      expect(terms.description).toEqual(["hotp"]);
+      expect(terms.conditions).toEqual(["hotp"]);
+    });
+  });
 });

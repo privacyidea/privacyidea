@@ -43,6 +43,7 @@ import { NotificationService } from "@services/notification/notification.service
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { PeriodicTaskService } from "@services/periodic-task/periodic-task.service";
 import { PolicyService } from "@services/policies/policies.service";
+import { ConditionalAccessPolicyService } from "@services/conditional-access/conditional-access-policy.service";
 import { PrivacyideaServerService } from "@services/privacyidea-server/privacyidea-server.service";
 import { RadiusServerService } from "@services/radius-server/radius-server.service";
 import { RealmService } from "@services/realm/realm.service";
@@ -75,6 +76,7 @@ import {
   MockNotificationService,
   MockPendingChangesService,
   MockPeriodicTaskService,
+  MockConditionalAccessPolicyService,
   MockPolicyService,
   MockPrivacyideaServerService,
   MockRadiusService,
@@ -149,6 +151,7 @@ describe("UserUtilsPanelComponent", () => {
         { provide: AuthenticationLogService, useClass: MockAuthenticationLogService },
         { provide: ClientsService, useClass: MockClientsService },
         { provide: PolicyService, useClass: MockPolicyService },
+        { provide: ConditionalAccessPolicyService, useClass: MockConditionalAccessPolicyService },
         { provide: SubscriptionService, useClass: MockSubscriptionService },
         { provide: MachineResolverService, useClass: MockMachineResolverService },
         { provide: ContainerTemplateService, useClass: MockContainerTemplateService },
@@ -225,6 +228,24 @@ describe("UserUtilsPanelComponent", () => {
       expect(tokenService.tokenResource.reload).toHaveBeenCalled();
       expect(tokenService.userTokenResource.reload).toHaveBeenCalled();
       expect(containerService.userContainersResource.reload).toHaveBeenCalled();
+    });
+
+    it("refreshes the conditional-access page", () => {
+      const caService = TestBed.inject(
+        ConditionalAccessPolicyService
+      ) as unknown as MockConditionalAccessPolicyService;
+      content.routeUrl.set(ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS);
+      component.refreshPage();
+      expect(caService.policiesResource.reload).toHaveBeenCalled();
+    });
+
+    it("refreshes the conditional-access details page", () => {
+      const caService = TestBed.inject(
+        ConditionalAccessPolicyService
+      ) as unknown as MockConditionalAccessPolicyService;
+      content.routeUrl.set(`${ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_DETAILS}5`);
+      component.refreshPage();
+      expect(caService.policiesResource.reload).toHaveBeenCalled();
     });
 
     it("refreshes tokens route", () => {
@@ -316,6 +337,32 @@ describe("UserUtilsPanelComponent", () => {
     it("format for times equal or larger than an hour is 'H h mm min'", () => {
       sessionTimerService.remainingTime.set(60 * 60 * 1000);
       expect(component.sessionTimeFormat()).toBe("H'\u202Fh' mm'\u202Fmin'");
+    });
+  });
+
+  describe("session time over a day", () => {
+    it("sessionOverOneDay is false below a day and true at/above a day", () => {
+      sessionTimerService.remainingTime.set(24 * 60 * 60 * 1000 - 1);
+      expect(component.sessionOverOneDay()).toBe(false);
+
+      sessionTimerService.remainingTime.set(24 * 60 * 60 * 1000);
+      expect(component.sessionOverOneDay()).toBe(true);
+    });
+
+    it("sessionOverOneDay defaults to false when remainingTime is undefined", () => {
+      sessionTimerService.remainingTime.set(undefined);
+      expect(component.sessionOverOneDay()).toBe(false);
+    });
+
+    it("sessionDaysText shows only the days when there are no whole hours", () => {
+      sessionTimerService.remainingTime.set(24 * 60 * 60 * 1000);
+      expect(component.sessionDaysText()).toBe("1\u202Fd");
+    });
+
+    it("sessionDaysText appends whole hours (without minutes) when present", () => {
+      // 2 days, 5 hours, 30 minutes -> minutes are dropped.
+      sessionTimerService.remainingTime.set((2 * 24 + 5) * 60 * 60 * 1000 + 30 * 60 * 1000);
+      expect(component.sessionDaysText()).toBe("2\u202Fd 5\u202Fh");
     });
   });
 

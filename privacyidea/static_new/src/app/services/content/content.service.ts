@@ -42,6 +42,7 @@ export interface ContentServiceInterface {
   onTokens: Signal<boolean>;
   onUsers: Signal<boolean>;
   onPolicies: Signal<boolean>;
+  onConditionalAccess: Signal<boolean>;
   onTokenDetails: Signal<boolean>;
   onUserDetails: Signal<boolean>;
   onUserDetailsSelfService: Signal<boolean>;
@@ -119,6 +120,7 @@ export class ContentService implements ContentServiceInterface {
   onTokens = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS);
   onUsers = computed(() => this.routeUrl() === ROUTE_PATHS.USERS);
   onPolicies = computed(() => this.routeUrl().startsWith(ROUTE_PATHS.POLICIES));
+  onConditionalAccess = computed(() => this.routeUrl().startsWith(ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS));
   onTokenDetails = computed(() => this.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS));
   onUserDetails = computed(() => this.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS + "/"));
   onUserDetailsSelfService = computed(() => this.routeUrl() === ROUTE_PATHS.USERS_DETAILS);
