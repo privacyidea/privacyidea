@@ -31,6 +31,7 @@ import { MatTooltipModule } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
 import { FilterOption } from "@core/models/filter_value_generic/filter-option";
 import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -60,7 +61,8 @@ import { ViewConditionsColumnComponent } from "./view-conditions-column/view-con
     MatTooltipModule,
     PolicyFilterComponent,
     ViewConditionsColumnComponent,
-    CopyButtonComponent
+    CopyButtonComponent,
+    HighlightPipe
   ],
   templateUrl: "./policies-table.component.html",
   styleUrl: "./policies-table.component.scss"
@@ -92,6 +94,22 @@ export class PoliciesTableComponent {
   readonly filter = signal<FilterValueGeneric<PolicyDetail>>(
     new FilterValueGeneric({ availableFilters: policyFilterOptions })
   );
+
+  // Terms to visually highlight per dense column: the keyword-less search terms plus that column's
+  // own keyword value. Short columns (name/scope/priority/active) are not highlighted on purpose.
+  readonly highlightTerms = computed(() => {
+    const filter = this.filter();
+    const freeText = filter.freeTextTerms;
+    const withKeyword = (key: string): string[] => {
+      const value = filter.getFilterOfKey(key);
+      return value ? [...freeText, value] : freeText;
+    };
+    return {
+      description: withKeyword("description"),
+      actions: withKeyword("actions"),
+      conditions: withKeyword("conditions")
+    };
+  });
 
   readonly emptyResource = linkedSignal({
     source: () => this.policyService.allPolicies(),
@@ -210,26 +228,58 @@ export class PoliciesTableComponent {
   }
 }
 
+// Split a priority filter into its comparison operator and numeric operand.
+// The operand is parsed strictly: anything that is not a whole number (e.g.
+// ">10x") yields NaN, so a partially-numeric value does not silently match.
+const PRIORITY_OPERATORS: readonly [string, (a: number, b: number) => boolean][] = [
+  [">=", (a, b) => a >= b],
+  ["<=", (a, b) => a <= b],
+  ["!=", (a, b) => a !== b],
+  [">", (a, b) => a > b],
+  ["<", (a, b) => a < b],
+  ["=", (a, b) => a === b]
+];
+
+function matchesPriority(priority: number, val: string): boolean {
+  const [prefix, compare] = PRIORITY_OPERATORS.find(([p]) => val.startsWith(p)) ?? ["", (a: number, b: number) => a === b];
+  const rest = val.substring(prefix.length).trim();
+  if (!/^-?\d+$/.test(rest)) return false;
+  return compare(priority, Number(rest));
+}
+
+function matchesActions(item: PolicyDetail, term: string): boolean {
+  if (!item.action) return false;
+  return Object.entries(item.action).some(
+    ([name, value]) => name.toLowerCase().includes(term) || String(value).toLowerCase().includes(term)
+  );
+}
+
+function matchesConditions(item: PolicyDetail, term: string): boolean {
+  const listFields = [
+    item.adminrealm,
+    item.adminuser,
+    item.realm,
+    item.user,
+    item.pinode,
+    item.client,
+    item.user_agents
+  ];
+  if (listFields.some((list) => list?.some((entry) => entry.toLowerCase().includes(term)))) return true;
+  return Boolean(
+    item.time?.toLowerCase().includes(term) ||
+      item.conditions?.some((cond) => cond.some((c) => String(c).toLowerCase().includes(term)))
+  );
+}
+
 const policyFilterOptions: FilterOption<PolicyDetail>[] = [
   new FilterOption<PolicyDetail>({
     key: "priority",
     label: $localize`Priority`,
     matches: (item, filter) => {
       const val = filter.getFilterOfKey("priority");
-      if (!val) return true;
-      const priority = item.priority;
-      try {
-        if (val.startsWith(">=")) return priority >= parseInt(val.substring(2), 10);
-        if (val.startsWith("<=")) return priority <= parseInt(val.substring(2), 10);
-        if (val.startsWith(">")) return priority > parseInt(val.substring(1), 10);
-        if (val.startsWith("<")) return priority < parseInt(val.substring(1), 10);
-        if (val.startsWith("!=")) return priority !== parseInt(val.substring(2), 10);
-        if (val.startsWith("=")) return priority === parseInt(val.substring(1), 10);
-        return priority === parseInt(val, 10);
-      } catch {
-        return false;
-      }
-    }
+      return !val || matchesPriority(item.priority, val);
+    },
+    globalMatches: (item, term) => String(item.priority).includes(term)
   }),
   new FilterOption<PolicyDetail>({
     key: "active",
@@ -247,7 +297,8 @@ const policyFilterOptions: FilterOption<PolicyDetail>[] = [
     matches: (item, filter) => {
       const v = filter.getFilterOfKey("active")?.toLowerCase();
       return v === "true" ? item.active === true : v === "false" ? item.active === false : true;
-    }
+    },
+    globalMatches: (item, term) => String(item.active).includes(term)
   }),
   new FilterOption<PolicyDetail>({
     key: "name",
@@ -255,7 +306,8 @@ const policyFilterOptions: FilterOption<PolicyDetail>[] = [
     matches: (item, filter) => {
       const val = filter.getFilterOfKey("name");
       return !val || item.name.toLowerCase().includes(val.toLowerCase());
-    }
+    },
+    globalMatches: (item, term) => item.name.toLowerCase().includes(term)
   }),
   new FilterOption<PolicyDetail>({
     key: "scope",
@@ -263,39 +315,34 @@ const policyFilterOptions: FilterOption<PolicyDetail>[] = [
     matches: (item, filter) => {
       const val = filter.getFilterOfKey("scope");
       return !val || item.scope.toLowerCase().includes(val.toLowerCase());
-    }
+    },
+    globalMatches: (item, term) => item.scope.toLowerCase().includes(term)
+  }),
+  new FilterOption<PolicyDetail>({
+    key: "description",
+    label: $localize`Description`,
+    matches: (item, filter) => {
+      const val = filter.getFilterOfKey("description");
+      return !val || (item.description?.toLowerCase().includes(val.toLowerCase()) ?? false);
+    },
+    globalMatches: (item, term) => item.description?.toLowerCase().includes(term) ?? false
   }),
   new FilterOption<PolicyDetail>({
     key: "actions",
     label: $localize`Actions`,
     matches: (item, filter) => {
       const val = filter.getFilterOfKey("actions")?.toLowerCase();
-      if (!val || !item.action) return true;
-      return Object.entries(item.action).some(
-        ([n, v]) => n.toLowerCase().includes(val) || String(v).toLowerCase().includes(val)
-      );
-    }
+      return !val || matchesActions(item, val);
+    },
+    globalMatches: (item, term) => matchesActions(item, term)
   }),
   new FilterOption<PolicyDetail>({
     key: "conditions",
     label: $localize`Conditions`,
     matches: (item, filter) => {
       const val = filter.getFilterOfKey("conditions")?.toLowerCase();
-      if (!val) return true;
-      const fields = [
-        item.adminrealm,
-        item.adminuser,
-        item.realm,
-        item.user,
-        item.pinode,
-        item.client,
-        item.user_agents
-      ];
-      if (fields.some((l) => l?.some((e) => e.toLowerCase().includes(val)))) return true;
-      return (
-        item.time?.toLowerCase().includes(val) ||
-        item.conditions?.some((cond) => cond.some((c) => String(c).toLowerCase().includes(val)))
-      );
-    }
+      return !val || matchesConditions(item, val);
+    },
+    globalMatches: (item, term) => matchesConditions(item, term)
   })
 ];

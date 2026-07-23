@@ -27,11 +27,16 @@ import { DomSanitizer } from "@angular/platform-browser";
 export class HighlightPipe implements PipeTransform {
   private sanitizer = inject(DomSanitizer);
 
-  transform(value: string, searchTerm: string): string | null {
-    if (!searchTerm || !value) return this.escapeHtml(value);
-    const escapedSearch = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  transform(value: string, searchTerm: string | string[]): string | null {
+    const terms = (Array.isArray(searchTerm) ? searchTerm : [searchTerm]).filter((term) => !!term);
+    if (terms.length === 0 || !value) return this.escapeHtml(value);
+    // Longer terms first so overlapping matches prefer the longer one in the alternation.
+    const alternation = terms
+      .sort((a, b) => b.length - a.length)
+      .map((term) => term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+      .join("|");
     // g - global (all occurrences), i - case-insensitive
-    const regex = new RegExp(escapedSearch, "gi");
+    const regex = new RegExp(alternation, "gi");
     const highlighted = this.escapeHtml(value).replace(regex, (match) => `<span class="highlight">${match}</span>`);
     return this.sanitizer.sanitize(SecurityContext.HTML, highlighted);
   }
