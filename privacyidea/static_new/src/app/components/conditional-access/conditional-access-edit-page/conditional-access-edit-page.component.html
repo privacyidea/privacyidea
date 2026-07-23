@@ -89,7 +89,7 @@
       @if (isNewPolicy() && policyService.templates().length > 0) {
         <mat-form-field
           appearance="fill"
-          class="input-width-xl margin-bottom-16"
+          class="input-width-xl"
           subscriptSizing="dynamic">
           <mat-label i18n>Start from template</mat-label>
           <mat-select
@@ -132,7 +132,7 @@
 
       <mat-form-field
         appearance="fill"
-        class="input-width-xl margin-bottom-16"
+        class="input-width-xl"
         subscriptSizing="dynamic">
         <mat-label i18n>Target</mat-label>
         <mat-select
@@ -142,10 +142,9 @@
             <mat-option [value]="target">{{ targetLabel(target) }}</mat-option>
           }
         </mat-select>
-        <app-info-hint
-          matSuffix
-          [text]="targetHelp"
-          [ariaLabel]="targetHelpAriaLabel" />
+        <mat-hint i18n>
+          The target on which the policy counts events and performs triggered stage actions.
+        </mat-hint>
       </mat-form-field>
 
       <mat-form-field

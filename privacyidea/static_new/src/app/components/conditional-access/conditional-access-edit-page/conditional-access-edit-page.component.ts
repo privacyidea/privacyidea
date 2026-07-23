@@ -130,8 +130,6 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   // Info-hint help texts, kept as $localize strings in the component (like the
   // title and target labels) so all of this component's user-facing text lives in
   // one place and is extracted for translation.
-  protected readonly targetHelp = $localize`What this policy counts and acts on. 'User' counts one user's failures and locks that user; 'Source IP' counts the distinct users an IP fails against and blocks that IP (password spraying). The target decides which actions a stage may use.`;
-  protected readonly targetHelpAriaLabel = $localize`About target`;
   protected readonly priorityHelp = $localize`Priority decides how this policy ranks against the others: a lower number means higher precedence, so for an allow/deny decision the matching policy with the lowest priority number wins, while lock, block and email policies all run regardless of priority.`;
   protected readonly priorityHelpAriaLabel = $localize`About priority`;
 
