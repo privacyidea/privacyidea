@@ -138,7 +138,7 @@ from privacyidea.lib.user import log_used_user, User, split_user
 from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent, AUTH_RESPONSE
 from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
 from .lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
-from .lib.utils import get_required, map_error_to_code, send_error, send_result
+from .lib.utils import get_required, get_auth_error_status_code, send_error, send_result
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
 from ..lib.fido2.challenge import create_fido2_challenge, verify_fido2_challenge
 from ..lib.fido2.policy_action import FIDO2PolicyAction
@@ -299,7 +299,7 @@ def offlinerefill():
                 scope=SCOPE.TOKEN,
                 action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE_FOR_OFFLINE_REFILL,
                 user_object=request.User if hasattr(request, "User") else None).any():
-            return send_error("Failed offline token refill", error_code=Error.VALIDATE), map_error_to_code(e)
+            return send_error("Failed offline token refill", error_code=Error.VALIDATE), get_auth_error_status_code(e)
         raise
 
 

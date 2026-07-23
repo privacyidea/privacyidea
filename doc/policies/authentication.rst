@@ -1087,3 +1087,6 @@ type: ``bool``
 
 If this policy is set, failed authentications will return a generic "Authentication failed" message.
 Other information is also removed from the `detail` object of the response.
+
+.. note:: To additionally return a uniform HTTP status code for failed authentications, see
+    the :ref:`policies_hardening` scope policy ``hide_auth_error_status``.

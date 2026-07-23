@@ -34,7 +34,7 @@ from urllib.parse import unquote
 
 import jwt
 from flask import (jsonify,
-                   current_app, request, Response)
+                   current_app, request, g, Response)
 
 from privacyidea.lib.utils import (prepare_result, get_version, to_unicode,
                                    get_plugin_info_from_useragent)
@@ -50,6 +50,8 @@ from privacyidea.lib.params import (  # noqa: F401
 )
 # check_policy_name lives in lib/policy; re-exported here for backward compatibility
 from privacyidea.lib.policy import check_policy_name  # noqa: F401
+from privacyidea.lib.policy import Match, SCOPE
+from privacyidea.lib.policies.actions import PolicyAction
 from ...lib.error import (PolicyError, ResourceNotFoundError,
                           PrivacyIDEAError, AuthError, Error)
 from ...lib.log import log_with
@@ -442,3 +444,34 @@ def map_error_to_code(error: Exception, default: int = 500) -> int:
         if cls in error_mapping:
             return error_mapping[cls]
     return default
+
+
+def get_auth_error_status_code(error: Exception) -> int:
+    """
+    Determine the HTTP status code for an error raised during authentication.
+
+    Normally this is the error's mapped status code (e.g. 401 for AuthError,
+    403 for PolicyError, 404 for ResourceNotFoundError, 400 for other
+    PrivacyIDEAErrors such as a denied authorization). If the
+    hide_auth_error_status policy (HARDENING scope) is set, all of these are
+    collapsed into a uniform 401, so the status code cannot be used to
+    distinguish why the authentication failed.
+
+    Like the other hardening policies this is evaluated without
+    user/realm/resolver/time conditions (client IP and user agent matching
+    still apply). Only requests to the authentication endpoints (/auth and
+    /validate) are affected, so the same error types raised on other endpoints
+    keep their regular status code.
+    """
+    mapped_code = map_error_to_code(error)
+    if request.blueprint not in ("jwtauth", "validate_blueprint"):
+        return mapped_code
+    if "policy_object" not in g or "audit_object" not in g:
+        return mapped_code
+    # Skip the policy evaluation entirely when no hardening policy is configured,
+    # to avoid a full policy match on every auth error while the feature is off.
+    if not g.policy_object.list_policies(scope=SCOPE.HARDENING, active=True):
+        return mapped_code
+    hide_status = Match.action_only(g, scope=SCOPE.HARDENING,
+                                    action=PolicyAction.HIDE_AUTH_ERROR_STATUS).any(write_to_audit_log=False)
+    return 401 if hide_status else mapped_code

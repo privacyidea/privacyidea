@@ -78,6 +78,17 @@ class AValidateOfflineTestCase(MyApiTestCase):
             data = res.json
             self.assertEqual(data["result"]["error"]["code"], Error.VALIDATE)
             self.assertEqual(data["result"]["error"]["message"], "Failed offline token refill")
+
+            # hide_auth_error_status additionally normalizes the masked failure's
+            # HTTP status code to a uniform 401
+            set_policy(name="hide_auth_error_status", scope=SCOPE.HARDENING,
+                       action=PolicyAction.HIDE_AUTH_ERROR_STATUS)
+            try:
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 401, res)
+                self.assertEqual(res.json["result"]["error"]["message"], "Failed offline token refill")
+            finally:
+                delete_policy("hide_auth_error_status")
         finally:
             delete_policy("hide_specific_error_message")
 
