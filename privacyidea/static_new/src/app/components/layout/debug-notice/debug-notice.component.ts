@@ -38,9 +38,12 @@ export class DebugNoticeComponent {
   readonly dismissed = signal(this.readDismissed());
   readonly debugState = computed<DebugState>(() => {
     const level = this.authService.logLevel();
-    if (level <= LogLevel.NotSet || level > LogLevel.Debug) {
+    if (level > LogLevel.Debug) {
       return "normal";
     }
+    // lib/log.py writes passwords to the logfile whenever the effective level is below
+    // DEBUG (10), and it treats level 0 (NOTSET) the same way, so every level below DEBUG
+    // maps to the passwords warning. Level 10 is plain DEBUG with passwords masked.
     return level < LogLevel.Debug ? "debug-passwords" : "debug";
   });
   readonly visible = computed(

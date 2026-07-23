@@ -40,6 +40,11 @@ describe("DebugNoticeComponent", () => {
     fixture.detectChanges();
   });
 
+  afterEach(() => {
+    // The dismiss flag persists in sessionStorage; clear it so it does not leak between tests.
+    sessionStorage.clear();
+  });
+
   it("creates", () => {
     expect(component).toBeTruthy();
   });
@@ -72,6 +77,15 @@ describe("DebugNoticeComponent", () => {
 
   it("escalates to the passwords variant, which also implies debug logging", () => {
     mockAuthService.logLevel.set(LogLevel.Debug - 1);
+    mockAuthService.role.set("admin");
+    fixture.detectChanges();
+
+    expect(component.visible()).toBe(true);
+    expect(fixture.nativeElement.querySelector(".debug-ribbon-text-passwords")).toBeTruthy();
+  });
+
+  it("shows the passwords variant at log level 0 (NOTSET), where lib/log.py still logs passwords", () => {
+    mockAuthService.logLevel.set(LogLevel.NotSet);
     mockAuthService.role.set("admin");
     fixture.detectChanges();
 
