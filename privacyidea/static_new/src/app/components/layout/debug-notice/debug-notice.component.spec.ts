@@ -84,13 +84,13 @@ describe("DebugNoticeComponent", () => {
     expect(fixture.nativeElement.querySelector(".debug-ribbon-text-passwords")).toBeTruthy();
   });
 
-  it("shows the passwords variant at log level 0 (NOTSET), where lib/log.py still logs passwords", () => {
+  it("is hidden when the log level is unset (NOTSET/0)", () => {
     mockAuthService.logLevel.set(LogLevel.NotSet);
     mockAuthService.role.set("admin");
     fixture.detectChanges();
 
-    expect(component.visible()).toBe(true);
-    expect(fixture.nativeElement.querySelector(".debug-ribbon-text-passwords")).toBeTruthy();
+    expect(component.visible()).toBe(false);
+    expect(fixture.nativeElement.querySelector(".debug-ribbon")).toBeNull();
   });
 
   it("does not show the passwords variant for plain debug logging", () => {
