@@ -1,0 +1,63 @@
+<p translate>API clients authenticate against privacyIDEA with an API key that is sent
+    in the <code>X-API-Key</code> header. The plaintext key is shown only once, right
+    after it is created or rotated.</p>
+
+<div class="alert alert-success" ng-show="newApiKey">
+    <button type="button" class="close" ng-click="dismissApiKey()">
+        <span aria-hidden="true">&times;</span>
+    </button>
+    <h4 translate>API key for "{{ newApiKey.display_name }}"</h4>
+    <p translate>Copy this key now. For security reasons it is shown only once and
+        cannot be retrieved again. If you lose it, rotate the key to generate a new one.</p>
+    <pre class="pi-api-key">{{ newApiKey.api_key }}</pre>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-bordered table-responsive table-striped">
+        <thead>
+        <tr>
+            <th translate>Name</th>
+            <th translate>Type</th>
+            <th translate>Status</th>
+            <th translate>Key ID</th>
+            <th translate>Created</th>
+            <th translate>Last used</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="client in clients">
+            <td>
+                <a ui-sref="config.clients.edit({clientid:client.id})">
+                    {{ client.display_name }}</a>
+            </td>
+            <td>{{ client.client_type }}</td>
+            <td>
+                <span class="label"
+                      ng-class="{'label-success': client.status === 'active',
+                                 'label-warning': client.status === 'suspended',
+                                 'label-danger': client.status === 'revoked'}">
+                    {{ client.status }}</span>
+            </td>
+            <td><code>pi_{{ client.key_id }}</code></td>
+            <td>{{ client.created_at | date:'yyyy-MM-dd HH:mm' }}</td>
+            <td>{{ (client.last_used_at | date:'yyyy-MM-dd HH:mm') || '-' }}</td>
+            <td>
+                <button class="btn btn-default"
+                        ng-show="checkRight('clients_rotate')"
+                        ng-click="rotateClientKey(client.id)">
+                    <span class="glyphicon glyphicon-refresh"></span>
+                    <span translate>Rotate key</span>
+                </button>
+                <button class="btn btn-danger"
+                        ng-show="checkRight('clients_delete')"
+                        data-confirmation-text="{{ 'Do you really want to delete this client?' | translate }}"
+                        ng-click="confirmDelete(delClient, client.id)">
+                    <span class="glyphicon glyphicon-trash"></span>
+                    <span translate>Delete</span>
+                </button>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>

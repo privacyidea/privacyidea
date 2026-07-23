@@ -287,6 +287,7 @@ class GROUP:
     SETTING_ACTIONS = "setting actions"
     TOKENGROUP = "tokengroup"
     SERVICEID = "service ID"
+    CLIENTS = "clients"
     CONTAINER = "container"
     REGISTRATION = "registration and synchronization"
     SMARTPHONE = "smartphone"
@@ -623,7 +624,8 @@ class PolicyClass:
                        audit_data: dict | None = None, request_headers: EnvironHeaders | None = None,
                        serial: str | None = None, extended_condition_check: int | list[str] | None = None,
                        additional_realms: list | None = None, container_serial: str | None = None,
-                       request_data: dict | None = None, user_agent: str | None = None) -> list[dict]:
+                       request_data: dict | None = None, user_agent: str | None = None,
+                       client_id: str | None = None) -> list[dict]:
         """
         Return all policies matching the given context.
         Optionally, write the matching policies to the audit log.
@@ -712,7 +714,7 @@ class PolicyClass:
             try:
                 reduced_policies = self.filter_policies_by_conditions(reduced_policies, user_object, request_headers,
                                                                       serial, extended_condition_check,
-                                                                      container_serial, request_data)
+                                                                      container_serial, request_data, client_id)
             except PolicyError:
                 # Add the information on which actions triggered the error to the logs
                 log.error(f"Error checking extended conditions for action '{action}'.")
@@ -763,7 +765,8 @@ class PolicyClass:
                                       request_headers: EnvironHeaders | None = None, serial: str | None = None,
                                       extended_condition_check: None | int | list[str] = None,
                                       container_serial: str | None = None,
-                                      request_data: dict | None = None) -> list[dict]:
+                                      request_data: dict | None = None,
+                                      client_id: str | None = None) -> list[dict]:
         """
         Evaluates for each policy condition if it matches the actual request (user / token / request headers) and
         returns a list of all matching policies.
@@ -778,6 +781,7 @@ class PolicyClass:
             None - check all).
         :param container_serial: The serial of a container or None if not contained in the request data
         :param request_data: The request data as dictionary, if available
+        :param client_id: The id of the API client of the request (g.client_id) or None
         :return: a list of matching policy dictionaries
         """
         reduced_policies = []
@@ -798,7 +802,7 @@ class PolicyClass:
                     # We check conditions, either if we are supposed to check everything or if
                     # the section is contained in the extended condition check
                     include_policy = condition.match(policy_name, user_object, serial, request_headers,
-                                                     container_serial, request_data)
+                                                     container_serial, request_data, client_id)
 
                     if not include_policy:
                         # condition does not match request, no need to check the remaining conditions
@@ -2156,6 +2160,26 @@ def get_static_policy_definitions(scope=None):
                 'desc': _("The Admin is allowed delete a service ID definition."),
                 'mainmenu': [MAIN_MENU.CONFIG],
                 'group': GROUP.SERVICEID},
+            PolicyAction.CLIENTS_LIST: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed to list the API clients."),
+                'mainmenu': [MAIN_MENU.CONFIG],
+                'group': GROUP.CLIENTS},
+            PolicyAction.CLIENTS_ADD: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed to create and modify API clients."),
+                'mainmenu': [MAIN_MENU.CONFIG],
+                'group': GROUP.CLIENTS},
+            PolicyAction.CLIENTS_DELETE: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed to delete an API client."),
+                'mainmenu': [MAIN_MENU.CONFIG],
+                'group': GROUP.CLIENTS},
+            PolicyAction.CLIENTS_ROTATE: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed to rotate the API key of a client."),
+                'mainmenu': [MAIN_MENU.CONFIG],
+                'group': GROUP.CLIENTS},
             PolicyAction.TOKENGROUPS: {
                 'type': 'bool',
                 'desc': _("The Admin is allowed to manage the tokengroups of a token."),
@@ -2565,6 +2589,11 @@ def get_static_policy_definitions(scope=None):
             }
         },
         SCOPE.AUTH: {
+            PolicyAction.REMEMBER_DEVICE: {
+                'type': 'bool',
+                'desc': _("Allow an API client to obtain a persistent 'remember this device' "
+                          "cookie on successful authentication. Combine with a 'client' condition "
+                          "to enable this only for specific API clients.")},
             PolicyAction.OTPPIN: {
                 'type': 'str',
                 'value': [ACTIONVALUE.TOKENPIN, ACTIONVALUE.USERSTORE,
@@ -3204,6 +3233,10 @@ def get_policy_condition_sections():
         },
         ConditionSection.REQUEST_DATA: {
             "description": _("The policy only matches if certain conditions on the request data are fulfilled.")
+        },
+        ConditionSection.CLIENT: {
+            "description": _("The policy only matches if certain conditions on the API client (identified by the "
+                             "X-API-Key header) are fulfilled.")
         }
     }
 
@@ -3305,7 +3338,8 @@ class Match:
             if "password" in request_data:
                 del request_data["password"]
         return self._g.policy_object.match_policies(audit_data=audit_data, request_headers=request_headers,
-                                                    pinode=self.pinode, request_data=request_data, **self._match_kwargs)
+                                                    pinode=self.pinode, request_data=request_data,
+                                                    client_id=self._g.get("client_id"), **self._match_kwargs)
 
     def any(self, write_to_audit_log=True):
         """

@@ -1,0 +1,65 @@
+<h2 class="form-signin-heading"
+    ng-show="clientid"
+    translate>Edit client "{{ client.display_name }}"</h2>
+<h2 class="form-signin-heading"
+    ng-hide="clientid"
+    translate>Create a new client</h2>
+
+<form name="formClient" role="form" validate
+      class="form-horizontal">
+
+    <div class="form-group">
+        <label for="display_name" class="col-sm-3 control-label"
+               translate>Display name</label>
+        <div class="col-sm-9">
+            <input name="display_name" id="display_name" class="form-control"
+                   ng-model="params.display_name" required
+                   placeholder="My Windows Credential Provider"
+                   autofocus/>
+        </div>
+    </div>
+
+    <div class="form-group" ng-hide="clientid">
+        <label for="client_type" class="col-sm-3 control-label"
+               translate>Client type</label>
+        <div class="col-sm-9">
+            <select name="client_type" id="client_type" class="form-control"
+                    ng-model="params.client_type" required
+                    ng-options="type for type in clientTypes">
+            </select>
+            <p class="help-block" translate>The kind of integration this client
+                represents. This cannot be changed later.</p>
+        </div>
+    </div>
+
+    <div class="form-group" ng-show="clientid">
+        <label class="col-sm-3 control-label" translate>Client type</label>
+        <div class="col-sm-9">
+            <p class="form-control-static">{{ client.client_type }}</p>
+        </div>
+    </div>
+
+    <div class="form-group" ng-show="clientid">
+        <label for="status" class="col-sm-3 control-label"
+               translate>Status</label>
+        <div class="col-sm-9">
+            <select name="status" id="status" class="form-control"
+                    ng-model="params.status"
+                    ng-options="state for state in clientStates">
+            </select>
+            <p class="help-block" translate>Only "active" clients can authenticate.
+                Set to "suspended" or "revoked" to block the API key without deleting
+                the client.</p>
+        </div>
+    </div>
+
+    <div class="text-center"
+         ng-show="checkRight('clients_add')">
+        <button ng-click="saveClient()"
+                ng-disabled="formClient.$invalid"
+                class="btn btn-primary"
+                translate>Save client
+        </button>
+    </div>
+
+</form>

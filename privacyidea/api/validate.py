@@ -115,6 +115,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            disabled_token_types, load_challenge_text)
 from privacyidea.api.lib.utils import get_all_params, get_optional_one_of, get_optional, INTERNAL_OPTION_KEYS
 from privacyidea.api.recover import recover_blueprint
+from privacyidea.lib.authsession import create_auth_session, set_persistent_cookie
 from privacyidea.api.register import register_blueprint
 from privacyidea.lib.applications.offline import MachineApplication
 from privacyidea.lib.audit import getAudit
@@ -737,6 +738,22 @@ def _finalize_auth_response(context):
 
     serials_str = ",".join(context["serial_list"])
     ret = send_result(context["result"], rid=2, details=details, **context["response_params"])
+
+    # On successful authentication, an API client can opt in to a persistent
+    # "remember this device" cookie. It is only issued if the request is bound to
+    # an API client (g.client_id) and the remember_device policy allows it for
+    # this client (the policy's optional "client" condition is evaluated against
+    # g.client_id). The cookie carries only a rotating series_id:counter token,
+    # never the API key.
+    if (success and g.get("client_id")
+            and is_true(get_optional(request.all_data, "request_persistent_cookie"))
+            and Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE,
+                           user_object=user).any()):
+        session, cookie_value = create_auth_session(user_id=user.login or serials_str,
+                                                    client_id=g.client_id,
+                                                    ip_address=g.client_ip,
+                                                    user_agent=g.get("user_agent"))
+        set_persistent_cookie(ret, cookie_value, session.expires_at)
 
     g.audit_object.log({
         "info": log_used_user(user, details.get("message")),

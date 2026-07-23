@@ -37,6 +37,7 @@ from .lib.utils import (get_all_params, get_optional, map_error_to_code, send_er
 from .container import container_blueprint
 from ..lib.container import find_container_for_token, find_container_by_serial
 from ..lib.framework import get_app_config_value
+from ..lib.clients import get_active_client_by_key, touch_client
 from ..lib.policies.actions import PolicyAction
 from ..lib.user import get_user_from_param
 import logging
@@ -76,6 +77,7 @@ from .subscriptions import subscriptions_blueprint
 from .monitoring import monitoring_blueprint
 from .tokengroup import tokengroup_blueprint
 from .serviceid import serviceid_blueprint
+from .clients import clients_blueprint
 from .healthcheck import healthz_blueprint
 from .info import info_blueprint
 from privacyidea.api.lib.postpolicy import postrequest, sign_response, hide_version
@@ -97,6 +99,32 @@ log = logging.getLogger(__name__)
 def log_begin_request():
     log.debug(f"Begin handling of request {request.full_path!r}")
     g.startdate = datetime.datetime.now()
+
+
+@token_blueprint.before_app_request
+def identify_api_client():
+    """
+    Identify the API client from the ``X-API-Key`` header for *every* request.
+
+    If the header is missing, ``g.client_id`` is set to ``None`` so that legacy
+    clients which do not send an API key keep working. If the header is present
+    but the key is unknown or the client is not active, the request is rejected
+    with 401. On success ``g.client_id`` is set and the client's usage timestamp
+    is updated.
+    """
+    api_key = request.headers.get("X-API-Key")
+    if not api_key:
+        g.client_id = None
+        return
+
+    client = get_active_client_by_key(api_key)
+    if not client:
+        raise AuthError(_("Authentication failure. Invalid or revoked API key."))
+
+    g.client_id = client.id
+    # This writes to the database on every authenticated request. If it ever
+    # becomes a hotspot, throttle the update to only refresh a stale timestamp.
+    touch_client(client)
 
 
 @token_blueprint.teardown_app_request
@@ -200,6 +228,7 @@ def before_userendpoint_request():
 @monitoring_blueprint.before_request
 @tokengroup_blueprint.before_request
 @serviceid_blueprint.before_request
+@clients_blueprint.before_request
 @admin_required
 def before_admin_request():
     before_request()
@@ -463,6 +492,7 @@ def before_request():
 @recover_blueprint.after_request
 @tokengroup_blueprint.after_request
 @serviceid_blueprint.after_request
+@clients_blueprint.after_request
 @container_blueprint.after_request
 @info_blueprint.after_request
 @jwtauth.after_request

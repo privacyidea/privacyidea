@@ -39,6 +39,8 @@ from .audit import Audit, audit_column_length
 from .cache import AuthCache, UserCache
 from .caconnector import CAConnector, CAConnectorConfig
 from .challenge import Challenge, cleanup_challenges
+from .client import Client
+from .authsession import AuthSession
 from .config import (Config, NodeName, Admin, PasswordReset,
                      save_config_timestamp, PRIVACYIDEA_TIMESTAMP)
 from .customuserattribute import CustomUserAttribute
@@ -69,7 +71,8 @@ from .usersetting import UserSetting
 
 # We don't use "import *" but to avoid the unused import warning we define this
 __all__ = ["db", "Audit", "audit_column_length", "AuthCache", "UserCache",
-           "CAConnector", "CAConnectorConfig", "Challenge", "cleanup_challenges",
+           "CAConnector", "CAConnectorConfig", "Challenge", "cleanup_challenges", "Client",
+           "AuthSession",
            "Config", "NodeName", "Admin", "PasswordReset", "save_config_timestamp",
            "PRIVACYIDEA_TIMESTAMP", "CustomUserAttribute", "InternalUserAttribute",
            "EventHandler", "EventHandlerOption", "EventHandlerCondition", "EventCounter",
