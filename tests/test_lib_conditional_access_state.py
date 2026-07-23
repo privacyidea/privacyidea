@@ -101,10 +101,12 @@ class LockoutStateTestCase(MyTestCase):
         self.assertFalse(entry["permanent"])
         self.assertGreater(entry["seconds_remaining"], 0)
 
-    def test_list_locked_users_excludes_expired(self):
-        # is_locked=True but the expiry is in the past -> no longer enforced.
+    def test_list_locked_users_default_returns_all_states(self):
+        # No states filter -> everything, including expired records.
         self._lock(utc_now() - timedelta(seconds=60))
-        self.assertListEqual([], list_locked_users())
+        self.assertEqual(1, len(list_locked_users()))
+        # Restricting to the currently-locked states hides the expired one.
+        self.assertListEqual([], list_locked_users(states=["permanent", "temporary"]))
 
     def test_list_locked_users_active_row(self):
         self._lock(utc_now() + timedelta(seconds=600))
@@ -112,13 +114,26 @@ class LockoutStateTestCase(MyTestCase):
         self.assertTrue(row["is_locked"])
         self.assertGreater(row["seconds_remaining"], 0)
 
-    def test_list_locked_users_include_expired_marks_stale(self):
-        self._lock(utc_now() - timedelta(seconds=60))
-        users = list_locked_users(include_expired=True)
-        self.assertEqual(1, len(users))
-        # A stale row is a timed lock whose window has elapsed.
-        self.assertFalse(users[0]["permanent"])
-        self.assertEqual(0, users[0]["seconds_remaining"])
+    def test_list_locked_users_states_filter(self):
+        self._lock(utc_now() + timedelta(seconds=600))                                  # temporary
+        self._lock(None, resolver=self.resolvername1, uid="2", realm=self.realm1, username="perm")  # permanent
+        self._lock(utc_now() - timedelta(seconds=60),
+                   resolver=self.resolvername1, uid="3", realm=self.realm1, username="old")  # expired
+        # No states filter -> all three states.
+        self.assertEqual(3, len(list_locked_users()))
+        # Restricting to the currently-locked states hides the expired one.
+        self.assertEqual(2, len(list_locked_users(states=["permanent", "temporary"])))
+        # Explicitly request only expired.
+        expired = list_locked_users(states=["expired"])
+        self.assertEqual(1, len(expired))
+        self.assertFalse(expired[0]["permanent"])
+        self.assertEqual(0, expired[0]["seconds_remaining"])
+        # Only permanent.
+        permanent = list_locked_users(states=["permanent"])
+        self.assertEqual(1, len(permanent))
+        self.assertTrue(permanent[0]["permanent"])
+        # All three.
+        self.assertEqual(3, len(list_locked_users(states=["permanent", "temporary", "expired"])))
 
     def test_list_locked_users_includes_permanent(self):
         self._lock(None)

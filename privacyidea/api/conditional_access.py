@@ -249,7 +249,7 @@ def get_locked_users():
 
     Requires the admin policy action :ref:`policy_user_lockout_read`.
 
-    The ``realm`` / ``resolver`` / ``username`` filters accept a comma-separated list
+    The ``realms`` / ``resolvers`` / ``usernames`` filters accept a comma-separated list
     and a ``*`` wildcard per value (matched with ``LIKE``); with ``case_insensitive``
     the plain values match case-insensitively too. These search filters are applied on
     top of — and never widen — the visibility scope.
@@ -257,8 +257,9 @@ def get_locked_users():
     :query realms: realm(s) to filter by
     :query resolvers: resolver(s) to filter by
     :query usernames: login(s) to filter by
+    :query states: lock state(s) to include — any of ``permanent``, ``temporary``,
+        ``expired`` (comma-separated).
     :query case_insensitive: match the filter values case-insensitively
-    :query include_expired: also list stale (expired) locks
     :query page: page number, 1-indexed (default 1)
     :query page_size: entries per page (default 15)
     :query sort_column: one of username, realm, resolver, lock_expires_at, last_updated
@@ -271,7 +272,7 @@ def get_locked_users():
         realms=to_list_param(get_optional(params, "realms")),
         resolvers=to_list_param(get_optional(params, "resolvers")),
         usernames=to_list_param(get_optional(params, "usernames")),
-        include_expired=is_true(get_optional(params, "include_expired")),
+        states=to_list_param(get_optional(params, "states")),
         case_insensitive=is_true(get_optional(params, "case_insensitive")),
         visibility_scopes=visibility_scopes,
         page=_int_param(get_optional(params, "page"), 1),

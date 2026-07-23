@@ -42,6 +42,12 @@ log = logging.getLogger(__name__)
 
 DEFAULT_PAGE_SIZE = 15
 
+# The lock "state" is derived from lock_expires_at vs. now:
+#   permanent  -> lock_expires_at IS NULL
+#   temporary  -> lock_expires_at in the future  (actively locked, will lift on its own)
+#   expired    -> lock_expires_at in the past     (stale record, no longer enforced)
+LOCK_STATES = ("permanent", "temporary", "expired")
+
 # Columns the locked-users list may be sorted by (any other value falls back to last_updated).
 SORTABLE_COLUMNS = {
     "username": UserLockoutState.username,
@@ -61,6 +67,25 @@ def _seconds_remaining(expires_at: datetime | None, now: datetime) -> int | None
 def _not_expired_condition(expiry_column, now: datetime):
     # Currently in force: a permanent restriction (NULL expiry) or a timed one whose expiry is still ahead.
     return or_(expiry_column.is_(None), expiry_column > now)
+
+
+def _state_condition(states: list[str] | None, now: datetime) -> ColumnElement[bool] | None:
+    """
+    WHERE clause selecting the requested lock *states* (see :data:`LOCK_STATES`), OR-ed together. Unknown
+    values are ignored; when no valid state is requested, ``None`` is returned (no state restriction —
+    all states, including expired).
+    """
+    clauses = []
+    for state in (states or []):
+        if state == "permanent":
+            clauses.append(UserLockoutState.lock_expires_at.is_(None))
+        elif state == "temporary":
+            clauses.append(and_(UserLockoutState.lock_expires_at.isnot(None),
+                                UserLockoutState.lock_expires_at > now))
+        elif state == "expired":
+            clauses.append(and_(UserLockoutState.lock_expires_at.isnot(None),
+                                UserLockoutState.lock_expires_at <= now))
+    return or_(*clauses) if clauses else None
 
 
 def _locked_user_dict(row: UserLockoutState, now: datetime) -> dict:
@@ -145,15 +170,25 @@ def user_matches_scopes(user: User, scopes: list | None) -> bool:
 
 
 def _lockout_conditions(realms: list[str] | None, resolvers: list[str] | None,
-                        usernames: list[str] | None, include_expired: bool,
+                        usernames: list[str] | None, states: list[str] | None,
                         visibility_scopes: list | None, now: datetime,
                         case_insensitive: bool) -> list[ColumnElement[bool]]:
     """
-    Build the WHERE conditions for a locked-users query. The realm/resolver/username
-    *filters* (user search) use the same wildcard (`*`) + optional case-insensitive
-    semantics; they are separate AND clauses from the case-sensitive authorization
-    boundary (:func:`_visibility_condition`), so search behaviour never widens the
-    visibility scope.
+    Build the WHERE conditions for a locked-users query.
+
+    The realm/resolver/username *filters* are separate AND clauses from the case-sensitive authorization
+    boundary (``visibility_scopes``), so search behaviour never widens the visibility scope.
+
+    :param realms: realm(s) to match (wildcard ``*`` per value); ``None``/empty means no realm filter
+    :param resolvers: resolver(s) to match (wildcard ``*`` per value); ``None``/empty means no resolver filter
+    :param usernames: login(s) to match (wildcard ``*`` per value); ``None``/empty means no username filter
+    :param states: lock state(s) to include (see :func:`_state_condition`); ``None``/empty means no state
+        filter (all states, including expired)
+    :param visibility_scopes: the admin's policy visibility boundary (see :func:`_visibility_condition`);
+        ``None`` means unrestricted
+    :param now: the reference time used to classify temporary vs. expired
+    :param case_insensitive: match the realm/resolver/username filter values case-insensitively
+    :return: the list of SQLAlchemy ``where`` conditions (AND-ed by the caller)
     """
     conditions: list[ColumnElement[bool]] = [UserLockoutState.is_locked.is_(True)]
     for column, value in ((UserLockoutState.realm, realms),
@@ -162,8 +197,9 @@ def _lockout_conditions(realms: list[str] | None, resolvers: list[str] | None,
         condition = _match_condition(column, value, case_insensitive)
         if condition is not None:
             conditions.append(condition)
-    if not include_expired:
-        conditions.append(_not_expired_condition(UserLockoutState.lock_expires_at, now))
+    state_condition = _state_condition(states, now)
+    if state_condition is not None:
+        conditions.append(state_condition)
     if visibility_scopes is not None:
         conditions.append(_visibility_condition(visibility_scopes))
     return conditions
@@ -171,7 +207,7 @@ def _lockout_conditions(realms: list[str] | None, resolvers: list[str] | None,
 
 @log_with(log)
 def list_locked_users(realms: list[str] | None = None, resolvers: list[str] | None = None,
-                      usernames: list[str] | None = None, include_expired: bool = False,
+                      usernames: list[str] | None = None, states: list[str] | None = None,
                       visibility_scopes: list | None = None, case_insensitive: bool = False,
                       now: datetime | None = None) -> list[dict]:
     """
@@ -180,7 +216,7 @@ def list_locked_users(realms: list[str] | None = None, resolvers: list[str] | No
     :func:`list_locked_users_paginate` for the paginated variant.
     """
     moment = now if now is not None else utc_now()
-    conditions = _lockout_conditions(realms, resolvers, usernames, include_expired,
+    conditions = _lockout_conditions(realms, resolvers, usernames, states,
                                      visibility_scopes, moment, case_insensitive)
     stmt = select(UserLockoutState).where(*conditions).order_by(UserLockoutState.last_updated.desc())
     return [_locked_user_dict(row, moment) for row in db.session.scalars(stmt).all()]
@@ -188,7 +224,7 @@ def list_locked_users(realms: list[str] | None = None, resolvers: list[str] | No
 
 @log_with(log)
 def list_locked_users_paginate(realms: list[str] | None = None, resolvers: list[str] | None = None,
-                               usernames: list[str] | None = None, include_expired: bool = False,
+                               usernames: list[str] | None = None, states: list[str] | None = None,
                                visibility_scopes: list | None = None, case_insensitive: bool = False,
                                page: int = 1, page_size: int = DEFAULT_PAGE_SIZE,
                                sort_column: str = "last_updated", sort_order: str = "desc",
@@ -202,7 +238,7 @@ def list_locked_users_paginate(realms: list[str] | None = None, resolvers: list[
     order across pages.
     """
     moment = now if now is not None else utc_now()
-    conditions = _lockout_conditions(realms, resolvers, usernames, include_expired,
+    conditions = _lockout_conditions(realms, resolvers, usernames, states,
                                      visibility_scopes, moment, case_insensitive)
     count = db.session.scalar(
         select(func.count()).select_from(UserLockoutState).where(*conditions))

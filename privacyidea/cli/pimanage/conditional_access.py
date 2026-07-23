@@ -82,7 +82,9 @@ def purge_expired_blocks():
 
 @conditional_access_cli.command("list-locked-users", help="List the currently locked users.")
 def list_locked_users_cmd():
-    users = list_locked_users()
+    # "currently locked" = permanent + temporary; expired stale records are excluded here (clear them with
+    # purge-expired-locks).
+    users = list_locked_users(states=["permanent", "temporary"])
     if not users:
         click.echo("No locked users.")
         return

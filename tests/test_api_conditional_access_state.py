@@ -153,16 +153,17 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
                                     ).json["result"]["value"]
         self.assertEqual(1, insensitive["count"])
 
-    def test_list_locked_users_include_expired(self):
+    def test_list_locked_users_states_filter(self):
         self._lock_user(utc_now() - timedelta(seconds=60))
-        # By default the stale lock is hidden.
-        self.assertListEqual([], self._request("lockout/users").json["result"]["value"]["locked_users"])
-        # With include_expired it is returned.
-        page = self._request("lockout/users",
-                             query_string={"include_expired": "1"}).json["result"]["value"]
-        self.assertEqual(1, len(page["locked_users"]))
-        # The stale row is a timed lock whose window has elapsed.
-        self.assertEqual(0, page["locked_users"][0]["seconds_remaining"])
+        # No states filter -> all states, so the expired lock is returned.
+        default = self._request("lockout/users").json["result"]["value"]["locked_users"]
+        self.assertEqual(1, len(default))
+        self.assertEqual(0, default[0]["seconds_remaining"])
+        # Restricting to the currently-locked states hides it.
+        hidden = self._request(
+            "lockout/users", query_string={"states": "permanent,temporary"}
+        ).json["result"]["value"]["locked_users"]
+        self.assertListEqual([], hidden)
 
     def test_purge_user_lockouts(self):
         self._lock_user(utc_now() - timedelta(seconds=60))  # expired -> purged
