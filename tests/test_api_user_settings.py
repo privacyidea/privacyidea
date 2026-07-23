@@ -39,15 +39,35 @@ class UserSettingsAPITestCase(MyApiTestCase):
         # GET returns exactly the same shape
         self.assertEqual(post_value, self._get().json["result"]["value"])
 
-    def test_03_open_mode_accepts_unknown_key(self):
-        # Key enforcement is not active yet (see the TODO in validate_user_settings),
-        # so the frontend may store any key.
+    def test_03_post_rejects_unknown_key(self):
+        # Only known top-level keys may be stored; the TS union in the WebUI is
+        # a compile-time hint only, the endpoint is what enforces it.
         res = self._post({"settings": {"frontend_key": "v"}})
+        self.assertEqual(400, res.status_code, res)
+        self.assertIn("frontend_key", res.json["result"]["error"]["message"])
+        # A rejected document is not partially applied
+        self.assertNotIn("frontend_key", self._get().json["result"]["value"])
+
+    def test_03b_post_accepts_configured_key(self):
+        self.app.config["PI_USER_SETTINGS_ALLOWED_KEYS"] = ["frontend_key"]
+        try:
+            res = self._post({"settings": {"frontend_key": "v"}})
+        finally:
+            del self.app.config["PI_USER_SETTINGS_ALLOWED_KEYS"]
         self.assertEqual(200, res.status_code, res)
         self.assertEqual("v", res.json["result"]["value"]["frontend_key"])
 
+    def test_03c_delete_accepts_unknown_key(self):
+        # Deleting is not key-checked, so a leftover from an earlier allow-list
+        # can still be cleaned up.
+        with self.app.test_request_context('/user/settings/frontend_key', method='DELETE',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res)
+        self.assertNotIn("frontend_key", res.json["result"]["value"])
+
     def test_04_post_rejects_oversized_payload(self):
-        res = self._post({"settings": {"big": "x" * (MAX_SETTINGS_BYTES + 1000)}})
+        res = self._post({"settings": {"theme": "x" * (MAX_SETTINGS_BYTES + 1000)}})
         self.assertEqual(400, res.status_code, res)
 
     def test_04b_post_rejects_non_object_settings(self):

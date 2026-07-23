@@ -626,9 +626,12 @@ The set of accepted setting keys can be extended without a code change::
     PI_USER_SETTINGS_ALLOWED_KEYS = ["my_custom_key", "another_key"]
 
 The value is a list of additional allowed keys (a comma-separated string is also
-accepted when set via an environment variable).
+accepted when set via an environment variable). They are accepted in addition to
+the keys the Web UI itself uses; writing any other top-level key is rejected with
+a 400 error. The *values* are never validated -- the backend stores them
+verbatim, subject only to the overall size limit.
 
-.. note:: Key enforcement is not active yet. Currently any key is accepted (only
-   the document structure and a size limit are enforced) so the Web UI can evolve
-   its settings freely. ``PI_USER_SETTINGS_ALLOWED_KEYS`` will take effect once
-   key enforcement is enabled.
+.. note:: Removing a key from ``PI_USER_SETTINGS_ALLOWED_KEYS`` does not delete
+   values that were already stored under it, and it does not prevent the
+   remaining keys from being updated. Such leftovers can be removed with a
+   ``DELETE`` to ``/user/settings/<key>``, which is not key-checked.

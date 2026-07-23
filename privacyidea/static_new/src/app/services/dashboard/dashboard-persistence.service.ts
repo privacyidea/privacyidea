@@ -16,26 +16,59 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Injectable } from "@angular/core";
+import { inject, Injectable } from "@angular/core";
 import { WidgetInstance } from "@models/dashboard";
+import { UserSettingsService, UserSettingsServiceInterface } from "@services/user-settings/user-settings.service";
+import { catchError, map, Observable, of } from "rxjs";
+
+/** Shape of the "dashboard" key inside the user settings document. */
+export interface DashboardSetting {
+  widgets: WidgetInstance[];
+}
 
 export interface DashboardPersistenceServiceInterface {
-  load(): WidgetInstance[] | null;
+  load(): Observable<WidgetInstance[] | null>;
 
-  save(widgets: WidgetInstance[]): void;
+  save(widgets: WidgetInstance[]): Observable<void>;
 }
 
 @Injectable({
   providedIn: "root"
 })
 export class DashboardPersistenceService implements DashboardPersistenceServiceInterface {
-  private store: WidgetInstance[] | null = null;
+  private readonly userSettings: UserSettingsServiceInterface = inject(UserSettingsService);
 
-  public load(): WidgetInstance[] | null {
-    return this.store ? structuredClone(this.store) : null;
+  public load(): Observable<WidgetInstance[] | null> {
+    return this.userSettings.getSetting<DashboardSetting>("dashboard").pipe(
+      map((setting) => this.readWidgets(setting)),
+      catchError(() => of(null))
+    );
   }
 
-  public save(widgets: WidgetInstance[]): void {
-    this.store = structuredClone(widgets);
+  public save(widgets: WidgetInstance[]): Observable<void> {
+    return this.userSettings.setSetting<DashboardSetting>("dashboard", { widgets }).pipe(
+      map(() => undefined),
+      catchError(() => of(undefined))
+    );
+  }
+
+  private readWidgets(setting: DashboardSetting | null): WidgetInstance[] | null {
+    const widgets = setting?.widgets;
+    if (!Array.isArray(widgets)) {
+      return null;
+    }
+    return widgets.filter((widget) => this.isWidgetInstance(widget));
+  }
+
+  private isWidgetInstance(widget: unknown): widget is WidgetInstance {
+    const candidate = widget as Partial<WidgetInstance> | null;
+    return (
+      !!candidate &&
+      typeof candidate.id === "string" &&
+      typeof candidate.type === "string" &&
+      [candidate.x, candidate.y, candidate.cols, candidate.rows].every(
+        (value) => typeof value === "number" && Number.isFinite(value)
+      )
+    );
   }
 }

@@ -56,19 +56,19 @@ MAX_SETTINGS_BYTES = 16384
 # pi.cfg / environment option letting admins extend the set of accepted setting
 # keys without a code change, e.g. PI_USER_SETTINGS_ALLOWED_KEYS = ["foo", "bar"].
 # Accepts a list (pi.cfg) or a comma-separated string (environment variable).
-# Placeholder for now: get_allowed_keys() is wired up but not yet enforced (see
-# the TODO in validate_user_settings).
 USER_SETTINGS_ALLOWED_KEYS_CONFIG = "PI_USER_SETTINGS_ALLOWED_KEYS"
 
-# Registry of the top-level setting keys the WebUI may store. Only used to seed
-# the (not-yet-enforced) allow-list; the backend stores the *values* verbatim
-# and never validates their structure. Admins can add further accepted keys via
+# Registry of the top-level setting keys the WebUI may store; writing any other
+# key is rejected. The backend stores the *values* verbatim and never validates
+# their structure. Admins can add further accepted keys via
 # PI_USER_SETTINGS_ALLOWED_KEYS without touching this registry.
 #
-# NOTE: these names are PLACEHOLDERS reflecting the intended settings. The
-# frontend team defines the real set; do not treat them as a committed API yet.
+# Mirrored by UserSettingKey in
+# privacyidea/static_new/src/app/services/user-settings/user-settings.service.ts
+# -- keep both sides in sync when a setting is added or removed.
 KNOWN_SETTING_KEYS = {
     "theme",
+    "locale",
     "starting_page",
     "token_columns",
     "dashboard",
@@ -147,19 +147,30 @@ class SettingsSubject:
                    user_id=user.uid or "", resolver=user.resolver or "", realm_id=user.realm_id)
 
 
-def validate_user_settings(settings: dict) -> None:
+def validate_user_settings(settings: dict, check_keys: bool = True) -> None:
     """
     Validate a settings document before it is stored.
 
-    For now this only enforces structure: the document must be a JSON object,
-    be JSON-serializable, and stay within :data:`MAX_SETTINGS_BYTES`. Any key
-    with any value is accepted so the frontend can iterate on the setting set
-    without a backend change.
+    The document must be a JSON object, be JSON-serializable, stay within
+    :data:`MAX_SETTINGS_BYTES` and -- unless ``check_keys`` is false -- only use
+    top-level keys from :func:`get_allowed_keys`. Values stay unvalidated: the
+    backend remains a pass-through store and the WebUI owns their structure.
+
+    :param check_keys: whether to enforce the top-level key allow-list. Pass
+        ``False`` to check only structure and size, e.g. when re-validating a
+        merged document that may still carry keys stored before the allow-list
+        was enforced (or before an admin removed a key from
+        ``PI_USER_SETTINGS_ALLOWED_KEYS``); such keys must not block writing
+        the keys that *are* allowed. They can still be removed via DELETE.
 
     Raises :class:`ParameterError` on the first problem found.
     """
     if not isinstance(settings, dict):
         raise ParameterError("The settings must be a JSON object.")
+    if check_keys:
+        unknown = sorted(key for key in settings if key not in get_allowed_keys())
+        if unknown:
+            raise ParameterError(f"Unknown settings key(s): {', '.join(unknown)}.")
     try:
         # ensure_ascii=False so the byte count matches what the JSON column
         # actually stores; the default would inflate non-ASCII characters into
@@ -169,10 +180,6 @@ def validate_user_settings(settings: dict) -> None:
         raise ParameterError(f"The settings must be JSON-serializable: {error}")
     if len(serialized.encode("utf-8")) > MAX_SETTINGS_BYTES:
         raise ParameterError(f"The settings exceed the maximum size of {MAX_SETTINGS_BYTES} bytes.")
-    # TODO: Enforce the top-level key allow-list once the frontend has settled
-    #  the set of settings: reject any key not in get_allowed_keys()
-    #  (KNOWN_SETTING_KEYS + PI_USER_SETTINGS_ALLOWED_KEYS). Values stay
-    #  unvalidated -- the backend remains a pass-through store.
 
 
 def _select_for_subject(subject: SettingsSubject):
@@ -226,7 +233,9 @@ def set_user_settings(subject: SettingsSubject, settings: dict, replace: bool = 
     new_settings = _merge_settings(row.settings if row else None, settings, replace)
     # Re-validate the full document, not just the incoming delta, so the size
     # cap cannot be bypassed by accumulating keys across repeated partial writes.
-    validate_user_settings(new_settings)
+    # Keys are not re-checked here: the incoming delta was already checked, and
+    # a stored key that is no longer allowed must not block updating the others.
+    validate_user_settings(new_settings, check_keys=False)
     if not new_settings:
         # Store absence rather than an empty document (absent == empty).
         if row is not None:
@@ -250,7 +259,7 @@ def set_user_settings(subject: SettingsSubject, settings: dict, replace: bool = 
         if row is None:
             raise
         row.settings = _merge_settings(row.settings, settings, replace)
-        validate_user_settings(row.settings)
+        validate_user_settings(row.settings, check_keys=False)
         row.save()
     return row.settings or {}
 
@@ -264,6 +273,10 @@ def delete_user_settings(subject: SettingsSubject, key: str | None = None) -> di
     WebUI falls back to its own default, which also tracks future default
     changes (unlike pinning the current default value). When the last key is
     removed the row is dropped, keeping absent == empty.
+
+    ``key`` is deliberately not checked against :func:`get_allowed_keys`: a key
+    that is no longer allowed is exactly the one an admin needs to be able to
+    clean up.
     """
     # Same guard as reads: never match the shared row of unidentified principals.
     if not subject.is_identified():

@@ -199,11 +199,12 @@ def set_user_settings_api():
     """
     Store WebUI settings for the logged-in principal.
 
-    The settings must be a JSON object and stay within the server-side size
-    limit; key and value-type enforcement is not active yet, so any keys are
-    currently accepted (see ``PI_USER_SETTINGS_ALLOWED_KEYS``). By default the
-    given keys are merged into the existing settings; pass ``replace=1`` to
-    replace the whole document. Always scoped to the caller's own JWT identity.
+    The settings must be a JSON object, stay within the server-side size limit
+    and only use known top-level keys (extendable via
+    ``PI_USER_SETTINGS_ALLOWED_KEYS``); the values are stored verbatim and are
+    not validated. By default the given keys are merged into the existing
+    settings; pass ``replace=1`` to replace the whole document. Always scoped
+    to the caller's own JWT identity.
 
     Requires authentication (any role).
 
@@ -211,8 +212,8 @@ def set_user_settings_api():
     :jsonparam replace: if true, replace the whole document instead of merging.
     :status 200: the stored settings object in ``result.value`` -- the same
         shape :http:get:`/user/settings` returns.
-    :status 400: the settings are not a JSON object, not JSON-serializable, or
-        exceed the maximum size.
+    :status 400: the settings are not a JSON object, not JSON-serializable,
+        exceed the maximum size, or contain an unknown key.
     """
     settings = get_required(request.all_data, "settings")
     replace = is_true(get_optional(request.all_data, "replace"))
@@ -231,7 +232,9 @@ def delete_user_settings_api(key=None):
 
     With a ``key`` path segment only that setting is removed (the WebUI then
     falls back to its own default for it); without one the whole document is
-    cleared. Always scoped to the caller's own JWT identity.
+    cleared. Unlike :http:post:`/user/settings` this accepts any key, so a
+    setting that is no longer accepted can still be cleaned up. Always scoped
+    to the caller's own JWT identity.
 
     Requires authentication (any role).
 

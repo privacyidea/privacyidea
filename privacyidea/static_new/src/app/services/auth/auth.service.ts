@@ -18,7 +18,7 @@
  **/
 
 import { HttpClient, HttpHeaders } from "@angular/common/http";
-import { computed, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
+import { computed, inject, Injectable, Injector, Signal, signal, WritableSignal } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
 import { Router } from "@angular/router";
 import { PiResponse } from "@app/app.component";
@@ -27,6 +27,7 @@ import { environment } from "@env/environment";
 import { PolicyAction } from "@services/auth/policy-actions";
 import { DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { LocalService, LocalServiceInterface } from "@services/local/local.service";
+import { UserSettingsService } from "@services/user-settings/user-settings.service";
 import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
 import { tokenTypes } from "@utils/token.utils";
 import { catchError, Observable, tap, throwError } from "rxjs";
@@ -399,6 +400,7 @@ export class AuthService implements AuthServiceInterface {
     this.clearStoredSession();
     this.authenticationAccepted.set(false);
     this.dashboardDataStore.invalidate();
+    this.injector.get(UserSettingsService).clearCache();
     this.router.navigate(["login"]);
   }
 
@@ -455,6 +457,10 @@ export class AuthService implements AuthServiceInterface {
   private readonly http = inject(HttpClient);
   private readonly versioningService: VersioningServiceInterface = inject(VersioningService);
   private readonly dashboardDataStore = inject(DashboardDataStore);
+  // Resolved lazily: UserSettingsService injects the AuthService itself, so an
+  // eager inject() here would be a circular dependency.
+  private readonly injector = inject(Injector);
+
   decodeJwtPayload(token: string): JwtData | null {
     try {
       const parts = token.split(".");

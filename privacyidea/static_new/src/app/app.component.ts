@@ -18,6 +18,7 @@
  **/
 import { Component, HostListener, inject } from "@angular/core";
 import { RouterOutlet } from "@angular/router";
+import { UiPreferencesService, UiPreferencesServiceInterface } from "@services/user-settings/ui-preferences.service";
 import { WelcomeDialogService } from "@services/welcome/welcome-dialog.service";
 import { AuthService, AuthServiceInterface } from "./services/auth/auth.service";
 import { SessionTimerService, SessionTimerServiceInterface } from "./services/session-timer/session-timer.service";
@@ -108,6 +109,7 @@ export function challengesTriggered<Value, Detail = unknown>(response: PiRespons
 export class AppComponent {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly sessionTimerService: SessionTimerServiceInterface = inject(SessionTimerService);
+  private readonly uiPreferencesService: UiPreferencesServiceInterface = inject(UiPreferencesService);
 
   title = "privacyidea-webui";
   lastSessionReset = 0;
@@ -117,6 +119,7 @@ export class AppComponent {
     // session timer here, because initialTimerStart() otherwise only runs on interactive login.
     if (this.authService.isAuthenticated()) {
       this.sessionTimerService.initialTimerStart();
+      this.uiPreferencesService.sync();
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const _welcomeInit = inject(WelcomeDialogService);

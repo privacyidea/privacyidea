@@ -18,10 +18,18 @@
  **/
 import { LOCALE_ID } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { LanguageSwitcherComponent, LOCALE_COOKIE_NAME } from "./language-switcher.component";
+import { LOCALE_COOKIE_NAME } from "@core/locale";
+import { AuthService } from "@services/auth/auth.service";
+import { UserSettingsService } from "@services/user-settings/user-settings.service";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockUserSettingsService } from "@testing/mock-services/mock-user-settings-service";
+import { throwError } from "rxjs";
+import { LanguageSwitcherComponent } from "./language-switcher.component";
 
 describe("LanguageSwitcherComponent", () => {
   let navigateSpy: jest.SpyInstance;
+  let authService: MockAuthService;
+  let userSettingsService: MockUserSettingsService;
 
   interface TestableSwitcher {
     currentLocale: string;
@@ -33,13 +41,19 @@ describe("LanguageSwitcherComponent", () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       imports: [LanguageSwitcherComponent],
-      providers: [{ provide: LOCALE_ID, useValue: locale }]
+      providers: [
+        { provide: LOCALE_ID, useValue: locale },
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: UserSettingsService, useClass: MockUserSettingsService }
+      ]
     });
     const fixture: ComponentFixture<LanguageSwitcherComponent> = TestBed.createComponent(LanguageSwitcherComponent);
     fixture.detectChanges();
     // Members are protected (template-only); access them through the instance for testing.
     const component = fixture.componentInstance as unknown as TestableSwitcher;
     navigateSpy = jest.spyOn(component, "navigate").mockImplementation(() => undefined);
+    authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    userSettingsService = TestBed.inject(UserSettingsService) as unknown as MockUserSettingsService;
     return component;
   };
 
@@ -95,6 +109,37 @@ describe("LanguageSwitcherComponent", () => {
     window.history.replaceState({}, "", "/app/v2/tokens");
     create("en").switchTo("de");
     expect(navigateSpy).toHaveBeenCalledWith("/app/v2/de/tokens");
+  });
+
+  it("stores the language as the user's locale setting when logged in", () => {
+    const switcher = create("en");
+    authService.isAuthenticated.set(true);
+
+    switcher.switchTo("de");
+
+    expect(userSettingsService.settings()?.["locale"]).toBe("de");
+    expect(navigateSpy).toHaveBeenCalledWith("/app/v2/de/");
+  });
+
+  it("navigates even when storing the setting fails", () => {
+    const switcher = create("en");
+    authService.isAuthenticated.set(true);
+    jest.spyOn(userSettingsService, "setSetting").mockReturnValue(throwError(() => new Error("boom")));
+
+    switcher.switchTo("de");
+
+    expect(navigateSpy).toHaveBeenCalledWith("/app/v2/de/");
+  });
+
+  it("does not store a setting when nobody is logged in", () => {
+    const switcher = create("en");
+    authService.isAuthenticated.set(false);
+    const setSpy = jest.spyOn(userSettingsService, "setSetting");
+
+    switcher.switchTo("de");
+
+    expect(setSpy).not.toHaveBeenCalled();
+    expect(navigateSpy).toHaveBeenCalledWith("/app/v2/de/");
   });
 
   it("does not double the locale prefix when a foreign locale segment is in the URL", () => {
