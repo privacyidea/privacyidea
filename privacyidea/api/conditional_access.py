@@ -41,14 +41,14 @@ from privacyidea.lib.conditional_access.lockout_policy import (list_lockout_poli
                                                                update_lockout_policy,
                                                                delete_lockout_policy)
 from privacyidea.lib.conditional_access.lockout_state import (DEFAULT_PAGE_SIZE,
-                                                              list_locked_users_paginate,
-                                                              get_user_lockout_dict,
-                                                              user_matches_scopes,
-                                                              unlock_user_by_id,
-                                                              purge_expired_user_lockouts,
-                                                              list_blocklist,
-                                                              remove_blocklist_entry,
-                                                              purge_expired_blocklist, unlock_user_by_username)
+                                                                list_locked_users_paginate,
+                                                                get_user_lockout_dict,
+                                                                user_matches_scopes,
+                                                                unlock_user_by_id,
+                                                                purge_expired_user_lockouts,
+                                                                list_blocklist,
+                                                                remove_blocklist_entry,
+                                                                purge_expired_blocklist, unlock_user_by_username)
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.params import get_optional, get_required, get_required_one_of
@@ -382,18 +382,18 @@ def reset_user_lockout():
 @log_with(log)
 def get_blocklist():
     """
-    List the currently blocked entries (a source IP is the only entry type for
-    now). "Currently blocked" excludes stale rows whose block has already expired.
+    List the currently blocked entries (IP addresses).
 
     Requires the admin policy action :ref:`policy_blocklist_read`.
 
-    :query include_expired: also list stale (expired) entries, each marked ``is_expired=true``
+    :query include_expired: also list stale (expired) entries
     :status 200: a list of blocklist-entry dicts in ``result.value``
     """
-    include_expired = is_true(get_optional(request.all_data, "include_expired"))
+    include_expired = is_true(get_optional(request.all_data, "include_expired", True))
     entries = list_blocklist(include_expired=include_expired)
     g.audit_object.log({"success": True, "info": f"{len(entries)} blocklist entr(y/ies)"})
     return send_result(entries)
+
 
 
 @conditional_access_blueprint.route('blocklist/purge', methods=['POST'])
