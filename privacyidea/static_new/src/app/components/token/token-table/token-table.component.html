@@ -352,6 +352,7 @@
       (click)="onKeywordClick(keyword)"
       [attr.aria-disabled]="isUnsupportedKeyword(keyword)"
       [class.unsupported-filter-item]="isUnsupportedKeyword(keyword)"
+      [disableRipple]="isUnsupportedKeyword(keyword)"
       [matTooltip]="filterColumnTooltip(keyword, keyword)"
       mat-menu-item
       matTooltipClass="filter-hint-tooltip"

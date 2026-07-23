@@ -532,7 +532,7 @@ export class TokenService implements TokenServiceInterface {
 
   handleFilterInput($event: Event): void {
     const input = $event.target as HTMLInputElement;
-    let newFilter = this.tokenFilter().copyWith({ value: input.value.trim() });
+    let newFilter = this.tokenFilter().copyWith({ value: input.value });
 
     if (newFilter.hasKey("user") && !newFilter.hasKey("realm")) {
       const defaultRealm = this.realmService.defaultRealm();
