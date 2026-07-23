@@ -841,6 +841,15 @@ body.self-service-layout {
   max-height: 400px;
 }
 
+.filter-hint-tooltip {
+  white-space: pre-line;
+  text-align: left;
+
+  .mdc-tooltip__surface {
+    max-width: 340px;
+  }
+}
+
 mat-chip.mat-mdc-chip {
   &.clickable-chip {
     .mdc-evolution-chip__action--presentational {

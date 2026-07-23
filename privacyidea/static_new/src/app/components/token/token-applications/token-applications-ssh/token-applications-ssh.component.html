@@ -54,8 +54,11 @@
             i18n-placeholder
             id="ssh-filter-input"
             matInput
+            [matTooltip]="filterHint"
+            matTooltipClass="filter-hint-tooltip"
             placeholder="Example query: 'service_id: myService'" />
         </app-clearable-input>
+        <mat-hint class="filter-keyword-hint">{{ filterKeywordHintText }}</mat-hint>
       </mat-form-field>
       <mat-paginator
         (page)="machineService.onPageEvent($event)"
@@ -88,6 +91,8 @@
                     (click)="onKeywordClick(column.key)"
                     class="filter-button"
                     mat-icon-button
+                    [matTooltip]="filterColumnTooltip(column.label)"
+                    matTooltipClass="filter-hint-tooltip"
                     type="button">
                     <mat-icon class="keyword-button-icon margin-left-0">
                       {{ getFilterIconName(column.key) }}

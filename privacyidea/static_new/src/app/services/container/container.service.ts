@@ -36,8 +36,11 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { StringUtils } from "@utils/string.utils";
 import { catchError, forkJoin, lastValueFrom, Observable, of, Subject, throwError } from "rxjs";
 
-const apiFilter = ["container_serial", "type", "description", "container_realm", "state"];
+const apiFilter = ["container_serial", "type", "description", "user", "container_realm", "state"];
 const advancedApiFilter = ["token_serial", "template", "assigned"];
+
+const exactMatchKeys = new Set(["user", "type", "state", "assigned"]);
+const booleanKeys = new Set(["assigned"]);
 
 // Filter keywords, a single value maps to the `type` query param, multiple to `type_list`.
 // TODO(4.0.0): send a single list-only `types` param once the backend drops the type/type_list split.
@@ -194,6 +197,8 @@ export interface ContainerServiceInterface {
   isPollingActive: Signal<boolean>;
   apiFilter: string[];
   advancedApiFilter: string[];
+  exactMatchKeys: Set<string>;
+  booleanKeys: Set<string>;
   stopPolling$: Subject<void>;
   containerBaseUrl: string;
   eventPageSize: WritableSignal<number>;
@@ -284,6 +289,8 @@ export class ContainerService implements ContainerServiceInterface {
   readonly isPollingActive = signal(false);
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
+  readonly exactMatchKeys = exactMatchKeys;
+  readonly booleanKeys = booleanKeys;
   stopPolling$ = new Subject<void>();
   containerBaseUrl = environment.proxyUrl + "/container/";
   readonly eventPageSize = signal(10);
@@ -400,7 +407,7 @@ export class ContainerService implements ContainerServiceInterface {
 
   filterParams = computed<Record<string, string>>(() => {
     const allowed = [...this.apiFilter, ...this.advancedApiFilter];
-    const plainKeys = new Set(["user", "type", "state", "assigned"]);
+    const plainKeys = exactMatchKeys;
 
     const filterMap = this.containerFilter().filterMap;
 

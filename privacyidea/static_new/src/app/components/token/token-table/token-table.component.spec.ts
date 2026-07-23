@@ -469,4 +469,33 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     table.onItemSelected("type", "");
     expect(tokenService.tokenFilter().hasKey("type")).toBe(false);
   });
+
+  describe("filterColumnTooltip", () => {
+    beforeEach(() => {
+      tokenService.exactMatchKeys = new Set(["realm"]);
+      tokenService.booleanKeys = new Set(["active"]);
+      tokenService.caseNotes = { serial: "usually-insensitive", "infokey & infovalue": "usually-sensitive" };
+    });
+
+    it("reports boolean keywords as true/false", () => {
+      expect(table.filterColumnTooltip("Active", "active")).toBe("Filter by Active\ntrue or false");
+    });
+
+    it("passes the exact-match flag through", () => {
+      expect(table.filterColumnTooltip("Realm", "realm")).toBe("Filter by Realm\nexact match");
+    });
+
+    it("passes the per-keyword case note through", () => {
+      expect(table.filterColumnTooltip("Serial", "serial")).toBe(
+        "Filter by Serial\npartial match, usually case-insensitive"
+      );
+      expect(table.filterColumnTooltip("infokey & infovalue", "infokey & infovalue")).toBe(
+        "Filter by infokey & infovalue\npartial match, usually case-sensitive"
+      );
+    });
+
+    it("names partial matching for keywords without further deviation", () => {
+      expect(table.filterColumnTooltip("Description", "description")).toBe("Filter by Description\npartial match");
+    });
+  });
 });

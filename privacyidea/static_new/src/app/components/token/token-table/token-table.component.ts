@@ -45,6 +45,8 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
+import { filterColumnHint, filterInputHint, filterKeywordHint } from "@utils/filter-hint.utils";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
@@ -70,6 +72,7 @@ const columnKeysMap = [
   selector: "app-token-table",
   standalone: true,
   imports: [
+    FilterAutocompleteDirective,
     MatTableModule,
     MatFormFieldModule,
     MatInputModule,
@@ -103,6 +106,11 @@ export class TokenTableComponent {
   readonly columnKeys: string[] = columnKeysMap.map((column) => column.key);
   readonly apiFilterKeyMap = this.tokenService.apiFilterKeyMap;
   readonly advancedApiFilter = this.tokenService.advancedApiFilter;
+  readonly filterKeywords = [...this.tokenService.apiFilter, ...this.tokenService.advancedApiFilter].filter(
+    (keyword) => !this.tokenService.unsupportedKeys.has(keyword)
+  );
+  readonly filterHint = filterInputHint({ mayBeCaseSensitive: true });
+  readonly filterKeywordHintText = filterKeywordHint(this.filterKeywords);
   private basePageSizeOptions = [...this.tableUtilsService.pageSizeOptions()];
   @ViewChild("filterHTMLInputElement", { static: false })
   filterInput!: ElementRef<HTMLInputElement>;
@@ -282,6 +290,19 @@ export class TokenTableComponent {
     return inputValue.hasKey(filter);
   }
 
+  filterColumnTooltip(label: string, keyword: string): string {
+    return filterColumnHint(label, {
+      exactMatch: this.tokenService.exactMatchKeys.has(keyword),
+      isBoolean: this.tokenService.booleanKeys.has(keyword),
+      isUnsupported: this.tokenService.unsupportedKeys.has(keyword),
+      caseNote: this.tokenService.caseNotes[keyword]
+    });
+  }
+
+  isUnsupportedKeyword(keyword: string): boolean {
+    return this.tokenService.unsupportedKeys.has(keyword);
+  }
+
   getFilterIconName(keyword: string): string {
     if (keyword === "active" || keyword === "assigned") {
       const value = this.tokenService.tokenFilter()?.getValueOfKey(keyword)?.toLowerCase();
@@ -296,6 +317,9 @@ export class TokenTableComponent {
   }
 
   onKeywordClick(filterKeyword: string): void {
+    if (this.isUnsupportedKeyword(filterKeyword)) {
+      return;
+    }
     this.toggleFilter(filterKeyword);
     const inputElement = this.filterInput?.nativeElement;
     if (inputElement) {

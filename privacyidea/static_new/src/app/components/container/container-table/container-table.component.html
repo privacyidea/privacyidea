@@ -32,6 +32,7 @@
           [showClearButton]="containerService.containerFilter().isNotEmpty">
           <input
             #filterHTMLInputElement
+            [appFilterAutocomplete]="filterKeywords"
             (input)="containerService.handleFilterInput($event)"
             [value]="containerService.containerFilter().filterString"
             aria-label="Filter Input"
@@ -39,8 +40,11 @@
             i18n-placeholder
             id="container-filter-input"
             matInput
+            [matTooltip]="filterHint"
+            matTooltipClass="filter-hint-tooltip"
             placeholder="Example query: 'type: generic'" />
         </app-clearable-input>
+        <mat-hint class="filter-keyword-hint">{{ filterKeywordHintText }}</mat-hint>
       </mat-form-field>
       <mat-paginator
         (page)="onPageEvent($event)"
@@ -51,7 +55,9 @@
         showFirstLastButtons />
     </div>
     <app-container-table-actions />
-    <div class="table-scroll-region" appScrollEdges>
+    <div
+      class="table-scroll-region"
+      appScrollEdges>
       <table
         [dataSource]="containerDataSource()"
         aria-label="Container Data Table"
@@ -88,9 +94,9 @@
                           [matMenuTriggerData]="{ keyword: apiFilterKeyMap[column.key] }"
                           [matMenuTriggerFor]="typeMenu"
                           class="filter-button"
-                          i18n-matTooltip
+                          [matTooltip]="filterColumnTooltip(column.label, apiFilterKeyMap[column.key])"
                           mat-icon-button
-                          matTooltip="Filter by type"
+                          matTooltipClass="filter-hint-tooltip"
                           type="button">
                           <mat-icon class="keyword-button-icon margin-left-0"> filter_list</mat-icon>
                         </button>
@@ -99,9 +105,9 @@
                           [matMenuTriggerData]="{ keyword: apiFilterKeyMap[column.key] }"
                           [matMenuTriggerFor]="statesMenu"
                           class="filter-button"
-                          i18n-matTooltip
+                          [matTooltip]="filterColumnTooltip(column.label, apiFilterKeyMap[column.key])"
                           mat-icon-button
-                          matTooltip="Filter by state"
+                          matTooltipClass="filter-hint-tooltip"
                           type="button">
                           <mat-icon class="keyword-button-icon margin-left-0">filter_list</mat-icon>
                         </button>
@@ -109,9 +115,9 @@
                         <button
                           (click)="onKeywordClick(apiFilterKeyMap[column.key])"
                           class="filter-button"
-                          i18n-matTooltip
+                          [matTooltip]="filterColumnTooltip(column.label, apiFilterKeyMap[column.key])"
                           mat-icon-button
-                          matTooltip="Toggle filter"
+                          matTooltipClass="filter-hint-tooltip"
                           type="button">
                           <mat-icon class="keyword-button-icon margin-left-0">
                             {{ getFilterIconName(apiFilterKeyMap[column.key]) }}

@@ -26,3 +26,12 @@
     width: 170px;
   }
 }
+
+.unsupported-filter-item {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.mat-mdc-menu-item.unsupported-filter-item:hover {
+  background-color: transparent;
+}

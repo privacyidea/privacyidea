@@ -1234,4 +1234,18 @@ describe("TokenService", () => {
       expect(tokenService.tokenResourceValue()).toBeNull();
     });
   });
+
+  describe("filter metadata", () => {
+    it("marks the keywords whose case behaviour deviates", () => {
+      expect(tokenService.caseNotes).toEqual({
+        serial: "usually-insensitive",
+        "infokey & infovalue": "usually-sensitive"
+      });
+    });
+
+    it("only notes keywords the UI can actually look up", () => {
+      const lookupKeys = [...tokenService.apiFilter, ...tokenService.advancedApiFilter];
+      Object.keys(tokenService.caseNotes).forEach((key) => expect(lookupKeys).toContain(key));
+    });
+  });
 });

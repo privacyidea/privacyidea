@@ -42,6 +42,8 @@ export class MockContainerService implements ContainerServiceInterface {
   isPollingActive: Signal<boolean> = signal(false);
   apiFilter: string[] = [];
   advancedApiFilter: string[] = [];
+  exactMatchKeys = new Set<string>();
+  booleanKeys = new Set<string>();
   stopPolling$ = new Subject<void>();
   readonly containerBaseUrl = "mockEnvironment.proxyUrl + '/container'";
   readonly eventPageSize = signal(10);

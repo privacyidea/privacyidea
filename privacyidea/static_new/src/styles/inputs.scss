@@ -172,3 +172,31 @@ mat-form-field.height-77 {
 .mat-mdc-form-field-required-marker {
   font-weight: bold;
 }
+
+.filter-autocomplete-ghost {
+  position: absolute;
+  display: none;
+  align-items: center;
+  overflow: hidden;
+  box-sizing: border-box;
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
+}
+
+.filter-autocomplete-content {
+  white-space: pre;
+}
+
+.filter-autocomplete-prefix {
+  visibility: hidden;
+}
+
+.filter-autocomplete-suffix {
+  color: var(--grey-light-active);
+}
+
+.filter-keyword-hint {
+  color: var(--grey-light-active);
+  overflow-wrap: anywhere;
+}

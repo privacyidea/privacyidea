@@ -26,14 +26,18 @@
         (clearButtonClick)="auditService.clearFilter()" [showClearButton]="auditService.auditFilter().isNotEmpty">
         <input
           #filterHTMLInputElement
+          [appFilterAutocomplete]="auditService.apiFilter"
           (input)="auditService.handleFilterInput($event)"
           [value]="auditService.auditFilter().value"
           aria-label="Filter Input"
           i18n-aria-label
           i18n-placeholder
           matInput
+          [matTooltip]="filterHint"
+          matTooltipClass="filter-hint-tooltip"
           placeholder="Example query: 'action: GET success: false'" />
       </app-clearable-input>
+      <mat-hint class="filter-keyword-hint">{{ filterKeywordHintText }}</mat-hint>
     </mat-form-field>
     <mat-paginator
       (page)="onPageEvent($event)"
@@ -58,7 +62,11 @@
               )) {
                 <div class="margin-left-16">
                   <button
-                    (click)="onKeywordClick(apiFilterKeyMap[column.key])" class="filter-button" mat-icon-button>
+                    (click)="onKeywordClick(apiFilterKeyMap[column.key])"
+                    [matTooltip]="filterColumnTooltip(column.label, apiFilterKeyMap[column.key])"
+                    class="filter-button"
+                    mat-icon-button
+                    matTooltipClass="filter-hint-tooltip">
                     <mat-icon class="keyword-button-icon margin-left-0">
                       {{ getFilterIconName(column.key) }}
                     </mat-icon>
