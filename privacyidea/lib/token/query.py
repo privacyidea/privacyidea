@@ -80,7 +80,7 @@ def _create_token_query(tokentype: str | None = None, token_type_list: list[str]
                                bool(user) or
                                assigned is not None or
                                not all_nodes)
-    
+
     if should_join_token_owner:
         sql_query = sql_query.outerjoin(TokenOwner, Token.id == TokenOwner.token_id)
 
@@ -100,7 +100,7 @@ def _create_token_query(tokentype: str | None = None, token_type_list: list[str]
             realm_ids = select(Realm.id).where(func.lower(Realm.name) == realm.lower())
         sql_query = sql_query.where(
             Token.id.in_(select(TokenRealm.token_id).where(TokenRealm.realm_id.in_(realm_ids))))
-        
+
     if realm_list:
         # Separate wildcard entries from exact entries
         exact_realms = [r.lower() for r in realm_list if "*" not in r]
