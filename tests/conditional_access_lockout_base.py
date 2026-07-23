@@ -18,10 +18,10 @@
 """
 Shared test fixtures for the conditional-access lockout tests.
 
-:class:`LockoutTestCase` is the common base for the engine, template and
-snapshot suites: it resolves a real test user, wipes every lockout table before
-and after each test, and offers helpers to seed ``authentication_log`` events
-and read back the resulting lock / block state.
+:class:`LockoutTestCase` is the common base for the engine and template suites:
+it resolves a real test user, wipes every lockout table before and after each
+test, and offers helpers to seed ``authentication_log`` events and read back
+the resulting lock / block state.
 
 This module is deliberately **not** named ``test_*`` so pytest does not collect
 it; the concrete suites import :class:`LockoutTestCase` and add their own tests.
