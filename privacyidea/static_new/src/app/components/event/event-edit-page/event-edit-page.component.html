@@ -63,14 +63,14 @@
 
     <div>
       <div class="two-col-grid">
-        <mat-form-field class="input-width-l">
+        <mat-form-field class="input-width-l margin-bottom-16">
           <mat-label i18n>Name</mat-label>
           <app-clearable-input
             (clearButtonClick)="updateEventHandler('name', '')"
             [showClearButton]="!!editEvent().name">
             <input
               (blur)="nameTouched.set(true)"
-              (input)="updateEventHandler('name', $event['target']['value'])"
+              (input)="updateEventHandler('name', $any($event.target).value)"
               [appErrorState]="showNameError()"
               [disabled]="!eventLoaded()"
               [value]="editEvent().name"
@@ -123,7 +123,7 @@
         <mat-form-field class="input-width-l">
           <mat-label i18n>Ordering</mat-label>
           <input
-            (input)="updateEventHandler('ordering', +$event['target']['value'])"
+            (input)="updateEventHandler('ordering', +$any($event.target).value)"
             [appErrorState]="showOrderingError()"
             [value]="editEvent().ordering"
             matInput
