@@ -41,7 +41,6 @@ import { MatTooltip } from "@angular/material/tooltip";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { ErrorStateDirective } from "@components/shared/directives/error-state.directive";
@@ -81,7 +80,6 @@ export type eventTab = "events" | "action" | "conditions";
     MatButton,
     MatSlideToggle,
     MatTooltip,
-    CopyButtonComponent,
     ErrorStateDirective,
     ClearableInputComponent
   ],

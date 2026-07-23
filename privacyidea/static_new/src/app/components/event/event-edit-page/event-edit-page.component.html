@@ -17,19 +17,19 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
-  #scrollContainer appScrollToTop aria-label="Event Handler Editor" class="edit-event-handler-layout" i18n-aria-label>
+  #scrollContainer
+  appScrollToTop
+  aria-label="Event Handler Editor"
+  class="edit-event-handler-layout"
+  i18n-aria-label>
   <div class="edit-event-handler-container">
     <h3 class="margin-8 flex-row flex-nowrap ali-center">
       {{ title() }}
-      @if (!isNewEvent()) {
-        <span>:&nbsp;</span>
-        <span class="event-name-color">{{ editEvent().name }}</span>
-        <app-copy-button [copyText]="editEvent().name"></app-copy-button>
-      }
     </h3>
 
     <div
-      [appStickyHeader]="scrollContainer" class="header-row sticky-header">
+      [appStickyHeader]="scrollContainer"
+      class="header-row sticky-header">
       <div class="action-buttons">
         <mat-slide-toggle
           (change)="updateEventHandler('active', $event.checked)"
@@ -62,31 +62,32 @@
     </div>
 
     <div>
-      @if (isNewEvent()) {
-        <div class="two-col-grid">
-          <mat-form-field class="input-width-l">
-            <mat-label i18n>Name</mat-label>
-            <app-clearable-input
-              (clearButtonClick)="updateEventHandler('name', '')" [showClearButton]="!!editEvent().name">
-              <input
-                (blur)="nameTouched.set(true)"
-                (input)="updateEventHandler('name', $event['target']['value'])"
-                [appErrorState]="showNameError()"
-                [value]="editEvent().name"
-                matInput
-                required
-                type="text" />
-            </app-clearable-input>
-            @if (showNameError() && editEvent().name === "") {
-              <mat-error i18n>Name is <strong>required</strong>.</mat-error>
-            }
-            @if (showNameError() && editEvent().name !== "") {
-              <mat-error
-                i18n>Name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores
-                     and hyphens are allowed.
-              </mat-error>
-            }
-          </mat-form-field>
+      <div class="two-col-grid">
+        <mat-form-field class="input-width-l">
+          <mat-label i18n>Name</mat-label>
+          <app-clearable-input
+            (clearButtonClick)="updateEventHandler('name', '')"
+            [showClearButton]="!!editEvent().name">
+            <input
+              (blur)="nameTouched.set(true)"
+              (input)="updateEventHandler('name', $event['target']['value'])"
+              [appErrorState]="showNameError()"
+              [value]="editEvent().name"
+              matInput
+              required
+              type="text" />
+          </app-clearable-input>
+          @if (showNameError() && editEvent().name === "") {
+            <mat-error i18n>Name is <strong>required</strong>.</mat-error>
+          }
+          @if (showNameError() && editEvent().name !== "") {
+            <mat-error
+              i18n>Name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores
+                   and hyphens are allowed.
+            </mat-error>
+          }
+        </mat-form-field>
+        @if (isNewEvent()) {
           <mat-form-field class="input-width-l">
             <mat-label i18n>Handler Module</mat-label>
             <mat-select
@@ -100,8 +101,8 @@
             </mat-select>
             <mat-error i18n> Selecting a handler module is <strong>required</strong>.</mat-error>
           </mat-form-field>
-        </div>
-      }
+        }
+      </div>
 
       <div class="two-col-grid margin-bottom-32">
         <mat-form-field class="input-width-l">
@@ -133,11 +134,14 @@
       </div>
 
       <app-event-selection
-        (newEvents)="setNewEvents($event)" [events]="editEvent().event"></app-event-selection>
+        (newEvents)="setNewEvents($event)"
+        [events]="editEvent().event"></app-event-selection>
     </div>
 
     <mat-tab-group
-      animationDuration="0ms" mat-align-tabs="start" mat-stretch-tabs="false">
+      animationDuration="0ms"
+      mat-align-tabs="start"
+      mat-stretch-tabs="false">
       @for (tab of availableTabs; track tab) {
         <mat-tab [label]="tab.toUpperCase()">
           <div class="tab-container">
