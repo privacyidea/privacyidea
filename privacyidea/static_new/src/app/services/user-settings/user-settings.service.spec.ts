@@ -127,16 +127,16 @@ describe("UserSettingsService", () => {
     service.getSettings().subscribe();
     respondWith({ theme: "dark" });
 
-    service.setSetting("starting_page", "tokens").subscribe();
+    service.setSetting("locale", "de").subscribe();
     httpMock.expectOne("/user/settings").flush({
-      result: { status: true, value: { theme: "dark", starting_page: "tokens" } }
+      result: { status: true, value: { theme: "dark", locale: "de" } }
     });
 
     let result: UserSettings | null = null;
     service.getSettings().subscribe((settings) => {
       result = settings;
     });
-    expect(result).toEqual({ theme: "dark", starting_page: "tokens" });
+    expect(result).toEqual({ theme: "dark", locale: "de" });
   });
 
   it("should delete a single setting", () => {

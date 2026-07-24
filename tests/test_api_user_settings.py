@@ -97,15 +97,15 @@ class UserSettingsAPITestCase(MyApiTestCase):
         self.assertEqual({}, get_user_settings(victim))
 
     def test_08_delete_single_key(self):
-        self._post({"settings": {"theme": "dark", "token_columns": ["serial"]}, "replace": 1})
+        self._post({"settings": {"theme": "dark", "dashboard": ["serial"]}, "replace": 1})
         with self.app.test_request_context('/user/settings/theme', method='DELETE',
                                             headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res)
             # Routed to the settings endpoint (not the user-delete route) and the
             # one key is gone.
-            self.assertEqual({"token_columns": ["serial"]}, res.json["result"]["value"])
-        self.assertEqual({"token_columns": ["serial"]}, self._get().json["result"]["value"])
+            self.assertEqual({"dashboard": ["serial"]}, res.json["result"]["value"])
+        self.assertEqual({"dashboard": ["serial"]}, self._get().json["result"]["value"])
 
     def test_09_delete_all_clears_document(self):
         self._post({"settings": {"theme": "dark"}, "replace": 1})

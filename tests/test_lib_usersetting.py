@@ -59,13 +59,13 @@ class UserSettingTestCase(MyTestCase):
         self.assertEqual({"theme": "dark"}, get_user_settings(subject))
 
         # A second partial write merges at the top level, not clobbering the first
-        set_user_settings(subject, {"token_columns": ["serial", "type"]})
-        self.assertEqual({"theme": "dark", "token_columns": ["serial", "type"]},
+        set_user_settings(subject, {"dashboard": ["serial", "type"]})
+        self.assertEqual({"theme": "dark", "dashboard": ["serial", "type"]},
                          get_user_settings(subject))
 
     def test_04_replace_overwrites_document(self):
         subject = self._admin_subject()
-        set_user_settings(subject, {"theme": "dark", "starting_page": "tokens"})
+        set_user_settings(subject, {"theme": "dark", "locale": "de"})
         stored = set_user_settings(subject, {"theme": "light"}, replace=True)
         self.assertEqual({"theme": "light"}, stored)
         # The dropped key is simply gone (the WebUI falls back to its default)
@@ -141,7 +141,7 @@ class UserSettingTestCase(MyTestCase):
         chunk = "x" * (MAX_SETTINGS_BYTES // 2)
         set_user_settings(subject, {"theme": chunk}, replace=True)
         # Merging a second half-cap chunk would push the stored doc over the cap
-        self.assertRaises(ParameterError, set_user_settings, subject, {"starting_page": chunk})
+        self.assertRaises(ParameterError, set_user_settings, subject, {"locale": chunk})
 
     def test_11_validation_rejects_non_serializable(self):
         # A non-JSON-serializable value yields a controlled ParameterError,
@@ -182,12 +182,12 @@ class UserSettingTestCase(MyTestCase):
     def test_15_delete_key_resets_to_default(self):
         subject = self._admin_subject()
         # replace=True for a clean baseline independent of other tests' writes
-        set_user_settings(subject, {"theme": "dark", "starting_page": "tokens"}, replace=True)
+        set_user_settings(subject, {"theme": "dark", "locale": "de"}, replace=True)
         remaining = delete_user_settings(subject, "theme")
-        self.assertEqual({"starting_page": "tokens"}, remaining)
-        self.assertEqual({"starting_page": "tokens"}, get_user_settings(subject))
+        self.assertEqual({"locale": "de"}, remaining)
+        self.assertEqual({"locale": "de"}, get_user_settings(subject))
         # Deleting an absent key is a no-op
-        self.assertEqual({"starting_page": "tokens"}, delete_user_settings(subject, "theme"))
+        self.assertEqual({"locale": "de"}, delete_user_settings(subject, "theme"))
 
     def test_16_delete_last_key_removes_row(self):
         subject = self._admin_subject()
@@ -198,7 +198,7 @@ class UserSettingTestCase(MyTestCase):
 
     def test_17_delete_all_clears_document(self):
         subject = self._admin_subject()
-        set_user_settings(subject, {"theme": "dark", "starting_page": "tokens"})
+        set_user_settings(subject, {"theme": "dark", "locale": "de"})
         self.assertEqual({}, delete_user_settings(subject))
         self.assertEqual({}, get_user_settings(subject))
 
@@ -327,8 +327,8 @@ class UserSettingTestCase(MyTestCase):
             return real_select(subj)
 
         with patch("privacyidea.lib.usersetting._select_for_subject", side_effect=fake_select):
-            stored = set_user_settings(subject, {"token_columns": ["serial"]})
+            stored = set_user_settings(subject, {"dashboard": ["serial"]})
 
-        self.assertEqual({"theme": "winner", "token_columns": ["serial"]}, stored)
-        self.assertEqual({"theme": "winner", "token_columns": ["serial"]},
+        self.assertEqual({"theme": "winner", "dashboard": ["serial"]}, stored)
+        self.assertEqual({"theme": "winner", "dashboard": ["serial"]},
                          get_user_settings(subject))

@@ -28,7 +28,9 @@ import { catchError, map, Observable, of, shareReplay, tap, throwError } from "r
  * The top-level setting keys the backend accepts. Mirrors KNOWN_SETTING_KEYS in
  * privacyidea/lib/usersetting.py; a key that is not listed there is rejected.
  */
-export type UserSettingKey = "theme" | "locale" | "starting_page" | "token_columns" | "dashboard" | "pinned_items";
+export type UserSettingKey = "theme" | "locale" | "dashboard";
+// Planned keys, enable together with KNOWN_SETTING_KEYS when the feature lands:
+// | "starting_page" | "token_columns" | "pinned_items"
 
 export type UserSettings = Partial<Record<UserSettingKey, unknown>>;
 

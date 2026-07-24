@@ -66,13 +66,15 @@ USER_SETTINGS_ALLOWED_KEYS_CONFIG = "PI_USER_SETTINGS_ALLOWED_KEYS"
 # Mirrored by UserSettingKey in
 # privacyidea/static_new/src/app/services/user-settings/user-settings.service.ts
 # -- keep both sides in sync when a setting is added or removed.
+# Keys that are planned but not yet written by the WebUI stay commented out
+# until the feature using them lands, so nothing unused is accepted.
 KNOWN_SETTING_KEYS = {
     "theme",
     "locale",
-    "starting_page",
-    "token_columns",
     "dashboard",
-    "pinned_items",
+    # "starting_page",
+    # "token_columns",
+    # "pinned_items",
 }
 
 
