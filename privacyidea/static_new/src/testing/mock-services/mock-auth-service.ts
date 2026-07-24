@@ -19,7 +19,7 @@
 
 import { HttpHeaders } from "@angular/common/http";
 import { computed, linkedSignal, signal } from "@angular/core";
-import { AuthData, AuthDetail, AuthRole, AuthServiceInterface, JwtData } from "@services/auth/auth.service";
+import { AuthData, AuthDetail, AuthRole, AuthServiceInterface, JwtData, LogLevel } from "@services/auth/auth.service";
 import { of } from "rxjs";
 import { MockPiResponse } from "./mock-utils";
 import { MockAuthData, MockAuthDetail } from "./mock-validate-service";
@@ -40,7 +40,7 @@ export class MockAuthService implements AuthServiceInterface {
   jwtLogoutTimeS = signal<number | null>(300);
   logoutTimeS = signal<number | null>(120);
   readonly isAuthenticated = signal(true);
-  readonly logLevel = signal(0);
+  readonly logLevel = signal<number>(LogLevel.NotSet);
   readonly menus = computed(() => this.authData()?.menus ?? []);
   readonly realm = linkedSignal(() => this.authData()?.realm ?? "");
   readonly rights = computed(() => this.authData()?.rights ?? []);
@@ -103,7 +103,7 @@ export class MockAuthService implements AuthServiceInterface {
   check2Step = jest.fn().mockReturnValue("disabled");
 
   static MOCK_AUTH_DATA: AuthData = {
-    log_level: 0,
+    log_level: LogLevel.NotSet,
     menus: ["token_overview", "token_self-service_menu", "container_overview"],
     realm: "default",
     rights: [],
