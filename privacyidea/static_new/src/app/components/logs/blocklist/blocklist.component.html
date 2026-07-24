@@ -117,7 +117,20 @@
         <td
           *matCellDef="let row"
           mat-cell>
-          <span>{{ row.identifier }}</span>
+          <span class="ip-cell">
+            <span>{{ row.identifier }}</span>
+            @if (authService.actionAllowed("authentication_log_read")) {
+              <button
+                (click)="showAuthenticationLog(row)"
+                [routerLink]="[ROUTE_PATHS.AUTHENTICATION_LOG]"
+                class="auth-log-button"
+                i18n-matTooltip
+                matTooltip="Show authentication log of this IP"
+                type="button">
+                <mat-icon class="mdi--list-lock auth-log-icon"></mat-icon>
+              </button>
+            }
+          </span>
         </td>
       </ng-container>
 

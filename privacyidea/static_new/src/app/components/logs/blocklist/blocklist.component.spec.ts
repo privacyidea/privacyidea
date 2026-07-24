@@ -23,7 +23,13 @@ import { AuthService } from "@services/auth/auth.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { ConditionalAccessStateService } from "@services/conditional-access-state/conditional-access-state.service";
-import { MockAuthService, MockDialogService, MockNotificationService } from "@testing/mock-services";
+import { AuthenticationLogService } from "@services/authentication-log/authentication-log.service";
+import {
+  MockAuthService,
+  MockAuthenticationLogService,
+  MockDialogService,
+  MockNotificationService
+} from "@testing/mock-services";
 import { MockConditionalAccessStateService } from "@testing/mock-services/mock-conditional-access-state-service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { of } from "rxjs";
@@ -60,6 +66,7 @@ describe("BlocklistComponent", () => {
   let casService: MockConditionalAccessStateService;
   let dialogService: MockDialogService;
   let notificationService: MockNotificationService;
+  let authLogService: MockAuthenticationLogService;
 
   beforeEach(async () => {
     TestBed.resetTestingModule();
@@ -71,6 +78,7 @@ describe("BlocklistComponent", () => {
         { provide: DialogService, useClass: MockDialogService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: ConditionalAccessStateService, useClass: MockConditionalAccessStateService },
+        { provide: AuthenticationLogService, useClass: MockAuthenticationLogService },
         provideHttpClient()
       ]
     }).compileComponents();
@@ -80,6 +88,7 @@ describe("BlocklistComponent", () => {
     casService = TestBed.inject(ConditionalAccessStateService) as unknown as MockConditionalAccessStateService;
     dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
     notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+    authLogService = TestBed.inject(AuthenticationLogService) as unknown as MockAuthenticationLogService;
     fixture.detectChanges();
   });
 
@@ -89,6 +98,12 @@ describe("BlocklistComponent", () => {
 
   it("should be created", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("showAuthenticationLog seeds the auth-log filter with the source IP", () => {
+    component.showAuthenticationLog(activeEntry);
+    const filter = authLogService.authenticationLogFilter().filterMap;
+    expect(filter.get("source_ip")).toBe("192.168.1.100");
   });
 
   it("dataSource is empty when the resource has no value", () => {

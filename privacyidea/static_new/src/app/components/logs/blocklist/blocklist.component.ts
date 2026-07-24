@@ -27,7 +27,9 @@ import { MatInput } from "@angular/material/input";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { Sort } from "@angular/material/sort";
+import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { FilterValue } from "@core/models/filter_value/filter_value";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
@@ -37,6 +39,10 @@ import {
   ConditionalAccessStateService,
   ConditionalAccessStateServiceInterface
 } from "@services/conditional-access-state/conditional-access-state.service";
+import {
+  AuthenticationLogService,
+  AuthenticationLogServiceInterface
+} from "@services/authentication-log/authentication-log.service";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
@@ -60,6 +66,7 @@ import { concatMap, reduce } from "rxjs/operators";
     MatInput,
     ClearableInputComponent,
     ScrollEdgesDirective,
+    RouterLink,
     DatePipe,
     TitleCasePipe,
     NgClass
@@ -68,6 +75,7 @@ import { concatMap, reduce } from "rxjs/operators";
 export class BlocklistComponent {
   protected readonly casService: ConditionalAccessStateServiceInterface = inject(ConditionalAccessStateService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly authenticationLogService: AuthenticationLogServiceInterface = inject(AuthenticationLogService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
@@ -97,6 +105,12 @@ export class BlocklistComponent {
 
    filterText = "";
    readonly sort: WritableSignal<Sort> = signal({ active: "identifier", direction: "asc" });
+
+  // Pre-seed the authentication-log filter with this entry's source IP and jump there, so the log shows only
+  // that IP's events. Navigation to the auth-log route itself is done by the template's routerLink.
+  showAuthenticationLog(row: BlocklistEntry): void {
+    this.authenticationLogService.authenticationLogFilter.set(new FilterValue().addEntry("source_ip", row.identifier));
+  }
 
   blockState(row: BlocklistEntry): string {
     if (row.permanent) {

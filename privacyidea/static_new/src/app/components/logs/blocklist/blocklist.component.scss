@@ -35,6 +35,43 @@
   line-height: 24px;
 }
 
+// Keep the IP and its auth-log shortcut on one row.
+.ip-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+// Auth-log shortcut
+.auth-log-button {
+  background: unset;
+  border: unset;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  opacity: var(--filter-button-opacity, 1);
+  transition: opacity 0.15s ease-in-out;
+}
+
+.auth-log-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// Reveal the shortcut only while the row is hovered or holds focus, to keep dense rows calm;
+// :focus-within keeps it reachable for keyboard/AT users.
+.blocklist-table tr.mat-mdc-row {
+  --filter-button-opacity: 0;
+
+  &:hover,
+  &:focus-within {
+    --filter-button-opacity: 1;
+  }
+}
+
 .filter-container {
   margin-bottom: 16px;
 }
