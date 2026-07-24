@@ -41,7 +41,6 @@ import { MatTooltip } from "@angular/material/tooltip";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { ErrorStateDirective } from "@components/shared/directives/error-state.directive";
@@ -81,7 +80,6 @@ export type eventTab = "events" | "action" | "conditions";
     MatButton,
     MatSlideToggle,
     MatTooltip,
-    CopyButtonComponent,
     ErrorStateDirective,
     ClearableInputComponent
   ],
@@ -108,6 +106,7 @@ export class EventEditPageComponent implements OnDestroy {
     this.isNewEvent() ? $localize`Create New Event Handler` : $localize`Edit Event Handler`
   );
   hasChanges = signal(false);
+  eventLoaded = computed(() => this.isNewEvent() || this.editEvent() !== EMPTY_EVENT);
   selectedEvents = linkedSignal(() => this.event().event);
   validConditionsDefinition = computed(() => {
     if (!this.editEvent().conditions) return true;
@@ -121,7 +120,7 @@ export class EventEditPageComponent implements OnDestroy {
     const validity: Record<string, boolean> = {};
     validity["events"] = this.editEvent().event.length > 0;
     validity["action"] = !!this.editEvent().action && this.validOptions();
-    validity["name"] = this.editEvent().name !== "" && /^[a-zA-Z0-9._-]*$/.test(this.editEvent().name);
+    validity["name"] = this.editEvent().name !== "" && /^[a-zA-Z0-9._\- ]*$/.test(this.editEvent().name);
     validity["handlerModule"] =
       this.eventService.selectedHandlerModule() !== null && this.eventService.selectedHandlerModule() !== "";
     validity["position"] = this.editEvent().position !== null && this.editEvent().position !== "";
