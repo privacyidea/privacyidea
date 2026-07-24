@@ -31,6 +31,7 @@ from privacyidea.lib.conditional_access.engine import (
     count_user_events,
     evaluate_access_decision,
     evaluate_lockout_policies,
+    get_user_lockout,
     is_user_locked,
     is_ip_blocked,
     is_ip_never_block,
@@ -219,6 +220,45 @@ class LockoutEngineTestCase(MyTestCase):
 
     def test_is_user_locked_unresolved_user(self):
         self.assertFalse(is_user_locked(User()))
+
+    # --- get_user_lockout clear_expired ---------------------------------------
+
+    def _add_lockout(self, lock_expires_at):
+        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid,
+                                        realm=self.user.realm, lock_expires_at=lock_expires_at))
+        db.session.commit()
+
+    def test_clear_expired_deletes_stale_row(self):
+        # An expired timed lock is dropped when the pre-check opts in.
+        self._add_lockout(utc_now() - timedelta(seconds=600))
+        self.assertIsNone(get_user_lockout(self.user, clear_expired=True))
+        self.assertIsNone(self._state())
+
+    def test_clear_expired_default_keeps_stale_row(self):
+        # The default is a pure read: an expired row reads as unlocked but stays.
+        self._add_lockout(utc_now() - timedelta(seconds=600))
+        self.assertIsNone(get_user_lockout(self.user))
+        self.assertIsNotNone(self._state())
+
+    def test_clear_expired_keeps_active_lock(self):
+        # A still-active timed lock is never deleted, even with clear_expired.
+        self._add_lockout(utc_now() + timedelta(seconds=600))
+        self.assertIsNotNone(get_user_lockout(self.user, clear_expired=True))
+        self.assertIsNotNone(self._state())
+
+    def test_clear_expired_keeps_permanent_lock(self):
+        # A permanent lock is never deleted, even with clear_expired.
+        self._add_lockout(None)
+        status = get_user_lockout(self.user, clear_expired=True)
+        self.assertIsNotNone(status)
+        self.assertTrue(status.permanent)
+        self.assertIsNotNone(self._state())
+
+    def test_is_user_locked_clear_expired_deletes_stale_row(self):
+        # The boolean wrapper threads clear_expired through to get_user_lockout.
+        self._add_lockout(utc_now() - timedelta(seconds=600))
+        self.assertFalse(is_user_locked(self.user, clear_expired=True))
+        self.assertIsNone(self._state())
 
     # --- is_ip_blocked --------------------------------------------------------
 

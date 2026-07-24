@@ -356,7 +356,7 @@ def conditional_access_precheck(user) -> "Response | None":
     # ORM models, so a module-level import would risk an import-order cycle.
     from privacyidea.lib.conditional_access.engine import (is_user_locked, is_ip_blocked,
                                                            evaluate_access_decision, AccessDecision)
-    if is_user_locked(user):
+    if is_user_locked(user, clear_expired=True):
         log.info(f"Rejecting authentication for locked user {user!r}.")
         g.audit_object.log({"success": False,
                             "info": "Rejected: account is temporarily locked"})

@@ -160,6 +160,9 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         # An expired lock is not a lock: a valid authentication still succeeds.
         body = self._check({"user": "cornelius", "pass": "pin755224"})
         self.assertTrue(body["result"]["value"], body)
+        # The stale row carries no state; the pre-check opts into cleanup, so this
+        # next login drops it (rather than leaving it for the bulk purge).
+        self.assertIsNone(db.session.get(UserLockoutState, (self.user.resolver, self.user.uid, self.user.realm)))
 
     # --- full loop ------------------------------------------------------------
 

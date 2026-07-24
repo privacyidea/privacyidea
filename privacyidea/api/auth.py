@@ -274,7 +274,7 @@ def _conditional_access_precheck(user: User) -> None:
     named); like the lock/block messages it is maskable via the
     hide_specific_error_message policy. ALLOW / CONTINUE fall through silently.
     """
-    lockout = get_user_lockout(user)
+    lockout = get_user_lockout(user, clear_expired=True)
     ip_block = get_ip_block(g.client_ip)
     restriction = _binding_restriction(lockout, ip_block)
     if restriction == "block":

@@ -210,18 +210,29 @@ def count_user_events(resolver: str, uid: str, realm: str,
     return db.session.scalar(stmt) or 0
 
 
-def get_user_lockout(user: "User", now: datetime | None = None) -> "RestrictionStatus | None":
+def get_user_lockout(user: "User", now: datetime | None = None, *,
+                     clear_expired: bool = False) -> "RestrictionStatus | None":
     """
     Return information about *user*'s **current** lock, or ``None`` if the user
-    is not currently locked. This is a **pure read** intended for the
-    authentication pre-check hot path: it never writes, so a stale row whose
-    ``lock_expires_at`` lies in the past simply reads as *not locked* (it is
-    overwritten by the next lock or by a cleanup job).
+    is not currently locked. Intended for the authentication pre-check hot path.
+
+    By default this is a **pure read**: a stale row whose ``lock_expires_at`` lies
+    in the past simply reads as *not locked* and is left in place.
+
+    With *clear_expired* the observed stale row is deleted on the spot. An expired
+    timed lock carries no enforced state — it already reads as *not locked* and the
+    authentication log is the historical record — so dropping it here, where the
+    row is already loaded and known expired, cleans it up on the user's next login
+    without a second lookup. The authentication pre-checks opt in; nothing that
+    merely inspects a user's status does. Permanent and still-active locks are
+    never deleted. The delete is defensive (see :func:`_delete_user_lockout_state`).
 
     A row with ``lock_expires_at IS NULL`` is a permanent lock.
 
     :param user: the user to check; an unresolved user is never locked
     :param now: the reference time; defaults to :func:`utc_now`
+    :param clear_expired: delete the row if it is a stale (timed, expired) lock;
+        off by default to keep this a pure read for non-auth callers
     :return: ``None`` if not locked, else a :class:`RestrictionStatus`
     """
     if not _resolved(user):
@@ -234,23 +245,27 @@ def get_user_lockout(user: "User", now: datetime | None = None) -> "RestrictionS
         return RestrictionStatus(permanent=True, expires_at=None, seconds_remaining=None)
     now = _naive_utc(now) if now is not None else utc_now()
     if state.lock_expires_at <= now:
+        # If explicitly requested, drop expired rows
+        if clear_expired:
+            _delete_user_lockout_state(state)
         return None
     remaining = int((state.lock_expires_at - now).total_seconds())
     return RestrictionStatus(permanent=False, expires_at=state.lock_expires_at,
                              seconds_remaining=remaining)
 
 
-def is_user_locked(user: "User", now: datetime | None = None) -> bool:
+def is_user_locked(user: "User", now: datetime | None = None, *, clear_expired: bool = False) -> bool:
     """
     Return whether *user* is currently locked. Thin boolean wrapper over
     :func:`get_user_lockout` for the authentication pre-check hot path; see that
-    function for the expiry and permanent-lock semantics.
+    function for the expiry, permanent-lock, and *clear_expired* semantics.
 
     :param user: the user to check; an unresolved user is never locked
     :param now: the reference time; defaults to :func:`utc_now`
+    :param clear_expired: delete the row if it is a stale (timed, expired) lock
     :return: ``True`` if the user is currently locked
     """
-    return get_user_lockout(user, now=now) is not None
+    return get_user_lockout(user, now=now, clear_expired=clear_expired) is not None
 
 
 # Built-in never-block networks: blocking loopback would lock out a same-host
@@ -828,6 +843,25 @@ def _execute_stage_actions(stage, user: "User", source_ip: str | None, now: date
             log.warning(f"Lockout action {action_type} (id {action.id}) on stage {stage.id} "
                         f"failed: {ex!r}; skipping.")
     return notices
+
+
+def _delete_user_lockout_state(state: UserLockoutState) -> None:
+    """
+    Delete a stale :class:`UserLockoutState` row.
+
+    Used by :func:`get_user_lockout` to drop a timed lock the auth pre-check finds
+    already expired: the row is no longer enforced and the authentication log is
+    the record, so it carries nothing worth keeping. The write is defensive — a
+    failure is logged and rolled back so cleaning up can never break the
+    authentication response that is still in flight.
+    """
+    try:
+        db.session.delete(state)
+        db.session.commit()
+    except Exception as ex:
+        log.warning("Failed to delete the expired user lockout state "
+                    f"({state.resolver!r}, {state.uid!r}, {state.realm!r}): {ex!r}")
+        db.session.rollback()
 
 
 def _upsert_user_lockout_state(user: "User", *, lock_expires_at: datetime | None, stage_id: int) -> None:
