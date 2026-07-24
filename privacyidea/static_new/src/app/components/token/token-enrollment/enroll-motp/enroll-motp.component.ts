@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, forwardRef, inject, input, signal } from "@angular/core";
+import { Component, computed, forwardRef, inject, input, signal } from "@angular/core";
 import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
@@ -29,6 +29,7 @@ import {
   EnrollmentArgs,
   EnrollTokenBase
 } from "@components/token/token-enrollment/enroll-token-base";
+import { MaskedInputComponent } from "@components/shared/masked-input/masked-input.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 
 export interface MotpEnrollmentOptions extends TokenEnrollmentData {
@@ -41,7 +42,7 @@ export interface MotpEnrollmentOptions extends TokenEnrollmentData {
 @Component({
   selector: "app-enroll-motp",
   standalone: true,
-  imports: [FormField, MatFormField, MatInput, MatLabel, MatCheckbox, MatError],
+  imports: [FormField, MatFormField, MatInput, MatLabel, MatCheckbox, MatError, MaskedInputComponent],
   templateUrl: "./enroll-motp.component.html",
   styleUrl: "./enroll-motp.component.scss",
   providers: [
@@ -75,6 +76,25 @@ export class EnrollMotpComponent extends EnrollTokenBase<MotpEnrollmentData> {
   repeatMotpPinForm = form(this.repeatMotpPin, (f) => {
     validate(f, (ctx) => (ctx.value() !== this.motpPin() ? [{ kind: "motpPinMismatch" }] : []));
     disabled(f, () => this.disabled());
+  });
+
+  motpPinError = computed(() => {
+    if (!this.motpPinForm().touched()) {
+      return "";
+    }
+    const errors = this.motpPinForm().errors();
+    if (errors.some((e) => e.kind === "required")) {
+      return $localize`Password is required`;
+    }
+    if (errors.some((e) => e.kind === "minlength")) {
+      return $localize`Password must be at least 4 characters long`;
+    }
+    return "";
+  });
+
+  repeatMotpPinError = computed(() => {
+    const mismatch = this.repeatMotpPinForm().errors().some((e) => e.kind === "motpPinMismatch");
+    return mismatch && this.repeatMotpPinForm().touched() ? $localize`mOTP PINs do not match.` : "";
   });
 
   buildEnrollmentArgs(basicOptions: TokenEnrollmentData): EnrollmentArgs<MotpEnrollmentData> | null {

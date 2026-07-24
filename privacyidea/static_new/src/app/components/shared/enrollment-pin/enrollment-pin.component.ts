@@ -16,10 +16,10 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, input } from "@angular/core";
-import { FieldTree, FormField } from "@angular/forms/signals";
-import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
-import { MatInput } from "@angular/material/input";
+import { Component, computed, input } from "@angular/core";
+import { FieldTree } from "@angular/forms/signals";
+
+import { MaskedInputComponent } from "../masked-input/masked-input.component";
 
 // TODO: Parent components (e.g. token-enrollment.component.ts) must be updated to pass
 // FieldTree<string> instead of FormControl<string> for setPinControl and repeatPinControl,
@@ -29,10 +29,16 @@ import { MatInput } from "@angular/material/input";
 @Component({
   selector: "app-enrollment-pin",
   standalone: true,
-  imports: [FormField, MatFormField, MatLabel, MatInput, MatError],
+  imports: [MaskedInputComponent],
   templateUrl: "./enrollment-pin.component.html"
 })
 export class EnrollmentPinComponent {
   setPinControl = input.required<FieldTree<string>>();
   repeatPinControl = input.required<FieldTree<string>>();
+
+  pinMismatchError = computed(() => {
+    const mismatch = this.repeatPinControl()().errors().some((e) => e.kind === "pinMismatch");
+    const touched = this.setPinControl()().touched() || this.repeatPinControl()().touched();
+    return mismatch && touched ? $localize`PINs do not match.` : "";
+  });
 }

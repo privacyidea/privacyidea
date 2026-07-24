@@ -16,19 +16,28 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div class="flex-column">
-  <h4 i18n>Set PIN</h4>
-  <div class="flex-column">
-    <app-masked-input
-      [field]="setPinControl()"
-      class="input-width-l"
-      i18n-label
-      label="PIN" />
-    <app-masked-input
-      [error]="pinMismatchError()"
-      [field]="repeatPinControl()"
-      class="input-width-l"
-      i18n-label
-      label="Repeat PIN" />
-  </div>
-</div>
+<mat-form-field>
+  <mat-label>{{ label() }}</mat-label>
+  <input
+    [class.masked-input]="masked()"
+    [formField]="field()"
+    [placeholder]="placeholder()"
+    autocomplete="off"
+    matInput
+    type="text" />
+  <button
+    (click)="toggleMasked()"
+    [attr.aria-label]="label()"
+    [attr.aria-pressed]="!masked()"
+    mat-icon-button
+    matSuffix
+    type="button">
+    <mat-icon>{{ masked() ? "visibility_off" : "visibility" }}</mat-icon>
+  </button>
+  @if (hint()) {
+    <mat-hint>{{ hint() }}</mat-hint>
+  }
+  @if (error()) {
+    <mat-error>{{ error() }}</mat-error>
+  }
+</mat-form-field>
