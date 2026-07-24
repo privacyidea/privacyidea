@@ -108,6 +108,23 @@ class SecureFormatter(Formatter):
         return super().format(record)
 
 
+def _hide_nested_keys(data, keywords):
+    """Recursively hide specified keys in a (nested) dictionary.
+
+    :param data: The dictionary (or other data) to process
+    :param keywords: List of keys to hide at any nesting level
+    """
+    if isinstance(data, dict):
+        for key in list(data.keys()):
+            if key in keywords:
+                data[key] = "HIDDEN"
+            else:
+                _hide_nested_keys(data[key], keywords)
+    elif isinstance(data, list):
+        for item in data:
+            _hide_nested_keys(item, keywords)
+
+
 class log_with:
     """
     Logging decorator that allows you to log with a
@@ -189,9 +206,7 @@ class log_with:
                         for keyword in self.hide_kwargs:
                             log_kwds[keyword] = "HIDDEN"
                         for k, v in self.hide_args_keywords.items():
-                            for keyword in v:
-                                if keyword in args[k]:
-                                    log_args[k][keyword] = "HIDDEN"
+                            _hide_nested_keys(log_args[k], v)
                 except Exception:
                     # Probably the deepcopy fails, due to special objects in the
                     # args But as we are asked to hide a parameter, we hide

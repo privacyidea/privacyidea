@@ -36,9 +36,7 @@ from privacyidea.lib.token.attributes import enable_token, unassign_token
 from privacyidea.lib.token.query import (create_tokenclass_object, get_one_token, get_token_owner, get_tokens,
                                          get_tokens_from_serial_or_user)
 
-
 log = logging.getLogger(__name__)
-
 
 
 @log_with(log)
@@ -167,7 +165,8 @@ def import_token(serial: str, token_dict: dict, tokenrealms: list | None = None)
     return token
 
 
-@log_with(log, hide_args_keywords={'param': 'pin'})
+@log_with(log, hide_args_keywords={0: ['pin', 'otpkey', 'password', 'radius.secret',
+                                       'enrollment_credential', 'sshkey']})
 def init_token(param: dict, user: User = None, tokenrealms: list[str] = None, tokenkind: str = None) -> TokenClass:
     """
     Create a new token or update an existing token with the specified parameters.
