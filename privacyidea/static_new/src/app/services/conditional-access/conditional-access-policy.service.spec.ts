@@ -160,9 +160,20 @@ describe("ConditionalAccessPolicyService", () => {
   });
 
   describe("targets and templates", () => {
-    const actionsByTarget = {
+    const targetConstraints = {
+      user: { actions: ["LOCK_USER", "ALLOW", "DENY"], count_modes: ["PER_ATTEMPT", "PER_REQUEST"] },
+      source_ip: {
+        actions: ["BLOCK_IP", "ALLOW", "DENY"],
+        count_modes: ["DISTINCT_USERS", "PER_ATTEMPT", "PER_REQUEST"]
+      }
+    };
+    const expectedActionsByTarget = {
       user: ["LOCK_USER", "ALLOW", "DENY"],
       source_ip: ["BLOCK_IP", "ALLOW", "DENY"]
+    };
+    const expectedCountModesByTarget = {
+      user: ["PER_ATTEMPT", "PER_REQUEST"],
+      source_ip: ["DISTINCT_USERS", "PER_ATTEMPT", "PER_REQUEST"]
     };
     const sampleTemplate = {
       key: "password_bruteforce",
@@ -174,6 +185,7 @@ describe("ConditionalAccessPolicyService", () => {
         dry_run: false,
         priority: 1,
         target: "user" as const,
+        count_mode: "PER_REQUEST" as const,
         counter_types_to_track: ["PASSWORD_FAIL" as const],
         stages: [
           { failure_threshold: 10, priority: 1, actions: [{ action_type: "LOCK_USER" as const, action_value: null }] }
@@ -187,20 +199,22 @@ describe("ConditionalAccessPolicyService", () => {
       httpMock.expectOne(service.baseUrl).flush(MockPiResponse.fromValue([]));
       httpMock.expectOne(service.eventTypesUrl).flush(MockPiResponse.fromValue([]));
       httpMock.expectOne(service.actionTypesUrl).flush(MockPiResponse.fromValue(["LOCK_USER", "ALLOW", "DENY"]));
-      httpMock.expectOne(service.targetsUrl).flush(MockPiResponse.fromValue(actionsByTarget));
+      httpMock.expectOne(service.targetsUrl).flush(MockPiResponse.fromValue(targetConstraints));
       httpMock.expectOne(service.templatesUrl).flush(MockPiResponse.fromValue([sampleTemplate]));
       await Promise.resolve();
     }
 
     it("should default to empty derived values before the resources fire", () => {
       expect(service.actionsByTarget()).toEqual({});
+      expect(service.countModesByTarget()).toEqual({});
       expect(service.targets()).toEqual([]);
       expect(service.templates()).toEqual([]);
     });
 
-    it("should derive actionsByTarget and targets from the /targets response", async () => {
+    it("should derive actionsByTarget, countModesByTarget and targets from the /targets response", async () => {
       await load();
-      expect(service.actionsByTarget()).toEqual(actionsByTarget);
+      expect(service.actionsByTarget()).toEqual(expectedActionsByTarget);
+      expect(service.countModesByTarget()).toEqual(expectedCountModesByTarget);
       expect(service.targets()).toEqual(["user", "source_ip"]);
     });
 
@@ -213,6 +227,17 @@ describe("ConditionalAccessPolicyService", () => {
       await load();
       expect(service.actionsForTarget("user")).toEqual(["LOCK_USER", "ALLOW", "DENY"]);
       expect(service.actionsForTarget("source_ip")).toEqual(["BLOCK_IP", "ALLOW", "DENY"]);
+    });
+
+    it("should return the supported count modes for a known target", async () => {
+      await load();
+      expect(service.countModesForTarget("user")).toEqual(["PER_ATTEMPT", "PER_REQUEST"]);
+      expect(service.countModesForTarget("source_ip")).toEqual(["DISTINCT_USERS", "PER_ATTEMPT", "PER_REQUEST"]);
+    });
+
+    it("should return no count modes for an unmapped target", async () => {
+      await load();
+      expect(service.countModesForTarget("unknown" as never)).toEqual([]);
     });
 
     it("should fall back to the full action-type list for an unmapped target", async () => {

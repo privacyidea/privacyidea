@@ -24,6 +24,7 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService } from "@services/auth/auth.service";
 import {
   ConditionalAccessPolicyService,
+  CountMode,
   LockoutActionType,
   LockoutPolicy,
   LockoutPolicySaveParams,
@@ -56,6 +57,7 @@ const mockPolicy: LockoutPolicy = {
   dry_run: false,
   priority: 1,
   target: "user",
+  count_mode: "PER_REQUEST",
   counter_types_to_track: ["PIN_FAIL"],
   stages: [{ failure_threshold: 5, priority: 1, actions: [{ action_type: "LOCK_USER", action_value: null }] }]
 };
@@ -67,6 +69,7 @@ const EMPTY_TEMPLATE_POLICY: LockoutPolicySaveParams = {
   dry_run: false,
   priority: 1,
   target: "user",
+  count_mode: "PER_REQUEST",
   counter_types_to_track: ["PASSWORD_FAIL"],
   stages: [{ failure_threshold: 10, priority: 1, actions: [{ action_type: "LOCK_USER", action_value: null }] }]
 };
@@ -337,6 +340,7 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
           dry_run: false,
           priority: 1,
           target: "user",
+          count_mode: "PER_REQUEST",
           counter_types_to_track: ["PASSWORD_FAIL"],
           stages: [{ failure_threshold: 10, priority: 1, actions: [{ action_type: "LOCK_USER", action_value: null }] }]
         }
@@ -424,6 +428,68 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
       component.onTargetChange("source_ip");
       component.onStagesChange(stageWith("LOCK_USER"));
       expect(component.targetActionsValid()).toBe(true);
+    });
+  });
+
+  describe("count mode", () => {
+    beforeEach(() => {
+      policyServiceMock.countModesByTarget.set({
+        user: ["PER_ATTEMPT", "PER_REQUEST"],
+        source_ip: ["DISTINCT_USERS", "PER_ATTEMPT", "PER_REQUEST"]
+      });
+    });
+
+    it("should offer the current mode until /targets loads", () => {
+      policyServiceMock.countModesByTarget.set({} as Record<LockoutTarget, CountMode[]>);
+      expect(component.countModeOptions()).toEqual([component.editPolicy().count_mode]);
+    });
+
+    it("should offer the target's count modes once loaded", () => {
+      component.onTargetChange("source_ip");
+      expect(component.countModeOptions()).toEqual(["DISTINCT_USERS", "PER_ATTEMPT", "PER_REQUEST"]);
+    });
+
+    it("should update the count mode on change", () => {
+      component.onCountModeChange("PER_ATTEMPT");
+      expect(component.editPolicy().count_mode).toBe("PER_ATTEMPT");
+    });
+
+    it("should not change the count mode when the target changes", () => {
+      component.onTargetChange("source_ip");
+      component.onCountModeChange("DISTINCT_USERS");
+      // Switching to a target where the mode is still valid leaves it untouched...
+      component.onTargetChange("source_ip");
+      expect(component.editPolicy().count_mode).toBe("DISTINCT_USERS");
+      // ...and switching to one where it is invalid also leaves it untouched (surfaced as an error, not rewritten).
+      component.onTargetChange("user");
+      expect(component.editPolicy().count_mode).toBe("DISTINCT_USERS");
+    });
+
+    it("should be valid when the count mode is supported by the target", () => {
+      component.onTargetChange("source_ip");
+      component.onCountModeChange("PER_ATTEMPT");
+      expect(component.countModeValid()).toBe(true);
+    });
+
+    it("should be invalid and block saving when the count mode is not supported by the target", () => {
+      component.onTargetChange("source_ip");
+      component.onCountModeChange("DISTINCT_USERS");
+      component.onTargetChange("user");
+      expect(component.countModeValid()).toBe(false);
+      expect(component.canSave()).toBe(false);
+    });
+
+    it("should not block while the supported-modes list is still empty", () => {
+      policyServiceMock.countModesByTarget.set({} as Record<LockoutTarget, CountMode[]>);
+      component.onTargetChange("user");
+      component.onCountModeChange("DISTINCT_USERS");
+      expect(component.countModeValid()).toBe(true);
+    });
+
+    it("should label the count modes", () => {
+      expect(component.countModeLabel("PER_REQUEST")).toBe("Per Request");
+      expect(component.countModeLabel("DISTINCT_USERS")).toBe("Distinct Users");
+      expect(component.countModeLabel("WHATEVER")).toBe("WHATEVER");
     });
   });
 });

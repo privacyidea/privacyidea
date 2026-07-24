@@ -129,10 +129,12 @@
           <mat-error i18n>Name is required.</mat-error>
         }
       </mat-form-field>
+    </div>
 
+    <div class="edit-policy-fields">
       <mat-form-field
         appearance="fill"
-        class="input-width-xl"
+        class="input-width-l"
         subscriptSizing="dynamic">
         <mat-label i18n>Target</mat-label>
         <mat-select
@@ -144,6 +146,23 @@
         </mat-select>
         <mat-hint i18n>
           The target on which the policy counts events and performs triggered stage actions.
+        </mat-hint>
+      </mat-form-field>
+
+      <mat-form-field
+        appearance="fill"
+        class="input-width-l"
+        subscriptSizing="dynamic">
+        <mat-label i18n>Count Mode</mat-label>
+        <mat-select
+          [value]="editPolicy().count_mode"
+          (selectionChange)="onCountModeChange($event.value)">
+          @for (countMode of countModeOptions(); track countMode) {
+            <mat-option [value]="countMode">{{ countModeLabel(countMode) }}</mat-option>
+          }
+        </mat-select>
+        <mat-hint i18n>
+          How the tracked events are counted against the thresholds.
         </mat-hint>
       </mat-form-field>
 
@@ -173,18 +192,18 @@
           (selectionChange)="onTimeWindowUnitChange($event.value)">
           <mat-option
             value="seconds"
-            i18n
-            >Seconds
+            i18n>
+            Seconds
           </mat-option>
           <mat-option
             value="minutes"
-            i18n
-            >Minutes
+            i18n>
+            Minutes
           </mat-option>
           <mat-option
             value="hours"
-            i18n
-            >Hours
+            i18n>
+            Hours
           </mat-option>
         </mat-select>
       </mat-form-field>

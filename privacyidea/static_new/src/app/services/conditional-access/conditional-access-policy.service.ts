@@ -65,6 +65,18 @@ export type LockoutActionType =
 // The identity a policy counts and acts on.
 export type LockoutTarget = "user" | "source_ip";
 
+// How the tracked counters are counted against the stage thresholds; which values are valid depends on the
+// target (see the /conditionalaccess/targets endpoint). Mirrors
+// privacyidea.lib.conditional_access.authentication_event_types.CountMode.
+export type CountMode = "PER_REQUEST" | "PER_ATTEMPT" | "DISTINCT_USERS";
+
+// Everything the backend constrains by target, served per target by /conditionalaccess/targets: the stage actions
+// it allows and the count modes it supports (both sorted; the UI treats the first count mode as the default).
+export interface TargetConstraints {
+  actions: LockoutActionType[];
+  count_modes: CountMode[];
+}
+
 export interface LockoutStageAction {
   id?: number;
   action_type: LockoutActionType;
@@ -87,6 +99,7 @@ export interface LockoutPolicy {
   dry_run: boolean;
   priority: number;
   target: LockoutTarget;
+  count_mode: CountMode;
   counter_types_to_track: AuthEventType[];
   stages: LockoutPolicyStage[];
 }
@@ -109,6 +122,7 @@ export const EMPTY_LOCKOUT_POLICY: LockoutPolicySaveParams = {
   dry_run: false,
   priority: 1,
   target: "user",
+  count_mode: "PER_REQUEST",
   counter_types_to_track: [],
   stages: []
 };
@@ -120,13 +134,16 @@ export interface ConditionalAccessPolicyServiceInterface {
   readonly eventTypes: Signal<AuthEventType[]>;
   readonly actionTypesResource: HttpResourceRef<PiResponse<string[]> | undefined>;
   readonly actionTypes: Signal<LockoutActionType[]>;
-  readonly targetsResource: HttpResourceRef<PiResponse<Record<string, string[]>> | undefined>;
+  readonly targetsResource: HttpResourceRef<PiResponse<Record<string, TargetConstraints>> | undefined>;
   readonly actionsByTarget: Signal<Record<LockoutTarget, LockoutActionType[]>>;
+  readonly countModesByTarget: Signal<Record<LockoutTarget, CountMode[]>>;
   readonly targets: Signal<LockoutTarget[]>;
   readonly templatesResource: HttpResourceRef<PiResponse<LockoutPolicyTemplate[]> | undefined>;
   readonly templates: Signal<LockoutPolicyTemplate[]>;
 
   actionsForTarget(target: LockoutTarget): LockoutActionType[];
+
+  countModesForTarget(target: LockoutTarget): CountMode[];
 
   savePolicy(policy: LockoutPolicySaveParams): Promise<number | undefined>;
 
@@ -208,8 +225,9 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
     () => (this.actionTypesResource.value()?.result?.value ?? []) as LockoutActionType[]
   );
 
-  // The targets and, per target, the actions that target allows
-  readonly targetsResource = httpResource<PiResponse<Record<string, string[]>>>(() => {
+  // The targets and, per target, the constraints that depend on the target: the actions it allows and the count
+  // modes it supports (see the TargetConstraints shape).
+  readonly targetsResource = httpResource<PiResponse<Record<string, TargetConstraints>>>(() => {
     if (!this.authService.actionAllowed("lockout_policy_read") || !this.contentService.onConditionalAccess()) {
       return undefined;
     }
@@ -220,11 +238,23 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
     };
   });
 
-  readonly actionsByTarget: Signal<Record<LockoutTarget, LockoutActionType[]>> = computed(
-    () => (this.targetsResource.value()?.result?.value ?? {}) as Record<LockoutTarget, LockoutActionType[]>
+  private readonly targetConstraints: Signal<Record<LockoutTarget, TargetConstraints>> = computed(
+    () => (this.targetsResource.value()?.result?.value ?? {}) as Record<LockoutTarget, TargetConstraints>
   );
 
-  readonly targets: Signal<LockoutTarget[]> = computed(() => Object.keys(this.actionsByTarget()) as LockoutTarget[]);
+  readonly actionsByTarget: Signal<Record<LockoutTarget, LockoutActionType[]>> = computed(() =>
+    Object.fromEntries(
+      Object.entries(this.targetConstraints()).map(([target, entry]) => [target, entry.actions])
+    ) as Record<LockoutTarget, LockoutActionType[]>
+  );
+
+  readonly countModesByTarget: Signal<Record<LockoutTarget, CountMode[]>> = computed(() =>
+    Object.fromEntries(
+      Object.entries(this.targetConstraints()).map(([target, entry]) => [target, entry.count_modes])
+    ) as Record<LockoutTarget, CountMode[]>
+  );
+
+  readonly targets: Signal<LockoutTarget[]> = computed(() => Object.keys(this.targetConstraints()) as LockoutTarget[]);
 
   readonly templatesResource = httpResource<PiResponse<LockoutPolicyTemplate[]>>(() => {
     if (!this.authService.actionAllowed("lockout_policy_read") || !this.contentService.onConditionalAccess()) {
@@ -245,6 +275,12 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
   // so the select is never empty on first paint.
   actionsForTarget(target: LockoutTarget): LockoutActionType[] {
     return this.actionsByTarget()[target] ?? this.actionTypes();
+  }
+
+  // Count modes supported by a target (sorted; the UI treats the first as the default). Empty until /targets loads;
+  // the editor keeps the current mode in that case so its select is never blank on first paint.
+  countModesForTarget(target: LockoutTarget): CountMode[] {
+    return this.countModesByTarget()[target] ?? [];
   }
 
   constructor() {
