@@ -28,6 +28,7 @@ from privacyidea.lib.conditional_access.lockout_policy import (_ACTIONS_BY_TARGE
                                                                delete_lockout_policy,
                                                                enable_lockout_policy,
                                                                get_lockout_policy,
+                                                               get_target_constraints,
                                                                list_lockout_policies,
                                                                update_lockout_policy)
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError
@@ -338,3 +339,17 @@ class LockoutPolicyCrudTestCase(MyTestCase):
                           f"the default count_mode for {target} is not among its allowed modes")
         covered = set().union(*_COUNT_MODES_BY_TARGET.values())
         self.assertSetEqual(set(CountMode), covered, "a CountMode is not usable on any target")
+
+    def test_10_target_constraints_expose_actions_and_count_modes(self):
+        constraints = get_target_constraints()
+        self.assertSetEqual({t.value for t in LockoutTarget}, set(constraints))
+        for target, entry in constraints.items():
+            self.assertSetEqual({"actions", "count_modes"}, set(entry))
+            self.assertListEqual(sorted(entry["actions"]), entry["actions"])
+            self.assertListEqual(sorted(entry["count_modes"]), entry["count_modes"])
+        self.assertListEqual([CountMode.PER_ATTEMPT.value, CountMode.PER_REQUEST.value],
+                             constraints[LockoutTarget.USER.value]["count_modes"])
+        self.assertListEqual([CountMode.DISTINCT_USERS.value, CountMode.PER_ATTEMPT.value, CountMode.PER_REQUEST.value],
+                             constraints[LockoutTarget.SOURCE_IP.value]["count_modes"])
+        self.assertIn(LockoutAction.BLOCK_IP.value, constraints[LockoutTarget.SOURCE_IP.value]["actions"])
+        self.assertIn(LockoutAction.LOCK_USER.value, constraints[LockoutTarget.USER.value]["actions"])

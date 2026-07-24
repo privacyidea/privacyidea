@@ -207,6 +207,18 @@ def get_actions_by_target() -> dict[str, list[str]]:
             for target, actions in _ACTIONS_BY_TARGET.items()}
 
 
+def get_target_constraints() -> dict[str, dict[str, list[str]]]:
+    """
+    The per-target policy constraints, as ``{target_value: {"actions": [...], "count_modes": [...]}}`` - for each
+    target the stage actions it allows (:data:`_ACTIONS_BY_TARGET`) and the count modes it supports
+    (:data:`_COUNT_MODES_BY_TARGET`), both sorted. Actions and count modes are the two things constrained by the
+    target.
+    """
+    return {target.value: {"actions": sorted(action.value for action in _ACTIONS_BY_TARGET[target]),
+                           "count_modes": sorted(mode.value for mode in _COUNT_MODES_BY_TARGET[target])}
+            for target in LockoutTarget}
+
+
 def _validate_target(target) -> "LockoutTarget":
     """
     Validate the policy target and return the matching :class:`LockoutTarget`

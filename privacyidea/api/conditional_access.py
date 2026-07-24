@@ -41,7 +41,7 @@ from privacyidea.lib.conditional_access.lockout_policy import (list_lockout_poli
                                                                create_lockout_policy,
                                                                update_lockout_policy,
                                                                delete_lockout_policy,
-                                                               get_actions_by_target)
+                                                               get_target_constraints)
 from privacyidea.lib.conditional_access.lockout_policy_template import list_lockout_policy_templates
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.log import log_with
@@ -124,17 +124,17 @@ def list_action_types():
 @log_with(log)
 def list_targets():
     """
-    Return the policy targets and, for each, the stage actions it allows, as
-    ``{target: [action, ...]}`` (see
-    :func:`~privacyidea.lib.conditional_access.lockout_policy.get_actions_by_target`).
+    Return the policy targets and, for each, the constraints that depend on the target - the stage actions it allows
+    and the count modes it supports - as ``{target: {"actions": [...], "count_modes": [...]}}`` (both sorted; see
+    :func:`~privacyidea.lib.conditional_access.lockout_policy.get_target_constraints`).
 
     Requires the admin policy action :ref:`policy_lockout_policy_read`.
 
-    :status 200: mapping of target name to its list of allowed action names
+    :status 200: mapping of target name to its allowed actions and supported count modes
     """
-    actions_by_target = get_actions_by_target()
-    g.audit_object.log({"success": True, "info": f"{len(actions_by_target)} targets"})
-    return send_result(actions_by_target)
+    target_constraints = get_target_constraints()
+    g.audit_object.log({"success": True, "info": f"{len(target_constraints)} targets"})
+    return send_result(target_constraints)
 
 
 @conditional_access_blueprint.route('policy', methods=['GET'])
