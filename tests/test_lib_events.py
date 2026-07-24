@@ -109,6 +109,17 @@ class EventHandlerLibTestCase(MyTestCase):
             if opt.Key == "always":
                 self.assertEqual("immer", opt.Value)
 
+        # Update the name of the first event (regression test for #5591)
+        r = set_event("renamed_event", "token_init, token_assign",
+                      "UserNotification", "sendmail",
+                      conditions={},
+                      options={"emailconfig": "themis",
+                               "always": "immer"},
+                      id=eid)
+        self.assertEqual(r, eid)
+        event_1 = db.session.scalars(select(EventHandler).where(EventHandler.id == eid)).one_or_none()
+        self.assertEqual("renamed_event", event_1.name)
+
         # check that the config timestamp has been updated
         self.assertGreater(get_config_object().timestamp, current_timestamp)
         current_timestamp = get_config_object().timestamp

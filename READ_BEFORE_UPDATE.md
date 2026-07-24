@@ -135,6 +135,10 @@
   differ between SQLite, PostgreSQL and MariaDB. If you rely on a specific resolver ordering
   within a realm, make sure each resolver has an explicit, distinct priority.
 
+* **Machine `hostname` in `GET /machine/` is always a list.** The LDAP machine resolver previously
+  returned a single string (e.g. `"dc01.example.test"`); it now returns a list
+  (e.g. `["dc01.example.test"]`), consistent with the hosts resolver and the documented API.
+
 ## Update from 3.12 to 3.13
 
 * `enrollpin` right enforcement has been made stricter. If you try to enroll a token with a PIN but do not have the

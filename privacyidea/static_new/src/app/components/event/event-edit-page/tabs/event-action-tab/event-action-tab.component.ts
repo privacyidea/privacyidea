@@ -94,7 +94,7 @@ export class EventActionTabComponent {
     const optionDefinitions = this.actionOptions();
     const values = this.selectedOptions();
     for (const name of Object.keys(optionDefinitions)) {
-      if (optionDefinitions[name].required && this.isEmpty(values[name])) {
+      if (optionDefinitions[name].required && this.checkOptionVisibility(name) && this.isEmpty(values[name])) {
         return false;
       }
     }
@@ -147,6 +147,7 @@ export class EventActionTabComponent {
   isOptionInvalid(name: string): boolean {
     const definition = this.actionOptions()[name];
     if (!definition || !definition.required) return false;
+    if (!this.checkOptionVisibility(name)) return false;
     return this.isEmpty(this.selectedOptions()[name]);
   }
 

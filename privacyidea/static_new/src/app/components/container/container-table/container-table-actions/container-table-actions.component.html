@@ -19,6 +19,19 @@
 <div
   appOverflowNav
   class="flex-row margin-bottom-16 gap-8">
+  @if (authService.actionAllowed("container_create")) {
+    <button
+      data-overflow-pinned
+      [routerLink]="[ROUTE_PATHS.CONTAINERS_CREATE]"
+      class="action-button-primary button-width-m"
+      mat-stroked-button>
+      <span class="icon-badge">
+        <mat-icon class="padding-right-3">folder</mat-icon>
+        <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+      </span>
+      <span i18n>Create Container</span>
+    </button>
+  }
   <button
     #advancedFilterTrigger="matMenuTrigger"
     data-overflow-pinned

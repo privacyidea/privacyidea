@@ -23,6 +23,12 @@ export class FilterOption<T = unknown> {
   readonly label: string;
   readonly hint?: string;
   readonly matches: (item: T, filterValue: FilterValueGeneric<T>) => boolean;
+  /**
+   * Optional predicate used for keyword-less (free-text) search: returns true if the given search
+   * term matches this column of the item. Columns that define it participate in global search, where
+   * a bare term entered without a keyword matches an item if any column's globalMatches returns true.
+   */
+  readonly globalMatches?: (item: T, term: string) => boolean;
   readonly isSelected?: (filterValue: FilterValueGeneric<T>) => boolean;
   readonly getActionType?: (filterValue: FilterValueGeneric<T>) => FilterActionType;
   readonly toggle?: (filterValue: FilterValueGeneric<T>) => FilterValueGeneric<T>;
@@ -33,6 +39,7 @@ export class FilterOption<T = unknown> {
     label: string;
     hint?: string;
     matches: (item: T, filterValue: FilterValueGeneric<T>) => boolean;
+    globalMatches?: (item: T, term: string) => boolean;
     isSelected?: (filterValue: FilterValueGeneric<T>) => boolean;
     getActionType?: (filterValue: FilterValueGeneric<T>) => FilterActionType;
     toggle?: (filterValue: FilterValueGeneric<T>) => FilterValueGeneric<T>;
@@ -42,6 +49,7 @@ export class FilterOption<T = unknown> {
     this.label = args.label;
     this.hint = args.hint;
     this.matches = args.matches;
+    this.globalMatches = args.globalMatches;
     this.isSelected = args.isSelected;
     this.getActionType = args.getActionType ?? ((filterValue) => (filterValue.hasKey(this.key) ? "remove" : "add"));
     this.toggle = args.toggle;
@@ -57,6 +65,7 @@ export class FilterOption<T = unknown> {
       label: this.label,
       hint: this.hint,
       matches: this.matches,
+      globalMatches: this.globalMatches,
       isSelected: this.isSelected,
       getActionType: this.getActionType,
       toggle: this.toggle

@@ -26,7 +26,6 @@ import { NavigationSelfServiceButtonComponent } from "@components/layout/navigat
 import { UserUtilsPanelSelfServiceComponent } from "@components/layout/user-utils-panel/user-utils-panel.self-service.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
-import { UserService, UserServiceInterface } from "@services/user/user.service";
 
 @Component({
   selector: "app-navigation-self-service",
@@ -44,8 +43,6 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
 export class NavigationSelfServiceComponent {
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   protected readonly authService: AuthServiceInterface = inject(AuthService);
-  protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly Boolean = Boolean;
-  userData = this.userService.user;
 }

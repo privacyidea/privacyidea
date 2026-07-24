@@ -33,28 +33,32 @@ class Machine:
     information like expiry or decommission...
     """
 
-    def __init__(self, resolver_name, machine_id, hostname=None, ip=None):
+    def __init__(self, resolver_name: str, machine_id: str,
+                 hostname: str | list[str] | None = None,
+                 ip: str | netaddr.IPAddress | None = None) -> None:
         self.id = machine_id
         self.resolver_name = resolver_name
-        self.hostname = hostname
+        if hostname is None:
+            self.hostname: list[str] = []
+        elif isinstance(hostname, str):
+            self.hostname = [hostname]
+        else:
+            self.hostname = list(hostname)
         if isinstance(ip, str):
             self.ip = netaddr.IPAddress(ip)
         else:
             self.ip = ip
 
-    def has_hostname(self, hostname):
+    def has_hostname(self, hostname: str) -> bool:
         """
         Checks if the machine has the given hostname.
-        A machine might have more than one hostname. The hostname is then
-        provided as a list
+        A machine might have more than one hostname, so the hostname is always
+        stored as a list.
+
         :param hostname: The hostname searched for
-        :type hostname: basestring
         :return: True or false
         """
-        if isinstance(self.hostname, list):
-            return hostname in self.hostname
-        elif isinstance(self.hostname, str):
-            return hostname.lower() == self.hostname.lower()
+        return any(hostname.lower() == h.lower() for h in self.hostname)
 
     def has_ip(self, ip):
         """

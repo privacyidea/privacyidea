@@ -126,17 +126,20 @@
                   {{ policy.scope?.toLowerCase() }}
                 }
                 @case ("description") {
-                  {{ policy.description }}
+                  <span [innerHTML]="policy.description ?? '' | highlight: highlightTerms().description"></span>
                 }
                 @case ("actions") {
                   @if (policy.action) {
                     <app-view-action-column
                       [actions]="policy.action"
+                      [highlightTerms]="highlightTerms().actions"
                       [scope]="policy.scope" />
                   }
                 }
                 @case ("conditions") {
-                  <app-view-conditions-column [policy]="policy" />
+                  <app-view-conditions-column
+                    [highlightTerms]="highlightTerms().conditions"
+                    [policy]="policy" />
                 }
                 @case ("active") {
                   <div class="flex just-center">

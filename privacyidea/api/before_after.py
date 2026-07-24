@@ -79,10 +79,10 @@ from .serviceid import serviceid_blueprint
 from .healthcheck import healthz_blueprint
 from .info import info_blueprint
 from privacyidea.api.lib.postpolicy import postrequest, sign_response, hide_version
-from ..lib.error import (PrivacyIDEAError,
+from ..lib.error import (PrivacyIDEAError, Error,
                          AuthError, UserError,
                          PolicyError, ResourceNotFoundError)
-from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent
+from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent, AUTH_RESPONSE
 from privacyidea.lib.user import User
 import datetime
 import threading
@@ -505,6 +505,12 @@ def auth_error(error):
     if "audit_object" in g:
         message = ''
 
+        if request.blueprint == "jwtauth" and request.path.endswith("/auth"):
+            # Mark failed logins as REJECT like _finalize_auth_response() in
+            # validate.py does, so the "!CHALLENGE" filter in check_max_auth_fail
+            # matches them (SQL "!=" does not match NULL).
+            g.audit_object.log({"authentication": AUTH_RESPONSE.REJECT})
+
         if hasattr(error, 'message'):
             message = error.message
 
@@ -518,8 +524,12 @@ def auth_error(error):
                                       user_object=request.User if hasattr(request, 'User') else None).any()
             if hide_message:
                 error.message = _("Authentication failed.")
-                error.details["message"] = error.message
-                error.details.pop("loginmode", None)
+                # Remap to the generic AUTHENTICATE id, so a masked failure is
+                # indistinguishable from any other unspecified auth failure.
+                error.id = Error.AUTHENTICATE
+                # Replace the details completely, so future additions to the
+                # details cannot accidentally leak information either.
+                error.details = {"message": error.message}
 
         g.audit_object.add_to_log({"info": message}, add_with_comma=True)
 

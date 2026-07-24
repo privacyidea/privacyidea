@@ -162,6 +162,7 @@ def check_user_pass(user: User, passw: str, options: dict | None = None) -> tupl
     :return: tuple of result (True, False) and additional dict
     :rtype: tuple
     """
+    options = dict(options) if options else {}
     token_type = options.pop("token_type", None)
     token_objects = get_tokens(user=user, tokentype=token_type)
     reply_dict = {}
