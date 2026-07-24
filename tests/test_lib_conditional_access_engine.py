@@ -33,6 +33,8 @@ from privacyidea.lib.conditional_access.engine import (
     count_user_events,
     count_user_attempts,
     count_distinct_users_for_ip,
+    count_ip_events,
+    count_ip_attempts,
     evaluate_access_decision,
     evaluate_lockout_policies,
     is_user_locked,
@@ -145,6 +147,80 @@ class LockoutEngineTestCase(LockoutTestCase):
         ip = "10.0.0.11"
         self._seed_ip_unknown_events(ip, AuthEventType.CHALLENGE_ANSWERED_FAIL, [None, None, None, None])
         self.assertEqual(1, count_distinct_users_for_ip(ip, [AuthEventType.CHALLENGE_ANSWERED_FAIL], 300))
+
+    # --- count_ip_events / count_ip_attempts (per-IP volume, no success reset) -----
+
+    def _seed_ip_attempt(self, source_ip: str, attempt_id: str, event_types: list[AuthEventType],
+                         timestamp: datetime | None = None) -> None:
+        """Insert one row per event type (in order) from *source_ip* sharing *attempt_id* - the per-IP PER_ATTEMPT
+        shape. No user identity is set; only source_ip/attempt_id/event_type/timestamp matter to the IP counters."""
+        timestamp = timestamp if timestamp is not None else utc_now()
+        for event_type in event_types:
+            db.session.add(AuthenticationLog(
+                event_type=str(event_type), source_ip=source_ip, attempt_id=attempt_id, timestamp=timestamp))
+        db.session.commit()
+
+    def test_count_ip_events_counts_rows_not_users(self):
+        ip = "10.1.0.1"
+        # 3 users, 2 rows each -> PER_REQUEST counts all 6 rows (where DISTINCT_USERS would count 3).
+        self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3, per_user=2)
+        self.assertEqual(6, count_ip_events(ip, [AuthEventType.PASSWORD_FAIL], 300))
+        self.assertEqual(3, count_distinct_users_for_ip(ip, [AuthEventType.PASSWORD_FAIL], 300))
+
+    def test_count_ip_events_filters_ip_type_and_window(self):
+        now = utc_now()
+        self._seed_ip_events("10.1.0.2", AuthEventType.PASSWORD_FAIL, n_users=4, timestamp=now)
+        self._seed_ip_events("10.1.0.3", AuthEventType.PASSWORD_FAIL, n_users=5, timestamp=now)
+        self._seed_ip_events("10.1.0.2", AuthEventType.MFA_FAIL, n_users=7, timestamp=now)
+        self._seed_ip_events("10.1.0.2", AuthEventType.PASSWORD_FAIL, n_users=3,
+                             timestamp=now - timedelta(seconds=7200))
+        self.assertEqual(4, count_ip_events("10.1.0.2", [AuthEventType.PASSWORD_FAIL], 300, window_end=now))
+
+    def test_count_ip_events_counts_userless_rows(self):
+        # The userless / serial-only rows that DISTINCT_USERS collapses to one still each count as raw volume.
+        ip = "10.1.0.4"
+        self._seed_ip_unknown_events(ip, AuthEventType.CHALLENGE_ANSWERED_FAIL, [None, None, None, None])
+        self.assertEqual(4, count_ip_events(ip, [AuthEventType.CHALLENGE_ANSWERED_FAIL], 300))
+        self.assertEqual(1, count_distinct_users_for_ip(ip, [AuthEventType.CHALLENGE_ANSWERED_FAIL], 300))
+
+    def test_count_ip_attempts_collapses_multi_row_attempt(self):
+        ip = "10.1.0.5"
+        # Two distinct attempts, one spanning three rows: PER_ATTEMPT counts 2 (PER_REQUEST would count 4).
+        self._seed_ip_attempt(ip, "a1", [AuthEventType.CHALLENGE_ANSWERED_FAIL, AuthEventType.PASSWORD_FAIL])
+        self._seed_ip_attempt(ip, "a2", [AuthEventType.PASSWORD_FAIL, AuthEventType.PASSWORD_FAIL, AuthEventType.PASSWORD_FAIL])
+        self.assertEqual(2, count_ip_attempts(ip, [AuthEventType.PASSWORD_FAIL], 300))
+        self.assertEqual(4, count_ip_events(ip, [AuthEventType.PASSWORD_FAIL], 300))
+
+    def test_count_ip_attempts_login_success_supersedes_failure_in_attempt(self):
+        # A LOGIN_SUCCESS is terminal for its attempt (fetched even though untracked), so a failed row in the same
+        # attempt does not make it count as a failure.
+        ip = "10.1.0.6"
+        self._seed_ip_attempt(ip, "won", [AuthEventType.PASSWORD_FAIL, AuthEventType.LOGIN_SUCCESS])
+        self._seed_ip_attempt(ip, "lost", [AuthEventType.PASSWORD_FAIL])
+        self.assertEqual(1, count_ip_attempts(ip, [AuthEventType.PASSWORD_FAIL], 300))
+
+    def test_count_ip_volume_modes_do_not_reset_on_success(self):
+        # A successful login by one account must not clear per-IP volume aggregated across the IP (unlike the user
+        # counters' since_last_success). Both volume modes keep counting the pre-success failures.
+        ip = "10.1.0.7"
+        self._seed_ip_attempt(ip, "s1", [AuthEventType.PASSWORD_FAIL])
+        self._seed_ip_attempt(ip, "s2", [AuthEventType.PASSWORD_FAIL])
+        self._seed_ip_attempt(ip, "ok", [AuthEventType.LOGIN_SUCCESS])
+        self.assertEqual(2, count_ip_events(ip, [AuthEventType.PASSWORD_FAIL], 300))
+        self.assertEqual(2, count_ip_attempts(ip, [AuthEventType.PASSWORD_FAIL], 300))
+
+    def test_source_ip_per_request_policy_blocks_on_volume_from_one_user(self):
+        # PER_REQUEST on a source_ip target = plain per-IP rate limiting: raw request volume from a single account
+        # trips it, where the DISTINCT_USERS spraying signal (1 distinct user) never would.
+        ip = "203.0.113.20"
+        self._make_policy(name="ratelimit", counter_type=AuthEventType.PASSWORD_FAIL, window=300,
+                          target=LockoutTarget.SOURCE_IP, count_mode=CountMode.PER_REQUEST,
+                          stages=(StageDefinition(failure_threshold=5, priority=1,
+                                                  actions=[StageActionDefinition(LockoutAction.BLOCK_IP, {"duration_seconds": 3600})]),))
+        self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=1, per_user=5)
+        self.assertFalse(is_ip_blocked(ip))
+        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip=ip)
+        self.assertTrue(is_ip_blocked(ip))
 
     # --- source_ip target evaluation (spraying) -------------------------------
 

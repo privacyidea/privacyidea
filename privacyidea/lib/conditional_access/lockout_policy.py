@@ -47,10 +47,11 @@ A policy is passed around as a plain dict::
     }
 
 ``count_mode`` is a :class:`~privacyidea.lib.conditional_access.authentication_event_types.CountMode` name whose valid
-values depend on the target (see ``_COUNT_MODES_BY_TARGET``): a ``user`` policy counts its event volume per
-``authentication_log`` row (``PER_REQUEST``) or per whole authentication attempt (``PER_ATTEMPT``), a ``source_ip``
-policy counts distinct targeted accounts (``DISTINCT_USERS``). When omitted it defaults to the target's default
-(``PER_REQUEST`` for ``user``, ``DISTINCT_USERS`` for ``source_ip``). ``counter_types_to_track`` values must be
+values depend on the target (see ``_COUNT_MODES_BY_TARGET``): both targets count event volume per ``authentication_log``
+row (``PER_REQUEST``) or per whole authentication attempt (``PER_ATTEMPT``); a ``source_ip`` policy may additionally
+count distinct targeted accounts (``DISTINCT_USERS``, the spraying / enumeration signal). When omitted it defaults to
+the target's default (``PER_REQUEST`` for ``user``, ``DISTINCT_USERS`` for ``source_ip``). ``counter_types_to_track``
+values must be
 :class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthEventType` names and ``action_type`` values
 must be :class:`~privacyidea.lib.conditional_access.engine.LockoutAction` names; anything else is a
 :class:`~privacyidea.lib.error.ParameterError` (fail-closed - a typo must not silently create a policy that never
@@ -93,8 +94,8 @@ class StageDefinition:
     """
     failure_threshold: int
     priority: int
-    name: str | None = None
     actions: list[StageActionDefinition] = field(default_factory=list)
+    name: str | None = None
 
 
 def lockout_policy_to_dict(policy: LockoutPolicy) -> dict:
@@ -224,13 +225,14 @@ def _validate_target_actions(stage_defs: list["StageDefinition"], target: "Locko
                              f"Allowed: {', '.join(sorted(allowed))}.")
 
 
-# The count modes each target may use, and the default when the caller does not specify one. A ``user`` target counts
-# its own event volume (per request or per whole attempt); a ``source_ip`` target counts distinct targeted accounts
-# (spraying / enumeration), so ``count_mode`` states that explicitly rather than carrying a volume mode that would not
-# apply. Mirrors the per-target ``_ACTIONS_BY_TARGET`` registration.
+# The count modes each target may use, and the default when the caller does not specify one. Both targets support the
+# volume modes (per request or per whole attempt); a ``source_ip`` target additionally offers ``DISTINCT_USERS`` - the
+# distinct targeted accounts (spraying / enumeration) signal - and defaults to it, since that is the characteristic
+# per-IP threat, while the volume modes give plain per-IP rate limiting. Mirrors the per-target ``_ACTIONS_BY_TARGET``
+# registration.
 _COUNT_MODES_BY_TARGET = {
     LockoutTarget.USER: {CountMode.PER_REQUEST, CountMode.PER_ATTEMPT},
-    LockoutTarget.SOURCE_IP: {CountMode.DISTINCT_USERS},
+    LockoutTarget.SOURCE_IP: {CountMode.DISTINCT_USERS, CountMode.PER_REQUEST, CountMode.PER_ATTEMPT},
 }
 _DEFAULT_COUNT_MODE_BY_TARGET = {
     LockoutTarget.USER: CountMode.PER_REQUEST,
@@ -245,7 +247,7 @@ def _validate_count_mode(count_mode, target: "LockoutTarget") -> str:
     A ``None`` *count_mode* yields the target's default (see :data:`_DEFAULT_COUNT_MODE_BY_TARGET`), so a caller need
     not know which mode a target expects. Otherwise the mode must be a known :class:`CountMode` (accepted as either a
     mode string from the API or a member) *and* allowed for *target* (see :data:`_COUNT_MODES_BY_TARGET`) - e.g.
-    ``DISTINCT_USERS`` on a ``user`` policy, or a volume mode on a ``source_ip`` policy, is rejected. Both accepted
+    ``DISTINCT_USERS`` on a ``user`` policy is rejected. Both accepted
     forms normalize to the plain string stored on the model, so the stored value's type does not depend on the caller.
     """
     if count_mode is None:

@@ -169,34 +169,39 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         self.assertEqual(CountMode.DISTINCT_USERS, get_lockout_policy(ip_id)["count_mode"])
 
     def test_02g_count_mode_target_compatibility(self):
-        # DISTINCT_USERS is only for source_ip; the volume modes only for user. An incompatible pair is rejected
-        # before anything is written.
+        # DISTINCT_USERS is the one mode specific to source_ip (there is no distinct-accounts notion for a single
+        # user), so it is the only incompatible pair and is rejected before anything is written. The volume modes are
+        # valid for either target.
         self.assertRaisesRegex(ParameterError, "count_mode 'DISTINCT_USERS' is not allowed for target 'user'",
                                create_lockout_policy, "P", 600, ["PIN_FAIL"], [_stage()],
                                target=LockoutTarget.USER, count_mode=CountMode.DISTINCT_USERS)
-        self.assertRaisesRegex(ParameterError, "count_mode 'PER_ATTEMPT' is not allowed for target 'source_ip'",
-                               create_lockout_policy, "P", 300, ["PASSWORD_FAIL"], [self._ip_stage()],
-                               target=LockoutTarget.SOURCE_IP, count_mode=CountMode.PER_ATTEMPT)
         self.assertEqual(0, db.session.query(LockoutPolicy).count())
+        # source_ip accepts either volume mode as well as its DISTINCT_USERS default, storing exactly what was asked.
+        for mode in (CountMode.PER_REQUEST, CountMode.PER_ATTEMPT):
+            policy_id = create_lockout_policy(f"IP-{mode.value}", 300, ["PASSWORD_FAIL"], [self._ip_stage()],
+                                              target=LockoutTarget.SOURCE_IP, count_mode=mode)
+            self.assertEqual(mode, get_lockout_policy(policy_id)["count_mode"])
 
     def test_02h_update_target_revalidates_count_mode(self):
-        # Switching a user policy (PER_REQUEST) to source_ip without also fixing the mode is rejected: the effective
-        # (target, count_mode) pair is validated, not just each field in isolation. (The compatible switch that also
-        # supplies count_mode=DISTINCT_USERS is covered end-to-end by the API test suite.)
-        reject_id = create_lockout_policy("Reject", 300, ["PASSWORD_FAIL"], [_stage()], target=LockoutTarget.USER)
+        # Switching a source_ip policy (default DISTINCT_USERS) to user without also fixing the mode is rejected: the
+        # effective (target, count_mode) pair is validated, not just each field in isolation, and DISTINCT_USERS is
+        # invalid for a user target. (The compatible switch that also supplies a volume count_mode is covered
+        # end-to-end by the API test suite.)
+        reject_id = create_lockout_policy("Reject", 300, ["PASSWORD_FAIL"], [self._ip_stage()],
+                                          target=LockoutTarget.SOURCE_IP)
         # Assert on the message so a stage/action-compatibility error cannot masquerade as the count_mode rejection
-        # (the stages here are deliberately BLOCK_IP, i.e. already target-compatible, so only count_mode can fail).
-        self.assertRaisesRegex(ParameterError, "count_mode 'PER_REQUEST' is not allowed for target 'source_ip'",
+        # (the stages here are deliberately LOCK_USER, i.e. already target-compatible, so only count_mode can fail).
+        self.assertRaisesRegex(ParameterError, "count_mode 'DISTINCT_USERS' is not allowed for target 'user'",
                                update_lockout_policy, reject_id,
-                               target=LockoutTarget.SOURCE_IP, stages=[self._ip_stage()])
+                               target=LockoutTarget.USER, stages=[_stage()])
 
-    def test_02i_update_source_ip_rejects_volume_count_mode(self):
-        # A source_ip policy cannot be switched to a volume mode.
+    def test_02i_update_source_ip_accepts_volume_count_mode(self):
+        # A source_ip policy can be switched from its DISTINCT_USERS default to a volume mode (plain per-IP rate
+        # limiting); the new mode is stored.
         ip_id = create_lockout_policy("Spray", 300, ["PASSWORD_FAIL"], [self._ip_stage()],
                                       target=LockoutTarget.SOURCE_IP)
-        self.assertRaisesRegex(ParameterError, "count_mode 'PER_ATTEMPT' is not allowed for target 'source_ip'",
-                               update_lockout_policy, ip_id, count_mode=CountMode.PER_ATTEMPT)
-        self.assertEqual(CountMode.DISTINCT_USERS, get_lockout_policy(ip_id)["count_mode"])
+        update_lockout_policy(ip_id, count_mode=CountMode.PER_ATTEMPT)
+        self.assertEqual(CountMode.PER_ATTEMPT, get_lockout_policy(ip_id)["count_mode"])
 
     def test_02b_duplicate_counter_types_are_deduplicated(self):
         # A repeated counter type is silently de-duplicated (order preserved),
