@@ -419,11 +419,15 @@ def reset_user_lockout():
 @log_with(log)
 def get_blocklist():
     """
-    List the currently blocked entries (IP addresses).
+    List the blocklist entries (IP addresses). By default this returns all
+    entries — currently-enforced blocks *and* stale (expired) rows; pass
+    ``include_expired=false`` to return only the entries still in force. Each row
+    carries the expiry fields so the caller can tell the two apart.
 
     Requires the admin policy action :ref:`policy_blocklist_read`.
 
-    :query include_expired: also list stale (expired) entries
+    :query include_expired: include stale (expired) entries as well as
+        currently-enforced ones (default ``true``)
     :status 200: a list of blocklist-entry dicts in ``result.value``
     """
     include_expired = is_true(get_optional(request.all_data, "include_expired", True))
