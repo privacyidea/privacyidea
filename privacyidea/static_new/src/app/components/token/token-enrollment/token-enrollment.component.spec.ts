@@ -413,6 +413,12 @@ describe("TokenEnrollmentComponent", () => {
         await component.enrollToken();
 
         expect(component.enrolledDialogData()?.showEnrollData).toBe(true);
+        expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+          expect.objectContaining({
+            component: TokenEnrollmentLastStepDialogComponent,
+            data: expect.objectContaining({ showEnrollData: true })
+          })
+        );
       });
 
       it("handles clickEnroll rejection by showing error snack", async () => {
