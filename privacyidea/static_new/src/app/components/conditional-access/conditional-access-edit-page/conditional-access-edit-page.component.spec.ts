@@ -22,7 +22,14 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ActivatedRoute, convertToParamMap, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService } from "@services/auth/auth.service";
-import { ConditionalAccessPolicyService, LockoutPolicy } from "@services/conditional-access/conditional-access-policy.service";
+import {
+  ConditionalAccessPolicyService,
+  CountMode,
+  LockoutActionType,
+  LockoutPolicy,
+  LockoutPolicySaveParams,
+  LockoutTarget
+} from "@services/conditional-access/conditional-access-policy.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import {
@@ -49,8 +56,22 @@ const mockPolicy: LockoutPolicy = {
   enabled: true,
   dry_run: false,
   priority: 1,
+  target: "user",
+  count_mode: "PER_REQUEST",
   counter_types_to_track: ["PIN_FAIL"],
   stages: [{ failure_threshold: 5, priority: 1, actions: [{ action_type: "LOCK_USER", action_value: null }] }]
+};
+
+const EMPTY_TEMPLATE_POLICY: LockoutPolicySaveParams = {
+  name: "Password Brute-Force",
+  time_window_seconds: 900,
+  enabled: true,
+  dry_run: false,
+  priority: 1,
+  target: "user",
+  count_mode: "PER_REQUEST",
+  counter_types_to_track: ["PASSWORD_FAIL"],
+  stages: [{ failure_threshold: 10, priority: 1, actions: [{ action_type: "LOCK_USER", action_value: null }] }]
 };
 
 describe("ConditionalAccessEditPageComponent — edit mode", () => {
@@ -141,8 +162,13 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
     expect(component.canSave()).toBe(false);
   });
 
-  it("should become invalid when a stage has a zero threshold", () => {
+  it("should stay valid when a stage has a zero threshold (an allow/deny allowlist stage)", () => {
     component.onStagesChange([{ failure_threshold: 0, priority: 1, actions: [] }]);
+    expect(component.stagesValid()).toBe(true);
+  });
+
+  it("should become invalid when a stage has a negative threshold", () => {
+    component.onStagesChange([{ failure_threshold: -1, priority: 1, actions: [] }]);
     expect(component.stagesValid()).toBe(false);
   });
 
@@ -300,5 +326,170 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
   it("should not offer delete for a new (unsaved) policy", async () => {
     await component.deletePolicy();
     expect(policyServiceMock.deleteWithConfirmDialog).not.toHaveBeenCalled();
+  });
+
+  it("should prefill from a template and clear back to empty on clear template", () => {
+    policyServiceMock.templates.set([
+      {
+        key: "password_bruteforce",
+        description: "Lock a user after repeated wrong passwords.",
+        policy: {
+          name: "Password Brute-Force",
+          time_window_seconds: 900,
+          enabled: true,
+          dry_run: false,
+          priority: 1,
+          target: "user",
+          count_mode: "PER_REQUEST",
+          counter_types_to_track: ["PASSWORD_FAIL"],
+          stages: [{ failure_threshold: 10, priority: 1, actions: [{ action_type: "LOCK_USER", action_value: null }] }]
+        }
+      }
+    ]);
+
+    component.applyTemplate("password_bruteforce");
+    expect(component.editPolicy().name).toBe("Password Brute-Force");
+    expect(component.editPolicy().stages.length).toBe(1);
+    expect(component.selectedTemplateKey()).toBe("password_bruteforce");
+
+    // The clear button resets the prefill back to the empty policy.
+    component.clearTemplateSelection();
+    expect(component.editPolicy().name).toBe("");
+    expect(component.editPolicy().stages).toEqual([]);
+    expect(component.editPolicy().counter_types_to_track).toEqual([]);
+    expect(component.selectedTemplateKey()).toBeNull();
+  });
+
+  it("should expose the selected template's description as a hint", () => {
+    policyServiceMock.templates.set([
+      { key: "k", description: "Lock a user after repeated wrong passwords.", policy: EMPTY_TEMPLATE_POLICY }
+    ]);
+    expect(component.selectedTemplateDescription()).toBe("");
+    component.applyTemplate("k");
+    expect(component.selectedTemplateDescription()).toBe("Lock a user after repeated wrong passwords.");
+  });
+
+  it("should update the policy target on target change", () => {
+    component.onTargetChange("source_ip");
+    expect(component.editPolicy().target).toBe("source_ip");
+  });
+
+  describe("targetOptions", () => {
+    it("should fall back to the fixed enum until /targets loads", () => {
+      policyServiceMock.targets.set([]);
+      expect(component.targetOptions()).toEqual(["user", "source_ip"]);
+    });
+
+    it("should use the backend targets once loaded", () => {
+      policyServiceMock.targets.set(["user", "source_ip"]);
+      expect(component.targetOptions()).toEqual(["user", "source_ip"]);
+    });
+  });
+
+  describe("targetLabel", () => {
+    it("should return the human label for a known target", () => {
+      expect(component.targetLabel("user")).toBe("User");
+      expect(component.targetLabel("source_ip")).toBe("Source IP");
+    });
+
+    it("should fall back to the raw value for an unknown target", () => {
+      expect(component.targetLabel("realm")).toBe("realm");
+    });
+  });
+
+  describe("targetActionsValid", () => {
+    const stageWith = (actionType: LockoutActionType) => [
+      { failure_threshold: 5, priority: 1, actions: [{ action_type: actionType, action_value: null }] }
+    ];
+
+    beforeEach(() => {
+      policyServiceMock.actionsByTarget.set({
+        user: ["LOCK_USER", "ALLOW", "DENY"],
+        source_ip: ["BLOCK_IP", "ALLOW", "DENY"]
+      });
+    });
+
+    it("should be valid when every stage action is allowed for the target", () => {
+      component.onTargetChange("user");
+      component.onStagesChange(stageWith("LOCK_USER"));
+      expect(component.targetActionsValid()).toBe(true);
+    });
+
+    it("should be invalid when a stage action is not allowed for the target", () => {
+      component.onTargetChange("source_ip");
+      component.onStagesChange(stageWith("LOCK_USER"));
+      expect(component.targetActionsValid()).toBe(false);
+      expect(component.canSave()).toBe(false);
+    });
+
+    it("should not block while the allowed-actions list is still empty", () => {
+      policyServiceMock.actionsByTarget.set({} as Record<LockoutTarget, LockoutActionType[]>);
+      policyServiceMock.actionTypes.set([]);
+      component.onTargetChange("source_ip");
+      component.onStagesChange(stageWith("LOCK_USER"));
+      expect(component.targetActionsValid()).toBe(true);
+    });
+  });
+
+  describe("count mode", () => {
+    beforeEach(() => {
+      policyServiceMock.countModesByTarget.set({
+        user: ["PER_ATTEMPT", "PER_REQUEST"],
+        source_ip: ["DISTINCT_USERS", "PER_ATTEMPT", "PER_REQUEST"]
+      });
+    });
+
+    it("should offer the current mode until /targets loads", () => {
+      policyServiceMock.countModesByTarget.set({} as Record<LockoutTarget, CountMode[]>);
+      expect(component.countModeOptions()).toEqual([component.editPolicy().count_mode]);
+    });
+
+    it("should offer the target's count modes once loaded", () => {
+      component.onTargetChange("source_ip");
+      expect(component.countModeOptions()).toEqual(["DISTINCT_USERS", "PER_ATTEMPT", "PER_REQUEST"]);
+    });
+
+    it("should update the count mode on change", () => {
+      component.onCountModeChange("PER_ATTEMPT");
+      expect(component.editPolicy().count_mode).toBe("PER_ATTEMPT");
+    });
+
+    it("should not change the count mode when the target changes", () => {
+      component.onTargetChange("source_ip");
+      component.onCountModeChange("DISTINCT_USERS");
+      // Switching to a target where the mode is still valid leaves it untouched...
+      component.onTargetChange("source_ip");
+      expect(component.editPolicy().count_mode).toBe("DISTINCT_USERS");
+      // ...and switching to one where it is invalid also leaves it untouched (surfaced as an error, not rewritten).
+      component.onTargetChange("user");
+      expect(component.editPolicy().count_mode).toBe("DISTINCT_USERS");
+    });
+
+    it("should be valid when the count mode is supported by the target", () => {
+      component.onTargetChange("source_ip");
+      component.onCountModeChange("PER_ATTEMPT");
+      expect(component.countModeValid()).toBe(true);
+    });
+
+    it("should be invalid and block saving when the count mode is not supported by the target", () => {
+      component.onTargetChange("source_ip");
+      component.onCountModeChange("DISTINCT_USERS");
+      component.onTargetChange("user");
+      expect(component.countModeValid()).toBe(false);
+      expect(component.canSave()).toBe(false);
+    });
+
+    it("should not block while the supported-modes list is still empty", () => {
+      policyServiceMock.countModesByTarget.set({} as Record<LockoutTarget, CountMode[]>);
+      component.onTargetChange("user");
+      component.onCountModeChange("DISTINCT_USERS");
+      expect(component.countModeValid()).toBe(true);
+    });
+
+    it("should label the count modes", () => {
+      expect(component.countModeLabel("PER_REQUEST")).toBe("Per Request");
+      expect(component.countModeLabel("DISTINCT_USERS")).toBe("Distinct Users");
+      expect(component.countModeLabel("WHATEVER")).toBe("WHATEVER");
+    });
   });
 });

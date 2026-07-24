@@ -192,6 +192,17 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
         self.assertEqual(1, value["count"])
         self.assertEqual("vpn", value["auth_logs"][0]["client_label"])
 
+    def test_filter_by_attempt_id(self):
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="1", realm=self.realm1,
+                                 attempt_id="att-x")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="2", realm=self.realm1,
+                                 attempt_id="att-y")
+        db.session.commit()
+
+        value = self._get({"attempt_id": "att-x"})["result"]["value"]
+        self.assertEqual(1, value["count"])
+        self.assertEqual("att-x", value["auth_logs"][0]["attempt_id"])
+
     def test_policy_gate_denies_without_action(self):
         # Admin policies exist but none grant authentication_log_read -> the admin is denied.
         set_policy("authlog_other", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE)

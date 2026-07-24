@@ -20,7 +20,7 @@
 import { Component, input, output } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
-import { LockoutPolicyStage } from "@services/conditional-access/conditional-access-policy.service";
+import { LockoutPolicyStage, LockoutTarget } from "@services/conditional-access/conditional-access-policy.service";
 import { ConditionalAccessStageItemComponent } from "./stage-item/conditional-access-stage-item.component";
 
 const NEW_STAGE: LockoutPolicyStage = { failure_threshold: 1, priority: 1, actions: [] };
@@ -34,6 +34,7 @@ const NEW_STAGE: LockoutPolicyStage = { failure_threshold: 1, priority: 1, actio
 })
 export class ConditionalAccessStagesListComponent {
   readonly stages = input.required<LockoutPolicyStage[]>();
+  readonly target = input<LockoutTarget>("user");
   readonly stagesChange = output<LockoutPolicyStage[]>();
 
   onAddStage(): void {

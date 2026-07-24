@@ -43,8 +43,17 @@ describe("ConditionalAccessPolicyService", () => {
     enabled: true,
     dry_run: false,
     priority: 1,
+    target: "user",
+    count_mode: "PER_REQUEST",
     counter_types_to_track: ["PIN_FAIL"],
-    stages: [{ id: 1, failure_threshold: 5, priority: 1, actions: [{ id: 1, action_type: "LOCK_USER", action_value: { lock_duration_seconds: 600 } }] }]
+    stages: [
+      {
+        id: 1,
+        failure_threshold: 5,
+        priority: 1,
+        actions: [{ id: 1, action_type: "LOCK_USER", action_value: { lock_duration_seconds: 600 } }]
+      }
+    ]
   };
 
   beforeEach(() => {
@@ -103,6 +112,8 @@ describe("ConditionalAccessPolicyService", () => {
       req.flush(MockPiResponse.fromValue([samplePolicy]));
       httpMock.expectOne(service.eventTypesUrl).flush(MockPiResponse.fromValue([]));
       httpMock.expectOne(service.actionTypesUrl).flush(MockPiResponse.fromValue([]));
+      httpMock.expectOne(service.targetsUrl).flush(MockPiResponse.fromValue({}));
+      httpMock.expectOne(service.templatesUrl).flush(MockPiResponse.fromValue([]));
       await Promise.resolve();
 
       expect(service.policies()).toEqual([samplePolicy]);
@@ -116,6 +127,8 @@ describe("ConditionalAccessPolicyService", () => {
       req.flush(MockPiResponse.fromError({ message: "denied" }), { status: 403, statusText: "Forbidden" });
       httpMock.expectOne(service.eventTypesUrl).flush(MockPiResponse.fromValue([]));
       httpMock.expectOne(service.actionTypesUrl).flush(MockPiResponse.fromValue([]));
+      httpMock.expectOne(service.targetsUrl).flush(MockPiResponse.fromValue({}));
+      httpMock.expectOne(service.templatesUrl).flush(MockPiResponse.fromValue([]));
       await Promise.resolve();
 
       expect(service.policies()).toEqual([]);
@@ -130,6 +143,8 @@ describe("ConditionalAccessPolicyService", () => {
       httpMock.expectOne(service.baseUrl).flush(MockPiResponse.fromValue([]));
       httpMock.expectOne(service.eventTypesUrl).flush(MockPiResponse.fromValue(["PIN_FAIL", "MFA_FAIL"]));
       httpMock.expectOne(service.actionTypesUrl).flush(MockPiResponse.fromValue(["LOCK_USER", "ALLOW"]));
+      httpMock.expectOne(service.targetsUrl).flush(MockPiResponse.fromValue({}));
+      httpMock.expectOne(service.templatesUrl).flush(MockPiResponse.fromValue([]));
       await Promise.resolve();
 
       expect(service.eventTypes()).toEqual(["PIN_FAIL", "MFA_FAIL"]);
@@ -142,6 +157,116 @@ describe("ConditionalAccessPolicyService", () => {
       TestBed.tick();
       httpMock.expectNone(service.eventTypesUrl);
       httpMock.expectNone(service.actionTypesUrl);
+    });
+  });
+
+  describe("targets and templates", () => {
+    const targetConstraints = {
+      user: { actions: ["LOCK_USER", "ALLOW", "DENY"], count_modes: ["PER_ATTEMPT", "PER_REQUEST"] },
+      source_ip: {
+        actions: ["BLOCK_IP", "ALLOW", "DENY"],
+        count_modes: ["DISTINCT_USERS", "PER_ATTEMPT", "PER_REQUEST"]
+      }
+    };
+    const expectedActionsByTarget = {
+      user: ["LOCK_USER", "ALLOW", "DENY"],
+      source_ip: ["BLOCK_IP", "ALLOW", "DENY"]
+    };
+    const expectedCountModesByTarget = {
+      user: ["PER_ATTEMPT", "PER_REQUEST"],
+      source_ip: ["DISTINCT_USERS", "PER_ATTEMPT", "PER_REQUEST"]
+    };
+    const sampleTemplate = {
+      key: "password_bruteforce",
+      description: "Lock a user after repeated wrong passwords.",
+      policy: {
+        name: "Password Brute-Force",
+        time_window_seconds: 900,
+        enabled: true,
+        dry_run: false,
+        priority: 1,
+        target: "user" as const,
+        count_mode: "PER_REQUEST" as const,
+        counter_types_to_track: ["PASSWORD_FAIL" as const],
+        stages: [
+          { failure_threshold: 10, priority: 1, actions: [{ action_type: "LOCK_USER" as const, action_value: null }] }
+        ]
+      }
+    };
+
+    async function load(): Promise<void> {
+      contentServiceMock.onConditionalAccess = signal(true);
+      TestBed.tick();
+      httpMock.expectOne(service.baseUrl).flush(MockPiResponse.fromValue([]));
+      httpMock.expectOne(service.eventTypesUrl).flush(MockPiResponse.fromValue([]));
+      httpMock.expectOne(service.actionTypesUrl).flush(MockPiResponse.fromValue(["LOCK_USER", "ALLOW", "DENY"]));
+      httpMock.expectOne(service.targetsUrl).flush(MockPiResponse.fromValue(targetConstraints));
+      httpMock.expectOne(service.templatesUrl).flush(MockPiResponse.fromValue([sampleTemplate]));
+      await Promise.resolve();
+    }
+
+    it("should default to empty derived values before the resources fire", () => {
+      expect(service.actionsByTarget()).toEqual({});
+      expect(service.countModesByTarget()).toEqual({});
+      expect(service.targets()).toEqual([]);
+      expect(service.templates()).toEqual([]);
+    });
+
+    it("should derive actionsByTarget, countModesByTarget and targets from the /targets response", async () => {
+      await load();
+      expect(service.actionsByTarget()).toEqual(expectedActionsByTarget);
+      expect(service.countModesByTarget()).toEqual(expectedCountModesByTarget);
+      expect(service.targets()).toEqual(["user", "source_ip"]);
+    });
+
+    it("should load templates from the /template response", async () => {
+      await load();
+      expect(service.templates()).toEqual([sampleTemplate]);
+    });
+
+    it("should return the allowed actions for a known target", async () => {
+      await load();
+      expect(service.actionsForTarget("user")).toEqual(["LOCK_USER", "ALLOW", "DENY"]);
+      expect(service.actionsForTarget("source_ip")).toEqual(["BLOCK_IP", "ALLOW", "DENY"]);
+    });
+
+    it("should return the supported count modes for a known target", async () => {
+      await load();
+      expect(service.countModesForTarget("user")).toEqual(["PER_ATTEMPT", "PER_REQUEST"]);
+      expect(service.countModesForTarget("source_ip")).toEqual(["DISTINCT_USERS", "PER_ATTEMPT", "PER_REQUEST"]);
+    });
+
+    it("should return no count modes for an unmapped target", async () => {
+      await load();
+      expect(service.countModesForTarget("unknown" as never)).toEqual([]);
+    });
+
+    it("should fall back to the full action-type list for an unmapped target", async () => {
+      contentServiceMock.onConditionalAccess = signal(true);
+      TestBed.tick();
+      httpMock.expectOne(service.baseUrl).flush(MockPiResponse.fromValue([]));
+      httpMock.expectOne(service.eventTypesUrl).flush(MockPiResponse.fromValue([]));
+      httpMock.expectOne(service.actionTypesUrl).flush(MockPiResponse.fromValue(["LOCK_USER", "ALLOW", "DENY"]));
+      httpMock.expectOne(service.targetsUrl).flush(MockPiResponse.fromValue({}));
+      httpMock.expectOne(service.templatesUrl).flush(MockPiResponse.fromValue([]));
+      await Promise.resolve();
+
+      expect(service.actionsForTarget("user")).toEqual(["LOCK_USER", "ALLOW", "DENY"]);
+    });
+
+    it("should not fetch targets or templates without the read right", () => {
+      authServiceMock.actionAllowed.mockReturnValue(false);
+      contentServiceMock.onConditionalAccess = signal(true);
+      TestBed.tick();
+      httpMock.expectNone(service.targetsUrl);
+      httpMock.expectNone(service.templatesUrl);
+    });
+
+    it("should not fetch targets or templates when not on the conditional-access route", () => {
+      contentServiceMock.onConditionalAccess = signal(false);
+      TestBed.tick();
+      httpMock.expectNone(service.targetsUrl);
+      httpMock.expectNone(service.templatesUrl);
     });
   });
 

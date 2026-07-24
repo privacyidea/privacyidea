@@ -1467,6 +1467,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         req = Request(env)
         self.setUp_user_realms()
         req.User = User("autoassignuser", self.realm1)
+        req.all_data = {}
         # The response contains the token type HOTP, successful authentication
         res = {"jsonrpc": "2.0",
                "result": {"status": True,

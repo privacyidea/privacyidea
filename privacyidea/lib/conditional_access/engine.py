@@ -27,10 +27,10 @@ from typing import TYPE_CHECKING
 from sqlalchemy import func, select
 
 from privacyidea.lib import _
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
 from privacyidea.lib.conditional_access.authentication_log import _naive_utc
 from privacyidea.models import (AuthenticationLog, BlockList, LockoutPolicy, LockoutPolicyCounterType,
-                                 LockoutStageAction, UserLockoutState, db)
+                                LockoutStageAction, UserLockoutState, db)
 from privacyidea.models.utils import utc_now
 
 if TYPE_CHECKING:
@@ -96,6 +96,28 @@ class AccessDecision(str, Enum):
         return self.value
 
 
+class LockoutTarget(str, Enum):
+    """
+    The identity a policy counts, thresholds, and enforces against.
+
+    :attr:`USER` (the default) counts one user's failures over the window and
+    locks that user. :attr:`SOURCE_IP` counts a single source IP's activity -
+    by default the *distinct users* it fails against (spraying), or plain request
+    / attempt volume in the other count modes - and blocks that IP. The value
+    drives what the threshold keys on and what the action targets (so the allowed
+    actions differ by target, enforced in the CRUD layer); the count *mode* within
+    a target is a separate axis (see :class:`CountMode`).
+
+    ``str`` is used instead of ``StrEnum`` (3.11+) for compatibility with Python
+    3.10, mirroring :class:`LockoutAction`.
+    """
+    USER = "user"
+    SOURCE_IP = "source_ip"
+
+    def __str__(self) -> str:
+        return self.value
+
+
 @dataclass(frozen=True)
 class RestrictionStatus:
     """
@@ -132,18 +154,56 @@ def _types_label(types: "list[str]") -> str:
     return ", ".join(types) if types else "(none)"
 
 
+def _count_events(subject, event_types: list[str], window_seconds: int,
+                  window_end: datetime | None = None, since_last_success: bool = False) -> int:
+    """
+    Count the ``authentication_log`` rows matching *subject* and *event_types* within the sliding window
+    ``[window_end - window_seconds, window_end]`` (``PER_REQUEST``).
+
+    *subject* is the list of SQLAlchemy WHERE conditions that identify whose rows to count - e.g.
+    ``[AuthenticationLog.source_ip == ip]`` or the ``(resolver, uid, realm)`` equality triple; it is spread into every
+    ``WHERE`` (including the last-success lookup) so the index the caller documents is used.
+
+    With *since_last_success* the count is floored at the subject's most recent completed login
+    (:attr:`AuthEventType.LOGIN_SUCCESS`) inside the window: failures preceding a successful login no longer count, so
+    a success clears the slate. ``> last_success`` excludes the success row itself (a different event_type anyway, but
+    the strict bound also keeps a same-instant failure from being masked by the success). The forensic log is
+    untouched - only the *counted* range is narrowed.
+    """
+    window_end = _naive_utc(window_end) if window_end is not None else utc_now()
+    window_start = window_end - timedelta(seconds=window_seconds)
+    type_values = [str(t) for t in event_types]
+    lower_bound = AuthenticationLog.timestamp >= window_start
+    if since_last_success:
+        last_success = db.session.scalar(
+            select(func.max(AuthenticationLog.timestamp))
+            .where(*subject,
+                   AuthenticationLog.event_type == str(AuthEventType.LOGIN_SUCCESS),
+                   AuthenticationLog.timestamp >= window_start,
+                   AuthenticationLog.timestamp <= window_end))
+        if last_success is not None:
+            lower_bound = AuthenticationLog.timestamp > last_success
+    stmt = (select(func.count())
+            .select_from(AuthenticationLog)
+            .where(*subject,
+                   AuthenticationLog.event_type.in_(type_values),
+                   lower_bound,
+                   AuthenticationLog.timestamp <= window_end))
+    return db.session.scalar(stmt) or 0
+
+
 def count_user_events(resolver: str, uid: str, realm: str,
-                      event_types: "str | list[str]",
-                      window_seconds: int, now: datetime | None = None,
+                      event_types: list[str],
+                      window_seconds: int, window_end: datetime | None = None,
                       since_last_success: bool = False) -> int:
     """
     Count the ``authentication_log`` rows for one user identity and event
-    type(s) within a sliding time window ending *now*.
+    type(s) within a sliding time window ``[window_end - window_seconds, window_end]``.
 
-    *event_types* may be a single :class:`AuthEventType` value or a list of
-    them; events matching **any** of the listed types are counted together (one
-    combined count), so a policy tracking ``[PASSWORD_FAIL, TOKEN_ONLY_FAIL]`` trips on
-    the total of both rather than on either in isolation.
+    *event_types* is a list of :class:`AuthEventType` values; events matching
+    **any** of them are counted together (one combined count), so a policy
+    tracking ``[PASSWORD_FAIL, TOKEN_ONLY_FAIL]`` trips on the total of both
+    rather than on either in isolation.
 
     The ``WHERE`` column order matches the composite index
     ``ix_authlog_user_event_time`` so this is an index range scan (the ``IN``
@@ -161,53 +221,273 @@ def count_user_events(resolver: str, uid: str, realm: str,
     :param resolver: resolver name of the user
     :param uid: resolver-local user id
     :param realm: realm name of the user
-    :param event_types: the :class:`AuthEventType` value, or list of values, to
+    :param event_types: the list of :class:`AuthEventType` values to
         count; rows matching any of them are counted together
     :param window_seconds: width of the look-back window in seconds
-    :param now: window end; defaults to :func:`utc_now`. An aware value is
-        normalized to naive UTC to match the stored ``timestamp`` column.
+    :param window_end: the instant the window ends; defaults to :func:`utc_now`.
+        An aware value is normalized to naive UTC to match the stored
+        ``timestamp`` column.
     :param since_last_success: only count events after the most recent
         ``LOGIN_SUCCESS`` in the window (a successful login resets the counter)
     :return: the number of matching events
     """
-    now = _naive_utc(now) if now is not None else utc_now()
-    window_start = now - timedelta(seconds=window_seconds)
-    # Accept a single type or a list; an AuthEventType is a str subclass, so a
-    # bare value is wrapped, while an explicit list is used as-is.
-    types = [event_types] if isinstance(event_types, str) else list(event_types)
-    type_values = [str(t) for t in types]
-    if since_last_success:
-        # A successful login inside the window resets the counter: count only the
-        # failures that follow it. ``> last_success`` excludes the success row
-        # itself (it is a different event_type anyway, but the strict bound also
-        # keeps a same-instant failure from being masked by the success).
-        last_success = db.session.scalar(
-            select(func.max(AuthenticationLog.timestamp))
-            .where(AuthenticationLog.resolver == resolver,
-                   AuthenticationLog.uid == uid,
-                   AuthenticationLog.realm == realm,
-                   AuthenticationLog.event_type == str(AuthEventType.LOGIN_SUCCESS),
-                   AuthenticationLog.timestamp >= window_start,
-                   AuthenticationLog.timestamp <= now))
-        if last_success is not None:
-            stmt = (select(func.count())
-                    .select_from(AuthenticationLog)
-                    .where(AuthenticationLog.resolver == resolver,
-                           AuthenticationLog.uid == uid,
-                           AuthenticationLog.realm == realm,
-                           AuthenticationLog.event_type.in_(type_values),
-                           AuthenticationLog.timestamp > last_success,
-                           AuthenticationLog.timestamp <= now))
-            return db.session.scalar(stmt) or 0
-    stmt = (select(func.count())
-            .select_from(AuthenticationLog)
-            .where(AuthenticationLog.resolver == resolver,
-                   AuthenticationLog.uid == uid,
-                   AuthenticationLog.realm == realm,
-                   AuthenticationLog.event_type.in_(type_values),
-                   AuthenticationLog.timestamp >= window_start,
-                   AuthenticationLog.timestamp <= now))
-    return db.session.scalar(stmt) or 0
+    return _count_events([AuthenticationLog.resolver == resolver,
+                          AuthenticationLog.uid == uid,
+                          AuthenticationLog.realm == realm],
+                         event_types, window_seconds, window_end, since_last_success)
+
+
+def count_distinct_users_for_ip(source_ip: str, event_types: list[str],
+                                window_seconds: int, window_end: datetime | None = None) -> int:
+    """
+    Count the number of **distinct accounts** a single *source_ip* targeted with any of *event_types* within the
+    sliding window ``[window_end - window_seconds, window_end]``. This is the password-spraying / enumeration signal:
+    one source IP hitting many different accounts, where per-user counting never trips because each account only sees a
+    failure or two.
+
+    An account is keyed by the ``(username, realm, resolver)`` triple - the **attempted** login, not the internal
+    ``uid`` - so it counts the same for a resolved user and for an unresolved one: an attacker guessing thousands of
+    *nonexistent* usernames (credential stuffing / user enumeration) is counted as thousands of distinct accounts,
+    whereas keying on ``(resolver, uid, realm)`` would collapse every unresolved attempt into the single
+    ``(NULL, NULL, NULL)`` identity and never trip. A request that carries no user at all (e.g. an initial
+    usernameless passkey authentication) has a ``NULL`` username and collapses into a single group - harmless, since
+    those are not an account-targeting signal.
+
+    Known limitation: a serial-only authentication against a token that has *no user assigned* also produces a
+    ``NULL``-username row, so brute-forcing many such userless tokens from one IP collapses into that same single
+    group and is not seen here. That is deliberate - there is no account being targeted: a single userless token is
+    bounded by its own fail counter, and the many-tokens case is raw volume, left to generic rate-limiting rather
+    than to this distinct-account signal.
+
+    Unlike :func:`count_user_events` there is **no** ``since_last_success`` reset: a successful login by one account
+    must not clear a spraying signal aggregated across all accounts of the IP.
+
+    A portable ``COUNT(*)`` over a ``SELECT DISTINCT`` subquery is used. The ``WHERE`` matches
+    ``ix_authlog_ip_event_time`` (source_ip, event_type, timestamp) so the subquery is an index range scan; the
+    ``DISTINCT`` over the three account columns is a cheap sort/hash over that small per-IP result set.
+
+    :param source_ip: the client IP whose distinct targeted accounts are counted
+    :param event_types: the list of :class:`AuthEventType` values to
+        count; rows matching any of them contribute
+    :param window_seconds: width of the look-back window in seconds
+    :param window_end: the instant the window ends; defaults to :func:`utc_now`.
+        The engine passes the single reference instant captured for the whole
+        evaluation so this count shares it with the de-dup window and the new
+        block's expiry.
+    :return: the number of distinct targeted accounts
+    """
+    window_end = _naive_utc(window_end) if window_end is not None else utc_now()
+    window_start = window_end - timedelta(seconds=window_seconds)
+    type_values = [str(t) for t in event_types]
+    distinct_accounts = (select(AuthenticationLog.username, AuthenticationLog.realm, AuthenticationLog.resolver)
+                         .where(AuthenticationLog.source_ip == source_ip,
+                                AuthenticationLog.event_type.in_(type_values),
+                                AuthenticationLog.timestamp >= window_start,
+                                AuthenticationLog.timestamp <= window_end)
+                         .distinct()
+                         .subquery())
+    return db.session.scalar(select(func.count()).select_from(distinct_accounts)) or 0
+
+
+def _count_matching_attempts(rows: list[AuthenticationLog], tracked_types: set[str],
+                             since_last_success: bool = False) -> int:
+    """
+    Reduce authentication-log rows to one representative event per attempt and count the attempts whose
+    representative is in *tracked_types*.
+
+    All rows sharing an ``attempt_id`` are one authentication attempt. Its representative — the event that classifies
+    the whole attempt — is :attr:`AuthEventType.LOGIN_SUCCESS` if the attempt ever logged in (a completed success is
+    terminal: a later stray answer replayed on the same, now-answered challenge maps to the same ``attempt_id`` but
+    must not undo the success), otherwise the **latest** event by row ``id``. Row ``id`` is the insertion order, which
+    orders the multichallenge steps correctly independent of event type — e.g. a wrong answer *then* a continue reads
+    as in-progress (latest = the continue), while a continue *then* a wrong answer reads as failed (latest = the fail),
+    which an event-type ranking could not distinguish.
+
+    Comparisons rely on :class:`AuthEventType` being a ``str`` subclass, so the stored ``event_type`` strings match
+    the enum members directly — no conversion needed.
+
+    :param rows: the authentication-log rows of the attempts to reduce
+    :param tracked_types: the event types a representative must be in to count the attempt
+    :param since_last_success: only count attempts whose latest row is newer than the last ``LOGIN_SUCCESS`` row
+    :return: the number of attempts whose representative event is in *tracked_types*
+    """
+    latest: dict[str, AuthenticationLog] = {}
+    succeeded: set[str] = set()
+    last_success_id = -1
+    # First pass: aggregate every row into its attempt — the attempt's latest (highest-id) row, whether it succeeded,
+    # and the newest LOGIN_SUCCESS row id (the reset point for since_last_success).
+    for row in rows:
+        if row.event_type == AuthEventType.LOGIN_SUCCESS:
+            succeeded.add(row.attempt_id)
+            last_success_id = max(last_success_id, row.id)
+        current = latest.get(row.attempt_id)
+        if current is None or row.id > current.id:
+            latest[row.attempt_id] = row
+    cutoff_id = last_success_id if since_last_success else -1
+    matches = 0
+    # Second pass: over the distinct attempts, resolve each representative event and count the ones that match — and,
+    # when flooring, only those whose latest row is newer than the last successful login.
+    for attempt_id, row in latest.items():
+        representative = AuthEventType.LOGIN_SUCCESS if attempt_id in succeeded else row.event_type
+        if representative in tracked_types and row.id > cutoff_id:
+            matches += 1
+    return matches
+
+
+def _count_attempts(subject, event_types: list[str], window_seconds: int,
+                    window_end: datetime | None = None, since_last_success: bool = False) -> int:
+    """
+    Count whole authentication *attempts* matching *subject* whose representative event is in *event_types*, within the
+    sliding window ``[window_end - window_seconds, window_end]`` (``PER_ATTEMPT``).
+
+    **All** in-window rows of the subject are fetched (every event type, not just the tracked ones - a non-tracked
+    ``LOGIN_SUCCESS`` must be able to supersede a tracked failure within its attempt), then grouped by ``attempt_id``
+    and reduced to one representative each (see :func:`_count_matching_attempts`). Only the *subject* + *timestamp*
+    predicate hits the index, so callers document the matching ``*_time`` index. The rows are the small in-window set
+    for one subject, so fetching full :class:`AuthenticationLog` objects (rather than columns) is negligible and keeps
+    the reduction working on named attributes.
+    """
+    window_end = _naive_utc(window_end) if window_end is not None else utc_now()
+    window_start = window_end - timedelta(seconds=window_seconds)
+    rows = db.session.scalars(
+        select(AuthenticationLog)
+        .where(*subject,
+               AuthenticationLog.timestamp >= window_start,
+               AuthenticationLog.timestamp <= window_end)).all()
+    return _count_matching_attempts(rows, set(event_types), since_last_success=since_last_success)
+
+
+def count_user_attempts(resolver: str, uid: str, realm: str, event_types: list[str],
+                        window_seconds: int, window_end: datetime | None = None,
+                        since_last_success: bool = False) -> int:
+    """
+    Count whole authentication *attempts* (not individual ``authentication_log`` rows) for one user identity whose
+    representative event matches *event_types*, within a sliding time window ``[window_end - window_seconds,
+    window_end]``. This is the
+    :attr:`~privacyidea.lib.conditional_access.authentication_event_types.CountMode.PER_ATTEMPT` counterpart of
+    :func:`count_user_events`, so a multi-request challenge / multichallenge login counts once. The ``WHERE``
+    (resolver, uid, realm, timestamp) matches the ``ix_authlog_user_time`` index.
+
+    :param resolver: resolver name of the user
+    :param uid: resolver-local user id
+    :param realm: realm name of the user
+    :param event_types: the event types an attempt's representative must match (a list; may hold a single entry)
+    :param window_seconds: width of the look-back window in seconds
+    :param window_end: the instant the window ends; defaults to :func:`utc_now`. An aware value is normalized to
+        naive UTC.
+    :param since_last_success: only count attempts after the user's most recent completed login in the window (a
+        successful login resets the counter); see :func:`_count_matching_attempts`
+    :return: the number of matching attempts
+    """
+    return _count_attempts([AuthenticationLog.resolver == resolver,
+                            AuthenticationLog.uid == uid,
+                            AuthenticationLog.realm == realm],
+                           event_types, window_seconds, window_end, since_last_success)
+
+
+def count_ip_events(source_ip: str, event_types: list[str], window_seconds: int,
+                    window_end: datetime | None = None) -> int:
+    """
+    Count the ``authentication_log`` rows a single *source_ip* produced with any of *event_types* within the sliding
+    window ``[window_end - window_seconds, window_end]``. This is the
+    :attr:`~privacyidea.lib.conditional_access.authentication_event_types.CountMode.PER_REQUEST` counterpart of
+    :func:`count_distinct_users_for_ip`: raw per-IP request volume rather than the distinct-accounts signal - the IP
+    analogue of :func:`count_user_events` keyed on the source IP instead of the ``(resolver, uid, realm)`` triple.
+
+    Unlike the user counter there is **no** ``since_last_success`` reset: a successful login by one account must not
+    clear a volume signal aggregated across everything the IP sent (same reasoning as
+    :func:`count_distinct_users_for_ip`). Every matching row counts regardless of user, so userless serial attempts -
+    the documented blind spot of the distinct-accounts signal - do contribute here.
+
+    The ``WHERE`` matches ``ix_authlog_ip_event_time`` (source_ip, event_type, timestamp) so this is an index range
+    scan.
+
+    ``since_last_success`` is intentionally not exposed: the shared core supports it, but enabling it for an IP would
+    reset the whole IP's counter on *any* one account's successful login (e.g. one legitimate user behind a NAT
+    clearing the volume signal for everyone behind it) - a real semantic decision, not just wiring.
+
+    :param source_ip: the client IP whose events are counted
+    :param event_types: the list of :class:`AuthEventType` values to count; rows matching any of them are counted
+        together
+    :param window_seconds: width of the look-back window in seconds
+    :param window_end: the instant the window ends; defaults to :func:`utc_now`. An aware value is normalized to naive
+        UTC.
+    :return: the number of matching events
+    """
+    return _count_events([AuthenticationLog.source_ip == source_ip], event_types, window_seconds, window_end)
+
+
+def count_ip_attempts(source_ip: str, event_types: list[str],
+                      window_seconds: int, window_end: datetime | None = None) -> int:
+    """
+    Count whole authentication *attempts* (not individual ``authentication_log`` rows) a single *source_ip* produced
+    whose representative event matches *event_types*, within the sliding window ``[window_end - window_seconds,
+    window_end]``. The
+    :attr:`~privacyidea.lib.conditional_access.authentication_event_types.CountMode.PER_ATTEMPT` counterpart of
+    :func:`count_ip_events`, so a multi-request challenge / multichallenge login counts once - the IP analogue of
+    :func:`count_user_attempts`.
+
+    As with :func:`count_ip_events` there is **no** ``since_last_success`` reset (see that function for why it is not
+    exposed for an IP). The ``WHERE`` (source_ip, timestamp) matches the ``ix_authlog_ip_time`` index.
+
+    :param source_ip: the client IP whose attempts are counted
+    :param event_types: the event types an attempt's representative must match
+    :param window_seconds: width of the look-back window in seconds
+    :param window_end: the instant the window ends; defaults to :func:`utc_now`. An aware value is normalized to naive
+        UTC.
+    :return: the number of matching attempts
+    """
+    return _count_attempts([AuthenticationLog.source_ip == source_ip], event_types, window_seconds, window_end)
+
+
+def _policy_count(policy: LockoutPolicy, user: "User", window_end: datetime,
+                  since_last_success: bool = False) -> int:
+    """
+    Count a user-target policy's events (``PER_REQUEST``) or attempts (``PER_ATTEMPT``) over its window, per the
+    policy's :attr:`~privacyidea.models.lockout_policy.LockoutPolicy.count_mode`. (Source-IP policies dispatch
+    separately via :func:`_policy_count_ip`.)
+
+    :param policy: the policy whose ``time_window_seconds`` and ``counter_types_to_track`` are counted over
+    :param user: the resolved user to count for
+    :param window_end: the instant the window ends (reference time)
+    :param since_last_success: True to floor the count at the user's last completed login in the window (a successful
+        login resets the counter). Applies to both user modes — ``PER_REQUEST`` floors at the last ``LOGIN_SUCCESS``
+        row, ``PER_ATTEMPT`` at the last successful attempt. (Source-IP ``DISTINCT_USERS`` deliberately never resets,
+        which is why it is a separate mode and does not go through here.)
+    :return: the event count (``PER_REQUEST``) or the attempt count (``PER_ATTEMPT``)
+    """
+    if policy.count_mode == CountMode.PER_ATTEMPT:
+        return count_user_attempts(user.resolver, user.uid, user.realm,
+                                   policy.counter_types_to_track, policy.time_window_seconds,
+                                   window_end=window_end, since_last_success=since_last_success)
+    return count_user_events(user.resolver, user.uid, user.realm,
+                             policy.counter_types_to_track, policy.time_window_seconds,
+                             window_end=window_end, since_last_success=since_last_success)
+
+
+def _policy_count_ip(policy: LockoutPolicy, source_ip: str, window_end: datetime) -> int:
+    """
+    Count a source-IP-target policy's subject over its window, per the policy's
+    :attr:`~privacyidea.models.lockout_policy.LockoutPolicy.count_mode`: distinct targeted accounts
+    (``DISTINCT_USERS``, the default and spraying/enumeration signal), individual events (``PER_REQUEST``) or whole
+    attempts (``PER_ATTEMPT``, the two volume modes = plain per-IP rate limiting). None of the three resets on a
+    successful login - a legit login by one account must not clear a signal aggregated across the whole IP - so there
+    is no ``since_last_success`` parameter, unlike the user path (:func:`_policy_count`).
+
+    :param policy: the policy whose ``time_window_seconds`` and ``counter_types_to_track`` are counted over
+    :param source_ip: the client IP to count for
+    :param window_end: the instant the window ends (reference time)
+    :return: the distinct-account count (``DISTINCT_USERS``), event count (``PER_REQUEST``) or attempt count
+        (``PER_ATTEMPT``)
+    """
+    if policy.count_mode == CountMode.PER_REQUEST:
+        return count_ip_events(source_ip, policy.counter_types_to_track,
+                               policy.time_window_seconds, window_end=window_end)
+    if policy.count_mode == CountMode.PER_ATTEMPT:
+        return count_ip_attempts(source_ip, policy.counter_types_to_track,
+                                 policy.time_window_seconds, window_end=window_end)
+    return count_distinct_users_for_ip(source_ip, policy.counter_types_to_track,
+                                       policy.time_window_seconds, window_end=window_end)
 
 
 def get_user_lockout(user: "User", now: datetime | None = None) -> "RestrictionStatus | None":
@@ -385,19 +665,18 @@ def evaluate_access_decision(user: "User", source_ip: str | None = None,
     DENY with a higher number and vice versa. ``dry_run`` policies are logged but
     never enforced.
 
-    Like the rest of the engine the decision is keyed on the resolved
-    ``(resolver, uid, realm)`` user, so an unresolved user (unknown login,
-    local admin) is never denied here. ``source_ip`` is accepted for signature
-    symmetry with :func:`evaluate_lockout_policies` but is not evaluated:
-    IP-scoped decisions (e.g. against password spraying) are not implemented.
+    Both targets decide here: a ``user`` policy is keyed on the resolved
+    ``(resolver, uid, realm)`` user (an unresolved user - unknown login, local
+    admin - is never decided by a user policy), while a ``source_ip`` policy is
+    keyed on *source_ip* and therefore applies even when the user is unresolved
+    (the spraying/enumeration case). A never-block source IP is exempt from an IP
+    ``DENY``, mirroring the ``BLOCK_IP`` allowlist.
 
-    :param user: the authenticating user; an unresolved user yields ``CONTINUE``
-    :param source_ip: the resolved client IP (reserved for IP-scoped decisions)
+    :param user: the authenticating user; only ``user``-target policies need it
+    :param source_ip: the resolved client IP; ``source_ip``-target policies decide on it
     :param now: the reference time; defaults to :func:`utc_now`
     :return: the :class:`AccessDecision` for this request
     """
-    if not _resolved(user):
-        return AccessDecision.CONTINUE
     now = _naive_utc(now) if now is not None else utc_now()
     policies = db.session.scalars(
         select(LockoutPolicy)
@@ -405,21 +684,34 @@ def evaluate_access_decision(user: "User", source_ip: str | None = None,
         .order_by(LockoutPolicy.priority.asc())
     ).all()
     for policy in policies:
-        decision = _policy_access_decision(policy, user, now)
+        decision = _policy_access_decision(policy, user, source_ip, now)
         if decision is not None:
             return decision
     return AccessDecision.CONTINUE
 
 
-def _policy_access_decision(policy: LockoutPolicy, user: "User",
+def _policy_access_decision(policy: LockoutPolicy, user: "User", source_ip: str | None,
                             now: datetime) -> "AccessDecision | None":
     """
     The ALLOW/DENY decision a single policy contributes pre-auth, or ``None`` if
-    this policy does not decide the request (no stage met, the met stage carries
-    only lockout-style actions, or the policy is in dry-run).
+    this policy does not decide the request (wrong/absent subject, no stage met,
+    the met stage carries only lockout-style actions, or the policy is in dry-run).
     """
-    count = count_user_events(user.resolver, user.uid, user.realm,
-                              policy.counter_types_to_track, policy.time_window_seconds, now=now)
+    if policy.target == LockoutTarget.SOURCE_IP:
+        # IP-scoped: decide on the source IP regardless of user resolution. A
+        # never-block IP is never denied by an IP policy (mirrors the BLOCK_IP
+        # allowlist), so it contributes no decision.
+        if not source_ip or is_ip_never_block(source_ip):
+            return None
+        count = _policy_count_ip(policy, source_ip, now)
+        subject_label = f"source IP {source_ip}"
+    else:
+        # User-scoped: keyed on the resolved user, so an unresolved user is never
+        # decided by a user policy.
+        if not _resolved(user):
+            return None
+        count = _policy_count(policy, user, now)
+        subject_label = repr(user)
     triggered_stage = next((stage for stage in policy.stages
                             if count >= stage.failure_threshold), None)
     if triggered_stage is None:
@@ -431,10 +723,10 @@ def _policy_access_decision(policy: LockoutPolicy, user: "User",
         return None
     types = _types_label(policy.counter_types_to_track)
     if policy.dry_run:
-        log.info(f"[dry-run] policy {policy.name!r} would return {decision} for {user!r}: "
+        log.info(f"[dry-run] policy {policy.name!r} would return {decision} for {subject_label}: "
                  f"{count} event(s) of {types} in {policy.time_window_seconds}s.")
         return None
-    log.info(f"Policy {policy.name!r} returns access decision {decision} for {user!r}: "
+    log.info(f"Policy {policy.name!r} returns access decision {decision} for {subject_label}: "
              f"{count} event(s) of {types} in {policy.time_window_seconds}s.")
     return decision
 
@@ -475,7 +767,8 @@ def evaluate_lockout_policies(user: "User", event_type, source_ip: str | None = 
     function itself only guards individual DB writes (see
     :func:`_upsert_user_lockout_state`).
 
-    :param user: the authenticating user; ignored unless fully resolved
+    :param user: the authenticating user; ``user``-target policies need it
+        resolved, ``source_ip``-target policies act on the IP regardless
     :param event_type: the classified outcome of the request
         (:class:`AuthEventType`)
     :param source_ip: the resolved client IP; the ``BLOCK_IP`` action blocks it
@@ -484,9 +777,6 @@ def evaluate_lockout_policies(user: "User", event_type, source_ip: str | None = 
         produced by executed actions (empty if nothing was triggered/notified)
     """
     if not event_type:
-        return []
-    if not _resolved(user):
-        log.debug(f"Skipping lockout evaluation for unresolved user {user!r}.")
         return []
     now = _naive_utc(now) if now is not None else utc_now()
     event_type = str(event_type)
@@ -527,16 +817,31 @@ def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
         no stage triggered, in dry-run, or when de-duplicated away).
     """
     window = policy.time_window_seconds
-    # The lock counts consecutive failures since the user's last completed login:
-    # a successful authentication clears the slate, so a legitimate user is not
-    # re-locked by stale pre-login failures on their next single typo. (The DENY
-    # decision deliberately does not reset on success — see _policy_access_decision.)
-    # The count is the *combined* total over all of the policy's tracked types,
-    # not just the current request's event_type, so a policy tracking several
-    # failure types trips on their sum.
-    count = count_user_events(user.resolver, user.uid, user.realm,
-                              policy.counter_types_to_track, window,
-                              now=now, since_last_success=True)
+    if policy.target == LockoutTarget.SOURCE_IP:
+        if not source_ip:
+            # An IP-targeted policy cannot count or act without a source IP.
+            log.debug(f"Skipping source-IP policy {policy.name!r}: the request carries no source IP.")
+            return []
+        # Count per the policy's mode: distinct targeted accounts (spraying) or plain per-IP volume. No
+        # since-last-success reset in any mode — a legit login by one account must not clear a signal aggregated
+        # across the whole IP (see _policy_count_ip).
+        count = _policy_count_ip(policy, source_ip, now)
+        subject_label = f"source IP {source_ip}"
+    else:
+        if not _resolved(user):
+            # A user-target policy is keyed on the resolved (resolver, uid, realm)
+            # user, so an unresolved user (unknown login, local admin) is never
+            # locked. Source-IP policies above still run for such requests.
+            return []
+        # The lock counts consecutive failures since the user's last completed login:
+        # a successful authentication clears the slate, so a legitimate user is not
+        # re-locked by stale pre-login failures on their next single typo. (The DENY
+        # decision deliberately does not reset on success — see _policy_access_decision.)
+        # The count is the *combined* total over all of the policy's tracked types,
+        # not just the current request's event_type, so a policy tracking several
+        # failure types trips on their sum.
+        count = _policy_count(policy, user, now, since_last_success=True)
+        subject_label = repr(user)
 
     # Stages are ordered highest-priority first by the relationship; the first
     # stage whose threshold is met wins, so the most severe matching stage is
@@ -550,7 +855,7 @@ def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
         # Dry-run never reads or writes the de-dup state, so it logs on every
         # in-window request that would trip the stage.
         log.info(f"[dry-run] policy {policy.name!r} would trigger stage {triggered_stage.id} "
-                 f"(threshold {triggered_stage.failure_threshold}) for {user!r}: "
+                 f"(threshold {triggered_stage.failure_threshold}) for {subject_label}: "
                  f"{count} event(s) of {_types_label(policy.counter_types_to_track)} in {window}s.")
         return []
 
@@ -591,7 +896,7 @@ def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
         return []
 
     log.info(f"Policy {policy.name!r} triggered stage {triggered_stage.id} "
-             f"(threshold {triggered_stage.failure_threshold}) for {user!r}: "
+             f"(threshold {triggered_stage.failure_threshold}) for {subject_label}: "
              f"{count} event(s) of {_types_label(policy.counter_types_to_track)} in {window}s.")
     tags = _base_action_tags(policy, triggered_stage, user, event_type, count, source_ip, now)
     return _execute_stage_actions(triggered_stage, user, source_ip, now, tags)

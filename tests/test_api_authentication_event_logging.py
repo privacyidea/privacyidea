@@ -288,6 +288,35 @@ class _AuthLogContractTests(_ContractHost):
                                         user=self.user, serials={self.serial},
                                         transaction_id=transaction_id)
 
+    # --- attempt_id: grouping the rows of one logical authentication attempt ---
+    # Note: single-flow grouping (trigger+answer, multichallenge, ...) is asserted automatically by
+    # assert_authentication_log (same_attempt=True) in every flow test above. These two cover what that does not:
+    # a genuinely multi-attempt log, and a wrong-then-right retry on one challenge.
+
+    def test_attempt_id_distinct_for_separate_attempts(self):
+        # Two independent single-request logins are two attempts and get two different attempt_ids.
+        self._assert_succeeded(self._authenticate(f"{self.pin}755224"))
+        self._assert_succeeded(self._authenticate(f"{self.pin}287082"))
+        first, second = assert_authentication_log([AuthEventType.LOGIN_SUCCESS, AuthEventType.LOGIN_SUCCESS],
+                                                  same_attempt=False).all
+        self.assertNotEqual(first.attempt_id, second.attempt_id)
+
+    def test_attempt_id_groups_challenge_retry(self):
+        # A wrong answer followed by the correct one on the same challenge is still one attempt: the trigger, the
+        # wrong answer and the success share one attempt_id (a later success does not start a new attempt).
+        # assert_authentication_log (same_attempt default) asserts the shared id across all three rows.
+        self._enable_challenge_response()
+        try:
+            transaction_id = self._trigger_challenge()
+            self._assert_failed(self._authenticate("000000", transaction_id=transaction_id))
+            self._assert_succeeded(self._authenticate("755224", transaction_id=transaction_id))
+        finally:
+            delete_policy("authlog_cr")
+        assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
+                                   AuthEventType.CHALLENGE_ANSWERED_FAIL,
+                                   AuthEventType.LOGIN_SUCCESS],
+                                  transaction_id=transaction_id)
+
     # --- Authorization policies (NOT_AUTHORIZED) ---
 
     def test_authmaxfail_logs_not_authorized(self):
@@ -353,8 +382,9 @@ class _AuthLogContractTests(_ContractHost):
         assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGERED], user=self.user,
                                         serials={self.serial, self.second_serial}, transaction_id=transaction_id)
 
-    # --- previous_transaction_id: a challenge answer that immediately triggers a fresh challenge links the rows
-    #     (CHALLENGE_CONTINUED carrying previous_transaction_id). Both endpoints classify and link these the same. ---
+    # --- multichallenge correlation: a challenge answer that immediately triggers a fresh challenge (a new
+    #     transaction_id) still belongs to one logical attempt. All of its rows share one attempt_id (recovered
+    #     across the transaction change), which is what assert_authentication_log verifies. ---
 
     def _assert_challenge(self, response: Response) -> dict:
         # An intermediate challenge looks the same on both endpoints: HTTP 200 with a falsy result value (a /auth
@@ -363,10 +393,10 @@ class _AuthLogContractTests(_ContractHost):
         self.assertFalse(response.json["result"]["value"], response.json)
         return response.json["detail"]
 
-    def test_questionnaire_sets_previous_transaction_id(self):
+    def test_questionnaire_multichallenge_correlates_by_attempt_id(self):
         # Questionnaire with question_number=2: PIN triggers question 1 (first_transaction_id), answering question 1
-        # triggers question 2 (second_transaction_id), answering question 2 is a LOGIN_SUCCESS. The middle step has
-        # previous_transaction_id=first_transaction_id because it answered the first challenge and created a new one.
+        # triggers question 2 (second_transaction_id), answering question 2 is a LOGIN_SUCCESS. The three rows span two
+        # transaction_ids but are one attempt, so they share one attempt_id.
         questions_and_answers = {"Question1": "Answer1", "Question2": "Answer2", "Question3": "Answer3",
                                  "Question4": "Answer4", "Question5": "Answer5"}
         questionnaire_serial = "AUTHLOG_QUESTIONNAIRE"
@@ -390,6 +420,8 @@ class _AuthLogContractTests(_ContractHost):
             delete_policy("authlog_question_number")
             remove_token(questionnaire_serial)
 
+        # The attempt spans two transaction_ids; assert_authentication_log verifies all three rows still share one
+        # attempt_id (recovered across the transaction change).
         entries = assert_authentication_log([
             AuthEventType.CHALLENGE_TRIGGERED,
             AuthEventType.CHALLENGE_CONTINUED,
@@ -398,16 +430,15 @@ class _AuthLogContractTests(_ContractHost):
         assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGERED], user=self.user,
                                         serials={questionnaire_serial}, transaction_id=first_transaction_id)
         assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_CONTINUED], user=self.user,
-                                        serials={questionnaire_serial}, transaction_id=second_transaction_id,
-                                        previous_transaction_id=first_transaction_id)
+                                        serials={questionnaire_serial}, transaction_id=second_transaction_id)
         assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS], user=self.user,
                                         serials={questionnaire_serial}, transaction_id=second_transaction_id)
 
-    def test_foureyes_sets_previous_transaction_id(self):
+    def test_foureyes_multichallenge_correlates_by_attempt_id(self):
         # 4-eyes with realm1 count=2: PIN triggers the initial challenge (first_transaction_id), the first admin
         # authenticates which satisfies one of two required tokens and creates a new challenge
-        # (second_transaction_id, previous=first_transaction_id), the second admin authenticates to satisfy the
-        # second required token and completes the flow (LOGIN_SUCCESS).
+        # (second_transaction_id), the second admin authenticates to satisfy the second required token and completes
+        # the flow (LOGIN_SUCCESS). The rows span two transaction_ids but share one attempt_id.
         required_realms = {"realm1": {"selected": True, "count": 2}}
         foureyes_serial = "AUTHLOG_FOUREYES"
         first_admin_serial = "AUTHLOG_FIRST_ADMIN"
@@ -442,14 +473,13 @@ class _AuthLogContractTests(_ContractHost):
         assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGERED], user=self.user,
                                         serials={foureyes_serial}, transaction_id=first_transaction_id)
         assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_CONTINUED], user=self.user,
-                                        serials={foureyes_serial}, transaction_id=second_transaction_id,
-                                        previous_transaction_id=first_transaction_id)
+                                        serials={foureyes_serial}, transaction_id=second_transaction_id)
         assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS], user=self.user,
                                         serials={foureyes_serial}, transaction_id=second_transaction_id)
 
     def test_questionnaire_fail_on_intermediate_challenge(self):
-        # Answering the first question wrong gives CHALLENGE_ANSWERED_FAIL with no previous_transaction_id —
-        # no new challenge was created, so there is nothing to link back to.
+        # Answering the first question wrong gives CHALLENGE_ANSWERED_FAIL: no new challenge was created, but the row
+        # still shares the attempt's attempt_id.
         questions_and_answers = {"Question1": "Answer1", "Question2": "Answer2", "Question3": "Answer3",
                                  "Question4": "Answer4", "Question5": "Answer5"}
         questionnaire_serial = "AUTHLOG_QUESTIONNAIRE"
@@ -473,9 +503,8 @@ class _AuthLogContractTests(_ContractHost):
                                         serials={questionnaire_serial}, transaction_id=first_transaction_id)
 
     def test_questionnaire_fail_on_last_challenge(self):
-        # Answering the first question correctly triggers the second (CHALLENGE_CONTINUED with
-        # previous_transaction_id set). Answering the second question wrong gives CHALLENGE_ANSWERED_FAIL
-        # with no previous_transaction_id — failure paths never populate it.
+        # Answering the first question correctly triggers the second (CHALLENGE_CONTINUED). Answering the second
+        # question wrong gives CHALLENGE_ANSWERED_FAIL. All rows share one attempt_id across the two transaction_ids.
         questions_and_answers = {"Question1": "Answer1", "Question2": "Answer2", "Question3": "Answer3",
                                  "Question4": "Answer4", "Question5": "Answer5"}
         questionnaire_serial = "AUTHLOG_QUESTIONNAIRE"
@@ -504,8 +533,7 @@ class _AuthLogContractTests(_ContractHost):
         assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGERED], user=self.user,
                                         serials={questionnaire_serial}, transaction_id=first_transaction_id)
         assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_CONTINUED], user=self.user,
-                                        serials={questionnaire_serial}, transaction_id=second_transaction_id,
-                                        previous_transaction_id=first_transaction_id)
+                                        serials={questionnaire_serial}, transaction_id=second_transaction_id)
         assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_ANSWERED_FAIL], user=self.user,
                                         serials={questionnaire_serial}, transaction_id=second_transaction_id)
 
@@ -643,9 +671,8 @@ class ValidateCheckAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
 
     def test_enroll_triggered_via_challenge_response(self):
         # Answering an HOTP challenge response correctly triggers a TOTP enrollment via post-policy. The enrollment
-        # step is reclassified from LOGIN_SUCCESS to ENROLLMENT_TRIGGERED and inherits previous_transaction_id from
-        # the answered HOTP challenge — the reclassify call only updates event_type/serial/transaction_id, leaving
-        # previous_transaction_id intact.
+        # step is reclassified from LOGIN_SUCCESS to ENROLLMENT_TRIGGERED (the reclassify call updates
+        # event_type/serial/transaction_id). All rows share one attempt_id across the two transaction_ids.
         self._enable_challenge_response()
         set_policy("authlog_enroll", scope=SCOPE.AUTH, action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE}=totp")
         enrolled_serial = None
@@ -680,8 +707,7 @@ class ValidateCheckAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
         assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGERED], user=self.user,
                                         serials={self.serial}, transaction_id=hotp_transaction_id)
         assert_authentication_log_entry(entries[AuthEventType.ENROLLMENT_TRIGGERED], user=self.user,
-                                        serials={enrolled_serial}, transaction_id=enrollment_transaction_id,
-                                        previous_transaction_id=hotp_transaction_id)
+                                        serials={enrolled_serial}, transaction_id=enrollment_transaction_id)
         assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS], user=self.user,
                                         serials={enrolled_serial}, transaction_id=enrollment_transaction_id)
 

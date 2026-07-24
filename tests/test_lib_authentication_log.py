@@ -64,14 +64,13 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertIsNone(entry.client_label)
         self.assertIsNone(entry.serial)
         self.assertIsNone(entry.transaction_id)
-        self.assertIsNone(entry.previous_transaction_id)
         self.assertIsNone(entry.other_info)
 
     def test_create_all_fields(self):
         event_id = log_authentication_event(
             event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="user1", realm="realm1",
             username="testuser", source_ip="192.168.1.1", client_label="vpn", serial="TOK001",
-            transaction_id="txn-123", previous_transaction_id="txn-prev", other_info={"key": "value"}
+            transaction_id="txn-123", other_info={"key": "value"}
         )
 
         entry = get_authentication_log_event(event_id)
@@ -81,7 +80,6 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertEqual("vpn", entry.client_label)
         self.assertEqual("TOK001", entry.serial)
         self.assertEqual("txn-123", entry.transaction_id)
-        self.assertEqual("txn-prev", entry.previous_transaction_id)
         self.assertEqual({"key": "value"}, entry.other_info)
 
     def test_create_returns_unique_ids(self):
@@ -273,6 +271,19 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertEqual(1, len(results))
         self.assertEqual("txn-a", results[0].transaction_id)
 
+    def test_get_authentication_logs_filter_by_attempt_id(self):
+        # Two requests of the same attempt share an attempt_id; a third belongs to another attempt.
+        log_authentication_event(event_type=AuthEventType.CHALLENGE_TRIGGERED, attempt_id="att-a",
+                                 resolver="res1", uid="u1", realm="r1")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, attempt_id="att-a",
+                                 resolver="res1", uid="u1", realm="r1")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, attempt_id="att-b",
+                                 resolver="res1", uid="u1", realm="r1")
+
+        results = get_authentication_logs(attempt_id="att-a")
+        self.assertEqual(2, len(results))
+        self.assertSetEqual({"att-a"}, {entry.attempt_id for entry in results})
+
     def test_get_authentication_logs_combined_filters(self):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1")
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u2", realm="r1")
@@ -330,7 +341,6 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertIsNone(entry.uid)
         self.assertIsNone(entry.realm)
         self.assertIsNone(entry.username)
-        self.assertIsNone(entry.previous_transaction_id)
         self.assertEqual("10.0.0.1", entry.source_ip)
 
     def test_cleanup_removes_old_entries(self):
@@ -424,15 +434,15 @@ class AuthenticationLogTestCase(MyTestCase):
         event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=over("resolver"),
                                             uid="u1", realm="r1", username=over("username"),
                                             client_label=over("client_label"), serial=over("serial"),
-                                            previous_transaction_id=over("previous_transaction_id"))
+                                            transaction_id=over("transaction_id"))
         entry = get_authentication_log_event(event_id)
         assert entry is not None
         self.assertEqual("X" * authentication_log_column_length["resolver"], entry.resolver)
         self.assertEqual("X" * authentication_log_column_length["username"], entry.username)
         self.assertEqual("X" * authentication_log_column_length["client_label"], entry.client_label)
         self.assertEqual("X" * authentication_log_column_length["serial"], entry.serial)
-        self.assertEqual("X" * authentication_log_column_length["previous_transaction_id"],
-                         entry.previous_transaction_id)
+        self.assertEqual("X" * authentication_log_column_length["transaction_id"],
+                         entry.transaction_id)
 
     def test_overflow_is_preserved_in_other_info(self):
         # The part of a value that does not fit the column is preserved under other_info["truncated"][column] (as the
@@ -529,7 +539,8 @@ class AuthenticationLogDBTestCase(MyTestCase):
                 event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="user1", realm="realm1",
                 username="testuser", user_role=AuthLogUserRole.ADMIN_EXTERNAL, source_ip="192.168.1.1",
                 client_label="vpn",
-                serial="TOK001", transaction_id="txn-123", previous_transaction_id="txn-prev",
+                serial="TOK001", transaction_id="txn-123",
+                attempt_id="attempt-123",
                 other_info={"key": "value"}
             )
 
@@ -537,8 +548,8 @@ class AuthenticationLogDBTestCase(MyTestCase):
         auth_log_dict = entry.to_dict()
 
         expected_keys = {"id", "resolver", "uid", "realm", "username", "user_role", "event_type", "timestamp",
-                         "source_ip", "client_label", "serial", "transaction_id", "previous_transaction_id",
-                         "other_info"}
+                         "source_ip", "client_label", "serial", "transaction_id",
+                         "attempt_id", "other_info"}
         self.assertSetEqual(expected_keys, set(auth_log_dict.keys()))
         self.assertEqual(event_id, auth_log_dict["id"])
         self.assertEqual("res1", auth_log_dict["resolver"])
@@ -553,7 +564,7 @@ class AuthenticationLogDBTestCase(MyTestCase):
         self.assertEqual("vpn", auth_log_dict["client_label"])
         self.assertEqual("TOK001", auth_log_dict["serial"])
         self.assertEqual("txn-123", auth_log_dict["transaction_id"])
-        self.assertEqual("txn-prev", auth_log_dict["previous_transaction_id"])
+        self.assertEqual("attempt-123", auth_log_dict["attempt_id"])
         self.assertEqual({"key": "value"}, auth_log_dict["other_info"])
 
 

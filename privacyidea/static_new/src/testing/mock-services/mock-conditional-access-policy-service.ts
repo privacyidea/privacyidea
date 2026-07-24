@@ -20,8 +20,13 @@ import { signal } from "@angular/core";
 import {
   AuthEventType,
   ConditionalAccessPolicyServiceInterface,
+  CountMode,
   LockoutActionType,
-  LockoutPolicy
+  LockoutPolicy,
+  LockoutPolicySaveParams,
+  LockoutPolicyTemplate,
+  LockoutTarget,
+  TargetConstraints
 } from "@services/conditional-access/conditional-access-policy.service";
 import { MockHttpResourceRef, MockPiResponse } from "@testing/mock-services/mock-utils";
 
@@ -38,7 +43,27 @@ export class MockConditionalAccessPolicyService implements ConditionalAccessPoli
 
   actionTypes = signal<LockoutActionType[]>([]);
 
-  savePolicy = jest.fn(async (): Promise<number | undefined> => Promise.resolve(1));
+  targetsResource = new MockHttpResourceRef(MockPiResponse.fromValue<Record<string, TargetConstraints>>({}));
+
+  actionsByTarget = signal<Record<LockoutTarget, LockoutActionType[]>>(
+    {} as Record<LockoutTarget, LockoutActionType[]>
+  );
+
+  countModesByTarget = signal<Record<LockoutTarget, CountMode[]>>({} as Record<LockoutTarget, CountMode[]>);
+
+  targets = signal<LockoutTarget[]>([]);
+
+  templatesResource = new MockHttpResourceRef(MockPiResponse.fromValue<LockoutPolicyTemplate[]>([]));
+
+  templates = signal<LockoutPolicyTemplate[]>([]);
+
+  actionsForTarget = jest.fn(
+    (target: LockoutTarget): LockoutActionType[] => this.actionsByTarget()[target] ?? this.actionTypes()
+  );
+
+  countModesForTarget = jest.fn((target: LockoutTarget): CountMode[] => this.countModesByTarget()[target] ?? []);
+
+  savePolicy = jest.fn(async (_: LockoutPolicySaveParams): Promise<number | undefined> => Promise.resolve(1));
 
   deletePolicy = jest.fn(async (): Promise<void> => Promise.resolve());
 
