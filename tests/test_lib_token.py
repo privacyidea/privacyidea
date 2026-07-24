@@ -1324,6 +1324,65 @@ class TokenTestCase(MyTestCase):
         with self.assertRaises(UserError):
             tokens = get_tokens_paginate(user=unresolvable)["tokens"]
 
+    def test_41a_get_tokens_paginate_comma_separated_realms(self):
+        """Test that the realm parameter accepts a comma-separated list of
+        realm names and returns tokens from all listed realms."""
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        self.setUp_user_realm3()
+
+        tok_r1 = init_token({"type": "hotp", "genkey": True},
+                            tokenrealms=[self.realm1])
+        tok_r2 = init_token({"type": "hotp", "genkey": True},
+                            tokenrealms=[self.realm2])
+        tok_r3 = init_token({"type": "hotp", "genkey": True},
+                            tokenrealms=[self.realm3])
+
+        # Comma-separated: realm1,realm2 returns tokens from both
+        tokens = get_tokens_paginate(realm=f"{self.realm1},{self.realm2}")["tokens"]
+        serials = [t["serial"] for t in tokens]
+        self.assertIn(tok_r1.get_serial(), serials)
+        self.assertIn(tok_r2.get_serial(), serials)
+        self.assertNotIn(tok_r3.get_serial(), serials)
+
+        # Comma-separated: all three realms
+        tokens = get_tokens_paginate(realm=f"{self.realm1},{self.realm2},{self.realm3}")["tokens"]
+        serials = [t["serial"] for t in tokens]
+        self.assertIn(tok_r1.get_serial(), serials)
+        self.assertIn(tok_r2.get_serial(), serials)
+        self.assertIn(tok_r3.get_serial(), serials)
+
+        # Comma-separated with spaces should also work
+        tokens = get_tokens_paginate(realm=f"{self.realm1}, {self.realm2}")["tokens"]
+        serials = [t["serial"] for t in tokens]
+        self.assertIn(tok_r1.get_serial(), serials)
+        self.assertIn(tok_r2.get_serial(), serials)
+
+        # Wildcard still works (not treated as comma-separated)
+        tokens = get_tokens_paginate(realm="realm*")["tokens"]
+        serials = [t["serial"] for t in tokens]
+        self.assertIn(tok_r1.get_serial(), serials)
+        self.assertIn(tok_r2.get_serial(), serials)
+        self.assertIn(tok_r3.get_serial(), serials)
+
+        # Comma-separated with wildcards in individual entries
+        tokens = get_tokens_paginate(realm="realm1,realm3*")["tokens"]
+        serials = [t["serial"] for t in tokens]
+        self.assertIn(tok_r1.get_serial(), serials)
+        self.assertNotIn(tok_r2.get_serial(), serials)
+        self.assertIn(tok_r3.get_serial(), serials)
+
+        # All wildcards in comma-separated list
+        tokens = get_tokens_paginate(realm="realm1*,realm2*")["tokens"]
+        serials = [t["serial"] for t in tokens]
+        self.assertIn(tok_r1.get_serial(), serials)
+        self.assertIn(tok_r2.get_serial(), serials)
+        self.assertNotIn(tok_r3.get_serial(), serials)
+
+        tok_r1.delete_token()
+        tok_r2.delete_token()
+        tok_r3.delete_token()
+
     def test_42_sort_tokens(self):
         # return pagination
         tokendata = get_tokens_paginate(sortby=Token.serial, page=1, psize=5)

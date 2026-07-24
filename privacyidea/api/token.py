@@ -660,7 +660,10 @@ def list_api():
         assigned to any user in this realm. Ignored for user-role
         callers.
     :query tokenrealm: filter to tokens that belong to this realm
-        (independent of the user's realm).
+        (independent of the user's realm). Substring match via ``*``;
+        comma-separated list of realm names also supported, where each
+        entry may contain wildcards
+        (e.g. ``realm1,realm2,realm3`` or ``staff*,students*``).
     :query description: filter by description.
     :query assigned: ``True`` or ``False`` to limit to assigned or
         unassigned tokens.
