@@ -219,8 +219,8 @@ class PasskeyAPITest(PasskeyAPITestBase):
         remove_token(serial)
         remove_token(serial_2)
 
-    def test_01b_token_init_user_display_name_policy(self):
-        # Without the policy, the display name defaults to the login name
+    def test_01b_token_init_user_name_policy(self):
+        # Without the policy, the user name and display name default to the login name
         with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
             get_nonce.return_value = self.registration_challenge
             with self.app.test_request_context('/token/init', method='POST',
@@ -231,12 +231,13 @@ class PasskeyAPITest(PasskeyAPITestBase):
                 self.assertEqual(200, res.status_code)
                 serial = res.json["detail"]["serial"]
                 passkey_registration = res.json["detail"]["passkey_registration"]
+                self.assertEqual(self.user.login, passkey_registration["user"]["name"])
                 self.assertEqual(self.user.login, passkey_registration["user"]["displayName"])
         remove_token(serial)
 
-        # With the policy, the tags {user} and {realm} are replaced
-        self.set_policy_with_cleanup("passkey_display_name", scope=SCOPE.ENROLL,
-                                     action=f"{PasskeyAction.UserDisplayName}={{user}}@{{realm}}")
+        # With the policy, the tags {user} and {realm} are replaced in both the user name and display name
+        self.set_policy_with_cleanup("passkey_user_name", scope=SCOPE.ENROLL,
+                                     action=f"{PasskeyAction.UserLabel}={{user}}@{{realm}}")
         with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
             get_nonce.return_value = self.registration_challenge
             with self.app.test_request_context('/token/init', method='POST',
@@ -247,6 +248,8 @@ class PasskeyAPITest(PasskeyAPITestBase):
                 self.assertEqual(200, res.status_code)
                 serial = res.json["detail"]["serial"]
                 passkey_registration = res.json["detail"]["passkey_registration"]
+                self.assertEqual(f"{self.user.login}@{self.user.realm}",
+                                 passkey_registration["user"]["name"])
                 self.assertEqual(f"{self.user.login}@{self.user.realm}",
                                  passkey_registration["user"]["displayName"])
         remove_token(serial)
