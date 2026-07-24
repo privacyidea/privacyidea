@@ -16,6 +16,18 @@
   white-space: nowrap;
 }
 
+.ca-action-warn-icon {
+  color: var(--mat-sys-error) !important;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+.ca-action-target-error {
+  color: var(--mat-sys-error);
+  margin: 0 0 8px;
+  font-size: var(--mat-sys-body-small-size, 0.75rem);
+}
+
 // Holds the per-action-type value fields (duration, or the several email
 // fields), wrapping them so they flow below the type select.
 .ca-action-value {
@@ -25,7 +37,6 @@
   gap: 16px;
   min-width: 0;
 }
-
 
 // Collapsible reference of the {tag} placeholders usable in subject/body.
 .ca-placeholder-help {

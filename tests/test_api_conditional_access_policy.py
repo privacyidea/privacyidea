@@ -75,6 +75,7 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
     def _policy_body(name: str = "API Policy", **overrides) -> dict:
         body = {"name": name,
                 "time_window_seconds": 600,
+                "target": "user",
                 "counter_types_to_track": [str(AuthEventType.PIN_FAIL)],
                 "stages": [{"failure_threshold": 5,
                             "actions": [{"action_type": str(LockoutAction.LOCK_USER),
@@ -113,6 +114,106 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         self._create_policy(name="Dup")
         res = self._request("policy", method="POST", json_data=self._policy_body(name="Dup"))
         self.assertEqual(400, res.status_code, res.json)
+
+    # --- target (user vs source_ip) --------------------------------------------
+
+    def test_create_source_ip_policy(self):
+        body = self._policy_body(name="Spray", target="source_ip",
+                                 counter_types_to_track=[str(AuthEventType.PASSWORD_FAIL)],
+                                 stages=[{"failure_threshold": 20,
+                                          "actions": [{"action_type": str(LockoutAction.BLOCK_IP),
+                                                       "action_value": {"duration_seconds": 3600}}]}])
+        res = self._request("policy", method="POST", json_data=body)
+        self.assertEqual(200, res.status_code, res.json)
+        policy = self._request(f"policy/{res.json['result']['value']}").json["result"]["value"]
+        self.assertEqual("source_ip", policy["target"])
+
+    def test_create_without_target_is_400(self):
+        # target is required (not defaulted): it decides counting and allowed actions.
+        body = self._policy_body()
+        del body["target"]
+        res = self._request("policy", method="POST", json_data=body)
+        self.assertEqual(400, res.status_code, res.json)
+
+    def test_create_invalid_target_is_400(self):
+        res = self._request("policy", method="POST", json_data=self._policy_body(target="planet"))
+        self.assertEqual(400, res.status_code, res.json)
+
+    def test_create_source_ip_deny_is_allowed(self):
+        # ALLOW/DENY are valid on a source_ip policy (IP-scoped pre-auth decision).
+        body = self._policy_body(name="IP deny", target="source_ip",
+                                 counter_types_to_track=[str(AuthEventType.PASSWORD_FAIL)],
+                                 stages=[{"failure_threshold": 20,
+                                          "actions": [{"action_type": str(LockoutAction.DENY)}]}])
+        res = self._request("policy", method="POST", json_data=body)
+        self.assertEqual(200, res.status_code, res.json)
+
+    def test_create_incompatible_action_for_target_is_400(self):
+        # LOCK_USER (the default body's action) is not allowed under a source_ip policy.
+        body = self._policy_body(name="Bad", target="source_ip",
+                                 counter_types_to_track=[str(AuthEventType.PASSWORD_FAIL)])
+        res = self._request("policy", method="POST", json_data=body)
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertIn("source_ip", res.json["result"]["error"]["message"])
+
+    def test_create_block_ip_under_user_target_is_400(self):
+        body = self._policy_body(name="Bad2",
+                                 stages=[{"failure_threshold": 5,
+                                          "actions": [{"action_type": str(LockoutAction.BLOCK_IP),
+                                                       "action_value": {"duration_seconds": 60}}]}])
+        res = self._request("policy", method="POST", json_data=body)
+        self.assertEqual(400, res.status_code, res.json)
+
+    def test_patch_change_target_with_compatible_stages(self):
+        # target may change as long as the new target/action combination is
+        # compatible: flip a user policy to source_ip while swapping in BLOCK_IP.
+        policy_id = self._create_policy()
+        res = self._request(f"policy/{policy_id}", method="PATCH",
+                            json_data={"target": "source_ip",
+                                       "stages": [{"failure_threshold": 20,
+                                                   "actions": [{"action_type": str(LockoutAction.BLOCK_IP),
+                                                                "action_value": {"duration_seconds": 60}}]}]})
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual("source_ip",
+                         self._request(f"policy/{policy_id}").json["result"]["value"]["target"])
+
+    def test_patch_change_target_incompatible_with_stages_is_400(self):
+        # flipping to source_ip while the existing LOCK_USER stage remains is rejected
+        policy_id = self._create_policy()
+        res = self._request(f"policy/{policy_id}", method="PATCH", json_data={"target": "source_ip"})
+        self.assertEqual(400, res.status_code, res.json)
+
+    def test_patch_same_target_is_accepted(self):
+        # echoing the unchanged target (full-object PATCH) is a compatible no-op
+        policy_id = self._create_policy()
+        res = self._request(f"policy/{policy_id}", method="PATCH",
+                            json_data={"target": "user", "priority": 5})
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual(5, self._request(f"policy/{policy_id}").json["result"]["value"]["priority"])
+
+    # --- GET /template (read templates) ----------------------------------------
+
+    def test_list_templates_returns_full_catalog(self):
+        res = self._request("template")
+        self.assertEqual(200, res.status_code, res.json)
+        catalog = {entry["key"]: entry for entry in res.json["result"]["value"]}
+        self.assertIn("password_bruteforce", catalog)
+        mfa = catalog["mfa_bruteforce"]
+        self.assertTrue(mfa["description"].strip())
+        self.assertEqual("user", mfa["policy"]["target"])
+        self.assertListEqual([str(AuthEventType.MFA_FAIL)], mfa["policy"]["counter_types_to_track"])
+        self.assertEqual(3, len(mfa["policy"]["stages"]))
+        # the spraying template is source_ip-targeted and blocks the IP
+        spray = catalog["password_spraying"]
+        self.assertEqual("source_ip", spray["policy"]["target"])
+        self.assertEqual(str(LockoutAction.BLOCK_IP),
+                         spray["policy"]["stages"][0]["actions"][0]["action_type"])
+
+    def test_template_policy_posts_verbatim(self):
+        # the real client flow: fetch the catalog once, POST a template's policy
+        catalog = {entry["key"]: entry for entry in self._request("template").json["result"]["value"]}
+        res = self._request("policy", method="POST", json_data=catalog["password_bruteforce"]["policy"])
+        self.assertEqual(200, res.status_code, res.json)
 
     # --- GET /policy and /policy/<id> (read) -----------------------------------
 
@@ -158,6 +259,16 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         values = res.json["result"]["value"]
         self.assertListEqual([action.value for action in LockoutAction], values)
         self.assertIn(str(LockoutAction.LOCK_USER), values)
+
+    def test_list_targets(self):
+        res = self._request("targets")
+        self.assertEqual(200, res.status_code, res.json)
+        actions_by_target = res.json["result"]["value"]
+        self.assertSetEqual({"user", "source_ip"}, set(actions_by_target))
+        self.assertIn(str(LockoutAction.LOCK_USER), actions_by_target["user"])
+        self.assertNotIn(str(LockoutAction.LOCK_USER), actions_by_target["source_ip"])
+        self.assertIn(str(LockoutAction.BLOCK_IP), actions_by_target["source_ip"])
+        self.assertNotIn(str(LockoutAction.BLOCK_IP), actions_by_target["user"])
 
     # --- PATCH /policy/<id> (update) -------------------------------------------
 

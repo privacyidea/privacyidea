@@ -20,7 +20,17 @@
   class="ca-action-item"
   [expanded]="!action().id">
   <mat-expansion-panel-header>
-    <mat-panel-title>{{ action().action_type }}</mat-panel-title>
+    <mat-panel-title>
+      @if (!isActionAllowedForTarget()) {
+        <mat-icon
+          class="ca-action-warn-icon"
+          aria-label="Action not allowed for the target"
+          i18n-aria-label>
+          warning
+        </mat-icon>
+      }
+      {{ action().action_type }}
+    </mat-panel-title>
     <mat-panel-description class="ca-action-panel-description">
       <span class="ca-action-desc-text">{{ actionDescription() }}</span>
       <button
@@ -41,12 +51,19 @@
     <mat-select
       [value]="action().action_type"
       (selectionChange)="onActionTypeChange($event.value)">
-      @for (actionType of policyService.actionTypes(); track actionType) {
+      @for (actionType of allowedActionTypes(); track actionType) {
         <mat-option [value]="actionType">{{ actionType }}</mat-option>
       }
     </mat-select>
     <mat-hint>{{ actionDescription() }}</mat-hint>
   </mat-form-field>
+  @if (!isActionAllowedForTarget()) {
+    <p
+      class="ca-action-target-error"
+      i18n>
+      This action is not allowed for the policy's target. Choose a different action, or change the target.
+    </p>
+  }
 
   <div class="ca-action-value">
     @switch (valueMode()) {

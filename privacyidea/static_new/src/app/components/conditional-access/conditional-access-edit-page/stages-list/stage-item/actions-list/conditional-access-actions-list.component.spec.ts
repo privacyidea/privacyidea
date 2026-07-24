@@ -55,6 +55,21 @@ describe("ConditionalAccessActionsListComponent", () => {
     expect(spy).toHaveBeenCalledWith([...actions, { action_type: "LOCK_USER", action_value: null }]);
   });
 
+  it("should default the new action to the first action allowed for the target", () => {
+    const policyServiceMock = TestBed.inject(
+      ConditionalAccessPolicyService
+    ) as unknown as MockConditionalAccessPolicyService;
+    policyServiceMock.actionsByTarget.set({
+      user: ["LOCK_USER", "ALLOW", "DENY"],
+      source_ip: ["BLOCK_IP", "ALLOW", "DENY"]
+    });
+    fixture.componentRef.setInput("target", "source_ip");
+
+    const spy = jest.spyOn(component.actionsChange, "emit");
+    component.onAddAction();
+    expect(spy).toHaveBeenCalledWith([...actions, { action_type: "BLOCK_IP", action_value: null }]);
+  });
+
   it("should emit a merged action on update by index", () => {
     const spy = jest.spyOn(component.actionsChange, "emit");
     component.onUpdateAction(1, { action_type: "EMAIL_USER" });

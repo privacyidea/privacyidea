@@ -56,9 +56,15 @@ describe("ConditionalAccessStageItemComponent", () => {
     expect(spy).toHaveBeenCalledWith({ failure_threshold: 10 });
   });
 
-  it("should not emit for an invalid failure_threshold", () => {
+  it("should emit updateStage for a threshold of 0 (an allow/deny allowlist stage)", () => {
     const spy = jest.spyOn(component.updateStage, "emit");
     component.onFailureThresholdInput("0");
+    expect(spy).toHaveBeenCalledWith({ failure_threshold: 0 });
+  });
+
+  it("should not emit for an invalid failure_threshold", () => {
+    const spy = jest.spyOn(component.updateStage, "emit");
+    component.onFailureThresholdInput("-1");
     expect(spy).not.toHaveBeenCalled();
     component.onFailureThresholdInput("abc");
     expect(spy).not.toHaveBeenCalled();

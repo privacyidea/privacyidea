@@ -21,7 +21,10 @@ import {
   AuthEventType,
   ConditionalAccessPolicyServiceInterface,
   LockoutActionType,
-  LockoutPolicy
+  LockoutPolicy,
+  LockoutPolicySaveParams,
+  LockoutPolicyTemplate,
+  LockoutTarget
 } from "@services/conditional-access/conditional-access-policy.service";
 import { MockHttpResourceRef, MockPiResponse } from "@testing/mock-services/mock-utils";
 
@@ -38,7 +41,23 @@ export class MockConditionalAccessPolicyService implements ConditionalAccessPoli
 
   actionTypes = signal<LockoutActionType[]>([]);
 
-  savePolicy = jest.fn(async (): Promise<number | undefined> => Promise.resolve(1));
+  targetsResource = new MockHttpResourceRef(MockPiResponse.fromValue<Record<string, string[]>>({}));
+
+  actionsByTarget = signal<Record<LockoutTarget, LockoutActionType[]>>(
+    {} as Record<LockoutTarget, LockoutActionType[]>
+  );
+
+  targets = signal<LockoutTarget[]>([]);
+
+  templatesResource = new MockHttpResourceRef(MockPiResponse.fromValue<LockoutPolicyTemplate[]>([]));
+
+  templates = signal<LockoutPolicyTemplate[]>([]);
+
+  actionsForTarget = jest.fn(
+    (target: LockoutTarget): LockoutActionType[] => this.actionsByTarget()[target] ?? this.actionTypes()
+  );
+
+  savePolicy = jest.fn(async (_: LockoutPolicySaveParams): Promise<number | undefined> => Promise.resolve(1));
 
   deletePolicy = jest.fn(async (): Promise<void> => Promise.resolve());
 

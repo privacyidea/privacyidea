@@ -21,11 +21,13 @@ End-to-end tests for the conditional-access lockout engine at the
 before any token logic runs, and the full loop where repeated failures trip a
 policy stage and lock the user.
 """
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
-from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs
-from privacyidea.lib.conditional_access.engine import LockoutAction, is_user_locked, is_ip_blocked
+from privacyidea.lib.conditional_access.authentication_log import (get_authentication_logs, log_authentication_event)
+from privacyidea.lib.conditional_access.engine import (LockoutAction, LockoutTarget,
+                                                       is_user_locked, is_ip_blocked)
+from privacyidea.lib.conditional_access.lockout_policy import create_lockout_policy
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
 from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
@@ -53,8 +55,21 @@ def _counter_types(counter_type):
     return [str(t) for t in values]
 
 
-class ConditionalAccessValidateTestCase(MyApiTestCase):
+def _seed_ip_spray(user: "User", event_type: AuthEventType, source_ip: str, n_users: int,
+                   timestamp: datetime | None = None):
+    """Seed *n_users* distinct users failing from *source_ip* (the spraying shape a
+    source_ip BLOCK_IP policy keys on: one IP hitting many accounts). The users are
+    synthetic (uid ``spray0``..) in *user*'s resolver/realm - only the distinct
+    ``(resolver, uid, realm)`` count matters, they need not resolve."""
+    timestamp = timestamp if timestamp is not None else utc_now()
+    for i in range(n_users):
+        db.session.add(AuthenticationLog(
+            event_type=str(event_type), resolver=user.resolver, uid=f"spray{i}",
+            realm=user.realm, source_ip=source_ip, timestamp=timestamp))
+    db.session.commit()
 
+
+class ConditionalAccessValidateTestCase(MyApiTestCase):
     serial = "CA_HOTP"
 
     def setUp(self):
@@ -91,44 +106,33 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
                                         lock_expires_at=lock_expires_at))
         db.session.commit()
 
-    def _make_lock_policy(self, *, counter_type, threshold: int, duration: int, window: int = 3600) -> None:
-        policy = LockoutPolicy(name="ca_lock", counter_types_to_track=_counter_types(counter_type),
-                               time_window_seconds=window, enabled=True, priority=1)
-        db.session.add(policy)
-        db.session.commit()
-        stage = LockoutPolicyStage(policy_id=policy.id, failure_threshold=threshold, priority=1)
-        db.session.add(stage)
-        db.session.commit()
-        db.session.add(LockoutStageAction(stage_id=stage.id,
-                                          action_type=str(LockoutAction.LOCK_USER),
-                                          action_value=duration))
-        db.session.commit()
+    @staticmethod
+    def _make_lock_policy(*, counter_type, threshold: int, duration: int, window: int = 3600) -> None:
+        create_lockout_policy(
+            name="ca_lock", time_window_seconds=window,
+            counter_types_to_track=_counter_types(counter_type),
+            stages=[{"failure_threshold": threshold, "priority": 1,
+                     "actions": [{"action_type": str(LockoutAction.LOCK_USER), "action_value": duration}]}],
+            target=LockoutTarget.USER)
 
-    def _make_block_ip_policy(self, *, counter_type, threshold: int, duration: int, window: int = 3600) -> None:
-        policy = LockoutPolicy(name="ca_blockip", counter_types_to_track=_counter_types(counter_type),
-                               time_window_seconds=window, enabled=True, priority=1)
-        db.session.add(policy)
-        db.session.commit()
-        stage = LockoutPolicyStage(policy_id=policy.id, failure_threshold=threshold, priority=1)
-        db.session.add(stage)
-        db.session.commit()
-        db.session.add(LockoutStageAction(stage_id=stage.id,
-                                          action_type=str(LockoutAction.BLOCK_IP),
-                                          action_value=duration))
-        db.session.commit()
+    @staticmethod
+    def _make_block_ip_policy(*, counter_type, threshold: int, duration: int, window: int = 3600) -> None:
+        create_lockout_policy(
+            name="ca_blockip", time_window_seconds=window,
+            counter_types_to_track=_counter_types(counter_type),
+            stages=[{"failure_threshold": threshold, "priority": 1,
+                     "actions": [{"action_type": str(LockoutAction.BLOCK_IP), "action_value": duration}]}],
+            target=LockoutTarget.SOURCE_IP)
 
-    def _make_decision_policy(self, *, name: str, counter_type, threshold: int, action,
+    @staticmethod
+    def _make_decision_policy(*, name: str, counter_type, threshold: int, action,
                               priority: int = 1, window: int = 3600) -> None:
-        policy = LockoutPolicy(name=name, counter_types_to_track=_counter_types(counter_type),
-                               time_window_seconds=window, enabled=True, priority=priority)
-        db.session.add(policy)
-        db.session.commit()
-        stage = LockoutPolicyStage(policy_id=policy.id, failure_threshold=threshold, priority=1)
-        db.session.add(stage)
-        db.session.commit()
-        db.session.add(LockoutStageAction(stage_id=stage.id, action_type=str(action),
-                                          action_value=None))
-        db.session.commit()
+        create_lockout_policy(
+            name=name, time_window_seconds=window,
+            counter_types_to_track=_counter_types(counter_type),
+            stages=[{"failure_threshold": threshold, "priority": 1,
+                     "actions": [{"action_type": str(action), "action_value": None}]}],
+            target=LockoutTarget.USER, priority=priority)
 
     def _failcount(self) -> int:
         return get_tokens(serial=self.serial)[0].token.failcount
@@ -193,16 +197,19 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         # request that wrote more than once. The helper swallowed it as a warning.
         # Two policies tripping in one request force that second write; assert the
         # post-eval helper's logger stays quiet through the full /validate/check flow.
-        self._make_lock_policy(counter_type=AuthEventType.MFA_FAIL, threshold=3, duration=600)
+        # A per-user lock (threshold 1) and a source-IP block (threshold 3 distinct
+        # users) are set so cornelius's single failing request - as the third distinct
+        # user on the pre-sprayed IP - trips BOTH at once.
+        ip = "203.0.113.9"
+        self._make_lock_policy(counter_type=AuthEventType.MFA_FAIL, threshold=1, duration=600)
         self._make_block_ip_policy(counter_type=AuthEventType.MFA_FAIL, threshold=3, duration=900)
+        _seed_ip_spray(self.user, AuthEventType.MFA_FAIL, ip, n_users=2)
         with self.assertNoLogs("privacyidea.api.lib.utils", level="WARNING"):
-            for _ in range(3):
-                body = self._check({"user": "cornelius", "pass": "pin000000"},
-                                   remote_addr="203.0.113.9")
-                self.assertFalse(body["result"]["value"], body)
+            body = self._check({"user": "cornelius", "pass": "pin000000"}, remote_addr=ip)
+            self.assertFalse(body["result"]["value"], body)
         # Both policies' writes landed and the transaction was never corrupted.
         self.assertTrue(is_user_locked(self.user))
-        self.assertTrue(is_ip_blocked("203.0.113.9"))
+        self.assertTrue(is_ip_blocked(ip))
 
     def test_user_locked_again_after_lock_expires(self):
         # Once the lock has run out, further failures must be able to re-lock the
@@ -281,15 +288,17 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         body = self._check({"user": "cornelius", "pass": "pin755224"}, remote_addr="198.51.100.9")
         self.assertTrue(body["result"]["value"], body)
 
-    def test_ip_blocked_after_threshold_failures(self):
-        # Repeated failures from one IP trip a BLOCK_IP stage; that IP is then blocked.
+    def test_ip_blocked_after_spraying_distinct_users(self):
+        # An IP that fails against many DISTINCT users (spraying) trips a BLOCK_IP
+        # stage and is blocked - a single user's own repeated failures never would.
         self._make_block_ip_policy(counter_type=AuthEventType.MFA_FAIL, threshold=3, duration=600)
         attacker_ip = "203.0.113.7"
-        for _ in range(3):
-            body = self._check({"user": "cornelius", "pass": "pin000000"}, remote_addr=attacker_ip)
-            self.assertFalse(body["result"]["value"], body)
+        # Two other users already sprayed from this IP (below the threshold of 3).
+        _seed_ip_spray(self.user, AuthEventType.MFA_FAIL, attacker_ip, n_users=2)
+        # cornelius is the third distinct user: his failing request trips the block.
+        body = self._check({"user": "cornelius", "pass": "pin000000"}, remote_addr=attacker_ip)
+        self.assertFalse(body["result"]["value"], body)
 
-        self.assertEqual(3, len(get_authentication_logs()))
         self.assertTrue(is_ip_blocked(attacker_ip))
         # The user themselves is not locked - only the IP was blocked.
         self.assertFalse(is_user_locked(self.user))
@@ -301,56 +310,50 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertFalse(body["result"]["value"], body)
         self.assertEqual(logs_before, len(get_authentication_logs()))
 
-    def test_escalation_to_permanent_block_after_lock_expiry(self):
-        # Escalation across two policies: a temp lock at threshold 2, then a
-        # PERMANENT_BLOCK_IP at the higher threshold 3. This pins the INTENTIONAL
+    def test_escalation_to_permanent_lock_after_lock_expiry(self):
+        # Escalation across two user policies: a temp lock at threshold 2, then a
+        # PERMANENT_LOCK_USER at the higher threshold 3. This pins the INTENTIONAL
         # behaviour (per the chosen design): attempts made WHILE the user is
         # temp-locked are rejected at the pre-check and never counted, so the
         # escalation only happens once the lock expires and the user fails again.
         # A policy's priority does NOT preempt the temp lock - lock/block policies
         # both fire when both thresholds are met, regardless of priority.
         self._make_lock_policy(counter_type=AuthEventType.MFA_FAIL, threshold=2, duration=60)
-        policy = LockoutPolicy(name="ca_permblock", counter_types_to_track=_counter_types(AuthEventType.MFA_FAIL),
-                               time_window_seconds=3600, enabled=True, priority=99)
-        db.session.add(policy)
-        db.session.commit()
-        stage = LockoutPolicyStage(policy_id=policy.id, failure_threshold=3, priority=1)
-        db.session.add(stage)
-        db.session.commit()
-        db.session.add(LockoutStageAction(stage_id=stage.id,
-                                          action_type=str(LockoutAction.PERMANENT_BLOCK_IP),
-                                          action_value=None))
-        db.session.commit()
-        ip = "203.0.113.50"
+        create_lockout_policy(
+            name="ca_permlock", time_window_seconds=3600,
+            counter_types_to_track=_counter_types(AuthEventType.MFA_FAIL),
+            stages=[{"failure_threshold": 3, "priority": 1,
+                     "actions": [{"action_type": str(LockoutAction.PERMANENT_LOCK_USER), "action_value": None}]}],
+            target=LockoutTarget.USER, priority=99)
+        key = (self.user.resolver, self.user.uid, self.user.realm)
 
-        # Two failures -> temp-locked, not yet IP-blocked (count 2 < 3).
+        # Two failures -> temp-locked, not yet permanently locked (count 2 < 3).
         for _ in range(2):
-            self._check({"user": "cornelius", "pass": "pin000000"}, remote_addr=ip)
+            self._check({"user": "cornelius", "pass": "pin000000"})
         self.assertTrue(is_user_locked(self.user))
-        self.assertFalse(is_ip_blocked(ip))
+        self.assertIsNotNone(db.session.get(UserLockoutState, key).lock_expires_at)  # timed
 
         # Hammering DURING the lock is rejected at the pre-check: no new log rows,
-        # the count stays frozen at 2, so it never escalates to the permanent block.
+        # the count stays frozen at 2, so it never escalates to the permanent lock.
         logs_locked = len(get_authentication_logs())
         for _ in range(3):
-            body = self._check({"user": "cornelius", "pass": "pin000000"}, remote_addr=ip)
+            body = self._check({"user": "cornelius", "pass": "pin000000"})
             self.assertFalse(body["result"]["value"], body)
         self.assertEqual(logs_locked, len(get_authentication_logs()))
-        self.assertFalse(is_ip_blocked(ip))
+        self.assertIsNotNone(db.session.get(UserLockoutState, key).lock_expires_at)  # still timed
 
-        # Expire the lock; the next failure reaches count 3 and escalates - the IP
-        # is now permanently blocked (block_expires_at is None).
-        state = db.session.get(UserLockoutState,
-                               (self.user.resolver, self.user.uid, self.user.realm))
+        # Expire the lock; the next failure reaches count 3 and escalates - the user
+        # is now permanently locked (lock_expires_at is None).
+        state = db.session.get(UserLockoutState, key)
         state.lock_expires_at = utc_now() - timedelta(seconds=10)
         db.session.commit()
-        body = self._check({"user": "cornelius", "pass": "pin000000"}, remote_addr=ip)
+        body = self._check({"user": "cornelius", "pass": "pin000000"})
         self.assertFalse(body["result"]["value"], body)
-        block = db.session.get(BlockList, ip)
-        self.assertIsNotNone(block)
-        self.assertTrue(block.is_blocked)
-        self.assertIsNone(block.block_expires_at)
-        self.assertTrue(is_ip_blocked(ip))
+        state = db.session.get(UserLockoutState, key)
+        self.assertIsNotNone(state)
+        self.assertTrue(state.is_locked)
+        self.assertIsNone(state.lock_expires_at)
+        self.assertTrue(is_user_locked(self.user))
 
     # --- ALLOW / DENY ---------------------------------------------------------
 
@@ -599,42 +602,32 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
                                            data={"username": username, "password": password}, **kwargs):
             return self.app.full_dispatch_request()
 
-    def _make_password_policy(self, *, threshold, duration=600, window=3600):
-        policy = LockoutPolicy(name="ca_pw", counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
-                               time_window_seconds=window, enabled=True, priority=1)
-        db.session.add(policy)
-        db.session.commit()
-        stage = LockoutPolicyStage(policy_id=policy.id, failure_threshold=threshold, priority=1)
-        db.session.add(stage)
-        db.session.commit()
-        db.session.add(LockoutStageAction(stage_id=stage.id,
-                                          action_type=str(LockoutAction.LOCK_USER),
-                                          action_value=duration))
-        db.session.commit()
+    @staticmethod
+    def _make_password_policy(*, threshold, duration=600, window=3600):
+        create_lockout_policy(
+            name="ca_pw", time_window_seconds=window,
+            counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
+            stages=[{"failure_threshold": threshold, "priority": 1,
+                     "actions": [{"action_type": str(LockoutAction.LOCK_USER), "action_value": duration}]}],
+            target=LockoutTarget.USER)
 
-    def _make_decision_policy(self, *, name, threshold, action, priority=1, window=3600):
-        policy = LockoutPolicy(name=name, counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
-                               time_window_seconds=window, enabled=True, priority=priority)
-        db.session.add(policy)
-        db.session.commit()
-        stage = LockoutPolicyStage(policy_id=policy.id, failure_threshold=threshold, priority=1)
-        db.session.add(stage)
-        db.session.commit()
-        db.session.add(LockoutStageAction(stage_id=stage.id, action_type=str(action),
-                                          action_value=None))
-        db.session.commit()
+    @staticmethod
+    def _make_decision_policy(*, name, threshold, action, priority=1, window=3600):
+        create_lockout_policy(
+            name=name, time_window_seconds=window,
+            counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
+            stages=[{"failure_threshold": threshold, "priority": 1,
+                     "actions": [{"action_type": str(action), "action_value": None}]}],
+            target=LockoutTarget.USER, priority=priority)
 
-    def _make_block_ip_policy(self, *, threshold, duration=600, window=3600):
-        policy = LockoutPolicy(name="ca_block_ip", counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
-                               time_window_seconds=window, enabled=True, priority=1)
-        db.session.add(policy)
-        db.session.commit()
-        stage = LockoutPolicyStage(policy_id=policy.id, failure_threshold=threshold, priority=1)
-        db.session.add(stage)
-        db.session.commit()
-        db.session.add(LockoutStageAction(stage_id=stage.id, action_type=str(LockoutAction.BLOCK_IP),
-                                          action_value=duration))
-        db.session.commit()
+    @staticmethod
+    def _make_block_ip_policy(*, threshold, duration=600, window=3600):
+        create_lockout_policy(
+            name="ca_block_ip", time_window_seconds=window,
+            counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
+            stages=[{"failure_threshold": threshold, "priority": 1,
+                     "actions": [{"action_type": str(LockoutAction.BLOCK_IP), "action_value": duration}]}],
+            target=LockoutTarget.SOURCE_IP)
 
     def test_locked_user_rejected_at_auth(self):
         db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid,
@@ -726,18 +719,23 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
             delete_policy("ca_hide")
 
     def test_ip_block_trip_message_at_auth(self):
-        # The failure that trips the BLOCK_IP stage already tells the user about
-        # the block instead of "Wrong credentials".
+        # The failure that trips the BLOCK_IP stage (by crossing the distinct-user
+        # threshold) already tells the user about the block instead of "Wrong
+        # credentials".
         self._make_block_ip_policy(threshold=3)
-        for _ in range(2):
-            res = self._auth("cornelius", "wrongpass", remote_addr="203.0.113.7")
-            self.assertEqual(401, res.status_code, res)
-            self.assertIn("Wrong credentials", res.json["result"]["error"]["message"], res.json)
-        res = self._auth("cornelius", "wrongpass", remote_addr="203.0.113.7")
+        ip = "203.0.113.7"
+        # Below the threshold, a failure is just a plain wrong-credentials rejection.
+        res = self._auth("cornelius", "wrongpass", remote_addr=ip)
+        self.assertEqual(401, res.status_code, res)
+        self.assertIn("Wrong credentials", res.json["result"]["error"]["message"], res.json)
+        # Two other users spray the same IP: with cornelius that is 3 distinct users.
+        _seed_ip_spray(self.user, AuthEventType.PASSWORD_FAIL, ip, n_users=2)
+        # cornelius's next failure crosses the distinct-user threshold -> IP blocked.
+        res = self._auth("cornelius", "wrongpass", remote_addr=ip)
         self.assertEqual(401, res.status_code, res)
         message = res.json["result"]["error"]["message"]
         self.assertIn("blocked", message.lower(), message)
-        self.assertIn("203.0.113.7", message, message)
+        self.assertIn(ip, message, message)
         self.assertIn("minute", message.lower(), message)
         self.assertNotIn("Wrong credentials", message, message)
         # The user themselves is not locked - only the IP was blocked.
@@ -875,18 +873,15 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         smtpmock.setdata(response={})
         add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
         try:
-            policy = LockoutPolicy(name="ca_mail", counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
-                                   time_window_seconds=3600, enabled=True, priority=1)
-            db.session.add(policy)
-            db.session.commit()
-            stage = LockoutPolicyStage(policy_id=policy.id, failure_threshold=2, priority=1)
-            db.session.add(stage)
-            db.session.commit()
-            db.session.add(LockoutStageAction(
-                stage_id=stage.id, action_type=str(LockoutAction.EMAIL_ADMIN),
-                action_value={"smtp_identifier": "lockoutmail", "recipient_group": "soc@example.com",
-                              "subject": "alert", "body": "alert"}))
-            db.session.commit()
+            create_lockout_policy(
+                name="ca_mail", time_window_seconds=3600,
+                counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
+                stages=[{"failure_threshold": 2, "priority": 1,
+                         "actions": [{"action_type": str(LockoutAction.EMAIL_ADMIN),
+                                      "action_value": {"smtp_identifier": "lockoutmail",
+                                                       "recipient_group": "soc@example.com",
+                                                       "subject": "alert", "body": "alert"}}]}],
+                target=LockoutTarget.USER)
 
             # 1st failure is below the threshold: plain rejection, no email, no notice.
             res = self._auth("cornelius", "wrongpass")
@@ -912,20 +907,16 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         smtpmock.setdata(response={})
         add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
         try:
-            policy = LockoutPolicy(name="ca_lockmail", counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
-                                   time_window_seconds=3600, enabled=True, priority=1)
-            db.session.add(policy)
-            db.session.commit()
-            stage = LockoutPolicyStage(policy_id=policy.id, failure_threshold=2, priority=1)
-            db.session.add(stage)
-            db.session.commit()
-            db.session.add(LockoutStageAction(stage_id=stage.id, action_type=str(LockoutAction.LOCK_USER),
-                                              action_value=600))
-            db.session.add(LockoutStageAction(
-                stage_id=stage.id, action_type=str(LockoutAction.EMAIL_ADMIN),
-                action_value={"smtp_identifier": "lockoutmail", "recipient_group": "soc@example.com",
-                              "subject": "s", "body": "b"}))
-            db.session.commit()
+            create_lockout_policy(
+                name="ca_lockmail", time_window_seconds=3600,
+                counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
+                stages=[{"failure_threshold": 2, "priority": 1,
+                         "actions": [{"action_type": str(LockoutAction.LOCK_USER), "action_value": 600},
+                                     {"action_type": str(LockoutAction.EMAIL_ADMIN),
+                                      "action_value": {"smtp_identifier": "lockoutmail",
+                                                       "recipient_group": "soc@example.com",
+                                                       "subject": "s", "body": "b"}}]}],
+                target=LockoutTarget.USER)
 
             self._auth("cornelius", "wrongpass")  # 1st failure: below the threshold
             res = self._auth("cornelius", "wrongpass")  # 2nd: trips the stage -> lock + email

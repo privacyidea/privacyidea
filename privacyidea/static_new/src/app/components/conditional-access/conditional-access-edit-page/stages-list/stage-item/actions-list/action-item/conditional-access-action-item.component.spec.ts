@@ -19,7 +19,9 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import {
   ConditionalAccessPolicyService,
-  LockoutStageAction
+  LockoutActionType,
+  LockoutStageAction,
+  LockoutTarget
 } from "@services/conditional-access/conditional-access-policy.service";
 import { MockConditionalAccessPolicyService } from "@testing/mock-services/mock-conditional-access-policy-service";
 import { ConditionalAccessActionItemComponent } from "./conditional-access-action-item.component";
@@ -62,6 +64,42 @@ describe("ConditionalAccessActionItemComponent", () => {
     expect(component.valueMode()).toBe("email");
     setAction({ action_type: "ALLOW", action_value: null });
     expect(component.valueMode()).toBe("none");
+  });
+
+  describe("target compatibility", () => {
+    let policyServiceMock: MockConditionalAccessPolicyService;
+
+    beforeEach(() => {
+      policyServiceMock = TestBed.inject(
+        ConditionalAccessPolicyService
+      ) as unknown as MockConditionalAccessPolicyService;
+      policyServiceMock.actionsByTarget.set({
+        user: ["LOCK_USER", "PERMANENT_LOCK_USER", "EMAIL_ADMIN", "EMAIL_USER", "ALLOW", "DENY"],
+        source_ip: ["BLOCK_IP", "PERMANENT_BLOCK_IP", "EMAIL_ADMIN", "ALLOW", "DENY"]
+      });
+    });
+
+    it("flags an action that is not allowed for the current target", () => {
+      fixture.componentRef.setInput("target", "source_ip");
+      setAction({ action_type: "LOCK_USER", action_value: 600 });
+      expect(component.isActionAllowedForTarget()).toBe(false);
+      // the stale type stays selectable so the user can change it
+      expect(component.allowedActionTypes()).toContain("LOCK_USER");
+    });
+
+    it("accepts an action that is allowed for the current target", () => {
+      fixture.componentRef.setInput("target", "source_ip");
+      setAction({ action_type: "BLOCK_IP", action_value: 600 });
+      expect(component.isActionAllowedForTarget()).toBe(true);
+    });
+
+    it("does not flag while the allowed list is still empty", () => {
+      policyServiceMock.actionsByTarget.set({} as Record<LockoutTarget, LockoutActionType[]>);
+      policyServiceMock.actionTypes.set([]);
+      fixture.componentRef.setInput("target", "source_ip");
+      setAction({ action_type: "LOCK_USER", action_value: 600 });
+      expect(component.isActionAllowedForTarget()).toBe(true);
+    });
   });
 
   describe("duration", () => {
