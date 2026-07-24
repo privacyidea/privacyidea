@@ -217,7 +217,7 @@ def create_policy():
         Required.
     :jsonparam enabled: whether the policy is evaluated (default true).
     :jsonparam dry_run: log-only mode, nothing is enforced (default false).
-    :jsonparam priority: evaluation priority, higher first (default 1).
+    :jsonparam priority: evaluation priority; lower numbers are evaluated first (default 1).
     :jsonparam target: the identity the policy counts and acts on - ``user``
         (per-user brute force) or ``source_ip`` (password spraying). Required.
     :status 200: the id of the new policy in ``result.value``
