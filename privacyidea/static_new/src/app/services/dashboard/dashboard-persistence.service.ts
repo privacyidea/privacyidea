@@ -46,7 +46,7 @@ export class DashboardPersistenceService implements DashboardPersistenceServiceI
   }
 
   public save(widgets: WidgetInstance[]): Observable<void> {
-    return this.userSettings.setSetting<DashboardSetting>("dashboard", { widgets }).pipe(
+    return this.userSettings.setSetting<DashboardSetting>("dashboard", { widgets: structuredClone(widgets) }).pipe(
       map(() => undefined),
       catchError(() => of(undefined))
     );
@@ -57,7 +57,7 @@ export class DashboardPersistenceService implements DashboardPersistenceServiceI
     if (!Array.isArray(widgets)) {
       return null;
     }
-    return widgets.filter((widget) => this.isWidgetInstance(widget));
+    return structuredClone(widgets.filter((widget) => this.isWidgetInstance(widget)));
   }
 
   private isWidgetInstance(widget: unknown): widget is WidgetInstance {

@@ -168,7 +168,8 @@ def validate_user_settings(settings: dict, check_keys: bool = True) -> None:
     if not isinstance(settings, dict):
         raise ParameterError("The settings must be a JSON object.")
     if check_keys:
-        unknown = sorted(key for key in settings if key not in get_allowed_keys())
+        allowed_keys = get_allowed_keys()
+        unknown = sorted(key for key in settings if key not in allowed_keys)
         if unknown:
             raise ParameterError(f"Unknown settings key(s): {', '.join(unknown)}.")
     try:
