@@ -567,8 +567,8 @@ def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
                                  or user_state.lock_expires_at > now))
     user_dedup = (user_incident_active
                   and user_state.last_stage_triggered == triggered_stage.id
-                  and user_state.last_updated is not None
-                  and user_state.last_updated >= dedup_window_start)
+                  and user_state.locked_at is not None
+                  and user_state.locked_at >= dedup_window_start)
     # An IP-blocking stage de-dups on its BlockList row, mirroring the user
     # de-dup. Without this such a stage has no de-dup at all (it never writes
     # UserLockoutState): every in-window failure would re-fire it, refreshing the
@@ -582,8 +582,8 @@ def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
                                    or ip_state.block_expires_at > now))
         ip_dedup = (ip_incident_active
                     and ip_state.last_stage_triggered == triggered_stage.id
-                    and ip_state.last_updated is not None
-                    and ip_state.last_updated >= dedup_window_start)
+                    and ip_state.blocked_at is not None
+                    and ip_state.blocked_at >= dedup_window_start)
     if user_dedup or ip_dedup:
         log.debug(f"De-dup: stage {triggered_stage.id} already triggered within the window for "
                   f"{user!r}; skipping actions.")

@@ -48,13 +48,13 @@ DEFAULT_PAGE_SIZE = 15
 #   expired    -> lock_expires_at in the past     (stale record, no longer enforced)
 LOCK_STATES = ("permanent", "temporary", "expired")
 
-# Columns the locked-users list may be sorted by (any other value falls back to last_updated).
+# Columns the locked-users list may be sorted by (any other value falls back to locked_at).
 SORTABLE_COLUMNS = {
     "username": UserLockoutState.username,
     "realm": UserLockoutState.realm,
     "resolver": UserLockoutState.resolver,
     "lock_expires_at": UserLockoutState.lock_expires_at,
-    "last_updated": UserLockoutState.last_updated,
+    "locked_at": UserLockoutState.locked_at,
 }
 
 
@@ -98,7 +98,7 @@ def _locked_user_dict(row: UserLockoutState, now: datetime) -> dict:
         "permanent": row.lock_expires_at is None,
         "lock_expires_at": row.lock_expires_at,
         "seconds_remaining": _seconds_remaining(row.lock_expires_at, now),
-        "last_updated": row.last_updated
+        "locked_at": row.locked_at
     }
 
 
@@ -108,7 +108,7 @@ def _blocklist_dict(row: BlockList, now: datetime) -> dict:
         "permanent": row.block_expires_at is None,
         "block_expires_at": row.block_expires_at,
         "seconds_remaining": _seconds_remaining(row.block_expires_at, now),
-        "last_updated": row.last_updated,
+        "blocked_at": row.blocked_at,
     }
 
 
@@ -215,7 +215,7 @@ def list_locked_users(realms: list[str] | None = None, resolvers: list[str] | No
     moment = now if now is not None else utc_now()
     conditions = _lockout_conditions(realms, resolvers, usernames, states,
                                      visibility_scopes, moment, case_insensitive)
-    stmt = select(UserLockoutState).where(*conditions).order_by(UserLockoutState.last_updated.desc())
+    stmt = select(UserLockoutState).where(*conditions).order_by(UserLockoutState.locked_at.desc())
     return [_locked_user_dict(row, moment) for row in db.session.scalars(stmt).all()]
 
 
@@ -224,14 +224,14 @@ def list_locked_users_paginate(realms: list[str] | None = None, resolvers: list[
                                usernames: list[str] | None = None, states: list[str] | None = None,
                                visibility_scopes: list | None = None, case_insensitive: bool = False,
                                page: int = 1, page_size: int = DEFAULT_PAGE_SIZE,
-                               sort_column: str = "last_updated", sort_order: str = "desc",
+                               sort_column: str = "locked_at", sort_order: str = "desc",
                                now: datetime | None = None) -> dict:
     """
     Return one page of matching locked users plus pagination metadata
     ``{locked_users, count, current, prev, next}`` — the counterpart of
     :func:`list_locked_users` for the WebUI table. Filter/scoping semantics are as
     :func:`_lockout_conditions`; sorting is by one of :data:`SORTABLE_COLUMNS`
-    (fallback ``last_updated``), always tie-broken by the primary key for a stable
+    (fallback ``locked_at``), always tie-broken by the primary key for a stable
     order across pages.
     """
     moment = now if now is not None else utc_now()
@@ -241,8 +241,8 @@ def list_locked_users_paginate(realms: list[str] | None = None, resolvers: list[
         select(func.count()).select_from(UserLockoutState).where(*conditions))
     order_column = SORTABLE_COLUMNS.get(sort_column)
     if order_column is None:
-        log.warning(f"Unknown sort column '{sort_column}'. Using 'last_updated' instead.")
-        order_column = UserLockoutState.last_updated
+        log.warning(f"Unknown sort column '{sort_column}'. Using 'locked_at' instead.")
+        order_column = UserLockoutState.locked_at
     tiebreak = (UserLockoutState.resolver, UserLockoutState.uid, UserLockoutState.realm)
     direction = (lambda col: col.asc()) if sort_order == "asc" else (lambda col: col.desc())
     stmt = (select(UserLockoutState).where(*conditions)
@@ -320,7 +320,7 @@ def list_blocklist(include_expired: bool = False, now: datetime | None = None) -
     conditions: list[ColumnElement[bool]] = []
     if not include_expired:
         conditions.append(_not_expired_condition(BlockList.block_expires_at, moment))
-    stmt = select(BlockList).where(*conditions).order_by(BlockList.last_updated.desc())
+    stmt = select(BlockList).where(*conditions).order_by(BlockList.blocked_at.desc())
     return [_blocklist_dict(row, moment) for row in db.session.scalars(stmt).all()]
 
 

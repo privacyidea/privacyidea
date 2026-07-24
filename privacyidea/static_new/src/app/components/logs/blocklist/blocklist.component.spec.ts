@@ -35,7 +35,7 @@ const activeEntry: BlocklistEntry = {
   block_expires_at: "2026-12-31T23:59:59Z",
   seconds_remaining: 3600,
   permanent: false,
-  last_updated: "2026-01-01T09:00:00Z"
+  blocked_at: "2026-01-01T09:00:00Z"
 };
 
 const permanentEntry: BlocklistEntry = {
@@ -43,7 +43,7 @@ const permanentEntry: BlocklistEntry = {
   block_expires_at: null,
   seconds_remaining: null,
   permanent: true,
-  last_updated: "2026-01-01T08:00:00Z"
+  blocked_at: "2026-01-01T08:00:00Z"
 };
 
 const expiredEntry: BlocklistEntry = {
@@ -51,7 +51,7 @@ const expiredEntry: BlocklistEntry = {
   block_expires_at: "2025-06-01T00:00:00Z",
   seconds_remaining: 0,
   permanent: false,
-  last_updated: "2025-05-01T00:00:00Z"
+  blocked_at: "2025-05-01T00:00:00Z"
 };
 
 describe("BlocklistComponent", () => {

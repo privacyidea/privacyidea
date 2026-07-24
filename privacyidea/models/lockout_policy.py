@@ -196,7 +196,9 @@ class UserLockoutState(MethodsMixin, db.Model):
     last_stage_triggered: Mapped[int | None] = mapped_column(
         Integer, ForeignKey('lockout_policy_stages.id', ondelete='SET NULL'),
         nullable=True, index=True)
-    last_updated: Mapped[datetime] = mapped_column(
+    # When the lock was applied; refreshed on each (re)lock, so it reflects the start of the
+    # current active lock rather than a generic audit timestamp.
+    locked_at: Mapped[datetime] = mapped_column(
         DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
     last_stage: Mapped["LockoutPolicyStage | None"] = relationship("LockoutPolicyStage")
@@ -230,7 +232,9 @@ class BlockList(MethodsMixin, db.Model):
     last_stage_triggered: Mapped[int | None] = mapped_column(
         Integer, ForeignKey('lockout_policy_stages.id', ondelete='SET NULL'),
         nullable=True, index=True)
-    last_updated: Mapped[datetime] = mapped_column(
+    # When the block was applied; refreshed on each (re)block, so it reflects the start of the
+    # current active block rather than a generic audit timestamp.
+    blocked_at: Mapped[datetime] = mapped_column(
         DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
     last_stage: Mapped["LockoutPolicyStage | None"] = relationship("LockoutPolicyStage")

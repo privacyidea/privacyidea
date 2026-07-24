@@ -686,7 +686,7 @@ describe("UserDetailsComponent", () => {
       permanent: false,
       lock_expires_at: "2030-01-01T10:00:00Z",
       seconds_remaining: 120,
-      last_updated: "2030-01-01T09:58:00Z"
+      locked_at: "2030-01-01T09:58:00Z"
     });
     dialogServiceMock.openDialog = jest.fn().mockReturnValue({
       afterClosed: () => of(true)

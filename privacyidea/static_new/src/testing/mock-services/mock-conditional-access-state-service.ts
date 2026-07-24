@@ -47,7 +47,7 @@ export class MockConditionalAccessStateService implements ConditionalAccessState
 
   lockedUsersFilter = signal(new FilterValue());
   lockedUsersFilterParams = computed<Record<string, string>>(() => ({}));
-  lockedUsersSort = signal<Sort>({ active: "last_updated", direction: "desc" });
+  lockedUsersSort = signal<Sort>({ active: "locked_at", direction: "desc" });
   lockedUsersPageSize = signal(15);
   lockedUsersPageIndex = signal(1);
 

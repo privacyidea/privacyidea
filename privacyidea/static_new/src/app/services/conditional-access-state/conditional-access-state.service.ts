@@ -52,7 +52,7 @@ export interface UserLockoutStatus {
   permanent: boolean;
   lock_expires_at: string | null;
   seconds_remaining: number | null;
-  last_updated: string;
+  locked_at: string;
 }
 
 export type ResetUserLockoutRequest =
@@ -75,7 +75,7 @@ export interface LockedUserEntry {
   permanent: boolean;
   lock_expires_at: string | null;
   seconds_remaining: number | null;
-  last_updated: string;
+  locked_at: string;
 }
 
 export interface LockedUsersPage {
@@ -91,7 +91,7 @@ export interface BlocklistEntry {
   permanent: boolean;
   block_expires_at: string | null;
   seconds_remaining: number | null;
-  last_updated: string;
+  blocked_at: string;
 }
 
 export interface ConditionalAccessStateServiceInterface {
@@ -150,7 +150,7 @@ export class ConditionalAccessStateService implements ConditionalAccessStateServ
     { equal: shallowEqualRecord }
   );
 
-  lockedUsersSort = signal<Sort>({ active: "last_updated", direction: "desc" });
+  lockedUsersSort = signal<Sort>({ active: "locked_at", direction: "desc" });
   lockedUsersPageSize = signal(LOCKED_USERS_DEFAULT_PAGE_SIZE);
 
   // 1-based (matches the API's page param). Reset to the first page whenever the effective filter, sort,

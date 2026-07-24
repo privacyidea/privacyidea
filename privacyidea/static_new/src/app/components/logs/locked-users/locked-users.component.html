@@ -276,28 +276,28 @@
         </td>
       </ng-container>
 
-      <!-- Last updated column -->
-      <ng-container matColumnDef="last_updated">
+      <!-- Locked at column -->
+      <ng-container matColumnDef="locked_at">
         <th
           *matHeaderCellDef
           mat-header-cell>
           <span class="header-cell">
-            <span i18n>Last Updated</span>
+            <span i18n>Locked</span>
             <button
-              (click)="onSortClick('last_updated')"
+              (click)="onSortClick('locked_at')"
               class="sort-button"
               i18n-matTooltip
               mat-icon-button
-              matTooltip="Sort by last updated"
+              matTooltip="Sort by lock time"
               type="button">
-              <mat-icon>{{ tableUtilsService.getSortIcon("last_updated", sort()) }}</mat-icon>
+              <mat-icon>{{ tableUtilsService.getSortIcon("locked_at", sort()) }}</mat-icon>
             </button>
           </span>
         </th>
         <td
           *matCellDef="let row"
           mat-cell>
-          {{ row.last_updated | date: "yyyy-MM-dd HH:mm:ss" }}
+          {{ row.locked_at | date: "yyyy-MM-dd HH:mm:ss" }}
         </td>
       </ng-container>
 

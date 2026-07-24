@@ -369,12 +369,12 @@ class LockoutEngineTestCase(MyTestCase):
         self._make_policy(name="lock3", counter_type=AuthEventType.MFA_FAIL, window=3600)
         self._seed_events(AuthEventType.MFA_FAIL, 3)
         evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
-        # Backdate last_updated beyond the window so the de-dup no longer applies, and move the
+        # Backdate locked_at beyond the window so the de-dup no longer applies, and move the
         # expiry to a sentinel; re-evaluation must re-fire and overwrite the sentinel.
         sentinel = utc_now() + timedelta(seconds=99999)
         state = self._state()
         state.lock_expires_at = sentinel
-        state.last_updated = utc_now() - timedelta(seconds=4000)
+        state.locked_at = utc_now() - timedelta(seconds=4000)
         db.session.commit()
         evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
         self.assertLess(self._state().lock_expires_at, sentinel)
@@ -403,7 +403,7 @@ class LockoutEngineTestCase(MyTestCase):
     def test_dedup_does_not_survive_lock_expiry(self):
         # The de-dup throttles repeats within ONE incident; an expired lock ends
         # the incident. Regression: the de-dup used to key only on (stage,
-        # last_updated within window), so once the lock ran out the user could
+        # locked_at within window), so once the lock ran out the user could
         # fail freely for the rest of the window without ever being re-locked.
         self._make_policy(name="lock3", counter_type=AuthEventType.MFA_FAIL)
         self._seed_events(AuthEventType.MFA_FAIL, 3)

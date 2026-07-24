@@ -300,7 +300,7 @@ def get_locked_users():
     :query case_insensitive: match the filter values case-insensitively
     :query page: page number, 1-indexed (default 1)
     :query page_size: entries per page (default 15)
-    :query sort_column: one of username, realm, resolver, lock_expires_at, last_updated
+    :query sort_column: one of username, realm, resolver, lock_expires_at, locked_at
     :query sort_order: ``asc`` or ``desc`` (default desc)
     :status 200: ``{locked_users, count, current, prev, next}`` in ``result.value``
     """
@@ -315,7 +315,7 @@ def get_locked_users():
         visibility_scopes=visibility_scopes,
         page=_int_param(get_optional(params, "page"), 1),
         page_size=_int_param(get_optional(params, "page_size"), DEFAULT_PAGE_SIZE),
-        sort_column=get_optional(params, "sort_column") or "last_updated",
+        sort_column=get_optional(params, "sort_column") or "locked_at",
         sort_order=get_optional(params, "sort_order") or "desc")
     g.audit_object.log({"success": True, "info": f"{page['count']} locked user(s)"})
     return send_result(page)

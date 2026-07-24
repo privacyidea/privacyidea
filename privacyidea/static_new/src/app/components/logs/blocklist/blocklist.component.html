@@ -176,20 +176,20 @@
         </td>
       </ng-container>
 
-      <!-- Last updated column -->
-      <ng-container matColumnDef="last_updated">
+      <!-- Blocked at column -->
+      <ng-container matColumnDef="blocked_at">
         <th
           *matHeaderCellDef
           mat-header-cell
           i18n>
           <div class="header-cell">
-            <span>Last Updated</span>
+            <span>Blocked</span>
             <button
-              (click)="onSortEvent('last_updated')"
+              (click)="onSortEvent('blocked_at')"
               class="sort-button"
               mat-icon-button
               type="button">
-              <mat-icon>{{ getSortIcon("last_updated") }}</mat-icon>
+              <mat-icon>{{ getSortIcon("blocked_at") }}</mat-icon>
             </button>
           </div>
         </th>
@@ -197,7 +197,7 @@
           *matCellDef="let row"
           mat-cell>
           <span>
-            {{ row.last_updated | date: "yyyy-MM-dd HH:mm:ss" }}
+            {{ row.blocked_at | date: "yyyy-MM-dd HH:mm:ss" }}
           </span>
         </td>
       </ng-container>

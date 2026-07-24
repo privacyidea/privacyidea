@@ -72,7 +72,7 @@ export class BlocklistComponent {
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
 
-  readonly displayedColumns: string[] = ["select", "identifier", "state", "block_expires_at", "last_updated"];
+  readonly displayedColumns: string[] = ["select", "identifier", "state", "block_expires_at", "blocked_at"];
 
   // Keep the previous rows while a reload is in flight to avoid flicker.
   readonly dataSource = linkedSignal<PiResponse<BlocklistEntry[]> | undefined, MatTableDataSource<BlocklistEntry>>({
@@ -114,7 +114,7 @@ export class BlocklistComponent {
       const lowerFilter = filterValue.toLowerCase();
       return (
         element.identifier.toLowerCase().includes(lowerFilter) ||
-        element.last_updated.toLowerCase().includes(lowerFilter) ||
+        element.blocked_at.toLowerCase().includes(lowerFilter) ||
         this.blockState(element).toLowerCase().includes(lowerFilter)
       );
     };
@@ -176,7 +176,7 @@ export class BlocklistComponent {
       case "state":
         return this.blockState(row);
       case "block_expires_at":
-      case "last_updated": {
+      case "blocked_at": {
         const timestamp = Date.parse(String((row as unknown as Record<string, unknown>)[key] ?? ""));
         return Number.isNaN(timestamp) ? "" : timestamp;
       }

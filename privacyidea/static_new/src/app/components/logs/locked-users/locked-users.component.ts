@@ -95,7 +95,7 @@ export class LockedUsersComponent {
     "resolver",
     "state",
     "lock_expires_at",
-    "last_updated"
+    "locked_at"
   ];
 
   // Alias for the template (sort icon + sort handler fallback).
@@ -231,7 +231,7 @@ export class LockedUsersComponent {
 
   onSortClick(columnKey: string): void {
     this.tableUtilsService.onSortButtonClick(columnKey, this.casService.lockedUsersSort, {
-      active: "last_updated",
+      active: "locked_at",
       direction: ""
     });
   }

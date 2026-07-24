@@ -51,7 +51,7 @@ const mockEntry: LockedUserEntry = {
   permanent: false,
   lock_expires_at: "2026-01-01T10:00:00Z",
   seconds_remaining: 3600,
-  last_updated: "2026-01-01T09:00:00Z"
+  locked_at: "2026-01-01T09:00:00Z"
 };
 
 const permanentEntry: LockedUserEntry = {
@@ -232,9 +232,9 @@ describe("LockedUsersComponent", () => {
   });
 
   it("onSortClick delegates to the table-utils sort cycler", () => {
-    component.onSortClick("last_updated");
-    expect(tableUtilsService.onSortButtonClick).toHaveBeenCalledWith("last_updated", casService.lockedUsersSort, {
-      active: "last_updated",
+    component.onSortClick("locked_at");
+    expect(tableUtilsService.onSortButtonClick).toHaveBeenCalledWith("locked_at", casService.lockedUsersSort, {
+      active: "locked_at",
       direction: ""
     });
   });

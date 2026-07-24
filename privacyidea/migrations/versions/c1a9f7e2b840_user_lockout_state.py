@@ -61,7 +61,7 @@ def upgrade():
         sa.Column('username', _unicode_case_sensitive(255), nullable=True),
         sa.Column('lock_expires_at', sa.DateTime(), nullable=True),
         sa.Column('last_stage_triggered', sa.Integer(), nullable=True),
-        sa.Column('last_updated', sa.DateTime(), nullable=False),
+        sa.Column('locked_at', sa.DateTime(), nullable=False),
         sa.ForeignKeyConstraint(['last_stage_triggered'], ['lockout_policy_stages.id'],
                                 ondelete='SET NULL'),
         sa.PrimaryKeyConstraint('resolver', 'uid', 'realm'),
