@@ -45,7 +45,7 @@ myApp.controller("componentController", ["ComponentFactory", "$scope",
 
 
         if ($location.path() === "/component") {
-            $location.path("/component/clienttype");
+            $location.path("/component/subscriptions");
         }
 
 

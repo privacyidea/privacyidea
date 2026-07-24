@@ -66,7 +66,7 @@ def save_clientapplication(ip: IPAddress | str, clienttype: str):
     client_app = db.session.execute(stmt).scalar_one_or_none()
 
     if client_app:
-        client_app.last_seen = last_seen
+        client_app.lastseen = last_seen
     else:
         client_app = ClientApplication(ip=f"{ip}", clienttype=clienttype, node=node, lastseen=last_seen)
         db.session.add(client_app)

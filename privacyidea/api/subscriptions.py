@@ -24,6 +24,9 @@ from privacyidea.api.lib.prepolicy import check_base_action, prepolicy
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.subscriptions import (get_subscription,
                                            get_users_with_active_tokens,
+                                           get_plugin_subscription_status,
+                                           get_server_subscription_status,
+                                           get_latest_github_versions,
                                            delete_subscription,
                                            save_subscription)
 import logging
@@ -69,6 +72,37 @@ def api_get(application=None):
 
     g.audit_object.log({'success': True})
     return send_result(subscription)
+
+
+@subscriptions_blueprint.route('/status', methods=['GET'])
+@prepolicy(check_base_action, request, action=PolicyAction.MANAGESUBSCRIPTION)
+@event("subscription_status", request, g)
+@log_with(log)
+def api_status():
+    """
+    Return a dashboard subscription status overview. The first entry is the
+    privacyIDEA server itself (marked with ``is_server: true``), followed by
+    one entry per plugin in
+    :data:`~privacyidea.lib.subscriptions.DASHBOARD_PLUGINS`. See
+    :func:`~privacyidea.lib.subscriptions.get_plugin_subscription_status` and
+    :func:`~privacyidea.lib.subscriptions.get_server_subscription_status` for
+    the status values and response shape.
+
+    Requires the admin policy action :ref:`policy_managesubscription`.
+
+    :status 200: list of status dictionaries in ``result.value``.
+    """
+    overview = [get_server_subscription_status()] + get_plugin_subscription_status()
+    # Enrich each entry with the latest release from GitHub (version, date and
+    # release page URL), cached server-side.
+    latest_versions = get_latest_github_versions()
+    for entry in overview:
+        release = latest_versions.get(entry["application"])
+        entry["current_version"] = release.get("version") if release else None
+        entry["current_version_date"] = release.get("released") if release else None
+        entry["current_version_url"] = release.get("url") if release else None
+    g.audit_object.log({'success': True})
+    return send_result(overview)
 
 
 @subscriptions_blueprint.route('/', methods=['POST'])
