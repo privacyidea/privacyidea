@@ -143,8 +143,8 @@ class PasskeyTokenClass(TokenClass):
                                   "name), {realm}, {resolver} and {serial}, as well as any attribute the user's "
                                   "resolver provides (e.g. {givenname}, {surname}, {email}), for replacement, e.g. "
                                   "'{user}@{realm}'. The resolved value is also used as the display name. Unknown tags "
-                                  "resolve to an empty string and the result is limited to 64 bytes. Defaults to the "
-                                  "login name of the user."),
+                                  "resolve to an empty string and the result is limited to 64 bytes. If the value is "
+                                  "empty or the policy is not set, the login name of the user is used."),
                         'group': 'WebAuthn'
                     }
                 }
@@ -265,8 +265,9 @@ class PasskeyTokenClass(TokenClass):
         attributes with the same name.
 
         Unknown tags and tags whose value is empty are replaced with an empty string. Static text and braces that
-        do not form a valid tag are kept as they are. The result is truncated to 64 bytes because authenticators
-        may not store longer names.
+        do not form a valid tag are kept as they are. If the whole template resolves to an empty value, the login
+        name is used as a fallback so the WebAuthn user.name is never empty. The result is truncated to 64 bytes
+        because authenticators may not store longer names.
 
         :param template: The user label template, e.g. "{user}@{realm}" or "{givenname} {surname}"
         :param user: The user the passkey is enrolled for
@@ -277,7 +278,7 @@ class PasskeyTokenClass(TokenClass):
         try:
             tags.update(user.info)
         except Exception as ex:
-            log.debug(f"Could not read user info while resolving passkey user label tags: {ex}")
+            log.debug("Could not read user info while resolving passkey user label tags: %s", ex)
         # Built-in tags win over resolver attributes with the same name
         tags.update({"user": user.login, "realm": user.realm, "resolver": user.resolver,
                      "serial": self.token.serial})
@@ -287,6 +288,12 @@ class PasskeyTokenClass(TokenClass):
             return str(value) if value is not None else ""
 
         user_label = USER_LABEL_TAG_PATTERN.sub(replace_tag, template)
+
+        # If the template resolved to an empty (or whitespace-only) value, e.g. because it only referenced
+        # tags that the resolver does not provide, fall back to the login name. The user label becomes the
+        # WebAuthn user.name, which must not be empty or the authenticator may reject the registration.
+        if not user_label.strip():
+            user_label = user.login
 
         encoded_user_label = user_label.encode("utf-8")
         if len(encoded_user_label) > USER_LABEL_MAX_BYTES:

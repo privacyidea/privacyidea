@@ -757,7 +757,8 @@ For example, if the user ``alice`` in the realm ``example`` has the given name `
 in ``Alice Miller``.
 
 Unknown tags and tags whose value is empty (for example an attribute that the resolver does not return) are
-replaced with an empty string. Static text and braces that do not form a valid tag are kept unchanged.
+replaced with an empty string. Static text and braces that do not form a valid tag are kept unchanged. If the
+whole template resolves to an empty value, the login name of the user is used as a fallback.
 
 .. note:: Whether the configured name is actually shown during login depends on the browser and authenticator.
     Browsers reliably show the name for roaming authenticators (security keys), while platform and synced

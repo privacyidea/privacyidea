@@ -541,6 +541,11 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         self.assertEqual("hans", token._resolve_user_label_tags("{user}", fake_user))
         # Static text and non-tag braces are preserved
         self.assertEqual("My Passkey", token._resolve_user_label_tags("My Passkey", fake_user))
+        # A template that resolves to an empty (or whitespace-only) value falls back to the login name, so the
+        # WebAuthn user.name is never empty
+        self.assertEqual("hans", token._resolve_user_label_tags("{unknown}", fake_user))
+        self.assertEqual("hans", token._resolve_user_label_tags("", fake_user))
+        self.assertEqual("hans", token._resolve_user_label_tags("  ", fake_user))
         # The result is truncated to 64 bytes
         resolved = token._resolve_user_label_tags("x" * 100, fake_user)
         self.assertEqual(64, len(resolved.encode("utf-8")))
@@ -566,7 +571,8 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
 
         broken_user = BrokenUser()
         self.assertEqual("hans@realm1", token._resolve_user_label_tags("{user}@{realm}", broken_user))
-        # A resolver attribute that cannot be read falls back to an empty string
-        self.assertEqual("", token._resolve_user_label_tags("{givenname}", broken_user))
+        # A resolver attribute that cannot be read resolves to an empty value; since that leaves the whole
+        # label empty, it falls back to the login name
+        self.assertEqual("hans", token._resolve_user_label_tags("{givenname}", broken_user))
 
         remove_token(serial)
