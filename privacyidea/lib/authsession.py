@@ -108,12 +108,12 @@ def validate_and_rotate(cookie_value: str, client_id: str) -> str | None:
       one, the token has been replayed (stolen cookie). The series is deleted
       and an ``AuthError`` is raised.
     * Otherwise the stored counter is incremented, ``last_used_at`` is updated
-      and the new cookie value (``series_id:new_counter``) is returned.
+      and the new cookie value plus its expiry are returned.
 
     :param cookie_value: the raw cookie value from the request
     :param client_id: the id of the API client making the request (g.client_id)
-    :return: the new cookie value on success, or ``None`` if there is no valid
-        session to rotate
+    :return: a ``(new_cookie_value, expires_at)`` tuple on success, or ``None``
+        if there is no valid session to rotate
     :raises AuthError: if cookie reuse (theft) is detected
     """
     series_id, counter = parse_cookie(cookie_value)
@@ -141,7 +141,7 @@ def validate_and_rotate(cookie_value: str, client_id: str) -> str | None:
     session.counter += 1
     session.last_used_at = utc_now()
     session.save()
-    return build_cookie_value(series_id, session.counter)
+    return build_cookie_value(series_id, session.counter), session.expires_at
 
 
 def set_persistent_cookie(response, cookie_value: str, expires_at) -> None:
@@ -157,3 +157,15 @@ def set_persistent_cookie(response, cookie_value: str, expires_at) -> None:
     """
     response.set_cookie(PERSISTENT_COOKIE_NAME, cookie_value,
                         expires=expires_at, httponly=True, secure=True, samesite="Strict")
+
+
+def clear_persistent_cookie(response) -> None:
+    """
+    Remove the persistent-session cookie from the client.
+
+    Used when a presented cookie is invalid, expired or has been invalidated
+    (e.g. after reuse detection), so the client stops sending it.
+
+    :param response: the Flask response to clear the cookie on
+    """
+    response.delete_cookie(PERSISTENT_COOKIE_NAME, httponly=True, secure=True, samesite="Strict")

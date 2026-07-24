@@ -46,15 +46,16 @@ class AuthSessionLibTestCase(MyTestCase):
         session, cookie = create_auth_session("bob", client_id)
         series_id = session.series_id
 
-        new_cookie = validate_and_rotate(cookie, client_id)
+        new_cookie, expires_at = validate_and_rotate(cookie, client_id)
         self.assertEqual(new_cookie, build_cookie_value(series_id, 2))
+        self.assertEqual(expires_at, session.expires_at)
 
         stored = AuthSession.query.filter_by(series_id=series_id).first()
         self.assertEqual(stored.counter, 2)
         self.assertIsNotNone(stored.last_used_at)
 
         # The rotated cookie validates again, bumping to 3.
-        self.assertEqual(validate_and_rotate(new_cookie, client_id),
+        self.assertEqual(validate_and_rotate(new_cookie, client_id)[0],
                          build_cookie_value(series_id, 3))
 
     def test_theft_detection_deletes_series(self):
