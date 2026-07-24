@@ -130,7 +130,6 @@ const columnKeysMap: { key: string; label: string; filterable: boolean; sortable
   { key: "client_label", label: $localize`Client`, filterable: true, sortable: true },
   { key: "serial", label: $localize`Serial`, filterable: true, sortable: true },
   { key: "transaction_id", label: $localize`Transaction ID`, filterable: true, sortable: true },
-  { key: "previous_transaction_id", label: $localize`Previous Transaction ID`, filterable: true, sortable: true },
   { key: "attempt_id", label: $localize`Attempt ID`, filterable: true, sortable: true },
   { key: "other_info", label: $localize`Info`, filterable: false, sortable: false }
 ];
@@ -214,7 +213,6 @@ const FILTER_TOOLTIPS: Record<string, string> = {
   source_ip: $localize`Filter by this source IP`,
   serial: $localize`Filter by this serial`,
   transaction_id: $localize`Filter by this transaction ID`,
-  previous_transaction_id: $localize`Filter by this previous transaction ID`,
   attempt_id: $localize`Filter by this attempt ID`
 };
 

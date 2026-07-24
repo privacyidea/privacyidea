@@ -89,7 +89,6 @@ def upgrade():
             sa.Column('client_label', _unicode_case_sensitive(1024), nullable=True),
             sa.Column('serial', _unicode_case_sensitive(1024), nullable=True),
             sa.Column('transaction_id', _unicode_case_sensitive(64), nullable=True),
-            sa.Column('previous_transaction_id', _unicode_case_sensitive(64), nullable=True),
             sa.Column('attempt_id', _unicode_case_sensitive(64), nullable=True),
             sa.Column('other_info', sa.JSON(), nullable=True),
             sa.PrimaryKeyConstraint('id'),
@@ -101,9 +100,12 @@ def upgrade():
         # Serves the attempt_id recovery lookup by transaction_id (see get_attempt_id_for_transaction).
         op.create_index('ix_authlog_transaction', 'authentication_log',
                         ['transaction_id'])
-        # Serves PER_ATTEMPT counting (count_user_attempts): a user's rows range-scanned by time, no event_type.
+        # Serves PER_ATTEMPT counting (count_user_attempts / count_ip_attempts): a subject's rows range-scanned by
+        # time, no event_type predicate.
         op.create_index('ix_authlog_user_time', 'authentication_log',
                         ['resolver', 'uid', 'realm', 'timestamp'])
+        op.create_index('ix_authlog_ip_time', 'authentication_log',
+                        ['source_ip', 'timestamp'])
 
     except (OperationalError, ProgrammingError) as ex:
         if "already exists" in str(ex.orig).lower():
@@ -131,6 +133,7 @@ def downgrade():
             batch_op.drop_index('ix_authlog_ip_event_time')
             batch_op.drop_index('ix_authlog_transaction')
             batch_op.drop_index('ix_authlog_user_time')
+            batch_op.drop_index('ix_authlog_ip_time')
 
         op.drop_table('authentication_log')
         bind = op.get_bind()

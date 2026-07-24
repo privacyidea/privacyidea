@@ -181,7 +181,7 @@ def assert_authentication_log(event_types, transaction_id=None, same_attempt=Tru
 def assert_authentication_log_entry(entry: AuthenticationLog, user: User = None,
                                     serials: set[str] = None,
                                     client_label: str = None, other_info: dict = None,
-                                    transaction_id: str = None, previous_transaction_id: str = None,
+                                    transaction_id: str = None,
                                     source_ip: str = None, user_role: AuthLogUserRole = AuthLogUserRole.USER):
     """
     Assert a single authentication-log entry carries the expected attributes.
@@ -204,7 +204,6 @@ def assert_authentication_log_entry(entry: AuthenticationLog, user: User = None,
     :param client_label: the entry must carry this client_label (default None: no client_label)
     :param other_info: the entry must carry this other_info (default None: no other_info)
     :param transaction_id: the entry must carry this transaction_id (default None: no transaction_id)
-    :param previous_transaction_id: the entry must carry this previous_transaction_id (default None: none)
     :param source_ip: the entry must carry this source_ip (default None: no source_ip)
     :param user_role: the entry must carry this user_role (default ``"user"``, the role of a regular user)
     """
@@ -218,7 +217,6 @@ def assert_authentication_log_entry(entry: AuthenticationLog, user: User = None,
     assert entry.client_label == client_label
     assert entry.other_info == other_info
     assert entry.transaction_id == transaction_id
-    assert entry.previous_transaction_id == previous_transaction_id
     assert entry.source_ip == source_ip
     entry_serials = entry.serial
     if entry_serials is not None:
