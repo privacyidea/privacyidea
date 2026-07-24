@@ -314,17 +314,24 @@ def is_ip_never_block(source_ip: str | None) -> bool:
     return any(ip in network for network in _never_block_networks())
 
 
-def get_ip_block(source_ip: str | None, now: datetime | None = None) -> "RestrictionStatus | None":
+def get_ip_block(source_ip: str | None, now: datetime | None = None, *,
+                 clear_expired: bool = False) -> "RestrictionStatus | None":
     """
     Return information about *source_ip*'s **current** block by the ``BLOCK_IP``
     action, or ``None`` if the IP is not currently blocked. This is the IP
     counterpart of :func:`get_user_lockout` and is meant for the authentication
     pre-check hot path.
 
-    Like :func:`get_user_lockout` it is a **pure read**: it never writes, so a
-    stale row whose ``block_expires_at`` lies in the past simply reads as *not
-    blocked* (it is overwritten by the next block or by a cleanup job). A row
-    with ``block_expires_at IS NULL`` is a permanent block.
+    By default this is a **pure read**: a stale row whose ``block_expires_at`` lies
+    in the past simply reads as *not blocked* and is left in place.
+
+    With *clear_expired* the observed stale row is deleted on the spot, an expired
+    timed block carries no enforced state (the authentication log is the record),
+    so dropping it here — where the row is already loaded and known expired — cleans
+    it up the next time that IP is seen, without a second lookup. The authentication
+    pre-checks opt in. Permanent and still-active blocks are never deleted. The delete
+    is defensive (see :func:`_delete_ip_block`). A row with ``block_expires_at IS NULL`` is a
+    permanent block.
 
     The remaining time is surfaced so the WebUI login (``/auth``) can tell the
     user how long the block lasts, just like the user lock (maskable via the
@@ -333,6 +340,8 @@ def get_ip_block(source_ip: str | None, now: datetime | None = None) -> "Restric
 
     :param source_ip: the client IP to check; a falsy value is never blocked
     :param now: the reference time; defaults to :func:`utc_now`
+    :param clear_expired: delete the row if it is a stale (timed, expired) block;
+        off by default to keep this a pure read for non-auth callers
     :return: ``None`` if not blocked, else a :class:`RestrictionStatus`
     """
     if not source_ip:
@@ -349,24 +358,27 @@ def get_ip_block(source_ip: str | None, now: datetime | None = None) -> "Restric
         return RestrictionStatus(permanent=True, expires_at=None, seconds_remaining=None)
     now = _naive_utc(now) if now is not None else utc_now()
     if state.block_expires_at <= now:
+        if clear_expired:
+            _delete_ip_block(state)
         return None
     remaining = int((state.block_expires_at - now).total_seconds())
     return RestrictionStatus(permanent=False, expires_at=state.block_expires_at,
                              seconds_remaining=remaining)
 
 
-def is_ip_blocked(source_ip: str | None, now: datetime | None = None) -> bool:
+def is_ip_blocked(source_ip: str | None, now: datetime | None = None, *, clear_expired: bool = False) -> bool:
     """
     Return whether *source_ip* is currently blocked by the ``BLOCK_IP`` action.
     Thin boolean wrapper over :func:`get_ip_block` for the authentication
-    pre-check hot path; see that function for the expiry and permanent-block
-    semantics.
+    pre-check hot path; see that function for the expiry, permanent-block, and
+    *clear_expired* semantics.
 
     :param source_ip: the client IP to check; a falsy value is never blocked
     :param now: the reference time; defaults to :func:`utc_now`
+    :param clear_expired: delete the row if it is a stale (timed, expired) block
     :return: ``True`` if the IP is currently blocked
     """
-    return get_ip_block(source_ip, now=now) is not None
+    return get_ip_block(source_ip, now=now, clear_expired=clear_expired) is not None
 
 
 def evaluate_access_decision(user: "User", source_ip: str | None = None,
@@ -861,6 +873,22 @@ def _delete_user_lockout_state(state: UserLockoutState) -> None:
     except Exception as ex:
         log.warning("Failed to delete the expired user lockout state "
                     f"({state.resolver!r}, {state.uid!r}, {state.realm!r}): {ex!r}")
+        db.session.rollback()
+
+
+def _delete_ip_block(state: BlockList) -> None:
+    """
+    Delete a stale :class:`BlockList` row. The IP counterpart of
+    :func:`_delete_user_lockout_state`: used by :func:`get_ip_block` to drop a
+    timed block the auth pre-check finds already expired. Defensive — a failure is
+    logged and rolled back so cleaning up can never break the authentication
+    response that is still in flight.
+    """
+    try:
+        db.session.delete(state)
+        db.session.commit()
+    except Exception as ex:
+        log.warning(f"Failed to delete the expired IP block {state.ip!r}: {ex!r}")
         db.session.rollback()
 
 

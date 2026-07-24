@@ -292,15 +292,17 @@ def unlock_user_by_id(resolver: str, uid: str, realm: str) -> bool:
 @log_with(log)
 def unlock_user_by_username(username: str, realm: str, resolver: str) -> bool:
     """
-    Delete the lock for a raw ``(resolver, uid, realm)`` identity. Returns
-    ``True`` if a row was removed, ``False`` if there was no lock.
+    Delete the lock(s) for a ``(username, realm, resolver)`` identity. Returns
+    ``True`` if any row was removed, ``False`` if there was no lock. ``username``
+    is the denormalized login and is not unique, so more than one row may match
+    (e.g. a stale row from a since-recreated login); all matches are removed.
     """
     stmt = delete(UserLockoutState).where(UserLockoutState.username == username,
                                           UserLockoutState.realm == realm,
                                           UserLockoutState.resolver == resolver)
     result = db.session.execute(stmt)
     db.session.commit()
-    return result.rowcount == 1
+    return result.rowcount > 0
 
 
 @log_with(log)

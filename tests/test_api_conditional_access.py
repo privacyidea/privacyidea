@@ -282,6 +282,16 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         body = self._check({"user": "cornelius", "pass": "pin755224"}, remote_addr="198.51.100.9")
         self.assertTrue(body["result"]["value"], body)
 
+    def test_expired_block_does_not_reject(self):
+        db.session.add(BlockList(ip="203.0.113.7", block_expires_at=utc_now() - timedelta(seconds=10)))
+        db.session.commit()
+        # An expired block is not a block: a valid authentication still succeeds.
+        body = self._check({"user": "cornelius", "pass": "pin755224"}, remote_addr="203.0.113.7")
+        self.assertTrue(body["result"]["value"], body)
+        # The stale row carries no state; the pre-check opts into cleanup, so this
+        # next request from the IP drops it (rather than leaving it for the bulk purge).
+        self.assertIsNone(db.session.get(BlockList, "203.0.113.7"))
+
     def test_ip_blocked_after_threshold_failures(self):
         # Repeated failures from one IP trip a BLOCK_IP stage; that IP is then blocked.
         self._make_block_ip_policy(counter_type=AuthEventType.MFA_FAIL, threshold=3, duration=600)

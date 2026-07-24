@@ -383,20 +383,19 @@ def purge_user_lockouts():
 @log_with(log)
 def reset_user_lockout():
     """
-    Reset (unlock) a user's conditional-access lockout. Accepts either a
-    resolvable user (``user`` + ``realm`` [+ ``resolver``]) or the raw identity
-    tuple (``resolver`` + ``user_id`` + ``realm``).
+    Reset (unlock) a user's conditional-access lockout. Identified by either the
+    login (``user``) or the resolver-local id (``user_id``); ``realm`` and
+    ``resolver`` are always required.
 
     Requires the admin policy action :ref:`policy_user_lockout_reset`.
 
     One of user or user_id is required.
 
     :jsonparam user: login of the user to unlock
-    :jsonparam realm: realm of the user
-    :jsonparam resolver: resolver of the user
+    :jsonparam realm: realm of the user (required)
+    :jsonparam resolver: resolver of the user (required)
     :jsonparam user_id: resolver-local user id
     :status 200: ``true`` if a lock was removed, ``false`` if none existed
-    :status 400: the user could not be resolved and no raw identity was given
     """
     params = request.all_data
     get_required_one_of(params, ["user", "user_id"])
@@ -431,7 +430,6 @@ def get_blocklist():
     entries = list_blocklist(include_expired=include_expired)
     g.audit_object.log({"success": True, "info": f"{len(entries)} blocklist entr(y/ies)"})
     return send_result(entries)
-
 
 
 @conditional_access_blueprint.route('blocklist/purge', methods=['POST'])

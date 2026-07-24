@@ -361,7 +361,7 @@ def conditional_access_precheck(user) -> "Response | None":
         g.audit_object.log({"success": False,
                             "info": "Rejected: account is temporarily locked"})
         return send_result(False, rid=2, details={})
-    if is_ip_blocked(g.client_ip):
+    if is_ip_blocked(g.client_ip, clear_expired=True):
         log.info(f"Rejecting authentication from blocked IP {g.client_ip!r}.")
         g.audit_object.log({"success": False,
                             "info": "Rejected: source IP is blocked"})

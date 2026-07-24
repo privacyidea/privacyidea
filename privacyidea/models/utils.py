@@ -37,6 +37,7 @@ def utc_now() -> datetime:
     """
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
+
 def case_sensitive_unicode(length: int):
     """
     A ``Unicode`` column pinned to a case-sensitive collation on MySQL/MariaDB.

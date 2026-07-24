@@ -28,7 +28,7 @@ TABLES = ['user_lockout_state']
 
 def _unicode_case_sensitive(length):
     """
-    A case-sensitive string column type (mirrors models.authentication_log._case_sensitive_unicode).
+    A case-sensitive string column type (mirrors models.utils.case_sensitive_unicode).
 
     The identity columns (resolver/uid/realm/username) are the user-lockout visibility boundary: a
     user-scoped read policy filters on them. On MySQL/MariaDB the server-default collation is typically

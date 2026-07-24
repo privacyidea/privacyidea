@@ -275,7 +275,7 @@ def _conditional_access_precheck(user: User) -> None:
     hide_specific_error_message policy. ALLOW / CONTINUE fall through silently.
     """
     lockout = get_user_lockout(user, clear_expired=True)
-    ip_block = get_ip_block(g.client_ip)
+    ip_block = get_ip_block(g.client_ip, clear_expired=True)
     restriction = _binding_restriction(lockout, ip_block)
     if restriction == "block":
         log.info(f"Rejecting /auth login from blocked IP {g.client_ip!r}.")

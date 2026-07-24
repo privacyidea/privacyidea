@@ -313,6 +313,44 @@ class LockoutEngineTestCase(MyTestCase):
         self.assertIsNone(block.seconds_remaining, block)
         self.assertIsNone(block.expires_at, block)
 
+    # --- get_ip_block clear_expired -------------------------------------------
+
+    def _add_block(self, ip, block_expires_at):
+        db.session.add(BlockList(ip=ip, block_expires_at=block_expires_at))
+        db.session.commit()
+
+    def test_ip_clear_expired_deletes_stale_row(self):
+        # An expired timed block is dropped when the pre-check opts in.
+        self._add_block("203.0.113.5", utc_now() - timedelta(seconds=600))
+        self.assertIsNone(get_ip_block("203.0.113.5", clear_expired=True))
+        self.assertIsNone(self._block("203.0.113.5"))
+
+    def test_ip_clear_expired_default_keeps_stale_row(self):
+        # The default is a pure read: an expired row reads as unblocked but stays.
+        self._add_block("203.0.113.5", utc_now() - timedelta(seconds=600))
+        self.assertIsNone(get_ip_block("203.0.113.5"))
+        self.assertIsNotNone(self._block("203.0.113.5"))
+
+    def test_ip_clear_expired_keeps_active_block(self):
+        # A still-active timed block is never deleted, even with clear_expired.
+        self._add_block("203.0.113.5", utc_now() + timedelta(seconds=600))
+        self.assertIsNotNone(get_ip_block("203.0.113.5", clear_expired=True))
+        self.assertIsNotNone(self._block("203.0.113.5"))
+
+    def test_ip_clear_expired_keeps_permanent_block(self):
+        # A permanent block is never deleted, even with clear_expired.
+        self._add_block("203.0.113.5", None)
+        block = get_ip_block("203.0.113.5", clear_expired=True)
+        self.assertIsNotNone(block)
+        self.assertTrue(block.permanent)
+        self.assertIsNotNone(self._block("203.0.113.5"))
+
+    def test_is_ip_blocked_clear_expired_deletes_stale_row(self):
+        # The boolean wrapper threads clear_expired through to get_ip_block.
+        self._add_block("203.0.113.5", utc_now() - timedelta(seconds=600))
+        self.assertFalse(is_ip_blocked("203.0.113.5", clear_expired=True))
+        self.assertIsNone(self._block("203.0.113.5"))
+
     # --- evaluate_lockout_policies --------------------------------------------
 
     def test_evaluate_triggers_lock(self):
