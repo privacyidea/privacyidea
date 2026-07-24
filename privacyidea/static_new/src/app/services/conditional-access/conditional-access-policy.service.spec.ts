@@ -44,6 +44,7 @@ describe("ConditionalAccessPolicyService", () => {
     dry_run: false,
     priority: 1,
     target: "user",
+    count_mode: "PER_REQUEST",
     counter_types_to_track: ["PIN_FAIL"],
     stages: [
       {
