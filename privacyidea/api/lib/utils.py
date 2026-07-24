@@ -493,12 +493,12 @@ def _is_authentication_endpoint(request) -> bool:
     /validate route, or the /auth login (not other jwtauth routes such as
     /auth/rights).
     """
-    # Imported lazily to avoid an import cycle (validate/auth import from here).
-    from privacyidea.api.auth import jwtauth
-    from privacyidea.api.validate import validate_blueprint
-    if request.blueprint == validate_blueprint.name:
+    # The blueprint names are stable string constants, so we compare against
+    # them directly instead of importing the blueprints (which would import
+    # from this module) on the error-handling path.
+    if request.blueprint == "validate_blueprint":
         return True
-    return request.blueprint == jwtauth.name and request.path.endswith("/auth")
+    return request.blueprint == "jwtauth" and request.path.endswith("/auth")
 
 
 def get_auth_error_status_code(error: Exception) -> int:
