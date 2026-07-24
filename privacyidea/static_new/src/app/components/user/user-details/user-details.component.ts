@@ -482,11 +482,6 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
 
   protected readonly Array = Array;
 
-  private formatTimestamp(value: string): string {
-    const parsed = new Date(value);
-    return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleString();
-  }
-
   protected str(value: unknown): string {
     return value === null || value === undefined ? "" : String(value);
   }
