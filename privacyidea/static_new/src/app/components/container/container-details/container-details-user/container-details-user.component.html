@@ -112,8 +112,9 @@
                 @if (element.value) {
                   <button
                     (click)="host().unassignUser()"
+                    aria-label="Unassign User"
                     class="yellow"
-                    i18n-aria-label="Unassign User"
+                    i18n-aria-label
                     mat-icon-button>
                     <mat-icon>person_remove</mat-icon>
                   </button>
@@ -129,7 +130,8 @@
                 } @else {
                   <button
                     (click)="host().toggleContainerEdit(element)"
-                    i18n-aria-label="Assign User"
+                    aria-label="Assign User"
+                    i18n-aria-label
                     mat-icon-button>
                     <mat-icon>person_add</mat-icon>
                   </button>

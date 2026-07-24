@@ -20,23 +20,20 @@
 export interface FilterInputHintOptions {
   supportsKeywords?: boolean;
   mayBeCaseSensitive?: boolean;
+  includeCaseNote?: boolean;
+  separator?: string;
 }
 
 export function filterInputHint(options: FilterInputHintOptions = {}): string {
   const lines: string[] = [];
+  lines.push($localize`Use * as a wildcard.`);
   if (options.supportsKeywords ?? true) {
-    lines.push($localize`Quote values with spaces or colons: description: "note: 2fa"`);
+    lines.push($localize`Quote values that contain spaces or a colon, e.g. description: "my note".`);
   }
-  lines.push($localize`Wildcard: * where partial match is supported`);
-  lines.push(options.mayBeCaseSensitive ? $localize`Mostly case-insensitive` : $localize`Case-insensitive`);
-  return lines.join("\n");
-}
-
-export function filterKeywordHint(keywords: string[]): string {
-  if (!keywords.length) {
-    return "";
+  if (options.includeCaseNote ?? true) {
+    lines.push(options.mayBeCaseSensitive ? $localize`Mostly case-insensitive` : $localize`Case-insensitive`);
   }
-  return $localize`Keywords: ${keywords.join(", ")}`;
+  return lines.join(options.separator ?? "\n");
 }
 
 export type FilterCaseNote = "usually-insensitive" | "usually-sensitive" | "sensitive";

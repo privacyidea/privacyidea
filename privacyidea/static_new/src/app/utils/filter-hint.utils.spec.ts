@@ -16,29 +16,31 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { filterColumnHint, filterInputHint, filterKeywordHint } from "./filter-hint.utils";
+import { filterColumnHint, filterInputHint } from "./filter-hint.utils";
 
 describe("filterInputHint", () => {
   it("only states what the placeholder does not already show", () => {
     expect(filterInputHint()).toBe(
-      'Quote values with spaces or colons: description: "note: 2fa"\nWildcard: * where partial match is supported\nCase-insensitive'
+      'Use * as a wildcard.\nQuote values that contain spaces or a colon, e.g. description: "my note".\nCase-insensitive'
     );
   });
 
   it("hedges the case note where the backend does not normalise case", () => {
     expect(filterInputHint({ mayBeCaseSensitive: true })).toBe(
-      'Quote values with spaces or colons: description: "note: 2fa"\nWildcard: * where partial match is supported\nMostly case-insensitive'
+      'Use * as a wildcard.\nQuote values that contain spaces or a colon, e.g. description: "my note".\nMostly case-insensitive'
     );
   });
-});
 
-describe("filterKeywordHint", () => {
-  it("lists the accepted keywords", () => {
-    expect(filterKeywordHint(["serial", "type"])).toBe("Keywords: serial, type");
+  it("omits the case note when not requested", () => {
+    expect(filterInputHint({ includeCaseNote: false })).toBe(
+      'Use * as a wildcard.\nQuote values that contain spaces or a colon, e.g. description: "my note".'
+    );
   });
 
-  it("stays empty without keywords", () => {
-    expect(filterKeywordHint([])).toBe("");
+  it("joins the sentences on one line with a custom separator", () => {
+    expect(filterInputHint({ includeCaseNote: false, separator: " " })).toBe(
+      'Use * as a wildcard. Quote values that contain spaces or a colon, e.g. description: "my note".'
+    );
   });
 });
 

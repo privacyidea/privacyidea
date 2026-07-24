@@ -38,11 +38,10 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatMenuModule } from "@angular/material/menu";
-import { MatTooltipModule } from "@angular/material/tooltip";
 import { ContainerTableActionsComponent } from "@components/container/container-table/container-table-actions/container-table-actions.component";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
-import { filterColumnHint, filterInputHint, filterKeywordHint } from "@utils/filter-hint.utils";
+import { filterInputHint } from "@utils/filter-hint.utils";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
@@ -69,7 +68,6 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
     MatButtonModule,
     MatMenuModule,
     MatDividerModule,
-    MatTooltipModule,
     ScrollEdgesDirective
   ],
   templateUrl: "./container-table.component.html",
@@ -96,8 +94,7 @@ export class ContainerTableComponent {
   readonly apiFilter = this.containerService.apiFilter;
   readonly advancedApiFilter = this.containerService.advancedApiFilter;
   readonly filterKeywords = [...this.containerService.apiFilter, ...this.containerService.advancedApiFilter];
-  readonly filterHint = filterInputHint();
-  readonly filterKeywordHintText = filterKeywordHint(this.filterKeywords);
+  readonly filterHint = filterInputHint({ includeCaseNote: false, separator: " " });
   containerSelection = this.containerService.containerSelection;
 
   pageSize = this.containerService.pageSize;
@@ -208,13 +205,6 @@ export class ContainerTableComponent {
   getFilterIconName(keyword: string): string {
     const isSelected = this.isFilterSelected(keyword, this.containerService.containerFilter());
     return isSelected ? "filter_alt_off" : "filter_alt";
-  }
-
-  filterColumnTooltip(label: string, keyword: string): string {
-    return filterColumnHint(label, {
-      exactMatch: this.containerService.exactMatchKeys.has(keyword),
-      isBoolean: this.containerService.booleanKeys.has(keyword)
-    });
   }
 
   onKeywordClick(filterKeyword: string): void {

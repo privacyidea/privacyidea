@@ -46,11 +46,9 @@
           i18n-placeholder
           id="offline-filter-input"
           matInput
-          [matTooltip]="filterHint"
-          matTooltipClass="filter-hint-tooltip"
           placeholder="Example query: 'serial: OATH0001'" />
       </app-clearable-input>
-      <mat-hint class="filter-keyword-hint">{{ filterKeywordHintText }}</mat-hint>
+      <mat-hint class="filter-keyword-hint">{{ filterHint }}</mat-hint>
     </mat-form-field>
     <mat-paginator
       (page)="machineService.onPageEvent($event)"
@@ -81,10 +79,9 @@
               @if (machineService.offlineApiFilter.includes(column.key)) {
                 <button
                   (click)="onKeywordClick(column.key)"
+                  attr.aria-label="Filter by {{ column.label }}"
                   class="filter-button"
                   mat-icon-button
-                  [matTooltip]="filterColumnTooltip(column.label, column.key)"
-                  matTooltipClass="filter-hint-tooltip"
                   type="button">
                   <mat-icon class="keyword-button-icon margin-left-0">
                     {{ getFilterIconName(column.key) }}
@@ -93,6 +90,7 @@
               }
               <button
                 (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
+                attr.aria-label="Sort by {{ column.label }}"
                 class="sort-button"
                 mat-icon-button
                 type="button">

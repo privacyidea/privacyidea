@@ -33,10 +33,8 @@
         i18n-aria-label
         i18n-placeholder
         matInput
-        [matTooltip]="filterHint"
-        matTooltipClass="filter-hint-tooltip"
         placeholder="Example query: 'scope: enrollment, active: true'" />
     </app-clearable-input>
-    <mat-hint class="filter-keyword-hint">{{ filterKeywordHintText() }}</mat-hint>
+    <mat-hint class="filter-keyword-hint">{{ filterHint }}</mat-hint>
   </mat-form-field>
 </div>

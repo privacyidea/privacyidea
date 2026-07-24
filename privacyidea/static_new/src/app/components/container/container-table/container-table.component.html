@@ -40,11 +40,9 @@
             i18n-placeholder
             id="container-filter-input"
             matInput
-            [matTooltip]="filterHint"
-            matTooltipClass="filter-hint-tooltip"
             placeholder="Example query: 'type: generic'" />
         </app-clearable-input>
-        <mat-hint class="filter-keyword-hint">{{ filterKeywordHintText }}</mat-hint>
+        <mat-hint class="filter-keyword-hint">{{ filterHint }}</mat-hint>
       </mat-form-field>
       <mat-paginator
         (page)="onPageEvent($event)"
@@ -74,6 +72,8 @@
                 mat-header-cell>
                 <mat-checkbox
                   (change)="$event ? toggleAllRows() : null"
+                  aria-label="Select all containers"
+                  i18n-aria-label
                   [checked]="isAllSelected()"
                   [disabled]="total() === 0"
                   [indeterminate]="containerSelection().length > 0 && !isAllSelected()"></mat-checkbox>
@@ -93,10 +93,9 @@
                         <button
                           [matMenuTriggerData]="{ keyword: apiFilterKeyMap[column.key] }"
                           [matMenuTriggerFor]="typeMenu"
+                          attr.aria-label="Filter by {{ column.label }}"
                           class="filter-button"
-                          [matTooltip]="filterColumnTooltip(column.label, apiFilterKeyMap[column.key])"
                           mat-icon-button
-                          matTooltipClass="filter-hint-tooltip"
                           type="button">
                           <mat-icon class="keyword-button-icon margin-left-0"> filter_list</mat-icon>
                         </button>
@@ -104,20 +103,18 @@
                         <button
                           [matMenuTriggerData]="{ keyword: apiFilterKeyMap[column.key] }"
                           [matMenuTriggerFor]="statesMenu"
+                          attr.aria-label="Filter by {{ column.label }}"
                           class="filter-button"
-                          [matTooltip]="filterColumnTooltip(column.label, apiFilterKeyMap[column.key])"
                           mat-icon-button
-                          matTooltipClass="filter-hint-tooltip"
                           type="button">
                           <mat-icon class="keyword-button-icon margin-left-0">filter_list</mat-icon>
                         </button>
                       } @else {
                         <button
                           (click)="onKeywordClick(apiFilterKeyMap[column.key])"
+                          attr.aria-label="Filter by {{ column.label }}"
                           class="filter-button"
-                          [matTooltip]="filterColumnTooltip(column.label, apiFilterKeyMap[column.key])"
                           mat-icon-button
-                          matTooltipClass="filter-hint-tooltip"
                           type="button">
                           <mat-icon class="keyword-button-icon margin-left-0">
                             {{ getFilterIconName(apiFilterKeyMap[column.key]) }}
@@ -127,10 +124,9 @@
                     }
                     <button
                       (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
+                      attr.aria-label="Sort by {{ column.label }}"
                       class="sort-button"
-                      i18n-matTooltip
                       mat-icon-button
-                      matTooltip="Sort by column"
                       type="button">
                       <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
                     </button>
@@ -152,6 +148,7 @@
                     <mat-checkbox
                       (change)="$event ? toggleRow(row) : null"
                       (click)="$event.stopPropagation()"
+                      attr.aria-label="Select container {{ element.serial }}"
                       [checked]="containerSelection().includes(row)"
                       [disabled]="total() === 0"></mat-checkbox>
                   }

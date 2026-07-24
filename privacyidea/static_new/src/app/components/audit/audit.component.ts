@@ -40,14 +40,13 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
 
 import { NgClass } from "@angular/common";
 import { MatButtonModule } from "@angular/material/button";
-import { MatTooltipModule } from "@angular/material/tooltip";
 import { MatCardModule } from "@angular/material/card";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { RouterLink } from "@angular/router";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
-import { filterColumnHint, filterInputHint, filterKeywordHint } from "@utils/filter-hint.utils";
+import { filterInputHint } from "@utils/filter-hint.utils";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
@@ -145,7 +144,6 @@ const columnKeysMap = [
     MatIcon,
     MatButtonModule,
     MatIconModule,
-    MatTooltipModule,
     ScrollEdgesDirective,
     LocalDateTimePipe
   ],
@@ -160,8 +158,7 @@ export class AuditComponent {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   readonly apiFilterKeyMap = this.auditService.apiFilterKeyMap;
-  readonly filterHint = filterInputHint({ mayBeCaseSensitive: true });
-  readonly filterKeywordHintText = filterKeywordHint(this.auditService.apiFilter);
+  readonly filterHint = filterInputHint({ includeCaseNote: false, separator: " " });
   sort = this.auditService.sort;
 
   @ViewChild("filterHTMLInputElement", { static: false })
@@ -219,13 +216,6 @@ export class AuditComponent {
 
   isFilterSelected(filter: string, inputValue: FilterValue): boolean {
     return inputValue.hasKey(filter);
-  }
-
-  filterColumnTooltip(label: string, keyword: string): string {
-    return filterColumnHint(label, {
-      exactMatch: this.auditService.exactMatchKeys.has(keyword),
-      isBoolean: this.auditService.booleanKeys.has(keyword)
-    });
   }
 
   getFilterIconName(keyword: string): string {

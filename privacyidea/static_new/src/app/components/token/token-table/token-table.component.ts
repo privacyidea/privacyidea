@@ -46,7 +46,7 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
-import { filterColumnHint, filterInputHint, filterKeywordHint } from "@utils/filter-hint.utils";
+import { filterColumnHint, filterInputHint } from "@utils/filter-hint.utils";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
@@ -109,8 +109,7 @@ export class TokenTableComponent {
   readonly filterKeywords = [...this.tokenService.apiFilter, ...this.tokenService.advancedApiFilter].filter(
     (keyword) => !this.tokenService.unsupportedKeys.has(keyword)
   );
-  readonly filterHint = filterInputHint({ mayBeCaseSensitive: true });
-  readonly filterKeywordHintText = filterKeywordHint(this.filterKeywords);
+  readonly filterHint = filterInputHint({ includeCaseNote: false, separator: " " });
   private basePageSizeOptions = [...this.tableUtilsService.pageSizeOptions()];
   @ViewChild("filterHTMLInputElement", { static: false })
   filterInput!: ElementRef<HTMLInputElement>;

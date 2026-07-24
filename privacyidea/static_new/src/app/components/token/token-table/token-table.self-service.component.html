@@ -58,10 +58,9 @@
               <div class="margin-left-16 flex">
                 <button
                   (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
+                  attr.aria-label="Sort by {{ column.label }}"
                   class="sort-button"
-                  i18n-matTooltip
                   mat-icon-button
-                  matTooltip="Sort by {{ column.label }}"
                   type="button">
                   <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
                 </button>
@@ -146,6 +145,8 @@
                   @if (!element.revoked) {
                     <button
                       (click)="revokeToken(element.serial)"
+                      aria-label="Revoke Token"
+                      i18n-aria-label
                       i18n-matTooltip
                       mat-icon-button
                       matTooltip="Revoke Token">
@@ -156,6 +157,8 @@
                 @case ("delete") {
                   <button
                     (click)="deleteToken(element.serial)"
+                    aria-label="Delete Token"
+                    i18n-aria-label
                     i18n-matTooltip
                     mat-icon-button
                     matTooltip="Delete Token">

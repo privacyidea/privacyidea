@@ -42,11 +42,9 @@
             i18n-placeholder
             id="token-filter-input"
             matInput
-            [matTooltip]="filterHint"
-            matTooltipClass="filter-hint-tooltip"
             placeholder="Example query: 'type: hotp userid: 1000'" />
         </app-clearable-input>
-        <mat-hint class="filter-keyword-hint">{{ filterKeywordHintText }}</mat-hint>
+        <mat-hint class="filter-keyword-hint">{{ filterHint }}</mat-hint>
         @if (showFilterHint()) {
           <mat-hint
             align="end"
@@ -57,7 +55,9 @@
       </mat-form-field>
       <button
         [matMenuTriggerFor]="advancedFilterMenu"
+        aria-label="More Filter"
         class="filter-button"
+        i18n-aria-label
         i18n-matTooltip
         mat-icon-button
         matTooltip="More Filter">
@@ -92,6 +92,8 @@
                 mat-header-cell>
                 <mat-checkbox
                   (change)="$event ? toggleAllRows() : null"
+                  aria-label="Select all tokens"
+                  i18n-aria-label
                   [checked]="isAllSelected()"
                   [disabled]="totalLength() === 0"
                   [indeterminate]="tokenSelection().length > 0 && !isAllSelected()" />
@@ -109,29 +111,26 @@
                         <button
                           [matMenuTriggerData]="{ keyword: apiFilterKeyMap[column.key] }"
                           [matMenuTriggerFor]="realmMenu"
+                          attr.aria-label="Filter by {{ column.label }}"
                           class="filter-button"
-                          [matTooltip]="filterColumnTooltip(column.label, apiFilterKeyMap[column.key])"
-                          mat-icon-button
-                          matTooltipClass="filter-hint-tooltip">
+                          mat-icon-button>
                           <mat-icon class="keyword-button-icon margin-left-0"> filter_list</mat-icon>
                         </button>
                       } @else if (apiFilterKeyMap[column.key] === "type") {
                         <button
                           [matMenuTriggerData]="{ keyword: apiFilterKeyMap[column.key] }"
                           [matMenuTriggerFor]="typeMenu"
+                          attr.aria-label="Filter by {{ column.label }}"
                           class="filter-button"
-                          [matTooltip]="filterColumnTooltip(column.label, apiFilterKeyMap[column.key])"
-                          mat-icon-button
-                          matTooltipClass="filter-hint-tooltip">
+                          mat-icon-button>
                           <mat-icon class="keyword-button-icon margin-left-0"> filter_list</mat-icon>
                         </button>
                       } @else {
                         <button
                           (click)="onKeywordClick(apiFilterKeyMap[column.key])"
+                          attr.aria-label="Filter by {{ column.label }}"
                           class="filter-button"
-                          [matTooltip]="filterColumnTooltip(column.label, apiFilterKeyMap[column.key])"
-                          mat-icon-button
-                          matTooltipClass="filter-hint-tooltip">
+                          mat-icon-button>
                           <mat-icon class="keyword-button-icon margin-left-0">
                             {{ getFilterIconName(apiFilterKeyMap[column.key]) }}
                           </mat-icon>
@@ -140,10 +139,9 @@
                     }
                     <button
                       (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
+                      attr.aria-label="Sort by {{ column.label }}"
                       class="sort-button"
-                      i18n-matTooltip
                       mat-icon-button
-                      matTooltip="Sort by {{ column.label }}"
                       type="button">
                       <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
                     </button>
@@ -167,6 +165,7 @@
                     <mat-checkbox
                       (change)="$event ? toggleRow(tokenDetails) : null"
                       (click)="$event.stopPropagation()"
+                      attr.aria-label="Select token {{ tokenDetails.serial }}"
                       [checked]="tokenSelection().includes(tokenDetails)"
                       [disabled]="totalLength() === 0" />
                   }

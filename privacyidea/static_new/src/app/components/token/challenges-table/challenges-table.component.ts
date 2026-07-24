@@ -25,7 +25,6 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatPaginator, MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
-import { MatTooltipModule } from "@angular/material/tooltip";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
@@ -40,7 +39,7 @@ import {
   ChallengesServiceInterface
 } from "@services/token/challenges/challenges.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
-import { filterColumnHint, filterInputHint, filterKeywordHint } from "@utils/filter-hint.utils";
+import { filterInputHint } from "@utils/filter-hint.utils";
 
 import { ChallengesTableActionsComponent } from "./challenges-table-actions/challenges-table-actions.component";
 
@@ -67,8 +66,7 @@ const columnKeysMap = [
     ScrollToTopDirective,
     ClearableInputComponent,
     ChallengesTableActionsComponent,
-    ScrollEdgesDirective,
-    MatTooltipModule
+    ScrollEdgesDirective
   ],
   templateUrl: "./challenges-table.component.html",
   styleUrls: ["./challenges-table.component.scss"]
@@ -84,8 +82,7 @@ export class ChallengesTableComponent {
   displayedColumns = columnKeysMap.map((c) => c.key);
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
   apiFilter = this.challengesService.apiFilter;
-  readonly filterHint = filterInputHint({ mayBeCaseSensitive: true });
-  readonly filterKeywordHintText = filterKeywordHint(this.challengesService.apiFilter);
+  readonly filterHint = filterInputHint({ includeCaseNote: false, separator: " " });
   advancedApiFilter = this.challengesService.advancedApiFilter;
   tokenSerial = this.tokenService.tokenSerial;
   pageSize = this.challengesService.pageSize;
@@ -121,10 +118,6 @@ export class ChallengesTableComponent {
   onPageEvent(event: PageEvent) {
     this.pageSize.set(event.pageSize);
     this.pageIndex.set(event.pageIndex);
-  }
-
-  filterColumnTooltip(label: string): string {
-    return filterColumnHint(label, { exactMatch: false, isBoolean: false });
   }
 
   toggleFilter(filterKeyword: string): void {

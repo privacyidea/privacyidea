@@ -45,7 +45,7 @@ import {
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { UserData, UserService, UserServiceInterface } from "@services/user/user.service";
-import { filterColumnHint, filterInputHint, filterKeywordHint } from "@utils/filter-hint.utils";
+import { filterInputHint } from "@utils/filter-hint.utils";
 
 import { NgClass } from "@angular/common";
 import { MatIconButton } from "@angular/material/button";
@@ -54,7 +54,6 @@ import { MatIcon } from "@angular/material/icon";
 import { MatFormField, MatHint, MatInput, MatLabel } from "@angular/material/input";
 import { MatPaginator } from "@angular/material/paginator";
 import { Sort } from "@angular/material/sort";
-import { MatTooltipModule } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
@@ -121,7 +120,6 @@ const userFilterOptions: FilterOption<UserData>[] = columnKeysMap.map(
     RouterLink,
     MatIcon,
     MatIconButton,
-    MatTooltipModule,
     ScrollEdgesDirective
   ],
   templateUrl: "./user-table.component.html",
@@ -136,8 +134,7 @@ export class UserTableComponent implements OnDestroy {
   protected readonly resolverService = inject(ResolverService);
   protected readonly dialog = inject(MatDialog);
   readonly apiFilter = this.userService.apiFilterOptions;
-  readonly filterHint = filterInputHint({ mayBeCaseSensitive: true });
-  readonly filterKeywordHintText = filterKeywordHint(this.userService.apiFilterOptions);
+  readonly filterHint = filterInputHint({ includeCaseNote: false, separator: " " });
   private basePageSizeOptions = [...this.tableUtilsService.pageSizeOptions()];
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
@@ -216,10 +213,6 @@ export class UserTableComponent implements OnDestroy {
       currentValue: this.userService.apiUserFilter()
     });
     this.userService.apiUserFilter.set(newValue);
-  }
-
-  filterColumnTooltip(label: string): string {
-    return filterColumnHint(label, { exactMatch: false, isBoolean: false, caseNote: "usually-insensitive" });
   }
 
   isFilterSelected(filter: string): boolean {

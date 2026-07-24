@@ -21,6 +21,7 @@
     (click)="clearInput($event)"
     [disabled]="disabled()"
     type="button"
+    attr.aria-label="{{ toolTipText() }}"
     matTooltip="{{ toolTipText() }}"
     mat-icon-button>
     <mat-icon>cancel</mat-icon>
