@@ -395,20 +395,23 @@ def count_ip_events(source_ip: str, event_types: list[str], window_seconds: int,
     analogue of :func:`count_user_events` keyed on the source IP instead of the ``(resolver, uid, realm)`` triple.
 
     Unlike the user counter there is **no** ``since_last_success`` reset: a successful login by one account must not
-    clear a volume signal aggregated across everything the IP sent (same reasoning as :func:`count_distinct_users_for_ip`).
-    Every matching row counts regardless of user, so userless serial attempts - the documented blind spot of the
-    distinct-accounts signal - do contribute here.
+    clear a volume signal aggregated across everything the IP sent (same reasoning as
+    :func:`count_distinct_users_for_ip`). Every matching row counts regardless of user, so userless serial attempts -
+    the documented blind spot of the distinct-accounts signal - do contribute here.
 
-    The ``WHERE`` matches ``ix_authlog_ip_event_time`` (source_ip, event_type, timestamp) so this is an index range scan.
+    The ``WHERE`` matches ``ix_authlog_ip_event_time`` (source_ip, event_type, timestamp) so this is an index range
+    scan.
 
     ``since_last_success`` is intentionally not exposed: the shared core supports it, but enabling it for an IP would
     reset the whole IP's counter on *any* one account's successful login (e.g. one legitimate user behind a NAT
     clearing the volume signal for everyone behind it) - a real semantic decision, not just wiring.
 
     :param source_ip: the client IP whose events are counted
-    :param event_types: the list of :class:`AuthEventType` values to count; rows matching any of them are counted together
+    :param event_types: the list of :class:`AuthEventType` values to count; rows matching any of them are counted
+        together
     :param window_seconds: width of the look-back window in seconds
-    :param window_end: the instant the window ends; defaults to :func:`utc_now`. An aware value is normalized to naive UTC.
+    :param window_end: the instant the window ends; defaults to :func:`utc_now`. An aware value is normalized to naive
+        UTC.
     :return: the number of matching events
     """
     return _count_events([AuthenticationLog.source_ip == source_ip], event_types, window_seconds, window_end)
@@ -430,7 +433,8 @@ def count_ip_attempts(source_ip: str, event_types: list[str],
     :param source_ip: the client IP whose attempts are counted
     :param event_types: the event types an attempt's representative must match
     :param window_seconds: width of the look-back window in seconds
-    :param window_end: the instant the window ends; defaults to :func:`utc_now`. An aware value is normalized to naive UTC.
+    :param window_end: the instant the window ends; defaults to :func:`utc_now`. An aware value is normalized to naive
+        UTC.
     :return: the number of matching attempts
     """
     return _count_attempts([AuthenticationLog.source_ip == source_ip], event_types, window_seconds, window_end)
@@ -473,7 +477,8 @@ def _policy_count_ip(policy: LockoutPolicy, source_ip: str, window_end: datetime
     :param policy: the policy whose ``time_window_seconds`` and ``counter_types_to_track`` are counted over
     :param source_ip: the client IP to count for
     :param window_end: the instant the window ends (reference time)
-    :return: the distinct-account count (``DISTINCT_USERS``), event count (``PER_REQUEST``) or attempt count (``PER_ATTEMPT``)
+    :return: the distinct-account count (``DISTINCT_USERS``), event count (``PER_REQUEST``) or attempt count
+        (``PER_ATTEMPT``)
     """
     if policy.count_mode == CountMode.PER_REQUEST:
         return count_ip_events(source_ip, policy.counter_types_to_track,
