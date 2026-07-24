@@ -18,6 +18,7 @@
 #
 import json
 import logging
+import re
 
 import cryptography.x509
 from cryptography.hazmat._oid import NameOID
@@ -54,6 +55,17 @@ from privacyidea.lib.tokenclass import TokenClass, ClientMode, AuthenticationMod
 from privacyidea.lib.tokenrolloutstate import RolloutState
 
 log = logging.getLogger(__name__)
+
+# Default template for the passkey user display name. The tags are resolved during enrollment,
+# {user} evaluates to the login name, so the default keeps the previous behaviour (the login name).
+DEFAULT_USER_DISPLAY_NAME = "{user}"
+
+# The WebAuthn user displayName is a free-form string, but authenticators MAY truncate it to 64 bytes
+# (WebAuthn §5.4.3 / CTAP2). We truncate here so the value that is stored and displayed is deterministic.
+DISPLAY_NAME_MAX_BYTES = 64
+
+# A display name tag has the form {tagname}, where tagname consists of word characters.
+DISPLAY_NAME_TAG_PATTERN = re.compile(r"\{(\w+)\}")
 
 
 class PasskeyTokenClass(TokenClass):
@@ -119,6 +131,16 @@ class PasskeyTokenClass(TokenClass):
                         'desc': _("Request attestation from the authenticator during the registration. The attestation "
                                   "certificate will be saved in the token info. The default value is 'none'."),
                         'value': [v for v in AttestationConveyancePreference],
+                        'group': 'WebAuthn'
+                    },
+                    PasskeyAction.UserDisplayName: {
+                        'type': 'str',
+                        'desc': _("The display name of the passkey that is shown by the authenticator during "
+                                  "registration. You can use the tags {user} (login name), {realm}, {resolver} and "
+                                  "{serial}, as well as any attribute the user's resolver provides (e.g. {givenname}, "
+                                  "{surname}, {email}), for replacement, e.g. '{user}@{realm}'. Unknown tags resolve "
+                                  "to an empty string and the result is limited to 64 bytes. Defaults to the login "
+                                  "name of the user."),
                         'group': 'WebAuthn'
                     }
                 }
@@ -187,11 +209,16 @@ class PasskeyTokenClass(TokenClass):
             if PasskeyAction.AttestationConveyancePreference in params:
                 attestation = AttestationConveyancePreference(params[PasskeyAction.AttestationConveyancePreference])
 
+            # User Display Name (configurable via policy, supports tags for replacement)
+            display_name_template = get_optional(params, PasskeyAction.UserDisplayName,
+                                                 default=DEFAULT_USER_DISPLAY_NAME)
+            user_display_name = self._resolve_display_name_tags(display_name_template, token_user)
+
             registration_options: PublicKeyCredentialCreationOptions = generate_registration_options(
                 rp_id=rp_id,
                 rp_name=rp_name,
                 user_name=token_user.login,
-                user_display_name=token_user.login,
+                user_display_name=user_display_name,
                 user_id=fido2_user_id,
                 attestation=attestation,
                 authenticator_selection=AuthenticatorSelectionCriteria(
@@ -222,6 +249,44 @@ class PasskeyTokenClass(TokenClass):
         else:
             response_detail = {}
         return response_detail
+
+    def _resolve_display_name_tags(self, template: str, user) -> str:
+        """
+        Resolve the tags in the passkey user display name template. A tag has the form {tagname}.
+
+        The following tags are always available: {user} (the login name), {realm}, {resolver} and {serial}.
+        Additionally, every attribute the user's resolver provides can be used as a tag, e.g. {givenname},
+        {surname}, {email} or {mobile} for an LDAP resolver. The built-in tags take precedence over resolver
+        attributes with the same name.
+
+        Unknown tags and tags whose value is empty are replaced with an empty string. Static text and braces that
+        do not form a valid tag are kept as they are. The result is truncated to 64 bytes because authenticators
+        may not store longer display names.
+
+        :param template: The display name template, e.g. "{user}@{realm}" or "{givenname} {surname}"
+        :param user: The user the passkey is enrolled for
+        :return: The display name with all tags replaced, truncated to 64 bytes
+        """
+        tags = {}
+        # Attributes the resolver provides for the user (e.g. LDAP attributes)
+        try:
+            tags.update(user.info)
+        except Exception as ex:
+            log.debug(f"Could not read user info while resolving passkey display name tags: {ex}")
+        # Built-in tags win over resolver attributes with the same name
+        tags.update({"user": user.login, "realm": user.realm, "resolver": user.resolver,
+                     "serial": self.token.serial})
+
+        def replace_tag(match):
+            value = tags.get(match.group(1))
+            return str(value) if value is not None else ""
+
+        display_name = DISPLAY_NAME_TAG_PATTERN.sub(replace_tag, template)
+
+        encoded_display_name = display_name.encode("utf-8")
+        if len(encoded_display_name) > DISPLAY_NAME_MAX_BYTES:
+            display_name = encoded_display_name[:DISPLAY_NAME_MAX_BYTES].decode("utf-8", errors="ignore")
+        return display_name
 
     def update(self, param, reset_failcount=True):
         """

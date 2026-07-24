@@ -99,7 +99,7 @@ from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_ty
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.certificatetoken import ACTION as CERTIFICATE_ACTION
 from privacyidea.lib.tokens.indexedsecrettoken import PIIXACTION
-from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
+from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass, DEFAULT_USER_DISPLAY_NAME
 from privacyidea.lib.tokens.push_types import PushAction
 # Token specific imports!
 from privacyidea.lib.tokens.webauthn import (AUTHENTICATOR_ATTACHMENT_TYPES,
@@ -2329,6 +2329,9 @@ def fido2_enroll(request, action):
                            else None)
     if passkey_attestation:
         request.all_data[PasskeyAction.AttestationConveyancePreference] = passkey_attestation
+
+    request.all_data[PasskeyAction.UserDisplayName] = get_first_policy_value(
+        PasskeyAction.UserDisplayName, default=DEFAULT_USER_DISPLAY_NAME, scope=SCOPE.ENROLL, user=user_object)
     if request and hasattr(request, "environ"):
         request.all_data['HTTP_ORIGIN'] = request.environ.get('HTTP_ORIGIN')
     else:

@@ -130,6 +130,7 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         self.assertIn(SCOPE.ENROLL, policy)
         policy_enroll = policy[SCOPE.ENROLL]
         self.assertIn(PasskeyAction.AttestationConveyancePreference, policy_enroll)
+        self.assertIn(PasskeyAction.UserDisplayName, policy_enroll)
 
     def test_02_init_defaults(self):
         """
@@ -490,3 +491,79 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
 
         # Clean up
         remove_token(token.token.serial)
+
+    def test_12_user_display_name_default(self):
+        """
+        Without a passkey_user_display_name policy, the display name defaults to the login name of the user.
+        """
+        registration_request = self._initialize_registration()
+        token = registration_request.token
+        passkey_registration = registration_request.init_detail["passkey_registration"]
+        self.assertEqual("hans", passkey_registration["user"]["displayName"])
+        remove_token(token.get_serial())
+
+    def test_13_user_display_name_with_tags(self):
+        """
+        The passkey_user_display_name policy value supports the tags {user} and {realm}.
+        """
+        registration_request = self._initialize_registration(
+            {PasskeyAction.UserDisplayName: "{user}@{realm}"})
+        token = registration_request.token
+        passkey_registration = registration_request.init_detail["passkey_registration"]
+        self.assertEqual("hans@realm1", passkey_registration["user"]["displayName"])
+        remove_token(token.get_serial())
+
+    def test_14_resolve_display_name_tags(self):
+        token = self._initialize_registration().token
+        serial = token.get_serial()
+
+        class FakeUser:
+            login = "hans"
+            realm = "realm1"
+            resolver = "resolver1"
+            info = {"givenname": "Hans", "surname": "Müller", "email": "hans@example.com"}
+
+        fake_user = FakeUser()
+        # Built-in tags
+        self.assertEqual("hans@realm1", token._resolve_display_name_tags("{user}@{realm}", fake_user))
+        self.assertEqual(serial, token._resolve_display_name_tags("{serial}", fake_user))
+        self.assertEqual("resolver1", token._resolve_display_name_tags("{resolver}", fake_user))
+        # Resolver / LDAP attributes
+        self.assertEqual("Hans Müller", token._resolve_display_name_tags("{givenname} {surname}", fake_user))
+        self.assertEqual("hans@example.com", token._resolve_display_name_tags("{email}", fake_user))
+        # Unknown tag is replaced with an empty string
+        self.assertEqual("Hans ", token._resolve_display_name_tags("{givenname} {unknown}", fake_user))
+        # Built-in tags win over resolver attributes with the same name
+        fake_user.info = {"user": "should-not-be-used"}
+        self.assertEqual("hans", token._resolve_display_name_tags("{user}", fake_user))
+        # Static text and non-tag braces are preserved
+        self.assertEqual("My Passkey", token._resolve_display_name_tags("My Passkey", fake_user))
+        # The result is truncated to 64 bytes
+        resolved = token._resolve_display_name_tags("x" * 100, fake_user)
+        self.assertEqual(64, len(resolved.encode("utf-8")))
+
+        remove_token(serial)
+
+    def test_15_resolve_display_name_tags_user_info_unavailable(self):
+        """
+        If reading the user info fails (e.g. the resolver is unavailable), tag resolution must not break: the
+        built-in tags still resolve and resolver attribute tags fall back to an empty string.
+        """
+        token = self._initialize_registration().token
+        serial = token.get_serial()
+
+        class BrokenUser:
+            login = "hans"
+            realm = "realm1"
+            resolver = "resolver1"
+
+            @property
+            def info(self):
+                raise Exception("resolver unavailable")
+
+        broken_user = BrokenUser()
+        self.assertEqual("hans@realm1", token._resolve_display_name_tags("{user}@{realm}", broken_user))
+        # A resolver attribute that cannot be read falls back to an empty string
+        self.assertEqual("", token._resolve_display_name_tags("{givenname}", broken_user))
+
+        remove_token(serial)
