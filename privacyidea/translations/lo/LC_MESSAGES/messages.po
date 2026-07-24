@@ -6,9 +6,9 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2026-05-19 14:39+0200\n"
-"PO-Revision-Date: 2026-04-26 16:10+0000\n"
+"PO-Revision-Date: 2026-07-25 14:01+0000\n"
 "Last-Translator: BoneNI <bounkirdni@gmail.com>\n"
 "Language-Team: Lao <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/lo/>\n"
@@ -18,6 +18,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 "Generated-By: Babel 2.17.0\n"
+"X-Generator: Weblate 2026.8.dev0\n"
 
 #: api/auth.py:290
 msgid "Authentication with passkey disabled."
@@ -79,7 +80,7 @@ msgstr "ໂນດ: ຄາດຫວັງຢ່າງໜ້ອຍໜຶ່ງໂ�
 #: api/periodictask.py:207
 #, python-brace-format
 msgid "Unknown task module: {!r}"
-msgstr ""
+msgstr "ບໍ່ຮູ້ຈັກໂມດູນວຽກງານ:"
 
 #: api/periodictask.py:215
 #, python-brace-format
@@ -1278,6 +1279,8 @@ msgid ""
 "\"interactive webauthn poll u2f\". Accepted values are: <code>interactive "
 "webauthn poll u2f</code>"
 msgstr ""
+"ທ່ານສາມາດຕັ້ງຄ່າໂໝດຂອງໄຄລເອັນຕາມລຳດັບທີ່ທ່ານຕ້ອງການ. ຕົວຢ່າງ: \"interactive webauthn "
+"poll u2f\". ຄ່າທີ່ຮອງຮັບແມ່ນ: <code>interactive webauthn poll u2f</code>"
 
 #: lib/policy.py:2650
 msgid ""
@@ -1553,6 +1556,9 @@ msgid ""
 "in the policy is preserved in the drop down. Include '-' as an entry to add "
 "an empty option. The first option specified here will be preselected."
 msgstr ""
+"ລາຍຊື່ຂອງ realm, ເຊິ່ງຈະຖືກສະແດງໃນເມນູແບບເລືອກລົງ (drop down) ໃນໜ້າຈໍເຂົ້າສູ່ລະບົບ WebUI. ແຕ່"
+"ລະ realm ແມ່ນແຍກກັນດ້ວຍຍະຫວ່າງ. ລຳດັບຂອງ realm ໃນນະໂຍບາຍຈະຖືກຮັກສາໄວ້ໃນເມນູແບບເລືອກລົງ. "
+"ໃສ່ເຄື່ອງໝາຍ \"-\" ເພື່ອເພີ່ມຕົວເລືອກວ່າງ. ຕົວເລືອກທຳອິດທີ່ລະບຸຢູ່ບ່ອນນີ້ຈະຖືກເລືອກໄວ້ລ່ວງໜ້າ."
 
 #: lib/policy.py:2909
 msgid ""
@@ -3458,13 +3464,11 @@ msgid "The message that is shown above the code on the smartphone."
 msgstr "ຂໍ້ຄວາມທີ່ສະແດງຢູ່ເໜືອລະຫັດໃນສະມາດໂຟນ."
 
 #: lib/tokens/pushtoken.py:472
-#, fuzzy
 msgid ""
 "Use an alternative challenge text for telling the user to confirm the "
 "authentication on his mobile device."
 msgstr ""
-"ໃຊ້ຂໍ້ຄວາມທ້າທາຍທາງເລືອກເພື່ອບອກໃຫ້ຜູ້ໃຊ້ໃສ່ລະຫັດຈາກ SMS. "
-"ທ່ານຍັງສາມາດໃຊ້ແທັກເພື່ອການປ່ຽນແທນອັດຕະໂນມັດໄດ້. ກວດສອບເອກະສານສຳລັບລາຍລະອຽດເພີ່ມເຕີມ."
+"ໃຊ້ຂໍ້ຄວາມທ້າທາຍທາງເລືອກ ເພື່ອແຈ້ງໃຫ້ຜູ້ໃຊ້ຢືນຢັນການພິສູດຕົວຕົນໃນອຸປະກອນມືຖືຂອງພວກເຂົາ."
 
 #: lib/tokens/pushtoken.py:479
 #, python-brace-format
