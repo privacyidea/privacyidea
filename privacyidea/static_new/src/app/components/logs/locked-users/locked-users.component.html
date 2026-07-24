@@ -151,6 +151,17 @@
                 [value]="row.username"
                 (filterValue)="addFilterValue('usernames', $event)" />
             }
+            @if (authService.actionAllowed("authentication_log_read")) {
+              <button
+                (click)="showAuthenticationLog(row)"
+                [routerLink]="[ROUTE_PATHS.AUTHENTICATION_LOG]"
+                class="auth-log-button"
+                i18n-matTooltip
+                matTooltip="Show authentication log of this user"
+                type="button">
+                <mat-icon class="mdi--list-lock auth-log-icon"></mat-icon>
+              </button>
+            }
           </span>
         </td>
       </ng-container>

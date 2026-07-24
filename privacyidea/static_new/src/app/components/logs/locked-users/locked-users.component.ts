@@ -29,6 +29,7 @@ import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { FilterValue } from "@core/models/filter_value/filter_value";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
@@ -42,6 +43,10 @@ import {
   LockedUserEntry,
   LockedUsersPage
 } from "@services/conditional-access-state/conditional-access-state.service";
+import {
+  AuthenticationLogService,
+  AuthenticationLogServiceInterface
+} from "@services/authentication-log/authentication-log.service";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
@@ -80,6 +85,7 @@ import { concatMap, reduce } from "rxjs/operators";
 export class LockedUsersComponent {
   protected readonly casService: ConditionalAccessStateServiceInterface = inject(ConditionalAccessStateService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly authenticationLogService: AuthenticationLogServiceInterface = inject(AuthenticationLogService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
@@ -142,6 +148,18 @@ export class LockedUsersComponent {
 
   displayLogin(row: LockedUserEntry): string {
     return row.username || row.uid;
+  }
+
+  // Pre-seed the authentication-log filter with this user's identity and jump there. Matches by username when
+  // known (falling back to uid for username-less rows), scoped to the same realm/resolver so the log shows only
+  // that user's events. Navigation to the auth-log route itself is done by the template's routerLink.
+  showAuthenticationLog(row: LockedUserEntry): void {
+    const identity = row.username
+      ? new FilterValue().addEntry("username", row.username)
+      : new FilterValue().addEntry("uid", row.uid);
+    this.authenticationLogService.authenticationLogFilter.set(
+      identity.addEntry("realm", row.realm).addEntry("resolver", row.resolver)
+    );
   }
 
   // A stale row (an expired timed lock still on record, shown only with "Show expired") is no longer enforced:

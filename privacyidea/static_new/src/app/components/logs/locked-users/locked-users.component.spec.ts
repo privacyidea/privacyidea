@@ -27,8 +27,10 @@ import { RealmService } from "@services/realm/realm.service";
 import { ResolverService } from "@services/resolver/resolver.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { ConditionalAccessStateService } from "@services/conditional-access-state/conditional-access-state.service";
+import { AuthenticationLogService } from "@services/authentication-log/authentication-log.service";
 import {
   MockAuthService,
+  MockAuthenticationLogService,
   MockContentService,
   MockDialogService,
   MockNotificationService,
@@ -78,6 +80,7 @@ describe("LockedUsersComponent", () => {
   let dialogService: MockDialogService;
   let notificationService: MockNotificationService;
   let tableUtilsService: MockTableUtilsService;
+  let authLogService: MockAuthenticationLogService;
 
   beforeEach(async () => {
     TestBed.resetTestingModule();
@@ -93,6 +96,7 @@ describe("LockedUsersComponent", () => {
         { provide: ResolverService, useClass: MockResolverService },
         { provide: TableUtilsService, useClass: MockTableUtilsService },
         { provide: ConditionalAccessStateService, useClass: MockConditionalAccessStateService },
+        { provide: AuthenticationLogService, useClass: MockAuthenticationLogService },
         provideHttpClient()
       ]
     }).compileComponents();
@@ -103,6 +107,7 @@ describe("LockedUsersComponent", () => {
     dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
     notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     tableUtilsService = TestBed.inject(TableUtilsService) as unknown as MockTableUtilsService;
+    authLogService = TestBed.inject(AuthenticationLogService) as unknown as MockAuthenticationLogService;
     fixture.detectChanges();
   });
 
@@ -112,6 +117,26 @@ describe("LockedUsersComponent", () => {
 
   it("should be created", () => {
     expect(component).toBeTruthy();
+  });
+
+  describe("showAuthenticationLog", () => {
+    it("seeds the auth-log filter with username, realm and resolver", () => {
+      component.showAuthenticationLog(mockEntry);
+      const filter = authLogService.authenticationLogFilter().filterMap;
+      expect(filter.get("username")).toBe("alice");
+      expect(filter.get("realm")).toBe("myrealm");
+      expect(filter.get("resolver")).toBe("ldapResolver");
+      expect(filter.has("uid")).toBe(false);
+    });
+
+    it("falls back to uid when the row has no username", () => {
+      component.showAuthenticationLog({ ...mockEntry, username: "" });
+      const filter = authLogService.authenticationLogFilter().filterMap;
+      expect(filter.get("uid")).toBe("uid001");
+      expect(filter.has("username")).toBe(false);
+      expect(filter.get("realm")).toBe("myrealm");
+      expect(filter.get("resolver")).toBe("ldapResolver");
+    });
   });
 
   it("dataSource is empty when the resource has no value", () => {

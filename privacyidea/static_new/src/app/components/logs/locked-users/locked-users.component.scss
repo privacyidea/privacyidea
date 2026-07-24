@@ -43,6 +43,37 @@
   gap: 8px;
 }
 
+// Auth-log shortcut
+.auth-log-button {
+  background: unset;
+  border: unset;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  opacity: var(--filter-button-opacity, 1);
+  transition: opacity 0.15s ease-in-out;
+}
+
+.auth-log-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// Reveal the inline row actions (filter button + auth-log shortcut) only while the row is
+// hovered or holds focus, to keep dense rows calm. Both read the inherited
+// --filter-button-opacity custom property; :focus-within keeps them reachable for keyboard/AT users.
+.locked-users-table tr.mat-mdc-row {
+  --filter-button-opacity: 0;
+
+  &:hover,
+  &:focus-within {
+    --filter-button-opacity: 1;
+  }
+}
+
 // Placeholder shown in the Lock Expiry column for permanent locks (no expiry).
 .lock-date {
   color: var(--mat-sys-on-surface-variant);
