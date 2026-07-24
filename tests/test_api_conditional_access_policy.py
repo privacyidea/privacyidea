@@ -262,6 +262,16 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         self.assertListEqual([action.value for action in LockoutAction], values)
         self.assertIn(str(LockoutAction.LOCK_USER), values)
 
+    def test_list_targets(self):
+        res = self._request("targets")
+        self.assertEqual(200, res.status_code, res.json)
+        actions_by_target = res.json["result"]["value"]
+        self.assertSetEqual({"user", "source_ip"}, set(actions_by_target))
+        self.assertIn(str(LockoutAction.LOCK_USER), actions_by_target["user"])
+        self.assertNotIn(str(LockoutAction.LOCK_USER), actions_by_target["source_ip"])
+        self.assertIn(str(LockoutAction.BLOCK_IP), actions_by_target["source_ip"])
+        self.assertNotIn(str(LockoutAction.BLOCK_IP), actions_by_target["user"])
+
     # --- PATCH /policy/<id> (update) -------------------------------------------
 
     def test_patch_renames_and_replaces_stages(self):

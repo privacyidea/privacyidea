@@ -40,7 +40,8 @@ from privacyidea.lib.conditional_access.lockout_policy import (list_lockout_poli
                                                                get_lockout_policy,
                                                                create_lockout_policy,
                                                                update_lockout_policy,
-                                                               delete_lockout_policy)
+                                                               delete_lockout_policy,
+                                                               get_actions_by_target)
 from privacyidea.lib.conditional_access.lockout_policy_template import list_lockout_policy_templates
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.log import log_with
@@ -116,6 +117,24 @@ def list_action_types():
     action_types = [action.value for action in LockoutAction]
     g.audit_object.log({"success": True, "info": f"{len(action_types)} action types"})
     return send_result(action_types)
+
+
+@conditional_access_blueprint.route('targets', methods=['GET'])
+@prepolicy(check_base_action, request, PolicyAction.LOCKOUT_POLICY_READ)
+@log_with(log)
+def list_targets():
+    """
+    Return the policy targets and, for each, the stage actions it allows, as
+    ``{target: [action, ...]}`` (see
+    :func:`~privacyidea.lib.conditional_access.lockout_policy.get_actions_by_target`).
+
+    Requires the admin policy action :ref:`policy_lockout_policy_read`.
+
+    :status 200: mapping of target name to its list of allowed action names
+    """
+    actions_by_target = get_actions_by_target()
+    g.audit_object.log({"success": True, "info": f"{len(actions_by_target)} targets"})
+    return send_result(actions_by_target)
 
 
 @conditional_access_blueprint.route('policy', methods=['GET'])

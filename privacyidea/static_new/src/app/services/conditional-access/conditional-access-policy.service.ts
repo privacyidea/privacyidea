@@ -62,6 +62,9 @@ export type LockoutActionType =
   | "ALLOW"
   | "DENY";
 
+// The identity a policy counts and acts on.
+export type LockoutTarget = "user" | "source_ip";
+
 export interface LockoutStageAction {
   id?: number;
   action_type: LockoutActionType;
@@ -83,6 +86,7 @@ export interface LockoutPolicy {
   enabled: boolean;
   dry_run: boolean;
   priority: number;
+  target: LockoutTarget;
   counter_types_to_track: AuthEventType[];
   stages: LockoutPolicyStage[];
 }
@@ -90,12 +94,21 @@ export interface LockoutPolicy {
 // The shape sent to create/update; id is only present (and ignored server-side) on update.
 export type LockoutPolicySaveParams = Omit<LockoutPolicy, "id"> & { id?: number };
 
+// A ready-made policy the backend ships (GET /conditionalaccess/template); "policy"
+// is a full create payload a client prefills, edits and POSTs as a normal policy.
+export interface LockoutPolicyTemplate {
+  key: string;
+  description: string;
+  policy: LockoutPolicySaveParams;
+}
+
 export const EMPTY_LOCKOUT_POLICY: LockoutPolicySaveParams = {
   name: "",
   time_window_seconds: 600,
   enabled: true,
   dry_run: false,
   priority: 1,
+  target: "user",
   counter_types_to_track: [],
   stages: []
 };
@@ -107,6 +120,13 @@ export interface ConditionalAccessPolicyServiceInterface {
   readonly eventTypes: Signal<AuthEventType[]>;
   readonly actionTypesResource: HttpResourceRef<PiResponse<string[]> | undefined>;
   readonly actionTypes: Signal<LockoutActionType[]>;
+  readonly targetsResource: HttpResourceRef<PiResponse<Record<string, string[]>> | undefined>;
+  readonly actionsByTarget: Signal<Record<LockoutTarget, LockoutActionType[]>>;
+  readonly targets: Signal<LockoutTarget[]>;
+  readonly templatesResource: HttpResourceRef<PiResponse<LockoutPolicyTemplate[]> | undefined>;
+  readonly templates: Signal<LockoutPolicyTemplate[]>;
+
+  actionsForTarget(target: LockoutTarget): LockoutActionType[];
 
   savePolicy(policy: LockoutPolicySaveParams): Promise<number | undefined>;
 
@@ -132,6 +152,8 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
   readonly baseUrl = environment.proxyUrl + "/conditionalaccess/policy";
   readonly eventTypesUrl = environment.proxyUrl + "/conditionalaccess/eventtypes";
   readonly actionTypesUrl = environment.proxyUrl + "/conditionalaccess/actiontypes";
+  readonly targetsUrl = environment.proxyUrl + "/conditionalaccess/targets";
+  readonly templatesUrl = environment.proxyUrl + "/conditionalaccess/template";
 
   readonly policiesResource = httpResource<PiResponse<LockoutPolicy[]>>(() => {
     if (!this.authService.actionAllowed("lockout_policy_read")) {
@@ -185,6 +207,45 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
   readonly actionTypes: Signal<LockoutActionType[]> = computed(
     () => (this.actionTypesResource.value()?.result?.value ?? []) as LockoutActionType[]
   );
+
+  // The targets and, per target, the actions that target allows
+  readonly targetsResource = httpResource<PiResponse<Record<string, string[]>>>(() => {
+    if (!this.authService.actionAllowed("lockout_policy_read") || !this.contentService.onConditionalAccess()) {
+      return undefined;
+    }
+    return {
+      url: this.targetsUrl,
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
+  });
+
+  readonly actionsByTarget: Signal<Record<LockoutTarget, LockoutActionType[]>> = computed(
+    () => (this.targetsResource.value()?.result?.value ?? {}) as Record<LockoutTarget, LockoutActionType[]>
+  );
+
+  readonly targets: Signal<LockoutTarget[]> = computed(() => Object.keys(this.actionsByTarget()) as LockoutTarget[]);
+
+  readonly templatesResource = httpResource<PiResponse<LockoutPolicyTemplate[]>>(() => {
+    if (!this.authService.actionAllowed("lockout_policy_read") || !this.contentService.onConditionalAccess()) {
+      return undefined;
+    }
+    return {
+      url: this.templatesUrl,
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
+  });
+
+  readonly templates: Signal<LockoutPolicyTemplate[]> = computed(
+    () => this.templatesResource.value()?.result?.value ?? []
+  );
+
+  // Actions allowed for a target; falls back to the full list until /targets loads,
+  // so the select is never empty on first paint.
+  actionsForTarget(target: LockoutTarget): LockoutActionType[] {
+    return this.actionsByTarget()[target] ?? this.actionTypes();
+  }
 
   constructor() {
     effect(() => {

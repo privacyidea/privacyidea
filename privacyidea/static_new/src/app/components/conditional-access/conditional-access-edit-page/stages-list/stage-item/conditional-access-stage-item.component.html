@@ -67,7 +67,9 @@
       <mat-icon>delete</mat-icon>
     </button>
   </div>
-  <p class="ca-stage-hint" i18n>
+  <p
+    class="ca-stage-hint"
+    i18n>
     Runs the actions below once this many tracked events occur within the policy's time window.
   </p>
 
@@ -80,14 +82,15 @@
       <input
         matInput
         type="number"
-        min="1"
+        min="0"
         [value]="stage().failure_threshold"
         (input)="onFailureThresholdInput($any($event.target).value)" />
-      <mat-hint i18n>Number of tracked events that trigger this stage.</mat-hint>
+      <mat-hint i18n>Number of tracked events that trigger this stage (0 = always, for an allow/deny rule).</mat-hint>
     </mat-form-field>
   </div>
 
   <app-conditional-access-actions-list
     [actions]="stage().actions"
+    [target]="target()"
     (actionsChange)="onActionsChange($event)" />
 </div>
