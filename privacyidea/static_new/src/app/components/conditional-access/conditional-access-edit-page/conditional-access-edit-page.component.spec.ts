@@ -24,7 +24,10 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService } from "@services/auth/auth.service";
 import {
   ConditionalAccessPolicyService,
-  LockoutPolicy
+  LockoutActionType,
+  LockoutPolicy,
+  LockoutPolicySaveParams,
+  LockoutTarget
 } from "@services/conditional-access/conditional-access-policy.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
@@ -52,8 +55,20 @@ const mockPolicy: LockoutPolicy = {
   enabled: true,
   dry_run: false,
   priority: 1,
+  target: "user",
   counter_types_to_track: ["PIN_FAIL"],
   stages: [{ failure_threshold: 5, priority: 1, actions: [{ action_type: "LOCK_USER", action_value: null }] }]
+};
+
+const EMPTY_TEMPLATE_POLICY: LockoutPolicySaveParams = {
+  name: "Password Brute-Force",
+  time_window_seconds: 900,
+  enabled: true,
+  dry_run: false,
+  priority: 1,
+  target: "user",
+  counter_types_to_track: ["PASSWORD_FAIL"],
+  stages: [{ failure_threshold: 10, priority: 1, actions: [{ action_type: "LOCK_USER", action_value: null }] }]
 };
 
 describe("ConditionalAccessEditPageComponent — edit mode", () => {
@@ -339,5 +354,76 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
     expect(component.editPolicy().stages).toEqual([]);
     expect(component.editPolicy().counter_types_to_track).toEqual([]);
     expect(component.selectedTemplateKey()).toBeNull();
+  });
+
+  it("should expose the selected template's description as a hint", () => {
+    policyServiceMock.templates.set([
+      { key: "k", description: "Lock a user after repeated wrong passwords.", policy: EMPTY_TEMPLATE_POLICY }
+    ]);
+    expect(component.selectedTemplateDescription()).toBe("");
+    component.applyTemplate("k");
+    expect(component.selectedTemplateDescription()).toBe("Lock a user after repeated wrong passwords.");
+  });
+
+  it("should update the policy target on target change", () => {
+    component.onTargetChange("source_ip");
+    expect(component.editPolicy().target).toBe("source_ip");
+  });
+
+  describe("targetOptions", () => {
+    it("should fall back to the fixed enum until /targets loads", () => {
+      policyServiceMock.targets.set([]);
+      expect(component.targetOptions()).toEqual(["user", "source_ip"]);
+    });
+
+    it("should use the backend targets once loaded", () => {
+      policyServiceMock.targets.set(["user", "source_ip"]);
+      expect(component.targetOptions()).toEqual(["user", "source_ip"]);
+    });
+  });
+
+  describe("targetLabel", () => {
+    it("should return the human label for a known target", () => {
+      expect(component.targetLabel("user")).toBe("User");
+      expect(component.targetLabel("source_ip")).toBe("Source IP");
+    });
+
+    it("should fall back to the raw value for an unknown target", () => {
+      expect(component.targetLabel("realm")).toBe("realm");
+    });
+  });
+
+  describe("targetActionsValid", () => {
+    const stageWith = (actionType: LockoutActionType) => [
+      { failure_threshold: 5, priority: 1, actions: [{ action_type: actionType, action_value: null }] }
+    ];
+
+    beforeEach(() => {
+      policyServiceMock.actionsByTarget.set({
+        user: ["LOCK_USER", "ALLOW", "DENY"],
+        source_ip: ["BLOCK_IP", "ALLOW", "DENY"]
+      });
+    });
+
+    it("should be valid when every stage action is allowed for the target", () => {
+      component.onTargetChange("user");
+      component.onStagesChange(stageWith("LOCK_USER"));
+      expect(component.targetActionsValid()).toBe(true);
+    });
+
+    it("should be invalid when a stage action is not allowed for the target", () => {
+      component.onTargetChange("source_ip");
+      component.onStagesChange(stageWith("LOCK_USER"));
+      expect(component.targetActionsValid()).toBe(false);
+      expect(component.canSave()).toBe(false);
+    });
+
+    it("should not block while the allowed-actions list is still empty", () => {
+      policyServiceMock.actionsByTarget.set({} as Record<LockoutTarget, LockoutActionType[]>);
+      policyServiceMock.actionTypes.set([]);
+      component.onTargetChange("source_ip");
+      component.onStagesChange(stageWith("LOCK_USER"));
+      expect(component.targetActionsValid()).toBe(true);
+    });
   });
 });

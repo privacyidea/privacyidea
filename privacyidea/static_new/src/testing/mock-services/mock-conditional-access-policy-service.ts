@@ -22,6 +22,7 @@ import {
   ConditionalAccessPolicyServiceInterface,
   LockoutActionType,
   LockoutPolicy,
+  LockoutPolicySaveParams,
   LockoutPolicyTemplate,
   LockoutTarget
 } from "@services/conditional-access/conditional-access-policy.service";
@@ -56,7 +57,7 @@ export class MockConditionalAccessPolicyService implements ConditionalAccessPoli
     (target: LockoutTarget): LockoutActionType[] => this.actionsByTarget()[target] ?? this.actionTypes()
   );
 
-  savePolicy = jest.fn(async (): Promise<number | undefined> => Promise.resolve(1));
+  savePolicy = jest.fn(async (_: LockoutPolicySaveParams): Promise<number | undefined> => Promise.resolve(1));
 
   deletePolicy = jest.fn(async (): Promise<void> => Promise.resolve());
 
