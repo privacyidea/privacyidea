@@ -38,9 +38,6 @@ const LOCKED_USERS_DEFAULT_PAGE_SIZE = 15;
 // (permanent / temporary / expired) and replaces the former "show expired" toggle.
 const LOCKED_USERS_FILTER_KEYS = ["usernames", "realms", "resolvers", "states"];
 
-// Default lock-state selection: hide expired records (the "currently locked" view).
-const DEFAULT_LOCKED_USERS_FILTER = "states: permanent,temporary";
-
 // Shallow value-equality for the flat filter-params record, so a value-less key edit does not re-notify.
 function shallowEqualRecord(a: Record<string, string>, b: Record<string, string>): boolean {
   const aKeys = Object.keys(a);
@@ -139,8 +136,7 @@ export class ConditionalAccessStateService implements ConditionalAccessStateServ
   }
 
   // Filter / sort / pagination state for the locked-users table, driving the resource params (server-side).
-  // Seeded to hide expired records by default.
-  lockedUsersFilter = signal(new FilterValue({ value: DEFAULT_LOCKED_USERS_FILTER }));
+  lockedUsersFilter = signal(new FilterValue());
 
   // Value-based equality so adding/clearing a filter key without a value does not trigger a needless reload.
   lockedUsersFilterParams = computed<Record<string, string>>(
@@ -273,10 +269,9 @@ export class ConditionalAccessStateService implements ConditionalAccessStateServ
 
   removeBlocklistEntry(entry: BlocklistEntry): Observable<boolean> {
     return this.http
-      .delete<PiResponse<boolean>>(
-        this.conditionalAccessBaseUrl + "blocklist/" + encodeURIComponent(entry.identifier),
-        { headers: this.authService.getHeaders() }
-      )
+      .delete<
+        PiResponse<boolean>
+      >(this.conditionalAccessBaseUrl + "blocklist/" + encodeURIComponent(entry.identifier), { headers: this.authService.getHeaders() })
       .pipe(
         map((response) => response.result?.value ?? false),
         catchError((error) => {

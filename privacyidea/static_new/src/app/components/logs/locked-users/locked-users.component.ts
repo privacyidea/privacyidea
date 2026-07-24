@@ -114,8 +114,7 @@ export class LockedUsersComponent {
     return [...options].sort((a, b) => a - b);
   });
 
-  // State filter options. Default selection (permanent + temporary) is seeded in the service's filter, so expired
-  // records are hidden until "Expired" is picked.
+  // State filter options.
   readonly stateOptions: MultiSelectFilterOption[] = [
     { label: $localize`Permanent`, value: "permanent" },
     { label: $localize`Temporary`, value: "temporary" },

@@ -19,13 +19,6 @@
 <div
   appScrollToTop
   class="blocklist-table-container">
-  <h3 i18n>Blocklist</h3>
-
-  <div
-    class="margin-bottom-16"
-    i18n>
-    This is a list of entries (e.g. IP addresses) currently blocked by the conditional-access engine.
-  </div>
 
   <div class="filter-container">
     <mat-form-field
@@ -67,7 +60,7 @@
         mat-stroked-button
         matTooltip="Delete all expired blocklist entries from the database">
         <mat-icon>delete_sweep</mat-icon>
-        <span i18n>Clean Up Expired</span>
+        <span i18n>Delete Expired</span>
       </button>
     }
   </div>
@@ -111,7 +104,7 @@
           mat-header-cell
           i18n>
           <div class="header-cell">
-            <span>Identifier</span>
+            <span>Source IP</span>
             <button
               (click)="onSortEvent('identifier')"
               class="sort-button"
