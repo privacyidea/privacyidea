@@ -2,6 +2,9 @@
 This testfile tests the basic app functionality of the privacyIDEA app
 """
 import os
+import subprocess
+import sys
+import tempfile
 import unittest
 import flask
 import inspect
@@ -172,3 +175,54 @@ class AppTestCase(unittest.TestCase):
                            level=logging.NOTSET,
                            partial=True)
             ], logger.handlers)
+
+
+class DockerConfigSecretKeyTestCase(unittest.TestCase):
+    """
+    DockerConfig reads the Flask SECRET_KEY from SECRET_KEY / SECRET_KEY_FILE and
+    also accepts PI_SECRET_KEY / PI_SECRET_KEY_FILE as an alias (for consistency
+    with the other PI_* secret variables), with the unprefixed name taking
+    precedence.
+
+    DockerConfig evaluates these at import time, so each case is checked in a
+    fresh subprocess with a controlled environment. Reloading the config module
+    in-process must be avoided: it would rebind ``privacyidea.config.config`` away
+    from the reference ``privacyidea.app`` holds and silently break config
+    overrides for later tests on the same worker.
+    """
+    _SECRET_ENV = ("SECRET_KEY", "SECRET_KEY_FILE", "PI_SECRET_KEY", "PI_SECRET_KEY_FILE")
+    _SCRIPT = ("import sys\n"
+               "import privacyidea.config as c\n"
+               "sys.stdout.write(getattr(c.DockerConfig, 'SECRET_KEY', '') or '<none>')\n")
+
+    def _docker_secret_key(self, extra_env):
+        env = {key: value for key, value in os.environ.items() if key not in self._SECRET_ENV}
+        env.update(extra_env)
+        result = subprocess.run([sys.executable, "-c", self._SCRIPT],
+                                env=env, cwd=dirname, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return result.stdout
+
+    def _write_secret(self, tmpdir, name, value):
+        path = os.path.join(tmpdir, name)
+        with open(path, "w") as secret_file:
+            secret_file.write(value + "\n")
+        return path
+
+    def test_01_pi_secret_key_file_alias(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            alias = self._write_secret(tmpdir, "pi_sk", "ALIAS-VALUE")
+            self.assertEqual(self._docker_secret_key({"PI_SECRET_KEY_FILE": alias}), "ALIAS-VALUE")
+
+    def test_02_plain_secret_key_file_still_works(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            plain = self._write_secret(tmpdir, "plain_sk", "PLAIN-VALUE")
+            self.assertEqual(self._docker_secret_key({"SECRET_KEY_FILE": plain}), "PLAIN-VALUE")
+
+    def test_03_plain_takes_precedence_over_alias(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            plain = self._write_secret(tmpdir, "plain_sk", "PLAIN-VALUE")
+            alias = self._write_secret(tmpdir, "pi_sk", "ALIAS-VALUE")
+            self.assertEqual(
+                self._docker_secret_key({"SECRET_KEY_FILE": plain, "PI_SECRET_KEY_FILE": alias}),
+                "PLAIN-VALUE")

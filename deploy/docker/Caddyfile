@@ -1,0 +1,13 @@
+# SPDX-FileCopyrightText: (C) 2026 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: CC0-1.0
+# Caddy reverse proxy for the optional "tls" compose profile.
+# PI_SITE_ADDRESS is set from .env (default: localhost). With a real public
+# hostname and reachable ports 80/443, Caddy provisions and renews a Let's
+# Encrypt certificate automatically.
+#
+# For an internal host without public DNS, uncomment "tls internal" to have
+# Caddy issue a locally-trusted certificate instead.
+{$PI_SITE_ADDRESS} {
+	# tls internal
+	reverse_proxy pi:8080
+}

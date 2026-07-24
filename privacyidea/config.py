@@ -287,7 +287,11 @@ class DockerConfig:
         SQLALCHEMY_DATABASE_URI = sqlalchemy_db_url
     if pi_pepper := _get_secrets_from_environment(ConfigKey.PEPPER):
         PI_PEPPER = pi_pepper
-    if secret_key := _get_secrets_from_environment(ConfigKey.SECRET_KEY):
+    # SECRET_KEY / SECRET_KEY_FILE keep Flask's key name (no PI_ prefix). Also
+    # accept PI_SECRET_KEY / PI_SECRET_KEY_FILE as an alias, for consistency with
+    # the other PI_* secret variables; the unprefixed name takes precedence.
+    if secret_key := (_get_secrets_from_environment(ConfigKey.SECRET_KEY)
+                      or _get_secrets_from_environment("PI_SECRET_KEY")):
         SECRET_KEY = secret_key
 
     if enc_key := _get_secrets_paths_from_environment("enckey", ConfigKey.ENCFILE):
