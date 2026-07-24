@@ -34,7 +34,7 @@ from urllib.parse import unquote
 
 import jwt
 from flask import (jsonify,
-                   current_app, request, Response)
+                   current_app, request, g, Response)
 
 from privacyidea.lib.utils import (prepare_result, get_version, to_unicode,
                                    get_plugin_info_from_useragent)
@@ -50,6 +50,8 @@ from privacyidea.lib.params import (  # noqa: F401
 )
 # check_policy_name lives in lib/policy; re-exported here for backward compatibility
 from privacyidea.lib.policy import check_policy_name  # noqa: F401
+from privacyidea.lib.policy import Match, SCOPE
+from privacyidea.lib.policies.actions import PolicyAction
 from ...lib.error import (PolicyError, ResourceNotFoundError,
                           PrivacyIDEAError, AuthError, Error)
 from ...lib.log import log_with
@@ -442,3 +444,84 @@ def map_error_to_code(error: Exception, default: int = 500) -> int:
         if cls in error_mapping:
             return error_mapping[cls]
     return default
+
+
+def hardening_action_active(g, request, action) -> bool:
+    """
+    Return whether the given HARDENING-scope policy action matches the current
+    request.
+
+    Hardening policies are evaluated without user/realm/resolver/time conditions
+    (client IP and user agent matching still apply). The evaluation is
+    defensive: an incomplete request context (for example an error raised early
+    in before_request, before g.client_ip was set) or a failure of the policy
+    backend results in ``False`` rather than an exception, so callers in error
+    handlers cannot themselves fail with a 500.
+    """
+    try:
+        # Ensure g.policy_object and g.client_ip/user_agent are available even
+        # when before_request failed early (e.g. an AuthError before the policy
+        # object was created).
+        if not hasattr(g, "policy_object"):
+            from privacyidea.lib.policy import PolicyClass
+            g.policy_object = PolicyClass()
+        # Skip the policy evaluation entirely when no hardening policy is
+        # configured. This keeps high-volume endpoints fast while the feature is
+        # disabled instead of running a full policy match on every request.
+        if not g.policy_object.list_policies(scope=SCOPE.HARDENING, active=True):
+            return False
+        # Match.action_only matches the client IP and user agent implicitly.
+        if not hasattr(g, "client_ip") or not g.client_ip:
+            from privacyidea.lib.config import get_from_config, SYSCONF
+            from privacyidea.lib.utils import get_client_ip
+            try:
+                override_client = get_from_config(SYSCONF.OVERRIDECLIENT)
+            except Exception:
+                override_client = None
+            g.client_ip = get_client_ip(request, override_client)
+        if not g.get("user_agent"):
+            ua_name, _ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
+            g.user_agent = ua_name
+        return Match.action_only(g, scope=SCOPE.HARDENING, action=action).any(write_to_audit_log=False)
+    except Exception:
+        return False
+
+
+def _is_authentication_endpoint(request) -> bool:
+    """
+    True if the current request targets an authentication endpoint: any
+    /validate route, or the /auth login (not other jwtauth routes such as
+    /auth/rights).
+    """
+    # The blueprint names are stable string constants, so we compare against
+    # them directly instead of importing the blueprints (which would import
+    # from this module) on the error-handling path.
+    if request.blueprint == "validate_blueprint":
+        return True
+    return request.blueprint == "jwtauth" and request.path.endswith("/auth")
+
+
+def get_auth_error_status_code(error: Exception) -> int:
+    """
+    Determine the HTTP status code for an error raised during authentication.
+
+    Normally this is the error's mapped status code (e.g. 401 for AuthError,
+    403 for PolicyError, 404 for ResourceNotFoundError, 400 for other
+    PrivacyIDEAErrors such as a denied authorization). If the
+    hide_auth_error_status policy (HARDENING scope) is set, the distinct 4xx
+    codes are collapsed into a uniform 401, so the status code cannot be used
+    to distinguish why the authentication failed.
+
+    Server faults (5xx) are never masked, so a real internal error is not
+    disguised as an authentication failure. Only requests to the authentication
+    endpoints (the /auth login and /validate) are affected, so the same error
+    types raised on other endpoints keep their regular status code.
+    """
+    mapped_code = map_error_to_code(error)
+    # Already 401 -> nothing to normalize (avoids a policy match on the
+    # high-volume failed-login path). Never collapse server faults to 401.
+    if mapped_code == 401 or mapped_code >= 500:
+        return mapped_code
+    if not _is_authentication_endpoint(request):
+        return mapped_code
+    return 401 if hardening_action_active(g, request, PolicyAction.HIDE_AUTH_ERROR_STATUS) else mapped_code
