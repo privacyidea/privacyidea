@@ -214,10 +214,9 @@ def get_user_lockout(user: "User", now: datetime | None = None) -> "RestrictionS
     """
     Return information about *user*'s **current** lock, or ``None`` if the user
     is not currently locked. This is a **pure read** intended for the
-    authentication pre-check hot path: it never writes, so a stale
-    ``is_locked=True`` row whose ``lock_expires_at`` lies in the past simply
-    reads as *not locked* (it is overwritten by the next lock or by a cleanup
-    job).
+    authentication pre-check hot path: it never writes, so a stale row whose
+    ``lock_expires_at`` lies in the past simply reads as *not locked* (it is
+    overwritten by the next lock or by a cleanup job).
 
     A row with ``lock_expires_at IS NULL`` is a permanent lock.
 
@@ -228,7 +227,7 @@ def get_user_lockout(user: "User", now: datetime | None = None) -> "RestrictionS
     if not _resolved(user):
         return None
     state = db.session.get(UserLockoutState, (user.resolver, user.uid, user.realm))
-    if not state or not state.is_locked:
+    if not state:
         return None
     if state.lock_expires_at is None:
         # Permanent lock; only an admin reset clears it.
@@ -308,9 +307,9 @@ def get_ip_block(source_ip: str | None, now: datetime | None = None) -> "Restric
     pre-check hot path.
 
     Like :func:`get_user_lockout` it is a **pure read**: it never writes, so a
-    stale ``is_blocked=True`` row whose ``block_expires_at`` lies in the past
-    simply reads as *not blocked* (it is overwritten by the next block or by a
-    cleanup job). A row with ``block_expires_at IS NULL`` is a permanent block.
+    stale row whose ``block_expires_at`` lies in the past simply reads as *not
+    blocked* (it is overwritten by the next block or by a cleanup job). A row
+    with ``block_expires_at IS NULL`` is a permanent block.
 
     The remaining time is surfaced so the WebUI login (``/auth``) can tell the
     user how long the block lasts, just like the user lock (maskable via the
@@ -324,7 +323,7 @@ def get_ip_block(source_ip: str | None, now: datetime | None = None) -> "Restric
     if not source_ip:
         return None
     state = db.session.get(BlockList, source_ip)
-    if not state or not state.is_blocked:
+    if not state:
         return None
     # A block row exists; honor the never-block allowlist so adding an IP to it
     # immediately stops enforcing any (e.g. stale or mistaken) block on that IP.
@@ -557,13 +556,13 @@ def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
     dedup_window_start = now - timedelta(seconds=window)
     # De-dup: skip a stage that already fired within the window for this user, or
     # (for IP-blocking stages) for this source IP. An incident *ends* when its
-    # lock/block is lifted — whether by expiry OR by an admin clearing
-    # ``is_locked`` / ``is_blocked`` — so the next trigger is a fresh incident
-    # that must execute again. Otherwise an expired or admin-lifted lock would
-    # leave a dead zone for the rest of the window in which the offender could
-    # keep failing without ever being re-locked / re-blocked.
+    # lock/block is lifted — whether by expiry OR by an admin deleting the row —
+    # so the next trigger is a fresh incident that must execute again. Otherwise
+    # an expired or admin-lifted lock would leave a dead zone for the rest of the
+    # window in which the offender could keep failing without ever being
+    # re-locked / re-blocked.
     user_state = db.session.get(UserLockoutState, (user.resolver, user.uid, user.realm))
-    user_incident_active = (user_state is not None and user_state.is_locked
+    user_incident_active = (user_state is not None
                             and (user_state.lock_expires_at is None
                                  or user_state.lock_expires_at > now))
     user_dedup = (user_incident_active
@@ -578,7 +577,7 @@ def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
     if source_ip and any(a.action_type in (LockoutAction.BLOCK_IP, LockoutAction.PERMANENT_BLOCK_IP)
                          for a in triggered_stage.actions):
         ip_state = db.session.get(BlockList, source_ip)
-        ip_incident_active = (ip_state is not None and ip_state.is_blocked
+        ip_incident_active = (ip_state is not None
                               and (ip_state.block_expires_at is None
                                    or ip_state.block_expires_at > now))
         ip_dedup = (ip_incident_active
@@ -790,11 +789,9 @@ def _execute_stage_actions(stage, user: "User", source_ip: str | None, now: date
                     log.warning(f"LOCK_USER action {action.id} on stage {stage.id} has no valid duration "
                                 f"({action.action_value!r}); skipping.")
                     continue
-                _upsert_user_lockout_state(user, is_locked=True,
-                                           lock_expires_at=now + timedelta(seconds=duration),
-                                           stage_id=stage.id)
+                _upsert_user_lockout_state(user, lock_expires_at=now + timedelta(seconds=duration), stage_id=stage.id)
             elif action_type == LockoutAction.PERMANENT_LOCK_USER:
-                _upsert_user_lockout_state(user, is_locked=True, lock_expires_at=None, stage_id=stage.id)
+                _upsert_user_lockout_state(user, lock_expires_at=None, stage_id=stage.id)
             elif action_type in (LockoutAction.EMAIL_ADMIN, LockoutAction.EMAIL_USER):
                 notice = _send_lockout_email(action_type, action, user, tags)
                 if notice:
@@ -818,8 +815,7 @@ def _execute_stage_actions(stage, user: "User", source_ip: str | None, now: date
                                     f"({action.action_value!r}); skipping.")
                         continue
                     block_expires_at = now + timedelta(seconds=duration)
-                _upsert_ip_block(source_ip, block_expires_at=block_expires_at,
-                                 stage_id=stage.id, reason=tags.get("policy"))
+                _upsert_ip_block(source_ip, block_expires_at=block_expires_at, stage_id=stage.id)
             elif action_type in (LockoutAction.ALLOW, LockoutAction.DENY):
                 # ALLOW/DENY decide the current request pre-auth (see
                 # evaluate_access_decision); they are not post-response side
@@ -834,8 +830,7 @@ def _execute_stage_actions(stage, user: "User", source_ip: str | None, now: date
     return notices
 
 
-def _upsert_user_lockout_state(user: "User", *, is_locked: bool,
-                               lock_expires_at: datetime | None, stage_id: int) -> None:
+def _upsert_user_lockout_state(user: "User", *, lock_expires_at: datetime | None, stage_id: int) -> None:
     """
     Create or update the :class:`UserLockoutState` row for *user*.
 
@@ -849,11 +844,10 @@ def _upsert_user_lockout_state(user: "User", *, is_locked: bool,
         if state is None:
             state = UserLockoutState(resolver=user.resolver, uid=user.uid, realm=user.realm)
             db.session.add(state)
-        elif state.is_locked and state.lock_expires_at is None and lock_expires_at is not None:
+        elif state.lock_expires_at is None and lock_expires_at is not None:
             log.info(f"Not downgrading the existing permanent lock for {user!r} to a timed lock.")
             return
         state.username = user.login
-        state.is_locked = is_locked
         state.lock_expires_at = lock_expires_at
         state.last_stage_triggered = stage_id
         db.session.commit()
@@ -862,8 +856,7 @@ def _upsert_user_lockout_state(user: "User", *, is_locked: bool,
         db.session.rollback()
 
 
-def _upsert_ip_block(source_ip: str, *, block_expires_at: datetime | None, stage_id: int,
-                     reason: str | None = None) -> None:
+def _upsert_ip_block(source_ip: str, *, block_expires_at: datetime | None, stage_id: int) -> None:
     """
     Create or update the :class:`BlockList` row for *source_ip*.
 
@@ -884,13 +877,11 @@ def _upsert_ip_block(source_ip: str, *, block_expires_at: datetime | None, stage
         if state is None:
             state = BlockList(ip=source_ip)
             db.session.add(state)
-        elif state.is_blocked and state.block_expires_at is None and block_expires_at is not None:
+        elif state.block_expires_at is None and block_expires_at is not None:
             log.info(f"Not downgrading the existing permanent block for IP {source_ip!r} to a timed block.")
             return
-        state.is_blocked = True
         state.block_expires_at = block_expires_at
         state.last_stage_triggered = stage_id
-        state.reason = reason
         db.session.commit()
     except Exception as ex:
         log.warning(f"Failed to write the IP block for {source_ip!r}: {ex!r}")

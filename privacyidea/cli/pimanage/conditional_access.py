@@ -51,8 +51,7 @@ def list_blocked_ips():
         return
     click.echo(f"{len(entries)} blocked IP(s):")
     for entry in entries:
-        click.echo(f"  {entry['identifier']}\texpires={_format_expiry(entry['block_expires_at'])}"
-                   f"\treason={entry['reason'] or ''}")
+        click.echo(f"  {entry['identifier']}\texpires={_format_expiry(entry['block_expires_at'])}")
 
 
 @conditional_access_cli.command("unblock-ip", help="Remove the block for a single IP.")

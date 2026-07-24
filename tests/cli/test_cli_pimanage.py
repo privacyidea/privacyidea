@@ -1013,14 +1013,11 @@ class PIManageConditionalAccessTestCase(CliTestCase):
         res = runner.invoke(pi_manage, ["conditionalaccess", "list-blocked-ips"])
         self.assertIn("No blocked IPs.", res.output, res)
 
-        db.session.add(BlockList(ip="203.0.113.7", is_blocked=True,
-                                 block_expires_at=utc_now() + dt.timedelta(seconds=600),
-                                 reason="brute force"))
+        db.session.add(BlockList(ip="203.0.113.7", block_expires_at=utc_now() + dt.timedelta(seconds=600)))
         db.session.commit()
 
         res = runner.invoke(pi_manage, ["conditionalaccess", "list-blocked-ips"])
         self.assertIn("203.0.113.7", res.output, res)
-        self.assertIn("brute force", res.output, res)
 
         res = runner.invoke(pi_manage, ["conditionalaccess", "unblock-ip", "203.0.113.7"])
         self.assertIn("Removed the block for IP 203.0.113.7.", res.output, res)
@@ -1034,7 +1031,7 @@ class PIManageConditionalAccessTestCase(CliTestCase):
 
     def test_04_list_and_unlock_by_id(self):
         runner = self.app.test_cli_runner()
-        db.session.add(UserLockoutState(resolver="reso1", uid="42", realm="realm1", is_locked=True,
+        db.session.add(UserLockoutState(resolver="reso1", uid="42", realm="realm1",
                                         lock_expires_at=utc_now() + dt.timedelta(seconds=600)))
         db.session.commit()
 
@@ -1051,8 +1048,7 @@ class PIManageConditionalAccessTestCase(CliTestCase):
     def test_05_clear_blocks(self):
         runner = self.app.test_cli_runner()
         for ip in ("203.0.113.7", "203.0.113.8"):
-            db.session.add(BlockList(ip=ip, is_blocked=True,
-                                     block_expires_at=utc_now() + dt.timedelta(seconds=600)))
+            db.session.add(BlockList(ip=ip, block_expires_at=utc_now() + dt.timedelta(seconds=600)))
         db.session.commit()
 
         res = runner.invoke(pi_manage, ["conditionalaccess", "clear-blocks", "--yes"])
@@ -1090,7 +1086,7 @@ class PIManageConditionalAccessTestCase(CliTestCase):
     def test_09_clear_locks(self):
         runner = self.app.test_cli_runner()
         for uid in ("1", "2", "3"):
-            db.session.add(UserLockoutState(resolver="reso1", uid=uid, realm="realm1", is_locked=True,
+            db.session.add(UserLockoutState(resolver="reso1", uid=uid, realm="realm1",
                                             lock_expires_at=utc_now() + dt.timedelta(seconds=600)))
         db.session.commit()
         res = runner.invoke(pi_manage, ["conditionalaccess", "clear-locks", "--yes"])
@@ -1099,9 +1095,9 @@ class PIManageConditionalAccessTestCase(CliTestCase):
 
     def test_09b_clear_locks_by_realm(self):
         runner = self.app.test_cli_runner()
-        db.session.add(UserLockoutState(resolver="reso1", uid="1", realm="realm1", is_locked=True,
+        db.session.add(UserLockoutState(resolver="reso1", uid="1", realm="realm1",
                                         lock_expires_at=utc_now() + dt.timedelta(seconds=600)))
-        db.session.add(UserLockoutState(resolver="reso2", uid="2", realm="realm2", is_locked=True,
+        db.session.add(UserLockoutState(resolver="reso2", uid="2", realm="realm2",
                                         lock_expires_at=utc_now() + dt.timedelta(seconds=600)))
         db.session.commit()
         res = runner.invoke(pi_manage, ["conditionalaccess", "clear-locks", "--realm", "realm1", "--yes"])
@@ -1112,10 +1108,8 @@ class PIManageConditionalAccessTestCase(CliTestCase):
 
     def test_09c_purge_expired_blocks(self):
         runner = self.app.test_cli_runner()
-        db.session.add(BlockList(ip="203.0.113.7", is_blocked=True,
-                                 block_expires_at=utc_now() - dt.timedelta(seconds=60)))  # expired
-        db.session.add(BlockList(ip="203.0.113.8", is_blocked=True,
-                                 block_expires_at=utc_now() + dt.timedelta(seconds=600)))  # active
+        db.session.add(BlockList(ip="203.0.113.7", block_expires_at=utc_now() - dt.timedelta(seconds=60)))  # expired
+        db.session.add(BlockList(ip="203.0.113.8", block_expires_at=utc_now() + dt.timedelta(seconds=600)))  # active
         db.session.commit()
         res = runner.invoke(pi_manage, ["conditionalaccess", "purge-expired-blocks"])
         self.assertIn("Removed 1 stale IP block(s).", res.output, res)
@@ -1125,9 +1119,9 @@ class PIManageConditionalAccessTestCase(CliTestCase):
 
     def test_09d_purge_expired_locks(self):
         runner = self.app.test_cli_runner()
-        db.session.add(UserLockoutState(resolver="reso1", uid="1", realm="realm1", is_locked=True,
+        db.session.add(UserLockoutState(resolver="reso1", uid="1", realm="realm1",
                                         lock_expires_at=utc_now() - dt.timedelta(seconds=60)))  # expired
-        db.session.add(UserLockoutState(resolver="reso1", uid="2", realm="realm1", is_locked=True,
+        db.session.add(UserLockoutState(resolver="reso1", uid="2", realm="realm1",
                                         lock_expires_at=utc_now() + dt.timedelta(seconds=600)))  # active
         db.session.commit()
         res = runner.invoke(pi_manage, ["conditionalaccess", "purge-expired-locks"])

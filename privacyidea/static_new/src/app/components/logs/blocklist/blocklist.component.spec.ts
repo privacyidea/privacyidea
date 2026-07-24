@@ -34,9 +34,7 @@ const activeEntry: BlocklistEntry = {
   identifier: "192.168.1.100",
   block_expires_at: "2026-12-31T23:59:59Z",
   seconds_remaining: 3600,
-  is_blocked: true,
   permanent: false,
-  reason: "Too many failed auth attempts",
   last_updated: "2026-01-01T09:00:00Z"
 };
 
@@ -44,9 +42,7 @@ const permanentEntry: BlocklistEntry = {
   identifier: "10.0.0.1",
   block_expires_at: null,
   seconds_remaining: null,
-  is_blocked: true,
   permanent: true,
-  reason: "Permanently blocked",
   last_updated: "2026-01-01T08:00:00Z"
 };
 
@@ -54,9 +50,7 @@ const expiredEntry: BlocklistEntry = {
   identifier: "172.16.0.5",
   block_expires_at: "2025-06-01T00:00:00Z",
   seconds_remaining: 0,
-  is_blocked: true,
   permanent: false,
-  reason: "Expired block",
   last_updated: "2025-05-01T00:00:00Z"
 };
 

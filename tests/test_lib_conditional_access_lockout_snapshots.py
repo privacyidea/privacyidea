@@ -174,7 +174,6 @@ class CurrentLockoutConfigTestCase(_LockoutSnapshotBase):
         evaluate_lockout_policies(self.user, AuthEventType.PIN_FAIL, source_ip="203.0.113.5", now=now)
         state = self._state()
         self.assertIsNotNone(state)
-        self.assertTrue(state.is_locked)
         # A timeout, not a permanent lock: lock_expires_at is set and 60s out.
         self.assertIsNotNone(state.lock_expires_at)
         self.assertEqual(now + timedelta(seconds=60), state.lock_expires_at)
@@ -219,13 +218,11 @@ class CurrentLockoutConfigTestCase(_LockoutSnapshotBase):
         evaluate_lockout_policies(self.user, AuthEventType.PIN_FAIL, source_ip="203.0.113.50")
         block = db.session.get(BlockList, "203.0.113.50")
         self.assertIsNotNone(block)
-        self.assertTrue(block.is_blocked)
         self.assertIsNone(block.block_expires_at)  # permanent
         self.assertTrue(is_ip_blocked("203.0.113.50"))
         # The user is also locked (LOCK_USER, threshold 5) — a timeout, not permanent.
         state = self._state()
         self.assertIsNotNone(state)
-        self.assertTrue(state.is_locked)
         self.assertIsNotNone(state.lock_expires_at)
 
     def test_password_fail_does_not_trigger_any_policy(self):
@@ -259,7 +256,6 @@ class PreviousLockoutConfigTestCase(_LockoutSnapshotBase):
         evaluate_lockout_policies(self.user, AuthEventType.PIN_FAIL, now=now)
         state = self._state()
         self.assertIsNotNone(state)
-        self.assertTrue(state.is_locked)
         self.assertEqual(now + timedelta(seconds=60), state.lock_expires_at)
         self.assertTrue(is_user_locked(self.user, now=now))
 
@@ -271,7 +267,6 @@ class PreviousLockoutConfigTestCase(_LockoutSnapshotBase):
         evaluate_lockout_policies(self.user, AuthEventType.NO_TOKEN, now=now)
         state = self._state()
         self.assertIsNotNone(state)
-        self.assertTrue(state.is_locked)
         self.assertEqual(now + timedelta(seconds=60), state.lock_expires_at)
         self.assertTrue(is_user_locked(self.user, now=now))
 

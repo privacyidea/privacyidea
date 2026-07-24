@@ -55,7 +55,6 @@ export interface UserLockoutStatus {
   permanent: boolean;
   lock_expires_at: string | null;
   seconds_remaining: number | null;
-  is_locked: boolean;
   last_updated: string;
 }
 
@@ -79,7 +78,6 @@ export interface LockedUserEntry {
   permanent: boolean;
   lock_expires_at: string | null;
   seconds_remaining: number | null;
-  is_locked: boolean;
   last_updated: string;
 }
 
@@ -96,8 +94,6 @@ export interface BlocklistEntry {
   permanent: boolean;
   block_expires_at: string | null;
   seconds_remaining: number | null;
-  is_blocked: boolean;
-  reason: string | null;
   last_updated: string;
 }
 

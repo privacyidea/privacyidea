@@ -72,7 +72,7 @@ export class BlocklistComponent {
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
 
-  readonly displayedColumns: string[] = ["select", "identifier", "state", "block_expires_at", "reason", "last_updated"];
+  readonly displayedColumns: string[] = ["select", "identifier", "state", "block_expires_at", "last_updated"];
 
   // Keep the previous rows while a reload is in flight to avoid flicker.
   readonly dataSource = linkedSignal<PiResponse<BlocklistEntry[]> | undefined, MatTableDataSource<BlocklistEntry>>({
@@ -114,7 +114,6 @@ export class BlocklistComponent {
       const lowerFilter = filterValue.toLowerCase();
       return (
         element.identifier.toLowerCase().includes(lowerFilter) ||
-        (element.reason?.toLowerCase().includes(lowerFilter) ?? false) ||
         element.last_updated.toLowerCase().includes(lowerFilter) ||
         this.blockState(element).toLowerCase().includes(lowerFilter)
       );

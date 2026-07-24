@@ -76,12 +76,11 @@ class LockoutStateTestCase(MyTestCase):
             uid=uid if uid is not None else user.uid,
             realm=realm if realm is not None else user.realm,
             username=username if username is not None else user.login,
-            is_locked=True, lock_expires_at=lock_expires_at))
+            lock_expires_at=lock_expires_at))
         db.session.commit()
 
-    def _block(self, ip, block_expires_at, reason=None):
-        db.session.add(BlockList(ip=ip, is_blocked=True,
-                                 block_expires_at=block_expires_at, reason=reason))
+    def _block(self, ip, block_expires_at):
+        db.session.add(BlockList(ip=ip, block_expires_at=block_expires_at))
         db.session.commit()
 
     # --- list_locked_users ----------------------------------------------------
@@ -111,7 +110,7 @@ class LockoutStateTestCase(MyTestCase):
     def test_list_locked_users_active_row(self):
         self._lock(utc_now() + timedelta(seconds=600))
         row = list_locked_users()[0]
-        self.assertTrue(row["is_locked"])
+        self.assertFalse(row["permanent"])
         self.assertGreater(row["seconds_remaining"], 0)
 
     def test_list_locked_users_states_filter(self):
@@ -278,12 +277,11 @@ class LockoutStateTestCase(MyTestCase):
         self.assertListEqual([], list_blocklist())
 
     def test_list_blocklist_active_and_excludes_expired(self):
-        self._block("203.0.113.7", utc_now() + timedelta(seconds=600), reason="brute force")
+        self._block("203.0.113.7", utc_now() + timedelta(seconds=600))
         self._block("203.0.113.8", utc_now() - timedelta(seconds=60))
         entries = list_blocklist()
         self.assertEqual(1, len(entries))
         self.assertEqual("203.0.113.7", entries[0]["identifier"])
-        self.assertEqual("brute force", entries[0]["reason"])
         self.assertFalse(entries[0]["permanent"])
 
     def test_list_blocklist_includes_permanent(self):

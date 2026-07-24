@@ -59,7 +59,6 @@ def upgrade():
         sa.Column('uid', _unicode_case_sensitive(320), nullable=False),
         sa.Column('realm', _unicode_case_sensitive(255), nullable=False),
         sa.Column('username', _unicode_case_sensitive(255), nullable=True),
-        sa.Column('is_locked', sa.Boolean(), nullable=False),
         sa.Column('lock_expires_at', sa.DateTime(), nullable=True),
         sa.Column('last_stage_triggered', sa.Integer(), nullable=True),
         sa.Column('last_updated', sa.DateTime(), nullable=False),

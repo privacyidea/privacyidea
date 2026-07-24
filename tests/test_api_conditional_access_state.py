@@ -77,14 +77,12 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
 
     def _lock_user(self, lock_expires_at, user=None) -> None:
         user = user or self.user
-        db.session.add(UserLockoutState(resolver=user.resolver, uid=user.uid, realm=user.realm,
-                                        username=user.login, is_locked=True,
+        db.session.add(UserLockoutState(resolver=user.resolver, uid=user.uid, realm=user.realm, username=user.login,
                                         lock_expires_at=lock_expires_at))
         db.session.commit()
 
-    def _block(self, ip, block_expires_at, reason=None) -> None:
-        db.session.add(BlockList(ip=ip, is_blocked=True,
-                                 block_expires_at=block_expires_at, reason=reason))
+    def _block(self, ip, block_expires_at) -> None:
+        db.session.add(BlockList(ip=ip, block_expires_at=block_expires_at))
         db.session.commit()
 
     # --- GET lockout/users ----------------------------------------------------
@@ -121,7 +119,7 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
     def test_list_locked_users_username_filter(self):
         self._lock_user(utc_now() + timedelta(seconds=600))
         db.session.add(UserLockoutState(resolver="r", uid="7", realm="realm2", username="hans",
-                                        is_locked=True, lock_expires_at=utc_now() + timedelta(seconds=600)))
+                                        lock_expires_at=utc_now() + timedelta(seconds=600)))
         db.session.commit()
         page = self._request("lockout/users",
                              query_string={"usernames": "cornelius"}).json["result"]["value"]
@@ -130,8 +128,7 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
 
     def test_list_locked_users_paginated(self):
         for i in range(5):
-            db.session.add(UserLockoutState(resolver="r", uid=str(100 + i), realm="realm2",
-                                            username=f"u{i}", is_locked=True,
+            db.session.add(UserLockoutState(resolver="r", uid=str(100 + i), realm="realm2", username=f"u{i}",
                                             lock_expires_at=utc_now() + timedelta(seconds=600)))
         db.session.commit()
         page = self._request("lockout/users",
@@ -167,7 +164,7 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
 
     def test_purge_user_lockouts(self):
         self._lock_user(utc_now() - timedelta(seconds=60))  # expired -> purged
-        db.session.add(UserLockoutState(resolver="r", uid="2", realm="realm2", is_locked=True,
+        db.session.add(UserLockoutState(resolver="r", uid="2", realm="realm2",
                                         lock_expires_at=utc_now() + timedelta(seconds=600)))  # active
         db.session.commit()
         res = self._request("lockout/users/purge", method="POST")
@@ -208,12 +205,11 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
     # --- GET blocklist --------------------------------------------------------
 
     def test_list_blocklist(self):
-        self._block("203.0.113.7", utc_now() + timedelta(seconds=600), reason="brute force")
+        self._block("203.0.113.7", utc_now() + timedelta(seconds=600))
         res = self._request("blocklist")
         value = res.json["result"]["value"]
         self.assertEqual(1, len(value))
         self.assertEqual("203.0.113.7", value[0]["identifier"])
-        self.assertEqual("brute force", value[0]["reason"])
 
     # --- DELETE blocklist/<entry> ---------------------------------------------
 
@@ -264,7 +260,7 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
     def test_list_is_constrained_to_policy_visibility_scope(self):
         # Lock a user in realm1 and a raw row in another realm.
         self._lock_user(utc_now() + timedelta(seconds=600))
-        db.session.add(UserLockoutState(resolver="other", uid="7", realm="otherrealm", is_locked=True,
+        db.session.add(UserLockoutState(resolver="other", uid="7", realm="otherrealm",
                                         lock_expires_at=utc_now() + timedelta(seconds=600)))
         db.session.commit()
         # An admin whose read action is scoped to realm1 only sees the realm1 lock.

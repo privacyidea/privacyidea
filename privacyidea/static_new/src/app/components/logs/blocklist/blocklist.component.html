@@ -42,7 +42,7 @@
            i18n-aria-label
            i18n-placeholder
            matInput
-           placeholder="IP, state, reason, ..." />
+           placeholder="IP, state, ..." />
       </app-clearable-input>
       <mat-hint i18n>Search across all columns (case-insensitive).</mat-hint>
     </mat-form-field>
@@ -180,30 +180,6 @@
               {{ row.block_expires_at | date: "yyyy-MM-dd HH:mm:ss" }}
             </span>
           }
-        </td>
-      </ng-container>
-
-      <!-- Reason column -->
-      <ng-container matColumnDef="reason">
-        <th
-          *matHeaderCellDef
-          mat-header-cell
-          i18n>
-          <div class="header-cell">
-            <span>Reason</span>
-            <button
-              (click)="onSortEvent('reason')"
-              class="sort-button"
-              mat-icon-button
-              type="button">
-              <mat-icon>{{ getSortIcon("reason") }}</mat-icon>
-            </button>
-          </div>
-        </th>
-        <td
-          *matCellDef="let row"
-          mat-cell>
-          <span>{{ row.reason }}</span>
         </td>
       </ng-container>
 

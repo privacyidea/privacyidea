@@ -211,14 +211,14 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
     return [entries.slice(0, half), entries.slice(half)];
   });
   lockoutStatus = this.conditionalAccessStateService.userLockoutStatus;
-  isUserLocked = computed(() => this.lockoutStatus()?.is_locked ?? false);
+  isUserLocked = computed(() => this.lockoutStatus() !== null);
   isPermanentLocked = computed(() => this.lockoutStatus()?.permanent ?? false);
   lockoutStateClass = computed(() =>
     this.isPermanentLocked() ? "highlight-false" : this.isUserLocked() ? "highlight-warning" : "highlight-true"
   );
   lockoutStatusText = computed(() => {
     const status = this.lockoutStatus();
-    if (!status?.is_locked) {
+    if (!status) {
       return $localize`Unlocked`;
     }
     if (status.permanent) {
@@ -371,7 +371,7 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
 
   resetUserLockout() {
     const lockoutStatus = this.lockoutStatus();
-    if (!lockoutStatus?.is_locked) {
+    if (!lockoutStatus) {
       return;
     }
     this.dialogService

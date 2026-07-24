@@ -98,7 +98,6 @@ def _locked_user_dict(row: UserLockoutState, now: datetime) -> dict:
         "permanent": row.lock_expires_at is None,
         "lock_expires_at": row.lock_expires_at,
         "seconds_remaining": _seconds_remaining(row.lock_expires_at, now),
-        "is_locked": row.is_locked,
         "last_updated": row.last_updated
     }
 
@@ -109,8 +108,6 @@ def _blocklist_dict(row: BlockList, now: datetime) -> dict:
         "permanent": row.block_expires_at is None,
         "block_expires_at": row.block_expires_at,
         "seconds_remaining": _seconds_remaining(row.block_expires_at, now),
-        "is_blocked": row.is_blocked,
-        "reason": row.reason,
         "last_updated": row.last_updated,
     }
 
@@ -190,7 +187,7 @@ def _lockout_conditions(realms: list[str] | None, resolvers: list[str] | None,
     :param case_insensitive: match the realm/resolver/username filter values case-insensitively
     :return: the list of SQLAlchemy ``where`` conditions (AND-ed by the caller)
     """
-    conditions: list[ColumnElement[bool]] = [UserLockoutState.is_locked.is_(True)]
+    conditions: list[ColumnElement[bool]] = []
     for column, value in ((UserLockoutState.realm, realms),
                           (UserLockoutState.resolver, resolvers),
                           (UserLockoutState.username, usernames)):
@@ -309,19 +306,18 @@ def unlock_user_by_username(username: str, realm: str, resolver: str) -> bool:
 @log_with(log)
 def list_blocklist(include_expired: bool = False, now: datetime | None = None) -> list[dict]:
     """
-    Return the blocklist entries, most recently updated first. Each row carries its
-    raw ``is_blocked`` flag plus the expiry fields (``permanent`` /
-    ``block_expires_at`` / ``seconds_remaining``), so the caller can tell a
-    currently-enforced block from a stale, expired record. The never-block
-    allowlist is an enforcement-time concern and is *not* applied here, so an admin
-    can see and clean up a row even for a never-enforced IP.
+    Return the blocklist entries, most recently updated first. Each row carries the
+    expiry fields (``permanent`` / ``block_expires_at`` / ``seconds_remaining``),
+    so the caller can tell a currently-enforced block from a stale, expired record.
+    The never-block allowlist is an enforcement-time concern and is *not* applied
+    here, so an admin can see and clean up a row even for a never-enforced IP.
 
-    :param include_expired: also return stale rows whose timed block has expired
-        (``is_expired=True``); by default only currently-enforced blocks are returned
+    :param include_expired: also return stale rows whose timed block has expired;
+        by default only currently-enforced blocks are returned
     :param now: reference time; defaults to :func:`utc_now`
     """
     moment = now if now is not None else utc_now()
-    conditions: list[ColumnElement[bool]] = [BlockList.is_blocked.is_(True)]
+    conditions: list[ColumnElement[bool]] = []
     if not include_expired:
         conditions.append(_not_expired_condition(BlockList.block_expires_at, moment))
     stmt = select(BlockList).where(*conditions).order_by(BlockList.last_updated.desc())
@@ -345,16 +341,14 @@ def remove_blocklist_entry(entry: str) -> bool:
 @log_with(log)
 def purge_expired_user_lockouts(now: datetime | None = None) -> int:
     """
-    Delete user-lockout rows that are no longer in force — explicitly unlocked
-    (``is_locked=False``) or a timed lock past its expiry. Permanent locks
-    (``lock_expires_at IS NULL`` and still locked) and active timed locks are
-    kept. Nothing writes these rows off on its own, so this is the housekeeping
-    that clears stale records. Returns the number of rows removed.
+    Delete user-lockout rows that are no longer in force — a timed lock past its
+    expiry. Permanent locks (``lock_expires_at IS NULL``) and active timed locks
+    are kept. Nothing writes these rows off on its own, so this is the
+    housekeeping that clears stale records. Returns the number of rows removed.
     """
     now = now or utc_now()
     stmt = delete(UserLockoutState).where(
-        or_(UserLockoutState.is_locked.is_(False),
-            and_(UserLockoutState.lock_expires_at.isnot(None), UserLockoutState.lock_expires_at <= now)))
+        and_(UserLockoutState.lock_expires_at.isnot(None), UserLockoutState.lock_expires_at <= now))
     count = db.session.execute(stmt).rowcount
     db.session.commit()
     return count
@@ -363,15 +357,14 @@ def purge_expired_user_lockouts(now: datetime | None = None) -> int:
 @log_with(log)
 def purge_expired_blocklist(now: datetime | None = None) -> int:
     """
-    Delete blocklist rows that are no longer in force — explicitly unblocked
-    (``is_blocked=False``) or a timed block past its expiry. Permanent blocks
-    and active timed blocks are kept. Returns the number of rows removed.
+    Delete blocklist rows that are no longer in force — a timed block past its
+    expiry. Permanent blocks and active timed blocks are kept. Returns the number
+    of rows removed.
     """
     now = now or utc_now()
     stmt = delete(BlockList).where(
-        or_(BlockList.is_blocked.is_(False),
-            and_(BlockList.block_expires_at.isnot(None),
-                 BlockList.block_expires_at <= now)))
+        and_(BlockList.block_expires_at.isnot(None),
+             BlockList.block_expires_at <= now))
     count = db.session.execute(stmt).rowcount
     db.session.commit()
     return count

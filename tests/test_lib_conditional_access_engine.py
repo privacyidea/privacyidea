@@ -200,32 +200,22 @@ class LockoutEngineTestCase(MyTestCase):
         self.assertFalse(is_user_locked(self.user))
 
     def test_is_user_locked_timed_future(self):
-        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid,
-                                        realm=self.user.realm, is_locked=True,
+        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
                                         lock_expires_at=utc_now() + timedelta(seconds=600)))
         db.session.commit()
         self.assertTrue(is_user_locked(self.user))
 
     def test_is_user_locked_timed_expired(self):
-        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid,
-                                        realm=self.user.realm, is_locked=True,
+        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
                                         lock_expires_at=utc_now() - timedelta(seconds=600)))
         db.session.commit()
         self.assertFalse(is_user_locked(self.user))
 
     def test_is_user_locked_permanent(self):
-        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid,
-                                        realm=self.user.realm, is_locked=True, lock_expires_at=None))
+        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
+                                        lock_expires_at=None))
         db.session.commit()
         self.assertTrue(is_user_locked(self.user))
-
-    def test_is_user_locked_flag_false(self):
-        # A future expiry but is_locked=False means not locked.
-        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid,
-                                        realm=self.user.realm, is_locked=False,
-                                        lock_expires_at=utc_now() + timedelta(seconds=600)))
-        db.session.commit()
-        self.assertFalse(is_user_locked(self.user))
 
     def test_is_user_locked_unresolved_user(self):
         self.assertFalse(is_user_locked(User()))
@@ -236,28 +226,19 @@ class LockoutEngineTestCase(MyTestCase):
         self.assertFalse(is_ip_blocked("203.0.113.5"))
 
     def test_is_ip_blocked_timed_future(self):
-        db.session.add(BlockList(ip="203.0.113.5", is_blocked=True,
-                                 block_expires_at=utc_now() + timedelta(seconds=600)))
+        db.session.add(BlockList(ip="203.0.113.5", block_expires_at=utc_now() + timedelta(seconds=600)))
         db.session.commit()
         self.assertTrue(is_ip_blocked("203.0.113.5"))
 
     def test_is_ip_blocked_timed_expired(self):
-        db.session.add(BlockList(ip="203.0.113.5", is_blocked=True,
-                                 block_expires_at=utc_now() - timedelta(seconds=600)))
+        db.session.add(BlockList(ip="203.0.113.5", block_expires_at=utc_now() - timedelta(seconds=600)))
         db.session.commit()
         self.assertFalse(is_ip_blocked("203.0.113.5"))
 
     def test_is_ip_blocked_permanent(self):
-        db.session.add(BlockList(ip="203.0.113.5", is_blocked=True, block_expires_at=None))
+        db.session.add(BlockList(ip="203.0.113.5", block_expires_at=None))
         db.session.commit()
         self.assertTrue(is_ip_blocked("203.0.113.5"))
-
-    def test_is_ip_blocked_flag_false(self):
-        # A future expiry but is_blocked=False (admin lifted it) means not blocked.
-        db.session.add(BlockList(ip="203.0.113.5", is_blocked=False,
-                                 block_expires_at=utc_now() + timedelta(seconds=600)))
-        db.session.commit()
-        self.assertFalse(is_ip_blocked("203.0.113.5"))
 
     def test_is_ip_blocked_empty_ip(self):
         # A request without a resolvable source IP is never blocked.
@@ -272,8 +253,7 @@ class LockoutEngineTestCase(MyTestCase):
 
     def test_get_ip_block_timed_reports_remaining(self):
         now = utc_now()
-        db.session.add(BlockList(ip="203.0.113.5", is_blocked=True,
-                                 block_expires_at=now + timedelta(seconds=600)))
+        db.session.add(BlockList(ip="203.0.113.5", block_expires_at=now + timedelta(seconds=600)))
         db.session.commit()
         block = get_ip_block("203.0.113.5", now=now)
         self.assertEqual(False, block.permanent, block)
@@ -281,13 +261,12 @@ class LockoutEngineTestCase(MyTestCase):
         self.assertIsNotNone(block.expires_at, block)
 
     def test_get_ip_block_expired_reads_as_unblocked(self):
-        db.session.add(BlockList(ip="203.0.113.5", is_blocked=True,
-                                 block_expires_at=utc_now() - timedelta(seconds=1)))
+        db.session.add(BlockList(ip="203.0.113.5", block_expires_at=utc_now() - timedelta(seconds=1)))
         db.session.commit()
         self.assertIsNone(get_ip_block("203.0.113.5"))
 
     def test_get_ip_block_permanent(self):
-        db.session.add(BlockList(ip="203.0.113.5", is_blocked=True, block_expires_at=None))
+        db.session.add(BlockList(ip="203.0.113.5", block_expires_at=None))
         db.session.commit()
         block = get_ip_block("203.0.113.5")
         self.assertEqual(True, block.permanent, block)
@@ -302,7 +281,6 @@ class LockoutEngineTestCase(MyTestCase):
         evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
         state = self._state()
         self.assertIsNotNone(state)
-        self.assertTrue(state.is_locked)
         self.assertIsNotNone(state.lock_expires_at)
         self.assertGreater(state.lock_expires_at, utc_now())
         self.assertTrue(is_user_locked(self.user))
@@ -444,18 +422,17 @@ class LockoutEngineTestCase(MyTestCase):
         self.assertTrue(is_user_locked(self.user))
 
     def test_dedup_does_not_survive_admin_unlock(self):
-        # An admin lifting the lock (is_locked=False) ends the incident just like
+        # An admin lifting the lock deletes the row, ending the incident just like
         # an expiry: the next in-window failure is a new incident and must re-lock.
-        # Regression: the de-dup used to ignore is_locked, so after an admin unlock
-        # the same stage stayed suppressed for the rest of the window.
+        # Regression: after an admin unlock the same stage must not stay suppressed
+        # for the rest of the window.
         self._make_policy(name="lock3", counter_type=AuthEventType.MFA_FAIL)
         self._seed_events(AuthEventType.MFA_FAIL, 3)
         evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
         self.assertTrue(is_user_locked(self.user))
 
-        # Admin lifts the lock without deleting the row (last_stage / last_updated remain).
-        state = self._state()
-        state.is_locked = False
+        # Admin lifts the lock by deleting the row.
+        db.session.delete(self._state())
         db.session.commit()
         self.assertFalse(is_user_locked(self.user))
 
@@ -477,14 +454,13 @@ class LockoutEngineTestCase(MyTestCase):
         self._seed_events(AuthEventType.MFA_FAIL, 3)
         evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
         state = self._state()
-        self.assertTrue(state.is_locked)
         self.assertIsNone(state.lock_expires_at)
         self.assertTrue(is_user_locked(self.user))
 
     def test_permanent_lock_not_downgraded_to_timed(self):
         # Pre-existing permanent lock (set by a higher-severity stage).
         db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid,
-                                        realm=self.user.realm, is_locked=True,
+                                        realm=self.user.realm,
                                         lock_expires_at=None, last_stage_triggered=None))
         db.session.commit()
         # A timed LOCK_USER policy now tries to lock the same user.
@@ -557,8 +533,7 @@ class LockoutEngineTestCase(MyTestCase):
     def test_allowlisted_ip_block_row_is_not_enforced(self):
         # Even with an existing block row, an allowlisted IP reads as not blocked, so
         # adding an IP to the allowlist immediately lifts a stale or mistaken block.
-        db.session.add(BlockList(ip="203.0.113.7", is_blocked=True,
-                                 block_expires_at=utc_now() + timedelta(seconds=900)))
+        db.session.add(BlockList(ip="203.0.113.7", block_expires_at=utc_now() + timedelta(seconds=900)))
         db.session.commit()
         self.assertTrue(is_ip_blocked("203.0.113.7"))
         set_privacyidea_config(SYSCONF.CONDITIONAL_ACCESS_NEVER_BLOCK, "203.0.113.0/24")
@@ -578,12 +553,10 @@ class LockoutEngineTestCase(MyTestCase):
         evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip="203.0.113.7")
         block = self._block("203.0.113.7")
         self.assertIsNotNone(block)
-        self.assertTrue(block.is_blocked)
         self.assertIsNotNone(block.block_expires_at)
         self.assertGreater(block.block_expires_at, utc_now())
-        # The originating stage and policy name are recorded for de-dup / auditing.
+        # The originating stage is recorded for de-dup / auditing.
         self.assertEqual(stages[0].id, block.last_stage_triggered)
-        self.assertEqual("blockip", block.reason)
         self.assertTrue(is_ip_blocked("203.0.113.7"))
         # A BLOCK_IP-only stage writes no user lock.
         self.assertIsNone(self._state())
@@ -605,7 +578,7 @@ class LockoutEngineTestCase(MyTestCase):
 
     def test_block_ip_does_not_downgrade_permanent_block(self):
         # Pre-existing permanent block (block_expires_at is None).
-        db.session.add(BlockList(ip="203.0.113.7", is_blocked=True, block_expires_at=None))
+        db.session.add(BlockList(ip="203.0.113.7", block_expires_at=None))
         db.session.commit()
         self._make_policy(name="blocktimed", counter_type=AuthEventType.PASSWORD_FAIL,
                           stages=((3, 1, LockoutAction.BLOCK_IP, 900),))
@@ -623,7 +596,6 @@ class LockoutEngineTestCase(MyTestCase):
         evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip="203.0.113.7")
         block = self._block("203.0.113.7")
         self.assertIsNotNone(block)
-        self.assertTrue(block.is_blocked)
         self.assertIsNone(block.block_expires_at)
         self.assertTrue(is_ip_blocked("203.0.113.7"))
 
@@ -654,7 +626,7 @@ class LockoutEngineTestCase(MyTestCase):
         db.session.commit()
         self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
         evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip="203.0.113.7")
-        self.assertTrue(self._state().is_locked)
+        self.assertTrue(is_user_locked(self.user))
         self.assertTrue(is_ip_blocked("203.0.113.7"))
 
     def test_block_ip_dedup_suppresses_repeat_within_window(self):
@@ -906,7 +878,6 @@ class LockoutEngineTestCase(MyTestCase):
         evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
         state = self._state()
         self.assertIsNotNone(state)
-        self.assertTrue(state.is_locked)
 
     @smtpmock.activate
     def test_email_action_returns_login_notice(self):
@@ -948,7 +919,7 @@ class LockoutEngineTestCase(MyTestCase):
                           stages=((3, 1, LockoutAction.LOCK_USER, 600),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
         self.assertEqual([], evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL))
-        self.assertTrue(self._state().is_locked)
+        self.assertTrue(is_user_locked(self.user))
 
     # --- _safe_format / _resolve_admin_recipients -----------------------------
 
