@@ -172,6 +172,7 @@ def before_request():
     # It can be passed to the inner policies.
 
     g.policy_object = PolicyClass()
+    g.policies = {}
 
     g.audit_object = getAudit(current_app.config, g.startdate)
     g.event_config = EventConfiguration()

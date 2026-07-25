@@ -829,6 +829,9 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         set_realm("ldaprealm", resolvers=[{'name': "catchall"}])
         set_default_realm("ldaprealm")
 
+        # The validate blueprint has to initialize its own request-local policy data.
+        self.app_context.g.pop("policies", None)
+
         # Authenticate user via passthru
         with self.app.test_request_context('/validate/check', method='POST', data={"user": "alice", "pass": "alicepw"}):
             res = self.app.full_dispatch_request()
