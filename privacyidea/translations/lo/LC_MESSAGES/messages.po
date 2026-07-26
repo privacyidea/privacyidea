@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2026-05-19 14:39+0200\n"
-"PO-Revision-Date: 2026-07-25 14:01+0000\n"
+"PO-Revision-Date: 2026-07-27 04:01+0000\n"
 "Last-Translator: BoneNI <bounkirdni@gmail.com>\n"
 "Language-Team: Lao <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/lo/>\n"
@@ -80,12 +80,12 @@ msgstr "ໂນດ: ຄາດຫວັງຢ່າງໜ້ອຍໜຶ່ງໂ�
 #: api/periodictask.py:207
 #, python-brace-format
 msgid "Unknown task module: {!r}"
-msgstr "ບໍ່ຮູ້ຈັກໂມດູນວຽກງານ:"
+msgstr "ບໍ່ຮູ້ຈັກໂມດູນໜ້າວຽກ:"
 
 #: api/periodictask.py:215
 #, python-brace-format
 msgid "options: expected dictionary, got {!r}"
-msgstr ""
+msgstr "ຕົວເລືອກ: ຕ້ອງການ ດິກຊັນນາຣີ, ແຕ່ໄດ້ຮັບ"
 
 #: api/policy.py:480 api/token.py:1294
 msgid "Unable to convert file contents. Binary data is not supported"
