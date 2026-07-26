@@ -3532,7 +3532,7 @@
       </trans-unit>
       <trans-unit id="8517109745758603034" datatype="html" xml:space="preserve">
         <source>API Key</source>
-        <target state="translated">API Key</target>
+        <target state="translated">ຄີ API</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/yubico-config/yubico-config.component.html</context>
           <context context-type="linenumber">43</context>
@@ -3568,7 +3568,7 @@
       </trans-unit>
       <trans-unit id="8904084167115016856" datatype="html" xml:space="preserve">
         <source>Yubico URL</source>
-        <target state="translated">Yubico URL</target>
+        <target state="translated">ຢູອາແອວ Yubico</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/yubico-config/yubico-config.component.html</context>
           <context context-type="linenumber">77</context>
@@ -3616,7 +3616,7 @@
       </trans-unit>
       <trans-unit id="2244684980140363769" datatype="html" xml:space="preserve">
         <source>Client ID API Key</source>
-        <target state="translated">Client ID API Key</target>
+        <target state="translated">ໄອດີລູກຄ້າ ຄີ API</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/yubikey-config/yubikey-config.component.html</context>
           <context context-type="linenumber">44,45</context>
@@ -6132,7 +6132,7 @@
       </trans-unit>
       <trans-unit id="394631406355371820" datatype="html" xml:space="preserve">
         <source>Certificate Revocation List</source>
-        <target state="translated">ລາຍການໃບຢັ້ງຢືນທີ່ຖືກຍົກເລີກ (CRL)</target>
+        <target state="translated">ລາຍການໃບຢັ້ງຢືນທີ່ຖືກຍົກເລີກ</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/ca-connectors/new-ca-connector/new-ca-connector.component.html</context>
           <context context-type="linenumber">233</context>
@@ -6268,7 +6268,7 @@
       </trans-unit>
       <trans-unit id="8194198789279663469" datatype="html" xml:space="preserve">
         <source>Domain CA</source>
-        <target state="translated">Domain CA</target>
+        <target state="translated">ໂດເມນ CA</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/ca-connectors/new-ca-connector/new-ca-connector.component.html</context>
           <context context-type="linenumber">390</context>
@@ -8216,7 +8216,7 @@
       </trans-unit>
       <trans-unit id="348324077381402312" datatype="html" xml:space="preserve">
         <source>One-Time-Password</source>
-        <target state="translated">ລະຫັດຜ່ານຄັ້ງດຽວ (OTP)</target>
+        <target state="translated">ລະຫັດຜ່ານຄັ້ງດຽວ</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
           <context context-type="linenumber">180,181</context>
