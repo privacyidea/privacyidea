@@ -800,8 +800,10 @@ body.self-service-layout {
 }
 
 .mat-mdc-option.mat-mdc-option-active {
-  background-color: var(--mat-sys-surface-container-low) !important;
+  background-color: var(--mat-sys-primary-container) !important;
   color: var(--mat-sys-on-surface) !important;
+  outline: 2px solid var(--mat-sys-primary);
+  outline-offset: -2px;
 }
 
 .cdk-overlay-container {

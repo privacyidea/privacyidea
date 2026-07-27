@@ -575,12 +575,14 @@ export class TokenService implements TokenServiceInterface {
     if (!this.tokenTypesResource.hasValue()) return [];
     const obj = this.tokenTypesResource?.value()?.result?.value;
     if (!obj) return [];
-    return Object.entries(obj).map(([key, info]) => ({
-      key: key as TokenTypeKey,
-      name: tokenTypes.find((t) => t.key === key)?.name || key,
-      info: String(info),
-      text: tokenTypes.find((t) => t.key === key)?.text || ""
-    }));
+    return Object.entries(obj)
+      .map(([key, info]) => ({
+        key: key as TokenTypeKey,
+        name: tokenTypes.find((t) => t.key === key)?.name || key,
+        info: String(info),
+        text: tokenTypes.find((t) => t.key === key)?.text || ""
+      }))
+      .sort((a, b) => a.info.split(":")[0].localeCompare(b.info.split(":")[0]));
   });
 
   pageSize = linkedSignal<{ role: string }, number>({

@@ -23,6 +23,7 @@ import { MatFormField } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { MAT_TOOLTIP_DEFAULT_OPTIONS, MatTooltipModule } from "@angular/material/tooltip";
+import { GridSelectNavDirective } from "@components/shared/directives/grid-select-nav.directive";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { CUSTOM_TOOLTIP_OPTIONS } from "../token-enrollment.constants";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -42,7 +43,8 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
     MatIcon,
     NgClass,
     MatTooltipModule,
-    StickyHeaderDirective
+    StickyHeaderDirective,
+    GridSelectNavDirective
   ],
   providers: [{ provide: MAT_TOOLTIP_DEFAULT_OPTIONS, useValue: CUSTOM_TOOLTIP_OPTIONS }]
 })
