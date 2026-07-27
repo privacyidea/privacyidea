@@ -86,6 +86,34 @@
     </div>
 
     <div class="edit-policy-fields">
+      @if (isNewPolicy() && policyService.templates().length > 0) {
+        <mat-form-field
+          appearance="fill"
+          class="input-width-xl"
+          subscriptSizing="dynamic">
+          <mat-label i18n>Start from template</mat-label>
+          <mat-select
+            [value]="selectedTemplateKey()"
+            (selectionChange)="applyTemplate($event.value)">
+            @for (template of policyService.templates(); track template.key) {
+              <mat-option [value]="template.key">{{ template.policy.name }}</mat-option>
+            }
+          </mat-select>
+          @if (selectedTemplateKey()) {
+            <app-clear-button
+              (clearButtonClick)="clearTemplateSelection(); $event.stopPropagation()"
+              i18n-toolTipText
+              toolTipText="Clear the template and reset all fields"
+              matSuffix></app-clear-button>
+          }
+          @if (selectedTemplateDescription()) {
+            <mat-hint>{{ selectedTemplateDescription() }}</mat-hint>
+          } @else {
+            <mat-hint i18n>Prefill the fields below from a ready-made policy, then edit as needed.</mat-hint>
+          }
+        </mat-form-field>
+      }
+
       <mat-form-field
         appearance="fill"
         class="input-width-xl">
@@ -100,6 +128,23 @@
         } @else if (showNameError()) {
           <mat-error i18n>Name is required.</mat-error>
         }
+      </mat-form-field>
+
+      <mat-form-field
+        appearance="fill"
+        class="input-width-xl"
+        subscriptSizing="dynamic">
+        <mat-label i18n>Target</mat-label>
+        <mat-select
+          [value]="editPolicy().target"
+          (selectionChange)="onTargetChange($event.value)">
+          @for (target of targetOptions(); track target) {
+            <mat-option [value]="target">{{ targetLabel(target) }}</mat-option>
+          }
+        </mat-select>
+        <mat-hint i18n>
+          The target on which the policy counts events and performs triggered stage actions.
+        </mat-hint>
       </mat-form-field>
 
       <mat-form-field
@@ -126,9 +171,21 @@
         <mat-select
           [value]="timeWindowUnit()"
           (selectionChange)="onTimeWindowUnitChange($event.value)">
-          <mat-option value="seconds" i18n>Seconds</mat-option>
-          <mat-option value="minutes" i18n>Minutes</mat-option>
-          <mat-option value="hours" i18n>Hours</mat-option>
+          <mat-option
+            value="seconds"
+            i18n
+            >Seconds
+          </mat-option>
+          <mat-option
+            value="minutes"
+            i18n
+            >Minutes
+          </mat-option>
+          <mat-option
+            value="hours"
+            i18n
+            >Hours
+          </mat-option>
         </mat-select>
       </mat-form-field>
 
@@ -163,10 +220,8 @@
           (input)="onPriorityInput($any($event.target).value)" />
         <app-info-hint
           matSuffix
-          i18n-text
-          text="Priority decides how this policy ranks against the others: a lower number means higher precedence, so for an allow/deny decision the matching policy with the lowest priority number wins, while lock, block and email policies all run regardless of priority."
-          ariaLabel="About priority"
-          i18n-ariaLabel />
+          [text]="priorityHelp"
+          [ariaLabel]="priorityHelpAriaLabel" />
         @if (!priorityValid()) {
           <mat-error i18n>Must be at least 1.</mat-error>
         }
@@ -175,20 +230,38 @@
     </div>
 
     <h4 i18n>Stages &amp; Actions</h4>
-    <p class="ca-section-hint" i18n>
-      A stage fires when the tracked events reach its failure threshold within the time window, and
-      then runs its actions. Add several stages with increasing thresholds to escalate. Only one stage of this policy runs per
-      evaluation: the one with the highest threshold the count has reached. Other policies are
-      evaluated on their own (see the policy Priority above).
+    <p
+      class="ca-section-hint"
+      i18n>
+      A stage fires when the tracked events reach its failure threshold within the time window, and then runs its
+      actions. Add several stages with increasing thresholds to escalate. Only one stage of this policy runs per
+      evaluation: the one with the highest threshold the count has reached. Other policies are evaluated on their own
+      (see the policy Priority above).
     </p>
     @if (!stagesValid()) {
-      <p class="ca-stages-error" i18n>At least one stage is required, and every stage needs a threshold of at least 1.</p>
+      <p
+        class="ca-stages-error"
+        i18n>
+        At least one stage is required, and every stage needs a non-negative failure threshold.
+      </p>
     }
     @if (!stageThresholdsUnique()) {
-      <p class="ca-stages-error" i18n>Each stage must have a different failure threshold.</p>
+      <p
+        class="ca-stages-error"
+        i18n>
+        Each stage must have a different failure threshold.
+      </p>
+    }
+    @if (!targetActionsValid()) {
+      <p
+        class="ca-stages-error"
+        i18n>
+        Some actions are not allowed for the selected target. Change the target or remove those actions.
+      </p>
     }
     <app-conditional-access-stages-list
       [stages]="editPolicy().stages"
+      [target]="editPolicy().target"
       (stagesChange)="onStagesChange($event)" />
   </div>
 </div>

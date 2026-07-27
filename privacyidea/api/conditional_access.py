@@ -40,7 +40,9 @@ from privacyidea.lib.conditional_access.lockout_policy import (list_lockout_poli
                                                                get_lockout_policy,
                                                                create_lockout_policy,
                                                                update_lockout_policy,
-                                                               delete_lockout_policy)
+                                                               delete_lockout_policy,
+                                                               get_actions_by_target)
+from privacyidea.lib.conditional_access.lockout_policy_template import list_lockout_policy_templates
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.params import get_optional, get_required
@@ -117,6 +119,24 @@ def list_action_types():
     return send_result(action_types)
 
 
+@conditional_access_blueprint.route('targets', methods=['GET'])
+@prepolicy(check_base_action, request, PolicyAction.LOCKOUT_POLICY_READ)
+@log_with(log)
+def list_targets():
+    """
+    Return the policy targets and, for each, the stage actions it allows, as
+    ``{target: [action, ...]}`` (see
+    :func:`~privacyidea.lib.conditional_access.lockout_policy.get_actions_by_target`).
+
+    Requires the admin policy action :ref:`policy_lockout_policy_read`.
+
+    :status 200: mapping of target name to its list of allowed action names
+    """
+    actions_by_target = get_actions_by_target()
+    g.audit_object.log({"success": True, "info": f"{len(actions_by_target)} targets"})
+    return send_result(actions_by_target)
+
+
 @conditional_access_blueprint.route('policy', methods=['GET'])
 @prepolicy(check_base_action, request, PolicyAction.LOCKOUT_POLICY_READ)
 @log_with(log)
@@ -157,6 +177,25 @@ def get_policy(policy_id):
     return send_result(policy)
 
 
+@conditional_access_blueprint.route('template', methods=['GET'])
+@prepolicy(check_base_action, request, PolicyAction.LOCKOUT_POLICY_READ)
+@log_with(log)
+def list_templates():
+    """
+    Return the whole shipped lockout policy template catalog in one call. Each
+    entry is ``{"key", "description", "policy"}`` where ``policy`` is a payload
+    ready to be prefilled, edited and POSTed to
+    :http:post:`/conditionalaccess/policy`.
+
+    Requires the admin policy action :ref:`policy_lockout_policy_read`.
+
+    :status 200: the list of template entries in ``result.value``
+    """
+    templates = list_lockout_policy_templates()
+    g.audit_object.log({"success": True, "info": f"{len(templates)} templates"})
+    return send_result(templates)
+
+
 @conditional_access_blueprint.route('policy', methods=['POST'])
 @prepolicy(check_base_action, request, PolicyAction.LOCKOUT_POLICY_WRITE)
 @log_with(log)
@@ -178,7 +217,9 @@ def create_policy():
         Required.
     :jsonparam enabled: whether the policy is evaluated (default true).
     :jsonparam dry_run: log-only mode, nothing is enforced (default false).
-    :jsonparam priority: evaluation priority, higher first (default 1).
+    :jsonparam priority: evaluation priority; lower numbers are evaluated first (default 1).
+    :jsonparam target: the identity the policy counts and acts on - ``user``
+        (per-user brute force) or ``source_ip`` (password spraying). Required.
     :status 200: the id of the new policy in ``result.value``
     :status 400: invalid or missing parameter
     """
@@ -193,7 +234,8 @@ def create_policy():
         stages=_get_json_param(params, "stages", required=True),
         enabled=is_true(enabled) if enabled is not None else True,
         dry_run=is_true(dry_run) if dry_run is not None else False,
-        priority=get_optional(params, "priority", default=1))
+        priority=get_optional(params, "priority", default=1),
+        target=get_required(params, "target"))
     g.audit_object.log({"success": True, "info": f"created policy '{name}' (id {policy_id})"})
     return send_result(policy_id)
 
@@ -210,7 +252,9 @@ def update_policy(policy_id):
     sending ``{"enabled": true}`` / ``{"enabled": false}``.
 
     Requires the admin policy action :ref:`policy_lockout_policy_write`.
-    Parameters are as for creating a policy, all optional.
+    Parameters are as for creating a policy, all optional. ``target`` may be
+    changed, but the resulting target/action combination must stay compatible
+    (otherwise a 400).
 
     :status 200: the id of the updated policy in ``result.value``
     :status 400: invalid parameter
@@ -228,7 +272,8 @@ def update_policy(policy_id):
         stages=_get_json_param(params, "stages"),
         enabled=is_true(enabled) if enabled is not None else None,
         dry_run=is_true(dry_run) if dry_run is not None else None,
-        priority=get_optional(params, "priority"))
+        priority=get_optional(params, "priority"),
+        target=get_optional(params, "target"))
     g.audit_object.log({"success": True,
                         "info": f"updated policy {policy_id} "
                                 f"({', '.join(changed_fields) or 'no fields'})"})

@@ -23,6 +23,7 @@
   @for (stage of stages(); track $index) {
     <app-conditional-access-stage-item
       [stage]="stage"
+      [target]="target()"
       (updateStage)="onUpdateStage($index, $event)"
       (removeStage)="onRemoveStage($index)" />
   }
