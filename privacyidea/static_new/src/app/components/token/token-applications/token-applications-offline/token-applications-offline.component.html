@@ -48,7 +48,7 @@
           matInput
           placeholder="Example query: 'serial: OATH0001'" />
       </app-clearable-input>
-      <mat-hint class="filter-keyword-hint">{{ filterHint }}</mat-hint>
+      <mat-hint>{{ filterHint }}</mat-hint>
     </mat-form-field>
     <mat-paginator
       (page)="machineService.onPageEvent($event)"
@@ -79,7 +79,8 @@
               @if (machineService.offlineApiFilter.includes(column.key)) {
                 <button
                   (click)="onKeywordClick(column.key)"
-                  attr.aria-label="Filter by {{ column.label }}"
+                  aria-label="Filter by {{ column.label }}"
+                  i18n-aria-label
                   class="filter-button"
                   mat-icon-button
                   type="button">
@@ -90,7 +91,8 @@
               }
               <button
                 (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
-                attr.aria-label="Sort by {{ column.label }}"
+                aria-label="Sort by {{ column.label }}"
+                i18n-aria-label
                 class="sort-button"
                 mat-icon-button
                 type="button">

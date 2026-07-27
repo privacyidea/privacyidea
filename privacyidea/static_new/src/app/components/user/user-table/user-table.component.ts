@@ -45,7 +45,7 @@ import {
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { UserData, UserService, UserServiceInterface } from "@services/user/user.service";
-import { filterInputHint } from "@utils/filter-hint.utils";
+import { inlineFilterHint } from "@utils/filter-hint.utils";
 
 import { NgClass } from "@angular/common";
 import { MatIconButton } from "@angular/material/button";
@@ -134,7 +134,7 @@ export class UserTableComponent implements OnDestroy {
   protected readonly resolverService = inject(ResolverService);
   protected readonly dialog = inject(MatDialog);
   readonly apiFilter = this.userService.apiFilterOptions;
-  readonly filterHint = filterInputHint({ includeCaseNote: false, separator: " " });
+  readonly filterHint = inlineFilterHint();
   private basePageSizeOptions = [...this.tableUtilsService.pageSizeOptions()];
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;

@@ -46,7 +46,7 @@ import { MatInput } from "@angular/material/input";
 import { RouterLink } from "@angular/router";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
-import { filterInputHint } from "@utils/filter-hint.utils";
+import { inlineFilterHint } from "@utils/filter-hint.utils";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
@@ -158,7 +158,7 @@ export class AuditComponent {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   readonly apiFilterKeyMap = this.auditService.apiFilterKeyMap;
-  readonly filterHint = filterInputHint({ includeCaseNote: false, separator: " " });
+  readonly filterHint = inlineFilterHint();
   sort = this.auditService.sort;
 
   @ViewChild("filterHTMLInputElement", { static: false })

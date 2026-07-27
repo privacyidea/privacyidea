@@ -44,7 +44,7 @@
             matInput
             placeholder="Example query: 'type: hotp userid: 1000'" />
         </app-clearable-input>
-        <mat-hint class="filter-keyword-hint">{{ filterHint }}</mat-hint>
+        <mat-hint>{{ filterHint }}</mat-hint>
         @if (showFilterHint()) {
           <mat-hint
             align="end"
@@ -111,7 +111,8 @@
                         <button
                           [matMenuTriggerData]="{ keyword: apiFilterKeyMap[column.key] }"
                           [matMenuTriggerFor]="realmMenu"
-                          attr.aria-label="Filter by {{ column.label }}"
+                          aria-label="Filter by {{ column.label }}"
+                          i18n-aria-label
                           class="filter-button"
                           mat-icon-button>
                           <mat-icon class="keyword-button-icon margin-left-0"> filter_list</mat-icon>
@@ -120,7 +121,8 @@
                         <button
                           [matMenuTriggerData]="{ keyword: apiFilterKeyMap[column.key] }"
                           [matMenuTriggerFor]="typeMenu"
-                          attr.aria-label="Filter by {{ column.label }}"
+                          aria-label="Filter by {{ column.label }}"
+                          i18n-aria-label
                           class="filter-button"
                           mat-icon-button>
                           <mat-icon class="keyword-button-icon margin-left-0"> filter_list</mat-icon>
@@ -128,7 +130,8 @@
                       } @else {
                         <button
                           (click)="onKeywordClick(apiFilterKeyMap[column.key])"
-                          attr.aria-label="Filter by {{ column.label }}"
+                          aria-label="Filter by {{ column.label }}"
+                          i18n-aria-label
                           class="filter-button"
                           mat-icon-button>
                           <mat-icon class="keyword-button-icon margin-left-0">
@@ -139,7 +142,8 @@
                     }
                     <button
                       (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
-                      attr.aria-label="Sort by {{ column.label }}"
+                      aria-label="Sort by {{ column.label }}"
+                      i18n-aria-label
                       class="sort-button"
                       mat-icon-button
                       type="button">

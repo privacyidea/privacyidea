@@ -31,6 +31,7 @@ import { environment } from "@env/environment";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { StringUtils } from "@utils/string.utils";
@@ -40,7 +41,6 @@ const apiFilter = ["container_serial", "type", "description", "user", "container
 const advancedApiFilter = ["token_serial", "template", "assigned"];
 
 const exactMatchKeys = new Set(["user", "type", "state", "assigned"]);
-const booleanKeys = new Set(["assigned"]);
 
 // Filter keywords, a single value maps to the `type` query param, multiple to `type_list`.
 // TODO(4.0.0): send a single list-only `types` param once the backend drops the type/type_list split.
@@ -198,7 +198,6 @@ export interface ContainerServiceInterface {
   apiFilter: string[];
   advancedApiFilter: string[];
   exactMatchKeys: Set<string>;
-  booleanKeys: Set<string>;
   stopPolling$: Subject<void>;
   containerBaseUrl: string;
   eventPageSize: WritableSignal<number>;
@@ -275,6 +274,7 @@ export class ContainerService implements ContainerServiceInterface {
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly userService: UserServiceInterface = inject(UserService);
+  private readonly realmService: RealmServiceInterface = inject(RealmService);
   private readonly http = inject(HttpClient);
   private readonly pollingTrigger = signal<number>(0);
   private readonly isRolloverPolling = signal(false);
@@ -290,7 +290,6 @@ export class ContainerService implements ContainerServiceInterface {
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
   readonly exactMatchKeys = exactMatchKeys;
-  readonly booleanKeys = booleanKeys;
   stopPolling$ = new Subject<void>();
   containerBaseUrl = environment.proxyUrl + "/container/";
   readonly eventPageSize = signal(10);
@@ -1000,7 +999,15 @@ export class ContainerService implements ContainerServiceInterface {
 
   handleFilterInput($event: Event): void {
     const input = $event.target as HTMLInputElement;
-    const newFilter = this.containerFilter().copyWith({ value: input.value });
+    let newFilter = this.containerFilter().copyWith({ value: input.value });
+
+    if (newFilter.hasKey("user") && !newFilter.hasKey("realm")) {
+      const defaultRealm = this.realmService.defaultRealm();
+      if (defaultRealm) {
+        newFilter = newFilter.addEntry("realm", defaultRealm);
+      }
+    }
+
     this.containerFilter.set(newFilter);
   }
 

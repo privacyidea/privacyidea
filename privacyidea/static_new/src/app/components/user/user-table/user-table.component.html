@@ -40,9 +40,9 @@
             i18n-aria-label
             i18n-placeholder
             matInput
-            placeholder="Example query: 'username: root'" />
+            placeholder="Search all columns, or by column e.g. 'root email: @acme'" />
         </app-clearable-input>
-        <mat-hint class="filter-keyword-hint">{{ filterHint }}</mat-hint>
+        <mat-hint>{{ filterHint }}</mat-hint>
       </mat-form-field>
       <mat-paginator
         [length]="totalLength()"
@@ -71,7 +71,8 @@
                   @if (apiFilter.includes(column.key)) {
                     <button
                       (click)="onFilterClick(column.key)"
-                      attr.aria-label="Filter by {{ column.label }}"
+                      aria-label="Filter by {{ column.label }}"
+                      i18n-aria-label
                       class="filter-button"
                       mat-icon-button
                       type="button">
@@ -82,7 +83,8 @@
                   }
                   <button
                     (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
-                    attr.aria-label="Sort by {{ column.label }}"
+                    aria-label="Sort by {{ column.label }}"
+                    i18n-aria-label
                     class="sort-button"
                     mat-icon-button
                     type="button">

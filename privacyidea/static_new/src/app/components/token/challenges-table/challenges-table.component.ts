@@ -39,7 +39,7 @@ import {
   ChallengesServiceInterface
 } from "@services/token/challenges/challenges.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
-import { filterInputHint } from "@utils/filter-hint.utils";
+import { inlineFilterHint } from "@utils/filter-hint.utils";
 
 import { ChallengesTableActionsComponent } from "./challenges-table-actions/challenges-table-actions.component";
 
@@ -82,7 +82,7 @@ export class ChallengesTableComponent {
   displayedColumns = columnKeysMap.map((c) => c.key);
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
   apiFilter = this.challengesService.apiFilter;
-  readonly filterHint = filterInputHint({ includeCaseNote: false, separator: " " });
+  readonly filterHint = inlineFilterHint();
   advancedApiFilter = this.challengesService.advancedApiFilter;
   tokenSerial = this.tokenService.tokenSerial;
   pageSize = this.challengesService.pageSize;

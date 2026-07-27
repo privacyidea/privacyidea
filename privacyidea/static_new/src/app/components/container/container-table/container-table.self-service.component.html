@@ -84,7 +84,8 @@
                 <div class="margin-left-16 flex">
                   <button
                     (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
-                    attr.aria-label="Sort by {{ column.label }}"
+                    aria-label="Sort by {{ column.label }}"
+                    i18n-aria-label
                     class="sort-button"
                     mat-icon-button
                     type="button">

@@ -85,10 +85,18 @@ export class FilterAutocompleteDirective implements AfterViewInit, OnDestroy {
   @HostListener("click")
   @HostListener("focus")
   @HostListener("scroll")
-  @HostListener("keyup")
   onInteraction(): void {
     this.dismissed = false;
     this.update();
+  }
+
+  @HostListener("keyup", ["$event"])
+  onKeyup(event: KeyboardEvent): void {
+    // The keyup that follows an Escape keydown must not revive the suggestion the keydown just dismissed.
+    if (event.key === "Escape") {
+      return;
+    }
+    this.onInteraction();
   }
 
   @HostListener("blur")

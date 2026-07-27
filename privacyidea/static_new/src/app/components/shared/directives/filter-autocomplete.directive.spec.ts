@@ -137,6 +137,7 @@ describe("FilterAutocompleteDirective", () => {
   it("hides the completion on Escape", () => {
     type("ser");
     input.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", cancelable: true }));
+    input.dispatchEvent(new KeyboardEvent("keyup", { key: "Escape", cancelable: true }));
     expect(ghost().style.display).toBe("none");
     expect(pressTab().defaultPrevented).toBe(false);
   });

@@ -122,8 +122,6 @@ export interface AuditServiceInterface {
   apiFilterKeyMap: Record<string, string>;
   apiFilter: string[];
   advancedApiFilter: string[];
-  exactMatchKeys: Set<string>;
-  booleanKeys: Set<string>;
   auditFilter: WritableSignal<FilterValue>;
   filterParams: () => Record<string, string>;
   pageSize: WritableSignal<number>;
@@ -151,8 +149,6 @@ export class AuditService implements AuditServiceInterface {
   readonly apiFilterKeyMap = apiFilterKeyMap;
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
-  readonly exactMatchKeys = new Set<string>();
-  readonly booleanKeys = new Set(["success"]);
   auditFilter = signal(new FilterValue());
   filterParams = computed<Record<string, string>>(() => {
     const allowed = [...this.apiFilter, ...this.advancedApiFilter];

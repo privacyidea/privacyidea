@@ -41,7 +41,7 @@ import { MatMenuModule } from "@angular/material/menu";
 import { ContainerTableActionsComponent } from "@components/container/container-table/container-table-actions/container-table-actions.component";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
-import { filterInputHint } from "@utils/filter-hint.utils";
+import { inlineFilterHint } from "@utils/filter-hint.utils";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
@@ -94,7 +94,7 @@ export class ContainerTableComponent {
   readonly apiFilter = this.containerService.apiFilter;
   readonly advancedApiFilter = this.containerService.advancedApiFilter;
   readonly filterKeywords = [...this.containerService.apiFilter, ...this.containerService.advancedApiFilter];
-  readonly filterHint = filterInputHint({ includeCaseNote: false, separator: " " });
+  readonly filterHint = inlineFilterHint();
   containerSelection = this.containerService.containerSelection;
 
   pageSize = this.containerService.pageSize;

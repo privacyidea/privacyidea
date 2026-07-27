@@ -34,7 +34,7 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
 import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
 import { PolicyDetail } from "@services/policies/policies.service";
-import { filterInputHint } from "@utils/filter-hint.utils";
+import { inlineFilterHint } from "@utils/filter-hint.utils";
 
 @Component({
   selector: "app-policy-filter",
@@ -54,7 +54,7 @@ export class PolicyFilterComponent implements AfterViewInit {
   }
 
   unfilteredPolicies = input<PolicyDetail[]>([]);
-  readonly filterHint = filterInputHint({ includeCaseNote: false, separator: " " });
+  readonly filterHint = inlineFilterHint();
 
   readonly filterChange = output<FilterValueGeneric<PolicyDetail>>();
   readonly inputElement = viewChild.required<ElementRef<HTMLInputElement>>("filterHTMLInputElement");

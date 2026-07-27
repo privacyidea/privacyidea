@@ -35,7 +35,7 @@
           matInput
           placeholder="Example query: 'action: GET success: false'" />
       </app-clearable-input>
-      <mat-hint class="filter-keyword-hint">{{ filterHint }}</mat-hint>
+      <mat-hint>{{ filterHint }}</mat-hint>
     </mat-form-field>
     <mat-paginator
       (page)="onPageEvent($event)"
@@ -61,7 +61,8 @@
                 <div class="margin-left-16">
                   <button
                     (click)="onKeywordClick(apiFilterKeyMap[column.key])"
-                    attr.aria-label="Filter by {{ column.label }}"
+                    aria-label="Filter by {{ column.label }}"
+                    i18n-aria-label
                     class="filter-button"
                     mat-icon-button>
                     <mat-icon class="keyword-button-icon margin-left-0">

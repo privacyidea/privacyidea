@@ -36,6 +36,15 @@ export function filterInputHint(options: FilterInputHintOptions = {}): string {
   return lines.join(options.separator ?? "\n");
 }
 
+/**
+ * The standard single-line filter hint shown beneath keyword filter inputs
+ * (wildcard + quoting guidance, no case note). Shared by all filterable tables
+ * so the wording stays consistent across the app.
+ */
+export function inlineFilterHint(): string {
+  return filterInputHint({ includeCaseNote: false, separator: " " });
+}
+
 export type FilterCaseNote = "usually-insensitive" | "usually-sensitive" | "sensitive";
 
 export interface FilterKeywordSemantics {
