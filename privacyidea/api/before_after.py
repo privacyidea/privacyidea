@@ -32,8 +32,8 @@ import copy
 
 from flask_babel import _
 
-from .lib.utils import (get_all_params, get_optional, map_error_to_code, send_error, verify_auth_token,
-                        get_auth_token_from_request, logged_in_user_from_token)
+from .lib.utils import (get_all_params, get_optional, map_error_to_code, get_auth_error_status_code, send_error,
+                        verify_auth_token, get_auth_token_from_request, logged_in_user_from_token)
 from .container import container_blueprint
 from ..lib.container import find_container_for_token, find_container_by_serial
 from ..lib.framework import get_app_config_value
@@ -533,7 +533,7 @@ def auth_error(error):
 
         g.audit_object.add_to_log({"info": message}, add_with_comma=True)
 
-    return send_error(error.message, error_code=error.id, details=error.details), map_error_to_code(error)
+    return send_error(error.message, error_code=error.id, details=error.details), get_auth_error_status_code(error)
 
 
 @system_blueprint.errorhandler(PolicyError)
@@ -559,7 +559,7 @@ def auth_error(error):
 def policy_error(error):
     if "audit_object" in g:
         g.audit_object.add_to_log({"info": error.message}, add_with_comma=True)
-    return send_error(error.message, error_code=error.id), map_error_to_code(error)
+    return send_error(error.message, error_code=error.id), get_auth_error_status_code(error)
 
 
 @system_blueprint.app_errorhandler(ResourceNotFoundError)
@@ -588,7 +588,7 @@ def resource_not_found_error(error):
     """
     if "audit_object" in g:
         g.audit_object.log({"info": error.message})
-    return send_error(error.message, error_code=error.id), map_error_to_code(error)
+    return send_error(error.message, error_code=error.id), get_auth_error_status_code(error)
 
 
 @system_blueprint.app_errorhandler(PrivacyIDEAError)
@@ -618,7 +618,7 @@ def privacyidea_error(error):
     """
     if "audit_object" in g:
         g.audit_object.log({"info": str(error)})
-    return send_error(str(error), error_code=error.id), map_error_to_code(error)
+    return send_error(str(error), error_code=error.id), get_auth_error_status_code(error)
 
 
 @system_blueprint.app_errorhandler(NotImplementedError)
