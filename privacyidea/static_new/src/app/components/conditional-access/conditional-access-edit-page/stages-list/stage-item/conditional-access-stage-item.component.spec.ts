@@ -42,6 +42,7 @@ describe("ConditionalAccessStageItemComponent", () => {
 
     fixture = TestBed.createComponent(ConditionalAccessStageItemComponent);
     fixture.componentRef.setInput("stage", stage);
+    fixture.componentRef.setInput("stageNumber", 1);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

@@ -15,6 +15,12 @@
   justify-content: space-between;
 }
 
+.ca-stage-number {
+  flex: 0 0 auto;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
 .ca-stage-name {
   align-items: center;
   display: flex;

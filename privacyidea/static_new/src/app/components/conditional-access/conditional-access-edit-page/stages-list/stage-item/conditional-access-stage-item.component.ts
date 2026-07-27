@@ -34,6 +34,8 @@ import { ConditionalAccessActionsListComponent } from "./actions-list/conditiona
 })
 export class ConditionalAccessStageItemComponent {
   readonly stage = input.required<LockoutPolicyStage>();
+  // 1-based trigger order (lowest threshold = Stage 1), shown as "Stage N".
+  readonly stageNumber = input.required<number>();
   readonly updateStage = output<Partial<LockoutPolicyStage>>();
   readonly removeStage = output<void>();
 

@@ -33,20 +33,36 @@
     </mat-panel-description>
   </mat-expansion-panel-header>
 
-  <mat-form-field
-    appearance="fill"
-    subscriptSizing="dynamic"
-    class="input-width-l margin-bottom-16">
-    <mat-label i18n>Action</mat-label>
-    <mat-select
-      [value]="action().action_type"
-      (selectionChange)="onActionTypeChange($event.value)">
-      @for (actionType of policyService.actionTypes(); track actionType) {
-        <mat-option [value]="actionType">{{ actionType }}</mat-option>
-      }
-    </mat-select>
-    <mat-hint>{{ actionDescription() }}</mat-hint>
-  </mat-form-field>
+  <div class="flex-row gap-16">
+    <mat-form-field
+      appearance="fill"
+      subscriptSizing="dynamic"
+      class="input-width-l margin-bottom-16">
+      <mat-label i18n>Action</mat-label>
+      <mat-select
+        [value]="action().action_type"
+        (selectionChange)="onActionTypeChange($event.value)">
+        @for (actionType of policyService.actionTypes(); track actionType) {
+          <mat-option [value]="actionType">{{ actionType }}</mat-option>
+        }
+      </mat-select>
+      <mat-hint>{{ actionDescription() }}</mat-hint>
+    </mat-form-field>
+
+    <mat-checkbox
+      class="margin-top-8"
+      [checked]="retriggerChecked()"
+      (change)="onRetriggerChange($event.checked)"
+      i18n>
+      Re-trigger while above the threshold (until escalation to the next stage)
+    </mat-checkbox>
+    <app-info-hint
+      class="margin-top-8"
+      text="When off, this action runs once, when the count reaches the stage's threshold exactly. When on, it runs again on every further tracked event while the count stays at or above the threshold, until the policy escalates to the next stage. Allow/Deny default to on; the lock, email and block actions default to off."
+      i18n-text
+      ariaLabel="About re-triggering"
+      i18n-ariaLabel />
+  </div>
 
   <div class="ca-action-value">
     @switch (valueMode()) {
@@ -55,14 +71,41 @@
           appearance="fill"
           subscriptSizing="dynamic"
           class="input-width-l">
-          <mat-label i18n>Duration (seconds)</mat-label>
+          <mat-label i18n>Duration</mat-label>
           <input
             matInput
             type="number"
             min="1"
             [value]="durationValue()"
             (input)="onDurationInput($any($event.target).value)" />
-          <mat-hint i18n>How long the lock or block lasts, in seconds.</mat-hint>
+          @if (durationUnit() !== "seconds") {
+            <mat-hint i18n>= {{ durationSecondsHint() }} seconds</mat-hint>
+          } @else {
+            <mat-hint i18n>How long the lock or block lasts.</mat-hint>
+          }
+        </mat-form-field>
+
+        <mat-form-field
+          appearance="fill"
+          subscriptSizing="dynamic"
+          class="input-width-s">
+          <mat-label i18n>Unit</mat-label>
+          <mat-select
+            [value]="durationUnit()"
+            (selectionChange)="onDurationUnitChange($event.value)">
+            <mat-option
+              value="seconds"
+              i18n>Seconds
+            </mat-option>
+            <mat-option
+              value="minutes"
+              i18n>Minutes
+            </mat-option>
+            <mat-option
+              value="hours"
+              i18n>Hours
+            </mat-option>
+          </mat-select>
         </mat-form-field>
       }
       @case ("email") {
@@ -147,19 +190,5 @@
         </details>
       }
     }
-  </div>
-
-  <div class="ca-action-retrigger">
-    <mat-checkbox
-      [checked]="retriggerChecked()"
-      (change)="onRetriggerChange($event.checked)"
-      i18n>
-      Re-trigger while at or above the threshold (until the policy escalates to the next stage)
-    </mat-checkbox>
-    <app-info-hint
-      text="When off, this action runs once, when the count reaches the stage's threshold exactly. When on, it runs again on every further tracked event while the count stays at or above the threshold, until the policy escalates to the next stage. Allow/Deny default to on; the lock, email and block actions default to off."
-      i18n-text
-      ariaLabel="About re-triggering"
-      i18n-ariaLabel />
   </div>
 </mat-expansion-panel>
