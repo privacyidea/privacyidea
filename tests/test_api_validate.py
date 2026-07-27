@@ -3106,7 +3106,7 @@ class ValidateAPITestCase(MyApiTestCase):
         self.assertEqual(401, response.status_code, response.json)
         result = response.json.get("result")
         error = result.get("error")
-        self.assertEqual(4031, error.get("code"))
+        self.assertEqual(Error.AUTHENTICATE, error.get("code"))
         self.assertEqual("Authentication failed.", error.get("message"))
         self.assertEqual(2, len(error))
         detail = response.json.get("detail")
