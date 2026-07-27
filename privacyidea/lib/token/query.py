@@ -429,8 +429,12 @@ def get_tokens(tokentype: str | None = None, token_type_list: list[str] | None =
     :type tokentype: basestring
     :param token_type_list: A list of token types. If None or empty, all token types are returned.
     :type token_type_list: list
-    :param realm: get tokens of a realm. If None, all tokens are returned. If allowed_realms is not None, it must
-        contain this realm, otherwise no matching tokens will be found.
+    :param realm: get tokens of a realm. If None, all tokens are returned.
+        Accepts a single realm name, a wildcard pattern (e.g. ``realm*``),
+        or a comma-separated list of realm names where each entry may
+        contain ``*`` wildcards (e.g. ``realm1,realm2`` or ``staff*,students*``).
+        If allowed_realms is not None, the queried realms must overlap with
+        allowed_realms, otherwise no matching tokens will be found.
     :type realm: basestring
     :param assigned: Get either assigned (True) or unassigned (False) tokens. If None, gets all tokens.
     :type assigned: bool
