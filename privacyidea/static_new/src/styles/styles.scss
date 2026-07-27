@@ -782,28 +782,24 @@ body.self-service-layout {
 }
 
 .mdc-list-item--selected:not(.mdc-list-item--disabled):not(.mat-mdc-option-multiple) {
-  background-color: var(--mat-sys-primary-light) !important;
+  --mat-option-hover-state-layer-color: var(--mat-sys-primary-base);
+  --mat-option-focus-state-layer-color: var(--mat-sys-primary-base-active);
+  --mat-option-selected-state-layer-color: var(--mat-sys-primary-base-hover);
+}
+.mat-mdc-option.mdc-list-item:not(.mdc-list-item--disabled) {
+  --mat-option-hover-state-layer-color: var(--mat-sys-primary-light);
+  --mat-option-focus-state-layer-color: var(--mat-sys-primary-light-active);
+  --mat-option-selected-state-layer-color: var(--mat-sys-primary-light-hover);
 }
 
-.mat-mdc-option.mdc-list-item {
-  background: var(--mat-sys-surface-container-low) !important;
-}
-
-.mat-mdc-select-panel[aria-multiselectable="false"]
-  .mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled)
-  .mdc-list-item__primary-text {
-  color: white !important;
-}
-
-.mat-mdc-option:hover:not(.mdc-list-item--selected, .mdc-list-item--disabled) {
-  background-color: #f2f9fd;
-}
-
-.mat-mdc-option.mat-mdc-option-active {
-  background-color: var(--mat-sys-primary-container) !important;
-  color: var(--mat-sys-on-primary-container) !important;
-  outline: 2px solid var(--mat-sys-primary);
-  outline-offset: -2px;
+.mat-mdc-select-panel[aria-multiselectable="false"] {
+  .mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled),
+  .mat-mdc-option.mdc-list-item:not(.mdc-list-item--disabled):hover,
+  .mat-mdc-option.mdc-list-item.mat-mdc-option-active:not(.mdc-list-item--disabled) {
+    .mdc-list-item__primary-text {
+      color: var(--mat-sys-on-primary) !important;
+    }
+  }
 }
 
 .cdk-overlay-container {
