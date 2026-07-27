@@ -26,7 +26,7 @@ import {
   input,
   numberAttribute
 } from "@angular/core";
-import { MatOption, MatSelect } from "@angular/material/select";
+import { MatSelect } from "@angular/material/select";
 
 @Directive({
   selector: "mat-select[appGridSelectNav]",
@@ -59,22 +59,20 @@ export class GridSelectNavDirective implements OnInit, OnDestroy {
     )
       return;
 
-    const options = this.select.options.toArray();
-    if (options.length === 0) return;
-
-    event.preventDefault();
-    event.stopImmediatePropagation();
+    const count = this.select.options.length;
+    if (count === 0) return;
 
     const keyManager = this.select._keyManager;
     const current = keyManager.activeItemIndex;
     if (current === null || current < 0) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
       keyManager.setActiveItem(0);
       this.appRef.tick();
       return;
     }
 
-    const columns = this.columnCount(options);
-    const last = options.length - 1;
+    const columns = this.columnCount();
     let target = current;
     switch (event.key) {
       case "ArrowLeft":
@@ -91,19 +89,24 @@ export class GridSelectNavDirective implements OnInit, OnDestroy {
         break;
     }
 
-    if (target < 0 || target > last) return;
+    if (target < 0 || target >= count) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
     keyManager.setActiveItem(target);
     this.appRef.tick();
   }
 
-  private columnCount(options: MatOption[]): number {
+  private columnCount(): number {
     const configured = this.appGridSelectColumns();
     if (configured !== null && configured > 0) return configured;
-    if (options.length < 2) return 1;
-    const firstTop = options[0]._getHostElement().offsetTop;
+    const panel = this.select.panel?.nativeElement as HTMLElement | undefined;
+    if (!panel) return 1;
+    const optionEls = panel.querySelectorAll<HTMLElement>("mat-option");
+    if (optionEls.length < 2) return 1;
+    const firstTop = optionEls[0].offsetTop;
     let columns = 1;
-    for (let i = 1; i < options.length; i++) {
-      if (options[i]._getHostElement().offsetTop !== firstTop) break;
+    for (let i = 1; i < optionEls.length; i++) {
+      if (optionEls[i].offsetTop !== firstTop) break;
       columns++;
     }
     return columns;
