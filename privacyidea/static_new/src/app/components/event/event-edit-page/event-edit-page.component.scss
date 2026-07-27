@@ -34,15 +34,6 @@
   gap: var(--global-gap);
 }
 
-.event-name {
-  white-space: nowrap;
-  overflow: inherit;
-  text-overflow: ellipsis;
-}
-
-.event-name-color {
-  color: var(--mat-sys-primary);
-}
 
 .event-details {
   display: grid;
