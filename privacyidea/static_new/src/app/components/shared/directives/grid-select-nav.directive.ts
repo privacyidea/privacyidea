@@ -16,16 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import {
-  ApplicationRef,
-  Directive,
-  ElementRef,
-  OnDestroy,
-  OnInit,
-  inject,
-  input,
-  numberAttribute
-} from "@angular/core";
+import { Directive, ElementRef, OnDestroy, OnInit, inject, input, numberAttribute } from "@angular/core";
 import { MatSelect } from "@angular/material/select";
 
 @Directive({
@@ -37,7 +28,6 @@ export class GridSelectNavDirective implements OnInit, OnDestroy {
 
   private readonly select = inject(MatSelect);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
-  private readonly appRef = inject(ApplicationRef);
   private readonly handler = (event: KeyboardEvent) => this.onKeydown(event);
 
   ngOnInit(): void {
@@ -51,24 +41,19 @@ export class GridSelectNavDirective implements OnInit, OnDestroy {
   private onKeydown(event: KeyboardEvent): void {
     if (!this.select.panelOpen) return;
     if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
-    if (
-      event.key !== "ArrowLeft" &&
-      event.key !== "ArrowRight" &&
-      event.key !== "ArrowUp" &&
-      event.key !== "ArrowDown"
-    )
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight" && event.key !== "ArrowUp" && event.key !== "ArrowDown")
       return;
 
     const count = this.select.options.length;
     if (count === 0) return;
 
     const keyManager = this.select._keyManager;
+    if (!keyManager) return;
     const current = keyManager.activeItemIndex;
     if (current === null || current < 0) {
       event.preventDefault();
       event.stopImmediatePropagation();
       keyManager.setActiveItem(0);
-      this.appRef.tick();
       return;
     }
 
@@ -93,7 +78,6 @@ export class GridSelectNavDirective implements OnInit, OnDestroy {
     event.preventDefault();
     event.stopImmediatePropagation();
     keyManager.setActiveItem(target);
-    this.appRef.tick();
   }
 
   private columnCount(): number {
