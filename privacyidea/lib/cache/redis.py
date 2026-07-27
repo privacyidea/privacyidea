@@ -48,7 +48,6 @@ import redis as redis_lib
 
 from privacyidea.lib.challenge_types import is_challenge_open
 from privacyidea.lib.framework import get_app_config_value, get_app_local_store
-from privacyidea.lib.utils import convert_column_to_unicode
 from privacyidea.models.utils import utc_now
 
 log = logging.getLogger(__name__)

@@ -34,6 +34,7 @@ and the splitting sign.
 
 The code is tested in tests/test_lib_tokens_4eyes.
 """
+
 import logging
 from privacyidea.lib.params import get_optional, get_required
 from privacyidea.lib.config import get_from_config
@@ -46,7 +47,6 @@ from privacyidea.lib import _
 from privacyidea.lib.policy import SCOPE, GROUP
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.challenge import get_challenges
-import json
 import datetime
 
 log = logging.getLogger(__name__)
@@ -130,7 +130,7 @@ class FourEyesTokenClass(TokenClass):
                                 'to authenticate'),
                'init': {},
                'config': {},
-               'user':  [],
+               'user': [],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin"],
                'policy': {
