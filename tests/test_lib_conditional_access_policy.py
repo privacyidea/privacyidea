@@ -69,11 +69,12 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         self.assertEqual(3, policy["priority"])
         self.assertEqual(["PIN_FAIL", "MFA_FAIL"], policy["counter_types_to_track"])
         self.assertEqual(2, len(policy["stages"]))
-        # stages are ordered by stage priority desc (evaluation order)
-        self.assertEqual(10, policy["stages"][0]["failure_threshold"])
-        self.assertEqual(2, len(policy["stages"][0]["actions"]))
+        # stages are ordered by ascending failure_threshold (first to trigger first)
+        self.assertEqual(5, policy["stages"][0]["failure_threshold"])
+        self.assertEqual(10, policy["stages"][1]["failure_threshold"])
+        self.assertEqual(2, len(policy["stages"][1]["actions"]))
         self.assertEqual({"lock_duration_seconds": 600},
-                         policy["stages"][1]["actions"][0]["action_value"])
+                         policy["stages"][0]["actions"][0]["action_value"])
 
     def test_02_create_validation_errors(self):
         valid = dict(time_window_seconds=600, counter_types_to_track=["PIN_FAIL"],

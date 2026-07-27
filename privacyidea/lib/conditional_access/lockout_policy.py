@@ -105,6 +105,10 @@ def lockout_policy_to_dict(policy: LockoutPolicy) -> dict:
     # serialized explicitly.
     result = {column: getattr(policy, column) for column in policy.__table__.columns.keys()}
     result["counter_types_to_track"] = list(policy.counter_types_to_track)
+    # Stages are ordered for display by ascending failure_threshold (the stage
+    # that triggers first comes first). This is independent of the engine's
+    # evaluation order (highest priority first, see the model relationship),
+    # which is why we sort here rather than relying on policy.stages order.
     result["stages"] = [
         {
             "id": stage.id,
@@ -118,7 +122,7 @@ def lockout_policy_to_dict(policy: LockoutPolicy) -> dict:
                     "action_value": action.action_value,
                 } for action in stage.actions
             ],
-        } for stage in policy.stages
+        } for stage in sorted(policy.stages, key=lambda stage: stage.failure_threshold)
     ]
     return result
 
