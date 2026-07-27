@@ -22,7 +22,6 @@ from datetime import datetime, timezone
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
-from flask import json
 from sqlalchemy import select, delete, and_, update
 
 from privacyidea.lib import _
@@ -728,7 +727,7 @@ class TokenContainerClass:
                 # Create message
                 nonce = challenge.challenge
                 times_stamp = challenge.timestamp.replace(tzinfo=timezone.utc).isoformat()
-                extra_data = json.loads(challenge.data)
+                extra_data = challenge.get_data()
                 passphrase_user = extra_data.get("passphrase_user")
                 if passphrase_user:
                     if not passphrase:

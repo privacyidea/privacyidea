@@ -373,9 +373,12 @@ class FourEyesTokenClass(TokenClass):
         challengeobject_list = get_challenges(serial=self.token.serial,
                                               transaction_id=transaction_id)
         if len(challengeobject_list) == 1:
-            remaining_realms = self._get_remaining_realms(options.get("data", {}))
+            # options["data"] is set by check_challenge_response / _authenticate_remaining_realms
+            # with the current used_tokens dict
+            used_tokens_data = options.get("data", {})
+            remaining_realms = self._get_remaining_realms(used_tokens_data)
             if remaining_realms:
-                options["data"] = json.dumps(options.get("data", {}))
+                options["data"] = used_tokens_data
                 options["message"] = f"Remaining tokens: {remaining_realms!s}"
                 return True
         return False
@@ -413,7 +416,8 @@ class FourEyesTokenClass(TokenClass):
             for challengeobject in challengeobject_list:
                 if challengeobject.is_valid():
                     # challenge is still valid
-                    used_tokens = json.loads(challengeobject_list[0].data or json.dumps({}))
+                    challenge_data = challengeobject.get_data()
+                    used_tokens = challenge_data.get("used_tokens", {})
                     remaining_realms = self._get_remaining_realms(used_tokens)
                     r_success = self._authenticate_remaining_realms(passw, remaining_realms, used_tokens, options)
 
@@ -448,10 +452,7 @@ class FourEyesTokenClass(TokenClass):
         """
         options = options or {}
         message = ""
-        if isinstance(options.get("data"), dict):
-            # In the special first chal-resp case we do not have jsonified data, yet. So we need to convert
-            options["data"] = json.dumps(options.get("data"))
-        used_tokens = json.loads(options.get("data", json.dumps({})))
+        used_tokens = options.get("data", {})
         remaining_realms = self._get_remaining_realms(used_tokens)
         if remaining_realms:
             message = "Please authenticate with another token from " \
@@ -466,7 +467,7 @@ class FourEyesTokenClass(TokenClass):
         # Create the challenge in the database
         db_challenge = create_challenge(self.token.serial,
                                         transaction_id=transactionid,
-                                        data=options.get("data"),
+                                        data={"used_tokens": used_tokens},
                                         session=options.get("session"),
                                         challenge=message,
                                         validitytime=validity)

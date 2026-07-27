@@ -151,10 +151,10 @@ class IndexedSecretTokenClass(TokenClass):
                            'desc': _("The user may only have this maximum number of active indexed secret"
                                      " tokens assigned."),
                            'group': GROUP.TOKEN
+                       }
                    }
                }
-           }
-        }
+               }
 
         if key:
             ret = res.get(key, {})
@@ -226,11 +226,11 @@ class IndexedSecretTokenClass(TokenClass):
             attributes["random_positions"] = random_positions
 
             db_challenge = create_challenge(self.token.serial,
-                                             transaction_id=transactionid,
-                                             challenge=options.get("challenge"),
-                                             data=position_str,
-                                             session=options.get("session"),
-                                             validitytime=validity)
+                                            transaction_id=transactionid,
+                                            challenge=options.get("challenge"),
+                                            data={"positions": position_str},
+                                            session=options.get("session"),
+                                            validitytime=validity)
             transactionid = transactionid or db_challenge.transaction_id
             return_message = return_message.format(position_str)
 
@@ -278,7 +278,9 @@ class IndexedSecretTokenClass(TokenClass):
                     # challenge is still valid
                     # Add the challenge to the options for check_otp
                     options["challenge"] = challengeobject.challenge
-                    options["data"] = [int(c) for c in challengeobject.data.split(",")]
+                    challenge_data = challengeobject.get_data()
+                    position_str = challenge_data["positions"]
+                    options["data"] = [int(c) for c in position_str.split(",")]
                     # Now see if the answer is the right indexes
                     secret_string = to_unicode(self.token.get_otpkey().getKey())
                     if len(options["data"]) == len(passw):

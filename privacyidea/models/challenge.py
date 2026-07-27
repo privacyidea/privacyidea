@@ -77,7 +77,7 @@ class Challenge(MethodsMixin, db.Model):
 
     @log_with(log)
     def __init__(self, serial, transaction_id=None,
-                 challenge='', data='', session='', validitytime=120):
+                 challenge='', data=None, session='', validitytime=120):
         # We manually assign attributes here as they depend on the function parameters
         self.transaction_id = transaction_id or self.create_transaction_id()
         self.challenge = challenge
@@ -123,25 +123,33 @@ class Challenge(MethodsMixin, db.Model):
         The data is encrypted before being stored in the database since it
         may contain OTP values.
 
-        :param data: The challenge data (string, dict, or other serializable value)
+        :param data: The challenge data. Must be a dict (or None/empty).
+        :type data: dict or None
         """
-        if data is None or data == '':
+        if not data:
             self._data = ''
-        elif isinstance(data, dict):
-            self._data = encryptPassword(json.dumps(data))
-        elif isinstance(data, str):
-            self._data = encryptPassword(data)
         else:
-            self._data = encryptPassword(convert_column_to_unicode(data))
+            self._data = encryptPassword(json.dumps(data))
 
     def get_data(self):
+        """
+        Get the decrypted challenge data as a dict.
+
+        :return: The challenge data as a dict. Returns {} if no data is stored.
+        :rtype: dict
+        """
         if not self.data:
             return {}
+        raw = self.data
         try:
-            data = json.loads(self.data)
+            data = json.loads(raw)
+            if isinstance(data, dict):
+                return data
+            # Legacy: non-dict JSON value (e.g. an int or string)
+            return {"value": data}
         except (json.JSONDecodeError, UnicodeDecodeError, ValueError):
-            data = self.data
-        return data
+            # Legacy unencrypted or non-JSON data
+            return {"value": raw}
 
     def get_session(self):
         return self.session

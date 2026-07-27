@@ -83,6 +83,7 @@ class CacheState(Enum):
     back to the database / issue defensive eviction.
     """
 
+
 # Default cooldown between connection attempts after any failure (init or
 # runtime). One unified value covers boot-order races (worker up before
 # Redis container) and transient runtime errors (Redis restart, network
@@ -104,6 +105,7 @@ def _retry_cooldown_seconds() -> int:
     except (TypeError, ValueError):
         return _DEFAULT_RETRY_COOLDOWN_SECONDS
     return value if value > 0 else _DEFAULT_RETRY_COOLDOWN_SECONDS
+
 
 # Redis key templates
 #
@@ -355,12 +357,23 @@ class ChallengeDTO:
         return self.transaction_id
 
     def get_data(self):
+        """
+        Get the challenge data as a dict.
+
+        :return: The challenge data as a dict. Returns {} if no data is stored.
+        :rtype: dict
+        """
         if not self.data:
             return {}
         try:
-            return json.loads(self.data)
+            data = json.loads(self.data)
+            if isinstance(data, dict):
+                return data
+            # Legacy: non-dict JSON value (e.g. an int or string)
+            return {"value": data}
         except (json.JSONDecodeError, ValueError):
-            return self.data
+            # Legacy non-JSON data
+            return {"value": self.data}
 
     def get_otp_status(self) -> tuple[int, bool]:
         return self.received_count, self.otp_valid
@@ -392,15 +405,14 @@ class ChallengeDTO:
         self.save()
 
     def set_data(self, data):
-        # Mirror Challenge.set_data (models/challenge.py): str -> as-is,
-        # dict -> JSON, anything else (bytes, ints, ...) -> unicode coercion.
-        # Keeps both backends accepting the same input shapes.
-        if isinstance(data, str):
-            self.data = data
-        elif isinstance(data, dict):
-            self.data = json.dumps(data)
+        """
+        Set the challenge data. Must be a dict (or None/empty).
+        Mirrors Challenge.set_data (models/challenge.py).
+        """
+        if not data:
+            self.data = ''
         else:
-            self.data = convert_column_to_unicode(data)
+            self.data = json.dumps(data)
         self.save()
 
     def set_session(self, session: str):

@@ -227,7 +227,7 @@ class RadiusTokenClass(RemoteTokenClass):
 
         db_challenge = create_challenge(self.token.serial,
                                         transaction_id=transactionid,
-                                        data=state,
+                                        data={"radius_state": state},
                                         challenge=message,
                                         validitytime=validity)
         self.challenge_janitor()
@@ -311,7 +311,9 @@ class RadiusTokenClass(RemoteTokenClass):
 
             for challengeobject in challengeobject_list:
                 if challengeobject.is_valid():
-                    state = binascii.unhexlify(challengeobject.data)
+                    challenge_data = challengeobject.get_data()
+                    radius_state_hex = challenge_data.get("radius_state", "")
+                    state = binascii.unhexlify(radius_state_hex)
 
                     # challenge is still valid
                     radius_response = self._check_radius(passw, options=options, radius_state=state)

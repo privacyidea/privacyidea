@@ -349,7 +349,7 @@ class SmsTokenClass(HotpTokenClass):
 
                     # Create the challenge in the database
                     if is_true(get_from_config("sms.concurrent_challenges")):
-                        data = self.get_otp()[2]
+                        data = {"otp": self.get_otp()[2]}
                 db_challenge = create_challenge(self.token.serial,
                                                transaction_id=transactionid,
                                                challenge=options.get("challenge"),
@@ -387,7 +387,9 @@ class SmsTokenClass(HotpTokenClass):
 
         ret = HotpTokenClass.check_otp(self, anOtpVal, counter, window, options)
         if ret < 0 and is_true(get_from_config("sms.concurrent_challenges")):
-            if options.get("data") is not None and safe_compare(options.get("data"), anOtpVal):
+            challenge_data = options.get("data")
+            saved_otp = challenge_data.get("otp") if challenge_data else None
+            if saved_otp is not None and safe_compare(saved_otp, anOtpVal):
                 # We authenticate from the saved challenge
                 ret = 1
         if ret >= 0 and self._get_auto_sms(options):

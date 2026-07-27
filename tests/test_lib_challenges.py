@@ -188,7 +188,8 @@ class ChallengeDataEncryptionTestCase(MyTestCase):
     """Test that challenge data is encrypted in the database."""
 
     def test_01_challenge_data_encrypted(self):
-        """OTP data stored in a challenge is encrypted in the database."""
+        """OTP data stored in a challenge is encrypted in the database.
+        Strings are wrapped in a dict with key 'value' for consistency."""
         otp_value = "123456"
         c = Challenge(serial="SPASS01", transaction_id="tid_enc_001",
                       data=otp_value, validitytime=300)
@@ -199,11 +200,11 @@ class ChallengeDataEncryptionTestCase(MyTestCase):
                             "OTP data should be stored encrypted!")
         self.assertIn(":", c._data)
 
-        # Verify the data property transparently decrypts
-        self.assertEqual(c.data, otp_value)
+        # Verify the data property transparently decrypts (returns JSON of wrapped dict)
+        self.assertEqual(json.loads(c.data), {"value": otp_value})
 
-        # Verify get_data() also works (parses JSON)
-        self.assertEqual(c.get_data(), int(otp_value))  # json.loads("123456") -> 123456
+        # Verify get_data() returns a dict (string wrapped in {"value": ...})
+        self.assertEqual(c.get_data(), {"value": otp_value})
 
         # Clean up
         db.session.delete(c)
@@ -295,9 +296,9 @@ class ChallengeDataEncryptionTestCase(MyTestCase):
         # data property should fall back to returning raw value when decryption fails
         self.assertEqual(c.data, "654321")
 
-        # get_data() parses as JSON -> returns int
+        # get_data() wraps non-dict JSON values in {"value": ...}
         retrieved = c.get_data()
-        self.assertEqual(retrieved, 654321)
+        self.assertEqual(retrieved, {"value": 654321})
 
         # Clean up
         db.session.delete(c)
@@ -331,7 +332,7 @@ class ChallengeDataEncryptionTestCase(MyTestCase):
                       validitytime=300)
         c.save()
 
-        # Assign via property setter (c.data = ...)
+        # Assign a string via property setter (c.data = ...) - gets wrapped in {"value": ...}
         c.data = "secret_otp_789"
         db.session.commit()
 
@@ -339,8 +340,8 @@ class ChallengeDataEncryptionTestCase(MyTestCase):
         self.assertNotEqual(c._data, "secret_otp_789")
         self.assertIn(":", c._data)
 
-        # Reading via property should decrypt
-        self.assertEqual(c.data, "secret_otp_789")
+        # Reading via property should decrypt to JSON of the wrapped dict
+        self.assertEqual(json.loads(c.data), {"value": "secret_otp_789"})
 
         # Assign a dict via setter
         c.data = {"push_confirmed": True}
