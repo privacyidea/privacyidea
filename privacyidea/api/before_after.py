@@ -32,8 +32,8 @@ import copy
 
 from flask_babel import _
 
-from .lib.utils import (get_all_params, get_optional, map_error_to_code, send_error, verify_auth_token,
-                        get_auth_token_from_request, logged_in_user_from_token)
+from .lib.utils import (get_all_params, get_before_request_config, get_optional, map_error_to_code, send_error,
+                        verify_auth_token, get_auth_token_from_request, logged_in_user_from_token)
 from .container import container_blueprint
 from ..lib.container import find_container_for_token, find_container_by_serial
 from ..lib.framework import get_app_config_value
@@ -41,13 +41,10 @@ from ..lib.policies.actions import PolicyAction
 from ..lib.user import get_user_from_param
 import logging
 from flask import request, g
-from privacyidea.lib.audit import getAudit
-from flask import current_app
-from privacyidea.lib.policy import PolicyClass, Match, SCOPE
-from privacyidea.lib.event import EventConfiguration
+from privacyidea.lib.policy import Match, SCOPE
 from privacyidea.lib.lifecycle import call_finalizers
 from privacyidea.api.auth import (user_required, admin_required, jwtauth)
-from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_object, get_privacyidea_node
+from privacyidea.lib.config import ensure_no_config_object, get_privacyidea_node
 from privacyidea.lib.token import get_token_type, get_token_owner
 from privacyidea.api.ttype import ttype_blueprint
 from privacyidea.api.validate import validate_blueprint
@@ -82,7 +79,7 @@ from privacyidea.api.lib.postpolicy import postrequest, sign_response, hide_vers
 from ..lib.error import (PrivacyIDEAError, Error,
                          AuthError, UserError,
                          PolicyError, ResourceNotFoundError)
-from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent, AUTH_RESPONSE
+from privacyidea.lib.utils import get_plugin_info_from_useragent, AUTH_RESPONSE
 from privacyidea.lib.user import User
 import datetime
 import threading
@@ -315,22 +312,6 @@ def resolve_logged_in_user():
         # In cases like the policy API, the parameter "user" is part of the
         # policy and will not resolve to a user object
         request.User = User()
-
-
-def get_before_request_config():
-    """
-    Gets the policy object, the audit object and the event configuration object and sets them to the global flask
-    variable. Additionally, reads the client IP and the HTTP headers from the request object and writes them to the
-    global flask variable.
-    """
-    g.policy_object = PolicyClass()
-    g.audit_object = getAudit(current_app.config, g.startdate)
-    g.event_config = EventConfiguration()
-    # access_route contains the ip addresses of all clients, hops and proxies.
-    g.client_ip = get_client_ip(request, get_from_config(SYSCONF.OVERRIDECLIENT))
-    # Save the HTTP header in the localproxy object
-    g.request_headers = request.headers
-    g.policies = {}
 
 
 def before_request():

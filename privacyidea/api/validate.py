@@ -90,7 +90,7 @@ import json
 import logging
 import threading
 
-from flask import (Blueprint, request, g, current_app, Response)
+from flask import (Blueprint, request, g, Response)
 from flask_babel import _
 
 from privacyidea.api.auth import admin_required
@@ -113,21 +113,19 @@ from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            webauthntoken_request, check_application_tokentype,
                                            increase_failcounter_on_challenge, get_first_policy_value, fido2_enroll,
                                            disabled_token_types, load_challenge_text)
-from privacyidea.api.lib.utils import get_all_params, get_optional_one_of, get_optional, INTERNAL_OPTION_KEYS
+from privacyidea.api.lib.utils import (get_all_params, get_before_request_config, get_optional_one_of, get_optional,
+                                       INTERNAL_OPTION_KEYS)
 from privacyidea.api.recover import recover_blueprint
 from privacyidea.api.register import register_blueprint
 from privacyidea.lib.applications.offline import MachineApplication
-from privacyidea.lib.audit import getAudit
 from privacyidea.lib.challenge import get_challenges, extract_answered_challenges, cancel_enrollment_via_multichallenge
-from privacyidea.lib.config import (get_from_config,
-                                    SYSCONF, ensure_no_config_object, get_privacyidea_node)
+from privacyidea.lib.config import ensure_no_config_object, get_privacyidea_node
 from privacyidea.lib.container import find_container_for_token, find_container_by_serial, check_container_challenge
 from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError, Error
-from privacyidea.lib.event import EventConfiguration
 from privacyidea.lib.event import event
 from privacyidea.lib.machine import list_machine_tokens, get_auth_items, attach_token
 from privacyidea.lib.policy import Match
-from privacyidea.lib.policy import PolicyClass, SCOPE
+from privacyidea.lib.policy import SCOPE
 from privacyidea.lib.policydecorators import reset_all_user_tokens_active, reset_token_failcounters
 from privacyidea.lib.subscriptions import CheckSubscription
 from privacyidea.lib.token import (check_user_pass, check_serial_pass,
@@ -135,7 +133,7 @@ from privacyidea.lib.token import (check_user_pass, check_serial_pass,
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.tokenclass import CHALLENGE_REFUSAL_STATUS
 from privacyidea.lib.user import log_used_user, User, split_user
-from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent, AUTH_RESPONSE
+from privacyidea.lib.utils import get_plugin_info_from_useragent, AUTH_RESPONSE
 from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
 from .lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
 from .lib.utils import get_required, map_error_to_code, send_error, send_result
@@ -166,20 +164,7 @@ def before_request():
     request.all_data = copy.deepcopy(g.request_data)
 
     privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
-    # Create a policy_object, that reads the database audit settings
-    # and contains the complete policy definition during the request.
-    # This audit_object can be used in the postpolicy and prepolicy
-    # It can be passed to the inner policies.
-
-    g.policy_object = PolicyClass()
-    g.policies = {}
-
-    g.audit_object = getAudit(current_app.config, g.startdate)
-    g.event_config = EventConfiguration()
-    # access_route contains the ip addresses of all clients, hops and proxies.
-    g.client_ip = get_client_ip(request, get_from_config(SYSCONF.OVERRIDECLIENT))
-    # Save the HTTP header in the localproxy object
-    g.request_headers = request.headers
+    get_before_request_config()
     g.serial = get_optional(request.all_data, "serial", default=None)
     ua_name, ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
     g.user_agent = ua_name
