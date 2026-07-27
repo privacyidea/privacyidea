@@ -16,25 +16,11 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div class="details-header">
-  <h3
-    class="margin-8"
-    i18n>
-    Details for {{ entityLabel() }}
-  </h3>
-  <app-copyable
-    class="flex-row flex-nowrap ali-center"
-    [copyText]="serial()">
-    <h3 class="h3-color margin-8">{{ serial() }}</h3>
-  </app-copyable>
-  <ng-content select="[headerExtra]"></ng-content>
-  @if (showAuditButton()) {
-    <button
-      (click)="auditClick.emit()"
-      [routerLink]="[auditRoute()]"
-      mat-icon-button
-      [matTooltip]="auditTooltip()">
-      <mat-icon>receipt_long</mat-icon>
-    </button>
-  }
-</div>
+<button
+  (click)="emit($event)"
+  [attr.aria-label]="label()"
+  [matTooltip]="label()"
+  class="filter-value-button"
+  type="button">
+  <mat-icon class="filter-value-icon">filter_alt</mat-icon>
+</button>

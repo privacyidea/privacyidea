@@ -124,7 +124,8 @@ describe("SmtpServersComponent", () => {
 
   it("should delete server after confirmation", async () => {
     const server = smtpServiceMock.smtpServers()[0];
-    component.deleteServer(server);
+    component.selection.set([server]);
+    component.deleteSelected();
     expect(dialogServiceMock.openDialog).toHaveBeenCalled();
     confirmClosed.next(true);
     confirmClosed.complete();
