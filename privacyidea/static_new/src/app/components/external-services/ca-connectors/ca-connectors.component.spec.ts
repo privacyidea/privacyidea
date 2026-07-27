@@ -79,6 +79,18 @@ describe("CaConnectorsComponent", () => {
     expect(component).toBeTruthy();
   });
 
+  it("should toggle row and all-row selection", () => {
+    const row = component.caConnectorDataSource().data[0];
+    component.toggleRow(row);
+    expect(component.isSelected(row)).toBe(true);
+    component.toggleRow(row);
+    expect(component.isSelected(row)).toBe(false);
+    component.toggleAllRows();
+    expect(component.isAllSelected()).toBe(true);
+    component.toggleAllRows();
+    expect(component.selection().length).toBe(0);
+  });
+
   it("should display connectors from service", () => {
     expect(component.caConnectorDataSource().data.length).toBe(2);
     expect(component.caConnectorDataSource().data[0].connectorname).toBe("conn1");
