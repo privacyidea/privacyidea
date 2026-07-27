@@ -22,7 +22,11 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
-import { LockoutPolicyStage, LockoutStageAction } from "@services/conditional-access/conditional-access-policy.service";
+import {
+  LockoutPolicyStage,
+  LockoutStageAction,
+  LockoutTarget
+} from "@services/conditional-access/conditional-access-policy.service";
 import { ConditionalAccessActionsListComponent } from "./actions-list/conditional-access-actions-list.component";
 
 @Component({
@@ -36,6 +40,9 @@ export class ConditionalAccessStageItemComponent {
   readonly stage = input.required<LockoutPolicyStage>();
   // 1-based trigger order (lowest threshold = Stage 1), shown as "Stage N".
   readonly stageNumber = input.required<number>();
+  // The identity the policy acts on; passed down to the action editor so it can
+  // offer only the action types valid for this target.
+  readonly target = input<LockoutTarget>("user");
   readonly updateStage = output<Partial<LockoutPolicyStage>>();
   readonly removeStage = output<void>();
 
@@ -58,7 +65,8 @@ export class ConditionalAccessStageItemComponent {
 
   onFailureThresholdInput(value: string): void {
     const parsed = parseInt(value, 10);
-    if (!isNaN(parsed) && parsed >= 1) {
+    // 0 is allowed: an ALLOW/DENY allowlist stage always matches at threshold 0.
+    if (!isNaN(parsed) && parsed >= 0) {
       this.updateStage.emit({ failure_threshold: parsed });
     }
   }

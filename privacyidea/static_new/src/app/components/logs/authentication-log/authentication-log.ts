@@ -29,7 +29,8 @@ import {
   WritableSignal
 } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
-import { MatDividerModule } from "@angular/material/divider";
+import { provideNativeDateAdapter } from "@angular/material/core";
+import { MatDatepickerModule } from "@angular/material/datepicker";
 import { MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
@@ -120,7 +121,9 @@ const USER_ROLE_BADGES: Record<string, { label: string; tooltip: string; class: 
 // `sortable` mirrors SORTABLE_COLUMNS in privacyidea/lib/conditional_access/authentication_log.py. Every column is
 // sortable except `other_info`, which is a JSON column the backend cannot order on meaningfully.
 const columnKeysMap: { key: string; label: string; filterable: boolean; sortable: boolean }[] = [
-  { key: "timestamp", label: $localize`Timestamp`, filterable: true, sortable: true },
+  // The timestamp filter lives in the table-action row (preset menu + custom-range slider), not in the column header,
+  // so the header only offers sorting.
+  { key: "timestamp", label: $localize`Timestamp`, filterable: false, sortable: true },
   { key: "event_type", label: $localize`Event Type`, filterable: true, sortable: true },
   { key: "username", label: $localize`User`, filterable: true, sortable: true },
   { key: "realm", label: $localize`Realm`, filterable: true, sortable: true },
@@ -134,50 +137,37 @@ const columnKeysMap: { key: string; label: string; filterable: boolean; sortable
   { key: "other_info", label: $localize`Info`, filterable: false, sortable: false }
 ];
 
-const TIME_PRESETS: readonly { key: string; label: string }[] = [
-  { key: "1h", label: $localize`Last 1 hour` },
-  { key: "24h", label: $localize`Last 24 hours` },
-  { key: "7d", label: $localize`Last 7 days` },
-  { key: "30d", label: $localize`Last 30 days` },
-  { key: "3m", label: $localize`Last 3 months` },
-  { key: "6m", label: $localize`Last 6 months` },
-  { key: "1y", label: $localize`Last year` }
-];
-
-// Computes the start of a time period relative to now, used by selectTimePreset to set the `from` filter.
-// period: a key from TIME_PRESETS, e.g. "1h", "24h", "7d", "30d", "3m", "1y" (number + unit h/d/m/y).
-// Returns an ISO 8601 string, e.g. "2026-06-02T10:00:00.000Z".
-function computePeriodStart(period: string): string {
-  const match = /^(\d+)([hdmy])$/.exec(period);
-  if (!match) throw new Error(`Unknown period key: ${period}`);
-  const amount = parseInt(match[1], 10);
-  const unit = match[2];
-  const now = new Date();
-  switch (unit) {
-    case "h":
-      return new Date(now.getTime() - amount * 3_600_000).toISOString();
-    case "d":
-      return new Date(now.getTime() - amount * 86_400_000).toISOString();
-    case "m": {
-      const date = new Date(now);
-      date.setMonth(date.getMonth() - amount);
-      return date.toISOString();
-    }
-    case "y": {
-      const date = new Date(now);
-      date.setFullYear(date.getFullYear() - amount);
-      return date.toISOString();
-    }
-    default:
-      throw new Error(`Unknown time unit: ${unit}`);
-  }
+// Local start-of-day / end-of-day ISO bounds for a date chosen in the range picker. The picker yields a native Date
+// at local midnight; the log renders timestamps in local time, so the bounds are the local day edges (inclusive end
+// at 23:59:59) converted to the ISO the API filter expects.
+function startOfDayIso(date: Date): string {
+  const day = new Date(date);
+  day.setHours(0, 0, 0, 0);
+  return day.toISOString();
 }
 
-// The custom-range slider has a fixed number of positions (its resolution); the time span they cover is dynamic
-// (sliderWindowMs) and follows the selected preset. It defaults to the widest preset (1 year).
+function endOfDayIso(date: Date): string {
+  const day = new Date(date);
+  day.setHours(23, 59, 59, 0);
+  return day.toISOString();
+}
+
+// The custom-range slider has a fixed number of positions (its resolution); the time span they cover is dynamic (the
+// window). It defaults to the span from the oldest entry to now, or the widest fallback until that loads.
 const RANGE_SLIDER_STEPS = 200;
 const MS_PER_DAY = 86_400_000;
 const DEFAULT_SLIDER_WINDOW_MS = 365 * MS_PER_DAY;
+
+// "Last X" spans and their labels for the date-range button: when the active range ends at ~now and its duration
+// matches one of these (within tolerance), the button shows that friendly period name instead of "Custom range".
+const PRESET_LABELS: readonly { ms: number; label: string }[] = [
+  { ms: MS_PER_DAY, label: $localize`Last 24 hours` },
+  { ms: 7 * MS_PER_DAY, label: $localize`Last 7 days` },
+  { ms: 30 * MS_PER_DAY, label: $localize`Last 30 days` },
+  { ms: 90 * MS_PER_DAY, label: $localize`Last 3 months` },
+  { ms: 182 * MS_PER_DAY, label: $localize`Last 6 months` },
+  { ms: 365 * MS_PER_DAY, label: $localize`Last year` }
+];
 
 // Converts an ISO 8601 string to the human-readable format shown in the active-filter chip.
 // Input: ISO 8601, e.g. "2026-06-02T10:00:00.000Z". Output: "2026-06-02 10:00:00 +00:00".
@@ -255,12 +245,13 @@ interface InfoEntry {
     MultiSelectMenuComponent,
     MatIcon,
     MatButtonModule,
-    MatDividerModule,
+    MatDatepickerModule,
     MatIconModule,
     MatMenuModule,
     MatSliderModule,
     MatTooltipModule
   ],
+  providers: [provideNativeDateAdapter()],
   templateUrl: "./authentication-log.html",
   styleUrl: "./authentication-log.scss"
 })
@@ -322,37 +313,75 @@ export class AuthenticationLog {
   });
   readonly showSourceIpMenu = computed(() => this.sourceIpOptions().length > 0);
 
-  readonly timePresets = TIME_PRESETS;
-  // Highlighted preset button. Component-local: it reflects the last preset the user clicked, not the underlying
-  // timestamp filter, so it is cleared whenever a custom range or a clear is applied.
-  readonly selectedPreset = signal<string | null>(null);
+  // Is any time filter active (a bound set, or a range narrowed on the slider)? Gates whether the picker shows a range.
+  private readonly hasTimeFilter = computed(
+    () => !!(this.authenticationLogService.timestampFrom() || this.authenticationLogService.timestampTo())
+  );
+  // The date-range picker's start/end mirror the slider *window* (its min/max), not the narrowed filter, so dragging
+  // the slider leaves the picked range in place — the picker only ever defines the outer bounds. Empty when no time
+  // filter is active; the end stays open while the window runs up to "now".
+  readonly rangePickerStart = computed<Date | null>(() => (this.hasTimeFilter() ? new Date(this.windowStartMs()) : null));
+  readonly rangePickerEnd = computed<Date | null>(() =>
+    this.hasTimeFilter() && !this.openEndedWindow() ? new Date(this.windowEndMs()) : null
+  );
+  // Label on the date-range button: the neutral default with no range set, a friendly "Last X" period when the active
+  // range ends at ~now and matches a preset span, otherwise "Custom range".
+  readonly dateRangeLabel = computed(() => {
+    const fromIso = this.authenticationLogService.timestampFrom();
+    const toIso = this.authenticationLogService.timestampTo();
+    if (!fromIso && !toIso) {
+      return $localize`Date range`;
+    }
+    if (fromIso) {
+      const now = Date.now();
+      const endMs = toIso ? new Date(toIso).getTime() : now;
+      // Only a range ending at ~now reads as a "Last X" period; a historical range stays "Custom range".
+      if (now - endMs < MS_PER_DAY) {
+        const duration = endMs - new Date(fromIso).getTime();
+        const preset = PRESET_LABELS.find((entry) => Math.abs(duration - entry.ms) <= Math.max(entry.ms * 0.05, MS_PER_DAY));
+        if (preset) {
+          return preset.label;
+        }
+      }
+    }
+    return $localize`Custom range`;
+  });
 
   readonly rangeSliderSteps = RANGE_SLIDER_STEPS;
-  // A single "now" anchor for the slider window's right edge. Sampled once (refreshed when a preset/clear starts a new
-  // window) so the duration-based math below reads a stable now.
+  // A "now" reference for open-ended windows (those running up to the present). Re-sampled when a new window starts so
+  // the math below reads a stable now.
   private readonly nowAnchorMs = signal(Date.now());
-  // Default window: from the oldest recorded entry up to now, falling back to the widest preset until it loads.
-  readonly defaultSliderWindowMs = computed(() => {
+  // Default window start: the oldest recorded entry (kept at least a day back), or the widest fallback until it loads.
+  readonly defaultWindowStartMs = computed(() => {
     const oldest = this.authenticationLogService.oldestTimestamp();
-    return oldest ? Math.max(MS_PER_DAY, this.nowAnchorMs() - new Date(oldest).getTime()) : DEFAULT_SLIDER_WINDOW_MS;
+    const end = this.nowAnchorMs();
+    return oldest ? Math.min(end - MS_PER_DAY, new Date(oldest).getTime()) : end - DEFAULT_SLIDER_WINDOW_MS;
   });
-  // The time span the slider covers (its zoom level): a preset's duration, or the default window (see above) which it
-  // tracks until a preset overrides it.
-  readonly sliderWindowMs = linkedSignal(() => this.defaultSliderWindowMs());
-  // Thumb positions (0 = start of the window .. RANGE_SLIDER_STEPS = now), derived from the active time filter
-  // (relative to sliderWindowMs). Writable during a drag; each recomputes on the next timestamp/window change.
+  // The slider window [start, end] — its zoom. Defaults to oldest→now; a date-range selection zooms it to the picked
+  // span so e.g. a single day fills the whole track. Writable so dragging the thumbs does not re-zoom it.
+  readonly windowStartMs = linkedSignal(() => this.defaultWindowStartMs());
+  readonly windowEndMs = linkedSignal(() => this.nowAnchorMs());
+  // Whether the window runs up to "now" (an open upper bound): true for the default / start-only window, false once an
+  // end date bounds it. Governs whether the end thumb at its max means "now"/open (no end_time) or that concrete end.
+  private readonly openEndedWindow = signal(true);
+  // Thumb positions (0 = window start .. RANGE_SLIDER_STEPS = window end), derived from the active time filter
+  // (relative to the window). Writable during a drag; each recomputes on the next timestamp/window change.
   readonly rangeStart = linkedSignal(() => this.isoToSliderPos(this.authenticationLogService.timestampFrom(), 0));
   readonly rangeEnd = linkedSignal(() =>
     this.isoToSliderPos(this.authenticationLogService.timestampTo(), RANGE_SLIDER_STEPS)
   );
-  // Human-readable from/to for the range summary line; the end thumb at its maximum reads as "now".
-  readonly rangeSummaryFrom = computed(() =>
-    formatDate(this.sliderPosToIso(this.rangeStart(), false)!, "yyyy-MM-dd HH:mm", "en-US")
+  // The range summary shows the window's extent (its min/max), not the dragged thumbs, so it stays a stable reference
+  // for the axis. The time-of-day is dropped once the window spans more than a day; an open window reads "now" at its
+  // max.
+  private summaryFormat(ms: number): string {
+    const format = this.windowEndMs() - this.windowStartMs() > MS_PER_DAY ? "yyyy-MM-dd" : "yyyy-MM-dd HH:mm";
+    return formatDate(ms, format, "en-US");
+  }
+
+  readonly rangeSummaryFrom = computed(() => this.summaryFormat(this.windowStartMs()));
+  readonly rangeSummaryTo = computed(() =>
+    this.openEndedWindow() ? $localize`now` : this.summaryFormat(this.windowEndMs())
   );
-  readonly rangeSummaryTo = computed(() => {
-    const iso = this.sliderPosToIso(this.rangeEnd(), true);
-    return iso ? formatDate(iso, "yyyy-MM-dd HH:mm", "en-US") : $localize`now`;
-  });
 
   // Activity histogram drawn behind the slider: the loaded entries' timestamps bucketed across the slider window,
   // each bar normalized (0..1) to the busiest bucket. Reflects the current page only, so it is an indication of
@@ -360,11 +389,11 @@ export class AuthenticationLog {
   readonly activityBinCount = 48;
   readonly activityHistogram = computed<number[]>(() => {
     const bins = new Array<number>(this.activityBinCount).fill(0);
-    const windowMs = this.sliderWindowMs();
-    const start = this.nowAnchorMs() - windowMs;
+    const start = this.windowStartMs();
+    const span = this.windowEndMs() - start;
     for (const entry of this.dataSource().data) {
       const t = entry.timestamp ? new Date(entry.timestamp).getTime() : NaN;
-      const fraction = (t - start) / windowMs;
+      const fraction = (t - start) / span;
       if (fraction < 0 || fraction > 1) {
         continue;
       }
@@ -378,7 +407,7 @@ export class AuthenticationLog {
     // Load known clients for the source-IP options (no-op without the `clienttype` right; the resource gates on it).
     this.clientsService.requestClientsForAutocomplete();
     // Keep the time filter in sync with edits made directly to the start_time/end_time entries in the main filter
-    // text (the slider/presets write the same signals via applyTimeRange).
+    // text (the slider/date picker write the same signals via applyTimeRange).
     effect(() => this.syncTimeFilterFromText());
   }
 
@@ -401,14 +430,12 @@ export class AuthenticationLog {
     if (!chip || !chip.trim()) {
       if (current !== null) {
         bound.set(null);
-        this.selectedPreset.set(null);
       }
       return;
     }
     const parsed = parseFilterTimestamp(chip);
     if (parsed && parsed !== current) {
       bound.set(parsed);
-      this.selectedPreset.set(null);
     }
   }
 
@@ -487,22 +514,39 @@ export class AuthenticationLog {
     this.authenticationLogService.clearFilter();
   }
 
-  selectTimePreset(key: string): void {
-    // Re-anchor "now" so the preset's window (and the leftmost thumb) is measured from the current moment.
+  clearTimeFilter(): void {
+    // Re-anchor "now" so the default window is recomputed from the current moment (see defaultWindowStartMs).
     this.nowAnchorMs.set(Date.now());
-    this.selectedPreset.set(key);
-    const startIso = computePeriodStart(key);
-    // Zoom the slider window to this preset's span; the thumbs then sit at its edges (start = oldest, end = now).
-    this.sliderWindowMs.set(this.nowAnchorMs() - new Date(startIso).getTime());
-    this.applyTimeRange(startIso, null);
+    this.openEndedWindow.set(true);
+    this.windowStartMs.set(this.defaultWindowStartMs());
+    this.windowEndMs.set(this.nowAnchorMs());
+    this.applyTimeRange(null, null);
   }
 
-  clearTimeFilter(): void {
-    // Re-anchor "now" so the default window is recomputed from the current moment (see defaultSliderWindowMs).
+  // Date-range picker edits: a chosen date sets the whole local day as the bound (inclusive), while the other bound is
+  // preserved; clearing a field (null) drops that bound. The picked range also zooms the slider window so the selected
+  // span fills the track (e.g. a single day -> 24 hours).
+  onRangeStartDateChange(date: Date | null): void {
+    const fromIso = date ? startOfDayIso(date) : null;
+    const toIso = this.authenticationLogService.timestampTo();
+    this.zoomSliderToRange(fromIso, toIso);
+    this.applyTimeRange(fromIso, toIso);
+  }
+
+  onRangeEndDateChange(date: Date | null): void {
+    const fromIso = this.authenticationLogService.timestampFrom();
+    const toIso = date ? endOfDayIso(date) : null;
+    this.zoomSliderToRange(fromIso, toIso);
+    this.applyTimeRange(fromIso, toIso);
+  }
+
+  // Zoom the slider window to the picked range so the selected span fills the whole track. A missing bound widens the
+  // window to that edge: no start -> back to the default oldest edge; no end -> an open window running up to now.
+  private zoomSliderToRange(fromIso: string | null, toIso: string | null): void {
     this.nowAnchorMs.set(Date.now());
-    this.selectedPreset.set(null);
-    this.sliderWindowMs.set(this.defaultSliderWindowMs());
-    this.applyTimeRange(null, null);
+    this.openEndedWindow.set(!toIso);
+    this.windowStartMs.set(fromIso ? new Date(fromIso).getTime() : this.defaultWindowStartMs());
+    this.windowEndMs.set(toIso ? new Date(toIso).getTime() : this.nowAnchorMs());
   }
 
   // Update the thumb position live while dragging (labels only, no reload); commitTimeRange applies it on release.
@@ -516,7 +560,6 @@ export class AuthenticationLog {
 
   // Apply the slider's current [start, end] thumbs as the time filter, on thumb release / keyboard commit.
   commitTimeRange(): void {
-    this.selectedPreset.set(null);
     this.applyTimeRange(this.sliderPosToIso(this.rangeStart(), false), this.sliderPosToIso(this.rangeEnd(), true));
   }
 
@@ -524,7 +567,7 @@ export class AuthenticationLog {
   // short windows, day for medium, month for the widest. The precise from/to is always shown in the summary line.
   readonly formatSliderThumb = (pos: number): string => {
     const iso = this.sliderPosToIso(pos, false)!;
-    const windowMs = this.sliderWindowMs();
+    const windowMs = this.windowEndMs() - this.windowStartMs();
     if (windowMs <= 3 * MS_PER_DAY) {
       return formatDate(iso, "HH:mm", "en-US");
     }
@@ -545,14 +588,15 @@ export class AuthenticationLog {
     this.authenticationLogService.authenticationLogFilter.set(filter);
   }
 
-  // Map a slider position (0 = start of the window, max = now) to an ISO timestamp, spread linearly over the current
-  // sliderWindowMs. The end thumb at its maximum means "up to now" -> null (no upper bound, so no end_time param).
+  // Map a slider position (0 = window start, max = window end) to an ISO timestamp, spread linearly over the window.
+  // For an open-ended window the end thumb at its maximum means "up to now" -> null (no upper bound, no end_time).
   private sliderPosToIso(pos: number, isEnd: boolean): string | null {
-    if (isEnd && pos >= RANGE_SLIDER_STEPS) {
+    if (isEnd && pos >= RANGE_SLIDER_STEPS && this.openEndedWindow()) {
       return null;
     }
-    const windowMs = this.sliderWindowMs();
-    const ms = this.nowAnchorMs() - windowMs + (pos / RANGE_SLIDER_STEPS) * windowMs;
+    const start = this.windowStartMs();
+    const span = this.windowEndMs() - start;
+    const ms = start + (pos / RANGE_SLIDER_STEPS) * span;
     // Emit whole-second precision to match the seconds shown in the chip/summary: a sub-second value looks identical
     // to the display yet silently mismatches an entry (which carries sub-second precision). Floor the inclusive start
     // so a boundary entry stays >= it (includes the oldest); ceil the inclusive end so it stays <= it.
@@ -561,13 +605,14 @@ export class AuthenticationLog {
   }
 
   // Inverse of sliderPosToIso: place an ISO timestamp on the slider axis (relative to the current window), clamped to
-  // the visible range. A null bound falls back to the given edge (start -> oldest, end -> now).
+  // the visible range. A null bound falls back to the given edge (start -> window start, end -> window end).
   private isoToSliderPos(iso: string | null, fallback: number): number {
     if (!iso) {
       return fallback;
     }
-    const windowMs = this.sliderWindowMs();
-    const fraction = 1 - (this.nowAnchorMs() - new Date(iso).getTime()) / windowMs;
+    const start = this.windowStartMs();
+    const span = this.windowEndMs() - start;
+    const fraction = (new Date(iso).getTime() - start) / span;
     return Math.min(RANGE_SLIDER_STEPS, Math.max(0, Math.round(fraction * RANGE_SLIDER_STEPS)));
   }
 

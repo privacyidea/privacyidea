@@ -24,6 +24,7 @@
     <app-conditional-access-stage-item
       [stage]="stage"
       [stageNumber]="stageNumber(stage)"
+      [target]="target()"
       (updateStage)="onUpdateStage($index, $event)"
       (removeStage)="onRemoveStage($index)" />
   }
