@@ -120,6 +120,43 @@ describe("ConditionalAccessActionItemComponent", () => {
       component.onDurationInput("");
       expect(spy).toHaveBeenCalledWith({ action_value: null });
     });
+
+    it("should convert the entered value to seconds using the selected unit", () => {
+      setAction({ action_type: "LOCK_USER", action_value: null });
+      const spy = jest.spyOn(component.updateAction, "emit");
+      component.durationUnit.set("minutes");
+      component.onDurationInput("5");
+      expect(spy).toHaveBeenCalledWith({ action_value: 300 });
+    });
+
+    it("should display the stored seconds in the selected unit", () => {
+      setAction({ action_type: "LOCK_USER", action_value: 3600 });
+      component.durationUnit.set("hours");
+      expect(component.durationValue()).toBe("1");
+    });
+
+    it("should keep the entered number and re-scale to seconds on unit change", () => {
+      setAction({ action_type: "LOCK_USER", action_value: 120 });
+      const spy = jest.spyOn(component.updateAction, "emit");
+      component.onDurationUnitChange("minutes");
+      expect(component.durationUnit()).toBe("minutes");
+      // "120" kept and re-interpreted as 120 minutes = 7200s.
+      expect(spy).toHaveBeenCalledWith({ action_value: 7200 });
+    });
+
+    it("should not emit on unit change when there is no value", () => {
+      setAction({ action_type: "LOCK_USER", action_value: null });
+      const spy = jest.spyOn(component.updateAction, "emit");
+      component.onDurationUnitChange("hours");
+      expect(spy).not.toHaveBeenCalled();
+    });
+
+    it("should report the stored seconds for the hint, or 0 when unset", () => {
+      setAction({ action_type: "LOCK_USER", action_value: 300 });
+      expect(component.durationSecondsHint()).toBe(300);
+      setAction({ action_type: "LOCK_USER", action_value: null });
+      expect(component.durationSecondsHint()).toBe(0);
+    });
   });
 
   describe("email", () => {

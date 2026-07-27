@@ -926,6 +926,17 @@ class LockoutEngineTestCase(LockoutTestCase):
         self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
         self.assertEqual(AccessDecision.DENY, evaluate_access_decision(self.user))
 
+    def test_access_decision_skips_unknown_action_type(self):
+        # An unrecognized action type in a decision stage is ignored (not raised),
+        # so the stage contributes no decision. Uses direct ORM since the CRUD
+        # layer would reject the invalid type.
+        _, stages = self._make_policy(name="unknown", counter_type=AuthEventType.PASSWORD_FAIL,
+                                      stages=((3, 1, LockoutAction.DENY, None),))
+        stages[0].actions[0].action_type = "TELEPORT_USER"
+        db.session.commit()
+        self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
+        self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(self.user))
+
     # --- evaluate_access_decision, source-IP target ---------------------------
 
     def test_access_decision_source_ip_deny(self):
