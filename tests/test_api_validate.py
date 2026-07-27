@@ -3102,6 +3102,83 @@ class ValidateAPITestCase(MyApiTestCase):
 
         delete_policy("hide_error_message")
 
+    def test_43_hide_auth_error_status(self):
+        """
+        hide_auth_error_status returns a uniform 401 HTTP status code for
+        failed authentications, so the status code cannot be used to
+        distinguish the reason a request failed.
+        """
+        self.setUp_user_realms()
+        set_default_realm(self.realm1)
+        init_token({"type": "spass", "serial": "spass_status", "pin": "test43"},
+                   user=User("cornelius", self.realm1))
+        # authorized=deny makes an otherwise successful authentication fail with HTTP 400
+        set_policy(name="deny_all", scope=SCOPE.AUTHZ,
+                   action=f"{PolicyAction.AUTHORIZED}={AUTHORIZED.DENY}")
+
+        # Without the policy a denied authorization is HTTP 400 ...
+        with self.app.test_request_context('/validate/check', method="POST",
+                                           data={"user": "cornelius", "pass": "test43"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(400, res.status_code, res.json)
+        # ... and an unknown user is also HTTP 400 (UserError)
+        with self.app.test_request_context('/validate/check', method="POST",
+                                           data={"user": "unknown", "pass": "test43"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(400, res.status_code, res.json)
+
+        # With the policy active every failure returns a uniform 401
+        set_policy(name="hide_status", scope=SCOPE.HARDENING,
+                   action=PolicyAction.HIDE_AUTH_ERROR_STATUS)
+        with self.app.test_request_context('/validate/check', method="POST",
+                                           data={"user": "cornelius", "pass": "test43"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res.json)
+        with self.app.test_request_context('/validate/check', method="POST",
+                                           data={"user": "unknown", "pass": "test43"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res.json)
+
+        # The policy only affects the authentication endpoints: a
+        # ResourceNotFoundError on a non-auth endpoint keeps its 404
+        with self.app.test_request_context('/policy/unknown_policy', method="DELETE",
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(404, res.status_code, res.json)
+
+        delete_policy("deny_all")
+        delete_policy("hide_status")
+        remove_token("spass_status")
+
+    def test_44_hide_auth_error_status_is_defensive(self):
+        """
+        A failure while evaluating the hardening policy must not turn the error
+        response into a 500. get_auth_error_status_code falls back to the mapped
+        status code when the policy backend raises.
+        """
+        from privacyidea.lib.policy import PolicyClass
+        self.setUp_user_realms()
+        set_default_realm(self.realm1)
+        set_policy(name="hide_status", scope=SCOPE.HARDENING,
+                   action=PolicyAction.HIDE_AUTH_ERROR_STATUS)
+
+        original_list_policies = PolicyClass.list_policies
+
+        def raise_for_hardening(self, *args, **kwargs):
+            if kwargs.get("scope") == SCOPE.HARDENING:
+                raise Exception("policy backend unavailable")
+            return original_list_policies(self, *args, **kwargs)
+
+        # An unknown user fails with HTTP 400; with the hardening evaluation
+        # raising, the response falls back to 400 instead of a 500.
+        with mock.patch.object(PolicyClass, "list_policies", raise_for_hardening):
+            with self.app.test_request_context('/validate/check', method="POST",
+                                               data={"user": "unknown", "pass": "1234"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(400, res.status_code, res.json)
+
+        delete_policy("hide_status")
+
     def _assert_unspecific_message_with_401(self, response):
         self.assertEqual(401, response.status_code, response.json)
         result = response.json.get("result")
