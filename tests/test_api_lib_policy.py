@@ -845,7 +845,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
                    action=PolicyAction.HIDE_VERSION)
         g.policy_object = PolicyClass()
         resp = jsonify(res)
-        with patch("privacyidea.api.lib.postpolicy.get_from_config",
+        with patch("privacyidea.lib.config.get_from_config",
                    side_effect=Exception("DB unavailable")):
             new_response = hide_version(req, resp)
         jresult = new_response.json
