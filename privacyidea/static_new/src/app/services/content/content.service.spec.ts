@@ -75,6 +75,25 @@ describe("ContentService", () => {
     expect(service.routeUrl()).toBe("/second");
   });
 
+  it("parses queryParams from the current route", () => {
+    expect(service.queryParams()).toEqual({});
+
+    emitNav(ROUTE_PATHS.TOKENS_ENROLLMENT + "?realm=defrealm&user=root");
+    expect(service.queryParams()).toEqual({ realm: "defrealm", user: "root" });
+
+    emitNav(ROUTE_PATHS.TOKENS_ENROLLMENT);
+    expect(service.queryParams()).toEqual({});
+  });
+
+  it("route checks match the base path even with query parameters", () => {
+    emitNav(ROUTE_PATHS.TOKENS_ENROLLMENT + "?realm=defrealm&user=root");
+    expect(service.onTokensEnrollment()).toBe(true);
+    expect(service.onTokens()).toBe(false);
+
+    emitNav(ROUTE_PATHS.CONTAINERS_CREATE + "?user=root");
+    expect(service.onContainersCreate()).toBe(true);
+  });
+
   it("onTokenEnrollmentLikely is true for enrollment related routes", () => {
     expect(service.onTokenEnrollmentLikely()).toBe(false);
 

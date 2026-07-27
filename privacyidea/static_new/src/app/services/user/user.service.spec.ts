@@ -142,6 +142,37 @@ describe("UserService", () => {
     expect(userService.selectedUserRealm()).toBe("realm1");
   });
 
+  it("seeds selectedUserRealm and selectionFilter from query parameters on navigation", () => {
+    realmService.realmOptions.set(["realm1", "defrealm"]);
+    contentServiceMock.queryParams.set({ realm: "defrealm", user: "root" });
+    contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_ENROLLMENT);
+
+    expect(userService.selectedUserRealm()).toBe("defrealm");
+    expect(userService.selectionUsernameFilter()).toBe("root");
+  });
+
+  it("keeps the seeded user selection when the realm changes on the same route", () => {
+    realmService.realmOptions.set(["realm1", "defrealm"]);
+    contentServiceMock.queryParams.set({ realm: "defrealm", user: "root" });
+    contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_ENROLLMENT);
+    expect(userService.selectionUsernameFilter()).toBe("root");
+
+    userService.selectionFilter.set("bob");
+    userService.selectedUserRealm.set("realm1");
+    expect(userService.selectionUsernameFilter()).toBe("bob");
+  });
+
+  it("resets the selection filter when navigating away without query parameters", () => {
+    realmService.realmOptions.set(["realm1", "defrealm"]);
+    contentServiceMock.queryParams.set({ realm: "defrealm", user: "root" });
+    contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_ENROLLMENT);
+    expect(userService.selectionUsernameFilter()).toBe("root");
+
+    contentServiceMock.queryParams.set({});
+    contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS);
+    expect(userService.selectionUsernameFilter()).toBe("");
+  });
+
   it("selectedUserRealm should expose empty string if no realmOptions are available", () => {
     realmService.realmOptions.set([]);
     expect(userService.selectedUserRealm()).toBe("");

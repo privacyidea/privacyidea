@@ -303,6 +303,7 @@ export class UserService implements UserServiceInterface {
   selectedUserRealm: WritableSignal<string> = linkedSignal({
     source: () => ({
       routeUrl: this.contentService.routeUrl(),
+      queryRealm: this.contentService.queryParams()["realm"] ?? "",
       detailsUserRealm: this.contentService.detailsUser().realm,
       defaultRealm: this.realmService.defaultRealm(),
       realmOptions: this.realmService.realmOptions(),
@@ -311,30 +312,56 @@ export class UserService implements UserServiceInterface {
       authRealm: this.authService.realm()
     }),
     computation: (source, previous): string => {
+      const previousRealm = previous?.value;
+      const routeChanged = source.routeUrl !== previous?.source.routeUrl;
+      const fallbackRealm = previousRealm || this.defaultRealm();
       // On user details the realm of the opened user is the source of truth
       if (this.contentService.onUserDetails()) {
-        if (source.detailsUserRealm) {
-          return source.detailsUserRealm;
-        }
-        if (previous?.value) {
-          return previous.value;
-        }
-      } else if (source.routeUrl.startsWith(ROUTE_PATHS.USERS) && previous?.value) {
-        return previous.value;
+        return source.detailsUserRealm || fallbackRealm;
       }
-      let defaultRealm = source.defaultRealm;
-      if (!this.realmService.realmOptions().includes(defaultRealm)) {
-        // user is not allowed to see the default realm
-        defaultRealm = "";
+      if (source.queryRealm) {
+        const realm = routeChanged ? source.queryRealm : fallbackRealm;
+        if (source.realmOptions.length > 0 && !source.realmOptions.includes(realm)) {
+          return this.defaultRealm();
+        }
+        return realm;
       }
-      const realm = source.authRole === "user" ? source.authRealm : defaultRealm;
-      return realm || source.realmOptions[0] || "";
+      if (source.routeUrl.startsWith(ROUTE_PATHS.USERS)) {
+        return fallbackRealm;
+      }
+      return this.defaultRealm();
     }
   });
 
-  selectionFilter = linkedSignal<{ realm: string; routeUrl: string }, UserData | string>({
-    source: () => ({ realm: this.selectedUserRealm(), routeUrl: this.contentService.routeUrl() }),
-    computation: () => ""
+  private defaultRealm(): string {
+    const options = this.realmService.realmOptions();
+    let defaultRealm = this.realmService.defaultRealm();
+    if (!options.includes(defaultRealm)) {
+      // user is not allowed to see the default realm
+      defaultRealm = "";
+    }
+    const realm = this.authService.role() === "user" ? this.authService.realm() : defaultRealm;
+    return realm || options[0] || "";
+  }
+
+  selectionFilter = linkedSignal<{ realm: string; routeUrl: string; queryUser: string }, UserData | string>({
+    source: () => ({
+      realm: this.selectedUserRealm(),
+      routeUrl: this.contentService.routeUrl(),
+      queryUser: this.contentService.queryParams()["user"] ?? ""
+    }),
+    computation: (source, previous) => {
+      if (source.queryUser) {
+        if (source.routeUrl !== previous?.source.routeUrl) {
+          return source.queryUser;
+        }
+        if (previous !== undefined) {
+          return previous.value;
+        }
+        return source.queryUser;
+      }
+      return "";
+    }
   });
 
   selectionUsernameFilter = computed<string>(() => {
