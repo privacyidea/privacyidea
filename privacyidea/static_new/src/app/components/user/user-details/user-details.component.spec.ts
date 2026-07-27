@@ -704,4 +704,60 @@ describe("UserDetailsComponent", () => {
     });
     expect(reloadSpy).toHaveBeenCalledTimes(1);
   });
+
+  it("lockoutStatusText reports a permanent lock", () => {
+    conditionalAccessStateServiceMock.setUserLockoutStatus({
+      resolver: "resolver1",
+      uid: "uid-123",
+      realm: "realm1",
+      username: "Alice",
+      permanent: true,
+      lock_expires_at: null,
+      seconds_remaining: null,
+      locked_at: "2030-01-01T09:58:00Z"
+    });
+    expect(component.lockoutStatusText()).toBe("Locked permanently");
+  });
+
+  it("lockoutStatusText falls back to 'Locked' when locked without an expiry", () => {
+    conditionalAccessStateServiceMock.setUserLockoutStatus({
+      resolver: "resolver1",
+      uid: "uid-123",
+      realm: "realm1",
+      username: "Alice",
+      permanent: false,
+      lock_expires_at: null,
+      seconds_remaining: null,
+      locked_at: "2030-01-01T09:58:00Z"
+    });
+    expect(component.lockoutStatusText()).toBe("Locked");
+  });
+
+  it("resetUserLockout does nothing when the user is not locked", () => {
+    conditionalAccessStateServiceMock.setUserLockoutStatus(null);
+    dialogServiceMock.openDialog = jest.fn();
+
+    component.resetUserLockout();
+
+    expect(dialogServiceMock.openDialog).not.toHaveBeenCalled();
+    expect(conditionalAccessStateServiceMock.resetUserLockout).not.toHaveBeenCalled();
+  });
+
+  it("resetUserLockout does not reset when the confirmation is cancelled", () => {
+    conditionalAccessStateServiceMock.setUserLockoutStatus({
+      resolver: "resolver1",
+      uid: "uid-123",
+      realm: "realm1",
+      username: "Alice",
+      permanent: false,
+      lock_expires_at: "2030-01-01T10:00:00Z",
+      seconds_remaining: 120,
+      locked_at: "2030-01-01T09:58:00Z"
+    });
+    dialogServiceMock.openDialog = jest.fn().mockReturnValue({ afterClosed: () => of(false) });
+
+    component.resetUserLockout();
+
+    expect(conditionalAccessStateServiceMock.resetUserLockout).not.toHaveBeenCalled();
+  });
 });

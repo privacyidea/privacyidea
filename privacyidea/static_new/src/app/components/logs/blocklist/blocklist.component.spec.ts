@@ -217,4 +217,62 @@ describe("BlocklistComponent", () => {
     expect(component.filterText).toBe("");
     expect(component.dataSource().filter).toBe("");
   });
+
+  it("blockStateClass maps permanent/expired/temporary to the badge colours", () => {
+    expect(component.blockStateClass(permanentEntry)).toBe("highlight-false");
+    expect(component.blockStateClass(expiredEntry)).toBe("highlight-true");
+    expect(component.blockStateClass(activeEntry)).toBe("highlight-warning");
+  });
+
+  it("the filter predicate keeps every row when the filter is empty", () => {
+    const predicate = component.blockFilterPredicate();
+    expect(predicate(activeEntry, "")).toBe(true);
+  });
+
+  it("the filter predicate also matches on the state word", () => {
+    const predicate = component.blockFilterPredicate();
+    expect(predicate(permanentEntry, "permanent")).toBe(true);
+    expect(predicate(activeEntry, "permanent")).toBe(false);
+  });
+
+  it("onSortEvent sorts by identifier (string compare via the default branch)", () => {
+    casService.setBlocklistEntries([activeEntry, permanentEntry, expiredEntry]);
+    // The default sort is identifier/asc, so the first click flips it to desc.
+    component.onSortEvent("identifier");
+    expect(component.sort()).toEqual({ active: "identifier", direction: "desc" });
+    // Descending string order: "192.168.1.100" > "172.16.0.5" > "10.0.0.1".
+    expect(component.dataSource().data[0]).toBe(activeEntry);
+    expect(component.dataSource().data[2]).toBe(permanentEntry);
+  });
+
+  it("onSortEvent cycles a non-default column asc -> desc -> reset to default", () => {
+    casService.setBlocklistEntries([activeEntry, permanentEntry, expiredEntry]);
+
+    component.onSortEvent("blocked_at");
+    expect(component.sort()).toEqual({ active: "blocked_at", direction: "asc" });
+
+    component.onSortEvent("blocked_at");
+    expect(component.sort()).toEqual({ active: "blocked_at", direction: "desc" });
+
+    // Third click clears the direction and falls back to the default sort.
+    component.onSortEvent("blocked_at");
+    expect(component.sort()).toEqual({ active: "identifier", direction: "asc" });
+  });
+
+  it("onSortEvent sorts by the numeric expiry and the derived state column", () => {
+    casService.setBlocklistEntries([activeEntry, permanentEntry, expiredEntry]);
+    component.onSortEvent("block_expires_at");
+    expect(component.sort().active).toBe("block_expires_at");
+    component.onSortEvent("state");
+    expect(component.sort().active).toBe("state");
+    expect(component.dataSource().data.length).toBe(3);
+  });
+
+  it("getSortIcon reflects the active column and direction", () => {
+    // identifier/asc is the default active sort; an unrelated column is neutral.
+    expect(component.getSortIcon("blocked_at")).toBe("unfold_more");
+    expect(component.getSortIcon("identifier")).toBe("keyboard_arrow_upward");
+    component.onSortEvent("identifier"); // -> desc
+    expect(component.getSortIcon("identifier")).toBe("keyboard_arrow_downward");
+  });
 });

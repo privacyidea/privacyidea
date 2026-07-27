@@ -298,4 +298,15 @@ describe("LockedUsersComponent", () => {
 
     expect(casService.purgeUserLockouts).not.toHaveBeenCalled();
   });
+
+  it("handleFilterInput writes the raw input into the shared filter", () => {
+    component.handleFilterInput({ target: { value: "usernames: alice" } } as unknown as Event);
+    expect(casService.lockedUsersFilter().getValueOfKey("usernames")).toBe("alice");
+  });
+
+  it("clearFilter empties the shared filter", () => {
+    casService.lockedUsersFilter.set(new FilterValue({ value: "usernames: alice" }));
+    component.clearFilter();
+    expect(casService.lockedUsersFilter().getValueOfKey("usernames")).toBeFalsy();
+  });
 });
