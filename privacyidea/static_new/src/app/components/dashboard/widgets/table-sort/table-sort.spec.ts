@@ -95,6 +95,19 @@ describe("TableSort", () => {
 
     expect(source).toEqual(rows);
   });
+
+  it("treats two missing values as equal and keeps them last", () => {
+    const sort = createSort();
+    const withTwoMissing: Row[] = [
+      { name: "beta", value: null },
+      { name: "alpha", value: null },
+      { name: "gamma", value: 5 }
+    ];
+
+    sort.toggle("value");
+
+    expect(sort.apply(withTwoMissing).map((row) => row.name)).toEqual(["gamma", "beta", "alpha"]);
+  });
 });
 
 @Component({

@@ -24,7 +24,7 @@ import { DashboardWidget, WidgetInstance } from "@models/dashboard";
 import { DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { NotificationDeliveryHealth, SystemService } from "@services/system/system.service";
 import { MockSystemService } from "@testing/mock-services/mock-system-service";
-import { of, throwError } from "rxjs";
+import { of, Subject, throwError } from "rxjs";
 import { NotificationDeliveryWidgetComponent } from "./notification-delivery-widget.component";
 
 function makeResponse<T>(value: T): PiResponse<T> {
@@ -189,5 +189,79 @@ describe("NotificationDeliveryWidgetComponent", () => {
     expect(emptyFixture.nativeElement.querySelector("table")).toBeNull();
     expect(emptyFixture.nativeElement.textContent).toContain("No notification deliveries in the last hour.");
     emptyFixture.destroy();
+  });
+
+  it("should sort each channel through its own TableSort column accessors", () => {
+    systemMock.getNotificationDelivery.mockReturnValue(
+      of(
+        makeResponse<NotificationDeliveryHealth>({
+          push: [
+            { key: "fcm-b", ok: 1, failed: 0, error: 0, total: 5 },
+            { key: "fcm-a", ok: 4, failed: 0, error: 0, total: 4 }
+          ],
+          sms: [
+            { key: "gw-b", ok: 2, failed: 1, error: 0, total: 9 },
+            { key: "gw-a", ok: 6, failed: 0, error: 0, total: 6 }
+          ],
+          email: [
+            { key: "smtp-b", ok: 1, failed: 2, error: 1, total: 8 },
+            { key: "smtp-a", ok: 7, failed: 0, error: 0, total: 7 }
+          ],
+          since_seconds: 3600
+        })
+      )
+    );
+    TestBed.inject(DashboardDataStore).invalidate();
+
+    const sortFixture = TestBed.createComponent(NotificationDeliveryWidgetComponent);
+    sortFixture.componentRef.setInput("instance", instance);
+    sortFixture.detectChanges();
+    const sortComponent = sortFixture.componentInstance;
+
+    sortComponent.pushSort.toggle("key");
+    expect(sortComponent.pushRows().map((row) => row.key)).toEqual(["fcm-a", "fcm-b"]);
+
+    sortComponent.smsSort.toggle("ok");
+    expect(sortComponent.smsRows().map((row) => row.ok)).toEqual([2, 6]);
+
+    sortComponent.emailSort.toggle("failed");
+    expect(sortComponent.emailRows().map((row) => row.failed)).toEqual([0, 2]);
+
+    sortComponent.pushSort.toggle("error");
+    expect(sortComponent.pushRows().length).toBe(2);
+    sortFixture.destroy();
+  });
+
+  it("should set the state to loading while the request is still in flight", () => {
+    const pending = new Subject<PiResponse<NotificationDeliveryHealth>>();
+    systemMock.getNotificationDelivery.mockReturnValue(pending.asObservable());
+    TestBed.inject(DashboardDataStore).invalidate();
+
+    const loadingFixture = TestBed.createComponent(NotificationDeliveryWidgetComponent);
+    loadingFixture.componentRef.setInput("instance", instance);
+    loadingFixture.detectChanges();
+
+    expect(loadingFixture.componentInstance.state()).toBe("loading");
+    loadingFixture.destroy();
+  });
+
+  it("should invalidate the cache and reload on reload()", () => {
+    systemMock.getNotificationDelivery.mockClear();
+
+    component.reload();
+
+    expect(systemMock.getNotificationDelivery).toHaveBeenCalledTimes(1);
+  });
+
+  it("should stay in the loading state until the data ref is initialised", () => {
+    const initSpy = jest.spyOn(NotificationDeliveryWidgetComponent.prototype, "ngOnInit").mockReturnValue(undefined);
+
+    const uninitFixture = TestBed.createComponent(NotificationDeliveryWidgetComponent);
+    uninitFixture.componentRef.setInput("instance", instance);
+    uninitFixture.detectChanges();
+
+    expect(uninitFixture.componentInstance.state()).toBe("loading");
+    uninitFixture.destroy();
+    initSpy.mockRestore();
   });
 });

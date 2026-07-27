@@ -23,10 +23,11 @@ import { PiResponse } from "@app/app.component";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { DashboardWidget, WidgetInstance } from "@models/dashboard";
 import { AuthService } from "@services/auth/auth.service";
+import { DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { CertificateHealthEntry, SystemService } from "@services/system/system.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockSystemService } from "@testing/mock-services/mock-system-service";
-import { of } from "rxjs";
+import { of, Subject, throwError } from "rxjs";
 import { CertificateHealthWidgetComponent } from "./certificate-health-widget.component";
 
 function makeResponse(entries: CertificateHealthEntry[]): PiResponse<CertificateHealthEntry[]> {
@@ -188,5 +189,97 @@ describe("CertificateHealthWidgetComponent", () => {
 
     expect(emptyFixture.nativeElement.textContent).toContain("No certificates to monitor.");
     emptyFixture.destroy();
+  });
+
+  it("should badge warning and unrecognised statuses with the shared highlight classes", () => {
+    systemMock.getCertificateHealth.mockReturnValue(
+      of(
+        makeResponse([
+          {
+            source: "privacyidea-server-file",
+            name: "warn.pem",
+            host: "warn.pem",
+            tls_mode: "file",
+            subject: "CN=warn",
+            issuer: "CN=ca",
+            not_after: "2026-09-01T00:00:00Z",
+            days_remaining: 20,
+            error: null,
+            status: "warning"
+          },
+          {
+            source: "privacyidea-server-file",
+            name: "weird.pem",
+            host: "weird.pem",
+            tls_mode: "file",
+            subject: "CN=weird",
+            issuer: "CN=ca",
+            not_after: "2026-09-01T00:00:00Z",
+            days_remaining: 20,
+            error: null,
+            status: "unknown" as CertificateHealthEntry["status"]
+          }
+        ])
+      )
+    );
+
+    const badgeFixture = TestBed.createComponent(CertificateHealthWidgetComponent);
+    badgeFixture.componentRef.setInput("instance", instance);
+    badgeFixture.detectChanges();
+
+    const badges: HTMLElement[] = Array.from(
+      badgeFixture.nativeElement.querySelectorAll(".cert-health-table tbody td:last-child span")
+    );
+    expect(badges[0].className).toBe("highlight-warning");
+    expect(badges[1].className).toBe("highlight-disabled");
+    badgeFixture.destroy();
+  });
+
+  it("should sort entries through each TableSort column accessor", () => {
+    for (const column of ["source", "name", "daysRemaining", "status"] as const) {
+      component.sort.toggle(column);
+      expect(component.sortedEntries().length).toBe(2);
+    }
+  });
+
+  it("should set the state to loading while the request is still in flight", () => {
+    const pending = new Subject<PiResponse<CertificateHealthEntry[]>>();
+    systemMock.getCertificateHealth.mockReturnValue(pending.asObservable());
+    TestBed.inject(DashboardDataStore).invalidate();
+
+    const loadingFixture = TestBed.createComponent(CertificateHealthWidgetComponent);
+    loadingFixture.componentRef.setInput("instance", instance);
+    loadingFixture.detectChanges();
+
+    expect(loadingFixture.componentInstance.state()).toBe("loading");
+    loadingFixture.destroy();
+  });
+
+  it("should set the state to error when the request fails", () => {
+    systemMock.getCertificateHealth.mockReturnValue(throwError(() => new Error("boom")));
+    TestBed.inject(DashboardDataStore).refreshAll();
+    fixture.detectChanges();
+
+    expect(component.state()).toBe("error");
+  });
+
+  it("should invalidate the cache and reload on reload()", () => {
+    systemMock.getCertificateHealth.mockClear();
+
+    component.reload();
+
+    expect(systemMock.getCertificateHealth).toHaveBeenCalledTimes(1);
+  });
+
+  it("should stay in the loading state until the data ref is initialised", () => {
+    const initSpy = jest.spyOn(CertificateHealthWidgetComponent.prototype, "ngOnInit").mockReturnValue(undefined);
+
+    const uninitFixture = TestBed.createComponent(CertificateHealthWidgetComponent);
+    uninitFixture.componentRef.setInput("instance", instance);
+    uninitFixture.detectChanges();
+
+    expect(uninitFixture.componentInstance.state()).toBe("loading");
+    uninitFixture.destroy();
+    initSpy.mockRestore();
   });
 });

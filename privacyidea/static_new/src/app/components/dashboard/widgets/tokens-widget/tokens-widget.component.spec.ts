@@ -25,7 +25,7 @@ import { DashboardDataStore } from "@services/dashboard/dashboard-data-store.ser
 import { TokenCountParams, TokenService } from "@services/token/token.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockTokenService } from "@testing/mock-services/mock-token-service";
-import { of } from "rxjs";
+import { of, Subject, throwError } from "rxjs";
 import { TokensWidgetComponent } from "./tokens-widget.component";
 
 function makeCountResponse(count: number) {
@@ -234,5 +234,37 @@ describe("TokensWidgetComponent", () => {
 
     expect(fixture2.nativeElement.querySelector("table")).toBeNull();
     fixture2.destroy();
+  });
+
+  it("should set the state to loading while the requests are still in flight", () => {
+    TestBed.inject(DashboardDataStore).invalidate();
+    tokenMock.getTokenCount.mockReturnValue(new Subject().asObservable());
+
+    const fixture2 = TestBed.createComponent(TokensWidgetComponent);
+    fixture2.componentRef.setInput("instance", instance);
+    fixture2.detectChanges();
+
+    expect(fixture2.componentInstance.state()).toBe("loading");
+    fixture2.destroy();
+  });
+
+  it("should set the state to error when a request fails", () => {
+    TestBed.inject(DashboardDataStore).invalidate();
+    tokenMock.getTokenCount.mockReturnValue(throwError(() => new Error("boom")));
+
+    const fixture2 = TestBed.createComponent(TokensWidgetComponent);
+    fixture2.componentRef.setInput("instance", instance);
+    fixture2.detectChanges();
+
+    expect(fixture2.componentInstance.state()).toBe("error");
+    fixture2.destroy();
+  });
+
+  it("should invalidate the cache and reload on reload()", () => {
+    tokenMock.getTokenCount.mockClear();
+
+    component.reload();
+
+    expect(tokenMock.getTokenCount).toHaveBeenCalledTimes(5);
   });
 });

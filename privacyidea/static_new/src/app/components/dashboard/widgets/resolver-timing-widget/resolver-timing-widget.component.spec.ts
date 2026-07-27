@@ -23,12 +23,13 @@ import { PiResponse } from "@app/app.component";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { DashboardWidget, WidgetInstance } from "@models/dashboard";
 import { AuthService } from "@services/auth/auth.service";
+import { DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { Resolver, Resolvers, ResolverService } from "@services/resolver/resolver.service";
 import { ResolverTimingEntry, SystemService } from "@services/system/system.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
 import { MockSystemService } from "@testing/mock-services/mock-system-service";
-import { of } from "rxjs";
+import { of, Subject, throwError } from "rxjs";
 import { ResolverTimingWidgetComponent } from "./resolver-timing-widget.component";
 
 function makeResponse<T>(value: T): PiResponse<T> {
@@ -266,5 +267,83 @@ describe("ResolverTimingWidgetComponent", () => {
     expect(idleRows.length).toBe(1);
 
     mixedFixture.destroy();
+  });
+
+  it("should badge a p95 in the warning range with highlight-warning", () => {
+    systemMock.getResolverTiming.mockReturnValue(
+      of(
+        makeResponse<ResolverTimingEntry[]>([
+          {
+            labels: { resolver: "midresolver", resolver_type: "sqlresolver", op: "get_user_info" },
+            count: 5,
+            avg: 0.1,
+            p50: 0.1,
+            p95: 0.2,
+            max: 0.25,
+            buckets: [[1, 5]]
+          }
+        ])
+      )
+    );
+    resolverMock.listResolvers.mockReturnValue(of(makeResponse<Resolvers>({})));
+    TestBed.inject(DashboardDataStore).invalidate();
+
+    const warnFixture = TestBed.createComponent(ResolverTimingWidgetComponent);
+    warnFixture.componentRef.setInput("instance", instance);
+    warnFixture.detectChanges();
+
+    const badge: HTMLElement = warnFixture.nativeElement.querySelector(".resolver-timing-table tbody span");
+    expect(badge.className).toBe("highlight-warning");
+    warnFixture.destroy();
+  });
+
+  it("should sort rows through each TableSort column accessor", () => {
+    for (const column of ["resolver", "op", "count", "avgMs", "p95Ms", "maxMs"] as const) {
+      component.sort.toggle(column);
+      expect(component.sortedRows().length).toBe(2);
+    }
+  });
+
+  it("should set the state to loading while the requests are still in flight", () => {
+    const pending = new Subject<PiResponse<ResolverTimingEntry[]>>();
+    systemMock.getResolverTiming.mockReturnValue(pending.asObservable());
+    TestBed.inject(DashboardDataStore).invalidate();
+
+    const loadingFixture = TestBed.createComponent(ResolverTimingWidgetComponent);
+    loadingFixture.componentRef.setInput("instance", instance);
+    loadingFixture.detectChanges();
+
+    expect(loadingFixture.componentInstance.state()).toBe("loading");
+    loadingFixture.destroy();
+  });
+
+  it("should set the state to error when a request fails", () => {
+    systemMock.getResolverTiming.mockReturnValue(throwError(() => new Error("boom")));
+    TestBed.inject(DashboardDataStore).refreshAll();
+    fixture.detectChanges();
+
+    expect(component.state()).toBe("error");
+  });
+
+  it("should invalidate the cache and reload on reload()", () => {
+    systemMock.getResolverTiming.mockClear();
+    resolverMock.listResolvers.mockClear();
+
+    component.reload();
+
+    expect(systemMock.getResolverTiming).toHaveBeenCalledTimes(1);
+    expect(resolverMock.listResolvers).toHaveBeenCalledTimes(1);
+  });
+
+  it("should stay in the loading state until the data ref is initialised", () => {
+    const initSpy = jest.spyOn(ResolverTimingWidgetComponent.prototype, "ngOnInit").mockReturnValue(undefined);
+
+    const uninitFixture = TestBed.createComponent(ResolverTimingWidgetComponent);
+    uninitFixture.componentRef.setInput("instance", instance);
+    uninitFixture.detectChanges();
+
+    expect(uninitFixture.componentInstance.state()).toBe("loading");
+    uninitFixture.destroy();
+    initSpy.mockRestore();
   });
 });
