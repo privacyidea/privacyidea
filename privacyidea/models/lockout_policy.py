@@ -119,9 +119,13 @@ class LockoutPolicyStage(MethodsMixin, db.Model):
     A failure threshold within a :class:`LockoutPolicy`. Each policy has
     N stages (e.g. 5, 10 and 15 failures).
 
-    Within a policy the stages are evaluated highest ``priority`` first,
-    so the most severe matching stage wins (e.g. evaluate the 15-fail
-    stage before the 5-fail stage).
+    Post-response, each of a stage's actions fires when the failure count reaches
+    the stage's ``failure_threshold`` (see
+    :attr:`LockoutStageAction.retrigger_above_threshold` for the per-action
+    fire-once vs re-trigger choice); escalation is expressed as separate stages
+    per threshold. ``priority`` orders the stages for the pre-auth ALLOW/DENY
+    decision (evaluated highest ``priority`` first, so the most severe matching
+    stage supplies the verdict).
     """
     __tablename__ = 'lockout_policy_stages'
     __table_args__ = (
@@ -153,6 +157,17 @@ class LockoutStageAction(MethodsMixin, db.Model):
     ``action_value`` is the action-specific payload, stored as JSON:
     e.g. the lock duration in seconds for ``LOCK_USER``/``BLOCK_IP`` or
     an email template ID for ``EMAIL_ADMIN``/``EMAIL_USER``.
+
+    ``retrigger_above_threshold`` controls how this action fires as the failure
+    count crosses its stage's threshold. False: fire once, when the count equals
+    the threshold exactly. True: keep firing while the count stays at or above the
+    threshold (the classic re-triggering lockout; de-dup still throttles repeats
+    within one incident). Because it is per action, one stage can e.g. email once
+    at its threshold while re-triggering the user lock. The CRUD layer picks an
+    action-aware default when the client omits it (ALLOW/DENY decisions default to
+    True, the lock/email/block effects to False); see
+    :func:`~privacyidea.lib.conditional_access.lockout_policy._validate_stages`
+    and :func:`~privacyidea.lib.conditional_access.engine._action_threshold_met`.
     """
     __tablename__ = 'lockout_stage_actions'
     id: Mapped[int] = mapped_column(Integer, Sequence("lockoutstageaction_seq"), primary_key=True)
@@ -161,6 +176,7 @@ class LockoutStageAction(MethodsMixin, db.Model):
         nullable=False, index=True)
     action_type: Mapped[str] = mapped_column(Unicode(100), nullable=False)
     action_value: Mapped[Any | None] = mapped_column(JSON, nullable=True)
+    retrigger_above_threshold: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     stage: Mapped["LockoutPolicyStage"] = relationship("LockoutPolicyStage", back_populates="actions")
 

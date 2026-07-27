@@ -37,8 +37,10 @@ A policy is passed around as a plain dict::
                 "failure_threshold": 5,
                 "priority": 1,
                 "actions": [
-                    {"action_type": "LOCK_USER", "action_value": {"lock_duration_seconds": 600}},
-                    {"action_type": "EMAIL_ADMIN", "action_value": {"smtp_identifier": "..."}},
+                    {"action_type": "LOCK_USER", "action_value": {"lock_duration_seconds": 600},
+                     "retrigger_above_threshold": True},
+                    {"action_type": "EMAIL_ADMIN", "action_value": {"smtp_identifier": "..."},
+                     "retrigger_above_threshold": False},
                 ],
             },
         ],
@@ -77,6 +79,7 @@ class StageActionDefinition:
     """One validated stage action (see :func:`_validate_stages`)."""
     action_type: str
     action_value: object = None
+    retrigger_above_threshold: bool = False
 
 
 @dataclass
@@ -120,6 +123,7 @@ def lockout_policy_to_dict(policy: LockoutPolicy) -> dict:
                     "id": action.id,
                     "action_type": action.action_type,
                     "action_value": action.action_value,
+                    "retrigger_above_threshold": action.retrigger_above_threshold,
                 } for action in stage.actions
             ],
         } for stage in sorted(policy.stages, key=lambda stage: stage.failure_threshold)
@@ -220,8 +224,9 @@ def _validate_stages(stages) -> list[StageDefinition]:
     if not isinstance(stages, list) or not stages:
         raise ParameterError("'stages' must be a non-empty list of stage definitions.")
     valid_actions = {action.value for action in LockoutAction}
+    decision_actions = {str(LockoutAction.ALLOW), str(LockoutAction.DENY)}
     allowed_stage_keys = {"name", "failure_threshold", "priority", "actions"}
-    allowed_action_keys = {"action_type", "action_value"}
+    allowed_action_keys = {"action_type", "action_value", "retrigger_above_threshold"}
     normalized = []
     thresholds = set()
     for stage in stages:
@@ -250,8 +255,20 @@ def _validate_stages(stages) -> list[StageDefinition]:
             if action_type not in valid_actions:
                 raise ParameterError(f"Unknown action type '{action_type}'. "
                                      f"Valid types: {', '.join(sorted(valid_actions))}.")
+            # retrigger_above_threshold is a per-action checkbox (coerced like the
+            # policy-level enabled/dry_run booleans). When the client omits it the
+            # default is action-aware: ALLOW/DENY are standing pre-auth decisions
+            # that apply while the count stays at/above the threshold, so they
+            # default to re-trigger; the post-response effects (lock/email/block)
+            # default to fire-once (once at the exact threshold).
+            retrigger_raw = action.get("retrigger_above_threshold")
+            if retrigger_raw is None:
+                retrigger = action_type in decision_actions
+            else:
+                retrigger = bool(retrigger_raw)
             normalized_actions.append(StageActionDefinition(action_type=action_type,
-                                                            action_value=action.get("action_value")))
+                                                            action_value=action.get("action_value"),
+                                                            retrigger_above_threshold=retrigger))
         normalized.append(StageDefinition(failure_threshold=threshold, priority=priority,
                                           name=name, actions=normalized_actions))
     return normalized
@@ -266,7 +283,8 @@ def _build_stages(stage_defs: list[StageDefinition]) -> list[LockoutPolicyStage]
             name=stage.name,
             failure_threshold=stage.failure_threshold,
             priority=stage.priority,
-            actions=[LockoutStageAction(action_type=action.action_type, action_value=action.action_value)
+            actions=[LockoutStageAction(action_type=action.action_type, action_value=action.action_value,
+                                        retrigger_above_threshold=action.retrigger_above_threshold)
                      for action in stage.actions],
         ) for stage in stage_defs
     ]

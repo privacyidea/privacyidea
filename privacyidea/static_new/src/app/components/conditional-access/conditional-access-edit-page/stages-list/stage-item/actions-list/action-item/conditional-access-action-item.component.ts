@@ -19,6 +19,7 @@
 
 import { Component, computed, inject, input, output } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
+import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
@@ -30,6 +31,7 @@ import {
   LockoutActionType,
   LockoutStageAction
 } from "@services/conditional-access/conditional-access-policy.service";
+import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 
 // One-line explanation of what each action does, shown under the action select.
 const ACTION_DESCRIPTIONS: Record<LockoutActionType, string> = {
@@ -118,7 +120,16 @@ const EMAIL_PLACEHOLDERS: readonly EmailPlaceholder[] = [
 @Component({
   selector: "app-conditional-access-action-item",
   standalone: true,
-  imports: [MatButtonModule, MatExpansionModule, MatFormFieldModule, MatIconModule, MatInputModule, MatSelectModule],
+  imports: [
+    MatButtonModule,
+    MatCheckboxModule,
+    MatExpansionModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
+    MatSelectModule,
+    InfoHintComponent
+  ],
   templateUrl: "./conditional-access-action-item.component.html",
   styleUrl: "./conditional-access-action-item.component.scss"
 })
@@ -132,6 +143,17 @@ export class ConditionalAccessActionItemComponent {
   readonly emailPlaceholders = EMAIL_PLACEHOLDERS;
 
   readonly actionDescription = computed<string>(() => ACTION_DESCRIPTIONS[this.action().action_type] ?? "");
+
+  // Effective checkbox state. When the action carries no explicit value the
+  // display mirrors the server's action-aware default: ALLOW/DENY decisions
+  // re-trigger, the lock/email/block effects fire once at the threshold.
+  readonly retriggerChecked = computed<boolean>(() => {
+    const action = this.action();
+    if (action.retrigger_above_threshold != null) {
+      return action.retrigger_above_threshold;
+    }
+    return action.action_type === "ALLOW" || action.action_type === "DENY";
+  });
 
   readonly valueMode = computed<ActionValueMode>(() =>
     ConditionalAccessActionItemComponent.modeFor(this.action().action_type)
@@ -208,6 +230,10 @@ export class ConditionalAccessActionItemComponent {
       next[key] = value;
     }
     this.updateAction.emit({ action_value: Object.keys(next).length > 0 ? next : null });
+  }
+
+  onRetriggerChange(checked: boolean): void {
+    this.updateAction.emit({ retrigger_above_threshold: checked });
   }
 
   onRemoveAction(): void {

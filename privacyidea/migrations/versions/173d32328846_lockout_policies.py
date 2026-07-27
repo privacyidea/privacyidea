@@ -127,6 +127,7 @@ def upgrade():
         sa.Column('stage_id', sa.Integer(), nullable=False),
         sa.Column('action_type', sa.Unicode(length=100), nullable=False),
         sa.Column('action_value', sa.JSON(), nullable=True),
+        sa.Column('retrigger_above_threshold', sa.Boolean(), nullable=False),
         sa.ForeignKeyConstraint(['stage_id'], ['lockout_policy_stages.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('id'),
         sa.Index('ix_lockout_stage_actions_stage_id', 'stage_id'),

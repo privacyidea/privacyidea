@@ -132,4 +132,30 @@ describe("ConditionalAccessActionItemComponent", () => {
     component.onRemoveAction();
     expect(spy).toHaveBeenCalled();
   });
+
+  describe("retrigger", () => {
+    it("should emit updateAction when the checkbox toggles", () => {
+      const spy = jest.spyOn(component.updateAction, "emit");
+      component.onRetriggerChange(true);
+      expect(spy).toHaveBeenCalledWith({ retrigger_above_threshold: true });
+      component.onRetriggerChange(false);
+      expect(spy).toHaveBeenCalledWith({ retrigger_above_threshold: false });
+    });
+
+    it("should default the checkbox by action type when unset", () => {
+      // LOCK_USER defaults to fire-once (unchecked).
+      setAction({ action_type: "LOCK_USER", action_value: 600 });
+      expect(component.retriggerChecked()).toBe(false);
+      // DENY defaults to re-trigger (checked).
+      setAction({ action_type: "DENY", action_value: null });
+      expect(component.retriggerChecked()).toBe(true);
+    });
+
+    it("should honor an explicit value over the action-type default", () => {
+      setAction({ action_type: "DENY", action_value: null, retrigger_above_threshold: false });
+      expect(component.retriggerChecked()).toBe(false);
+      setAction({ action_type: "LOCK_USER", action_value: 600, retrigger_above_threshold: true });
+      expect(component.retriggerChecked()).toBe(true);
+    });
+  });
 });

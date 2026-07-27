@@ -126,8 +126,10 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         stage = LockoutPolicyStage(policy_id=policy.id, failure_threshold=threshold, priority=1)
         db.session.add(stage)
         db.session.commit()
+        # ALLOW/DENY decision actions re-trigger by default (apply while the count
+        # stays at or above the threshold), mirroring the CRUD action-aware default.
         db.session.add(LockoutStageAction(stage_id=stage.id, action_type=str(action),
-                                          action_value=None))
+                                          action_value=None, retrigger_above_threshold=True))
         db.session.commit()
 
     def _failcount(self) -> int:
@@ -204,12 +206,13 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertTrue(is_user_locked(self.user))
         self.assertTrue(is_ip_blocked("203.0.113.9"))
 
-    def test_user_locked_again_after_lock_expires(self):
-        # Once the lock has run out, further failures must be able to re-lock the
-        # user. Regression: the stage de-dup used to swallow every re-trigger for
-        # a full policy window after the lock was written, leaving a dead zone of
-        # (window - lock_duration) after expiry in which the user could fail
-        # without limit and never be locked again.
+    def test_lock_fires_once_at_exact_threshold(self):
+        # A stage fires once, at its exact threshold. After the lock expires,
+        # further failures push the count ABOVE the threshold, so the threshold-3
+        # stage does not re-fire (re-locking a higher count needs its own stage).
+        # A successful login resets the count, and climbing back to exactly 3
+        # re-locks. This replaces the earlier "re-lock on any further failure"
+        # behaviour, per the exact-threshold trigger semantics.
         self._make_lock_policy(counter_type=AuthEventType.MFA_FAIL, threshold=3, duration=600)
         for _ in range(3):
             self._check({"user": "cornelius", "pass": "pin000000"})
@@ -222,10 +225,17 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         db.session.commit()
         self.assertFalse(is_user_locked(self.user))
 
-        # The next failure trips the stage again (the count is already over the
-        # threshold) and must re-lock - the expired lock must not de-dup it away.
+        # A further failure pushes the count to 4, past the threshold-3 stage, so
+        # it does not re-fire: the user stays unlocked.
         body = self._check({"user": "cornelius", "pass": "pin000000"})
         self.assertFalse(body["result"]["value"], body)
+        self.assertFalse(is_user_locked(self.user))
+
+        # A successful login resets the counter; climbing back to exactly 3 re-locks.
+        body = self._check({"user": "cornelius", "pass": "pin755224"})
+        self.assertTrue(body["result"]["value"], body)
+        for _ in range(3):
+            self._check({"user": "cornelius", "pass": "pin000000"})
         self.assertTrue(is_user_locked(self.user))
 
     def test_below_threshold_does_not_lock(self):
@@ -620,8 +630,10 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         stage = LockoutPolicyStage(policy_id=policy.id, failure_threshold=threshold, priority=1)
         db.session.add(stage)
         db.session.commit()
+        # ALLOW/DENY decision actions re-trigger by default (apply while the count
+        # stays at or above the threshold), mirroring the CRUD action-aware default.
         db.session.add(LockoutStageAction(stage_id=stage.id, action_type=str(action),
-                                          action_value=None))
+                                          action_value=None, retrigger_above_threshold=True))
         db.session.commit()
 
     def _make_block_ip_policy(self, *, threshold, duration=600, window=3600):

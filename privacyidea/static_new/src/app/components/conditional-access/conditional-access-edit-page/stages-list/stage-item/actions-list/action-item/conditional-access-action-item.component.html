@@ -148,4 +148,18 @@
       }
     }
   </div>
+
+  <div class="ca-action-retrigger">
+    <mat-checkbox
+      [checked]="retriggerChecked()"
+      (change)="onRetriggerChange($event.checked)"
+      i18n>
+      Re-trigger while at or above the threshold (until the policy escalates to the next stage)
+    </mat-checkbox>
+    <app-info-hint
+      text="When off, this action runs once, when the count reaches the stage's threshold exactly. When on, it runs again on every further tracked event while the count stays at or above the threshold, until the policy escalates to the next stage. Allow/Deny default to on; the lock, email and block actions default to off."
+      i18n-text
+      ariaLabel="About re-triggering"
+      i18n-ariaLabel />
+  </div>
 </mat-expansion-panel>

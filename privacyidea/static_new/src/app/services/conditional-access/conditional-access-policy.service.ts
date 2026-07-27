@@ -66,6 +66,9 @@ export interface LockoutStageAction {
   id?: number;
   action_type: LockoutActionType;
   action_value: unknown;
+  // When false (default) the action fires once, at its stage's exact threshold;
+  // when true it keeps firing while the count stays at or above the threshold.
+  retrigger_above_threshold?: boolean;
 }
 
 export interface LockoutPolicyStage {

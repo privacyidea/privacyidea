@@ -26,6 +26,14 @@
   min-width: 0;
 }
 
+// Per-action re-trigger toggle with its explanatory info hint.
+.ca-action-retrigger {
+  align-items: center;
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
+}
+
 
 // Collapsible reference of the {tag} placeholders usable in subject/body.
 .ca-placeholder-help {

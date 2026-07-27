@@ -125,6 +125,27 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         self.assertListEqual([str(AuthEventType.PIN_FAIL)], policy["counter_types_to_track"])
         self.assertEqual(5, policy["stages"][0]["failure_threshold"])
         self.assertEqual(str(LockoutAction.LOCK_USER), policy["stages"][0]["actions"][0]["action_type"])
+        # retrigger_above_threshold defaults to False on a lock action when omitted.
+        self.assertFalse(policy["stages"][0]["actions"][0]["retrigger_above_threshold"])
+
+    def test_create_action_retrigger_flag_round_trips(self):
+        # One stage, two actions with independent modes: the lock re-triggers, the
+        # email fires once.
+        body = self._policy_body(
+            name="Retrig",
+            stages=[{"failure_threshold": 8,
+                     "actions": [{"action_type": str(LockoutAction.LOCK_USER),
+                                  "action_value": {"lock_duration_seconds": 300},
+                                  "retrigger_above_threshold": True},
+                                 {"action_type": str(LockoutAction.EMAIL_ADMIN),
+                                  "action_value": {"smtp_identifier": "x"},
+                                  "retrigger_above_threshold": False}]}])
+        res = self._request("policy", method="POST", json_data=body)
+        self.assertEqual(200, res.status_code, res.json)
+        policy = self._request(f"policy/{res.json['result']['value']}").json["result"]["value"]
+        by_type = {action["action_type"]: action for action in policy["stages"][0]["actions"]}
+        self.assertTrue(by_type[str(LockoutAction.LOCK_USER)]["retrigger_above_threshold"])
+        self.assertFalse(by_type[str(LockoutAction.EMAIL_ADMIN)]["retrigger_above_threshold"])
 
     def test_get_unknown_id_is_404(self):
         res = self._request("policy/424242")
