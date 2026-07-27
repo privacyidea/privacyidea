@@ -360,7 +360,10 @@ class ChallengeDTO:
         """
         Get the challenge data as a dict.
 
-        :return: The challenge data as a dict. Returns {} if no data is stored.
+        Always returns a dict. For legacy challenges that stored raw strings
+        or non-dict JSON values, the data is wrapped in ``{"value": <data>}``.
+
+        :return: The challenge data as a dict. Returns ``{}`` if no data is stored.
         :rtype: dict
         """
         if not self.data:

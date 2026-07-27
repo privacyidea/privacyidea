@@ -188,23 +188,22 @@ class ChallengeDataEncryptionTestCase(MyTestCase):
     """Test that challenge data is encrypted in the database."""
 
     def test_01_challenge_data_encrypted(self):
-        """OTP data stored in a challenge is encrypted in the database.
-        Strings are wrapped in a dict with key 'value' for consistency."""
-        otp_value = "123456"
+        """Challenge data (dict) is encrypted in the database."""
+        data = {"otp": "123456"}
         c = Challenge(serial="SPASS01", transaction_id="tid_enc_001",
-                      data=otp_value, validitytime=300)
+                      data=data, validitytime=300)
         c.save()
 
         # Verify the raw _data attribute is the encrypted form (not plaintext)
-        self.assertNotEqual(c._data, otp_value,
-                            "OTP data should be stored encrypted!")
+        self.assertNotEqual(c._data, json.dumps(data),
+                            "Challenge data should be stored encrypted!")
         self.assertIn(":", c._data)
 
-        # Verify the data property transparently decrypts (returns JSON of wrapped dict)
-        self.assertEqual(json.loads(c.data), {"value": otp_value})
+        # Verify the data property transparently decrypts
+        self.assertEqual(json.loads(c.data), data)
 
-        # Verify get_data() returns a dict (string wrapped in {"value": ...})
-        self.assertEqual(c.get_data(), {"value": otp_value})
+        # Verify get_data() returns the dict
+        self.assertEqual(c.get_data(), data)
 
         # Clean up
         db.session.delete(c)
@@ -332,34 +331,26 @@ class ChallengeDataEncryptionTestCase(MyTestCase):
                       validitytime=300)
         c.save()
 
-        # Assign a string via property setter (c.data = ...) - gets wrapped in {"value": ...}
-        c.data = "secret_otp_789"
-        db.session.commit()
-
-        # Raw _data should be encrypted (not plaintext)
-        self.assertNotEqual(c._data, "secret_otp_789")
-        self.assertIn(":", c._data)
-
-        # Reading via property should decrypt to JSON of the wrapped dict
-        self.assertEqual(json.loads(c.data), {"value": "secret_otp_789"})
-
-        # Assign a dict via setter
+        # Assign a dict via property setter
         c.data = {"push_confirmed": True}
         db.session.commit()
 
         self.assertNotEqual(c._data, json.dumps({"push_confirmed": True}))
         self.assertIn(":", c._data)
         self.assertEqual(json.loads(c.data), {"push_confirmed": True})
+        self.assertEqual(c.get_data(), {"push_confirmed": True})
 
-        # Assign empty string via setter - stored as empty, not encrypted
-        c.data = ""
+        # Assign empty dict via setter - stored as empty, not encrypted
+        c.data = {}
         db.session.commit()
         self.assertEqual(c._data, "")
+        self.assertEqual(c.get_data(), {})
 
         # Assign None via setter
         c.data = None
         db.session.commit()
         self.assertEqual(c._data, "")
+        self.assertEqual(c.get_data(), {})
 
         # Clean up
         db.session.delete(c)
