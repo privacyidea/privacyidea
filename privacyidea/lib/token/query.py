@@ -93,7 +93,13 @@ def _create_token_query(tokentype: str | None = None, token_type_list: list[str]
     # inflate the paginated count.
     # The realm parameter accepts a single realm name, a wildcard pattern, or a
     # comma-separated list of realm names (each entry may contain wildcards).
+    # Entries that are only wildcards (e.g. "**" or "*") would match every realm
+    # name but would still exclude tokens with NO realm (due to the subquery
+    # join). To preserve the "no filter" semantic of such catch-all patterns,
+    # we strip them out; if nothing remains, no realm filter is applied.
     realm_list = [r.strip() for r in realm.split(",") if r.strip()] if realm else None
+    if realm_list:
+        realm_list = [r for r in realm_list if r.strip("*")]
 
     if realm_list:
         # Separate wildcard entries from exact entries
