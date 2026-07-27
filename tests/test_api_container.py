@@ -167,6 +167,9 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertFalse(policies[PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER])
         self.assertFalse(policies[PolicyAction.DISABLE_CLIENT_TOKEN_DELETION])
 
+        audit_entry = self.find_most_recent_audit_entry(action='POST /container/register/finalize')
+        self.assertEqual(1, audit_entry['success'], audit_entry)
+
         delete_policy("client_policy")
 
     def test_02_register_smartphone_of_user(self):
