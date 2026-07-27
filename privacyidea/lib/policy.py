@@ -3138,6 +3138,18 @@ def get_static_policy_definitions(scope=None):
                           'Note: This policy is evaluated without user/realm/resolver/time conditions '
                           '(client IP and user agent matching still apply).'),
                 'group': GROUP.SYSTEM,
+            },
+            PolicyAction.HIDE_AUTH_ERROR_STATUS: {
+                'type': 'bool',
+                'desc': _('Return a uniform 401 HTTP status code for failed authentications, so the status code '
+                          'cannot be used to distinguish the reason a request failed. Combine with '
+                          '"hide_specific_error_message" (in the authentication scope) to also mask the error '
+                          'message. WARNING: This changes the HTTP status codes returned by the /auth and '
+                          '/validate endpoints (e.g. 400/403/404 all become 401). Clients, proxies or monitoring '
+                          'that rely on the specific status codes may break. Only enable this if you understand '
+                          'the impact on your integrations. This policy is evaluated without '
+                          'user/realm/resolver/time conditions (client IP and user agent matching still apply).'),
+                'group': GROUP.SYSTEM,
             }
         }
 
