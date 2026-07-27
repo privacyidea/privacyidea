@@ -90,17 +90,23 @@ SESSION_KEY_LENGTH = 32
 def to_list_param(value):
     """
     Normalize a request parameter that may arrive as a JSON list or a comma-separated
-    string into a list of stripped string entries. ``None`` (parameter not supplied)
-    yields ``None``.
+    string into a list of stripped, non-empty string entries. Empty entries are
+    dropped, so ``"a,"`` yields ``["a"]`` and a blank value (``""`` / ``","``) yields
+    an empty list ``[]`` — never ``[""]``, which would otherwise filter on an empty
+    string. A not-supplied parameter (``None``) still yields ``None``.
+
+    An empty list is returned (rather than ``None``) for a supplied-but-blank value so
+    every caller gets an iterable: filter builders treat ``[]`` as "no filter" just like
+    ``None``, while callers that iterate the result (e.g. setting container realms) do
+    not choke on ``None``.
 
     Unlike :func:`privacyidea.lib.utils.to_list`, this splits a comma-separated string
     into its entries rather than wrapping the whole string as a single-element list.
     """
     if value is None:
         return None
-    if isinstance(value, (list, tuple)):
-        return [str(item).strip() for item in value]
-    return [item.strip() for item in str(value).split(",")]
+    items = value if isinstance(value, (list, tuple)) else str(value).split(",")
+    return [entry for entry in (str(item).strip() for item in items) if entry]
 
 
 def send_result(obj, rid=1, details=None, **kwargs) -> Response:
