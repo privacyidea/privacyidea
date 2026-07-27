@@ -32,8 +32,8 @@ import copy
 
 from flask_babel import _
 
-from .lib.utils import (get_all_params, get_optional, map_error_to_code, send_error, verify_auth_token,
-                        get_auth_token_from_request, logged_in_user_from_token)
+from .lib.utils import (get_all_params, get_optional, map_error_to_code, get_auth_error_status_code, send_error,
+                        verify_auth_token, get_auth_token_from_request, logged_in_user_from_token)
 from .container import container_blueprint
 from ..lib.container import find_container_for_token, find_container_by_serial
 from ..lib.framework import get_app_config_value
@@ -79,7 +79,7 @@ from .serviceid import serviceid_blueprint
 from .healthcheck import healthz_blueprint
 from .info import info_blueprint
 from privacyidea.api.lib.postpolicy import postrequest, sign_response, hide_version
-from ..lib.error import (PrivacyIDEAError,
+from ..lib.error import (PrivacyIDEAError, Error,
                          AuthError, UserError,
                          PolicyError, ResourceNotFoundError)
 from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent, AUTH_RESPONSE
@@ -524,12 +524,16 @@ def auth_error(error):
                                       user_object=request.User if hasattr(request, 'User') else None).any()
             if hide_message:
                 error.message = _("Authentication failed.")
-                error.details["message"] = error.message
-                error.details.pop("loginmode", None)
+                # Remap to the generic AUTHENTICATE id, so a masked failure is
+                # indistinguishable from any other unspecified auth failure.
+                error.id = Error.AUTHENTICATE
+                # Replace the details completely, so future additions to the
+                # details cannot accidentally leak information either.
+                error.details = {"message": error.message}
 
         g.audit_object.add_to_log({"info": message}, add_with_comma=True)
 
-    return send_error(error.message, error_code=error.id, details=error.details), map_error_to_code(error)
+    return send_error(error.message, error_code=error.id, details=error.details), get_auth_error_status_code(error)
 
 
 @system_blueprint.errorhandler(PolicyError)
@@ -555,7 +559,7 @@ def auth_error(error):
 def policy_error(error):
     if "audit_object" in g:
         g.audit_object.add_to_log({"info": error.message}, add_with_comma=True)
-    return send_error(error.message, error_code=error.id), map_error_to_code(error)
+    return send_error(error.message, error_code=error.id), get_auth_error_status_code(error)
 
 
 @system_blueprint.app_errorhandler(ResourceNotFoundError)
@@ -584,7 +588,7 @@ def resource_not_found_error(error):
     """
     if "audit_object" in g:
         g.audit_object.log({"info": error.message})
-    return send_error(error.message, error_code=error.id), map_error_to_code(error)
+    return send_error(error.message, error_code=error.id), get_auth_error_status_code(error)
 
 
 @system_blueprint.app_errorhandler(PrivacyIDEAError)
@@ -614,7 +618,7 @@ def privacyidea_error(error):
     """
     if "audit_object" in g:
         g.audit_object.log({"info": str(error)})
-    return send_error(str(error), error_code=error.id), map_error_to_code(error)
+    return send_error(str(error), error_code=error.id), get_auth_error_status_code(error)
 
 
 @system_blueprint.app_errorhandler(NotImplementedError)
