@@ -66,6 +66,7 @@ PASSWORD_BRUTEFORCE = LockoutPolicyTemplate(
         "dry_run": False,
         "priority": 1,
         "target": LockoutTarget.USER,
+        "count_mode": CountMode.PER_REQUEST,
         "counter_types_to_track": [AuthEventType.PASSWORD_FAIL,
                                    AuthEventType.PIN_FAIL],
         "stages": [
@@ -86,6 +87,7 @@ MFA_BRUTEFORCE = LockoutPolicyTemplate(
         "dry_run": False,
         "priority": 1,
         "target": LockoutTarget.USER,
+        "count_mode": CountMode.PER_REQUEST,
         "counter_types_to_track": [AuthEventType.MFA_FAIL],
         "stages": [
             {"failure_threshold": 3, "priority": 1,
