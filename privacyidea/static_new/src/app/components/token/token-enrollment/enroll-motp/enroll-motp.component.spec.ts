@@ -120,6 +120,53 @@ describe("EnrollMotpComponent", () => {
     });
   });
 
+  describe("motpPinError", () => {
+    it("should stay empty while the field is untouched", () => {
+      component.motpPin.set("");
+      expect(component.motpPinError()).toBe("");
+    });
+
+    it("should report the required error once touched", () => {
+      component.motpPin.set("");
+      component.motpPinForm().markAsTouched();
+      expect(component.motpPinError()).toBe("Password is required");
+    });
+
+    it("should report the minlength error once touched", () => {
+      component.motpPin.set("abc");
+      component.motpPinForm().markAsTouched();
+      expect(component.motpPinError()).toBe("Password must be at least 4 characters long");
+    });
+
+    it("should be empty for a valid touched pin", () => {
+      component.motpPin.set("abcd");
+      component.motpPinForm().markAsTouched();
+      expect(component.motpPinError()).toBe("");
+    });
+  });
+
+  describe("repeatMotpPinError", () => {
+    it("should stay empty while the field is untouched", () => {
+      component.motpPin.set("abcd");
+      component.repeatMotpPin.set("abce");
+      expect(component.repeatMotpPinError()).toBe("");
+    });
+
+    it("should report the mismatch once touched", () => {
+      component.motpPin.set("abcd");
+      component.repeatMotpPin.set("abce");
+      component.repeatMotpPinForm().markAsTouched();
+      expect(component.repeatMotpPinError()).toBe("mOTP PINs do not match.");
+    });
+
+    it("should be empty when the pins match", () => {
+      component.motpPin.set("abcd");
+      component.repeatMotpPin.set("abcd");
+      component.repeatMotpPinForm().markAsTouched();
+      expect(component.repeatMotpPinError()).toBe("");
+    });
+  });
+
   describe("buildEnrollmentArgs", () => {
     it("should return null and mark touched when motpPin is invalid", () => {
       component.motpPin.set("");

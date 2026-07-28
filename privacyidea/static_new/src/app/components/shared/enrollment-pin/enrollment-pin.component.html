@@ -18,36 +18,17 @@
 -->
 <div class="flex-column">
   <h4 i18n>Set PIN</h4>
-  <input
-    style="display: none"
-    type="text" />
-  <input
-    style="display: none"
-    type="password" />
   <div class="flex-column">
-    <mat-form-field class="input-width-l">
-      <mat-label i18n>PIN</mat-label>
-      <input
-        [formField]="setPinControl()"
-        [type]="'password'"
-        matInput />
-    </mat-form-field>
-    <mat-form-field class="input-width-l">
-      <mat-label i18n>Repeat PIN</mat-label>
-      <input
-        [formField]="repeatPinControl()"
-        [type]="'password'"
-        matInput />
-    </mat-form-field>
+    <app-masked-input
+      [field]="setPinControl()"
+      class="input-width-l"
+      i18n-label
+      label="PIN" />
+    <app-masked-input
+      [error]="pinMismatchError()"
+      [field]="repeatPinControl()"
+      class="input-width-l"
+      i18n-label
+      label="Repeat PIN" />
   </div>
-  @if (
-    repeatPinControl()().errors().some(e => e.kind === 'pinMismatch') &&
-  (setPinControl()().touched() || repeatPinControl()().touched())
-  ) {
-    <mat-error
-      class="pin-error"
-      i18n
-      >PINs do not match.</mat-error
-    >
-  }
 </div>

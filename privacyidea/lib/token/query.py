@@ -60,7 +60,8 @@ def create_tokenclass_object(db_token: Token) -> TokenClass | None:
 
 
 def _create_token_query(tokentype: str | None = None, token_type_list: list[str] | None = None,
-                        realm: str | None = None, assigned: bool | None = None, user: User | None = None,
+                        realm: str | None = None,
+                        assigned: bool | None = None, user: User | None = None,
                         serial_exact: str | None = None, serial_wildcard: str | None = None,
                         serial_list: list[str] | None = None, active: bool | None = None,
                         resolver: str | None = None, rollout_state: str | None = None,
@@ -90,13 +91,34 @@ def _create_token_query(tokentype: str | None = None, token_type_list: list[str]
     # that is in an allowed realm and in the queried realm is returned even when
     # those are different realms, and avoids duplicate rows that would otherwise
     # inflate the paginated count.
-    if realm and realm.strip("*"):
-        if "*" in realm:
-            realm_ids = select(Realm.id).where(
+    # The realm parameter accepts a single realm name, a wildcard pattern, or a
+    # comma-separated list of realm names (each entry may contain wildcards).
+    # Entries that are only wildcards (e.g. "**" or "*") would match every realm
+    # name but would still exclude tokens with NO realm (due to the subquery
+    # join). To preserve the "no filter" semantic of such catch-all patterns,
+    # we strip them out; if nothing remains, no realm filter is applied.
+    realm_list = [r.strip() for r in realm.split(",") if r.strip()] if realm else None
+    if realm_list:
+        realm_list = [r for r in realm_list if r.strip("*")]
+
+    if realm_list:
+        # Separate wildcard entries from exact entries
+        exact_realms = [r.lower() for r in realm_list if "*" not in r]
+        wildcard_realms = [r for r in realm_list if "*" in r]
+
+        realm_conditions = []
+        if exact_realms:
+            realm_conditions.append(
+                func.lower(Realm.name).in_(exact_realms)
+            )
+        for wr in wildcard_realms:
+            realm_conditions.append(
                 func.lower(Realm.name).like(
-                    convert_wildcard_to_sql_like(realm.lower()), escape=SQL_LIKE_ESCAPE))
-        else:
-            realm_ids = select(Realm.id).where(func.lower(Realm.name) == realm.lower())
+                    convert_wildcard_to_sql_like(wr.lower()),
+                    escape=SQL_LIKE_ESCAPE)
+            )
+
+        realm_ids = select(Realm.id).where(or_(*realm_conditions))
         sql_query = sql_query.where(
             Token.id.in_(select(TokenRealm.token_id).where(TokenRealm.realm_id.in_(realm_ids))))
 
@@ -413,8 +435,12 @@ def get_tokens(tokentype: str | None = None, token_type_list: list[str] | None =
     :type tokentype: basestring
     :param token_type_list: A list of token types. If None or empty, all token types are returned.
     :type token_type_list: list
-    :param realm: get tokens of a realm. If None, all tokens are returned. If allowed_realms is not None, it must
-        contain this realm, otherwise no matching tokens will be found.
+    :param realm: get tokens of a realm. If None, all tokens are returned.
+        Accepts a single realm name, a wildcard pattern (e.g. ``realm*``),
+        or a comma-separated list of realm names where each entry may
+        contain ``*`` wildcards (e.g. ``realm1,realm2`` or ``staff*,students*``).
+        If allowed_realms is not None, the queried realms must overlap with
+        allowed_realms, otherwise no matching tokens will be found.
     :type realm: basestring
     :param assigned: Get either assigned (True) or unassigned (False) tokens. If None, gets all tokens.
     :type assigned: bool
@@ -455,7 +481,8 @@ def get_tokens(tokentype: str | None = None, token_type_list: list[str] | None =
         serial_list = serial.replace(" ", "").split(",")
         serial = None
 
-    sql_query = _create_token_query(tokentype=tokentype, token_type_list=token_type_list, realm=realm,
+    sql_query = _create_token_query(tokentype=tokentype, token_type_list=token_type_list,
+                                    realm=realm,
                                     assigned=assigned, user=user,
                                     serial_exact=serial, serial_wildcard=serial_wildcard, serial_list=serial_list,
                                     active=active, resolver=resolver,
@@ -505,8 +532,9 @@ def get_tokens_paginate(tokentype: str | None = None, token_type_list: list[str]
 
     :param tokentype:
     :param token_type_list: A list of token types
-    :param realm: A realm the token is assigned to (if allowed_realms is not None, it must contain this realm,
-        otherwise no matching tokens will be found)
+    :param realm: A realm the token is assigned to, a wildcard pattern, or a comma-separated list of realm names
+        (each entry may contain ``*`` wildcards). If allowed_realms is not None, it must contain this realm,
+        otherwise no matching tokens will be found.
     :param assigned: Returns assigned (True) or not assigned (False) tokens
     :type assigned: bool
     :param user: The user, whose token should be displayed
@@ -547,8 +575,8 @@ def get_tokens_paginate(tokentype: str | None = None, token_type_list: list[str]
         serial = None
     session: Session = db.session
     session.commit()
-    sql_query: Select = _create_token_query(tokentype=tokentype, token_type_list=token_type_list, realm=realm,
-                                            assigned=assigned, user=user,
+    sql_query: Select = _create_token_query(tokentype=tokentype, token_type_list=token_type_list,
+                                            realm=realm, assigned=assigned, user=user,
                                             serial_wildcard=serial, serial_list=serial_list, active=active,
                                             resolver=resolver, tokeninfo=tokeninfo,
                                             rollout_state=rollout_state,
