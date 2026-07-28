@@ -58,13 +58,13 @@
       </mat-select>
       <mat-hint>{{ actionDescription() }}</mat-hint>
     </mat-form-field>
-  @if (!isActionAllowedForTarget()) {
-    <p
-      class="ca-action-target-error"
-      i18n>
-      This action is not allowed for the policy's target. Choose a different action, or change the target.
-    </p>
-  }
+    @if (!isActionAllowedForTarget()) {
+      <p
+        class="ca-action-target-error"
+        i18n>
+        This action is not allowed for the policy's target. Choose a different action, or change the target.
+      </p>
+    }
 
     <mat-checkbox
       class="margin-top-8"
