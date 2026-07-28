@@ -220,6 +220,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         # behaviour, per the exact-threshold trigger semantics.
         self._make_lock_policy(counter_type=AuthEventType.MFA_FAIL, threshold=3, duration=600)
         for _ in range(3):
+            self.assertFalse(is_user_locked(self.user))
             self._check({"user": "cornelius", "pass": "pin000000"})
         self.assertTrue(is_user_locked(self.user))
 
@@ -240,6 +241,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         body = self._check({"user": "cornelius", "pass": "pin755224"})
         self.assertTrue(body["result"]["value"], body)
         for _ in range(3):
+            self.assertFalse(is_user_locked(self.user))
             self._check({"user": "cornelius", "pass": "pin000000"})
         self.assertTrue(is_user_locked(self.user))
 
