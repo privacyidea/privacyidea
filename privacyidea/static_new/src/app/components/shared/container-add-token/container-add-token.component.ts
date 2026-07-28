@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass } from "@angular/common";
-import { Component, input, model, output } from "@angular/core";
+import { Component, inject, linkedSignal, output, WritableSignal } from "@angular/core";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
@@ -26,8 +26,9 @@ import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatPaginator, PageEvent } from "@angular/material/paginator";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { AuthServiceInterface } from "@services/auth/auth.service";
-import { TokenDetails } from "@services/token/token.service";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
+import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 @Component({
   selector: "app-container-add-token",
@@ -46,21 +47,46 @@ import { TokenDetails } from "@services/token/token.service";
     NgClass,
     ClearableInputComponent
   ],
-  templateUrl: "./container-add-token.component.html"
+  templateUrl: "./container-add-token.component.html",
+  styleUrls: ["./container-add-token.component.scss"]
 })
 export class ContainerAddTokenComponent {
-  authService = input.required<AuthServiceInterface>();
-  showOnlyTokenInContainer = model.required<boolean>();
-  total = input.required<number>();
-  pageIndex = input.required<number>();
-  pageSize = input.required<number>();
-  filterValue = input.required<string>();
-  filterIsNotEmpty = input.required<boolean>();
-  tokenOptions = input.required<TokenDetails[]>();
-  inputClass = input("margin-bottom-16 input-width-xl");
+  private readonly containerService: ContainerServiceInterface = inject(ContainerService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
-  pageEvent = output<PageEvent>();
-  filterInput = output<Event>();
-  clearFilter = output<void>();
   addToken = output<TokenDetails>();
+
+  protected readonly showOnlyTokenInContainer = this.tokenService.showOnlyTokenInContainer;
+  protected readonly tokenFilter = this.tokenService.tokenFilter;
+  protected readonly pageIndex = this.tokenService.pageIndex;
+  protected readonly pageSize = this.tokenService.pageSize;
+  protected readonly total: WritableSignal<number> = linkedSignal({
+    source: this.tokenService.tokenResourceValue,
+    computation: (tokenResourceValue, previous) => tokenResourceValue?.count ?? previous?.value ?? 0
+  });
+  protected readonly tokenOptions: WritableSignal<TokenDetails[]> = linkedSignal({
+    source: this.tokenService.tokenResourceValue,
+    computation: (tokenResourceValue, previous) => tokenResourceValue?.tokens ?? previous?.value ?? []
+  });
+
+  onPageEvent(event: PageEvent) {
+    this.tokenService.eventPageSize.set(event.pageSize);
+    this.tokenService.pageIndex.set(event.pageIndex);
+  }
+
+  clearFilter() {
+    this.tokenService.clearFilter();
+    this.applyCompatibleTokenTypesFilter();
+  }
+
+  applyCompatibleTokenTypesFilter() {
+    const compatibleTokenTypes = this.containerService.supportedTokenTypes();
+    const filter = this.tokenService.tokenFilter();
+    this.tokenService.tokenFilter.set(
+      compatibleTokenTypes.length > 0
+        ? filter.updateHiddenEntry("type_list", compatibleTokenTypes.join(","))
+        : filter.removeHiddenKey("type_list")
+    );
+  }
 }

@@ -378,7 +378,16 @@ export class TokenService implements TokenServiceInterface {
   readonly tokenSerial = this.contentService.tokenSerial;
   private readonly _filterParams = computed<Record<string, string>>(() => {
     const allowed = [...this.apiFilter, ...this.advancedApiFilter, ...this.hiddenApiFilter, "infokey", "infovalue"];
-    const plainKeys = new Set(["user", "infokey", "infovalue", "active", "assigned", "container_serial", "realm"]);
+    const plainKeys = new Set([
+      "user",
+      "infokey",
+      "infovalue",
+      "active",
+      "assigned",
+      "container_serial",
+      "realm",
+      "type_list"
+    ]);
     const entries = [
       ...Array.from(this.tokenFilter().filterMap.entries()),
       ...Array.from(this.tokenFilter().hiddenFilterMap.entries())

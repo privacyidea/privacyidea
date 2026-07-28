@@ -99,6 +99,7 @@ export class MockContainerService implements ContainerServiceInterface {
     })
   );
   containerDetails = signal<ContainerDetails>({ containers: [], count: 0 });
+  supportedTokenTypes = signal<string[]>([]);
   containerDetail = signal<ContainerDetailData | null>(null);
   templateComparison = signal<TemplateComparisonResult | null>(null);
   addToken = jest.fn().mockReturnValue(of(null));

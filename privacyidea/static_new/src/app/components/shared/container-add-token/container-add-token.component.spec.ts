@@ -18,37 +18,47 @@
  **/
 import { provideZonelessChangeDetection } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatCheckbox, MatCheckboxChange } from "@angular/material/checkbox";
-import { AuthServiceInterface } from "@services/auth/auth.service";
+import { MatPaginator } from "@angular/material/paginator";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { FilterValue } from "@core/models/filter_value/filter_value";
+import { AuthService } from "@services/auth/auth.service";
+import { ContainerService } from "@services/container/container.service";
+import { TokenService } from "@services/token/token.service";
+import { MockAuthService, MockContainerService, MockTokenService } from "@testing/mock-services";
 import { By } from "@angular/platform-browser";
 import { ContainerAddTokenComponent } from "./container-add-token.component";
 
 describe("ContainerAddTokenComponent", () => {
   let fixture: ComponentFixture<ContainerAddTokenComponent>;
   let component: ContainerAddTokenComponent;
-  let actionAllowed: jest.Mock;
+  let authService: MockAuthService;
+  let containerService: MockContainerService;
+  let tokenService: MockTokenService;
 
   const checkbox = () => fixture.debugElement.query(By.directive(MatCheckbox))?.componentInstance as MatCheckbox;
   const hint = () => fixture.nativeElement.querySelector("mat-hint") as HTMLElement | null;
 
   beforeEach(async () => {
-    actionAllowed = jest.fn().mockReturnValue(true);
-
     await TestBed.configureTestingModule({
       imports: [ContainerAddTokenComponent],
-      providers: [provideZonelessChangeDetection()]
+      providers: [
+        provideZonelessChangeDetection(),
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: ContainerService, useClass: MockContainerService },
+        { provide: TokenService, useClass: MockTokenService }
+      ]
     }).compileComponents();
+
+    authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    containerService = TestBed.inject(ContainerService) as unknown as MockContainerService;
+    tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
+    authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_add_token"] });
+    tokenService.showOnlyTokenInContainer.set(false);
 
     fixture = TestBed.createComponent(ContainerAddTokenComponent);
     component = fixture.componentInstance;
-    fixture.componentRef.setInput("authService", { actionAllowed } as unknown as AuthServiceInterface);
-    fixture.componentRef.setInput("showOnlyTokenInContainer", false);
-    fixture.componentRef.setInput("total", 0);
-    fixture.componentRef.setInput("pageIndex", 0);
-    fixture.componentRef.setInput("pageSize", 5);
-    fixture.componentRef.setInput("filterValue", "");
-    fixture.componentRef.setInput("filterIsNotEmpty", false);
-    fixture.componentRef.setInput("tokenOptions", []);
     fixture.detectChanges();
   });
 
@@ -60,37 +70,102 @@ describe("ContainerAddTokenComponent", () => {
     expect(fixture.nativeElement.textContent).toContain("Include tokens that are in a container");
   });
 
-  it("reflects showOnlyTokenInContainer in the checkbox checked state", () => {
+  it("reflects the token service showOnlyTokenInContainer state in the checkbox", () => {
     expect(checkbox().checked).toBe(false);
 
-    fixture.componentRef.setInput("showOnlyTokenInContainer", true);
+    tokenService.showOnlyTokenInContainer.set(true);
     fixture.detectChanges();
 
     expect(checkbox().checked).toBe(true);
   });
 
-  it("writes the checkbox change back to the showOnlyTokenInContainer model", () => {
+  it("writes the checkbox change back to the token service", () => {
     checkbox().change.emit({ source: checkbox(), checked: true } as MatCheckboxChange);
     fixture.detectChanges();
-    expect(component.showOnlyTokenInContainer()).toBe(true);
+    expect(tokenService.showOnlyTokenInContainer()).toBe(true);
 
     checkbox().change.emit({ source: checkbox(), checked: false } as MatCheckboxChange);
     fixture.detectChanges();
-    expect(component.showOnlyTokenInContainer()).toBe(false);
+    expect(tokenService.showOnlyTokenInContainer()).toBe(false);
   });
 
   it("shows the move-token hint only while tokens in a container are included", () => {
     expect(hint()).toBeNull();
 
-    fixture.componentRef.setInput("showOnlyTokenInContainer", true);
+    tokenService.showOnlyTokenInContainer.set(true);
     fixture.detectChanges();
 
     expect(hint()).not.toBeNull();
     expect(hint()?.textContent).toContain("removes it from its previous container");
   });
 
+  const openPanel = () => {
+    const autocomplete = fixture.debugElement.query(By.directive(MatAutocomplete)).componentInstance as MatAutocomplete;
+    autocomplete.opened.emit();
+  };
+
+  it("filters the token list by the token types of the container when the panel opens", () => {
+    containerService.supportedTokenTypes.set(["hotp", "webauthn"]);
+
+    openPanel();
+
+    expect(tokenService.tokenFilter().hiddenFilterMap.get("type_list")).toBe("hotp,webauthn");
+  });
+
+  it("keeps a typed filter when applying the token type filter", () => {
+    containerService.supportedTokenTypes.set(["hotp", "webauthn"]);
+    tokenService.tokenFilter.set(new FilterValue({ value: "serial: OTP" }));
+
+    openPanel();
+
+    expect(tokenService.tokenFilter().filterString).toBe("serial: OTP");
+    expect(tokenService.tokenFilter().hiddenFilterMap.get("type_list")).toBe("hotp,webauthn");
+  });
+
+  it("removes the type_list entry when the container supports no known token types", () => {
+    tokenService.tokenFilter.set(new FilterValue().updateHiddenEntry("type_list", "hotp"));
+    containerService.supportedTokenTypes.set([]);
+
+    openPanel();
+
+    expect(tokenService.tokenFilter().hiddenFilterMap.has("type_list")).toBe(false);
+  });
+
+  it("re-applies the token type filter after the filter was cleared", () => {
+    tokenService.clearFilter.mockImplementation(() => tokenService.tokenFilter.set(new FilterValue()));
+    containerService.supportedTokenTypes.set(["hotp", "webauthn"]);
+    openPanel();
+    tokenService.tokenFilter.set(tokenService.tokenFilter().copyWith({ value: "serial: OTP" }));
+
+    fixture.debugElement.query(By.directive(ClearableInputComponent)).componentInstance.clearButtonClick.emit();
+
+    expect(tokenService.clearFilter).toHaveBeenCalled();
+    expect(tokenService.tokenFilter().filterString).toBe("");
+    expect(tokenService.tokenFilter().hiddenFilterMap.get("type_list")).toBe("hotp,webauthn");
+  });
+
+  it("renders the paginator inside the autocomplete panel and writes page events to the token service", () => {
+    tokenService.tokenResourceValue.set({ count: 22, current: 1, tokens: [] });
+
+    const trigger = fixture.debugElement
+      .query(By.directive(MatAutocompleteTrigger))
+      .injector.get(MatAutocompleteTrigger);
+    trigger.openPanel();
+    fixture.detectChanges();
+
+    const panel = document.querySelector(".mat-mdc-autocomplete-panel") as HTMLElement;
+    expect(panel.querySelector("mat-paginator")).not.toBeNull();
+
+    fixture.debugElement
+      .query(By.directive(MatPaginator))
+      .componentInstance.page.emit({ pageIndex: 1, pageSize: 5, length: 22 });
+
+    expect(tokenService.eventPageSize()).toBe(5);
+    expect(tokenService.pageIndex()).toBe(1);
+  });
+
   it("does not render the panel when container_add_token is not allowed", () => {
-    fixture.componentRef.setInput("authService", { actionAllowed: () => false } as unknown as AuthServiceInterface);
+    authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: [] });
     fixture.detectChanges();
 
     expect(fixture.debugElement.query(By.directive(MatCheckbox))).toBeNull();

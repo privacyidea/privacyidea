@@ -1,0 +1,7 @@
+.token-option-paginator {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--mat-sys-surface-container);
+  border-bottom: 1px solid var(--mat-sys-surface-container-highest);
+}

@@ -16,7 +16,7 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-@if (authService().actionAllowed("container_add_token")) {
+@if (authService.actionAllowed("container_add_token")) {
   <div class="flex-column width-100">
     <h4
       class="details-card-title"
@@ -31,24 +31,18 @@
           <span i18n> Include tokens that are in a container </span>
         </mat-checkbox>
       </section>
-      <mat-paginator
-        (page)="pageEvent.emit($event)"
-        [hidePageSize]="true"
-        [length]="total()"
-        [pageIndex]="pageIndex()"
-        [pageSize]="pageSize()"></mat-paginator>
     </div>
-    <mat-form-field [class]="inputClass()">
+    <mat-form-field class="margin-bottom-16 input-width-xl">
       <mat-label i18n>Add Token to Container</mat-label>
       <app-clearable-input
-        (clearButtonClick)="clearFilter.emit()"
-        [showClearButton]="filterIsNotEmpty()">
+        (clearButtonClick)="clearFilter()"
+        [showClearButton]="tokenFilter().isNotEmpty">
         <input
           #filterHTMLInputElement
           #tokenAutoTrigger="matAutocompleteTrigger"
-          (input)="filterInput.emit($event)"
+          (input)="tokenService.handleFilterInput($event)"
           [matAutocomplete]="tokenAuto"
-          [value]="filterValue()"
+          [value]="tokenFilter().filterString"
           i18n-placeholder
           matInput
           placeholder="Example query: 'type: hotp serial: 123'" />
@@ -56,7 +50,27 @@
       @if (showOnlyTokenInContainer()) {
         <mat-hint i18n> Adding a token removes it from its previous container</mat-hint>
       }
-      <mat-autocomplete #tokenAuto="matAutocomplete">
+      <mat-autocomplete
+        #tokenAuto="matAutocomplete"
+        class="token-option-panel"
+        (opened)="applyCompatibleTokenTypesFilter()">
+        <div
+          class="token-option-paginator"
+          (mousedown)="$event.preventDefault()">
+          <mat-paginator
+            (page)="onPageEvent($event)"
+            [hidePageSize]="true"
+            [length]="total()"
+            [pageIndex]="pageIndex()"
+            [pageSize]="pageSize()"></mat-paginator>
+        </div>
+        @if (tokenOptions().length === 0) {
+          <mat-option
+            [disabled]="true"
+            i18n>
+            No matching tokens
+          </mat-option>
+        }
         @for (option of tokenOptions(); track option) {
           <mat-option
             (click)="addToken.emit(option)"
