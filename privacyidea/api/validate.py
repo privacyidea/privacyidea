@@ -123,7 +123,6 @@ from privacyidea.lib.config import ensure_no_config_object, get_privacyidea_node
 from privacyidea.lib.container import find_container_for_token, find_container_by_serial, check_container_challenge
 from privacyidea.lib.error import (ParameterError, PolicyError, ResourceNotFoundError, Error, AuthError, UserError,
                                    TokenAdminError)
-from privacyidea.lib.event import EventConfiguration
 from privacyidea.lib.event import event
 from privacyidea.lib.machine import list_machine_tokens, get_auth_items, attach_token
 from privacyidea.lib.policy import Match
@@ -138,7 +137,7 @@ from privacyidea.lib.user import log_used_user, User, split_user
 from privacyidea.lib.utils import get_plugin_info_from_useragent, AUTH_RESPONSE
 from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
 from .lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
-from .lib.utils import (get_required, get_auth_error_status_code, map_error_to_code, send_error, send_result,
+from .lib.utils import (get_required, get_auth_error_status_code, send_error, send_result,
                         log_authentication, conditional_access_gate, conditional_access_posteval)
 from ..lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
                                                                  LOG_TRANSACTION_ID_KEY)
@@ -352,8 +351,7 @@ def _poll_transaction_identity() -> User:
     looked up from it; an empty :class:`User` (IP-block still applies) is
     returned when the transaction has no valid challenge.
     """
-    transaction_id = (request.view_args or {}).get("transaction_id") \
-        or get_optional(request.all_data, "transaction_id")
+    transaction_id = (request.view_args or {}).get("transaction_id") or get_optional(request.all_data, "transaction_id")
     if not transaction_id:
         return User()
     valid_challenges = [challenge for challenge in get_challenges(transaction_id=transaction_id)
