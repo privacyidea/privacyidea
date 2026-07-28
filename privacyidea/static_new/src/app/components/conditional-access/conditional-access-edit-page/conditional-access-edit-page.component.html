@@ -161,9 +161,15 @@
             <mat-option [value]="countMode">{{ countModeLabel(countMode) }}</mat-option>
           }
         </mat-select>
-        <mat-hint i18n>
-          How the tracked events are counted against the thresholds.
-        </mat-hint>
+        @if (!editPolicy().count_mode) {
+          <mat-error i18n>Count Mode is required.</mat-error>
+        } @else if (!countModeValid()) {
+          <mat-error i18n>This count mode is not allowed for the selected target.</mat-error>
+        } @else {
+          <mat-hint i18n>
+            How the tracked events are counted against the thresholds.
+          </mat-hint>
+        }
       </mat-form-field>
 
       <mat-form-field
