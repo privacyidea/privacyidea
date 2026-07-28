@@ -142,6 +142,7 @@ export class ContainerTableComponent {
     states: "state",
     description: "description",
     user_name: "user",
+    user_realm: "realm",
     realms: "container_realm"
   } as const;
 
