@@ -36,8 +36,11 @@ import jwt
 from flask import (jsonify,
                    current_app, request, g, Response)
 
+from privacyidea.lib.audit import getAudit
+from privacyidea.lib.config import get_from_config, SYSCONF
+from privacyidea.lib.event import EventConfiguration
 from privacyidea.lib.utils import (prepare_result, get_version, to_unicode,
-                                   get_plugin_info_from_useragent)
+                                   get_client_ip, get_plugin_info_from_useragent)
 # Re-exported from privacyidea.lib.params for backwards-compatibility with
 # callers that import these names from privacyidea.api.lib.utils.
 from privacyidea.lib.params import (  # noqa: F401
@@ -48,6 +51,7 @@ from privacyidea.lib.params import (  # noqa: F401
     get_optional_one_of,
     attestation_certificate_allowed,
 )
+from privacyidea.lib.policy import PolicyClass
 # check_policy_name lives in lib/policy; re-exported here for backward compatibility
 from privacyidea.lib.policy import check_policy_name  # noqa: F401
 from privacyidea.lib.policy import Match, SCOPE
@@ -293,6 +297,25 @@ def get_all_params(request):
         return_param.update(check_unquote(request, request.view_args))
 
     return return_param
+
+
+def get_before_request_config():
+    """
+    Gets the policy object, the audit object and the event configuration object and sets them to the global flask
+    variable. Additionally, reads the client IP and the HTTP headers from the request object and writes them to the
+    global flask variable.
+
+    Every blueprint's before_request has to call this, so no request handler relies on request-local data that
+    another request left behind.
+    """
+    g.policy_object = PolicyClass()
+    g.audit_object = getAudit(current_app.config, g.startdate)
+    g.event_config = EventConfiguration()
+    # access_route contains the ip addresses of all clients, hops and proxies.
+    g.client_ip = get_client_ip(request, get_from_config(SYSCONF.OVERRIDECLIENT))
+    # Save the HTTP header in the localproxy object
+    g.request_headers = request.headers
+    g.policies = {}
 
 
 def get_priority_from_param(param):
