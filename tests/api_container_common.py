@@ -32,11 +32,6 @@ class APIContainerTest(MyApiTestCase):
         # Start each test with an empty audit log so audit assertions can not match a stale entry.
         getAudit(self.app.config).clear()
 
-    def clear_flask_g(self):
-        if self.app_context.g:
-            keys = [key for key in iter(self.app_context.g)]
-            [self.app_context.g.pop(key) for key in keys]
-
     def request_assert_success(self, url, data: dict, auth_token, method='POST'):
         with self.app.test_request_context(url,
                                            method=method,
@@ -46,7 +41,7 @@ class APIContainerTest(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res.json)
             self.assertTrue(res.json["result"]["status"])
-        self.clear_flask_g()
+        self.reset_flask_g()
         return res.json
 
     def request_assert_error(self, status_code, url, data: dict, auth_token, method='POST',
@@ -65,7 +60,7 @@ class APIContainerTest(MyApiTestCase):
                 self.assertEqual(res.json["result"]["error"]["code"], error_code)
             if error_message is not None:
                 self.assertEqual(res.json["result"]["error"]["message"], error_message)
-        self.clear_flask_g()
+        self.reset_flask_g()
 
         if try_unspecific:
             set_policy(name="hide_specific_error_message", scope=SCOPE.CONTAINER,
@@ -87,7 +82,7 @@ class APIContainerTest(MyApiTestCase):
                                            headers={'Authorization': auth_token} if auth_token else None):
             res = self.app.full_dispatch_request()
             self.assertEqual(405, res.status_code, res.json)
-        self.clear_flask_g()
+        self.reset_flask_g()
         return res.json
 
     def request_assert_404_no_result(self, url, data: dict, auth_token, method='POST'):
@@ -98,7 +93,7 @@ class APIContainerTest(MyApiTestCase):
                                            headers={'Authorization': auth_token} if auth_token else None):
             res = self.app.full_dispatch_request()
             self.assertEqual(404, res.status_code, res.json)
-        self.clear_flask_g()
+        self.reset_flask_g()
 
     def _audit_entries(self, action):
         """Most-recent-first audit entries for an action, read directly via the audit lib.
@@ -169,7 +164,7 @@ class APIContainerAuthorization(APIContainerTest):
             self.assertEqual(res.json["result"]["error"]["code"], 303)
             if error_message is not None:
                 self.assertEqual(res.json["result"]["error"]["message"], error_message)
-        self.clear_flask_g()
+        self.reset_flask_g()
         return res.json
 
     def create_container_for_user(self, ctype="generic"):
