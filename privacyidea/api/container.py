@@ -921,7 +921,7 @@ def registration_finalize():
 
         g.audit_object.log({"container_serial": container_serial,
                             "container_type": container.type,
-                            "success": res})
+                            "success": bool(res.get("success"))})
         return send_result(res)
 
     except Exception as e:
