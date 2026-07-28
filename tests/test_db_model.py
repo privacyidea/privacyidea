@@ -25,6 +25,8 @@ from datetime import timedelta
 from mock import mock
 from sqlalchemy import func, delete, select
 
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.engine import LockoutTarget
 from privacyidea.lib.policies.conditions import (PolicyConditionClass, ConditionSection,
                                                  ConditionHandleMissingData)
 from privacyidea.lib.policy import set_policy_conditions
@@ -763,8 +765,9 @@ class LockoutPolicyTestCase(MyTestCase):
 
     def test_01_create_policy_with_stages_and_actions(self):
         policy = LockoutPolicy(name="Default MFA Lockout Policy",
-                               counter_types_to_track=["MFA_FAIL"],
-                               time_window_seconds=3600)
+                               counter_types_to_track=[AuthEventType.MFA_FAIL],
+                               time_window_seconds=3600,
+                               target=LockoutTarget.USER)
         policy_id = policy.save()
         self.assertGreaterEqual(policy_id, 1)
 
@@ -813,11 +816,13 @@ class LockoutPolicyTestCase(MyTestCase):
         # association proxy over the normalized child table round-trips the list
         # (order preserved).
         policy = LockoutPolicy(name="Multi counter policy",
-                               counter_types_to_track=["PASSWORD_FAIL", "OTP_FAIL", "MFA_FAIL"],
-                               time_window_seconds=900)
+                               counter_types_to_track=[AuthEventType.PASSWORD_FAIL, AuthEventType.MFA_FAIL,
+                                                       AuthEventType.TOKEN_ONLY_FAIL],
+                               time_window_seconds=900,
+                               target=LockoutTarget.USER)
         policy.save()
 
         reloaded = LockoutPolicy.query.filter_by(name="Multi counter policy").one()
-        self.assertEqual(["PASSWORD_FAIL", "OTP_FAIL", "MFA_FAIL"],
+        self.assertEqual([AuthEventType.PASSWORD_FAIL, AuthEventType.MFA_FAIL, AuthEventType.TOKEN_ONLY_FAIL],
                          reloaded.counter_types_to_track)
         reloaded.delete()

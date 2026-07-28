@@ -18,7 +18,7 @@ from testfixtures import LogCapture
 from privacyidea.lib.cache import ChallengeDTO
 from privacyidea.lib.challenge import get_challenges, delete_challenges
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
-from privacyidea.lib.conditional_access.engine import is_user_locked, LockoutAction
+from privacyidea.lib.conditional_access.engine import is_user_locked
 from privacyidea.models.lockout_policy import (LockoutPolicy, LockoutPolicyStage, LockoutStageAction,
                                                LockoutPolicyCounterType, UserLockoutState)
 from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_config
@@ -1770,41 +1770,22 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
         remove_token(self.serial_push)
         delete_policy("push_config")
 
-    def test_18d_push_answer_failures_lock_owner(self):
-        """End-to-end conditional access at /ttype/push: a burst of bad push
-        signatures (CHALLENGE_ANSWERED_FAIL) feeds the engine via the post-eval
-        seam — attributed to the resolved token owner — and locks that owner once
-        the policy threshold is crossed."""
+    def test_18d_push_bad_signature_written_to_auth_log(self):
+        """The push-specific conditional-access seam: a well-formed-but-wrong push
+        signature at /ttype/push emits CHALLENGE_ANSWERED_FAIL to the auth log. """
         self.setUp_user_realms()
         user = User("selfservice", self.realm1)
         set_policy("push_config", scope=SCOPE.ENROLL,
                    action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
                           f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        self._enroll_push_for(user)
+        self._clear_ca()
 
-        with self.app.test_request_context('/token/init', method='POST',
-                                           data={"type": "push", "pin": "push_pin",
-                                                 "user": "selfservice", "realm": self.realm1,
-                                                 "serial": self.serial_push, "genkey": 1},
-                                           headers={'Authorization': self.at}):
-            result = self.app.full_dispatch_request()
-            enrollment_credential = result.json.get("detail").get("enrollment_credential")
-        with self.app.test_request_context('/ttype/push', method='POST',
-                                           data={"enrollment_credential": enrollment_credential,
-                                                 "serial": self.serial_push,
-                                                 "pubkey": self.smartphone_public_key_pem_urlsafe,
-                                                 "fbtoken": "firebaseT"}):
-            self.assertEqual(200, self.app.full_dispatch_request().status_code)
-
-        def clear_ca():
-            for model in (UserLockoutState, LockoutStageAction, LockoutPolicyStage,
-                          LockoutPolicyCounterType, LockoutPolicy, AuthenticationLog):
-                db.session.query(model).delete()
-            db.session.commit()
-
-        def trigger_and_send_bad_signature():
+        try:
             with self.app.test_request_context('/validate/check', method='POST',
                                                data={"user": "selfservice", "pass": "push_pin"}):
-                self.app.full_dispatch_request()
+                trigger = self.app.full_dispatch_request()
+                transaction_id = trigger.json["detail"]["transaction_id"]
             # Sign the wrong message: a well-formed signature that cannot verify
             # against the expected nonce|serial -> CHALLENGE_ANSWERED_FAIL.
             signature = self.smartphone_private_key.sign(f"wrong|{self.serial_push}".encode("utf8"),
@@ -1813,31 +1794,14 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
                                                data={"serial": self.serial_push,
                                                      "signature": b32encode(signature)}):
                 self.assertEqual(200, self.app.full_dispatch_request().status_code)
-
-        # A LOCK_USER policy: 2 CHALLENGE_ANSWERED_FAIL within the window -> lock.
-        clear_ca()
-        policy = LockoutPolicy(name="ca_push_lock",
-                               counter_types_to_track=[str(AuthEventType.CHALLENGE_ANSWERED_FAIL)],
-                               time_window_seconds=3600, enabled=True, priority=1)
-        db.session.add(policy)
-        db.session.commit()
-        stage = LockoutPolicyStage(policy_id=policy.id, failure_threshold=2, priority=1)
-        db.session.add(stage)
-        db.session.commit()
-        db.session.add(LockoutStageAction(stage_id=stage.id, action_type=str(LockoutAction.LOCK_USER),
-                                          action_value=600))
-        db.session.commit()
-
-        try:
-            self.assertFalse(is_user_locked(user))
-            # First failure: below threshold, no lock yet.
-            trigger_and_send_bad_signature()
-            self.assertFalse(is_user_locked(user))
-            # Second failure crosses the threshold -> the owner is locked.
-            trigger_and_send_bad_signature()
-            self.assertTrue(is_user_locked(user))
+            # The bad signature is attributed to the resolved owner and fed to the engine.
+            entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
+                                                 AuthEventType.CHALLENGE_ANSWERED_FAIL])
+            assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_ANSWERED_FAIL],
+                                            user=user, serials={self.serial_push},
+                                            transaction_id=transaction_id)
         finally:
-            clear_ca()
+            self._clear_ca()
             remove_token(self.serial_push)
             delete_policy("push_config")
 

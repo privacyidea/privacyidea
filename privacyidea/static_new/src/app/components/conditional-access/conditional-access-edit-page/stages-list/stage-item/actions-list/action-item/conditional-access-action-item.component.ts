@@ -28,7 +28,8 @@ import {
   ConditionalAccessPolicyService,
   ConditionalAccessPolicyServiceInterface,
   LockoutActionType,
-  LockoutStageAction
+  LockoutStageAction,
+  LockoutTarget
 } from "@services/conditional-access/conditional-access-policy.service";
 
 // One-line explanation of what each action does, shown under the action select.
@@ -126,12 +127,31 @@ export class ConditionalAccessActionItemComponent {
   protected readonly policyService: ConditionalAccessPolicyServiceInterface = inject(ConditionalAccessPolicyService);
 
   readonly action = input.required<LockoutStageAction>();
+  readonly target = input<LockoutTarget>("user");
   readonly updateAction = output<Partial<LockoutStageAction>>();
   readonly removeAction = output<void>();
 
   readonly emailPlaceholders = EMAIL_PLACEHOLDERS;
 
   readonly actionDescription = computed<string>(() => ACTION_DESCRIPTIONS[this.action().action_type] ?? "");
+
+  // The action types offered for the current target (see the /targets endpoint).
+  // The currently-selected type is always included so a stale, now-incompatible
+  // action stays visible in the select for the user to change.
+  readonly allowedActionTypes = computed<LockoutActionType[]>(() => {
+    const allowed = this.policyService.actionsForTarget(this.target());
+    const current = this.action().action_type;
+    return allowed.includes(current) ? allowed : [...allowed, current];
+  });
+
+  // Whether the selected action is valid for the current target. Changing the
+  // target can leave a stale, now-incompatible action (e.g. LOCK_USER after
+  // switching to source_ip); flag it so it's fixed before the backend 400s. While
+  // the allowed list is still loading (empty) we cannot judge, so treat as valid.
+  readonly isActionAllowedForTarget = computed<boolean>(() => {
+    const allowed = this.policyService.actionsForTarget(this.target());
+    return allowed.length === 0 || allowed.includes(this.action().action_type);
+  });
 
   readonly valueMode = computed<ActionValueMode>(() =>
     ConditionalAccessActionItemComponent.modeFor(this.action().action_type)
