@@ -18,6 +18,7 @@
  **/
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { signal } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
 import { MatTableDataSource } from "@angular/material/table";
 import { FilterValue } from "@core/models/filter_value/filter_value";
@@ -369,6 +370,38 @@ describe("TableUtilsService", () => {
       const data = [makeToken({ serial: "b" }), makeToken({ serial: "a" })];
       const result = service.clientsideSortTokenData(data, { active: "serial", direction: "asc" });
       expect(result).toBe(data);
+    });
+  });
+
+  describe("onSortButtonClick", () => {
+    it("cycles a column through ascending -> descending -> cleared (default serial fallback)", () => {
+      const sort = signal({ active: "serial", direction: "asc" as const });
+
+      service.onSortButtonClick("event_type", sort);
+      expect(sort()).toEqual({ active: "event_type", direction: "asc" });
+
+      service.onSortButtonClick("event_type", sort);
+      expect(sort()).toEqual({ active: "event_type", direction: "desc" });
+
+      service.onSortButtonClick("event_type", sort);
+      expect(sort()).toEqual({ active: "serial", direction: "asc" });
+    });
+
+    it("uses the provided fallback when clearing", () => {
+      const sort = signal({ active: "timestamp", direction: "desc" as const });
+      const fallback = { active: "timestamp", direction: "" as const };
+
+      service.onSortButtonClick("event_type", sort, fallback);
+      service.onSortButtonClick("event_type", sort, fallback);
+      service.onSortButtonClick("event_type", sort, fallback);
+      expect(sort()).toEqual({ active: "timestamp", direction: "" });
+    });
+
+    it("switching to a different column restarts at ascending", () => {
+      const sort = signal({ active: "event_type", direction: "desc" as const });
+
+      service.onSortButtonClick("username", sort);
+      expect(sort()).toEqual({ active: "username", direction: "asc" });
     });
   });
 });

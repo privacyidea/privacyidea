@@ -16,25 +16,22 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div class="details-header">
-  <h3
-    class="margin-8"
-    i18n>
-    Details for {{ entityLabel() }}
-  </h3>
-  <app-copyable
-    class="flex-row flex-nowrap ali-center"
-    [copyText]="serial()">
-    <h3 class="h3-color margin-8">{{ serial() }}</h3>
-  </app-copyable>
-  <ng-content select="[headerExtra]"></ng-content>
-  @if (showAuditButton()) {
-    <button
-      (click)="auditClick.emit()"
-      [routerLink]="[auditRoute()]"
-      mat-icon-button
-      [matTooltip]="auditTooltip()">
-      <mat-icon>receipt_long</mat-icon>
-    </button>
-  }
-</div>
+
+<button
+  [matMenuTriggerFor]="inner.matMenu"
+  aria-label="Filter by {{ label() }}"
+  class="filter-button"
+  i18n-aria-label
+  i18n-matTooltip
+  mat-icon-button
+  matTooltip="Filter by {{ label() }}">
+  <mat-icon class="keyword-button-icon margin-left-0"> filter_list </mat-icon>
+</button>
+<app-multi-select-menu
+  #inner
+  [options]="options()"
+  [selected]="selected()"
+  [valueSuffix]="valueSuffix()"
+  [allowCustom]="allowCustom()"
+  (selectionChange)="selectionChange.emit($event)"
+  (addCustom)="addCustom.emit()" />
