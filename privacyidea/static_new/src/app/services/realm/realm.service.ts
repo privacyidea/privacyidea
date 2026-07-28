@@ -28,6 +28,8 @@ import { catchError, Observable, throwError } from "rxjs";
 export type AdminRealms = string[];
 export type Realms = Record<string, Realm>;
 
+export const REALM_CUSTOM_ATTRIBUTES_ERROR_CODE = 908;
+
 export interface Realm {
   default: boolean;
   id: number;
@@ -79,7 +81,7 @@ export interface RealmServiceInterface {
     resolvers: { name: string; priority?: number | null }[]
   ): Observable<PiResponse<number>>;
 
-  deleteRealm(realm: string): Observable<PiResponse<number>>;
+  deleteRealm(realm: string, deleteCustomAttributes?: boolean): Observable<PiResponse<number>>;
 
   setDefaultRealm(realm: string): Observable<PiResponse<number>>;
 }
@@ -250,22 +252,14 @@ export class RealmService implements RealmServiceInterface {
       );
   }
 
-  deleteRealm(realm: string): Observable<PiResponse<number>> {
+  deleteRealm(realm: string, deleteCustomAttributes = false): Observable<PiResponse<number>> {
     const encodedRealm = encodeURIComponent(realm);
     const url = `${environment.proxyUrl}/realm/${encodedRealm}`;
 
-    return this.http
-      .delete<PiResponse<number>>(url, {
-        headers: this.authService.getHeaders()
-      })
-      .pipe(
-        catchError((error) => {
-          console.error("Failed to delete realm.", error);
-          const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to delete realm. " + message);
-          return throwError(() => error);
-        })
-      );
+    return this.http.delete<PiResponse<number>>(url, {
+      headers: this.authService.getHeaders(),
+      params: deleteCustomAttributes ? { delete_custom_attributes: 1 } : {}
+    });
   }
 
   setDefaultRealm(realm: string): Observable<PiResponse<number>> {
