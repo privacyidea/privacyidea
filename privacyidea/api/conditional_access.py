@@ -44,16 +44,12 @@ from privacyidea.lib.conditional_access.lockout_policy import (list_lockout_poli
                                                                delete_lockout_policy,
                                                                get_actions_by_target)
 from privacyidea.lib.conditional_access.lockout_policy_template import list_lockout_policy_templates
-                                                               delete_lockout_policy)
-from privacyidea.lib.conditional_access.lockout_state import (DEFAULT_PAGE_SIZE,
-                                                                list_locked_users_paginate,
-                                                                get_user_lockout_dict,
-                                                                user_matches_scopes,
-                                                                unlock_user_by_id,
-                                                                purge_expired_user_lockouts,
-                                                                list_blocklist,
-                                                                remove_blocklist_entry,
-                                                                purge_expired_blocklist, unlock_user_by_username)
+from privacyidea.lib.conditional_access.lockout_state import (list_locked_users_paginate, DEFAULT_PAGE_SIZE,
+                                                              user_matches_scopes, get_user_lockout_dict,
+                                                              purge_expired_user_lockouts, unlock_user_by_id,
+                                                              unlock_user_by_username,
+                                                              list_blocklist, purge_expired_blocklist,
+                                                              remove_blocklist_entry)
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.params import get_optional, get_required, get_required_one_of
