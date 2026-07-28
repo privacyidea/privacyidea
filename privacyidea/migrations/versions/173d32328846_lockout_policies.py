@@ -99,6 +99,7 @@ def upgrade():
         sa.Column('target', sa.Unicode(length=100), nullable=False),
         sa.PrimaryKeyConstraint('id'),
         sa.UniqueConstraint('name'),
+        sa.UniqueConstraint('priority', name='uq_lockout_policy_priority'),
     )
     _create_table(
         'lockout_policy_counter_types',

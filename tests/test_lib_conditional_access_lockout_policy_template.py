@@ -75,7 +75,7 @@ class LockoutPolicyTemplateTestCase(MyTestCase):
         # Each template must use only known event types and actions and must be
         # accepted by the real create path (fail-closed validation), so a broken
         # shipped template is caught here rather than at admin runtime.
-        for entry in list_lockout_policy_templates():
+        for index, entry in enumerate(list_lockout_policy_templates(), start=1):
             template = entry["policy"]
             self.assertTrue(set(template["counter_types_to_track"]) <= VALID_EVENT_TYPES, entry["key"])
             for stage in template["stages"]:
@@ -83,7 +83,9 @@ class LockoutPolicyTemplateTestCase(MyTestCase):
                     self.assertIn(action["action_type"], VALID_ACTIONS,
                                   f"Invalid action type {action['action_type']} in lockout policy template "
                                   f"{entry['key']}")
-            policy_id = create_lockout_policy(**{**template, "name": f"instance-{entry['key']}"})
+            # templates carry no policy-level priority; the client supplies a unique one on create
+            policy_id = create_lockout_policy(**{**template, "name": f"instance-{entry['key']}",
+                                                 "priority": index})
             policy = get_lockout_policy(policy_id)
             self.assertListEqual(template["counter_types_to_track"], policy["counter_types_to_track"],
                                  f"{entry['key']}: counter types not preserved")
@@ -133,7 +135,8 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
                 for action in stage["actions"]:
                     if action["action_type"] in (LockoutAction.EMAIL_ADMIN, LockoutAction.EMAIL_USER):
                         action["action_value"]["smtp_identifier"] = "lockoutmail"
-        return create_lockout_policy(**policy)
+        # templates carry no policy-level priority; supply a unique one on create
+        return create_lockout_policy(**policy, priority=1)
 
     # --- password brute-force template ----------------------------------------
 

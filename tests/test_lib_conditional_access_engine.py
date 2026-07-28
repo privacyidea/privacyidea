@@ -717,9 +717,9 @@ class LockoutEngineTestCase(LockoutTestCase):
         # A user-target policy in the same run stays a no-op for the unknown user.
         ip = "203.0.113.60"
         self._make_policy(name="spray", counter_type=AuthEventType.PASSWORD_FAIL, window=300,
-                          target=LockoutTarget.SOURCE_IP,
+                          target=LockoutTarget.SOURCE_IP, priority=1,
                           stages=((3, 1, LockoutAction.BLOCK_IP, {"duration_seconds": 3600}),))
-        self._make_policy(name="userlock", counter_type=AuthEventType.PASSWORD_FAIL,
+        self._make_policy(name="userlock", counter_type=AuthEventType.PASSWORD_FAIL, priority=2,
                           stages=((3, 1, LockoutAction.LOCK_USER, 60),))
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3)
         evaluate_lockout_policies(User(), AuthEventType.PASSWORD_FAIL, source_ip=ip)
@@ -736,7 +736,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         # permanent block wins over the timed one regardless of evaluation order
         # (cross-policy, same request).
         ip = "203.0.113.50"
-        self._make_policy(name="lock", counter_type=AuthEventType.PIN_FAIL, priority=10,
+        self._make_policy(name="lock", counter_type=AuthEventType.PIN_FAIL, priority=1,
                           stages=((5, 1, LockoutAction.LOCK_USER, 60),))
         self._make_policy(name="blocktimed", counter_type=AuthEventType.PIN_FAIL, priority=10,
                           target=LockoutTarget.SOURCE_IP, stages=((7, 1, LockoutAction.BLOCK_IP, 60),))

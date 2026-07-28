@@ -64,7 +64,6 @@ PASSWORD_BRUTEFORCE = LockoutPolicyTemplate(
         "time_window_seconds": 900,
         "enabled": True,
         "dry_run": False,
-        "priority": 1,
         "target": LockoutTarget.USER,
         "counter_types_to_track": [AuthEventType.PASSWORD_FAIL,
                                    AuthEventType.PIN_FAIL],
@@ -84,7 +83,6 @@ MFA_BRUTEFORCE = LockoutPolicyTemplate(
         "time_window_seconds": 3600,
         "enabled": True,
         "dry_run": False,
-        "priority": 1,
         "target": LockoutTarget.USER,
         "counter_types_to_track": [AuthEventType.MFA_FAIL],
         "stages": [
@@ -130,7 +128,6 @@ PASSWORD_SPRAYING = LockoutPolicyTemplate(
         "time_window_seconds": 300,
         "enabled": True,
         "dry_run": False,
-        "priority": 1,
         "target": LockoutTarget.SOURCE_IP,
         "counter_types_to_track": [AuthEventType.PASSWORD_FAIL, AuthEventType.PIN_FAIL],
         "stages": [

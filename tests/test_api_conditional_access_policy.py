@@ -76,6 +76,7 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         body = {"name": name,
                 "time_window_seconds": 600,
                 "target": "user",
+                "priority": 1,
                 "counter_types_to_track": [str(AuthEventType.PIN_FAIL)],
                 "stages": [{"failure_threshold": 5,
                             "actions": [{"action_type": str(LockoutAction.LOCK_USER),
@@ -132,6 +133,13 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         # target is required (not defaulted): it decides counting and allowed actions.
         body = self._policy_body()
         del body["target"]
+        res = self._request("policy", method="POST", json_data=body)
+        self.assertEqual(400, res.status_code, res.json)
+
+    def test_create_without_priority_is_400(self):
+        # priority is a required create param (unique precedence, no default).
+        body = self._policy_body()
+        del body["priority"]
         res = self._request("policy", method="POST", json_data=body)
         self.assertEqual(400, res.status_code, res.json)
 
@@ -210,9 +218,10 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
                          spray["policy"]["stages"][0]["actions"][0]["action_type"])
 
     def test_template_policy_posts_verbatim(self):
-        # the real client flow: fetch the catalog once, POST a template's policy
+        # the real client flow: fetch the catalog once, add a priority, POST a template's policy
         catalog = {entry["key"]: entry for entry in self._request("template").json["result"]["value"]}
-        res = self._request("policy", method="POST", json_data=catalog["password_bruteforce"]["policy"])
+        policy = {**catalog["password_bruteforce"]["policy"], "priority": 1}
+        res = self._request("policy", method="POST", json_data=policy)
         self.assertEqual(200, res.status_code, res.json)
 
     # --- GET /policy and /policy/<id> (read) -----------------------------------
@@ -326,6 +335,7 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         # the positive-int validation rejects it. This documents that behavior.
         data = {"name": "Form Policy",
                 "time_window_seconds": "600",
+                "priority": "1",
                 "counter_types_to_track": json.dumps(["PIN_FAIL"]),
                 "stages": json.dumps([{"failure_threshold": 5,
                                        "actions": [{"action_type": "LOCK_USER",
@@ -338,6 +348,7 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
     def test_create_form_encoded_malformed_json_is_400(self):
         data = {"name": "Form Policy",
                 "time_window_seconds": "600",
+                "priority": "1",
                 "counter_types_to_track": json.dumps(["PIN_FAIL"]),
                 "stages": "{not json"}
         with self.app.test_request_context("/conditionalaccess/policy", method="POST", data=data,

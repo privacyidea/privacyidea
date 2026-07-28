@@ -92,7 +92,12 @@ export interface LockoutPolicy {
 }
 
 // The shape sent to create/update; id is only present (and ignored server-side) on update.
-export type LockoutPolicySaveParams = Omit<LockoutPolicy, "id"> & { id?: number };
+// priority is number | null in the draft: a new policy starts with no priority so the admin
+// is forced to pick a deliberate, unique value (the backend requires it and 400s otherwise).
+export type LockoutPolicySaveParams = Omit<LockoutPolicy, "id" | "priority"> & {
+  id?: number;
+  priority: number | null;
+};
 
 // A ready-made policy the backend ships (GET /conditionalaccess/template); "policy"
 // is a full create payload a client prefills, edits and POSTs as a normal policy.
@@ -107,7 +112,7 @@ export const EMPTY_LOCKOUT_POLICY: LockoutPolicySaveParams = {
   time_window_seconds: 600,
   enabled: true,
   dry_run: false,
-  priority: 1,
+  priority: null,
   target: "user",
   counter_types_to_track: [],
   stages: []

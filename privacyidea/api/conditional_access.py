@@ -143,7 +143,8 @@ def list_targets():
 def list_policies():
     """
     Return all conditional-access lockout policies with their stages and
-    actions, ordered by descending priority (the engine's evaluation order).
+    actions, ordered by ascending priority (the engine's evaluation order: a
+    lower priority number means higher precedence), name as tie-breaker.
 
     Requires the admin policy action :ref:`policy_lockout_policy_read`.
 
@@ -217,7 +218,8 @@ def create_policy():
         Required.
     :jsonparam enabled: whether the policy is evaluated (default true).
     :jsonparam dry_run: log-only mode, nothing is enforced (default false).
-    :jsonparam priority: evaluation priority; lower numbers are evaluated first (default 1).
+    :jsonparam priority: evaluation priority; lower numbers are evaluated first.
+        Required and must be unique across policies (no default).
     :jsonparam target: the identity the policy counts and acts on - ``user``
         (per-user brute force) or ``source_ip`` (password spraying). Required.
     :status 200: the id of the new policy in ``result.value``
@@ -234,7 +236,7 @@ def create_policy():
         stages=_get_json_param(params, "stages", required=True),
         enabled=is_true(enabled) if enabled is not None else True,
         dry_run=is_true(dry_run) if dry_run is not None else False,
-        priority=get_optional(params, "priority", default=1),
+        priority=get_required(params, "priority"),
         target=get_required(params, "target"))
     g.audit_object.log({"success": True, "info": f"created policy '{name}' (id {policy_id})"})
     return send_result(policy_id)

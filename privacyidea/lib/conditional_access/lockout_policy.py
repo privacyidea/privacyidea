@@ -153,6 +153,25 @@ def _validate_name(name, exclude_id: int | None = None) -> str:
     return name
 
 
+def _validate_priority(priority, exclude_id: int | None = None) -> int:
+    """
+    Validate the policy priority: a strictly positive integer that is unique
+    across all policies. A shared priority would leave the evaluation order (and
+    thus which policy wins an allow/deny decision) undefined, so a collision is
+    rejected rather than silently tie-broken.
+
+    :param exclude_id: on update, the id of the policy being changed, so its own
+        current priority does not count as a collision.
+    :return: the validated priority
+    """
+    priority = _validate_positive_int(priority, "priority")
+    existing = db.session.scalar(select(LockoutPolicy).where(LockoutPolicy.priority == priority))
+    if existing and existing.id != exclude_id:
+        raise ParameterError(f"A lockout policy with priority {priority} already exists ('{existing.name}'); "
+                             "priorities must be unique.")
+    return priority
+
+
 def _validate_positive_int(value, field: str) -> int:
     """
     Validate a strictly positive integer field. bool is explicitly rejected
@@ -349,22 +368,23 @@ def get_lockout_policy(policy_id: int) -> dict:
 
 
 @log_with(log)
-def create_lockout_policy(name: str, time_window_seconds: int, counter_types_to_track: list[str],
-                          stages: list[dict], target: str, enabled: bool = True,
-                          dry_run: bool = False, priority: int = 1) -> int:
+def create_lockout_policy(name: str, time_window_seconds: int, counter_types_to_track: list[str], stages: list[dict],
+                          target: str, priority: int, enabled: bool = True, dry_run: bool = False) -> int:
     """
     Create a lockout policy with its stages and actions in one transaction.
 
     See the module docstring for the parameter shapes; everything is validated
     here and a :class:`ParameterError` is raised on any invalid input before
     anything is written. ``target`` is required (no silent default) so the
-    target/action compatibility is always a deliberate choice.
+    target/action compatibility is always a deliberate choice. ``priority`` is
+    likewise required (no default) and must be unique across policies, so the
+    caller always picks a deliberate, unambiguous precedence.
 
     :return: the id of the new policy
     """
     name = _validate_name(name)
     time_window_seconds = _validate_positive_int(time_window_seconds, "time_window_seconds")
-    priority = _validate_positive_int(priority, "priority")
+    priority = _validate_priority(priority)
     lockout_target = _validate_target(target)
     counter_types = _validate_counter_types(counter_types_to_track)
     stage_defs = _validate_stages(stages)
@@ -419,7 +439,7 @@ def update_lockout_policy(policy_id: int, name: str | None = None,
     if time_window_seconds is not None:
         time_window_seconds = _validate_positive_int(time_window_seconds, "time_window_seconds")
     if priority is not None:
-        priority = _validate_positive_int(priority, "priority")
+        priority = _validate_priority(priority, exclude_id=policy.id)
     lockout_target = _validate_target(target) if target is not None else None
     if counter_types_to_track is not None:
         counter_types_to_track = _validate_counter_types(counter_types_to_track)

@@ -79,7 +79,7 @@ class LockoutPolicyCrudTestCase(MyTestCase):
 
     def test_02_create_validation_errors(self):
         valid = dict(time_window_seconds=600, counter_types_to_track=["PIN_FAIL"],
-                     stages=[_stage()], target=LockoutTarget.USER)
+                     stages=[_stage()], target=LockoutTarget.USER, priority=1)
         # name
         self.assertRaises(ParameterError, create_lockout_policy, "", **valid)
         self.assertRaises(ParameterError, create_lockout_policy, None, **valid)
@@ -89,37 +89,44 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         self.assertRaises(ParameterError, create_lockout_policy, "Taken", **valid)
         self.assertRaises(ParameterError, create_lockout_policy, "  Taken  ", **valid)
         usr = LockoutTarget.USER
-        # window / priority
-        self.assertRaises(ParameterError, create_lockout_policy, "P", 0, ["PIN_FAIL"], [_stage()], target=usr)
-        self.assertRaises(ParameterError, create_lockout_policy, "P", "600", ["PIN_FAIL"], [_stage()], target=usr)
+        # window / priority; a valid, unique priority keeps the intended later check the one that raises
+        self.assertRaises(ParameterError, create_lockout_policy, "P", 0, ["PIN_FAIL"], [_stage()],
+                          target=usr, priority=2)
+        self.assertRaises(ParameterError, create_lockout_policy, "P", "600", ["PIN_FAIL"], [_stage()],
+                          target=usr, priority=2)
         self.assertRaises(ParameterError, create_lockout_policy, "P", 600, ["PIN_FAIL"], [_stage()],
                           target=usr, priority=0)
         # target
         self.assertRaises(ParameterError, create_lockout_policy, "P", 600, ["PIN_FAIL"], [_stage()],
-                          target="planet")
+                          target="planet", priority=2)
         # counter types
-        self.assertRaises(ParameterError, create_lockout_policy, "P", 600, [], [_stage()], target=usr)
-        self.assertRaises(ParameterError, create_lockout_policy, "P", 600, ["NOT_A_TYPE"], [_stage()], target=usr)
-        self.assertRaises(ParameterError, create_lockout_policy, "P", 600, "PIN_FAIL", [_stage()], target=usr)
+        self.assertRaises(ParameterError, create_lockout_policy, "P", 600, [], [_stage()],
+                          target=usr, priority=2)
+        self.assertRaises(ParameterError, create_lockout_policy, "P", 600, ["NOT_A_TYPE"], [_stage()],
+                          target=usr, priority=2)
+        self.assertRaises(ParameterError, create_lockout_policy, "P", 600, "PIN_FAIL", [_stage()],
+                          target=usr, priority=2)
         # stages
-        self.assertRaises(ParameterError, create_lockout_policy, "P", 600, ["PIN_FAIL"], [], target=usr)
-        self.assertRaises(ParameterError, create_lockout_policy, "P", 600, ["PIN_FAIL"], None, target=usr)
+        self.assertRaises(ParameterError, create_lockout_policy, "P", 600, ["PIN_FAIL"], [],
+                          target=usr, priority=2)
+        self.assertRaises(ParameterError, create_lockout_policy, "P", 600, ["PIN_FAIL"], None,
+                          target=usr, priority=2)
         self.assertRaises(ParameterError, create_lockout_policy, "P", 600, ["PIN_FAIL"],
-                          [{"priority": 1}], target=usr)  # missing threshold
+                          [{"priority": 1}], target=usr, priority=2)  # missing threshold
         self.assertRaises(ParameterError, create_lockout_policy, "P", 600, ["PIN_FAIL"],
-                          [_stage(5), _stage(5)], target=usr)  # duplicate threshold
+                          [_stage(5), _stage(5)], target=usr, priority=2)  # duplicate threshold
         self.assertRaises(ParameterError, create_lockout_policy, "P", 600, ["PIN_FAIL"],
-                          [{"failure_threshold": 5, "bogus": 1}], target=usr)  # unknown stage key
+                          [{"failure_threshold": 5, "bogus": 1}], target=usr, priority=2)  # unknown stage key
         self.assertRaises(ParameterError, create_lockout_policy, "P", 600, ["PIN_FAIL"],
-                          [5], target=usr)  # stage is not a dict
+                          [5], target=usr, priority=2)  # stage is not a dict
         self.assertRaises(ParameterError, create_lockout_policy, "P", 600, ["PIN_FAIL"],
-                          [{"failure_threshold": 5, "actions": "notalist"}], target=usr)  # actions not a list
+                          [{"failure_threshold": 5, "actions": "notalist"}], target=usr, priority=2)  # actions not a list
         self.assertRaises(ParameterError, create_lockout_policy, "P", 600, ["PIN_FAIL"],
-                          [{"failure_threshold": 5, "actions": [42]}], target=usr)  # action not a dict
+                          [{"failure_threshold": 5, "actions": [42]}], target=usr, priority=2)  # action not a dict
         self.assertRaises(ParameterError, create_lockout_policy, "P", 600, ["PIN_FAIL"],
-                          [_stage(actions=[{"action_type": "NOT_AN_ACTION"}])], target=usr)
+                          [_stage(actions=[{"action_type": "NOT_AN_ACTION"}])], target=usr, priority=2)
         self.assertRaises(ParameterError, create_lockout_policy, "P", 600, ["PIN_FAIL"],
-                          [_stage(actions=[{"action_type": "LOCK_USER", "bogus": 1}])], target=usr)
+                          [_stage(actions=[{"action_type": "LOCK_USER", "bogus": 1}])], target=usr, priority=2)
         # nothing invalid was persisted
         self.assertEqual(1, db.session.query(LockoutPolicy).count())
 
@@ -128,21 +135,23 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         # not rejected: tracking the same event type twice has no effect.
         policy_id = create_lockout_policy("Dedup", 600,
                                           ["MFA_FAIL", "PIN_FAIL", "MFA_FAIL"], [_stage()],
-                                          target=LockoutTarget.USER)
+                                          target=LockoutTarget.USER, priority=1)
         self.assertEqual(["MFA_FAIL", "PIN_FAIL"],
                          get_lockout_policy(policy_id)["counter_types_to_track"])
 
     def test_02c_target_action_compatibility(self):
         # BLOCK_IP only makes sense on a source_ip target; LOCK_USER only on a user target.
         self.assertRaises(ParameterError, create_lockout_policy, "P", 600, ["PIN_FAIL"],
-                          [_stage(actions=[{"action_type": "BLOCK_IP"}])], target=LockoutTarget.USER)
+                          [_stage(actions=[{"action_type": "BLOCK_IP"}])], target=LockoutTarget.USER,
+                          priority=1)
         self.assertRaises(ParameterError, create_lockout_policy, "P", 600, ["PIN_FAIL"],
-                          [_stage(actions=[{"action_type": "LOCK_USER"}])], target=LockoutTarget.SOURCE_IP)
+                          [_stage(actions=[{"action_type": "LOCK_USER"}])], target=LockoutTarget.SOURCE_IP,
+                          priority=2)
         # a source_ip policy may block the offending IP
         create_lockout_policy("Spray", 300, ["PIN_FAIL"],
                               [_stage(20, actions=[{"action_type": "BLOCK_IP",
                                                     "action_value": {"duration_seconds": 3600}}])],
-                              target=LockoutTarget.SOURCE_IP)
+                              target=LockoutTarget.SOURCE_IP, priority=3)
 
     def test_03_list_and_order(self):
         # Listed by ascending priority number (lowest number = highest precedence).
@@ -158,7 +167,7 @@ class LockoutPolicyCrudTestCase(MyTestCase):
 
     def test_04_update(self):
         policy_id = create_lockout_policy("Original", 600, ["PIN_FAIL"], [_stage(5)],
-                                          target=LockoutTarget.USER)
+                                          target=LockoutTarget.USER, priority=1)
         # partial update: only the given fields change
         update_lockout_policy(policy_id, name="Renamed", dry_run=True)
         policy = get_lockout_policy(policy_id)
@@ -198,8 +207,9 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         self.assertEqual(1, db.session.query(LockoutPolicyCounterType).count())
 
     def test_05_update_validation(self):
-        policy_id = create_lockout_policy("A", 600, ["PIN_FAIL"], [_stage(5)], target=LockoutTarget.USER)
-        create_lockout_policy("B", 600, ["PIN_FAIL"], [_stage(5)], target=LockoutTarget.USER)
+        policy_id = create_lockout_policy("A", 600, ["PIN_FAIL"], [_stage(5)],
+                                          target=LockoutTarget.USER, priority=1)
+        create_lockout_policy("B", 600, ["PIN_FAIL"], [_stage(5)], target=LockoutTarget.USER, priority=2)
         # name collision with another policy
         self.assertRaises(ParameterError, update_lockout_policy, policy_id, name="B")
         # invalid values are rejected without changing anything
@@ -217,7 +227,7 @@ class LockoutPolicyCrudTestCase(MyTestCase):
     def test_06_delete(self):
         policy_id = create_lockout_policy("Doomed", 600, ["PIN_FAIL"],
                                           [_stage(5), _stage(10, priority=2)],
-                                          target=LockoutTarget.USER)
+                                          target=LockoutTarget.USER, priority=1)
         self.assertEqual(policy_id, delete_lockout_policy(policy_id))
         self.assertRaises(ResourceNotFoundError, get_lockout_policy, policy_id)
         # cascades removed the children
@@ -227,7 +237,8 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         self.assertRaises(ResourceNotFoundError, delete_lockout_policy, policy_id)
 
     def test_07_enable_disable(self):
-        policy_id = create_lockout_policy("Toggle", 600, ["PIN_FAIL"], [_stage()], target=LockoutTarget.USER)
+        policy_id = create_lockout_policy("Toggle", 600, ["PIN_FAIL"], [_stage()],
+                                          target=LockoutTarget.USER, priority=1)
         enable_lockout_policy(policy_id, enable=False)
         self.assertFalse(get_lockout_policy(policy_id)["enabled"])
         enable_lockout_policy(policy_id)
@@ -244,3 +255,29 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         covered = set().union(*_ACTIONS_BY_TARGET.values())
         self.assertSetEqual(set(LockoutAction), covered,
                             "a LockoutAction is not assignable to any target")
+
+    def test_09_duplicate_priority_rejected(self):
+        # priority must be unique across policies: a second policy reusing a
+        # priority is rejected and nothing is persisted.
+        create_lockout_policy("First", 600, ["PIN_FAIL"], [_stage()], target=LockoutTarget.USER, priority=1)
+        self.assertRaises(ParameterError, create_lockout_policy, "Second", 600, ["PIN_FAIL"],
+                          [_stage()], target=LockoutTarget.USER, priority=1)
+        self.assertEqual(1, db.session.query(LockoutPolicy).count())
+
+    def test_10_update_to_used_priority_rejected(self):
+        first = create_lockout_policy("First", 600, ["PIN_FAIL"], [_stage()],
+                                      target=LockoutTarget.USER, priority=1)
+        create_lockout_policy("Second", 600, ["PIN_FAIL"], [_stage()],
+                              target=LockoutTarget.USER, priority=2)
+        # moving one policy onto another policy's priority collides
+        self.assertRaises(ParameterError, update_lockout_policy, first, priority=2)
+        self.assertEqual(1, get_lockout_policy(first)["priority"])
+
+    def test_11_update_keeping_own_priority_ok(self):
+        policy_id = create_lockout_policy("Solo", 600, ["PIN_FAIL"], [_stage()],
+                                          target=LockoutTarget.USER, priority=5)
+        # re-passing the policy's own current priority is not a collision
+        update_lockout_policy(policy_id, name="Solo2", priority=5)
+        policy = get_lockout_policy(policy_id)
+        self.assertEqual("Solo2", policy["name"])
+        self.assertEqual(5, policy["priority"])

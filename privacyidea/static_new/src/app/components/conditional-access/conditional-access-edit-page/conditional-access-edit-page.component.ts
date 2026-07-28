@@ -38,6 +38,7 @@ import {
   ConditionalAccessPolicyService,
   ConditionalAccessPolicyServiceInterface,
   EMPTY_LOCKOUT_POLICY,
+  LockoutPolicy,
   LockoutPolicySaveParams,
   LockoutPolicyStage,
   LockoutTarget
@@ -130,7 +131,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   // Info-hint help texts, kept as $localize strings in the component (like the
   // title and target labels) so all of this component's user-facing text lives in
   // one place and is extracted for translation.
-  protected readonly priorityHelp = $localize`Priority decides how this policy ranks against the others: a lower number means higher precedence, so for an allow/deny decision the matching policy with the lowest priority number wins, while lock, block and email policies all run regardless of priority.`;
+  protected readonly priorityHelp = $localize`Priority decides how this policy ranks against the others: a lower number means higher precedence, so for an allow/deny decision the matching policy with the lowest priority number wins, while lock, block and email policies all run regardless of priority. It is required and must be unique across policies so the order is unambiguous.`;
   protected readonly priorityHelpAriaLabel = $localize`About priority`;
 
   // The templates offered on the create page, and the currently picked one (its
@@ -141,7 +142,25 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   );
 
   timeWindowValid = computed(() => this.editPolicy().time_window_seconds >= 1);
-  priorityValid = computed(() => this.editPolicy().priority >= 1);
+  // Priority is required (no default): the field starts empty so the admin must
+  // deliberately pick one. A non-integer, empty or < 1 value is invalid.
+  priorityValid = computed(() => {
+    const priority = this.editPolicy().priority;
+    return priority != null && Number.isInteger(priority) && priority >= 1;
+  });
+  // Priorities are unique across policies (the backend enforces a unique constraint
+  // and 400s otherwise), so the evaluation order is unambiguous. Surface the clashing
+  // policy so the inline error can name it. Editing a policy without changing its
+  // priority is not a self-collision (excluded by id).
+  priorityConflict = computed<LockoutPolicy | undefined>(() => {
+    const priority = this.editPolicy().priority;
+    if (priority == null) {
+      return undefined;
+    }
+    const currentId = this.editPolicy().id;
+    return this.policyService.policies().find((policy) => policy.priority === priority && policy.id !== currentId);
+  });
+  priorityUnique = computed(() => !this.priorityConflict());
   counterTypesValid = computed(() => this.editPolicy().counter_types_to_track.length > 0);
   stagesValid = computed(() => {
     const stages = this.editPolicy().stages;
@@ -179,6 +198,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
       this.policyForm().valid() &&
       this.timeWindowValid() &&
       this.priorityValid() &&
+      this.priorityUnique() &&
       this.counterTypesValid() &&
       this.stagesValid() &&
       this.stageThresholdsUnique() &&
@@ -268,6 +288,9 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     const template = key ? this.policyService.templates().find((t) => t.key === key) : undefined;
     const policy = template ? deepCopy(template.policy) : deepCopy(EMPTY_LOCKOUT_POLICY);
     delete policy.id;
+    // Templates carry no priority: the admin must pick a unique one, so normalize a
+    // missing value to null and leave the field empty (see priorityValid).
+    policy.priority = policy.priority ?? null;
     this.editPolicy.set(policy);
     this.syncTimeWindowFromSeconds(policy.time_window_seconds);
   }
@@ -305,10 +328,12 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   }
 
   onPriorityInput(value: string): void {
-    const parsed = parseInt(value, 10);
-    if (!isNaN(parsed) && parsed >= 1) {
-      this.updateEditPolicy({ priority: parsed });
-    }
+    // Always write back (null when cleared or non-numeric) so priorityValid /
+    // priorityUnique can flag an empty or invalid field and disable Save; only
+    // swallowing valid values would leave a stale priority behind on clear.
+    const trimmed = value.trim();
+    const parsed = trimmed === "" ? NaN : parseInt(trimmed, 10);
+    this.updateEditPolicy({ priority: isNaN(parsed) ? null : parsed });
   }
 
   toggleEnabled(checked: boolean): void {

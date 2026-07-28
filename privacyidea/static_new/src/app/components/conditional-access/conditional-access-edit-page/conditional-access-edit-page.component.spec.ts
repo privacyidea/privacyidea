@@ -65,7 +65,8 @@ const EMPTY_TEMPLATE_POLICY: LockoutPolicySaveParams = {
   time_window_seconds: 900,
   enabled: true,
   dry_run: false,
-  priority: 1,
+  // Templates carry no policy-level priority: the admin must pick a unique one.
+  priority: null,
   target: "user",
   counter_types_to_track: ["PASSWORD_FAIL"],
   stages: [{ failure_threshold: 10, priority: 1, actions: [{ action_type: "LOCK_USER", action_value: null }] }]
@@ -200,11 +201,13 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
     expect(component.editPolicy().time_window_seconds).toBe(36000);
   });
 
-  it("should update priority for valid input only", () => {
+  it("should update priority, clearing to null on empty or non-numeric input", () => {
     component.onPriorityInput("5");
     expect(component.editPolicy().priority).toBe(5);
     component.onPriorityInput("abc");
-    expect(component.editPolicy().priority).toBe(5);
+    expect(component.editPolicy().priority).toBeNull();
+    component.onPriorityInput("");
+    expect(component.editPolicy().priority).toBeNull();
   });
 
   it("should toggle dry_run without calling the enable/disable endpoints", () => {
@@ -313,10 +316,38 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
     expect(policyServiceMock.disablePolicy).not.toHaveBeenCalled();
   });
 
-  it("should become valid once name, a counter type and a stage are set", () => {
+  it("should become valid once name, a counter type, a stage and a priority are set", () => {
     component.updateEditPolicy({ name: "New Policy" });
     component.onCounterTypesChange(["PIN_FAIL"]);
     component.onStagesChange([{ failure_threshold: 5, priority: 1, actions: [] }]);
+    component.onPriorityInput("1");
+    expect(component.canSave()).toBe(true);
+  });
+
+  it("should stay invalid until a priority is entered (no default)", () => {
+    component.updateEditPolicy({ name: "New Policy" });
+    component.onCounterTypesChange(["PIN_FAIL"]);
+    component.onStagesChange([{ failure_threshold: 5, priority: 1, actions: [] }]);
+    expect(component.editPolicy().priority).toBeNull();
+    expect(component.priorityValid()).toBe(false);
+    expect(component.canSave()).toBe(false);
+    component.onPriorityInput("1");
+    expect(component.priorityValid()).toBe(true);
+    expect(component.canSave()).toBe(true);
+  });
+
+  it("should block saving when the priority collides with an existing policy", () => {
+    policyServiceMock.policies.set([{ ...mockPolicy, id: 99, priority: 3 }]);
+    component.updateEditPolicy({ name: "New Policy" });
+    component.onCounterTypesChange(["PIN_FAIL"]);
+    component.onStagesChange([{ failure_threshold: 5, priority: 1, actions: [] }]);
+    component.onPriorityInput("3");
+    expect(component.priorityUnique()).toBe(false);
+    expect(component.priorityConflict()?.name).toBe("Brute Force");
+    expect(component.canSave()).toBe(false);
+    // a free priority number clears the collision
+    component.onPriorityInput("4");
+    expect(component.priorityUnique()).toBe(true);
     expect(component.canSave()).toBe(true);
   });
 
@@ -335,7 +366,8 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
           time_window_seconds: 900,
           enabled: true,
           dry_run: false,
-          priority: 1,
+          // Templates carry no policy-level priority.
+          priority: null,
           target: "user",
           counter_types_to_track: ["PASSWORD_FAIL"],
           stages: [{ failure_threshold: 10, priority: 1, actions: [{ action_type: "LOCK_USER", action_value: null }] }]
@@ -346,6 +378,8 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
     component.applyTemplate("password_bruteforce");
     expect(component.editPolicy().name).toBe("Password Brute-Force");
     expect(component.editPolicy().stages.length).toBe(1);
+    // The admin must still pick a priority: the template leaves it empty.
+    expect(component.editPolicy().priority).toBeNull();
     expect(component.selectedTemplateKey()).toBe("password_bruteforce");
 
     // The clear button resets the prefill back to the empty policy.
