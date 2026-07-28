@@ -930,6 +930,12 @@ class APIContainer(APIContainerTest):
                                            "ERR905: The key is reserved for internal use and cannot be deleted.")
         self.assert_audit_entry('DELETE /container/<string:container_serial>/info/delete/<key>', success=0)
 
+        # Deleting a non-existing key is a no-op that returns False, not an internal-key error
+        result = self.request_assert_success(f"/container/{container_serial}/info/delete/does_not_exist",
+                                             {}, self.at, "DELETE")
+        self.assertFalse(result["result"]["value"])
+        self.assert_audit_entry('DELETE /container/<string:container_serial>/info/delete/<key>', success=0)
+
     def test_25_broken_user_resolver(self):
         # Arrange
         self.setUp_user_realms()
