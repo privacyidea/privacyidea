@@ -727,7 +727,8 @@ def set_realms(container_serial):
 
     # Set realms
     result = set_container_realms(container_serial, realm_list, allowed_realms)
-    success = False not in result.values()
+    # "deleted" is a status flag, not a per-realm result: exclude it so it does not poison the success value.
+    success = all(v for k, v in result.items() if k != "deleted")
 
     # Audit log
     container = find_container_by_serial(container_serial)
