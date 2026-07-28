@@ -61,23 +61,27 @@ class APIContainerTemplate(APIContainerTest):
         data = json.dumps({"template_options": {"tokens": []}, "default": True})
         result = self.request_assert_success(f'/container/smartphone/template/{template_name}',
                                              data, self.at, 'POST')
+        self.assert_audit_entry('POST /container/<string:container_type>/template/<string:template_name>', success=1)
         self.assertGreater(result["result"]["value"]["template_id"], 0)
 
         # Delete template
         result = self.request_assert_success(f'/container/template/{template_name}',
                                              {}, self.at, 'DELETE')
+        self.assert_audit_entry('DELETE /container/template/<string:template_name>', success=1)
         self.assertTrue(result["result"]["value"])
 
     def test_02_create_template_fail(self):
         # Create template without name
         self.request_assert_404_no_result('/container/smartphone/template',
                                           {}, self.at, 'POST')
+        self.assert_no_audit_entry('POST /container/smartphone/template')
 
     def test_03_delete_template_fail(self):
         # Delete non existing template
         template_name = "random"
         self.request_assert_405(f'container/template/{template_name}',
                                 {}, None, 'POST')
+        self.assert_no_audit_entry('POST /container/template/<string:template_name>')
 
     def test_04_update_template_options_success(self):
         # Create a template
@@ -92,6 +96,7 @@ class APIContainerTemplate(APIContainerTest):
 
         result = self.request_assert_success(f'/container/generic/template/{template_name}',
                                              params, self.at, 'POST')
+        self.assert_audit_entry('POST /container/<string:container_type>/template/<string:template_name>', success=1)
         self.assertEqual(template_id, result["result"]["value"]["template_id"])
 
         template = get_template_obj(template_name)
@@ -111,6 +116,7 @@ class APIContainerTemplate(APIContainerTest):
         self.request_assert_error(400, f'/container/generic/template/{template_name}',
                                   params, self.at, 'POST',
                                   error_code=905)
+        self.assert_audit_entry('POST /container/<string:container_type>/template/<string:template_name>', success=0)
 
         template = get_template_obj(template_name)
         template.delete()
@@ -138,12 +144,14 @@ class APIContainerTemplate(APIContainerTest):
         # create container by passing the complete template dictionary
         request_params = json.dumps({"type": "smartphone", "template": template_params})
         result = self.request_assert_success('/container/init', request_params, self.at, 'POST')
+        self.assert_audit_entry('POST /container/init', success=1)
         check_result(result)
 
         # create container by passing only the template name
         result = self.request_assert_success('/container/init',
                                              {"type": "smartphone", "template_name": template_params["name"]},
                                              self.at, 'POST')
+        self.assert_audit_entry('POST /container/init', success=1)
         check_result(result)
 
         template = get_template_obj(template_params["name"])
@@ -169,6 +177,7 @@ class APIContainerTemplate(APIContainerTest):
         # with template dict
         request_params = json.dumps({"type": "smartphone", "template": template_params})
         result = self.request_assert_success("/container/init", request_params, self.at, "POST")
+        self.assert_audit_entry('POST /container/init', success=1)
         check_result(result)
 
         # with template from db
@@ -176,6 +185,7 @@ class APIContainerTemplate(APIContainerTest):
         result = self.request_assert_success("/container/init",
                                              {"type": "smartphone", "template_name": template_params["name"]},
                                              self.at, "POST")
+        self.assert_audit_entry('POST /container/init', success=1)
         check_result(result)
 
         template = get_template_obj(template_params["name"])
@@ -189,6 +199,7 @@ class APIContainerTemplate(APIContainerTest):
         result = self.request_assert_success('/container/init',
                                              request_params,
                                              self.at, 'POST')
+        self.assert_audit_entry('POST /container/init', success=1)
         container_serial = result["result"]["value"]["container_serial"]
         container = find_container_by_serial(container_serial)
         tokens = container.get_tokens()
@@ -214,12 +225,14 @@ class APIContainerTemplate(APIContainerTest):
         # Create a container from the template dict
         request_params = json.dumps({"type": "smartphone", "template": template_params})
         result = self.request_assert_success('/container/init', request_params, self.at, 'POST')
+        self.assert_audit_entry('POST /container/init', success=1)
         check_result(result)
 
         # Create a container from the db template
         result = self.request_assert_success("/container/init",
                                              {"type": "smartphone", "template_name": template_params["name"]}, self.at,
                                              "POST")
+        self.assert_audit_entry('POST /container/init', success=1)
         check_result(result)
 
         template = get_template_obj(template_params["name"])
@@ -318,12 +331,14 @@ class APIContainerTemplate(APIContainerTest):
         request_params = json.dumps(
             {"type": "generic", "template": template_params, "user": "cornelius", "realm": self.realm3})
         result = self.request_assert_success("/container/init", request_params, self.at, "POST")
+        self.assert_audit_entry('POST /container/init', success=1)
         check_result(result)
 
         # Create a container from the template name
         result = self.request_assert_success("/container/init",
                                              {"type": "generic", "template_name": template_params["name"],
                                               "user": "cornelius", "realm": self.realm3}, self.at, "POST")
+        self.assert_audit_entry('POST /container/init', success=1)
         check_result(result)
 
         template = get_template_obj(template_params["name"])
@@ -418,12 +433,14 @@ class APIContainerTemplate(APIContainerTest):
         request_params = json.dumps(
             {"type": "generic", "template": template_params})
         result = self.request_assert_success("/container/init", request_params, self.at, "POST")
+        self.assert_audit_entry('POST /container/init', success=1)
         check_result(result)
 
         # Create container from the db template
         result = self.request_assert_success("/container/init",
                                              {"type": "generic", "template_name": template_params["name"]}, self.at,
                                              "POST")
+        self.assert_audit_entry('POST /container/init', success=1)
         check_result(result)
 
         template = get_template_obj(template_params["name"])
@@ -458,6 +475,7 @@ class APIContainerTemplate(APIContainerTest):
         result = self.request_assert_success('/container/init',
                                              request_params,
                                              self.at, 'POST')
+        self.assert_audit_entry('POST /container/init', success=1)
         container_serial = result["result"]["value"]["container_serial"]
         container = find_container_by_serial(container_serial)
         tokens = container.get_tokens()
@@ -469,6 +487,7 @@ class APIContainerTemplate(APIContainerTest):
         result = self.request_assert_success('/container/init',
                                              request_params,
                                              self.at, 'POST')
+        self.assert_audit_entry('POST /container/init', success=1)
         container_serial = result["result"]["value"]["container_serial"]
         container1 = find_container_by_serial(container_serial)
         tokens = container1.get_tokens()
@@ -479,6 +498,7 @@ class APIContainerTemplate(APIContainerTest):
         result = self.request_assert_success('/container/init',
                                              request_params,
                                              self.at, 'POST')
+        self.assert_audit_entry('POST /container/init', success=1)
         container_serial = result["result"]["value"]["container_serial"]
         container2 = find_container_by_serial(container_serial)
         tokens = container2.get_tokens()
@@ -491,6 +511,7 @@ class APIContainerTemplate(APIContainerTest):
         result = self.request_assert_success('/container/init',
                                              request_params,
                                              self.at, 'POST')
+        self.assert_audit_entry('POST /container/init', success=1)
         container_serial = result["result"]["value"]["container_serial"]
         container = find_container_by_serial(container_serial)
         tokens = container.get_tokens()
@@ -521,6 +542,7 @@ class APIContainerTemplate(APIContainerTest):
         result = self.request_assert_success('/container/init',
                                              request_params,
                                              self.at, 'POST')
+        self.assert_audit_entry('POST /container/init', success=1)
         container_serial = result["result"]["value"]["container_serial"]
         container = find_container_by_serial(container_serial)
         tokens = container.get_tokens()
@@ -538,6 +560,7 @@ class APIContainerTemplate(APIContainerTest):
         result = self.request_assert_success('/container/init',
                                              request_params,
                                              self.at, 'POST')
+        self.assert_audit_entry('POST /container/init', success=1)
         container_serial = result["result"]["value"]["container_serial"]
         container = find_container_by_serial(container_serial)
         tokens = container.get_tokens()
@@ -554,6 +577,7 @@ class APIContainerTemplate(APIContainerTest):
         result = self.request_assert_success('/container/init',
                                              request_params,
                                              self.at, 'POST')
+        self.assert_audit_entry('POST /container/init', success=1)
         container_serial = result["result"]["value"]["container_serial"]
         container = find_container_by_serial(container_serial)
         tokens = container.get_tokens()
@@ -569,6 +593,7 @@ class APIContainerTemplate(APIContainerTest):
         result = self.request_assert_success('/container/init',
                                              request_params,
                                              self.at, 'POST')
+        self.assert_audit_entry('POST /container/init', success=1)
         container_serial = result["result"]["value"]["container_serial"]
         container = find_container_by_serial(container_serial)
         tokens = container.get_tokens()
@@ -597,6 +622,7 @@ class APIContainerTemplate(APIContainerTest):
         result = self.request_assert_success('/container/init',
                                              request_params,
                                              self.at, 'POST')
+        self.assert_audit_entry('POST /container/init', success=1)
         container_serial = result["result"]["value"]["container_serial"]
         container = find_container_by_serial(container_serial)
         tokens = container.get_tokens()
@@ -630,6 +656,7 @@ class APIContainerTemplate(APIContainerTest):
         result = self.request_assert_success('/container/init',
                                              request_params,
                                              self.at, 'POST')
+        self.assert_audit_entry('POST /container/init', success=1)
 
         # check result
         token_result = result["result"]["value"]["tokens"]
@@ -669,6 +696,7 @@ class APIContainerTemplate(APIContainerTest):
 
         query_params = {"container_type": "smartphone", "pagesize": 15, "page": 1}
         result = self.request_assert_success('/container/templates', query_params, self.at, 'GET')
+        self.assert_audit_entry('GET /container/templates', success=1)
         self.assertEqual(2, result["result"]["value"]["count"])
         self.assertEqual(1, result["result"]["value"]["current"])
         self.assertEqual(2, len(result["result"]["value"]["templates"]))
@@ -683,6 +711,7 @@ class APIContainerTemplate(APIContainerTest):
                                      "template": {"name": "test", "container_type": "smartphone",
                                                   "template_options": template_options}})
         result = self.request_assert_success('/container/init', request_params, self.at, 'POST')
+        self.assert_audit_entry('POST /container/init', success=1)
         equal_cserial = result["result"]["value"]["container_serial"]
 
         # Create container with tokens and link with template
@@ -699,6 +728,7 @@ class APIContainerTemplate(APIContainerTest):
 
         # Compare template with all containers
         result = self.request_assert_success("/container/template/test/compare", {}, self.at, "GET")
+        self.assert_audit_entry('GET /container/template/<string:template_name>/compare', success=1)
         # Check result for equal container
         container_diff = result["result"]["value"][equal_cserial]
         token_diff = container_diff["tokens"]
@@ -715,6 +745,7 @@ class APIContainerTemplate(APIContainerTest):
         # Compare template with specific container
         result = self.request_assert_success("/container/template/test/compare", {"container_serial": cserial},
                                              self.at, "GET")
+        self.assert_audit_entry('GET /container/template/<string:template_name>/compare', success=1)
         # Check result for unequal container
         container_diff = result["result"]["value"][cserial]
         token_diff = container_diff["tokens"]
@@ -732,6 +763,7 @@ class APIContainerTemplate(APIContainerTest):
 
     def test_17_get_template_token_types(self):
         result = self.request_assert_success('/container/template/tokentypes', {}, self.at, 'GET')
+        self.assert_audit_entry('GET /container/template/tokentypes', success=1)
         self.assertEqual(3, len(result["result"]["value"]))
         template_token_types = result["result"]["value"]
         template_container_types = template_token_types.keys()

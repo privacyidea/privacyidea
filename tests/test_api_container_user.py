@@ -68,12 +68,14 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_DESCRIPTION)
         self.request_denied_assert_403('/container/init', {"type": "Smartphone", "description": "test description!!"},
                                        self.at_user)
+        self.assert_audit_entry('POST /container/init', success=0)
         delete_policy("policy")
 
     def test_03_user_delete_allowed(self):
         set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_DELETE)
         container_serial = self.create_container_for_user()
         self.request_assert_success(f"/container/{container_serial}", {}, self.at_user, method='DELETE')
+        self.assert_audit_entry('DELETE /container/<string:container_serial>', success=1)
         delete_policy("policy")
 
     def test_04_user_delete_denied(self):
@@ -81,6 +83,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_CREATE)
         container_serial = self.create_container_for_user()
         self.request_denied_assert_403(f"/container/{container_serial}", {}, self.at_user, method='DELETE')
+        self.assert_audit_entry('DELETE /container/<string:container_serial>', success=0)
         delete_policy("policy")
 
         # User is not the owner of the container
@@ -88,9 +91,11 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         # another owner
         container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})["container_serial"]
         self.request_denied_assert_403(f"/container/{container_serial}", {}, self.at_user, method='DELETE')
+        self.assert_audit_entry('DELETE /container/<string:container_serial>', success=0)
         # no owner
         container_serial = init_container({"type": "generic"})["container_serial"]
         self.request_denied_assert_403(f"/container/{container_serial}", {}, self.at_user, method='DELETE')
+        self.assert_audit_entry('DELETE /container/<string:container_serial>', success=0)
         delete_policy("policy")
 
     def test_05_user_description_allowed(self):
@@ -98,6 +103,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         container_serial = self.create_container_for_user()
         self.request_assert_success(f"/container/{container_serial}/description", {"description": "test"}, self.at_user,
                                     method='POST')
+        self.assert_audit_entry('POST /container/<string:container_serial>/description', success=1)
         delete_policy("policy")
 
     def test_06_user_description_denied(self):
@@ -107,6 +113,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         self.request_denied_assert_403(f"/container/{container_serial}/description", {"description": "test"},
                                        self.at_user,
                                        method='POST')
+        self.assert_audit_entry('POST /container/<string:container_serial>/description', success=0)
         delete_policy("policy")
 
         # User is not the owner of the container
@@ -114,11 +121,13 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})["container_serial"]
         self.request_denied_assert_403(f"/container/{container_serial}/description", {"description": "test"},
                                        self.at_user, method='POST')
+        self.assert_audit_entry('POST /container/<string:container_serial>/description', success=0)
 
         # Container has no owner
         container_serial = init_container({"type": "generic"})["container_serial"]
         self.request_denied_assert_403(f"/container/{container_serial}/description", {"description": "test"},
                                        self.at_user, method='POST')
+        self.assert_audit_entry('POST /container/<string:container_serial>/description', success=0)
         delete_policy("policy")
 
     def test_07_user_state_allowed(self):
@@ -127,6 +136,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         self.request_assert_success(f"/container/{container_serial}/states", {"states": "active, damaged, lost"},
                                     self.at_user,
                                     method='POST')
+        self.assert_audit_entry('POST /container/<string:container_serial>/states', success=1)
         delete_policy("policy")
 
     def test_08_user_state_denied(self):
@@ -136,6 +146,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         self.request_denied_assert_403(f"/container/{container_serial}/states", {"states": "active, damaged, lost"},
                                        self.at_user,
                                        method='POST')
+        self.assert_audit_entry('POST /container/<string:container_serial>/states', success=0)
         delete_policy("policy")
 
         # User is not the owner of the container
@@ -143,11 +154,13 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})["container_serial"]
         self.request_denied_assert_403(f"/container/{container_serial}/states", {"states": "active, damaged, lost"},
                                        self.at_user, method='POST')
+        self.assert_audit_entry('POST /container/<string:container_serial>/states', success=0)
 
         # Container has no owner
         container_serial = init_container({"type": "generic", "realm": self.realm1})["container_serial"]
         self.request_denied_assert_403(f"/container/{container_serial}/states", {"states": "active, damaged, lost"},
                                        self.at_user, method='POST')
+        self.assert_audit_entry('POST /container/<string:container_serial>/states', success=0)
         delete_policy("policy")
 
     def test_09_user_add_token_allowed(self):
@@ -162,6 +175,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         result = self.request_assert_success(f"/container/{container_serial}/add", {"serial": token_serial},
                                              self.at_user,
                                              method='POST')
+        self.assert_audit_entry('POST /container/<string:container_serial>/add', success=1)
         self.assertTrue(result["result"]["value"])
 
         # add multiple tokens
@@ -171,6 +185,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         result = self.request_assert_success(f"/container/{container_serial}/addall", {"serial": token_serials},
                                              self.at_user,
                                              method='POST')
+        self.assert_audit_entry('POST /container/<string:container_serial>/addall', success=1)
         self.assertTrue(result["result"]["value"][token2.get_serial()])
         self.assertTrue(result["result"]["value"][token3.get_serial()])
 
@@ -186,6 +201,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_DELETE)
         self.request_denied_assert_403(f"/container/{container_serial}/add", {"serial": my_token_serial}, self.at_user,
                                        method='POST')
+        self.assert_audit_entry('POST /container/<string:container_serial>/add', success=0)
         delete_policy("policy")
 
         # User has 'add' rights but is not the owner of the token
@@ -196,6 +212,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
                    action={PolicyAction.CONTAINER_ADD_TOKEN: True, PolicyAction.CONTAINER_REMOVE_TOKEN: True})
         self.request_denied_assert_403(f"/container/{container_serial}/add", {"serial": token_serial}, self.at_user,
                                        method='POST')
+        self.assert_audit_entry('POST /container/<string:container_serial>/add', success=0)
 
         # User has 'add' rights but is not the owner of the container
         another_container_serial = init_container({"type": "generic",
@@ -204,12 +221,14 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         self.request_denied_assert_403(f"/container/{another_container_serial}/add", {"serial": my_token_serial},
                                        self.at_user,
                                        method='POST')
+        self.assert_audit_entry('POST /container/<string:container_serial>/add', success=0)
 
         # User has 'add' rights but the token is already in a container from another user
         add_token_to_container(another_container_serial, my_token_serial)
         self.request_denied_assert_403(f"/container/{container_serial}/add", {"serial": my_token_serial},
                                        self.at_user,
                                        method='POST')
+        self.assert_audit_entry('POST /container/<string:container_serial>/add', success=0)
 
         # Adding multiple tokens, user is only the owner of one token
         token2 = init_token({"genkey": "1"}, user=User("hans", self.realm1))
@@ -219,6 +238,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         result = self.request_assert_success(f"/container/{container_serial}/addall", {"serial": token_serials},
                                              self.at_user,
                                              method='POST')
+        self.assert_audit_entry('POST /container/<string:container_serial>/addall', success=0)
         self.assertFalse(result["result"]["value"][token2.get_serial()])
         self.assertTrue(result["result"]["value"][token3.get_serial()])
         self.assertFalse(result["result"]["value"][token4.get_serial()])
@@ -238,6 +258,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         result = self.request_assert_success(f"/container/{container_serial}/remove", {"serial": token_serial},
                                              self.at_user,
                                              method='POST')
+        self.assert_audit_entry('POST /container/<string:container_serial>/remove', success=1)
         self.assertTrue(result["result"]["value"])
 
         # multiple tokens
@@ -249,6 +270,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         result = self.request_assert_success(f"/container/{container_serial}/removeall", {"serial": serials},
                                              self.at_user,
                                              method='POST')
+        self.assert_audit_entry('POST /container/<string:container_serial>/removeall', success=1)
         self.assertTrue(result["result"]["value"][hotp.get_serial()])
         self.assertTrue(result["result"]["value"][totp.get_serial()])
         delete_policy("policy")
@@ -262,6 +284,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_DELETE)
         self.request_denied_assert_403(f"/container/{container_serial}/remove", {"serial": my_token_serial},
                                        self.at_user, method='POST')
+        self.assert_audit_entry('POST /container/<string:container_serial>/remove', success=0)
         delete_policy("policy")
 
         # User has 'remove' rights but is not the owner of the token
@@ -272,12 +295,14 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         add_token_to_container(container_serial, token_serial)
         self.request_denied_assert_403(f"/container/{container_serial}/remove", {"serial": token_serial}, self.at_user,
                                        method='POST')
+        self.assert_audit_entry('POST /container/<string:container_serial>/remove', success=0)
 
         # User has 'remove' rights but is not the owner of the token (token has no owner)
         unassign_token(token_serial)
         add_token_to_container(container_serial, token_serial)
         self.request_denied_assert_403(f"/container/{container_serial}/remove", {"serial": token_serial}, self.at_user,
                                        method='POST')
+        self.assert_audit_entry('POST /container/<string:container_serial>/remove', success=0)
 
         # User has 'remove' rights but is not the owner of the container
         another_container_serial = init_container({"type": "generic",
@@ -286,12 +311,14 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         add_token_to_container(another_container_serial, my_token_serial)
         self.request_denied_assert_403(f"/container/{another_container_serial}/remove", {"serial": my_token_serial},
                                        self.at_user, method='POST')
+        self.assert_audit_entry('POST /container/<string:container_serial>/remove', success=0)
 
         # User has 'remove' rights but is not the owner of the container (container has no owner)
         find_container_by_serial(another_container_serial).remove_user(User("hans", self.realm1))
         add_token_to_container(another_container_serial, my_token_serial)
         self.request_denied_assert_403(f"/container/{another_container_serial}/remove", {"serial": my_token_serial},
                                        self.at_user, method='POST')
+        self.assert_audit_entry('POST /container/<string:container_serial>/remove', success=0)
 
         # multiple tokens
         container = find_container_by_serial(container_serial)
@@ -305,6 +332,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         result = self.request_assert_success(f"/container/{container_serial}/removeall", {"serial": serials},
                                              self.at_user,
                                              method='POST')
+        self.assert_audit_entry('POST /container/<string:container_serial>/removeall', success=0)
         self.assertFalse(result["result"]["value"][hotp.get_serial()])
         self.assertTrue(result["result"]["value"][totp.get_serial()])
         self.assertFalse(result["result"]["value"][spass.get_serial()])
@@ -317,6 +345,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         container_serial = init_container({"type": "generic"})["container_serial"]
         self.request_assert_success(f"/container/{container_serial}/assign", {"realm": "realm1", "user": "root"},
                                     self.at_user)
+        self.assert_audit_entry('POST /container/<string:container_serial>/assign', success=1)
         delete_policy("policy")
 
     def test_14_user_assign_user_denied(self):
@@ -325,6 +354,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         self.request_denied_assert_403(f"/container/{container_serial}/assign",
                                        {"realm": "realm1", "user": "selfservice"},
                                        self.at_user)
+        self.assert_audit_entry('POST /container/<string:container_serial>/assign', success=0)
         delete_policy("policy")
 
     def test_15_user_remove_user_allowed(self):
@@ -333,6 +363,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         container_serial = self.create_container_for_user()
         self.request_assert_success(f"/container/{container_serial}/unassign", {"realm": "realm1", "user": "root"},
                                     self.at_user)
+        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=1)
         delete_policy("policy")
 
     def test_16_user_remove_user_denied(self):
@@ -341,6 +372,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         container_serial = self.create_container_for_user()
         self.request_denied_assert_403(f"/container/{container_serial}/unassign",
                                        {"realm": "realm1", "user": "selfservice"}, self.at_user)
+        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=0)
         delete_policy("policy")
 
         # User is not allowed to unassign users from a container that is not his own
@@ -350,6 +382,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         assign_user(container_serial, user)
         self.request_denied_assert_403(f"/container/{container_serial}/unassign", {"realm": "realm1", "user": "root"},
                                        self.at_user)
+        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=0)
         delete_policy("policy")
 
     def test_17_user_container_realms_denied(self):
@@ -385,6 +418,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
 
         # Act
         result = self.request_assert_success('/container/', {"container_serial": container_serial}, self.at_user, 'GET')
+        self.assert_audit_entry('GET /container/', success=1)
 
         # Assert
         tokens = result["result"]["value"]["containers"][0]["tokens"]
@@ -402,6 +436,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         # User does not have CONTAINER_LIST rights
         set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_DELETE)
         self.request_denied_assert_403('/container/', {}, self.at_user, 'GET')
+        self.assert_audit_entry('GET /container/', success=0)
 
     def test_20_user_container_register_allowed(self):
         self.setUp_user_realms()
@@ -417,6 +452,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
                    realm=self.realm1)
         data = {"container_serial": container_serial}
         self.request_assert_success('/container/register/initialize', data, self.at_user, 'POST')
+        self.assert_audit_entry('POST /container/register/initialize', success=1)
         delete_policy("policy")
         delete_policy("container_policy")
         delete_policy("another_container_policy")
@@ -430,6 +466,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_CREATE)
         data = {"container_serial": container_serial}
         self.request_denied_assert_403('/container/register/initialize', data, self.at_user, 'POST')
+        self.assert_audit_entry('POST /container/register/initialize', success=0)
         delete_container_by_serial(container_serial)
         delete_policy("policy")
 
@@ -440,6 +477,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_REGISTER)
         data = {"container_serial": another_container_serial}
         self.request_denied_assert_403('/container/register/initialize', data, self.at_user, 'POST')
+        self.assert_audit_entry('POST /container/register/initialize', success=0)
         delete_container_by_serial(another_container_serial)
         delete_policy("policy")
 
@@ -449,6 +487,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         container_serial = self.test_20_user_container_register_allowed()
         set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_UNREGISTER)
         self.request_assert_success(f'/container/register/{container_serial}/terminate', {}, self.at_user, 'POST')
+        self.assert_audit_entry('POST /container/register/<string:container_serial>/terminate', success=1)
         delete_policy("policy")
 
     def test_23_user_container_unregister_denied(self):
@@ -456,6 +495,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         # User does not have CONTAINER_UNREGISTER rights
         set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_CREATE)
         self.request_denied_assert_403(f'/container/register/{container_serial}/terminate', {}, self.at_user, 'POST')
+        self.assert_audit_entry('POST /container/register/<string:container_serial>/terminate', success=0)
         delete_policy("policy")
 
         # User has CONTAINER_UNREGISTER rights but is not the owner of the container
@@ -466,10 +506,12 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
                    action={PolicyAction.CONTAINER_SERVER_URL: "https://test"})
         data = {"container_serial": container_serial}
         self.request_assert_success('/container/register/initialize', data, self.at, 'POST')
+        self.assert_audit_entry('POST /container/register/initialize', success=1)
 
         set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_UNREGISTER)
         self.request_denied_assert_403(f'/container/register/{another_container_serial}/terminate', {}, self.at_user,
                                        'POST')
+        self.assert_audit_entry('POST /container/register/<string:container_serial>/terminate', success=0)
         delete_policy("policy")
         delete_policy("container_policy")
 
@@ -485,6 +527,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
                    action={PolicyAction.CONTAINER_SERVER_URL: "https://test"})
         data = {"container_serial": container_serial, "rollover": True}
         self.request_assert_success('/container/register/initialize', data, self.at_user, 'POST')
+        self.assert_audit_entry('POST /container/register/initialize', success=1)
 
         delete_policy("policy")
         delete_policy("container_policy")
@@ -502,6 +545,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
                    action={PolicyAction.CONTAINER_REGISTER: True})
         data = {"container_serial": container_serial, "rollover": True}
         self.request_denied_assert_403('/container/register/initialize', data, self.at_user, 'POST')
+        self.assert_audit_entry('POST /container/register/initialize', success=0)
         delete_policy("policy")
         delete_policy("container_policy")
 
@@ -510,6 +554,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         data = {"template_options": {}}
         template_name = "test"
         self.request_assert_success(f'/container/generic/template/{template_name}', data, self.at_user, 'POST')
+        self.assert_audit_entry('POST /container/<string:container_type>/template/<string:template_name>', success=1)
         delete_policy("policy")
         return template_name
 
@@ -518,12 +563,14 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_CREATE)
         data = {"template_options": {}}
         self.request_denied_assert_403('/container/generic/template/test', data, self.at_user, 'POST')
+        self.assert_audit_entry('POST /container/<string:container_type>/template/<string:template_name>', success=0)
         delete_policy("policy")
 
     def test_28_user_container_template_delete_allowed(self):
         template_name = self.test_26_user_container_template_create_allowed()
         set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_TEMPLATE_DELETE)
         self.request_assert_success(f'/container/template/{template_name}', {}, self.at_user, 'DELETE')
+        self.assert_audit_entry('DELETE /container/template/<string:template_name>', success=1)
         delete_policy("policy")
 
     def test_29_user_container_template_delete_denied(self):
@@ -531,18 +578,21 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         # User does not have CONTAINER_TEMPLATE_DELETE rights
         set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_CREATE)
         self.request_denied_assert_403(f'/container/template/{template_name}', {}, self.at_user, 'DELETE')
+        self.assert_audit_entry('DELETE /container/template/<string:template_name>', success=0)
         get_template_obj(template_name).delete()
         delete_policy("policy")
 
     def test_30_user_template_list_allowed(self):
         set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_TEMPLATE_LIST)
         self.request_assert_success('/container/templates', {}, self.at_user, 'GET')
+        self.assert_audit_entry('GET /container/templates', success=1)
         delete_policy("policy")
 
     def test_31_user_template_list_denied(self):
         # User does not have CONTAINER_TEMPLATE_LIST rights
         set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_CREATE)
         self.request_denied_assert_403('/container/templates', {}, self.at_user, 'GET')
+        self.assert_audit_entry('GET /container/templates', success=0)
         delete_policy("policy")
 
     def test_32_user_compare_template_container_allowed(self):
@@ -556,20 +606,24 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         set_policy("policy", scope=SCOPE.USER,
                    action={PolicyAction.CONTAINER_TEMPLATE_LIST: True, PolicyAction.CONTAINER_LIST: True})
         self.request_assert_success(f'/container/template/{template_name}/compare', {}, self.at_user, 'GET')
+        self.assert_audit_entry('GET /container/template/<string:template_name>/compare', success=1)
 
         # Test with containers the user might not be allowed to see
         # Create containers with template
         request_params = json.dumps({"type": "smartphone", "template": template_params})
 
         result = self.request_assert_success('/container/init', request_params, self.at, 'POST')
+        self.assert_audit_entry('POST /container/init', success=1)
         container_serial_no_user = result["result"]["value"]["container_serial"]
 
         result = self.request_assert_success('/container/init', request_params, self.at, 'POST')
+        self.assert_audit_entry('POST /container/init', success=1)
         container_serial_user = result["result"]["value"]["container_serial"]
         container_user = find_container_by_serial(container_serial_user)
         container_user.add_user(User("selfservice", self.realm1))
 
         result = self.request_assert_success(f'/container/template/{template_name}/compare', {}, self.at_user, 'GET')
+        self.assert_audit_entry('GET /container/template/<string:template_name>/compare', success=1)
         containers = result["result"]["value"].keys()
         self.assertIn(container_serial_user, containers)
         self.assertNotIn(container_serial_no_user, containers)
@@ -578,12 +632,14 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         # container of the user
         result = self.request_assert_success(f'/container/template/{template_name}/compare',
                                              {"container_serial": container_serial_user}, self.at_user, 'GET')
+        self.assert_audit_entry('GET /container/template/<string:template_name>/compare', success=1)
         containers = result["result"]["value"].keys()
         self.assertIn(container_serial_user, containers)
         self.assertNotIn(container_serial_no_user, containers)
         # container without user
         result = self.request_assert_success(f'/container/template/{template_name}/compare',
                                              {"container_serial": container_serial_no_user}, self.at_user, 'GET')
+        self.assert_audit_entry('GET /container/template/<string:template_name>/compare', success=1)
         containers = result["result"]["value"].keys()
         self.assertNotIn(container_serial_user, containers)
         self.assertNotIn(container_serial_no_user, containers)
@@ -597,6 +653,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         # User does not have CONTAINER_TEMPLATE_LIST rights
         set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_CREATE)
         self.request_denied_assert_403(f'/container/template/{template_name}/compare', {}, self.at_user, 'GET')
+        self.assert_audit_entry('GET /container/template/<string:template_name>/compare', success=0)
         delete_policy("policy")
 
         template = get_template_obj(template_name)
@@ -621,6 +678,7 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         result = self.request_assert_success('/container/init',
                                              request_params,
                                              self.at_user, 'POST')
+        self.assert_audit_entry('POST /container/init', success=1)
         container_serial = result["result"]["value"]["container_serial"]
         container = find_container_by_serial(container_serial)
         tokens = container.get_tokens()

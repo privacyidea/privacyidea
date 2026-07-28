@@ -63,6 +63,7 @@ class ContainerPolicyConditions(APIContainerAuthorization):
         set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_CREATE,
                    conditions=[(ConditionSection.CONTAINER, "type", PrimaryComparators.EQUALS, "generic", True)])
         self.request_assert_error(403, '/container/init', {"type": "generic"}, self.at, 'POST')
+        self.assert_audit_entry('POST /container/init', success=0)
         delete_policy("policy")
 
     def test_02_delete(self):
@@ -72,10 +73,12 @@ class ContainerPolicyConditions(APIContainerAuthorization):
         # Delete smartphone is allowed
         container_serial = init_container({"type": "smartphone"})["container_serial"]
         self.request_assert_success(f"/container/{container_serial}", {}, self.at, "DELETE")
+        self.assert_audit_entry('DELETE /container/<string:container_serial>', success=1)
 
         # Delete yubikey fails
         container_serial = init_container({"type": "yubikey"})["container_serial"]
         self.request_assert_error(403, f"/container/{container_serial}", {}, self.at, "DELETE")
+        self.assert_audit_entry('DELETE /container/<string:container_serial>', success=0)
         delete_policy("policy")
         delete_container_by_serial(container_serial)
 
@@ -101,13 +104,16 @@ class ContainerPolicyConditions(APIContainerAuthorization):
         # Assign user without phone to generic container is allowed
         self.request_assert_success(f"/container/{generic_serial}/assign",
                                     {"user": "selfservice", "realm": self.realm1}, self.at, "POST")
+        self.assert_audit_entry('POST /container/<string:container_serial>/assign', success=1)
 
         # Assign user without phone to smartphone container fails
         self.request_assert_error(403, f"/container/{smph_serial}/assign",
                                   {"user": "selfservice", "realm": self.realm1}, self.at, "POST")
+        self.assert_audit_entry('POST /container/<string:container_serial>/assign', success=0)
         # Assign user with phone to smartphone is allowed
         self.request_assert_success(f"/container/{smph_serial}/assign",
                                     {"user": "cornelius", "realm": self.realm1}, self.at, "POST")
+        self.assert_audit_entry('POST /container/<string:container_serial>/assign', success=1)
 
         # Simulate registration
         smartphone.set_container_info(
@@ -116,10 +122,12 @@ class ContainerPolicyConditions(APIContainerAuthorization):
         # Unassign user from (not registered) generic container is allowed
         self.request_assert_success(f"/container/{generic_serial}/unassign",
                                     {"user": "selfservice", "realm": self.realm1}, self.at, "POST")
+        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=1)
 
         # Unassign user from registered smartphone is not allowed
         self.request_assert_error(403, f"/container/{smph_serial}/unassign",
                                   {"user": "cornelius", "realm": self.realm1}, self.at, "POST")
+        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=0)
 
         delete_policy("assign")
         delete_policy("assign_smph")
@@ -133,8 +141,11 @@ class ContainerPolicyConditions(APIContainerAuthorization):
                    conditions=[(ConditionSection.CONTAINER, "type", PrimaryComparators.EQUALS, "generic", True)])
         container_serial = init_container({"type": "generic"})["container_serial"]
         self.request_assert_error(403, "/container/", {}, self.at, "GET")
+        self.assert_audit_entry('GET /container/', success=0)
         self.request_assert_error(403, "/container/", {"type": "generic"}, self.at, "GET")
+        self.assert_audit_entry('GET /container/', success=0)
         self.request_assert_error(403, "/container/", {"container_serial": container_serial}, self.at, "GET")
+        self.assert_audit_entry('GET /container/', success=0)
 
         delete_policy("policy")
         delete_container_by_serial(container_serial)
@@ -159,27 +170,32 @@ class ContainerPolicyConditions(APIContainerAuthorization):
         # hotp and totp with sha256 are allowed
         self.request_assert_success(f"/container/{container_serial}/add", {"serial": hotp_sha256.get_serial()},
                                     self.at_user, "POST")
+        self.assert_audit_entry('POST /container/<string:container_serial>/add', success=1)
         container = find_container_by_serial(container_serial)
         self.assertSetEqual({hotp_sha256.get_serial()}, {token.get_serial() for token in container.get_tokens()})
         self.request_assert_success(f"/container/{container_serial}/add", {"serial": totp_sha256.get_serial()},
                                     self.at_user, "POST")
+        self.assert_audit_entry('POST /container/<string:container_serial>/add', success=1)
         container = find_container_by_serial(container_serial)
         self.assertSetEqual({hotp_sha256.get_serial(), totp_sha256.get_serial()},
                             {token.get_serial() for token in container.get_tokens()})
         # hotp and totp with sha1 are not allowed
         self.request_assert_error(403, f"/container/{container_serial}/add", {"serial": hotp_sha1.get_serial()},
                                   self.at_user, "POST")
+        self.assert_audit_entry('POST /container/<string:container_serial>/add', success=0)
         container = find_container_by_serial(container_serial)
         self.assertSetEqual({hotp_sha256.get_serial(), totp_sha256.get_serial()},
                             {token.get_serial() for token in container.get_tokens()})
         self.request_assert_error(403, f"/container/{container_serial}/add", {"serial": totp_sha1.get_serial()},
                                   self.at_user, "POST")
+        self.assert_audit_entry('POST /container/<string:container_serial>/add', success=0)
         container = find_container_by_serial(container_serial)
         self.assertSetEqual({hotp_sha256.get_serial(), totp_sha256.get_serial()},
                             {token.get_serial() for token in container.get_tokens()})
         # sms also not allowed
         self.request_assert_error(403, f"/container/{container_serial}/add", {"serial": sms.get_serial()},
                                   self.at_user, "POST")
+        self.assert_audit_entry('POST /container/<string:container_serial>/add', success=0)
         container = find_container_by_serial(container_serial)
         self.assertSetEqual({hotp_sha256.get_serial(), totp_sha256.get_serial()},
                             {token.get_serial() for token in container.get_tokens()})
@@ -195,6 +211,7 @@ class ContainerPolicyConditions(APIContainerAuthorization):
                                                         f"{sms.get_serial()},{totp_sha256.get_serial()},"
                                                         f"{totp_sha1.get_serial()}"},
                                              self.at_user, "POST")
+        self.assert_audit_entry('POST /container/<string:container_serial>/addall', success=0)
         self.assertTrue(result["result"]["value"][hotp_sha256.get_serial()])
         self.assertTrue(result["result"]["value"][totp_sha256.get_serial()])
         self.assertFalse(result["result"]["value"][hotp_sha1.get_serial()])
@@ -219,6 +236,7 @@ class ContainerPolicyConditions(APIContainerAuthorization):
         # Add token of a user without phone number to a container with phone number fails
         self.request_assert_error(403, f"/container/{container_serial}/add", {"serial": hotp_sha1.get_serial()},
                                   self.at, "POST")
+        self.assert_audit_entry('POST /container/<string:container_serial>/add', success=0)
         container = find_container_by_serial(container_serial)
         self.assertSetEqual({hotp_sha256.get_serial(), totp_sha256.get_serial()},
                             {token.get_serial() for token in container.get_tokens()})
@@ -228,6 +246,7 @@ class ContainerPolicyConditions(APIContainerAuthorization):
         hotp_sha1.add_user(cornelius)
         self.request_assert_success(f"/container/{container_serial}/add", {"serial": hotp_sha1.get_serial()},
                                     self.at, "POST")
+        self.assert_audit_entry('POST /container/<string:container_serial>/add', success=1)
         container = find_container_by_serial(container_serial)
         self.assertSetEqual({hotp_sha256.get_serial(), totp_sha256.get_serial(), hotp_sha1.get_serial()},
                             {token.get_serial() for token in container.get_tokens()})
@@ -250,10 +269,12 @@ class ContainerPolicyConditions(APIContainerAuthorization):
         # set realms for active container fails
         self.request_assert_error(403, f"/container/{container_serial}/realms", {"realms": self.realm1}, self.at,
                                   "POST")
+        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=0)
 
         # Set realms for disabled container is allowed
         set_container_states(container_serial, [ContainerStates.DISABLED.value])
         self.request_assert_success(f"/container/{container_serial}/realms", {"realms": self.realm1}, self.at, "POST")
+        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=1)
 
         delete_policy("policy")
         delete_container_by_serial(container_serial)
@@ -282,12 +303,14 @@ class ContainerPolicyConditions(APIContainerAuthorization):
         container.add_states([ContainerStates.LOST.value])
         self.request_assert_error(403, "container/register/initialize", {"container_serial": container_serial},
                                   self.at_user, "POST")
+        self.assert_audit_entry('POST /container/register/initialize', success=0)
 
         # Registration allowed
         container.set_states([ContainerStates.ACTIVE.value])
         # external user
         result = self.request_assert_success("container/register/initialize", {"container_serial": container_serial},
                                              self.at_user, "POST")
+        self.assert_audit_entry('POST /container/register/initialize', success=1)
         self.assertEqual("https://pi-external.net/", result["result"]["value"]["server_url"])
         # internal user
         unregister(container)
@@ -295,6 +318,7 @@ class ContainerPolicyConditions(APIContainerAuthorization):
         container.add_user(User("cornelius", self.realm1))
         result = self.request_assert_success("container/register/initialize", {"container_serial": container_serial},
                                              self.at, "POST")
+        self.assert_audit_entry('POST /container/register/initialize', success=1)
         self.assertEqual("https://pi.net/", result["result"]["value"]["server_url"])
 
         delete_policy("policy")
@@ -322,17 +346,20 @@ class ContainerPolicyConditions(APIContainerAuthorization):
         # Rollover fails
         self.request_assert_error(403, "container/register/initialize",
                                   {"container_serial": container_serial, "rollover": True}, self.at, "POST")
+        self.assert_audit_entry('POST /container/register/initialize', success=0)
 
         # Change user: Rollover still fails
         container.remove_user(User("selfservice", self.realm1))
         container.add_user(User("cornelius", self.realm1))
         self.request_assert_error(403, "container/register/initialize",
                                   {"container_serial": container_serial, "rollover": True}, self.at, "POST")
+        self.assert_audit_entry('POST /container/register/initialize', success=0)
 
         # Rollover success
         container.set_states([ContainerStates.LOST.value])
         data = {"container_serial": container_serial, "rollover": True}
         self.request_assert_success("container/register/initialize", data, self.at, "POST")
+        self.assert_audit_entry('POST /container/register/initialize', success=1)
 
         delete_policy("policy")
         delete_policy("registration")
@@ -351,6 +378,7 @@ class ContainerPolicyConditions(APIContainerAuthorization):
         # Register init
         result = self.request_assert_success("container/register/initialize", {"container_serial": container_serial},
                                              self.at, "POST")
+        self.assert_audit_entry('POST /container/register/initialize', success=1)
         init_response_data = result["result"]["value"]
 
         # Finalize
@@ -360,6 +388,7 @@ class ContainerPolicyConditions(APIContainerAuthorization):
         result = self.request_assert_success("container/register/finalize",
                                              params,
                                              None, 'POST')
+        self.assert_audit_entry('POST /container/register/finalize', success=1)
         self.assertTrue(result["result"]["value"]["policies"][PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER])
 
         # --- container with template: initially add tokens not allowed ---
@@ -369,6 +398,7 @@ class ContainerPolicyConditions(APIContainerAuthorization):
         # Register init
         result = self.request_assert_success("container/register/initialize", {"container_serial": container_serial},
                                              self.at, "POST")
+        self.assert_audit_entry('POST /container/register/initialize', success=1)
         init_response_data = result["result"]["value"]
 
         # Finalize
@@ -376,6 +406,7 @@ class ContainerPolicyConditions(APIContainerAuthorization):
         params = mock_smph.register_finalize(init_response_data["nonce"], init_response_data["time_stamp"],
                                              "https://pi.net/container/register/finalize", container_serial)
         result = self.request_assert_success("container/register/finalize", params, None, "POST")
+        self.assert_audit_entry('POST /container/register/finalize', success=1)
         self.assertFalse(result["result"]["value"]["policies"][PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER])
 
         delete_policy("registration")
@@ -395,20 +426,24 @@ class ContainerPolicyConditions(APIContainerAuthorization):
         # Registration
         result = self.request_assert_success("container/register/initialize", {"container_serial": container_serial},
                                              self.at, "POST")
+        self.assert_audit_entry('POST /container/register/initialize', success=1)
         init_response_data = result["result"]["value"]
         # Finalize
         mock_smph = MockSmartphone()
         params = mock_smph.register_finalize(init_response_data["nonce"], init_response_data["time_stamp"],
                                              "https://pi.net/container/register/finalize", container_serial)
         self.request_assert_success("container/register/finalize", params, None, "POST")
+        self.assert_audit_entry('POST /container/register/finalize', success=1)
 
         # Synchronize with external user
         scope = "https://pi.net/container/synchronize"
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": mock_smph.container_serial}, None,
                                              "POST")
+        self.assert_audit_entry('POST /container/challenge', success=1)
         params = mock_smph.synchronize(result["result"]["value"], scope)
         result = self.request_assert_success("container/synchronize", params, None, "POST")
+        self.assert_audit_entry('POST /container/synchronize', success=1)
         self.assertFalse(result["result"]["value"]["policies"][PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER])
 
         # Synchronize with internal user
@@ -418,8 +453,10 @@ class ContainerPolicyConditions(APIContainerAuthorization):
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": mock_smph.container_serial}, None,
                                              "POST")
+        self.assert_audit_entry('POST /container/challenge', success=1)
         params = mock_smph.synchronize(result["result"]["value"], scope)
         result = self.request_assert_success("container/synchronize", params, None, "POST")
+        self.assert_audit_entry('POST /container/synchronize', success=1)
         self.assertTrue(result["result"]["value"]["policies"][PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER])
 
         delete_policy("registration")
@@ -442,11 +479,13 @@ class ContainerPolicyConditions(APIContainerAuthorization):
         # Registration
         result = self.request_assert_success("container/register/initialize", {"container_serial": container_serial},
                                              self.at, "POST")
+        self.assert_audit_entry('POST /container/register/initialize', success=1)
         init_response_data = result["result"]["value"]
         mock_smph = MockSmartphone()
         params = mock_smph.register_finalize(init_response_data["nonce"], init_response_data["time_stamp"],
                                              "https://pi.net/container/register/finalize", container_serial)
         self.request_assert_success("container/register/finalize", params, None, "POST")
+        self.assert_audit_entry('POST /container/register/finalize', success=1)
 
         container.set_states([ContainerStates.LOST.value])
 
@@ -455,11 +494,13 @@ class ContainerPolicyConditions(APIContainerAuthorization):
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": container_serial}, None,
                                              "POST")
+        self.assert_audit_entry('POST /container/challenge', success=1)
         challenge_data = result["result"]["value"]
         rollover_scope = "https://pi.net/container/rollover"
         params = mock_smph.register_finalize(challenge_data["nonce"], challenge_data["time_stamp"],
                                              rollover_scope, mock_smph.container_serial)
         self.request_assert_error(403, "container/rollover", params, None, "POST", try_unspecific=False)
+        self.assert_audit_entry('POST /container/rollover', success=0)
 
         # Client rollover: User not allowed
         container.set_states([ContainerStates.ACTIVE.value])
@@ -467,12 +508,14 @@ class ContainerPolicyConditions(APIContainerAuthorization):
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": container_serial}, None,
                                              "POST")
+        self.assert_audit_entry('POST /container/challenge', success=1)
         challenge_data = result["result"]["value"]
         rollover_scope = "https://pi.net/container/rollover"
         params = mock_smph.register_finalize(challenge_data["nonce"], challenge_data["time_stamp"],
                                              rollover_scope, mock_smph.container_serial)
         self.request_assert_error(403, "container/rollover", params, None, "POST",
                                   try_unspecific=False)
+        self.assert_audit_entry('POST /container/rollover', success=0)
 
         # Client rollover: State not allowed
         container.remove_user(User("selfservice", self.realm1))
@@ -482,12 +525,14 @@ class ContainerPolicyConditions(APIContainerAuthorization):
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": container_serial}, None,
                                              "POST")
+        self.assert_audit_entry('POST /container/challenge', success=1)
         challenge_data = result["result"]["value"]
         rollover_scope = "https://pi.net/container/rollover"
         params = mock_smph.register_finalize(challenge_data["nonce"], challenge_data["time_stamp"],
                                              rollover_scope, mock_smph.container_serial)
         self.request_assert_error(403, "container/rollover", params, None, "POST",
                                   try_unspecific=False)
+        self.assert_audit_entry('POST /container/rollover', success=0)
 
         # Client rollover: Success
         container.set_states([ContainerStates.ACTIVE.value])
@@ -495,11 +540,13 @@ class ContainerPolicyConditions(APIContainerAuthorization):
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": container_serial}, None,
                                              "POST")
+        self.assert_audit_entry('POST /container/challenge', success=1)
         challenge_data = result["result"]["value"]
         rollover_scope = "https://pi.net/container/rollover"
         params = mock_smph.register_finalize(challenge_data["nonce"], challenge_data["time_stamp"],
                                              rollover_scope, mock_smph.container_serial)
         self.request_assert_success("container/rollover", params, None, "POST")
+        self.assert_audit_entry('POST /container/rollover', success=1)
 
         delete_policy("registration")
         delete_policy("rollover")
