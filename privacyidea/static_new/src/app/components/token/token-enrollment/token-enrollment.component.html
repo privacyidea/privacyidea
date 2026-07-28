@@ -22,7 +22,11 @@
   aria-label="Token Enrollment"
   class="token-enrollment-container"
   i18n-aria-label>
-  <h3 class="margin-8" i18n>Enroll a New Token</h3>
+  <h3
+    class="margin-8"
+    i18n>
+    Enroll a New Token
+  </h3>
   <form (submit)="$event.preventDefault(); enrollToken()">
     <app-token-enrollment-type-selector
       [canReopenDialog]="canReopenEnrollmentDialog()"
@@ -35,8 +39,7 @@
       </div>
       <h4 i18n>Token Configuration</h4>
       <app-enroll-token-type-switch [tokenTypeKey]="tokenService.selectedTokenType().key" />
-      <mat-form-field
-        class="input-width-xl margin-top-16">
+      <mat-form-field class="input-width-xl margin-top-16">
         <mat-label i18n>Description</mat-label>
         <textarea
           [formField]="descriptionForm"
@@ -44,18 +47,12 @@
           matInput
           placeholder="Enter description"
           rows="3"></textarea>
-        <mat-hint align="end"
-          >{{ description().length }} / {{ tokenService.maxDescriptionLength }}
-        </mat-hint>
+        <mat-hint align="end">{{ description().length }} / {{ tokenService.maxDescriptionLength }} </mat-hint>
         @if (descriptionForm().errors().some(e => e.kind === 'required') && descriptionForm().touched()) {
-          <mat-error i18n>
-            Description is <strong>required</strong>.
-          </mat-error>
+          <mat-error i18n> Description is <strong>required</strong>. </mat-error>
         }
         @if (descriptionForm().errors().some(e => e.kind === 'maxlength') && descriptionForm().touched()) {
-          <mat-error i18n>
-            Description must not exceed {{ tokenService.maxDescriptionLength }} characters.
-          </mat-error>
+          <mat-error i18n> Description must not exceed {{ tokenService.maxDescriptionLength }} characters. </mat-error>
         }
       </mat-form-field>
       <div class="gap-16">
