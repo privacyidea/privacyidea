@@ -927,17 +927,15 @@ def _log_authentication_event(context):
     request_txn = request.all_data.get("transaction_id") or request.all_data.get("state")
     # The log-only TXN (push_wait success) stands in for the challenge TXN that the response does not carry.
     details_txn = context["details"].get("transaction_id") or context.get(LOG_TRANSACTION_ID_KEY)
-    # Prefer the newly-created challenge TXN (details) over the answered-challenge TXN (request). When both exist
-    # and differ, the request TXN is the "previous" — the challenge that was just answered.
+    # Prefer the newly-created challenge TXN (details) over the answered-challenge TXN (request); the rows of one
+    # attempt share an attempt_id regardless, so the answered challenge is still correlated via that.
     logged_txn = details_txn or request_txn
-    previous_txn = request_txn if (details_txn and request_txn and details_txn != request_txn) else None
     g.auth_log_event_id = log_authentication(
         context[AUTH_EVENT_TYPE_KEY],
         request,
         user=context["user"],
         serial=",".join(context["serial_list"]) or None,
         transaction_id=logged_txn,
-        previous_transaction_id=previous_txn,
     )
 
 

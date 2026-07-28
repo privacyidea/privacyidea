@@ -59,13 +59,14 @@ def _seed_ip_spray(user: "User", event_type: AuthEventType, source_ip: str, n_us
                    timestamp: datetime | None = None):
     """Seed *n_users* distinct users failing from *source_ip* (the spraying shape a
     source_ip BLOCK_IP policy keys on: one IP hitting many accounts). The users are
-    synthetic (uid ``spray0``..) in *user*'s resolver/realm - only the distinct
-    ``(resolver, uid, realm)`` count matters, they need not resolve."""
+    synthetic (uid/username ``spray0``..) in *user*'s resolver/realm - only the distinct
+    ``(username, realm, resolver)`` count matters, they need not resolve; the distinct
+    ``username`` per user mirrors the resolved row a real request writes."""
     timestamp = timestamp if timestamp is not None else utc_now()
     for i in range(n_users):
         db.session.add(AuthenticationLog(
             event_type=str(event_type), resolver=user.resolver, uid=f"spray{i}",
-            realm=user.realm, source_ip=source_ip, timestamp=timestamp))
+            realm=user.realm, username=f"spray{i}", source_ip=source_ip, timestamp=timestamp))
     db.session.commit()
 
 

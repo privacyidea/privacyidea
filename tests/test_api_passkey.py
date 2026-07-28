@@ -1025,8 +1025,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         auth_log_entries = assert_authentication_log([AuthEventType.ENROLLMENT_TRIGGERED],
                                                      transaction_id=enroll_transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.ENROLLMENT_TRIGGERED], user=self.user,
-                                        serials={evm_serial}, transaction_id=enroll_transaction_id,
-                                        previous_transaction_id=passkey_transaction_id)
+                                        serials={evm_serial}, transaction_id=enroll_transaction_id)
 
         # Cancel the enrollment
         with self.app.test_request_context('/validate/check', method='POST',
@@ -1092,8 +1091,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         auth_log_entries = assert_authentication_log([AuthEventType.ENROLLMENT_TRIGGERED],
                                                      transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.ENROLLMENT_TRIGGERED], user=self.user,
-                                        serials={evm_serial}, transaction_id=transaction_id,
-                                        previous_transaction_id=passkey_challenge["transaction_id"])
+                                        serials={evm_serial}, transaction_id=transaction_id)
 
         # Cancel the enrollment, will work and return a successful authentication
         with self.app.test_request_context('/validate/check', method='POST',
@@ -1154,8 +1152,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         auth_log_entries = assert_authentication_log([AuthEventType.ENROLLMENT_TRIGGERED],
                                                      transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.ENROLLMENT_TRIGGERED], user=self.user,
-                                        serials={evm_serial}, transaction_id=transaction_id,
-                                        previous_transaction_id=passkey_challenge["transaction_id"])
+                                        serials={evm_serial}, transaction_id=transaction_id)
 
         # Try to cancel the enrollment, will result in a REJECT
         with self.app.test_request_context('/validate/check', method='POST',
