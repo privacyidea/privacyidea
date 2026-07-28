@@ -242,16 +242,18 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
     () => (this.targetsResource.value()?.result?.value ?? {}) as Record<LockoutTarget, TargetConstraints>
   );
 
-  readonly actionsByTarget: Signal<Record<LockoutTarget, LockoutActionType[]>> = computed(() =>
-    Object.fromEntries(
-      Object.entries(this.targetConstraints()).map(([target, entry]) => [target, entry.actions])
-    ) as Record<LockoutTarget, LockoutActionType[]>
+  readonly actionsByTarget: Signal<Record<LockoutTarget, LockoutActionType[]>> = computed(
+    () =>
+      Object.fromEntries(
+        Object.entries(this.targetConstraints()).map(([target, entry]) => [target, entry.actions])
+      ) as Record<LockoutTarget, LockoutActionType[]>
   );
 
-  readonly countModesByTarget: Signal<Record<LockoutTarget, CountMode[]>> = computed(() =>
-    Object.fromEntries(
-      Object.entries(this.targetConstraints()).map(([target, entry]) => [target, entry.count_modes])
-    ) as Record<LockoutTarget, CountMode[]>
+  readonly countModesByTarget: Signal<Record<LockoutTarget, CountMode[]>> = computed(
+    () =>
+      Object.fromEntries(
+        Object.entries(this.targetConstraints()).map(([target, entry]) => [target, entry.count_modes])
+      ) as Record<LockoutTarget, CountMode[]>
   );
 
   readonly targets: Signal<LockoutTarget[]> = computed(() => Object.keys(this.targetConstraints()) as LockoutTarget[]);
@@ -277,8 +279,6 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
     return this.actionsByTarget()[target] ?? this.actionTypes();
   }
 
-  // Count modes supported by a target (sorted; the UI treats the first as the default). Empty until /targets loads;
-  // the editor keeps the current mode in that case so its select is never blank on first paint.
   countModesForTarget(target: LockoutTarget): CountMode[] {
     return this.countModesByTarget()[target] ?? [];
   }
