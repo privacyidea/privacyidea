@@ -42,6 +42,14 @@
             placeholder="Example query: 'type: generic'" />
         </app-clearable-input>
       </mat-form-field>
+      <button
+        [matMenuTriggerFor]="advancedFilterMenu"
+        class="margin-left-8"
+        i18n-matTooltip
+        mat-icon-button
+        matTooltip="More Filter">
+        <mat-icon>filter_list</mat-icon>
+      </button>
       <mat-paginator
         (page)="onPageEvent($event)"
         [length]="total()"
@@ -296,6 +304,19 @@
     <div i18n>You do not have the permission to view the container list.</div>
   }
 </div>
+
+<mat-menu
+  #advancedFilterMenu="matMenu"
+  class="button-width-m">
+  @for (keyword of advancedApiFilter; track keyword) {
+    <button
+      (click)="onKeywordClick(keyword)"
+      mat-menu-item>
+      <mat-icon class="margin-right-16">{{ getFilterIconName(keyword) }}</mat-icon>
+      {{ keyword }}
+    </button>
+  }
+</mat-menu>
 
 <mat-menu #statesMenu="matMenu">
   <ng-template
