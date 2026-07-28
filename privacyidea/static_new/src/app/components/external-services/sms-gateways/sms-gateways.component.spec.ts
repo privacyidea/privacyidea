@@ -102,12 +102,29 @@ describe("SmsGatewaysComponent", () => {
     expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMS_DETAILS + gateway.name);
   });
 
-  it("should delete gateway after confirmation", () => {
+  it("should toggle row and all-row selection", () => {
     const gateway = smsGatewayServiceMock.smsGateways()[0];
-    component.deleteGateway(gateway);
+    component.toggleRow(gateway);
+    expect(component.isSelected(gateway)).toBe(true);
+    component.toggleAllRows();
+    expect(component.isAllSelected()).toBe(true);
+    component.toggleAllRows();
+    expect(component.selection().length).toBe(0);
+  });
+
+  it("should delete the selected gateways after confirmation", () => {
+    const gateway = smsGatewayServiceMock.smsGateways()[0];
+    component.selection.set([gateway]);
+    component.deleteSelected();
     expect(dialogServiceMock.openDialog).toHaveBeenCalled();
     confirmClosed.next("discard");
     confirmClosed.complete();
     expect(smsGatewayServiceMock.deleteSmsGateway).toHaveBeenCalledWith("gw1");
+    expect(component.selection().length).toBe(0);
+  });
+
+  it("should not open the dialog when nothing is selected", () => {
+    component.deleteSelected();
+    expect(dialogServiceMock.openDialog).not.toHaveBeenCalled();
   });
 });
