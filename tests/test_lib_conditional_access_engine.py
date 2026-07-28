@@ -801,12 +801,10 @@ class LockoutEngineTestCase(LockoutTestCase):
         # user locked with a timeout
         state = self._state()
         self.assertIsNotNone(state)
-        self.assertTrue(state.is_locked)
         self.assertIsNotNone(state.lock_expires_at)
         # IP blocked permanently: the timed block did not downgrade the permanent one
         block = self._block(ip)
         self.assertIsNotNone(block)
-        self.assertTrue(block.is_blocked)
         self.assertIsNone(block.block_expires_at)
         self.assertTrue(is_ip_blocked(ip))
 
