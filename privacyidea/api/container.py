@@ -795,15 +795,19 @@ def delete_container_info_entry(container_serial, key):
     :param container_serial: path component, the container serial.
     :param key: path component, the info key to delete.
     :status 200: ``True`` on success in ``result.value``.
-    :status 403: the key is reserved as ``PI_INTERNAL``.
+    :status 400: the key is reserved as ``PI_INTERNAL``.
     """
     res = delete_container_info(container_serial, key)
+    success = res[key]
 
     # Audit log
     g.audit_object.log({"container_serial": container_serial,
                         "key": key,
-                        "success": res[key]})
-    return send_result(res[key])
+                        "success": success})
+
+    if not success:
+        raise ParameterError("The key is reserved for internal use and cannot be deleted.")
+    return send_result(success)
 
 
 @container_blueprint.route('register/initialize', methods=['POST'])
