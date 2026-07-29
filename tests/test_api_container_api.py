@@ -925,9 +925,10 @@ class APIContainer(APIContainerTest):
                                                                 info_type=PI_INTERNAL)])
 
         # Try to delete internal key
-        result = self.request_assert_error(400, f"/container/{container_serial}/info/delete/internal_test",
-                                           {}, self.at, "DELETE", 905,
-                                           "ERR905: The key is reserved for internal use and cannot be deleted.")
+        result = self.request_assert_error(403, f"/container/{container_serial}/info/delete/internal_test",
+                                           {}, self.at, "DELETE", 303,
+                                           "The key 'internal_test' is reserved for internal use "
+                                           "and cannot be deleted.")
         self.assert_audit_entry('DELETE /container/<string:container_serial>/info/delete/<key>', success=0)
 
         # Deleting a non-existing key is a no-op that returns False, not an internal-key error

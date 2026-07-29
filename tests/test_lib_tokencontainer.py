@@ -568,11 +568,11 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertEqual(1, len(container_info))
         self.assertIn("creation_date", container_info)
 
-        # Try to delete internal info key
+        # Deleting a specific reserved internal key is refused
         container.update_container_info(
             [TokenContainerInfoData(key="public_server_key", value="123456789", info_type=PI_INTERNAL)])
-        res = delete_container_info(container_serial, "public_server_key")
-        self.assertDictEqual({"public_server_key": False}, res)
+        self.assertRaises(PolicyError, delete_container_info, container_serial, "public_server_key")
+        # Bulk deletion keeps internal keys silently instead of raising
         res = delete_container_info(container_serial)
         self.assertDictEqual({"public_server_key": False, "creation_date": False}, res)
 

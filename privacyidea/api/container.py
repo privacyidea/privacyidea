@@ -796,8 +796,10 @@ def delete_container_info_entry(container_serial, key):
     :param key: path component, the info key to delete.
     :status 200: ``True`` if the entry was deleted, ``False`` if the key does
         not exist, in ``result.value``.
-    :status 400: the key is reserved as ``PI_INTERNAL``.
+    :status 403: the key is reserved as ``PI_INTERNAL``.
     """
+    # delete_container_info raises a PolicyError (403) if the key is reserved for internal use, and
+    # returns False for a key that does not exist (a no-op), so no special-casing is needed here.
     res = delete_container_info(container_serial, key)
     success = res[key]
 
@@ -806,12 +808,6 @@ def delete_container_info_entry(container_serial, key):
                         "key": key,
                         "success": success})
 
-    # delete_container_info returns False both for a reserved internal key and for a key that does
-    # not exist. Only the reserved-key case is an error; a missing key is a no-op returning False.
-    if not success:
-        container = find_container_by_serial(container_serial)
-        if key in container.get_internal_info_keys():
-            raise ParameterError("The key is reserved for internal use and cannot be deleted.")
     return send_result(success)
 
 
