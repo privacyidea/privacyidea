@@ -25,6 +25,7 @@ export class FilterValueGeneric<T> {
   readonly hiddenFilterMap: Map<string, FilterOption<T>>;
   readonly allFilters: FilterOption<T>[];
   readonly availableFilters: Map<string, FilterOption<T>>;
+  private readonly searchableColumns: FilterOption<T>[];
 
   // --- Constructor ---
   constructor(
@@ -51,6 +52,9 @@ export class FilterValueGeneric<T> {
     this.filterMap = args.filterMap ?? new Map<string, FilterOption<T>>();
     this.hiddenFilterMap = args.hiddenFilterMap ?? new Map<string, FilterOption<T>>();
     this.allFilters = [...this.filterMap.values(), ...this.hiddenFilterMap.values()];
+    // The set of columns that opt into free-text search never changes for a given availableFilters,
+    // so compute it once here instead of rebuilding it for every item and every free-text term.
+    this.searchableColumns = Array.from(this.availableFilters.values()).filter((option) => option.globalMatches);
   }
 
   // --- Getters / State ---
@@ -122,9 +126,8 @@ export class FilterValueGeneric<T> {
    */
   private matchesFreeText(item: T, term: string): boolean {
     const normalized = term.toLowerCase();
-    const searchable = Array.from(this.availableFilters.values()).filter((option) => option.globalMatches);
-    if (searchable.length === 0) return true;
-    return searchable.some((option) => option.globalMatches!(item, normalized));
+    if (this.searchableColumns.length === 0) return true;
+    return this.searchableColumns.some((option) => option.globalMatches!(item, normalized));
   }
 
   public filterItems(unfiltered: T[]): T[] {
@@ -214,11 +217,17 @@ export class FilterValueGeneric<T> {
   }
 
   public setByString(rawValue: string): FilterValueGeneric<T> {
-    const newMap = parseToMap(rawValue.trim().toLocaleLowerCase());
+    const text = rawValue.trim().toLocaleLowerCase();
+    const tokens = parseFilterTokens(text);
+    // Keywords and free text share this instance's key space, so shadowed bare words are dropped.
+    const freeTextTerms = new Set(keywordlessTermsNotShadowedByKeyword(text));
     let instance: FilterValueGeneric<T> = this._copyWith({ filterMap: new Map() });
-    newMap.forEach((value, key) => {
-      // A null value marks a standalone word (no `key:`): add it as free text, not a keyword filter.
-      instance = value === null ? instance.addFreeText(key) : instance.setValueOfKey(key, value);
+    tokens.forEach(({ key, value }) => {
+      if (value === null) {
+        if (freeTextTerms.has(key)) instance = instance.addFreeText(key);
+      } else {
+        instance = instance.setValueOfKey(key, value);
+      }
     });
     return instance;
   }
@@ -250,8 +259,43 @@ const RE_QUOTED_DBL = /^"((?:\\.|[^"\\])*)"/;
 const RE_QUOTED_SNG = /^'((?:\\.|[^'\\])*)'/;
 const RE_UNQUOTED = /^((?:(?!\s+[A-Za-z0-9_]+\s*:)[^ ])+)/;
 
-function parseToMap(text: string): Map<string, string | null> {
-  const map = new Map<string, string | null>();
+/**
+ * A single segment of a filter string: a `key: value` keyword filter, or a standalone free-text word
+ * (marked by a null value). Tokens are returned in input order and never deduplicated, so a keyword
+ * and a same-named free-text word are both preserved for the caller to reconcile.
+ */
+export interface FilterToken {
+  key: string;
+  value: string | null;
+}
+
+/**
+ * Every standalone word in `text`: tokens entered without a `key:` prefix, in input order.
+ *
+ * Use this where keyword filters and free-text terms are kept apart, e.g. keywords sent to the
+ * server and free text applied client-side on its own filter instance. Callers that keep both in
+ * one key space want {@link keywordlessTermsNotShadowedByKeyword} instead.
+ */
+export function keywordlessTerms(text: string): string[] {
+  return parseFilterTokens(text)
+    .filter((token) => token.value === null)
+    .map((token) => token.key);
+}
+
+/**
+ * Like {@link keywordlessTerms}, minus words whose key also appears as a `key: value` keyword.
+ *
+ * Use this where keywords and free text share one key space: the keyword filter is the more
+ * specific one, so the bare word is dropped rather than overwriting it.
+ */
+export function keywordlessTermsNotShadowedByKeyword(text: string): string[] {
+  const tokens = parseFilterTokens(text);
+  const keywordKeys = new Set(tokens.filter((token) => token.value !== null).map((token) => token.key));
+  return tokens.filter((token) => token.value === null && !keywordKeys.has(token.key)).map((token) => token.key);
+}
+
+export function parseFilterTokens(text: string): FilterToken[] {
+  const tokens: FilterToken[] = [];
   let remaining = text.trim();
 
   while (remaining.length > 0) {
@@ -265,7 +309,7 @@ function parseToMap(text: string): Map<string, string | null> {
 
     const colonMatch = tempRemaining.match(RE_COLON_WHITESPACE);
     if (!colonMatch) {
-      map.set(key, null);
+      tokens.push({ key, value: null });
       remaining = tempRemaining.trim();
       continue;
     }
@@ -306,7 +350,7 @@ function parseToMap(text: string): Map<string, string | null> {
         }
       }
     }
-    map.set(key, value);
+    tokens.push({ key, value });
   }
-  return map;
+  return tokens;
 }
