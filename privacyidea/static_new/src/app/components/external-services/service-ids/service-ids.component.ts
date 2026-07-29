@@ -18,6 +18,7 @@
  **/
 import { Component, computed, ElementRef, inject, signal, ViewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
+import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ServiceId, ServiceIdService, ServiceIdServiceInterface } from "@services/service-id/service-id.service";
@@ -45,6 +46,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
     MatSortModule,
     MatIconModule,
     MatButtonModule,
+    MatCheckboxModule,
     MatTooltipModule,
     ScrollToTopDirective,
     MatFormField,
@@ -72,7 +74,9 @@ export class ServiceIdsComponent {
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
-  displayedColumns: string[] = ["id", "servicename", "description", "actions"];
+  displayedColumns: string[] = ["select", "id", "servicename", "description"];
+
+  selection = signal<ServiceId[]>([]);
   serviceIdDataSource = computed(() => {
     const services = this.serviceIdService.serviceIds();
     const dataSource = new MatTableDataSource(services);
@@ -89,24 +93,57 @@ export class ServiceIdsComponent {
     this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_DETAILS + serviceId.servicename);
   }
 
-  deleteServiceId(serviceId: ServiceId): void {
+
+  isAllSelected(): boolean {
+    const rows = this.serviceIdDataSource().data;
+    return rows.length > 0 && this.selection().length === rows.length;
+  }
+
+  toggleAllRows(): void {
+    if (this.isAllSelected()) {
+      this.selection.set([]);
+    } else {
+      this.selection.set([...this.serviceIdDataSource().data]);
+    }
+  }
+
+  toggleRow(row: ServiceId): void {
+    const current = this.selection();
+    if (current.includes(row)) {
+      this.selection.set(current.filter((selected) => selected !== row));
+    } else {
+      this.selection.set([...current, row]);
+    }
+  }
+
+  isSelected(row: ServiceId): boolean {
+    return this.selection().includes(row);
+  }
+
+  deleteSelected(): void {
+    const selected = this.selection();
+    if (selected.length === 0) {
+      return;
+    }
     this.dialogService
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Delete Service ID`,
-          items: [serviceId.servicename],
+          title: $localize`Delete Service IDs`,
+          items: selected.map((row) => row.servicename),
           itemType: "service-id",
           confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
-      .subscribe({
-        next: (result) => {
-          if (result) this.serviceIdService.deleteServiceId(serviceId.servicename);
+      .subscribe((result) => {
+        if (result) {
+          selected.forEach((row) => this.serviceIdService.deleteServiceId(row.servicename));
+          this.selection.set([]);
         }
       });
   }
+
 
   onFilterInput(value: string): void {
     const trimmed = (value ?? "").trim();

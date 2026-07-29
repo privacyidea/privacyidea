@@ -155,6 +155,17 @@ class MyTestCase(unittest.TestCase):
         self.app_context.g.serial = None
         self.app_context.g.policies = {}
 
+    def reset_flask_g(self):
+        """Remove everything from ``g``, so the next request starts from the state a real one would see.
+
+        The app context is pushed once per test class, hence ``g`` outlives the individual requests a test
+        dispatches. Leftovers let a blueprint that never initializes its own request-local state pass its
+        tests on values another request left behind. Call this before dispatching a request, and between
+        requests if a test dispatches several.
+        """
+        for key in list(iter(self.app_context.g)):
+            self.app_context.g.pop(key)
+
     def tearDown(self):
         # Rollback uncommitted changes to the DB and close the session to
         # avoid breaking following tests due to unfinished transactions
