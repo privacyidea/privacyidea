@@ -572,7 +572,8 @@ class APIContainer(APIContainerTest):
         # Set info
         self.request_assert_success(f'/container/{container_serial}/info/key1',
                                     {"value": "value1"}, self.at, 'POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/info/<key>', success=1)
+        self.assert_audit_entry('POST /container/<string:container_serial>/info/<key>', success=1,
+                                container_serial=container_serial, action_detail="key=key1")
 
         delete_container_by_serial(container_serial)
 
