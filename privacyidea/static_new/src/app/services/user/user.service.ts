@@ -360,16 +360,13 @@ export class UserService implements UserServiceInterface {
       queryUser: this.contentService.queryParams()["user"] ?? ""
     }),
     computation: (source, previous) => {
-      if (source.queryUser) {
-        if (source.routeUrl !== previous?.source.routeUrl) {
-          return source.queryUser;
-        }
-        if (previous !== undefined) {
-          return previous.value;
-        }
-        return source.queryUser;
+      if (!source.queryUser) {
+        return "";
       }
-      return "";
+      // A navigation seeds the selection from the query parameter, while a selection made afterwards
+      // on the same route wins over it.
+      const sameRoute = previous !== undefined && previous.source.routeUrl === source.routeUrl;
+      return sameRoute ? previous.value : source.queryUser;
     }
   });
 

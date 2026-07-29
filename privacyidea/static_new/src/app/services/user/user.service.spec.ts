@@ -18,14 +18,16 @@
  **/
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
+import { provideLocationMocks } from "@angular/common/testing";
 import { TestBed } from "@angular/core/testing";
+import { provideRouter, Router } from "@angular/router";
 import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
 import { RealmService } from "@services/realm/realm.service";
 import { TokenDetails, Tokens, TokenService } from "@services/token/token.service";
 import { EditUserData, UserAttributePolicy, UserData, UserService } from "./user.service";
 
-import { signal } from "@angular/core";
+import { Component, signal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { ROUTE_PATHS } from "@app/route_paths";
@@ -171,6 +173,36 @@ describe("UserService", () => {
     contentServiceMock.queryParams.set({});
     contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS);
     expect(userService.selectionUsernameFilter()).toBe("");
+  });
+
+  it("ignores a query realm that is not in the realms the user may see", () => {
+    realmService.realmOptions.set(["realm1", "defrealm"]);
+    contentServiceMock.queryParams.set({ realm: "hiddenRealm", user: "root" });
+    contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_ENROLLMENT);
+
+    expect(userService.selectedUserRealm()).toBe("realm1");
+  });
+
+  it("keeps a manually chosen realm when the token type changes on the same route", () => {
+    const tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
+    realmService.realmOptions.set(["realm1", "defrealm"]);
+    contentServiceMock.queryParams.set({ realm: "defrealm", user: "root" });
+    contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_ENROLLMENT);
+    expect(userService.selectedUserRealm()).toBe("defrealm");
+
+    userService.selectedUserRealm.set("realm1");
+    tokenService.selectedTokenType.update((type) => ({ ...type, key: "totp" }));
+
+    expect(userService.selectedUserRealm()).toBe("realm1");
+  });
+
+  it("selectedUserRealm uses the own realm of a self service user", () => {
+    realmService.realmOptions.set(["realm1", "defrealm"]);
+    authServiceMock.role.set("user");
+    authServiceMock.realm.set("selfRealm");
+    contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_ENROLLMENT);
+
+    expect(userService.selectedUserRealm()).toBe("selfRealm");
   });
 
   it("selectedUserRealm should expose empty string if no realmOptions are available", () => {
@@ -771,5 +803,87 @@ describe("UserService", () => {
       expect(resultValue).toBe(false);
       expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to delete user fail-user. fail");
     });
+  });
+});
+
+@Component({ template: "" })
+class RouteStubComponent {}
+
+// The details page hands the opened user to the enrollment and container pages through the query
+// string (UserDetailsComponent.enrollNewToken / createNewContainer). These scenarios drive the whole
+// round trip through the real Router and ContentService instead of a route mock.
+describe("UserService user prefill from the route", () => {
+  let router: Router;
+  let contentService: ContentService;
+  let userService: UserService;
+  let realmService: MockRealmService;
+  let httpMock: HttpTestingController;
+
+  beforeEach(() => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([{ path: "**", component: RouteStubComponent }]),
+        provideLocationMocks(),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        ContentService,
+        UserService,
+        { provide: RealmService, useClass: MockRealmService },
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: TokenService, useClass: MockTokenService },
+        { provide: NotificationService, useClass: MockNotificationService },
+        MockLocalService
+      ]
+    });
+
+    router = TestBed.inject(Router);
+    contentService = TestBed.inject(ContentService);
+    userService = TestBed.inject(UserService);
+    realmService = TestBed.inject(RealmService) as unknown as MockRealmService;
+    httpMock = TestBed.inject(HttpTestingController);
+    realmService.realmOptions.set(["realm1", "defrealm"]);
+  });
+
+  afterEach(() => {
+    // The user details route starts the user resources; their payloads do not matter for routing.
+    httpMock.match(() => true).forEach((request) => request.flush({}));
+    httpMock.verify();
+  });
+
+  it("carries the opened user from the details route into the enrollment route", async () => {
+    await router.navigate([ROUTE_PATHS.USERS_DETAILS, "alice"], { queryParams: { realm: "defrealm" } });
+    contentService.detailsUser.set({ username: "alice", realm: "defrealm" });
+    expect(contentService.onUserDetails()).toBe(true);
+    expect(userService.selectedUserRealm()).toBe("defrealm");
+
+    await router.navigate([ROUTE_PATHS.TOKENS_ENROLLMENT], { queryParams: { realm: "defrealm", user: "alice" } });
+
+    expect(contentService.routeUrl()).toBe(ROUTE_PATHS.TOKENS_ENROLLMENT + "?realm=defrealm&user=alice");
+    expect(contentService.onTokensEnrollment()).toBe(true);
+    expect(userService.selectedUserRealm()).toBe("defrealm");
+    expect(userService.selectionUsernameFilter()).toBe("alice");
+  });
+
+  it("carries the opened user into the container create route and drops it on the next navigation", async () => {
+    await router.navigate([ROUTE_PATHS.CONTAINERS_CREATE], { queryParams: { realm: "defrealm", user: "alice" } });
+
+    expect(contentService.onContainersCreate()).toBe(true);
+    expect(userService.selectedUserRealm()).toBe("defrealm");
+    expect(userService.selectionUsernameFilter()).toBe("alice");
+
+    await router.navigate([ROUTE_PATHS.TOKENS]);
+
+    expect(userService.selectionUsernameFilter()).toBe("");
+  });
+
+  it("keeps a user picked on the enrollment page instead of restoring the one from the query string", async () => {
+    await router.navigate([ROUTE_PATHS.TOKENS_ENROLLMENT], { queryParams: { realm: "defrealm", user: "alice" } });
+    expect(userService.selectionUsernameFilter()).toBe("alice");
+
+    userService.selectionFilter.set("bob");
+    userService.selectedUserRealm.set("realm1");
+
+    expect(userService.selectionUsernameFilter()).toBe("bob");
   });
 });
