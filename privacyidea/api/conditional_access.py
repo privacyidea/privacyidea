@@ -426,8 +426,9 @@ def purge_user_lockouts():
 def reset_user_lockout():
     """
     Reset (unlock) a user's conditional-access lockout. Identified by either the
-    login (``user``) or the resolver-local id (``user_id``); ``realm`` and
-    ``resolver`` are always required.
+    login (``user``) or the resolver-local id (``user_id``); ``realm`` is
+    required and ``resolver`` is optional — it only narrows the match.
+    Omitting it clears every matching lock in the realm.
 
     Requires the admin policy action :ref:`policy_user_lockout_reset`.
 
@@ -435,7 +436,7 @@ def reset_user_lockout():
 
     :jsonparam user: login of the user to unlock
     :jsonparam realm: realm of the user (required)
-    :jsonparam resolver: resolver of the user (required)
+    :jsonparam resolver: resolver of the user (optional; only disambiguates)
     :jsonparam user_id: resolver-local user id
     :status 200: ``true`` if a lock was removed, ``false`` if none existed
     """
@@ -444,13 +445,14 @@ def reset_user_lockout():
     user_id = get_optional(params, "user_id")
     login = get_optional(params, "user")
     realm = get_required(params, "realm")
-    resolver = get_required(params, "resolver")
+    resolver = get_optional(params, "resolver")
+    resolver_suffix = f", resolver={resolver}" if resolver else ""
     if user_id:
-        removed = unlock_user_by_id(resolver, user_id, realm)
-        target = f"resolver={resolver}, uid={user_id}, realm={realm}"
+        removed = unlock_user_by_id(user_id, realm, resolver)
+        target = f"uid={user_id}, realm={realm}{resolver_suffix}"
     else:
         removed = unlock_user_by_username(login, realm, resolver)
-        target = f"{login}@{realm}"
+        target = f"{login}@{realm}{resolver_suffix}"
     g.audit_object.log({"success": removed, "info": f"reset lockout ({target})"})
     return send_result(removed)
 

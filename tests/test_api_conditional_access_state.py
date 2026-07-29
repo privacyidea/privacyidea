@@ -191,16 +191,28 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
         self.assertEqual(200, res.status_code, res.json)
         self.assertTrue(res.json["result"]["value"])
 
+    def test_reset_user_by_login_without_resolver(self):
+        # resolver is an optional disambiguator: a login+realm reset must work without it.
+        self._lock_user(utc_now() + timedelta(seconds=600))
+        res = self._request("lockout/user", method="DELETE",
+                            json_data={"user": "cornelius", "realm": self.realm1})
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertTrue(res.json["result"]["value"])
+        self.assertIsNone(db.session.get(UserLockoutState, (self.user.resolver, self.user.uid, self.user.realm)))
+
+    def test_reset_user_by_raw_id_without_resolver(self):
+        # Same for the uid path: resolver is optional there too.
+        self._lock_user(utc_now() + timedelta(seconds=600))
+        res = self._request("lockout/user", method="DELETE",
+                            json_data={"user_id": self.user.uid, "realm": self.user.realm})
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertTrue(res.json["result"]["value"])
+
     def test_reset_user_not_locked_returns_false(self):
         res = self._request("lockout/user", method="DELETE",
                             json_data={"user": "cornelius", "realm": self.realm1, "resolver": self.resolvername1})
         self.assertEqual(200, res.status_code, res.json)
         self.assertFalse(res.json["result"]["value"])
-
-    def test_reset_unresolvable_user_is_400(self):
-        res = self._request("lockout/user", method="DELETE",
-                            json_data={"user": "ghost", "realm": self.realm1})
-        self.assertEqual(400, res.status_code, res.json)
 
     # --- GET blocklist --------------------------------------------------------
 

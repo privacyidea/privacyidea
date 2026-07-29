@@ -1045,6 +1045,17 @@ class PIManageConditionalAccessTestCase(CliTestCase):
         self.assertIsNone(UserLockoutState.query.filter_by(resolver="reso1", uid="42",
                                                            realm="realm1").first())
 
+    def test_04b_unlock_by_id_without_resolver(self):
+        # --resolver is optional (disambiguator only); unlock-by-id must work on (uid, realm) alone.
+        runner = self.app.test_cli_runner()
+        db.session.add(UserLockoutState(resolver="reso1", uid="42", realm="realm1",
+                                        lock_expires_at=utc_now() + dt.timedelta(seconds=600)))
+        db.session.commit()
+        res = runner.invoke(pi_manage, ["conditionalaccess", "unlock-by-id", "--uid", "42", "--realm", "realm1"])
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertIn("Unlocked", res.output, res)
+        self.assertIsNone(UserLockoutState.query.filter_by(uid="42", realm="realm1").first())
+
     def test_05_clear_blocks(self):
         runner = self.app.test_cli_runner()
         for ip in ("203.0.113.7", "203.0.113.8"):
@@ -1060,6 +1071,17 @@ class PIManageConditionalAccessTestCase(CliTestCase):
         runner = self.app.test_cli_runner()
         res = runner.invoke(pi_manage,
                             ["conditionalaccess", "unlock-user", "ghost", "--realm", "nope", "--resolver", "test"])
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertEqual(0, UserLockoutState.query.count())
+        self.assertIn("Unlocked user ghost@nope (resolver=test)", res.output, res)
+
+    def test_06_unlock_user_without_resolver(self):
+        # Regression: --resolver is optional (only disambiguates), so unlock-user must still
+        # unlock without it. It used to compile to ``resolver IS NULL`` and silently do nothing.
+        db.session.add(UserLockoutState(resolver="test", realm="nope", username="ghost", uid="1234"))
+        db.session.commit()
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["conditionalaccess", "unlock-user", "ghost", "--realm", "nope"])
         self.assertEqual(0, res.exit_code, res.output)
         self.assertEqual(0, UserLockoutState.query.count())
         self.assertIn("Unlocked user ghost@nope", res.output, res)

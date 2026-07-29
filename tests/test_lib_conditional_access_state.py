@@ -260,15 +260,42 @@ class LockoutStateTestCase(MyTestCase):
 
     def test_unlock_user_by_id(self):
         self._lock(utc_now() + timedelta(seconds=600))
-        self.assertTrue(unlock_user_by_id(self.user.resolver, self.user.uid, self.user.realm))
+        self.assertTrue(unlock_user_by_id(self.user.uid, self.user.realm, self.user.resolver))
         self.assertIsNone(db.session.get(
             UserLockoutState, (self.user.resolver, self.user.uid, self.user.realm)))
         # A second reset finds nothing to remove.
-        self.assertFalse(unlock_user_by_id(self.user.resolver, self.user.uid, self.user.realm))
+        self.assertFalse(unlock_user_by_id(self.user.uid, self.user.realm, self.user.resolver))
+
+    def test_unlock_user_by_id_without_resolver(self):
+        # Resolver is an optional disambiguator (mirrors unlock_user_by_username): omitting it
+        # must still unlock, matching on (uid, realm).
+        self._lock(utc_now() + timedelta(seconds=600))
+        self.assertTrue(unlock_user_by_id(self.user.uid, self.user.realm))
+        self.assertListEqual([], list_locked_users())
+
+    def test_unlock_user_by_id_uid_collision_across_resolvers(self):
+        # uid is resolver-local and opaque, so the same uid can belong to unrelated users in two
+        # resolvers of a realm. Without a resolver both matching locks are cleared; with one, only
+        # the targeted resolver's lock is removed.
+        self._lock(utc_now() + timedelta(seconds=600), resolver="resoA", uid="1001",
+                   realm="collide", username="alice")
+        self._lock(utc_now() + timedelta(seconds=600), resolver="resoB", uid="1001",
+                   realm="collide", username="bob")
+        # Targeted: only resoA's lock goes.
+        self.assertTrue(unlock_user_by_id("1001", "collide", "resoA"))
+        self.assertIsNotNone(db.session.get(UserLockoutState, ("resoB", "1001", "collide")))
+        # Untargeted: the remaining collision (resoB) is cleared too.
+        self.assertTrue(unlock_user_by_id("1001", "collide"))
+        self.assertIsNone(db.session.get(UserLockoutState, ("resoB", "1001", "collide")))
 
     def test_unlock_user_by_username(self):
         self._lock(utc_now() + timedelta(seconds=600))
         self.assertTrue(unlock_user_by_username(self.user.login, self.user.realm, self.user.resolver))
+        self.assertListEqual([], list_locked_users())
+
+    def test_unlock_user_by_username_without_resolver(self):
+        self._lock(utc_now() + timedelta(seconds=600))
+        self.assertTrue(unlock_user_by_username(self.user.login, self.user.realm))
         self.assertListEqual([], list_locked_users())
 
     # --- blocklist ------------------------------------------------------------

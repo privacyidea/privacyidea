@@ -98,23 +98,25 @@ def list_locked_users_cmd():
 @click.option("--realm", required=True, help="The realm of the user.")
 @click.option("--resolver", help="The resolver of the user (only needed to disambiguate).")
 def unlock_user_cmd(login, realm, resolver):
+    target = f"{login}@{realm}" + (f" (resolver={resolver})" if resolver else "")
     if unlock_user_by_username(login, realm, resolver):
-        click.echo(f"Unlocked user {login}@{realm}.")
+        click.echo(f"Unlocked user {target}.")
     else:
-        click.echo(f"No lock found for user {login}@{realm}.")
+        click.echo(f"No lock found for user {target}.")
 
 
 @conditional_access_cli.command("unlock-by-id",
-                                help="Remove a user lock by its raw (resolver, uid, realm) — for users "
-                                     "that no longer resolve.")
-@click.option("--resolver", required=True)
+                                help="Remove a user lock by its (uid, realm). Pass --resolver to disambiguate a shared "
+                                     "uid.")
 @click.option("--uid", required=True)
 @click.option("--realm", required=True)
-def unlock_by_id(resolver, uid, realm):
-    if unlock_user_by_id(resolver, uid, realm):
-        click.echo(f"Unlocked (resolver={resolver}, uid={uid}, realm={realm}).")
+@click.option("--resolver", help="The resolver of the user.")
+def unlock_by_id(uid, realm, resolver):
+    target = f"uid={uid}, realm={realm}" + (f", resolver={resolver}" if resolver else "")
+    if unlock_user_by_id(uid, realm, resolver):
+        click.echo(f"Unlocked ({target}).")
     else:
-        click.echo(f"No lock found for (resolver={resolver}, uid={uid}, realm={realm}).")
+        click.echo(f"No lock found for ({target}).")
 
 
 @conditional_access_cli.command("clear-locks",

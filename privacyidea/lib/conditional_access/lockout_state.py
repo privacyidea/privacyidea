@@ -275,31 +275,42 @@ def get_user_lockout_dict(user: User, now: datetime | None = None) -> dict | Non
 
 
 @log_with(log)
-def unlock_user_by_id(resolver: str, uid: str, realm: str) -> bool:
+def unlock_user_by_id(uid: str, realm: str, resolver: str | None = None) -> bool:
     """
-    Delete the lock for a raw ``(resolver, uid, realm)`` identity. Returns
-    ``True`` if a row was removed, ``False`` if there was no lock. Works even for
-    a user that no longer resolves in its resolver.
+    Delete the lock(s) for a ``(uid, realm[, resolver])`` identity. Returns
+    ``True`` if any row was removed, ``False`` if there was no lock. Like
+    :func:`unlock_user_by_username`, this performs **no** live resolver lookup —
+    it matches the stored row columns directly, so it works even for a user that
+    no longer resolves or whose login has since changed.
+
+    ``resolver`` is optional and only narrows the match when supplied — mirroring
+    :func:`unlock_user_by_username` (resolver is always a disambiguator, never a
+    required part of the key). Omitting the resolver clears the lock for **every**
+    matching uid in the realm; pass a resolver to target exactly one.
     """
-    row = db.session.get(UserLockoutState, (resolver, uid, realm))
-    if not row:
-        return False
-    db.session.delete(row)
+    conditions = [UserLockoutState.uid == uid, UserLockoutState.realm == realm]
+    if resolver:
+        conditions.append(UserLockoutState.resolver == resolver)
+    stmt = delete(UserLockoutState).where(*conditions)
+    result = db.session.execute(stmt)
     db.session.commit()
-    return True
+    return result.rowcount > 0
 
 
 @log_with(log)
-def unlock_user_by_username(username: str, realm: str, resolver: str) -> bool:
+def unlock_user_by_username(username: str, realm: str, resolver: str | None = None) -> bool:
     """
-    Delete the lock(s) for a ``(username, realm, resolver)`` identity. Returns
+    Delete the lock(s) for a ``(username, realm[, resolver])`` identity. Returns
     ``True`` if any row was removed, ``False`` if there was no lock. ``username``
     is the denormalized login and is not unique, so more than one row may match
-    (e.g. a stale row from a since-recreated login); all matches are removed.
+    (e.g. a stale row from a since-recreated login, or the same login across
+    resolvers); all matches are removed. ``resolver`` is optional and only
+    narrows the match when supplied.
     """
-    stmt = delete(UserLockoutState).where(UserLockoutState.username == username,
-                                          UserLockoutState.realm == realm,
-                                          UserLockoutState.resolver == resolver)
+    conditions = [UserLockoutState.username == username, UserLockoutState.realm == realm]
+    if resolver:
+        conditions.append(UserLockoutState.resolver == resolver)
+    stmt = delete(UserLockoutState).where(*conditions)
     result = db.session.execute(stmt)
     db.session.commit()
     return result.rowcount > 0
