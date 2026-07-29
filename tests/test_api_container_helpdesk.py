@@ -26,8 +26,9 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         self.setUp_user_realms()
         set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_CREATE, realm=self.realm1)
         result = self.request_assert_success('/container/init', {"type": "generic", "realm": self.realm1}, self.at)
-        self.assert_audit_entry('POST /container/init', success=1)
-        self.assertGreater(len(result["result"]["value"]["container_serial"]), 0)
+        container_serial = result["result"]["value"]["container_serial"]
+        self.assert_audit_entry('POST /container/init', success=1, container_serial=container_serial)
+        self.assertGreater(len(container_serial), 0)
         delete_policy("policy")
 
     def test_02_helpdesk_create_denied(self):
@@ -36,12 +37,12 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_CREATE, realm=self.realm1)
         self.request_denied_assert_403('/container/init', {"type": "Smartphone", "realm": self.realm2},
                                        self.at)
-        self.assert_audit_entry('POST /container/init', success=0)
+        self.assert_audit_entry('POST /container/init', success=0, info=self.NOT_EMPTY)
         # create container for no realm is denied
         self.request_denied_assert_403('/container/init',
                                        {"type": "Smartphone"},
                                        self.at)
-        self.assert_audit_entry('POST /container/init', success=0)
+        self.assert_audit_entry('POST /container/init', success=0, info=self.NOT_EMPTY)
         delete_policy("policy")
 
         # policy for a resolver
@@ -50,12 +51,12 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         self.request_denied_assert_403('/container/init',
                                        {"type": "Smartphone", "user": "corny", "realm": self.realm3},
                                        self.at)
-        self.assert_audit_entry('POST /container/init', success=0)
+        self.assert_audit_entry('POST /container/init', success=0, info=self.NOT_EMPTY)
         # create container for no user is denied
         self.request_denied_assert_403('/container/init',
                                        {"type": "Smartphone"},
                                        self.at)
-        self.assert_audit_entry('POST /container/init', success=0)
+        self.assert_audit_entry('POST /container/init', success=0, info=self.NOT_EMPTY)
         delete_policy("policy")
 
     def test_03_helpdesk_delete_allowed(self):
@@ -75,20 +76,20 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DELETE, realm=self.realm3)
         # container of a user
         self.request_denied_assert_403(f"/container/{c_serial_user}", {}, self.at, method='DELETE')
-        self.assert_audit_entry('DELETE /container/<string:container_serial>', success=0)
+        self.assert_audit_entry('DELETE /container/<string:container_serial>', success=0, info=self.NOT_EMPTY)
         # container without user
         self.request_denied_assert_403(f"/container/{c_serial_no_user}", {}, self.at, method='DELETE')
-        self.assert_audit_entry('DELETE /container/<string:container_serial>', success=0)
+        self.assert_audit_entry('DELETE /container/<string:container_serial>', success=0, info=self.NOT_EMPTY)
         delete_policy("policy")
 
         # policy for a resolver
         set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DELETE, resolver=self.resolvername3)
         # container of a user
         self.request_denied_assert_403(f"/container/{c_serial_user}", {}, self.at, method='DELETE')
-        self.assert_audit_entry('DELETE /container/<string:container_serial>', success=0)
+        self.assert_audit_entry('DELETE /container/<string:container_serial>', success=0, info=self.NOT_EMPTY)
         # container without user
         self.request_denied_assert_403(f"/container/{c_serial_no_user}", {}, self.at, method='DELETE')
-        self.assert_audit_entry('DELETE /container/<string:container_serial>', success=0)
+        self.assert_audit_entry('DELETE /container/<string:container_serial>', success=0, info=self.NOT_EMPTY)
         delete_policy("policy")
 
     def test_05_helpdesk_description_allowed(self):
@@ -125,20 +126,20 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DESCRIPTION, realm=self.realm3)
         self.request_denied_assert_403(f"/container/{c_serial_user}/description", {"description": "test"},
                                        self.at, method='POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/description', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/description', success=0, info=self.NOT_EMPTY)
         self.request_denied_assert_403(f"/container/{c_serial_no_user}/description", {"description": "test"},
                                        self.at, method='POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/description', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/description', success=0, info=self.NOT_EMPTY)
         delete_policy("policy")
 
         # policy for a resolver
         set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DESCRIPTION, resolver=self.resolvername3)
         self.request_denied_assert_403(f"/container/{c_serial_user}/description", {"description": "test"},
                                        self.at, method='POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/description', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/description', success=0, info=self.NOT_EMPTY)
         self.request_denied_assert_403(f"/container/{c_serial_no_user}/description", {"description": "test"},
                                        self.at, method='POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/description', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/description', success=0, info=self.NOT_EMPTY)
         delete_policy("policy")
 
         # policy for a user
@@ -147,10 +148,10 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
                    resolver=self.resolvername1)
         self.request_denied_assert_403(f"/container/{c_serial_user}/description", {"description": "test"},
                                        self.at, method='POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/description', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/description', success=0, info=self.NOT_EMPTY)
         self.request_denied_assert_403(f"/container/{c_serial_no_user}/description", {"description": "test"},
                                        self.at, method='POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/description', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/description', success=0, info=self.NOT_EMPTY)
         delete_policy("policy")
 
     def test_07_helpdesk_state_allowed(self):
@@ -179,20 +180,20 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_STATE, realm=self.realm3)
         self.request_denied_assert_403(f"/container/{c_serial_user}/states", {"states": "active, damaged, lost"},
                                        self.at, method='POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/states', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/states', success=0, info=self.NOT_EMPTY)
         self.request_denied_assert_403(f"/container/{c_serial_no_user}/states", {"states": "active, damaged, lost"},
                                        self.at, method='POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/states', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/states', success=0, info=self.NOT_EMPTY)
         delete_policy("policy")
 
         # policy for resolver
         set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_STATE, resolver=self.resolvername3)
         self.request_denied_assert_403(f"/container/{c_serial_user}/states", {"states": "active, damaged, lost"},
                                        self.at, method='POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/states', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/states', success=0, info=self.NOT_EMPTY)
         self.request_denied_assert_403(f"/container/{c_serial_no_user}/states", {"states": "active, damaged, lost"},
                                        self.at, method='POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/states', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/states', success=0, info=self.NOT_EMPTY)
         delete_policy("policy")
 
     def test_09_helpdesk_add_token_allowed(self):
@@ -209,7 +210,8 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         token_serial = token.get_serial()
         self.request_assert_success(f"/container/{container_serial}/add", {"serial": token_serial}, self.at,
                                     method='POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/add', success=1)
+        self.assert_audit_entry('POST /container/<string:container_serial>/add', success=1,
+                                container_serial=container_serial, serial=token_serial)
 
         # Add token that is in another container
         token = init_token({"genkey": "1", "realm": self.realm1})
@@ -218,7 +220,8 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         add_token_to_container(old_container_serial, token_serial)
         self.request_assert_success(f"/container/{container_serial}/add", {"serial": token_serial}, self.at,
                                     method='POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/add', success=1)
+        self.assert_audit_entry('POST /container/<string:container_serial>/add', success=1,
+                                container_serial=container_serial, serial=token_serial)
 
         # add multiple tokens: one authorized with the realm, the other with the resolver
         token2 = init_token({"genkey": "1", "realm": self.realm1})
@@ -227,7 +230,8 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         result = self.request_assert_success(f"/container/{container_serial}/addall", {"serial": token_serials},
                                              self.at,
                                              method='POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/addall', success=1)
+        self.assert_audit_entry('POST /container/<string:container_serial>/addall', success=1,
+                                container_serial=container_serial)
         self.assertTrue(result["result"]["value"][token2.get_serial()])
         self.assertTrue(result["result"]["value"][token3.get_serial()])
         delete_policy("policy_realm")
@@ -258,14 +262,14 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         token_serial = token.get_serial()
         self.request_denied_assert_403(f"/container/{c_serial_user}/add", {"serial": token_serial}, self.at,
                                        method='POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/add', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/add', success=0, info=self.NOT_EMPTY)
 
         # helpdesk of user realm realm3: only container is in realm1
         token = init_token({"genkey": "1", "realm": self.realm3})
         token_serial = token.get_serial()
         self.request_denied_assert_403(f"/container/{c_serial_user}/add", {"serial": token_serial}, self.at,
                                        method='POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/add', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/add', success=0, info=self.NOT_EMPTY)
         delete_policy("policy_realm")
         delete_policy("policy_resolver")
 
@@ -277,14 +281,14 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         token_serial = token.get_serial()
         self.request_denied_assert_403(f"/container/{c_serial_user}/add", {"serial": token_serial}, self.at,
                                        method='POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/add', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/add', success=0, info=self.NOT_EMPTY)
 
         # Helpdesk is not allowed to remove token from old container
         token.set_realms([self.realm1])
         add_token_to_container(c_serial_no_user, token_serial)
         self.request_denied_assert_403(f"/container/{c_serial_user}/add", {"serial": token_serial}, self.at,
                                        method='POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/add', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/add', success=0, info=self.NOT_EMPTY)
 
         # Adding multiple tokens
         token2 = init_token({"genkey": "1"}, user=User("hans", self.realm1))
@@ -295,7 +299,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         # to authorized container
         result = self.request_assert_success(f"/container/{c_serial_user}/addall", {"serial": token_serials}, self.at,
                                              method='POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/addall', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/addall', success=0, info=self.NOT_EMPTY)
         self.assertFalse(result["result"]["value"][token.get_serial()])
         self.assertTrue(result["result"]["value"][token2.get_serial()])
         self.assertTrue(result["result"]["value"][token3.get_serial()])
@@ -306,21 +310,21 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         container.set_realms([self.realm3], add=False)
         self.request_denied_assert_403(f"/container/{c_serial_user}/addall", {"serial": token_serials}, self.at,
                                        method='POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/addall', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/addall', success=0, info=self.NOT_EMPTY)
 
         # helpdesk of user realm realm1: container has no owner, token in realm 1
         token = init_token({"genkey": "1", "realm": self.realm1})
         token_serial = token.get_serial()
         self.request_denied_assert_403(f"/container/{c_serial_no_user}/add", {"serial": token_serial}, self.at,
                                        method='POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/add', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/add', success=0, info=self.NOT_EMPTY)
 
         # helpdesk of userealm realm1: container has no owner, token is in realm3
         token = init_token({"genkey": "1", "realm": self.realm3})
         token_serial = token.get_serial()
         self.request_denied_assert_403(f"/container/{c_serial_no_user}/add", {"serial": token_serial}, self.at,
                                        method='POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/add', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/add', success=0, info=self.NOT_EMPTY)
 
         # adding multiple tokens denied, since access on container is not allowed
         token2 = init_token({"genkey": "1", "realm": self.realm3})
@@ -328,7 +332,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         token_serials = ','.join([token2.get_serial(), token3.get_serial()])
         self.request_denied_assert_403(f"/container/{c_serial_no_user}/addall", {"serial": token_serials}, self.at,
                                        method='POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/addall', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/addall', success=0, info=self.NOT_EMPTY)
         delete_policy("policy_realm")
         delete_policy("policy_resolver")
 
@@ -387,26 +391,26 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         add_token_to_container(c_serial_user, token_serial)
         self.request_denied_assert_403(f"/container/{c_serial_user}/remove", {"serial": token_serial}, self.at,
                                        method='POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/remove', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/remove', success=0, info=self.NOT_EMPTY)
         # container has no owner, token is in realm1
         remove_token_from_container(c_serial_user, token_serial)
         add_token_to_container(c_serial_no_user, token_serial)
         self.request_denied_assert_403(f"/container/{c_serial_user}/remove", {"serial": token_serial}, self.at,
                                        method='POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/remove', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/remove', success=0, info=self.NOT_EMPTY)
         # container in realm1 and token in realm 2
         token = init_token({"genkey": "1", "realm": self.realm2})
         token_serial = token.get_serial()
         add_token_to_container(c_serial_user, token_serial)
         self.request_denied_assert_403(f"/container/{c_serial_user}/remove", {"serial": token_serial}, self.at,
                                        method='POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/remove', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/remove', success=0, info=self.NOT_EMPTY)
         # container has no owner, token is in realm2
         remove_token_from_container(c_serial_user, token_serial)
         add_token_to_container(c_serial_no_user, token_serial)
         self.request_denied_assert_403(f"/container/{c_serial_user}/remove", {"serial": token_serial}, self.at,
                                        method='POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/remove', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/remove', success=0, info=self.NOT_EMPTY)
         delete_policy("policy")
 
         # helpdesk of userealm realm1: container in realm1 and token in realm 2
@@ -415,7 +419,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         add_token_to_container(c_serial_user, token_serial)
         self.request_denied_assert_403(f"/container/{c_serial_user}/remove", {"serial": token_serial}, self.at,
                                        method='POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/remove', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/remove', success=0, info=self.NOT_EMPTY)
 
         # multiple tokens
         self.setUp_user_realm3()
@@ -433,7 +437,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
                                        error_message=("Admin actions are defined, but the action "
                                                       "container_remove_token is not allowed for any of "
                                                       "the serials provided!"))
-        self.assert_audit_entry('POST /container/<string:container_serial>/removeall', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/removeall', success=0, info=self.NOT_EMPTY)
         delete_policy("policy_realm")
         delete_policy("policy_resolver")
 
@@ -444,7 +448,8 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         container_serial = init_container({"type": "generic", "realm": self.realm1})["container_serial"]
         self.request_assert_success(f"/container/{container_serial}/assign",
                                     {"realm": self.realm1, "user": "hans", "resolver": self.resolvername1}, self.at)
-        self.assert_audit_entry('POST /container/<string:container_serial>/assign', success=1)
+        self.assert_audit_entry('POST /container/<string:container_serial>/assign', success=1,
+                                container_serial=container_serial)
         delete_policy("policy")
 
         # Allow to assign a user to a container without user and realm
@@ -468,13 +473,13 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         container_serial = init_container({"type": "generic", "realm": self.realm3})["container_serial"]
         self.request_denied_assert_403(f"/container/{container_serial}/assign",
                                        {"realm": self.realm1, "user": "hans", "resolver": self.resolvername1}, self.at)
-        self.assert_audit_entry('POST /container/<string:container_serial>/assign', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/assign', success=0, info=self.NOT_EMPTY)
 
         # container in realm1, new user from realm3
         container_serial = init_container({"type": "generic", "realm": self.realm1})["container_serial"]
         self.request_denied_assert_403(f"/container/{container_serial}/assign",
                                        {"realm": self.realm3, "user": "corny"}, self.at)
-        self.assert_audit_entry('POST /container/<string:container_serial>/assign', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/assign', success=0, info=self.NOT_EMPTY)
         delete_policy("policy")
 
         # helpdesk for resolver1
@@ -485,12 +490,12 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         container_serial = init_container({"type": "generic"})["container_serial"]
         self.request_denied_assert_403(f"/container/{container_serial}/assign",
                                        {"realm": self.realm4, "user": "corny"}, self.at)
-        self.assert_audit_entry('POST /container/<string:container_serial>/assign', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/assign', success=0, info=self.NOT_EMPTY)
         # container in realm1, new user from resolver1
         container_serial = init_container({"type": "generic", "realm": self.realm1})["container_serial"]
         self.request_denied_assert_403(f"/container/{container_serial}/assign",
                                        {"realm": self.realm4, "user": "hans"}, self.at)
-        self.assert_audit_entry('POST /container/<string:container_serial>/assign', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/assign', success=0, info=self.NOT_EMPTY)
         delete_policy("policy")
 
     def test_15_helpdesk_remove_user_allowed(self):
@@ -498,7 +503,8 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})["container_serial"]
         self.request_assert_success(f"/container/{container_serial}/unassign",
                                     {"realm": "realm1", "user": "hans", "resolver": self.resolvername1}, self.at)
-        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=1)
+        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=1,
+                                container_serial=container_serial)
         delete_policy("policy")
 
         # Policy for realm and resolver
@@ -537,12 +543,12 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})["container_serial"]
         self.request_denied_assert_403(f"/container/{container_serial}/unassign",
                                        {"realm": "realm1", "user": "hans", "resolver": self.resolvername1}, self.at)
-        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=0, info=self.NOT_EMPTY)
         # container is additionally in realm2, but user is still from realm1
         add_container_realms(container_serial, ["realm2"], allowed_realms=None)
         self.request_denied_assert_403(f"/container/{container_serial}/unassign",
                                        {"realm": "realm1", "user": "hans", "resolver": self.resolvername1}, self.at)
-        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=0, info=self.NOT_EMPTY)
         delete_policy("policy")
 
         # Helpdesk for resolver3 in realm4
@@ -556,7 +562,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
                                            "resolver": self.resolvername1})["container_serial"]
         self.request_denied_assert_403(f"/container/{container_serial}/unassign",
                                        {"realm": self.realm4, "user": "hans", "resolver": self.resolvername1}, self.at)
-        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=0, info=self.NOT_EMPTY)
         # container is in realm3, user is from resolver3 (correct resolver, but wrong realm)
         container_serial = init_container({"type": "generic",
                                            "user": "corny",
@@ -564,7 +570,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
                                            "resolver": self.resolvername3})["container_serial"]
         self.request_denied_assert_403(f"/container/{container_serial}/unassign",
                                        {"realm": self.realm3, "user": "corny", "resolver": self.resolvername3}, self.at)
-        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=0, info=self.NOT_EMPTY)
         delete_policy("policy")
 
     def test_17_helpdesk_container_realms_allowed(self):
@@ -615,11 +621,11 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         # container in realm1
         container_serial = self.create_container_for_user()
         self.request_denied_assert_403(f"/container/{container_serial}/realms", {"realms": "realm2"}, self.at)
-        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=0, info=self.NOT_EMPTY)
 
         # container in realm1, set realm3
         self.request_denied_assert_403(f"/container/{container_serial}/realms", {"realms": "realm3"}, self.at)
-        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=0, info=self.NOT_EMPTY)
         delete_policy("policy")
 
         # Helpdesk for realm1
@@ -627,7 +633,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
 
         # container in realm1, set realm2 (not allowed)
         result = self.request_assert_success(f"/container/{container_serial}/realms", {"realms": "realm2"}, self.at)
-        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=0, info=self.NOT_EMPTY)
         self.assertFalse(result["result"]["value"]["realm2"])
         container = find_container_by_serial(container_serial)
         realms = [realm.name for realm in container.realms]
@@ -636,7 +642,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         # helpdesk of user realm realm1: container in realm1, set realm2 and realm1 (only realm1 allowed)
         result = self.request_assert_success(f"/container/{container_serial}/realms", {"realms": "realm2,realm1"},
                                              self.at)
-        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=0, info=self.NOT_EMPTY)
         self.assertFalse(result["result"]["value"]["realm2"])
         self.assertTrue(result["result"]["value"]["realm1"])
 
@@ -653,7 +659,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         # container in no realm, set realm1
         container_serial = init_container({"type": "generic"})["container_serial"]
         self.request_denied_assert_403(f"/container/{container_serial}/realms", {"realms": "realm1"}, self.at)
-        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=0, info=self.NOT_EMPTY)
         delete_policy("policy")
 
         # Helpdesk for realm1 and realm4 and resolver3
@@ -666,7 +672,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
                                            "resolver": self.resolvername1,
                                            "user": "hans"})["container_serial"]
         self.request_denied_assert_403(f"/container/{container_serial}/realms", {"realms": "realm1"}, self.at)
-        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=0, info=self.NOT_EMPTY)
         delete_policy("policy")
 
     def test_19_helpdesk_container_list_allowed(self):
@@ -721,7 +727,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_REGISTER, realm=self.realm2)
         data = {"container_serial": container_serial}
         self.request_denied_assert_403('/container/register/initialize', data, self.at, 'POST')
-        self.assert_audit_entry('POST /container/register/initialize', success=0)
+        self.assert_audit_entry('POST /container/register/initialize', success=0, info=self.NOT_EMPTY)
         delete_policy("policy")
         delete_policy("container_policy")
 
@@ -737,7 +743,8 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         # Admin does not have CONTAINER_UNREGISTER rights for the realm of the container (realm 1)
         set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_UNREGISTER, realm=self.realm2)
         self.request_denied_assert_403(f'/container/register/{container_serial}/terminate', {}, self.at, 'POST')
-        self.assert_audit_entry('POST /container/register/<string:container_serial>/terminate', success=0)
+        self.assert_audit_entry('POST /container/register/<string:container_serial>/terminate', success=0,
+                                info=self.NOT_EMPTY)
         delete_policy("policy")
 
     def test_24_helpdesk_container_rollover_allowed(self):
@@ -768,7 +775,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_REGISTER, realm=self.realm2)
         data = {"container_serial": container_serial, "rollover": True}
         self.request_denied_assert_403('/container/register/initialize', data, self.at, 'POST')
-        self.assert_audit_entry('POST /container/register/initialize', success=0)
+        self.assert_audit_entry('POST /container/register/initialize', success=0, info=self.NOT_EMPTY)
         delete_policy("policy")
         delete_policy("container_policy")
 
@@ -958,20 +965,20 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_INFO, realm=self.realm3)
         self.request_denied_assert_403(f"/container/{c_serial_user}/info/test", {"value": "1234"}, self.at,
                                        method='POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/info/<key>', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/info/<key>', success=0, info=self.NOT_EMPTY)
         self.request_denied_assert_403(f"/container/{c_serial_no_user}/info/test", {"value": "1234"}, self.at,
                                        method='POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/info/<key>', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/info/<key>', success=0, info=self.NOT_EMPTY)
         delete_policy("policy")
 
         # policy for a resolver
         set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_INFO, resolver=self.resolvername3)
         self.request_denied_assert_403(f"/container/{c_serial_user}/info/test", {"value": "1234"}, self.at,
                                        method='POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/info/<key>', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/info/<key>', success=0, info=self.NOT_EMPTY)
         self.request_denied_assert_403(f"/container/{c_serial_no_user}/info/test", {"value": "1234"}, self.at,
                                        method='POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/info/<key>', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/info/<key>', success=0, info=self.NOT_EMPTY)
         delete_policy("policy")
 
         # policy for a user
@@ -979,10 +986,10 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
                    resolver=self.resolvername1)
         self.request_denied_assert_403(f"/container/{c_serial_user}/info/test", {"value": "1234"}, self.at,
                                        method='POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/info/<key>', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/info/<key>', success=0, info=self.NOT_EMPTY)
         self.request_denied_assert_403(f"/container/{c_serial_no_user}/info/test", {"value": "1234"}, self.at,
                                        method='POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/info/<key>', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/info/<key>', success=0, info=self.NOT_EMPTY)
         delete_policy("policy")
 
     def test_32_helpdesk_delete_container_info_allowed(self):
@@ -1029,20 +1036,24 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_INFO, realm=self.realm3)
         self.request_denied_assert_403(f"/container/{c_serial_user}/info/delete/test", {}, self.at,
                                        method="DELETE")
-        self.assert_audit_entry('DELETE /container/<string:container_serial>/info/delete/<key>', success=0)
+        self.assert_audit_entry('DELETE /container/<string:container_serial>/info/delete/<key>', success=0,
+                                info=self.NOT_EMPTY)
         self.request_denied_assert_403(f"/container/{c_serial_no_user}/info/delete/test", {}, self.at,
                                        method="DELETE")
-        self.assert_audit_entry('DELETE /container/<string:container_serial>/info/delete/<key>', success=0)
+        self.assert_audit_entry('DELETE /container/<string:container_serial>/info/delete/<key>', success=0,
+                                info=self.NOT_EMPTY)
         delete_policy("policy")
 
         # policy for a resolver
         set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_INFO, resolver=self.resolvername3)
         self.request_denied_assert_403(f"/container/{c_serial_user}/info/delete/test", {}, self.at,
                                        method="DELETE")
-        self.assert_audit_entry('DELETE /container/<string:container_serial>/info/delete/<key>', success=0)
+        self.assert_audit_entry('DELETE /container/<string:container_serial>/info/delete/<key>', success=0,
+                                info=self.NOT_EMPTY)
         self.request_denied_assert_403(f"/container/{c_serial_no_user}/info/delete/test", {}, self.at,
                                        method="DELETE")
-        self.assert_audit_entry('DELETE /container/<string:container_serial>/info/delete/<key>', success=0)
+        self.assert_audit_entry('DELETE /container/<string:container_serial>/info/delete/<key>', success=0,
+                                info=self.NOT_EMPTY)
         delete_policy("policy")
 
         # policy for a user
@@ -1050,8 +1061,10 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
                    resolver=self.resolvername1)
         self.request_denied_assert_403(f"/container/{c_serial_user}/info/delete/test", {}, self.at,
                                        method="DELETE")
-        self.assert_audit_entry('DELETE /container/<string:container_serial>/info/delete/<key>', success=0)
+        self.assert_audit_entry('DELETE /container/<string:container_serial>/info/delete/<key>', success=0,
+                                info=self.NOT_EMPTY)
         self.request_denied_assert_403(f"/container/{c_serial_no_user}/info/delete/test", {}, self.at,
                                        method="DELETE")
-        self.assert_audit_entry('DELETE /container/<string:container_serial>/info/delete/<key>', success=0)
+        self.assert_audit_entry('DELETE /container/<string:container_serial>/info/delete/<key>', success=0,
+                                info=self.NOT_EMPTY)
         delete_policy("policy")

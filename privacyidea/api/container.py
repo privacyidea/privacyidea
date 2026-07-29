@@ -805,7 +805,7 @@ def delete_container_info_entry(container_serial, key):
 
     # Audit log
     g.audit_object.log({"container_serial": container_serial,
-                        "key": key,
+                        "action_detail": f"key={key}",
                         "success": success})
 
     return send_result(success)

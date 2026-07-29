@@ -1,55 +1,24 @@
 # SPDX-FileCopyrightText: 2024 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
-import base64
 import json
-import mock
-from dataclasses import dataclass
-from datetime import datetime, timezone, timedelta
 
-from typing import Optional
-
-import passlib
-from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PublicKey
-
-from privacyidea.lib.applications.offline import MachineApplication, REFILLTOKEN_LENGTH
-from privacyidea.lib.challenge import get_challenges
-from privacyidea.lib.container import (create_container_template, get_template_obj, delete_container_by_serial,
-                                       get_container_realms, set_container_states, unregister)
-from privacyidea.lib.container import (init_container, find_container_by_serial, add_token_to_container, assign_user,
-                                       add_container_realms, remove_token_from_container)
-from privacyidea.lib.containers.container_info import PI_INTERNAL, TokenContainerInfoData, RegistrationState
-from privacyidea.lib.containers.container_states import ContainerStates
+from privacyidea.lib.container import (create_container_template, get_template_obj)
+from privacyidea.lib.container import (init_container, find_container_by_serial)
 from privacyidea.lib.containers.smartphone import SmartphoneOptions
-from privacyidea.lib.crypto import generate_keypair_ecc, decrypt_aes
-from privacyidea.lib.error import Error
-from privacyidea.lib.machine import attach_token
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.policies.conditions import ConditionSection, ConditionHandleMissingData
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
 from privacyidea.lib.privacyideaserver import add_privacyideaserver
-from privacyidea.lib.realm import set_realm, set_default_realm
-from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.serviceid import set_serviceid
-from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
-from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
-from privacyidea.lib.token import (get_one_token, get_tokens_from_serial_or_user,
-                                   get_tokeninfo, get_tokens)
-from privacyidea.lib.token import init_token, get_tokens_paginate, unassign_token
+from privacyidea.lib.token import (get_tokens_from_serial_or_user,
+                                   get_tokeninfo)
+from privacyidea.lib.token import init_token
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.papertoken import PAPERACTION
 from privacyidea.lib.tokens.pushtoken import PushAction
 from privacyidea.lib.tokens.tantoken import TANAction
 from privacyidea.lib.user import User
-from privacyidea.lib.utils.compare import PrimaryComparators
-from privacyidea.models import Realm
-from tests.base import MyApiTestCase
-from tests.test_lib_tokencontainer import MockSmartphone
-
 from .api_container_common import (
     APIContainerTest,
-    APIContainerAuthorization,
-    SmartphoneRequests,
-    UNSPECIFIC_ERROR_MESSAGES,
 )
 
 
@@ -61,7 +30,8 @@ class APIContainerTemplate(APIContainerTest):
         data = json.dumps({"template_options": {"tokens": []}, "default": True})
         result = self.request_assert_success(f'/container/smartphone/template/{template_name}',
                                              data, self.at, 'POST')
-        self.assert_audit_entry('POST /container/<string:container_type>/template/<string:template_name>', success=1)
+        self.assert_audit_entry('POST /container/<string:container_type>/template/<string:template_name>', success=1,
+                                action_detail=self.contains(f"template_name={template_name}"))
         self.assertGreater(result["result"]["value"]["template_id"], 0)
 
         # Delete template
@@ -74,14 +44,14 @@ class APIContainerTemplate(APIContainerTest):
         # Create template without name
         self.request_assert_404_no_result('/container/smartphone/template',
                                           {}, self.at, 'POST')
-        self.assert_no_audit_entry('POST /container/smartphone/template')
+        self.assert_audit_log_empty()
 
     def test_03_delete_template_fail(self):
         # Delete non existing template
         template_name = "random"
         self.request_assert_405(f'container/template/{template_name}',
                                 {}, None, 'POST')
-        self.assert_no_audit_entry('POST /container/template/<string:template_name>')
+        self.assert_audit_log_empty()
 
     def test_04_update_template_options_success(self):
         # Create a template
@@ -116,7 +86,8 @@ class APIContainerTemplate(APIContainerTest):
         self.request_assert_error(400, f'/container/generic/template/{template_name}',
                                   params, self.at, 'POST',
                                   error_code=905)
-        self.assert_audit_entry('POST /container/<string:container_type>/template/<string:template_name>', success=0)
+        self.assert_audit_entry('POST /container/<string:container_type>/template/<string:template_name>', success=0,
+                                info=self.contains('ERR905'))
 
         template = get_template_obj(template_name)
         template.delete()
@@ -144,14 +115,16 @@ class APIContainerTemplate(APIContainerTest):
         # create container by passing the complete template dictionary
         request_params = json.dumps({"type": "smartphone", "template": template_params})
         result = self.request_assert_success('/container/init', request_params, self.at, 'POST')
-        self.assert_audit_entry('POST /container/init', success=1)
+        self.assert_audit_entry('POST /container/init', success=1,
+                                container_serial=result["result"]["value"]["container_serial"])
         check_result(result)
 
         # create container by passing only the template name
         result = self.request_assert_success('/container/init',
                                              {"type": "smartphone", "template_name": template_params["name"]},
                                              self.at, 'POST')
-        self.assert_audit_entry('POST /container/init', success=1)
+        self.assert_audit_entry('POST /container/init', success=1,
+                                container_serial=result["result"]["value"]["container_serial"])
         check_result(result)
 
         template = get_template_obj(template_params["name"])

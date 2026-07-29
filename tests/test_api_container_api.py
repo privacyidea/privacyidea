@@ -23,8 +23,8 @@ class APIContainer(APIContainerTest):
         # Init container
         payload = {"type": "Smartphone", "description": "test description!!"}
         res = self.request_assert_success('/container/init', payload, self.at, 'POST')
-        self.assert_audit_entry('POST /container/init', success=1)
         cserial = res["result"]["value"]["container_serial"]
+        self.assert_audit_entry('POST /container/init', success=1, container_serial=cserial)
         self.assertTrue(len(cserial) > 1)
 
         # Check creation date is set
@@ -33,7 +33,8 @@ class APIContainer(APIContainerTest):
 
         # Delete the container
         result = self.request_assert_success(f"container/{cserial}", {}, self.at, 'DELETE')
-        self.assert_audit_entry('DELETE /container/<string:container_serial>', success=1)
+        self.assert_audit_entry('DELETE /container/<string:container_serial>', success=1,
+                                container_serial=cserial)
         self.assertTrue(result["result"]["value"])
 
     def test_01_init_container_fail(self):
@@ -42,13 +43,13 @@ class APIContainer(APIContainerTest):
         self.request_assert_error(400, '/container/init', payload, self.at, 'POST',
                                   error_code=404,
                                   error_message="ERR404: Type 'wrongType' is not a valid type!")
-        self.assert_audit_entry('POST /container/init', success=0)
+        self.assert_audit_entry('POST /container/init', success=0, info=self.contains('ERR404'))
 
         # Init without type
         self.request_assert_error(400, '/container/init', {}, self.at, 'POST',
                                   error_code=404,
                                   error_message="ERR404: Type parameter is required!")
-        self.assert_audit_entry('POST /container/init', success=0)
+        self.assert_audit_entry('POST /container/init', success=0, info=self.contains('ERR404'))
 
         # Init without auth token
         payload = {"type": "Smartphone", "description": "test description!!"}
@@ -64,11 +65,12 @@ class APIContainer(APIContainerTest):
                                   {}, self.at, 'DELETE',
                                   error_code=601,
                                   error_message="Unable to find container with serial wrong_serial.")
-        self.assert_audit_entry('DELETE /container/<string:container_serial>', success=0)
+        self.assert_audit_entry('DELETE /container/<string:container_serial>', success=0,
+                                container_serial="wrong_serial", info=self.NOT_EMPTY)
 
         # Call without serial
         self.request_assert_405('/container/', {}, self.at, 'DELETE')
-        self.assert_no_audit_entry('DELETE /container/')
+        self.assert_audit_log_empty()
 
     def test_03_assign_user_fail(self):
         # Arrange
@@ -80,7 +82,8 @@ class APIContainer(APIContainerTest):
                                   payload, self.at, 'POST',
                                   error_code=904,
                                   error_message="ERR904: The user can not be found in any resolver in this realm!")
-        self.assert_audit_entry('POST /container/<string:container_serial>/assign', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/assign', success=0,
+                                container_serial=container_serial, info=self.contains('ERR904'))
 
         # Assign user with non-existing realm
         payload = {"user": "hans", "realm": "non_existing"}
@@ -88,7 +91,8 @@ class APIContainer(APIContainerTest):
                                   payload, self.at, 'POST',
                                   error_code=904,
                                   error_message="ERR904: The user can not be found in any resolver in this realm!")
-        self.assert_audit_entry('POST /container/<string:container_serial>/assign', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/assign', success=0,
+                                info=self.contains('ERR904'))
 
         # Assign without user
         self.setUp_user_realm2()
@@ -97,7 +101,8 @@ class APIContainer(APIContainerTest):
                                   payload, self.at, 'POST',
                                   error_code=905,
                                   error_message="ERR905: Missing parameter: user")
-        self.assert_audit_entry('POST /container/<string:container_serial>/assign', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/assign', success=0,
+                                info=self.contains('ERR905'))
 
         delete_container_by_serial(container_serial)
 
@@ -109,7 +114,8 @@ class APIContainer(APIContainerTest):
 
         # Assign with user and realm
         result = self.request_assert_success(f'/container/{container_serial}/assign', payload, self.at, 'POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/assign', success=1)
+        self.assert_audit_entry('POST /container/<string:container_serial>/assign', success=1,
+                                container_serial=container_serial)
         self.assertTrue(result["result"]["value"])
 
         # Assign another user fails
@@ -118,7 +124,8 @@ class APIContainer(APIContainerTest):
                                   payload, self.at, 'POST',
                                   error_code=301,
                                   error_message="ERR301: This container is already assigned to another user.")
-        self.assert_audit_entry('POST /container/<string:container_serial>/assign', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/assign', success=0,
+                                info=self.contains('ERR301'))
 
         delete_container_by_serial(container_serial)
 
@@ -130,13 +137,15 @@ class APIContainer(APIContainerTest):
 
         # Assign with user and realm
         result = self.request_assert_success(f'/container/{container_serial}/assign', payload, self.at, 'POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/assign', success=1)
+        self.assert_audit_entry('POST /container/<string:container_serial>/assign', success=1,
+                                container_serial=container_serial)
         self.assertTrue(result["result"]["value"])
 
         # Unassign
         result = self.request_assert_success(f'/container/{container_serial}/unassign',
                                              payload, self.at, 'POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=1)
+        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=1,
+                                container_serial=container_serial)
         self.assertTrue(result["result"]["value"])
 
         delete_container_by_serial(container_serial)
@@ -167,7 +176,8 @@ class APIContainer(APIContainerTest):
                                   payload, self.at, 'POST',
                                   error_code=904,
                                   error_message="ERR904: The user can not be found in any resolver in this realm!")
-        self.assert_audit_entry('POST /container/<string:container_serial>/assign', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/assign', success=0,
+                                info=self.contains('ERR904'))
 
         container.delete()
 
@@ -184,7 +194,8 @@ class APIContainer(APIContainerTest):
         # Unassign only with username works if user is in default realm
         payload = {"user": "hans"}
         result = self.request_assert_success(f'/container/{container_serial}/unassign', payload, self.at, 'POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=1)
+        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=1,
+                                container_serial=container_serial)
         self.assertTrue(result["result"].get("value"))
         self.assertEqual(0, len(container.get_users()))
 
@@ -192,7 +203,8 @@ class APIContainer(APIContainerTest):
         container.add_user(user)
         payload = {"user": user.login, "realm": user.realm}
         result = self.request_assert_success(f'/container/{container_serial}/unassign', payload, self.at, 'POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=1)
+        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=1,
+                                container_serial=container_serial)
         self.assertTrue(result["result"].get("value"))
         self.assertEqual(0, len(container.get_users()))
 
@@ -200,7 +212,8 @@ class APIContainer(APIContainerTest):
         container.add_user(user)
         payload = {"user": user.login, "resolver": user.resolver}
         result = self.request_assert_success(f'/container/{container_serial}/unassign', payload, self.at, 'POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=1)
+        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=1,
+                                container_serial=container_serial)
         self.assertTrue(result["result"].get("value"))
         self.assertEqual(0, len(container.get_users()))
 
@@ -208,7 +221,8 @@ class APIContainer(APIContainerTest):
         container.add_user(user)
         payload = {"user_id": user.uid}
         result = self.request_assert_success(f'/container/{container_serial}/unassign', payload, self.at, 'POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=1)
+        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=1,
+                                container_serial=container_serial)
         self.assertTrue(result["result"].get("value"))
         self.assertEqual(0, len(container.get_users()))
 
@@ -216,7 +230,8 @@ class APIContainer(APIContainerTest):
         container.add_user(user)
         payload = {"user_id": user.uid, "realm": user.realm, "resolver": user.resolver}
         result = self.request_assert_success(f'/container/{container_serial}/unassign', payload, self.at, 'POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=1)
+        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=1,
+                                container_serial=container_serial)
         self.assertTrue(result["result"].get("value"))
         self.assertEqual(0, len(container.get_users()))
 
@@ -236,7 +251,8 @@ class APIContainer(APIContainerTest):
         self.request_assert_error(400, f'/container/{container_serial}/unassign', {}, self.at, 'POST',
                                   error_code=905,
                                   error_message="ERR905: Missing one of the following parameters: ['user', 'user_id']")
-        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=0,
+                                info=self.contains('ERR905'))
 
         # Only username, realm / resolver / uid missing (if user is not in defrealm)
         payload = {"user": user.login}
@@ -244,14 +260,16 @@ class APIContainer(APIContainerTest):
                                   payload, self.at, 'POST',
                                   error_code=904,
                                   error_message="ERR904: The user can not be found in any resolver in this realm!")
-        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=0,
+                                info=self.contains('ERR904'))
         # If no default realm exists, another error is raised
         set_default_realm()
         self.request_assert_error(400, f'/container/{container_serial}/unassign',
                                   payload, self.at, 'POST',
                                   error_code=905,
                                   error_message="ERR905: Missing parameter 'realm', 'resolver', and/or 'user_id'")
-        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=0,
+                                info=self.contains('ERR905'))
 
         # Only realm: user / user_id missing
         payload = {"realm": self.realm3}
@@ -259,7 +277,8 @@ class APIContainer(APIContainerTest):
                                   payload, self.at, 'POST',
                                   error_code=905,
                                   error_message="ERR905: Missing one of the following parameters: ['user', 'user_id']")
-        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=0,
+                                info=self.contains('ERR905'))
 
         # Unassign user with non-existing realm
         payload = {"user": user.login, "realm": "non_existing"}
@@ -267,7 +286,8 @@ class APIContainer(APIContainerTest):
                                   payload, self.at, 'POST',
                                   error_code=904,
                                   error_message="ERR904: The user can not be found in any resolver in this realm!")
-        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=0,
+                                info=self.contains('ERR904'))
 
         # Unassign not assigned user
         payload = {"user": "hans", "realm": self.realm1}
@@ -296,7 +316,8 @@ class APIContainer(APIContainerTest):
                                   payload, self.at, 'POST',
                                   error_code=904,
                                   error_message="ERR904: The user can not be found in any resolver in this realm!")
-        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=0,
+                                info=self.contains('ERR904'))
 
         # Remove non-existing not assigned user
         payload = {"user": "another_invalid", "realm": self.realm1, "user_id": "987"}
@@ -304,7 +325,8 @@ class APIContainer(APIContainerTest):
                                   payload, self.at, 'POST',
                                   error_code=904,
                                   error_message="ERR904: The user can not be found in any resolver in this realm!")
-        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=0,
+                                info=self.contains('ERR904'))
 
         # --- Success ---
         # Only with user_id should work as long as the container can only have one user
@@ -363,7 +385,8 @@ class APIContainer(APIContainerTest):
                                   payload, self.at, 'POST',
                                   error_code=904,
                                   error_message="ERR904: The user can not be found in any resolver in this realm!")
-        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/unassign', success=0,
+                                info=self.contains('ERR904'))
         # Success when providing only user_id and resolver, even if realm does not exist
         payload = {"user_id": user.uid, "resolver": user.resolver}
         result = self.request_assert_success(f'/container/{container_serial}/unassign', payload, self.at, 'POST')
@@ -423,18 +446,19 @@ class APIContainer(APIContainerTest):
                                   {}, self.at, 'POST',
                                   error_code=905,
                                   error_message="ERR905: Missing parameter: realms")
-        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=0,
+                                info=self.contains('ERR905'))
 
         # Set non-existing realm
         payload = {"realms": "nonexistingrealm"}
         result = self.request_assert_success(f'/container/{container_serial}/realms', payload, self.at, 'POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=0, info=self.NOT_EMPTY)
         result = result.get("result")
         self.assertFalse(result["value"]["nonexistingrealm"])
 
         # Missing container serial
         self.request_assert_405('/container/realms', {"realms": [self.realm1]}, self.at, 'POST')
-        self.assert_no_audit_entry('POST /container/<string:container_serial>')
+        self.assert_audit_log_empty()
 
         delete_container_by_serial(container_serial)
 
@@ -446,14 +470,16 @@ class APIContainer(APIContainerTest):
         payload = {"description": "new description"}
         result = self.request_assert_success(f'/container/{container_serial}/description',
                                              payload, self.at, 'POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/description', success=1)
+        self.assert_audit_entry('POST /container/<string:container_serial>/description', success=1,
+                                action_detail="description=new description")
         self.assertTrue(result["result"]["value"])
 
         # Set empty description
         payload = {"description": ""}
         result = self.request_assert_success(f'/container/{container_serial}/description',
                                              payload, self.at, 'POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/description', success=1)
+        self.assert_audit_entry('POST /container/<string:container_serial>/description', success=1,
+                                action_detail="description=")
         self.assertTrue(result["result"]["value"])
 
         delete_container_by_serial(container_serial)
@@ -467,19 +493,21 @@ class APIContainer(APIContainerTest):
                                   {}, self.at, 'POST',
                                   error_code=905,
                                   error_message="ERR905: Missing parameter: description")
-        self.assert_audit_entry('POST /container/<string:container_serial>/description', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/description', success=0,
+                                info=self.contains('ERR905'))
 
         # Description parameter is None
         self.request_assert_error(400, f'/container/{container_serial}/description',
                                   {"description": None}, self.at, 'POST',
                                   error_code=905,
                                   error_message="ERR905: Missing parameter: description")
-        self.assert_audit_entry('POST /container/<string:container_serial>/description', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/description', success=0,
+                                info=self.contains('ERR905'))
 
         # Missing container serial
         self.request_assert_405('/container/description', {"description": "new description"},
                                 self.at, 'POST')
-        self.assert_no_audit_entry('POST /container/<string:container_serial>')
+        self.assert_audit_log_empty()
 
         delete_container_by_serial(container_serial)
 
@@ -491,7 +519,8 @@ class APIContainer(APIContainerTest):
         payload = {"states": "active,damaged,lost"}
         result = self.request_assert_success(f'/container/{container_serial}/states',
                                              payload, self.at, 'POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/states', success=1)
+        self.assert_audit_entry('POST /container/<string:container_serial>/states', success=1,
+                                action_detail="states=['active', 'damaged', 'lost']")
         self.assertTrue(result["result"]["value"])
         self.assertTrue(result["result"]["value"]["active"])
         self.assertTrue(result["result"]["value"]["damaged"])
@@ -508,12 +537,13 @@ class APIContainer(APIContainerTest):
                                   {}, self.at, 'POST',
                                   error_code=905,
                                   error_message="ERR905: Missing parameter: states")
-        self.assert_audit_entry('POST /container/<string:container_serial>/states', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/states', success=0,
+                                info=self.contains('ERR905'))
 
         # Missing container serial
         self.request_assert_405('/container/states', {"states": "active,damaged,lost"},
                                 self.at, 'POST')
-        self.assert_no_audit_entry('POST /container/<string:container_serial>')
+        self.assert_audit_log_empty()
 
         # Set exclusive states
         payload = {"states": "active,disabled"}
@@ -521,7 +551,8 @@ class APIContainer(APIContainerTest):
                                   payload, self.at, 'POST',
                                   error_code=905,
                                   error_message="ERR905: The state list ['active', 'disabled'] contains exclusive states!")
-        self.assert_audit_entry('POST /container/<string:container_serial>/states', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/states', success=0,
+                                info=self.contains('ERR905'))
 
         delete_container_by_serial(container_serial)
 
@@ -545,16 +576,17 @@ class APIContainer(APIContainerTest):
                                   {}, self.at, 'POST',
                                   error_code=905,
                                   error_message="ERR905: Missing parameter: value")
-        self.assert_audit_entry('POST /container/<string:container_serial>/info/<key>', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/info/<key>', success=0,
+                                info=self.contains('ERR905'))
 
         # Missing container serial
         self.request_assert_404_no_result('/container/info/key1', {"value": "value1"}, self.at, 'POST')
-        self.assert_no_audit_entry('POST /container/info/key1')
+        self.assert_audit_log_empty()
 
         # Missing key
         self.request_assert_404_no_result(f'/container/{container_serial}/info/',
                                           {"value": "value1"}, self.at, 'POST')
-        self.assert_no_audit_entry(f'POST /container/{container_serial}/info/')
+        self.assert_audit_log_empty()
 
         delete_container_by_serial(container_serial)
 
@@ -571,20 +603,24 @@ class APIContainer(APIContainerTest):
         # Add single token
         result = self.request_assert_success(f'/container/{container_serial}/add',
                                              {"serial": hotp_01_serial}, self.at, 'POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/add', success=1)
+        self.assert_audit_entry('POST /container/<string:container_serial>/add', success=1,
+                                container_serial=container_serial, serial=hotp_01_serial)
         self.assertTrue(result["result"]["value"])
 
         # Remove single token
         result = self.request_assert_success(f'/container/{container_serial}/remove',
                                              {"serial": hotp_01_serial}, self.at, 'POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/remove', success=1)
+        self.assert_audit_entry('POST /container/<string:container_serial>/remove', success=1,
+                                container_serial=container_serial, serial=hotp_01_serial)
         self.assertTrue(result["result"]["value"])
 
         # Add multiple tokens
         result = self.request_assert_success(f'/container/{container_serial}/addall',
                                              {"serial": f"{hotp_01_serial},{hotp_02_serial},{hotp_03_serial}"},
                                              self.at, 'POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/addall', success=1)
+        self.assert_audit_entry('POST /container/<string:container_serial>/addall', success=1,
+                                container_serial=container_serial,
+                                serial=self.NOT_EMPTY)  # addall/removeall log serials in a non-deterministic order
         self.assertTrue(result["result"]["value"][hotp_01_serial])
         self.assertTrue(result["result"]["value"][hotp_02_serial])
         self.assertTrue(result["result"]["value"][hotp_03_serial])
@@ -593,7 +629,9 @@ class APIContainer(APIContainerTest):
         result = self.request_assert_success(f'/container/{container_serial}/removeall',
                                              {"serial": f"{hotp_01_serial}, {hotp_02_serial}, {hotp_03_serial}"},
                                              self.at, 'POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/removeall', success=1)
+        self.assert_audit_entry('POST /container/<string:container_serial>/removeall', success=1,
+                                container_serial=container_serial,
+                                serial=self.NOT_EMPTY)  # addall/removeall log serials in a non-deterministic order
         self.assertTrue(result["result"]["value"][hotp_01_serial])
         self.assertTrue(result["result"]["value"][hotp_02_serial])
         self.assertTrue(result["result"]["value"][hotp_03_serial])
@@ -602,7 +640,9 @@ class APIContainer(APIContainerTest):
         result = self.request_assert_success(f'/container/{container_serial}/addall',
                                              {"serial": f"{hotp_01_serial}, {hotp_02_serial}, {hotp_03_serial}"},
                                              self.at, 'POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/addall', success=1)
+        self.assert_audit_entry('POST /container/<string:container_serial>/addall', success=1,
+                                container_serial=container_serial,
+                                serial=self.NOT_EMPTY)  # addall/removeall log serials in a non-deterministic order
         self.assertTrue(result["result"]["value"][hotp_01_serial])
         self.assertTrue(result["result"]["value"][hotp_02_serial])
         self.assertTrue(result["result"]["value"][hotp_03_serial])
@@ -611,7 +651,9 @@ class APIContainer(APIContainerTest):
         result = self.request_assert_success(f'/container/{container_serial}/removeall',
                                              {"serial": f"{hotp_01_serial},{hotp_02_serial},{hotp_03_serial}"},
                                              self.at, 'POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/removeall', success=1)
+        self.assert_audit_entry('POST /container/<string:container_serial>/removeall', success=1,
+                                container_serial=container_serial,
+                                serial=self.NOT_EMPTY)  # addall/removeall log serials in a non-deterministic order
         self.assertTrue(result["result"]["value"][hotp_01_serial])
         self.assertTrue(result["result"]["value"][hotp_02_serial])
         self.assertTrue(result["result"]["value"][hotp_03_serial])
@@ -629,11 +671,12 @@ class APIContainer(APIContainerTest):
                                   {}, self.at, 'POST',
                                   error_code=905,
                                   error_message="ERR905: Missing parameter: 'serial' or 'serials'")
-        self.assert_audit_entry('POST /container/<string:container_serial>/add', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/add', success=0,
+                                info=self.contains('ERR905'))
 
         # Add token without container serial
         self.request_assert_405('/container/add', {"serial": hotp_01_serial}, self.at, 'POST')
-        self.assert_no_audit_entry('POST /container/add')
+        self.assert_audit_log_empty()
 
         delete_container_by_serial(container_serial)
 
@@ -649,11 +692,12 @@ class APIContainer(APIContainerTest):
                                   {}, self.at, 'POST',
                                   error_code=905,
                                   error_message="ERR905: Missing parameter: 'serial' or 'serials'")
-        self.assert_audit_entry('POST /container/<string:container_serial>/remove', success=0)
+        self.assert_audit_entry('POST /container/<string:container_serial>/remove', success=0,
+                                info=self.contains('ERR905'))
 
         # Remove token without container serial
         self.request_assert_405('/container/remove', {"serial": hotp_01_serial}, self.at, 'POST')
-        self.assert_no_audit_entry('POST /container/remove')
+        self.assert_audit_log_empty()
 
         delete_container_by_serial(container_serial)
 
@@ -914,7 +958,8 @@ class APIContainer(APIContainerTest):
         # Delete info
         self.request_assert_success(f"/container/{container_serial}/info/delete/test",
                                     {}, self.at, "DELETE")
-        self.assert_audit_entry('DELETE /container/<string:container_serial>/info/delete/<key>', success=1)
+        self.assert_audit_entry('DELETE /container/<string:container_serial>/info/delete/<key>', success=1,
+                                action_detail="key=test")
 
     def test_24_delete_container_info_fail(self):
         # Arrange
@@ -929,13 +974,15 @@ class APIContainer(APIContainerTest):
                                            {}, self.at, "DELETE", 303,
                                            "The key 'internal_test' is reserved for internal use "
                                            "and cannot be deleted.")
-        self.assert_audit_entry('DELETE /container/<string:container_serial>/info/delete/<key>', success=0)
+        self.assert_audit_entry('DELETE /container/<string:container_serial>/info/delete/<key>', success=0,
+                                info=self.NOT_EMPTY)
 
         # Deleting a non-existing key is a no-op that returns False, not an internal-key error
         result = self.request_assert_success(f"/container/{container_serial}/info/delete/does_not_exist",
                                              {}, self.at, "DELETE")
         self.assertFalse(result["result"]["value"])
-        self.assert_audit_entry('DELETE /container/<string:container_serial>/info/delete/<key>', success=0)
+        self.assert_audit_entry('DELETE /container/<string:container_serial>/info/delete/<key>', success=0,
+                                action_detail="key=does_not_exist")
 
     def test_25_broken_user_resolver(self):
         # Arrange
