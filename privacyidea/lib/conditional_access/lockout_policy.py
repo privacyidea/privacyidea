@@ -39,8 +39,10 @@ A policy is passed around as a plain dict::
                 "failure_threshold": 5,
                 "priority": 1,
                 "actions": [
-                    {"action_type": "LOCK_USER", "action_value": {"lock_duration_seconds": 600}},
-                    {"action_type": "EMAIL_ADMIN", "action_value": {"smtp_identifier": "..."}},
+                    {"action_type": "LOCK_USER", "action_value": {"lock_duration_seconds": 600},
+                     "retrigger_above_threshold": True},
+                    {"action_type": "EMAIL_ADMIN", "action_value": {"smtp_identifier": "..."},
+                     "retrigger_above_threshold": False},
                 ],
             },
         ],
@@ -76,12 +78,24 @@ log = logging.getLogger(__name__)
 # clean ParameterError instead of a DB-dependent truncation or error.
 MAX_NAME_LENGTH = 255
 
+# The pre-auth ALLOW/DENY actions: standing decisions that apply while the count
+# stays at or above the threshold, so they default to re-triggering (the
+# post-response lock/email/block effects default to fire-once).
+DECISION_ACTIONS = frozenset({str(LockoutAction.ALLOW), str(LockoutAction.DENY)})
+
 
 @dataclass
 class StageActionDefinition:
-    """One validated stage action (see :func:`_validate_stages`)."""
+    """
+    One validated stage action (see :func:`_validate_stages`).
+
+    ``retrigger_above_threshold`` left at ``None`` means "not chosen": it is
+    resolved to the action-aware default in :func:`_build_stages` (re-trigger for
+    the :data:`DECISION_ACTIONS`, fire-once for the post-response effects).
+    """
     action_type: str
     action_value: object = None
+    retrigger_above_threshold: bool | None = None
 
 
 @dataclass
@@ -110,6 +124,10 @@ def lockout_policy_to_dict(policy: LockoutPolicy) -> dict:
     # serialized explicitly.
     result = {column: getattr(policy, column) for column in policy.__table__.columns.keys()}
     result["counter_types_to_track"] = list(policy.counter_types_to_track)
+    # Stages are ordered for display by ascending failure_threshold (the stage
+    # that triggers first comes first). This is independent of the engine's
+    # evaluation order (highest priority first, see the model relationship),
+    # which is why we sort here rather than relying on policy.stages order.
     result["stages"] = [
         {
             "id": stage.id,
@@ -121,9 +139,10 @@ def lockout_policy_to_dict(policy: LockoutPolicy) -> dict:
                     "id": action.id,
                     "action_type": action.action_type,
                     "action_value": action.action_value,
+                    "retrigger_above_threshold": action.retrigger_above_threshold,
                 } for action in stage.actions
             ],
-        } for stage in policy.stages
+        } for stage in sorted(policy.stages, key=lambda stage: stage.failure_threshold)
     ]
     return result
 
@@ -322,7 +341,7 @@ def _validate_stages(stages) -> list[StageDefinition]:
         raise ParameterError("'stages' must be a non-empty list of stage definitions.")
     valid_actions = {action.value for action in LockoutAction}
     allowed_stage_keys = {"name", "failure_threshold", "priority", "actions"}
-    allowed_action_keys = {"action_type", "action_value"}
+    allowed_action_keys = {"action_type", "action_value", "retrigger_above_threshold"}
     normalized = []
     thresholds = set()
     for stage in stages:
@@ -355,23 +374,43 @@ def _validate_stages(stages) -> list[StageDefinition]:
             if action_type not in valid_actions:
                 raise ParameterError(f"Unknown action type '{action_type}'. "
                                      f"Valid types: {', '.join(sorted(valid_actions))}.")
+            # retrigger_above_threshold is a per-action checkbox (coerced like the
+            # policy-level enabled/dry_run booleans). An omitted flag stays None
+            # and is resolved to the action-aware default by :func:`_build_stages`.
+            retrigger_raw = action.get("retrigger_above_threshold")
+            retrigger = None if retrigger_raw is None else bool(retrigger_raw)
             normalized_actions.append(StageActionDefinition(action_type=action_type,
-                                                            action_value=action.get("action_value")))
+                                                            action_value=action.get("action_value"),
+                                                            retrigger_above_threshold=retrigger))
         normalized.append(StageDefinition(failure_threshold=threshold, priority=priority,
                                           name=name, actions=normalized_actions))
     return normalized
 
 
+def _default_retrigger(action: StageActionDefinition) -> bool:
+    """The action's ``retrigger_above_threshold``, defaulted by action type when unset."""
+    if action.retrigger_above_threshold is None:
+        return str(action.action_type) in DECISION_ACTIONS
+    return action.retrigger_above_threshold
+
+
 def _build_stages(stage_defs: list[StageDefinition]) -> list[LockoutPolicyStage]:
     """
     Turn validated :class:`StageDefinition` objects into (unpersisted) ORM objects.
+
+    An action whose ``retrigger_above_threshold`` is ``None`` (not chosen by the
+    admin) gets the action-aware default: the :data:`DECISION_ACTIONS` are
+    standing pre-auth decisions that apply while the count stays at or above the
+    threshold, so they re-trigger; the post-response effects (lock/email/block)
+    fire once, at the exact threshold.
     """
     return [
         LockoutPolicyStage(
             name=stage.name,
             failure_threshold=stage.failure_threshold,
             priority=stage.priority,
-            actions=[LockoutStageAction(action_type=action.action_type, action_value=action.action_value)
+            actions=[LockoutStageAction(action_type=action.action_type, action_value=action.action_value,
+                                        retrigger_above_threshold=_default_retrigger(action))
                      for action in stage.actions],
         ) for stage in stage_defs
     ]

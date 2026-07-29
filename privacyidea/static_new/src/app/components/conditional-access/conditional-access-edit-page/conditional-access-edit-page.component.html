@@ -184,8 +184,6 @@
           (input)="onTimeWindowInput($any($event.target).value)" />
         @if (!timeWindowValid()) {
           <mat-error i18n>Must be at least 1.</mat-error>
-        } @else if (timeWindowUnit() !== "seconds") {
-          <mat-hint i18n>= {{ editPolicy().time_window_seconds }} seconds</mat-hint>
         }
       </mat-form-field>
 

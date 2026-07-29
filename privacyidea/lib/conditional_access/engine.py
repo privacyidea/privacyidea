@@ -651,12 +651,13 @@ def evaluate_access_decision(user: "User", source_ip: str | None = None,
     Because there is no event for the current request yet, the decision is keyed
     on the user's **prior** event history: for each enabled policy the events of
     its ``counter_types_to_track`` are counted (combined across all tracked
-    types) over its window, and the highest-priority stage whose threshold is
-    met supplies the decision. A
-    ``DENY`` stage therefore rejects this single request without persisting any
+    types) over its window, and the highest-priority stage with a matching
+    ALLOW/DENY action supplies the decision. A
+    ``DENY`` action therefore rejects this single request without persisting any
     state — a stateless, self-healing reject that lifts on its own as the
     failures age out of the window (contrast the durable :attr:`LockoutAction.LOCK_USER`).
-    A stage with ``failure_threshold`` 0 always matches, so an ``ALLOW`` stage at
+    Because ALLOW/DENY actions default to re-triggering (``count >= threshold``), a
+    stage with ``failure_threshold`` 0 always matches, so an ``ALLOW`` action at
     threshold 0 acts as a default-allow / allowlist exception.
 
     Policies are evaluated by ascending ``priority`` (a lower number means higher
@@ -694,8 +695,16 @@ def _policy_access_decision(policy: LockoutPolicy, user: "User", source_ip: str 
                             now: datetime) -> "AccessDecision | None":
     """
     The ALLOW/DENY decision a single policy contributes pre-auth, or ``None`` if
-    this policy does not decide the request (wrong/absent subject, no stage met,
-    the met stage carries only lockout-style actions, or the policy is in dry-run).
+    this policy does not decide the request (wrong/absent subject, no ALLOW/DENY action's threshold
+    condition is met, or the policy is in dry-run).
+
+    Each ALLOW/DENY action decides for itself via :func:`_action_threshold_met`:
+    such actions default to re-triggering (``count >= threshold``, so the decision
+    stands while the failures are high), which is what makes ``ALLOW`` at threshold
+    0 a default-allow and ``DENY`` a self-healing reject. An admin can switch a
+    decision action to fire-once, in which case it only decides the request at the
+    exact threshold count. The highest-priority stage with a met ALLOW/DENY action
+    supplies the decision.
     """
     if policy.target == LockoutTarget.SOURCE_IP:
         # IP-scoped: decide on the source IP regardless of user resolution. A
@@ -712,14 +721,9 @@ def _policy_access_decision(policy: LockoutPolicy, user: "User", source_ip: str 
             return None
         count = _policy_count(policy, user, now)
         subject_label = repr(user)
-    triggered_stage = next((stage for stage in policy.stages
-                            if count >= stage.failure_threshold), None)
-    if triggered_stage is None:
-        return None
-    decision = _stage_access_decision(triggered_stage)
+    decision = next((d for d in (_stage_access_decision(stage, count) for stage in policy.stages)
+                     if d is not None), None)
     if decision is None:
-        # The met stage only locks / emails / blocks; that is handled
-        # post-response, not as a pre-auth decision.
         return None
     types = _types_label(policy.counter_types_to_track)
     if policy.dry_run:
@@ -731,11 +735,12 @@ def _policy_access_decision(policy: LockoutPolicy, user: "User", source_ip: str 
     return decision
 
 
-def _stage_access_decision(stage) -> "AccessDecision | None":
+def _stage_access_decision(stage, count: int) -> "AccessDecision | None":
     """
-    Extract the pre-auth ALLOW/DENY decision from a triggered stage's actions, or
-    ``None`` if the stage carries no ALLOW/DENY action. If a stage is
-    misconfigured with both, DENY wins (fail closed).
+    Extract the pre-auth ALLOW/DENY decision from a stage's actions whose
+    per-action threshold condition is met at *count*, or ``None`` if no such
+    ALLOW/DENY action applies. If both an ALLOW and a DENY apply, DENY wins (fail
+    closed).
     """
     has_allow = False
     for action in stage.actions:
@@ -743,10 +748,13 @@ def _stage_access_decision(stage) -> "AccessDecision | None":
             action_type = LockoutAction(action.action_type)
         except ValueError:
             continue
+        if action_type not in (LockoutAction.ALLOW, LockoutAction.DENY):
+            continue
+        if not _action_threshold_met(action, stage.failure_threshold, count):
+            continue
         if action_type == LockoutAction.DENY:
             return AccessDecision.DENY
-        if action_type == LockoutAction.ALLOW:
-            has_allow = True
+        has_allow = True
     return AccessDecision.ALLOW if has_allow else None
 
 
@@ -757,6 +765,16 @@ def evaluate_lockout_policies(user: "User", event_type, source_ip: str | None = 
     the actions of the triggered stage, if any. This runs post-response, *after*
     the request's ``authentication_log`` row has been written (so the count
     includes it).
+
+    Each action decides for itself whether it fires. By default an action fires
+    once, when the failure count reaches its stage's threshold exactly: an action
+    at threshold 8 runs on the 8th failure and not again on the 9th. An action with
+    ``retrigger_above_threshold`` fires whenever the count is at or above the
+    threshold, so a single stage can email once at threshold 8 while keeping the
+    user locked for every further failure (see :func:`_action_threshold_met`). The
+    count climbs by one per tracked failure and resets after a successful login
+    (see :func:`count_user_events`), so a fresh burst re-triggers the fire-once
+    actions too.
 
     The persistent side effects (lock state) are consulted by the *next* inbound
     request via the pre-check. In addition, an executed ``EMAIL_*`` action yields
@@ -806,12 +824,42 @@ def evaluate_lockout_policies(user: "User", event_type, source_ip: str | None = 
     return unique
 
 
+def _action_threshold_met(action, threshold: int, count: int) -> bool:
+    """
+    Whether *action* fires at the given failure *count*, for its stage's
+    *threshold*.
+
+    Default (``retrigger_above_threshold`` unset): the action fires only when the
+    count equals the threshold exactly, so it triggers once as the count climbs
+    past it. With ``retrigger_above_threshold`` the action fires whenever the count
+    is at or above the threshold (the classic re-triggering lockout). The flag is
+    per action, so one stage can e.g. email once at its threshold while keeping the
+    user locked as long as the count stays at or above it.
+    """
+    if action.retrigger_above_threshold:
+        return count >= threshold
+    return count == threshold
+
+
+def _stage_pending_actions(stage, count: int) -> list:
+    """The actions of *stage* whose per-action condition is met at *count*."""
+    return [action for action in stage.actions
+            if _action_threshold_met(action, stage.failure_threshold, count)]
+
+
 def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
                      source_ip: str | None, now: datetime) -> list[str]:
     """
     Evaluate a single policy: count the user's events over the policy window,
-    find the highest-priority stage whose threshold is met, de-duplicate, then
-    execute the stage's actions (or, in dry-run, only log them).
+    find the triggered stage, de-duplicate, then execute the stage's *pending*
+    actions (or, in dry-run, only log them).
+
+    Each action decides for itself whether it fires (see
+    :func:`_action_threshold_met`): by default an action triggers once, when the
+    count equals the stage's ``failure_threshold``; an action with
+    ``retrigger_above_threshold`` fires whenever the count is at or above the
+    threshold. So one stage can, for example, email once at threshold 8 while
+    keeping the user locked for every further failure at 8 or more.
 
     :return: the user-facing notices produced by the executed actions (empty if
         no stage triggered, in dry-run, or when de-duplicated away).
@@ -843,13 +891,21 @@ def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
         count = _policy_count(policy, user, now, since_last_success=True)
         subject_label = repr(user)
 
-    # Stages are ordered highest-priority first by the relationship; the first
-    # stage whose threshold is met wins, so the most severe matching stage is
-    # picked when several thresholds are crossed.
+    # Pick the triggered stage: the highest-priority stage that has at least one
+    # action whose per-action condition is met (see _action_threshold_met). By
+    # default an action fires only at the exact threshold, so each fire-once action
+    # triggers once as the count climbs past it (a threshold-8 email is sent when
+    # the 8th failure lands, not again at 9); a re-triggering action keeps firing
+    # while the count stays at or above the threshold. Stages are ordered
+    # highest-priority first by the relationship, so the most severe stage with a
+    # pending action wins; only that one stage's pending actions run (one stage per
+    # policy per request). (Contrast the pre-auth ALLOW/DENY decision - see
+    # _policy_access_decision.)
     triggered_stage = next((stage for stage in policy.stages
-                            if count >= stage.failure_threshold), None)
+                            if _stage_pending_actions(stage, count)), None)
     if triggered_stage is None:
         return []
+    pending_actions = _stage_pending_actions(triggered_stage, count)
 
     if policy.dry_run:
         # Dry-run never reads or writes the de-dup state, so it logs on every
@@ -860,13 +916,16 @@ def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
         return []
 
     dedup_window_start = now - timedelta(seconds=window)
-    # De-dup: skip a stage that already fired within the window for this user, or
-    # (for IP-blocking stages) for this source IP. An incident *ends* when its
-    # lock/block is lifted — whether by expiry OR by an admin clearing
-    # ``is_locked`` / ``is_blocked`` — so the next trigger is a fresh incident
-    # that must execute again. Otherwise an expired or admin-lifted lock would
-    # leave a dead zone for the rest of the window in which the offender could
-    # keep failing without ever being re-locked / re-blocked.
+    # De-dup: with exact-threshold triggering a stage normally fires once as the
+    # count climbs past it, but a sliding window can let the count fall back to
+    # and re-reach the same threshold; this skips a stage that already fired
+    # within the window for this user, or (for IP-blocking stages) for this
+    # source IP. An incident *ends* when its lock/block is lifted — whether by
+    # expiry OR by an admin clearing ``is_locked`` / ``is_blocked`` — so
+    # re-reaching the threshold afterwards is a fresh incident that must execute
+    # again. Otherwise an expired or admin-lifted lock would leave a dead zone in
+    # which the offender could re-reach the threshold without being re-locked /
+    # re-blocked.
     user_state = db.session.get(UserLockoutState, (user.resolver, user.uid, user.realm))
     user_incident_active = (user_state is not None and user_state.is_locked
                             and (user_state.lock_expires_at is None
@@ -877,11 +936,11 @@ def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
                   and user_state.last_updated >= dedup_window_start)
     # An IP-blocking stage de-dups on its BlockList row, mirroring the user
     # de-dup. Without this such a stage has no de-dup at all (it never writes
-    # UserLockoutState): every in-window failure would re-fire it, refreshing the
-    # block and re-running any sibling actions.
+    # UserLockoutState): the count re-reaching the threshold would re-fire it,
+    # refreshing the block and re-running any sibling actions.
     ip_dedup = False
     if source_ip and any(a.action_type in (LockoutAction.BLOCK_IP, LockoutAction.PERMANENT_BLOCK_IP)
-                         for a in triggered_stage.actions):
+                         for a in pending_actions):
         ip_state = db.session.get(BlockList, source_ip)
         ip_incident_active = (ip_state is not None and ip_state.is_blocked
                               and (ip_state.block_expires_at is None
@@ -899,7 +958,7 @@ def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
              f"(threshold {triggered_stage.failure_threshold}) for {subject_label}: "
              f"{count} event(s) of {_types_label(policy.counter_types_to_track)} in {window}s.")
     tags = _base_action_tags(policy, triggered_stage, user, event_type, count, source_ip, now)
-    return _execute_stage_actions(triggered_stage, user, source_ip, now, tags)
+    return _execute_stage_actions(triggered_stage, pending_actions, user, source_ip, now, tags)
 
 
 def _lock_duration_seconds(action_value) -> int | None:
@@ -1069,19 +1128,20 @@ def _send_lockout_email(action_type: "LockoutAction", stage_action: LockoutStage
     return None
 
 
-def _execute_stage_actions(stage, user: "User", source_ip: str | None, now: datetime,
+def _execute_stage_actions(stage, actions, user: "User", source_ip: str | None, now: datetime,
                            tags: dict) -> list[str]:
     """
-    Execute every action of a triggered stage. Each action is guarded
-    independently: an unknown type, a misconfiguration, or a failing side effect
-    (e.g. an unreachable mail server) is logged and skipped so it can never break
-    the authentication flow or prevent the stage's other actions from running.
+    Execute the given *actions* of a triggered *stage* (the stage's pending
+    actions, i.e. those whose per-action threshold condition is met). Each action
+    is guarded independently: an unknown type, a misconfiguration, or a failing
+    side effect (e.g. an unreachable mail server) is logged and skipped so it can
+    never break the authentication flow or prevent the other actions from running.
 
     :return: the user-facing notices produced by executed ``EMAIL_*`` actions
-        (empty if the stage has no email action or none was delivered).
+        (empty if no email action ran or none was delivered).
     """
     notices: list[str] = []
-    for action in stage.actions:
+    for action in actions:
         try:
             action_type = LockoutAction(action.action_type)
         except ValueError:

@@ -38,9 +38,11 @@ from privacyidea.models.lockout_policy import (LockoutPolicy, LockoutPolicyCount
 from .base import MyTestCase
 
 
-def _stage(threshold=5, priority=1, actions=None):
+def _stage(threshold=5, priority=1, actions=None, retrigger=False):
     if actions is None:
         actions = [{"action_type": "LOCK_USER", "action_value": {"lock_duration_seconds": 600}}]
+    # retrigger is per action; apply it to each action of this stage.
+    actions = [{**action, "retrigger_above_threshold": retrigger} for action in actions]
     return {"failure_threshold": threshold, "priority": priority, "actions": actions}
 
 
@@ -81,11 +83,47 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         self.assertEqual(CountMode.PER_REQUEST, policy["count_mode"])
         self.assertEqual(["PIN_FAIL", "MFA_FAIL"], policy["counter_types_to_track"])
         self.assertEqual(2, len(policy["stages"]))
-        # stages are ordered by stage priority desc (evaluation order)
-        self.assertEqual(10, policy["stages"][0]["failure_threshold"])
-        self.assertEqual(2, len(policy["stages"][0]["actions"]))
+        # stages are ordered by ascending failure_threshold (first to trigger first)
+        self.assertEqual(5, policy["stages"][0]["failure_threshold"])
+        self.assertEqual(10, policy["stages"][1]["failure_threshold"])
+        self.assertEqual(2, len(policy["stages"][1]["actions"]))
         self.assertEqual({"lock_duration_seconds": 600},
-                         policy["stages"][1]["actions"][0]["action_value"])
+                         policy["stages"][0]["actions"][0]["action_value"])
+        # retrigger_above_threshold defaults to False on a lock action (fire once).
+        self.assertFalse(policy["stages"][0]["actions"][0]["retrigger_above_threshold"])
+
+    def test_01b_action_retrigger_flag_round_trips(self):
+        # The per-action retrigger_above_threshold checkbox round-trips within one
+        # stage: the lock action re-triggers while the email fires once.
+        policy_id = create_lockout_policy(
+            "Retrig", 600, ["PIN_FAIL"],
+            stages=[{"failure_threshold": 8,
+                     "actions": [{"action_type": "LOCK_USER",
+                                  "action_value": {"lock_duration_seconds": 300},
+                                  "retrigger_above_threshold": True},
+                                 {"action_type": "EMAIL_ADMIN",
+                                  "action_value": {"smtp_identifier": "x"},
+                                  "retrigger_above_threshold": False}]}],
+            target=LockoutTarget.USER)
+        policy = get_lockout_policy(policy_id)
+        by_type = {action["action_type"]: action for action in policy["stages"][0]["actions"]}
+        self.assertTrue(by_type["LOCK_USER"]["retrigger_above_threshold"])
+        self.assertFalse(by_type["EMAIL_ADMIN"]["retrigger_above_threshold"])
+
+    def test_01c_retrigger_default_is_action_aware(self):
+        # When the client omits retrigger_above_threshold, ALLOW/DENY decision
+        # actions default to re-trigger and the lock/email/block effects to fire-once.
+        policy_id = create_lockout_policy(
+            "Defaults", 600, ["PIN_FAIL"],
+            stages=[{"failure_threshold": 3, "actions": [{"action_type": "DENY"}]},
+                    {"failure_threshold": 5,
+                     "actions": [{"action_type": "LOCK_USER",
+                                  "action_value": {"lock_duration_seconds": 60}}]}],
+            target=LockoutTarget.USER)
+        policy = get_lockout_policy(policy_id)
+        by_threshold = {stage["failure_threshold"]: stage for stage in policy["stages"]}
+        self.assertTrue(by_threshold[3]["actions"][0]["retrigger_above_threshold"])   # DENY
+        self.assertFalse(by_threshold[5]["actions"][0]["retrigger_above_threshold"])  # LOCK_USER
 
     def test_02_create_validation_errors(self):
         valid = dict(time_window_seconds=600, counter_types_to_track=["PIN_FAIL"],
