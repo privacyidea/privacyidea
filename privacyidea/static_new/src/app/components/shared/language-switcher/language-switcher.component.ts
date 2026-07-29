@@ -47,6 +47,7 @@ const UI_LOCALES: UiLocale[] = [
   { code: "it", label: "Italiano" },
   { code: "ta", label: "தமிழ்" },
   { code: "pt", label: "Português" },
+  { code: "pl", label: "Polski" },
   { code: "ru", label: "Русский" },
   { code: "uk", label: "Українська" }
 ];

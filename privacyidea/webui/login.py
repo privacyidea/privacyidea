@@ -54,7 +54,7 @@ log = logging.getLogger(__name__)
 DEFAULT_THEME = "/static/contrib/css/bootstrap-theme.css"
 # note: the empty comment in the following line allows to include it in the docs
 DEFAULT_LANGUAGE_LIST = ['en', 'de', 'nl', 'zh_Hant', 'fr', 'es', 'tr', 'cs',
-                         'it', 'ta', 'pt', 'ru', 'uk']  #:
+                         'it', 'ta', 'pt', 'pl', 'ru', 'uk']  #:
 
 # Cookie that records an explicit UI language choice (set by the WebUI language switcher).
 # It is consulted before the browser's Accept-Language header when resolving the locale.

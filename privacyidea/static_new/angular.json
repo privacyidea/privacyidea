@@ -20,6 +20,7 @@
           "it": { "translation": "src/locale/messages.it.xlf" },
           "ta": { "translation": "src/locale/messages.ta.xlf" },
           "pt": { "translation": "src/locale/messages.pt.xlf" },
+          "pl": { "translation": "src/locale/messages.pl.xlf" },
           "ru": { "translation": "src/locale/messages.ru.xlf" },
           "uk": { "translation": "src/locale/messages.uk.xlf" }
         }
@@ -161,6 +162,13 @@
               "baseHref": "/app/v2/pt/",
               "fileReplacements": [{ "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }]
             },
+            "pl": {
+              "optimization": false,
+              "sourceMap": true,
+              "localize": ["pl"],
+              "baseHref": "/app/v2/",
+              "fileReplacements": [{ "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }]
+            },
             "ru": {
               "optimization": false,
               "sourceMap": true,
@@ -200,6 +208,7 @@
             "it": { "buildTarget": "privacyidea-webui:build:it" },
             "ta": { "buildTarget": "privacyidea-webui:build:ta" },
             "pt": { "buildTarget": "privacyidea-webui:build:pt" },
+            "pl": { "buildTarget": "privacyidea-webui:build:pl" },
             "ru": { "buildTarget": "privacyidea-webui:build:ru" },
             "uk": { "buildTarget": "privacyidea-webui:build:uk" }
           },

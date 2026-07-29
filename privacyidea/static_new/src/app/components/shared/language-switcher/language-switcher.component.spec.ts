@@ -25,6 +25,7 @@ describe("LanguageSwitcherComponent", () => {
 
   interface TestableSwitcher {
     currentLocale: string;
+    locales: { code: string; label: string }[];
     switchTo: (code: string) => void;
     navigate: (url: string) => void;
   }
@@ -59,7 +60,12 @@ describe("LanguageSwitcherComponent", () => {
 
   it("reports the compiled locale as current", () => {
     expect(create("de").currentLocale).toBe("de");
+    expect(create("pl").currentLocale).toBe("pl");
     expect(create("zh-Hant").currentLocale).toBe("zh-Hant");
+  });
+
+  it("offers Polish in the language menu", () => {
+    expect(create("en").locales).toContainEqual({ code: "pl", label: "Polski" });
   });
 
   it("normalizes English region variants to 'en'", () => {
@@ -93,8 +99,8 @@ describe("LanguageSwitcherComponent", () => {
 
   it("maps the route correctly when leaving English (no locale subpath)", () => {
     window.history.replaceState({}, "", "/app/v2/tokens");
-    create("en").switchTo("de");
-    expect(navigateSpy).toHaveBeenCalledWith("/app/v2/de/tokens");
+    create("en").switchTo("pl");
+    expect(navigateSpy).toHaveBeenCalledWith("/app/v2/pl/tokens");
   });
 
   it("does not double the locale prefix when a foreign locale segment is in the URL", () => {

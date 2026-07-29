@@ -276,6 +276,14 @@ class NewUIRoutingTestCase(MyTestCase):
         self.assertEqual(res.status_code, 302)
         self.assertIn("/app/v2/de/", res.location)
 
+    def test_root_redirects_to_polish_locale_when_build_exists(self):
+        """GET / with Polish Accept-Language redirects to /app/v2/pl/ when build exists."""
+        with mock.patch("privacyidea.webui.login.os.path.isfile", return_value=True):
+            with self.app.test_request_context("/", method="GET", headers={"Accept-Language": "pl"}):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 302)
+        self.assertIn("/app/v2/pl/", res.location)
+
     def test_root_does_not_redirect_when_build_missing(self):
         """GET / with German Accept-Language falls back to old UI when no build."""
         with mock.patch("privacyidea.webui.login.os.path.isfile", return_value=False), \
