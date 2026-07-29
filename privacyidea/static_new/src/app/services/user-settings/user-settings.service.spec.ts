@@ -30,6 +30,7 @@ describe("UserSettingsService", () => {
   let service: UserSettingsService;
   let httpMock: HttpTestingController;
   let notificationService: MockNotificationService;
+  let authService: MockAuthService;
 
   const respondWith = (settings: UserSettings, request = httpMock.expectOne("/user/settings")): void => {
     request.flush({ result: { status: true, value: settings } } as PiResponse<UserSettings>);
@@ -49,6 +50,7 @@ describe("UserSettingsService", () => {
     service = TestBed.inject(UserSettingsService);
     httpMock = TestBed.inject(HttpTestingController);
     notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+    authService = TestBed.inject(AuthService) as unknown as MockAuthService;
   });
 
   afterEach(() => {
@@ -169,6 +171,46 @@ describe("UserSettingsService", () => {
     respondWith({ theme: "light" });
 
     expect(result).toEqual({ theme: "light" });
+  });
+
+  describe("principals without stored settings", () => {
+    it("should not request anything for a principal of role 'user'", () => {
+      authService.role.set("user");
+
+      let result: UserSettings | null = null;
+      service.getSettings().subscribe((settings) => {
+        result = settings;
+      });
+
+      expect(result).toEqual({});
+      httpMock.expectNone("/user/settings");
+    });
+
+    it("should not store a setting for a principal of role 'user'", () => {
+      authService.role.set("user");
+
+      service.setSetting("theme", "dark").subscribe();
+
+      httpMock.expectNone("/user/settings");
+      expect(service.settings()).toBeNull();
+    });
+
+    it("should not delete a setting for a principal of role 'user'", () => {
+      authService.role.set("user");
+
+      service.deleteSetting("theme").subscribe();
+
+      httpMock.expectNone("/user/settings/theme");
+    });
+
+    it("should not request anything while nobody is logged in", () => {
+      authService.isAuthenticated.set(false);
+
+      service.getSettings().subscribe();
+      service.setSetting("theme", "dark").subscribe();
+
+      httpMock.expectNone("/user/settings");
+    });
   });
 
   it("should drop the cached document on clearCache", () => {

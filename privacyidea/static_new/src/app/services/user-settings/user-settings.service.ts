@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { HttpClient } from "@angular/common/http";
-import { inject, Injectable, Signal, signal } from "@angular/core";
+import { computed, inject, Injectable, Signal, signal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
 import { environment } from "@env/environment";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -36,6 +36,8 @@ export type UserSettings = Partial<Record<UserSettingKey, unknown>>;
 
 export interface UserSettingsServiceInterface {
   readonly settings: Signal<UserSettings | null>;
+
+  readonly available: Signal<boolean>;
 
   getSettings(): Observable<UserSettings>;
 
@@ -62,7 +64,19 @@ export class UserSettingsService implements UserSettingsServiceInterface {
 
   public readonly settings: Signal<UserSettings | null> = this.cache.asReadonly();
 
+  /**
+   * Stored settings exist for administrators only. A principal of role "user" keeps
+   * theme and language in the browser (cookie and local storage), so no request is
+   * sent for them and every read answers with an empty document.
+   */
+  public readonly available: Signal<boolean> = computed(
+    () => this.authService.isAuthenticated() && this.authService.role() !== "user"
+  );
+
   public getSettings(): Observable<UserSettings> {
+    if (!this.available()) {
+      return of({});
+    }
     const cached = this.cache();
     if (cached) {
       return of(cached);
@@ -85,6 +99,9 @@ export class UserSettingsService implements UserSettingsServiceInterface {
   }
 
   public setSetting<T>(key: UserSettingKey, value: T): Observable<UserSettings> {
+    if (!this.available()) {
+      return of({});
+    }
     return this.http
       .post<PiResponse<UserSettings>>(
         this.baseUrl,
@@ -99,6 +116,9 @@ export class UserSettingsService implements UserSettingsServiceInterface {
   }
 
   public deleteSetting(key: UserSettingKey): Observable<UserSettings> {
+    if (!this.available()) {
+      return of({});
+    }
     return this.http
       .delete<PiResponse<UserSettings>>(`${this.baseUrl}/${encodeURIComponent(key)}`, {
         headers: this.authService.getHeaders()

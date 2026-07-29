@@ -149,6 +149,7 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
   activeSection = computed(() => {
     const url = this.contentService.routeUrl();
     if (url.startsWith(ROUTE_PATHS.DASHBOARD)) return "dashboard";
+    if (url.startsWith(ROUTE_PATHS.SETTINGS)) return "settings";
     if (url.startsWith(ROUTE_PATHS.CONTAINERS)) return "container";
     if (url.startsWith(ROUTE_PATHS.USERS)) return "users";
     if (url.startsWith(ROUTE_PATHS.POLICIES)) return "policies";

@@ -26,6 +26,7 @@ import { Observable, of } from "rxjs";
 
 export class MockUserSettingsService implements UserSettingsServiceInterface {
   readonly settings = signal<UserSettings | null>({});
+  readonly available = signal(true);
 
   getSettings(): Observable<UserSettings> {
     return of(this.settings() ?? {});

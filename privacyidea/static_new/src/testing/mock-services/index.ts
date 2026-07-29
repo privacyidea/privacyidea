@@ -30,6 +30,7 @@ export * from "./mock-system-service";
 export * from "./mock-table-utils-service";
 export * from "./mock-token-service";
 export * from "./mock-tokengroup-service";
+export * from "./mock-ui-preferences-service";
 export * from "./mock-user-service";
 export * from "./mock-user-settings-service";
 export * from "./mock-utils";

@@ -24,6 +24,7 @@ import { ThemeService } from "@services/theme/theme.service";
 import { UserSettingsService } from "@services/user-settings/user-settings.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockUserSettingsService } from "@testing/mock-services/mock-user-settings-service";
+import { throwError } from "rxjs";
 import { UiPreferencesService } from "./ui-preferences.service";
 
 describe("UiPreferencesService", () => {
@@ -172,5 +173,191 @@ describe("UiPreferencesService", () => {
     service.sync();
 
     expect(navigateSpy).not.toHaveBeenCalled();
+  });
+
+  describe("normalizeLocaleUrl", () => {
+    it("should drop a locale segment the running bundle does not match", () => {
+      // The URL asks for German, but the server answered with the English bundle.
+      create("en");
+      window.history.replaceState({}, "", "/app/v2/de/users");
+
+      service.normalizeLocaleUrl();
+
+      expect(navigateSpy).toHaveBeenCalledWith("/app/v2/users");
+    });
+
+    it("should keep the requested page and its query string", () => {
+      create("en");
+      window.history.replaceState({}, "", "/app/v2/de/tokens/details/OATH0001?foo=bar");
+
+      service.normalizeLocaleUrl();
+
+      expect(navigateSpy).toHaveBeenCalledWith("/app/v2/tokens/details/OATH0001?foo=bar");
+    });
+
+    it("should rewrite to the running locale, not to English", () => {
+      create("de");
+      window.history.replaceState({}, "", "/app/v2/fr/users");
+
+      service.normalizeLocaleUrl();
+
+      expect(navigateSpy).toHaveBeenCalledWith("/app/v2/de/users");
+    });
+
+    it("should leave a URL whose segment matches the running bundle alone", () => {
+      create("de");
+      window.history.replaceState({}, "", "/app/v2/de/users");
+
+      service.normalizeLocaleUrl();
+
+      expect(navigateSpy).not.toHaveBeenCalled();
+    });
+
+    it("should leave a URL without a locale segment alone", () => {
+      create("en");
+      window.history.replaceState({}, "", "/app/v2/users");
+
+      service.normalizeLocaleUrl();
+
+      expect(navigateSpy).not.toHaveBeenCalled();
+    });
+
+    it("should not treat an unknown first segment as a locale", () => {
+      create("en");
+      window.history.replaceState({}, "", "/app/v2/tokens/details/OATH0001");
+
+      service.normalizeLocaleUrl();
+
+      expect(navigateSpy).not.toHaveBeenCalled();
+    });
+
+    it("should run for an anonymous visitor as well", () => {
+      create("en");
+      authService.isAuthenticated.set(false);
+      window.history.replaceState({}, "", "/app/v2/de/login");
+
+      service.normalizeLocaleUrl();
+
+      expect(navigateSpy).toHaveBeenCalledWith("/app/v2/login");
+    });
+  });
+
+  describe("preferredLocale", () => {
+    it("should report the stored language, even while another bundle runs", () => {
+      create("en");
+      userSettingsService.settings.set({ locale: "de" });
+
+      expect(service.preferredLocale()).toBe("de");
+    });
+
+    it("should fall back to the running bundle without a stored language", () => {
+      create("de");
+      userSettingsService.settings.set({});
+
+      expect(service.preferredLocale()).toBe("de");
+    });
+
+    it("should ignore a stored language that is not a known locale", () => {
+      create("en");
+      userSettingsService.settings.set({ locale: "klingon" });
+
+      expect(service.preferredLocale()).toBe("en");
+    });
+  });
+
+  describe("switchLocale", () => {
+    it("should set the cookie and load the bundle of the chosen locale", () => {
+      create("en");
+
+      service.switchLocale("de");
+
+      expect(document.cookie).toContain(`${LOCALE_COOKIE_NAME}=de`);
+      expect(navigateSpy).toHaveBeenCalledWith("/app/v2/de/tokens");
+    });
+
+    it("should navigate to the subpath-less base when switching to English", () => {
+      create("de");
+      window.history.replaceState({}, "", "/app/v2/de/tokens");
+
+      service.switchLocale("en");
+
+      expect(document.cookie).toContain(`${LOCALE_COOKIE_NAME}=en`);
+      expect(navigateSpy).toHaveBeenCalledWith("/app/v2/tokens");
+    });
+
+    it("should store the choice without a page load when the bundle already runs", () => {
+      // The way out of a stored preference whose bundle the server does not serve: the app
+      // runs another locale, and picking that one has to be storable.
+      create("en");
+      userSettingsService.settings.set({ locale: "de" });
+
+      service.switchLocale("en");
+
+      expect(userSettingsService.settings()?.["locale"]).toBe("en");
+      expect(document.cookie).toContain(`${LOCALE_COOKIE_NAME}=en`);
+      expect(navigateSpy).not.toHaveBeenCalled();
+    });
+
+    it("should forget a pending attempt once its locale is chosen away", () => {
+      create("en");
+      service.switchLocale("de");
+      expect(navigateSpy).toHaveBeenCalledTimes(1);
+
+      // Back in the English bundle (the "de" one was missing): choosing English must clear
+      // the attempt, otherwise a later switch to German would be skipped as "already tried".
+      create("en");
+      service.switchLocale("en");
+      service.switchLocale("de");
+
+      expect(navigateSpy).toHaveBeenCalledWith("/app/v2/de/tokens");
+    });
+
+    it("should preserve the in-app route and query string", () => {
+      create("de");
+      window.history.replaceState({}, "", "/app/v2/de/tokens/details/OATH0001?foo=bar");
+
+      service.switchLocale("fr");
+
+      expect(navigateSpy).toHaveBeenCalledWith("/app/v2/fr/tokens/details/OATH0001?foo=bar");
+    });
+
+    it("should not double the locale prefix when a foreign locale segment is in the URL", () => {
+      // e.g. the English bundle served in place at a non-English URL after a missing-bundle fallback.
+      create("en");
+      window.history.replaceState({}, "", "/app/v2/zh-Hant/tokens");
+
+      service.switchLocale("de");
+
+      expect(navigateSpy).toHaveBeenCalledWith("/app/v2/de/tokens");
+    });
+
+    it("should store the choice as the locale setting when logged in", () => {
+      create("en");
+
+      service.switchLocale("de");
+
+      expect(userSettingsService.settings()?.["locale"]).toBe("de");
+      expect(navigateSpy).toHaveBeenCalledWith("/app/v2/de/tokens");
+    });
+
+    it("should navigate even when storing the setting fails", () => {
+      create("en");
+      jest.spyOn(userSettingsService, "setSetting").mockReturnValue(throwError(() => new Error("boom")));
+
+      service.switchLocale("de");
+
+      expect(navigateSpy).toHaveBeenCalledWith("/app/v2/de/tokens");
+    });
+
+    it("should not store a setting while nobody is logged in", () => {
+      create("en");
+      authService.isAuthenticated.set(false);
+      const setSpy = jest.spyOn(userSettingsService, "setSetting");
+
+      service.switchLocale("de");
+
+      expect(setSpy).not.toHaveBeenCalled();
+      expect(navigateSpy).toHaveBeenCalledWith("/app/v2/de/tokens");
+    });
   });
 });

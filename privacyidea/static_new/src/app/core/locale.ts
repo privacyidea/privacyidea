@@ -16,6 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { writeCookie } from "@core/cookie";
 
 /** Mount point of the new WebUI; locale bundles live at APP_PREFIX or APP_PREFIX + "<locale>/". */
 export const APP_PREFIX = "/app/v2/";
@@ -68,17 +69,25 @@ export function isKnownLocale(code: string): boolean {
 }
 
 /**
+ * The locale the current URL explicitly asks for, or null when the path carries no
+ * locale segment (the source-locale bundle is served without one).
+ */
+export function localeSegmentFromPath(): string | null {
+  const path = window.location.pathname;
+  if (!path.startsWith(APP_PREFIX)) {
+    return null;
+  }
+  const firstSegment = path.slice(APP_PREFIX.length).split("/", 1)[0];
+  return isKnownLocale(firstSegment) ? firstSegment : null;
+}
+
+/**
  * The locale the current URL asks for: the leading path segment, or "en" for the
  * source-locale bundle served without one. This is the *requested* locale, which
  * differs from LOCALE_ID when the server falls back to another bundle.
  */
 export function localeFromPath(): string {
-  const path = window.location.pathname;
-  if (!path.startsWith(APP_PREFIX)) {
-    return "en";
-  }
-  const firstSegment = path.slice(APP_PREFIX.length).split("/", 1)[0];
-  return isKnownLocale(firstSegment) ? firstSegment : "en";
+  return localeSegmentFromPath() ?? "en";
 }
 
 /** The in-app route after the /app/v2/ prefix and any leading locale segment. */
@@ -102,7 +111,7 @@ export function localeTargetUrl(code: string): string {
 
 /** Records the explicit language choice for a year, so it survives reloads and deep links. */
 export function rememberLocale(code: string): void {
-  document.cookie = `${LOCALE_COOKIE_NAME}=${code}; path=/; max-age=31536000; SameSite=Lax`;
+  writeCookie(LOCALE_COOKIE_NAME, code);
 }
 
 /** Session storage key holding the locale a bundle load was last attempted for. */

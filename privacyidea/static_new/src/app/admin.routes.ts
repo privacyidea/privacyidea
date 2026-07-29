@@ -51,6 +51,7 @@ import { TokengroupsComponent } from "@components/external-services/tokengroups/
 import { MachineResolverDetailsComponent } from "@components/machine-resolver/machine-resolver-details/machine-resolver-details.component";
 import { MachineResolverComponent } from "@components/machine-resolver/machine-resolver.component";
 import { PolicyEditPageComponent } from "@components/policies/policy-edit-page/policy-edit-page.component";
+import { SettingsComponent } from "@components/settings/settings.component";
 import { PoliciesTableComponent } from "@components/policies/policies-table/policies-table.component";
 import { ChallengesTableComponent } from "@components/token/challenges-table/challenges-table.component";
 import { ContainerCreateComponent } from "@components/container/container-create/container-create.component";
@@ -82,6 +83,10 @@ export const routes: Routes = [
     component: DashboardComponent,
     canActivate: [dashboardGuard],
     canDeactivate: [pendingChangesGuard]
+  },
+  {
+    path: "settings",
+    component: SettingsComponent
   },
   {
     path: "tokens",
