@@ -95,11 +95,7 @@
             min="1"
             [value]="durationValue()"
             (input)="onDurationInput($any($event.target).value)" />
-          @if (durationUnit() !== "seconds") {
-            <mat-hint i18n>= {{ durationSecondsHint() }} seconds</mat-hint>
-          } @else {
-            <mat-hint i18n>How long the lock or block lasts.</mat-hint>
-          }
+          <mat-hint i18n>How long the lock or block lasts.</mat-hint>
         </mat-form-field>
 
         <mat-form-field

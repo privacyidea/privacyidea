@@ -125,9 +125,11 @@ class LockoutPolicyStage(MethodsMixin, db.Model):
     the stage's ``failure_threshold`` (see
     :attr:`LockoutStageAction.retrigger_above_threshold` for the per-action
     fire-once vs re-trigger choice); escalation is expressed as separate stages
-    per threshold. ``priority`` orders the stages for the pre-auth ALLOW/DENY
-    decision (evaluated highest ``priority`` first, so the most severe matching
-    stage supplies the verdict).
+    per threshold. The stage's own ``priority`` column (distinct from, and
+    ordered opposite to, :attr:`LockoutPolicy.priority`) orders the stages
+    *within* one policy for the pre-auth ALLOW/DENY decision: stages are
+    evaluated by descending ``priority``, so the most severe matching stage
+    supplies the verdict.
     """
     __tablename__ = 'lockout_policy_stages'
     __table_args__ = (

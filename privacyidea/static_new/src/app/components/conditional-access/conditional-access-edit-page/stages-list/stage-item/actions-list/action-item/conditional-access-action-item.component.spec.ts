@@ -150,13 +150,6 @@ describe("ConditionalAccessActionItemComponent", () => {
       component.onDurationUnitChange("hours");
       expect(spy).not.toHaveBeenCalled();
     });
-
-    it("should report the stored seconds for the hint, or 0 when unset", () => {
-      setAction({ action_type: "LOCK_USER", action_value: 300 });
-      expect(component.durationSecondsHint()).toBe(300);
-      setAction({ action_type: "LOCK_USER", action_value: null });
-      expect(component.durationSecondsHint()).toBe(0);
-    });
   });
 
   describe("email", () => {

@@ -227,11 +227,6 @@ export class ConditionalAccessActionItemComponent {
     return null;
   }
 
-  // The stored value in seconds, for the "= N seconds" hint under the field.
-  durationSecondsHint(): number {
-    return this.durationSeconds() ?? 0;
-  }
-
   // Display value in the currently selected unit.
   durationValue(): string {
     const seconds = this.durationSeconds();
