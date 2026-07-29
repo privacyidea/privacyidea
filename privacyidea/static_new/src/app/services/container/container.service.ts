@@ -479,8 +479,12 @@ export class ContainerService implements ContainerServiceInterface {
     return this.containerRequest({
       no_token: 1,
       ...this.filterParams(),
-      ...(this.userService.detailsUser().username && { user: this.userService.detailsUser().username }),
-      ...(this.userService.selectedUserRealm() && { realm: this.userService.selectedUserRealm() })
+      // The realm is only sent together with the username: on its own it filters for the containers of
+      // all users of that realm, which are not the containers of the user shown on the details page.
+      ...(this.userService.detailsUser().username && {
+        user: this.userService.detailsUser().username,
+        ...(this.userService.selectedUserRealm() && { realm: this.userService.selectedUserRealm() })
+      })
     });
   });
 

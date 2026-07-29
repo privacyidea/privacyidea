@@ -894,14 +894,30 @@ class APIContainer(APIContainerTest):
                 self.assertEqual("hans", container["users"][0]["user_name"])
                 self.assertEqual(self.realm1, container["users"][0]["user_realm"])
 
-            # A realm that does not exist is rejected
-            self.request_assert_error(404, '/container/', {"realm": "non_existing_realm", "pagesize": 100},
-                                      self.at, 'GET', error_code=Error.RESOURCE_NOT_FOUND)
+            # Combined with a wildcard resolver
+            result = self.request_assert_success('/container/',
+                                                 {"realm": self.realm1, "resolver": f"{self.resolvername1[:-1]}*",
+                                                  "pagesize": 100},
+                                                 self.at, 'GET')
+            self.assertIn(realm1_serial, {c["serial"] for c in result["result"]["value"]["containers"]})
+
+            # A realm that does not exist matches nothing
+            result = self.request_assert_success('/container/',
+                                                 {"realm": "non_existing_realm", "pagesize": 100},
+                                                 self.at, 'GET')
+            self.assertEqual(0, result["result"]["value"]["count"])
 
             # A username that can not be resolved is rejected
             self.request_assert_error(400, '/container/', {"user": "non_existing_user", "realm": self.realm1,
                                                           "pagesize": 100},
                                       self.at, 'GET', error_code=Error.USER)
+
+            # The realm is evaluated first, hence an unknown user in an unknown realm matches nothing
+            result = self.request_assert_success('/container/',
+                                                 {"user": "non_existing_user", "realm": "non_existing_realm",
+                                                  "pagesize": 100},
+                                                 self.at, 'GET')
+            self.assertEqual(0, result["result"]["value"]["count"])
         finally:
             delete_container_by_serial(realm1_serial)
             delete_container_by_serial(realm2_serial)

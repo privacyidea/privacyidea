@@ -143,11 +143,12 @@
   is given without `user`, listing the containers of all users of that realm. Previously such a
   request returned an empty list, because the realm was only ever applied together with a resolved
   user id. Note that `realm` (the realm of the assigned user) and `container_realm` (the realm of the
-  container itself) are still two distinct filters. Two error cases that were silently answered with
-  an empty list now return an error, the same way `GET /token/` already does:
-  a `realm` that does not exist is rejected with a 404, and a `user` that can not be found in any
-  resolver of the realm with a 400. Scripts that pass a stale or misspelled realm or user name to
-  `GET /container/` and relied on getting a result need to be updated.
+  container itself) are still two distinct filters. A realm that does not exist matches nothing, like
+  any other filter value that does not exist. A `user` that can not be resolved to a user id is now
+  rejected with a 400 instead of being answered with an empty list, because the request would
+  otherwise be filtered by the realm and the resolver alone and return the containers of other users.
+  Scripts that pass a stale or misspelled user name to `GET /container/` and relied on getting an
+  empty result need to handle the error.
 
 ## Update from 3.12 to 3.13
 
