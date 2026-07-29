@@ -97,11 +97,11 @@ describe("ContentService", () => {
   describe("route flags", () => {
     // Every flag with the URLs it has to recognize. Each URL is checked twice: bare, and with query
     // parameters appended, because navigation now carries the realm/user selection in the query string.
-    const routeFlagCases: ReadonlyArray<{
+    const routeFlagCases: readonly {
       name: string;
       read: (service: ContentService) => boolean;
       urls: string[];
-    }> = [
+    }[] = [
       { name: "onLogin", read: (s) => s.onLogin(), urls: [ROUTE_PATHS.LOGIN] },
       { name: "onAudit", read: (s) => s.onAudit(), urls: [ROUTE_PATHS.AUDIT] },
       { name: "onClients", read: (s) => s.onClients(), urls: [ROUTE_PATHS.CLIENTS] },
