@@ -261,7 +261,7 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res.json)
             self.assertTrue(res.json["result"]["status"], res.json)
-        self.clear_flask_g()
+        self.reset_flask_g()
         with self.app.test_request_context(f"/container/{container_serial}/realms",
                                            method='POST',
                                            json={"realms": ["realm2"]},
@@ -269,7 +269,7 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res.json)
             self.assertTrue(res.json["result"]["status"], res.json)
-        self.clear_flask_g()
+        self.reset_flask_g()
         delete_policy("policy_state")
         delete_policy("policy_realm")
 
