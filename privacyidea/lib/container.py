@@ -179,7 +179,10 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
     """
     Generates a sql query to filter containers by the given parameters.
 
-    :param user: container owner, optional
+    :param user: container owner, optional. The login name, the realm and the resolver of the user are
+        applied independently, hence a user object carrying only a realm or only a resolver lists the
+        containers of all users of that realm or resolver. Raises a UserError if a login name is given
+        that can not be resolved and a ResourceNotFoundError if the realm does not exist.
     :param serial: container serial (case-insensitive and allows '*' as wildcard), optional
     :param ctype: container type filter (case-insensitive and allows '*' as wildcard), optional
     :param ctype_exact: exact container type filter list (case-insensitive; matches any type in the list), optional.
@@ -209,15 +212,24 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
     stmt = select(TokenContainer)
     realm1 = aliased(Realm)
     if user:
-        stmt = stmt.join(TokenContainer.owners).where(TokenContainerOwner.user_id == user.uid)
+        if user.login and not user.resolver:
+            # A username was requested, but it can not be found in any resolver. Without this check, the
+            # query would only be filtered by the realm and return all containers of that realm.
+            raise UserError("The user can not be found in any resolver in this realm!")
+        # The realm, the resolver and the user id are applied independently, so that the containers of all
+        # users of a realm or resolver can be listed without specifying a username.
+        stmt = stmt.join(TokenContainer.owners)
         if user.realm:
             realm_db = db.session.execute(
                 select(realm1).where(func.lower(realm1.name) == user.realm.lower())
             ).scalar_one_or_none()
-            if realm_db:
-                stmt = stmt.where(TokenContainerOwner.realm_id == realm_db.id)
+            if not realm_db:
+                raise ResourceNotFoundError(f"Realm '{user.realm}' does not exist.")
+            stmt = stmt.where(TokenContainerOwner.realm_id == realm_db.id)
         if user.resolver:
             stmt = stmt.where(func.lower(TokenContainerOwner.resolver) == user.resolver.lower())
+        if user.uid:
+            stmt = stmt.where(TokenContainerOwner.user_id == user.uid)
 
     if serial and serial.strip("*"):
         if "*" in serial:
@@ -382,7 +394,10 @@ def get_all_containers(user: User = None, serial: str = None, ctype: str = None,
     the next or previous page. If page and pagesize are both smaller than 0, no pagination is used.
     The containers are filtered by the given parameters.
 
-    :param user: container owner, optional
+    :param user: container owner, optional. The login name, the realm and the resolver of the user are
+        applied independently, hence a user object carrying only a realm or only a resolver lists the
+        containers of all users of that realm or resolver. Raises a UserError if a login name is given
+        that can not be resolved and a ResourceNotFoundError if the realm does not exist.
     :param serial: container serial (case-insensitive and allows '*' as wildcard), optional
     :param ctype: container type filter (case-insensitive and allows '*' as wildcard), optional
     :param ctype_exact: exact container type filter list (case-insensitive; matches any type in the list), optional.

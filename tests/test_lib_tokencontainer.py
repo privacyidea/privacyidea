@@ -872,10 +872,28 @@ class TokenContainerManagementTestCase(MyTestCase):
         container1_owner = container_data["containers"][0].get_users()[0]
         self.assertEqual(user_cornelius_1, container1_owner)
 
+        # Filter by the realm of the user only: lists the containers of all users of that realm
+        container_data = get_all_containers(user=User(realm=self.realm1), pagesize=15)
+        self.assertEqual(1, len(container_data["containers"]))
+        self.assertEqual(container_serials[1], container_data["containers"][0].serial)
+
+        # The realm of the user is matched case-insensitive
+        container_data = get_all_containers(user=User(realm=self.realm2.upper()), pagesize=15)
+        self.assertEqual(1, len(container_data["containers"]))
+        self.assertEqual(container_serials[2], container_data["containers"][0].serial)
+
+        # Filter by the resolver of the user only
+        container_data = get_all_containers(user=User(realm=self.realm1, resolver=self.resolvername1), pagesize=15)
+        self.assertEqual(1, len(container_data["containers"]))
+        self.assertEqual(container_serials[1], container_data["containers"][0].serial)
+
+        # Filter for a non-existing realm
+        self.assertRaises(ResourceNotFoundError, get_all_containers, user=User(realm="non_existing_realm"),
+                          pagesize=15)
+
         # Filter for non-existing user
         user_invalid = User(login="invalid", realm="random")
-        container_data = get_all_containers(user=user_invalid, pagesize=15)
-        self.assertEqual(0, len(container_data["containers"]))
+        self.assertRaises(UserError, get_all_containers, user=user_invalid, pagesize=15)
 
         # ---- assigned ----
         container_data = get_all_containers(assigned=True, pagesize=15)

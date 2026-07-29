@@ -125,7 +125,8 @@ def list_containers():
 
     Requires authentication and the policy action ``container_list``.
 
-    :query user: filter by the username of an assigned user.
+    :query user: filter by the username of an assigned user. Combined with
+        ``realm`` and ``resolver`` to identify the user.
     :query container_serial: filter by container serial
         (case-insensitive, ``*`` wildcard).
     :query type: filter by container type (case-insensitive, ``*``
@@ -138,8 +139,14 @@ def list_containers():
         this serial (case-insensitive, ``*`` wildcard).
     :query template: filter by the name of the template the
         container was created from (case-sensitive, ``*`` wildcard).
-    :query container_realm: filter by realm (case-insensitive, ``*``
-        wildcard).
+    :query realm: filter by the realm of the assigned user (exact,
+        case-insensitive). May be given without ``user`` to list the
+        containers of all users of that realm. Not to be confused with
+        ``container_realm``: the realm of a user is always among the realms
+        of their container, but a container can be in further realms and
+        keeps the realm of a user that has been unassigned.
+    :query container_realm: filter by the realm of the container itself
+        (case-insensitive, ``*`` wildcard).
     :query description: filter by description (case-insensitive,
         ``*`` wildcard).
     :query resolver: filter by the resolver of the assigned user
@@ -164,6 +171,8 @@ def list_containers():
         entry.
     :status 200: paginated container list in ``result.value`` with
         ``containers``, ``count``, ``current``, ``next``, ``prev``.
+    :status 400: the ``user`` can not be found in any resolver of the realm.
+    :status 404: the ``realm`` does not exist.
     """
     param = request.all_data
     user = request.User
