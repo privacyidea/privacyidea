@@ -38,6 +38,7 @@ import {
 } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
+import { RealmService } from "@services/realm/realm.service";
 import { Tokens, TokenService } from "@services/token/token.service";
 import { UserService } from "@services/user/user.service";
 import {
@@ -46,6 +47,7 @@ import {
   MockLocalService,
   MockNotificationService,
   MockPiResponse,
+  MockRealmService,
   MockTokenService,
   MockUserService
 } from "@testing/mock-services";
@@ -72,6 +74,7 @@ describe("ContainerService", () => {
         { provide: TokenService, useClass: MockTokenService },
         { provide: ContentService, useClass: MockContentService },
         { provide: UserService, useClass: MockUserService },
+        { provide: RealmService, useClass: MockRealmService },
         MockLocalService,
         MockNotificationService
       ]
@@ -487,7 +490,8 @@ describe("ContainerService", () => {
     containerService.containerFilter.set(new FilterValue({ value: "desc: foo token_serial: 123 type: user: Bob" }));
     expect(containerService.filterParams()).toEqual({
       desc: "*foo*",
-      token_serial: "*123*"
+      token_serial: "*123*",
+      user: "Bob"
     });
   });
 

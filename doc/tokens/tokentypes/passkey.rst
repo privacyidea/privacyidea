@@ -46,6 +46,17 @@ the scope authentication and that policy does affect passkey authentication.
 On the token detail page, the passkey can be tested and, if successful, will show the username that is returned by
 privacyIDEA to use for login.
 
+User Label
+~~~~~~~~~~
+
+The name of the passkey that the authenticator shows in the credential selection during login (and during
+registration) can be configured with the policy :ref:`policy_passkey_user_label`. This is useful to tell passkeys
+apart, for example when the same login name exists in several realms. The resolved value is also used as the
+display name. If the policy is not set, the login name of the user is used. The policy value supports tags such
+as ``{user}`` (login name), ``{realm}``, ``{resolver}`` and ``{serial}``, as well as any attribute the user's
+resolver provides (e.g. ``{givenname}``, ``{surname}``, ``{email}``). A value like ``{user}@{realm}`` results in
+a name such as ``alice@example``. See the policy for details on the available tags and the 64 byte length limit.
+
 Attestation
 ~~~~~~~~~~~
 

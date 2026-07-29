@@ -45,17 +45,18 @@ import {
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { UserData, UserService, UserServiceInterface } from "@services/user/user.service";
+import { inlineFilterHint } from "@utils/filter-hint.utils";
 
 import { NgClass } from "@angular/common";
 import { MatIconButton } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
 import { MatIcon } from "@angular/material/icon";
-import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
+import { MatFormField, MatHint, MatInput, MatLabel } from "@angular/material/input";
 import { MatPaginator } from "@angular/material/paginator";
 import { Sort } from "@angular/material/sort";
-import { MatTooltipModule } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
@@ -94,9 +95,11 @@ const userFilterOptions: FilterOption<UserData>[] = columnKeysMap.map(
 @Component({
   selector: "app-user-table",
   imports: [
+    FilterAutocompleteDirective,
     MatCell,
     MatCellDef,
     MatFormField,
+    MatHint,
     MatLabel,
     MatInput,
     MatPaginator,
@@ -117,7 +120,6 @@ const userFilterOptions: FilterOption<UserData>[] = columnKeysMap.map(
     RouterLink,
     MatIcon,
     MatIconButton,
-    MatTooltipModule,
     ScrollEdgesDirective
   ],
   templateUrl: "./user-table.component.html",
@@ -132,6 +134,7 @@ export class UserTableComponent implements OnDestroy {
   protected readonly resolverService = inject(ResolverService);
   protected readonly dialog = inject(MatDialog);
   readonly apiFilter = this.userService.apiFilterOptions;
+  readonly filterHint = inlineFilterHint();
   private basePageSizeOptions = [...this.tableUtilsService.pageSizeOptions()];
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;

@@ -1,0 +1,55 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+@if (visible()) {
+  @if (debugState() === "debug-passwords") {
+    <div
+      class="debug-ribbon"
+      role="alert"
+      aria-label="privacyIDEA is running in DEBUG mode with PASSWORDS being written to the log file. You can change the debug level in pi.cfg. Afterwards be sure to remove the logfile!"
+      i18n-aria-label>
+      <button
+        type="button"
+        class="debug-ribbon-text debug-ribbon-text-passwords"
+        matTooltip="privacyIDEA is running in DEBUG mode with PASSWORDS being written to the log file. You can change the debug level in pi.cfg. Afterwards be sure to remove the logfile! Click to dismiss."
+        matTooltipPosition="right"
+        i18n-matTooltip
+        (click)="dismiss()"
+        i18n>
+        Passwords
+      </button>
+    </div>
+  } @else {
+    <div
+      class="debug-ribbon"
+      role="status"
+      aria-label="privacyIDEA is running in DEBUG mode. You can change the debug level in pi.cfg."
+      i18n-aria-label>
+      <button
+        type="button"
+        class="debug-ribbon-text"
+        matTooltip="privacyIDEA is running in DEBUG mode. You can change the debug level in pi.cfg. Click to dismiss."
+        matTooltipPosition="right"
+        i18n-matTooltip
+        (click)="dismiss()"
+        i18n>
+        Debug
+      </button>
+    </div>
+  }
+}

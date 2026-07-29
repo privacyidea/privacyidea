@@ -18,6 +18,7 @@
 #
 import json
 import logging
+import re
 
 import cryptography.x509
 from cryptography.hazmat._oid import NameOID
@@ -54,6 +55,19 @@ from privacyidea.lib.tokenclass import TokenClass, ClientMode, AuthenticationMod
 from privacyidea.lib.tokenrolloutstate import RolloutState
 
 log = logging.getLogger(__name__)
+
+# Default template for the passkey user label. The tags are resolved during enrollment, {user} evaluates to
+# the login name, so the default keeps the previous behaviour (the login name). The resolved value is used as
+# the WebAuthn user.name, which is what the authenticator shows in the credential selection during login, and
+# is mirrored into user.displayName.
+DEFAULT_USER_LABEL = "{user}"
+
+# The WebAuthn user.name and user.displayName are free-form strings, but authenticators MAY truncate them to
+# 64 bytes (WebAuthn §5.4.3 / CTAP2). We truncate here so the value that is stored and displayed is deterministic.
+USER_LABEL_MAX_BYTES = 64
+
+# A user label tag has the form {tagname}, where tagname consists of word characters.
+USER_LABEL_TAG_PATTERN = re.compile(r"\{(\w+)\}")
 
 
 class PasskeyTokenClass(TokenClass):
@@ -119,6 +133,18 @@ class PasskeyTokenClass(TokenClass):
                         'desc': _("Request attestation from the authenticator during the registration. The attestation "
                                   "certificate will be saved in the token info. The default value is 'none'."),
                         'value': [v for v in AttestationConveyancePreference],
+                        'group': 'WebAuthn'
+                    },
+                    PasskeyAction.UserLabel: {
+                        'type': 'str',
+                        'desc': _("The name of the passkey that the authenticator shows in the credential selection "
+                                  "during login (and during registration). Use this to tell passkeys apart, e.g. when "
+                                  "the same login name exists in several realms. You can use the tags {user} (login "
+                                  "name), {realm}, {resolver} and {serial}, as well as any attribute the user's "
+                                  "resolver provides (e.g. {givenname}, {surname}, {email}), for replacement, e.g. "
+                                  "'{user}@{realm}'. The resolved value is also used as the display name. Unknown tags "
+                                  "resolve to an empty string and the result is limited to 64 bytes. If the value is "
+                                  "empty or the policy is not set, the login name of the user is used."),
                         'group': 'WebAuthn'
                     }
                 }
@@ -187,11 +213,17 @@ class PasskeyTokenClass(TokenClass):
             if PasskeyAction.AttestationConveyancePreference in params:
                 attestation = AttestationConveyancePreference(params[PasskeyAction.AttestationConveyancePreference])
 
+            # User label (configurable via policy, supports tags for replacement). This is the name the
+            # authenticator shows in the credential selection during login. The same value is used as the
+            # display name for authenticator/passkey managers that show it.
+            user_label_template = get_optional(params, PasskeyAction.UserLabel, default=DEFAULT_USER_LABEL)
+            user_label = self._resolve_user_label_tags(user_label_template, token_user)
+
             registration_options: PublicKeyCredentialCreationOptions = generate_registration_options(
                 rp_id=rp_id,
                 rp_name=rp_name,
-                user_name=token_user.login,
-                user_display_name=token_user.login,
+                user_name=user_label,
+                user_display_name=user_label,
                 user_id=fido2_user_id,
                 attestation=attestation,
                 authenticator_selection=AuthenticatorSelectionCriteria(
@@ -222,6 +254,51 @@ class PasskeyTokenClass(TokenClass):
         else:
             response_detail = {}
         return response_detail
+
+    def _resolve_user_label_tags(self, template: str, user) -> str:
+        """
+        Resolve the tags in the passkey user label template. A tag has the form {tagname}.
+
+        The following tags are always available: {user} (the login name), {realm}, {resolver} and {serial}.
+        Additionally, every attribute the user's resolver provides can be used as a tag, e.g. {givenname},
+        {surname}, {email} or {mobile} for an LDAP resolver. The built-in tags take precedence over resolver
+        attributes with the same name.
+
+        Unknown tags and tags whose value is empty are replaced with an empty string. Static text and braces that
+        do not form a valid tag are kept as they are. If the whole template resolves to an empty value, the login
+        name is used as a fallback so the WebAuthn user.name is never empty. The result is truncated to 64 bytes
+        because authenticators may not store longer names.
+
+        :param template: The user label template, e.g. "{user}@{realm}" or "{givenname} {surname}"
+        :param user: The user the passkey is enrolled for
+        :return: The user label with all tags replaced, truncated to 64 bytes
+        """
+        tags = {}
+        # Attributes the resolver provides for the user (e.g. LDAP attributes)
+        try:
+            tags.update(user.info)
+        except Exception as ex:
+            log.debug("Could not read user info while resolving passkey user label tags: %s", ex)
+        # Built-in tags win over resolver attributes with the same name
+        tags.update({"user": user.login, "realm": user.realm, "resolver": user.resolver,
+                     "serial": self.token.serial})
+
+        def replace_tag(match):
+            value = tags.get(match.group(1))
+            return str(value) if value is not None else ""
+
+        user_label = USER_LABEL_TAG_PATTERN.sub(replace_tag, template)
+
+        # If the template resolved to an empty (or whitespace-only) value, e.g. because it only referenced
+        # tags that the resolver does not provide, fall back to the login name. The user label becomes the
+        # WebAuthn user.name, which must not be empty or the authenticator may reject the registration.
+        if not user_label.strip():
+            user_label = user.login
+
+        encoded_user_label = user_label.encode("utf-8")
+        if len(encoded_user_label) > USER_LABEL_MAX_BYTES:
+            user_label = encoded_user_label[:USER_LABEL_MAX_BYTES].decode("utf-8", errors="ignore")
+        return user_label
 
     def update(self, param, reset_failcount=True):
         """
