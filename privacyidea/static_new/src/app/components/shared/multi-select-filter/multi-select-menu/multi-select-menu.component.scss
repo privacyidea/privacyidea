@@ -1,0 +1,7 @@
+// The menu panel itself renders in the CDK overlay (outside this component's view), so its width override lives
+// globally in styles.scss under `.filter-select-menu` — applied via the panel class set on the <mat-menu> above.
+@use "styles";
+
+.mat-divider {
+  border-top-color: var(--mat-sys-outline-variant);
+}
