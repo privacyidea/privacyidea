@@ -42,7 +42,9 @@
       i18n-title
       title="Language">
       <div class="settings-row">
-        <mat-form-field class="input-width-m">
+        <mat-form-field
+          class="input-width-m"
+          subscriptSizing="dynamic">
           <mat-select
             (selectionChange)="selectLocale($event.value)"
             [value]="preferredLocale()"
