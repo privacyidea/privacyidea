@@ -780,8 +780,7 @@ def set_container_info(container_serial, key):
 
     # Audit log
     g.audit_object.log({"container_serial": container_serial,
-                        "key": key,
-                        "value": value,
+                        "action_detail": f"key={key}, value={value}",
                         "success": res})
     return send_result(res)
 
