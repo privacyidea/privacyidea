@@ -90,7 +90,7 @@ import json
 import logging
 import threading
 
-from flask import (Blueprint, request, g, current_app, Response)
+from flask import (Blueprint, request, g, Response)
 from flask_babel import _
 
 from privacyidea.api.auth import admin_required
@@ -113,22 +113,20 @@ from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            webauthntoken_request, check_application_tokentype,
                                            increase_failcounter_on_challenge, get_first_policy_value, fido2_enroll,
                                            disabled_token_types, load_challenge_text)
-from privacyidea.api.lib.utils import get_all_params, get_optional_one_of, get_optional, INTERNAL_OPTION_KEYS
+from privacyidea.api.lib.utils import (get_all_params, get_before_request_config, get_optional_one_of, get_optional,
+                                       INTERNAL_OPTION_KEYS)
 from privacyidea.api.recover import recover_blueprint
 from privacyidea.api.register import register_blueprint
 from privacyidea.lib.applications.offline import MachineApplication
-from privacyidea.lib.audit import getAudit
 from privacyidea.lib.challenge import get_challenges, extract_answered_challenges, cancel_enrollment_via_multichallenge
-from privacyidea.lib.config import (get_from_config,
-                                    SYSCONF, ensure_no_config_object, get_privacyidea_node)
+from privacyidea.lib.config import ensure_no_config_object, get_privacyidea_node
 from privacyidea.lib.container import find_container_for_token, find_container_by_serial, check_container_challenge
 from privacyidea.lib.error import (ParameterError, PolicyError, ResourceNotFoundError, Error, AuthError, UserError,
                                    TokenAdminError)
-from privacyidea.lib.event import EventConfiguration
 from privacyidea.lib.event import event
 from privacyidea.lib.machine import list_machine_tokens, get_auth_items, attach_token
 from privacyidea.lib.policy import Match
-from privacyidea.lib.policy import PolicyClass, SCOPE
+from privacyidea.lib.policy import SCOPE
 from privacyidea.lib.policydecorators import reset_all_user_tokens_active, reset_token_failcounters
 from privacyidea.lib.subscriptions import CheckSubscription
 from privacyidea.lib.token import (check_user_pass, check_serial_pass,
@@ -136,11 +134,11 @@ from privacyidea.lib.token import (check_user_pass, check_serial_pass,
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.tokenclass import CHALLENGE_REFUSAL_STATUS
 from privacyidea.lib.user import log_used_user, User, split_user
-from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent, AUTH_RESPONSE
+from privacyidea.lib.utils import get_plugin_info_from_useragent, AUTH_RESPONSE
 from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
 from .lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
-from .lib.utils import (get_required, map_error_to_code, send_error, send_result, log_authentication,
-                        conditional_access_gate, conditional_access_posteval)
+from .lib.utils import (get_required, get_auth_error_status_code, send_error, send_result,
+                        log_authentication, conditional_access_gate, conditional_access_posteval)
 from ..lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
                                                                  LOG_TRANSACTION_ID_KEY)
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
@@ -170,19 +168,7 @@ def before_request():
     request.all_data = copy.deepcopy(g.request_data)
 
     privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
-    # Create a policy_object, that reads the database audit settings
-    # and contains the complete policy definition during the request.
-    # This audit_object can be used in the postpolicy and prepolicy
-    # It can be passed to the inner policies.
-
-    g.policy_object = PolicyClass()
-
-    g.audit_object = getAudit(current_app.config, g.startdate)
-    g.event_config = EventConfiguration()
-    # access_route contains the ip addresses of all clients, hops and proxies.
-    g.client_ip = get_client_ip(request, get_from_config(SYSCONF.OVERRIDECLIENT))
-    # Save the HTTP header in the localproxy object
-    g.request_headers = request.headers
+    get_before_request_config()
     g.serial = get_optional(request.all_data, "serial", default=None)
     ua_name, ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
     g.user_agent = ua_name
@@ -303,7 +289,7 @@ def offlinerefill():
                 scope=SCOPE.TOKEN,
                 action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE_FOR_OFFLINE_REFILL,
                 user_object=request.User if hasattr(request, "User") else None).any():
-            return send_error("Failed offline token refill", error_code=Error.VALIDATE), map_error_to_code(e)
+            return send_error("Failed offline token refill", error_code=Error.VALIDATE), get_auth_error_status_code(e)
         raise
 
 
@@ -365,8 +351,7 @@ def _poll_transaction_identity() -> User:
     looked up from it; an empty :class:`User` (IP-block still applies) is
     returned when the transaction has no valid challenge.
     """
-    transaction_id = (request.view_args or {}).get("transaction_id") \
-        or get_optional(request.all_data, "transaction_id")
+    transaction_id = (request.view_args or {}).get("transaction_id") or get_optional(request.all_data, "transaction_id")
     if not transaction_id:
         return User()
     valid_challenges = [challenge for challenge in get_challenges(transaction_id=transaction_id)
@@ -927,17 +912,15 @@ def _log_authentication_event(context):
     request_txn = request.all_data.get("transaction_id") or request.all_data.get("state")
     # The log-only TXN (push_wait success) stands in for the challenge TXN that the response does not carry.
     details_txn = context["details"].get("transaction_id") or context.get(LOG_TRANSACTION_ID_KEY)
-    # Prefer the newly-created challenge TXN (details) over the answered-challenge TXN (request). When both exist
-    # and differ, the request TXN is the "previous" — the challenge that was just answered.
+    # Prefer the newly-created challenge TXN (details) over the answered-challenge TXN (request); the rows of one
+    # attempt share an attempt_id regardless, so the answered challenge is still correlated via that.
     logged_txn = details_txn or request_txn
-    previous_txn = request_txn if (details_txn and request_txn and details_txn != request_txn) else None
     g.auth_log_event_id = log_authentication(
         context[AUTH_EVENT_TYPE_KEY],
         request,
         user=context["user"],
         serial=",".join(context["serial_list"]) or None,
         transaction_id=logged_txn,
-        previous_transaction_id=previous_txn,
     )
 
 

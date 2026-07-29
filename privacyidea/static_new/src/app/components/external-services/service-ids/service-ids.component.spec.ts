@@ -80,6 +80,18 @@ describe("ServiceIdsComponent", () => {
     expect(component).toBeTruthy();
   });
 
+  it("should toggle row and all-row selection", () => {
+    const row = component.serviceIdDataSource().data[0];
+    component.toggleRow(row);
+    expect(component.isSelected(row)).toBe(true);
+    component.toggleRow(row);
+    expect(component.isSelected(row)).toBe(false);
+    component.toggleAllRows();
+    expect(component.isAllSelected()).toBe(true);
+    component.toggleAllRows();
+    expect(component.selection().length).toBe(0);
+  });
+
   it("should display service IDs from service", () => {
     expect(component.serviceIdDataSource().data.length).toBe(2);
     expect(component.serviceIdDataSource().data[0].servicename).toBe("service1");

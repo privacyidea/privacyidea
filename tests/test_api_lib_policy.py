@@ -845,7 +845,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
                    action=PolicyAction.HIDE_VERSION)
         g.policy_object = PolicyClass()
         resp = jsonify(res)
-        with patch("privacyidea.api.lib.postpolicy.get_from_config",
+        with patch("privacyidea.lib.config.get_from_config",
                    side_effect=Exception("DB unavailable")):
             new_response = hide_version(req, resp)
         jresult = new_response.json
@@ -1467,6 +1467,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         req = Request(env)
         self.setUp_user_realms()
         req.User = User("autoassignuser", self.realm1)
+        req.all_data = {}
         # The response contains the token type HOTP, successful authentication
         res = {"jsonrpc": "2.0",
                "result": {"status": True,

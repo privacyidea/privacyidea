@@ -32,7 +32,7 @@
         [user]="assignedUser()"
         [tokenData]="containerTokenData()" />
     </div>
-    <div class="flex-row filter-paginator-container ali-center">
+    <div class="flex-row filter-paginator-container ali-center margin-top-16">
       @if (dataSource().data.length > 1) {
         <mat-form-field
           class="container-details-token-table-filter width-50"
@@ -51,13 +51,13 @@
               placeholder="Filter across all columns." />
           </app-clearable-input>
         </mat-form-field>
-      }
 
-      <div class="flex-row ali-center margin-left-auto">
-        <mat-paginator
-          [hidePageSize]="true"
-          [pageSize]="pageSize" />
-      </div>
+        <div class="flex-row ali-center margin-left-auto">
+          <mat-paginator
+            [hidePageSize]="true"
+            [pageSize]="pageSize" />
+        </div>
+      }
     </div>
   </div>
 
@@ -97,10 +97,8 @@
               @switch (column.key) {
                 @case ("serial") {
                   <app-copyable [copyText]="element.status !== 'missing' ? element.token.serial : ''">
-                    @if (
-                      element.status !== "missing" &&
-                      (element.token.username === authService.username() || authService.role() === "admin")
-                    ) {
+                    @if (element.status !== "missing" &&
+                    (element.token.username === authService.username() || authService.role() === "admin")) {
                       <a
                         (click)="contentService.tokenSelected(element.token.serial)"
                         (keydown.enter)="contentService.tokenSelected(element.token.serial)"

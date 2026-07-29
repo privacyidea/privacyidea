@@ -41,7 +41,7 @@ export interface AuthenticationLogEntry {
   client_label?: string | null;
   serial?: string | null;
   transaction_id?: string | null;
-  previous_transaction_id?: string | null;
+  attempt_id?: string | null;
   other_info?: Record<string, unknown> | null;
 }
 
@@ -78,7 +78,7 @@ const apiFilter = [
   "source_ip",
   "serial",
   "transaction_id",
-  "previous_transaction_id",
+  "attempt_id",
   "client_label"
 ];
 
