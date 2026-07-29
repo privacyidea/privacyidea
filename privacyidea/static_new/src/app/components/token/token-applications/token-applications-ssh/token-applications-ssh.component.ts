@@ -34,6 +34,7 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { MachineService, MachineServiceInterface, TokenApplication } from "@services/machine/machine.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { inlineFilterHint } from "@utils/filter-hint.utils";
 
 @Component({
   selector: "app-token-applications-ssh",
@@ -69,6 +70,7 @@ export class TokenApplicationsSshComponent {
   length = computed(() => this.machineService.tokenApplications()?.length ?? 0);
   displayedColumns: string[] = this.columnsKeyMap.map((column) => column.key);
   sort = this.machineService.sort;
+  readonly filterHint = inlineFilterHint();
 
   dataSource = computed(() => {
     const data = this.machineService.tokenApplications();

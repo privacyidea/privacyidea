@@ -22,6 +22,7 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatMenuModule, MatMenuTrigger } from "@angular/material/menu";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { OverflowNavDirective } from "../../../shared/directives/overflow-nav/overflow-nav.directive";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
@@ -37,7 +38,7 @@ import { forkJoin } from "rxjs";
 
 @Component({
   selector: "app-container-table-actions",
-  imports: [MatButtonModule, MatIcon, MatMenuModule, MatTooltipModule, OverflowNavDirective],
+  imports: [MatButtonModule, MatIcon, MatMenuModule, MatTooltipModule, OverflowNavDirective, RouterLink],
   templateUrl: "./container-table-actions.component.html",
   styleUrl: "./container-table-actions.component.scss"
 })

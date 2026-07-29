@@ -3689,6 +3689,42 @@ class APITokenTestCase(MyApiTestCase):
         remove_token(tok_realm1.get_serial())
         remove_token(tok_realm2.get_serial())
 
+    def test_62a_list_tokens_comma_separated_tokenrealm(self):
+        """GET /token/?tokenrealm=realm1,realm2 must return tokens from both
+        realms in a single request."""
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+
+        tok_r1 = init_token({"genkey": 1}, tokenrealms=[self.realm1])
+        tok_r2 = init_token({"genkey": 1}, tokenrealms=[self.realm2])
+
+        # Comma-separated tokenrealm returns tokens from both realms
+        with self.app.test_request_context("/token/",
+                                           method="GET",
+                                           query_string=urlencode({"tokenrealm": f"{self.realm1},{self.realm2}"}),
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            value = res.json["result"]["value"]
+            serials = [t["serial"] for t in value["tokens"]]
+            self.assertIn(tok_r1.get_serial(), serials)
+            self.assertIn(tok_r2.get_serial(), serials)
+
+        # Single tokenrealm still works - only realm1
+        with self.app.test_request_context("/token/",
+                                           method="GET",
+                                           query_string=urlencode({"tokenrealm": self.realm1}),
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            value = res.json["result"]["value"]
+            serials = [t["serial"] for t in value["tokens"]]
+            self.assertIn(tok_r1.get_serial(), serials)
+            self.assertNotIn(tok_r2.get_serial(), serials)
+
+        remove_token(tok_r1.get_serial())
+        remove_token(tok_r2.get_serial())
+
     def test_63_list_tokens_user_role_cannot_escalate(self):
         """A caller with role 'user' must not be able to list tokens of other
         users by passing user= or realm= query parameters."""
@@ -4671,7 +4707,7 @@ class APITokengroupTestCase(MyApiTestCase):
             result = res.json['result']
             self.assertFalse(result.get("status"))
             self.assertEqual(result.get("error").get("code"), 601)
-            self.assertEqual(result.get("error").get("message"), "The tokengroup does not exist.")
+            self.assertEqual('The tokengroup does not exist.', result.get("error").get("message"))
 
         # Delete a non-existing tokengroup from the token
         with self.app.test_request_context('/token/group/{0!s}/gaga'.format(serial),
@@ -4682,6 +4718,6 @@ class APITokengroupTestCase(MyApiTestCase):
             result = res.json['result']
             self.assertFalse(result.get("status"))
             self.assertEqual(result.get("error").get("code"), 601)
-            self.assertEqual(result.get("error").get("message"), "The tokengroup does not exist.")
+            self.assertEqual('Tokengroup gaga does not exist.', result.get("error").get("message"))
 
         remove_token(serial)

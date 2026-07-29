@@ -1057,6 +1057,10 @@ requests==2.34.2 \
     # via
     #   msal
     #   privacyIDEA (pyproject.toml)
+rfc8785==0.1.4 \
+    --hash=sha256:520d690b448ecf0703691c76e1a34a24ddcd4fc5bc41d589cb7c58ec651bcd48 \
+    --hash=sha256:e545841329fe0eee4f6a3b44e7034343100c12b4ec566dc06ca9735681deb4da
+    # via privacyIDEA (pyproject.toml)
 segno==1.6.6 \
     --hash=sha256:28c7d081ed0cf935e0411293a465efd4d500704072cdb039778a2ab8736190c7 \
     --hash=sha256:e60933afc4b52137d323a4434c8340e0ce1e58cec71439e46680d4db188f11b3

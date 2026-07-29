@@ -19,27 +19,19 @@
 <div
   appOverflowNav
   class="flex-row margin-bottom-16 gap-8">
-  <button
-    #advancedFilterTrigger="matMenuTrigger"
-    data-overflow-pinned
-    [matMenuTriggerFor]="advancedFilterMenu"
-    class="action-button-secondary button-width-m"
-    mat-stroked-button>
-    <mat-icon> filter_list</mat-icon>
-    <span i18n>More Filter</span>
-  </button>
-  <mat-menu
-    #advancedFilterMenu="matMenu"
-    class="button-width-m">
-    @for (keyword of containerService.advancedApiFilter; track keyword) {
-      <button
-        (click)="onAdvancedFilterClick(keyword)"
-        mat-menu-item>
-        <mat-icon class="margin-right-16">{{ getFilterIconName(keyword) }}</mat-icon>
-        {{ keyword }}
-      </button>
-    }
-  </mat-menu>
+  @if (authService.actionAllowed("container_create")) {
+    <button
+      data-overflow-pinned
+      [routerLink]="[ROUTE_PATHS.CONTAINERS_CREATE]"
+      class="action-button-primary button-width-m"
+      mat-stroked-button>
+      <span class="icon-badge">
+        <mat-icon class="padding-right-3">folder</mat-icon>
+        <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+      </span>
+      <span i18n>Create Container</span>
+    </button>
+  }
   @if (authService.actionAllowed("container_delete")) {
     <button
       (click)="deleteSelectedContainer()"

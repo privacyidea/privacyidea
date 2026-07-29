@@ -85,7 +85,7 @@ class event:
                     event_audit.log(event_audit_data)
 
                     result = event_handler.do(e_handler_def.get("action"), options=options)
-                    if not result and event_handler.run_details:
+                    if event_handler.run_details:
                         event_audit_data["info"] += f" ({event_handler.run_details})"
                         event_audit.log(event_audit_data)
                     # set audit object to success
@@ -119,7 +119,7 @@ class event:
                     event_audit.log(event_audit_data)
 
                     result = event_handler.do(e_handler_def.get("action"), options=options)
-                    if not result and event_handler.run_details:
+                    if event_handler.run_details:
                         event_audit_data["info"] += f" ({event_handler.run_details})"
                         event_audit.log(event_audit_data)
                     # In case the handler has modified the response
@@ -234,6 +234,8 @@ def set_event(name=None, event=None, handlermodule=None, action=None, conditions
     existing_event_handler = db.session.scalars(stmt_exists).one_or_none()
 
     if existing_event_handler:
+        if name is not None:
+            existing_event_handler.name = name
         if event is not None:
             existing_event_handler.event = event
         if handlermodule is not None:
