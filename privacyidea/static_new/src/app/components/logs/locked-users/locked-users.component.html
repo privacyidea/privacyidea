@@ -37,8 +37,7 @@
           matInput
           placeholder="Example query: 'usernames: alice realms: myrealm'" />
       </app-clearable-input>
-      <mat-hint i18n>The search is case-insensitive. Use * as a wildcard. Wrap the filter value in quotation marks
-                     if it contains colons or spaces.
+      <mat-hint i18n>Use * as a wildcard. Wrap the filter value in quotation marks if it contains colons or spaces.
       </mat-hint>
     </mat-form-field>
     <mat-paginator
@@ -63,9 +62,7 @@
       <button
         (click)="deleteExpired()"
         class="action-button-delete-secondary button-width-m"
-        i18n-matTooltip
-        mat-stroked-button
-        matTooltip="Delete all expired lockout records from the database">
+        mat-stroked-button>
         <mat-icon>delete_sweep</mat-icon>
         <span i18n>Delete Expired</span>
       </button>
@@ -112,19 +109,19 @@
             <span i18n>Username</span>
             <button
               (click)="onKeywordClick('usernames')"
+              aria-label="Filter by username"
               class="filter-button"
-              i18n-matTooltip
+              i18n-aria-label
               mat-icon-button
-              matTooltip="Filter by username"
               type="button">
               <mat-icon class="keyword-button-icon margin-left-0">filter_alt</mat-icon>
             </button>
             <button
               (click)="onSortClick('username')"
+              aria-label="Sort by username"
               class="sort-button"
-              i18n-matTooltip
+              i18n-aria-label
               mat-icon-button
-              matTooltip="Sort by username"
               type="button">
               <mat-icon>{{ tableUtilsService.getSortIcon("username", sort()) }}</mat-icon>
             </button>
@@ -149,6 +146,8 @@
             @if (row.username) {
               <app-filter-value-button
                 [value]="row.username"
+                i18n-label
+                label="Filter by this user"
                 (filterValue)="addFilterValue('usernames', $event)" />
             }
             @if (authService.actionAllowed("authentication_log_read")) {
@@ -181,10 +180,10 @@
               (selectionChange)="setFilterValues('realms', $event)" />
             <button
               (click)="onSortClick('realm')"
+              aria-label="Sort by realm"
               class="sort-button"
-              i18n-matTooltip
+              i18n-aria-label
               mat-icon-button
-              matTooltip="Sort by realm"
               type="button">
               <mat-icon>{{ tableUtilsService.getSortIcon("realm", sort()) }}</mat-icon>
             </button>
@@ -216,10 +215,10 @@
               (selectionChange)="setFilterValues('resolvers', $event)" />
             <button
               (click)="onSortClick('resolver')"
+              aria-label="Sort by resolver"
               class="sort-button"
-              i18n-matTooltip
+              i18n-aria-label
               mat-icon-button
-              matTooltip="Sort by resolver"
               type="button">
               <mat-icon>{{ tableUtilsService.getSortIcon("resolver", sort()) }}</mat-icon>
             </button>
@@ -267,10 +266,10 @@
             <span i18n>Lock Expiry</span>
             <button
               (click)="onSortClick('lock_expires_at')"
+              aria-label="Sort by lock expiry"
               class="sort-button"
-              i18n-matTooltip
+              i18n-aria-label
               mat-icon-button
-              matTooltip="Sort by lock expiry"
               type="button">
               <mat-icon>{{ tableUtilsService.getSortIcon("lock_expires_at", sort()) }}</mat-icon>
             </button>
@@ -296,10 +295,10 @@
             <span i18n>Locked</span>
             <button
               (click)="onSortClick('locked_at')"
+              aria-label="Sort by lock time"
               class="sort-button"
-              i18n-matTooltip
+              i18n-aria-label
               mat-icon-button
-              matTooltip="Sort by lock time"
               type="button">
               <mat-icon>{{ tableUtilsService.getSortIcon("locked_at", sort()) }}</mat-icon>
             </button>

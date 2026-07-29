@@ -56,6 +56,7 @@ import { ResolverService, ResolverServiceInterface } from "@services/resolver/re
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { from } from "rxjs";
 import { concatMap, reduce } from "rxjs/operators";
+import { $localize } from "@angular/localize/init";
 
 @Component({
   selector: "app-locked-users",
@@ -323,4 +324,6 @@ export class LockedUsersComponent {
         });
       });
   }
+
+  protected readonly $localize = $localize;
 }

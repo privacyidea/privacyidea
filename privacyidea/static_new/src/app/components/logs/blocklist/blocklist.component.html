@@ -47,18 +47,14 @@
         (click)="removeSelected()"
         [disabled]="selection().length === 0"
         class="action-button-secondary button-width-m"
-        i18n-matTooltip
-        mat-stroked-button
-        matTooltip="Unblock selected blocklist entries">
+        mat-stroked-button>
         <mat-icon>lock_open</mat-icon>
         <span i18n>Unblock</span>
       </button>
       <button
         (click)="cleanUpExpired()"
         class="action-button-delete-secondary button-width-m"
-        i18n-matTooltip
-        mat-stroked-button
-        matTooltip="Delete all expired blocklist entries from the database">
+        mat-stroked-button>
         <mat-icon>delete_sweep</mat-icon>
         <span i18n>Delete Expired</span>
       </button>
@@ -107,7 +103,9 @@
             <span>Source IP</span>
             <button
               (click)="onSortEvent('identifier')"
+              aria-label="Sort by source IP"
               class="sort-button"
+              i18n-aria-label
               mat-icon-button
               type="button">
               <mat-icon>{{ getSortIcon("identifier") }}</mat-icon>
@@ -143,7 +141,9 @@
              <span i18n>State</span>
              <button
                (click)="onSortEvent('state')"
+               aria-label="Sort by state"
                class="sort-button"
+               i18n-aria-label
                mat-icon-button
                type="button">
                <mat-icon>{{ getSortIcon("state") }}</mat-icon>
@@ -169,7 +169,9 @@
             <span>Expiry</span>
             <button
               (click)="onSortEvent('block_expires_at')"
+              aria-label="Sort by expiry"
               class="sort-button"
+              i18n-aria-label
               mat-icon-button
               type="button">
               <mat-icon>{{ getSortIcon("block_expires_at") }}</mat-icon>
@@ -199,7 +201,9 @@
             <span>Blocked</span>
             <button
               (click)="onSortEvent('blocked_at')"
+              aria-label="Sort by blocked time"
               class="sort-button"
+              i18n-aria-label
               mat-icon-button
               type="button">
               <mat-icon>{{ getSortIcon("blocked_at") }}</mat-icon>
