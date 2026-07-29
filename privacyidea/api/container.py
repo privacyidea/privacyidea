@@ -716,9 +716,10 @@ def set_realms(container_serial):
     :jsonparam realms: comma-separated list of realm names
         (whitespace tolerated; pass an empty string to remove all
         realms).
-    :status 200: dict mapping each realm to whether it was applied
-        (plus a ``deleted`` entry counting removed realms), in
-        ``result.value``.
+    :status 200: dict mapping each attached realm to ``True`` (including
+        realms kept although not requested) and each requested realm that
+        could not be attached to ``False``, plus ``deleted`` (whether any
+        realm was removed), in ``result.value``.
     """
     # Get parameters
     container_realms = get_required(request.all_data, "realms", allow_empty=True)
@@ -727,8 +728,6 @@ def set_realms(container_serial):
 
     # Set realms
     result = set_container_realms(container_serial, realm_list, allowed_realms)
-    # "deleted" is a status flag, not a per-realm result: exclude it so it does not poison the success value.
-    success = all(v for k, v in result.items() if k != "deleted")
 
     # Audit log
     container = find_container_by_serial(container_serial)
@@ -737,15 +736,23 @@ def set_realms(container_serial):
         g.audit_object.log({"user": owners[0].login,
                             "realm": owners[0].realm,
                             "resolver": owners[0].resolver})
-    audit_log_data = {"container_serial": container_serial,
-                      "container_type": container.type,
-                      "action_detail": f"realms={container_realms}",
-                      "success": success}
-    if not success:
-        result_str = ", ".join([f"{k}: {v}" for k, v in result.items() if not k == "deleted"])
-        audit_log_data["info"] = f"success = {result_str}"
-    g.audit_object.log(audit_log_data)
-    return send_result(result)
+    info = "; ".join(f"{label}={realms}" for label, realms in (("attached", result.attached),
+                                                               ("removed", result.removed),
+                                                               ("not added", result.not_added),
+                                                               ("not removed", result.not_removed)) if realms)
+    g.audit_object.log({"container_serial": container_serial,
+                        "container_type": container.type,
+                        "action_detail": f"realms={container_realms}",
+                        "success": result.success,
+                        "info": info})
+
+    # Response: every attached realm maps to True (including realms that could not be removed and stayed
+    # although not requested), every requested realm that could not be attached maps to False, plus
+    # whether anything was removed. The full breakdown is in the audit info.
+    response = {realm: True for realm in result.attached}
+    response.update({realm: False for realm in result.not_added})
+    response["deleted"] = bool(result.removed)
+    return send_result(response)
 
 
 @container_blueprint.route('<string:container_serial>/info/<key>', methods=['POST'])

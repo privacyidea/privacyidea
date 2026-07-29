@@ -580,7 +580,9 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         # container in realm1, add realm2
         container_serial = self.create_container_for_user()
         self.request_assert_success(f"/container/{container_serial}/realms", {"realms": "realm2"}, self.at)
-        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=1)
+        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=0,
+                                container_serial=container_serial, action_detail="realms=realm2",
+                                info="attached=['realm1', 'realm2']; not removed=['realm1']")
         delete_policy("policy")
 
         # Helpdesk for resolver1 in realm1 and realm2
@@ -589,7 +591,9 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         # container in realm1 and resolver1, add realm2
         container_serial = self.create_container_for_user()
         self.request_assert_success(f"/container/{container_serial}/realms", {"realms": "realm2"}, self.at)
-        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=1)
+        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=0,
+                                container_serial=container_serial, action_detail="realms=realm2",
+                                info="attached=['realm1', 'realm2']; not removed=['realm1']")
         delete_policy("policy")
 
         # Helpdesk for resolver1 (is allowed to set all realms)
@@ -598,7 +602,8 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         container_serial = self.create_container_for_user()
         self.request_assert_success(f"/container/{container_serial}/realms", {"realms": [self.realm1, self.realm2]},
                                     self.at)
-        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=1)
+        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=1,
+                                container_serial=container_serial)
         delete_policy("policy")
 
         # Helpdesk for realm1
@@ -607,7 +612,8 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         container_serial = self.create_container_for_user()
         self.request_assert_success(f"/container/{container_serial}/realms", {"realms": [self.realm1, self.realm2]},
                                     self.at)
-        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=1)
+        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=1,
+                                container_serial=container_serial)
         self.assertSetEqual({self.realm1}, set(get_container_realms(container_serial)))
         delete_policy("policy")
 
@@ -621,11 +627,13 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         # container in realm1
         container_serial = self.create_container_for_user()
         self.request_denied_assert_403(f"/container/{container_serial}/realms", {"realms": "realm2"}, self.at)
-        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=0, info=self.NOT_EMPTY)
+        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=0,
+                                container_serial=container_serial, info=self.NOT_EMPTY)
 
         # container in realm1, set realm3
         self.request_denied_assert_403(f"/container/{container_serial}/realms", {"realms": "realm3"}, self.at)
-        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=0, info=self.NOT_EMPTY)
+        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=0,
+                                container_serial=container_serial, info=self.NOT_EMPTY)
         delete_policy("policy")
 
         # Helpdesk for realm1
@@ -633,7 +641,9 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
 
         # container in realm1, set realm2 (not allowed)
         result = self.request_assert_success(f"/container/{container_serial}/realms", {"realms": "realm2"}, self.at)
-        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=0, info=self.NOT_EMPTY)
+        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=0,
+                                container_serial=container_serial, action_detail="realms=realm2",
+                                info="attached=['realm1']; not added=['realm2']; not removed=['realm1']")
         self.assertFalse(result["result"]["value"]["realm2"])
         container = find_container_by_serial(container_serial)
         realms = [realm.name for realm in container.realms]
@@ -642,14 +652,20 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         # helpdesk of user realm realm1: container in realm1, set realm2 and realm1 (only realm1 allowed)
         result = self.request_assert_success(f"/container/{container_serial}/realms", {"realms": "realm2,realm1"},
                                              self.at)
-        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=0, info=self.NOT_EMPTY)
+        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=0,
+                                container_serial=container_serial, action_detail="realms=realm2,realm1",
+                                info="attached=['realm1']; not added=['realm2']")
         self.assertFalse(result["result"]["value"]["realm2"])
         self.assertTrue(result["result"]["value"]["realm1"])
 
         # container in realm1 and realm2, set realm1 (removes realm2 not allowed)
         add_container_realms(container_serial, ["realm1", "realm2"], allowed_realms=None)
-        self.request_assert_success(f"/container/{container_serial}/realms", {"realms": "realm1"}, self.at)
-        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=1)
+        result = self.request_assert_success(f"/container/{container_serial}/realms", {"realms": "realm1"}, self.at)
+        # The removal of realm2 is refused (audited as a failure); realm2 stays attached (True).
+        self.assertTrue(result["result"]["value"]["realm2"])
+        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=0,
+                                container_serial=container_serial, action_detail="realms=realm1",
+                                info="attached=['realm1', 'realm2']; not removed=['realm2']")
         container = find_container_by_serial(container_serial)
         realms = [realm.name for realm in container.realms]
         self.assertEqual(2, len(realms))
@@ -659,7 +675,8 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         # container in no realm, set realm1
         container_serial = init_container({"type": "generic"})["container_serial"]
         self.request_denied_assert_403(f"/container/{container_serial}/realms", {"realms": "realm1"}, self.at)
-        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=0, info=self.NOT_EMPTY)
+        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=0,
+                                container_serial=container_serial, info=self.NOT_EMPTY)
         delete_policy("policy")
 
         # Helpdesk for realm1 and realm4 and resolver3
@@ -672,7 +689,8 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
                                            "resolver": self.resolvername1,
                                            "user": "hans"})["container_serial"]
         self.request_denied_assert_403(f"/container/{container_serial}/realms", {"realms": "realm1"}, self.at)
-        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=0, info=self.NOT_EMPTY)
+        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=0,
+                                container_serial=container_serial, info=self.NOT_EMPTY)
         delete_policy("policy")
 
     def test_19_helpdesk_container_list_allowed(self):

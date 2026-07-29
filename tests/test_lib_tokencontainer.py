@@ -350,9 +350,11 @@ class TokenContainerManagementTestCase(MyTestCase):
         # Set existing realms
         result = set_container_realms(container_serial, [self.realm1, self.realm2], None)
         # Check return value
-        self.assertFalse(result['deleted'])
-        self.assertTrue(result[self.realm1])
-        self.assertTrue(result[self.realm2])
+        self.assertListEqual(sorted([self.realm1, self.realm2]), result.attached)
+        self.assertListEqual([], result.not_added)
+        self.assertListEqual([], result.removed)
+        self.assertListEqual([], result.not_removed)
+        self.assertTrue(result.success)
         # Check realms
         container_realms = [realm.name for realm in container.realms]
         self.assertIn(self.realm1, container_realms)
@@ -361,9 +363,11 @@ class TokenContainerManagementTestCase(MyTestCase):
         # Set one non-existing realm
         result = set_container_realms(container_serial, ["nonexisting", self.realm2], None)
         # Check return value
-        self.assertTrue(result['deleted'])
-        self.assertFalse(result['nonexisting'])
-        self.assertTrue(result[self.realm2])
+        self.assertListEqual([self.realm2], result.attached)
+        self.assertListEqual(["nonexisting"], result.not_added)
+        self.assertListEqual([self.realm1], result.removed)
+        self.assertListEqual([], result.not_removed)
+        self.assertFalse(result.success)
         # Check realms
         container_realms = [realm.name for realm in container.realms]
         self.assertNotIn("nonexisting", container_realms)
@@ -371,7 +375,8 @@ class TokenContainerManagementTestCase(MyTestCase):
 
         # Set empty realm
         result = set_container_realms(container_serial, [""], None)
-        self.assertTrue(result['deleted'])
+        self.assertListEqual([self.realm2], result.removed)
+        self.assertTrue(result.success)
         container_realms = [realm.name for realm in container.realms]
         self.assertEqual(0, len(container_realms))
 

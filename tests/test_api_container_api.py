@@ -405,7 +405,9 @@ class APIContainer(APIContainerTest):
         # Set existing realms
         payload = {"realms": self.realm1 + "," + self.realm2}
         result = self.request_assert_success(f'/container/{container_serial}/realms', payload, self.at, 'POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=1)
+        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=1,
+                                container_serial=container_serial, action_detail="realms=realm1,realm2",
+                                info="attached=['realm1', 'realm2']")
         result = result["result"]
         self.assertTrue(result["value"])
         self.assertFalse(result["value"]["deleted"])
@@ -415,7 +417,9 @@ class APIContainer(APIContainerTest):
         # Set no realm shall remove all realms for the container
         payload = {"realms": ""}
         result = self.request_assert_success(f'/container/{container_serial}/realms', payload, self.at, 'POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=1)
+        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=1,
+                                container_serial=container_serial, action_detail="realms=",
+                                info="removed=['realm1', 'realm2']")
         result = result["result"]
         self.assertTrue(result["value"])
         self.assertTrue(result["value"]["deleted"])
@@ -424,14 +428,17 @@ class APIContainer(APIContainerTest):
 
         delete_container_by_serial(container_serial)
 
-        # Automatically add the user realms
+        # The user's realm can not be removed, so it stays although not requested: the requested realm set
+        # is not fully applied and it is reported in not_removed.
         container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})["container_serial"]
         payload = {"realms": self.realm2}
         result = self.request_assert_success(f'/container/{container_serial}/realms', payload, self.at, 'POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=1)
-        # TODO: Should we also add the result for the users realm even if they are not in the requested realms?
-        # self.assertTrue(result["result"]["value"][self.realm1])
+        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=0,
+                                container_serial=container_serial, action_detail="realms=realm2",
+                                info="attached=['realm1', 'realm2']; not removed=['realm1']")
         self.assertTrue(result["result"]["value"][self.realm2])
+        # the user's realm can not be removed, so it stays attached (True) although not requested
+        self.assertTrue(result["result"]["value"][self.realm1])
 
         delete_container_by_serial(container_serial)
 
@@ -447,12 +454,14 @@ class APIContainer(APIContainerTest):
                                   error_code=905,
                                   error_message="ERR905: Missing parameter: realms")
         self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=0,
-                                info=self.contains('ERR905'))
+                                container_serial=container_serial, info=self.contains('ERR905'))
 
         # Set non-existing realm
         payload = {"realms": "nonexistingrealm"}
         result = self.request_assert_success(f'/container/{container_serial}/realms', payload, self.at, 'POST')
-        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=0, info=self.NOT_EMPTY)
+        self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=0,
+                                container_serial=container_serial, action_detail="realms=nonexistingrealm",
+                                info="not added=['nonexistingrealm']")
         result = result.get("result")
         self.assertFalse(result["value"]["nonexistingrealm"])
 
