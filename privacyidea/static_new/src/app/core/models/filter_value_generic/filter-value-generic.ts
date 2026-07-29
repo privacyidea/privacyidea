@@ -217,16 +217,14 @@ export class FilterValueGeneric<T> {
   }
 
   public setByString(rawValue: string): FilterValueGeneric<T> {
-    const tokens = parseFilterTokens(rawValue.trim().toLocaleLowerCase());
-    const keywordKeys = new Set(tokens.filter((token) => token.value !== null).map((token) => token.key));
+    const text = rawValue.trim().toLocaleLowerCase();
+    const tokens = parseFilterTokens(text);
+    // Keywords and free text share this instance's key space, so shadowed bare words are dropped.
+    const freeTextTerms = new Set(keywordlessTermsNotShadowedByKeyword(text));
     let instance: FilterValueGeneric<T> = this._copyWith({ filterMap: new Map() });
     tokens.forEach(({ key, value }) => {
       if (value === null) {
-        // A standalone word (no `key:`) is added as free text. If the same word also appears as an
-        // explicit `key: value`, the keyword filter wins and the bare word is dropped, so the more
-        // specific keyword is never silently overwritten by the free-text term (they share a key space).
-        if (keywordKeys.has(key)) return;
-        instance = instance.addFreeText(key);
+        if (freeTextTerms.has(key)) instance = instance.addFreeText(key);
       } else {
         instance = instance.setValueOfKey(key, value);
       }
@@ -269,6 +267,31 @@ const RE_UNQUOTED = /^((?:(?!\s+[A-Za-z0-9_]+\s*:)[^ ])+)/;
 export interface FilterToken {
   key: string;
   value: string | null;
+}
+
+/**
+ * Every standalone word in `text`: tokens entered without a `key:` prefix, in input order.
+ *
+ * Use this where keyword filters and free-text terms are kept apart, e.g. keywords sent to the
+ * server and free text applied client-side on its own filter instance. Callers that keep both in
+ * one key space want {@link keywordlessTermsNotShadowedByKeyword} instead.
+ */
+export function keywordlessTerms(text: string): string[] {
+  return parseFilterTokens(text)
+    .filter((token) => token.value === null)
+    .map((token) => token.key);
+}
+
+/**
+ * Like {@link keywordlessTerms}, minus words whose key also appears as a `key: value` keyword.
+ *
+ * Use this where keywords and free text share one key space: the keyword filter is the more
+ * specific one, so the bare word is dropped rather than overwriting it.
+ */
+export function keywordlessTermsNotShadowedByKeyword(text: string): string[] {
+  const tokens = parseFilterTokens(text);
+  const keywordKeys = new Set(tokens.filter((token) => token.value !== null).map((token) => token.key));
+  return tokens.filter((token) => token.value === null && !keywordKeys.has(token.key)).map((token) => token.key);
 }
 
 export function parseFilterTokens(text: string): FilterToken[] {

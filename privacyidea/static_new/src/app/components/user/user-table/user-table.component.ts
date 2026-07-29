@@ -62,7 +62,7 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { UserNewResolverComponent } from "@components/user/user-new-resolver/user-new-resolver.component";
 import { FilterOption } from "@core/models/filter_value_generic/filter-option";
-import { FilterValueGeneric, parseFilterTokens } from "@core/models/filter_value_generic/filter-value-generic";
+import { FilterValueGeneric, keywordlessTerms } from "@core/models/filter_value_generic/filter-value-generic";
 import { ResolverService } from "@services/resolver/resolver.service";
 import { UserTableActionsComponent } from "./user-table-actions/user-table-actions.component";
 
@@ -150,14 +150,10 @@ export class UserTableComponent implements OnDestroy {
   // Empty base; free-text terms are layered on per query to reuse the shared FilterValueGeneric model.
   private readonly freeTextFilter = new FilterValueGeneric<UserData>({ availableFilters: userFilterOptions });
 
-  // Keyword-less search terms, applied client-side across all columns of the fully-loaded user list.
-  // Keyword segments (e.g. "username: root") keep going to the server via UserService.filterParams.
-  // Both sides parse the raw filter string with the same shared tokenizer so they agree on what is a
-  // keyword value and what is a standalone free-text word.
+  // Applied client-side across all columns of the fully-loaded user list, while keyword segments
+  // (e.g. "username: root") go to the server via UserService.filterParams.
   readonly freeTextTerms = computed<string[]>(() =>
-    parseFilterTokens(this.userService.apiUserFilter().filterString.toLowerCase())
-      .filter((token) => token.value === null)
-      .map((token) => token.key)
+    keywordlessTerms(this.userService.apiUserFilter().filterString.toLowerCase())
   );
 
   // Free-text-filtered users, computed once and shared by both the row list and the total count so the

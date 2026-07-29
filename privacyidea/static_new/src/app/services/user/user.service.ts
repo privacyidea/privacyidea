@@ -181,6 +181,8 @@ export class UserService implements UserServiceInterface {
         // Normalize the keyword to lower case so mixed-case input (e.g. "UserName:") still matches
         // the allowed-filter list and the emitted API param key stays canonical.
         const key = token.key.toLowerCase();
+        // Only the key is normalized. The value is passed through case-preserving, so case matching is
+        // the resolver's decision rather than the frontend's.
         const value = (token.value ?? "").toString().trim();
         return [key, value ? `*${value}*` : value] as const;
       })
