@@ -80,6 +80,18 @@ describe("TokengroupsComponent", () => {
     expect(component).toBeTruthy();
   });
 
+  it("should toggle row and all-row selection", () => {
+    const row = component.tokengroupDataSource().data[0];
+    component.toggleRow(row);
+    expect(component.isSelected(row)).toBe(true);
+    component.toggleRow(row);
+    expect(component.isSelected(row)).toBe(false);
+    component.toggleAllRows();
+    expect(component.isAllSelected()).toBe(true);
+    component.toggleAllRows();
+    expect(component.selection().length).toBe(0);
+  });
+
   it("should display groups from service", () => {
     expect(component.tokengroupDataSource().data.length).toBe(2);
     expect(component.tokengroupDataSource().data[0].groupname).toBe("group1");

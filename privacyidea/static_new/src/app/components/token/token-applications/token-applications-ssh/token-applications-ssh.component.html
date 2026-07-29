@@ -56,6 +56,7 @@
             matInput
             placeholder="Example query: 'service_id: myService'" />
         </app-clearable-input>
+        <mat-hint>{{ filterHint }}</mat-hint>
       </mat-form-field>
       <mat-paginator
         (page)="machineService.onPageEvent($event)"
@@ -86,6 +87,8 @@
                 @if (machineService.sshApiFilter.includes(column.key)) {
                   <button
                     (click)="onKeywordClick(column.key)"
+                    aria-label="Filter by {{ column.label }}"
+                    i18n-aria-label
                     class="filter-button"
                     mat-icon-button
                     type="button">
@@ -96,6 +99,8 @@
                 }
                 <button
                   (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
+                  aria-label="Sort by {{ column.label }}"
+                  i18n-aria-label
                   class="sort-button"
                   mat-icon-button
                   type="button">

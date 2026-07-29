@@ -37,6 +37,7 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
   ConditionalAccessPolicyService,
   ConditionalAccessPolicyServiceInterface,
+  CountMode,
   EMPTY_LOCKOUT_POLICY,
   LockoutPolicySaveParams,
   LockoutPolicyStage,
@@ -60,6 +61,14 @@ const TIME_UNIT_FACTORS: Record<TimeUnit, number> = {
 const TARGET_LABELS: Record<string, string> = {
   user: $localize`User`,
   source_ip: $localize`Source IP`
+};
+
+// Human-readable labels for the count modes served by /conditionalaccess/targets. A mode not listed here falls back
+// to its raw value, so a newly added mode still shows.
+const COUNT_MODE_LABELS: Record<string, string> = {
+  PER_REQUEST: $localize`Per Request`,
+  PER_ATTEMPT: $localize`Per Attempt`,
+  DISTINCT_USERS: $localize`Distinct Users`
 };
 
 @Component({
@@ -127,6 +136,16 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     return TARGET_LABELS[target] ?? target;
   }
 
+  // The count modes offered for the currently selected target (the /targets endpoint decides which are valid per
+  // target). Falls back to the current mode until /targets loads, so the required select is never empty.
+  readonly countModeOptions = computed<CountMode[]>(() => {
+    const fromBackend = this.policyService.countModesForTarget(this.editPolicy().target);
+    return fromBackend.length ? fromBackend : [this.editPolicy().count_mode];
+  });
+  countModeLabel(mode: string): string {
+    return COUNT_MODE_LABELS[mode] ?? mode;
+  }
+
   // Info-hint help texts, kept as $localize strings in the component (like the
   // title and target labels) so all of this component's user-facing text lives in
   // one place and is extracted for translation.
@@ -165,6 +184,19 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
       stage.actions.every((action) => allowedSet.has(action.action_type))
     );
   });
+  // The count mode must be one the selected target supports (the backend enforces the same via _COUNT_MODES_BY_TARGET
+  // and 400s otherwise). Like targetActionsValid, switching the target on an existing policy can leave a stale,
+  // now-incompatible mode behind - we surface that as a validation error rather than silently rewriting the user's
+  // selection, mirroring how an incompatible stage action is handled.
+  countModeValid = computed(() => {
+    const allowed = this.policyService.countModesForTarget(this.editPolicy().target);
+    // Until the supported-modes list has loaded we cannot judge compatibility, so
+    // don't block saving on it (the backend still enforces the rule).
+    if (allowed.length === 0) {
+      return true;
+    }
+    return allowed.includes(this.editPolicy().count_mode);
+  });
   // Only the highest-priority stage whose threshold is met ever fires, so two stages
   // sharing a threshold would leave one permanently dead; the backend rejects it too
   // (uq_lockout_stage_policy_threshold), so block it here.
@@ -182,7 +214,8 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
       this.counterTypesValid() &&
       this.stagesValid() &&
       this.stageThresholdsUnique() &&
-      this.targetActionsValid()
+      this.targetActionsValid() &&
+      this.countModeValid()
   );
 
   nameTouched = signal(false);
@@ -257,7 +290,15 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   }
 
   onTargetChange(target: LockoutTarget): void {
+    // Only the target changes here; the count mode is left as-is. Switching to a target that does not support the
+    // current mode (e.g. DISTINCT_USERS under a user target) is surfaced as a validation error (countModeValid) that
+    // blocks saving, rather than silently rewriting the user's selection - mirroring how an incompatible stage action
+    // is handled (targetActionsValid).
     this.updateEditPolicy({ target });
+  }
+
+  onCountModeChange(count_mode: CountMode): void {
+    this.updateEditPolicy({ count_mode });
   }
 
   // Prefill the whole editor from a shipped template (create page only). The

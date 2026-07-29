@@ -296,17 +296,6 @@ def _conditional_access_precheck(user: User) -> None:
                         id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
 
 
-def _previous_transaction_id(details: dict) -> str | None:
-    """
-    The answered-challenge transaction_id to link from this login's authentication-log row, when answering one
-    challenge immediately created a fresh one (CHALLENGE_CONTINUED); otherwise None. Mirrors /validate/check: the
-    newly-created challenge transaction_id lives in *details*, the answered one in the request, and they differ.
-    """
-    request_txn = get_optional(request.all_data, "transaction_id")
-    details_txn = details.get("transaction_id")
-    return request_txn if (details_txn and request_txn and details_txn != request_txn) else None
-
-
 @jwtauth.route('', methods=['POST'])
 @prepolicy(auth_timelimit, request=request)
 @prepolicy(increase_failcounter_on_challenge, request=request)
@@ -683,8 +672,7 @@ def get_auth_token():
                 # in validate.py).
                 g.audit_object.log({"authentication": AUTH_RESPONSE.CHALLENGE})
                 log_authentication(auth_event_type, request, user=user, serial=serials,
-                                   transaction_id=details.get("transaction_id"),
-                                   previous_transaction_id=_previous_transaction_id(details))
+                                   transaction_id=details.get("transaction_id"))
                 return send_result(False, rid=2, details=details)
 
     # Authentication log
@@ -699,7 +687,7 @@ def get_auth_token():
     log_authentication(auth_event_type, request, user=user, serial=serials or details.get("serial"),
                        transaction_id=(get_optional(request.all_data, "transaction_id")
                                        or details.get("transaction_id") or log_transaction_id),
-                       previous_transaction_id=_previous_transaction_id(details), username=login_name,
+                       username=login_name,
                        internal_admin=internal_admin)
 
     # Feed the classified outcome to the lockout engine (after the log row is written so the
