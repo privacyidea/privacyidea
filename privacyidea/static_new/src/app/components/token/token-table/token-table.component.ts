@@ -51,7 +51,9 @@ import { CopyableComponent } from "@components/shared/copyable/copyable.componen
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { FilterValue } from "@core/models/filter_value/filter_value";
+import { MultiSelectFilterComponent } from "@components/shared/multi-select-filter/multi-select-filter.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { StringUtils } from "@utils/string.utils";
 import { TokenTableActionsComponent } from "./token-table-actions/token-table-actions.component";
 
 const columnKeysMap = [
@@ -84,6 +86,7 @@ const columnKeysMap = [
     ScrollToTopDirective,
     ClearableInputComponent,
     CopyableComponent,
+    MultiSelectFilterComponent,
     TokenTableActionsComponent,
     MatIconButton,
     MatMenuModule,
@@ -110,6 +113,7 @@ export class TokenTableComponent {
     (keyword) => !this.tokenService.unsupportedKeys.has(keyword) && !keyword.includes(" ")
   );
   readonly filterHint = inlineFilterHint();
+  readonly tokenTypeFilterOptions = computed(() => this.tokenService.tokenTypeOptions().map((type) => type.key));
   private basePageSizeOptions = [...this.tableUtilsService.pageSizeOptions()];
   @ViewChild("filterHTMLInputElement", { static: false })
   filterInput!: ElementRef<HTMLInputElement>;
@@ -334,6 +338,18 @@ export class TokenTableComponent {
         });
       }
     }
+  }
+
+  selectedFilterValues(keyword: string): string[] {
+    return StringUtils.splitFilterList(this.tokenService.tokenFilter().getValueOfKey(keyword));
+  }
+
+  setFilterValues(keyword: string, values: string[]): void {
+    const currentFilter = this.tokenService.tokenFilter();
+    const newValue = values.length
+      ? currentFilter.addEntry(keyword, values.join(","))
+      : currentFilter.removeKey(keyword);
+    this.tokenService.tokenFilter.set(newValue);
   }
 
   onItemSelected(keyword: string, value: string): void {

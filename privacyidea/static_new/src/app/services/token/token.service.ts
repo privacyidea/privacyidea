@@ -35,9 +35,9 @@ import { ContentService, ContentServiceInterface, DetailsUser } from "@services/
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
+import { FilterCaseNote } from "@utils/filter-hint.utils";
 import { parseBooleanValue } from "@utils/parse-boolean-value";
 import { StringUtils } from "@utils/string.utils";
-import { FilterCaseNote } from "@utils/filter-hint.utils";
 import { tokenTypes } from "@utils/token.utils";
 import {
   catchError,
@@ -130,6 +130,43 @@ const caseNotes: Record<string, FilterCaseNote> = {
 // the filter clauses were removed in 78c0cc621 and not restored. Once they either work
 // again or are dropped, remove this set along with the whole "unsupported" mechanism.
 const unsupportedKeys = new Set(["userid", "resolver"]);
+
+function toParamValue(key: string, value: string): string {
+  if (key === "active" || key === "assigned") {
+    const lower = value.toLowerCase();
+    if (lower === "true" || lower === "1" || lower === "false" || lower === "0") {
+      return parseBooleanValue(value) ? "True" : "False";
+    }
+    return value;
+  }
+  if (exactMatchKeys.has(key)) {
+    return value;
+  }
+  // The tokenrealm query param accepts a comma-separated list, so every entry is wildcarded on its own.
+  if (key === "tokenrealm") {
+    return StringUtils.splitFilterList(value)
+      .map((entry) => `*${entry}*`)
+      .join(",");
+  }
+  return `*${value}*`;
+}
+
+// A single token type maps to the `type` query param, multiple to `type_list`.
+function toTypeParams(filterEntries: [string, string][]): Record<string, string> {
+  const filterValues = new Map(filterEntries);
+  const types = [
+    ...StringUtils.splitFilterList(filterValues.get("type")),
+    ...StringUtils.splitFilterList(filterValues.get("type_list"))
+  ];
+  const uniqueTypes = Array.from(new Set(types));
+  if (uniqueTypes.length === 1) {
+    return { type: `*${uniqueTypes[0]}*` };
+  }
+  if (uniqueTypes.length > 1) {
+    return { type_list: uniqueTypes.join(",") };
+  }
+  return {};
+}
 
 export interface Tokens {
   count: number;
@@ -405,25 +442,20 @@ export class TokenService implements TokenServiceInterface {
   readonly tokenSerial = this.contentService.tokenSerial;
   private readonly _filterParams = computed<Record<string, string>>(() => {
     const allowed = [...this.apiFilter, ...this.advancedApiFilter, ...this.hiddenApiFilter, "infokey", "infovalue"];
-    const plainKeys = exactMatchKeys;
-    const entries = [
+    const filterEntries = [
       ...Array.from(this.tokenFilter().filterMap.entries()),
       ...Array.from(this.tokenFilter().hiddenFilterMap.entries())
-    ]
-      .filter(([key]) => allowed.includes(key))
+    ];
+    const entries = filterEntries
+      // Filter unknown keys, token types are handled by toTypeParams
+      .filter(([key]) => allowed.includes(key) && key !== "type" && key !== "type_list")
+      // Normalize values
       .map(([key, value]) => [key, (value ?? "").toString().trim()] as const)
+      // Remove empty values
       .filter(([key, v]) => (key === "container_serial" ? true : StringUtils.validFilterValue(v)))
-      .map(([key, v]) => {
-        if (key === "active" || key === "assigned") {
-          const lower = v.toLowerCase();
-          if (lower === "true" || lower === "1" || lower === "false" || lower === "0") {
-            return [key, parseBooleanValue(v) ? "True" : "False"] as const;
-          }
-          return [key, v] as const;
-        }
-        return [key, plainKeys.has(key) ? v : `*${v}*`] as const;
-      });
-    return Object.fromEntries(entries) as Record<string, string>;
+      // Convert to query param values
+      .map(([key, v]) => [key, toParamValue(key, v)] as const);
+    return { ...Object.fromEntries(entries), ...toTypeParams(filterEntries) };
   });
 
   constructor() {
