@@ -24,13 +24,7 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { catchError, map, Observable, of, shareReplay, tap, throwError } from "rxjs";
 
-/**
- * The top-level setting keys the backend accepts. Mirrors KNOWN_SETTING_KEYS in
- * privacyidea/lib/usersetting.py; a key that is not listed there is rejected.
- */
 export type UserSettingKey = "theme" | "locale" | "dashboard";
-// Planned keys, enable together with KNOWN_SETTING_KEYS when the feature lands:
-// | "starting_page" | "token_columns" | "pinned_items"
 
 export type UserSettings = Partial<Record<UserSettingKey, unknown>>;
 
@@ -103,11 +97,9 @@ export class UserSettingsService implements UserSettingsServiceInterface {
       return of({});
     }
     return this.http
-      .post<PiResponse<UserSettings>>(
-        this.baseUrl,
-        { settings: { [key]: value } },
-        { headers: this.authService.getHeaders() }
-      )
+      .post<
+        PiResponse<UserSettings>
+      >(this.baseUrl, { settings: { [key]: value } }, { headers: this.authService.getHeaders() })
       .pipe(
         map((response) => response.result?.value ?? {}),
         tap((settings) => this.store(settings)),

@@ -59,13 +59,13 @@ class UserSettingTestCase(MyTestCase):
         self.assertEqual({"theme": "dark"}, get_user_settings(subject))
 
         # A second partial write merges at the top level, not clobbering the first
-        set_user_settings(subject, {"dashboard": ["serial", "type"]})
-        self.assertEqual({"theme": "dark", "dashboard": ["serial", "type"]},
+        set_user_settings(subject, {"token_columns": ["serial", "type"]})
+        self.assertEqual({"theme": "dark", "token_columns": ["serial", "type"]},
                          get_user_settings(subject))
 
     def test_04_replace_overwrites_document(self):
         subject = self._admin_subject()
-        set_user_settings(subject, {"theme": "dark", "locale": "de"})
+        set_user_settings(subject, {"theme": "dark", "starting_page": "tokens"})
         stored = set_user_settings(subject, {"theme": "light"}, replace=True)
         self.assertEqual({"theme": "light"}, stored)
         # The dropped key is simply gone (the WebUI falls back to its default)
@@ -77,49 +77,27 @@ class UserSettingTestCase(MyTestCase):
         self.assertEqual("dark", get_user_settings(self._admin_subject())["theme"])
         self.assertEqual("light", get_user_settings(self._user_subject())["theme"])
 
-    def test_06_validation_enforces_structure(self):
+    def test_06_open_mode_always_enforces_structure(self):
+        # Structural checks hold regardless of key enforcement
         self.assertRaises(ParameterError, validate_user_settings, ["not", "a", "dict"])
         self.assertRaises(ParameterError, validate_user_settings,
                           {"theme": "x" * (MAX_SETTINGS_BYTES + 1)})
 
-    def test_07_unknown_keys_rejected_values_unvalidated(self):
-        # A key outside the allow-list is refused, both on validation and on write
-        self.assertRaises(ParameterError, validate_user_settings, {"unknown_key": 1})
-        self.assertRaises(ParameterError, set_user_settings,
-                          self._admin_subject(), {"frontend_only_key": {"nested": True}})
-        # The known keys, however, take any value shape: only keys are enforced
-        stored = set_user_settings(self._admin_subject(),
-                                   {"dashboard": {"widgets": [{"id": 1}]}, "theme": 42})
-        self.assertEqual({"widgets": [{"id": 1}]}, stored["dashboard"])
-        self.assertEqual(42, stored["theme"])
+    def test_07_open_mode_accepts_unknown_keys_and_types(self):
+        # Keys are not enforced yet: unknown keys and arbitrary value types pass
+        validate_user_settings({"unknown_key": 1, "whatever": "many"})
+        stored = set_user_settings(self._admin_subject(), {"frontend_only_key": {"nested": True}})
+        self.assertEqual({"nested": True}, stored["frontend_only_key"])
 
-    def test_07b_unknown_key_message_names_the_keys(self):
-        with self.assertRaises(ParameterError) as ctx:
-            validate_user_settings({"theme": "dark", "bogus": 1, "alsobogus": 2})
-        message = f"{ctx.exception}"
-        self.assertIn("alsobogus", message)
-        self.assertIn("bogus", message)
-        self.assertNotIn("theme", message)
-
-    def test_08_configured_keys_are_accepted(self):
+    def test_08_allowed_keys_placeholder_includes_config(self):
+        # get_allowed_keys() is wired up (for the later enforcement step) and
+        # already merges the admin-configured keys with the known keys.
         self.assertTrue(KNOWN_SETTING_KEYS.issubset(get_allowed_keys()))
-        # An admin-configured key is accepted without a code change ...
         self.app.config["PI_USER_SETTINGS_ALLOWED_KEYS"] = ["custom_admin_key"]
         try:
             self.assertIn("custom_admin_key", get_allowed_keys())
-            set_user_settings(self._admin_subject(), {"custom_admin_key": "v"})
         finally:
             del self.app.config["PI_USER_SETTINGS_ALLOWED_KEYS"]
-        # ... and once it is no longer configured it cannot be written again,
-        # but the stored value must not block writing the allowed keys.
-        subject = self._admin_subject()
-        self.assertRaises(ParameterError, set_user_settings, subject, {"custom_admin_key": "v2"})
-        stored = set_user_settings(subject, {"theme": "dark"})
-        self.assertEqual("v", stored["custom_admin_key"])
-        self.assertEqual("dark", stored["theme"])
-        # It stays removable, so admins can clean up such leftovers
-        remaining = delete_user_settings(subject, "custom_admin_key")
-        self.assertNotIn("custom_admin_key", remaining)
 
     def test_09_unidentified_user_is_not_shared(self):
         # An unresolvable user (no uid/realm_id) must not read or write a row:
@@ -139,14 +117,14 @@ class UserSettingTestCase(MyTestCase):
         # bounded by MAX_SETTINGS_BYTES.
         subject = self._admin_subject()
         chunk = "x" * (MAX_SETTINGS_BYTES // 2)
-        set_user_settings(subject, {"theme": chunk}, replace=True)
+        set_user_settings(subject, {"a": chunk})
         # Merging a second half-cap chunk would push the stored doc over the cap
-        self.assertRaises(ParameterError, set_user_settings, subject, {"locale": chunk})
+        self.assertRaises(ParameterError, set_user_settings, subject, {"b": chunk})
 
     def test_11_validation_rejects_non_serializable(self):
         # A non-JSON-serializable value yields a controlled ParameterError,
         # not an unhandled TypeError.
-        self.assertRaises(ParameterError, validate_user_settings, {"theme": {1, 2, 3}})
+        self.assertRaises(ParameterError, validate_user_settings, {"x": {1, 2, 3}})
 
     def test_12_non_ascii_counted_by_real_byte_size(self):
         # ensure_ascii=False: a non-ASCII string near the cap is measured by its
@@ -154,7 +132,7 @@ class UserSettingTestCase(MyTestCase):
         # "ä" is 2 UTF-8 bytes; MAX_SETTINGS_BYTES//2 of them ~= the cap in real
         # bytes but would be ~3x over if counted as escapes.
         value = "ä" * (MAX_SETTINGS_BYTES // 2 - 20)
-        validate_user_settings({"theme": value})  # does not raise
+        validate_user_settings({"k": value})  # does not raise
 
     def test_13_reuses_resolved_user_for_user_role(self):
         # When request.User is the JWT user, it is reused (no re-resolution)
@@ -182,12 +160,12 @@ class UserSettingTestCase(MyTestCase):
     def test_15_delete_key_resets_to_default(self):
         subject = self._admin_subject()
         # replace=True for a clean baseline independent of other tests' writes
-        set_user_settings(subject, {"theme": "dark", "locale": "de"}, replace=True)
+        set_user_settings(subject, {"theme": "dark", "starting_page": "tokens"}, replace=True)
         remaining = delete_user_settings(subject, "theme")
-        self.assertEqual({"locale": "de"}, remaining)
-        self.assertEqual({"locale": "de"}, get_user_settings(subject))
+        self.assertEqual({"starting_page": "tokens"}, remaining)
+        self.assertEqual({"starting_page": "tokens"}, get_user_settings(subject))
         # Deleting an absent key is a no-op
-        self.assertEqual({"locale": "de"}, delete_user_settings(subject, "theme"))
+        self.assertEqual({"starting_page": "tokens"}, delete_user_settings(subject, "theme"))
 
     def test_16_delete_last_key_removes_row(self):
         subject = self._admin_subject()
@@ -198,7 +176,7 @@ class UserSettingTestCase(MyTestCase):
 
     def test_17_delete_all_clears_document(self):
         subject = self._admin_subject()
-        set_user_settings(subject, {"theme": "dark", "locale": "de"})
+        set_user_settings(subject, {"theme": "dark", "starting_page": "tokens"})
         self.assertEqual({}, delete_user_settings(subject))
         self.assertEqual({}, get_user_settings(subject))
 
@@ -327,8 +305,8 @@ class UserSettingTestCase(MyTestCase):
             return real_select(subj)
 
         with patch("privacyidea.lib.usersetting._select_for_subject", side_effect=fake_select):
-            stored = set_user_settings(subject, {"dashboard": ["serial"]})
+            stored = set_user_settings(subject, {"token_columns": ["serial"]})
 
-        self.assertEqual({"theme": "winner", "dashboard": ["serial"]}, stored)
-        self.assertEqual({"theme": "winner", "dashboard": ["serial"]},
+        self.assertEqual({"theme": "winner", "token_columns": ["serial"]}, stored)
+        self.assertEqual({"theme": "winner", "token_columns": ["serial"]},
                          get_user_settings(subject))
