@@ -26,6 +26,7 @@ export class MockContentService implements ContentServiceInterface {
   detailsUser = signal({ username: "", realm: "" });
   router: Router = {} as Router;
   routeUrl = signal("");
+  routePath = computed(() => this.routeUrl().split(/[?#]/)[0]);
   previousUrl = signal("");
   queryParams = signal<Record<string, string>>({});
   tokenSerial = signal("");
@@ -89,9 +90,8 @@ export class MockContentService implements ContentServiceInterface {
   onSubscription = computed(() => this.matchesPath(ROUTE_PATHS.SUBSCRIPTION));
   onMachineResolver = computed(() => this.matchesPath(ROUTE_PATHS.MACHINE_RESOLVER));
 
-  private matchesPath(path: string): boolean {
-    const url = this.routeUrl();
-    return url === path || url.startsWith(path + "?");
+  matchesPath(path: string): boolean {
+    return this.routePath() === path;
   }
 
   tokenSelected = jest.fn();

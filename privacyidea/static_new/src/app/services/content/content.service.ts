@@ -31,6 +31,7 @@ export interface ContentServiceInterface {
   detailsUser: WritableSignal<DetailsUser>;
   router: Router;
   routeUrl: Signal<string>;
+  routePath: Signal<string>;
   previousUrl: Signal<string>;
   queryParams: Signal<Record<string, string>>;
   tokenSerial: WritableSignal<string>;
@@ -81,6 +82,7 @@ export interface ContentServiceInterface {
   onSubscription: Signal<boolean>;
   onMachineResolver: Signal<boolean>;
 
+  matchesPath: (path: string) => boolean;
   tokenSelected: (serial: string) => void;
   navigateContainerDetails: (containerSerial: string) => void;
   userSelected: (username: string, realm: string) => void;
@@ -101,6 +103,7 @@ export class ContentService implements ContentServiceInterface {
     { initialValue: [this.router.url, this.router.url] as const }
   );
   readonly routeUrl = computed(() => this._urlPair()[1]);
+  readonly routePath = computed(() => this.routeUrl().split(/[?#]/)[0]);
   readonly previousUrl = computed(() => this._urlPair()[0]);
   readonly queryParams = computed<Record<string, string>>(() => {
     const url = this.routeUrl();
@@ -109,7 +112,7 @@ export class ContentService implements ContentServiceInterface {
       return {};
     }
     const params: Record<string, string> = {};
-    new URLSearchParams(url.slice(queryIndex + 1)).forEach((value, key) => {
+    new URLSearchParams(url.slice(queryIndex + 1).split("#")[0]).forEach((value, key) => {
       params[key] = value;
     });
     return params;
@@ -235,9 +238,8 @@ export class ContentService implements ContentServiceInterface {
       this.routeUrl().startsWith(ROUTE_PATHS.MACHINE_RESOLVER_DETAILS)
   );
 
-  private matchesPath(path: string): boolean {
-    const url = this.routeUrl();
-    return url === path || url.startsWith(path + "?");
+  matchesPath(path: string): boolean {
+    return this.routePath() === path;
   }
 
   tokenSelected(serial: string): void {
