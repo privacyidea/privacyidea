@@ -72,10 +72,13 @@ class RADIUSServerTestCase(MyTestCase):
 
         radius = get_radius("myserver")
         with LogCapture(level=logging.DEBUG) as lc:
-            r = radius.request("user", "password")
+            r = radius.request("user", "Tr0ub4dor&3")
             self.assertIsInstance(r, pyrad.packet.Packet)
             self.assertEqual(r.code, pyrad.packet.AccessAccept)
-            self.assertIn("{'password': 'HIDDEN'}", lc.records[0].message)
+            # The password is hidden wherever it was passed, so assert on the value rather than on
+            # the position or keyword it arrived in.
+            self.assertNotIn("Tr0ub4dor&3", lc.records[0].message)
+            self.assertIn("HIDDEN", lc.records[0].message)
 
         radiusmock.setdata(response=radiusmock.AccessReject)
         r = radius.request("user", "password")
