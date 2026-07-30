@@ -41,7 +41,7 @@ from privacyidea.lib.conditional_access.lockout_policy import (list_lockout_poli
                                                                create_lockout_policy,
                                                                update_lockout_policy,
                                                                delete_lockout_policy,
-                                                               get_actions_by_target)
+                                                               get_target_constraints)
 from privacyidea.lib.conditional_access.lockout_policy_template import list_lockout_policy_templates
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.log import log_with
@@ -124,17 +124,17 @@ def list_action_types():
 @log_with(log)
 def list_targets():
     """
-    Return the policy targets and, for each, the stage actions it allows, as
-    ``{target: [action, ...]}`` (see
-    :func:`~privacyidea.lib.conditional_access.lockout_policy.get_actions_by_target`).
+    Return the policy targets and, for each, the constraints that depend on the target - the stage actions it allows
+    and the count modes it supports - as ``{target: {"actions": [...], "count_modes": [...]}}`` (both sorted; see
+    :func:`~privacyidea.lib.conditional_access.lockout_policy.get_target_constraints`).
 
     Requires the admin policy action :ref:`policy_lockout_policy_read`.
 
-    :status 200: mapping of target name to its list of allowed action names
+    :status 200: mapping of target name to its allowed actions and supported count modes
     """
-    actions_by_target = get_actions_by_target()
-    g.audit_object.log({"success": True, "info": f"{len(actions_by_target)} targets"})
-    return send_result(actions_by_target)
+    target_constraints = get_target_constraints()
+    g.audit_object.log({"success": True, "info": f"{len(target_constraints)} targets"})
+    return send_result(target_constraints)
 
 
 @conditional_access_blueprint.route('policy', methods=['GET'])
@@ -209,6 +209,12 @@ def create_policy():
     :jsonparam name: unique policy name. Required.
     :jsonparam time_window_seconds: sliding window (in seconds) over which the
         tracked failures are counted. Required, positive integer.
+    :jsonparam count_mode: how the tracked counters are counted against the
+        thresholds; valid values depend on ``target`` - a ``user`` policy uses
+        ``PER_REQUEST`` (per authentication_log row) or ``PER_ATTEMPT`` (per whole
+        authentication attempt), a ``source_ip`` policy uses ``DISTINCT_USERS``
+        (distinct targeted accounts). Optional; defaults to the target's default
+        (``PER_REQUEST`` for ``user``, ``DISTINCT_USERS`` for ``source_ip``).
     :jsonparam counter_types_to_track: non-empty list of authentication event
         types (e.g. ``["PIN_FAIL", "MFA_FAIL"]``) counted together against the
         stage thresholds. Required.
@@ -237,6 +243,7 @@ def create_policy():
         enabled=is_true(enabled) if enabled is not None else True,
         dry_run=is_true(dry_run) if dry_run is not None else False,
         priority=get_required(params, "priority"),
+        count_mode=get_optional(params, "count_mode"),
         target=get_required(params, "target"))
     g.audit_object.log({"success": True, "info": f"created policy '{name}' (id {policy_id})"})
     return send_result(policy_id)
@@ -275,7 +282,8 @@ def update_policy(policy_id):
         enabled=is_true(enabled) if enabled is not None else None,
         dry_run=is_true(dry_run) if dry_run is not None else None,
         priority=get_optional(params, "priority"),
-        target=get_optional(params, "target"))
+        target=get_optional(params, "target"),
+        count_mode=get_optional(params, "count_mode"))
     g.audit_object.log({"success": True,
                         "info": f"updated policy {policy_id} "
                                 f"({', '.join(changed_fields) or 'no fields'})"})

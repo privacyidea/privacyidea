@@ -26,6 +26,7 @@ import functools
 import json
 import logging
 import re
+import secrets
 import string
 import threading
 import time
@@ -37,8 +38,14 @@ from flask import jsonify, current_app, Response, Request, request, g, has_reque
 from flask_babel import _
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
-from privacyidea.lib.conditional_access.authentication_log import log_authentication_event, AuthLogUserRole
+from privacyidea.lib.conditional_access.authentication_log import (log_authentication_event, AuthLogUserRole,
+                                                                   get_attempt_id_for_transaction)
 from privacyidea.lib.user import User
+from privacyidea.lib.audit import getAudit
+from privacyidea.lib.config import get_from_config, SYSCONF
+from privacyidea.lib.event import EventConfiguration
+from privacyidea.lib.utils import (prepare_result, get_version, to_unicode,
+                                   get_client_ip, get_plugin_info_from_useragent)
 # Re-exported from privacyidea.lib.params for backwards-compatibility with
 # callers that import these names from privacyidea.api.lib.utils.
 from privacyidea.lib.params import (  # noqa: F401
@@ -49,9 +56,11 @@ from privacyidea.lib.params import (  # noqa: F401
     get_optional_one_of,
     attestation_certificate_allowed,
 )
+from privacyidea.lib.policy import PolicyClass
 # check_policy_name lives in lib/policy; re-exported here for backward compatibility
 from privacyidea.lib.policy import check_policy_name  # noqa: F401
-from privacyidea.lib.utils import prepare_result, get_version, to_unicode, get_plugin_info_from_useragent
+from privacyidea.lib.policy import Match, SCOPE
+from privacyidea.lib.policies.actions import PolicyAction
 from ...lib.error import (PolicyError, ResourceNotFoundError,
                           PrivacyIDEAError, AuthError, Error)
 from ...lib.log import log_with
@@ -85,6 +94,57 @@ NO_UNQUOTE_USER_AGENTS = {
 }
 
 SESSION_KEY_LENGTH = 32
+
+
+def generate_attempt_id() -> str:
+    """
+    Mint a fresh attempt id: 128-bit cryptographically random hex string (32 hex chars).
+
+    Each logical authentication attempt (which may span multiple HTTP requests in challenge / multichallenge flows)
+    shares the same attempt id. The high entropy avoids silent collision across the retained authentication log.
+    """
+    return secrets.token_hex(16)
+
+
+def resolve_attempt_id(request: Request | None, transaction_id: str | None = None) -> str:
+    """
+    Determine the per-attempt correlation id for the authentication-log row of the current request.
+
+    All rows of one logical authentication attempt share an ``attempt_id`` so a policy can count *attempts* rather
+    than individual log rows (a challenge / multichallenge attempt spans several requests, hence several rows). The id
+    is derived entirely from the durable authentication log, so nothing has to be stored on the (ephemeral) challenge:
+
+    * A request that carries no ``transaction_id`` / ``state`` starts a new attempt and gets a freshly minted id.
+    * A request answering a previously triggered challenge carries that challenge's ``transaction_id``. The trigger
+      request already wrote a row with both that ``transaction_id`` and the ``attempt_id``, so the attempt is
+      recovered from it (:func:`~privacyidea.lib.conditional_access.authentication_log.get_attempt_id_for_transaction`)
+      and every row of the attempt shares one id. ``state`` is the RADIUS alias of ``transaction_id``.
+
+    The **client-sent** transaction id takes precedence: for a multichallenge continuation the row's own
+    *transaction_id* is the freshly minted next challenge (no attempt row yet), while the request still carries the
+    *answered* one, which is the correct grouping key. When the request carries none, the row's own *transaction_id*
+    is used as a fallback — this is what groups a challenge resolved inside its own triggering request (push_wait
+    logs both the trigger and the terminal row on one request that has no transaction_id of its own).
+
+    A missing or legacy trigger row (no stored ``attempt_id``) falls back to a fresh id, so every new row is grouped
+    as at least its own attempt rather than left ungrouped.
+
+    :param request: the current request, or ``None`` when logging outside a request
+    :param transaction_id: the transaction_id being written on this row, used as the lookup key when the request
+        itself carries none
+    :return: the attempt id to store on this request's authentication-log row
+    """
+    request_transaction_id = None
+    if request is not None:
+        request_data = getattr(request, "all_data", {})
+        request_transaction_id = (get_optional(request_data, "transaction_id")
+                                  or get_optional(request_data, "state"))
+    lookup_transaction_id = request_transaction_id or transaction_id
+    if lookup_transaction_id:
+        existing = get_attempt_id_for_transaction(lookup_transaction_id)
+        if existing:
+            return existing
+    return generate_attempt_id()
 
 
 def send_result(obj, rid=1, details=None, **kwargs) -> Response:
@@ -252,8 +312,8 @@ def _determine_user_role(user: User | None, internal_admin: bool) -> AuthLogUser
 
 def log_authentication(event_type: AuthEventType | None, request: Request | None = None, user: User | None = None,
                        serial: str | None = None, transaction_id: str | None = None,
-                       previous_transaction_id: str | None = None, username: str | None = None,
-                       internal_admin: bool = False) -> int | None:
+                       username: str | None = None,
+                       internal_admin: bool = False, attempt_id: str | None = None) -> int | None:
     """
     Write one authentication_log entry for the current request.
 
@@ -281,10 +341,17 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
     ``user_role`` records whether the principal is a regular user or an admin (see :class:`AuthLogUserRole`). Pass
     ``internal_admin=True`` for a local database admin (``/auth`` only); an admin-realm admin is detected from the
     user's realm, so the caller need not flag it.
+
+    ``attempt_id`` groups all rows of one logical authentication attempt (see :func:`resolve_attempt_id`). When not
+    given it is resolved automatically from the request: minted fresh for an initial request, or recovered from the
+    answered challenge's trigger row for a follow-up. Pass it explicitly only when the answered ``transaction_id`` is
+    not carried on the request (e.g. the out-of-band push answer at ``/ttype/push``).
     """
     if not event_type:
         log.debug("Not logging authentication event, because no event type is given.")
         return
+    if attempt_id is None:
+        attempt_id = resolve_attempt_id(request, transaction_id)
     client_label = None
     source_ip = None
     if has_request_context():
@@ -307,7 +374,6 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
     return log_authentication_event(
         event_type=event_type,
         transaction_id=transaction_id,
-        previous_transaction_id=previous_transaction_id,
         resolver=user.resolver if resolved else None,
         uid=user.uid if resolved else None,
         realm=(user.realm or None) if user else None,
@@ -316,6 +382,7 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
         source_ip=source_ip,
         client_label=client_label,
         serial=serial,
+        attempt_id=attempt_id,
     )
 
 
@@ -476,6 +543,25 @@ def get_all_params(request):
     return return_param
 
 
+def get_before_request_config():
+    """
+    Gets the policy object, the audit object and the event configuration object and sets them to the global flask
+    variable. Additionally, reads the client IP and the HTTP headers from the request object and writes them to the
+    global flask variable.
+
+    Every blueprint's before_request has to call this, so no request handler relies on request-local data that
+    another request left behind.
+    """
+    g.policy_object = PolicyClass()
+    g.audit_object = getAudit(current_app.config, g.startdate)
+    g.event_config = EventConfiguration()
+    # access_route contains the ip addresses of all clients, hops and proxies.
+    g.client_ip = get_client_ip(request, get_from_config(SYSCONF.OVERRIDECLIENT))
+    # Save the HTTP header in the localproxy object
+    g.request_headers = request.headers
+    g.policies = {}
+
+
 def get_priority_from_param(param):
     """
     Return a dictionary of priorities as int from params like
@@ -625,3 +711,84 @@ def map_error_to_code(error: Exception, default: int = 500) -> int:
         if cls in error_mapping:
             return error_mapping[cls]
     return default
+
+
+def hardening_action_active(g, request, action) -> bool:
+    """
+    Return whether the given HARDENING-scope policy action matches the current
+    request.
+
+    Hardening policies are evaluated without user/realm/resolver/time conditions
+    (client IP and user agent matching still apply). The evaluation is
+    defensive: an incomplete request context (for example an error raised early
+    in before_request, before g.client_ip was set) or a failure of the policy
+    backend results in ``False`` rather than an exception, so callers in error
+    handlers cannot themselves fail with a 500.
+    """
+    try:
+        # Ensure g.policy_object and g.client_ip/user_agent are available even
+        # when before_request failed early (e.g. an AuthError before the policy
+        # object was created).
+        if not hasattr(g, "policy_object"):
+            from privacyidea.lib.policy import PolicyClass
+            g.policy_object = PolicyClass()
+        # Skip the policy evaluation entirely when no hardening policy is
+        # configured. This keeps high-volume endpoints fast while the feature is
+        # disabled instead of running a full policy match on every request.
+        if not g.policy_object.list_policies(scope=SCOPE.HARDENING, active=True):
+            return False
+        # Match.action_only matches the client IP and user agent implicitly.
+        if not hasattr(g, "client_ip") or not g.client_ip:
+            from privacyidea.lib.config import get_from_config, SYSCONF
+            from privacyidea.lib.utils import get_client_ip
+            try:
+                override_client = get_from_config(SYSCONF.OVERRIDECLIENT)
+            except Exception:
+                override_client = None
+            g.client_ip = get_client_ip(request, override_client)
+        if not g.get("user_agent"):
+            ua_name, _ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
+            g.user_agent = ua_name
+        return Match.action_only(g, scope=SCOPE.HARDENING, action=action).any(write_to_audit_log=False)
+    except Exception:
+        return False
+
+
+def _is_authentication_endpoint(request) -> bool:
+    """
+    True if the current request targets an authentication endpoint: any
+    /validate route, or the /auth login (not other jwtauth routes such as
+    /auth/rights).
+    """
+    # The blueprint names are stable string constants, so we compare against
+    # them directly instead of importing the blueprints (which would import
+    # from this module) on the error-handling path.
+    if request.blueprint == "validate_blueprint":
+        return True
+    return request.blueprint == "jwtauth" and request.path.endswith("/auth")
+
+
+def get_auth_error_status_code(error: Exception) -> int:
+    """
+    Determine the HTTP status code for an error raised during authentication.
+
+    Normally this is the error's mapped status code (e.g. 401 for AuthError,
+    403 for PolicyError, 404 for ResourceNotFoundError, 400 for other
+    PrivacyIDEAErrors such as a denied authorization). If the
+    hide_auth_error_status policy (HARDENING scope) is set, the distinct 4xx
+    codes are collapsed into a uniform 401, so the status code cannot be used
+    to distinguish why the authentication failed.
+
+    Server faults (5xx) are never masked, so a real internal error is not
+    disguised as an authentication failure. Only requests to the authentication
+    endpoints (the /auth login and /validate) are affected, so the same error
+    types raised on other endpoints keep their regular status code.
+    """
+    mapped_code = map_error_to_code(error)
+    # Already 401 -> nothing to normalize (avoids a policy match on the
+    # high-volume failed-login path). Never collapse server faults to 401.
+    if mapped_code == 401 or mapped_code >= 500:
+        return mapped_code
+    if not _is_authentication_endpoint(request):
+        return mapped_code
+    return 401 if hardening_action_active(g, request, PolicyAction.HIDE_AUTH_ERROR_STATUS) else mapped_code

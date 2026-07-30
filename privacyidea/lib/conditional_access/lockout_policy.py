@@ -32,33 +32,39 @@ A policy is passed around as a plain dict::
         "dry_run": False,
         "priority": 1,
         "target": "user",
+        "count_mode": "PER_REQUEST",
         "counter_types_to_track": ["PIN_FAIL", "MFA_FAIL"],
         "stages": [
             {
                 "failure_threshold": 5,
                 "priority": 1,
                 "actions": [
-                    {"action_type": "LOCK_USER", "action_value": {"lock_duration_seconds": 600}},
-                    {"action_type": "EMAIL_ADMIN", "action_value": {"smtp_identifier": "..."}},
+                    {"action_type": "LOCK_USER", "action_value": {"lock_duration_seconds": 600},
+                     "retrigger_above_threshold": True},
+                    {"action_type": "EMAIL_ADMIN", "action_value": {"smtp_identifier": "..."},
+                     "retrigger_above_threshold": False},
                 ],
             },
         ],
     }
 
-``counter_types_to_track`` values must be
-:class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthEventType`
-names and ``action_type`` values must be
-:class:`~privacyidea.lib.conditional_access.engine.LockoutAction` names; anything
-else is a :class:`~privacyidea.lib.error.ParameterError` (fail-closed - a typo
-must not silently create a policy that never matches or an action that never
-fires).
+``count_mode`` is a :class:`~privacyidea.lib.conditional_access.authentication_event_types.CountMode` name whose valid
+values depend on the target (see ``_COUNT_MODES_BY_TARGET``): both targets count event volume per ``authentication_log``
+row (``PER_REQUEST``) or per whole authentication attempt (``PER_ATTEMPT``); a ``source_ip`` policy may additionally
+count distinct targeted accounts (``DISTINCT_USERS``, the spraying / enumeration signal). When omitted it defaults to
+the target's default (``PER_REQUEST`` for ``user``, ``DISTINCT_USERS`` for ``source_ip``). ``counter_types_to_track``
+values must be
+:class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthEventType` names and ``action_type`` values
+must be :class:`~privacyidea.lib.conditional_access.engine.LockoutAction` names; anything else is a
+:class:`~privacyidea.lib.error.ParameterError` (fail-closed - a typo must not silently create a policy that never
+matches or an action that never fires).
 """
 import logging
 from dataclasses import dataclass, field
 
 from sqlalchemy import select
 
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
 from privacyidea.lib.conditional_access.engine import LockoutAction, LockoutTarget
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError
 from privacyidea.lib.log import log_with
@@ -72,12 +78,24 @@ log = logging.getLogger(__name__)
 # clean ParameterError instead of a DB-dependent truncation or error.
 MAX_NAME_LENGTH = 255
 
+# The pre-auth ALLOW/DENY actions: standing decisions that apply while the count
+# stays at or above the threshold, so they default to re-triggering (the
+# post-response lock/email/block effects default to fire-once).
+DECISION_ACTIONS = frozenset({str(LockoutAction.ALLOW), str(LockoutAction.DENY)})
+
 
 @dataclass
 class StageActionDefinition:
-    """One validated stage action (see :func:`_validate_stages`)."""
+    """
+    One validated stage action (see :func:`_validate_stages`).
+
+    ``retrigger_above_threshold`` left at ``None`` means "not chosen": it is
+    resolved to the action-aware default in :func:`_build_stages` (re-trigger for
+    the :data:`DECISION_ACTIONS`, fire-once for the post-response effects).
+    """
     action_type: str
     action_value: object = None
+    retrigger_above_threshold: bool | None = None
 
 
 @dataclass
@@ -90,8 +108,8 @@ class StageDefinition:
     """
     failure_threshold: int
     priority: int
-    name: str | None = None
     actions: list[StageActionDefinition] = field(default_factory=list)
+    name: str | None = None
 
 
 def lockout_policy_to_dict(policy: LockoutPolicy) -> dict:
@@ -106,6 +124,10 @@ def lockout_policy_to_dict(policy: LockoutPolicy) -> dict:
     # serialized explicitly.
     result = {column: getattr(policy, column) for column in policy.__table__.columns.keys()}
     result["counter_types_to_track"] = list(policy.counter_types_to_track)
+    # Stages are ordered for display by ascending failure_threshold (the stage
+    # that triggers first comes first). This is independent of the engine's
+    # evaluation order (highest priority first, see the model relationship),
+    # which is why we sort here rather than relying on policy.stages order.
     result["stages"] = [
         {
             "id": stage.id,
@@ -117,9 +139,10 @@ def lockout_policy_to_dict(policy: LockoutPolicy) -> dict:
                     "id": action.id,
                     "action_type": action.action_type,
                     "action_value": action.action_value,
+                    "retrigger_above_threshold": action.retrigger_above_threshold,
                 } for action in stage.actions
             ],
-        } for stage in policy.stages
+        } for stage in sorted(policy.stages, key=lambda stage: stage.failure_threshold)
     ]
     return result
 
@@ -222,6 +245,18 @@ def get_actions_by_target() -> dict[str, list[str]]:
             for target, actions in _ACTIONS_BY_TARGET.items()}
 
 
+def get_target_constraints() -> dict[str, dict[str, list[str]]]:
+    """
+    The per-target policy constraints, as ``{target_value: {"actions": [...], "count_modes": [...]}}`` - for each
+    target the stage actions it allows (:data:`_ACTIONS_BY_TARGET`) and the count modes it supports
+    (:data:`_COUNT_MODES_BY_TARGET`), both sorted. Actions and count modes are the two things constrained by the
+    target.
+    """
+    return {target.value: {"actions": sorted(action.value for action in _ACTIONS_BY_TARGET[target]),
+                           "count_modes": sorted(mode.value for mode in _COUNT_MODES_BY_TARGET[target])}
+            for target in LockoutTarget}
+
+
 def _validate_target(target) -> "LockoutTarget":
     """
     Validate the policy target and return the matching :class:`LockoutTarget`
@@ -249,14 +284,53 @@ def _validate_target_actions(stage_defs: list["StageDefinition"], target: "Locko
                              f"Allowed: {', '.join(sorted(allowed))}.")
 
 
+# The count modes each target may use, and the default when the caller does not specify one. Both targets support the
+# volume modes (per request or per whole attempt); a ``source_ip`` target additionally offers ``DISTINCT_USERS`` - the
+# distinct targeted accounts (spraying / enumeration) signal - and defaults to it, since that is the characteristic
+# per-IP threat, while the volume modes give plain per-IP rate limiting. Mirrors the per-target ``_ACTIONS_BY_TARGET``
+# registration.
+_COUNT_MODES_BY_TARGET = {
+    LockoutTarget.USER: {CountMode.PER_REQUEST, CountMode.PER_ATTEMPT},
+    LockoutTarget.SOURCE_IP: {CountMode.DISTINCT_USERS, CountMode.PER_REQUEST, CountMode.PER_ATTEMPT},
+}
+_DEFAULT_COUNT_MODE_BY_TARGET = {
+    LockoutTarget.USER: CountMode.PER_REQUEST,
+    LockoutTarget.SOURCE_IP: CountMode.DISTINCT_USERS,
+}
+
+
+def _validate_count_mode(count_mode, target: "LockoutTarget") -> str:
+    """
+    Validate the policy's :class:`CountMode` for *target* and return its canonical string value.
+
+    A ``None`` *count_mode* yields the target's default (see :data:`_DEFAULT_COUNT_MODE_BY_TARGET`), so a caller need
+    not know which mode a target expects. Otherwise the mode must be a known :class:`CountMode` (accepted as either a
+    mode string from the API or a member) *and* allowed for *target* (see :data:`_COUNT_MODES_BY_TARGET`) - e.g.
+    ``DISTINCT_USERS`` on a ``user`` policy is rejected. Both accepted
+    forms normalize to the plain string stored on the model, so the stored value's type does not depend on the caller.
+    """
+    if count_mode is None:
+        return _DEFAULT_COUNT_MODE_BY_TARGET[target].value
+    try:
+        mode = CountMode(count_mode)
+    except ValueError:
+        valid_modes = ", ".join(mode.value for mode in CountMode)
+        raise ParameterError(f"Unknown count_mode '{count_mode}'. Valid modes: {valid_modes}.")
+    allowed = _COUNT_MODES_BY_TARGET[target]
+    if mode not in allowed:
+        raise ParameterError(f"count_mode '{mode}' is not allowed for target '{target}'. "
+                             f"Allowed: {', '.join(sorted(m.value for m in allowed))}.")
+    return mode.value
+
+
 def _validate_counter_types(counter_types) -> list[str]:
     """
-    Validate the tracked counter types: a non-empty list of
-    :class:`AuthEventType` values.
+    Validate the tracked counter types: a non-empty list of :class:`AuthEventType` values. The same vocabulary
+    applies in both :class:`CountMode`\\ s - the mode changes only whether these events are counted per log row or
+    per whole attempt, not what may be tracked.
 
-    A counter type repeated in the list is de-duplicated (order preserved)
-    rather than rejected - tracking the same event type twice has no effect on
-    evaluation, so a copy-paste duplicate should not fail the whole request.
+    A counter type repeated in the list is de-duplicated (order preserved) rather than rejected - tracking the same
+    event type twice has no effect on evaluation, so a copy-paste duplicate should not fail the whole request.
     """
     if not isinstance(counter_types, list) or not counter_types:
         raise ParameterError("'counter_types_to_track' must be a non-empty list of authentication event types.")
@@ -286,7 +360,7 @@ def _validate_stages(stages) -> list[StageDefinition]:
         raise ParameterError("'stages' must be a non-empty list of stage definitions.")
     valid_actions = {action.value for action in LockoutAction}
     allowed_stage_keys = {"name", "failure_threshold", "priority", "actions"}
-    allowed_action_keys = {"action_type", "action_value"}
+    allowed_action_keys = {"action_type", "action_value", "retrigger_above_threshold"}
     normalized = []
     thresholds = set()
     for stage in stages:
@@ -319,23 +393,43 @@ def _validate_stages(stages) -> list[StageDefinition]:
             if action_type not in valid_actions:
                 raise ParameterError(f"Unknown action type '{action_type}'. "
                                      f"Valid types: {', '.join(sorted(valid_actions))}.")
+            # retrigger_above_threshold is a per-action checkbox (coerced like the
+            # policy-level enabled/dry_run booleans). An omitted flag stays None
+            # and is resolved to the action-aware default by :func:`_build_stages`.
+            retrigger_raw = action.get("retrigger_above_threshold")
+            retrigger = None if retrigger_raw is None else bool(retrigger_raw)
             normalized_actions.append(StageActionDefinition(action_type=action_type,
-                                                            action_value=action.get("action_value")))
+                                                            action_value=action.get("action_value"),
+                                                            retrigger_above_threshold=retrigger))
         normalized.append(StageDefinition(failure_threshold=threshold, priority=priority,
                                           name=name, actions=normalized_actions))
     return normalized
 
 
+def _default_retrigger(action: StageActionDefinition) -> bool:
+    """The action's ``retrigger_above_threshold``, defaulted by action type when unset."""
+    if action.retrigger_above_threshold is None:
+        return str(action.action_type) in DECISION_ACTIONS
+    return action.retrigger_above_threshold
+
+
 def _build_stages(stage_defs: list[StageDefinition]) -> list[LockoutPolicyStage]:
     """
     Turn validated :class:`StageDefinition` objects into (unpersisted) ORM objects.
+
+    An action whose ``retrigger_above_threshold`` is ``None`` (not chosen by the
+    admin) gets the action-aware default: the :data:`DECISION_ACTIONS` are
+    standing pre-auth decisions that apply while the count stays at or above the
+    threshold, so they re-trigger; the post-response effects (lock/email/block)
+    fire once, at the exact threshold.
     """
     return [
         LockoutPolicyStage(
             name=stage.name,
             failure_threshold=stage.failure_threshold,
             priority=stage.priority,
-            actions=[LockoutStageAction(action_type=action.action_type, action_value=action.action_value)
+            actions=[LockoutStageAction(action_type=action.action_type, action_value=action.action_value,
+                                        retrigger_above_threshold=_default_retrigger(action))
                      for action in stage.actions],
         ) for stage in stage_defs
     ]
@@ -368,8 +462,9 @@ def get_lockout_policy(policy_id: int) -> dict:
 
 
 @log_with(log)
-def create_lockout_policy(name: str, time_window_seconds: int, counter_types_to_track: list[str], stages: list[dict],
-                          target: str, priority: int, enabled: bool = True, dry_run: bool = False) -> int:
+def create_lockout_policy(name: str, time_window_seconds: int, counter_types_to_track: list[str],
+                          stages: list[dict], target: str, priority: int, enabled: bool = True,
+                          dry_run: bool = False, count_mode: str | None = None) -> int:
     """
     Create a lockout policy with its stages and actions in one transaction.
 
@@ -379,6 +474,7 @@ def create_lockout_policy(name: str, time_window_seconds: int, counter_types_to_
     target/action compatibility is always a deliberate choice. ``priority`` is
     likewise required (no default) and must be unique across policies, so the
     caller always picks a deliberate, unambiguous precedence.
+    ``count_mode`` defaults to the target's default when not given (see :func:`_validate_count_mode`).
 
     :return: the id of the new policy
     """
@@ -386,6 +482,7 @@ def create_lockout_policy(name: str, time_window_seconds: int, counter_types_to_
     time_window_seconds = _validate_positive_int(time_window_seconds, "time_window_seconds")
     priority = _validate_priority(priority)
     lockout_target = _validate_target(target)
+    count_mode = _validate_count_mode(count_mode, lockout_target)
     counter_types = _validate_counter_types(counter_types_to_track)
     stage_defs = _validate_stages(stages)
     _validate_target_actions(stage_defs, lockout_target)
@@ -393,7 +490,7 @@ def create_lockout_policy(name: str, time_window_seconds: int, counter_types_to_
     policy = LockoutPolicy(name=name, time_window_seconds=time_window_seconds,
                            enabled=bool(enabled), dry_run=bool(dry_run), priority=priority,
                            target=lockout_target, counter_types_to_track=counter_types,
-                           stages=_build_stages(stage_defs))
+                           count_mode=count_mode, stages=_build_stages(stage_defs))
     db.session.add(policy)
     db.session.commit()
     log.info(f"Created lockout policy '{name}' (id {policy.id}).")
@@ -406,7 +503,7 @@ def update_lockout_policy(policy_id: int, name: str | None = None,
                           counter_types_to_track: list[str] | None = None,
                           stages: list[dict] | None = None, enabled: bool | None = None,
                           dry_run: bool | None = None, priority: int | None = None,
-                          target: str | None = None) -> tuple[int, list[str]]:
+                          target: str | None = None, count_mode: str | None = None) -> tuple[int, list[str]]:
     """
     Update a lockout policy. Only the given (non-``None``) fields are changed.
 
@@ -450,6 +547,14 @@ def update_lockout_policy(policy_id: int, name: str | None = None,
         effective_target = lockout_target if lockout_target is not None else LockoutTarget(policy.target)
         effective_stages = stages if stages is not None else policy.stages
         _validate_target_actions(effective_stages, effective_target)
+    # target and count_mode must stay mutually compatible: switching the target can invalidate the stored mode (e.g.
+    # a user policy's PER_REQUEST is not valid once it becomes a source_ip policy), so validate the effective pair.
+    if lockout_target is not None or count_mode is not None:
+        effective_target = lockout_target if lockout_target is not None else LockoutTarget(policy.target)
+        effective_mode = count_mode if count_mode is not None else policy.count_mode
+        validated_mode = _validate_count_mode(effective_mode, effective_target)
+        if count_mode is not None:
+            count_mode = validated_mode
 
     changed_fields = []
     if name is not None:
@@ -470,6 +575,9 @@ def update_lockout_policy(policy_id: int, name: str | None = None,
     if dry_run is not None:
         policy.dry_run = bool(dry_run)
         changed_fields.append("dry_run")
+    if count_mode is not None:
+        policy.count_mode = count_mode
+        changed_fields.append("count_mode")
     if counter_types_to_track is not None:
         # Delete the existing rows and flush before inserting the replacements,
         # so a single flush never holds two rows with the same

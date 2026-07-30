@@ -28,7 +28,7 @@ import json
 
 from werkzeug.test import TestResponse
 
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
 from privacyidea.lib.conditional_access.engine import LockoutAction
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
@@ -173,17 +173,19 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         self.assertEqual(400, res.status_code, res.json)
 
     def test_patch_change_target_with_compatible_stages(self):
-        # target may change as long as the new target/action combination is
-        # compatible: flip a user policy to source_ip while swapping in BLOCK_IP.
+        # target may change as long as the new target/action AND target/count_mode combinations are compatible:
+        # flip a user policy to source_ip while swapping in BLOCK_IP and the source_ip count_mode.
         policy_id = self._create_policy()
         res = self._request(f"policy/{policy_id}", method="PATCH",
                             json_data={"target": "source_ip",
+                                       "count_mode": str(CountMode.DISTINCT_USERS),
                                        "stages": [{"failure_threshold": 20,
                                                    "actions": [{"action_type": str(LockoutAction.BLOCK_IP),
                                                                 "action_value": {"duration_seconds": 60}}]}]})
         self.assertEqual(200, res.status_code, res.json)
-        self.assertEqual("source_ip",
-                         self._request(f"policy/{policy_id}").json["result"]["value"]["target"])
+        result = self._request(f"policy/{policy_id}").json["result"]["value"]
+        self.assertEqual("source_ip", result["target"])
+        self.assertEqual(str(CountMode.DISTINCT_USERS), result["count_mode"])
 
     def test_patch_change_target_incompatible_with_stages_is_400(self):
         # flipping to source_ip while the existing LOCK_USER stage remains is rejected
@@ -235,6 +237,27 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         self.assertListEqual([str(AuthEventType.PIN_FAIL)], policy["counter_types_to_track"])
         self.assertEqual(5, policy["stages"][0]["failure_threshold"])
         self.assertEqual(str(LockoutAction.LOCK_USER), policy["stages"][0]["actions"][0]["action_type"])
+        # retrigger_above_threshold defaults to False on a lock action when omitted.
+        self.assertFalse(policy["stages"][0]["actions"][0]["retrigger_above_threshold"])
+
+    def test_create_action_retrigger_flag_round_trips(self):
+        # One stage, two actions with independent modes: the lock re-triggers, the
+        # email fires once.
+        body = self._policy_body(
+            name="Retrig",
+            stages=[{"failure_threshold": 8,
+                     "actions": [{"action_type": str(LockoutAction.LOCK_USER),
+                                  "action_value": {"lock_duration_seconds": 300},
+                                  "retrigger_above_threshold": True},
+                                 {"action_type": str(LockoutAction.EMAIL_ADMIN),
+                                  "action_value": {"smtp_identifier": "x"},
+                                  "retrigger_above_threshold": False}]}])
+        res = self._request("policy", method="POST", json_data=body)
+        self.assertEqual(200, res.status_code, res.json)
+        policy = self._request(f"policy/{res.json['result']['value']}").json["result"]["value"]
+        by_type = {action["action_type"]: action for action in policy["stages"][0]["actions"]}
+        self.assertTrue(by_type[str(LockoutAction.LOCK_USER)]["retrigger_above_threshold"])
+        self.assertFalse(by_type[str(LockoutAction.EMAIL_ADMIN)]["retrigger_above_threshold"])
 
     def test_get_unknown_id_is_404(self):
         res = self._request("policy/424242")
@@ -272,12 +295,18 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
     def test_list_targets(self):
         res = self._request("targets")
         self.assertEqual(200, res.status_code, res.json)
-        actions_by_target = res.json["result"]["value"]
-        self.assertSetEqual({"user", "source_ip"}, set(actions_by_target))
-        self.assertIn(str(LockoutAction.LOCK_USER), actions_by_target["user"])
-        self.assertNotIn(str(LockoutAction.LOCK_USER), actions_by_target["source_ip"])
-        self.assertIn(str(LockoutAction.BLOCK_IP), actions_by_target["source_ip"])
-        self.assertNotIn(str(LockoutAction.BLOCK_IP), actions_by_target["user"])
+        constraints = res.json["result"]["value"]
+        self.assertSetEqual({"user", "source_ip"}, set(constraints))
+        # Each target carries its allowed actions and supported count modes.
+        self.assertIn(str(LockoutAction.LOCK_USER), constraints["user"]["actions"])
+        self.assertNotIn(str(LockoutAction.LOCK_USER), constraints["source_ip"]["actions"])
+        self.assertIn(str(LockoutAction.BLOCK_IP), constraints["source_ip"]["actions"])
+        self.assertNotIn(str(LockoutAction.BLOCK_IP), constraints["user"]["actions"])
+        # Volume modes are valid for both; DISTINCT_USERS is source_ip-only.
+        self.assertListEqual([str(CountMode.PER_ATTEMPT), str(CountMode.PER_REQUEST)],
+                             constraints["user"]["count_modes"])
+        self.assertListEqual([str(CountMode.DISTINCT_USERS), str(CountMode.PER_ATTEMPT), str(CountMode.PER_REQUEST)],
+                             constraints["source_ip"]["count_modes"])
 
     # --- PATCH /policy/<id> (update) -------------------------------------------
 

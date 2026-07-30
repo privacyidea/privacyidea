@@ -230,6 +230,41 @@ class PasskeyAPITest(PasskeyAPITestBase):
         remove_token(serial)
         remove_token(serial_2)
 
+    def test_01b_token_init_user_name_policy(self):
+        # Without the policy, the user name and display name default to the login name
+        with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
+            get_nonce.return_value = self.registration_challenge
+            with self.app.test_request_context('/token/init', method='POST',
+                                               data={"type": "passkey", "user": self.user.login,
+                                                     "realm": self.user.realm},
+                                               headers=self.pk_headers):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code)
+                serial = res.json["detail"]["serial"]
+                passkey_registration = res.json["detail"]["passkey_registration"]
+                self.assertEqual(self.user.login, passkey_registration["user"]["name"])
+                self.assertEqual(self.user.login, passkey_registration["user"]["displayName"])
+        remove_token(serial)
+
+        # With the policy, the tags {user} and {realm} are replaced in both the user name and display name
+        self.set_policy_with_cleanup("passkey_user_name", scope=SCOPE.ENROLL,
+                                     action=f"{PasskeyAction.UserLabel}={{user}}@{{realm}}")
+        with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
+            get_nonce.return_value = self.registration_challenge
+            with self.app.test_request_context('/token/init', method='POST',
+                                               data={"type": "passkey", "user": self.user.login,
+                                                     "realm": self.user.realm},
+                                               headers=self.pk_headers):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code)
+                serial = res.json["detail"]["serial"]
+                passkey_registration = res.json["detail"]["passkey_registration"]
+                self.assertEqual(f"{self.user.login}@{self.user.realm}",
+                                 passkey_registration["user"]["name"])
+                self.assertEqual(f"{self.user.login}@{self.user.realm}",
+                                 passkey_registration["user"]["displayName"])
+        remove_token(serial)
+
     def test_02_authenticate_no_uv(self):
         serial = self._enroll_static_passkey()
         passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
@@ -1025,8 +1060,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         auth_log_entries = assert_authentication_log([AuthEventType.ENROLLMENT_TRIGGERED],
                                                      transaction_id=enroll_transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.ENROLLMENT_TRIGGERED], user=self.user,
-                                        serials={evm_serial}, transaction_id=enroll_transaction_id,
-                                        previous_transaction_id=passkey_transaction_id)
+                                        serials={evm_serial}, transaction_id=enroll_transaction_id)
 
         # Cancel the enrollment
         with self.app.test_request_context('/validate/check', method='POST',
@@ -1092,8 +1126,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         auth_log_entries = assert_authentication_log([AuthEventType.ENROLLMENT_TRIGGERED],
                                                      transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.ENROLLMENT_TRIGGERED], user=self.user,
-                                        serials={evm_serial}, transaction_id=transaction_id,
-                                        previous_transaction_id=passkey_challenge["transaction_id"])
+                                        serials={evm_serial}, transaction_id=transaction_id)
 
         # Cancel the enrollment, will work and return a successful authentication
         with self.app.test_request_context('/validate/check', method='POST',
@@ -1154,8 +1187,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         auth_log_entries = assert_authentication_log([AuthEventType.ENROLLMENT_TRIGGERED],
                                                      transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.ENROLLMENT_TRIGGERED], user=self.user,
-                                        serials={evm_serial}, transaction_id=transaction_id,
-                                        previous_transaction_id=passkey_challenge["transaction_id"])
+                                        serials={evm_serial}, transaction_id=transaction_id)
 
         # Try to cancel the enrollment, will result in a REJECT
         with self.app.test_request_context('/validate/check', method='POST',

@@ -120,6 +120,36 @@ describe("ConditionalAccessActionItemComponent", () => {
       component.onDurationInput("");
       expect(spy).toHaveBeenCalledWith({ action_value: null });
     });
+
+    it("should convert the entered value to seconds using the selected unit", () => {
+      setAction({ action_type: "LOCK_USER", action_value: null });
+      const spy = jest.spyOn(component.updateAction, "emit");
+      component.durationUnit.set("minutes");
+      component.onDurationInput("5");
+      expect(spy).toHaveBeenCalledWith({ action_value: 300 });
+    });
+
+    it("should display the stored seconds in the selected unit", () => {
+      setAction({ action_type: "LOCK_USER", action_value: 3600 });
+      component.durationUnit.set("hours");
+      expect(component.durationValue()).toBe("1");
+    });
+
+    it("should keep the entered number and re-scale to seconds on unit change", () => {
+      setAction({ action_type: "LOCK_USER", action_value: 120 });
+      const spy = jest.spyOn(component.updateAction, "emit");
+      component.onDurationUnitChange("minutes");
+      expect(component.durationUnit()).toBe("minutes");
+      // "120" kept and re-interpreted as 120 minutes = 7200s.
+      expect(spy).toHaveBeenCalledWith({ action_value: 7200 });
+    });
+
+    it("should not emit on unit change when there is no value", () => {
+      setAction({ action_type: "LOCK_USER", action_value: null });
+      const spy = jest.spyOn(component.updateAction, "emit");
+      component.onDurationUnitChange("hours");
+      expect(spy).not.toHaveBeenCalled();
+    });
   });
 
   describe("email", () => {
@@ -169,5 +199,31 @@ describe("ConditionalAccessActionItemComponent", () => {
     const spy = jest.spyOn(component.removeAction, "emit");
     component.onRemoveAction();
     expect(spy).toHaveBeenCalled();
+  });
+
+  describe("retrigger", () => {
+    it("should emit updateAction when the checkbox toggles", () => {
+      const spy = jest.spyOn(component.updateAction, "emit");
+      component.onRetriggerChange(true);
+      expect(spy).toHaveBeenCalledWith({ retrigger_above_threshold: true });
+      component.onRetriggerChange(false);
+      expect(spy).toHaveBeenCalledWith({ retrigger_above_threshold: false });
+    });
+
+    it("should default the checkbox by action type when unset", () => {
+      // LOCK_USER defaults to fire-once (unchecked).
+      setAction({ action_type: "LOCK_USER", action_value: 600 });
+      expect(component.retriggerChecked()).toBe(false);
+      // DENY defaults to re-trigger (checked).
+      setAction({ action_type: "DENY", action_value: null });
+      expect(component.retriggerChecked()).toBe(true);
+    });
+
+    it("should honor an explicit value over the action-type default", () => {
+      setAction({ action_type: "DENY", action_value: null, retrigger_above_threshold: false });
+      expect(component.retriggerChecked()).toBe(false);
+      setAction({ action_type: "LOCK_USER", action_value: 600, retrigger_above_threshold: true });
+      expect(component.retriggerChecked()).toBe(true);
+    });
   });
 });

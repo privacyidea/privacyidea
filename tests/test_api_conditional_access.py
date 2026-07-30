@@ -59,13 +59,14 @@ def _seed_ip_spray(user: "User", event_type: AuthEventType, source_ip: str, n_us
                    timestamp: datetime | None = None):
     """Seed *n_users* distinct users failing from *source_ip* (the spraying shape a
     source_ip BLOCK_IP policy keys on: one IP hitting many accounts). The users are
-    synthetic (uid ``spray0``..) in *user*'s resolver/realm - only the distinct
-    ``(resolver, uid, realm)`` count matters, they need not resolve."""
+    synthetic (uid/username ``spray0``..) in *user*'s resolver/realm - only the distinct
+    ``(username, realm, resolver)`` count matters, they need not resolve; the distinct
+    ``username`` per user mirrors the resolved row a real request writes."""
     timestamp = timestamp if timestamp is not None else utc_now()
     for i in range(n_users):
         db.session.add(AuthenticationLog(
             event_type=str(event_type), resolver=user.resolver, uid=f"spray{i}",
-            realm=user.realm, source_ip=source_ip, timestamp=timestamp))
+            realm=user.realm, username=f"spray{i}", source_ip=source_ip, timestamp=timestamp))
     db.session.commit()
 
 
@@ -213,14 +214,16 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertTrue(is_user_locked(self.user))
         self.assertTrue(is_ip_blocked(ip))
 
-    def test_user_locked_again_after_lock_expires(self):
-        # Once the lock has run out, further failures must be able to re-lock the
-        # user. Regression: the stage de-dup used to swallow every re-trigger for
-        # a full policy window after the lock was written, leaving a dead zone of
-        # (window - lock_duration) after expiry in which the user could fail
-        # without limit and never be locked again.
+    def test_lock_fires_once_at_exact_threshold(self):
+        # A LOCK action fires once, at its exact threshold. After the lock expires,
+        # further failures push the count ABOVE the threshold, so the threshold-3
+        # stage does not re-fire (re-locking a higher count needs its own stage).
+        # A successful login resets the count, and climbing back to exactly 3
+        # re-locks. This replaces the earlier "re-lock on any further failure"
+        # behaviour, per the exact-threshold trigger semantics.
         self._make_lock_policy(counter_type=AuthEventType.MFA_FAIL, threshold=3, duration=600)
         for _ in range(3):
+            self.assertFalse(is_user_locked(self.user))
             self._check({"user": "cornelius", "pass": "pin000000"})
         self.assertTrue(is_user_locked(self.user))
 
@@ -231,10 +234,18 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         db.session.commit()
         self.assertFalse(is_user_locked(self.user))
 
-        # The next failure trips the stage again (the count is already over the
-        # threshold) and must re-lock - the expired lock must not de-dup it away.
+        # A further failure pushes the count to 4, past the threshold-3 stage, so
+        # it does not re-fire: the user stays unlocked.
         body = self._check({"user": "cornelius", "pass": "pin000000"})
         self.assertFalse(body["result"]["value"], body)
+        self.assertFalse(is_user_locked(self.user))
+
+        # A successful login resets the counter; climbing back to exactly 3 re-locks.
+        body = self._check({"user": "cornelius", "pass": "pin755224"})
+        self.assertTrue(body["result"]["value"], body)
+        for _ in range(3):
+            self.assertFalse(is_user_locked(self.user))
+            self._check({"user": "cornelius", "pass": "pin000000"})
         self.assertTrue(is_user_locked(self.user))
 
     def test_below_threshold_does_not_lock(self):

@@ -80,6 +80,18 @@ describe("RadiusServersComponent", () => {
     expect(component).toBeTruthy();
   });
 
+  it("should toggle row and all-row selection", () => {
+    const row = component.radiusDataSource().data[0];
+    component.toggleRow(row);
+    expect(component.isSelected(row)).toBe(true);
+    component.toggleRow(row);
+    expect(component.isSelected(row)).toBe(false);
+    component.toggleAllRows();
+    expect(component.isAllSelected()).toBe(true);
+    component.toggleAllRows();
+    expect(component.selection().length).toBe(0);
+  });
+
   it("should display servers from service", () => {
     expect(component.radiusDataSource().data.length).toBe(2);
     expect(component.radiusDataSource().data[0].identifier).toBe("server1");

@@ -81,6 +81,18 @@ describe("PrivacyideaServersComponent", () => {
     expect(component).toBeTruthy();
   });
 
+  it("should toggle row and all-row selection", () => {
+    const row = component.privacyideaDataSource().data[0];
+    component.toggleRow(row);
+    expect(component.isSelected(row)).toBe(true);
+    component.toggleRow(row);
+    expect(component.isSelected(row)).toBe(false);
+    component.toggleAllRows();
+    expect(component.isAllSelected()).toBe(true);
+    component.toggleAllRows();
+    expect(component.selection().length).toBe(0);
+  });
+
   it("should display servers from service", () => {
     expect(component.privacyideaDataSource().data.length).toBe(2);
     expect(component.privacyideaDataSource().data[0].identifier).toBe("server1");

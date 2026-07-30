@@ -32,6 +32,7 @@ from sqlalchemy import (
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from privacyidea.lib.conditional_access.authentication_event_types import CountMode
 from privacyidea.models import db
 from privacyidea.models.utils import MethodsMixin, utc_now
 
@@ -68,6 +69,9 @@ class LockoutPolicy(MethodsMixin, db.Model):
     priority: Mapped[int] = mapped_column(Integer, nullable=False, unique=True)
     # The identity this policy counts and acts on: "user" or "source_ip".
     target: Mapped[str] = mapped_column(Unicode(100), nullable=False)
+    # How the tracked counters are counted against the stage thresholds: per authentication_log row
+    # ("PER_REQUEST", the default) or per whole authentication attempt ("PER_ATTEMPT").
+    count_mode: Mapped[str] = mapped_column(Unicode(20), default=CountMode.PER_REQUEST, nullable=False)
 
     stages: Mapped[list["LockoutPolicyStage"]] = relationship(
         "LockoutPolicyStage",
@@ -123,9 +127,15 @@ class LockoutPolicyStage(MethodsMixin, db.Model):
     A failure threshold within a :class:`LockoutPolicy`. Each policy has
     N stages (e.g. 5, 10 and 15 failures).
 
-    Within a policy the stages are evaluated highest ``priority`` first,
-    so the most severe matching stage wins (e.g. evaluate the 15-fail
-    stage before the 5-fail stage).
+    Post-response, each of a stage's actions fires when the failure count reaches
+    the stage's ``failure_threshold`` (see
+    :attr:`LockoutStageAction.retrigger_above_threshold` for the per-action
+    fire-once vs re-trigger choice); escalation is expressed as separate stages
+    per threshold. The stage's own ``priority`` column (distinct from, and
+    ordered opposite to, :attr:`LockoutPolicy.priority`) orders the stages
+    *within* one policy for the pre-auth ALLOW/DENY decision: stages are
+    evaluated by descending ``priority``, so the most severe matching stage
+    supplies the verdict.
     """
     __tablename__ = 'lockout_policy_stages'
     __table_args__ = (
@@ -157,6 +167,17 @@ class LockoutStageAction(MethodsMixin, db.Model):
     ``action_value`` is the action-specific payload, stored as JSON:
     e.g. the lock duration in seconds for ``LOCK_USER``/``BLOCK_IP`` or
     an email template ID for ``EMAIL_ADMIN``/``EMAIL_USER``.
+
+    ``retrigger_above_threshold`` controls how this action fires as the failure
+    count crosses its stage's threshold. False: fire once, when the count equals
+    the threshold exactly. True: keep firing while the count stays at or above the
+    threshold (the classic re-triggering lockout; de-dup still throttles repeats
+    within one incident). Because it is per action, one stage can e.g. email once
+    at its threshold while re-triggering the user lock. The CRUD layer picks an
+    action-aware default when the client omits it (ALLOW/DENY decisions default to
+    True, the lock/email/block effects to False); see
+    :func:`~privacyidea.lib.conditional_access.lockout_policy._validate_stages`
+    and :func:`~privacyidea.lib.conditional_access.engine._action_threshold_met`.
     """
     __tablename__ = 'lockout_stage_actions'
     id: Mapped[int] = mapped_column(Integer, Sequence("lockoutstageaction_seq"), primary_key=True)
@@ -165,6 +186,7 @@ class LockoutStageAction(MethodsMixin, db.Model):
         nullable=False, index=True)
     action_type: Mapped[str] = mapped_column(Unicode(100), nullable=False)
     action_value: Mapped[Any | None] = mapped_column(JSON, nullable=True)
+    retrigger_above_threshold: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     stage: Mapped["LockoutPolicyStage"] = relationship("LockoutPolicyStage", back_populates="actions")
 
