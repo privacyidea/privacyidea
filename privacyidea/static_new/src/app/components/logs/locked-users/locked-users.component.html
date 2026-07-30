@@ -29,6 +29,7 @@
         (clearButtonClick)="clearFilter()"
         [showClearButton]="casService.lockedUsersFilter().isNotEmpty">
         <input
+          #filterHTMLInputElement
           (input)="handleFilterInput($event)"
           [value]="casService.lockedUsersFilter().value"
           aria-label="Filter Input"

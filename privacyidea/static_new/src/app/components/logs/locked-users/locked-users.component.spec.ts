@@ -188,6 +188,15 @@ describe("LockedUsersComponent", () => {
     expect(casService.lockedUsersFilter()).toBe(toggled);
   });
 
+  it("onKeywordClick focuses the filter input so the value can be typed right away", () => {
+    (tableUtilsService.toggleKeywordInFilter as jest.Mock).mockReturnValue(new FilterValue({ value: "usernames: " }));
+    const focusSpy = jest.spyOn(component.filterInput.nativeElement, "focus");
+
+    component.onKeywordClick("usernames");
+
+    expect(focusSpy).toHaveBeenCalled();
+  });
+
   it("sets and reads the state filter", () => {
     component.setFilterValues("states", ["expired"]);
     expect(component.selectedFilterValues("states")).toEqual(["expired"]);

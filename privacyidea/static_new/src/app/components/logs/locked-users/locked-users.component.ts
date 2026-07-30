@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { DatePipe, NgClass } from "@angular/common";
-import { Component, computed, inject, linkedSignal } from "@angular/core";
+import { Component, computed, ElementRef, inject, linkedSignal, ViewChild } from "@angular/core";
 import { PiResponse } from "@app/app.component";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
@@ -94,6 +94,9 @@ export class LockedUsersComponent {
   protected readonly resolverService: ResolverServiceInterface = inject(ResolverService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
+
+  @ViewChild("filterHTMLInputElement", { static: false })
+  filterInput!: ElementRef<HTMLInputElement>;
 
   readonly displayedColumns: string[] = [
     "select",
@@ -237,6 +240,7 @@ export class LockedUsersComponent {
         currentValue: this.casService.lockedUsersFilter()
       })
     );
+    this.filterInput?.nativeElement.focus();
   }
 
   private splitCsv(value: string | undefined): string[] {
