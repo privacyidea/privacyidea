@@ -211,11 +211,23 @@ describe("BlocklistComponent", () => {
   });
 
   it("clearFilter resets the filter text", () => {
-    component.filterText = "test";
+    component.filterText.set("test");
     component.dataSource().filter = "test";
     component.clearFilter();
-    expect(component.filterText).toBe("");
+    expect(component.filterText()).toBe("");
     expect(component.dataSource().filter).toBe("");
+  });
+
+  it("keeps the active filter when the blocklist is reloaded", () => {
+    casService.setBlocklistEntries([activeEntry, permanentEntry]);
+    component.handleFilterInput({ target: { value: "10.0.0.1" } } as unknown as Event);
+    expect(component.dataSource().filteredData).toEqual([permanentEntry]);
+
+    // A reload builds a new data source; the filter must survive it.
+    casService.setBlocklistEntries([activeEntry, permanentEntry]);
+
+    expect(component.dataSource().filter).toBe("10.0.0.1");
+    expect(component.dataSource().filteredData).toEqual([permanentEntry]);
   });
 
   it("blockStateClass maps permanent/expired/temporary to the badge colours", () => {

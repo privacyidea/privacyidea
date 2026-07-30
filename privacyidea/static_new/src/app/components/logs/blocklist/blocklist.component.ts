@@ -88,23 +88,26 @@ export class BlocklistComponent {
       this.casService.blocklistResource.hasValue() ? this.casService.blocklistResource.value() : undefined,
     computation: (resource, previous) => {
       if (resource) {
-        const ds = new MatTableDataSource(this.sortRows(resource.result?.value ?? []));
-        ds.filterPredicate = this.blockFilterPredicate();
-        return ds;
+        const dataSource = new MatTableDataSource(this.sortRows(resource.result?.value ?? []));
+        dataSource.filterPredicate = this.blockFilterPredicate();
+        // Re-apply the active filter: a reload builds a new data source, whose filter would otherwise
+        // start out empty while the input still shows the filter text.
+        dataSource.filter = this.normalizedFilter();
+        return dataSource;
       }
       return previous?.value ?? new MatTableDataSource<BlocklistEntry>([]);
     }
   });
 
-   // Selection resets whenever the underlying data changes.
-   readonly selection = linkedSignal<PiResponse<BlocklistEntry[]> | undefined, BlocklistEntry[]>({
-     source: () =>
-       this.casService.blocklistResource.hasValue() ? this.casService.blocklistResource.value() : undefined,
-     computation: () => []
-   });
+  // Selection resets whenever the underlying data changes.
+  readonly selection = linkedSignal<PiResponse<BlocklistEntry[]> | undefined, BlocklistEntry[]>({
+    source: () =>
+      this.casService.blocklistResource.hasValue() ? this.casService.blocklistResource.value() : undefined,
+    computation: () => []
+  });
 
-   filterText = "";
-   readonly sort: WritableSignal<Sort> = signal({ active: "identifier", direction: "asc" });
+  readonly filterText = signal("");
+  readonly sort: WritableSignal<Sort> = signal({ active: "identifier", direction: "asc" });
 
   // Pre-seed the authentication-log filter with this entry's source IP and jump there, so the log shows only
   // that IP's events. Navigation to the auth-log route itself is done by the template's routerLink.
@@ -160,7 +163,7 @@ export class BlocklistComponent {
     this.sort.set(direction ? { active: columnKey, direction } : { active: "identifier", direction: "asc" });
     const ds = this.dataSource();
     ds.data = this.sortRows([...ds.data]);
-    ds.filter = this.filterText;
+    ds.filter = this.normalizedFilter();
   }
 
   getSortIcon(columnKey: string): string {
@@ -224,16 +227,19 @@ export class BlocklistComponent {
 
   // --- filtering ---
 
+  private normalizedFilter(): string {
+    return this.filterText().trim().toLowerCase();
+  }
+
   handleFilterInput(event: Event): void {
-    this.filterText = (event.target as HTMLInputElement).value;
-    this.dataSource().filter = this.filterText;
+    this.filterText.set((event.target as HTMLInputElement).value);
+    this.dataSource().filter = this.normalizedFilter();
   }
 
   clearFilter(): void {
-    this.filterText = "";
+    this.filterText.set("");
     this.dataSource().filter = "";
   }
-
 
   // --- bulk actions ---
 

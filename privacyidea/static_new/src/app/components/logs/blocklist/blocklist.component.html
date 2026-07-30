@@ -27,10 +27,10 @@
       <mat-label i18n>Filter Blocklist ...</mat-label>
       <app-clearable-input
         (clearButtonClick)="clearFilter()"
-        [showClearButton]="filterText.length > 0">
+        [showClearButton]="filterText().length > 0">
          <input
            (input)="handleFilterInput($event)"
-           [value]="filterText"
+           [value]="filterText()"
            aria-label="Filter Input"
            i18n-aria-label
            i18n-placeholder
