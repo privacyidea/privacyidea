@@ -442,11 +442,11 @@ def list_lockout_policies(enabled: bool | None = None) -> list[dict]:
     """
     Return all lockout policies as dicts, lowest priority number first (the
     engine's evaluation order: a lower number means higher precedence, matching
-    privacyIDEA's policy engine), name as tie-breaker.
+    privacyIDEA's policy engine).
 
     :param enabled: if given, only return policies with this enabled state
     """
-    stmt = select(LockoutPolicy).order_by(LockoutPolicy.priority.asc(), LockoutPolicy.name)
+    stmt = select(LockoutPolicy).order_by(LockoutPolicy.priority.asc())
     if enabled is not None:
         stmt = stmt.where(LockoutPolicy.enabled == enabled)
     policies = db.session.scalars(stmt).all()
@@ -471,15 +471,21 @@ def _unique_conflict_as_400():
 
     The app-level name/priority uniqueness checks race with concurrent writers:
     two requests can both pass validation and only collide when the write hits
-    the database (at a ``flush`` or the ``commit``). Convert that
-    :class:`IntegrityError` into a ParameterError after rolling back, so the
-    session is usable again.
+    the database (at a ``flush`` or the ``commit``). Rolling back is the job that
+    matters here - without it the session stays poisoned and every later query in
+    the request raises - so *any* IntegrityError is handled. The per-policy child
+    constraints (counter type, stage threshold) are ordered around by the split flushes in
+    :func:`update_lockout_policy` and so are only backstopped here; the message
+    therefore names every uniqueness rule rather than guessing which one fired.
+    The original error is chained, so the traceback still identifies the
+    constraint.
     """
     try:
         yield
-    except IntegrityError:
+    except IntegrityError as ex:
         db.session.rollback()
-        raise ParameterError("A lockout policy with this name or priority already exists.")
+        raise ParameterError("The lockout policy conflicts with existing data: name and priority must be unique "
+                             "across policies, and counter types and stage thresholds unique within a policy.") from ex
 
 
 @log_with(log)

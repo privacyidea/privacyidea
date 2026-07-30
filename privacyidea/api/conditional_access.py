@@ -144,7 +144,7 @@ def list_policies():
     """
     Return all conditional-access lockout policies with their stages and
     actions, ordered by ascending priority (the engine's evaluation order: a
-    lower priority number means higher precedence), name as tie-breaker.
+    lower priority number means higher precedence).
 
     Requires the admin policy action :ref:`policy_lockout_policy_read`.
 

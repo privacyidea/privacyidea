@@ -262,7 +262,7 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         self.assertEqual(["MFA_FAIL", "PIN_FAIL"],
                          get_lockout_policy(policy_id)["counter_types_to_track"])
 
-    def test_02c_target_action_compatibility(self):
+    def test_02j_target_action_compatibility(self):
         # BLOCK_IP only makes sense on a source_ip target; LOCK_USER only on a user target.
         self.assertRaises(ParameterError, create_lockout_policy, "P", 600, ["PIN_FAIL"],
                           [_stage(actions=[{"action_type": "BLOCK_IP"}])], target=LockoutTarget.USER,

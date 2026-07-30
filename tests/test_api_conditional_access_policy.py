@@ -116,6 +116,20 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         res = self._request("policy", method="POST", json_data=self._policy_body(name="Dup"))
         self.assertEqual(400, res.status_code, res.json)
 
+    def test_create_duplicate_priority_is_400(self):
+        # Priorities are unique across policies, so the evaluation order is never
+        # ambiguous. The rejection names the policy already holding the priority.
+        self._create_policy(name="First", priority=7)
+        res = self._request("policy", method="POST",
+                            json_data=self._policy_body(name="Second", priority=7))
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertIn("First", res.json["result"]["error"]["message"])
+
+    def test_create_free_priority_is_accepted(self):
+        # The counterpart: a priority no other policy holds goes through.
+        self._create_policy(name="First", priority=7)
+        self._create_policy(name="Second", priority=8)
+
     # --- target (user vs source_ip) --------------------------------------------
 
     def test_create_source_ip_policy(self):
@@ -343,6 +357,26 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         res = self._request(f"policy/{policy_id}", method="PATCH",
                             json_data={"time_window_seconds": -1})
         self.assertEqual(400, res.status_code, res.json)
+
+    def test_patch_to_used_priority_is_400(self):
+        # Moving a policy onto a priority another policy holds collides; the
+        # target policy keeps its own priority.
+        self._create_policy(name="Holder", priority=3)
+        policy_id = self._create_policy(name="Mover", priority=4)
+        res = self._request(f"policy/{policy_id}", method="PATCH", json_data={"priority": 3})
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertIn("Holder", res.json["result"]["error"]["message"])
+        self.assertEqual(4, self._request(f"policy/{policy_id}").json["result"]["value"]["priority"])
+
+    def test_patch_keeping_own_priority_is_allowed(self):
+        # Re-sending a policy's current priority is not a self-collision.
+        policy_id = self._create_policy(name="Solo", priority=3)
+        res = self._request(f"policy/{policy_id}", method="PATCH",
+                            json_data={"name": "Solo2", "priority": 3})
+        self.assertEqual(200, res.status_code, res.json)
+        policy = self._request(f"policy/{policy_id}").json["result"]["value"]
+        self.assertEqual("Solo2", policy["name"])
+        self.assertEqual(3, policy["priority"])
 
     # --- DELETE /policy/<id> ---------------------------------------------------
 

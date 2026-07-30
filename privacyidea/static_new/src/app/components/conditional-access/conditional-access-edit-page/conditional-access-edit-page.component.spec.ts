@@ -216,6 +216,65 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
     expect(component.editPolicy().priority).toBeNull();
   });
 
+  it("should keep the typed text so an invalid priority is explained, not wiped", () => {
+    component.onPriorityInput("1.5");
+    expect(component.priorityInput()).toBe("1.5");
+    expect(component.priorityError()).toBe("not-an-integer");
+    component.onPriorityInput("abc");
+    expect(component.priorityInput()).toBe("abc");
+    expect(component.priorityError()).toBe("not-an-integer");
+    // 0 and negatives are out of range, not malformed, but are reported the same way.
+    component.onPriorityInput("0");
+    expect(component.priorityError()).toBe("not-an-integer");
+    component.onPriorityInput("2");
+    expect(component.priorityError()).toBeNull();
+  });
+
+  it("should distinguish an empty priority from an invalid one", () => {
+    component.onPriorityInput("");
+    expect(component.priorityError()).toBe("required");
+    component.onPriorityInput("   ");
+    expect(component.priorityError()).toBe("required");
+  });
+
+  it("should show the existing priority in the field in edit mode", () => {
+    expect(component.priorityInput()).toBe(String(mockPolicy.priority));
+  });
+
+  // mat-form-field only projects <mat-error> while its control is in an error state, so
+  // asserting on the signals alone would pass with nothing rendered. These read the DOM.
+  const renderedErrors = (): string[] =>
+    Array.from(fixture.nativeElement.querySelectorAll("mat-error")).map((element) =>
+      (element as HTMLElement).textContent!.trim()
+    );
+
+  it("should render the priority error message in the DOM, not just compute it", () => {
+    component.onPriorityInput("1.5");
+    fixture.detectChanges();
+    expect(component.priorityError()).toBe("not-an-integer");
+    expect(renderedErrors()).toContain("Priority must be a whole number of at least 1.");
+  });
+
+  it("should render the required-priority message when the field is cleared", () => {
+    component.onPriorityInput("");
+    fixture.detectChanges();
+    expect(renderedErrors()).toContain("A priority is required.");
+  });
+
+  it("should render the collision message naming the conflicting policy", () => {
+    policyServiceMock.policies.set([mockPolicy, { ...mockPolicy, id: 99, name: "Other", priority: 4 }]);
+    component.onPriorityInput("4");
+    fixture.detectChanges();
+    expect(component.priorityUnique()).toBe(false);
+    expect(renderedErrors().join(" ")).toContain("Other");
+  });
+
+  it("should render no priority error for a valid, free priority", () => {
+    component.onPriorityInput("42");
+    fixture.detectChanges();
+    expect(renderedErrors()).toEqual([]);
+  });
+
   it("should toggle dry_run without calling the enable/disable endpoints", () => {
     component.toggleDryRun(true);
     expect(component.editPolicy().dry_run).toBe(true);

@@ -30,6 +30,7 @@ import { MatTooltipModule } from "@angular/material/tooltip";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
+import { ErrorStateDirective } from "@components/shared/directives/error-state.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
@@ -88,6 +89,7 @@ const COUNT_MODE_LABELS: Record<string, string> = {
     StickyHeaderDirective,
     InfoHintComponent,
     ClearButtonComponent,
+    ErrorStateDirective,
     ConditionalAccessStagesListComponent
   ],
   templateUrl: "./conditional-access-edit-page.component.html",
@@ -161,12 +163,25 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   );
 
   timeWindowValid = computed(() => this.editPolicy().time_window_seconds >= 1);
+  // The raw text of the priority field, kept separate from the parsed value so an
+  // invalid entry can be reported instead of silently rewritten (see onPriorityInput).
+  priorityInput = signal<string>("");
   // Priority is required (no default): the field starts empty so the admin must
   // deliberately pick one. A non-integer, empty or < 1 value is invalid.
   priorityValid = computed(() => {
     const priority = this.editPolicy().priority;
     return priority != null && Number.isInteger(priority) && priority >= 1;
   });
+  // Distinguish "nothing entered yet" from "what you entered is not a valid priority",
+  // so a rejected entry is explained rather than just refused.
+  priorityError = computed<"required" | "not-an-integer" | null>(() => {
+    if (this.priorityValid()) {
+      return null;
+    }
+    return this.priorityInput().trim() === "" ? "required" : "not-an-integer";
+  });
+
+  showPriorityError = computed(() => this.priorityError() !== null || !this.priorityUnique());
   // Priorities are unique across policies (the backend enforces a unique constraint
   // and 400s otherwise), so the evaluation order is unambiguous. Surface the clashing
   // policy so the inline error can name it. Editing a policy without changing its
@@ -263,6 +278,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
           this.policy.set(deepCopy(found));
           this.editPolicy.set(deepCopy(found));
           this.syncTimeWindowFromSeconds(found.time_window_seconds);
+          this.syncPriorityInput(found.priority);
         }
       } else {
         this.isNewPolicy.set(true);
@@ -270,6 +286,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
         this.policy.set(deepCopy(EMPTY_LOCKOUT_POLICY));
         this.editPolicy.set(deepCopy(EMPTY_LOCKOUT_POLICY));
         this.syncTimeWindowFromSeconds(EMPTY_LOCKOUT_POLICY.time_window_seconds);
+        this.syncPriorityInput(EMPTY_LOCKOUT_POLICY.priority);
       }
     });
 
@@ -282,6 +299,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
           this.policy.set(deepCopy(found));
           this.editPolicy.set(deepCopy(found));
           this.syncTimeWindowFromSeconds(found.time_window_seconds);
+          this.syncPriorityInput(found.priority);
         }
       }
     });
@@ -327,13 +345,15 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   applyTemplate(key: string | null): void {
     this.selectedTemplateKey.set(key);
     const template = key ? this.policyService.templates().find((t) => t.key === key) : undefined;
-    const policy = template ? deepCopy(template.policy) : deepCopy(EMPTY_LOCKOUT_POLICY);
-    delete policy.id;
-    // Templates carry no priority: the admin must pick a unique one, so normalize a
-    // missing value to null and leave the field empty (see priorityValid).
-    policy.priority = policy.priority ?? null;
+    const prefill = template ? deepCopy(template.policy) : deepCopy(EMPTY_LOCKOUT_POLICY);
+    delete prefill.id;
+    // Templates carry no priority: the admin must pick a unique one, so normalize the
+    // missing key to null and leave the field empty (see priorityValid). Spelling the
+    // target type out here makes the compiler enforce that normalization.
+    const policy: LockoutPolicySaveParams = { ...prefill, priority: prefill.priority ?? null };
     this.editPolicy.set(policy);
     this.syncTimeWindowFromSeconds(policy.time_window_seconds);
+    this.syncPriorityInput(policy.priority);
   }
 
   // The template select's clear button: drop the selected template and reset the
@@ -369,13 +389,20 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   }
 
   onPriorityInput(value: string): void {
-    // Always write back (null when cleared, non-numeric or non-integer) so
-    // priorityValid / priorityUnique can flag an invalid field and disable Save.
-    // Number() (not parseInt) is used so a decimal like "1.5" stays invalid
-    // instead of being silently truncated to a passing integer.
+    // Keep the raw text and the parsed value separate: the field is bound to the raw
+    // text, so a rejected entry like "1.5" stays visible next to the error explaining
+    // it instead of being blanked. An entry that is not a whole number >= 1 leaves
+    // priority null, which disables Save and shows priorityError. Number() (not
+    // parseInt) is used so "1.5" stays invalid rather than being truncated to 1.
+    this.priorityInput.set(value);
     const trimmed = value.trim();
     const parsed = trimmed === "" ? NaN : Number(trimmed);
     this.updateEditPolicy({ priority: Number.isInteger(parsed) ? parsed : null });
+  }
+
+  // Show the stored priority in the field (edit mode, template prefill, reset).
+  private syncPriorityInput(priority: number | null): void {
+    this.priorityInput.set(priority == null ? "" : String(priority));
   }
 
   toggleEnabled(checked: boolean): void {
