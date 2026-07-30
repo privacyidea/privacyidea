@@ -134,22 +134,65 @@ EXACT_ONLY_KEY_NAMES = frozenset({
     "verify",
 })
 
-# Names that the substring matching below would hide although they hold no secret: flags, format
-# names and public identifiers. Keeping them readable matters, because they are the fields an
-# admin needs while debugging. The list was built by running is_sensitive_key over every parameter
-# name the code reads, so it is complete for the current vocabulary and has to be revisited when
-# parameters are added. "2stepinit" is the warning in this list: it contains "pin" across the
-# boundary of "step" and "init".
+# Names that the matching below would hide although they hold no secret. Keeping them readable
+# matters, because they are the fields an admin reads while debugging a policy.
+#
+# Most of these are policy actions and configuration knobs named after the credential they govern
+# rather than holding one: a minimum PIN length, whether to change a PIN, the name of a hash
+# algorithm, the right to set a PIN. The list was built by running is_sensitive_key over every
+# request parameter the code reads, every policy action name and every string used as a dict key
+# in lib, so it is complete for the current vocabulary and has to be revisited when names are
+# added. "2stepinit" is the warning in this list: it contains "pin" across the boundary of "step"
+# and "init".
+#
+# A more durable answer would derive this from the policy action registry instead of listing it,
+# since a policy action is by definition a setting and not a credential.
 INSENSITIVE_KEY_NAMES = frozenset({
     "2stepinit",
+    "change_pin_every",
+    "change_pin_on_first_use",
+    "change_pin_via_validate",
+    "copytokenpin",
     "credential_id",
+    "credentialid",
+    "daypassword.hashlib",
+    "daypassword.timestep",
     "encryptpin",
+    "encrypt_pin",
+    "enrollpin",
+    "force_app_pin",
+    "forward_authorization_token",
+    "group_attribute_mapping_key",
+    "mapping",
+    "otp_pin_contents",
+    "otp_pin_maxlength",
+    "otp_pin_minlength",
+    "otp_pin_random",
+    "otp_pin_set_random",
+    "otp_received",
+    "otp_valid",
     "otpkeyformat",
+    "passkey_trigger_by_pin",
+    "passonnotoken",
+    "passonnouser",
+    "passphrase_prompt",
+    "passphrase_user",
+    "password_hash_type",
+    "password_reset",
+    "pin_scopes",
+    "pinhandling",
     "pinode",
     "pinodes",
     "radius.local_checkpin",
     "registered_credential_ids",
     "remote.local_checkpin",
+    "requestmapping",
+    "responsemapping",
+    "send_passphrase",
+    "set_hsm_password",
+    "setpin",
+    "setrandompin",
+    "webauthn_public_key_credential_algorithms",
 })
 
 # Names that are additionally searched for anywhere inside a key, so that a glued spelling such as
@@ -166,6 +209,21 @@ SENSITIVE_KEY_FRAGMENTS = frozenset(
 # A redacted copy is built for every DEBUG log line, so the recursion is bounded to keep a
 # pathological structure from costing more than the log line is worth.
 MAX_REDACT_DEPTH = 8
+
+
+def is_sensitive_value(value) -> bool:
+    """
+    Decide whether a value can hold a credential at all.
+
+    Policy actions and configuration knobs are named after the credential they govern
+    ("force_app_pin", "otp_pin_minlength", "change_pin_every", "passOnNoToken"), so the key alone
+    cannot tell a credential from a setting. Their values are switches and numbers, and a switch is
+    never a credential, so the type decides where the name cannot.
+
+    :param value: The value belonging to a sensitive key
+    :return: True if the value has to be hidden
+    """
+    return not isinstance(value, (bool, type(None)))
 
 
 def is_sensitive_key(key) -> bool:
@@ -248,7 +306,8 @@ def redact(value, depth: int = 0, _path_ids: frozenset = frozenset()):
             return "<recursion>"
         _path_ids = _path_ids | {id(value)}
         if type(value) is dict:
-            return {key: HIDDEN if is_sensitive_key(key) else redact(item, depth + 1, _path_ids)
+            return {key: HIDDEN if is_sensitive_key(key) and is_sensitive_value(item)
+                    else redact(item, depth + 1, _path_ids)
                     for key, item in value.items()}
         return type(value)(redact(item, depth + 1, _path_ids) for item in value)
     if isinstance(value, Mapping) or _is_headers_like(value):
@@ -259,7 +318,8 @@ def redact(value, depth: int = 0, _path_ids: frozenset = frozenset()):
             return "<recursion>"
         _path_ids = _path_ids | {id(value)}
         try:
-            return {key: HIDDEN if is_sensitive_key(key) else redact(item, depth + 1, _path_ids)
+            return {key: HIDDEN if is_sensitive_key(key) and is_sensitive_value(item)
+                    else redact(item, depth + 1, _path_ids)
                     for key, item in value.items()}
         except Exception:
             # Returning the original here would hand an unredacted object to the log line, which

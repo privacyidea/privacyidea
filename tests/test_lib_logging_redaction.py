@@ -216,6 +216,32 @@ class TestNoOverHiding:
     def test_key_is_not_hidden(self, key):
         assert not is_sensitive_key(key), f"{key} would be hidden from the log"
 
+    @pytest.mark.parametrize("key", [
+        "force_app_pin",          # a policy action governing a PIN, not holding one
+        "otp_pin_minlength",
+        "otp_pin_contents",
+        "change_pin_every",
+        "setpin",                 # the right to set a PIN
+        "set_hsm_password",
+        "passOnNoToken",
+        "otp_valid",
+        "password_hash_type",     # the name of an algorithm
+        "daypassword.hashlib",
+        "requestMapping",
+        "webauthn_public_key_credential_algorithms",
+    ])
+    def test_policy_action_name_is_not_hidden(self, key):
+        assert not is_sensitive_key(key), f"{key} would be hidden from the log"
+
+    def test_a_flag_is_never_hidden_even_under_a_sensitive_name(self):
+        # A key can be named after the credential it governs while holding only a switch.
+        assert redact({"pin": True, "password": False, "otpkey": None}) == {
+            "pin": True, "password": False, "otpkey": None}
+
+    def test_a_credential_under_the_same_name_is_hidden(self):
+        assert redact({"pin": TEST_PIN, "password": TEST_PASSWORD}) == {
+            "pin": "HIDDEN", "password": "HIDDEN"}
+
     def test_sensitive_names_are_still_hidden(self):
         # The counterpart, so that widening the exceptions above cannot quietly disable hiding.
         for key in ["pin", "otppin", "userpin", "sopin", "motppin", "password", "BINDPW",
