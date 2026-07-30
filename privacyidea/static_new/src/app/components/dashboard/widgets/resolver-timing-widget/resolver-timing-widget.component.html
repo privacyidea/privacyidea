@@ -23,27 +23,57 @@
       <thead>
         <tr>
           <th>
-            <app-table-sort-header key="resolver" [sortState]="sort" label="Resolver" i18n-label />
+            <app-table-sort-header
+              key="resolver"
+              [sortState]="sort"
+              label="Resolver"
+              i18n-label />
           </th>
           <th>
-            <app-table-sort-header key="op" [sortState]="sort" label="Operation" i18n-label />
+            <app-table-sort-header
+              key="op"
+              [sortState]="sort"
+              label="Operation"
+              i18n-label />
           </th>
-          <th matTooltip="Number of requests within the last hour." i18n-matTooltip>
-            <app-table-sort-header key="count" [sortState]="sort" label="Requests" i18n-label [hasHintTooltip]="true" />
+          <th
+            matTooltip="Number of requests within the last hour."
+            i18n-matTooltip>
+            <app-table-sort-header
+              key="count"
+              [sortState]="sort"
+              label="Requests"
+              i18n-label
+              [hasHintTooltip]="true" />
           </th>
           <th>
-            <app-table-sort-header key="avgMs" [sortState]="sort" label="Avg (ms)" i18n-label />
+            <app-table-sort-header
+              key="avgMs"
+              [sortState]="sort"
+              label="Avg (ms)"
+              i18n-label />
           </th>
-          <th matTooltip="95% of requests within the last hour completed within this time." i18n-matTooltip>
-            <app-table-sort-header key="p95Ms" [sortState]="sort" label="P95 (ms)" i18n-label [hasHintTooltip]="true" />
+          <th
+            matTooltip="95% of requests within the last hour completed within this time."
+            i18n-matTooltip>
+            <app-table-sort-header
+              key="p95Ms"
+              [sortState]="sort"
+              label="P95 (ms)"
+              i18n-label
+              [hasHintTooltip]="true" />
           </th>
           <th>
-            <app-table-sort-header key="maxMs" [sortState]="sort" label="Max (ms)" i18n-label />
+            <app-table-sort-header
+              key="maxMs"
+              [sortState]="sort"
+              label="Max (ms)"
+              i18n-label />
           </th>
         </tr>
       </thead>
       <tbody>
-        @for (row of sortedRows(); track row.resolver + row.op) {
+        @for (row of sortedRows(); track row.resolver + row.resolverType + row.op) {
           <tr>
             <td [appTruncationTooltip]="row.resolver">
               @if (resolverLink(row); as link) {
@@ -55,12 +85,18 @@
             <td [appTruncationTooltip]="row.op ?? ''">{{ row.op !== null ? row.op : "—" }}</td>
             <td>{{ row.count }}</td>
             <td>{{ row.avgMs !== null ? row.avgMs : "—" }}</td>
-            <td><span [class]="badgeClass(row)">{{ row.p95Ms !== null ? row.p95Ms : "—" }}</span></td>
+            <td>
+              <span [class]="badgeClass(row)">{{ row.p95Ms !== null ? row.p95Ms : "—" }}</span>
+            </td>
             <td>{{ row.maxMs !== null ? row.maxMs : "—" }}</td>
           </tr>
         } @empty {
           <tr>
-            <td colspan="6" i18n>No resolver activity in the last hour.</td>
+            <td
+              colspan="6"
+              i18n>
+              No resolver activity in the last hour.
+            </td>
           </tr>
         }
       </tbody>

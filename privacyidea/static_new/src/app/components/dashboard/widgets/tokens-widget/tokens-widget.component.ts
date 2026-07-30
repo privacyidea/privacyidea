@@ -70,6 +70,10 @@ export class TokensWidgetComponent extends DashboardWidget implements OnInit {
 
   private readonly dataRef = signal<DashboardDataRef<TokenCountResponses> | null>(null);
   override readonly partialLoading = computed(() => this.dataRef()?.revalidating() ?? false);
+  override readonly refreshFailed = computed(() => {
+    const ref = this.dataRef();
+    return !!ref && ref.error() && ref.value() !== undefined;
+  });
 
   readonly counts = computed<TokenCounts>(() => {
     const results = this.dataRef()?.value();
@@ -109,16 +113,12 @@ export class TokensWidgetComponent extends DashboardWidget implements OnInit {
       if (!ref) {
         return;
       }
-      if (ref.error()) {
-        this.state.set("error");
+      const value = ref.value();
+      if (value === undefined) {
+        this.state.set(ref.error() ? "error" : "loading");
         return;
       }
-      const value = ref.value();
-      if (value !== undefined) {
-        this.state.set(Object.values(value).every((response) => response.result?.status === true) ? "ready" : "error");
-      } else {
-        this.state.set("loading");
-      }
+      this.state.set(Object.values(value).every((response) => response.result?.status === true) ? "ready" : "error");
     });
   }
 
@@ -143,7 +143,6 @@ export class TokensWidgetComponent extends DashboardWidget implements OnInit {
   }
 
   override reload(): void {
-    this.store.invalidate("dashboard:tokens");
     this.load();
   }
 

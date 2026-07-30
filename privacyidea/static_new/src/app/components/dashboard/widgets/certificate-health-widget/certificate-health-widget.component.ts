@@ -59,6 +59,11 @@ export class CertificateHealthWidgetComponent extends DashboardWidget implements
 
   private readonly dataRef = signal<DashboardDataRef<PiResponse<CertificateHealthEntry[]>> | null>(null);
 
+  override readonly refreshFailed = computed(() => {
+    const ref = this.dataRef();
+    return !!ref && ref.error() && ref.value() !== undefined;
+  });
+
   readonly entries = computed<CertificateHealthEntry[]>(() => this.dataRef()?.value()?.result?.value ?? []);
   readonly resolverLinkAllowed = computed(() => this.authService.actionAllowed("resolverread"));
 
@@ -78,21 +83,16 @@ export class CertificateHealthWidgetComponent extends DashboardWidget implements
       if (!ref) {
         return;
       }
-      if (ref.error()) {
-        this.state.set("error");
+      const value = ref.value();
+      if (value === undefined) {
+        this.state.set(ref.error() ? "error" : "loading");
         return;
       }
-      const value = ref.value();
-      if (value !== undefined) {
-        this.state.set(value.result?.status === true ? "ready" : "error");
-      } else {
-        this.state.set("loading");
-      }
+      this.state.set(value.result?.status === true ? "ready" : "error");
     });
   }
 
   override reload(): void {
-    this.store.invalidate("dashboard:certificate-health");
     this.ngOnInit();
   }
 

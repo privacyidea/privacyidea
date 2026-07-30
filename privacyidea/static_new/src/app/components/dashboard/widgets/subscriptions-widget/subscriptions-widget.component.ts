@@ -52,6 +52,10 @@ export class SubscriptionsWidgetComponent extends DashboardWidget implements OnI
 
   private readonly dataRef = signal<DashboardDataRef<PiResponse<Record<string, Subscription>>> | null>(null);
   override readonly partialLoading = computed(() => this.dataRef()?.revalidating() ?? false);
+  override readonly refreshFailed = computed(() => {
+    const ref = this.dataRef();
+    return !!ref && ref.error() && ref.value() !== undefined;
+  });
 
   readonly subscriptions = computed<Subscription[]>(() => {
     const map = this.dataRef()?.value()?.result?.value ?? {};
@@ -65,21 +69,16 @@ export class SubscriptionsWidgetComponent extends DashboardWidget implements OnI
       if (!ref) {
         return;
       }
-      if (ref.error()) {
-        this.state.set("error");
+      const value = ref.value();
+      if (value === undefined) {
+        this.state.set(ref.error() ? "error" : "loading");
         return;
       }
-      const value = ref.value();
-      if (value !== undefined) {
-        this.state.set(value.result?.status === true ? "ready" : "error");
-      } else {
-        this.state.set("loading");
-      }
+      this.state.set(value.result?.status === true ? "ready" : "error");
     });
   }
 
   override reload(): void {
-    this.store.invalidate("dashboard:subscriptions");
     this.ngOnInit();
   }
 

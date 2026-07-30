@@ -53,6 +53,7 @@ export abstract class DashboardWidget {
   readonly state = signal<WidgetState>("loading");
   readonly loading = computed(() => this.state() === "loading");
   readonly partialLoading = computed(() => false);
+  readonly refreshFailed = computed(() => false);
 
   static readonly type: WidgetTypeId;
   static readonly title: string = "";

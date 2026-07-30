@@ -16,6 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { HttpErrorResponse } from "@angular/common/http";
 import { provideZonelessChangeDetection } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideRouter } from "@angular/router";
@@ -157,6 +158,25 @@ describe("ResolverTimingWidgetComponent", () => {
     expect(firstCell.textContent?.trim()).toBe("ldapresolver");
   });
 
+  it("should keep showing the timing data without resolverread instead of failing on the denied resolver list", async () => {
+    authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: [] });
+    resolverMock.listResolvers.mockReturnValue(
+      throwError(() => new HttpErrorResponse({ status: 403, statusText: "Forbidden" }))
+    );
+    resolverMock.listResolvers.mockClear();
+    TestBed.inject(DashboardDataStore).invalidate();
+
+    const deniedFixture = TestBed.createComponent(ResolverTimingWidgetComponent);
+    deniedFixture.componentRef.setInput("instance", instance);
+    deniedFixture.detectChanges();
+    await deniedFixture.whenStable();
+
+    expect(deniedFixture.componentInstance.state()).toBe("ready");
+    expect(deniedFixture.nativeElement.querySelectorAll("tbody tr").length).toBe(2);
+    expect(resolverMock.listResolvers).not.toHaveBeenCalled();
+    deniedFixture.destroy();
+  });
+
   it("should convert seconds to rounded milliseconds", () => {
     const firstRowCells = fixture.nativeElement.querySelectorAll("tbody tr:first-child td");
     expect(firstRowCells[3].textContent?.trim()).toBe("20");
@@ -165,7 +185,9 @@ describe("ResolverTimingWidgetComponent", () => {
   });
 
   it("should badge the p95 cell using the shared highlight classes", () => {
-    const badges: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll(".resolver-timing-table tbody span"));
+    const badges: HTMLElement[] = Array.from(
+      fixture.nativeElement.querySelectorAll(".resolver-timing-table tbody span")
+    );
     expect(badges[0].className).toBe("highlight-false");
     expect(badges[1].className).toBe("highlight-true");
   });
@@ -269,6 +291,51 @@ describe("ResolverTimingWidgetComponent", () => {
     mixedFixture.destroy();
   });
 
+  it("should render both entries when two resolver instances share a name and operation but differ in type", () => {
+    systemMock.getResolverTiming.mockReturnValue(
+      of(
+        makeResponse<ResolverTimingEntry[]>([
+          {
+            labels: { resolver: "?", resolver_type: "unknown", op: "get_user_info" },
+            count: 3,
+            avg: 0.05,
+            p50: 0.05,
+            p95: 0.07,
+            max: 0.09,
+            buckets: [[1, 3]]
+          },
+          {
+            labels: { resolver: "?", resolver_type: "passwdresolver", op: "get_user_info" },
+            count: 7,
+            avg: 0.01,
+            p50: 0.01,
+            p95: 0.02,
+            max: 0.03,
+            buckets: [[1, 7]]
+          }
+        ])
+      )
+    );
+    resolverMock.listResolvers.mockReturnValue(of(makeResponse<Resolvers>({})));
+    TestBed.inject(DashboardDataStore).invalidate();
+
+    const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => undefined);
+    const duplicateFixture = TestBed.createComponent(ResolverTimingWidgetComponent);
+    duplicateFixture.componentRef.setInput("instance", instance);
+    duplicateFixture.detectChanges();
+    duplicateFixture.componentInstance.sort.toggle("count");
+    duplicateFixture.componentInstance.sort.toggle("count");
+    duplicateFixture.detectChanges();
+
+    const countCells = Array.from(
+      duplicateFixture.nativeElement.querySelectorAll("tbody tr") as NodeListOf<HTMLElement>
+    ).map((row) => row.querySelectorAll("td")[2].textContent?.trim());
+    expect(countCells).toEqual(["7", "3"]);
+    expect(warnSpy).not.toHaveBeenCalledWith(expect.stringContaining("NG0955"));
+    warnSpy.mockRestore();
+    duplicateFixture.destroy();
+  });
+
   it("should badge a p95 in the warning range with highlight-warning", () => {
     systemMock.getResolverTiming.mockReturnValue(
       of(
@@ -317,12 +384,26 @@ describe("ResolverTimingWidgetComponent", () => {
     loadingFixture.destroy();
   });
 
-  it("should set the state to error when a request fails", () => {
+  it("should set the state to error when the first request fails", () => {
+    systemMock.getResolverTiming.mockReturnValue(throwError(() => new Error("boom")));
+    TestBed.inject(DashboardDataStore).invalidate();
+
+    const failedFixture = TestBed.createComponent(ResolverTimingWidgetComponent);
+    failedFixture.componentRef.setInput("instance", instance);
+    failedFixture.detectChanges();
+
+    expect(failedFixture.componentInstance.state()).toBe("error");
+    failedFixture.destroy();
+  });
+
+  it("should keep the cached rows and flag the failure when a refresh fails", () => {
     systemMock.getResolverTiming.mockReturnValue(throwError(() => new Error("boom")));
     TestBed.inject(DashboardDataStore).refreshAll();
     fixture.detectChanges();
 
-    expect(component.state()).toBe("error");
+    expect(component.state()).toBe("ready");
+    expect(component.refreshFailed()).toBe(true);
+    expect(component.rows().length).toBeGreaterThan(0);
   });
 
   it("should invalidate the cache and reload on reload()", () => {

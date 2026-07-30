@@ -72,6 +72,11 @@ export class NotificationDeliveryWidgetComponent extends DashboardWidget impleme
 
   private readonly dataRef = signal<DashboardDataRef<PiResponse<NotificationDeliveryHealth>> | null>(null);
 
+  override readonly refreshFailed = computed(() => {
+    const ref = this.dataRef();
+    return !!ref && ref.error() && ref.value() !== undefined;
+  });
+
   readonly sections = computed<NotificationDeliverySections>(() => {
     const delivery = this.dataRef()?.value()?.result?.value;
 
@@ -97,21 +102,16 @@ export class NotificationDeliveryWidgetComponent extends DashboardWidget impleme
       if (!ref) {
         return;
       }
-      if (ref.error()) {
-        this.state.set("error");
+      const value = ref.value();
+      if (value === undefined) {
+        this.state.set(ref.error() ? "error" : "loading");
         return;
       }
-      const value = ref.value();
-      if (value !== undefined) {
-        this.state.set(value.result?.status === true ? "ready" : "error");
-      } else {
-        this.state.set("loading");
-      }
+      this.state.set(value.result?.status === true ? "ready" : "error");
     });
   }
 
   override reload(): void {
-    this.store.invalidate("dashboard:notification-delivery");
     this.ngOnInit();
   }
 

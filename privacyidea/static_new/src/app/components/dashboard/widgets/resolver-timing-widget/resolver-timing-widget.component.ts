@@ -21,8 +21,8 @@ import { MatTooltip } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
 import { PiResponse } from "@app/app.component";
 import { ROUTE_PATHS } from "@app/route_paths";
-import { TableSortHeaderComponent } from "@components/dashboard/widgets/table-sort/table-sort-header.component";
 import { TableSort } from "@components/dashboard/widgets/table-sort/table-sort";
+import { TableSortHeaderComponent } from "@components/dashboard/widgets/table-sort/table-sort-header.component";
 import { WidgetStateComponent } from "@components/dashboard/widgets/widget-state/widget-state.component";
 import { TruncationTooltipDirective } from "@components/shared/directives/truncation-tooltip.directive";
 import { DashboardWidget, WidgetSize } from "@models/dashboard";
@@ -30,7 +30,7 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DashboardDataRef, DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { Resolvers, ResolverService, ResolverServiceInterface } from "@services/resolver/resolver.service";
 import { ResolverTimingEntry, SystemService, SystemServiceInterface } from "@services/system/system.service";
-import { forkJoin } from "rxjs";
+import { forkJoin, of } from "rxjs";
 
 export interface ResolverTimingRow {
   resolver: string;
@@ -44,7 +44,7 @@ export interface ResolverTimingRow {
 
 interface ResolverTimingResponses {
   timing: PiResponse<ResolverTimingEntry[]>;
-  resolvers: PiResponse<Resolvers>;
+  resolvers: PiResponse<Resolvers> | null;
 }
 
 function toMs(seconds: number | null | undefined): number | null {
@@ -75,10 +75,15 @@ export class ResolverTimingWidgetComponent extends DashboardWidget implements On
 
   private readonly dataRef = signal<DashboardDataRef<ResolverTimingResponses> | null>(null);
 
+  override readonly refreshFailed = computed(() => {
+    const ref = this.dataRef();
+    return !!ref && ref.error() && ref.value() !== undefined;
+  });
+
   readonly rows = computed<ResolverTimingRow[]>(() => {
     const value = this.dataRef()?.value();
     const entries = value?.timing.result?.value ?? [];
-    const configuredResolvers = value?.resolvers.result?.value ?? {};
+    const configuredResolvers = value?.resolvers?.result?.value ?? {};
 
     const activeRows: ResolverTimingRow[] = entries.map((entry) => ({
       resolver: entry.labels.resolver,
@@ -124,22 +129,17 @@ export class ResolverTimingWidgetComponent extends DashboardWidget implements On
       if (!ref) {
         return;
       }
-      if (ref.error()) {
-        this.state.set("error");
+      const value = ref.value();
+      if (value === undefined) {
+        this.state.set(ref.error() ? "error" : "loading");
         return;
       }
-      const value = ref.value();
-      if (value !== undefined) {
-        const ok = value.timing.result?.status === true && value.resolvers.result?.status === true;
-        this.state.set(ok ? "ready" : "error");
-      } else {
-        this.state.set("loading");
-      }
+      const ok = value.timing.result?.status === true && value.resolvers?.result?.status !== false;
+      this.state.set(ok ? "ready" : "error");
     });
   }
 
   override reload(): void {
-    this.store.invalidate("dashboard:resolver-timing");
     this.loadData();
   }
 
@@ -152,7 +152,7 @@ export class ResolverTimingWidgetComponent extends DashboardWidget implements On
       this.store.load("dashboard:resolver-timing", () =>
         forkJoin({
           timing: this.systemService.getResolverTiming(),
-          resolvers: this.resolverService.listResolvers()
+          resolvers: this.resolverLinkAllowed() ? this.resolverService.listResolvers() : of(null)
         })
       )
     );
@@ -165,7 +165,7 @@ export class ResolverTimingWidgetComponent extends DashboardWidget implements On
   protected badgeClass(row: ResolverTimingRow): string {
     const value = row.p95Ms ?? row.maxMs;
     if (value === null) {
-      return "highlight-disabled";
+      return "";
     }
     if (value >= 500) {
       return "highlight-false";

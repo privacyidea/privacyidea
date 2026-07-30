@@ -38,14 +38,18 @@
                   unknown
                 </span>
               } @else if (type.stale) {
-                <span class="count-stale">
+                <span
+                  class="count-stale"
+                  matTooltip="Could not be refreshed, showing the previous value."
+                  i18n-matTooltip>
                   {{ type.count }}
-                  <mat-icon
+                  <sup
                     class="stale-marker"
-                    matTooltip="Could not be refreshed, showing the previous value."
-                    i18n-matTooltip>
-                    history
-                  </mat-icon>
+                    role="img"
+                    aria-label="Could not be refreshed, showing the previous value."
+                    i18n-aria-label>
+                    *
+                  </sup>
                 </span>
               } @else {
                 {{ type.count }}

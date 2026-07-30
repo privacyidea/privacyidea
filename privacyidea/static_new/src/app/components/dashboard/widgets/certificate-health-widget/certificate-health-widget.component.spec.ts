@@ -255,12 +255,26 @@ describe("CertificateHealthWidgetComponent", () => {
     loadingFixture.destroy();
   });
 
-  it("should set the state to error when the request fails", () => {
+  it("should set the state to error when the first request fails", () => {
+    systemMock.getCertificateHealth.mockReturnValue(throwError(() => new Error("boom")));
+    TestBed.inject(DashboardDataStore).invalidate();
+
+    const failedFixture = TestBed.createComponent(CertificateHealthWidgetComponent);
+    failedFixture.componentRef.setInput("instance", instance);
+    failedFixture.detectChanges();
+
+    expect(failedFixture.componentInstance.state()).toBe("error");
+    failedFixture.destroy();
+  });
+
+  it("should keep the cached entries and flag the failure when a refresh fails", () => {
     systemMock.getCertificateHealth.mockReturnValue(throwError(() => new Error("boom")));
     TestBed.inject(DashboardDataStore).refreshAll();
     fixture.detectChanges();
 
-    expect(component.state()).toBe("error");
+    expect(component.state()).toBe("ready");
+    expect(component.refreshFailed()).toBe(true);
+    expect(component.entries().length).toBeGreaterThan(0);
   });
 
   it("should invalidate the cache and reload on reload()", () => {

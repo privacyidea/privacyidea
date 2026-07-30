@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, effect, inject, OnInit, signal } from "@angular/core";
-import { MatIcon } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
 import { PiResponse } from "@app/app.component";
@@ -30,7 +29,7 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DashboardDataRef, DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { TokenCount, TokenService, TokenServiceInterface, TokenTypeKey } from "@services/token/token.service";
 import { tokenTypes } from "@utils/token.utils";
-import { catchError, map, merge, of, scan } from "rxjs";
+import { catchError, map, merge, Observable, of, scan } from "rxjs";
 
 export interface TokenTypeCount {
   key: TokenTypeKey;
@@ -47,7 +46,7 @@ interface TokenTypeAccumulator {
 @Component({
   selector: "app-token-types-widget",
   standalone: true,
-  imports: [MatIcon, MatTooltip, RouterLink, WidgetStateComponent],
+  imports: [MatTooltip, RouterLink, WidgetStateComponent],
   templateUrl: "./token-types-widget.component.html",
   styleUrl: "./token-types-widget.component.scss"
 })
@@ -86,6 +85,10 @@ export class TokenTypesWidgetComponent extends DashboardWidget implements OnInit
   );
   readonly loadingMore = computed(() => this.typeCountsRef()?.revalidating() ?? false);
   override readonly partialLoading = computed(() => this.hasPartialData() && this.loadingMore());
+  override readonly refreshFailed = computed(() => {
+    const ref = this.typeCountsRef();
+    return !!ref && ref.error() && ref.value() !== undefined;
+  });
   readonly allTypesFailed = computed(() => {
     const results = this.typeCountsRef()?.value();
     return !!results && results.length > 0 && results.every((entry) => entry.count === null);
@@ -106,15 +109,11 @@ export class TokenTypesWidgetComponent extends DashboardWidget implements OnInit
       if (!ref) {
         return;
       }
-      if (ref.error() || (!ref.revalidating() && this.allTypesFailed())) {
-        this.state.set("error");
+      if (ref.value() === undefined) {
+        this.state.set(ref.error() ? "error" : "loading");
         return;
       }
-      if (ref.value() !== undefined) {
-        this.state.set("ready");
-      } else {
-        this.state.set("loading");
-      }
+      this.state.set(!ref.revalidating() && this.allTypesFailed() ? "error" : "ready");
     });
   }
 
@@ -127,82 +126,82 @@ export class TokenTypesWidgetComponent extends DashboardWidget implements OnInit
   }
 
   override reload(): void {
-    const previous = this.store.peek<TokenTypeCount[]>("dashboard:tokens:by_type")?.value();
-    this.store.invalidate("dashboard:tokens:by_type");
-    this.load(true, previous);
+    this.load(true);
   }
 
-  private load(forceAllTypes: boolean, previousCounts?: TokenTypeCount[]): void {
+  private load(forceAllTypes: boolean): void {
     if (!this.authService.actionAllowed("tokenlist")) {
       this.state.set("denied");
       return;
     }
 
-    const cachedRef = this.store.peek<TokenTypeCount[]>("dashboard:tokens:by_type");
-    const cached = cachedRef?.value() ?? undefined;
+    let forceAll = forceAllTypes;
+    this.typeCountsRef.set(
+      this.store.load("dashboard:tokens:by_type", () => {
+        const request = this.typeCountRequest(forceAll);
+        forceAll = true;
+        return request;
+      })
+    );
+  }
+
+  private typeCountRequest(forceAllTypes: boolean): Observable<TokenTypeCount[]> {
+    const knownCounts = this.store.peek<TokenTypeCount[]>("dashboard:tokens:by_type")?.value() ?? [];
     const keysToLoad =
-      forceAllTypes || cached === undefined
+      forceAllTypes || knownCounts.length === 0
         ? tokenTypes.map((type) => type.key)
-        : cached.filter((entry) => entry.count === null || entry.count > 0).map((entry) => entry.key);
+        : knownCounts.filter((entry) => entry.count === null || entry.count > 0).map((entry) => entry.key);
 
     this.expectedLoadCount.set(keysToLoad.length);
 
-    if (cachedRef) {
-      this.typeCountsRef.set(cachedRef);
-    }
-
     if (keysToLoad.length === 0) {
-      return;
+      return of(knownCounts);
     }
 
     const typeByKey = new Map(tokenTypes.map((type) => [type.key, type]));
-    const initialCounts = cached ?? [];
-    const previousByKey = new Map((previousCounts ?? initialCounts).map((entry) => [entry.key, entry]));
+    const previousByKey = new Map(knownCounts.map((entry) => [entry.key, entry]));
     const initialAccumulator: TokenTypeAccumulator = {
-      items: initialCounts,
-      indexByKey: new Map(initialCounts.map((entry, index) => [entry.key, index]))
+      items: knownCounts,
+      indexByKey: new Map(knownCounts.map((entry, index) => [entry.key, index]))
     };
 
-    this.typeCountsRef.set(
-      this.store.load("dashboard:tokens:by_type", () =>
-        merge(
-          ...keysToLoad.map((typeKey) => {
-            const name = typeByKey.get(typeKey)?.name || typeKey;
-            return this.tokenService.getTokenCount({ type: typeKey }).pipe(
-              map<PiResponse<TokenCount>, TokenTypeCount>((response) => ({
-                key: typeKey,
-                name,
-                count: response.result?.value?.count ?? 0
-              })),
-              catchError(() => {
-                const fallback = previousByKey.get(typeKey);
-                if (fallback && fallback.count !== null) {
-                  return of<TokenTypeCount>({ key: typeKey, name, count: fallback.count, stale: true });
-                }
-                return of<TokenTypeCount>({ key: typeKey, name, count: null });
-              })
-            );
-          })
-        ).pipe(
-          scan((accumulated: TokenTypeAccumulator, entry) => {
-            const index = accumulated.indexByKey.get(entry.key);
-            const nextItems = [...accumulated.items];
-
-            if (index === undefined) {
-              accumulated.indexByKey.set(entry.key, nextItems.length);
-              nextItems.push(entry);
-            } else {
-              nextItems[index] = entry;
+    return merge(
+      ...keysToLoad.map((typeKey) => {
+        const name = typeByKey.get(typeKey)?.name || typeKey;
+        return this.tokenService.getTokenCount({ type: typeKey }).pipe(
+          map<PiResponse<TokenCount>, TokenTypeCount>((response) => ({
+            key: typeKey,
+            name,
+            count: response.result?.value?.count ?? 0
+          })),
+          catchError(() => {
+            const fallback = previousByKey.get(typeKey);
+            if (fallback && fallback.count !== null) {
+              return of<TokenTypeCount>({ key: typeKey, name, count: fallback.count, stale: true });
             }
+            return of<TokenTypeCount>({ key: typeKey, name, count: null });
+          })
+        );
+      })
+    ).pipe(
+      scan((accumulated: TokenTypeAccumulator, entry) => {
+        const index = accumulated.indexByKey.get(entry.key);
+        const nextItems = [...accumulated.items];
+        const nextIndexByKey = new Map(accumulated.indexByKey);
 
-            return {
-              items: nextItems,
-              indexByKey: accumulated.indexByKey
-            };
-          }, initialAccumulator),
-          map((accumulated) => accumulated.items)
-        )
-      )
+        if (index === undefined) {
+          nextIndexByKey.set(entry.key, nextItems.length);
+          nextItems.push(entry);
+        } else {
+          nextItems[index] = entry;
+        }
+
+        return {
+          items: nextItems,
+          indexByKey: nextIndexByKey
+        };
+      }, initialAccumulator),
+      map((accumulated) => accumulated.items)
     );
   }
 }

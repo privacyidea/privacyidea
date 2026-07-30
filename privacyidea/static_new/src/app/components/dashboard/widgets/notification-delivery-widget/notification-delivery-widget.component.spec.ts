@@ -167,14 +167,28 @@ describe("NotificationDeliveryWidgetComponent", () => {
     partialFixture.destroy();
   });
 
-  it("should set the state to error when a refresh fails while cached data is still present", () => {
+  it("should keep the cached data and flag the failure when a refresh fails", () => {
     expect(component.state()).toBe("ready");
 
     systemMock.getNotificationDelivery.mockReturnValue(throwError(() => new Error("boom")));
     TestBed.inject(DashboardDataStore).refreshAll();
     fixture.detectChanges();
 
-    expect(component.state()).toBe("error");
+    expect(component.state()).toBe("ready");
+    expect(component.refreshFailed()).toBe(true);
+    expect(component.sections().push.length).toBeGreaterThan(0);
+  });
+
+  it("should set the state to error when the first request fails", () => {
+    systemMock.getNotificationDelivery.mockReturnValue(throwError(() => new Error("boom")));
+    TestBed.inject(DashboardDataStore).invalidate();
+
+    const failedFixture = TestBed.createComponent(NotificationDeliveryWidgetComponent);
+    failedFixture.componentRef.setInput("instance", instance);
+    failedFixture.detectChanges();
+
+    expect(failedFixture.componentInstance.state()).toBe("error");
+    failedFixture.destroy();
   });
 
   it("should show a single fallback message instead of any section when all channels are empty", () => {

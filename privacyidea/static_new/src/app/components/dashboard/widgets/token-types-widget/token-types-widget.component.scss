@@ -37,15 +37,13 @@
 
 .count-stale {
   display: inline-flex;
-  align-items: center;
-  gap: var(--quarter-global-gap);
+  align-items: flex-start;
   color: var(--mat-sys-outline);
 }
 
 .stale-marker {
-  font-size: 1rem;
-  width: 1rem;
-  height: 1rem;
+  font-size: 0.75em;
+  line-height: 1;
 }
 
 .empty-hint {
