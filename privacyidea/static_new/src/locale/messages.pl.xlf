@@ -1708,7 +1708,7 @@
       </trans-unit>
       <trans-unit id="562631054226299262" datatype="html">
         <source> Retry to execute this periodic task if it fails. </source>
-        <target> Ponów zadanie cykliczne, jeśli się nie powiedzie. </target>
+        <target> Ponawiaj zadanie cykliczne po niepowodzeniu. </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/periodic-task/periodic-task-edit/periodic-task-edit.component.html</context>
           <context context-type="linenumber">214,215</context>
@@ -2228,7 +2228,7 @@
       </trans-unit>
       <trans-unit id="2118317108126412124" datatype="html">
         <source>distinct users with active tokens</source>
-        <target>różni użytkownicy z aktywnymi tokenami</target>
+        <target>unikalnych użytkowników z aktywnymi tokenami</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/subscription/subscription.component.html</context>
           <context context-type="linenumber">91,92</context>
@@ -2924,7 +2924,7 @@
       </trans-unit>
       <trans-unit id="2885977596275965761" datatype="html">
         <source> The questionnaire token needs to define answers to these questions and the user will be presented with random questions and needs to provide his previously defined answer. </source>
-        <target> Dla tokena kwestionariuszowego należy zdefiniować odpowiedzi na te pytania. Użytkownik otrzyma losowe pytania i musi podać wcześniej zdefiniowaną odpowiedź. </target>
+        <target> Dla tokena z pytaniami należy zdefiniować odpowiedzi. Podczas uwierzytelniania użytkownik otrzyma losowe pytanie i musi podać zapisaną wcześniej odpowiedź. </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/questionnaire-config/questionnaire-config.component.html</context>
           <context context-type="linenumber">28,29</context>
@@ -4139,7 +4139,7 @@
       </trans-unit>
       <trans-unit id="1216605105092972143" datatype="html">
         <source>Add new info</source>
-        <target>Dodaj nowe informacje</target>
+        <target>Dodaj nową informację</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-details/container-details-info/container-details-info.component.html</context>
           <context context-type="linenumber">96,97</context>
@@ -4279,7 +4279,7 @@
       </trans-unit>
       <trans-unit id="7016757737031308232" datatype="html">
         <source><x id="INTERPOLATION" equiv-text="{{ column.label }}"/> Header</source>
-        <target>Nagłówek kolumny <x id="INTERPOLATION" equiv-text="{{ column.label }}"/></target>
+        <target><x id="INTERPOLATION" equiv-text="{{ column.label }}"/> — nagłówek kolumny</target>
               <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-details/container-details-token-table/container-details-token-table.component.html</context>
           <context context-type="linenumber">75,76</context>
@@ -4287,7 +4287,7 @@
       </trans-unit>
       <trans-unit id="2917243515612935879" datatype="html">
         <source><x id="INTERPOLATION" equiv-text="{{ column.label }}"/> Cell</source>
-        <target>Komórka kolumny <x id="INTERPOLATION" equiv-text="{{ column.label }}"/></target>
+        <target><x id="INTERPOLATION" equiv-text="{{ column.label }}"/> — komórka tabeli</target>
               <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-details/container-details-token-table/container-details-token-table.component.html</context>
           <context context-type="linenumber">93,94</context>
@@ -4295,7 +4295,7 @@
       </trans-unit>
       <trans-unit id="125690875052577861" datatype="html">
         <source><x id="INTERPOLATION" equiv-text="{{ column.label }}"/> Link</source>
-        <target>Łącze w kolumnie <x id="INTERPOLATION" equiv-text="{{ column.label }}"/></target>
+        <target><x id="INTERPOLATION" equiv-text="{{ column.label }}"/> — łącze</target>
               <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-details/container-details-token-table/container-details-token-table.component.html</context>
           <context context-type="linenumber">105,106</context>
@@ -5382,7 +5382,7 @@
       </trans-unit>
       <trans-unit id="8400522507688703742" datatype="html">
         <source>Failures</source>
-        <target>Błędy</target>
+        <target>Nieudane uwierzytelnienia</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/authentications-widget/authentications-widget.component.html</context>
           <context context-type="linenumber">34,35</context>
@@ -5390,7 +5390,7 @@
       </trans-unit>
       <trans-unit id="2892782979049148387" datatype="html">
         <source>Users / Tokens with Failures</source>
-        <target>Użytkownicy / tokeny z błędami</target>
+        <target>Użytkownicy i tokeny z nieudanymi próbami</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/authentications-widget/authentications-widget.component.html</context>
           <context context-type="linenumber">38,39</context>
@@ -10946,7 +10946,7 @@
       </trans-unit>
       <trans-unit id="713213140721220586" datatype="html">
         <source> The server will create the private RSA key and store it in the database. <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/> You can later download the PKCS#12 file.</source>
-        <target> Serwer utworzy prywatny klucz RSA i zapisze go w bazie danych. <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/> Plik PKCS#12 będzie można pobrać później.</target>
+        <target> Serwer utworzy klucz prywatny RSA i zapisze go w bazie danych. <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/> Plik PKCS#12 będzie można pobrać później.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-certificate/enroll-certificate.component.html</context>
           <context context-type="linenumber">84,85</context>
@@ -11521,7 +11521,7 @@
       </trans-unit>
       <trans-unit id="2087486085025226931" datatype="html">
         <source> To enable questionnaire token enrollment, you need to set up the <x id="START_LINK" ctype="x-a" equiv-text="&lt;a           role=&quot;button&quot;           tabindex=&quot;0&quot;           aria-label=&quot;Go to Questionnaire token configuration&quot;           i18n-aria-label           (click)=&quot;goToQuestionConfig()&quot;           (keydown)=&quot;onQuestionConfigKeydown($event)&quot;&gt;"/> Questionnaire Token Configuration <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a         &gt;"/>! </source>
-        <target> Aby włączyć rejestrację tokenów z pytaniami, skonfiguruj <x id="START_LINK" ctype="x-a" equiv-text="&lt;a           role=&quot;button&quot;           tabindex=&quot;0&quot;           aria-label=&quot;Go to Questionnaire token configuration&quot;           i18n-aria-label           (click)=&quot;goToQuestionConfig()&quot;           (keydown)=&quot;onQuestionConfigKeydown($event)&quot;&gt;"/> token z pytaniami <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a         &gt;"/>. </target>
+        <target> Aby włączyć rejestrację tokenów z pytaniami, przejdź do <x id="START_LINK" ctype="x-a" equiv-text="&lt;a           role=&quot;button&quot;           tabindex=&quot;0&quot;           aria-label=&quot;Go to Questionnaire token configuration&quot;           i18n-aria-label           (click)=&quot;goToQuestionConfig()&quot;           (keydown)=&quot;onQuestionConfigKeydown($event)&quot;&gt;"/> konfiguracji tokena z pytaniami <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a         &gt;"/>. </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-questionnaire/enroll-question.component.html</context>
           <context context-type="linenumber">25,36</context>
@@ -12302,7 +12302,7 @@
       </trans-unit>
       <trans-unit id="5812532373542430601" datatype="html">
         <source> Description must not exceed <x id="INTERPOLATION" equiv-text="{{ tokenService.maxDescriptionLength }}"/> characters. </source>
-        <target> Opis nie może przekraczać <x id="INTERPOLATION" equiv-text="{{ tokenService.maxDescriptionLength }}"/> znaków. </target>
+        <target> Opis może mieć maksymalnie <x id="INTERPOLATION" equiv-text="{{ tokenService.maxDescriptionLength }}"/> znaków. </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.component.html</context>
           <context context-type="linenumber">57,58</context>
@@ -12458,7 +12458,7 @@
       </trans-unit>
       <trans-unit id="5011432065626097805" datatype="html">
         <source> Description cannot exceed <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>80 characters<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>. </source>
-        <target> Opis nie może przekraczać <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>80 znaków<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>. </target>
+        <target> Opis może mieć maksymalnie <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>80 znaków<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>. </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.wizard.component.html</context>
           <context context-type="linenumber">74,75</context>
@@ -13315,7 +13315,7 @@
       </trans-unit>
       <trans-unit id="5424812630434548195" datatype="html">
         <source>Filter by <x id="INTERPOLATION" equiv-text="{{ column.label }}"/></source>
-        <target>Filtruj według <x id="INTERPOLATION" equiv-text="{{ column.label }}"/>
+        <target>Filtruj: <x id="INTERPOLATION" equiv-text="{{ column.label }}"/>
         </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-table/token-table.component.html</context>
@@ -13348,7 +13348,7 @@
       </trans-unit>
       <trans-unit id="5083658411133224968" datatype="html">
         <source>Sort by <x id="INTERPOLATION" equiv-text="{{ column.label }}"/></source>
-        <target>Sortuj według <x id="INTERPOLATION" equiv-text="{{ column.label }}"/>
+        <target>Sortuj: <x id="INTERPOLATION" equiv-text="{{ column.label }}"/>
         </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-table/token-table.component.html</context>
@@ -14749,7 +14749,7 @@
       </trans-unit>
       <trans-unit id="281167015188118996" datatype="html">
         <source> Edit User Store </source>
-        <target> Edytuj źródło użytkowników </target>
+        <target> Zezwalaj na edycję źródła użytkowników </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
           <context context-type="linenumber">353</context>
@@ -15322,7 +15322,7 @@
       </trans-unit>
       <trans-unit id="5752321584804178776" datatype="html">
         <source>The file containing the CA certificate which signed the LDAP TLS certificate.</source>
-        <target>Plik z certyfikatem CA, którym podpisano certyfikat TLS LDAP.</target>
+        <target>Plik z certyfikatem CA, którym podpisano certyfikat TLS serwera LDAP.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/ldap-resolver/ldap-resolver.component.html</context>
           <context context-type="linenumber">140</context>
@@ -15975,7 +15975,7 @@
       </trans-unit>
       <trans-unit id="143598329681633226" datatype="html">
         <source>Where Statement</source>
-        <target>Warunek WHERE</target>
+        <target>Klauzula WHERE</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/sql-resolver/sql-resolver.component.html</context>
           <context context-type="linenumber">291</context>
@@ -15991,7 +15991,7 @@
       </trans-unit>
       <trans-unit id="8632611131604660131" datatype="html">
         <source>Pool Timeout</source>
-        <target>Limit czasu puli</target>
+        <target>Limit oczekiwania na połączenie z puli</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/sql-resolver/sql-resolver.component.html</context>
           <context context-type="linenumber">311</context>
@@ -16515,7 +16515,7 @@
       </trans-unit>
       <trans-unit id="7726968594995512506" datatype="html">
         <source>1 success:</source>
-        <target>Powodzenie (1):</target>
+        <target>1 sukces:</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/notification/notification.service.ts</context>
           <context context-type="linenumber">128</context>
@@ -16523,7 +16523,7 @@
       </trans-unit>
       <trans-unit id="697620679030718087" datatype="html">
         <source><x id="PH" equiv-text="count"/> successes:</source>
-        <target>Powodzenia (<x id="PH" equiv-text="count"/>):</target>
+        <target>Sukcesy (<x id="PH" equiv-text="count"/>):</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/notification/notification.service.ts</context>
           <context context-type="linenumber">128</context>
@@ -16539,7 +16539,7 @@
       </trans-unit>
       <trans-unit id="8384115098006831621" datatype="html">
         <source>Retry If Failed</source>
-        <target>Ponawiaj po błędzie</target>
+        <target>Ponawiaj po niepowodzeniu</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/periodic-task/periodic-task.service.ts</context>
           <context context-type="linenumber">66</context>
@@ -17327,7 +17327,7 @@
       </trans-unit>
       <trans-unit id="3456116978392706361" datatype="html">
         <source>The 4 Eyes token will only authenticate if two or more users use their token in succession. You can define how many tokens are required for a successful authentication.</source>
-        <target>Token 4 Eyes uwierzytelnia dopiero po kolejnym użyciu tokenów przez co najmniej dwóch użytkowników. Można określić liczbę tokenów wymaganą do uwierzytelnienia.</target>
+        <target>Token 4 Eyes uwierzytelnia dopiero wtedy, gdy co najmniej dwóch użytkowników kolejno użyje swoich tokenów. Można określić liczbę tokenów wymaganą do uwierzytelnienia.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/token.utils.ts</context>
           <context context-type="linenumber">96</context>

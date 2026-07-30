@@ -1061,7 +1061,7 @@ msgstr "Jeśli występuje kilka różnych wyzwań, ten tekst poprzedza ich list�
 
 #: lib/policy.py:2541
 msgid "If there are several different challenges, this text follows the list of the challenge texts."
-msgstr "Jeśli występuje kilka różnych wyzwań, ten tekst znajduje się za ich listą."
+msgstr "Jeśli występuje kilka różnych wyzwań, ten tekst jest wyświetlany po ich liście."
 
 #: lib/policy.py:2546
 msgid ""
@@ -1195,7 +1195,7 @@ msgstr ""
 
 #: lib/policy.py:2662
 msgid "Enable to return an unspecific error message for failed authentications."
-msgstr "Włącz ogólny komunikat błędu przy nieudanym uwierzytelnieniu."
+msgstr "Zwracaj ogólny komunikat błędu po nieudanym uwierzytelnieniu."
 
 #: lib/policy.py:2668
 #, python-brace-format
@@ -1515,7 +1515,8 @@ msgstr ""
 msgid ""
 "The container needs to verify the SSL certificate of the privacyIDEA server during registration and synchronization. "
 "(default True)"
-msgstr "Kontener musi weryfikować certyfikat SSL serwera privacyIDEA podczas rejestracji i synchronizacji. (domyślnie True)"
+msgstr ""
+"Kontener musi weryfikować certyfikat SSL serwera privacyIDEA podczas rejestracji i synchronizacji (domyślnie: True)."
 
 #: lib/policy.py:3016
 msgid "The client is allowed to perform a rollover of the container and the included tokens."
@@ -1543,7 +1544,7 @@ msgstr "Klient nie może wyrejestrować kontenera. Użytkownik nie może usuną�
 
 #: lib/policy.py:3040
 msgid "Enable to return an unspecific error message for failures in the authentication-free container endpoints."
-msgstr "Włącz ogólny komunikat błędu dla niepowodzeń w endpointach kontenera niewymagających uwierzytelnienia."
+msgstr "Zwracaj ogólny komunikat o błędach endpointów kontenera niewymagających uwierzytelnienia."
 
 #: lib/policy.py:3046
 msgid "This action makes the description required for all selected tokentypes, during the editing process."
@@ -1551,11 +1552,11 @@ msgstr "Ta akcja wymaga opisu podczas edycji wszystkich wybranych typów tokenó
 
 #: lib/policy.py:3055
 msgid "Enable to return an unspecific error message for failures in the special token endpoints /ttype/*."
-msgstr "Włącz ogólny komunikat błędu dla niepowodzeń w specjalnych endpointach tokenów /ttype/*."
+msgstr "Zwracaj ogólny komunikat o błędach specjalnych endpointów tokenów /ttype/*."
 
 #: lib/policy.py:3059
 msgid "Enable to return an unspecific error message for failed offline token refills."
-msgstr "Włącz ogólny komunikat błędu przy nieudanym uzupełnianiu tokenów offline."
+msgstr "Zwracaj ogólny komunikat błędu w razie nieudanego uzupełniania tokenów offline."
 
 #: lib/policy.py:3104
 msgid "The policy only matches if certain conditions on the user info are fulfilled."
@@ -1625,7 +1626,8 @@ msgstr "Nie udało się zainicjować tokena. Nieznany typ tokena:"
 #: lib/token.py:1327
 #, python-brace-format
 msgid "Token {serial} already exists with type {old_type}. Can not initialize token with new type {token_type}"
-msgstr "Token {serial} już istnieje jako typ {old_type}. Nie można zainicjować tokena z nowym typem {token_type}"
+msgstr ""
+"Token {serial} już istnieje i ma typ {old_type}. Nie można zainicjować go ponownie jako tokena typu {token_type}"
 
 #: lib/token.py:1331
 msgid "init token failed:"
@@ -1639,11 +1641,11 @@ msgstr "Token jest już przypisany do użytkownika {old_user!r}"
 #: lib/token.py:1527
 #, python-brace-format
 msgid "Token assign failed for {0!r}/{1!s} : {2!r}"
-msgstr "Nie udało się przypisać tokena dla {0!r}/{1!s}: {2!r}"
+msgstr "Nie udało się przypisać tokena {1!s} użytkownikowi {0!r}: {2!r}"
 
 #: lib/token.py:1557
 msgid "Token unassign failed for"
-msgstr "Nie udało się usunąć przypisania tokena dla"
+msgstr "Nie udało się usunąć przypisania tokena"
 
 #: lib/token.py:1637
 msgid "Parameter user must not be a string:"
@@ -1801,7 +1803,7 @@ msgstr "Domena tokena, którego ma dotyczyć to zdarzenie."
 
 #: lib/eventhandler/base.py:224
 msgid "The resolver of the token, for which this event should apply."
-msgstr "Źródło użytkowników tokena, którego ma dotyczyć to zdarzenie."
+msgstr "Źródło użytkowników powiązane z tokenem, którego ma dotyczyć to zdarzenie."
 
 #: lib/eventhandler/base.py:232
 msgid "The type of the token."
@@ -1974,7 +1976,7 @@ msgid ""
 "would be triggered."
 msgstr ""
 "Właściciel kontenera pochodzi z tego źródła użytkowników. Jeśli wybrano wiele źródeł, warunek jest spełniony, gdy co "
-"najmniej jeden właściciel pochodzi z jednego z nich. Gdy kontener nie ma właściciela, warunek nie jest sprawdzany, "
+"najmniej jeden właściciel pochodzi z któregokolwiek z nich. Gdy kontener nie ma właściciela, warunek nie jest sprawdzany, "
 "więc akcja zostaje uruchomiona."
 
 #: lib/eventhandler/base.py:472
@@ -2044,7 +2046,7 @@ msgstr "Identyfikator lub klucz licznika."
 
 #: lib/eventhandler/counterhandler.py:75
 msgid "Don't stop counter if it reaches zero."
-msgstr "Nie zatrzymuj licznika po osiągnięciu zera."
+msgstr "Zezwól na ujemne wartości licznika."
 
 #: lib/eventhandler/customuserattributeshandler.py:80
 msgid "The user for whom the custom attribute should be set."
@@ -2060,7 +2062,7 @@ msgstr "Wartość atrybutu niestandardowego użytkownika."
 
 #: lib/eventhandler/customuserattributeshandler.py:96
 msgid "The user from which the custom attribute should be deleted."
-msgstr "Użytkownik, któremu ma zostać usunięty atrybut niestandardowy."
+msgstr "Użytkownik, którego atrybut niestandardowy ma zostać usunięty."
 
 #: lib/eventhandler/customuserattributeshandler.py:103
 msgid "The key of the custom user attribute that should be deleted."
@@ -2088,7 +2090,7 @@ msgstr "Przekaż nagłówek Authorization. Umożliwia to przekazywanie również
 
 #: lib/eventhandler/logginghandler.py:85
 msgid "The name of the logging facility"
-msgstr "Nazwa mechanizmu rejestrowania"
+msgstr "Nazwa loggera"
 
 #: lib/eventhandler/logginghandler.py:91
 msgid "The string to write to the log"
@@ -2164,8 +2166,8 @@ msgid ""
 "Finish current transaction before running the script. This is useful if changes to the database should be made "
 "available to the script or the running request."
 msgstr ""
-"Zakończ bieżącą transakcję przed uruchomieniem skryptu. Jest to przydatne, gdy zmiany w bazie danych mają być "
-"dostępne dla skryptu lub wykonywanego żądania."
+"Zatwierdź bieżącą transakcję przed uruchomieniem skryptu. Dzięki temu zmiany w bazie danych będą dostępne dla skryptu "
+"lub wykonywanego żądania."
 
 #: lib/eventhandler/scripthandler.py:111
 msgid "Add '--serial <serial number>' as script parameter."
@@ -2237,7 +2239,7 @@ msgstr "Słownik dodatkowych parametrów inicjalizacji."
 
 #: lib/eventhandler/tokenhandler.py:236
 msgid "Set the MOTP PIN of the MOTP token during enrollment. This is a required value for enrolling MOTP tokens."
-msgstr "Ustaw PIN MOTP podczas rejestracji tokena MOTP. Ta wartość jest wymagana do rejestracji tokenów MOTP."
+msgstr "Ustaw PIN mOTP podczas rejestracji tokena mOTP. Ta wartość jest wymagana do rejestracji tokenów mOTP."
 
 #: lib/eventhandler/tokenhandler.py:244
 msgid "Add the token to the container if there is one identifiable in the request."
@@ -2285,7 +2287,7 @@ msgstr "Interpretuj wartość tokeninfo jako 'int' i zwiększ ją o podane przes
 
 #: lib/eventhandler/tokenhandler.py:343
 msgid "The increment the tokeninfo key should be increased. Can be positive or negative, s.th. like +1 or -7."
-msgstr "Wartość, o którą należy zwiększyć klucz tokeninfo. Może być dodatnia lub ujemna, np. +1 lub -7."
+msgstr "Przyrost wartości pola tokeninfo. Może być dodatni lub ujemny, np. +1 albo -7."
 
 #: lib/eventhandler/tokenhandler.py:353
 msgid "Delete this tokeninfo key."
@@ -2323,7 +2325,7 @@ msgstr "Liczba rund haszowania hasła"
 
 #: lib/eventhandler/usernotification.py:147
 msgid "Send notification email via this email server."
-msgstr "Wyślij powiadomienie przez ten serwer poczty."
+msgstr "Wyślij powiadomienie e-mail przez ten serwer pocztowy."
 
 #: lib/eventhandler/usernotification.py:151
 msgid "Either send email as plain text or HTML."
@@ -2438,7 +2440,8 @@ msgstr "Dane wysyłane w webhooku"
 #: lib/machines/ldap.py:371
 #, python-brace-format
 msgid "Your LDAP machine resolver configuration seems to be OK, {0!s} machine objects found in {1:.4f}s."
-msgstr "Konfiguracja źródła maszyn LDAP wygląda poprawnie. Znaleziono {0!s} obiektów maszyn w {1:.4f}s."
+msgstr ""
+"Konfiguracja źródła maszyn LDAP wygląda poprawnie. Liczba znalezionych obiektów maszyn: {0!s}; czas: {1:.4f} s."
 
 #: lib/policies/conditions.py:97
 msgid "Raise an error if the data that is required to check the condition is not available."
@@ -2455,12 +2458,14 @@ msgstr "Jeśli brakuje wymaganych danych, warunek jest uznawany za niespełniony
 #: lib/resolvers/LDAPIdResolver.py:1285
 #, python-brace-format
 msgid "Your LDAP config found {0!s} user objects in {2:.4f}s, but only {1!s} with the specified uidtype."
-msgstr "Konfiguracja LDAP znalazła {0!s} obiektów użytkowników w {2:.4f}s, ale tylko {1!s} z podanym uidtype."
+msgstr ""
+"Konfiguracja LDAP znalazła obiekty użytkowników: łącznie {0!s}, w tym z podanym uidtype: {1!s}; czas: {2:.4f} s."
 
 #: lib/resolvers/LDAPIdResolver.py:1289
 #, python-brace-format
 msgid "Your LDAP config seems to be OK, {0!s} user objects found in {1:.4f}s."
-msgstr "Konfiguracja LDAP wygląda poprawnie. Znaleziono {0!s} obiektów użytkowników w {1:.4f}s."
+msgstr ""
+"Konfiguracja LDAP wygląda poprawnie. Liczba znalezionych obiektów użytkowników: {0!s}; czas: {1:.4f} s."
 
 #: lib/smsprovider/FirebaseProvider.py:214
 msgid "The filename of the JSON config file, that allows privacyIDEA to talk to the Firebase REST API."
@@ -2476,7 +2481,7 @@ msgstr "Bazowy adres URL bramy HTTP"
 
 #: lib/smsprovider/HttpSMSProvider.py:252
 msgid "Should the HTTP Gateway be connected via an HTTP GET or POST request."
-msgstr "Określa, czy połączenie z bramą HTTP ma używać żądania HTTP GET czy POST."
+msgstr "Określa, czy brama HTTP ma być wywoływana żądaniem GET czy POST."
 
 #: lib/smsprovider/HttpSMSProvider.py:257
 msgid "Specify a substring, that indicates, that the SMS was delivered successfully."
@@ -2624,7 +2629,7 @@ msgstr "Maksymalna liczba aktywnych tokenów haseł aplikacji, które można prz
 
 #: lib/tokens/certificatetoken.py:291
 msgid "Certificate: Enroll an x509 Certificate Token."
-msgstr "Certyfikat: zarejestruj token certyfikatu x509."
+msgstr "Certyfikat: zarejestruj token certyfikatu X.509."
 
 #: lib/tokens/certificatetoken.py:302
 msgid "The user may only have this maximum number of certificates assigned."
@@ -2923,7 +2928,7 @@ msgid ""
 "privacyIDEA plugins, this is not recommended. It is advised to use a condition, for example on a user-agent, with "
 "this policy."
 msgstr ""
-"Po włączeniu token klucza dostępu można wyzwalać za pomocą PIN-u lub endpointu /validate/triggerchallenge. Nie jest "
+"Po włączeniu token klucza dostępu można wyzwalać za pomocą PIN-u lub przez endpoint /validate/triggerchallenge. Nie jest "
 "to zalecane w przypadku wtyczek privacyIDEA. Z tą polityką zaleca się użycie warunku, np. dotyczącego nagłówka User-"
 "Agent."
 
@@ -2957,11 +2962,12 @@ msgstr "Maksymalna liczba aktywnych tokenów hasłowych, które można przypisa�
 
 #: lib/tokens/pushtoken.py:79
 msgid "Please confirm the authentication on your mobile device!"
-msgstr "Potwierdź uwierzytelnianie na urządzeniu mobilnym!"
+msgstr "Potwierdź uwierzytelnienie na urządzeniu mobilnym!"
 
 #: lib/tokens/pushtoken.py:80
 msgid "Use the polling feature of your privacyIDEA Authenticator App to check for a new Login request."
-msgstr "Użyj funkcji odpytywania w aplikacji privacyIDEA Authenticator, aby sprawdzić nowe żądanie logowania."
+msgstr ""
+"Użyj funkcji odpytywania w aplikacji privacyIDEA Authenticator, aby sprawdzić, czy pojawiło się nowe żądanie logowania."
 
 #: lib/tokens/pushtoken.py:82
 msgid "Do you want to confirm the login?"
@@ -2997,7 +3003,7 @@ msgstr "Czas na ukończenie drugiego etapu rejestracji (w minutach)."
 
 #: lib/tokens/pushtoken.py:399
 msgid "The smartphone needs to verify SSL during the enrollment. (default 1)"
-msgstr "Smartfon musi weryfikować certyfikat SSL podczas rejestracji (domyślnie 1)"
+msgstr "Smartfon musi weryfikować certyfikat SSL podczas rejestracji (domyślnie: 1)."
 
 #: lib/tokens/pushtoken.py:405
 msgid "The user may only have this maximum number of Push tokens assigned."
@@ -3026,7 +3032,7 @@ msgstr "Tytuł powiadomienia wyświetlanego na telefonie."
 
 #: lib/tokens/pushtoken.py:449
 msgid "The smartphone needs to verify SSL during authentication. (default 1)"
-msgstr "Smartfon musi weryfikować certyfikat SSL podczas uwierzytelniania (domyślnie 1)"
+msgstr "Smartfon musi weryfikować certyfikat SSL podczas uwierzytelniania (domyślnie: 1)."
 
 #: lib/tokens/pushtoken.py:455
 msgid "Require the user to confirm the login with a presence check."
@@ -3046,7 +3052,7 @@ msgstr "Komunikat wyświetlany nad kodem na smartfonie."
 
 #: lib/tokens/pushtoken.py:472
 msgid "Use an alternative challenge text for telling the user to confirm the authentication on his mobile device."
-msgstr "Użyj innego tekstu prośby o potwierdzenie uwierzytelniania na urządzeniu mobilnym."
+msgstr "Użyj innego tekstu prośby o potwierdzenie uwierzytelnienia na urządzeniu mobilnym."
 
 #: lib/tokens/pushtoken.py:479
 #, python-brace-format
@@ -3103,16 +3109,16 @@ msgstr "Liczba pytań, na które użytkownik musi odpowiedzieć podczas uwierzyt
 
 #: lib/tokens/questionnairetoken.py:116
 msgid "The user may only have this maximum number of questionaire tokens assigned."
-msgstr "Maksymalna liczba tokenów kwestionariusza, które można przypisać użytkownikowi."
+msgstr "Maksymalna liczba tokenów z pytaniami, które można przypisać użytkownikowi."
 
 #: lib/tokens/questionnairetoken.py:121
 msgid "The user may only have this maximum number of active questionaire tokens assigned."
-msgstr "Maksymalna liczba aktywnych tokenów kwestionariusza, które można przypisać użytkownikowi."
+msgstr "Maksymalna liczba aktywnych tokenów z pytaniami, które można przypisać użytkownikowi."
 
 #: lib/tokens/questionnairetoken.py:165
 #, python-format
 msgid "You need to provide at least %s answers."
-msgstr "Podaj co najmniej %s odpowiedzi."
+msgstr "Minimalna liczba wymaganych odpowiedzi: %s."
 
 #: lib/tokens/radiustoken.py:105
 msgid "RADIUS: Forward authentication request to a RADIUS server."
@@ -3217,7 +3223,7 @@ msgstr "Maksymalna liczba aktywnych tokenów SPASS, które można przypisać uż
 
 #: lib/tokens/sshkeytoken.py:83
 msgid "SSH Public Key: The public SSH key."
-msgstr "Klucz publiczny SSH: publiczny klucz SSH."
+msgstr "Klucz publiczny SSH."
 
 #: lib/tokens/sshkeytoken.py:92
 msgid "The user may only have this maximum number of SSH keys assigned."
@@ -3273,7 +3279,7 @@ msgstr "U2F: rejestracja tokena U2F."
 
 #: lib/tokens/u2ftoken.py:260
 msgid "This is a list of FQDN hostnames trusting the registered U2F tokens."
-msgstr "Lista nazw hostów FQDN ufających zarejestrowanym tokenom U2F."
+msgstr "Lista nazw hostów FQDN akceptujących zarejestrowane tokeny U2F."
 
 #: lib/tokens/u2ftoken.py:264
 msgid ""
@@ -3318,11 +3324,11 @@ msgstr "Token VASCO: uwierzytelnianie za pomocą tokenów VASCO"
 
 #: lib/tokens/vascotoken.py:109
 msgid "The user may only have this maximum number of Vasco tokens assigned."
-msgstr "Maksymalna liczba tokenów Vasco, które można przypisać użytkownikowi."
+msgstr "Maksymalna liczba tokenów VASCO, które można przypisać użytkownikowi."
 
 #: lib/tokens/vascotoken.py:115
 msgid "The user may only have this maximum number of active Vasco tokens assigned."
-msgstr "Maksymalna liczba aktywnych tokenów Vasco, które można przypisać użytkownikowi."
+msgstr "Maksymalna liczba aktywnych tokenów VASCO, które można przypisać użytkownikowi."
 
 #: lib/tokens/webauthntoken.py:465
 msgid "Generic WebAuthn Token"
@@ -3387,7 +3393,7 @@ msgstr "Autoryzowane są tylko wskazane tokeny WebAuthn."
 
 #: lib/tokens/webauthntoken.py:610
 msgid "One webauthn token can not be registered to a user more than once."
-msgstr "Tego samego tokena WebAuthn nie można zarejestrować użytkownikowi więcej niż raz."
+msgstr "Tego samego tokena WebAuthn nie można zarejestrować dla jednego użytkownika więcej niż raz."
 
 #: lib/tokens/webauthntoken.py:615
 msgid "A human-readable name for the organization rolling out WebAuthn tokens."
@@ -3561,16 +3567,16 @@ msgid ""
 "True if the date and time of the left attribute is within the past duration of the right attribute. The right "
 "attribute should be a duration such as '1y', '7d', '6h', '15m'."
 msgstr ""
-"Prawda, gdy data i czas lewego atrybutu mieszczą się w okresie wstecz określonym przez prawy atrybut. Prawy atrybut "
-"powinien być okresem, np. '1y', '7d', '6h', '15m'."
+"Prawda, gdy data i czas lewego atrybutu przypadają w okresie poprzedzającym bieżącą chwilę, którego długość określa "
+"prawy atrybut. Prawy atrybut powinien określać czas, np. '1y', '7d', '6h', '15m'."
 
 #: lib/utils/compare.py:414
 msgid ""
 "False if the date and time of the left attribute is within the past duration of the right attribute. The right "
 "attribute should be a duration such as '1y', '7d', '6h', '15m'."
 msgstr ""
-"Fałsz, gdy data i czas lewego atrybutu mieszczą się w okresie wstecz określonym przez prawy atrybut. Prawy atrybut "
-"powinien być okresem, np. '1y', '7d', '6h', '15m'."
+"Fałsz, gdy data i czas lewego atrybutu przypadają w okresie poprzedzającym bieżącą chwilę, którego długość określa "
+"prawy atrybut. Prawy atrybut powinien określać czas, np. '1y', '7d', '6h', '15m'."
 
 #: lib/utils/compare.py:418
 msgid "True if the value of the left attribute contains the right value (case-insensitive)"

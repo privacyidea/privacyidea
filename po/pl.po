@@ -572,7 +572,7 @@ msgstr "Adres uwierzytelniania"
 
 #: privacyidea/static/components/config/views/config.system.edit.html:80
 msgid "Auto resync timeout"
-msgstr "Czas automatycznej resynchronizacji"
+msgstr "Limit czasu automatycznej resynchronizacji"
 
 #: privacyidea/static/components/config/views/config.system.edit.html:76
 msgid "Automatic resync during authentication"
@@ -3297,7 +3297,7 @@ msgstr "Czytaj dalej w nowym oknie…"
 
 #: privacyidea/static/components/token/views/token.enroll.sms.html:15
 msgid "Read number dynamically from user source on each request."
-msgstr "Pobieraj numer ze źródła użytkowników przy każdym żądaniu."
+msgstr "Pobieraj numer telefonu ze źródła użytkowników przy każdym żądaniu."
 
 #: privacyidea/static/components/config/views/config.policies.list.html:23
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:33
@@ -4418,7 +4418,7 @@ msgid ""
 "    When authenticating with this type of token, you will be asked a random\n"
 "    question and then need to provide the previously defined answer."
 msgstr ""
-"Token pytań pozwala zdefiniować odpowiedzi na pytania. Podczas\n"
+"Token z pytaniami pozwala zdefiniować odpowiedzi na pytania. Podczas\n"
 "uwierzytelniania pojawi się losowe pytanie, na które należy podać wcześniej\n"
 "zapisaną odpowiedź."
 
@@ -4878,7 +4878,7 @@ msgid ""
 "    presented with a random questions and needs to provide his previously\n"
 "    defined answer."
 msgstr ""
-"Kwestionariusz pozwala zdefiniować zestaw pytań. Token pytań przechowuje\n"
+"Kwestionariusz pozwala zdefiniować zestaw pytań. Token z pytaniami przechowuje\n"
 "odpowiedzi na te pytania. Użytkownik otrzyma losowe pytanie i musi podać\n"
 "wcześniej zapisaną odpowiedź."
 
@@ -5362,7 +5362,7 @@ msgstr "Serwer uwierzytelniania TiQR"
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:66
 msgid "TiQR Info URL"
-msgstr "Adres URL informacji TiQR"
+msgstr "Adres URL witryny dostawcy tożsamości"
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:54
 msgid "TiQR Logo URL"
@@ -5390,7 +5390,7 @@ msgstr "Ustawienia tokena TiQR"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:225
 msgid "Time in seconds privacyIDEA tries to reach the user store server."
-msgstr "Czas w sekundach na połączenie privacyIDEA z serwerem źródła użytkowników."
+msgstr "Czas oczekiwania privacyIDEA na połączenie z serwerem źródła użytkowników."
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:46
 #: privacyidea/static/components/config/views/config.smtp.edit.html:46
@@ -6066,7 +6066,7 @@ msgstr "Utworzono kontener o numerze seryjnym:"
 
 #: privacyidea/static/components/user/views/user.html:12 privacyidea/static/components/user/views/user.password.html:2
 msgid "Your details"
-msgstr "Twoje dane"
+msgstr "Moje dane"
 
 #: privacyidea/static/components/recovery/controllers/recoveryControllers.js:30
 msgid "Your password has been reset successfully."
@@ -6268,7 +6268,7 @@ msgstr "PIN mOTP"
 
 #: privacyidea/static/components/audit/views/audit.log.html:149
 msgid "missing_line"
-msgstr "missing_line"
+msgstr "Brakujący wiersz"
 
 #: privacyidea/static/components/user/views/user.list.html:40
 msgid "mobile"
@@ -6414,7 +6414,7 @@ msgstr "ustaw hasło"
 
 #: privacyidea/static/components/audit/views/audit.log.html:148
 msgid "sig_check"
-msgstr "sig_check"
+msgstr "Weryfikacja podpisu"
 
 #: privacyidea/static/components/directives/views/directive.attachmachine.html:8
 msgid "start typing a machine."
@@ -6443,7 +6443,7 @@ msgstr "nazwisko"
 
 #: privacyidea/static/components/audit/views/audit.log.html:150
 msgid "thread_id"
-msgstr "thread_id"
+msgstr "Identyfikator wątku"
 
 #: privacyidea/static/components/token/views/token.challenges.html:28
 msgid "timestamp"
