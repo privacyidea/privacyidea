@@ -614,7 +614,7 @@ class User:
         return search_fields
 
     # If passwords should not be logged, we hide it from the log entry
-    @log_with(log, hide_kwargs=["password"])
+    @log_with(log)
     def update_user_info(self, attributes : dict, password: str = None) -> bool:
         """
         This updates the given attributes of a user.
@@ -710,7 +710,7 @@ class User:
             "custom_attributes": self.attributes
         }
 
-@log_with(log, hide_kwargs=["password"])
+@log_with(log)
 def create_user(resolvername: str, attributes: dict, password: str = None) -> int or str:
     """
     This creates a new user in the given resolver. The resolver must be
@@ -776,7 +776,7 @@ def split_user(username: str) -> tuple[str, str]:
     return user, realm
 
 
-@log_with(log, hide_args_keywords={0: ["pass", "password"]})
+@log_with(log)
 def get_user_from_param(param: dict, optional_or_required: bool = True) -> User:
     """
     Find the parameter user, realm and resolver and

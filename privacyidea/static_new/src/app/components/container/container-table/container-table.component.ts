@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, ElementRef, ViewChild, WritableSignal, inject, linkedSignal } from "@angular/core";
+import { Component, ElementRef, ViewChild, WritableSignal, computed, inject, linkedSignal } from "@angular/core";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { Sort } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
@@ -95,6 +95,21 @@ export class ContainerTableComponent {
   readonly advancedApiFilter = this.containerService.advancedApiFilter;
   readonly filterKeywords = [...this.containerService.apiFilter, ...this.containerService.advancedApiFilter];
   readonly filterHint = inlineFilterHint();
+  // The `user` and `realm` filters are exact values that the backend resolves against the user store, so
+  // they are only applied when the input is confirmed with enter. All other filters are applied while typing.
+  protected readonly filterInputValue = linkedSignal({
+    source: () => this.containerService.containerFilter().filterString,
+    computation: (filterString) => filterString
+  });
+  protected readonly showFilterHint = computed(() => {
+    const current = this.filterInputValue().trim().toLowerCase();
+    const applied = this.containerService.containerFilter().filterString.trim().toLowerCase();
+
+    if (current !== applied) {
+      return /(^|\s)user:/.test(current) || /(^|\s)realm:/.test(current);
+    }
+    return false;
+  });
   containerSelection = this.containerService.containerSelection;
 
   pageSize = this.containerService.pageSize;
@@ -142,6 +157,7 @@ export class ContainerTableComponent {
     states: "state",
     description: "description",
     user_name: "user",
+    user_realm: "realm",
     realms: "container_realm"
   } as const;
 
@@ -188,6 +204,17 @@ export class ContainerTableComponent {
 
   onSortEvent($event: Sort) {
     this.sort.set($event);
+  }
+
+  onFilterInput($event: Event) {
+    const input = $event.target as HTMLInputElement;
+    this.filterInputValue.set(input.value);
+    const value = input.value.toLowerCase();
+    const hasUser = /(^|\s)user:/.test(value);
+    const hasRealm = /(^|\s)realm:/.test(value);
+    if (!hasUser && !hasRealm) {
+      this.containerService.handleFilterInput($event);
+    }
   }
 
   toggleFilter(filterKeyword: string): void {

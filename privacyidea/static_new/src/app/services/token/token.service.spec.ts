@@ -491,6 +491,37 @@ describe("TokenService", () => {
     });
   });
 
+  describe("tokenTypeOptions() ordering", () => {
+    const flushRights = async (value: Record<string, string>) => {
+      contentServiceMock.onTokensEnrollment = signal(true);
+      TestBed.tick();
+      const req = mockBackend.expectOne((r) => r.url.endsWith("/auth/rights"));
+      req.flush(MockPiResponse.fromValue(value));
+      await Promise.resolve();
+    };
+
+    it("sorts options alphabetically by the label (text before the first colon)", async () => {
+      await flushRights({
+        hotp: "Zulu: event based",
+        totp: "Alpha: time based",
+        spass: "Mike: simple pass"
+      });
+
+      expect(tokenService.tokenTypeOptions().map((o) => o.key)).toEqual(["totp", "spass", "hotp"]);
+    });
+
+    it("uses the full info string as the label when it contains no colon", async () => {
+      await flushRights({
+        hotp: "Beta",
+        totp: "Alpha"
+      });
+
+      const options = tokenService.tokenTypeOptions();
+      expect(options.map((o) => o.key)).toEqual(["totp", "hotp"]);
+      expect(options[0].info).toBe("Alpha");
+    });
+  });
+
   describe("showOnlyTokenInContainer -> token container filter", () => {
     const containerRoute = ROUTE_PATHS.CONTAINERS_DETAILS + "/CONT0001";
     const hasContainerFilter = () => tokenService.tokenFilter().hiddenFilterMap.has("container_serial");
