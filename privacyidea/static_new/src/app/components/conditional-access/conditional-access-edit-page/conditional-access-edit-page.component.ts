@@ -369,12 +369,13 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   }
 
   onPriorityInput(value: string): void {
-    // Always write back (null when cleared or non-numeric) so priorityValid /
-    // priorityUnique can flag an empty or invalid field and disable Save; only
-    // swallowing valid values would leave a stale priority behind on clear.
+    // Always write back (null when cleared, non-numeric or non-integer) so
+    // priorityValid / priorityUnique can flag an invalid field and disable Save.
+    // Number() (not parseInt) is used so a decimal like "1.5" stays invalid
+    // instead of being silently truncated to a passing integer.
     const trimmed = value.trim();
-    const parsed = trimmed === "" ? NaN : parseInt(trimmed, 10);
-    this.updateEditPolicy({ priority: isNaN(parsed) ? null : parsed });
+    const parsed = trimmed === "" ? NaN : Number(trimmed);
+    this.updateEditPolicy({ priority: Number.isInteger(parsed) ? parsed : null });
   }
 
   toggleEnabled(checked: boolean): void {

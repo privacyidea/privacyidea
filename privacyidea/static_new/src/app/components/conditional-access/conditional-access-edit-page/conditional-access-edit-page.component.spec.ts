@@ -204,12 +204,15 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
     expect(component.editPolicy().time_window_seconds).toBe(36000);
   });
 
-  it("should update priority, clearing to null on empty or non-numeric input", () => {
+  it("should update priority, clearing to null on empty, non-numeric or decimal input", () => {
     component.onPriorityInput("5");
     expect(component.editPolicy().priority).toBe(5);
     component.onPriorityInput("abc");
     expect(component.editPolicy().priority).toBeNull();
     component.onPriorityInput("");
+    expect(component.editPolicy().priority).toBeNull();
+    // A decimal must not be silently truncated to a passing integer.
+    component.onPriorityInput("1.5");
     expect(component.editPolicy().priority).toBeNull();
   });
 
