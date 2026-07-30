@@ -102,26 +102,32 @@ def log_begin_request():
 @token_blueprint.before_app_request
 def identify_api_client():
     """
-    Identify the API client from the ``X-API-Key`` header for *every* request.
+    Identify the API client from the ``X-API-Key`` header for *every* request
+    and expose it as ``g.client_id`` (``None`` when no valid client).
 
-    If the header is missing, ``g.client_id`` is set to ``None`` so that legacy
-    clients which do not send an API key keep working. If the header is present
-    but the key is unknown or the client is not active, the request is rejected
-    with 401. On success ``g.client_id`` is set and the client's usage timestamp
-    is updated.
+    The header is an *optional* identification mechanism, so an absent, unknown,
+    inactive or revoked key simply leaves the request unidentified
+    (``g.client_id = None``) rather than rejecting it - otherwise a stale key
+    sent to an endpoint that does not use API-key auth (e.g. the WebUI) would
+    break that request. Endpoints that require an identified client
+    (``/auth/capabilities``, the remembered-device flow) enforce it themselves.
     """
+    g.client_id = None
     api_key = request.headers.get("X-API-Key")
     if not api_key:
-        g.client_id = None
         return
 
     client = get_active_client_by_key(api_key)
     if not client:
-        raise AuthError(_("Authentication failure. Invalid or revoked API key."))
+        # Unknown / inactive / revoked key: treat as unidentified, do not reject
+        # the whole request here (this is a before_app_request that runs for
+        # every endpoint app-wide).
+        log.warning("Ignoring an unknown or inactive X-API-Key.")
+        return
 
     g.client_id = client.id
-    # This writes to the database on every authenticated request. If it ever
-    # becomes a hotspot, throttle the update to only refresh a stale timestamp.
+    # Refresh the client's usage timestamp, throttled so a busy client does not
+    # issue a DB write on every single request.
     touch_client(client)
 
 

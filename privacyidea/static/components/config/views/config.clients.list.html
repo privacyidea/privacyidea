@@ -31,7 +31,13 @@
         </thead>
         <tbody>
         <tr ng-repeat="client in clients">
-            <td>{{ client.display_name }}</td>
+            <td>
+                <input ng-if="checkRight('clients_add')" class="form-control input-sm"
+                       ng-model="client.display_name"
+                       ng-blur="renameClient(client)"
+                       title="{{ 'Rename this client' | translate }}"/>
+                <span ng-if="!checkRight('clients_add')">{{ client.display_name }}</span>
+            </td>
             <td>{{ client.client_type }}</td>
             <td>
                 <select ng-if="checkRight('clients_add')"

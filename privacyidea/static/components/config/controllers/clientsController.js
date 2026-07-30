@@ -35,10 +35,31 @@ myApp.controller("clientsController", ["$scope", "$stateParams", "inform",
         $scope.getClients = function () {
             ConfigFactory.getClients(null, function (data) {
                 $scope.clients = data.result.value;
+                // Snapshot names so renameClient can tell a real edit from a
+                // plain focus/blur and avoid pointless updates.
+                $scope.originalNames = {};
+                angular.forEach($scope.clients, function (c) {
+                    $scope.originalNames[c.id] = c.display_name;
+                });
             });
         };
 
         $scope.getClients();
+
+        $scope.renameClient = function (client) {
+            var name = (client.display_name || "").trim();
+            if (!name || name === $scope.originalNames[client.id]) {
+                // Empty or unchanged: revert to the stored name, do not save.
+                client.display_name = $scope.originalNames[client.id];
+                return;
+            }
+            ConfigFactory.updateClient(client.id, {display_name: name}, function (data) {
+                if (data.result.status === true) {
+                    inform.add(gettextCatalog.getString("Client renamed."), {type: "info"});
+                    $scope.getClients();
+                }
+            });
+        };
 
         // --- persistent "remember device" sessions ---
         $scope.sessions = [];
@@ -161,6 +182,12 @@ myApp.controller("clientsController", ["$scope", "$stateParams", "inform",
             $scope.params = {};
         };
 
-        // listen to the reload broadcast
-        $scope.$on("piReload", $scope.getClients);
+        // listen to the reload broadcast: refresh whichever view is active.
+        $scope.$on("piReload", function () {
+            if ($state.includes('config.clients.sessions') && $scope.sessionsClientId) {
+                $scope.loadSessions($scope.sessionsClientId);
+            } else {
+                $scope.getClients();
+            }
+        });
     }]);

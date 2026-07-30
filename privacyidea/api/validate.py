@@ -117,7 +117,8 @@ from privacyidea.api.lib.utils import (get_all_params, get_before_request_config
                                        INTERNAL_OPTION_KEYS)
 from privacyidea.api.recover import recover_blueprint
 from privacyidea.lib.authsession import (create_auth_session, set_persistent_cookie,
-                                         clear_persistent_cookie, validate_and_rotate,
+                                         clear_persistent_cookie, get_valid_session,
+                                         rotate_session, session_user_id,
                                          PERSISTENT_COOKIE_NAME)
 from privacyidea.api.register import register_blueprint
 from privacyidea.lib.applications.offline import MachineApplication
@@ -462,6 +463,15 @@ def check():
     if is_true(request.all_data.get("cancel_enrollment")):
         return _handle_enrollment_cancellation(request.all_data)
 
+    # Conditional Access decision point (remembered device).
+    # Runs before any token verification, so an accepted device never triggers a
+    # challenge and the audit honestly records an ACCEPT. This is the seam where
+    # a future Conditional Access / policy evaluation will decide whether a
+    # recognised device may skip the second factor.
+    remembered_device_response = _remembered_device_access()
+    if remembered_device_response is not None:
+        return remembered_device_response
+
     # This dictionary carries state across the extracted helper functions
     # to avoid changing the functional signatures of the underlying libraries yet.
     context = {
@@ -745,57 +755,131 @@ def _finalize_auth_response(context):
     return ret
 
 
+def _remembered_device_access():
+    """
+    Decide whether a recognised remembered device may skip the second factor.
+
+    If the request is bound to an API client and presents a ``pi_remember_device``
+    cookie valid **for the authenticating user**, the device is accepted when the
+    ``remember_device`` policy (scope auth, with its client/user/realm conditions)
+    allows it. The policy *is* the grant decision: an admin enabling
+    ``remember_device`` for a client/realm is the signal that recognised devices
+    may skip the second factor. This runs *before* any token verification, so an
+    accepted device never triggers a challenge and the audit records a clean
+    ACCEPT.
+
+    This is the single place that consumes a presented cookie: it validates and
+    (on accept/decline) rotates it once, stashing the follow-up cookie action on
+    ``g.remember_cookie_action`` for :func:`_resolve_persistent_cookie`, so the
+    cookie is never looked up or rotated twice.
+
+    Independence from Conditional Access: this feature does not depend on a CA
+    feature and does not gate on one. A future CA / risk layer is orthogonal - it
+    would *veto* auth globally (bad IP, anomaly) and could consume the theft
+    signal emitted below - but it neither enables nor is required by this flow.
+
+    :return: an ACCEPT ``Response`` when the device is accepted, else ``None``
+        (normal authentication then proceeds).
+    """
+    # Reset per-request state (g is app-context scoped).
+    g.remembered_device = False
+    g.remember_cookie_action = None
+    if not g.get("client_id"):
+        return None
+    presented = request.cookies.get(PERSISTENT_COOKIE_NAME)
+    if not presented:
+        return None
+
+    user = request.User
+    user_id = session_user_id(user)
+    if not user_id:
+        # No resolvable user to bind the cookie to - do not honour it.
+        g.remember_cookie_action = ("clear",)
+        return None
+
+    try:
+        result = get_valid_session(presented, g.client_id, user_id, g.get("client_ip"))
+    except AuthError:
+        # ---- Theft-response seam -------------------------------------------
+        # Reuse/replay detected. Baseline response (not optional - detection is
+        # toothless without it): get_valid_session has already invalidated the
+        # whole series, and we record the event in action_detail (which the
+        # normal finalize path does not overwrite, unlike info) and drop the
+        # cookie. Escalations (notify the user, force global re-auth, block the
+        # client/IP, feed a CA risk score, or 401 instead of falling through)
+        # plug in here. We currently fall through to normal auth rather than
+        # failing the request.
+        log.warning("Persistent device cookie reuse detected; series invalidated.")
+        g.audit_object.add_to_log({"action_detail": "persistent cookie reuse detected"},
+                                  add_with_comma=True)
+        g.remember_cookie_action = ("clear",)
+        return None
+        # --------------------------------------------------------------------
+    if not result:
+        # Unknown / expired / not this user's / wrong client: drop the cookie.
+        g.remember_cookie_action = ("clear",)
+        return None
+
+    session, is_grace = result
+    # The device is recognised and bound to this user.
+    g.remembered_device = True
+
+    # A fresh use rotates the cookie; a grace hit (concurrent/duplicate request)
+    # leaves the cookie untouched so the token chain does not fork.
+    if is_grace:
+        cookie_action = None
+    else:
+        cookie_value, expires_at = rotate_session(session)
+        cookie_action = ("set", cookie_value, expires_at)
+
+    # --- Grant decision: the remember_device policy --------------------------
+    if not Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE,
+                      user_object=user).any():
+        # Policy does not allow this device to skip the second factor. Let normal
+        # authentication proceed; _resolve_persistent_cookie applies the cookie
+        # action decided above (a rotated cookie on a fresh use, nothing on grace).
+        g.remember_cookie_action = cookie_action
+        return None
+    # -------------------------------------------------------------------------
+
+    details = {"remembered_device": True, "message": "Accepted by remembered device."}
+    ret = send_result(True, rid=2, details=details)
+    if cookie_action:
+        set_persistent_cookie(ret, cookie_action[1], cookie_action[2])
+    g.audit_object.log({
+        "user": user.login, "resolver": user.resolver, "realm": user.realm,
+        "success": True,
+        "authentication": ret.json.get("result", {}).get("authentication", ""),
+        "info": "Accepted by remembered device",
+    })
+    return ret
+
+
 def _resolve_persistent_cookie(user, success, serials_str, details):
     """
-    Work out what to do with the persistent "remember this device" cookie and
-    record the outcome in ``details``/``g``. Returns an action to apply to the
-    response later: ``("set", value, expires_at)``, ``("clear",)`` or ``None``.
+    Decide the persistent-cookie action for the final response:
+    ``("set", value, expires_at)``, ``("clear",)`` or ``None``.
 
-    Only acts on a successful authentication of a request bound to an API client
-    (``g.client_id``). The cookie carries only a rotating ``series_id:counter``
-    token, never the API key.
-
-    * If the request presents a ``pi_remember_device`` cookie, it is validated
-      and rotated. A valid cookie marks the device as recognised
-      (``g.remembered_device``); an invalid/expired one is cleared; a replayed
-      one invalidates the whole series (reuse detection) without failing the
-      already-successful authentication.
-    * Otherwise, if the client opts in (``request_persistent_cookie``) and the
-      ``remember_device`` policy allows it for this client, a new session is
-      created and its cookie issued.
+    Any presented cookie has already been consumed (validated + possibly rotated)
+    by :func:`_remembered_device_access`, which stashes the resulting action on
+    ``g.remember_cookie_action``. This function honours that stash and otherwise
+    only *issues* a new cookie: on a successful auth of a client-bound request
+    that opts in (``request_persistent_cookie``) and is allowed by the
+    ``remember_device`` policy.
     """
-    g.remembered_device = False
+    details["remembered_device"] = g.get("remembered_device", False)
+
+    action = g.get("remember_cookie_action")
+    if action is not None:
+        return action
+
+    # No cookie was presented: consider issuing one.
     if not success or not g.get("client_id"):
         return None
 
-    action = None
-    presented = request.cookies.get(PERSISTENT_COOKIE_NAME)
-    if presented:
-        try:
-            rotated = validate_and_rotate(presented, g.client_id)
-        except AuthError:
-            # Reuse/theft detected: validate_and_rotate has already invalidated
-            # the series. We do not fail the (already successful) authentication
-            # here - the cookie does not grant access on its own yet - but we
-            # drop it from the client and record the event.
-            rotated = None
-            log.warning("Persistent device cookie reuse detected; series invalidated.")
-            g.audit_object.add_to_log({"info": "persistent cookie reuse detected"}, add_with_comma=True)
-        if rotated:
-            cookie_value, expires_at = rotated
-            action = ("set", cookie_value, expires_at)
-            g.remembered_device = True
-        else:
-            action = ("clear",)
-
-    # A recognised device is currently only reported, not acted upon. The
-    # Conditional Access decision (whether a remembered device may relax
-    # authentication) is deferred; for now we assume it does not.
-    details["remembered_device"] = g.remembered_device
-
-    if not g.remembered_device and is_true(get_optional(request.all_data, "request_persistent_cookie")):
+    if is_true(get_optional(request.all_data, "request_persistent_cookie")):
         if Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE, user_object=user).any():
-            session, cookie_value = create_auth_session(user_id=user.login or serials_str,
+            session, cookie_value = create_auth_session(user_id=session_user_id(user) or serials_str,
                                                         client_id=g.client_id,
                                                         ip_address=g.client_ip,
                                                         user_agent=g.get("user_agent"))

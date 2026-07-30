@@ -165,25 +165,42 @@ class APIClientAPIKeyMiddlewareTestCase(MyApiTestCase):
         stored = Client.query.filter_by(id=client["id"]).first()
         self.assertIsNotNone(stored.last_used_at)
 
-    def test_03_invalid_key_rejected(self):
+    def test_03_invalid_key_ignored_on_non_client_endpoint(self):
+        # The X-API-Key is optional identification: an unknown key must NOT lock
+        # out an endpoint that does not use API-key auth.
         with self.app.test_request_context('/', method='GET',
                                            headers={'X-API-Key': 'pi_totally_wrong'}):
-            res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 401, res)
+            self.assertNotEqual(self.app.full_dispatch_request().status_code, 401)
+        # But an endpoint that requires an identified client still rejects it.
+        with self.app.test_request_context('/auth/capabilities', method='GET',
+                                           headers={'X-API-Key': 'pi_totally_wrong'}):
+            self.assertEqual(self.app.full_dispatch_request().status_code, 401)
 
-    def test_04_revoked_key_rejected(self):
+    def test_04_revoked_key_ignored_but_not_identified(self):
         client = self._create_client()
-        # Revoke the client.
         with self.app.test_request_context(f'/clients/{client["id"]}',
                                            data={"status": "revoked"},
                                            method='POST',
                                            headers={'Authorization': self.at}):
             self.assertEqual(self.app.full_dispatch_request().status_code, 200)
 
+        # A revoked key does not lock out a non-client endpoint ...
         with self.app.test_request_context('/', method='GET',
                                            headers={'X-API-Key': client["api_key"]}):
+            self.assertNotEqual(self.app.full_dispatch_request().status_code, 401)
+        # ... and no longer identifies a client (capabilities requires one).
+        with self.app.test_request_context('/auth/capabilities', method='GET',
+                                           headers={'X-API-Key': client["api_key"]}):
+            self.assertEqual(self.app.full_dispatch_request().status_code, 401)
+
+    def test_05_stale_key_does_not_break_authenticated_request(self):
+        # A request authenticated by other means (admin JWT) succeeds even if it
+        # also carries an unknown X-API-Key header.
+        with self.app.test_request_context('/clients/', method='GET',
+                                           headers={'Authorization': self.at,
+                                                    'X-API-Key': 'pi_totally_wrong'}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 401, res)
+            self.assertEqual(res.status_code, 200, res)
 
 
 class APIClientSessionsTestCase(MyApiTestCase):

@@ -148,13 +148,23 @@ def create_client(display_name: str, client_type: str, config: dict = None,
     return client, key["plaintext"]
 
 
-def touch_client(client: Client) -> None:
+def touch_client(client: Client, min_interval_seconds: int = 60) -> None:
     """
     Update the ``last_used_at`` timestamp of a client to the current time.
 
+    Throttled: the DB write is skipped if ``last_used_at`` was updated less than
+    ``min_interval_seconds`` ago, so a busy client polling on every request does
+    not generate one auth write per request (the column only needs coarse
+    freshness).
+
     :param client: the client that was used to authenticate the request
+    :param min_interval_seconds: minimum age of ``last_used_at`` before it is
+        rewritten
     """
-    client.last_used_at = utc_now()
+    now = utc_now()
+    if client.last_used_at and (now - client.last_used_at).total_seconds() < min_interval_seconds:
+        return
+    client.last_used_at = now
     client.save()
 
 
