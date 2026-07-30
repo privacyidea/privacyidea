@@ -27,7 +27,7 @@ $corner-size-stacked: 132px;
   // Centred on the square, so the band's centre line runs across its diagonal.
   top: 24%;
   left: 24%;
-  background-color: var(--yellow-dark);
+  background-color: light-dark(var(--yellow-dark), var(--yellow-light-active));
   color: white;
   width: $band-width;
   padding: 4px 0;

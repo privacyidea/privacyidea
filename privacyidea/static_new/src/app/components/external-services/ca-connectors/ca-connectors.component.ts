@@ -100,7 +100,6 @@ export class CaConnectorsComponent {
     }
   }
 
-
   isAllSelected(): boolean {
     const rows = this.caConnectorDataSource().data;
     return rows.length > 0 && this.selection().length === rows.length;
@@ -145,12 +144,13 @@ export class CaConnectorsComponent {
       .afterClosed()
       .subscribe((result) => {
         if (result) {
-          selected.forEach((row) => this.caConnectorService.deleteCaConnector(row.connectorname));
+          selected.forEach(
+            (row) => void this.caConnectorService.deleteCaConnector(row.connectorname).catch(() => undefined)
+          );
           this.selection.set([]);
         }
       });
   }
-
 
   onFilterInput(value: string): void {
     const trimmed = (value ?? "").trim();

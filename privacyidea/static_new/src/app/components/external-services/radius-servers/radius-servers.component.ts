@@ -100,7 +100,6 @@ export class RadiusServersComponent {
     this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS_DETAILS + server.identifier);
   }
 
-
   isAllSelected(): boolean {
     const rows = this.radiusDataSource().data;
     return rows.length > 0 && this.selection().length === rows.length;
@@ -145,12 +144,11 @@ export class RadiusServersComponent {
       .afterClosed()
       .subscribe((result) => {
         if (result) {
-          selected.forEach((row) => this.radiusService.deleteRadiusServer(row.identifier));
+          selected.forEach((row) => void this.radiusService.deleteRadiusServer(row.identifier).catch(() => undefined));
           this.selection.set([]);
         }
       });
   }
-
 
   onFilterInput(value: string): void {
     const trimmed = (value ?? "").trim();
