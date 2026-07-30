@@ -141,7 +141,9 @@ export class SmsGatewaysComponent {
       .afterClosed()
       .subscribe((result) => {
         if (result) {
-          selected.forEach((gateway) => this.smsGatewayService.deleteSmsGateway(gateway.name));
+          selected.forEach(
+            (gateway) => void this.smsGatewayService.deleteSmsGateway(gateway.name).catch(() => undefined)
+          );
           this.selection.set([]);
         }
       });

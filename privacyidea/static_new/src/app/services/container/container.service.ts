@@ -43,6 +43,11 @@ import { catchError, forkJoin, lastValueFrom, Observable, of, Subject, throwErro
 const apiFilter = ["container_serial", "type", "description", "user", "realm", "container_realm", "state"];
 const advancedApiFilter = ["token_serial", "template", "assigned"];
 
+// `realm` is the realm of the assigned user (it builds the endpoint's user object), not the container's
+// own realm, which is `container_realm`. It is only ever set implicitly to scope a `user:` filter, so it
+// stays out of `apiFilter` and is not offered as a keyword.
+const hiddenApiFilter = ["realm"];
+
 const exactMatchKeys = new Set(["user", "realm", "type", "state", "assigned"]);
 
 // Filter keywords, a single value maps to the `type` query param, multiple to `type_list`.
@@ -409,7 +414,7 @@ export class ContainerService implements ContainerServiceInterface {
   });
 
   filterParams = computed<Record<string, string>>(() => {
-    const allowed = [...this.apiFilter, ...this.advancedApiFilter];
+    const allowed = [...this.apiFilter, ...this.advancedApiFilter, ...hiddenApiFilter];
     const plainKeys = exactMatchKeys;
 
     const filterMap = this.containerFilter().filterMap;
@@ -1015,6 +1020,7 @@ export class ContainerService implements ContainerServiceInterface {
     const input = $event.target as HTMLInputElement;
     let newFilter = this.containerFilter().copyWith({ value: input.value });
 
+    // A username is only unique within a realm, so scope a bare `user:` filter to the default realm.
     if (newFilter.hasKey("user") && !newFilter.hasKey("realm")) {
       const defaultRealm = this.realmService.defaultRealm();
       if (defaultRealm) {
