@@ -16,6 +16,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
 import io
+from collections.abc import Mapping
 import logging
 
 import pytest
@@ -113,6 +114,75 @@ class TestRedact:
         redacted = redact({"obj": Unpickleable(), "pin": TEST_PIN, "serial": "OATH0001"})
         assert redacted["pin"] == "HIDDEN"
         assert redacted["serial"] == "OATH0001"
+
+
+class TestRedactionFailsClosed:
+    """
+    A failure while hiding must never fall back to the original value.
+
+    Handing the original back looks harmless because no exception escapes, but the log line then
+    renders the object through its repr and the secret is written out. Failing to hide something
+    and logging it anyway is the one outcome that must not happen.
+    """
+
+    def test_mapping_whose_items_raises_is_not_returned(self):
+        class ExplodingMapping(Mapping):
+            def __getitem__(self, key):
+                return TEST_PIN
+
+            def __iter__(self):
+                return iter(["pin"])
+
+            def __len__(self):
+                return 1
+
+            def items(self):
+                raise RuntimeError("cannot iterate")
+
+            def __repr__(self):
+                # What would end up in the log if the original were returned.
+                return f"ExplodingMapping(pin={TEST_PIN!r})"
+
+        redacted = redact(ExplodingMapping())
+        assert redacted == "<redaction failed>"
+        assert_not_logged(str(redacted))
+
+    def test_nested_unwalkable_mapping_does_not_leak(self):
+        class ExplodingMapping(Mapping):
+            def __getitem__(self, key):
+                return TEST_SECRET
+
+            def __iter__(self):
+                return iter(["secret"])
+
+            def __len__(self):
+                return 1
+
+            def items(self):
+                raise RuntimeError("cannot iterate")
+
+            def __repr__(self):
+                return f"ExplodingMapping(secret={TEST_SECRET!r})"
+
+        redacted = redact({"serial": "OATH0001", "nested": ExplodingMapping()})
+        assert redacted["serial"] == "OATH0001"
+        assert_not_logged(str(redacted))
+
+    def test_unreadable_signature_is_reported(self, monkeypatch, caplog):
+        def exploding_signature(_func):
+            raise ValueError("no signature for this callable")
+
+        monkeypatch.setattr("privacyidea.lib.log.inspect.signature", exploding_signature)
+        logger = logging.getLogger("privacyidea.redaction-test-signature")
+
+        with caplog.at_level(logging.WARNING, logger="privacyidea.lib.log"):
+            @log_with(logger)
+            def check_user_pass(user, passw, options=None):
+                return True
+
+        assert "will not be hidden" in caplog.text
+        # The decorator still works, it just cannot hide by parameter name any more.
+        assert check_user_pass("alice", "some-value") is True
 
 
 class TestNoOverHiding:

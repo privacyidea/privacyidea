@@ -262,7 +262,11 @@ def redact(value, depth: int = 0, _path_ids: frozenset = frozenset()):
             return {key: HIDDEN if is_sensitive_key(key) else redact(item, depth + 1, _path_ids)
                     for key, item in value.items()}
         except Exception:
-            return value
+            # Returning the original here would hand an unredacted object to the log line, which
+            # then renders it through its repr. A container we failed to walk is a container whose
+            # contents we know nothing about, so none of it can be logged. Do not raise: redact()
+            # is also called from __repr__, which has no caller able to suppress the whole line.
+            return "<redaction failed>"
     return value
 
 
@@ -312,7 +316,12 @@ class log_with:
         # signature, so unlike a parameter index they cannot silently drift out of sync with it.
         try:
             parameter_names = list(inspect.signature(func).parameters)
-        except (TypeError, ValueError):
+        except (TypeError, ValueError) as exx:
+            # Without the signature, a secret passed as a bare positional value is no longer
+            # recognised, which would silently weaken the hiding for this function. Say so once,
+            # at decoration time, rather than leaving it invisible.
+            log.warning(f"Cannot read the signature of {getattr(func, '__name__', func)!r}, so a "
+                        f"sensitive value passed positionally to it will not be hidden: {exx}")
             parameter_names = []
         sensitive_positions = {index for index, name in enumerate(parameter_names)
                                if is_sensitive_key(name)}
