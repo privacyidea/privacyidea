@@ -22,12 +22,13 @@ import { Component, input } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
-import { RouterLink } from "@angular/router";
 import { UserUtilsPanelComponent } from "@components/layout/user-utils-panel/user-utils-panel.component";
+import { LanguageSwitcherComponent } from "@components/shared/language-switcher/language-switcher.component";
+import { ThemeSwitcherComponent } from "@components/shared/theme-switcher/theme-switcher.component";
 
 @Component({
   selector: "app-user-utils-panel-self-service",
-  imports: [MatIcon, MatIconButton, MatTooltip, NgClass, DatePipe, RouterLink],
+  imports: [MatIcon, MatIconButton, MatTooltip, LanguageSwitcherComponent, ThemeSwitcherComponent, NgClass, DatePipe],
   templateUrl: "./user-utils-panel.self-service.component.html",
   styleUrl: "./user-utils-panel.component.scss"
 })

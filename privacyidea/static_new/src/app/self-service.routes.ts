@@ -19,7 +19,6 @@
 import { Routes } from "@angular/router";
 
 import { pendingChangesGuard } from "@app/guards/pending-changes.guard";
-import { SettingsComponent } from "@components/settings/settings.component";
 import { AuditSelfServiceComponent } from "./components/audit/audit.self-service.component";
 import { AssignTokenSelfServiceComponent } from "./components/token/assign-token-self-service/assign-token-self-service.component";
 import { ContainerCreateSelfServiceComponent } from "./components/container/container-create/container-create.self-service.component";
@@ -34,10 +33,6 @@ import { UserDetailsSelfServiceComponent } from "./components/user/user-details/
 import { UserSelfServiceComponent } from "./components/user/user.self-service.component";
 
 export const routes: Routes = [
-  {
-    path: "settings",
-    component: SettingsComponent
-  },
   {
     path: "tokens",
     children: [

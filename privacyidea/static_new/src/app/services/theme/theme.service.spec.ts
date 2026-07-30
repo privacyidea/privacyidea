@@ -21,7 +21,8 @@ import { TestBed } from "@angular/core/testing";
 import { ThemeMode, ThemeService } from "./theme.service";
 
 import { DOCUMENT, Renderer2, RendererFactory2 } from "@angular/core";
-import { APP_THEME_STORAGE_KEY } from "@core/constants";
+import { APP_THEME_COOKIE_NAME } from "@core/constants";
+import { readCookie, writeCookie } from "@core/cookie";
 import { AuthService } from "@services/auth/auth.service";
 import { UserSettingsService } from "@services/user-settings/user-settings.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
@@ -82,7 +83,7 @@ describe("ThemeService", () => {
   let userSettingsService: MockUserSettingsService;
 
   beforeEach(() => {
-    localStorage.clear();
+    writeCookie(APP_THEME_COOKIE_NAME, "", 0);
     jest.restoreAllMocks();
 
     htmlEl = document.documentElement as HTMLHtmlElement;
@@ -130,7 +131,7 @@ describe("ThemeService", () => {
     service.applyStoredTheme("light");
 
     expect(service.currentTheme()).toBe("light");
-    expect(localStorage.getItem(APP_THEME_STORAGE_KEY)).toBe("light");
+    expect(readCookie(APP_THEME_COOKIE_NAME)).toBe("light");
     expect(setSpy).not.toHaveBeenCalled();
   });
 
@@ -143,7 +144,7 @@ describe("ThemeService", () => {
   });
 
   it("initializeTheme() reads saved theme and applies it", () => {
-    localStorage.setItem(APP_THEME_STORAGE_KEY, "dark");
+    writeCookie(APP_THEME_COOKIE_NAME, "dark");
     setupMatchMedia(false);
 
     service.initializeTheme();
@@ -173,7 +174,7 @@ describe("ThemeService", () => {
     service.setTheme("light");
 
     expect(service.currentTheme()).toBe("light");
-    expect(localStorage.getItem(APP_THEME_STORAGE_KEY)).toBe("light");
+    expect(readCookie(APP_THEME_COOKIE_NAME)).toBe("light");
     expect(htmlEl.classList.contains("light")).toBe(true);
     expect(htmlEl.classList.contains("dark")).toBe(false);
     expect(htmlEl.classList.contains("system")).toBe(false);
@@ -218,13 +219,13 @@ describe("ThemeService", () => {
     expect(mql.removeEventListener as unknown as jest.Mock).toHaveBeenCalledWith("change", expect.any(Function));
   });
 
-  it("always writes the theme to localStorage", () => {
+  it("always writes the theme to the cookie", () => {
     setupMatchMedia(false);
 
     service.setTheme("dark");
-    expect(localStorage.getItem(APP_THEME_STORAGE_KEY)).toBe("dark");
+    expect(readCookie(APP_THEME_COOKIE_NAME)).toBe("dark");
 
     service.setTheme("system");
-    expect(localStorage.getItem(APP_THEME_STORAGE_KEY)).toBe("system");
+    expect(readCookie(APP_THEME_COOKIE_NAME)).toBe("system");
   });
 });

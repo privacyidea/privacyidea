@@ -19,15 +19,8 @@
 
 <div class="utils-group-self-service utils">
   @if (!wizard()) {
-    <button
-      [routerLink]="ROUTE_PATHS.SETTINGS"
-      aria-label="Settings"
-      i18n-aria-label
-      mat-icon-button
-      i18n-matTooltip
-      matTooltip="Settings">
-      <mat-icon>settings</mat-icon>
-    </button>
+    <app-language-switcher></app-language-switcher>
+    <app-theme-switcher></app-theme-switcher>
     <button
       (click)="refreshPage()"
       class="refresh-btn"
