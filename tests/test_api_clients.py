@@ -1,7 +1,8 @@
 from .base import MyApiTestCase
 
-from privacyidea.lib.clients import hash_api_key
-from privacyidea.models import Client
+from privacyidea.lib.clients import hash_api_key, create_client
+from privacyidea.lib.authsession import create_auth_session
+from privacyidea.models import Client, AuthSession
 
 
 class APIClientsTestCase(MyApiTestCase):
@@ -78,6 +79,16 @@ class APIClientsTestCase(MyApiTestCase):
             value = res.json['result']['value']
             self.assertEqual(value["display_name"], "Renamed CP")
             self.assertEqual(value["status"], "suspended")
+
+    def test_03b_update_invalid_status_is_400(self):
+        client_id = self._create_client()["id"]
+        with self.app.test_request_context(f'/clients/{client_id}',
+                                           data={"status": "bogus"},
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            # An invalid status is a bad parameter (400), not a missing resource (404).
+            self.assertEqual(res.status_code, 400, res)
 
     def test_04_rotate_key_invalidates_old(self):
         created = self._create_client()
@@ -173,3 +184,62 @@ class APIClientAPIKeyMiddlewareTestCase(MyApiTestCase):
                                            headers={'X-API-Key': client["api_key"]}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 401, res)
+
+
+class APIClientSessionsTestCase(MyApiTestCase):
+    """
+    Listing and revoking a client's persistent remember-device sessions.
+    Order-independent: each test creates its own client(s) and sessions.
+    """
+
+    def test_01_list_sessions(self):
+        client, _key = create_client("sessions client", "windows_cp")
+        session, _cookie = create_auth_session("alice", client.id, ip_address="10.0.0.9",
+                                               user_agent="curl")
+
+        with self.app.test_request_context(f'/clients/{client.id}/sessions',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            sessions = res.json['result']['value']
+            self.assertEqual(len(sessions), 1)
+            entry = sessions[0]
+            self.assertEqual(entry["series_id"], session.series_id)
+            self.assertEqual(entry["user_id"], "alice")
+            self.assertEqual(entry["ip_address"], "10.0.0.9")
+            # The rotating token/counter must never be exposed.
+            self.assertNotIn("counter", entry)
+
+    def test_02_revoke_session(self):
+        client, _key = create_client("revoke client", "windows_cp")
+        session, _cookie = create_auth_session("bob", client.id)
+
+        with self.app.test_request_context(f'/clients/{client.id}/sessions/{session.series_id}',
+                                           method='DELETE',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            self.assertEqual(res.json['result']['value'], session.series_id)
+
+        self.assertIsNone(AuthSession.query.filter_by(series_id=session.series_id).first())
+
+    def test_03_revoke_is_scoped_to_client(self):
+        client_a, _ = create_client("client A", "windows_cp")
+        client_b, _ = create_client("client B", "keycloak")
+        session, _cookie = create_auth_session("carol", client_a.id)
+
+        # Try to revoke A's session via B's id -> 404, and A's session survives.
+        with self.app.test_request_context(f'/clients/{client_b.id}/sessions/{session.series_id}',
+                                           method='DELETE',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 404, res)
+        self.assertIsNotNone(AuthSession.query.filter_by(series_id=session.series_id).first())
+
+    def test_04_sessions_missing_client_404(self):
+        with self.app.test_request_context('/clients/does-not-exist/sessions',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 404, res)

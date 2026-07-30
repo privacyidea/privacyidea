@@ -1,0 +1,49 @@
+<h3>
+    <span translate>Remembered devices for</span>
+    "{{ sessionsClientName }}"
+</h3>
+<p translate>These are the active "remember this device" sessions for this client.
+    Revoking one invalidates that device's cookie immediately.</p>
+
+<a class="btn btn-default btn-sm" ui-sref="config.clients.list">
+    <span class="glyphicon glyphicon-chevron-left"></span>
+    <span translate>Back to clients</span>
+</a>
+
+<div class="table-responsive" style="margin-top: 1em;">
+    <table class="table table-bordered table-responsive table-striped">
+        <thead>
+        <tr>
+            <th translate>User</th>
+            <th translate>IP address</th>
+            <th translate>User agent</th>
+            <th translate>Created</th>
+            <th translate>Last used</th>
+            <th translate>Expires</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="session in sessions">
+            <td>{{ session.user_id }}</td>
+            <td>{{ session.ip_address || '-' }}</td>
+            <td>{{ session.user_agent || '-' }}</td>
+            <td>{{ session.created_at | date:'yyyy-MM-dd HH:mm' }}</td>
+            <td>{{ (session.last_used_at | date:'yyyy-MM-dd HH:mm') || '-' }}</td>
+            <td>{{ session.expires_at | date:'yyyy-MM-dd HH:mm' }}</td>
+            <td>
+                <button class="btn btn-danger btn-sm"
+                        ng-show="checkRight('clients_delete')"
+                        data-confirmation-text="{{ 'Do you really want to revoke this session?' | translate }}"
+                        ng-click="confirmDelete(revokeSession, session.series_id)">
+                    <span class="glyphicon glyphicon-trash"></span>
+                    <span translate>Revoke</span>
+                </button>
+            </td>
+        </tr>
+        <tr ng-show="sessions.length === 0">
+            <td colspan="7" translate>This client has no remembered devices.</td>
+        </tr>
+        </tbody>
+    </table>
+</div>

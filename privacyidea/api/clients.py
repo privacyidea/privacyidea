@@ -40,6 +40,7 @@ from ..lib.policies.actions import PolicyAction
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.clients import (get_client, get_clients, create_client, update_client,
                            rotate_client_key, delete_client, client_to_dict)
+from ..lib.authsession import get_client_sessions, revoke_client_session, session_to_dict
 
 log = logging.getLogger(__name__)
 
@@ -153,6 +154,54 @@ def rotate_client_api(client_id):
     result = client_to_dict(client)
     result["api_key"] = api_key
     return send_result(result)
+
+
+@clients_blueprint.route('/<client_id>/sessions', methods=['GET'])
+@prepolicy(check_base_action, request, PolicyAction.CLIENTS_LIST)
+@event("clients_sessions_list", request, g)
+@log_with(log)
+def list_client_sessions_api(client_id):
+    """
+    List the persistent "remember device" sessions of a client.
+
+    The rotating token is never included; each entry carries only the
+    ``series_id`` (used to target revocation) and non-sensitive metadata
+    (user, IP, user agent, created / last used / expiry).
+
+    Requires admin authentication and the policy action :ref:`policy_clients_list`.
+
+    :param client_id: path component, the id of the client.
+    :status 200: a list of sessions in ``result.value``.
+    :status 404: no client with that id exists.
+    """
+    # Ensure the client exists (404 otherwise).
+    get_client(client_id)
+    sessions = get_client_sessions(client_id)
+
+    g.audit_object.log({"success": True, "info": client_id})
+    return send_result([session_to_dict(session) for session in sessions])
+
+
+@clients_blueprint.route('/<client_id>/sessions/<series_id>', methods=['DELETE'])
+@prepolicy(check_base_action, request, PolicyAction.CLIENTS_DELETE)
+@event("clients_sessions_revoke", request, g)
+@log_with(log)
+def revoke_client_session_api(client_id, series_id):
+    """
+    Revoke a single persistent session of a client. The revocation is scoped to
+    the client, so a client id cannot be used to revoke another client's session.
+
+    Requires admin authentication and the policy action :ref:`policy_clients_delete`.
+
+    :param client_id: path component, the id of the client.
+    :param series_id: path component, the series id of the session.
+    :status 200: ``result.value`` is the series id of the revoked session.
+    :status 404: no such session exists for this client.
+    """
+    r = revoke_client_session(client_id, series_id)
+
+    g.audit_object.log({"success": True, "info": f"{client_id}: revoked session"})
+    return send_result(r)
 
 
 @clients_blueprint.route('/<client_id>', methods=['DELETE'])

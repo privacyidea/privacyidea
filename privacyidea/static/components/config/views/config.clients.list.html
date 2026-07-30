@@ -50,6 +50,12 @@
             <td>{{ (client.last_used_at | date:'yyyy-MM-dd HH:mm') || '-' }}</td>
             <td>
                 <button class="btn btn-default"
+                        ng-show="checkRight('clients_list')"
+                        ng-click="showSessions(client)">
+                    <span class="glyphicon glyphicon-phone"></span>
+                    <span translate>Devices</span>
+                </button>
+                <button class="btn btn-default"
                         ng-show="checkRight('clients_rotate')"
                         ng-click="rotateClientKey(client.id)">
                     <span class="glyphicon glyphicon-refresh"></span>

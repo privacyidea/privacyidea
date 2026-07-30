@@ -40,6 +40,38 @@ myApp.controller("clientsController", ["$scope", "$stateParams", "inform",
 
         $scope.getClients();
 
+        // --- persistent "remember device" sessions ---
+        $scope.sessions = [];
+        $scope.sessionsClientId = $stateParams.clientid || "";
+        $scope.sessionsClientName = $scope.sessionsClientId;
+
+        $scope.loadSessions = function (clientId) {
+            $scope.sessionsClientId = clientId;
+            ConfigFactory.getClientSessions(clientId, function (data) {
+                $scope.sessions = data.result.value;
+            });
+        };
+
+        $scope.showSessions = function (client) {
+            $scope.sessionsClientName = client.display_name;
+            $scope.loadSessions(client.id);
+            $state.go('config.clients.sessions', {clientid: client.id});
+        };
+
+        $scope.revokeSession = function (seriesId) {
+            ConfigFactory.revokeClientSession($scope.sessionsClientId, seriesId, function (data) {
+                if (data.result.status === true) {
+                    inform.add(gettextCatalog.getString("Session revoked."), {type: "info"});
+                    $scope.loadSessions($scope.sessionsClientId);
+                }
+            });
+        };
+
+        // Deep-link or page refresh directly onto the sessions view.
+        if ($stateParams.clientid) {
+            $scope.loadSessions($stateParams.clientid);
+        }
+
         $scope.saveClient = function () {
             // Create a new client. The response carries the plaintext API key,
             // which we surface once on the list page.

@@ -31,10 +31,11 @@ API-key middleware) on every validation.
 """
 import logging
 import secrets
+from datetime import datetime
 
 from flask_babel import _
 
-from privacyidea.lib.error import AuthError
+from privacyidea.lib.error import AuthError, ResourceNotFoundError
 from privacyidea.models import AuthSession
 from privacyidea.models.utils import utc_now
 
@@ -95,14 +96,14 @@ def create_auth_session(user_id: str, client_id: str, ip_address: str = None,
     return session, build_cookie_value(series_id, session.counter)
 
 
-def validate_and_rotate(cookie_value: str, client_id: str) -> str | None:
+def validate_and_rotate(cookie_value: str, client_id: str) -> tuple[str, datetime] | None:
     """
     Validate a persistent-session cookie and rotate its counter.
 
     The session is looked up by ``series_id`` **and** ``client_id`` so a cookie
     only ever validates for the client it was issued to.
 
-    * If no matching (or a expired) session exists, ``None`` is returned - the
+    * If no matching (or an expired) session exists, ``None`` is returned - the
       caller should treat the request as if no persistent session was presented.
     * If a session exists but the presented counter does not match the stored
       one, the token has been replayed (stolen cookie). The series is deleted
@@ -169,3 +170,52 @@ def clear_persistent_cookie(response) -> None:
     :param response: the Flask response to clear the cookie on
     """
     response.delete_cookie(PERSISTENT_COOKIE_NAME, httponly=True, secure=True, samesite="Strict")
+
+
+def get_client_sessions(client_id: str) -> list[AuthSession]:
+    """
+    Return all persistent sessions belonging to a client, newest first.
+
+    :param client_id: the id of the API client
+    :return: a list of ``AuthSession`` objects
+    """
+    return AuthSession.query.filter_by(client_id=client_id).order_by(AuthSession.created_at.desc()).all()
+
+
+def revoke_client_session(client_id: str, series_id: str) -> str:
+    """
+    Revoke (delete) a single persistent session of a client.
+
+    The lookup is scoped to ``client_id`` so a client's id can never be used to
+    revoke a session that belongs to a different client.
+
+    :param client_id: the id of the API client the session must belong to
+    :param series_id: the series id of the session to revoke
+    :return: the series id of the revoked session
+    :raises ResourceNotFoundError: if no such session exists for this client
+    """
+    session = AuthSession.query.filter_by(series_id=series_id, client_id=client_id).first()
+    if not session:
+        raise ResourceNotFoundError(f"The session {series_id!r} does not exist for this client.")
+    session.delete()
+    return series_id
+
+
+def session_to_dict(session: AuthSession) -> dict:
+    """
+    Serialise a persistent session for API output. The rotating token
+    (``counter``) is intentionally not exposed; ``series_id`` is only an
+    identifier used to target revocation.
+
+    :param session: the ``AuthSession`` to serialise
+    :return: a JSON-serialisable dict
+    """
+    return {
+        "series_id": session.series_id,
+        "user_id": session.user_id,
+        "ip_address": session.ip_address,
+        "user_agent": session.user_agent,
+        "created_at": session.created_at.isoformat() if session.created_at else None,
+        "last_used_at": session.last_used_at.isoformat() if session.last_used_at else None,
+        "expires_at": session.expires_at.isoformat() if session.expires_at else None,
+    }

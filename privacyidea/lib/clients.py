@@ -26,7 +26,7 @@ import hmac
 import logging
 import secrets
 
-from privacyidea.lib.error import ResourceNotFoundError
+from privacyidea.lib.error import ParameterError, ResourceNotFoundError
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.models import Client
 from privacyidea.models.utils import utc_now
@@ -197,7 +197,7 @@ def update_client(client_id: str, display_name: str = None, status: str = None,
         client.display_name = display_name
     if status is not None:
         if status not in CLIENT_STATUS:
-            raise ResourceNotFoundError(f"Unknown client status {status!r}.")
+            raise ParameterError(f"Unknown client status {status!r}.")
         client.status = status
     if config is not None:
         client.config = config

@@ -1090,6 +1090,30 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
                     AuthFactory.authError(error.data)
                 });
             },
+            getClientSessions: function (clientId, callback) {
+                $http.get(clientsUrl + "/" + clientId + "/sessions", {
+                    headers: {
+                        'PI-Authorization': AuthFactory.getAuthToken(),
+                        'Content-Type': 'application/json'
+                    }
+                }).then(function (response) {
+                    callback(response.data)
+                }, function (error) {
+                    AuthFactory.authError(error.data)
+                });
+            },
+            revokeClientSession: function (clientId, seriesId, callback) {
+                $http.delete(clientsUrl + "/" + clientId + "/sessions/" + seriesId, {
+                    headers: {
+                        'PI-Authorization': AuthFactory.getAuthToken(),
+                        'Content-Type': 'application/json'
+                    }
+                }).then(function (response) {
+                    callback(response.data)
+                }, function (error) {
+                    AuthFactory.authError(error.data)
+                });
+            },
             getPrivacyidea: function (callback, identifier) {
                 if (!identifier) {
                     identifier = "";

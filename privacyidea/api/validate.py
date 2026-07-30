@@ -125,7 +125,6 @@ from privacyidea.lib.challenge import get_challenges, extract_answered_challenge
 from privacyidea.lib.config import ensure_no_config_object, get_privacyidea_node
 from privacyidea.lib.container import find_container_for_token, find_container_by_serial, check_container_challenge
 from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError, Error, AuthError
-from privacyidea.lib.event import EventConfiguration
 from privacyidea.lib.event import event
 from privacyidea.lib.machine import list_machine_tokens, get_auth_items, attach_token
 from privacyidea.lib.policy import Match

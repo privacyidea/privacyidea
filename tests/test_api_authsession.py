@@ -93,8 +93,8 @@ class PersistentCookieValidateTestCase(MyApiTestCase):
         # No remember_device policy at all -> default off.
         self.assertEqual(self._cookies(self._check(api_key)), [])
 
-    def test_03_no_cookie_without_optin(self):
-        _client, api_key = create_client("no optin client", "windows_cp")
+    def test_03_no_cookie_without_opt_in(self):
+        _client, api_key = create_client("no opt-in client", "windows_cp")
         set_policy("remember", scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE)
         try:
             self.assertEqual(self._cookies(self._check(api_key, opt_in=False)), [])
