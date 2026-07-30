@@ -35,6 +35,7 @@ import { ContentService, ContentServiceInterface, DetailsUser } from "@services/
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
+import { FilterCaseNote } from "@utils/filter-hint.utils";
 import { parseBooleanValue } from "@utils/parse-boolean-value";
 import { StringUtils } from "@utils/string.utils";
 import { tokenTypes } from "@utils/token.utils";
@@ -107,6 +108,28 @@ const apiFilterKeyMap: Record<string, string> = {
 };
 
 const hiddenApiFilter = ["type_list"];
+
+const exactMatchKeys = new Set([
+  "user",
+  "infokey",
+  "infovalue",
+  "infokey & infovalue",
+  "active",
+  "assigned",
+  "container_serial",
+  "realm"
+]);
+const booleanKeys = new Set(["active", "assigned"]);
+// `serial` is a raw LIKE (SQLite/MySQL fold case, PostgreSQL does not), the tokeninfo
+// keys are a raw equality comparison (only MySQL with a _ci collation folds case).
+const caseNotes: Record<string, FilterCaseNote> = {
+  serial: "usually-insensitive",
+  "infokey & infovalue": "usually-sensitive"
+};
+// TODO: temporary. The backend accepts these keywords but never applies them, because
+// the filter clauses were removed in 78c0cc621 and not restored. Once they either work
+// again or are dropped, remove this set along with the whole "unsupported" mechanism.
+const unsupportedKeys = new Set(["userid", "resolver"]);
 
 export interface Tokens {
   count: number;
@@ -275,6 +298,10 @@ export interface TokenServiceInterface {
   defaultSizeOptions: number[];
   apiFilter: string[];
   advancedApiFilter: string[];
+  exactMatchKeys: Set<string>;
+  booleanKeys: Set<string>;
+  caseNotes: Record<string, FilterCaseNote>;
+  unsupportedKeys: Set<string>;
   sort: WritableSignal<Sort>;
   pageIndex: WritableSignal<number>;
   tokenResource: HttpResourceRef<PiResponse<Tokens> | undefined>;
@@ -378,16 +405,7 @@ export class TokenService implements TokenServiceInterface {
   readonly tokenSerial = this.contentService.tokenSerial;
   private readonly _filterParams = computed<Record<string, string>>(() => {
     const allowed = [...this.apiFilter, ...this.advancedApiFilter, ...this.hiddenApiFilter, "infokey", "infovalue"];
-    const plainKeys = new Set([
-      "user",
-      "infokey",
-      "infovalue",
-      "active",
-      "assigned",
-      "container_serial",
-      "realm",
-      "type_list"
-    ]);
+    const plainKeys = exactMatchKeys;
     const entries = [
       ...Array.from(this.tokenFilter().filterMap.entries()),
       ...Array.from(this.tokenFilter().hiddenFilterMap.entries())
@@ -611,6 +629,10 @@ export class TokenService implements TokenServiceInterface {
   tokenIsRevoked = signal(true);
   readonly defaultSizeOptions = [5, 10, 25, 50];
   readonly apiFilter = apiFilter;
+  readonly exactMatchKeys = exactMatchKeys;
+  readonly booleanKeys = booleanKeys;
+  readonly caseNotes = caseNotes;
+  readonly unsupportedKeys = unsupportedKeys;
   readonly advancedApiFilter = advancedApiFilter;
 
   sort = signal({ active: "serial", direction: "asc" } as Sort);
