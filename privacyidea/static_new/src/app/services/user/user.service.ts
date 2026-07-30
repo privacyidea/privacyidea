@@ -316,12 +316,15 @@ export class UserService implements UserServiceInterface {
       detailsUserRealm: this.contentService.detailsUser().realm,
       defaultRealm: this.realmService.defaultRealm(),
       realmOptions: this.realmService.realmOptions(),
+      defaultRealmResolved: this.realmService.defaultRealmResolved(),
       selectedTokenType: this.tokenService.selectedTokenType(),
       authRole: this.authService.role(),
       authRealm: this.authService.realm()
     }),
     computation: (source, previous): string => {
-      const previousRealm = previous?.value;
+      // The previous value is only trustworthy if the default realm was already
+      // known when it was picked, otherwise it may be a provisional first option.
+      const previousRealm = previous?.source.defaultRealmResolved ? previous.value : "";
       const routeChanged = source.routeUrl !== previous?.source.routeUrl;
       const fallbackRealm = previousRealm || this.defaultRealm();
       // On user details the realm of the opened user is the source of truth

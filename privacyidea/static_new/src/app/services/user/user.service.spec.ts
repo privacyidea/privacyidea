@@ -23,7 +23,7 @@ import { TestBed } from "@angular/core/testing";
 import { provideRouter, Router } from "@angular/router";
 import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
-import { RealmService } from "@services/realm/realm.service";
+import { Realms, RealmService } from "@services/realm/realm.service";
 import { TokenDetails, Tokens, TokenService } from "@services/token/token.service";
 import { EditUserData, UserAttributePolicy, UserData, UserService } from "./user.service";
 
@@ -142,6 +142,20 @@ describe("UserService", () => {
   it("selectedUserRealm should expose first realm if no default realm is set", () => {
     realmService.realmOptions.set(["realm1", "realm2"]);
     expect(userService.selectedUserRealm()).toBe("realm1");
+  });
+
+  it("selectedUserRealm switches to the default realm when it resolves after the realm options", () => {
+    contentServiceMock.routeUrl.set(ROUTE_PATHS.USERS);
+    realmService.defaultRealmResource.isLoading.set(true);
+    realmService.defaultRealmResource.set(MockPiResponse.fromValue<Realms>({}));
+    realmService.realmOptions.set(["aRealm", "zRealm"]);
+    expect(userService.selectedUserRealm()).toBe("aRealm");
+
+    realmService.defaultRealmResource.set(
+      MockPiResponse.fromValue<Realms>({ zRealm: { default: true, id: 1, option: "", resolver: [] } })
+    );
+    realmService.defaultRealmResource.isLoading.set(false);
+    expect(userService.selectedUserRealm()).toBe("zRealm");
   });
 
   it("seeds selectedUserRealm and selectionFilter from query parameters on navigation", () => {
