@@ -17,7 +17,7 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="flex-row gap-8">
-  @if (advancedApiFilter.length > 0) {
+  @if (advancedApiFilterKeys.length > 0) {
     <button
       [matMenuTriggerFor]="advancedFilterMenu"
       class="action-button-primary button-width-m"
@@ -29,7 +29,7 @@
       <span i18n>More Filter</span>
     </button>
     <mat-menu #advancedFilterMenu="matMenu">
-      @for (keyword of advancedApiFilter; track keyword) {
+      @for (keyword of advancedApiFilterKeys; track keyword) {
         <button
           (click)="onAdvancedFilterClick(keyword)"
           mat-menu-item>

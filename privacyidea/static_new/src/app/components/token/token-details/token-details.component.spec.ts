@@ -512,7 +512,7 @@ describe("TokenDetailsComponent", () => {
   it("showTokenAuditLog sets the audit filter with the token serial", () => {
     const auditSvc = TestBed.inject(AuditService) as unknown as MockAuditService;
     component["showTokenAuditLog"]();
-    expect(auditSvc.auditFilter().value).toBe("serial: Mock serial");
+    expect(auditSvc.activeFilter().value).toBe("serial: Mock serial");
   });
 
   it("saveAllInlineEdits saves editing rows and open user/info edits", async () => {
