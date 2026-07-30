@@ -291,6 +291,10 @@ body.self-service-layout {
   color: var(--mat-sys-primary);
 }
 
+.h3-color {
+  color: var(--mat-sys-primary-dark);
+}
+
 .ali-center {
   align-items: center;
 }
@@ -666,7 +670,7 @@ body.self-service-layout {
 }
 
 .highlight {
-  background-color: var(--green-brand-light) !important;
+  background-color: var(--green-light-active) !important;
   padding: 0 2px;
 }
 
@@ -839,6 +843,21 @@ body.self-service-layout {
 
 .mat-mdc-menu-content {
   max-height: 400px;
+}
+
+.filter-hint-tooltip {
+  white-space: pre-line;
+  text-align: left;
+
+  .mdc-tooltip__surface {
+    max-width: 340px;
+  }
+}
+
+// Panel class set by the shared app-multi-select-filter component. Its options can be long, so let the menu grow to
+// fit instead of truncating at the default 280px.
+.filter-select-menu.mat-mdc-menu-panel {
+  max-width: min(90vw, 480px);
 }
 
 mat-chip.mat-mdc-chip {

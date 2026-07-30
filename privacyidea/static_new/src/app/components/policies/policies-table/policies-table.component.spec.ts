@@ -281,6 +281,32 @@ describe("PoliciesTableComponent", () => {
       expect(filterBy("actions: totp")).toEqual(["auth-totp"]);
     });
 
+    it("excludes policies without any actions from an actions keyword filter", () => {
+      const noActionPolicy = {
+        name: "no-actions",
+        priority: 30,
+        scope: "admin",
+        active: true,
+        description: "",
+        action: undefined,
+        realm: [],
+        user: [],
+        adminrealm: [],
+        adminuser: [],
+        pinode: [],
+        client: [],
+        user_agents: [],
+        time: "",
+        conditions: []
+      } as unknown as PolicyDetail;
+      mockPolicyService.allPolicies.set([...richPolicies, noActionPolicy]);
+      fixture.detectChanges();
+
+      // A policy with no actions must not pass an active `actions:` filter (it matches on the shared
+      // "tokentype" action key that both action-bearing policies define).
+      expect(filterBy("actions: tokentype")).toEqual(["enroll-hotp", "auth-totp"]);
+    });
+
     it("matches with the conditions keyword across condition fields", () => {
       expect(filterBy("conditions: support")).toEqual(["auth-totp"]);
       expect(filterBy("conditions: department")).toEqual(["auth-totp"]);
@@ -299,6 +325,12 @@ describe("PoliciesTableComponent", () => {
       expect(filterBy("priority: !=10")).toEqual(["auth-totp"]);
       expect(filterBy("priority: =20")).toEqual(["auth-totp"]);
       expect(filterBy("priority: 10")).toEqual(["enroll-hotp"]);
+    });
+
+    it("rejects partially-numeric priority operands instead of silently matching", () => {
+      expect(filterBy("priority: >10x")).toEqual([]);
+      expect(filterBy("priority: abc")).toEqual([]);
+      expect(filterBy("priority: >=")).toEqual([]);
     });
 
     it("matches with the active keyword", () => {

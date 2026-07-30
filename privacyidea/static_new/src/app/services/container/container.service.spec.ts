@@ -38,6 +38,7 @@ import {
 } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
+import { RealmService } from "@services/realm/realm.service";
 import { Tokens, TokenService } from "@services/token/token.service";
 import { UserService } from "@services/user/user.service";
 import {
@@ -46,6 +47,7 @@ import {
   MockLocalService,
   MockNotificationService,
   MockPiResponse,
+  MockRealmService,
   MockTokenService,
   MockUserService
 } from "@testing/mock-services";
@@ -72,6 +74,7 @@ describe("ContainerService", () => {
         { provide: TokenService, useClass: MockTokenService },
         { provide: ContentService, useClass: MockContentService },
         { provide: UserService, useClass: MockUserService },
+        { provide: RealmService, useClass: MockRealmService },
         MockLocalService,
         MockNotificationService
       ]
@@ -443,6 +446,46 @@ describe("ContainerService", () => {
     expect(containerService.filterParams()).toEqual({ type_list: "smartphone,yubikey" });
   });
 
+  describe("handleFilterInput realm handling", () => {
+    const filterInputEvent = (value: string): Event => ({ target: { value } as HTMLInputElement }) as unknown as Event;
+
+    it("adds the default realm when filtering by user without a realm", () => {
+      containerService.handleFilterInput(filterInputEvent("user: alice"));
+
+      expect(containerService.containerFilter().filterMap.get("realm")).toBe("realm1");
+    });
+
+    it("keeps an explicitly given realm", () => {
+      containerService.handleFilterInput(filterInputEvent("user: alice realm: otherrealm"));
+
+      expect(containerService.containerFilter().filterMap.get("realm")).toBe("otherrealm");
+    });
+
+    it("does not default the realm when no user filter is set", () => {
+      containerService.handleFilterInput(filterInputEvent("type: generic"));
+
+      expect(containerService.containerFilter().hasKey("realm")).toBe(false);
+    });
+
+    it("keeps a realm that is filtered without a user", () => {
+      containerService.handleFilterInput(filterInputEvent("realm: otherrealm"));
+
+      expect(containerService.containerFilter().filterMap.get("realm")).toBe("otherrealm");
+    });
+  });
+
+  it("filterParams sends user and realm as exact values", () => {
+    containerService.containerFilter.set(new FilterValue({ value: "user: alice realm: realm1" }));
+
+    expect(containerService.filterParams()).toEqual({ user: "alice", realm: "realm1" });
+  });
+
+  it("filterParams keeps realm and container_realm apart", () => {
+    containerService.containerFilter.set(new FilterValue({ value: "realm: realm1 container_realm: realm2" }));
+
+    expect(containerService.filterParams()).toEqual({ realm: "realm1", container_realm: "*realm2*" });
+  });
+
   it("pageSize falls back to 10 for invalid eventPageSize", () => {
     containerService.eventPageSize.set(-1);
     expect(containerService.pageSize()).toBe(10);
@@ -487,7 +530,8 @@ describe("ContainerService", () => {
     containerService.containerFilter.set(new FilterValue({ value: "desc: foo token_serial: 123 type: user: Bob" }));
     expect(containerService.filterParams()).toEqual({
       desc: "*foo*",
-      token_serial: "*123*"
+      token_serial: "*123*",
+      user: "Bob"
     });
   });
 

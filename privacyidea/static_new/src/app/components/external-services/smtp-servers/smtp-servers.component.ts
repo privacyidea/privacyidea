@@ -19,6 +19,7 @@
 
 import { Component, computed, ElementRef, inject, signal, ViewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
+import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatIconModule } from "@angular/material/icon";
 import { MatPaginator } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
@@ -46,6 +47,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
     MatSortModule,
     MatIconModule,
     MatButtonModule,
+    MatCheckboxModule,
     MatTooltipModule,
     ScrollToTopDirective,
     MatFormField,
@@ -73,7 +75,9 @@ export class SmtpServersComponent {
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
 
-  displayedColumns: string[] = ["identifier", "server", "sender", "tls", "description", "actions"];
+  displayedColumns: string[] = ["select", "identifier", "server", "sender", "tls", "description"];
+
+  selection = signal<SmtpServer[]>([]);
 
   smtpDataSource = computed(() => {
     const servers = this.smtpService.smtpServers();
@@ -91,24 +95,57 @@ export class SmtpServersComponent {
     this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP_DETAILS + server.identifier);
   }
 
-  deleteServer(server: SmtpServer): void {
+
+  isAllSelected(): boolean {
+    const rows = this.smtpDataSource().data;
+    return rows.length > 0 && this.selection().length === rows.length;
+  }
+
+  toggleAllRows(): void {
+    if (this.isAllSelected()) {
+      this.selection.set([]);
+    } else {
+      this.selection.set([...this.smtpDataSource().data]);
+    }
+  }
+
+  toggleRow(row: SmtpServer): void {
+    const current = this.selection();
+    if (current.includes(row)) {
+      this.selection.set(current.filter((selected) => selected !== row));
+    } else {
+      this.selection.set([...current, row]);
+    }
+  }
+
+  isSelected(row: SmtpServer): boolean {
+    return this.selection().includes(row);
+  }
+
+  deleteSelected(): void {
+    const selected = this.selection();
+    if (selected.length === 0) {
+      return;
+    }
     this.dialogService
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Delete SMTP Server`,
-          items: [server.identifier],
+          title: $localize`Delete SMTP Servers`,
+          items: selected.map((row) => row.identifier),
           itemType: "smtp-server",
           confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
-      .subscribe(async (result) => {
+      .subscribe((result) => {
         if (result) {
-          await this.smtpService.deleteSmtpServer(server.identifier);
+          selected.forEach((row) => this.smtpService.deleteSmtpServer(row.identifier));
+          this.selection.set([]);
         }
       });
   }
+
 
   onFilterInput(value: string): void {
     const trimmed = (value ?? "").trim();
