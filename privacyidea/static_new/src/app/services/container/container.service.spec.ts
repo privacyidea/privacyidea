@@ -452,25 +452,25 @@ describe("ContainerService", () => {
     it("adds the default realm when filtering by user without a realm", () => {
       containerService.handleFilterInput(filterInputEvent("user: alice"));
 
-      expect(containerService.activeFilter().filterMap.get("realm")).toBe("realm1");
+      expect(containerService.filterDraft().filterMap.get("realm")).toBe("realm1");
     });
 
     it("keeps an explicitly given realm", () => {
       containerService.handleFilterInput(filterInputEvent("user: alice realm: otherrealm"));
 
-      expect(containerService.activeFilter().filterMap.get("realm")).toBe("otherrealm");
+      expect(containerService.filterDraft().filterMap.get("realm")).toBe("otherrealm");
     });
 
     it("does not default the realm when no user filter is set", () => {
       containerService.handleFilterInput(filterInputEvent("type: generic"));
 
-      expect(containerService.activeFilter().hasKey("realm")).toBe(false);
+      expect(containerService.filterDraft().hasKey("realm")).toBe(false);
     });
 
     it("keeps a realm that is filtered without a user", () => {
       containerService.handleFilterInput(filterInputEvent("realm: otherrealm"));
 
-      expect(containerService.activeFilter().filterMap.get("realm")).toBe("otherrealm");
+      expect(containerService.filterDraft().filterMap.get("realm")).toBe("otherrealm");
     });
   });
 
