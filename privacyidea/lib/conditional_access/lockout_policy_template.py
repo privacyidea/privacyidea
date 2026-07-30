@@ -149,7 +149,6 @@ USER_RATE_LIMITING = LockoutPolicyTemplate(
         "time_window_seconds": 60,
         "enabled": True,
         "dry_run": False,
-        "priority": 1,
         "target": LockoutTarget.USER,
         # PER_ATTEMPT so a multichallenge / push login counts as one attempt; every AuthEventType is tracked so
         # successes and abandoned (pending) attempts count too - this caps the request rate, it does not lock.
@@ -171,7 +170,6 @@ USER_FAILED_RATE_LIMITING = LockoutPolicyTemplate(
         "time_window_seconds": 60,
         "enabled": True,
         "dry_run": False,
-        "priority": 1,
         "target": LockoutTarget.USER,
         "count_mode": CountMode.PER_ATTEMPT,
         "counter_types_to_track": list(_USER_AUTH_FAILURES),
@@ -210,7 +208,6 @@ USER_ENUMERATION = LockoutPolicyTemplate(
         "time_window_seconds": 300,
         "enabled": True,
         "dry_run": False,
-        "priority": 1,
         "target": LockoutTarget.SOURCE_IP,
         # DISTINCT_USERS keys on the attempted username, so each probed non-existent login counts as a distinct
         # targeted account - the enumeration signal, and NAT-safe (fan-out, not raw request volume).
@@ -235,7 +232,6 @@ IP_FAILED_RATE_LIMITING = LockoutPolicyTemplate(
         # Dry-run by default: the right distinct-account threshold depends on the environment (number of users, whether
         # a NAT/CGNAT/VPN egress is shared), so an admin should watch the logged decisions and tune it before enforcing.
         "dry_run": True,
-        "priority": 1,
         "target": LockoutTarget.SOURCE_IP,
         # For an IP, "attempts" is the number of DISTINCT accounts (attempted usernames) it targeted - the fan-out
         # signal, never raw request volume, so a busy shared egress is judged only by how many accounts it fails on.
@@ -258,7 +254,6 @@ IP_RATE_LIMITING = LockoutPolicyTemplate(
         # Dry-run by default: this is the one IP template that counts successes, so a legitimate shared-egress IP can
         # trip it. It logs the decision it *would* make and enforces nothing until an admin turns dry_run off.
         "dry_run": True,
-        "priority": 1,
         "target": LockoutTarget.SOURCE_IP,
         "count_mode": CountMode.DISTINCT_USERS,
         "counter_types_to_track": list(AuthEventType),
