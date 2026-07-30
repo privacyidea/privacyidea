@@ -191,4 +191,49 @@ describe("AuthenticationLogService", () => {
     TestBed.tick();
     httpMock.expectNone((r) => r.url.includes("/authenticationlog/"));
   });
+
+  it("eventTypes is empty before load and reflects the loaded values", async () => {
+    expect(service.eventTypes()).toEqual([]);
+    service.authenticationLogResource.reload();
+    TestBed.tick();
+    httpMock.match(isPageRequest).forEach((r) => r.flush(emptyPage()));
+    flushOldest();
+    httpMock
+      .match((r) => r.url.endsWith("/eventtypes"))
+      .forEach((r) => r.flush(MockPiResponse.fromValue(["LOGIN_SUCCESS", "AUTHENTICATION_FAIL"])));
+    await Promise.resolve();
+    TestBed.tick();
+    expect(service.eventTypes()).toEqual(["LOGIN_SUCCESS", "AUTHENTICATION_FAIL"]);
+  });
+
+  it("oldestTimestamp is null before load and reflects the oldest entry after", async () => {
+    expect(service.oldestTimestamp()).toBeNull();
+    service.authenticationLogResource.reload();
+    TestBed.tick();
+    httpMock.match(isPageRequest).forEach((r) => r.flush(emptyPage()));
+    flushEventTypes();
+    httpMock
+      .match((r) => r.url.endsWith("/authenticationlog/") && r.params.get("page_size") === "1")
+      .forEach((r) =>
+        r.flush(
+          MockPiResponse.fromValue({
+            auth_logs: [{ timestamp: "2020-01-01T00:00:00Z" }],
+            count: 1,
+            current: 1,
+            prev: null,
+            next: null
+          })
+        )
+      );
+    await Promise.resolve();
+    TestBed.tick();
+    expect(service.oldestTimestamp()).toBe("2020-01-01T00:00:00Z");
+  });
+
+  it("handleFilterInput sets, and clearFilter empties, the shared filter", () => {
+    service.handleFilterInput({ target: { value: "serial: PISP0001" } } as unknown as Event);
+    expect(service.filterParams()).toEqual({ serial: "PISP0001" });
+    service.clearFilter();
+    expect(service.filterParams()).toEqual({});
+  });
 });

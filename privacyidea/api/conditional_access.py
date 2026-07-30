@@ -32,8 +32,9 @@ import logging
 
 from flask import Blueprint, request, g
 
+from privacyidea.api.auth import admin_required
 from privacyidea.api.lib.prepolicy import prepolicy, check_base_action
-from privacyidea.api.lib.utils import send_result
+from privacyidea.api.lib.utils import send_result, to_list_param
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.engine import LockoutAction
 from privacyidea.lib.conditional_access.lockout_policy import (list_lockout_policies,
@@ -43,10 +44,18 @@ from privacyidea.lib.conditional_access.lockout_policy import (list_lockout_poli
                                                                delete_lockout_policy,
                                                                get_target_constraints)
 from privacyidea.lib.conditional_access.lockout_policy_template import list_lockout_policy_templates
+from privacyidea.lib.conditional_access.lockout_state import (list_locked_users_paginate, DEFAULT_PAGE_SIZE,
+                                                              user_matches_scopes, get_user_lockout_dict,
+                                                              purge_expired_user_lockouts, unlock_user_by_id,
+                                                              unlock_user_by_username,
+                                                              list_blocklist, purge_expired_blocklist,
+                                                              remove_blocklist_entry)
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.log import log_with
-from privacyidea.lib.params import get_optional, get_required
+from privacyidea.lib.params import get_optional, get_required, get_required_one_of
 from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policies.helper import get_policy_visibility_scopes
+from privacyidea.lib.user import User
 from privacyidea.lib.utils import is_true
 
 log = logging.getLogger(__name__)
@@ -69,6 +78,15 @@ def _get_json_param(params: dict, name: str, required: bool = False):
         except ValueError:
             raise ParameterError(f"'{name}' must be valid JSON.")
     return value
+
+
+def _int_param(value, default: int) -> int:
+    """Parse an optional integer query parameter, falling back to *default* when
+    it is absent or not a valid integer (lenient — pagination should not 400)."""
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
 
 
 def _int_policy_id(policy_id) -> int:
@@ -304,3 +322,220 @@ def delete_policy(policy_id):
     delete_lockout_policy(_int_policy_id(policy_id))
     g.audit_object.log({"success": True, "info": f"deleted policy {policy_id}"})
     return send_result(policy_id)
+
+
+@conditional_access_blueprint.route('lockout/users', methods=['GET'])
+@admin_required
+@prepolicy(check_base_action, request, PolicyAction.USER_LOCKOUT_READ)
+@log_with(log)
+def get_locked_users():
+    """
+    List the locked users, paginated. By default every record is returned — locks still in
+    force *and* stale rows whose timed lock has already expired; each row carries the expiry
+    fields so the caller can tell them apart, and ``states`` narrows to a subset. Results are
+    constrained to the admin's policy visibility scope (the realm / resolver / user
+    conditions on the ``user_lockout_read`` policies), mirroring the authentication log.
+
+    Requires the admin policy action :ref:`policy_user_lockout_read`.
+
+    The ``realms`` / ``resolvers`` / ``usernames`` filters accept a comma-separated list
+    and a ``*`` wildcard per value (matched with ``LIKE``); with ``case_insensitive``
+    the plain values match case-insensitively too. These search filters are applied on
+    top of — and never widen — the visibility scope.
+
+    :query realms: realm(s) to filter by
+    :query resolvers: resolver(s) to filter by
+    :query usernames: login(s) to filter by
+    :query states: lock state(s) to include — any of ``permanent``, ``temporary``,
+        ``expired`` (comma-separated). Any other value is a ``ParameterError``.
+    :query case_insensitive: match the filter values case-insensitively
+    :query page: page number, 1-indexed (default 1)
+    :query page_size: entries per page (default 15)
+    :query sort_column: one of username, realm, resolver, lock_expires_at, locked_at
+    :query sort_order: ``asc`` or ``desc`` (default desc)
+    :status 200: ``{locked_users, count, current, prev, next}`` in ``result.value``
+    """
+    params = request.all_data
+    visibility_scopes = get_policy_visibility_scopes(PolicyAction.USER_LOCKOUT_READ)
+    page = list_locked_users_paginate(
+        realms=to_list_param(get_optional(params, "realms")),
+        resolvers=to_list_param(get_optional(params, "resolvers")),
+        usernames=to_list_param(get_optional(params, "usernames")),
+        states=to_list_param(get_optional(params, "states")),
+        case_insensitive=is_true(get_optional(params, "case_insensitive")),
+        visibility_scopes=visibility_scopes,
+        page=_int_param(get_optional(params, "page"), 1),
+        page_size=_int_param(get_optional(params, "page_size"), DEFAULT_PAGE_SIZE),
+        sort_column=get_optional(params, "sort_column") or "locked_at",
+        sort_order=get_optional(params, "sort_order") or "desc")
+    g.audit_object.log({"success": True, "info": f"{page['count']} locked user(s)"})
+    return send_result(page)
+
+
+@conditional_access_blueprint.route('lockout/user', methods=['GET'])
+@admin_required
+@prepolicy(check_base_action, request, PolicyAction.USER_LOCKOUT_READ)
+@log_with(log)
+def get_user_lockout():
+    """
+    Return the current lock of a single user (or ``null`` if not locked).
+    Constrained to the admin's policy visibility scope.
+
+    Requires the admin policy action :ref:`policy_user_lockout_read`.
+
+    One user identifier is required: user or user_id
+
+    :query user: login of the user to look up.
+    :query user_id: user id of the user to look up. Requires ``resolver``: a uid is only
+        unique within its resolver, so a user object cannot be built from a uid alone.
+    :query realm: realm of the user
+    :query resolver: resolver of the user; optional alongside ``user``, required with ``user_id``
+    :status 200: the user's lock dict, or ``null``, in ``result.value``
+    """
+    get_required_one_of(request.all_data, ["user", "user_id"])
+    user_id = get_optional(request.all_data, "user_id")
+    username = get_optional(request.all_data, "user")
+    realm = get_required(request.all_data, "realm")
+    resolver = get_optional(request.all_data, "resolver")
+    if user_id and not username and not resolver:
+        # User() refuses a uid without a resolver (a uid is only unique per resolver); reject it here so
+        # the caller gets a ParameterError instead of a UserError from deep inside the resolver lookup.
+        raise ParameterError("The parameter 'resolver' is required when looking a user up by 'user_id'.")
+    visibility_scopes = get_policy_visibility_scopes(PolicyAction.USER_LOCKOUT_READ)
+
+    # User is already resolved in before request, but only for the login, realm, resolver triplet. If the uid is given
+    # instead we need to resolve the user here
+    user = request.User
+    if not user or not user.exist():
+        user = User(uid=user_id, login=username, realm=realm, resolver=resolver)
+
+    value = None
+    if not user.is_empty() and user.exist() and user_matches_scopes(user, visibility_scopes):
+        value = get_user_lockout_dict(user)
+    g.audit_object.log({"success": True})
+    return send_result(value)
+
+
+@conditional_access_blueprint.route('lockout/users/purge', methods=['POST'])
+@admin_required
+@prepolicy(check_base_action, request, PolicyAction.USER_LOCKOUT_RESET)
+@log_with(log)
+def purge_user_lockouts():
+    """
+    Delete stale user-lockout records (expired or already-unlocked rows).
+
+    Requires the admin policy action :ref:`policy_user_lockout_reset`. Constrained to
+    the admin's policy visibility scope: a scoped admin only purges the stale rows
+    inside their realm / resolver / user boundary.
+
+    :status 200: the number of rows removed, in ``result.value``
+    """
+    visibility_scopes = get_policy_visibility_scopes(PolicyAction.USER_LOCKOUT_RESET)
+    count = purge_expired_user_lockouts(visibility_scopes=visibility_scopes)
+    g.audit_object.log({"success": True, "info": f"purged {count} stale user lockout(s)"})
+    return send_result(count)
+
+
+@conditional_access_blueprint.route('lockout/user', methods=['DELETE'])
+@admin_required
+@prepolicy(check_base_action, request, PolicyAction.USER_LOCKOUT_RESET)
+@log_with(log)
+def reset_user_lockout():
+    """
+    Reset (unlock) a user's conditional-access lockout. Identified by either the
+    login (``user``) or the resolver-local id (``user_id``); ``realm`` is
+    required and ``resolver`` is optional — it only narrows the match.
+    Omitting it clears every matching lock in the realm.
+
+    Requires the admin policy action :ref:`policy_user_lockout_reset`. Constrained to
+    the admin's policy visibility scope (the realm / resolver / user conditions on the
+    ``user_lockout_reset`` policies), mirroring the read endpoints. The boundary is part
+    of the delete criterion, so a call that matches several rows only clears the ones
+    inside the scope, and a target outside it is indistinguishable from an absent lock
+    (both return ``false``).
+
+    One of user or user_id is required.
+
+    :jsonparam user: login of the user to unlock
+    :jsonparam realm: realm of the user (required)
+    :jsonparam resolver: resolver of the user (optional; only disambiguates)
+    :jsonparam user_id: resolver-local user id
+    :status 200: ``true`` if a lock was removed, ``false`` if none existed or it is
+        outside the admin's visibility scope
+    """
+    params = request.all_data
+    get_required_one_of(params, ["user", "user_id"])
+    user_id = get_optional(params, "user_id")
+    login = get_optional(params, "user")
+    realm = get_required(params, "realm")
+    resolver = get_optional(params, "resolver")
+    visibility_scopes = get_policy_visibility_scopes(PolicyAction.USER_LOCKOUT_RESET)
+    resolver_suffix = f", resolver={resolver}" if resolver else ""
+    if user_id:
+        removed = unlock_user_by_id(user_id, realm, resolver, visibility_scopes=visibility_scopes)
+        target = f"uid={user_id}, realm={realm}{resolver_suffix}"
+    else:
+        removed = unlock_user_by_username(login, realm, resolver, visibility_scopes=visibility_scopes)
+        target = f"{login}@{realm}{resolver_suffix}"
+    # Name the boundary in the audit log so a scoped-out attempt is distinguishable from a missing lock.
+    scope_suffix = "" if visibility_scopes is None else ", within visibility scope"
+    g.audit_object.log({"success": removed, "info": f"reset lockout ({target}{scope_suffix})"})
+    return send_result(removed)
+
+
+@conditional_access_blueprint.route('blocklist', methods=['GET'])
+@admin_required
+@prepolicy(check_base_action, request, PolicyAction.BLOCKLIST_READ)
+@log_with(log)
+def get_blocklist():
+    """
+    List the blocklist entries (IP addresses). By default this returns all
+    entries — currently-enforced blocks *and* stale (expired) rows; pass
+    ``include_expired=false`` to return only the entries still in force. Each row
+    carries the expiry fields so the caller can tell the two apart.
+
+    Requires the admin policy action :ref:`policy_blocklist_read`.
+
+    :query include_expired: include stale (expired) entries as well as
+        currently-enforced ones (default ``true``)
+    :status 200: a list of blocklist-entry dicts in ``result.value``
+    """
+    include_expired = is_true(get_optional(request.all_data, "include_expired", True))
+    entries = list_blocklist(include_expired=include_expired)
+    g.audit_object.log({"success": True, "info": f"{len(entries)} blocklist entr(y/ies)"})
+    return send_result(entries)
+
+
+@conditional_access_blueprint.route('blocklist/purge', methods=['POST'])
+@admin_required
+@prepolicy(check_base_action, request, PolicyAction.BLOCKLIST_RESET)
+@log_with(log)
+def purge_blocklist():
+    """
+    Delete stale blocklist records (expired or already-unblocked rows). Permanent
+    and currently-enforced blocks are kept.
+
+    Requires the admin policy action :ref:`policy_blocklist_reset`.
+
+    :status 200: the number of rows removed, in ``result.value``
+    """
+    count = purge_expired_blocklist()
+    g.audit_object.log({"success": True, "info": f"purged {count} stale blocklist entr(y/ies)"})
+    return send_result(count)
+
+
+@conditional_access_blueprint.route('blocklist/<entry>', methods=['DELETE'])
+@admin_required
+@prepolicy(check_base_action, request, PolicyAction.BLOCKLIST_RESET)
+@log_with(log)
+def remove_blocklist(entry):
+    """
+    Remove a single blocklist entry by its identifier (a source IP today).
+
+    Requires the admin policy action :ref:`policy_blocklist_reset`.
+
+    :status 200: ``true`` if an entry was removed, ``false`` if none existed
+    """
+    removed = remove_blocklist_entry(entry)
+    g.audit_object.log({"success": removed, "info": f"removed blocklist entry {entry}"})
+    return send_result(removed)

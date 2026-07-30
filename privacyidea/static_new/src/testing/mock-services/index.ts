@@ -9,6 +9,7 @@ export * from "./mock-conditional-access-policy-service";
 export * from "./mock-container-service";
 export * from "./mock-container-template-service";
 export * from "./mock-content-service";
+export * from "./mock-conditional-access-state-service";
 export * from "./mock-dialog-service";
 export * from "./mock-documentation-service";
 export * from "./mock-loading-service";

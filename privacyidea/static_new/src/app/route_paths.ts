@@ -23,6 +23,8 @@ export const ROUTE_PATHS = {
   AUDIT: "/logs/audit",
   CLIENTS: "/logs/clients",
   AUTHENTICATION_LOG: "/logs/authentication-log",
+  LOCKED_USERS: "/logs/locked-users",
+  BLOCKLIST: "/logs/blocklist",
   TOKENS: "/tokens",
   POLICIES: "/policies",
   POLICIES_NEW: "/policies/new",

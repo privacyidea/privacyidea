@@ -103,8 +103,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
 
     def _lock_user(self, lock_expires_at) -> None:
         db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid,
-                                        realm=self.user.realm, is_locked=True,
-                                        lock_expires_at=lock_expires_at))
+                                        realm=self.user.realm, lock_expires_at=lock_expires_at))
         db.session.commit()
 
     @staticmethod
@@ -166,6 +165,9 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         # An expired lock is not a lock: a valid authentication still succeeds.
         body = self._check({"user": "cornelius", "pass": "pin755224"})
         self.assertTrue(body["result"]["value"], body)
+        # The stale row carries no state; the pre-check opts into cleanup, so this
+        # next login drops it (rather than leaving it for the bulk purge).
+        self.assertIsNone(db.session.get(UserLockoutState, (self.user.resolver, self.user.uid, self.user.realm)))
 
     # --- full loop ------------------------------------------------------------
 
@@ -279,8 +281,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
     # --- BLOCK_IP -------------------------------------------------------------
 
     def test_blocked_ip_rejected_without_token_logic(self):
-        db.session.add(BlockList(ip="203.0.113.7", is_blocked=True,
-                                 block_expires_at=utc_now() + timedelta(seconds=600)))
+        db.session.add(BlockList(ip="203.0.113.7", block_expires_at=utc_now() + timedelta(seconds=600)))
         db.session.commit()
         self.assertEqual(0, self._failcount())
 
@@ -298,6 +299,16 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         # (the valid OTP was never consumed by the rejected request above).
         body = self._check({"user": "cornelius", "pass": "pin755224"}, remote_addr="198.51.100.9")
         self.assertTrue(body["result"]["value"], body)
+
+    def test_expired_block_does_not_reject(self):
+        db.session.add(BlockList(ip="203.0.113.7", block_expires_at=utc_now() - timedelta(seconds=10)))
+        db.session.commit()
+        # An expired block is not a block: a valid authentication still succeeds.
+        body = self._check({"user": "cornelius", "pass": "pin755224"}, remote_addr="203.0.113.7")
+        self.assertTrue(body["result"]["value"], body)
+        # The stale row carries no state; the pre-check opts into cleanup, so this
+        # next request from the IP drops it (rather than leaving it for the bulk purge).
+        self.assertIsNone(db.session.get(BlockList, "203.0.113.7"))
 
     def test_ip_blocked_after_spraying_distinct_users(self):
         # An IP that fails against many DISTINCT users (spraying) trips a BLOCK_IP
@@ -362,7 +373,6 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertFalse(body["result"]["value"], body)
         state = db.session.get(UserLockoutState, key)
         self.assertIsNotNone(state)
-        self.assertTrue(state.is_locked)
         self.assertIsNone(state.lock_expires_at)
         self.assertTrue(is_user_locked(self.user))
 
@@ -428,8 +438,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
 
     def test_allow_cannot_override_ip_block(self):
         # The IP block is also checked before the ALLOW/DENY decision.
-        db.session.add(BlockList(ip="203.0.113.7", is_blocked=True,
-                                 block_expires_at=utc_now() + timedelta(seconds=600)))
+        db.session.add(BlockList(ip="203.0.113.7", block_expires_at=utc_now() + timedelta(seconds=600)))
         db.session.commit()
         self._make_decision_policy(name="ca_allow", counter_type=AuthEventType.MFA_FAIL,
                                    threshold=0, action=LockoutAction.ALLOW, priority=1)
@@ -486,8 +495,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertEqual(0, db.session.query(Challenge).count())
 
     def test_triggerchallenge_blocked_ip_rejected(self):
-        db.session.add(BlockList(ip="203.0.113.7", is_blocked=True,
-                                 block_expires_at=utc_now() + timedelta(seconds=600)))
+        db.session.add(BlockList(ip="203.0.113.7", block_expires_at=utc_now() + timedelta(seconds=600)))
         db.session.commit()
         body = self._trigger_challenge(remote_addr="203.0.113.7")
         self.assertFalse(body["result"]["value"], body)
@@ -535,8 +543,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
             delete_policy("ca_cr")
 
     def test_polltransaction_blocked_ip_rejected(self):
-        db.session.add(BlockList(ip="203.0.113.7", is_blocked=True,
-                                 block_expires_at=utc_now() + timedelta(seconds=600)))
+        db.session.add(BlockList(ip="203.0.113.7", block_expires_at=utc_now() + timedelta(seconds=600)))
         db.session.commit()
         # The IP-block pre-check fires regardless of whether the transaction exists.
         body = self._poll("9" * 20, remote_addr="203.0.113.7")
@@ -641,8 +648,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
             target=LockoutTarget.SOURCE_IP)
 
     def test_locked_user_rejected_at_auth(self):
-        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid,
-                                        realm=self.user.realm, is_locked=True,
+        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
                                         lock_expires_at=utc_now() + timedelta(seconds=600)))
         db.session.commit()
         # Correct userstore password, but the user is locked -> 401 that states the lockout.
@@ -661,8 +667,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
 
     def test_permanently_locked_user_message_at_auth(self):
         # A permanent lock (no expiry) points the user at the administrator.
-        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid,
-                                        realm=self.user.realm, is_locked=True,
+        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
                                         lock_expires_at=None))
         db.session.commit()
         res = self._auth("cornelius", "test")
@@ -675,8 +680,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         self.assertEqual("permanent", res.json["detail"]["restriction"], res.json)
 
     def test_blocked_ip_rejected_at_auth(self):
-        db.session.add(BlockList(ip="203.0.113.7", is_blocked=True,
-                                 block_expires_at=utc_now() + timedelta(seconds=600)))
+        db.session.add(BlockList(ip="203.0.113.7", block_expires_at=utc_now() + timedelta(seconds=600)))
         db.session.commit()
         # Correct userstore password, but the source IP is blocked -> 401 whose message
         # names the block, the offending IP and the remaining time (like the user lock).
@@ -695,7 +699,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
 
     def test_permanently_blocked_ip_message_at_auth(self):
         # A permanent block (no expiry) points the user at the administrator, no minutes.
-        db.session.add(BlockList(ip="203.0.113.7", is_blocked=True, block_expires_at=None))
+        db.session.add(BlockList(ip="203.0.113.7", block_expires_at=None))
         db.session.commit()
         res = self._auth("cornelius", "test", remote_addr="203.0.113.7")
         self.assertEqual(401, res.status_code, res)
@@ -715,8 +719,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
         from privacyidea.lib.policies.actions import PolicyAction
         db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid,
-                                        realm=self.user.realm, is_locked=True,
-                                        lock_expires_at=None))
+                                        realm=self.user.realm, lock_expires_at=None))
         db.session.commit()
         set_policy(name="ca_hide", scope=SCOPE.AUTH, action=f"{PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE}")
         try:
@@ -780,14 +783,12 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
     # IP for the block, "conditional-access" for the decision).
 
     def _lock_user(self):
-        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid,
-                                        realm=self.user.realm, is_locked=True,
+        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
                                         lock_expires_at=utc_now() + timedelta(seconds=600)))
         db.session.commit()
 
     def _block_ip(self, ip):
-        db.session.add(BlockList(ip=ip, is_blocked=True,
-                                 block_expires_at=utc_now() + timedelta(seconds=600)))
+        db.session.add(BlockList(ip=ip, block_expires_at=utc_now() + timedelta(seconds=600)))
         db.session.commit()
 
     def test_lock_checked_before_deny_at_auth(self):
@@ -839,7 +840,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         # longer-lasting (binding) restriction - not "try again in a minute", which
         # would be misleading since waiting it out cannot help.
         self._lock_user()  # timed user lock, 600s
-        db.session.add(BlockList(ip="203.0.113.7", is_blocked=True, block_expires_at=None))
+        db.session.add(BlockList(ip="203.0.113.7", block_expires_at=None))
         db.session.commit()
         res = self._auth("cornelius", "test", remote_addr="203.0.113.7")
         self.assertEqual(401, res.status_code, res)
@@ -852,8 +853,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
 
     def test_permanent_lock_message_wins_over_timed_ip_block(self):
         # Symmetric: a permanent user lock outranks a timed IP block.
-        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid,
-                                        realm=self.user.realm, is_locked=True,
+        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
                                         lock_expires_at=None))
         self._block_ip("203.0.113.7")  # timed block, 600s
         res = self._auth("cornelius", "test", remote_addr="203.0.113.7")

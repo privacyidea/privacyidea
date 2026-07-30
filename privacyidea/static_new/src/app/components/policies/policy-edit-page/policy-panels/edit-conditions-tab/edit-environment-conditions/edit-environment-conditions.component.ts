@@ -41,13 +41,8 @@ import { MatSelect, MatSelectChange, MatSelectModule } from "@angular/material/s
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/multi-select-only.component";
 import { ClientsService, ClientsServiceInterface } from "@services/clients/clients.service";
-import {
-  getUserAgentLabel,
-  PolicyDetail,
-  PolicyService,
-  PolicyServiceInterface,
-  USER_AGENT_OPTIONS
-} from "@services/policies/policies.service";
+import { getUserAgentLabel, USER_AGENT_PRESETS } from "@constants/user-agent.constants";
+import { PolicyDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
 
 interface ClientSuggestion {
@@ -161,7 +156,7 @@ export class EditEnvironmentConditionsComponent implements OnInit {
     return matches.slice(0, 20);
   });
 
-  readonly userAgentOptions = USER_AGENT_OPTIONS;
+  readonly userAgentPresets = USER_AGENT_PRESETS;
   readonly getUserAgentLabel = getUserAgentLabel;
   userAgentSearch = signal<string>("");
 
@@ -172,8 +167,8 @@ export class EditEnvironmentConditionsComponent implements OnInit {
   filteredUserAgentPresets = computed(() => {
     const selected = this.selectedUserAgents();
     const search = this.userAgentSearch().toLowerCase();
-    return this.userAgentOptions.filter(
-      (ua) => !selected.includes(ua.key) && ua.label.toLowerCase().includes(search)
+    return this.userAgentPresets.filter(
+      (ua) => !selected.includes(ua.identifier) && ua.displayName.toLowerCase().includes(search)
     );
   });
 
@@ -281,7 +276,7 @@ export class EditEnvironmentConditionsComponent implements OnInit {
     event.stopPropagation();
     const currentResults = this.filteredUserAgentPresets();
     if (currentResults.length > 0) {
-      this.addUserAgentValue(currentResults[0].key);
+      this.addUserAgentValue(currentResults[0].identifier);
       this.userAgentSearch.set("");
       select.close();
     }

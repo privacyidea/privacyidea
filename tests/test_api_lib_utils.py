@@ -6,7 +6,8 @@ from .base import MyApiTestCase
 from privacyidea.api.lib.utils import (check_policy_name,
                                        verify_auth_token, is_fqdn,
                                        attestation_certificate_allowed, get_priority_from_param,
-                                       get_required_one_of, get_optional_one_of, get_required, get_optional)
+                                       get_required_one_of, get_optional_one_of, get_required, get_optional,
+                                       to_list_param)
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.user import User
@@ -21,6 +22,27 @@ from privacyidea.lib.token import init_token, remove_token
 
 
 class UtilsTestCase(MyApiTestCase):
+
+    def test_00_to_list_param(self):
+        # A not-supplied parameter stays None so callers can tell it apart from a supplied-but-blank one.
+        self.assertIsNone(to_list_param(None))
+        # Comma-separated string -> entries, stripped.
+        self.assertListEqual(["a", "b"], to_list_param("a,b"))
+        self.assertListEqual(["a", "b"], to_list_param(" a , b "))
+        # A single value is a one-element list, not a wrapped string.
+        self.assertListEqual(["a"], to_list_param("a"))
+        # Native JSON lists/tuples pass through, stringified and stripped.
+        self.assertListEqual(["a", "b"], to_list_param(["a", " b "]))
+        self.assertListEqual(["a", "b"], to_list_param(("a", "b")))
+        self.assertListEqual(["1", "2"], to_list_param([1, 2]))
+        # Empty entries are dropped, so a blank value yields [] rather than [""] — filtering on an
+        # empty string would otherwise match nothing (or everything, depending on the caller).
+        self.assertListEqual(["a"], to_list_param("a,"))
+        self.assertListEqual([], to_list_param(""))
+        self.assertListEqual([], to_list_param(","))
+        self.assertListEqual([], to_list_param("  "))
+        self.assertListEqual([], to_list_param([]))
+        self.assertListEqual(["a"], to_list_param(["a", "", "  "]))
 
     def test_01_getParam(self):
         # allow_empty=True: empty string is returned as-is for required params

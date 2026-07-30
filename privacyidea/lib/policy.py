@@ -1982,6 +1982,22 @@ def get_static_policy_definitions(scope=None):
                                                 "desc": _("Admin is allowed to create, edit and delete the "
                                                           "conditional-access lockout policies."),
                                                 "group": GROUP.SYSTEM},
+            PolicyAction.USER_LOCKOUT_READ: {'type': 'bool',
+                                             "desc": _("Admin is allowed to read the conditional-access user "
+                                                       "lockout state: view a user's lock and list the locked "
+                                                       "users."),
+                                             "group": GROUP.SYSTEM},
+            PolicyAction.USER_LOCKOUT_RESET: {'type': 'bool',
+                                              "desc": _("Admin is allowed to reset (unlock) a conditional-access "
+                                                        "user lockout."),
+                                              "group": GROUP.SYSTEM},
+            PolicyAction.BLOCKLIST_READ: {'type': 'bool',
+                                          "desc": _("Admin is allowed to read the conditional-access blocklist."),
+                                          "group": GROUP.SYSTEM},
+            PolicyAction.BLOCKLIST_RESET: {'type': 'bool',
+                                           "desc": _("Admin is allowed to remove entries from the "
+                                                     "conditional-access blocklist."),
+                                           "group": GROUP.SYSTEM},
             PolicyAction.AUDIT_AGE: {'type': 'str',
                                      "desc": _("The admin will only see audit "
                                                "entries of the last 10d, 3m or 2y."),

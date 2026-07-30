@@ -1602,8 +1602,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         credential/serial lock-evasion gap. Generic failure, no auth-log row."""
         serial = self._enroll_static_passkey()
         db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid,
-                                        realm=self.user.realm, is_locked=True,
-                                        lock_expires_at=utc_now() + timedelta(seconds=600)))
+                                        realm=self.user.realm, lock_expires_at=utc_now() + timedelta(seconds=600)))
         db.session.commit()
         db.session.query(AuthenticationLog).delete()
         db.session.commit()

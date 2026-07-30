@@ -1839,7 +1839,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
         self._clear_ca()
         # Lock the owner up front.
         db.session.add(UserLockoutState(resolver=user.resolver, uid=user.uid, realm=user.realm,
-                                        is_locked=True, lock_expires_at=utc_now() + datetime.timedelta(seconds=600)))
+                                        lock_expires_at=utc_now() + datetime.timedelta(seconds=600)))
         db.session.commit()
         try:
             self.assertTrue(is_user_locked(user))
@@ -1876,7 +1876,6 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             transaction_id = challenge.transaction_id
             # Now lock the owner and answer with a VALID signature.
             db.session.add(UserLockoutState(resolver=user.resolver, uid=user.uid, realm=user.realm,
-                                            is_locked=True,
                                             lock_expires_at=utc_now() + datetime.timedelta(seconds=600)))
             db.session.commit()
             self.assertTrue(is_user_locked(user))
