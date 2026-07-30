@@ -17,15 +17,31 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 @if (visible()) {
-  @if (debugState() === "debug-passwords") {
-    <div
-      class="debug-ribbon"
-      role="alert"
-      aria-label="privacyIDEA is running in DEBUG mode with PASSWORDS being written to the log file. You can change the debug level in pi.cfg. Afterwards be sure to remove the logfile!"
-      i18n-aria-label>
+  @let passwordsLogged = debugState() === "debug-passwords";
+  <!-- Password logging is a debug level, so its ribbon is stacked below the debug one rather than
+       replacing it: the mode itself stays visible while the extra warning is added. -->
+  <div
+    class="debug-ribbon"
+    [class.debug-ribbon-stacked]="passwordsLogged"
+    [attr.role]="passwordsLogged ? 'alert' : 'status'">
+    <button
+      type="button"
+      class="debug-ribbon-text"
+      aria-label="privacyIDEA is running in DEBUG mode. You can change the debug level in pi.cfg."
+      i18n-aria-label
+      matTooltip="privacyIDEA is running in DEBUG mode. You can change the debug level in pi.cfg. Click to dismiss."
+      matTooltipPosition="right"
+      i18n-matTooltip
+      (click)="dismiss()"
+      i18n>
+      Debug
+    </button>
+    @if (passwordsLogged) {
       <button
         type="button"
         class="debug-ribbon-text debug-ribbon-text-passwords"
+        aria-label="PASSWORDS are being written to the log file. Afterwards be sure to remove the logfile!"
+        i18n-aria-label
         matTooltip="privacyIDEA is running in DEBUG mode with PASSWORDS being written to the log file. You can change the debug level in pi.cfg. Afterwards be sure to remove the logfile! Click to dismiss."
         matTooltipPosition="right"
         i18n-matTooltip
@@ -33,23 +49,6 @@
         i18n>
         Passwords
       </button>
-    </div>
-  } @else {
-    <div
-      class="debug-ribbon"
-      role="status"
-      aria-label="privacyIDEA is running in DEBUG mode. You can change the debug level in pi.cfg."
-      i18n-aria-label>
-      <button
-        type="button"
-        class="debug-ribbon-text"
-        matTooltip="privacyIDEA is running in DEBUG mode. You can change the debug level in pi.cfg. Click to dismiss."
-        matTooltipPosition="right"
-        i18n-matTooltip
-        (click)="dismiss()"
-        i18n>
-        Debug
-      </button>
-    </div>
-  }
+    }
+  </div>
 }

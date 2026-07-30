@@ -93,7 +93,6 @@ export class ServiceIdsComponent {
     this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_DETAILS + serviceId.servicename);
   }
 
-
   isAllSelected(): boolean {
     const rows = this.serviceIdDataSource().data;
     return rows.length > 0 && this.selection().length === rows.length;
@@ -138,12 +137,11 @@ export class ServiceIdsComponent {
       .afterClosed()
       .subscribe((result) => {
         if (result) {
-          selected.forEach((row) => this.serviceIdService.deleteServiceId(row.servicename));
+          selected.forEach((row) => void this.serviceIdService.deleteServiceId(row.servicename).catch(() => undefined));
           this.selection.set([]);
         }
       });
   }
-
 
   onFilterInput(value: string): void {
     const trimmed = (value ?? "").trim();

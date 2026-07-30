@@ -31,13 +31,24 @@ import { environment } from "@env/environment";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { StringUtils } from "@utils/string.utils";
 import { catchError, forkJoin, lastValueFrom, Observable, of, Subject, throwError } from "rxjs";
 
-const apiFilter = ["container_serial", "type", "description", "container_realm", "state"];
+// `realm` is the realm of the assigned user: the backend resolves `user` together with `realm` into
+// the user object the container list is filtered by. `container_realm` is the realm of the container
+// itself and is a separate filter.
+const apiFilter = ["container_serial", "type", "description", "user", "realm", "container_realm", "state"];
 const advancedApiFilter = ["token_serial", "template", "assigned"];
+
+// `realm` is the realm of the assigned user (it builds the endpoint's user object), not the container's
+// own realm, which is `container_realm`. It is only ever set implicitly to scope a `user:` filter, so it
+// stays out of `apiFilter` and is not offered as a keyword.
+const hiddenApiFilter = ["realm"];
+
+const exactMatchKeys = new Set(["user", "realm", "type", "state", "assigned"]);
 
 // Filter keywords, a single value maps to the `type` query param, multiple to `type_list`.
 // TODO(4.0.0): send a single list-only `types` param once the backend drops the type/type_list split.
@@ -194,6 +205,7 @@ export interface ContainerServiceInterface {
   isPollingActive: Signal<boolean>;
   apiFilter: string[];
   advancedApiFilter: string[];
+  exactMatchKeys: Set<string>;
   stopPolling$: Subject<void>;
   containerBaseUrl: string;
   eventPageSize: WritableSignal<number>;
@@ -270,6 +282,7 @@ export class ContainerService implements ContainerServiceInterface {
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly userService: UserServiceInterface = inject(UserService);
+  private readonly realmService: RealmServiceInterface = inject(RealmService);
   private readonly http = inject(HttpClient);
   private readonly pollingTrigger = signal<number>(0);
   private readonly isRolloverPolling = signal(false);
@@ -284,6 +297,7 @@ export class ContainerService implements ContainerServiceInterface {
   readonly isPollingActive = signal(false);
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
+  readonly exactMatchKeys = exactMatchKeys;
   stopPolling$ = new Subject<void>();
   containerBaseUrl = environment.proxyUrl + "/container/";
   readonly eventPageSize = signal(10);
@@ -399,8 +413,8 @@ export class ContainerService implements ContainerServiceInterface {
   });
 
   filterParams = computed<Record<string, string>>(() => {
-    const allowed = [...this.apiFilter, ...this.advancedApiFilter];
-    const plainKeys = new Set(["user", "type", "state", "assigned"]);
+    const allowed = [...this.apiFilter, ...this.advancedApiFilter, ...hiddenApiFilter];
+    const plainKeys = exactMatchKeys;
 
     const filterMap = this.containerFilter().filterMap;
 
@@ -470,8 +484,12 @@ export class ContainerService implements ContainerServiceInterface {
     return this.containerRequest({
       no_token: 1,
       ...this.filterParams(),
-      ...(this.userService.detailsUser().username && { user: this.userService.detailsUser().username }),
-      ...(this.userService.selectedUserRealm() && { realm: this.userService.selectedUserRealm() })
+      // The realm is only sent together with the username: on its own it filters for the containers of
+      // all users of that realm, which are not the containers of the user shown on the details page.
+      ...(this.userService.detailsUser().username && {
+        user: this.userService.detailsUser().username,
+        ...(this.userService.selectedUserRealm() && { realm: this.userService.selectedUserRealm() })
+      })
     });
   });
 
@@ -993,7 +1011,16 @@ export class ContainerService implements ContainerServiceInterface {
 
   handleFilterInput($event: Event): void {
     const input = $event.target as HTMLInputElement;
-    const newFilter = this.containerFilter().copyWith({ value: input.value });
+    let newFilter = this.containerFilter().copyWith({ value: input.value });
+
+    // A username is only unique within a realm, so scope a bare `user:` filter to the default realm.
+    if (newFilter.hasKey("user") && !newFilter.hasKey("realm")) {
+      const defaultRealm = this.realmService.defaultRealm();
+      if (defaultRealm) {
+        newFilter = newFilter.addEntry("realm", defaultRealm);
+      }
+    }
+
     this.containerFilter.set(newFilter);
   }
 
