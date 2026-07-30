@@ -179,7 +179,12 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
     """
     Generates a sql query to filter containers by the given parameters.
 
-    :param user: container owner, optional
+    :param user: container owner, optional. The realm, the resolver and the user id of the user are applied
+        independently, hence a user object carrying only a realm lists the containers of all users of that
+        realm. Note that a user object with only a resolver is empty (User.is_empty ignores the resolver)
+        and therefore does not filter at all. Since only assigned containers have an owner, a user object
+        never matches an unassigned container, and neither does a realm that does not exist. Raises a
+        UserError if a login name is given that can not be resolved to a user id.
     :param serial: container serial (case-insensitive and allows '*' as wildcard), optional
     :param ctype: container type filter (case-insensitive and allows '*' as wildcard), optional
     :param ctype_exact: exact container type filter list (case-insensitive; matches any type in the list), optional.
@@ -209,15 +214,34 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
     stmt = select(TokenContainer)
     realm1 = aliased(Realm)
     if user:
-        stmt = stmt.join(TokenContainer.owners).where(TokenContainerOwner.user_id == user.uid)
+        realm_db = None
         if user.realm:
             realm_db = db.session.execute(
                 select(realm1).where(func.lower(realm1.name) == user.realm.lower())
             ).scalar_one_or_none()
+        if user.realm and not realm_db:
+            # No user can be in a realm that does not exist: like every other filter, an unknown value
+            # matches nothing.
+            stmt = stmt.where(false())
+        else:
+            if user.login and not user.uid:
+                # A username was requested, but it can not be resolved to a user id: neither the realm nor
+                # the resolver of the user may be used as a fallback filter, because the query would then
+                # return the containers of all users of that realm or resolver.
+                raise UserError("The user can not be found in any resolver in this realm!")
+            # The realm, the resolver and the user id are applied independently, so that the containers of
+            # all users of a realm can be listed without specifying a username.
+            stmt = stmt.join(TokenContainer.owners)
             if realm_db:
                 stmt = stmt.where(TokenContainerOwner.realm_id == realm_db.id)
-        if user.resolver:
-            stmt = stmt.where(func.lower(TokenContainerOwner.resolver) == user.resolver.lower())
+            if user.resolver:
+                if "*" in user.resolver:
+                    stmt = stmt.where(TokenContainerOwner.resolver.ilike(
+                        convert_wildcard_to_sql_like(user.resolver), escape=SQL_LIKE_ESCAPE))
+                else:
+                    stmt = stmt.where(func.lower(TokenContainerOwner.resolver) == user.resolver.lower())
+            if user.uid:
+                stmt = stmt.where(TokenContainerOwner.user_id == user.uid)
 
     if serial and serial.strip("*"):
         if "*" in serial:
@@ -382,7 +406,12 @@ def get_all_containers(user: User = None, serial: str = None, ctype: str = None,
     the next or previous page. If page and pagesize are both smaller than 0, no pagination is used.
     The containers are filtered by the given parameters.
 
-    :param user: container owner, optional
+    :param user: container owner, optional. The realm, the resolver and the user id of the user are applied
+        independently, hence a user object carrying only a realm lists the containers of all users of that
+        realm. Note that a user object with only a resolver is empty (User.is_empty ignores the resolver)
+        and therefore does not filter at all. Since only assigned containers have an owner, a user object
+        never matches an unassigned container, and neither does a realm that does not exist. Raises a
+        UserError if a login name is given that can not be resolved to a user id.
     :param serial: container serial (case-insensitive and allows '*' as wildcard), optional
     :param ctype: container type filter (case-insensitive and allows '*' as wildcard), optional
     :param ctype_exact: exact container type filter list (case-insensitive; matches any type in the list), optional.

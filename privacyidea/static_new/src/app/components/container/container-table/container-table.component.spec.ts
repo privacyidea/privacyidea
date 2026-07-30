@@ -49,6 +49,7 @@ import {
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
+import { FilterValue } from "@core/models/filter_value/filter_value";
 
 describe("ContainerTableComponent (Jest)", () => {
   let component: ContainerTableComponent;
@@ -163,6 +164,43 @@ describe("ContainerTableComponent (Jest)", () => {
       const result = component.sort();
       expect(result.active).toBe("type");
       expect(result.direction).toBe("asc");
+    });
+  });
+
+  describe("#onFilterInput", () => {
+    it("applies the filter while typing as long as no user or realm filter is used", () => {
+      const inputEvent = { target: { value: "type: generic" } } as unknown as Event;
+
+      component.onFilterInput(inputEvent);
+
+      expect(containerService.handleFilterInput).toHaveBeenCalledWith(inputEvent);
+    });
+
+    it("defers the user and the realm filter until the input is confirmed", () => {
+      component.onFilterInput({ target: { value: "user: alice" } } as unknown as Event);
+      expect(containerService.handleFilterInput).not.toHaveBeenCalled();
+
+      component.onFilterInput({ target: { value: "realm: realm1" } } as unknown as Event);
+      expect(containerService.handleFilterInput).not.toHaveBeenCalled();
+    });
+
+    it("hints that the filter has to be confirmed while a user filter is typed", () => {
+      component.onFilterInput({ target: { value: "user: alice" } } as unknown as Event);
+
+      expect(component.showFilterHint()).toBe(true);
+    });
+
+    it("does not hint once the typed filter is the applied one", () => {
+      containerService.containerFilter.set(new FilterValue({ value: "user: alice" }));
+      component.onFilterInput({ target: { value: "user: alice" } } as unknown as Event);
+
+      expect(component.showFilterHint()).toBe(false);
+    });
+
+    it("does not hint for a filter that is applied while typing", () => {
+      component.onFilterInput({ target: { value: "type: generic" } } as unknown as Event);
+
+      expect(component.showFilterHint()).toBe(false);
     });
   });
 
