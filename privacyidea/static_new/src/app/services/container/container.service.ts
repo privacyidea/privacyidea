@@ -37,10 +37,13 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { StringUtils } from "@utils/string.utils";
 import { catchError, forkJoin, lastValueFrom, Observable, of, Subject, throwError } from "rxjs";
 
-const apiFilter = ["container_serial", "type", "description", "user", "container_realm", "state"];
+// `realm` is the realm of the assigned user: the backend resolves `user` together with `realm` into
+// the user object the container list is filtered by. `container_realm` is the realm of the container
+// itself and is a separate filter.
+const apiFilter = ["container_serial", "type", "description", "user", "realm", "container_realm", "state"];
 const advancedApiFilter = ["token_serial", "template", "assigned"];
 
-const exactMatchKeys = new Set(["user", "type", "state", "assigned"]);
+const exactMatchKeys = new Set(["user", "realm", "type", "state", "assigned"]);
 
 // Filter keywords, a single value maps to the `type` query param, multiple to `type_list`.
 // TODO(4.0.0): send a single list-only `types` param once the backend drops the type/type_list split.
@@ -476,8 +479,12 @@ export class ContainerService implements ContainerServiceInterface {
     return this.containerRequest({
       no_token: 1,
       ...this.filterParams(),
-      ...(this.userService.detailsUser().username && { user: this.userService.detailsUser().username }),
-      ...(this.userService.selectedUserRealm() && { realm: this.userService.selectedUserRealm() })
+      // The realm is only sent together with the username: on its own it filters for the containers of
+      // all users of that realm, which are not the containers of the user shown on the details page.
+      ...(this.userService.detailsUser().username && {
+        user: this.userService.detailsUser().username,
+        ...(this.userService.selectedUserRealm() && { realm: this.userService.selectedUserRealm() })
+      })
     });
   });
 
