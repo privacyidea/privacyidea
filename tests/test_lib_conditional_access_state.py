@@ -23,6 +23,7 @@ the live user-lockout state and blocklist entries.
 from datetime import timedelta
 
 from privacyidea.lib.conditional_access.authentication_log import AuthenticationLogVisibilityScope
+from privacyidea.lib.error import ParameterError
 from privacyidea.lib.conditional_access.lockout_state import (
     get_user_lockout_dict,
     list_blocklist,
@@ -133,6 +134,15 @@ class LockoutStateTestCase(MyTestCase):
         self.assertTrue(permanent[0]["permanent"])
         # All three.
         self.assertEqual(3, len(list_locked_users(states=["permanent", "temporary", "expired"])))
+
+    def test_list_locked_users_unknown_state_raises(self):
+        self._lock(utc_now() + timedelta(seconds=600))
+        # An unknown state must not be ignored: dropping it would widen the result to every state,
+        # so a typo would silently return more than was asked for.
+        self.assertRaises(ParameterError, list_locked_users, states=["bogus"])
+        # ... also when mixed with a valid one.
+        self.assertRaises(ParameterError, list_locked_users, states=["permanent", "bogus"])
+        self.assertRaises(ParameterError, list_locked_users_paginate, states=["bogus"])
 
     def test_list_locked_users_includes_permanent(self):
         self._lock(None)
@@ -303,10 +313,16 @@ class LockoutStateTestCase(MyTestCase):
     def test_list_blocklist_empty(self):
         self.assertListEqual([], list_blocklist())
 
-    def test_list_blocklist_active_and_excludes_expired(self):
+    def test_list_blocklist_default_returns_all_states(self):
         self._block("203.0.113.7", utc_now() + timedelta(seconds=600))
         self._block("203.0.113.8", utc_now() - timedelta(seconds=60))
         entries = list_blocklist()
+        self.assertSetEqual({"203.0.113.7", "203.0.113.8"}, {entry["identifier"] for entry in entries})
+
+    def test_list_blocklist_excludes_expired_on_request(self):
+        self._block("203.0.113.7", utc_now() + timedelta(seconds=600))
+        self._block("203.0.113.8", utc_now() - timedelta(seconds=60))
+        entries = list_blocklist(include_expired=False)
         self.assertEqual(1, len(entries))
         self.assertEqual("203.0.113.7", entries[0]["identifier"])
         self.assertFalse(entries[0]["permanent"])

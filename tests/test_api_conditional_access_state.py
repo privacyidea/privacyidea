@@ -116,6 +116,27 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
         self.assertEqual(200, res.status_code, res.json)
         self.assertIsNone(res.json["result"]["value"])
 
+    def test_single_user_lookup_by_uid_needs_a_resolver(self):
+        # A uid is only unique within its resolver, so User() cannot be built from one alone. The
+        # endpoint has to reject that up front instead of letting a UserError escape the lookup.
+        self._lock_user(utc_now() + timedelta(seconds=600))
+        res = self._request("lockout/user",
+                            query_string={"user_id": self.user.uid, "realm": self.realm1})
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertIn("resolver", res.json["result"]["error"]["message"])
+
+    def test_single_user_lookup_by_uid_with_resolver(self):
+        self._lock_user(utc_now() + timedelta(seconds=600))
+        res = self._request("lockout/user",
+                            query_string={"user_id": self.user.uid, "realm": self.realm1,
+                                          "resolver": self.user.resolver})
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual("cornelius", res.json["result"]["value"]["username"])
+
+    def test_list_locked_users_unknown_state_is_rejected(self):
+        res = self._request("lockout/users", query_string={"states": "bogus"})
+        self.assertEqual(400, res.status_code, res.json)
+
     def test_list_locked_users_username_filter(self):
         self._lock_user(utc_now() + timedelta(seconds=600))
         db.session.add(UserLockoutState(resolver="r", uid="7", realm="realm2", username="hans",

@@ -743,6 +743,25 @@ describe("UserDetailsComponent", () => {
     expect(conditionalAccessStateServiceMock.resetUserLockout).not.toHaveBeenCalled();
   });
 
+  it("resetUserLockout reports when nothing was reset (already gone or out of scope)", () => {
+    conditionalAccessStateServiceMock.setUserLockoutStatus({
+      resolver: "resolver1",
+      uid: "uid-123",
+      realm: "realm1",
+      username: "Alice",
+      permanent: false,
+      lock_expires_at: "2030-01-01T10:00:00Z",
+      seconds_remaining: 120,
+      locked_at: "2030-01-01T09:58:00Z"
+    });
+    dialogServiceMock.openDialog = jest.fn().mockReturnValue({ afterClosed: () => of(true) });
+    (conditionalAccessStateServiceMock.resetUserLockout as jest.Mock).mockReturnValue(of(false));
+
+    component.resetUserLockout();
+
+    expect(notificationServiceMock.error).toHaveBeenCalled();
+  });
+
   it("resetUserLockout does not reset when the confirmation is cancelled", () => {
     conditionalAccessStateServiceMock.setUserLockoutStatus({
       resolver: "resolver1",

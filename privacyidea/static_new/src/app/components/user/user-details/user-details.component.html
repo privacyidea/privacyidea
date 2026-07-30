@@ -45,6 +45,8 @@
       <button
         (click)="showUserAuthenticationLog()"
         [routerLink]="[ROUTE_PATHS.AUTHENTICATION_LOG]"
+        aria-label="Show authentication log of user"
+        i18n-aria-label
         mat-icon-button
         matTooltip="Show authentication log of user"
         i18n-matTooltip>
@@ -295,8 +297,7 @@
               class="details-card--user-info"
               title="User Lockout State"
               i18n-title>
-              <span
-                [ngClass]="lockoutStateClass()">
+              <span [ngClass]="lockoutStateClass()">
                 {{ lockoutStatusText() }}
               </span>
               @if (authService.actionAllowed("user_lockout_reset") && isUserLocked()) {

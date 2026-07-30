@@ -27,7 +27,7 @@ import {
   BlocklistEntry,
   ConditionalAccessStateService,
   LockedUsersPage,
-  UserLockoutStatus
+  LockedUserEntry
 } from "@services/conditional-access-state/conditional-access-state.service";
 import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
@@ -43,7 +43,7 @@ const BASE = "/api/conditionalaccess/";
 const emptyLockedUsersPage = () =>
   MockPiResponse.fromValue<LockedUsersPage>({ locked_users: [], count: 0, current: 1, prev: null, next: null });
 
-const lockoutStatus = (): UserLockoutStatus => ({
+const lockoutStatus = (): LockedUserEntry => ({
   resolver: "reso1",
   uid: "uid-1",
   realm: "realm1",
@@ -167,14 +167,14 @@ describe("ConditionalAccessStateService", () => {
 
     const req = httpMock.expectOne((r) => r.url === BASE + "lockout/user");
     expect(req.request.params.has("resolver")).toBe(false);
-    req.flush(MockPiResponse.fromValue<UserLockoutStatus | null>(null));
+    req.flush(MockPiResponse.fromValue<LockedUserEntry | null>(null));
   });
 
   it("userLockoutStatus is null when the user is not locked (value null)", async () => {
     onUserDetailsRoute();
     TestBed.tick();
     const req = httpMock.expectOne((r) => r.url === BASE + "lockout/user");
-    req.flush(MockPiResponse.fromValue<UserLockoutStatus | null>(null));
+    req.flush(MockPiResponse.fromValue<LockedUserEntry | null>(null));
     await Promise.resolve();
     TestBed.tick();
     expect(service.userLockoutStatus()).toBeNull();

@@ -132,6 +132,7 @@ export class BlocklistComponent {
       return (
         element.identifier.toLowerCase().includes(lowerFilter) ||
         element.blocked_at.toLowerCase().includes(lowerFilter) ||
+        (element.block_expires_at ?? "").toLowerCase().includes(lowerFilter) ||
         this.blockState(element).toLowerCase().includes(lowerFilter)
       );
     };
@@ -300,6 +301,4 @@ export class BlocklistComponent {
         });
       });
   }
-
-  protected readonly Array = Array;
 }

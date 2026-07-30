@@ -30,8 +30,9 @@ from datetime import datetime
 
 from sqlalchemy import and_, delete, false, func, or_, select, ColumnElement
 
-from privacyidea.lib.conditional_access.authentication_log import _match_condition
+from privacyidea.lib.conditional_access.authentication_log import match_condition
 from privacyidea.lib.conditional_access.engine import get_user_lockout
+from privacyidea.lib.error import ParameterError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.user import User
 from privacyidea.models import db
@@ -58,6 +59,31 @@ SORTABLE_COLUMNS = {
 }
 
 
+def _delete_and_commit(stmt) -> int:
+    """
+    Execute a ``DELETE`` inside a SAVEPOINT, commit it, and return the number of rows removed.
+
+    The engine's delete helpers swallow failures because they run while an authentication response is
+    still in flight. These are management operations instead: the caller reports the outcome back to an
+    admin, so a failure has to surface rather than be indistinguishable from "nothing matched". The
+    SAVEPOINT bounds the damage — a failed statement rolls back on its own and leaves the session usable
+    for the rest of the request (which still has its audit entry to write).
+
+    The commit is deliberately *outside* the savepoint context: committing inside it breaks under
+    SQLAlchemy 2.x (see :func:`privacyidea.api.lib.utils.conditional_access_postcheck`).
+    """
+    with db.session.begin_nested():
+        count = db.session.execute(stmt).rowcount
+    try:
+        db.session.commit()
+    except Exception:
+        # The savepoint flushed cleanly but the outer commit failed; clear the session so the rest of
+        # the request can still run, then let the caller report the failure.
+        db.session.rollback()
+        raise
+    return count
+
+
 def _seconds_remaining(expires_at: datetime | None, now: datetime) -> int | None:
     if expires_at is None:
         return None
@@ -71,10 +97,17 @@ def _not_expired_condition(expiry_column, now: datetime):
 
 def _state_condition(states: list[str] | None, now: datetime) -> ColumnElement[bool] | None:
     """
-    WHERE clause selecting the requested lock *states* (see :data:`LOCK_STATES`), OR-ed together. Unknown
-    values are ignored; when no valid state is requested, ``None`` is returned (no state restriction —
-    all states, including expired).
+    WHERE clause selecting the requested lock *states* (see :data:`LOCK_STATES`), OR-ed together. An
+    unknown value is a :class:`ParameterError` rather than a silently ignored term: ignoring it would
+    widen the result to *all* states, so a typo would return more than the caller asked for. ``None`` is
+    returned only when no state is requested at all (no state restriction — all states, incl. expired).
+
+    :raises ParameterError: if *states* contains a value outside :data:`LOCK_STATES`
     """
+    unknown = [state for state in (states or []) if state not in LOCK_STATES]
+    if unknown:
+        raise ParameterError(f"Unknown lock state(s) {', '.join(sorted(unknown))}. "
+                             f"Allowed values: {', '.join(LOCK_STATES)}.")
     clauses = []
     for state in (states or []):
         if state == "permanent":
@@ -191,7 +224,7 @@ def _lockout_conditions(realms: list[str] | None, resolvers: list[str] | None,
     for column, value in ((UserLockoutState.realm, realms),
                           (UserLockoutState.resolver, resolvers),
                           (UserLockoutState.username, usernames)):
-        condition = _match_condition(column, value, case_insensitive)
+        condition = match_condition(column, value, case_insensitive)
         if condition is not None:
             conditions.append(condition)
     state_condition = _state_condition(states, now)
@@ -301,10 +334,7 @@ def unlock_user_by_id(uid: str, realm: str, resolver: str | None = None,
         conditions.append(UserLockoutState.resolver == resolver)
     if visibility_scopes is not None:
         conditions.append(_visibility_condition(visibility_scopes))
-    stmt = delete(UserLockoutState).where(*conditions)
-    result = db.session.execute(stmt)
-    db.session.commit()
-    return result.rowcount > 0
+    return _delete_and_commit(delete(UserLockoutState).where(*conditions)) > 0
 
 
 @log_with(log)
@@ -326,14 +356,11 @@ def unlock_user_by_username(username: str, realm: str, resolver: str | None = No
         conditions.append(UserLockoutState.resolver == resolver)
     if visibility_scopes is not None:
         conditions.append(_visibility_condition(visibility_scopes))
-    stmt = delete(UserLockoutState).where(*conditions)
-    result = db.session.execute(stmt)
-    db.session.commit()
-    return result.rowcount > 0
+    return _delete_and_commit(delete(UserLockoutState).where(*conditions)) > 0
 
 
 @log_with(log)
-def list_blocklist(include_expired: bool = False, now: datetime | None = None) -> list[dict]:
+def list_blocklist(include_expired: bool = True, now: datetime | None = None) -> list[dict]:
     """
     Return the blocklist entries, most recently updated first. Each row carries the
     expiry fields (``permanent`` / ``block_expires_at`` / ``seconds_remaining``),
@@ -341,8 +368,10 @@ def list_blocklist(include_expired: bool = False, now: datetime | None = None) -
     The never-block allowlist is an enforcement-time concern and is *not* applied
     here, so an admin can see and clean up a row even for a never-enforced IP.
 
-    :param include_expired: also return stale rows whose timed block has expired;
-        by default only currently-enforced blocks are returned
+    :param include_expired: also return stale rows whose timed block has expired.
+        Defaults to ``True``: a management view lists what is *on record* and the
+        caller tells the two apart from the expiry fields. Pass ``False`` to get
+        only the blocks still in force.
     :param now: reference time; defaults to :func:`utc_now`
     """
     moment = now if now is not None else utc_now()
@@ -359,12 +388,7 @@ def remove_blocklist_entry(entry: str) -> bool:
     Remove a single blocklist entry by its identifier (a source IP today).
     Returns ``True`` if a row was removed, ``False`` if there was no entry.
     """
-    row = db.session.get(BlockList, entry)
-    if not row:
-        return False
-    db.session.delete(row)
-    db.session.commit()
-    return True
+    return _delete_and_commit(delete(BlockList).where(BlockList.ip == entry)) > 0
 
 
 @log_with(log)
@@ -384,10 +408,7 @@ def purge_expired_user_lockouts(now: datetime | None = None, visibility_scopes: 
     conditions = [UserLockoutState.lock_expires_at.isnot(None), UserLockoutState.lock_expires_at <= now]
     if visibility_scopes is not None:
         conditions.append(_visibility_condition(visibility_scopes))
-    stmt = delete(UserLockoutState).where(and_(*conditions))
-    count = db.session.execute(stmt).rowcount
-    db.session.commit()
-    return count
+    return _delete_and_commit(delete(UserLockoutState).where(and_(*conditions)))
 
 
 @log_with(log)
@@ -398,9 +419,6 @@ def purge_expired_blocklist(now: datetime | None = None) -> int:
     of rows removed.
     """
     now = now or utc_now()
-    stmt = delete(BlockList).where(
+    return _delete_and_commit(delete(BlockList).where(
         and_(BlockList.block_expires_at.isnot(None),
-             BlockList.block_expires_at <= now))
-    count = db.session.execute(stmt).rowcount
-    db.session.commit()
-    return count
+             BlockList.block_expires_at <= now)))

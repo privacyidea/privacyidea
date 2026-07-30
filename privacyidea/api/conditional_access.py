@@ -325,13 +325,14 @@ def delete_policy(policy_id):
 
 
 @conditional_access_blueprint.route('lockout/users', methods=['GET'])
-@prepolicy(check_base_action, request, PolicyAction.USER_LOCKOUT_READ)
 @admin_required
+@prepolicy(check_base_action, request, PolicyAction.USER_LOCKOUT_READ)
 @log_with(log)
 def get_locked_users():
     """
-    List the locked users, paginated. "Currently locked" excludes stale rows whose
-    lock has already expired (mirrors the authentication pre-check). Results are
+    List the locked users, paginated. By default every record is returned — locks still in
+    force *and* stale rows whose timed lock has already expired; each row carries the expiry
+    fields so the caller can tell them apart, and ``states`` narrows to a subset. Results are
     constrained to the admin's policy visibility scope (the realm / resolver / user
     conditions on the ``user_lockout_read`` policies), mirroring the authentication log.
 
@@ -346,7 +347,7 @@ def get_locked_users():
     :query resolvers: resolver(s) to filter by
     :query usernames: login(s) to filter by
     :query states: lock state(s) to include — any of ``permanent``, ``temporary``,
-        ``expired`` (comma-separated).
+        ``expired`` (comma-separated). Any other value is a ``ParameterError``.
     :query case_insensitive: match the filter values case-insensitively
     :query page: page number, 1-indexed (default 1)
     :query page_size: entries per page (default 15)
@@ -372,8 +373,8 @@ def get_locked_users():
 
 
 @conditional_access_blueprint.route('lockout/user', methods=['GET'])
-@prepolicy(check_base_action, request, PolicyAction.USER_LOCKOUT_READ)
 @admin_required
+@prepolicy(check_base_action, request, PolicyAction.USER_LOCKOUT_READ)
 @log_with(log)
 def get_user_lockout():
     """
@@ -385,9 +386,10 @@ def get_user_lockout():
     One user identifier is required: user or user_id
 
     :query user: login of the user to look up.
-    :query user_id: user id of the user to look up.
+    :query user_id: user id of the user to look up. Requires ``resolver``: a uid is only
+        unique within its resolver, so a user object cannot be built from a uid alone.
     :query realm: realm of the user
-    :query resolver: resolver of the user (optional)
+    :query resolver: resolver of the user; optional alongside ``user``, required with ``user_id``
     :status 200: the user's lock dict, or ``null``, in ``result.value``
     """
     get_required_one_of(request.all_data, ["user", "user_id"])
@@ -395,6 +397,10 @@ def get_user_lockout():
     username = get_optional(request.all_data, "user")
     realm = get_required(request.all_data, "realm")
     resolver = get_optional(request.all_data, "resolver")
+    if user_id and not username and not resolver:
+        # User() refuses a uid without a resolver (a uid is only unique per resolver); reject it here so
+        # the caller gets a ParameterError instead of a UserError from deep inside the resolver lookup.
+        raise ParameterError("The parameter 'resolver' is required when looking a user up by 'user_id'.")
     visibility_scopes = get_policy_visibility_scopes(PolicyAction.USER_LOCKOUT_READ)
 
     # User is already resolved in before request, but only for the login, realm, resolver triplet. If the uid is given
@@ -411,8 +417,8 @@ def get_user_lockout():
 
 
 @conditional_access_blueprint.route('lockout/users/purge', methods=['POST'])
-@prepolicy(check_base_action, request, PolicyAction.USER_LOCKOUT_RESET)
 @admin_required
+@prepolicy(check_base_action, request, PolicyAction.USER_LOCKOUT_RESET)
 @log_with(log)
 def purge_user_lockouts():
     """
@@ -431,8 +437,8 @@ def purge_user_lockouts():
 
 
 @conditional_access_blueprint.route('lockout/user', methods=['DELETE'])
-@prepolicy(check_base_action, request, PolicyAction.USER_LOCKOUT_RESET)
 @admin_required
+@prepolicy(check_base_action, request, PolicyAction.USER_LOCKOUT_RESET)
 @log_with(log)
 def reset_user_lockout():
     """
@@ -478,8 +484,8 @@ def reset_user_lockout():
 
 
 @conditional_access_blueprint.route('blocklist', methods=['GET'])
-@prepolicy(check_base_action, request, PolicyAction.BLOCKLIST_READ)
 @admin_required
+@prepolicy(check_base_action, request, PolicyAction.BLOCKLIST_READ)
 @log_with(log)
 def get_blocklist():
     """
@@ -501,8 +507,8 @@ def get_blocklist():
 
 
 @conditional_access_blueprint.route('blocklist/purge', methods=['POST'])
-@prepolicy(check_base_action, request, PolicyAction.BLOCKLIST_RESET)
 @admin_required
+@prepolicy(check_base_action, request, PolicyAction.BLOCKLIST_RESET)
 @log_with(log)
 def purge_blocklist():
     """
@@ -519,8 +525,8 @@ def purge_blocklist():
 
 
 @conditional_access_blueprint.route('blocklist/<entry>', methods=['DELETE'])
-@prepolicy(check_base_action, request, PolicyAction.BLOCKLIST_RESET)
 @admin_required
+@prepolicy(check_base_action, request, PolicyAction.BLOCKLIST_RESET)
 @log_with(log)
 def remove_blocklist(entry):
     """

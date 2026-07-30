@@ -19,7 +19,6 @@
 <div
   appScrollToTop
   class="locked-users-table-container">
-
   <div class="filter-paginator-container">
     <mat-form-field
       class="locked-users-table-filter"
@@ -38,7 +37,8 @@
           matInput
           placeholder="Example query: 'usernames: alice realms: myrealm'" />
       </app-clearable-input>
-      <mat-hint i18n>Use * as a wildcard. Wrap the filter value in quotation marks if it contains colons or spaces.
+      <mat-hint i18n>
+        Use * as a wildcard. Wrap the filter value in quotation marks if it contains colons or spaces.
       </mat-hint>
     </mat-form-field>
     <mat-paginator
@@ -155,7 +155,9 @@
               <button
                 (click)="showAuthenticationLog(row)"
                 [routerLink]="[ROUTE_PATHS.AUTHENTICATION_LOG]"
+                aria-label="Show authentication log of this user"
                 class="auth-log-button"
+                i18n-aria-label
                 i18n-matTooltip
                 matTooltip="Show authentication log of this user"
                 type="button">

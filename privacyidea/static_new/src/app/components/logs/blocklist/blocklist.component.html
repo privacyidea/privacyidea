@@ -19,7 +19,6 @@
 <div
   appScrollToTop
   class="blocklist-table-container">
-
   <div class="filter-container">
     <mat-form-field
       class="blocklist-table-filter"
@@ -28,14 +27,14 @@
       <app-clearable-input
         (clearButtonClick)="clearFilter()"
         [showClearButton]="filterText().length > 0">
-         <input
-           (input)="handleFilterInput($event)"
-           [value]="filterText()"
-           aria-label="Filter Input"
-           i18n-aria-label
-           i18n-placeholder
-           matInput
-           placeholder="IP, state, ..." />
+        <input
+          (input)="handleFilterInput($event)"
+          [value]="filterText()"
+          aria-label="Filter Input"
+          i18n-aria-label
+          i18n-placeholder
+          matInput
+          placeholder="IP, state, ..." />
       </app-clearable-input>
       <mat-hint i18n>Search across all columns (case-insensitive).</mat-hint>
     </mat-form-field>
@@ -70,7 +69,6 @@
       class="blocklist-table"
       i18n-aria-label
       mat-table>
-
       <!-- Selection column -->
       <ng-container matColumnDef="select">
         <th
@@ -97,10 +95,9 @@
       <ng-container matColumnDef="identifier">
         <th
           *matHeaderCellDef
-          mat-header-cell
-          i18n>
+          mat-header-cell>
           <div class="header-cell">
-            <span>Source IP</span>
+            <span i18n>Source IP</span>
             <button
               (click)="onSortEvent('identifier')"
               aria-label="Sort by source IP"
@@ -121,7 +118,9 @@
               <button
                 (click)="showAuthenticationLog(row)"
                 [routerLink]="[ROUTE_PATHS.AUTHENTICATION_LOG]"
+                aria-label="Show authentication log of this IP"
                 class="auth-log-button"
+                i18n-aria-label
                 i18n-matTooltip
                 matTooltip="Show authentication log of this IP"
                 type="button">
@@ -132,41 +131,40 @@
         </td>
       </ng-container>
 
-       <!-- State column -->
-       <ng-container matColumnDef="state">
-         <th
-           *matHeaderCellDef
-           mat-header-cell>
-           <div class="header-cell">
-             <span i18n>State</span>
-             <button
-               (click)="onSortEvent('state')"
-               aria-label="Sort by state"
-               class="sort-button"
-               i18n-aria-label
-               mat-icon-button
-               type="button">
-               <mat-icon>{{ getSortIcon("state") }}</mat-icon>
-             </button>
-           </div>
-         </th>
-         <td
-           *matCellDef="let row"
-           mat-cell>
-           <span [ngClass]="blockStateClass(row)">
-             {{ blockState(row) | titlecase }}
-           </span>
-         </td>
-       </ng-container>
+      <!-- State column -->
+      <ng-container matColumnDef="state">
+        <th
+          *matHeaderCellDef
+          mat-header-cell>
+          <div class="header-cell">
+            <span i18n>State</span>
+            <button
+              (click)="onSortEvent('state')"
+              aria-label="Sort by state"
+              class="sort-button"
+              i18n-aria-label
+              mat-icon-button
+              type="button">
+              <mat-icon>{{ getSortIcon("state") }}</mat-icon>
+            </button>
+          </div>
+        </th>
+        <td
+          *matCellDef="let row"
+          mat-cell>
+          <span [ngClass]="blockStateClass(row)">
+            {{ blockState(row) | titlecase }}
+          </span>
+        </td>
+      </ng-container>
 
       <!-- Expiry column -->
       <ng-container matColumnDef="block_expires_at">
         <th
           *matHeaderCellDef
-          mat-header-cell
-          i18n>
+          mat-header-cell>
           <div class="header-cell">
-            <span>Expiry</span>
+            <span i18n>Expiry</span>
             <button
               (click)="onSortEvent('block_expires_at')"
               aria-label="Sort by expiry"
@@ -195,10 +193,9 @@
       <ng-container matColumnDef="blocked_at">
         <th
           *matHeaderCellDef
-          mat-header-cell
-          i18n>
+          mat-header-cell>
           <div class="header-cell">
-            <span>Blocked</span>
+            <span i18n>Blocked</span>
             <button
               (click)="onSortEvent('blocked_at')"
               aria-label="Sort by blocked time"
@@ -241,4 +238,3 @@
     </table>
   </div>
 </div>
-

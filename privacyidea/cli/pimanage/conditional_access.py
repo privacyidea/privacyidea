@@ -45,7 +45,9 @@ def _format_expiry(expires_at):
 
 @conditional_access_cli.command("list-blocked-ips", help="List the currently blocked IPs.")
 def list_blocked_ips():
-    entries = list_blocklist()
+    # "currently blocked" = permanent + still-running timed blocks; stale expired rows are excluded here
+    # (clear them with purge-expired-blocks), mirroring list-locked-users.
+    entries = list_blocklist(include_expired=False)
     if not entries:
         click.echo("No blocked IPs.")
         return

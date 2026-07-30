@@ -400,7 +400,13 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
               next: (success) => {
                 if (success) {
                   this.conditionalAccessStateService.userLockoutResource.reload();
+                  return;
                 }
+                // The request succeeded but removed nothing: the lock was already gone, or it sits
+                // outside this admin's visibility scope. The service only reports transport errors,
+                // so without this the button would look like it did nothing.
+                this.notificationService.error($localize`No lockout was reset for this user.`);
+                this.conditionalAccessStateService.userLockoutResource.reload();
               }
             });
         }

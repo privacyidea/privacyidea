@@ -44,7 +44,8 @@ function shallowEqualRecord(a: Record<string, string>, b: Record<string, string>
   return aKeys.length === Object.keys(b).length && aKeys.every((key) => a[key] === b[key]);
 }
 
-export interface UserLockoutStatus {
+// One user-lockout record. Both `lockout/user` (single lookup) and `lockout/users` (list)
+export interface LockedUserEntry {
   resolver: string;
   uid: string;
   realm: string;
@@ -67,17 +68,6 @@ export type ResetUserLockoutRequest =
       resolver: string;
     };
 
-export interface LockedUserEntry {
-  resolver: string;
-  uid: string;
-  realm: string;
-  username: string;
-  permanent: boolean;
-  lock_expires_at: string | null;
-  seconds_remaining: number | null;
-  locked_at: string;
-}
-
 export interface LockedUsersPage {
   locked_users: LockedUserEntry[];
   count: number;
@@ -95,8 +85,8 @@ export interface BlocklistEntry {
 }
 
 export interface ConditionalAccessStateServiceInterface {
-  userLockoutResource: HttpResourceRef<PiResponse<UserLockoutStatus | null> | undefined>;
-  userLockoutStatus: Signal<UserLockoutStatus | null>;
+  userLockoutResource: HttpResourceRef<PiResponse<LockedUserEntry | null> | undefined>;
+  userLockoutStatus: Signal<LockedUserEntry | null>;
   resetUserLockout(request: ResetUserLockoutRequest): Observable<boolean>;
   lockedUsersFilter: WritableSignal<FilterValue>;
   lockedUsersFilterParams: () => Record<string, string>;
@@ -164,7 +154,7 @@ export class ConditionalAccessStateService implements ConditionalAccessStateServ
     computation: () => 1
   });
 
-  userLockoutResource = httpResource<PiResponse<UserLockoutStatus | null>>(() => {
+  userLockoutResource = httpResource<PiResponse<LockedUserEntry | null>>(() => {
     if (!this.contentService.onUserDetails() || !this.canReadUserLockout()) {
       return undefined;
     }
@@ -188,7 +178,7 @@ export class ConditionalAccessStateService implements ConditionalAccessStateServ
     };
   });
 
-  userLockoutStatus = computed<UserLockoutStatus | null>(() => {
+  userLockoutStatus = computed<LockedUserEntry | null>(() => {
     if (!this.userLockoutResource.hasValue()) {
       return null;
     }

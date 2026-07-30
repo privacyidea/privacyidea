@@ -25,18 +25,17 @@ import {
   ConditionalAccessStateServiceInterface,
   LockedUsersPage,
   LockedUserEntry,
-  ResetUserLockoutRequest,
-  UserLockoutStatus
+  ResetUserLockoutRequest
 } from "@services/conditional-access-state/conditional-access-state.service";
 import { Observable, of } from "rxjs";
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 
 export class MockConditionalAccessStateService implements ConditionalAccessStateServiceInterface {
-  userLockoutResource = new MockHttpResourceRef<PiResponse<UserLockoutStatus | null> | undefined>(
-    MockPiResponse.fromValue<UserLockoutStatus | null>(null)
+  userLockoutResource = new MockHttpResourceRef<PiResponse<LockedUserEntry | null> | undefined>(
+    MockPiResponse.fromValue<LockedUserEntry | null>(null)
   );
 
-  userLockoutStatus = computed<UserLockoutStatus | null>(() => {
+  userLockoutStatus = computed<LockedUserEntry | null>(() => {
     if (!this.userLockoutResource.hasValue()) {
       return null;
     }
@@ -65,12 +64,8 @@ export class MockConditionalAccessStateService implements ConditionalAccessState
   removeBlocklistEntry = jest.fn().mockImplementation((_: BlocklistEntry): Observable<boolean> => of(true));
   purgeBlocklist = jest.fn().mockImplementation((): Observable<number> => of(0));
 
-  setUserLockoutStatus(value: UserLockoutStatus | null): void {
-    this.userLockoutResource.set(MockPiResponse.fromValue<UserLockoutStatus | null>(value));
-  }
-
-  setUserLockoutResourceUndefined(): void {
-    this.userLockoutResource.set(undefined);
+  setUserLockoutStatus(value: LockedUserEntry | null): void {
+    this.userLockoutResource.set(MockPiResponse.fromValue<LockedUserEntry | null>(value));
   }
 
   setLockedUsers(entries: LockedUserEntry[]): void {
