@@ -399,7 +399,7 @@ def get_user_lockout():
 
     # User is already resolved in before request, but only for the login, realm, resolver triplet. If the uid is given
     # instead we need to resolve the user here
-    user = getattr(request, "user", None)
+    user = request.User
     if not user or not user.exist():
         user = User(uid=user_id, login=username, realm=realm, resolver=resolver)
 
