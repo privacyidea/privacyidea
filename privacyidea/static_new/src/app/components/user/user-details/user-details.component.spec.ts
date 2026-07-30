@@ -287,24 +287,26 @@ describe("UserDetailsComponent", () => {
     expect(reloadTokenSpy).toHaveBeenCalledTimes(1);
   });
 
-  it("enrollNewToken sets the user selection filter and navigates to token enrollment", () => {
+  it("enrollNewToken navigates to token enrollment with the user as query parameters", () => {
     userServiceMock.detailsUser.set({ username: "Alice", realm: "realm1" });
-    const navigateSpy = jest.spyOn(component["router"], "navigateByUrl").mockResolvedValue(true);
+    const navigateSpy = jest.spyOn(component["router"], "navigate").mockResolvedValue(true);
 
     component.enrollNewToken();
 
-    expect(userServiceMock.selectionFilter()).toBe("Alice");
-    expect(navigateSpy).toHaveBeenCalledWith(ROUTE_PATHS.TOKENS_ENROLLMENT);
+    expect(navigateSpy).toHaveBeenCalledWith([ROUTE_PATHS.TOKENS_ENROLLMENT], {
+      queryParams: { realm: "realm1", user: "Alice" }
+    });
   });
 
-  it("createNewContainer sets the user selection filter and navigates to container create", () => {
+  it("createNewContainer navigates to container create with the user as query parameters", () => {
     userServiceMock.detailsUser.set({ username: "Alice", realm: "realm1" });
-    const navigateSpy = jest.spyOn(component["router"], "navigateByUrl").mockResolvedValue(true);
+    const navigateSpy = jest.spyOn(component["router"], "navigate").mockResolvedValue(true);
 
     component.createNewContainer();
 
-    expect(userServiceMock.selectionFilter()).toBe("Alice");
-    expect(navigateSpy).toHaveBeenCalledWith(ROUTE_PATHS.CONTAINERS_CREATE);
+    expect(navigateSpy).toHaveBeenCalledWith([ROUTE_PATHS.CONTAINERS_CREATE], {
+      queryParams: { realm: "realm1", user: "Alice" }
+    });
   });
 
   it("detailsEntries lists the user data attributes and excludes the editable flag", () => {

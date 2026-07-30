@@ -31,7 +31,9 @@ export interface ContentServiceInterface {
   detailsUser: WritableSignal<DetailsUser>;
   router: Router;
   routeUrl: Signal<string>;
+  routePath: Signal<string>;
   previousUrl: Signal<string>;
+  queryParams: Signal<Record<string, string>>;
   tokenSerial: WritableSignal<string>;
   containerSerial: WritableSignal<string>;
 
@@ -84,6 +86,7 @@ export interface ContentServiceInterface {
   onSubscription: Signal<boolean>;
   onMachineResolver: Signal<boolean>;
 
+  matchesPath: (path: string) => boolean;
   tokenSelected: (serial: string) => void;
   navigateContainerDetails: (containerSerial: string) => void;
   userSelected: (username: string, realm: string) => void;
@@ -104,7 +107,20 @@ export class ContentService implements ContentServiceInterface {
     { initialValue: [this.router.url, this.router.url] as const }
   );
   readonly routeUrl = computed(() => this._urlPair()[1]);
+  readonly routePath = computed(() => this.routeUrl().split(/[?#]/)[0]);
   readonly previousUrl = computed(() => this._urlPair()[0]);
+  readonly queryParams = computed<Record<string, string>>(() => {
+    const url = this.routeUrl();
+    const queryIndex = url.indexOf("?");
+    if (queryIndex < 0) {
+      return {};
+    }
+    const params: Record<string, string> = {};
+    new URLSearchParams(url.slice(queryIndex + 1).split("#")[0]).forEach((value, key) => {
+      params[key] = value;
+    });
+    return params;
+  });
   tokenSerial = signal("");
   containerSerial: WritableSignal<string> = linkedSignal({
     source: this.routeUrl,
@@ -115,120 +131,124 @@ export class ContentService implements ContentServiceInterface {
       return "";
     }
   });
-  onLogin = computed(() => this.routeUrl() === ROUTE_PATHS.LOGIN);
-  onAudit = computed(() => this.routeUrl() === ROUTE_PATHS.AUDIT);
-  onAuthenticationLog = computed(() => this.routeUrl() === ROUTE_PATHS.AUTHENTICATION_LOG);
-  onClients = computed(() => this.routeUrl() === ROUTE_PATHS.CLIENTS);
-  onLockedUsers = computed(() => this.routeUrl() === ROUTE_PATHS.LOCKED_USERS);
-  onBlocklist = computed(() => this.routeUrl() === ROUTE_PATHS.BLOCKLIST);
-  onTokens = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS);
-  onUsers = computed(() => this.routeUrl() === ROUTE_PATHS.USERS);
+  onLogin = computed(() => this.matchesPath(ROUTE_PATHS.LOGIN));
+  onAudit = computed(() => this.matchesPath(ROUTE_PATHS.AUDIT));
+  onAuthenticationLog = computed(() => this.matchesPath(ROUTE_PATHS.AUTHENTICATION_LOG));
+  onClients = computed(() => this.matchesPath(ROUTE_PATHS.CLIENTS));
+  onLockedUsers = computed(() => this.matchesPath(ROUTE_PATHS.LOCKED_USERS));
+  onBlocklist = computed(() => this.matchesPath(ROUTE_PATHS.BLOCKLIST));
+  onTokens = computed(() => this.matchesPath(ROUTE_PATHS.TOKENS));
+  onUsers = computed(() => this.matchesPath(ROUTE_PATHS.USERS));
   onPolicies = computed(() => this.routeUrl().startsWith(ROUTE_PATHS.POLICIES));
   onConditionalAccess = computed(() => this.routeUrl().startsWith(ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS));
   onTokenDetails = computed(() => this.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS));
   onUserDetails = computed(() => this.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS + "/"));
-  onUserDetailsSelfService = computed(() => this.routeUrl() === ROUTE_PATHS.USERS_DETAILS);
-  onUserRealms = computed(() => this.routeUrl() === ROUTE_PATHS.USERS_REALMS);
-  onTokensEnrollment = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_ENROLLMENT);
+  onUserDetailsSelfService = computed(() => this.matchesPath(ROUTE_PATHS.USERS_DETAILS));
+  onUserRealms = computed(() => this.matchesPath(ROUTE_PATHS.USERS_REALMS));
+  onTokensEnrollment = computed(() => this.matchesPath(ROUTE_PATHS.TOKENS_ENROLLMENT));
   onTokenEnrollmentLikely = computed(
     () =>
       // allow token details for rollover
       this.onTokensEnrollment() || this.onTokenDetails() || this.onTokensWizard() || this.onAnyContainerTemplatesRoute()
   );
-  onTokensChallenges = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_CHALLENGES);
-  onTokensApplications = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_APPLICATIONS);
-  onTokensGetSerial = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_GET_SERIAL);
-  onTokensImport = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_IMPORT);
-  onContainers = computed(() => this.routeUrl() === ROUTE_PATHS.CONTAINERS);
-  onContainersCreate = computed(() =>
-    [ROUTE_PATHS.CONTAINERS_CREATE, ROUTE_PATHS.CONTAINERS_WIZARD].includes(this.routeUrl())
+  onTokensChallenges = computed(() => this.matchesPath(ROUTE_PATHS.TOKENS_CHALLENGES));
+  onTokensApplications = computed(() => this.matchesPath(ROUTE_PATHS.TOKENS_APPLICATIONS));
+  onTokensGetSerial = computed(() => this.matchesPath(ROUTE_PATHS.TOKENS_GET_SERIAL));
+  onTokensImport = computed(() => this.matchesPath(ROUTE_PATHS.TOKENS_IMPORT));
+  onContainers = computed(() => this.matchesPath(ROUTE_PATHS.CONTAINERS));
+  onContainersCreate = computed(
+    () => this.matchesPath(ROUTE_PATHS.CONTAINERS_CREATE) || this.matchesPath(ROUTE_PATHS.CONTAINERS_WIZARD)
   );
   onContainersDetails = computed(() => this.routeUrl().startsWith(ROUTE_PATHS.CONTAINERS_DETAILS));
-  onTokensAssignToken = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_ASSIGN_TOKEN);
-  onTokensWizard = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_WIZARD);
-  onContainersWizard = computed(() => this.routeUrl() === ROUTE_PATHS.CONTAINERS_WIZARD);
+  onTokensAssignToken = computed(() => this.matchesPath(ROUTE_PATHS.TOKENS_ASSIGN_TOKEN));
+  onTokensWizard = computed(() => this.matchesPath(ROUTE_PATHS.TOKENS_WIZARD));
+  onContainersWizard = computed(() => this.matchesPath(ROUTE_PATHS.CONTAINERS_WIZARD));
   onAnyTokensRoute = computed(
-    () => this.routeUrl() === ROUTE_PATHS.TOKENS || this.routeUrl().startsWith(ROUTE_PATHS.TOKENS + "/")
+    () => this.matchesPath(ROUTE_PATHS.TOKENS) || this.routeUrl().startsWith(ROUTE_PATHS.TOKENS + "/")
   );
   onAnyUsersRoute = computed(
-    () => this.routeUrl() === ROUTE_PATHS.USERS || this.routeUrl().startsWith(ROUTE_PATHS.USERS + "/")
+    () => this.matchesPath(ROUTE_PATHS.USERS) || this.routeUrl().startsWith(ROUTE_PATHS.USERS + "/")
   );
-  onContainersTemplates = computed(() => this.routeUrl() === ROUTE_PATHS.CONTAINERS_TEMPLATES);
-  onContainersTemplatesCreate = computed(() => this.routeUrl() === ROUTE_PATHS.CONTAINERS_TEMPLATES_CREATE);
+  onContainersTemplates = computed(() => this.matchesPath(ROUTE_PATHS.CONTAINERS_TEMPLATES));
+  onContainersTemplatesCreate = computed(() => this.matchesPath(ROUTE_PATHS.CONTAINERS_TEMPLATES_CREATE));
   onContainersTemplatesDetails = computed(() => this.routeUrl().startsWith(ROUTE_PATHS.CONTAINERS_TEMPLATES_DETAILS));
   onAnyContainerTemplatesRoute = computed(
     () => this.onContainersTemplates() || this.onContainersTemplatesCreate() || this.onContainersTemplatesDetails()
   );
   onEvents = computed(
     () =>
-      this.routeUrl() === ROUTE_PATHS.EVENTS ||
-      this.routeUrl() === ROUTE_PATHS.EVENTS_NEW ||
+      this.matchesPath(ROUTE_PATHS.EVENTS) ||
+      this.matchesPath(ROUTE_PATHS.EVENTS_NEW) ||
       this.routeUrl().startsWith(ROUTE_PATHS.EVENTS_DETAILS)
   );
-  onConfigurationSystem = computed(() => this.routeUrl() === ROUTE_PATHS.CONFIGURATION_SYSTEM);
-  onConfigurationTokenTypes = computed(() => this.routeUrl() === ROUTE_PATHS.CONFIGURATION_TOKENTYPES);
+  onConfigurationSystem = computed(() => this.matchesPath(ROUTE_PATHS.CONFIGURATION_SYSTEM));
+  onConfigurationTokenTypes = computed(() => this.matchesPath(ROUTE_PATHS.CONFIGURATION_TOKENTYPES));
   onConfigurationMachines = computed(
     () =>
-      this.routeUrl() === ROUTE_PATHS.CONFIGURATION_MACHINES ||
+      this.matchesPath(ROUTE_PATHS.CONFIGURATION_MACHINES) ||
       this.routeUrl().startsWith(ROUTE_PATHS.CONFIGURATION_MACHINES_DETAILS)
   );
 
   onExternalSmtp = computed(
     () =>
-      this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SMTP ||
-      this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SMTP_NEW ||
+      this.matchesPath(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP) ||
+      this.matchesPath(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP_NEW) ||
       this.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP_DETAILS)
   );
   onExternalRadius = computed(
     () =>
-      this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS ||
-      this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS_NEW ||
+      this.matchesPath(ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS) ||
+      this.matchesPath(ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS_NEW) ||
       this.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS_DETAILS)
   );
   onExternalSms = computed(
     () =>
-      this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SMS ||
-      this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SMS_NEW ||
+      this.matchesPath(ROUTE_PATHS.EXTERNAL_SERVICES_SMS) ||
+      this.matchesPath(ROUTE_PATHS.EXTERNAL_SERVICES_SMS_NEW) ||
       this.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMS_DETAILS)
   );
   onExternalCaConnectors = computed(
     () =>
-      this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS ||
-      this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS_NEW ||
+      this.matchesPath(ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS) ||
+      this.matchesPath(ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS_NEW) ||
       this.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS_DETAILS)
   );
   onExternalPrivacyIdea = computed(
     () =>
-      this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA ||
-      this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA_NEW ||
+      this.matchesPath(ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA) ||
+      this.matchesPath(ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA_NEW) ||
       this.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA_DETAILS)
   );
   onExternalTokenGroups = computed(
     () =>
-      this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS ||
-      this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_NEW ||
+      this.matchesPath(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS) ||
+      this.matchesPath(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_NEW) ||
       this.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_DETAILS)
   );
   onExternalServiceIds = computed(
     () =>
-      this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS ||
-      this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_NEW ||
+      this.matchesPath(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS) ||
+      this.matchesPath(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_NEW) ||
       this.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_DETAILS)
   );
-  onUsersResolvers = computed(() => this.routeUrl() === ROUTE_PATHS.USERS_RESOLVERS);
+  onUsersResolvers = computed(() => this.matchesPath(ROUTE_PATHS.USERS_RESOLVERS));
   onConfigurationPeriodicTasks = computed(
     () =>
-      this.routeUrl() === ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS ||
-      this.routeUrl() === ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS_NEW ||
+      this.matchesPath(ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS) ||
+      this.matchesPath(ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS_NEW) ||
       this.routeUrl().startsWith(ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS_DETAILS)
   );
-  onSubscription = computed(() => this.routeUrl() === ROUTE_PATHS.SUBSCRIPTION);
+  onSubscription = computed(() => this.matchesPath(ROUTE_PATHS.SUBSCRIPTION));
   onMachineResolver = computed(
     () =>
-      this.routeUrl() === ROUTE_PATHS.MACHINE_RESOLVER ||
-      this.routeUrl() === ROUTE_PATHS.MACHINE_RESOLVER_NEW ||
+      this.matchesPath(ROUTE_PATHS.MACHINE_RESOLVER) ||
+      this.matchesPath(ROUTE_PATHS.MACHINE_RESOLVER_NEW) ||
       this.routeUrl().startsWith(ROUTE_PATHS.MACHINE_RESOLVER_DETAILS)
   );
+
+  matchesPath(path: string): boolean {
+    return this.routePath() === path;
+  }
 
   tokenSelected(serial: string): void {
     this.router.navigateByUrl(ROUTE_PATHS.TOKENS_DETAILS + encodeURIComponent(serial));
