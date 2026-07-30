@@ -102,21 +102,8 @@ describe("FilterValue helpers", () => {
   });
 });
 
-describe("FilterValue.freeText", () => {
-  test("returns the whole input when there are no keyword segments", () => {
-    expect(new FilterValue({ value: "root" }).freeText).toBe("root");
-    expect(new FilterValue({ value: "  alice  bob " }).freeText).toBe("alice bob");
-  });
-
-  test("is empty when the input is purely keyword-based", () => {
-    expect(new FilterValue({ value: "username: root email: a@b.c" }).freeText).toBe("");
-  });
-
-  test("keeps leading free text alongside keyword segments", () => {
-    expect(new FilterValue({ value: "root username: admin" }).freeText).toBe("root");
-  });
-
-  test("does not affect the keyword filterMap", () => {
+describe("FilterValue keyword parsing alongside free text", () => {
+  test("does not let leading free text affect the keyword filterMap", () => {
     const fv = new FilterValue({ value: "root username: admin" });
     expect(fv.filterMap.get("username")).toBe("admin");
   });

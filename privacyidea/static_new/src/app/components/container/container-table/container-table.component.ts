@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, ElementRef, ViewChild, WritableSignal, inject, linkedSignal } from "@angular/core";
+import { Component, ElementRef, ViewChild, WritableSignal, computed, inject, linkedSignal } from "@angular/core";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { Sort } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
@@ -38,9 +38,10 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatMenuModule } from "@angular/material/menu";
-import { MatTooltipModule } from "@angular/material/tooltip";
 import { ContainerTableActionsComponent } from "@components/container/container-table/container-table-actions/container-table-actions.component";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
+import { inlineFilterHint } from "@utils/filter-hint.utils";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
@@ -51,6 +52,7 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
   selector: "app-container-table",
   standalone: true,
   imports: [
+    FilterAutocompleteDirective,
     MatTableModule,
     MatFormFieldModule,
     MatInputModule,
@@ -66,7 +68,6 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
     MatButtonModule,
     MatMenuModule,
     MatDividerModule,
-    MatTooltipModule,
     ScrollEdgesDirective
   ],
   templateUrl: "./container-table.component.html",
@@ -92,6 +93,23 @@ export class ContainerTableComponent {
   readonly columnKeys = [...this.tableUtilsService.getColumnKeys(this.columnsKeyMap)];
   readonly apiFilter = this.containerService.apiFilter;
   readonly advancedApiFilter = this.containerService.advancedApiFilter;
+  readonly filterKeywords = [...this.containerService.apiFilter, ...this.containerService.advancedApiFilter];
+  readonly filterHint = inlineFilterHint();
+  // The `user` and `realm` filters are exact values that the backend resolves against the user store, so
+  // they are only applied when the input is confirmed with enter. All other filters are applied while typing.
+  protected readonly filterInputValue = linkedSignal({
+    source: () => this.containerService.containerFilter().filterString,
+    computation: (filterString) => filterString
+  });
+  protected readonly showFilterHint = computed(() => {
+    const current = this.filterInputValue().trim().toLowerCase();
+    const applied = this.containerService.containerFilter().filterString.trim().toLowerCase();
+
+    if (current !== applied) {
+      return /(^|\s)user:/.test(current) || /(^|\s)realm:/.test(current);
+    }
+    return false;
+  });
   containerSelection = this.containerService.containerSelection;
 
   pageSize = this.containerService.pageSize;
@@ -139,6 +157,7 @@ export class ContainerTableComponent {
     states: "state",
     description: "description",
     user_name: "user",
+    user_realm: "realm",
     realms: "container_realm"
   } as const;
 
@@ -185,6 +204,17 @@ export class ContainerTableComponent {
 
   onSortEvent($event: Sort) {
     this.sort.set($event);
+  }
+
+  onFilterInput($event: Event) {
+    const input = $event.target as HTMLInputElement;
+    this.filterInputValue.set(input.value);
+    const value = input.value.toLowerCase();
+    const hasUser = /(^|\s)user:/.test(value);
+    const hasRealm = /(^|\s)realm:/.test(value);
+    if (!hasUser && !hasRealm) {
+      this.containerService.handleFilterInput($event);
+    }
   }
 
   toggleFilter(filterKeyword: string): void {

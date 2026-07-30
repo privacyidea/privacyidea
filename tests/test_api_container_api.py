@@ -845,6 +845,84 @@ class APIContainer(APIContainerTest):
             delete_container_by_serial(smartphone_serial)
             delete_container_by_serial(generic_serial)
 
+    def test_21d_get_all_containers_filter_by_user_realm(self):
+        # Arrange: two containers with owners in different realms. Other test methods in this class leave
+        # containers around, so we only assert on the serials created here.
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        realm1_serial = init_container({"type": "generic"})["container_serial"]
+        find_container_by_serial(realm1_serial).add_user(User(login="hans", realm=self.realm1))
+        realm2_serial = init_container({"type": "generic"})["container_serial"]
+        find_container_by_serial(realm2_serial).add_user(User(login="cornelius", realm=self.realm2))
+        unassigned_serial = init_container({"type": "generic", "realm": self.realm1})["container_serial"]
+
+        try:
+            # The realm of the assigned user is filtered without a username
+            result = self.request_assert_success('/container/',
+                                                 {"realm": self.realm1, "pagesize": 100},
+                                                 self.at, 'GET')
+            serials = {c["serial"] for c in result["result"]["value"]["containers"]}
+            self.assertIn(realm1_serial, serials)
+            self.assertNotIn(realm2_serial, serials)
+            # A container in the realm without an owner is not a match
+            self.assertNotIn(unassigned_serial, serials)
+
+            # The realm is matched case-insensitive
+            result = self.request_assert_success('/container/',
+                                                 {"realm": self.realm1.upper(), "pagesize": 100},
+                                                 self.at, 'GET')
+            self.assertIn(realm1_serial, {c["serial"] for c in result["result"]["value"]["containers"]})
+
+            # container_realm matches the realm of the container itself, hence it also returns the
+            # container without an owner
+            result = self.request_assert_success('/container/',
+                                                 {"container_realm": self.realm1, "pagesize": 100},
+                                                 self.at, 'GET')
+            serials = {c["serial"] for c in result["result"]["value"]["containers"]}
+            self.assertIn(realm1_serial, serials)
+            self.assertIn(unassigned_serial, serials)
+
+            # Combined with a username: only the containers of that user in that realm
+            result = self.request_assert_success('/container/',
+                                                 {"user": "hans", "realm": self.realm1, "pagesize": 100},
+                                                 self.at, 'GET')
+            serials = {c["serial"] for c in result["result"]["value"]["containers"]}
+            self.assertIn(realm1_serial, serials)
+            self.assertNotIn(realm2_serial, serials)
+            self.assertNotIn(unassigned_serial, serials)
+            for container in result["result"]["value"]["containers"]:
+                self.assertEqual("hans", container["users"][0]["user_name"])
+                self.assertEqual(self.realm1, container["users"][0]["user_realm"])
+
+            # Combined with a wildcard resolver
+            result = self.request_assert_success('/container/',
+                                                 {"realm": self.realm1, "resolver": f"{self.resolvername1[:-1]}*",
+                                                  "pagesize": 100},
+                                                 self.at, 'GET')
+            self.assertIn(realm1_serial, {c["serial"] for c in result["result"]["value"]["containers"]})
+
+            # A realm that does not exist matches nothing
+            result = self.request_assert_success('/container/',
+                                                 {"realm": "non_existing_realm", "pagesize": 100},
+                                                 self.at, 'GET')
+            self.assertEqual(0, result["result"]["value"]["count"])
+
+            # A username that can not be resolved is rejected
+            self.request_assert_error(400, '/container/', {"user": "non_existing_user", "realm": self.realm1,
+                                                          "pagesize": 100},
+                                      self.at, 'GET', error_code=Error.USER)
+
+            # The realm is evaluated first, hence an unknown user in an unknown realm matches nothing
+            result = self.request_assert_success('/container/',
+                                                 {"user": "non_existing_user", "realm": "non_existing_realm",
+                                                  "pagesize": 100},
+                                                 self.at, 'GET')
+            self.assertEqual(0, result["result"]["value"]["count"])
+        finally:
+            delete_container_by_serial(realm1_serial)
+            delete_container_by_serial(realm2_serial)
+            delete_container_by_serial(unassigned_serial)
+
     def test_22_get_all_containers_paginate_invalid_params(self):
         init_container({"type": "generic", "description": "test container"})
 
