@@ -60,9 +60,11 @@ must be :class:`~privacyidea.lib.conditional_access.engine.LockoutAction` names;
 matches or an action that never fires).
 """
 import logging
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
 from privacyidea.lib.conditional_access.engine import LockoutAction, LockoutTarget
@@ -461,6 +463,25 @@ def get_lockout_policy(policy_id: int) -> dict:
     return lockout_policy_to_dict(_get_policy(policy_id))
 
 
+@contextmanager
+def _unique_conflict_as_400():
+    """
+    Turn a unique-constraint violation from the wrapped DB writes into a clean
+    :class:`ParameterError` (a 400, not a 500).
+
+    The app-level name/priority uniqueness checks race with concurrent writers:
+    two requests can both pass validation and only collide when the write hits
+    the database (at a ``flush`` or the ``commit``). Convert that
+    :class:`IntegrityError` into a ParameterError after rolling back, so the
+    session is usable again.
+    """
+    try:
+        yield
+    except IntegrityError:
+        db.session.rollback()
+        raise ParameterError("A lockout policy with this name or priority already exists.")
+
+
 @log_with(log)
 def create_lockout_policy(name: str, time_window_seconds: int, counter_types_to_track: list[str],
                           stages: list[dict], target: str, priority: int, enabled: bool = True,
@@ -492,7 +513,8 @@ def create_lockout_policy(name: str, time_window_seconds: int, counter_types_to_
                            target=lockout_target, counter_types_to_track=counter_types,
                            count_mode=count_mode, stages=_build_stages(stage_defs))
     db.session.add(policy)
-    db.session.commit()
+    with _unique_conflict_as_400():
+        db.session.commit()
     log.info(f"Created lockout policy '{name}' (id {policy.id}).")
     return policy.id
 
@@ -557,44 +579,47 @@ def update_lockout_policy(policy_id: int, name: str | None = None,
             count_mode = validated_mode
 
     changed_fields = []
-    if name is not None:
-        policy.name = name
-        changed_fields.append("name")
-    if time_window_seconds is not None:
-        policy.time_window_seconds = time_window_seconds
-        changed_fields.append("time_window_seconds")
-    if priority is not None:
-        policy.priority = priority
-        changed_fields.append("priority")
-    if lockout_target is not None:
-        policy.target = lockout_target
-        changed_fields.append("target")
-    if enabled is not None:
-        policy.enabled = bool(enabled)
-        changed_fields.append("enabled")
-    if dry_run is not None:
-        policy.dry_run = bool(dry_run)
-        changed_fields.append("dry_run")
-    if count_mode is not None:
-        policy.count_mode = count_mode
-        changed_fields.append("count_mode")
-    if counter_types_to_track is not None:
-        # Delete the existing rows and flush before inserting the replacements,
-        # so a single flush never holds two rows with the same
-        # (policy_id, counter_type). This keeps a replacement that reuses a
-        # counter type within the (policy_id, counter_type) unique constraint.
-        policy.counter_types = []
-        db.session.flush()
-        policy.counter_types_to_track = counter_types_to_track
-        changed_fields.append("counter_types_to_track")
-    if stages is not None:
-        # Same split-flush replacement, keeping the (policy_id, failure_threshold)
-        # unique constraint when a threshold is reused across the update.
-        policy.stages = []
-        db.session.flush()
-        policy.stages = _build_stages(stages)
-        changed_fields.append("stages")
-    db.session.commit()
+    # A name/priority collision can race past the app-level checks and surface at
+    # the first flush or the commit; convert it to a clean ParameterError (400).
+    with _unique_conflict_as_400():
+        if name is not None:
+            policy.name = name
+            changed_fields.append("name")
+        if time_window_seconds is not None:
+            policy.time_window_seconds = time_window_seconds
+            changed_fields.append("time_window_seconds")
+        if priority is not None:
+            policy.priority = priority
+            changed_fields.append("priority")
+        if lockout_target is not None:
+            policy.target = lockout_target
+            changed_fields.append("target")
+        if enabled is not None:
+            policy.enabled = bool(enabled)
+            changed_fields.append("enabled")
+        if dry_run is not None:
+            policy.dry_run = bool(dry_run)
+            changed_fields.append("dry_run")
+        if count_mode is not None:
+            policy.count_mode = count_mode
+            changed_fields.append("count_mode")
+        if counter_types_to_track is not None:
+            # Delete the existing rows and flush before inserting the replacements,
+            # so a single flush never holds two rows with the same
+            # (policy_id, counter_type). This keeps a replacement that reuses a
+            # counter type within the (policy_id, counter_type) unique constraint.
+            policy.counter_types = []
+            db.session.flush()
+            policy.counter_types_to_track = counter_types_to_track
+            changed_fields.append("counter_types_to_track")
+        if stages is not None:
+            # Same split-flush replacement, keeping the (policy_id, failure_threshold)
+            # unique constraint when a threshold is reused across the update.
+            policy.stages = []
+            db.session.flush()
+            policy.stages = _build_stages(stages)
+            changed_fields.append("stages")
+        db.session.commit()
     log.info(f"Updated lockout policy '{policy.name}' (id {policy.id}); "
              f"changed fields: {', '.join(changed_fields) or 'none'}.")
     return policy.id, changed_fields
