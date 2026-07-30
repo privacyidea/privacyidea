@@ -31,6 +31,9 @@ export class GridSelectNavDirective implements OnInit, OnDestroy {
   private readonly handler = (event: KeyboardEvent) => this.onKeydown(event);
 
   ngOnInit(): void {
+    // MatSelect drives its options with an ActiveDescendantKeyManager, so DOM focus stays on the
+    // mat-select host even while the overlay panel is open. Keydowns therefore target the host and
+    // this capture listener sees them before MatSelect's own host `(keydown)` binding.
     this.host.nativeElement.addEventListener("keydown", this.handler, true);
   }
 
@@ -67,17 +70,48 @@ export class GridSelectNavDirective implements OnInit, OnDestroy {
         target = current + 1;
         break;
       case "ArrowUp":
-        target = current - columns;
+        target = this.verticalTarget(current, columns, count, -1);
         break;
       case "ArrowDown":
-        target = current + columns;
+        target = this.verticalTarget(current, columns, count, 1);
         break;
     }
 
-    if (target < 0 || target >= count) return;
+    // Swallow the key even when the move leaves the grid, so MatSelect's key manager cannot fall
+    // back to its single-option step. Moving off a horizontal edge does nothing.
     event.preventDefault();
     event.stopImmediatePropagation();
+    if (target < 0 || target >= count) return;
     keyManager.setActiveItem(target);
+  }
+
+  /**
+   * Moves one row within the same column. Running off the end of a column continues into the
+   * neighbouring one, so holding ArrowDown walks down the first column, carries on at the top of the
+   * next, and cycles back to the first column after the last one; ArrowUp travels the same circle
+   * backwards. Empty cells of an incomplete last row are skipped.
+   */
+  private verticalTarget(current: number, columns: number, count: number, delta: number): number {
+    const rows = Math.ceil(count / columns);
+    const column = current % columns;
+    const row = Math.floor(current / columns);
+
+    const nextRow = row + delta;
+    if (nextRow >= 0 && nextRow < rows) {
+      const target = nextRow * columns + column;
+      if (target < count) return target;
+    }
+
+    const nextColumn = (column + delta + columns) % columns;
+    if (delta > 0) {
+      const target = nextColumn;
+      return target < count ? target : current;
+    }
+    for (let lastRow = rows - 1; lastRow >= 0; lastRow--) {
+      const target = lastRow * columns + nextColumn;
+      if (target < count) return target;
+    }
+    return current;
   }
 
   private columnCount(): number {

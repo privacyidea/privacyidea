@@ -170,8 +170,8 @@ describe("GridSelectNavDirective", () => {
       expect(activeIndex()).toBe(2);
     });
 
-    // Out-of-range targets are not handled, so the key falls through to mat-select. mat-select
-    // drops horizontal keys while the panel is open and clamps vertical ones at the list ends.
+    // Horizontal targets outside the option list are swallowed, so mat-select never gets to apply
+    // its own single-option step and moving off either end of the list does nothing.
     it("keeps the active option when ArrowLeft would move before the first option", () => {
       setActive(0);
       pressKey(fixture, "ArrowLeft");
@@ -184,27 +184,76 @@ describe("GridSelectNavDirective", () => {
       expect(activeIndex()).toBe(5);
     });
 
-    it("keeps the active option when ArrowDown would move below the last row", () => {
-      setActive(5);
+    it("continues at the top of the next column on ArrowDown from the bottom of a column", () => {
+      setActive(4);
       pressKey(fixture, "ArrowDown");
-      expect(activeIndex()).toBe(5);
+      expect(activeIndex()).toBe(1);
     });
 
-    it("leaves ArrowUp to mat-select's single-step move when there is no row above", () => {
-      setActive(1);
-      pressKey(fixture, "ArrowUp");
+    it("returns to the first column on ArrowDown from the bottom of the last column", () => {
+      setActive(5);
+      pressKey(fixture, "ArrowDown");
       expect(activeIndex()).toBe(0);
     });
 
-    it("leaves ArrowDown to mat-select's single-step move when the row below is incomplete", () => {
+    it("continues at the bottom of the previous column on ArrowUp from the top of a column", () => {
+      setActive(1);
+      pressKey(fixture, "ArrowUp");
+      expect(activeIndex()).toBe(4);
+    });
+
+    it("returns to the last column on ArrowUp from the top of the first column", () => {
+      setActive(0);
+      pressKey(fixture, "ArrowUp");
+      expect(activeIndex()).toBe(5);
+    });
+
+    it("cycles through every option when ArrowDown is held", () => {
+      setActive(0);
+      const visited = [0];
+      for (let i = 0; i < 6; i++) {
+        pressKey(fixture, "ArrowDown");
+        visited.push(activeIndex());
+      }
+
+      expect(visited).toEqual([0, 2, 4, 1, 3, 5, 0]);
+    });
+
+    it("cycles backwards through every option when ArrowUp is held", () => {
+      setActive(0);
+      const visited = [0];
+      for (let i = 0; i < 6; i++) {
+        pressKey(fixture, "ArrowUp");
+        visited.push(activeIndex());
+      }
+
+      expect(visited).toEqual([0, 5, 3, 1, 4, 2, 0]);
+    });
+
+    it("skips the empty cells of an incomplete last row while cycling", () => {
       fixture.componentInstance.options = ["a", "b", "c", "d", "e"];
       fixture.detectChanges();
-      setActive(4);
+      setActive(0);
+      const visited = [0];
+      for (let i = 0; i < 5; i++) {
+        pressKey(fixture, "ArrowDown");
+        visited.push(activeIndex());
+      }
 
-      pressKey(fixture, "ArrowDown");
+      // Index 5 does not exist, so the right column ends at 3 and the circle closes there.
+      expect(visited).toEqual([0, 2, 4, 1, 3, 0]);
+    });
 
-      // 4 is the only option in the last row; 4 + 2 is out of range, so mat-select clamps at 4.
-      expect(activeIndex()).toBe(4);
+    it("prevents the default on a horizontal edge move so mat-select cannot step a single option", () => {
+      setActive(0);
+      const laterListener = jest.fn();
+      selectEl(fixture).addEventListener("keydown", laterListener);
+
+      const event = pressKey(fixture, "ArrowLeft");
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(laterListener).not.toHaveBeenCalled();
+      expect(activeIndex()).toBe(0);
     });
 
     it("activates the first option when no option is active yet", () => {
