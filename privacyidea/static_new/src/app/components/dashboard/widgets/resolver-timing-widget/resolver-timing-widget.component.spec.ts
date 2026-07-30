@@ -215,7 +215,7 @@ describe("ResolverTimingWidgetComponent", () => {
     expect(cells?.[1].textContent?.trim()).toBe("—");
     expect(cells?.[2].textContent?.trim()).toBe("0");
     expect(cells?.[3].textContent?.trim()).toBe("—");
-    expect(idleRow?.querySelector("span")?.className).toBe("highlight-disabled");
+    expect(idleRow?.querySelector("span")?.className).toBe("");
     idleFixture.destroy();
   });
 
