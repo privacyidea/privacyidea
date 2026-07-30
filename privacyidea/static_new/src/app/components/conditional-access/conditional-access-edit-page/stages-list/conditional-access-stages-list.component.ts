@@ -37,6 +37,12 @@ export class ConditionalAccessStagesListComponent {
   readonly target = input<LockoutTarget>("user");
   readonly stagesChange = output<LockoutPolicyStage[]>();
 
+  // 1-based order in which this stage triggers: the lowest threshold is Stage 1.
+  // Recomputed live, so editing a threshold re-numbers the stages.
+  stageNumber(stage: LockoutPolicyStage): number {
+    return this.stages().filter((other) => other.failure_threshold < stage.failure_threshold).length + 1;
+  }
+
   onAddStage(): void {
     this.stagesChange.emit([...this.stages(), { ...NEW_STAGE, actions: [] }]);
   }

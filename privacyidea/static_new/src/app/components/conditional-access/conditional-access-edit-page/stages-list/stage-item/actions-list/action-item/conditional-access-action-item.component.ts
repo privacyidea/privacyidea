@@ -17,8 +17,9 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, input, output } from "@angular/core";
+import { Component, computed, inject, input, output, signal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
+import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
@@ -31,6 +32,7 @@ import {
   LockoutStageAction,
   LockoutTarget
 } from "@services/conditional-access/conditional-access-policy.service";
+import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 
 // One-line explanation of what each action does, shown under the action select.
 const ACTION_DESCRIPTIONS: Record<LockoutActionType, string> = {
@@ -49,6 +51,16 @@ const ACTION_DESCRIPTIONS: Record<LockoutActionType, string> = {
 // - "email": a JSON object with the fields listed in EMAIL_FIELDS.
 // - "none": the action takes no value (stored as null).
 type ActionValueMode = "duration" | "email" | "none";
+
+// The duration is always stored (and sent to the backend) in seconds; the unit
+// select only changes how that value is entered and displayed.
+type DurationUnit = "seconds" | "minutes" | "hours";
+
+const DURATION_UNIT_FACTORS: Record<DurationUnit, number> = {
+  seconds: 1,
+  minutes: 60,
+  hours: 3600
+};
 
 interface EmailField {
   key: string;
@@ -119,7 +131,16 @@ const EMAIL_PLACEHOLDERS: readonly EmailPlaceholder[] = [
 @Component({
   selector: "app-conditional-access-action-item",
   standalone: true,
-  imports: [MatButtonModule, MatExpansionModule, MatFormFieldModule, MatIconModule, MatInputModule, MatSelectModule],
+  imports: [
+    MatButtonModule,
+    MatCheckboxModule,
+    MatExpansionModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
+    MatSelectModule,
+    InfoHintComponent
+  ],
   templateUrl: "./conditional-access-action-item.component.html",
   styleUrl: "./conditional-access-action-item.component.scss"
 })
@@ -153,6 +174,17 @@ export class ConditionalAccessActionItemComponent {
     return allowed.length === 0 || allowed.includes(this.action().action_type);
   });
 
+  // Effective checkbox state. When the action carries no explicit value the
+  // display mirrors the server's action-aware default: ALLOW/DENY decisions
+  // re-trigger, the lock/email/block effects fire once at the threshold.
+  readonly retriggerChecked = computed<boolean>(() => {
+    const action = this.action();
+    if (action.retrigger_above_threshold != null) {
+      return action.retrigger_above_threshold;
+    }
+    return action.action_type === "ALLOW" || action.action_type === "DENY";
+  });
+
   readonly valueMode = computed<ActionValueMode>(() =>
     ConditionalAccessActionItemComponent.modeFor(this.action().action_type)
   );
@@ -177,17 +209,31 @@ export class ConditionalAccessActionItemComponent {
     return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
   }
 
-  durationValue(): string {
+  readonly durationUnit = signal<DurationUnit>("seconds");
+
+  readonly durationUnits: readonly DurationUnit[] = ["seconds", "minutes", "hours"];
+
+  // The raw stored duration in seconds, or null if unset/invalid.
+  private durationSeconds(): number | null {
     const value = this.action().action_value;
     if (typeof value === "number") {
-      return String(value);
+      return value;
     }
     if (value && typeof value === "object" && !Array.isArray(value)) {
       const record = value as Record<string, unknown>;
       const nested = record["duration_seconds"] ?? record["duration"];
-      return nested == null ? "" : String(nested);
+      return typeof nested === "number" ? nested : null;
     }
-    return "";
+    return null;
+  }
+
+  // Display value in the currently selected unit.
+  durationValue(): string {
+    const seconds = this.durationSeconds();
+    if (seconds == null) {
+      return "";
+    }
+    return String(seconds / DURATION_UNIT_FACTORS[this.durationUnit()]);
   }
 
   emailFieldValue(key: string): string {
@@ -215,7 +261,19 @@ export class ConditionalAccessActionItemComponent {
       return;
     }
     const parsed = parseInt(trimmed, 10);
-    this.updateAction.emit({ action_value: Number.isNaN(parsed) ? null : parsed });
+    const seconds = Number.isNaN(parsed) ? null : parsed * DURATION_UNIT_FACTORS[this.durationUnit()];
+    this.updateAction.emit({ action_value: seconds });
+  }
+
+  onDurationUnitChange(unit: DurationUnit): void {
+    // Keep the entered number and re-interpret it in the new unit, matching the
+    // policy time-window selector.
+    const current = this.durationValue();
+    this.durationUnit.set(unit);
+    const parsed = parseInt(current, 10);
+    if (!Number.isNaN(parsed)) {
+      this.updateAction.emit({ action_value: parsed * DURATION_UNIT_FACTORS[unit] });
+    }
   }
 
   onEmailFieldInput(key: string, value: string): void {
@@ -228,6 +286,10 @@ export class ConditionalAccessActionItemComponent {
       next[key] = value;
     }
     this.updateAction.emit({ action_value: Object.keys(next).length > 0 ? next : null });
+  }
+
+  onRetriggerChange(checked: boolean): void {
+    this.updateAction.emit({ retrigger_above_threshold: checked });
   }
 
   onRemoveAction(): void {
