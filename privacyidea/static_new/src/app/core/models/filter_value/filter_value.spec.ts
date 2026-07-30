@@ -102,6 +102,13 @@ describe("FilterValue helpers", () => {
   });
 });
 
+describe("FilterValue keyword parsing alongside free text", () => {
+  test("does not let leading free text affect the keyword filterMap", () => {
+    const fv = new FilterValue({ value: "root username: admin" });
+    expect(fv.filterMap.get("username")).toBe("admin");
+  });
+});
+
 describe("Round-trip safety via setFromMap", () => {
   test("map -> setFromMap -> parse yields the same key/values (handles spaces and dots)", () => {
     const source = new Map<string, string>([

@@ -110,6 +110,7 @@ import {
 })
 export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly renderer = inject(Renderer2);
+  private readonly hostRef = inject<ElementRef<HTMLElement>>(ElementRef);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
@@ -282,6 +283,15 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
       this.userRealm = (this.userData().find((detail) => detail.keyMap.key === "user_realm")?.value as string) || "";
       this.containerService.compatibleWithSelectedTokenType.set(this.tokenDetails().tokentype);
     });
+
+    // Re-fit the panel width whenever the set of rendered cards can change.
+    effect(() => {
+      this.tokenType();
+      this.showCounters();
+      this.descriptionRow();
+      this.isAttachedToMachine();
+      this.scheduleFit();
+    });
   }
 
   @ViewChild(TokenDetailsUserComponent) userChild?: TokenDetailsUserComponent;
@@ -289,8 +299,11 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
   @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
   @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
+  @ViewChild("detailsGrid") private detailsGrid?: ElementRef<HTMLElement>;
 
   private stickyObserver?: IntersectionObserver;
+  private resizeObserver?: ResizeObserver;
+  private fitRafId = 0;
 
   ngOnInit(): void {
     this.pendingChangesService.registerHasChanges(
@@ -341,11 +354,66 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
       { root: this.scrollContainer.nativeElement, threshold: [0, 1] }
     );
     this.stickyObserver.observe(this.stickySentinel.nativeElement);
+
+    // Track the available width (viewport/zoom changes) and re-fit the panel.
+    this.resizeObserver = new ResizeObserver(() => this.scheduleFit());
+    this.resizeObserver.observe(this.hostRef.nativeElement);
+    this.scheduleFit();
   }
 
   ngOnDestroy(): void {
     this.pendingChangesService.clearAllRegistrations();
     this.stickyObserver?.disconnect();
+    this.resizeObserver?.disconnect();
+    if (this.fitRafId) cancelAnimationFrame(this.fitRafId);
+  }
+
+  private scheduleFit(): void {
+    if (this.fitRafId) cancelAnimationFrame(this.fitRafId);
+    this.fitRafId = requestAnimationFrame(() => {
+      this.fitRafId = 0;
+      this.fitWidthToTopRow();
+    });
+  }
+
+  // Fixes the panel width to the rendered top row so it hugs the cards with no
+  // trailing whitespace. Cards have non-uniform widths and do not grow, so this
+  // is measured rather than computed: lay the grid out at full width, then read
+  // back the span of the first row and size the container's content box to it.
+  private fitWidthToTopRow(): void {
+    const container = this.scrollContainer?.nativeElement;
+    const grid = this.detailsGrid?.nativeElement;
+    if (!container || !grid) return;
+
+    // Let the grid wrap at the full available width before measuring.
+    this.renderer.setStyle(container, "width", "100%");
+
+    const items: HTMLElement[] = [];
+    for (const child of Array.from(grid.children) as HTMLElement[]) {
+      // display:contents wrappers (e.g. the machine card) have no box of their
+      // own; their children are the actual flex items.
+      if (child.getClientRects().length === 0) {
+        items.push(...(Array.from(child.children) as HTMLElement[]));
+      } else {
+        items.push(child);
+      }
+    }
+
+    const rects = items.map((el) => el.getBoundingClientRect()).filter((r) => r.width > 0);
+    if (!rects.length) {
+      this.renderer.removeStyle(container, "width");
+      return;
+    }
+
+    const top = Math.min(...rects.map((r) => r.top));
+    const firstRow = rects.filter((r) => r.top - top < 2);
+    const rowSpan = Math.max(...firstRow.map((r) => r.right)) - Math.min(...firstRow.map((r) => r.left));
+
+    const styles = getComputedStyle(container);
+    const padX = parseFloat(styles.paddingLeft) + parseFloat(styles.paddingRight);
+    const borderX = parseFloat(styles.borderLeftWidth) + parseFloat(styles.borderRightWidth);
+
+    this.renderer.setStyle(container, "width", `${Math.ceil(rowSpan + padX + borderX)}px`);
   }
 
   resetFailCount(): void {

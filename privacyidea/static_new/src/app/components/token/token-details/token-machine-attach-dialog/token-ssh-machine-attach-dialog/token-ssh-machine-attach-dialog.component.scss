@@ -1,9 +1,9 @@
 @use "styles";
 @use "table";
 
-.full-width {
-  width: 100%;
-  margin-bottom: 1em;
+.mat-divider {
+  margin-bottom: 16px;
+  width: var(--input-width-l);
 }
 
 .form {

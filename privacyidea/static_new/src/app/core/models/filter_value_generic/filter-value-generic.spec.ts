@@ -45,7 +45,9 @@ describe("FilterValueGeneric", () => {
           (item as unknown as Record<string, unknown>)[key]?.toString().toLowerCase().includes(val.toLowerCase()) ??
           false
         );
-      }
+      },
+      globalMatches: (item, term) =>
+        (item as unknown as Record<string, unknown>)[key]?.toString().toLowerCase().includes(term) ?? false
     });
   };
 
@@ -151,6 +153,24 @@ describe("FilterValueGeneric", () => {
       expect(res.getFilterOfKey("search_term")).toBeNull();
       expect(res.filterMap.get("standalone")).toBeDefined();
     });
+
+    it("should expose standalone words as freeTextTerms and exclude keyword filters", () => {
+      const res = filter.setByString("alpha beta name:carol");
+      expect(res.freeTextTerms).toEqual(["alpha", "beta"]);
+      expect(new FilterValueGeneric<PolicyMock>({ availableFilters: [] }).freeTextTerms).toEqual([]);
+    });
+
+    it("should keep a keyword filter when the same word also appears as a bare free-text term", () => {
+      // A bare word equal to a keyword name must not overwrite the explicit `key: value` filter,
+      // regardless of order; the more specific keyword wins and the bare word is dropped.
+      const trailing = filter.setByString("scope:admin scope");
+      expect(trailing.getFilterOfKey("scope")).toBe("admin");
+      expect(trailing.freeTextTerms).toEqual([]);
+
+      const leading = filter.setByString("scope scope:admin");
+      expect(leading.getFilterOfKey("scope")).toBe("admin");
+      expect(leading.freeTextTerms).toEqual([]);
+    });
   });
 
   describe("4. Filtering Logic & Item Processing", () => {
@@ -195,6 +215,39 @@ describe("FilterValueGeneric", () => {
       const f = filter.setValueOfKey("scope", "admin");
       expect(() => f.filterItems(broken)).not.toThrow();
       expect(f.filterItems(broken).length).toBe(0);
+    });
+
+    it("should match a keyword-less term across all columns (OR)", () => {
+      const res = filter.setByString("user").filterItems(data);
+      expect(res.map((p) => p.name)).toEqual(["P2"]);
+    });
+
+    it("should AND keyword-less terms with keyword filters", () => {
+      const res = filter.setByString("admin active:true").filterItems(data);
+      expect(res.map((p) => p.name)).toEqual(["P1"]);
+    });
+
+    it("should require every keyword-less term to match somewhere (AND across terms)", () => {
+      expect(filter.setByString("admin r1").filterItems(data).map((p) => p.name)).toEqual(["P1", "P3"]);
+      expect(filter.setByString("admin r2").filterItems(data)).toEqual([]);
+    });
+
+    it("should treat a bare word equal to a column key as free text, not a match-all keyword no-op", () => {
+      // "scope" is a registered key; as a bare word it must still search columns, no row holds "scope".
+      expect(filter.setByString("scope").filterItems(data)).toEqual([]);
+      expect(filter.addFreeText("admin").filterItems(data).map((p) => p.name)).toEqual(["P1", "P3"]);
+    });
+  });
+
+  describe("4b. Free-text search without global matchers configured", () => {
+    it("should treat keyword-less terms as no-ops when no column opts into global search", () => {
+      const plain = new FilterValueGeneric<PolicyMock>({
+        availableFilters: [
+          new FilterOption<PolicyMock>({ key: "name", label: "Name", matches: () => true })
+        ]
+      });
+      const items = [{ name: "A" }, { name: "B" }] as PolicyMock[];
+      expect(plain.setByString("anything").filterItems(items).length).toBe(2);
     });
   });
 

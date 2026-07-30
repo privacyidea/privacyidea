@@ -19,8 +19,8 @@
 
 import { Component, computed, inject, input, linkedSignal, output, signal } from "@angular/core";
 
-import { MatButtonModule } from "@angular/material/button";
 import { EditActionTabComponent } from "@components/policies/policy-edit-page/policy-panels/edit-action-tab/edit-action-tab.component";
+import { SelectorButtonsComponent } from "@components/policies/policy-edit-page/policy-panels/edit-action-tab/selector-buttons/selector-buttons.component";
 import { EditConditionsTabComponent } from "@components/policies/policy-edit-page/policy-panels/edit-conditions-tab/edit-conditions-tab.component";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PolicyDetail } from "@services/policies/policies.service";
@@ -34,7 +34,7 @@ export type PolicyTab = "actions" | "conditions";
   selector: "app-policy-panel-edit",
   standalone: true,
   imports: [
-    MatButtonModule,
+    SelectorButtonsComponent,
     EditActionTabComponent,
     EditConditionsTabComponent,
     PolicyDescriptionEditComponent,
@@ -58,6 +58,9 @@ export class PolicyPanelEditComponent {
   readonly policyEdit = output<Partial<PolicyDetail>>();
 
   readonly activeTab = signal<PolicyTab>("actions");
+
+  readonly tabValues: PolicyTab[] = ["actions", "conditions"];
+  readonly tabLabels = [$localize`Actions`, $localize`Conditions`];
 
   /**
    * Puffer for local changes.
@@ -83,6 +86,12 @@ export class PolicyPanelEditComponent {
 
   public setActiveTab(tab: PolicyTab): void {
     this.activeTab.set(tab);
+  }
+
+  public onTabSelected(tab: string | undefined): void {
+    if (tab === "actions" || tab === "conditions") {
+      this.setActiveTab(tab);
+    }
   }
 
   /**

@@ -178,7 +178,7 @@ $description-width: 18rem;
   }
 
   #{$filter-class} {
-    max-width: 932px;
+    max-width: var(--input-width-xxl);
     min-width: 300px;
     width: 100%;
     flex: 7 1;

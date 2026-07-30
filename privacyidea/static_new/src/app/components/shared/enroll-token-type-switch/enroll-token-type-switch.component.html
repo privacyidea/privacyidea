@@ -18,10 +18,14 @@
 -->
 @switch (tokenTypeKey()) {
   @case ("hotp") {
-    <app-enroll-hotp [enrollmentData]="$any(enrollmentData())" [wizard]="wizard()" />
+    <app-enroll-hotp
+      [enrollmentData]="$any(enrollmentData())"
+      [wizard]="wizard()" />
   }
   @case ("totp") {
-    <app-enroll-totp [enrollmentData]="$any(enrollmentData())" [wizard]="wizard()" />
+    <app-enroll-totp
+      [enrollmentData]="$any(enrollmentData())"
+      [wizard]="wizard()" />
   }
   @case ("spass") {
     <app-enroll-spass />
@@ -42,19 +46,27 @@
     <app-enroll-yubico />
   }
   @case ("radius") {
-    <app-enroll-radius [enrollmentData]="$any(enrollmentData())" [wizard]="wizard()" />
+    <app-enroll-radius
+      [enrollmentData]="$any(enrollmentData())"
+      [wizard]="wizard()" />
   }
   @case ("sms") {
-    <app-enroll-sms [enrollmentData]="$any(enrollmentData())" [wizard]="wizard()" />
+    <app-enroll-sms
+      [enrollmentData]="$any(enrollmentData())"
+      [wizard]="wizard()" />
   }
   @case ("4eyes") {
     <app-enroll-foureyes [enrollmentData]="$any(enrollmentData())" />
   }
   @case ("applspec") {
-    <app-enroll-applspec [enrollmentData]="$any(enrollmentData())" [wizard]="wizard()" />
+    <app-enroll-applspec
+      [enrollmentData]="$any(enrollmentData())"
+      [wizard]="wizard()" />
   }
   @case ("daypassword") {
-    <app-enroll-daypassword [enrollmentData]="$any(enrollmentData())" [wizard]="wizard()" />
+    <app-enroll-daypassword
+      [enrollmentData]="$any(enrollmentData())"
+      [wizard]="wizard()" />
   }
   @case ("certificate") {
     <app-enroll-certificate [enrollmentData]="$any(enrollmentData())" />
@@ -63,7 +75,7 @@
     <app-enroll-email [enrollmentData]="$any(enrollmentData())" />
   }
   @case ("indexedsecret") {
-    <app-enroll-indexedsecret [enrollmentData]="$any(enrollmentData())"/>
+    <app-enroll-indexedsecret [enrollmentData]="$any(enrollmentData())" />
   }
   @case ("paper") {
     <app-enroll-paper />

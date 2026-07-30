@@ -104,14 +104,25 @@ jobs:
         pip install -r tests/requirements.txt
         pip install PyMySQL
 
+    - name: Determine pytest-xdist worker count
+      # Derive the worker count once and reuse it for both the per-worker
+      # database pre-creation and the pytest -n flag, so the two can never drift
+      # (pre-creating fewer databases than workers leaves late workers with no
+      # database). Cap at 8: each xdist worker gets its own Redis logical DB
+      # (tests/conftest.py) and Redis has only 16 (0-15), so 8 stays well within
+      # range and covers typical GH runners (2-4 cores) with headroom.
+      run: |
+        WORKERS=$(nproc)
+        if [ "$WORKERS" -gt 8 ]; then WORKERS=8; fi
+        echo "WORKERS=$WORKERS" >> "$GITHUB_ENV"
+
     - name: Pre-create per-worker databases
       # pytest-xdist workers append a _gw<N> suffix to TEST_DATABASE_URL and use
       # the matching Redis logical DB index (see tests/conftest.py).
       # db.create_all() creates tables inside an existing database — the
-      # databases themselves must be pre-created. Eight covers typical GH
-      # runners (2-4 cores) with room to spare.
+      # databases themselves must be pre-created.
       run: |
-        for i in $(seq 0 7); do
+        for i in $(seq 0 $((WORKERS - 1))); do
           mysql -h 127.0.0.1 -u root -proot -e \
             "CREATE DATABASE privacyidea_test_gw$i; \
              GRANT ALL ON privacyidea_test_gw$i.* TO 'privacyidea'@'%';"
@@ -130,11 +141,9 @@ jobs:
         PYTHONWARNINGS: "once::DeprecationWarning"
       run: |
         pip freeze
-        # Cap workers at 16: each xdist worker gets its own Redis logical DB
-        # (tests/conftest.py) and Redis has only 16 (0-15). conftest fails fast
-        # above that, so don't let a larger runner spawn more than 16 workers.
-        WORKERS=$(nproc)
-        if [ "$WORKERS" -gt 16 ]; then WORKERS=16; fi
+        # WORKERS is derived once in the "Determine pytest-xdist worker count"
+        # step (capped at 8, within Redis's 16 logical DBs) and reused here so
+        # the -n flag can never exceed the number of pre-created databases.
         # --dist=loadfile keeps all tests in one file on one worker, preserving
         # the intra-file ordering the unittest-style suite currently relies on.
         # Collect coverage: this job is the ONLY one that exercises the Redis

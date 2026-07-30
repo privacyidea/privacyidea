@@ -118,6 +118,26 @@ describe("PolicyPanelEditComponent - Extended Tests", () => {
     expect(component.activeTab()).toBe("actions");
   });
 
+  it("should set the active tab from a valid selector value", () => {
+    component.setActiveTab("actions");
+
+    component.onTabSelected("conditions");
+    expect(component.activeTab()).toBe("conditions");
+
+    component.onTabSelected("actions");
+    expect(component.activeTab()).toBe("actions");
+  });
+
+  it("should ignore invalid or undefined selector values", () => {
+    component.setActiveTab("conditions");
+
+    component.onTabSelected(undefined);
+    expect(component.activeTab()).toBe("conditions");
+
+    component.onTabSelected("not-a-tab");
+    expect(component.activeTab()).toBe("conditions");
+  });
+
   it("should NOT trigger a confirmation dialog on scope change if actions are empty", async () => {
     // Current policy has action: {} (empty)
     await component.onPolicyScopeChange("admin");

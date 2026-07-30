@@ -25,6 +25,7 @@ export class FilterValueGeneric<T> {
   readonly hiddenFilterMap: Map<string, FilterOption<T>>;
   readonly allFilters: FilterOption<T>[];
   readonly availableFilters: Map<string, FilterOption<T>>;
+  private readonly searchableColumns: FilterOption<T>[];
 
   // --- Constructor ---
   constructor(
@@ -51,6 +52,9 @@ export class FilterValueGeneric<T> {
     this.filterMap = args.filterMap ?? new Map<string, FilterOption<T>>();
     this.hiddenFilterMap = args.hiddenFilterMap ?? new Map<string, FilterOption<T>>();
     this.allFilters = [...this.filterMap.values(), ...this.hiddenFilterMap.values()];
+    // The set of columns that opt into free-text search never changes for a given availableFilters,
+    // so compute it once here instead of rebuilding it for every item and every free-text term.
+    this.searchableColumns = Array.from(this.availableFilters.values()).filter((option) => option.globalMatches);
   }
 
   // --- Getters / State ---
@@ -86,6 +90,16 @@ export class FilterValueGeneric<T> {
       .join(" ");
   }
 
+  /**
+   * The keyword-less search terms: standalone words entered without a column keyword. Used to
+   * highlight where a free-text match occurred across columns.
+   */
+  get freeTextTerms(): string[] {
+    return Array.from(this.filterMap.values())
+      .filter((option) => option instanceof DummyFilterOption && option.value === null)
+      .map((option) => option.key);
+  }
+
   get apiFilterString(): string {
     return Array.from([...this.filterMap.values(), ...this.hiddenFilterMap.values()])
       .filter((option) => !(option instanceof DummyFilterOption))
@@ -96,7 +110,24 @@ export class FilterValueGeneric<T> {
 
   // --- Public API ---
   public matches(item: T): boolean {
-    return this.allFilters.every((filter) => filter.matches(item, this));
+    return this.allFilters.every((filter) => {
+      // A standalone word (no keyword) is stored as a DummyFilterOption with a null value.
+      // Treat it as a keyword-less free-text term matched across all searchable columns.
+      if (filter instanceof DummyFilterOption && filter.value === null) {
+        return this.matchesFreeText(item, filter.key);
+      }
+      return filter.matches(item, this);
+    });
+  }
+
+  /**
+   * Matches a keyword-less search term against every column that opts into global search via
+   * FilterOption.globalMatches (OR across columns). If no column opts in, free-text is a no-op.
+   */
+  private matchesFreeText(item: T, term: string): boolean {
+    const normalized = term.toLowerCase();
+    if (this.searchableColumns.length === 0) return true;
+    return this.searchableColumns.some((option) => option.globalMatches!(item, normalized));
   }
 
   public filterItems(unfiltered: T[]): T[] {
@@ -128,6 +159,16 @@ export class FilterValueGeneric<T> {
     } else {
       newFilterMap.set(key, optionFromMap);
     }
+    return this._copyWith({ filterMap: newFilterMap });
+  }
+
+  /**
+   * Adds a free-text term. Unlike addKey, it is always stored as a cross-column DummyFilterOption,
+   * even when the term equals a registered key — so a bare word never becomes a match-all no-op.
+   */
+  public addFreeText(term: string): FilterValueGeneric<T> {
+    const newFilterMap = new Map(this.filterMap);
+    newFilterMap.set(term, new DummyFilterOption({ key: term }));
     return this._copyWith({ filterMap: newFilterMap });
   }
 
@@ -176,10 +217,17 @@ export class FilterValueGeneric<T> {
   }
 
   public setByString(rawValue: string): FilterValueGeneric<T> {
-    const newMap = parseToMap(rawValue.trim().toLocaleLowerCase());
+    const text = rawValue.trim().toLocaleLowerCase();
+    const tokens = parseFilterTokens(text);
+    // Keywords and free text share this instance's key space, so shadowed bare words are dropped.
+    const freeTextTerms = new Set(keywordlessTermsNotShadowedByKeyword(text));
     let instance: FilterValueGeneric<T> = this._copyWith({ filterMap: new Map() });
-    newMap.forEach((value, key) => {
-      instance = instance.setValueOfKey(key, value);
+    tokens.forEach(({ key, value }) => {
+      if (value === null) {
+        if (freeTextTerms.has(key)) instance = instance.addFreeText(key);
+      } else {
+        instance = instance.setValueOfKey(key, value);
+      }
     });
     return instance;
   }
@@ -211,8 +259,43 @@ const RE_QUOTED_DBL = /^"((?:\\.|[^"\\])*)"/;
 const RE_QUOTED_SNG = /^'((?:\\.|[^'\\])*)'/;
 const RE_UNQUOTED = /^((?:(?!\s+[A-Za-z0-9_]+\s*:)[^ ])+)/;
 
-function parseToMap(text: string): Map<string, string | null> {
-  const map = new Map<string, string | null>();
+/**
+ * A single segment of a filter string: a `key: value` keyword filter, or a standalone free-text word
+ * (marked by a null value). Tokens are returned in input order and never deduplicated, so a keyword
+ * and a same-named free-text word are both preserved for the caller to reconcile.
+ */
+export interface FilterToken {
+  key: string;
+  value: string | null;
+}
+
+/**
+ * Every standalone word in `text`: tokens entered without a `key:` prefix, in input order.
+ *
+ * Use this where keyword filters and free-text terms are kept apart, e.g. keywords sent to the
+ * server and free text applied client-side on its own filter instance. Callers that keep both in
+ * one key space want {@link keywordlessTermsNotShadowedByKeyword} instead.
+ */
+export function keywordlessTerms(text: string): string[] {
+  return parseFilterTokens(text)
+    .filter((token) => token.value === null)
+    .map((token) => token.key);
+}
+
+/**
+ * Like {@link keywordlessTerms}, minus words whose key also appears as a `key: value` keyword.
+ *
+ * Use this where keywords and free text share one key space: the keyword filter is the more
+ * specific one, so the bare word is dropped rather than overwriting it.
+ */
+export function keywordlessTermsNotShadowedByKeyword(text: string): string[] {
+  const tokens = parseFilterTokens(text);
+  const keywordKeys = new Set(tokens.filter((token) => token.value !== null).map((token) => token.key));
+  return tokens.filter((token) => token.value === null && !keywordKeys.has(token.key)).map((token) => token.key);
+}
+
+export function parseFilterTokens(text: string): FilterToken[] {
+  const tokens: FilterToken[] = [];
   let remaining = text.trim();
 
   while (remaining.length > 0) {
@@ -226,7 +309,7 @@ function parseToMap(text: string): Map<string, string | null> {
 
     const colonMatch = tempRemaining.match(RE_COLON_WHITESPACE);
     if (!colonMatch) {
-      map.set(key, null);
+      tokens.push({ key, value: null });
       remaining = tempRemaining.trim();
       continue;
     }
@@ -267,7 +350,7 @@ function parseToMap(text: string): Map<string, string | null> {
         }
       }
     }
-    map.set(key, value);
+    tokens.push({ key, value });
   }
-  return map;
+  return tokens;
 }

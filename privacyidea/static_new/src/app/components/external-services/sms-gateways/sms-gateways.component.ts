@@ -19,6 +19,7 @@
 
 import { Component, computed, ElementRef, inject, signal, ViewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
+import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { SmsGateway, SmsGatewayService, SmsGatewayServiceInterface } from "@services/sms-gateway/sms-gateway.service";
@@ -46,6 +47,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
     MatSortModule,
     MatIconModule,
     MatButtonModule,
+    MatCheckboxModule,
     MatTooltipModule,
     ScrollToTopDirective,
     MatFormField,
@@ -75,7 +77,9 @@ export class SmsGatewaysComponent {
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
 
-  displayedColumns: string[] = ["name", "description", "providermodule", "actions"];
+  displayedColumns: string[] = ["select", "name", "description", "providermodule"];
+
+  selection = signal<SmsGateway[]>([]);
 
   smsDataSource = computed(() => {
     const gateways = this.smsGatewayService.smsGateways();
@@ -93,13 +97,43 @@ export class SmsGatewaysComponent {
     this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SMS_DETAILS + gateway.name);
   }
 
-  deleteGateway(gateway: SmsGateway): void {
+  isAllSelected(): boolean {
+    const rows = this.smsDataSource().data;
+    return rows.length > 0 && this.selection().length === rows.length;
+  }
+
+  toggleAllRows(): void {
+    if (this.isAllSelected()) {
+      this.selection.set([]);
+    } else {
+      this.selection.set([...this.smsDataSource().data]);
+    }
+  }
+
+  toggleRow(gateway: SmsGateway): void {
+    const current = this.selection();
+    if (current.includes(gateway)) {
+      this.selection.set(current.filter((row) => row !== gateway));
+    } else {
+      this.selection.set([...current, gateway]);
+    }
+  }
+
+  isSelected(gateway: SmsGateway): boolean {
+    return this.selection().includes(gateway);
+  }
+
+  deleteSelected(): void {
+    const selected = this.selection();
+    if (selected.length === 0) {
+      return;
+    }
     this.dialogService
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Delete SMS Gateway`,
-          items: [gateway.name],
+          title: $localize`Delete SMS Gateways`,
+          items: selected.map((gateway) => gateway.name),
           itemType: "sms-gateway",
           confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
         }
@@ -107,7 +141,8 @@ export class SmsGatewaysComponent {
       .afterClosed()
       .subscribe((result) => {
         if (result) {
-          this.smsGatewayService.deleteSmsGateway(gateway.name);
+          selected.forEach((gateway) => this.smsGatewayService.deleteSmsGateway(gateway.name));
+          this.selection.set([]);
         }
       });
   }

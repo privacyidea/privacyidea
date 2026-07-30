@@ -37,6 +37,19 @@ class PushDeclineReason(str, Enum):
         return self.value
 
 
+class PushCapability(str, Enum):
+    """Optional push features this server version supports, advertised to the
+    smartphone in every challenge so a newer app knows which fields it may add
+    to its signed answer. An absent capability means the app falls back to
+    legacy behaviour. Adding a feature is appending a member.
+
+    Members are ``str``, so they serialise to their value and compare as their
+    value without ``.value``. Add a ``__str__`` returning ``self.value`` (see
+    :class:`PushDeclineReason`) only if a member ever needs string interpolation.
+    """
+    DECLINE_REASON = "decline_reason"
+
+
 class PushAction:
     FIREBASE_CONFIG = "push_firebase_configuration"
     REGISTRATION_URL = "push_registration_url"
