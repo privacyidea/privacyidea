@@ -32,7 +32,7 @@ import { DialogService } from "@services/dialog/dialog.service";
 import { TokenDetails, Tokens, TokenService } from "@services/token/token.service";
 import { MockTokenService } from "@testing/mock-services";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
-import { lastValueFrom, of } from "rxjs";
+import { lastValueFrom, of, throwError } from "rxjs";
 import { EnrollPushComponent } from "./enroll-push.component";
 
 function makeInitResp(serial = "S-1"): EnrollmentResponse {
@@ -96,7 +96,7 @@ describe("EnrollPushComponent", () => {
   });
 
   it("buildEnrollmentArgs returns a push-typed payload bound to the push mapper", () => {
-    const args = component.buildEnrollmentArgs({ realm: "r", username: "u" } as TokenEnrollmentData);
+    const args = component.buildEnrollmentArgs({ type: "push", realm: "r", username: "u" });
     expect(args).not.toBeNull();
     expect(args!.data.type).toBe("push");
     expect(args!.mapper).toBe(TestBed.inject(PushApiPayloadMapper));
@@ -174,6 +174,22 @@ describe("EnrollPushComponent", () => {
       }
     });
     expect(tokenService.pollTokenRolloutState).toHaveBeenCalledTimes(2);
+  });
+
+  it("returns null when polling errors out", async () => {
+    const initResp = makeInitResp("S-4");
+    tokenService.enrollToken.mockReturnValue(of(initResp));
+    tokenService.pollTokenRolloutState.mockReturnValue(throwError(() => new Error("poll failed")));
+
+    const enrollmentArgs = component.buildEnrollmentArgs({} as TokenEnrollmentData);
+    const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentArgs!));
+
+    const finalResponse = await component.onEnrollmentResponse(initResponse as EnrollmentResponse);
+    fixture.detectChanges();
+
+    expect(finalResponse).toBeNull();
+    expect(dialogService.openDialog).toHaveBeenCalledTimes(1);
+    expect(component.pollResponse()).toBeUndefined();
   });
 
   it("stopPolling is invoked when dialog afterClosed emits", async () => {
