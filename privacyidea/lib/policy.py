@@ -564,7 +564,8 @@ class PolicyClass:
             new_policies = []
             for policy in reduced_policies:
                 policy_matches = False
-                # The policy either matches if it has no user agents defined or if the user agent is contained in the list
+                # The policy either matches if it has no user agents defined
+                # or if the user agent is contained in the list
                 if not policy.get("user_agents"):
                     # If no user agent is defined, we match this policy
                     policy_matches = True
