@@ -95,7 +95,6 @@ export class SmtpServersComponent {
     this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP_DETAILS + server.identifier);
   }
 
-
   isAllSelected(): boolean {
     const rows = this.smtpDataSource().data;
     return rows.length > 0 && this.selection().length === rows.length;
@@ -140,12 +139,11 @@ export class SmtpServersComponent {
       .afterClosed()
       .subscribe((result) => {
         if (result) {
-          selected.forEach((row) => this.smtpService.deleteSmtpServer(row.identifier));
+          selected.forEach((row) => void this.smtpService.deleteSmtpServer(row.identifier).catch(() => undefined));
           this.selection.set([]);
         }
       });
   }
-
 
   onFilterInput(value: string): void {
     const trimmed = (value ?? "").trim();
