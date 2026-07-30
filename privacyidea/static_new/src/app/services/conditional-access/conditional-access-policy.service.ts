@@ -115,12 +115,19 @@ export type LockoutPolicySaveParams = Omit<LockoutPolicy, "id" | "priority"> & {
   priority: number | null;
 };
 
+// What a shipped template carries: a create payload minus the priority, which the
+// catalog deliberately omits so the admin picks a unique one. Optional (not just
+// nullable) because the key is absent from the response altogether.
+export type LockoutPolicyTemplateParams = Omit<LockoutPolicySaveParams, "priority"> & {
+  priority?: number | null;
+};
+
 // A ready-made policy the backend ships (GET /conditionalaccess/template); "policy"
 // is a full create payload a client prefills, edits and POSTs as a normal policy.
 export interface LockoutPolicyTemplate {
   key: string;
   description: string;
-  policy: LockoutPolicySaveParams;
+  policy: LockoutPolicyTemplateParams;
 }
 
 export const EMPTY_LOCKOUT_POLICY: LockoutPolicySaveParams = {
