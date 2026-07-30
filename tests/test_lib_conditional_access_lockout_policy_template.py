@@ -172,8 +172,8 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
                         action["action_value"]["smtp_identifier"] = "lockoutmail"
         if enforce:
             policy["dry_run"] = False
-            # templates carry no policy-level priority; supply a unique one on create
-            return create_lockout_policy(**policy, priority=1)
+        # templates carry no policy-level priority; supply a unique one on create
+        return create_lockout_policy(**policy, priority=1)
 
     # --- password brute-force template ----------------------------------------
 

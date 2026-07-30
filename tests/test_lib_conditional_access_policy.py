@@ -19,6 +19,9 @@
 Tests for the conditional-access lockout-policy CRUD layer
 (:mod:`privacyidea.lib.conditional_access.lockout_policy`).
 """
+from unittest import mock
+
+from privacyidea.lib.conditional_access import lockout_policy as lockout_policy_module
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
 from privacyidea.lib.conditional_access.engine import LockoutAction, LockoutTarget
 from privacyidea.lib.conditional_access.lockout_policy import (_ACTIONS_BY_TARGET,
@@ -104,7 +107,7 @@ class LockoutPolicyCrudTestCase(MyTestCase):
                                  {"action_type": "EMAIL_ADMIN",
                                   "action_value": {"smtp_identifier": "x"},
                                   "retrigger_above_threshold": False}]}],
-            target=LockoutTarget.USER)
+            target=LockoutTarget.USER, priority=1)
         policy = get_lockout_policy(policy_id)
         by_type = {action["action_type"]: action for action in policy["stages"][0]["actions"]}
         self.assertTrue(by_type["LOCK_USER"]["retrigger_above_threshold"])
@@ -119,7 +122,7 @@ class LockoutPolicyCrudTestCase(MyTestCase):
                     {"failure_threshold": 5,
                      "actions": [{"action_type": "LOCK_USER",
                                   "action_value": {"lock_duration_seconds": 60}}]}],
-            target=LockoutTarget.USER)
+            target=LockoutTarget.USER, priority=1)
         policy = get_lockout_policy(policy_id)
         by_threshold = {stage["failure_threshold"]: stage for stage in policy["stages"]}
         self.assertTrue(by_threshold[3]["actions"][0]["retrigger_above_threshold"])   # DENY
@@ -167,8 +170,8 @@ class LockoutPolicyCrudTestCase(MyTestCase):
                           [{"failure_threshold": 5, "bogus": 1}], target=usr, priority=2)  # unknown stage key
         self.assertRaises(ParameterError, create_lockout_policy, "P", 600, ["PIN_FAIL"],
                           [5], target=usr, priority=2)  # stage is not a dict
-        self.assertRaises(ParameterError, create_lockout_policy, "P", 600, ["PIN_FAIL"],
-                          [{"failure_threshold": 5, "actions": "notalist"}], target=usr, priority=2)  # actions not a list
+        self.assertRaises(ParameterError, create_lockout_policy, "P", 600, ["PIN_FAIL"],  # actions not a list
+                          [{"failure_threshold": 5, "actions": "notalist"}], target=usr, priority=2)
         self.assertRaises(ParameterError, create_lockout_policy, "P", 600, ["PIN_FAIL"],
                           [{"failure_threshold": 5, "actions": [42]}], target=usr, priority=2)  # action not a dict
         self.assertRaises(ParameterError, create_lockout_policy, "P", 600, ["PIN_FAIL"],
@@ -182,7 +185,7 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         # PER_ATTEMPT tracks the same AuthEventType vocabulary; only the counting unit differs.
         policy_id = create_lockout_policy("RateLimit", 60, [AuthEventType.MFA_FAIL, AuthEventType.LOGIN_SUCCESS],
                                           [_stage(10)], target=LockoutTarget.USER,
-                                          count_mode=CountMode.PER_ATTEMPT)
+                                          count_mode=CountMode.PER_ATTEMPT, priority=1)
         policy = get_lockout_policy(policy_id)
         self.assertEqual(CountMode.PER_ATTEMPT, policy["count_mode"])
         self.assertEqual([AuthEventType.MFA_FAIL, AuthEventType.LOGIN_SUCCESS], policy["counter_types_to_track"])
@@ -191,13 +194,13 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         # An unknown mode is rejected as such (not, say, mistaken for a target error).
         self.assertRaisesRegex(ParameterError, "Unknown count_mode 'SOMETHING'",
                                create_lockout_policy, "P", 600, [AuthEventType.PIN_FAIL], [_stage()],
-                               target=LockoutTarget.USER, count_mode="SOMETHING")
+                               target=LockoutTarget.USER, count_mode="SOMETHING", priority=1)
         self.assertEqual(0, db.session.query(LockoutPolicy).count())
 
     def test_02e_update_count_mode(self):
         # Switching the mode alone is allowed (the vocabulary is shared); the tracked counters are untouched.
         policy_id = create_lockout_policy("Switch", 600, [AuthEventType.PIN_FAIL], [_stage()],
-                                          target=LockoutTarget.USER)
+                                          target=LockoutTarget.USER, priority=1)
         update_lockout_policy(policy_id, count_mode=CountMode.PER_ATTEMPT)
         policy = get_lockout_policy(policy_id)
         self.assertEqual(CountMode.PER_ATTEMPT, policy["count_mode"])
@@ -209,9 +212,10 @@ class LockoutPolicyCrudTestCase(MyTestCase):
     def test_02f_count_mode_defaults_per_target(self):
         # No count_mode given: a user policy defaults to PER_REQUEST, a source_ip policy to DISTINCT_USERS,
         # so the stored value always states what the policy actually counts.
-        user_id = create_lockout_policy("U", 600, ["PIN_FAIL"], [_stage()], target=LockoutTarget.USER)
+        user_id = create_lockout_policy("U", 600, ["PIN_FAIL"], [_stage()], target=LockoutTarget.USER, priority=1)
         self.assertEqual(CountMode.PER_REQUEST, get_lockout_policy(user_id)["count_mode"])
-        ip_id = create_lockout_policy("I", 300, ["PASSWORD_FAIL"], [self._ip_stage()], target=LockoutTarget.SOURCE_IP)
+        ip_id = create_lockout_policy("I", 300, ["PASSWORD_FAIL"], [self._ip_stage()],
+                                      target=LockoutTarget.SOURCE_IP, priority=2)
         self.assertEqual(CountMode.DISTINCT_USERS, get_lockout_policy(ip_id)["count_mode"])
 
     def test_02g_count_mode_target_compatibility(self):
@@ -220,12 +224,12 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         # valid for either target.
         self.assertRaisesRegex(ParameterError, "count_mode 'DISTINCT_USERS' is not allowed for target 'user'",
                                create_lockout_policy, "P", 600, ["PIN_FAIL"], [_stage()],
-                               target=LockoutTarget.USER, count_mode=CountMode.DISTINCT_USERS)
+                               target=LockoutTarget.USER, count_mode=CountMode.DISTINCT_USERS, priority=1)
         self.assertEqual(0, db.session.query(LockoutPolicy).count())
         # source_ip accepts either volume mode as well as its DISTINCT_USERS default, storing exactly what was asked.
-        for mode in (CountMode.PER_REQUEST, CountMode.PER_ATTEMPT):
+        for index, mode in enumerate((CountMode.PER_REQUEST, CountMode.PER_ATTEMPT), start=1):
             policy_id = create_lockout_policy(f"IP-{mode.value}", 300, ["PASSWORD_FAIL"], [self._ip_stage()],
-                                              target=LockoutTarget.SOURCE_IP, count_mode=mode)
+                                              target=LockoutTarget.SOURCE_IP, count_mode=mode, priority=index)
             self.assertEqual(mode, get_lockout_policy(policy_id)["count_mode"])
 
     def test_02h_update_target_revalidates_count_mode(self):
@@ -234,7 +238,7 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         # invalid for a user target. (The compatible switch that also supplies a volume count_mode is covered
         # end-to-end by the API test suite.)
         reject_id = create_lockout_policy("Reject", 300, ["PASSWORD_FAIL"], [self._ip_stage()],
-                                          target=LockoutTarget.SOURCE_IP)
+                                          target=LockoutTarget.SOURCE_IP, priority=1)
         # Assert on the message so a stage/action-compatibility error cannot masquerade as the count_mode rejection
         # (the stages here are deliberately LOCK_USER, i.e. already target-compatible, so only count_mode can fail).
         self.assertRaisesRegex(ParameterError, "count_mode 'DISTINCT_USERS' is not allowed for target 'user'",
@@ -245,7 +249,7 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         # A source_ip policy can be switched from its DISTINCT_USERS default to a volume mode (plain per-IP rate
         # limiting); the new mode is stored.
         ip_id = create_lockout_policy("Spray", 300, ["PASSWORD_FAIL"], [self._ip_stage()],
-                                      target=LockoutTarget.SOURCE_IP)
+                                      target=LockoutTarget.SOURCE_IP, priority=1)
         update_lockout_policy(ip_id, count_mode=CountMode.PER_ATTEMPT)
         self.assertEqual(CountMode.PER_ATTEMPT, get_lockout_policy(ip_id)["count_mode"])
 
@@ -428,3 +432,27 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         policy = get_lockout_policy(policy_id)
         self.assertEqual("Solo2", policy["name"])
         self.assertEqual(5, policy["priority"])
+
+    def test_14_create_priority_race_reported_as_parameter_error(self):
+        # The app-level uniqueness check races with concurrent writers: two
+        # requests can both pass validation and only collide at the DB unique
+        # constraint on commit. That must surface as a clean ParameterError
+        # (a 400), not bubble as a 500, and must leave the session usable.
+        create_lockout_policy("Winner", 600, ["PIN_FAIL"], [_stage()], target=LockoutTarget.USER, priority=1)
+        # Bypass the app-level check to force the DB-constraint path (the race window).
+        with mock.patch.object(lockout_policy_module, "_validate_priority",
+                               side_effect=lambda priority, exclude_id=None: priority):
+            self.assertRaises(ParameterError, create_lockout_policy, "Racer", 600, ["PIN_FAIL"],
+                              [_stage()], target=LockoutTarget.USER, priority=1)
+        # The session recovered from the rolled-back conflict: a normal create still works.
+        create_lockout_policy("After", 600, ["PIN_FAIL"], [_stage()], target=LockoutTarget.USER, priority=2)
+        self.assertListEqual(["Winner", "After"], [p["name"] for p in list_lockout_policies()])
+
+    def test_15_update_priority_race_reported_as_parameter_error(self):
+        create_lockout_policy("A", 600, ["PIN_FAIL"], [_stage()], target=LockoutTarget.USER, priority=1)
+        second = create_lockout_policy("B", 600, ["PIN_FAIL"], [_stage()], target=LockoutTarget.USER, priority=2)
+        with mock.patch.object(lockout_policy_module, "_validate_priority",
+                               side_effect=lambda priority, exclude_id=None: priority):
+            self.assertRaises(ParameterError, update_lockout_policy, second, priority=1)
+        # Rolled back: B keeps priority 2 and the session is usable.
+        self.assertEqual(2, get_lockout_policy(second)["priority"])
