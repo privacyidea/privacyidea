@@ -66,7 +66,7 @@ log = logging.getLogger(__name__)
 
 
 # Hide the keyswords BINDPW and Password in params
-@log_with(log, hide_args_keywords={0: ["BINDPW", "Password"]})
+@log_with(log)
 def save_resolver(params):
     """
     create a new resolver from request parameters

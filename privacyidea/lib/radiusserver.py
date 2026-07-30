@@ -73,7 +73,7 @@ class RADIUSServer:
     def get_secret(self):
         return decryptPassword(self.config.secret)
 
-    @log_with(log, hide_kwargs=["password"])
+    @log_with(log)
     def request(self, user: str, password: str, radius_state: bytes = None) -> pyrad.packet | None:
         """
         Perform a RADIUS request to a RADIUS server.
@@ -148,7 +148,7 @@ class RADIUSServer:
         return response
 
 
-@log_with(log, hide_kwargs=["secret"])
+@log_with(log)
 def get_temporary_radius_server(server: str, secret: str, port: int = 1812,
                                 timeout: int = 5, retries: int = 3,
                                 dictionary: str = "/etc/privacyidea/dictionary") -> RADIUSServer:
@@ -226,7 +226,7 @@ def list_radiusservers(identifier=None, server=None):
     return res
 
 
-@log_with(log, hide_kwargs=["secret"])
+@log_with(log)
 def add_radius(identifier: str, server: str = None, secret: str = None,
                port: int = 1812, description: str = "",
                dictionary: str = '/etc/privacyidea/dictionary',
@@ -289,7 +289,7 @@ def add_radius(identifier: str, server: str = None, secret: str = None,
     return server_id
 
 
-@log_with(log, hide_kwargs=["secret", "password"])
+@log_with(log)
 def test_radius(identifier, server, secret, user, password, port=1812, description="",
                 dictionary='/etc/privacyidea/dictionary', retries=3, timeout=5,
                 options=None):
