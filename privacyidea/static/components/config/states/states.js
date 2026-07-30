@@ -340,13 +340,9 @@ angular.module('privacyideaApp.configStates', ['ui.router', 'privacyideaApp.vers
                     url: "/list",
                     templateUrl: configpath + "config.clients.list.html" + versioningSuffixProviderProvider.$get().$get()
                 })
-                .state('config.clients.edit', {
-                    url: "/edit/:clientid",
-                    templateUrl: configpath + "config.clients.edit.html" + versioningSuffixProviderProvider.$get().$get()
-                })
                 .state('config.clients.add', {
-                    url: "/edit/",
-                    templateUrl: configpath + "config.clients.edit.html" + versioningSuffixProviderProvider.$get().$get()
+                    url: "/add/",
+                    templateUrl: configpath + "config.clients.add.html" + versioningSuffixProviderProvider.$get().$get()
                 })
                 .state('config.privacyideaserver', {
                     url: "/privacyideaserver",

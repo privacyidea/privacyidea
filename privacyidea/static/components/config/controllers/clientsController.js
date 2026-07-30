@@ -27,58 +27,47 @@ myApp.controller("clientsController", ["$scope", "$stateParams", "inform",
         // The possible client states.
         $scope.clientStates = ["active", "suspended", "revoked"];
 
-        $scope.clientid = $stateParams.clientid;
         $scope.params = {};
         // Holds a freshly generated API key so it can be shown to the admin
         // exactly once (after create or rotate). It is never fetched again.
         $scope.newApiKey = null;
 
         $scope.getClients = function () {
-            ConfigFactory.getClients($scope.clientid, function (data) {
-                var value = data.result.value;
-                if ($scope.clientid) {
-                    // Editing a single client: the list holds exactly one entry.
-                    $scope.client = value[0];
-                    $scope.params.display_name = $scope.client.display_name;
-                    $scope.params.status = $scope.client.status;
-                } else {
-                    $scope.clients = value;
-                }
+            ConfigFactory.getClients(null, function (data) {
+                $scope.clients = data.result.value;
             });
         };
 
         $scope.getClients();
 
         $scope.saveClient = function () {
-            if ($scope.clientid) {
-                // Update metadata of an existing client.
-                ConfigFactory.updateClient($scope.clientid, $scope.params, function (data) {
-                    if (data.result.status === true) {
-                        inform.add(gettextCatalog.getString("Client saved."),
-                            {type: "info"});
-                        $scope.deselectClient();
-                        $state.go('config.clients.list');
-                        $scope.reload();
-                    }
-                });
-            } else {
-                // Create a new client. The response carries the plaintext API
-                // key, which we surface once on the list page.
-                ConfigFactory.addClient($scope.params, function (data) {
-                    if (data.result.status === true) {
-                        var client = data.result.value;
-                        $scope.newApiKey = {
-                            display_name: client.display_name,
-                            api_key: client.api_key
-                        };
-                        inform.add(gettextCatalog.getString("Client created."),
-                            {type: "info"});
-                        $scope.deselectClient();
-                        $state.go('config.clients.list');
-                        $scope.reload();
-                    }
-                });
-            }
+            // Create a new client. The response carries the plaintext API key,
+            // which we surface once on the list page.
+            ConfigFactory.addClient($scope.params, function (data) {
+                if (data.result.status === true) {
+                    var client = data.result.value;
+                    $scope.newApiKey = {
+                        display_name: client.display_name,
+                        api_key: client.api_key
+                    };
+                    inform.add(gettextCatalog.getString("Client created."),
+                        {type: "info"});
+                    $scope.deselectClient();
+                    $state.go('config.clients.list');
+                    $scope.reload();
+                }
+            });
+        };
+
+        $scope.setClientStatus = function (client) {
+            // Inline status change from the list (active / suspended / revoked).
+            ConfigFactory.updateClient(client.id, {status: client.status}, function (data) {
+                if (data.result.status === true) {
+                    inform.add(gettextCatalog.getString("Client status updated."),
+                        {type: "info"});
+                    $scope.getClients();
+                }
+            });
         };
 
         $scope.rotateClientKey = function (clientId) {
@@ -89,8 +78,6 @@ myApp.controller("clientsController", ["$scope", "$stateParams", "inform",
                         display_name: client.display_name,
                         api_key: client.api_key
                     };
-                    inform.add(gettextCatalog.getString("API key rotated."),
-                        {type: "info"});
                     $scope.getClients();
                 }
             });
@@ -106,8 +93,39 @@ myApp.controller("clientsController", ["$scope", "$stateParams", "inform",
             $scope.newApiKey = null;
         };
 
+        $scope.copyApiKey = function () {
+            var text = $scope.newApiKey ? $scope.newApiKey.api_key : "";
+            if (!text) {
+                return;
+            }
+            var copied = function () {
+                inform.add(gettextCatalog.getString("API key copied to clipboard."),
+                    {type: "info"});
+            };
+            var failed = function () {
+                inform.add(gettextCatalog.getString("Could not copy the API key to the clipboard."),
+                    {type: "danger"});
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(copied, failed);
+            } else {
+                // Fallback for non-secure contexts (e.g. plain HTTP) where the
+                // async Clipboard API is unavailable.
+                var textarea = document.createElement("textarea");
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                try {
+                    document.execCommand("copy");
+                    copied();
+                } catch (e) {
+                    failed();
+                }
+                document.body.removeChild(textarea);
+            }
+        };
+
         $scope.deselectClient = function () {
-            $scope.clientid = "";
             $scope.params = {};
         };
 

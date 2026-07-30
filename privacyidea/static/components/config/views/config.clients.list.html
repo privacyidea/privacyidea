@@ -10,6 +10,10 @@
     <p translate>Copy this key now. For security reasons it is shown only once and
         cannot be retrieved again. If you lose it, rotate the key to generate a new one.</p>
     <pre class="pi-api-key">{{ newApiKey.api_key }}</pre>
+    <button class="btn btn-default btn-sm" ng-click="copyApiKey()">
+        <span class="glyphicon glyphicon-copy"></span>
+        <span translate>Copy to clipboard</span>
+    </button>
 </div>
 
 <div class="table-responsive">
@@ -27,13 +31,15 @@
         </thead>
         <tbody>
         <tr ng-repeat="client in clients">
-            <td>
-                <a ui-sref="config.clients.edit({clientid:client.id})">
-                    {{ client.display_name }}</a>
-            </td>
+            <td>{{ client.display_name }}</td>
             <td>{{ client.client_type }}</td>
             <td>
-                <span class="label"
+                <select ng-if="checkRight('clients_add')"
+                        class="form-control input-sm"
+                        ng-model="client.status"
+                        ng-change="setClientStatus(client)"
+                        ng-options="state for state in clientStates"></select>
+                <span ng-if="!checkRight('clients_add')" class="label"
                       ng-class="{'label-success': client.status === 'active',
                                  'label-warning': client.status === 'suspended',
                                  'label-danger': client.status === 'revoked'}">
