@@ -418,11 +418,14 @@ def purge_user_lockouts():
     """
     Delete stale user-lockout records (expired or already-unlocked rows).
 
-    Requires the admin policy action :ref:`policy_user_lockout_reset`.
+    Requires the admin policy action :ref:`policy_user_lockout_reset`. Constrained to
+    the admin's policy visibility scope: a scoped admin only purges the stale rows
+    inside their realm / resolver / user boundary.
 
     :status 200: the number of rows removed, in ``result.value``
     """
-    count = purge_expired_user_lockouts()
+    visibility_scopes = get_policy_visibility_scopes(PolicyAction.USER_LOCKOUT_RESET)
+    count = purge_expired_user_lockouts(visibility_scopes=visibility_scopes)
     g.audit_object.log({"success": True, "info": f"purged {count} stale user lockout(s)"})
     return send_result(count)
 
@@ -438,7 +441,12 @@ def reset_user_lockout():
     required and ``resolver`` is optional — it only narrows the match.
     Omitting it clears every matching lock in the realm.
 
-    Requires the admin policy action :ref:`policy_user_lockout_reset`.
+    Requires the admin policy action :ref:`policy_user_lockout_reset`. Constrained to
+    the admin's policy visibility scope (the realm / resolver / user conditions on the
+    ``user_lockout_reset`` policies), mirroring the read endpoints. The boundary is part
+    of the delete criterion, so a call that matches several rows only clears the ones
+    inside the scope, and a target outside it is indistinguishable from an absent lock
+    (both return ``false``).
 
     One of user or user_id is required.
 
@@ -446,7 +454,8 @@ def reset_user_lockout():
     :jsonparam realm: realm of the user (required)
     :jsonparam resolver: resolver of the user (optional; only disambiguates)
     :jsonparam user_id: resolver-local user id
-    :status 200: ``true`` if a lock was removed, ``false`` if none existed
+    :status 200: ``true`` if a lock was removed, ``false`` if none existed or it is
+        outside the admin's visibility scope
     """
     params = request.all_data
     get_required_one_of(params, ["user", "user_id"])
@@ -454,14 +463,17 @@ def reset_user_lockout():
     login = get_optional(params, "user")
     realm = get_required(params, "realm")
     resolver = get_optional(params, "resolver")
+    visibility_scopes = get_policy_visibility_scopes(PolicyAction.USER_LOCKOUT_RESET)
     resolver_suffix = f", resolver={resolver}" if resolver else ""
     if user_id:
-        removed = unlock_user_by_id(user_id, realm, resolver)
+        removed = unlock_user_by_id(user_id, realm, resolver, visibility_scopes=visibility_scopes)
         target = f"uid={user_id}, realm={realm}{resolver_suffix}"
     else:
-        removed = unlock_user_by_username(login, realm, resolver)
+        removed = unlock_user_by_username(login, realm, resolver, visibility_scopes=visibility_scopes)
         target = f"{login}@{realm}{resolver_suffix}"
-    g.audit_object.log({"success": removed, "info": f"reset lockout ({target})"})
+    # Name the boundary in the audit log so a scoped-out attempt is distinguishable from a missing lock.
+    scope_suffix = "" if visibility_scopes is None else ", within visibility scope"
+    g.audit_object.log({"success": removed, "info": f"reset lockout ({target}{scope_suffix})"})
     return send_result(removed)
 
 

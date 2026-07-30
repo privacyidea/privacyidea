@@ -275,7 +275,8 @@ def get_user_lockout_dict(user: User, now: datetime | None = None) -> dict | Non
 
 
 @log_with(log)
-def unlock_user_by_id(uid: str, realm: str, resolver: str | None = None) -> bool:
+def unlock_user_by_id(uid: str, realm: str, resolver: str | None = None,
+                      visibility_scopes: list | None = None) -> bool:
     """
     Delete the lock(s) for a ``(uid, realm[, resolver])`` identity. Returns
     ``True`` if any row was removed, ``False`` if there was no lock. Like
@@ -287,10 +288,19 @@ def unlock_user_by_id(uid: str, realm: str, resolver: str | None = None) -> bool
     :func:`unlock_user_by_username` (resolver is always a disambiguator, never a
     required part of the key). Omitting the resolver clears the lock for **every**
     matching uid in the realm; pass a resolver to target exactly one.
+
+    ``visibility_scopes`` is the caller's authorization boundary (see
+    :func:`_visibility_condition`); ``None`` means unrestricted. It is part of the
+    ``DELETE`` criterion rather than a pre-flight check because one call may match
+    several rows: a scoped admin must not clear a row outside their boundary via a
+    call that also matches one inside it. An out-of-scope target is therefore
+    indistinguishable from an absent lock — both return ``False``.
     """
     conditions = [UserLockoutState.uid == uid, UserLockoutState.realm == realm]
     if resolver:
         conditions.append(UserLockoutState.resolver == resolver)
+    if visibility_scopes is not None:
+        conditions.append(_visibility_condition(visibility_scopes))
     stmt = delete(UserLockoutState).where(*conditions)
     result = db.session.execute(stmt)
     db.session.commit()
@@ -298,7 +308,8 @@ def unlock_user_by_id(uid: str, realm: str, resolver: str | None = None) -> bool
 
 
 @log_with(log)
-def unlock_user_by_username(username: str, realm: str, resolver: str | None = None) -> bool:
+def unlock_user_by_username(username: str, realm: str, resolver: str | None = None,
+                            visibility_scopes: list | None = None) -> bool:
     """
     Delete the lock(s) for a ``(username, realm[, resolver])`` identity. Returns
     ``True`` if any row was removed, ``False`` if there was no lock. ``username``
@@ -306,10 +317,15 @@ def unlock_user_by_username(username: str, realm: str, resolver: str | None = No
     (e.g. a stale row from a since-recreated login, or the same login across
     resolvers); all matches are removed. ``resolver`` is optional and only
     narrows the match when supplied.
+
+    ``visibility_scopes`` restricts the delete to the caller's authorization
+    boundary exactly as in :func:`unlock_user_by_id`.
     """
     conditions = [UserLockoutState.username == username, UserLockoutState.realm == realm]
     if resolver:
         conditions.append(UserLockoutState.resolver == resolver)
+    if visibility_scopes is not None:
+        conditions.append(_visibility_condition(visibility_scopes))
     stmt = delete(UserLockoutState).where(*conditions)
     result = db.session.execute(stmt)
     db.session.commit()
@@ -352,16 +368,23 @@ def remove_blocklist_entry(entry: str) -> bool:
 
 
 @log_with(log)
-def purge_expired_user_lockouts(now: datetime | None = None) -> int:
+def purge_expired_user_lockouts(now: datetime | None = None, visibility_scopes: list | None = None) -> int:
     """
     Delete user-lockout rows that are no longer in force — a timed lock past its
     expiry. Permanent locks (``lock_expires_at IS NULL``) and active timed locks
     are kept. Nothing writes these rows off on its own, so this is the
     housekeeping that clears stale records. Returns the number of rows removed.
+
+    ``visibility_scopes`` restricts the purge to the caller's authorization
+    boundary (see :func:`_visibility_condition`); ``None`` means unrestricted.
+    A scoped admin only clears the stale rows they can see, so the returned count
+    is the number they were allowed to remove.
     """
     now = now or utc_now()
-    stmt = delete(UserLockoutState).where(
-        and_(UserLockoutState.lock_expires_at.isnot(None), UserLockoutState.lock_expires_at <= now))
+    conditions = [UserLockoutState.lock_expires_at.isnot(None), UserLockoutState.lock_expires_at <= now]
+    if visibility_scopes is not None:
+        conditions.append(_visibility_condition(visibility_scopes))
+    stmt = delete(UserLockoutState).where(and_(*conditions))
     count = db.session.execute(stmt).rowcount
     db.session.commit()
     return count
