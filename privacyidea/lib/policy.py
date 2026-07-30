@@ -560,24 +560,25 @@ class PolicyClass:
                 pinode, [p.get('name') for p in reduced_policies]))
 
         # Match the user agent
-        new_policies = []
-        for policy in reduced_policies:
-            policy_matches = False
-            # The policy either matches if it has no user agents defined or if the user agent is contained in the list
-            if not policy.get("user_agents"):
-                # If no user agent is defined, we match this policy
-                policy_matches = True
-            elif user_agent:
-                policy_agents = [agent.lower() for agent in policy.get("user_agents") if agent]
-                if user_agent.lower() in policy_agents:
+        if user_agent is not None:
+            new_policies = []
+            for policy in reduced_policies:
+                policy_matches = False
+                # The policy either matches if it has no user agents defined or if the user agent is contained in the list
+                if not policy.get("user_agents"):
+                    # If no user agent is defined, we match this policy
                     policy_matches = True
+                elif user_agent:
+                    policy_agents = [agent.lower() for agent in policy.get("user_agents") if agent]
+                    if user_agent.lower() in policy_agents:
+                        policy_matches = True
 
-            if policy_matches:
-                new_policies.append(policy)
+                if policy_matches:
+                    new_policies.append(policy)
 
-        reduced_policies = new_policies
-        log.debug("Policies after matching the user_agent={!s}: {!s}".format(
-            user_agent, [p.get('name') for p in reduced_policies]))
+            reduced_policies = new_policies
+            log.debug("Policies after matching the user_agent={!s}: {!s}".format(
+                user_agent, [p.get('name') for p in reduced_policies]))
 
         # Match the client IP.
         # Client IPs may be direct match, may be located in subnets or may
