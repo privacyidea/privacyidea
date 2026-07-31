@@ -409,7 +409,7 @@ describe("TokenService", () => {
   describe("token filter -> tokenResource request params", () => {
     it("wildcard-wraps non-ID filter fields in the outgoing request", () => {
       contentServiceMock.onTokens = signal(true);
-      tokenService.tokenFilter.set(new FilterValue({ value: "serial: otp user: alice description: vpn" }));
+      tokenService.activeFilter.set(new FilterValue({ value: "serial: otp user: alice description: vpn" }));
       TestBed.tick();
 
       const req = mockBackend.expectOne((r) => r.url === "/token/");
@@ -421,7 +421,7 @@ describe("TokenService", () => {
 
     it("omits empty / wildcard-only filter values from the outgoing request", () => {
       contentServiceMock.onTokens = signal(true);
-      tokenService.tokenFilter.set(
+      tokenService.activeFilter.set(
         new FilterValue({ value: "serial: '' type: hotp active: '  ' description: * rollout_state: ***" })
       );
       TestBed.tick();
@@ -437,7 +437,7 @@ describe("TokenService", () => {
 
     it("normalizes assigned/active boolean filters to backend format True/False", () => {
       contentServiceMock.onTokens = signal(true);
-      tokenService.tokenFilter.set(new FilterValue({ value: "assigned: false active: true serial: OTP" }));
+      tokenService.activeFilter.set(new FilterValue({ value: "assigned: false active: true serial: OTP" }));
       TestBed.tick();
 
       const req = mockBackend.expectOne((r) => r.url === "/token/");
@@ -449,7 +449,7 @@ describe("TokenService", () => {
 
     it("sends a single token type as a wildcarded type param", () => {
       contentServiceMock.onTokens = signal(true);
-      tokenService.tokenFilter.set(new FilterValue({ value: "type: hotp" }));
+      tokenService.activeFilter.set(new FilterValue({ value: "type: hotp" }));
       TestBed.tick();
 
       const req = mockBackend.expectOne((r) => r.url === "/token/");
@@ -460,7 +460,7 @@ describe("TokenService", () => {
 
     it("sends multiple token types as type_list instead of type", () => {
       contentServiceMock.onTokens = signal(true);
-      tokenService.tokenFilter.set(new FilterValue({ value: "type: hotp,totp" }));
+      tokenService.activeFilter.set(new FilterValue({ value: "type: hotp,totp" }));
       TestBed.tick();
 
       const req = mockBackend.expectOne((r) => r.url === "/token/");
@@ -471,7 +471,7 @@ describe("TokenService", () => {
 
     it("merges the type and type_list keywords into a single deduplicated list", () => {
       contentServiceMock.onTokens = signal(true);
-      tokenService.tokenFilter.set(new FilterValue({ value: "type: hotp type_list: totp,hotp" }));
+      tokenService.activeFilter.set(new FilterValue({ value: "type: hotp type_list: totp,hotp" }));
       TestBed.tick();
 
       const req = mockBackend.expectOne((r) => r.url === "/token/");
@@ -482,7 +482,7 @@ describe("TokenService", () => {
 
     it("wildcard-wraps every token realm of a comma-separated list on its own", () => {
       contentServiceMock.onTokens = signal(true);
-      tokenService.tokenFilter.set(new FilterValue({ value: "tokenrealm: realm1,realm2" }));
+      tokenService.activeFilter.set(new FilterValue({ value: "tokenrealm: realm1,realm2" }));
       TestBed.tick();
 
       const req = mockBackend.expectOne((r) => r.url === "/token/");
@@ -524,7 +524,7 @@ describe("TokenService", () => {
 
   describe("showOnlyTokenInContainer -> token container filter", () => {
     const containerRoute = ROUTE_PATHS.CONTAINERS_DETAILS + "/CONT0001";
-    const hasContainerFilter = () => tokenService.tokenFilter().hiddenFilterMap.has("container_serial");
+    const hasContainerFilter = () => tokenService.activeFilter().hiddenFilterMap.has("container_serial");
 
     it("defaults to false on the container details route (shows only tokens not in a container)", () => {
       contentServiceMock.routeUrl.set(containerRoute);
@@ -1318,7 +1318,7 @@ describe("TokenService", () => {
     });
 
     it("only notes keywords the UI can actually look up", () => {
-      const lookupKeys = [...tokenService.apiFilter, ...tokenService.advancedApiFilter];
+      const lookupKeys = [...tokenService.apiFilterKeys, ...tokenService.advancedApiFilterKeys];
       Object.keys(tokenService.caseNotes).forEach((key) => expect(lookupKeys).toContain(key));
     });
   });
