@@ -109,39 +109,39 @@ describe("ContainerAddTokenComponent", () => {
 
     openPanel();
 
-    expect(tokenService.tokenFilter().hiddenFilterMap.get("type_list")).toBe("hotp,webauthn");
+    expect(tokenService.activeFilter().hiddenFilterMap.get("type_list")).toBe("hotp,webauthn");
   });
 
   it("keeps a typed filter when applying the token type filter", () => {
     containerService.supportedTokenTypes.set(["hotp", "webauthn"]);
-    tokenService.tokenFilter.set(new FilterValue({ value: "serial: OTP" }));
+    tokenService.activeFilter.set(new FilterValue({ value: "serial: OTP" }));
 
     openPanel();
 
-    expect(tokenService.tokenFilter().filterString).toBe("serial: OTP");
-    expect(tokenService.tokenFilter().hiddenFilterMap.get("type_list")).toBe("hotp,webauthn");
+    expect(tokenService.activeFilter().filterString).toBe("serial: OTP");
+    expect(tokenService.activeFilter().hiddenFilterMap.get("type_list")).toBe("hotp,webauthn");
   });
 
   it("removes the type_list entry when the container supports no known token types", () => {
-    tokenService.tokenFilter.set(new FilterValue().updateHiddenEntry("type_list", "hotp"));
+    tokenService.activeFilter.set(new FilterValue().updateHiddenEntry("type_list", "hotp"));
     containerService.supportedTokenTypes.set([]);
 
     openPanel();
 
-    expect(tokenService.tokenFilter().hiddenFilterMap.has("type_list")).toBe(false);
+    expect(tokenService.activeFilter().hiddenFilterMap.has("type_list")).toBe(false);
   });
 
   it("re-applies the token type filter after the filter was cleared", () => {
-    tokenService.clearFilter.mockImplementation(() => tokenService.tokenFilter.set(new FilterValue()));
+    tokenService.clearFilter.mockImplementation(() => tokenService.activeFilter.set(new FilterValue()));
     containerService.supportedTokenTypes.set(["hotp", "webauthn"]);
     openPanel();
-    tokenService.tokenFilter.set(tokenService.tokenFilter().copyWith({ value: "serial: OTP" }));
+    tokenService.activeFilter.set(tokenService.activeFilter().copyWith({ value: "serial: OTP" }));
 
     fixture.debugElement.query(By.directive(ClearableInputComponent)).componentInstance.clearButtonClick.emit();
 
     expect(tokenService.clearFilter).toHaveBeenCalled();
-    expect(tokenService.tokenFilter().filterString).toBe("");
-    expect(tokenService.tokenFilter().hiddenFilterMap.get("type_list")).toBe("hotp,webauthn");
+    expect(tokenService.activeFilter().filterString).toBe("");
+    expect(tokenService.activeFilter().hiddenFilterMap.get("type_list")).toBe("hotp,webauthn");
   });
 
   it("renders the paginator inside the autocomplete panel and writes page events to the token service", () => {

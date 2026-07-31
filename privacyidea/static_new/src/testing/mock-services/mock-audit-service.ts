@@ -21,18 +21,28 @@ import { Sort } from "@angular/material/sort";
 import { PiResponse } from "@app/app.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { Audit, AuditServiceInterface } from "@services/audit/audit.service";
+import { Debouncer } from "@utils/debounce.utils";
 import { of } from "rxjs";
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 
 export class MockAuditService implements AuditServiceInterface {
   apiFilterKeyMap: Record<string, string> = {};
-  apiFilter = ["user", "success"];
-  advancedApiFilter = ["machineid", "resolver"];
-  auditFilter = signal(new FilterValue());
+  apiFilterKeys = ["user", "success"];
+  advancedApiFilterKeys = ["machineid", "resolver"];
+  hiddenApiFilterKeys: string[] = [];
+  exactMatchKeys = new Set<string>();
+  allFilterKeys: Signal<string[]> = signal([
+    ...this.apiFilterKeys,
+    ...this.advancedApiFilterKeys,
+    ...this.hiddenApiFilterKeys
+  ]);
+  activeFilter = signal(new FilterValue());
+  filterDebouncer = new Debouncer(this.activeFilter);
+  filterDraft = this.activeFilter;
   filterParams: Signal<Record<string, string>> = signal({});
-  pageSize = linkedSignal({ source: this.auditFilter, computation: () => 10 });
+  pageSize = linkedSignal({ source: this.activeFilter, computation: () => 10 });
   pageIndex = linkedSignal({
-    source: () => ({ filterValue: this.auditFilter(), pageSize: this.pageSize() }),
+    source: () => ({ filterValue: this.activeFilter(), pageSize: this.pageSize() }),
     computation: () => 0
   });
   auditResource = new MockHttpResourceRef<PiResponse<Audit> | undefined>(
@@ -41,11 +51,23 @@ export class MockAuditService implements AuditServiceInterface {
   sort = signal<Sort>({ active: "time", direction: "desc" });
   isDownloading = signal(false);
   clearFilter = jest.fn().mockImplementation(() => {
-    this.auditFilter.set(new FilterValue());
+    this.activeFilter.set(new FilterValue());
+  });
+  setFilter = jest.fn().mockImplementation((filter: FilterValue) => {
+    this.activeFilter.set(filter);
+  });
+  updateFilter = jest.fn().mockImplementation((computeFilter: (current: FilterValue) => FilterValue) => {
+    this.activeFilter.set(computeFilter(this.activeFilter()));
+  });
+  filterFromInput = jest.fn().mockImplementation(($event: Event) => {
+    const inputElement = $event.target as HTMLInputElement;
+    return new FilterValue({ value: inputElement.value });
   });
   handleFilterInput = jest.fn().mockImplementation(($event: Event) => {
-    const inputElement = $event.target as HTMLInputElement;
-    this.auditFilter.set(new FilterValue({ value: inputElement.value }));
+    this.activeFilter.set(this.filterFromInput($event));
+  });
+  applyFilterInput = jest.fn().mockImplementation(($event: Event) => {
+    this.activeFilter.set(this.filterFromInput($event));
   });
   downloadCSV = jest.fn();
   fetchAuditPage = jest.fn((_: Record<string, string | number>) =>

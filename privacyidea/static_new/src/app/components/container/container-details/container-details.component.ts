@@ -447,6 +447,6 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
   }
 
   protected showContainerAuditLog() {
-    this.auditService.auditFilter.set(new FilterValue({ value: `container_serial: ${this.containerSerial()}` }));
+    this.auditService.setFilter(new FilterValue({ value: `container_serial: ${this.containerSerial()}` }));
   }
 }

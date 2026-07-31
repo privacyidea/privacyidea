@@ -58,7 +58,7 @@ export class ContainerAddTokenComponent {
   addToken = output<TokenDetails>();
 
   protected readonly showOnlyTokenInContainer = this.tokenService.showOnlyTokenInContainer;
-  protected readonly tokenFilter = this.tokenService.tokenFilter;
+  protected readonly filterDraft = this.tokenService.filterDraft;
   protected readonly pageIndex = this.tokenService.pageIndex;
   protected readonly pageSize = this.tokenService.pageSize;
   protected readonly total: WritableSignal<number> = linkedSignal({
@@ -82,8 +82,7 @@ export class ContainerAddTokenComponent {
 
   applyCompatibleTokenTypesFilter() {
     const compatibleTokenTypes = this.containerService.supportedTokenTypes();
-    const filter = this.tokenService.tokenFilter();
-    this.tokenService.tokenFilter.set(
+    this.tokenService.updateFilter((filter) =>
       compatibleTokenTypes.length > 0
         ? filter.updateHiddenEntry("type_list", compatibleTokenTypes.join(","))
         : filter.removeHiddenKey("type_list")
