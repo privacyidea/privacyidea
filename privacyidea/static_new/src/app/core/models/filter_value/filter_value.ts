@@ -58,6 +58,14 @@ export class FilterValue {
     return parseToMap(this._hiddenValue);
   }
 
+  /**
+   * The visible entries followed by the hidden ones, so that a hidden entry wins
+   * over a visible one of the same key.
+   */
+  get allEntries(): [string, string][] {
+    return [...this.filterMap.entries(), ...this.hiddenFilterMap.entries()];
+  }
+
   public copyWith(args?: { value?: string; hiddenValue?: string }): FilterValue {
     const newFilter = new FilterValue({
       value: args?.value ?? this._value,
@@ -86,6 +94,18 @@ export class FilterValue {
     return this.filterMap.get(key);
   }
 
+  /**
+   * The value of a key that filters a boolean, and undefined when the key is not
+   * filtered or carries something other than true or false.
+   */
+  public booleanValueOfKey(key: string): boolean | undefined {
+    const value = this.getValueOfKey(key)?.toLowerCase();
+    if (value !== "true" && value !== "false") {
+      return undefined;
+    }
+    return value === "true";
+  }
+
   public removeKey(key: string): FilterValue {
     this._value = this._value.replace(keySegmentRe(key), "").trim().replace(/\s+/g, " ");
     return new FilterValue({ value: this._value, hiddenValue: this._hiddenValue });
@@ -106,6 +126,21 @@ export class FilterValue {
     } else {
       return this.addKey(key);
     }
+  }
+
+  public toggleKeys(keys: string[]): FilterValue {
+    return keys.reduce<FilterValue>((filter, key) => filter.toggleKey(key), this);
+  }
+
+  /**
+   * Cycles a key that filters a boolean through true, false and not filtered.
+   */
+  public toggleBooleanKey(key: string): FilterValue {
+    const value = this.booleanValueOfKey(key);
+    if (value === undefined) {
+      return this.addEntry(key, "true");
+    }
+    return value ? this.addEntry(key, "false") : this.removeKey(key);
   }
 
   /**
