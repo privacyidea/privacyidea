@@ -1,47 +1,15 @@
 """Shared bases for split test_api_container_*.py files."""
 # SPDX-FileCopyrightText: 2024 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
-import base64
-import json
-import mock
 from dataclasses import dataclass
-from datetime import datetime, timezone, timedelta
-
 from typing import Optional
 
-import passlib
-from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PublicKey
-
-from privacyidea.lib.applications.offline import MachineApplication, REFILLTOKEN_LENGTH
-from privacyidea.lib.challenge import get_challenges
-from privacyidea.lib.container import (create_container_template, get_template_obj, delete_container_by_serial,
-                                       get_container_realms, set_container_states, unregister)
-from privacyidea.lib.container import (init_container, find_container_by_serial, add_token_to_container, assign_user,
-                                       add_container_realms, remove_token_from_container)
-from privacyidea.lib.containers.container_info import PI_INTERNAL, TokenContainerInfoData, RegistrationState
-from privacyidea.lib.containers.container_states import ContainerStates
-from privacyidea.lib.containers.smartphone import SmartphoneOptions
-from privacyidea.lib.crypto import generate_keypair_ecc, decrypt_aes
 from privacyidea.lib.error import Error
-from privacyidea.lib.machine import attach_token
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.policies.conditions import ConditionSection, ConditionHandleMissingData
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
-from privacyidea.lib.privacyideaserver import add_privacyideaserver
-from privacyidea.lib.realm import set_realm, set_default_realm
+from privacyidea.lib.realm import set_realm
 from privacyidea.lib.resolver import save_resolver
-from privacyidea.lib.serviceid import set_serviceid
-from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
-from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
-from privacyidea.lib.token import (get_one_token, get_tokens_from_serial_or_user,
-                                   get_tokeninfo, get_tokens)
-from privacyidea.lib.token import init_token, get_tokens_paginate, unassign_token
-from privacyidea.lib.tokens.papertoken import PAPERACTION
-from privacyidea.lib.tokens.pushtoken import PushAction
-from privacyidea.lib.tokens.tantoken import TANAction
 from privacyidea.lib.user import User
-from privacyidea.lib.utils.compare import PrimaryComparators
-from privacyidea.models import Realm
 from tests.base import MyApiTestCase
 from tests.test_lib_tokencontainer import MockSmartphone
 
@@ -58,11 +26,6 @@ class APIContainerTest(MyApiTestCase):
     FIREBASE_FILE = "tests/testdata/firebase-test.json"
     CLIENT_FILE = "tests/testdata/google-services.json"
 
-    def clear_flask_g(self):
-        if self.app_context.g:
-            keys = [key for key in iter(self.app_context.g)]
-            [self.app_context.g.pop(key) for key in keys]
-
     def request_assert_success(self, url, data: dict, auth_token, method='POST'):
         with self.app.test_request_context(url,
                                            method=method,
@@ -72,7 +35,7 @@ class APIContainerTest(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res.json)
             self.assertTrue(res.json["result"]["status"])
-        self.clear_flask_g()
+        self.reset_flask_g()
         return res.json
 
     def request_assert_error(self, status_code, url, data: dict, auth_token, method='POST',
@@ -91,7 +54,7 @@ class APIContainerTest(MyApiTestCase):
                 self.assertEqual(res.json["result"]["error"]["code"], error_code)
             if error_message is not None:
                 self.assertEqual(res.json["result"]["error"]["message"], error_message)
-        self.clear_flask_g()
+        self.reset_flask_g()
 
         if try_unspecific:
             set_policy(name="hide_specific_error_message", scope=SCOPE.CONTAINER,
@@ -113,7 +76,7 @@ class APIContainerTest(MyApiTestCase):
                                            headers={'Authorization': auth_token} if auth_token else None):
             res = self.app.full_dispatch_request()
             self.assertEqual(405, res.status_code, res.json)
-        self.clear_flask_g()
+        self.reset_flask_g()
         return res.json
 
     def request_assert_404_no_result(self, url, data: dict, auth_token, method='POST'):
@@ -124,8 +87,7 @@ class APIContainerTest(MyApiTestCase):
                                            headers={'Authorization': auth_token} if auth_token else None):
             res = self.app.full_dispatch_request()
             self.assertEqual(404, res.status_code, res.json)
-        self.clear_flask_g()
-
+        self.reset_flask_g()
 
 
 class APIContainerAuthorization(APIContainerTest):
@@ -166,7 +128,7 @@ class APIContainerAuthorization(APIContainerTest):
             self.assertEqual(res.json["result"]["error"]["code"], 303)
             if error_message is not None:
                 self.assertEqual(res.json["result"]["error"]["message"], error_message)
-        self.clear_flask_g()
+        self.reset_flask_g()
         return res.json
 
     def create_container_for_user(self, ctype="generic"):
@@ -181,7 +143,6 @@ class APIContainerAuthorization(APIContainerTest):
         self.assertGreater(len(container_serial), 0)
         delete_policy("user_container_create")
         return container_serial
-
 
 
 @dataclass

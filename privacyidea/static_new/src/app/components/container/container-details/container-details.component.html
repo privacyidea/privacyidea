@@ -35,8 +35,7 @@
         [containerSerial]="containerSerial()"
         [containerType]="containerType()"></app-container-details-actions>
     </div>
-    <div
-      class="details-grid">
+    <div class="details-grid">
       @if (descriptionRow(); as desc) {
         <app-details-card
           class="details-card--description"
@@ -139,8 +138,8 @@
             [total]="total()"
             [pageIndex]="pageIndex()"
             [pageSize]="pageSize()"
-            [filterValue]="tokenService.tokenFilter().filterString"
-            [filterIsNotEmpty]="tokenService.tokenFilter().isNotEmpty"
+            [filterValue]="tokenService.activeFilter().filterString"
+            [filterIsNotEmpty]="tokenService.activeFilter().isNotEmpty"
             [tokenOptions]="tokenDataSource().data"
             (pageEvent)="onPageEvent($event)"
             (filterInput)="tokenService.handleFilterInput($event)"

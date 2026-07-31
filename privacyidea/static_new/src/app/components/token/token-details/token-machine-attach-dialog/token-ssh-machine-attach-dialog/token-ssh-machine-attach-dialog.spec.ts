@@ -99,7 +99,7 @@ describe("TokenSshMachineAssignDialogComponent", () => {
     expect(component.availableUsers()).toEqual(["alice", "bob", "carol"]);
   });
 
-  it("filteredMachines respects machineFilter via selectedMachineValue effect", () => {
+  it("filteredMachines respects activeFilter via selectedMachineValue effect", () => {
     expect(component.filteredMachines()).toHaveLength(2);
 
     component.selectedMachineValue.set("host-2");

@@ -97,4 +97,14 @@ describe("HighlightPipe", () => {
     const result = pipe.transform("enroll", ["en", "enroll"]);
     expect(result).toBe('<span class="highlight">enroll</span>');
   });
+
+  it("should highlight a term with HTML metacharacters without corrupting surrounding entities", () => {
+    const result = pipe.transform("a & b < c", "&");
+    expect(result).toBe('a <span class="highlight">&amp;</span> b &lt; c');
+  });
+
+  it("should match a '<' term against the raw text rather than the escaped entity", () => {
+    const result = pipe.transform("x < y", "<");
+    expect(result).toBe('x <span class="highlight">&lt;</span> y');
+  });
 });

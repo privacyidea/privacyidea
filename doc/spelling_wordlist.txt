@@ -64,3 +64,5 @@ otpkey
 otpcounter
 passphrase
 perl
+gzip
+brotli

@@ -26,9 +26,10 @@ import { Sort } from "@angular/material/sort";
 import { PiResponse } from "@app/app.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { environment } from "@env/environment";
+import { FilterableTableService, FilterableTableServiceInterface } from "@services/table-utils/filterable-table-service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
-import { StringUtils } from "@utils/string.utils";
+import { buildFilterParams, filterParamsEqual } from "@utils/filter.utils";
 import { Observable, shareReplay } from "rxjs";
 
 export type TokenApplications = TokenApplication[];
@@ -59,24 +60,14 @@ export interface TokenApplication {
   type: string;
 }
 
-export interface MachineServiceInterface {
-  sshApiFilter: string[];
-  offlineApiFilter: string[];
-  advancedApiFilter: string[];
+export interface MachineServiceInterface extends FilterableTableServiceInterface {
+  sshApiFilterKeys: string[];
+  offlineApiFilterKeys: string[];
   machines: WritableSignal<Machines | undefined>;
   tokenApplications: Signal<TokenApplications | undefined>;
   selectedApplicationType: WritableSignal<"ssh" | "offline">;
-  pageSize: WritableSignal<number>;
-  machineFilter: WritableSignal<FilterValue>;
-  filterParams: () => Record<string, string>;
-  sort: WritableSignal<Sort>;
-  pageIndex: WritableSignal<number>;
   machinesResource: HttpResourceRef<PiResponse<Machines> | undefined>;
   tokenApplicationResource: HttpResourceRef<PiResponse<TokenApplications> | undefined>;
-
-  handleFilterInput($event: Event): void;
-
-  clearFilter(): void;
 
   deleteAssignMachineToToken(args: {
     serial: string;
@@ -141,7 +132,7 @@ export interface MachineServiceInterface {
 }
 
 @Injectable()
-export class MachineService implements MachineServiceInterface {
+export class MachineService extends FilterableTableService implements MachineServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
@@ -150,9 +141,14 @@ export class MachineService implements MachineServiceInterface {
   private readonly http = inject(HttpClient);
 
   private baseUrl = environment.proxyUrl + "/machine/";
-  sshApiFilter = ["serial", "service_id"];
-  offlineApiFilter = ["serial", "count", "rounds"];
-  advancedApiFilter = ["hostname", "machineid & resolver"];
+  sshApiFilterKeys = ["serial", "service_id"];
+  offlineApiFilterKeys = ["serial", "count", "rounds"];
+  override readonly advancedApiFilterKeys = ["hostname", "machineid & resolver"];
+
+  // The keyword list follows the application the token details page is showing.
+  get apiFilterKeys(): string[] {
+    return this.selectedApplicationType() === "ssh" ? this.sshApiFilterKeys : this.offlineApiFilterKeys;
+  }
 
   selectedApplicationType = linkedSignal({
     source: this.tokenService.tokenDetailResource.value,
@@ -165,15 +161,7 @@ export class MachineService implements MachineServiceInterface {
     }
   });
 
-  pageSize = linkedSignal({
-    source: () => ({
-      selectedApplicationType: this.selectedApplicationType,
-      tokenApplicationResource: this.tokenService.tokenDetailResourceValue
-    }),
-    computation: () => 10
-  });
-
-  machineFilter: WritableSignal<FilterValue> = linkedSignal({
+  readonly activeFilter: WritableSignal<FilterValue> = linkedSignal({
     source: () => ({
       selectedApplicationType: this.selectedApplicationType(),
       tokenDetailResource: this.tokenService.tokenDetailResource.hasValue()
@@ -189,40 +177,46 @@ export class MachineService implements MachineServiceInterface {
     }
   });
 
-  filterParams = computed<Record<string, string>>(() => {
-    const isSSH = this.selectedApplicationType() === "ssh";
-    const allowed = isSSH
-      ? [...this.sshApiFilter, ...this.advancedApiFilter]
-      : [...this.offlineApiFilter, ...this.advancedApiFilter];
+  // Which keywords are wrapped in wildcards and which are sent plain depends on the
+  // application, so the keys cannot come from a static exactMatchKeys set.
+  override readonly filterParams = computed<Record<string, string>>(
+    () => {
+      const isSSH = this.selectedApplicationType() === "ssh";
+      const wrapKeys = new Set(isSSH ? ["serial", "service_id"] : ["serial"]);
+      const plainKeys = new Set(
+        isSSH ? ["hostname", "machineid", "resolver"] : ["hostname", "machineid", "resolver", "count", "rounds"]
+      );
 
-    const wrapKeys = new Set(isSSH ? ["serial", "service_id"] : ["serial"]);
-    const plainKeys = new Set(
-      isSSH ? ["hostname", "machineid", "resolver"] : ["hostname", "machineid", "resolver", "count", "rounds"]
-    );
+      return buildFilterParams(
+        this.activeFilter().filterMap,
+        this.allFilterKeys().filter((key) => wrapKeys.has(key) || plainKeys.has(key)),
+        plainKeys
+      );
+    },
+    { equal: filterParamsEqual }
+  );
 
-    const entries = Array.from(this.machineFilter().filterMap.entries())
-      .filter(([key]) => allowed.includes(key))
-      .map(([key, value]) => [key, (value ?? "").toString().trim()] as const)
-      .filter(([, v]) => StringUtils.validFilterValue(v))
-      .map(([key, v]) => [key, wrapKeys.has(key) ? `*${v}*` : v] as const)
-      .filter(([key]) => wrapKeys.has(key) || plainKeys.has(key));
-
-    return Object.fromEntries(entries) as Record<string, string>;
-  });
-
-  sort = linkedSignal({
-    source: this.selectedApplicationType,
-    computation: () => ({ active: "serial", direction: "asc" }) as Sort
+  pageSize = linkedSignal({
+    source: () => ({
+      selectedApplicationType: this.selectedApplicationType,
+      tokenApplicationResource: this.tokenService.tokenDetailResourceValue
+    }),
+    computation: () => 10
   });
 
   pageIndex = linkedSignal({
     source: () => ({
       application: this.selectedApplicationType(),
-      filter: this.machineFilter(),
+      filter: this.activeFilter(),
       sort: this.sort(),
       tokenApplicationResource: this.tokenService.tokenDetailResourceValue
     }),
     computation: () => 0
+  });
+
+  sort = linkedSignal({
+    source: this.selectedApplicationType,
+    computation: () => ({ active: "serial", direction: "asc" }) as Sort
   });
 
   machinesResource = httpResource<PiResponse<Machines>>(() => {
@@ -306,16 +300,6 @@ export class MachineService implements MachineServiceInterface {
       return value;
     }
   });
-
-  handleFilterInput($event: Event): void {
-    const input = $event.target as HTMLInputElement;
-    const newFilter = this.machineFilter().copyWith({ value: input.value });
-    this.machineFilter.set(newFilter);
-  }
-
-  clearFilter(): void {
-    this.machineFilter.set(new FilterValue());
-  }
 
   deleteAssignMachineToToken(args: {
     serial: string;
@@ -458,7 +442,7 @@ export class MachineService implements MachineServiceInterface {
   toggleFilter(filterKeyword: string): void {
     let newValue;
     if (filterKeyword === "machineid & resolver") {
-      const current = this.machineFilter();
+      const current = this.activeFilter();
       const hasMachineId = current.hasKey("machineid");
       const hasResolver = current.hasKey("resolver");
 
@@ -476,19 +460,19 @@ export class MachineService implements MachineServiceInterface {
     } else {
       newValue = this.tableUtilsService.toggleKeywordInFilter({
         keyword: filterKeyword,
-        currentValue: this.machineFilter()
+        currentValue: this.activeFilter()
       });
     }
-    this.machineFilter.set(newValue);
+    this.setFilter(newValue);
   }
 
   getFilterIconName(keyword: string): string {
     if (keyword === "machineid & resolver") {
-      const current = this.machineFilter();
+      const current = this.activeFilter();
       const selected = current.hasKey("machineid") && current.hasKey("resolver");
       return selected ? "filter_alt_off" : "filter_alt";
     }
-    const isSelected = this.machineFilter().hasKey(keyword);
+    const isSelected = this.activeFilter().hasKey(keyword);
     return isSelected ? "filter_alt_off" : "filter_alt";
   }
 
