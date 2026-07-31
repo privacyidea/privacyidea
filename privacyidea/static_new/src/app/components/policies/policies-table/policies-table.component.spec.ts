@@ -27,10 +27,17 @@ import { PoliciesTableComponent } from "@components/policies/policies-table/poli
 import { PolicyFilterComponent } from "@components/policies/policies-table/policy-filter/policy-filter.component";
 import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
 import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { PolicyDetail, PolicyService } from "@services/policies/policies.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
-import { MockDialogService, MockPolicyService, MockRouter, MockTableUtilsService } from "@testing/mock-services";
+import {
+  MockContentService,
+  MockDialogService,
+  MockPolicyService,
+  MockRouter,
+  MockTableUtilsService
+} from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { of } from "rxjs";
 
@@ -65,6 +72,7 @@ describe("PoliciesTableComponent", () => {
         { provide: AuthService, useClass: MockAuthService },
         { provide: TableUtilsService, useClass: MockTableUtilsService },
         { provide: PolicyFilterComponent, useClass: MockPolicyFilterComponent },
+        { provide: ContentService, useClass: MockContentService },
         { provide: Router, useClass: MockRouter }
       ]
     })
@@ -218,6 +226,66 @@ describe("PoliciesTableComponent", () => {
     const expectedColspan = component.columnKeys().length;
 
     expect(noDataCell.attributes["colspan"]).toBe(expectedColspan.toString());
+  });
+
+  describe("initial filter from query params", () => {
+    const rssPolicy = {
+      name: "rss-policy",
+      priority: 40,
+      scope: "webui",
+      active: true,
+      description: "",
+      action: { rss_age: "30" },
+      realm: [],
+      user: [],
+      adminrealm: [],
+      adminuser: [],
+      pinode: [],
+      client: [],
+      user_agents: [],
+      time: "",
+      conditions: []
+    } as unknown as PolicyDetail;
+
+    const createWithQueryParams = (params: Record<string, string>): ComponentFixture<PoliciesTableComponent> => {
+      (TestBed.inject(ContentService) as unknown as MockContentService).queryParams.set(params);
+      const created = TestBed.createComponent(PoliciesTableComponent);
+      created.detectChanges();
+      return created;
+    };
+
+    it("should start unfiltered when no filter param is present", () => {
+      const created = createWithQueryParams({});
+
+      expect(created.componentInstance.filter().isEmpty).toBe(true);
+      created.destroy();
+    });
+
+    it("should adopt the filter query param as initial filter", () => {
+      const created = createWithQueryParams({ filter: "actions: rss_age" });
+
+      expect(created.componentInstance.filter().getFilterOfKey("actions")).toBe("rss_age");
+      created.destroy();
+    });
+
+    it("should apply the filter query param to the listed policies", () => {
+      mockPolicyService.allPolicies.set([...mockPolicies, rssPolicy]);
+      const created = createWithQueryParams({ filter: "actions: rss_age" });
+
+      expect(created.componentInstance.policiesListFiltered().map((policy) => policy.name)).toEqual(["rss-policy"]);
+      created.destroy();
+    });
+
+    it("should hand the query param filter to the filter component", () => {
+      const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["policyread"] });
+      const created = createWithQueryParams({ filter: "actions: rss_age" });
+
+      const filterComponent = created.debugElement.query(By.directive(MockPolicyFilterComponent))
+        .componentInstance as MockPolicyFilterComponent;
+      expect(filterComponent.initialFilter.getFilterOfKey("actions")).toBe("rss_age");
+      created.destroy();
+    });
   });
 
   describe("filter matching and highlighting", () => {

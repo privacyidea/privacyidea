@@ -21,10 +21,13 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideRouter } from "@angular/router";
 import { TokensWidgetComponent } from "@components/dashboard/widgets/tokens-widget/tokens-widget.component";
 import { WidgetInstance } from "@models/dashboard";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService } from "@services/auth/auth.service";
 import { DashboardLayoutService } from "@services/dashboard/dashboard-layout.service";
+import { InfoService } from "@services/info/info.service";
 import { SubscriptionService } from "@services/subscription/subscription.service";
 import { TokenService } from "@services/token/token.service";
+import { MockInfoService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockSubscriptionService } from "@testing/mock-services/mock-subscription-service";
 import { MockTokenService } from "@testing/mock-services/mock-token-service";
@@ -45,7 +48,8 @@ describe("WidgetFrameComponent", () => {
         provideRouter([]),
         { provide: AuthService, useClass: MockAuthService },
         { provide: TokenService, useClass: MockTokenService },
-        { provide: SubscriptionService, useClass: MockSubscriptionService }
+        { provide: SubscriptionService, useClass: MockSubscriptionService },
+        { provide: InfoService, useClass: MockInfoService }
       ]
     }).compileComponents();
 
@@ -76,6 +80,12 @@ describe("WidgetFrameComponent", () => {
 
   it("should render the widget title", () => {
     expect(fixture.nativeElement.querySelector(".widget-title").textContent).toContain("Token Usage");
+  });
+
+  it("should render the title as plain text for a widget without a title route", () => {
+    expect(component["titleRoute"]()).toBeNull();
+    expect(fixture.nativeElement.querySelector("span.widget-title")).not.toBeNull();
+    expect(fixture.nativeElement.querySelector("a.widget-title")).toBeNull();
   });
 
   it("should show a reload button when the widget is not loading", () => {
@@ -125,6 +135,35 @@ describe("WidgetFrameComponent", () => {
     fixture.nativeElement.querySelector(".widget-remove").click();
 
     expect(removeSpy).toHaveBeenCalledWith("w1");
+  });
+
+  describe("widget with a title route", () => {
+    const newsInstance: WidgetInstance = { id: "n1", type: "news", x: 0, y: 0, cols: 9, rows: 3 };
+
+    beforeEach(() => {
+      fixture.componentRef.setInput("instance", newsInstance);
+      fixture.detectChanges();
+    });
+
+    it("should expose the title route of the widget type in view mode", () => {
+      expect(component["titleRoute"]()).toBe(ROUTE_PATHS.NEWS);
+    });
+
+    it("should render the title as a link to that route", () => {
+      const link: HTMLAnchorElement = fixture.nativeElement.querySelector("a.widget-title");
+      expect(link).not.toBeNull();
+      expect(link.getAttribute("href")).toBe(ROUTE_PATHS.NEWS);
+      expect(link.textContent).toContain("News");
+    });
+
+    it("should not link the title in edit mode", () => {
+      layoutService.editMode.set(true);
+      fixture.detectChanges();
+
+      expect(component["titleRoute"]()).toBeNull();
+      expect(fixture.nativeElement.querySelector("a.widget-title")).toBeNull();
+      expect(fixture.nativeElement.querySelector("span.widget-title").textContent).toContain("News");
+    });
   });
 
   describe("pinned widget", () => {

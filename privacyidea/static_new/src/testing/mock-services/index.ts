@@ -9,6 +9,7 @@ export * from "./mock-container-template-service";
 export * from "./mock-content-service";
 export * from "./mock-dialog-service";
 export * from "./mock-documentation-service";
+export * from "./mock-info-service";
 export * from "./mock-loading-service";
 export * from "./mock-local-service";
 export * from "./mock-machine-resolver-service";

@@ -324,6 +324,11 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
       contentService.routeUrl.set(ROUTE_PATHS.TOKENS);
       expect(component.activeSection()).toBe("token");
     });
+
+    it("should keep 'dashboard' active for the news route", () => {
+      contentService.routeUrl.set(ROUTE_PATHS.NEWS);
+      expect(component.activeSection()).toBe("dashboard");
+    });
   });
 
   describe("dashboard toolbar actions", () => {
