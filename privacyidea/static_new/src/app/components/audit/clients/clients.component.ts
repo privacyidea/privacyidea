@@ -167,7 +167,6 @@ export class ClientsComponent {
 
   filterValue = "";
 
-
   onSortChange(event: { active: string }) {
     this.activeSortColumn.set(event.active || null);
   }
@@ -185,11 +184,11 @@ export class ClientsComponent {
   showInAuditLog(column: string, value: string) {
     if (column === "application") {
       const userAgent = this._split_user_agent(value);
-      this.auditService.auditFilter.set(
+      this.auditService.setFilter(
         new FilterValue({ value: `user_agent: ${userAgent.userAgent} user_agent_version: ${userAgent.version}` })
       );
     } else if (column === "ip") {
-      this.auditService.auditFilter.set(new FilterValue({ value: `client: ${value}` }));
+      this.auditService.setFilter(new FilterValue({ value: `client: ${value}` }));
     }
   }
 

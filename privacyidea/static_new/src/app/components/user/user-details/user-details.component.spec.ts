@@ -225,7 +225,7 @@ describe("UserDetailsComponent", () => {
 
     component.showUserAuditLog();
 
-    expect(auditServiceMock.auditFilter().value).toBe("user: Alice");
+    expect(auditServiceMock.activeFilter().value).toBe("user: Alice");
   });
 
   it("assignUserToToken opens PIN dialog and assigns user to token, then reloads resources", () => {

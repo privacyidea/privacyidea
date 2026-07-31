@@ -194,7 +194,7 @@ describe("MachineService (with mock classes)", () => {
   });
 
   it("filterParams produces expected object for ssh", () => {
-    machineService.machineFilter.set(new FilterValue({ value: "serial:abc hostname:host" }));
+    machineService.activeFilter.set(new FilterValue({ value: "serial:abc hostname:host" }));
     expect(machineService.filterParams()).toEqual({
       serial: "*abc*",
       hostname: "host"
@@ -203,7 +203,7 @@ describe("MachineService (with mock classes)", () => {
 
   it("filterParams handles offline application type", () => {
     machineService.selectedApplicationType.set("offline");
-    machineService.machineFilter.set(
+    machineService.activeFilter.set(
       new FilterValue({ value: "serial:xyz hostname:h count:5 rounds:10 service_id:svc" })
     );
 
@@ -232,7 +232,7 @@ describe("MachineService (with mock classes)", () => {
 
   it("should not include empty filter values in filterParams", () => {
     machineService.selectedApplicationType.set("ssh");
-    machineService.machineFilter.set({
+    machineService.activeFilter.set({
       filterMap: new Map([
         ["serial", ""],
         ["service_id", "123"],

@@ -419,10 +419,10 @@ describe("UserService", () => {
       httpMock.expectOne((r) => r.url.includes("/user/editable_attributes"));
     });
 
-    it("resetFilter replaces apiUserFilter with a fresh instance", () => {
-      const before = userService.apiUserFilter();
-      userService.resetFilter();
-      const after = userService.apiUserFilter();
+    it("clearFilter replaces activeFilter with a fresh instance", () => {
+      const before = userService.activeFilter();
+      userService.clearFilter();
+      const after = userService.activeFilter();
 
       expect(after).not.toBe(before);
       expect(userService.filterParams()).toEqual({});
@@ -430,7 +430,7 @@ describe("UserService", () => {
   });
 
   it("should not include empty or wildcard-only filter values in filterParams", () => {
-    userService.apiUserFilter.set(new FilterValue({ value: "username: email: alice@test surname:*" }));
+    userService.activeFilter.set(new FilterValue({ value: "username: email: alice@test surname:*" }));
 
     const params = userService.filterParams();
     expect(params).not.toHaveProperty("username");
@@ -439,14 +439,14 @@ describe("UserService", () => {
   });
 
   it("sends only the first word after a keyword to the server; trailing words are not appended", () => {
-    userService.apiUserFilter.set(new FilterValue({ value: "username: root smith" }));
+    userService.activeFilter.set(new FilterValue({ value: "username: root smith" }));
 
     const params = userService.filterParams();
     expect(params).toHaveProperty("username", "*root*");
   });
 
   it("normalizes keyword case so mixed-case keys still produce a server filter", () => {
-    userService.apiUserFilter.set(new FilterValue({ value: "UserName: root" }));
+    userService.activeFilter.set(new FilterValue({ value: "UserName: root" }));
 
     const params = userService.filterParams();
     expect(params).toHaveProperty("username", "*root*");
