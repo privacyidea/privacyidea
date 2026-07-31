@@ -137,7 +137,11 @@ export const routes: Routes = [
       { path: "", component: PoliciesTableComponent },
       { path: "new", component: PolicyEditPageComponent, canDeactivate: [pendingChangesGuard] },
       { path: "details/:name", component: PolicyEditPageComponent, canDeactivate: [pendingChangesGuard] },
-      { path: "conditional-access", component: ConditionalAccessComponent },
+      {
+        path: "conditional-access",
+        component: ConditionalAccessComponent,
+        canDeactivate: [pendingChangesGuard]
+      },
       {
         path: "conditional-access/new",
         component: ConditionalAccessEditPageComponent,

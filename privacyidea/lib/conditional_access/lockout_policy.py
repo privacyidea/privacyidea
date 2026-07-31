@@ -68,7 +68,7 @@ from sqlalchemy.exc import IntegrityError
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
 from privacyidea.lib.conditional_access.engine import LockoutAction, LockoutTarget
-from privacyidea.lib.error import ParameterError, ResourceNotFoundError
+from privacyidea.lib.error import ConflictError, ParameterError, ResourceNotFoundError
 from privacyidea.lib.log import log_with
 from privacyidea.models import db
 from privacyidea.models.lockout_policy import (LockoutPolicy, LockoutPolicyStage,
@@ -629,6 +629,80 @@ def update_lockout_policy(policy_id: int, name: str | None = None,
     log.info(f"Updated lockout policy '{policy.name}' (id {policy.id}); "
              f"changed fields: {', '.join(changed_fields) or 'none'}.")
     return policy.id, changed_fields
+
+
+@log_with(log)
+def reorder_lockout_policies(policy_ids: list[int],
+                             expected_priorities: list[int] | None = None) -> None:
+    """
+    Rearrange the evaluation order of the given policies.
+
+    The listed policies take the priority values that this very set of policies
+    already holds, in ascending order: the first id gets the lowest of those
+    values (highest precedence), the last id the highest. Only the *ownership* of
+    the values changes, so the set of priorities in the table is an invariant.
+    That is what makes this safe whatever numbering the admin uses - contiguous
+    ``1,2,3`` reorders exactly like gapped ``10,20,30``, nothing is renumbered,
+    no value is ever exhausted and the uniqueness constraint is never strained.
+
+    Any subset may be passed, and policies not listed keep their priority. Only
+    the policies that actually move need to be sent: the rows whose position
+    changes are the permutation's support, which is a union of cycles, so the
+    values they collectively hold are the same before and after - sending just
+    them yields exactly the same result as sending everything. A single swap is
+    therefore two ids, and two admins rearranging disjoint parts of the list do
+    not conflict at all. Passing an already-sorted order is a no-op, which makes
+    the operation idempotent.
+
+    *expected_priorities* is an optional per-id assertion, aligned with
+    *policy_ids*: the priority each policy is expected to hold right now. It
+    turns a concurrent rearrangement from a silent overwrite into a clean
+    :class:`ConflictError`, and because it covers only the submitted policies it
+    fires solely when someone changed a row this caller is about to move.
+
+    :param policy_ids: the policies to rearrange, in the wanted evaluation order
+    :param expected_priorities: the priorities the caller last saw for those
+        policies, in the same order; omit to write unconditionally
+    :raises ParameterError: if *policy_ids* is not a list of distinct ids, or the
+        assertion does not line up with it
+    :raises ResourceNotFoundError: if any id does not exist
+    :raises ConflictError: if a policy no longer holds its asserted priority
+    """
+    if not isinstance(policy_ids, (list, tuple)) or not policy_ids:
+        raise ParameterError("'policy_ids' must be a non-empty list of policy ids.")
+    ids = [_validate_positive_int(policy_id, "policy id") for policy_id in policy_ids]
+    if len(set(ids)) != len(ids):
+        raise ParameterError("'policy_ids' must not contain the same policy twice.")
+    if expected_priorities is not None:
+        if not isinstance(expected_priorities, (list, tuple)) or len(expected_priorities) != len(ids):
+            raise ParameterError("'expected_priorities' must have one entry per policy id.")
+        expected_priorities = [_validate_positive_int(priority, "expected priority")
+                               for priority in expected_priorities]
+    policies = [_get_policy(policy_id) for policy_id in ids]
+    if expected_priorities is not None:
+        stale = [policy.name for policy, expected in zip(policies, expected_priorities)
+                 if policy.priority != expected]
+        if stale:
+            # Raise error for mismatching policy priorities.
+            names = ", ".join(f"'{name}'" for name in stale)
+            raise ConflictError("The submitted expected priorities do not match the current "
+                                f"priorities of these lockout policies: {names}.")
+    # The values these policies hold, lowest first: reassigned in the requested order.
+    priorities = sorted(policy.priority for policy in policies)
+    with _unique_conflict_as_400():
+        # Park every policy on a value that cannot collide with a live one (ids are
+        # unique and priorities are validated >= 1) before assigning the new ones: the
+        # uniqueness constraint is checked per statement, so writing the final values
+        # straight away would collide with whichever policy still holds them. The
+        # flushes force the statement order rather than leaving it to the unit of work.
+        for policy in policies:
+            policy.priority = -policy.id
+        db.session.flush()
+        for policy, priority in zip(policies, priorities):
+            policy.priority = priority
+        db.session.flush()
+        db.session.commit()
+    log.info(f"Reordered {len(policies)} lockout policies.")
 
 
 @log_with(log)

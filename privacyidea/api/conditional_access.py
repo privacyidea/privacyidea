@@ -41,6 +41,7 @@ from privacyidea.lib.conditional_access.lockout_policy import (list_lockout_poli
                                                                create_lockout_policy,
                                                                update_lockout_policy,
                                                                delete_lockout_policy,
+                                                               reorder_lockout_policies,
                                                                get_target_constraints)
 from privacyidea.lib.conditional_access.lockout_policy_template import list_lockout_policy_templates
 from privacyidea.lib.error import ParameterError
@@ -288,6 +289,48 @@ def update_policy(policy_id):
                         "info": f"updated policy {policy_id} "
                                 f"({', '.join(changed_fields) or 'no fields'})"})
     return send_result(policy_id)
+
+
+@conditional_access_blueprint.route('policy/order', methods=['PUT'])
+@prepolicy(check_base_action, request, PolicyAction.LOCKOUT_POLICY_WRITE)
+@log_with(log)
+def reorder_policies():
+    """
+    Rearrange the evaluation order of conditional-access lockout policies.
+
+    The listed policies take the priority values this same set of policies
+    already holds, in ascending order: the first id gets the lowest of those
+    values (highest precedence), the last the highest. Only the ownership of the
+    values changes, so no policy is renumbered and whatever numbering scheme the
+    admin uses is preserved.
+
+    Any subset may be sent and unlisted policies keep their priority, so a swap
+    sends two ids and a full rearrangement sends all of them. Sending an
+    already-sorted order is a no-op, so the request is idempotent.
+
+    Requires the admin policy action :ref:`policy_lockout_policy_write`.
+
+    :jsonparam policy_ids: the policies to rearrange, as a list of ids in the
+        wanted evaluation order (highest precedence first). Required, non-empty
+        and without duplicates.
+    :jsonparam expected_priorities: optional per-policy assertion, one entry per
+        id in the same order: the priority the client last saw that policy hold.
+        Given it, a concurrent rearrangement is reported as a 409 instead of
+        silently overwriting the other admin's order. Since it covers only the
+        submitted policies, it conflicts solely when a policy this request moves
+        was changed elsewhere.
+    :status 200: ``true`` in ``result.value``; fetch ``GET /policy`` for the new order
+    :status 400: ``policy_ids`` is missing, empty or contains a duplicate, or
+        ``expected_priorities`` does not have one entry per id
+    :status 404: one of the ids does not exist
+    :status 409: a policy no longer holds its asserted priority
+    """
+    params = request.all_data
+    policy_ids = _get_json_param(params, "policy_ids", required=True)
+    old_priorities = _get_json_param(params, "expected_priorities")
+    reorder_lockout_policies(policy_ids, old_priorities)
+    g.audit_object.log({"success": True})
+    return send_result(True)
 
 
 @conditional_access_blueprint.route('policy/<policy_id>', methods=['DELETE'])

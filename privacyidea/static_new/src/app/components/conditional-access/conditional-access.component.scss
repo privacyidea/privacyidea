@@ -25,3 +25,21 @@
   width: 48px;
   text-align: center;
 }
+
+// Priority value and the rearrange arrows share one line.
+.ca-priority-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+
+  // The end-of-list arrows use Material's disabledInteractive, so they stay focusable and
+  // report aria-disabled instead of taking the native disabled attribute (which would drop
+  // keyboard focus to <body> the moment a row reaches an end). The trade-off is that
+  // Material's own dimming does not apply - it keys off the native :disabled state - so the
+  // unavailable look has to be reproduced here, at Material's 38% disabled opacity.
+  .reorder-button[aria-disabled="true"] {
+    cursor: default;
+    opacity: 0.38;
+  }
+}

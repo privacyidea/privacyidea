@@ -61,7 +61,7 @@ from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.policy import check_policy_name  # noqa: F401
 from privacyidea.lib.policy import Match, SCOPE
 from privacyidea.lib.policies.actions import PolicyAction
-from ...lib.error import (PolicyError, ResourceNotFoundError,
+from ...lib.error import (ConflictError, PolicyError, ResourceNotFoundError,
                           PrivacyIDEAError, AuthError, Error)
 from ...lib.log import log_with
 
@@ -704,6 +704,7 @@ def map_error_to_code(error: Exception, default: int = 500) -> int:
         AuthError: 401,
         PolicyError: 403,
         ResourceNotFoundError: 404,
+        ConflictError: 409,
         NotImplementedError: 501,
     }
     # return the code for the closest ancestor that is in the map
