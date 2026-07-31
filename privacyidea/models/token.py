@@ -30,7 +30,7 @@ from privacyidea.lib.crypto import (geturandom, encrypt, hexlify_and_unicode,
                                     pass_hash, encryptPin, decryptPin, hash,
                                     verify_pass_hash, SecretObj)
 from privacyidea.lib.error import ResourceNotFoundError
-from privacyidea.lib.log import log_with
+from privacyidea.lib.log import HIDDEN, is_sensitive_key, log_with, redact
 from privacyidea.lib.utils import convert_column_to_unicode
 from privacyidea.models import db
 from privacyidea.models.realm import Realm
@@ -399,7 +399,10 @@ class Token(MethodsMixin, db.Model):
         ldict = {}
         for attr in self.__dict__:
             key = f"{attr!r}"
-            val = f"{getattr(self, attr)!r}"
+            if is_sensitive_key(attr):
+                val = f"{HIDDEN!r}"
+            else:
+                val = f"{redact(getattr(self, attr))!r}"
             ldict[key] = val
         res = f"<{self.__class__!r} {ldict!r}>"
         return res

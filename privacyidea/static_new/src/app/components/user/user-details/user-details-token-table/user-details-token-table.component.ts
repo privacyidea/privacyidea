@@ -101,7 +101,7 @@ export class UserDetailsTokenTableComponent implements AfterViewInit {
 
   dataSource = new MatTableDataSource<ContainerDetailToken>([]);
   sort = signal({ active: "serial", direction: "asc" } as Sort);
-  apiFilter = this.tokenService.apiFilter;
+  apiFilterKeys = this.tokenService.apiFilterKeys;
   selection: WritableSignal<ContainerDetailToken[]> = linkedSignal({
     source: () =>
       this.tokenService.userTokenResource.hasValue() ? this.tokenService.userTokenResource.value() : undefined,

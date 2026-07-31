@@ -35,6 +35,7 @@ import { NotificationService } from "@services/notification/notification.service
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 
 import { ContainerTableComponent } from "@components/container/container-table/container-table.component";
+import { FilterValue } from "@core/models/filter_value/filter_value";
 import { DialogService } from "@services/dialog/dialog.service";
 import { TokenService } from "@services/token/token.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
@@ -49,7 +50,6 @@ import {
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
-import { FilterValue } from "@core/models/filter_value/filter_value";
 
 describe("ContainerTableComponent (Jest)", () => {
   let component: ContainerTableComponent;
@@ -191,7 +191,7 @@ describe("ContainerTableComponent (Jest)", () => {
     });
 
     it("does not hint once the typed filter is the applied one", () => {
-      containerService.containerFilter.set(new FilterValue({ value: "user: alice" }));
+      containerService.activeFilter.set(new FilterValue({ value: "user: alice" }));
       component.onFilterInput({ target: { value: "user: alice" } } as unknown as Event);
 
       expect(component.showFilterHint()).toBe(false);

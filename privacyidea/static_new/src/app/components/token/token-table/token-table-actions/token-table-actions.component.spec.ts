@@ -394,25 +394,25 @@ describe("TokenTableActionsComponent", () => {
   describe("isFilterSelected()", () => {
     it("should return true for infokey & infovalue when both keys are present", () => {
       const filter = new FilterValue({ value: "infokey: key1 infovalue: val1" });
-      tokenService.tokenFilter.set(filter);
+      tokenService.activeFilter.set(filter);
       expect(component.isFilterSelected("infokey & infovalue")).toBe(true);
     });
 
     it("should return false for infokey & infovalue when only one key is present", () => {
       const filter = new FilterValue({ value: "infokey: key1" });
-      tokenService.tokenFilter.set(filter);
+      tokenService.activeFilter.set(filter);
       expect(component.isFilterSelected("infokey & infovalue")).toBe(false);
     });
 
     it("should return true for a regular filter when key is present", () => {
       const filter = new FilterValue({ value: "type: hotp" });
-      tokenService.tokenFilter.set(filter);
+      tokenService.activeFilter.set(filter);
       expect(component.isFilterSelected("type")).toBe(true);
     });
 
     it("should return false for a regular filter when key is not present", () => {
       const filter = new FilterValue();
-      tokenService.tokenFilter.set(filter);
+      tokenService.activeFilter.set(filter);
       expect(component.isFilterSelected("type")).toBe(false);
     });
   });
@@ -420,43 +420,43 @@ describe("TokenTableActionsComponent", () => {
   describe("getFilterIconName()", () => {
     it("should return 'filter_alt' when active filter has no value", () => {
       const filter = new FilterValue();
-      tokenService.tokenFilter.set(filter);
+      tokenService.activeFilter.set(filter);
       expect(component.getFilterIconName("active")).toBe("filter_alt");
     });
 
     it("should return 'screen_rotation_alt' when active is 'true'", () => {
       const filter = new FilterValue({ value: "active: true" });
-      tokenService.tokenFilter.set(filter);
+      tokenService.activeFilter.set(filter);
       expect(component.getFilterIconName("active")).toBe("screen_rotation_alt");
     });
 
     it("should return 'filter_alt_off' when active is 'false'", () => {
       const filter = new FilterValue({ value: "active: false" });
-      tokenService.tokenFilter.set(filter);
+      tokenService.activeFilter.set(filter);
       expect(component.getFilterIconName("active")).toBe("filter_alt_off");
     });
 
     it("should return 'filter_alt' when active has an unknown value", () => {
       const filter = new FilterValue({ value: "active: maybe" });
-      tokenService.tokenFilter.set(filter);
+      tokenService.activeFilter.set(filter);
       expect(component.getFilterIconName("active")).toBe("filter_alt");
     });
 
     it("should return 'filter_alt_off' when a non-boolean keyword is selected", () => {
       const filter = new FilterValue({ value: "type: hotp" });
-      tokenService.tokenFilter.set(filter);
+      tokenService.activeFilter.set(filter);
       expect(component.getFilterIconName("type")).toBe("filter_alt_off");
     });
 
     it("should return 'filter_alt' when a non-boolean keyword is not selected", () => {
       const filter = new FilterValue();
-      tokenService.tokenFilter.set(filter);
+      tokenService.activeFilter.set(filter);
       expect(component.getFilterIconName("type")).toBe("filter_alt");
     });
 
     it("should work for 'assigned' keyword with 'true' value", () => {
       const filter = new FilterValue({ value: "assigned: true" });
-      tokenService.tokenFilter.set(filter);
+      tokenService.activeFilter.set(filter);
       expect(component.getFilterIconName("assigned")).toBe("screen_rotation_alt");
     });
   });
@@ -471,7 +471,7 @@ describe("TokenTableActionsComponent", () => {
 
     it("should call toggleBooleanInFilter for 'assigned' keyword", () => {
       const filter = new FilterValue();
-      tokenService.tokenFilter.set(filter);
+      tokenService.activeFilter.set(filter);
       component.onAdvancedFilterClick("assigned");
       expect(tableUtilsService.toggleBooleanInFilter).toHaveBeenCalledWith({
         keyword: "assigned",
@@ -481,7 +481,7 @@ describe("TokenTableActionsComponent", () => {
 
     it("should add both infokey and infovalue when neither is present", () => {
       const filter = new FilterValue();
-      tokenService.tokenFilter.set(filter);
+      tokenService.activeFilter.set(filter);
       component.onAdvancedFilterClick("infokey & infovalue");
       expect(tableUtilsService.toggleKeywordInFilter).toHaveBeenCalledWith({
         keyword: "infokey",
@@ -492,14 +492,14 @@ describe("TokenTableActionsComponent", () => {
 
     it("should remove both infokey and infovalue when both are present", () => {
       const filter = new FilterValue({ value: "infokey: k infovalue: v" });
-      tokenService.tokenFilter.set(filter);
+      tokenService.activeFilter.set(filter);
       component.onAdvancedFilterClick("infokey & infovalue");
       expect(tableUtilsService.toggleKeywordInFilter).toHaveBeenCalledTimes(2);
     });
 
     it("should add infovalue when only infokey is present", () => {
       const filter = new FilterValue({ value: "infokey: k" });
-      tokenService.tokenFilter.set(filter);
+      tokenService.activeFilter.set(filter);
       component.onAdvancedFilterClick("infokey & infovalue");
       expect(tableUtilsService.toggleKeywordInFilter).toHaveBeenCalledWith({
         keyword: "infovalue",
@@ -510,7 +510,7 @@ describe("TokenTableActionsComponent", () => {
 
     it("should add infokey when only infovalue is present", () => {
       const filter = new FilterValue({ value: "infovalue: v" });
-      tokenService.tokenFilter.set(filter);
+      tokenService.activeFilter.set(filter);
       component.onAdvancedFilterClick("infokey & infovalue");
       expect(tableUtilsService.toggleKeywordInFilter).toHaveBeenCalledWith({
         keyword: "infokey",
@@ -521,7 +521,7 @@ describe("TokenTableActionsComponent", () => {
 
     it("should call toggleKeywordInFilter for generic keywords", () => {
       const filter = new FilterValue();
-      tokenService.tokenFilter.set(filter);
+      tokenService.activeFilter.set(filter);
       component.onAdvancedFilterClick("type");
       expect(tableUtilsService.toggleKeywordInFilter).toHaveBeenCalledWith({
         keyword: "type",
@@ -531,7 +531,7 @@ describe("TokenTableActionsComponent", () => {
 
     it("should focus the filter input after toggle", () => {
       const filter = new FilterValue();
-      tokenService.tokenFilter.set(filter);
+      tokenService.activeFilter.set(filter);
       const mockInput = document.createElement("input");
       mockInput.id = "token-filter-input";
       document.body.appendChild(mockInput);

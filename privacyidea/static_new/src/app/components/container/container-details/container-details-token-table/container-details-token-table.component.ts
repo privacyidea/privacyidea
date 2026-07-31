@@ -132,7 +132,7 @@ export class ContainerDetailsTokenTableComponent implements AfterViewInit {
   tokenSerial = this.tokenService.tokenSerial;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   sort = signal({ active: "serial", direction: "asc" } as Sort);
-  apiFilter = this.tokenService.apiFilter;
+  apiFilterKeys = this.tokenService.apiFilterKeys;
   @ViewChild("filterInput", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
 
   protected readonly sortedData = computed(() => {
