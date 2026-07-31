@@ -20,6 +20,7 @@ import { Injectable } from "@angular/core";
 import { AdministrationWidgetComponent } from "@components/dashboard/widgets/administration-widget/administration-widget.component";
 import { AuthenticationsWidgetComponent } from "@components/dashboard/widgets/authentications-widget/authentications-widget.component";
 import { EventsWidgetComponent } from "@components/dashboard/widgets/events-widget/events-widget.component";
+import { NewsWidgetComponent } from "@components/dashboard/widgets/news-widget/news-widget.component";
 import { PoliciesWidgetComponent } from "@components/dashboard/widgets/policies-widget/policies-widget.component";
 import { SubscriptionsWidgetComponent } from "@components/dashboard/widgets/subscriptions-widget/subscriptions-widget.component";
 import { TokenTypesWidgetComponent } from "@components/dashboard/widgets/token-types-widget/token-types-widget.component";
@@ -37,6 +38,7 @@ export interface WidgetRegistryServiceInterface {
 })
 export class WidgetRegistryService implements WidgetRegistryServiceInterface {
   public readonly widgetTypes: WidgetComponentType[] = [
+    NewsWidgetComponent,
     TokensWidgetComponent,
     TokenTypesWidgetComponent,
     AuthenticationsWidgetComponent,

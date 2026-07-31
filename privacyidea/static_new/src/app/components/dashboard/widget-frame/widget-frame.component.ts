@@ -22,6 +22,7 @@ import { Component, computed, inject, input, viewChild } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatProgressSpinner } from "@angular/material/progress-spinner";
+import { RouterLink } from "@angular/router";
 import { WidgetInstance, WidgetState } from "@models/dashboard";
 import { DashboardLayoutService, DashboardLayoutServiceInterface } from "@services/dashboard/dashboard-layout.service";
 import { WidgetRegistryService, WidgetRegistryServiceInterface } from "@services/dashboard/widget-registry.service";
@@ -36,7 +37,7 @@ interface DashboardWidgetLike {
 @Component({
   selector: "app-widget-frame",
   standalone: true,
-  imports: [NgComponentOutlet, MatIcon, MatIconButton, MatProgressSpinner, CdkDragHandle],
+  imports: [NgComponentOutlet, MatIcon, MatIconButton, MatProgressSpinner, CdkDragHandle, RouterLink],
   templateUrl: "./widget-frame.component.html",
   styleUrl: "./widget-frame.component.scss"
 })
@@ -69,6 +70,10 @@ export class WidgetFrameComponent {
   });
 
   protected readonly headerIcon = computed(() => this.widgetType()?.headerIcon ?? null);
+
+  protected readonly titleRoute = computed(() =>
+    this.layoutService.editMode() ? null : (this.widgetType()?.titleRoute ?? null)
+  );
 
   protected readonly showHeaderSpinner = computed(
     () => !this.initialLoading() && (this.loading() || this.partialLoading())

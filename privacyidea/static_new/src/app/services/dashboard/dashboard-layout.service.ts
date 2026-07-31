@@ -218,18 +218,19 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
   }
 
   private defaultWidgets(): WidgetInstance[] {
-    const positions: { type: WidgetTypeId; x: number; y: number }[] = [
-      { type: "tokens", x: 0, y: 0 },
-      { type: "token-types", x: 0, y: 5 },
-      { type: "events", x: 0, y: 10 },
-      { type: "policies", x: 6, y: 0 },
-      { type: "administration", x: 6, y: 5 },
+    const positions: { type: WidgetTypeId; x: number; y: number; cols?: number }[] = [
+      { type: "news", x: 0, y: 0, cols: 9 },
+      { type: "events", x: 9, y: 0, cols: 7 },
+      { type: "tokens", x: 0, y: 3 },
+      { type: "policies", x: 6, y: 3 },
+      { type: "token-types", x: 0, y: 8 },
+      { type: "administration", x: 6, y: 8 },
       { type: "authentications", x: 16, y: 5 }
     ];
-    return positions.reduce<WidgetInstance[]>((result, { type, x, y }) => {
+    return positions.reduce<WidgetInstance[]>((result, { type, x, y, cols }) => {
       const widgetType = this.registry.get(type);
       if (widgetType) {
-        result.push({ id: uuid(), type, x, y, ...widgetType.defaultSize });
+        result.push({ id: uuid(), type, x, y, ...widgetType.defaultSize, cols: cols ?? widgetType.defaultSize.cols });
       }
       return result;
     }, []);

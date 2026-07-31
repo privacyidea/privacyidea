@@ -24,6 +24,7 @@ export const DASHBOARD_COLUMNS = 24;
 export type WidgetState = "loading" | "ready" | "denied" | "error";
 
 export type WidgetTypeId =
+  | "news"
   | "tokens"
   | "token-types"
   | "authentications"
@@ -53,6 +54,7 @@ export abstract class DashboardWidget {
 
   static readonly type: WidgetTypeId;
   static readonly title: string = "";
+  static readonly titleRoute: string | null = null;
   static readonly icon: string = "";
   static readonly headerIcon: Type<unknown> | null = null;
   static readonly defaultSize: WidgetSize = { cols: 3, rows: 3 };

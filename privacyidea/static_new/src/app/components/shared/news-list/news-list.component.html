@@ -1,0 +1,52 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+@if (items().length) {
+  <ul class="news-list">
+    @for (item of items(); track $index) {
+      <li class="news-item">
+        <span class="news-channel">
+          {{ item.channel }}
+        </span>
+        <a
+          class="news-title"
+          [href]="item.link"
+          rel="noopener"
+          target="_blank">
+          {{ item.title }}
+        </a>
+        @if (item.date; as date) {
+          <span class="news-date">
+            {{ date | date: "shortDate" }}
+          </span>
+        }
+        @if (showSummary()) {
+          <div
+            class="news-summary"
+            [innerHTML]="item.summary"></div>
+        }
+      </li>
+    }
+  </ul>
+} @else {
+  <div class="news-empty">
+    <mat-icon class="news-empty-icon">newspaper</mat-icon>
+    <span i18n>No news available.</span>
+  </div>
+}

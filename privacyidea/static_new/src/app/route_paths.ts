@@ -20,6 +20,7 @@ export const ROUTE_PATHS = {
   LOGIN: "/login",
   DASHBOARD: "/dashboard",
   AUDIT: "/audit",
+  NEWS: "/news",
   CLIENTS: "/audit/clients",
   TOKENS: "/tokens",
   POLICIES: "/policies",

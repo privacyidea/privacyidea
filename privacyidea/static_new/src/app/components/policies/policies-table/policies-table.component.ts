@@ -35,6 +35,7 @@ import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
 import { FilterOption } from "@core/models/filter_value_generic/filter-option";
 import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PolicyDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
@@ -73,6 +74,7 @@ export class PoliciesTableComponent {
   readonly authService: AuthServiceInterface = inject(AuthService);
   readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   private readonly router = inject(Router);
+  private readonly contentService: ContentServiceInterface = inject(ContentService);
 
   readonly filterComponent = viewChild<PolicyFilterComponent>("filterComponent");
 
@@ -91,9 +93,7 @@ export class PoliciesTableComponent {
   readonly skeletonRowCount = 10;
 
   readonly sort = signal<Sort>({ active: "priority", direction: "asc" });
-  readonly filter = signal<FilterValueGeneric<PolicyDetail>>(
-    new FilterValueGeneric({ availableFilters: policyFilterOptions })
-  );
+  readonly filter = signal<FilterValueGeneric<PolicyDetail>>(this.filterFromQueryParams());
 
   // Terms to visually highlight per dense column: the keyword-less search terms plus that column's
   // own keyword value. Short columns (name/scope/priority/active) are not highlighted on purpose.
@@ -157,6 +157,12 @@ export class PoliciesTableComponent {
 
   onFilterUpdate(newFilter: FilterValueGeneric<PolicyDetail>): void {
     this.filter.set(newFilter);
+  }
+
+  private filterFromQueryParams(): FilterValueGeneric<PolicyDetail> {
+    const filter = new FilterValueGeneric<PolicyDetail>({ availableFilters: policyFilterOptions });
+    const raw = this.contentService.queryParams()["filter"];
+    return raw ? filter.setByString(raw) : filter;
   }
 
   onFilterClick(columnKey: string): void {
@@ -241,7 +247,10 @@ const PRIORITY_OPERATORS: readonly [string, (a: number, b: number) => boolean][]
 ];
 
 function matchesPriority(priority: number, val: string): boolean {
-  const [prefix, compare] = PRIORITY_OPERATORS.find(([p]) => val.startsWith(p)) ?? ["", (a: number, b: number) => a === b];
+  const [prefix, compare] = PRIORITY_OPERATORS.find(([p]) => val.startsWith(p)) ?? [
+    "",
+    (a: number, b: number) => a === b
+  ];
   const rest = val.substring(prefix.length).trim();
   if (!/^-?\d+$/.test(rest)) return false;
   return compare(priority, Number(rest));
@@ -267,7 +276,7 @@ function matchesConditions(item: PolicyDetail, term: string): boolean {
   if (listFields.some((list) => list?.some((entry) => entry.toLowerCase().includes(term)))) return true;
   return Boolean(
     item.time?.toLowerCase().includes(term) ||
-      item.conditions?.some((cond) => cond.some((c) => String(c).toLowerCase().includes(term)))
+    item.conditions?.some((cond) => cond.some((c) => String(c).toLowerCase().includes(term)))
   );
 }
 
