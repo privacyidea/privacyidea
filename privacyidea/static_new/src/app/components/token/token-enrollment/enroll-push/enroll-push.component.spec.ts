@@ -27,7 +27,7 @@ import {
   TokenEnrollmentData
 } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { PushApiPayloadMapper } from "@app/mappers/token-api-payload/push-token-api-payload.mapper";
-import { ReopenDialogAction } from "@components/token/token-enrollment/enroll-token-base";
+import { EnrollTokenBase, ReopenDialogAction } from "@components/token/token-enrollment/enroll-token-base";
 import { DialogService } from "@services/dialog/dialog.service";
 import { TokenDetails, Tokens, TokenService } from "@services/token/token.service";
 import { MockTokenService } from "@testing/mock-services";
@@ -190,6 +190,52 @@ describe("EnrollPushComponent", () => {
     expect(finalResponse).toBeNull();
     expect(dialogService.openDialog).toHaveBeenCalledTimes(1);
     expect(component.pollResponse()).toBeUndefined();
+  });
+
+  it("reopenDialog returns null without polling again while the first step dialog is still open", async () => {
+    const initResp = makeInitResp("S-5");
+    tokenService.enrollToken.mockReturnValue(of(initResp));
+    tokenService.pollTokenRolloutState.mockReturnValue(of(makePollResp("clientwait")));
+
+    const enrollmentArgs = component.buildEnrollmentArgs({} as TokenEnrollmentData);
+    const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentArgs!));
+
+    await component.onEnrollmentResponse(initResponse as EnrollmentResponse);
+    fixture.detectChanges();
+
+    const reopenFn = component.reopenDialog() as ReopenDialogAction | undefined;
+    expect(await reopenFn!()).toBeNull();
+    expect(dialogService.isDialogOpen).toHaveBeenCalledWith(component.firstStepDialogRef);
+    expect(tokenService.pollTokenRolloutState).toHaveBeenCalledTimes(1);
+  });
+
+  it("falls back to the rollout_state of the init response when the poll response carries no token", async () => {
+    const initResp = {
+      ...makeInitResp("S-6"),
+      detail: { serial: "S-6", rollout_state: "enrolled" } as EnrollmentResponseDetail
+    };
+    tokenService.enrollToken.mockReturnValue(of(initResp));
+    tokenService.pollTokenRolloutState.mockReturnValue(of({ result: { status: true } } as PiResponse<Tokens, unknown>));
+
+    const enrollmentArgs = component.buildEnrollmentArgs({} as TokenEnrollmentData);
+    const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentArgs!));
+
+    const finalResponse = await component.onEnrollmentResponse(initResponse as EnrollmentResponse);
+    fixture.detectChanges();
+
+    expect(finalResponse).toEqual(initResp);
+  });
+
+  it("returns null without opening a dialog when there is no enrollment response", async () => {
+    const finalResponse = await component.onEnrollmentResponse(null as unknown as EnrollmentResponse);
+
+    expect(finalResponse).toBeNull();
+    expect(dialogService.openDialog).not.toHaveBeenCalled();
+    expect(tokenService.pollTokenRolloutState).not.toHaveBeenCalled();
+  });
+
+  it("provides itself as EnrollTokenBase", () => {
+    expect(fixture.debugElement.injector.get(EnrollTokenBase)).toBe(component);
   });
 
   it("stopPolling is invoked when dialog afterClosed emits", async () => {
