@@ -61,6 +61,10 @@ import {
   ConditionalAccessPolicyServiceInterface
 } from "@services/conditional-access/conditional-access-policy.service";
 import {
+  ConditionalAccessStateService,
+  ConditionalAccessStateServiceInterface
+} from "@services/conditional-access-state/conditional-access-state.service";
+import {
   PrivacyideaServerService,
   PrivacyideaServerServiceInterface
 } from "@services/privacyidea-server/privacyidea-server.service";
@@ -104,6 +108,8 @@ export class UserUtilsPanelComponent {
   private readonly policyService: PolicyServiceInterface = inject(PolicyService);
   private readonly conditionalAccessPolicyService: ConditionalAccessPolicyServiceInterface =
     inject(ConditionalAccessPolicyService);
+  private readonly conditionalAccessStateService: ConditionalAccessStateServiceInterface =
+    inject(ConditionalAccessStateService);
   private readonly subscriptionService = inject(SubscriptionService);
   private readonly machineResolverService: MachineResolverServiceInterface = inject(MachineResolverService);
   private readonly containerTemplateService: ContainerTemplateServiceInterface = inject(ContainerTemplateService);
@@ -233,7 +239,7 @@ export class UserUtilsPanelComponent {
       return;
     }
 
-    switch (this.contentService.routeUrl()) {
+    switch (this.contentService.routePath()) {
       case ROUTE_PATHS.TOKENS:
         this.tokenService.tokenResource.reload();
         break;
@@ -255,6 +261,12 @@ export class UserUtilsPanelComponent {
         break;
       case ROUTE_PATHS.AUTHENTICATION_LOG:
         this.authenticationLogService.authenticationLogResource.reload();
+        break;
+      case ROUTE_PATHS.LOCKED_USERS:
+        this.conditionalAccessStateService.lockedUsersResource.reload();
+        break;
+      case ROUTE_PATHS.BLOCKLIST:
+        this.conditionalAccessStateService.blocklistResource.reload();
         break;
       case ROUTE_PATHS.CLIENTS:
         this.clientsService.clientsResource.reload();

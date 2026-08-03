@@ -57,9 +57,7 @@
       <button
         [matMenuTriggerFor]="userRoleMenu.matMenu"
         class="action-button-secondary button-width-m"
-        i18n-matTooltip
-        mat-stroked-button
-        matTooltip="Filter by User Role">
+        mat-stroked-button>
         <mat-icon>filter_list</mat-icon>
         <span i18n>User Role</span>
         <mat-icon iconPositionEnd>arrow_drop_down</mat-icon>
@@ -76,9 +74,7 @@
       <button
         (click)="rangePicker.open()"
         class="action-button-secondary button-width-m"
-        i18n-matTooltip
-        mat-stroked-button
-        matTooltip="Filter by Date Range">
+        mat-stroked-button>
         <mat-icon>date_range</mat-icon>
         <span>{{ dateRangeLabel() }}</span>
         <mat-icon iconPositionEnd>arrow_drop_down</mat-icon>
@@ -206,7 +202,9 @@
                     } @else {
                       <button
                         (click)="onKeywordClick(column.key)"
+                        aria-label="Filter by {{ column.label }}"
                         class="filter-button"
+                        i18n-aria-label
                         mat-icon-button>
                         <mat-icon class="keyword-button-icon margin-left-0">
                           {{ getFilterIconName(column.key) }}
@@ -217,10 +215,10 @@
                   @if (column.sortable) {
                     <button
                       (click)="onSortClick(column.key)"
+                      aria-label="Sort by {{ column.label }}"
                       class="sort-button"
-                      i18n-matTooltip
+                      i18n-aria-label
                       mat-icon-button
-                      matTooltip="Sort by {{ column.label }}"
                       type="button">
                       <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
                     </button>

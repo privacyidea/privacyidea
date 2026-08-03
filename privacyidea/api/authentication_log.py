@@ -32,7 +32,7 @@ from privacyidea.lib.conditional_access.authentication_log import (get_authentic
 from privacyidea.lib.log import log_with
 from privacyidea.lib.params import get_optional
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.policies.helper import get_authentication_log_visibility_scopes
+from privacyidea.lib.policies.helper import get_policy_visibility_scopes
 from privacyidea.lib.utils import is_true
 
 log = logging.getLogger(__name__)
@@ -105,7 +105,7 @@ def get_authentication_log():
     end_time = get_optional(params, "end_time")
     end_time = isoparse(end_time) if end_time else None
 
-    visibility_scopes = get_authentication_log_visibility_scopes(PolicyAction.AUTHENTICATION_LOG_READ)
+    visibility_scopes = get_policy_visibility_scopes(PolicyAction.AUTHENTICATION_LOG_READ)
     # A scoped admin always also sees their own entries, added to the policy scope as an extra OR alternative.
     # (A user already sees only their own entries, so this is irrelevant for them.)
     if g.logged_in_user["role"] == ROLE.ADMIN and visibility_scopes is not None:

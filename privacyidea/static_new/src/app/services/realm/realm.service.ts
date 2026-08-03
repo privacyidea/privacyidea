@@ -72,6 +72,7 @@ export interface RealmServiceInterface {
   adminRealmOptions: Signal<string[]>;
   defaultRealmResource: HttpResourceRef<PiResponse<Realms> | undefined>;
   defaultRealm: Signal<string>;
+  defaultRealmResolved: Signal<boolean>;
 
   createRealm(
     realm: string,
@@ -102,6 +103,7 @@ export class RealmService implements RealmServiceInterface {
       this.contentService.onPolicies() ||
       this.contentService.onUserRealms() ||
       this.contentService.onAuthenticationLog() ||
+      this.contentService.onLockedUsers() ||
       this.contentService.onAnyContainerTemplatesRoute()
     );
   });
@@ -186,6 +188,10 @@ export class RealmService implements RealmServiceInterface {
     }
     return defaultRealm;
   });
+
+  // False while the default realm request is still in flight, so consumers can
+  // avoid latching onto a provisional realm before the real default is known.
+  defaultRealmResolved = computed<boolean>(() => !this.defaultRealmResource.isLoading());
 
   constructor() {
     effect(() => {

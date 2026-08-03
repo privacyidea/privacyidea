@@ -196,7 +196,10 @@ export class AuthenticationLogService implements AuthenticationLogServiceInterfa
     };
   });
 
-  eventTypes = computed<AuthenticationLogEventType[]>(() => this.eventTypesResource.value()?.result?.value ?? []);
+  eventTypes = computed<AuthenticationLogEventType[]>(() => {
+    if (!this.eventTypesResource.hasValue()) return [];
+    return this.eventTypesResource.value()?.result?.value ?? [];
+  });
 
   // The single oldest entry (timestamp ascending), used to size the time slider's default window down to the first
   // recorded event. Gated like the log itself (route + read right).
@@ -212,9 +215,10 @@ export class AuthenticationLogService implements AuthenticationLogServiceInterfa
     };
   });
 
-  oldestTimestamp = computed<string | null>(
-    () => this.oldestEntryResource.value()?.result?.value?.auth_logs?.[0]?.timestamp ?? null
-  );
+  oldestTimestamp = computed<string | null>(() => {
+    if (!this.oldestEntryResource.hasValue()) return null;
+    return this.oldestEntryResource.value()?.result?.value?.auth_logs?.[0]?.timestamp ?? null;
+  });
 
   clearFilter(): void {
     this.authenticationLogFilter.set(this.authenticationLogFilter().copyWith({ value: "" }));

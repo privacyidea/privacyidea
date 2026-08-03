@@ -33,7 +33,8 @@
           <input
             #filterHTMLInputElement
             [appFilterAutocomplete]="filterKeywords"
-            (input)="containerService.handleFilterInput($event)"
+            (input)="onFilterInput($event)"
+            (keyup.enter)="containerService.handleFilterInput($event)"
             [value]="containerService.containerFilter().filterString"
             aria-label="Filter Input"
             i18n-aria-label
@@ -43,6 +44,13 @@
             placeholder="Example query: 'type: generic'" />
         </app-clearable-input>
         <mat-hint>{{ filterHint }}</mat-hint>
+        @if (showFilterHint()) {
+          <mat-hint
+            align="end"
+            i18n
+            >Press enter to apply the filter</mat-hint
+          >
+        }
       </mat-form-field>
       <button
         [matMenuTriggerFor]="advancedFilterMenu"

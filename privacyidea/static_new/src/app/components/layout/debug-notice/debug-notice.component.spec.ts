@@ -84,6 +84,20 @@ describe("DebugNoticeComponent", () => {
     expect(fixture.nativeElement.querySelector(".debug-ribbon-text-passwords")).toBeTruthy();
   });
 
+  it("shows the debug ribbon alongside the passwords one and stacks them", () => {
+    mockAuthService.logLevel.set(LogLevel.Debug - 1);
+    mockAuthService.role.set("admin");
+    fixture.detectChanges();
+
+    const ribbon: HTMLElement = fixture.nativeElement.querySelector(".debug-ribbon");
+    expect(ribbon.classList).toContain("debug-ribbon-stacked");
+    expect(ribbon.getAttribute("role")).toBe("alert");
+    expect(fixture.nativeElement.querySelectorAll(".debug-ribbon-text").length).toBe(2);
+    expect(
+      fixture.nativeElement.querySelector(".debug-ribbon-text:not(.debug-ribbon-text-passwords)").textContent.trim()
+    ).toBe("Debug");
+  });
+
   it("is hidden when the log level is unset (NOTSET/0)", () => {
     mockAuthService.logLevel.set(LogLevel.NotSet);
     mockAuthService.role.set("admin");

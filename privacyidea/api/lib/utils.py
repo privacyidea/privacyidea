@@ -96,6 +96,28 @@ NO_UNQUOTE_USER_AGENTS = {
 SESSION_KEY_LENGTH = 32
 
 
+def to_list_param(value):
+    """
+    Normalize a request parameter that may arrive as a JSON list or a comma-separated
+    string into a list of stripped, non-empty string entries. Empty entries are
+    dropped, so ``"a,"`` yields ``["a"]`` and a blank value (``""`` / ``","``) yields
+    an empty list ``[]`` — never ``[""]``, which would otherwise filter on an empty
+    string. A not-supplied parameter (``None``) still yields ``None``.
+
+    An empty list is returned (rather than ``None``) for a supplied-but-blank value so
+    every caller gets an iterable: filter builders treat ``[]`` as "no filter" just like
+    ``None``, while callers that iterate the result (e.g. setting container realms) do
+    not choke on ``None``.
+
+    Unlike :func:`privacyidea.lib.utils.to_list`, this splits a comma-separated string
+    into its entries rather than wrapping the whole string as a single-element list.
+    """
+    if value is None:
+        return None
+    items = value if isinstance(value, (list, tuple)) else str(value).split(",")
+    return [entry for entry in (str(item).strip() for item in items) if entry]
+
+
 def generate_attempt_id() -> str:
     """
     Mint a fresh attempt id: 128-bit cryptographically random hex string (32 hex chars).
@@ -407,12 +429,12 @@ def conditional_access_precheck(user) -> "Response | None":
     # ORM models, so a module-level import would risk an import-order cycle.
     from privacyidea.lib.conditional_access.engine import (is_user_locked, is_ip_blocked,
                                                            evaluate_access_decision, AccessDecision)
-    if is_user_locked(user):
+    if is_user_locked(user, clear_expired=True):
         log.info(f"Rejecting authentication for locked user {user!r}.")
         g.audit_object.log({"success": False,
                             "info": "Rejected: account is temporarily locked"})
         return send_result(False, rid=2, details={})
-    if is_ip_blocked(g.client_ip):
+    if is_ip_blocked(g.client_ip, clear_expired=True):
         log.info(f"Rejecting authentication from blocked IP {g.client_ip!r}.")
         g.audit_object.log({"success": False,
                             "info": "Rejected: source IP is blocked"})

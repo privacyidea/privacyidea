@@ -490,48 +490,62 @@ def _policy_count_ip(policy: LockoutPolicy, source_ip: str, window_end: datetime
                                        policy.time_window_seconds, window_end=window_end)
 
 
-def get_user_lockout(user: "User", now: datetime | None = None) -> "RestrictionStatus | None":
+def get_user_lockout(user: "User", now: datetime | None = None, *,
+                     clear_expired: bool = False) -> "RestrictionStatus | None":
     """
     Return information about *user*'s **current** lock, or ``None`` if the user
-    is not currently locked. This is a **pure read** intended for the
-    authentication pre-check hot path: it never writes, so a stale
-    ``is_locked=True`` row whose ``lock_expires_at`` lies in the past simply
-    reads as *not locked* (it is overwritten by the next lock or by a cleanup
-    job).
+    is not currently locked. Intended for the authentication pre-check hot path.
+
+    By default this is a **pure read**: a stale row whose ``lock_expires_at`` lies
+    in the past simply reads as *not locked* and is left in place.
+
+    With *clear_expired* the observed stale row is deleted on the spot. An expired
+    timed lock carries no enforced state — it already reads as *not locked* and the
+    authentication log is the historical record — so dropping it here, where the
+    row is already loaded and known expired, cleans it up on the user's next login
+    without a second lookup. The authentication pre-checks opt in; nothing that
+    merely inspects a user's status does. Permanent and still-active locks are
+    never deleted. The delete is defensive (see :func:`_delete_user_lockout_state`).
 
     A row with ``lock_expires_at IS NULL`` is a permanent lock.
 
     :param user: the user to check; an unresolved user is never locked
     :param now: the reference time; defaults to :func:`utc_now`
+    :param clear_expired: delete the row if it is a stale (timed, expired) lock;
+        off by default to keep this a pure read for non-auth callers
     :return: ``None`` if not locked, else a :class:`RestrictionStatus`
     """
     if not _resolved(user):
         return None
     state = db.session.get(UserLockoutState, (user.resolver, user.uid, user.realm))
-    if not state or not state.is_locked:
+    if not state:
         return None
     if state.lock_expires_at is None:
         # Permanent lock; only an admin reset clears it.
         return RestrictionStatus(permanent=True, expires_at=None, seconds_remaining=None)
     now = _naive_utc(now) if now is not None else utc_now()
     if state.lock_expires_at <= now:
+        # If explicitly requested, drop expired rows
+        if clear_expired:
+            _delete_user_lockout_state(state)
         return None
     remaining = int((state.lock_expires_at - now).total_seconds())
     return RestrictionStatus(permanent=False, expires_at=state.lock_expires_at,
                              seconds_remaining=remaining)
 
 
-def is_user_locked(user: "User", now: datetime | None = None) -> bool:
+def is_user_locked(user: "User", now: datetime | None = None, *, clear_expired: bool = False) -> bool:
     """
     Return whether *user* is currently locked. Thin boolean wrapper over
     :func:`get_user_lockout` for the authentication pre-check hot path; see that
-    function for the expiry and permanent-lock semantics.
+    function for the expiry, permanent-lock, and *clear_expired* semantics.
 
     :param user: the user to check; an unresolved user is never locked
     :param now: the reference time; defaults to :func:`utc_now`
+    :param clear_expired: delete the row if it is a stale (timed, expired) lock
     :return: ``True`` if the user is currently locked
     """
-    return get_user_lockout(user, now=now) is not None
+    return get_user_lockout(user, now=now, clear_expired=clear_expired) is not None
 
 
 # Built-in never-block networks: blocking loopback would lock out a same-host
@@ -580,17 +594,24 @@ def is_ip_never_block(source_ip: str | None) -> bool:
     return any(ip in network for network in _never_block_networks())
 
 
-def get_ip_block(source_ip: str | None, now: datetime | None = None) -> "RestrictionStatus | None":
+def get_ip_block(source_ip: str | None, now: datetime | None = None, *,
+                 clear_expired: bool = False) -> "RestrictionStatus | None":
     """
     Return information about *source_ip*'s **current** block by the ``BLOCK_IP``
     action, or ``None`` if the IP is not currently blocked. This is the IP
     counterpart of :func:`get_user_lockout` and is meant for the authentication
     pre-check hot path.
 
-    Like :func:`get_user_lockout` it is a **pure read**: it never writes, so a
-    stale ``is_blocked=True`` row whose ``block_expires_at`` lies in the past
-    simply reads as *not blocked* (it is overwritten by the next block or by a
-    cleanup job). A row with ``block_expires_at IS NULL`` is a permanent block.
+    By default this is a **pure read**: a stale row whose ``block_expires_at`` lies
+    in the past simply reads as *not blocked* and is left in place.
+
+    With *clear_expired* the observed stale row is deleted on the spot, an expired
+    timed block carries no enforced state (the authentication log is the record),
+    so dropping it here — where the row is already loaded and known expired — cleans
+    it up the next time that IP is seen, without a second lookup. The authentication
+    pre-checks opt in. Permanent and still-active blocks are never deleted. The delete
+    is defensive (see :func:`_delete_ip_block`). A row with ``block_expires_at IS NULL`` is a
+    permanent block.
 
     The remaining time is surfaced so the WebUI login (``/auth``) can tell the
     user how long the block lasts, just like the user lock (maskable via the
@@ -599,12 +620,14 @@ def get_ip_block(source_ip: str | None, now: datetime | None = None) -> "Restric
 
     :param source_ip: the client IP to check; a falsy value is never blocked
     :param now: the reference time; defaults to :func:`utc_now`
+    :param clear_expired: delete the row if it is a stale (timed, expired) block;
+        off by default to keep this a pure read for non-auth callers
     :return: ``None`` if not blocked, else a :class:`RestrictionStatus`
     """
     if not source_ip:
         return None
     state = db.session.get(BlockList, source_ip)
-    if not state or not state.is_blocked:
+    if not state:
         return None
     # A block row exists; honor the never-block allowlist so adding an IP to it
     # immediately stops enforcing any (e.g. stale or mistaken) block on that IP.
@@ -615,24 +638,27 @@ def get_ip_block(source_ip: str | None, now: datetime | None = None) -> "Restric
         return RestrictionStatus(permanent=True, expires_at=None, seconds_remaining=None)
     now = _naive_utc(now) if now is not None else utc_now()
     if state.block_expires_at <= now:
+        if clear_expired:
+            _delete_ip_block(state)
         return None
     remaining = int((state.block_expires_at - now).total_seconds())
     return RestrictionStatus(permanent=False, expires_at=state.block_expires_at,
                              seconds_remaining=remaining)
 
 
-def is_ip_blocked(source_ip: str | None, now: datetime | None = None) -> bool:
+def is_ip_blocked(source_ip: str | None, now: datetime | None = None, *, clear_expired: bool = False) -> bool:
     """
     Return whether *source_ip* is currently blocked by the ``BLOCK_IP`` action.
     Thin boolean wrapper over :func:`get_ip_block` for the authentication
-    pre-check hot path; see that function for the expiry and permanent-block
-    semantics.
+    pre-check hot path; see that function for the expiry, permanent-block, and
+    *clear_expired* semantics.
 
     :param source_ip: the client IP to check; a falsy value is never blocked
     :param now: the reference time; defaults to :func:`utc_now`
+    :param clear_expired: delete the row if it is a stale (timed, expired) block
     :return: ``True`` if the IP is currently blocked
     """
-    return get_ip_block(source_ip, now=now) is not None
+    return get_ip_block(source_ip, now=now, clear_expired=clear_expired) is not None
 
 
 def evaluate_access_decision(user: "User", source_ip: str | None = None,
@@ -921,19 +947,19 @@ def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
     # and re-reach the same threshold; this skips a stage that already fired
     # within the window for this user, or (for IP-blocking stages) for this
     # source IP. An incident *ends* when its lock/block is lifted — whether by
-    # expiry OR by an admin clearing ``is_locked`` / ``is_blocked`` — so
+    # expiry OR by an admin deleting the row — so
     # re-reaching the threshold afterwards is a fresh incident that must execute
     # again. Otherwise an expired or admin-lifted lock would leave a dead zone in
     # which the offender could re-reach the threshold without being re-locked /
     # re-blocked.
     user_state = db.session.get(UserLockoutState, (user.resolver, user.uid, user.realm))
-    user_incident_active = (user_state is not None and user_state.is_locked
+    user_incident_active = (user_state is not None
                             and (user_state.lock_expires_at is None
                                  or user_state.lock_expires_at > now))
     user_dedup = (user_incident_active
                   and user_state.last_stage_triggered == triggered_stage.id
-                  and user_state.last_updated is not None
-                  and user_state.last_updated >= dedup_window_start)
+                  and user_state.locked_at is not None
+                  and user_state.locked_at >= dedup_window_start)
     # An IP-blocking stage de-dups on its BlockList row, mirroring the user
     # de-dup. Without this such a stage has no de-dup at all (it never writes
     # UserLockoutState): the count re-reaching the threshold would re-fire it,
@@ -942,13 +968,13 @@ def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
     if source_ip and any(a.action_type in (LockoutAction.BLOCK_IP, LockoutAction.PERMANENT_BLOCK_IP)
                          for a in pending_actions):
         ip_state = db.session.get(BlockList, source_ip)
-        ip_incident_active = (ip_state is not None and ip_state.is_blocked
+        ip_incident_active = (ip_state is not None
                               and (ip_state.block_expires_at is None
                                    or ip_state.block_expires_at > now))
         ip_dedup = (ip_incident_active
                     and ip_state.last_stage_triggered == triggered_stage.id
-                    and ip_state.last_updated is not None
-                    and ip_state.last_updated >= dedup_window_start)
+                    and ip_state.blocked_at is not None
+                    and ip_state.blocked_at >= dedup_window_start)
     if user_dedup or ip_dedup:
         log.debug(f"De-dup: stage {triggered_stage.id} already triggered within the window for "
                   f"{user!r}; skipping actions.")
@@ -1155,11 +1181,9 @@ def _execute_stage_actions(stage, actions, user: "User", source_ip: str | None, 
                     log.warning(f"LOCK_USER action {action.id} on stage {stage.id} has no valid duration "
                                 f"({action.action_value!r}); skipping.")
                     continue
-                _upsert_user_lockout_state(user, is_locked=True,
-                                           lock_expires_at=now + timedelta(seconds=duration),
-                                           stage_id=stage.id)
+                _upsert_user_lockout_state(user, lock_expires_at=now + timedelta(seconds=duration), stage_id=stage.id)
             elif action_type == LockoutAction.PERMANENT_LOCK_USER:
-                _upsert_user_lockout_state(user, is_locked=True, lock_expires_at=None, stage_id=stage.id)
+                _upsert_user_lockout_state(user, lock_expires_at=None, stage_id=stage.id)
             elif action_type in (LockoutAction.EMAIL_ADMIN, LockoutAction.EMAIL_USER):
                 notice = _send_lockout_email(action_type, action, user, tags)
                 if notice:
@@ -1183,8 +1207,7 @@ def _execute_stage_actions(stage, actions, user: "User", source_ip: str | None, 
                                     f"({action.action_value!r}); skipping.")
                         continue
                     block_expires_at = now + timedelta(seconds=duration)
-                _upsert_ip_block(source_ip, block_expires_at=block_expires_at,
-                                 stage_id=stage.id, reason=tags.get("policy"))
+                _upsert_ip_block(source_ip, block_expires_at=block_expires_at, stage_id=stage.id)
             elif action_type in (LockoutAction.ALLOW, LockoutAction.DENY):
                 # ALLOW/DENY decide the current request pre-auth (see
                 # evaluate_access_decision); they are not post-response side
@@ -1199,8 +1222,42 @@ def _execute_stage_actions(stage, actions, user: "User", source_ip: str | None, 
     return notices
 
 
-def _upsert_user_lockout_state(user: "User", *, is_locked: bool,
-                               lock_expires_at: datetime | None, stage_id: int) -> None:
+def _delete_user_lockout_state(state: UserLockoutState) -> None:
+    """
+    Delete a stale :class:`UserLockoutState` row.
+
+    Used by :func:`get_user_lockout` to drop a timed lock the auth pre-check finds
+    already expired: the row is no longer enforced and the authentication log is
+    the record, so it carries nothing worth keeping. The write is defensive — a
+    failure is logged and rolled back so cleaning up can never break the
+    authentication response that is still in flight.
+    """
+    try:
+        db.session.delete(state)
+        db.session.commit()
+    except Exception as ex:
+        log.warning("Failed to delete the expired user lockout state "
+                    f"({state.resolver!r}, {state.uid!r}, {state.realm!r}): {ex!r}")
+        db.session.rollback()
+
+
+def _delete_ip_block(state: BlockList) -> None:
+    """
+    Delete a stale :class:`BlockList` row. The IP counterpart of
+    :func:`_delete_user_lockout_state`: used by :func:`get_ip_block` to drop a
+    timed block the auth pre-check finds already expired. Defensive — a failure is
+    logged and rolled back so cleaning up can never break the authentication
+    response that is still in flight.
+    """
+    try:
+        db.session.delete(state)
+        db.session.commit()
+    except Exception as ex:
+        log.warning(f"Failed to delete the expired IP block {state.ip!r}: {ex!r}")
+        db.session.rollback()
+
+
+def _upsert_user_lockout_state(user: "User", *, lock_expires_at: datetime | None, stage_id: int) -> None:
     """
     Create or update the :class:`UserLockoutState` row for *user*.
 
@@ -1214,10 +1271,10 @@ def _upsert_user_lockout_state(user: "User", *, is_locked: bool,
         if state is None:
             state = UserLockoutState(resolver=user.resolver, uid=user.uid, realm=user.realm)
             db.session.add(state)
-        elif state.is_locked and state.lock_expires_at is None and lock_expires_at is not None:
+        elif state.lock_expires_at is None and lock_expires_at is not None:
             log.info(f"Not downgrading the existing permanent lock for {user!r} to a timed lock.")
             return
-        state.is_locked = is_locked
+        state.username = user.login
         state.lock_expires_at = lock_expires_at
         state.last_stage_triggered = stage_id
         db.session.commit()
@@ -1226,8 +1283,7 @@ def _upsert_user_lockout_state(user: "User", *, is_locked: bool,
         db.session.rollback()
 
 
-def _upsert_ip_block(source_ip: str, *, block_expires_at: datetime | None, stage_id: int,
-                     reason: str | None = None) -> None:
+def _upsert_ip_block(source_ip: str, *, block_expires_at: datetime | None, stage_id: int) -> None:
     """
     Create or update the :class:`BlockList` row for *source_ip*.
 
@@ -1248,13 +1304,11 @@ def _upsert_ip_block(source_ip: str, *, block_expires_at: datetime | None, stage
         if state is None:
             state = BlockList(ip=source_ip)
             db.session.add(state)
-        elif state.is_blocked and state.block_expires_at is None and block_expires_at is not None:
+        elif state.block_expires_at is None and block_expires_at is not None:
             log.info(f"Not downgrading the existing permanent block for IP {source_ip!r} to a timed block.")
             return
-        state.is_blocked = True
         state.block_expires_at = block_expires_at
         state.last_stage_triggered = stage_id
-        state.reason = reason
         db.session.commit()
     except Exception as ex:
         log.warning(f"Failed to write the IP block for {source_ip!r}: {ex!r}")

@@ -29,7 +29,7 @@ from privacyidea.api.lib.prepolicy import (check_base_action, prepolicy, check_u
                                            check_container_register_rollover, container_registration_config,
                                            smartphone_config, check_client_container_action, hide_tokeninfo,
                                            check_client_container_disabled_action, hide_container_info)
-from privacyidea.api.lib.utils import map_error_to_code, send_error, send_result
+from privacyidea.api.lib.utils import map_error_to_code, send_error, send_result, to_list_param
 from privacyidea.lib.params import get_optional, get_required, get_required_one_of
 from privacyidea.lib.container import (find_container_by_serial, init_container, get_container_classes_descriptions,
                                        get_container_token_types, get_all_containers, add_container_info,
@@ -92,18 +92,6 @@ The endpoints fall in three audiences:
 """
 
 
-def _split_csv_or_list(value):
-    """
-    Accept either a JSON list or a comma-separated string and return a
-    list of stripped string entries. Used by endpoints that historically
-    only accepted the comma-separated form so that JSON callers can pass
-    a native list without a 500.
-    """
-    if isinstance(value, list):
-        return [str(item).strip() for item in value]
-    return [item.strip() for item in str(value).split(",")]
-
-
 @container_blueprint.route('/', methods=['GET'])
 @prepolicy(check_base_action, request, action=PolicyAction.CONTAINER_LIST)
 @prepolicy(check_admin_tokenlist, request, PolicyAction.CONTAINER_LIST)
@@ -125,7 +113,8 @@ def list_containers():
 
     Requires authentication and the policy action ``container_list``.
 
-    :query user: filter by the username of an assigned user.
+    :query user: filter by the username of an assigned user. Combined with
+        ``realm`` and ``resolver`` to identify the user.
     :query container_serial: filter by container serial
         (case-insensitive, ``*`` wildcard).
     :query type: filter by container type (case-insensitive, ``*``
@@ -138,8 +127,17 @@ def list_containers():
         this serial (case-insensitive, ``*`` wildcard).
     :query template: filter by the name of the template the
         container was created from (case-sensitive, ``*`` wildcard).
-    :query container_realm: filter by realm (case-insensitive, ``*``
-        wildcard).
+    :query realm: filter by the realm of the assigned user (exact,
+        case-insensitive). May be given without ``user`` to list the
+        containers of all users of that realm; a realm that does not exist
+        matches nothing. Only assigned containers have an owner, hence this
+        filter never matches an unassigned container and combining it with
+        ``assigned=false`` yields an empty list. Not to be confused with
+        ``container_realm``: the realm of a user is always among the realms
+        of their container, but a container can be in further realms and
+        keeps the realm of a user that has been unassigned.
+    :query container_realm: filter by the realm of the container itself
+        (case-insensitive, ``*`` wildcard).
     :query description: filter by description (case-insensitive,
         ``*`` wildcard).
     :query resolver: filter by the resolver of the assigned user
@@ -164,6 +162,9 @@ def list_containers():
         entry.
     :status 200: paginated container list in ``result.value`` with
         ``containers``, ``count``, ``current``, ``next``, ``prev``.
+    :status 400: the ``user`` can not be found in any resolver of the
+        realm. Not raised when the ``realm`` itself does not exist — that
+        is answered with an empty list.
     """
     param = request.all_data
     user = request.User
@@ -175,7 +176,7 @@ def list_containers():
     ctype_exact = None
     ctype_list = get_optional(param, "type_list")
     if ctype_list:
-        ctype_exact = _split_csv_or_list(ctype_list)
+        ctype_exact = to_list_param(ctype_list)
     token_serial = get_optional(param, "token_serial")
     template = get_optional(param, "template")
     realm = get_optional(param, "container_realm")
@@ -652,7 +653,7 @@ def set_states(container_serial):
         set, in ``result.value``.
     """
     states_value = get_required(request.all_data, "states", allow_empty=False)
-    states = _split_csv_or_list(states_value)
+    states = to_list_param(states_value)
     res = set_container_states(container_serial, states)
 
     # Audit log
@@ -722,7 +723,7 @@ def set_realms(container_serial):
     """
     # Get parameters
     container_realms = get_required(request.all_data, "realms", allow_empty=True)
-    realm_list = _split_csv_or_list(container_realms)
+    realm_list = to_list_param(container_realms)
     allowed_realms = getattr(request, "pi_allowed_realms", None)
 
     # Set realms

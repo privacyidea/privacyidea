@@ -18,7 +18,6 @@
  **/
 import { Component, input, output } from "@angular/core";
 import { MatIcon } from "@angular/material/icon";
-import { MatTooltip } from "@angular/material/tooltip";
 
 /**
  * A small inline "filter by this value" button to place next to a cell value. It is deliberately dumb: it emits the
@@ -28,7 +27,7 @@ import { MatTooltip } from "@angular/material/tooltip";
 @Component({
   selector: "app-filter-value-button",
   standalone: true,
-  imports: [MatIcon, MatTooltip],
+  imports: [MatIcon],
   templateUrl: "./filter-value-button.component.html",
   styleUrl: "./filter-value-button.component.scss"
 })

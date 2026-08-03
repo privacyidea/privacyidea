@@ -44,6 +44,7 @@ import { PendingChangesService } from "@services/pending-changes/pending-changes
 import { PeriodicTaskService } from "@services/periodic-task/periodic-task.service";
 import { PolicyService } from "@services/policies/policies.service";
 import { ConditionalAccessPolicyService } from "@services/conditional-access/conditional-access-policy.service";
+import { ConditionalAccessStateService } from "@services/conditional-access-state/conditional-access-state.service";
 import { PrivacyideaServerService } from "@services/privacyidea-server/privacyidea-server.service";
 import { RadiusServerService } from "@services/radius-server/radius-server.service";
 import { RealmService } from "@services/realm/realm.service";
@@ -77,6 +78,7 @@ import {
   MockPendingChangesService,
   MockPeriodicTaskService,
   MockConditionalAccessPolicyService,
+  MockConditionalAccessStateService,
   MockPolicyService,
   MockPrivacyideaServerService,
   MockRadiusService,
@@ -152,6 +154,7 @@ describe("UserUtilsPanelComponent", () => {
         { provide: ClientsService, useClass: MockClientsService },
         { provide: PolicyService, useClass: MockPolicyService },
         { provide: ConditionalAccessPolicyService, useClass: MockConditionalAccessPolicyService },
+        { provide: ConditionalAccessStateService, useClass: MockConditionalAccessStateService },
         { provide: SubscriptionService, useClass: MockSubscriptionService },
         { provide: MachineResolverService, useClass: MockMachineResolverService },
         { provide: ContainerTemplateService, useClass: MockContainerTemplateService },
@@ -295,6 +298,24 @@ describe("UserUtilsPanelComponent", () => {
       content.routeUrl.set(ROUTE_PATHS.USERS);
       component.refreshPage();
       expect(userService.usersResource.reload).toHaveBeenCalled();
+    });
+
+    it("refreshes locked-users route", () => {
+      const casService = TestBed.inject(
+        ConditionalAccessStateService
+      ) as unknown as MockConditionalAccessStateService;
+      content.routeUrl.set(ROUTE_PATHS.LOCKED_USERS);
+      component.refreshPage();
+      expect(casService.lockedUsersResource.reload).toHaveBeenCalled();
+    });
+
+    it("refreshes blocklist route", () => {
+      const casService = TestBed.inject(
+        ConditionalAccessStateService
+      ) as unknown as MockConditionalAccessStateService;
+      content.routeUrl.set(ROUTE_PATHS.BLOCKLIST);
+      component.refreshPage();
+      expect(casService.blocklistResource.reload).toHaveBeenCalled();
     });
   });
 

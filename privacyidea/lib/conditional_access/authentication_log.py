@@ -334,7 +334,7 @@ def _wildcard_pattern(value: str) -> str:
     return escaped.replace("*", "%")
 
 
-def _match_condition(column: InstrumentedAttribute, value: str | list[str] | None,
+def match_condition(column: InstrumentedAttribute, value: str | list[str] | None,
                      case_insensitive: bool = False) -> ColumnElement[bool] | None:
     """
     Build the match condition for one column from a single value or a list of values, or ``None`` for no filter on
@@ -384,7 +384,7 @@ def _filter_conditions(resolver: str | list[str] | None = None,
     can be applied to both ``select`` and ``delete`` statements. timestamp filters are inclusive on both ends.
 
     With *case_insensitive* set, plain (non-wildcard) filter values match case-insensitively; wildcard values always
-    match case-insensitively (see :func:`_match_condition`).
+    match case-insensitively (see :func:`match_condition`).
     """
     match_filters: dict[InstrumentedAttribute, str | list[str] | None] = {
         AuthenticationLog.resolver: resolver,
@@ -400,7 +400,7 @@ def _filter_conditions(resolver: str | list[str] | None = None,
         AuthenticationLog.client_label: client_label,
     }
     conditions = [condition for column, value in match_filters.items()
-                  if (condition := _match_condition(column, value, case_insensitive)) is not None]
+                  if (condition := match_condition(column, value, case_insensitive)) is not None]
     if start_time is not None:
         conditions.append(AuthenticationLog.timestamp >= _naive_utc(start_time))
     if end_time is not None:
