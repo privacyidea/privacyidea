@@ -36,11 +36,11 @@
       <mat-label i18n>Filter Offline Applications...</mat-label>
       <app-clearable-input
         (clearButtonClick)="machineService.clearFilter()"
-        [showClearButton]="machineService.machineFilter().isNotEmpty">
+        [showClearButton]="machineService.filterDraft().isNotEmpty">
         <input
           #filterInput
           (input)="machineService.handleFilterInput($event)"
-          [value]="machineService.machineFilter().filterString"
+          [value]="machineService.filterDraft().filterString"
           aria-label="Filter Input"
           i18n-aria-label
           i18n-placeholder
@@ -76,7 +76,7 @@
           <div class="flex ali-center">
             {{ column.label }}
             <div class="margin-left-16 flex">
-              @if (machineService.offlineApiFilter.includes(column.key)) {
+              @if (machineService.offlineApiFilterKeys.includes(column.key)) {
                 <button
                   (click)="onKeywordClick(column.key)"
                   aria-label="Filter by {{ column.label }}"

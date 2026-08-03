@@ -23,12 +23,12 @@
       class="audit-table-filter" subscriptSizing="dynamic">
       <mat-label i18n>Filter Audit Log...</mat-label>
       <app-clearable-input
-        (clearButtonClick)="auditService.clearFilter()" [showClearButton]="auditService.auditFilter().isNotEmpty">
+        (clearButtonClick)="auditService.clearFilter()" [showClearButton]="auditService.filterDraft().isNotEmpty">
         <input
           #filterHTMLInputElement
-          [appFilterAutocomplete]="auditService.apiFilter"
+          [appFilterAutocomplete]="auditService.apiFilterKeys"
           (input)="auditService.handleFilterInput($event)"
-          [value]="auditService.auditFilter().value"
+          [value]="auditService.filterDraft().value"
           aria-label="Filter Input"
           i18n-aria-label
           i18n-placeholder

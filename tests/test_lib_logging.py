@@ -30,3 +30,4 @@ def test_log_formatter(caplog, tmp_path):
     assert parse_date("2016/\0x052/20") is None
     assert ("!!Log Entry Secured by SecureFormatter!! Dateformat 2016/.x052/20 "
             "could not be parsed") == caplog.messages[0]
+

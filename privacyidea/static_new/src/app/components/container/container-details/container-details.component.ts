@@ -44,13 +44,13 @@ import {
 } from "@components/container/container-details/container-details-info/container-details-info.component";
 import { ContainerDetailsRealmsComponent } from "@components/container/container-details/container-details-realms/container-details-realms.component";
 import { ContainerDetailsStatesComponent } from "@components/container/container-details/container-details-states/container-details-states.component";
-import { ContainerDetailsUserComponent } from "@components/container/container-details/container-details-user/container-details-user.component";
 import { ContainerDetailsTokenTableComponent } from "@components/container/container-details/container-details-token-table/container-details-token-table.component";
+import { ContainerDetailsUserComponent } from "@components/container/container-details/container-details-user/container-details-user.component";
 import { ContainerAddTokenComponent } from "@components/shared/container-add-token/container-add-token.component";
 import { DetailFieldComponent } from "@components/shared/details-shared/detail-field/detail-field.component";
-import { DetailsEditRegistry } from "@components/shared/details-shared/field-editing/details-edit-registry.service";
 import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
 import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
+import { DetailsEditRegistry } from "@components/shared/details-shared/field-editing/details-edit-registry.service";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { EditButtonsComponent, EditableElement } from "@components/shared/edit-buttons/edit-buttons.component";
 import { infoDetailsKeyMap } from "@components/token/token-details/token-details.constants";
@@ -491,6 +491,6 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
   }
 
   protected showContainerAuditLog() {
-    this.auditService.auditFilter.set(new FilterValue({ value: `container_serial: ${this.containerSerial()}` }));
+    this.auditService.setFilter(new FilterValue({ value: `container_serial: ${this.containerSerial()}` }));
   }
 }
