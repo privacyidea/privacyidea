@@ -24,7 +24,7 @@ import re
 import time
 from dataclasses import dataclass
 from enum import Enum
-from urllib.parse import urlencode
+from urllib.parse import quote, urlencode
 
 import requests
 from pydash import get
@@ -144,24 +144,39 @@ class RequestConfig:
 
         # replace tags in endpoint and request mapping
         if tags:
-            self.endpoint = self._substitute_tags(self.endpoint, tags)
+            self.endpoint = self._substitute_tags(self.endpoint, tags, quote_values=True)
             if isinstance(request_mapping, dict):
                 self._replace_tags_in_dict(request_mapping, tags)
         self.request_mapping = request_mapping
 
     @staticmethod
-    def _substitute_tags(template: str, tags: dict) -> str:
+    def _substitute_tags(template: str, tags: dict, quote_values: bool = False) -> str:
         """
         Replaces all tags in the template with their value from tags. The template is traversed only once, hence a
         placeholder contained in a substituted value is not replaced again.
         Tags without an entry in tags are kept as they are.
 
+        Values which are substituted into the endpoint must be percent-encoded (quote_values=True), otherwise a
+        reserved character in a username or user id, e.g. '#', '?' or '/', is interpreted as part of the URL structure
+        instead of being part of the value. Only the values are encoded, the template itself keeps its structure.
+        Values of the request mapping must not be encoded, since requests encodes the query string and the request
+        body itself.
+
         :param template: string which may contain tags such as '{username}'
         :param tags: maps the tag names to the values they are replaced with
+        :param quote_values: whether the values have to be percent-encoded
         :return: the template with all known tags replaced
         """
-        return TAG_PATTERN.sub(
-            lambda match: str(tags[match.group(1)]) if match.group(1) in tags else match.group(0), template)
+
+        def substitute(match) -> str:
+            tag = match.group(1)
+            if tag not in tags:
+                return match.group(0)
+            value = str(tags[tag])
+            # safe="" because '/' must be encoded as well, otherwise a value could add further path segments
+            return quote(value, safe="") if quote_values else value
+
+        return TAG_PATTERN.sub(substitute, template)
 
     @staticmethod
     def _replace_tags_in_dict(d: dict, tags: dict):

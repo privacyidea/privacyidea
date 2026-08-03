@@ -1,6 +1,7 @@
 import copy
 import json
 from typing import Optional, Union
+from urllib.parse import quote
 
 import mock
 import pytest
@@ -200,7 +201,31 @@ class RequestConfigTestCase(MyTestCase):
                                                  "username": "{givenname}", "password": "Sup3rS3cret"})
         self.assertEqual("{username} Doe", config.request_mapping["displayName"])
         self.assertEqual("Sup3rS3cret", config.request_mapping["passwordProfile"]["password"])
-        self.assertEqual("http://example.com/auth/{givenname}", config.endpoint)
+        # In the endpoint the value is percent-encoded, hence the braces can not be mistaken for a tag either
+        self.assertEqual("http://example.com/auth/%7Bgivenname%7D", config.endpoint)
+
+    def test_06b_endpoint_values_are_percent_encoded(self):
+        # Reserved characters in a value must not become part of the URL structure. Only the values are encoded, the
+        # template keeps its structure, and values of the request mapping stay untouched (requests encodes them).
+        config_dict = {
+            ENDPOINT: "http://example.com/users/{username}?filter={username}",
+            METHOD: "post",
+            HEADERS: {"Content-Type": "application/json"},
+            REQUEST_MAPPING: '{"login": "{username}"}'
+        }
+        config = RequestConfig(config_dict, {}, {"username": "gu#est/a b'c?d&e"})
+        self.assertEqual("http://example.com/users/gu%23est%2Fa%20b%27c%3Fd%26e"
+                         "?filter=gu%23est%2Fa%20b%27c%3Fd%26e", config.endpoint)
+        self.assertEqual("gu#est/a b'c?d&e", config.request_mapping["login"])
+
+        # A value can not add further path segments
+        config = RequestConfig(config_dict, {}, {"username": "../applications"})
+        self.assertEqual("http://example.com/users/..%2Fapplications?filter=..%2Fapplications", config.endpoint)
+
+        # Identifiers without reserved characters are not modified
+        config = RequestConfig(config_dict, {}, {"username": "87d349ed-44d7-43e1-9a83-5f2406dee5bd"})
+        self.assertEqual("http://example.com/users/87d349ed-44d7-43e1-9a83-5f2406dee5bd"
+                         "?filter=87d349ed-44d7-43e1-9a83-5f2406dee5bd", config.endpoint)
 
     def test_07_unknown_tags_and_braces_are_kept(self):
         # Tags without a value are kept as they are, and braces which are no tags must not be modified
@@ -1950,7 +1975,9 @@ class EntraIDResolverTestCase(MyTestCase):
 
         # success
         user_name = "AdeleV@contoso.com"
-        responses.add(responses.GET, f"https://graph.microsoft.com/v1.0/users/{user_name}", status=200,
+        # The username is substituted into the endpoint path, hence it is percent-encoded ('@' -> '%40')
+        quoted_user_name = quote(user_name, safe="")
+        responses.add(responses.GET, f"https://graph.microsoft.com/v1.0/users/{quoted_user_name}", status=200,
                       body="""{"businessPhones": ["+1 425 555 0109"],
                                "displayName": "Adele Vance",
                                "givenName": "Adele",
@@ -1967,11 +1994,39 @@ class EntraIDResolverTestCase(MyTestCase):
         self.assertEqual("87d349ed-44d7-43e1-9a83-5f2406dee5bd", resolver.getUserId(user_name))
 
         # User ID does not exists
-        responses.add(responses.GET, f"https://graph.microsoft.com/v1.0/users/{user_name}", status=404,
+        responses.add(responses.GET, f"https://graph.microsoft.com/v1.0/users/{quoted_user_name}", status=404,
                       body="""{"error": {"code": "Request_ResourceNotFound", 
                                                "message": "Resource 'AdeleV@contoso.com' does not exist."}}"""
                       )
         self.assertEqual("", resolver.getUserId(user_name))
+
+    @responses.activate
+    def test_11b_getUserId_guest_user(self):
+        # The user principal name of a guest user contains '#'. Without encoding, requests treats everything after it
+        # as the URL fragment and never sends it, so the wrong user is requested.
+        resolver = self.set_up_resolver()
+        user_name = "guest_contoso.com#EXT#@tenant.onmicrosoft.com"
+
+        responses.add(responses.GET, f"https://graph.microsoft.com/v1.0/users/{quote(user_name, safe='')}", status=200,
+                      body=json.dumps({"userPrincipalName": user_name,
+                                       "id": "87d349ed-44d7-43e1-9a83-5f2406dee5bd"}))
+
+        self.assertEqual("87d349ed-44d7-43e1-9a83-5f2406dee5bd", resolver.getUserId(user_name))
+        # The complete UPN has to be part of the request target, the fragment must not be cut off
+        self.assertEqual("/v1.0/users/guest_contoso.com%23EXT%23%40tenant.onmicrosoft.com",
+                         responses.calls[0].request.path_url)
+
+    @responses.activate
+    def test_11c_getUserId_does_not_leave_the_users_endpoint(self):
+        # A login name is attacker controlled. It must not be able to add path segments and thereby address another
+        # resource of the API.
+        resolver = self.set_up_resolver()
+
+        responses.add(responses.GET, "https://graph.microsoft.com/v1.0/users/..%2Fapplications", status=404,
+                      body=json.dumps({"error": {"code": "Request_ResourceNotFound", "message": "does not exist"}}))
+
+        self.assertEqual("", resolver.getUserId("../applications"))
+        self.assertEqual("/v1.0/users/..%2Fapplications", responses.calls[0].request.path_url)
 
     @responses.activate
     def test_12_testconnection_success(self):
@@ -2021,7 +2076,7 @@ class EntraIDResolverTestCase(MyTestCase):
                                         }""")
 
         # user by name response
-        responses.add(responses.GET, "https://graph.microsoft.com/v1.0/users/AdeleV@contoso.com", status=200,
+        responses.add(responses.GET, "https://graph.microsoft.com/v1.0/users/AdeleV%40contoso.com", status=200,
                       body="""{"businessPhones": ["+1 425 555 0109"],
                                "displayName": "Adele Vance",
                                "givenName": "Adele",
@@ -2094,7 +2149,7 @@ class EntraIDResolverTestCase(MyTestCase):
                                            "id": "87d349ed-44d7-43e1-9a83-5f2406dee5bd"
                                         }""")
         # user by name response
-        responses.add(responses.GET, "https://graph.microsoft.com/v1.0/users/AdeleV@contoso.com", status=200,
+        responses.add(responses.GET, "https://graph.microsoft.com/v1.0/users/AdeleV%40contoso.com", status=200,
                       body="""{"businessPhones": ["+1 425 555 0109"],
                                "displayName": "Adele Vance",
                                "givenName": "Adele",
