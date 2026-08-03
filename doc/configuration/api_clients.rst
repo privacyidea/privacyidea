@@ -24,8 +24,8 @@ Both features are **off by default** and gated by policy.
 Managing API clients
 ---------------------
 
-API clients are managed in the WebUI under *Config → API clients*, or over the
-``/clients`` REST API. The admin actions :ref:`policy_clients_list`,
+API clients are managed in the WebUI or over the ``/clients`` REST API.
+The admin actions :ref:`policy_clients_list`,
 :ref:`policy_clients_add`, :ref:`policy_clients_delete` and
 :ref:`policy_clients_rotate` control who may do what.
 
