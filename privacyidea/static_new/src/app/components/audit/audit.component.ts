@@ -45,13 +45,13 @@ import { MatIcon, MatIconModule } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { RouterLink } from "@angular/router";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
-import { inlineFilterHint } from "@utils/filter-hint.utils";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
-import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { LocalDateTimePipe } from "@components/shared/pipes/local-date-time.pipe";
 import { FilterValue } from "@core/models/filter_value/filter_value";
+import { inlineFilterHint } from "@utils/filter-hint.utils";
 
 type AuditCellRenderType =
   | "status-span"
@@ -199,19 +199,17 @@ export class AuditComponent {
   }
 
   toggleFilter(filterKeyword: string): void {
-    let newValue;
-    if (filterKeyword === "success") {
-      newValue = this.tableUtilsService.toggleBooleanInFilter({
-        keyword: filterKeyword,
-        currentValue: this.auditService.auditFilter()
-      });
-    } else {
-      newValue = this.tableUtilsService.toggleKeywordInFilter({
-        keyword: filterKeyword,
-        currentValue: this.auditService.auditFilter()
-      });
-    }
-    this.auditService.auditFilter.set(newValue);
+    this.auditService.updateFilter((current) =>
+      filterKeyword === "success"
+        ? this.tableUtilsService.toggleBooleanInFilter({
+            keyword: filterKeyword,
+            currentValue: current
+          })
+        : this.tableUtilsService.toggleKeywordInFilter({
+            keyword: filterKeyword,
+            currentValue: current
+          })
+    );
   }
 
   isFilterSelected(filter: string, inputValue: FilterValue): boolean {
@@ -220,13 +218,13 @@ export class AuditComponent {
 
   getFilterIconName(keyword: string): string {
     if (keyword === "success") {
-      const value = this.auditService.auditFilter()?.getValueOfKey(keyword)?.toLowerCase();
-      if (!value) {
+      const value = this.auditService.activeFilter().booleanValueOfKey(keyword);
+      if (value === undefined) {
         return "filter_alt";
       }
-      return value === "true" ? "screen_rotation_alt" : value === "false" ? "filter_alt_off" : "filter_alt";
+      return value ? "screen_rotation_alt" : "filter_alt_off";
     } else {
-      const isSelected = this.auditService.auditFilter().hasKey(keyword);
+      const isSelected = this.auditService.activeFilter().hasKey(keyword);
       return isSelected ? "filter_alt_off" : "filter_alt";
     }
   }

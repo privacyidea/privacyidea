@@ -364,6 +364,37 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
             self.assertEqual(401, res.status_code, res.json)
         delete_policy("policy")
 
+    def test_17b_user_container_list_only_returns_own_containers(self):
+        # A user only sees their own containers, independent of the user parameters of the request.
+        self.setUp_user_realms()
+        set_policy("policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_LIST)
+        # A second resolver in the realm of the user, holding a different set of users
+        save_resolver({"resolver": "reso3", "type": "passwdresolver", "fileName": "tests/testdata/passwd"})
+        set_realm(self.realm1, [{"name": self.resolvername1}, {"name": "reso3"}])
+        # A container of another user in that second resolver
+        other_container_serial = init_container({"type": "generic"})["container_serial"]
+        assign_user(other_container_serial, User("daemon", self.realm1, "reso3"))
+        my_container_serial = init_container({"type": "generic"})["container_serial"]
+        assign_user(my_container_serial, User("selfservice", self.realm1, self.resolvername1))
+
+        try:
+            # The user does not exist in the second resolver, hence the request can not be resolved to a user
+            self.request_assert_error(400, '/container/', {"resolver": "reso3", "pagesize": 100},
+                                      self.at_user, 'GET', error_code=Error.USER)
+
+            # The user sees their own container, but never the one of the other user
+            result = self.request_assert_success('/container/', {"pagesize": 100}, self.at_user, 'GET')
+            serials = {c["serial"] for c in result["result"]["value"]["containers"]}
+            self.assertIn(my_container_serial, serials)
+            self.assertNotIn(other_container_serial, serials)
+            for container in result["result"]["value"]["containers"]:
+                self.assertEqual("selfservice", container["users"][0]["user_name"])
+        finally:
+            delete_container_by_serial(other_container_serial)
+            delete_container_by_serial(my_container_serial)
+            set_realm(self.realm1, [{"name": self.resolvername1}])
+            delete_policy("policy")
+
     def test_18_user_container_list_allowed(self):
         # Arrange
         self.setUp_user_realms()

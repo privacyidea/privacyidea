@@ -19,7 +19,6 @@
 import { httpResource, HttpResourceRef } from "@angular/common/http";
 import { effect, inject, Injectable, signal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
-import { ROUTE_PATHS } from "@app/route_paths";
 import { environment } from "@env/environment";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
@@ -53,7 +52,7 @@ export class ClientsService implements ClientsServiceInterface {
     if (!this.authService.actionAllowed("clienttype")) {
       return undefined;
     }
-    if (!this.autocompleteRequested() && this.contentService.routeUrl() !== ROUTE_PATHS.CLIENTS) {
+    if (!this.autocompleteRequested() && !this.contentService.onClients()) {
       return undefined;
     }
     return {

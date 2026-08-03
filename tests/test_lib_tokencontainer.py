@@ -877,10 +877,49 @@ class TokenContainerManagementTestCase(MyTestCase):
         container1_owner = container_data["containers"][0].get_users()[0]
         self.assertEqual(user_cornelius_1, container1_owner)
 
-        # Filter for non-existing user
-        user_invalid = User(login="invalid", realm="random")
-        container_data = get_all_containers(user=user_invalid, pagesize=15)
+        # Filter by the realm of the user only: lists the containers of all users of that realm
+        container_data = get_all_containers(user=User(realm=self.realm1), pagesize=15)
+        self.assertEqual(1, len(container_data["containers"]))
+        self.assertEqual(container_serials[1], container_data["containers"][0].serial)
+
+        # The realm of the user is matched case-insensitive
+        container_data = get_all_containers(user=User(realm=self.realm2.upper()), pagesize=15)
+        self.assertEqual(1, len(container_data["containers"]))
+        self.assertEqual(container_serials[2], container_data["containers"][0].serial)
+
+        # Filter by the realm and the resolver of the user
+        container_data = get_all_containers(user=User(realm=self.realm1, resolver=self.resolvername1), pagesize=15)
+        self.assertEqual(1, len(container_data["containers"]))
+        self.assertEqual(container_serials[1], container_data["containers"][0].serial)
+
+        # The resolver of the user allows wildcards, like the separate resolver filter does
+        container_data = get_all_containers(user=User(realm=self.realm1, resolver="resolver*"), pagesize=15)
+        self.assertEqual(1, len(container_data["containers"]))
+        self.assertEqual(container_serials[1], container_data["containers"][0].serial)
+
+        # A user object with only a resolver is empty and does not filter at all
+        all_containers = get_all_containers(pagesize=15)["containers"]
+        container_data = get_all_containers(user=User(resolver=self.resolvername1), pagesize=15)
+        self.assertEqual(len(all_containers), len(container_data["containers"]))
+
+        # A realm that does not exist matches nothing
+        container_data = get_all_containers(user=User(realm="non_existing_realm"), pagesize=15)
         self.assertEqual(0, len(container_data["containers"]))
+
+        # The realm is evaluated first, hence an unresolvable user in a realm that does not exist also
+        # matches nothing instead of raising
+        container_data = get_all_containers(user=User(login="invalid", realm="non_existing_realm"), pagesize=15)
+        self.assertEqual(0, len(container_data["containers"]))
+
+        # Filter for non-existing user
+        user_invalid = User(login="invalid", realm=self.realm1)
+        self.assertRaises(UserError, get_all_containers, user=user_invalid, pagesize=15)
+
+        # A username that does not exist in the given resolver is rejected instead of being filtered by the
+        # realm and the resolver alone
+        user_unresolvable = User(login="invalid", realm=self.realm1, resolver=self.resolvername1)
+        self.assertFalse(user_unresolvable.uid)
+        self.assertRaises(UserError, get_all_containers, user=user_unresolvable, pagesize=15)
 
         # ---- assigned ----
         container_data = get_all_containers(assigned=True, pagesize=15)

@@ -98,15 +98,15 @@ describe("UserTableComponent", () => {
     // Read the data signal directly rather than running full template change detection: the
     // template's clear-button binding reads the live input value and trips checkNoChanges in tests.
     const namesFor = (rawFilter: string) => {
-      mockUserService.apiUserFilter.set(new FilterValue({ value: rawFilter }));
+      mockUserService.activeFilter.set(new FilterValue({ value: rawFilter }));
       return component.usersDataSource().data.map((u) => u.username);
     };
 
     it("derives free-text terms from the keyword-less part of the filter", () => {
-      mockUserService.apiUserFilter.set(new FilterValue({ value: "alice username: bob" }));
+      mockUserService.activeFilter.set(new FilterValue({ value: "alice username: bob" }));
       expect(component.freeTextTerms()).toEqual(["alice"]);
 
-      mockUserService.apiUserFilter.set(new FilterValue({ value: "username: bob" }));
+      mockUserService.activeFilter.set(new FilterValue({ value: "username: bob" }));
       expect(component.freeTextTerms()).toEqual([]);
     });
 
@@ -120,10 +120,22 @@ describe("UserTableComponent", () => {
       expect(namesFor("username: bob")).toEqual(["alice", "bob"]);
     });
 
+    it("keeps the last count and rows while the users resource has no value (loading)", () => {
+      mockUserService.activeFilter.set(new FilterValue({ value: "bob" }));
+      expect(component.totalLength()).toBe(1);
+      expect(component.usersDataSource().data.map((u) => u.username)).toEqual(["bob"]);
+
+      // Simulate a reload where the resource temporarily has no value: free-text filtering is
+      // skipped and the previously computed count and rows are retained.
+      mockUserService.usersResource.set(undefined as never);
+      expect(component.totalLength()).toBe(1);
+      expect(component.usersDataSource().data.map((u) => u.username)).toEqual(["bob"]);
+    });
+
     it("resets the filter when leaving the page", () => {
-      mockUserService.apiUserFilter.set(new FilterValue({ value: "alice" }));
+      mockUserService.activeFilter.set(new FilterValue({ value: "alice" }));
       component.ngOnDestroy();
-      expect(mockUserService.resetFilter).toHaveBeenCalled();
+      expect(mockUserService.clearFilter).toHaveBeenCalled();
     });
   });
 

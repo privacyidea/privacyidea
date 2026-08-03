@@ -35,6 +35,7 @@ import { NotificationService } from "@services/notification/notification.service
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 
 import { ContainerTableComponent } from "@components/container/container-table/container-table.component";
+import { FilterValue } from "@core/models/filter_value/filter_value";
 import { DialogService } from "@services/dialog/dialog.service";
 import { TokenService } from "@services/token/token.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
@@ -163,6 +164,43 @@ describe("ContainerTableComponent (Jest)", () => {
       const result = component.sort();
       expect(result.active).toBe("type");
       expect(result.direction).toBe("asc");
+    });
+  });
+
+  describe("#onFilterInput", () => {
+    it("applies the filter while typing as long as no user or realm filter is used", () => {
+      const inputEvent = { target: { value: "type: generic" } } as unknown as Event;
+
+      component.onFilterInput(inputEvent);
+
+      expect(containerService.handleFilterInput).toHaveBeenCalledWith(inputEvent);
+    });
+
+    it("defers the user and the realm filter until the input is confirmed", () => {
+      component.onFilterInput({ target: { value: "user: alice" } } as unknown as Event);
+      expect(containerService.handleFilterInput).not.toHaveBeenCalled();
+
+      component.onFilterInput({ target: { value: "realm: realm1" } } as unknown as Event);
+      expect(containerService.handleFilterInput).not.toHaveBeenCalled();
+    });
+
+    it("hints that the filter has to be confirmed while a user filter is typed", () => {
+      component.onFilterInput({ target: { value: "user: alice" } } as unknown as Event);
+
+      expect(component.showFilterHint()).toBe(true);
+    });
+
+    it("does not hint once the typed filter is the applied one", () => {
+      containerService.activeFilter.set(new FilterValue({ value: "user: alice" }));
+      component.onFilterInput({ target: { value: "user: alice" } } as unknown as Event);
+
+      expect(component.showFilterHint()).toBe(false);
+    });
+
+    it("does not hint for a filter that is applied while typing", () => {
+      component.onFilterInput({ target: { value: "type: generic" } } as unknown as Event);
+
+      expect(component.showFilterHint()).toBe(false);
     });
   });
 
