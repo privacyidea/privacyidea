@@ -1,3 +1,5 @@
+from unittest import mock
+
 from .base import MyApiTestCase
 
 from privacyidea.lib.clients import hash_api_key, create_client
@@ -201,6 +203,18 @@ class APIClientAPIKeyMiddlewareTestCase(MyApiTestCase):
                                                     'X-API-Key': 'pi_totally_wrong'}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200, res)
+
+    def test_05b_key_resolution_error_does_not_500(self):
+        # Identification is optional: an error while resolving the X-API-Key
+        # (e.g. a transient DB failure) must leave the request unidentified and
+        # let it proceed, never turn it into a 500.
+        client = self._create_client()
+        with mock.patch("privacyidea.api.before_after.identify_client_by_key",
+                        side_effect=Exception("DB is down")):
+            with self.app.test_request_context('/', method='GET',
+                                               headers={'X-API-Key': client["api_key"]}):
+                res = self.app.full_dispatch_request()
+                self.assertNotEqual(res.status_code, 500, res)
 
     def test_06_suspended_key_not_blocked_but_audited(self):
         # A known key whose client is suspended does not block /validate/check,
