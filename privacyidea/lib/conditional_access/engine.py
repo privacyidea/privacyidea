@@ -957,13 +957,16 @@ def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
                 "policy_id": policy.id,
                 "policy_name": policy.name,
                 "target": policy.target,
-                "stage_id": triggered_stage.id,
                 "threshold": triggered_stage.failure_threshold,
                 "count": count,
                 "counter_types": list(policy.counter_types_to_track),
                 "window_seconds": window,
                 "actions": [a.action_type for a in pending_actions],
             }
+            if triggered_stage.name:
+                # The stage's label is only recorded when an admin gave it one; the
+                # threshold below already identifies which stage of the policy this is.
+                finding["stage_name"] = triggered_stage.name
             record_dry_run_finding(auth_log_event_id, finding)
         return []
 

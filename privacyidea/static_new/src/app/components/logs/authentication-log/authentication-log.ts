@@ -217,7 +217,7 @@ const INFO_KEY_ACRONYMS: Record<string, string> = {
 
 // When an element of a list-valued info key carries one of these, it heads that group instead of a bare ordinal and is
 // not repeated among the group's rows. A conditional-access dry-run finding is one policy's outcome, so its policy
-// name identifies it (its stage is a separate `stage_id` row).
+// name identifies it (the stage it tripped is a separate `stage_name` row, when that stage is named).
 const INFO_GROUP_LABEL_KEYS = ["policy_name", "name"];
 
 // A rendered other_info row. A leaf carries `value`; a one-level-nested dict carries `children` (rendered as a

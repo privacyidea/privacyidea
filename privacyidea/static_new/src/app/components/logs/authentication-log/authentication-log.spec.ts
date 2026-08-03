@@ -268,7 +268,7 @@ describe("AuthenticationLog", () => {
   it("infoEntries heads a group with its policy name and does not repeat it among the rows", () => {
     expect(
       component.infoEntries({
-        conditional_access_dry_run: [{ policy_name: "Brute Force PIN Lockout", stage_id: 113, threshold: 5 }]
+        conditional_access_dry_run: [{ policy_name: "Brute Force PIN Lockout", stage_name: "Lock 10 min", threshold: 5 }]
       })
     ).toEqual([
       {
@@ -277,7 +277,7 @@ describe("AuthenticationLog", () => {
           {
             label: "Brute Force PIN Lockout",
             rows: [
-              { key: "Stage ID", value: "113" },
+              { key: "Stage name", value: "Lock 10 min" },
               { key: "Threshold", value: "5" }
             ]
           }
@@ -289,8 +289,8 @@ describe("AuthenticationLog", () => {
   it("infoEntries heads every named group by name, so the label is not a positional index", () => {
     const entries = component.infoEntries({
       conditional_access_dry_run: [
-        { policy_name: "Permanent IP Block", stage_id: 112 },
-        { policy_name: "Email Notification Test", stage_id: 115 }
+        { policy_name: "Permanent IP Block", threshold: 7 },
+        { policy_name: "Email Notification Test", threshold: 6 }
       ]
     });
     expect(entries[0].groups?.map((group) => group.label)).toEqual(["Permanent IP Block", "Email Notification Test"]);
