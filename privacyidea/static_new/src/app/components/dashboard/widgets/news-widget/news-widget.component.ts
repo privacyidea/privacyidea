@@ -41,7 +41,6 @@ export class NewsWidgetComponent extends DashboardWidget implements OnInit {
   static override readonly defaultSize: WidgetSize = { cols: 8, rows: 3 };
   static override readonly minSize: WidgetSize = { cols: 6, rows: 3 };
   static override readonly maxSize: WidgetSize = { cols: DASHBOARD_COLUMNS, rows: 8 };
-  static override readonly titleRoute = ROUTE_PATHS.NEWS;
 
   private readonly infoService: InfoServiceInterface = inject(InfoService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
@@ -49,12 +48,15 @@ export class NewsWidgetComponent extends DashboardWidget implements OnInit {
   private readonly router = inject(Router);
 
   protected readonly rssAgePolicyLink = this.router.createUrlTree([ROUTE_PATHS.POLICIES], {
-    queryParams: { filter: "actions: rss_age" }
+    queryParams: { filter: '"actions: rss_age"' }
   });
 
-  readonly canReadPolicies = computed(() => this.authService.actionAllowed("policyread"));
+  protected readonly canReadPolicies = computed(() => this.authService.actionAllowed("policyread"));
 
   readonly newsDisabled = computed(() => this.authService.rssAge() <= 0);
+
+  override readonly canReload = computed(() => !this.newsDisabled());
+  override readonly titleRoute = computed(() => (this.newsDisabled() ? null : ROUTE_PATHS.NEWS));
 
   private readonly dataRef = signal<DashboardDataRef<PiResponse<NewsChannels>> | null>(null);
   override readonly partialLoading = computed(() => this.dataRef()?.revalidating() ?? false);
@@ -80,7 +82,6 @@ export class NewsWidgetComponent extends DashboardWidget implements OnInit {
   }
 
   override reload(): void {
-    this.store.invalidate("dashboard:news");
     this.ngOnInit();
   }
 

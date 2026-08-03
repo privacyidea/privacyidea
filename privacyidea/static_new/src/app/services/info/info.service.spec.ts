@@ -80,6 +80,16 @@ describe("sortNewsItems", () => {
     expect(items[1].date).toBeNull();
   });
 
+  it("should keep items without a parsable date behind dated ones", () => {
+    const channels: NewsChannels = {
+      Blog: [newsItem("Dated", "Mon, 20 Jul 2026 10:00:00 +0000"), newsItem("NoDate", "not a date")]
+    };
+
+    const items = sortNewsItems(channels);
+    expect(items.map((item) => item.title)).toEqual(["Dated", "NoDate"]);
+    expect(items[1].date).toBeNull();
+  });
+
   it("should treat an empty pub_date as no date", () => {
     const channels: NewsChannels = { Blog: [newsItem("NoDate", "")] };
 

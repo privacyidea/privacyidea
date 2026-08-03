@@ -141,6 +141,11 @@ describe("WidgetFrameComponent", () => {
     const newsInstance: WidgetInstance = { id: "n1", type: "news", x: 0, y: 0, cols: 9, rows: 3 };
 
     beforeEach(() => {
+      const authMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+      authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rss_age: 30 });
+
+      fixture = TestBed.createComponent(WidgetFrameComponent);
+      component = fixture.componentInstance;
       fixture.componentRef.setInput("instance", newsInstance);
       fixture.detectChanges();
     });

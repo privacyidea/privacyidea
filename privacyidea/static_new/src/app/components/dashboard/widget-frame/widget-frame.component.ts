@@ -23,16 +23,9 @@ import { MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatProgressSpinner } from "@angular/material/progress-spinner";
 import { RouterLink } from "@angular/router";
-import { WidgetInstance, WidgetState } from "@models/dashboard";
+import { DashboardWidget, WidgetInstance } from "@models/dashboard";
 import { DashboardLayoutService, DashboardLayoutServiceInterface } from "@services/dashboard/dashboard-layout.service";
 import { WidgetRegistryService, WidgetRegistryServiceInterface } from "@services/dashboard/widget-registry.service";
-
-interface DashboardWidgetLike {
-  state?: () => WidgetState;
-  loading?: () => boolean;
-  partialLoading?: () => boolean;
-  reload?: () => void;
-}
 
 @Component({
   selector: "app-widget-frame",
@@ -55,34 +48,45 @@ export class WidgetFrameComponent {
   protected readonly outletInputs = computed(() => ({ instance: this.instance() }));
 
   protected readonly initialLoading = computed(() => {
-    const instance = this.outlet()?.componentInstance as DashboardWidgetLike | undefined;
-    return instance?.state?.() === "loading";
+    const instance = this.outlet()?.componentInstance as DashboardWidget | undefined;
+    return instance?.state() === "loading";
   });
 
   protected readonly loading = computed(() => {
-    const instance = this.outlet()?.componentInstance as DashboardWidgetLike | undefined;
-    return instance?.loading?.() ?? false;
+    const instance = this.outlet()?.componentInstance as DashboardWidget | undefined;
+    return instance?.loading() ?? false;
   });
 
   protected readonly partialLoading = computed(() => {
-    const instance = this.outlet()?.componentInstance as DashboardWidgetLike | undefined;
-    return instance?.partialLoading?.() ?? false;
+    const instance = this.outlet()?.componentInstance as DashboardWidget | undefined;
+    return instance?.partialLoading() ?? false;
+  });
+
+  protected readonly canReload = computed(() => {
+    const instance = this.outlet()?.componentInstance as DashboardWidget | undefined;
+    return instance?.canReload() ?? true;
   });
 
   protected readonly headerIcon = computed(() => this.widgetType()?.headerIcon ?? null);
 
-  protected readonly titleRoute = computed(() =>
-    this.layoutService.editMode() ? null : (this.widgetType()?.titleRoute ?? null)
-  );
+  protected readonly titleRoute = computed(() => {
+    if (this.layoutService.editMode() || this.initialLoading()) {
+      return null;
+    }
+    const instance = this.outlet()?.componentInstance as DashboardWidget | undefined;
+    return instance?.titleRoute() ?? null;
+  });
 
   protected readonly showHeaderSpinner = computed(
     () => !this.initialLoading() && (this.loading() || this.partialLoading())
   );
-  protected readonly showReload = computed(() => !this.initialLoading() && !this.showHeaderSpinner());
+  protected readonly showReload = computed(
+    () => !this.initialLoading() && !this.showHeaderSpinner() && this.canReload()
+  );
 
   protected reload(): void {
-    const instance = this.outlet()?.componentInstance as DashboardWidgetLike | undefined;
-    instance?.reload?.();
+    const instance = this.outlet()?.componentInstance as DashboardWidget | undefined;
+    instance?.reload();
   }
 
   protected remove(): void {

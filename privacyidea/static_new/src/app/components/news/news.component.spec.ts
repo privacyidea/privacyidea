@@ -19,6 +19,7 @@
 import { provideZonelessChangeDetection } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
+import { provideRouter } from "@angular/router";
 import { routes as adminRoutes } from "@app/admin.routes";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { routes as selfServiceRoutes } from "@app/self-service.routes";
@@ -32,6 +33,7 @@ import { NewsComponent } from "./news.component";
 describe("NewsComponent", () => {
   let fixture: ComponentFixture<NewsComponent>;
   let component: NewsComponent;
+  let authMock: MockAuthService;
   let infoMock: MockInfoService;
 
   beforeEach(async () => {
@@ -39,10 +41,14 @@ describe("NewsComponent", () => {
       imports: [NewsComponent],
       providers: [
         provideZonelessChangeDetection(),
+        provideRouter([]),
         { provide: AuthService, useClass: MockAuthService },
         { provide: InfoService, useClass: MockInfoService }
       ]
     }).compileComponents();
+
+    authMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+    authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rss_age: 30, rights: ["policyread"] });
 
     infoMock = TestBed.inject(InfoService) as unknown as MockInfoService;
 
@@ -96,6 +102,42 @@ describe("NewsComponent", () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector(".news-empty")).not.toBeNull();
+  });
+
+  describe("disabled news feed", () => {
+    let disabledFixture: ComponentFixture<NewsComponent>;
+
+    const createDisabled = (rights: string[]): ComponentFixture<NewsComponent> => {
+      authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rss_age: 0, rights: rights });
+      const created = TestBed.createComponent(NewsComponent);
+      created.detectChanges();
+      return created;
+    };
+
+    afterEach(() => disabledFixture.destroy());
+
+    it("should replace the list with a hint when the rss_age policy disables the feed", () => {
+      disabledFixture = createDisabled(["policyread"]);
+
+      expect(disabledFixture.nativeElement.querySelector(".news-hint")).not.toBeNull();
+      expect(disabledFixture.debugElement.query(By.directive(NewsListComponent))).toBeNull();
+    });
+
+    it("should link the hint to the rss_age policies for admins with policyread", () => {
+      disabledFixture = createDisabled(["policyread"]);
+
+      const link: HTMLAnchorElement = disabledFixture.nativeElement.querySelector(".news-hint a");
+      expect(link.textContent).toContain("rss_age");
+      expect(link.getAttribute("href")).toContain(ROUTE_PATHS.POLICIES);
+      expect(decodeURIComponent(link.getAttribute("href")!)).toContain('filter="actions: rss_age"');
+    });
+
+    it("should not link the hint without the policyread right", () => {
+      disabledFixture = createDisabled([]);
+
+      expect(disabledFixture.nativeElement.querySelector(".news-hint a")).toBeNull();
+      expect(disabledFixture.nativeElement.querySelector(".news-hint").textContent).toContain("rss_age");
+    });
   });
 
   it("should be reachable under the news route for admins", () => {

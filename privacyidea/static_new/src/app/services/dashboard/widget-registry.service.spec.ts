@@ -66,12 +66,6 @@ describe("WidgetRegistryService", () => {
     expect(service.get("news")?.type).toBe("news");
   });
 
-  it("should only declare title routes that start at the application root", () => {
-    for (const widget of service.widgetTypes.filter((type) => type.titleRoute !== null)) {
-      expect(widget.titleRoute).toMatch(/^\//);
-    }
-  });
-
   it("should return undefined for an unknown type", () => {
     expect(service.get("does-not-exist")).toBeUndefined();
   });

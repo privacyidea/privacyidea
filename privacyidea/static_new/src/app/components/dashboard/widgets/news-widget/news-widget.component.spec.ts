@@ -100,7 +100,7 @@ describe("NewsWidgetComponent", () => {
   });
 
   it("should link its title to the news page", () => {
-    expect(NewsWidgetComponent.titleRoute).toBe(ROUTE_PATHS.NEWS);
+    expect(component.titleRoute()).toBe(ROUTE_PATHS.NEWS);
   });
 
   it("should override the static size constraints", () => {
@@ -177,12 +177,24 @@ describe("NewsWidgetComponent", () => {
       errorFixture.destroy();
     });
 
-    it("should invalidate the cache and load again on reload()", () => {
+    it("should load again on reload()", () => {
       infoMock.getNews.mockClear();
 
       component.reload();
 
       expect(infoMock.getNews).toHaveBeenCalledTimes(1);
+    });
+
+    it("should keep the loaded items when a reload fails", () => {
+      const subject = new Subject();
+      infoMock.getNews.mockReturnValue(subject.asObservable());
+
+      component.reload();
+      subject.error(new Error("boom"));
+      fixture.detectChanges();
+
+      expect(component.state()).toBe("ready");
+      expect(component.items().map((item) => item.title)).toEqual(["Newer entry", "Older entry"]);
     });
   });
 
@@ -201,8 +213,17 @@ describe("NewsWidgetComponent", () => {
       expect(disabledFixture.componentInstance.newsDisabled()).toBe(true);
     });
 
+    it("should drop the title link and the reload button", () => {
+      expect(disabledFixture.componentInstance.titleRoute()).toBeNull();
+      expect(disabledFixture.componentInstance.canReload()).toBe(false);
+    });
+
     it("should not request the feed", () => {
       expect(infoMock.getNews).not.toHaveBeenCalled();
+    });
+
+    it("should never report a partial load without a request", () => {
+      expect(disabledFixture.componentInstance.partialLoading()).toBe(false);
     });
 
     it("should become ready so the hint is shown instead of a spinner", () => {
@@ -215,14 +236,14 @@ describe("NewsWidgetComponent", () => {
       const link: HTMLAnchorElement = disabledFixture.nativeElement.querySelector(".news-hint a");
       expect(link.textContent).toContain("rss_age");
       expect(link.getAttribute("href")).toContain(ROUTE_PATHS.POLICIES);
-      expect(decodeURIComponent(link.getAttribute("href")!)).toContain("filter=actions: rss_age");
+      expect(decodeURIComponent(link.getAttribute("href")!)).toContain('filter="actions: rss_age"');
     });
 
     it("should not link the hint without the policyread right", () => {
       authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rss_age: 0, rights: [] });
       const withoutRight = createWidget();
 
-      expect(withoutRight.componentInstance.canReadPolicies()).toBe(false);
+      expect(withoutRight.componentInstance["canReadPolicies"]()).toBe(false);
       expect(withoutRight.nativeElement.querySelector(".news-hint a")).toBeNull();
       expect(withoutRight.nativeElement.querySelector(".news-hint").textContent).toContain("rss_age");
       withoutRight.destroy();

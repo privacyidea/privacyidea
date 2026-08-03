@@ -51,10 +51,11 @@ export abstract class DashboardWidget {
   readonly state = signal<WidgetState>("loading");
   readonly loading = computed(() => this.state() === "loading");
   readonly partialLoading = computed(() => false);
+  readonly canReload = computed(() => true);
+  readonly titleRoute = computed<string | null>(() => null);
 
   static readonly type: WidgetTypeId;
   static readonly title: string = "";
-  static readonly titleRoute: string | null = null;
   static readonly icon: string = "";
   static readonly headerIcon: Type<unknown> | null = null;
   static readonly defaultSize: WidgetSize = { cols: 3, rows: 3 };

@@ -27,7 +27,25 @@
     i18n>
     News
   </h3>
-  <app-news-list
-    [items]="infoService.newsItems()"
-    [showSummary]="true" />
+  @if (newsDisabled()) {
+    @if (canReadPolicies()) {
+      <p
+        class="news-hint margin-8"
+        i18n>
+        The news feed is disabled by the
+        <a [routerLink]="rssAgePolicyLink">rss_age</a>
+        policy.
+      </p>
+    } @else {
+      <p
+        class="news-hint margin-8"
+        i18n>
+        The news feed is disabled.
+      </p>
+    }
+  } @else {
+    <app-news-list
+      [items]="infoService.newsItems()"
+      [showSummary]="true" />
+  }
 </div>

@@ -93,7 +93,13 @@ export class PoliciesTableComponent {
   readonly skeletonRowCount = 10;
 
   readonly sort = signal<Sort>({ active: "priority", direction: "asc" });
-  readonly filter = signal<FilterValueGeneric<PolicyDetail>>(this.filterFromQueryParams());
+  readonly filter = linkedSignal<string, FilterValueGeneric<PolicyDetail>>({
+    source: () => (this.contentService.queryParams()["filter"] ?? "").replace(/^"(.*)"$/s, "$1"),
+    computation: (raw) => {
+      const filter = new FilterValueGeneric<PolicyDetail>({ availableFilters: policyFilterOptions });
+      return raw ? filter.setByString(raw) : filter;
+    }
+  });
 
   // Terms to visually highlight per dense column: the keyword-less search terms plus that column's
   // own keyword value. Short columns (name/scope/priority/active) are not highlighted on purpose.
@@ -157,12 +163,6 @@ export class PoliciesTableComponent {
 
   onFilterUpdate(newFilter: FilterValueGeneric<PolicyDetail>): void {
     this.filter.set(newFilter);
-  }
-
-  private filterFromQueryParams(): FilterValueGeneric<PolicyDetail> {
-    const filter = new FilterValueGeneric<PolicyDetail>({ availableFilters: policyFilterOptions });
-    const raw = this.contentService.queryParams()["filter"];
-    return raw ? filter.setByString(raw) : filter;
   }
 
   onFilterClick(columnKey: string): void {

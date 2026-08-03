@@ -16,7 +16,9 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject } from "@angular/core";
+import { Component, computed, inject } from "@angular/core";
+import { Router, RouterLink } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { NewsListComponent } from "@components/shared/news-list/news-list.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -24,11 +26,20 @@ import { InfoService, InfoServiceInterface } from "@services/info/info.service";
 
 @Component({
   selector: "app-news",
-  imports: [NewsListComponent, ScrollToTopDirective],
+  imports: [NewsListComponent, RouterLink, ScrollToTopDirective],
   templateUrl: "./news.component.html",
   styleUrl: "./news.component.scss"
 })
 export class NewsComponent {
   protected readonly infoService: InfoServiceInterface = inject(InfoService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly router = inject(Router);
+
+  protected readonly rssAgePolicyLink = this.router.createUrlTree([ROUTE_PATHS.POLICIES], {
+    queryParams: { filter: '"actions: rss_age"' }
+  });
+
+  protected readonly canReadPolicies = computed(() => this.authService.actionAllowed("policyread"));
+
+  protected readonly newsDisabled = computed(() => this.authService.rssAge() <= 0);
 }

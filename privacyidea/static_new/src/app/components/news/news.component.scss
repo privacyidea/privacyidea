@@ -22,4 +22,10 @@
 .news-page {
   @include styles.main-component-style;
   box-sizing: border-box;
+  height: var(--content-max-height);
+  width: var(--max-width);
+}
+
+.news-hint {
+  color: var(--mat-sys-outline);
 }
