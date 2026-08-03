@@ -245,7 +245,7 @@ describe("NewsWidgetComponent", () => {
 
       expect(withoutRight.componentInstance["canReadPolicies"]()).toBe(false);
       expect(withoutRight.nativeElement.querySelector(".news-hint a")).toBeNull();
-      expect(withoutRight.nativeElement.querySelector(".news-hint").textContent).toContain("rss_age");
+      expect(withoutRight.nativeElement.querySelector(".news-hint").textContent).not.toContain("rss_age");
       withoutRight.destroy();
     });
   });

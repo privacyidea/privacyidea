@@ -136,7 +136,7 @@ describe("NewsComponent", () => {
       disabledFixture = createDisabled([]);
 
       expect(disabledFixture.nativeElement.querySelector(".news-hint a")).toBeNull();
-      expect(disabledFixture.nativeElement.querySelector(".news-hint").textContent).toContain("rss_age");
+      expect(disabledFixture.nativeElement.querySelector(".news-hint").textContent).not.toContain("rss_age");
     });
   });
 
