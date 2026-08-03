@@ -41,7 +41,7 @@ export class ChallengesTableActionsComponent {
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
 
-  readonly advancedApiFilter = this.challengesService.advancedApiFilter;
+  readonly advancedApiFilterKeys = this.challengesService.advancedApiFilterKeys;
 
   onDeleteExpiredChallenges(): void {
     this.challengesService.deleteExpiredChallenges().subscribe({
@@ -56,11 +56,12 @@ export class ChallengesTableActionsComponent {
   }
 
   toggleFilter(filterKeyword: string): void {
-    const newValue = this.tableUtilsService.toggleKeywordInFilter({
-      keyword: filterKeyword,
-      currentValue: this.challengesService.challengesFilter()
-    });
-    this.challengesService.challengesFilter.set(newValue);
+    this.challengesService.updateFilter((current) =>
+      this.tableUtilsService.toggleKeywordInFilter({
+        keyword: filterKeyword,
+        currentValue: current
+      })
+    );
   }
 
   onAdvancedFilterClick(filterKeyword: string): void {
@@ -68,7 +69,7 @@ export class ChallengesTableActionsComponent {
   }
 
   getFilterIconName(keyword: string): string {
-    const isSelected = this.challengesService.challengesFilter().hasKey(keyword);
+    const isSelected = this.challengesService.activeFilter().hasKey(keyword);
     return isSelected ? "filter_alt_off" : "filter_alt";
   }
 }

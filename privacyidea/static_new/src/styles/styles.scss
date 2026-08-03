@@ -291,6 +291,10 @@ body.self-service-layout {
   color: var(--mat-sys-primary);
 }
 
+.h3-color {
+  color: var(--mat-sys-primary-dark);
+}
+
 .ali-center {
   align-items: center;
 }
@@ -666,7 +670,7 @@ body.self-service-layout {
 }
 
 .highlight {
-  background-color: var(--green-brand-light) !important;
+  background-color: var(--green-light-active) !important;
   padding: 0 2px;
 }
 
@@ -782,26 +786,24 @@ body.self-service-layout {
 }
 
 .mdc-list-item--selected:not(.mdc-list-item--disabled):not(.mat-mdc-option-multiple) {
-  background-color: var(--mat-sys-primary-light) !important;
+  --mat-option-hover-state-layer-color: var(--mat-sys-primary-base);
+  --mat-option-focus-state-layer-color: var(--mat-sys-primary-base-active);
+  --mat-option-selected-state-layer-color: var(--mat-sys-primary-base-hover);
+}
+.mat-mdc-option.mdc-list-item:not(.mdc-list-item--disabled) {
+  --mat-option-hover-state-layer-color: var(--mat-sys-primary-light);
+  --mat-option-focus-state-layer-color: var(--mat-sys-primary-light-active);
+  --mat-option-selected-state-layer-color: var(--mat-sys-primary-light-hover);
 }
 
-.mat-mdc-option.mdc-list-item {
-  background: var(--mat-sys-surface-container-low) !important;
-}
-
-.mat-mdc-select-panel[aria-multiselectable="false"]
-  .mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled)
-  .mdc-list-item__primary-text {
-  color: white !important;
-}
-
-.mat-mdc-option:hover:not(.mdc-list-item--selected, .mdc-list-item--disabled) {
-  background-color: #f2f9fd;
-}
-
-.mat-mdc-option.mat-mdc-option-active {
-  background-color: var(--mat-sys-surface-container-low) !important;
-  color: var(--mat-sys-on-surface) !important;
+.mat-mdc-select-panel[aria-multiselectable="false"] {
+  .mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled),
+  .mat-mdc-option.mdc-list-item:not(.mdc-list-item--disabled):hover,
+  .mat-mdc-option.mdc-list-item.mat-mdc-option-active:not(.mdc-list-item--disabled) {
+    .mdc-list-item__primary-text {
+      color: var(--mat-sys-on-primary) !important;
+    }
+  }
 }
 
 .cdk-overlay-container {
@@ -839,6 +841,21 @@ body.self-service-layout {
 
 .mat-mdc-menu-content {
   max-height: 400px;
+}
+
+.filter-hint-tooltip {
+  white-space: pre-line;
+  text-align: left;
+
+  .mdc-tooltip__surface {
+    max-width: 340px;
+  }
+}
+
+// Panel class set by the shared app-multi-select-filter component. Its options can be long, so let the menu grow to
+// fit instead of truncating at the default 280px.
+.filter-select-menu.mat-mdc-menu-panel {
+  max-width: min(90vw, 480px);
 }
 
 mat-chip.mat-mdc-chip {

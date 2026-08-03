@@ -159,6 +159,18 @@ describe("FilterValueGeneric", () => {
       expect(res.freeTextTerms).toEqual(["alpha", "beta"]);
       expect(new FilterValueGeneric<PolicyMock>({ availableFilters: [] }).freeTextTerms).toEqual([]);
     });
+
+    it("should keep a keyword filter when the same word also appears as a bare free-text term", () => {
+      // A bare word equal to a keyword name must not overwrite the explicit `key: value` filter,
+      // regardless of order; the more specific keyword wins and the bare word is dropped.
+      const trailing = filter.setByString("scope:admin scope");
+      expect(trailing.getFilterOfKey("scope")).toBe("admin");
+      expect(trailing.freeTextTerms).toEqual([]);
+
+      const leading = filter.setByString("scope scope:admin");
+      expect(leading.getFilterOfKey("scope")).toBe("admin");
+      expect(leading.freeTextTerms).toEqual([]);
+    });
   });
 
   describe("4. Filtering Logic & Item Processing", () => {

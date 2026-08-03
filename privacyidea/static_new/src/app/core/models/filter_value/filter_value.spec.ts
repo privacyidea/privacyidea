@@ -100,23 +100,119 @@ describe("FilterValue helpers", () => {
     fv = fv.addEntry("description", "this token is");
     expect(fv.filterMap.get("description")).toBe("this token is");
   });
+
+  test("value, hiddenValue, isEmpty and isNotEmpty reflect the visible value", () => {
+    const empty = new FilterValue({ hiddenValue: "container_serial: CONT0001" });
+    expect(empty.value).toBe("");
+    expect(empty.filterString).toBe("");
+    expect(empty.hiddenValue).toBe("container_serial: CONT0001");
+    expect(empty.isEmpty).toBe(true);
+    expect(empty.isNotEmpty).toBe(false);
+
+    const filled = new FilterValue({ value: "user: alice" });
+    expect(filled.isEmpty).toBe(false);
+    expect(filled.isNotEmpty).toBe(true);
+  });
+
+  test("setString replaces the visible value", () => {
+    const fv = new FilterValue({ value: "user: alice" });
+    fv.setString = "serial: OATH0001";
+    expect(fv.value).toBe("serial: OATH0001");
+    expect(fv.filterMap.get("user")).toBeUndefined();
+    expect(fv.filterMap.get("serial")).toBe("OATH0001");
+  });
+
+  test("getValueOfKey returns the value of a visible key only", () => {
+    const fv = new FilterValue({ value: "user: alice", hiddenValue: "container_serial: CONT0001" });
+    expect(fv.getValueOfKey("user")).toBe("alice");
+    expect(fv.getValueOfKey("container_serial")).toBeUndefined();
+    expect(fv.getValueOfKey("serial")).toBeUndefined();
+  });
+
+  test("allEntries lists the visible entries before the hidden ones", () => {
+    const fv = new FilterValue({ value: "user: alice serial: OATH", hiddenValue: "serial: HIDDEN0001" });
+    expect(fv.allEntries).toEqual([
+      ["user", "alice"],
+      ["serial", "OATH"],
+      ["serial", "HIDDEN0001"]
+    ]);
+    expect(new Map(fv.allEntries).get("serial")).toBe("HIDDEN0001");
+  });
+
+  test("booleanValueOfKey reads true and false, and undefined for anything else", () => {
+    expect(new FilterValue({ value: "active: true" }).booleanValueOfKey("active")).toBe(true);
+    expect(new FilterValue({ value: "active: TRUE" }).booleanValueOfKey("active")).toBe(true);
+    expect(new FilterValue({ value: "active: false" }).booleanValueOfKey("active")).toBe(false);
+    expect(new FilterValue({ value: "active: False" }).booleanValueOfKey("active")).toBe(false);
+    expect(new FilterValue({ value: "active: yes" }).booleanValueOfKey("active")).toBeUndefined();
+    expect(new FilterValue({ value: "active:" }).booleanValueOfKey("active")).toBeUndefined();
+    expect(new FilterValue({ value: "user: alice" }).booleanValueOfKey("active")).toBeUndefined();
+  });
+
+  test("toggleKey adds a missing key and removes an existing one", () => {
+    let fv = new FilterValue({ value: "user: alice" });
+    fv = fv.toggleKey("serial");
+    expect(fv.hasKey("serial")).toBe(true);
+    fv = fv.toggleKey("serial");
+    expect(fv.hasKey("serial")).toBe(false);
+    expect(fv.filterMap.get("user")).toBe("alice");
+  });
+
+  test("toggleKeys toggles every key of the list", () => {
+    let fv = new FilterValue({ value: "serial: " });
+    fv = fv.toggleKeys(["serial", "user"]);
+    expect(fv.hasKey("serial")).toBe(false);
+    expect(fv.hasKey("user")).toBe(true);
+  });
+
+  test("toggleBooleanKey cycles through true, false and not filtered", () => {
+    let fv = new FilterValue({ value: "user: alice" });
+
+    fv = fv.toggleBooleanKey("active");
+    expect(fv.getValueOfKey("active")).toBe("true");
+
+    fv = fv.toggleBooleanKey("active");
+    expect(fv.getValueOfKey("active")).toBe("false");
+
+    fv = fv.toggleBooleanKey("active");
+    expect(fv.hasKey("active")).toBe(false);
+    expect(fv.filterMap.get("user")).toBe("alice");
+  });
+
+  test("toggleBooleanKey restarts the cycle for a value that is not a boolean", () => {
+    const fv = new FilterValue({ value: "active: maybe" }).toggleBooleanKey("active");
+    expect(fv.getValueOfKey("active")).toBe("true");
+  });
+
+  test("updateHiddenEntry adds and updates a hidden entry without touching the visible value", () => {
+    let fv = new FilterValue({ value: "user: alice" });
+
+    fv = fv.updateHiddenEntry("container_serial", "CONT0001");
+    expect(fv.hiddenFilterMap.get("container_serial")).toBe("CONT0001");
+
+    fv = fv.updateHiddenEntry("container_serial", "CONT0002");
+    expect(fv.hiddenFilterMap.get("container_serial")).toBe("CONT0002");
+    expect(fv.value).toBe("user: alice");
+  });
+
+  test("setHiddenFromMap replaces all hidden entries", () => {
+    const fv = new FilterValue({ hiddenValue: "container_serial: CONT0001" });
+
+    fv.setHiddenFromMap(
+      new Map([
+        ["serial", "OATH0001"],
+        ["realm", "defrealm"]
+      ])
+    );
+
+    expect(fv.hiddenFilterMap.get("container_serial")).toBeUndefined();
+    expect(fv.hiddenFilterMap.get("serial")).toBe("OATH0001");
+    expect(fv.hiddenFilterMap.get("realm")).toBe("defrealm");
+  });
 });
 
-describe("FilterValue.freeText", () => {
-  test("returns the whole input when there are no keyword segments", () => {
-    expect(new FilterValue({ value: "root" }).freeText).toBe("root");
-    expect(new FilterValue({ value: "  alice  bob " }).freeText).toBe("alice bob");
-  });
-
-  test("is empty when the input is purely keyword-based", () => {
-    expect(new FilterValue({ value: "username: root email: a@b.c" }).freeText).toBe("");
-  });
-
-  test("keeps leading free text alongside keyword segments", () => {
-    expect(new FilterValue({ value: "root username: admin" }).freeText).toBe("root");
-  });
-
-  test("does not affect the keyword filterMap", () => {
+describe("FilterValue keyword parsing alongside free text", () => {
+  test("does not let leading free text affect the keyword filterMap", () => {
     const fv = new FilterValue({ value: "root username: admin" });
     expect(fv.filterMap.get("username")).toBe("admin");
   });

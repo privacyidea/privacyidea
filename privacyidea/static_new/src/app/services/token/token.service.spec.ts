@@ -409,7 +409,7 @@ describe("TokenService", () => {
   describe("token filter -> tokenResource request params", () => {
     it("wildcard-wraps non-ID filter fields in the outgoing request", () => {
       contentServiceMock.onTokens = signal(true);
-      tokenService.tokenFilter.set(new FilterValue({ value: "serial: otp user: alice description: vpn" }));
+      tokenService.activeFilter.set(new FilterValue({ value: "serial: otp user: alice description: vpn" }));
       TestBed.tick();
 
       const req = mockBackend.expectOne((r) => r.url === "/token/");
@@ -421,7 +421,7 @@ describe("TokenService", () => {
 
     it("omits empty / wildcard-only filter values from the outgoing request", () => {
       contentServiceMock.onTokens = signal(true);
-      tokenService.tokenFilter.set(
+      tokenService.activeFilter.set(
         new FilterValue({ value: "serial: '' type: hotp active: '  ' description: * rollout_state: ***" })
       );
       TestBed.tick();
@@ -437,7 +437,7 @@ describe("TokenService", () => {
 
     it("normalizes assigned/active boolean filters to backend format True/False", () => {
       contentServiceMock.onTokens = signal(true);
-      tokenService.tokenFilter.set(new FilterValue({ value: "assigned: false active: true serial: OTP" }));
+      tokenService.activeFilter.set(new FilterValue({ value: "assigned: false active: true serial: OTP" }));
       TestBed.tick();
 
       const req = mockBackend.expectOne((r) => r.url === "/token/");
@@ -448,9 +448,40 @@ describe("TokenService", () => {
     });
   });
 
+  describe("tokenTypeOptions() ordering", () => {
+    const flushRights = async (value: Record<string, string>) => {
+      contentServiceMock.onTokensEnrollment = signal(true);
+      TestBed.tick();
+      const req = mockBackend.expectOne((r) => r.url.endsWith("/auth/rights"));
+      req.flush(MockPiResponse.fromValue(value));
+      await Promise.resolve();
+    };
+
+    it("sorts options alphabetically by the label (text before the first colon)", async () => {
+      await flushRights({
+        hotp: "Zulu: event based",
+        totp: "Alpha: time based",
+        spass: "Mike: simple pass"
+      });
+
+      expect(tokenService.tokenTypeOptions().map((o) => o.key)).toEqual(["totp", "spass", "hotp"]);
+    });
+
+    it("uses the full info string as the label when it contains no colon", async () => {
+      await flushRights({
+        hotp: "Beta",
+        totp: "Alpha"
+      });
+
+      const options = tokenService.tokenTypeOptions();
+      expect(options.map((o) => o.key)).toEqual(["totp", "hotp"]);
+      expect(options[0].info).toBe("Alpha");
+    });
+  });
+
   describe("showOnlyTokenInContainer -> token container filter", () => {
     const containerRoute = ROUTE_PATHS.CONTAINERS_DETAILS + "/CONT0001";
-    const hasContainerFilter = () => tokenService.tokenFilter().hiddenFilterMap.has("container_serial");
+    const hasContainerFilter = () => tokenService.activeFilter().hiddenFilterMap.has("container_serial");
 
     it("defaults to false on the container details route (shows only tokens not in a container)", () => {
       contentServiceMock.routeUrl.set(containerRoute);
@@ -1232,6 +1263,20 @@ describe("TokenService", () => {
 
       expect(tokenService.tokenResource.hasValue()).toBe(false);
       expect(tokenService.tokenResourceValue()).toBeNull();
+    });
+  });
+
+  describe("filter metadata", () => {
+    it("marks the keywords whose case behaviour deviates", () => {
+      expect(tokenService.caseNotes).toEqual({
+        serial: "usually-insensitive",
+        "infokey & infovalue": "usually-sensitive"
+      });
+    });
+
+    it("only notes keywords the UI can actually look up", () => {
+      const lookupKeys = [...tokenService.apiFilterKeys, ...tokenService.advancedApiFilterKeys];
+      Object.keys(tokenService.caseNotes).forEach((key) => expect(lookupKeys).toContain(key));
     });
   });
 });

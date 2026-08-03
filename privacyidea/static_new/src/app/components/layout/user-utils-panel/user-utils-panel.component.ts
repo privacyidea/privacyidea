@@ -216,7 +216,7 @@ export class UserUtilsPanelComponent {
       return;
     }
 
-    switch (this.contentService.routeUrl()) {
+    switch (this.contentService.routePath()) {
       case ROUTE_PATHS.TOKENS:
         this.tokenService.tokenResource.reload();
         break;
