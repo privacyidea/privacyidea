@@ -117,9 +117,8 @@ from privacyidea.api.lib.utils import (get_all_params, get_before_request_config
                                        INTERNAL_OPTION_KEYS)
 from privacyidea.api.recover import recover_blueprint
 from privacyidea.lib.authsession import (create_auth_session, set_persistent_cookie,
-                                         clear_persistent_cookie, get_valid_session,
-                                         rotate_session, session_user_id,
-                                         PERSISTENT_COOKIE_NAME)
+                                         clear_persistent_cookie, consume_remember_device_cookie,
+                                         session_user_id, PERSISTENT_COOKIE_NAME)
 from privacyidea.api.register import register_blueprint
 from privacyidea.lib.applications.offline import MachineApplication
 from privacyidea.lib.challenge import get_challenges, extract_answered_challenges, cancel_enrollment_via_multichallenge
@@ -463,15 +462,6 @@ def check():
     if is_true(request.all_data.get("cancel_enrollment")):
         return _handle_enrollment_cancellation(request.all_data)
 
-    # Conditional Access decision point (remembered device).
-    # Runs before any token verification, so an accepted device never triggers a
-    # challenge and the audit honestly records an ACCEPT. This is the seam where
-    # a future Conditional Access / policy evaluation will decide whether a
-    # recognised device may skip the second factor.
-    remembered_device_response = _remembered_device_access()
-    if remembered_device_response is not None:
-        return remembered_device_response
-
     # This dictionary carries state across the extracted helper functions
     # to avoid changing the functional signatures of the underlying libraries yet.
     context = {
@@ -736,10 +726,8 @@ def _finalize_auth_response(context):
 
     serials_str = ",".join(context["serial_list"])
 
-    # Decide the persistent-cookie action *before* building the response, so the
-    # "remembered_device" detail is part of the serialised body. The cookie
-    # itself is attached to the response object afterwards.
-    cookie_action = _resolve_persistent_cookie(user, success, serials_str, details)
+    # Decide whether to issue a persistent "remember device" cookie.
+    cookie_action = _resolve_persistent_cookie(user, success)
 
     ret = send_result(context["result"], rid=2, details=details, **context["response_params"])
     _apply_persistent_cookie(ret, cookie_action)
@@ -755,136 +743,47 @@ def _finalize_auth_response(context):
     return ret
 
 
-def _remembered_device_access():
+def _resolve_persistent_cookie(user, success):
     """
-    Decide whether a recognised remembered device may skip the second factor.
+    Decide whether to *issue* a new persistent ("remember device") cookie on a
+    successful authentication, returning ``("set", value, expires_at)`` or
+    ``None``.
 
-    If the request is bound to an API client and presents a ``pi_remember_device``
-    cookie valid **for the authenticating user**, the device is accepted when the
-    ``remember_device`` policy (scope auth, with its client/user/realm conditions)
-    allows it. The policy *is* the grant decision: an admin enabling
-    ``remember_device`` for a client/realm is the signal that recognised devices
-    may skip the second factor. This runs *before* any token verification, so an
-    accepted device never triggers a challenge and the audit records a clean
-    ACCEPT.
-
-    This is the single place that consumes a presented cookie: it validates and
-    (on accept/decline) rotates it once, stashing the follow-up cookie action on
-    ``g.remember_cookie_action`` for :func:`_resolve_persistent_cookie`, so the
-    cookie is never looked up or rotated twice.
-
-    Independence from Conditional Access: this feature does not depend on a CA
-    feature and does not gate on one. A future CA / risk layer is orthogonal - it
-    would *veto* auth globally (bad IP, anomaly) and could consume the theft
-    signal emitted below - but it neither enables nor is required by this flow.
-
-    :return: an ACCEPT ``Response`` when the device is accepted, else ``None``
-        (normal authentication then proceeds).
+    ``/validate/check`` only issues cookies. A presented cookie is consumed and
+    rotated by the dedicated recognition endpoint (``/validate/remember_device``),
+    never here, so this endpoint carries no cookie theft/rotation logic. A cookie
+    is issued when a client-bound request opts in (``request_persistent_cookie``)
+    and the ``remember_device`` policy (scope auth, with its client/user/realm
+    conditions) allows it.
     """
-    # Reset per-request state (g is app-context scoped).
-    g.remembered_device = False
-    g.remember_cookie_action = None
-    if not g.get("client_id"):
-        return None
-    presented = request.cookies.get(PERSISTENT_COOKIE_NAME)
-    if not presented:
-        return None
-
-    user = request.User
-    user_id = session_user_id(user)
-    if not user_id:
-        # No resolvable user to bind the cookie to - do not honour it.
-        g.remember_cookie_action = ("clear",)
-        return None
-
-    try:
-        result = get_valid_session(presented, g.client_id, user_id, g.get("client_ip"))
-    except AuthError:
-        # ---- Theft-response seam -------------------------------------------
-        # Reuse/replay detected. Baseline response (not optional - detection is
-        # toothless without it): get_valid_session has already invalidated the
-        # whole series, and we record the event in action_detail (which the
-        # normal finalize path does not overwrite, unlike info) and drop the
-        # cookie. Escalations (notify the user, force global re-auth, block the
-        # client/IP, feed a CA risk score, or 401 instead of falling through)
-        # plug in here. We currently fall through to normal auth rather than
-        # failing the request.
-        log.warning("Persistent device cookie reuse detected; series invalidated.")
-        g.audit_object.add_to_log({"action_detail": "persistent cookie reuse detected"},
-                                  add_with_comma=True)
-        g.remember_cookie_action = ("clear",)
-        return None
-        # --------------------------------------------------------------------
-    if not result:
-        # Unknown / expired / not this user's / wrong client: drop the cookie.
-        g.remember_cookie_action = ("clear",)
-        return None
-
-    session, is_grace = result
-    # The device is recognised and bound to this user.
-    g.remembered_device = True
-
-    # A fresh use rotates the cookie; a grace hit (concurrent/duplicate request)
-    # leaves the cookie untouched so the token chain does not fork.
-    if is_grace:
-        cookie_action = None
-    else:
-        cookie_value, expires_at = rotate_session(session)
-        cookie_action = ("set", cookie_value, expires_at)
-
-    # --- Grant decision: the remember_device policy --------------------------
-    if not Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE,
-                      user_object=user).any():
-        # Policy does not allow this device to skip the second factor. Let normal
-        # authentication proceed; _resolve_persistent_cookie applies the cookie
-        # action decided above (a rotated cookie on a fresh use, nothing on grace).
-        g.remember_cookie_action = cookie_action
-        return None
-    # -------------------------------------------------------------------------
-
-    details = {"remembered_device": True, "message": "Accepted by remembered device."}
-    ret = send_result(True, rid=2, details=details)
-    if cookie_action:
-        set_persistent_cookie(ret, cookie_action[1], cookie_action[2])
-    g.audit_object.log({
-        "user": user.login, "resolver": user.resolver, "realm": user.realm,
-        "success": True,
-        "authentication": ret.json.get("result", {}).get("authentication", ""),
-        "info": "Accepted by remembered device",
-    })
-    return ret
-
-
-def _resolve_persistent_cookie(user, success, serials_str, details):
-    """
-    Decide the persistent-cookie action for the final response:
-    ``("set", value, expires_at)``, ``("clear",)`` or ``None``.
-
-    Any presented cookie has already been consumed (validated + possibly rotated)
-    by :func:`_remembered_device_access`, which stashes the resulting action on
-    ``g.remember_cookie_action``. This function honours that stash and otherwise
-    only *issues* a new cookie: on a successful auth of a client-bound request
-    that opts in (``request_persistent_cookie``) and is allowed by the
-    ``remember_device`` policy.
-    """
-    details["remembered_device"] = g.get("remembered_device", False)
-
-    action = g.get("remember_cookie_action")
-    if action is not None:
-        return action
-
-    # No cookie was presented: consider issuing one.
     if not success or not g.get("client_id"):
         return None
-
-    if is_true(get_optional(request.all_data, "request_persistent_cookie")):
-        if Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE, user_object=user).any():
-            session, cookie_value = create_auth_session(user_id=session_user_id(user) or serials_str,
-                                                        client_id=g.client_id,
-                                                        ip_address=g.client_ip,
-                                                        user_agent=g.get("user_agent"))
-            action = ("set", cookie_value, session.expires_at)
-    return action
+    if not is_true(get_optional(request.all_data, "request_persistent_cookie")):
+        return None
+    user_id = session_user_id(user)
+    if not user_id:
+        # The recognition endpoint binds and matches on "login@realm", so a
+        # session for a userless (serial-only) auth could never be recognised.
+        # Do not issue a cookie that can never be redeemed.
+        return None
+    if not Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE, user_object=user).any():
+        return None
+    # The cookie lifetime is a policy value so it can differ per realm/user/client
+    # (e.g. a shorter lifetime for admins). Unset / invalid -> the model default.
+    validity_days = None
+    validity_pols = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE_VALIDITY,
+                               user_object=user).action_values(unique=True)
+    if validity_pols:
+        try:
+            validity_days = int(list(validity_pols)[0])
+        except (ValueError, TypeError):
+            validity_days = None
+    session, cookie_value = create_auth_session(user_id=user_id,
+                                                client_id=g.client_id,
+                                                ip_address=g.client_ip,
+                                                user_agent=g.get("user_agent"),
+                                                validity_days=validity_days)
+    return "set", cookie_value, session.expires_at
 
 
 def _apply_persistent_cookie(response, action):
@@ -895,6 +794,144 @@ def _apply_persistent_cookie(response, action):
         set_persistent_cookie(response, action[1], action[2])
     elif action[0] == "clear":
         clear_persistent_cookie(response)
+
+
+@validate_blueprint.route('/capabilities', methods=['GET'])
+def get_capabilities():
+    """
+    Discovery endpoint for API clients.
+
+    Requires an identified API client (the ``X-API-Key`` header, resolved into
+    ``g.client_id`` by the API-key middleware). Returns the capabilities this
+    server offers to the client.
+
+    .. important::
+
+       This is **client-level** discovery only. ``remember_device: true`` means
+       the feature is available to *this client* (any ``client`` condition on the
+       policy is honoured via ``g.client_id``); it is **not** a per-user
+       guarantee. A ``remember_device`` policy scoped to specific users/realms
+       still gates the feature per user at issuance (``/validate/check``) and
+       recognition (``/validate/remember_device``). A client should treat ``true``
+       as "worth attempting" and rely on those endpoints for the authoritative
+       per-user answer.
+
+    :status 200: capabilities in ``result.value``.
+    :status 401: no API client is identified.
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+       HTTP/1.1 200 OK
+       Content-Type: application/json
+
+       {
+         "id": 1,
+         "jsonrpc": "2.0",
+         "result": {
+           "status": true,
+           "value": {"capabilities": {"remember_device": true}}
+         },
+         "version": "privacyIDEA unknown"
+       }
+    """
+    if g.get("client_id") is None:
+        raise AuthError(_("Authentication failure. A valid API key is required."),
+                        id=Error.AUTHENTICATE_AUTH_HEADER)
+    # Whether "remember device" is offered depends on the remember_device policy
+    # (SCOPE.AUTH); any "client" condition on that policy is evaluated against
+    # this request's g.client_id automatically.
+    remember_device = Match.generic(g, scope=SCOPE.AUTH,
+                                    action=PolicyAction.REMEMBER_DEVICE).any()
+    return send_result({"capabilities": {"remember_device": remember_device}})
+
+
+@validate_blueprint.route('/remember_device', methods=['POST'])
+def check_remember_device():
+    """
+    Recognition endpoint for the persistent "remember device" cookie.
+
+    Answers a single question - *is this device remembered for this user and
+    client?* - and rotates the cookie on a hit. It is deliberately **not** an
+    authentication: it verifies no credential, triggers no challenge (no push,
+    no SMS) and does not feed the authentication accounting. A recognised device
+    lets the calling client skip the second factor; enforcing a first factor
+    beforehand is the client's responsibility.
+
+    Requires an identified API client (``X-API-Key`` -> ``g.client_id``) and the
+    ``user``/``realm`` the cookie was issued for. The cookie is bound to that
+    exact user and client, so it can never be replayed for another account or a
+    different client. A stale counter is treated as theft: the whole series is
+    invalidated and the cookie cleared. Recognition is only offered when the
+    ``remember_device`` policy allows it (the same gate ``/validate/capabilities``
+    reports); otherwise the answer is always ``false`` and a presented cookie is
+    left untouched.
+
+    Issuing a cookie stays on ``/validate/check`` (``request_persistent_cookie=1``).
+
+    :reqheader X-API-Key: the API client's key
+    :reqheader Cookie: ``pi_remember_device=<series>:<counter>``
+    :formparam user: the username the cookie was issued for
+    :formparam realm: the user's realm
+    :status 200: ``result.value`` is ``true`` when the device is recognised,
+        ``false`` otherwise (a miss is a normal answer, not an error).
+    :status 401: no API client is identified.
+    """
+    if g.get("client_id") is None:
+        raise AuthError(_("Authentication failure. A valid API key is required."),
+                        id=Error.AUTHENTICATE_AUTH_HEADER)
+
+    user = request.User
+    recognised = False
+    cookie_action = None
+
+    # Only evaluate the remember_device policy (which also writes a policy-match
+    # audit entry) once we know there is actually a cookie and a bindable user to
+    # recognise, so a cookie-less poll does not pay for a discarded evaluation.
+    # user.exist() is required: a session is bound to the "login@realm" string,
+    # so without it a deleted/removed account would keep matching by string and
+    # skip the second factor. Confirming the user still resolves means deleting
+    # the account revokes its remembered devices.
+    presented = request.cookies.get(PERSISTENT_COOKIE_NAME)
+    user_id = session_user_id(user)
+
+    if presented and user_id and user.exist() and Match.user(g, scope=SCOPE.AUTH,
+                                                             action=PolicyAction.REMEMBER_DEVICE,
+                                                             user_object=user).any():
+        result = consume_remember_device_cookie(presented, g.client_id, user_id, g.get("client_ip"))
+        if result.status == "recognized":
+            recognised = True
+            cookie_action = ("set", result.cookie_value, result.expires_at)
+        elif result.status == "grace":
+            # Tolerated concurrent/duplicate request: recognised, but do not
+            # rotate (the client keeps the cookie it already has).
+            recognised = True
+        elif result.status == "theft":
+            # Baseline theft response: consume_remember_device_cookie has already
+            # invalidated the whole series. Record it in action_detail (which the
+            # error path does not overwrite) and drop the cookie. This is the seam
+            # for future escalations (notify the user, block the client/IP, feed a
+            # risk score).
+            log.warning("Persistent device cookie reuse detected; series invalidated.")
+            g.audit_object.add_to_log({"action_detail": "persistent cookie reuse detected"},
+                                      add_with_comma=True)
+            cookie_action = ("clear",)
+        else:  # miss: unknown / expired / not this user's / wrong client
+            cookie_action = ("clear",)
+
+    # A recognition is its own audit action ("POST /validate/remember_device") and
+    # is intentionally not marked as an authentication (no ACCEPT/REJECT), so it
+    # never counts towards the auth success/failure accounting.
+    g.audit_object.log({
+        "user": user.login, "resolver": user.resolver, "realm": user.realm,
+        "success": recognised,
+        "info": "remembered device recognised" if recognised else "device not recognised",
+    })
+
+    ret = send_result(recognised, rid=2, details={"remembered_device": recognised})
+    _apply_persistent_cookie(ret, cookie_action)
+    return ret
 
 
 @validate_blueprint.route('/triggerchallenge', methods=['POST', 'GET'])

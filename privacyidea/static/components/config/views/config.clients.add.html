@@ -1,3 +1,7 @@
+<!-- Hide any freshly-shown API key when navigating onto the create view: the
+     key panel is a one-time flash on the list, not sticky across the menu. -->
+<div ng-init="dismissApiKey()"></div>
+
 <h2 class="form-signin-heading" translate>Create a new client</h2>
 
 <form name="formClient" role="form" validate
@@ -20,7 +24,7 @@
         <div class="col-sm-9">
             <select name="client_type" id="client_type" class="form-control"
                     ng-model="params.client_type" required
-                    ng-options="type for type in clientTypes">
+                    ng-options="type.name as type.label for type in clientTypes">
             </select>
             <p class="help-block" translate>The kind of integration this client
                 represents. This cannot be changed later.</p>

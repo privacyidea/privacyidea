@@ -1,9 +1,15 @@
+<!-- Hide any freshly-shown API key when navigating onto the sessions view. -->
+<div ng-init="dismissApiKey()"></div>
+
 <h3>
-    <span translate>Remembered devices for</span>
+    <span translate>Remembered-device sessions for</span>
     "{{ sessionsClientName }}"
 </h3>
 <p translate>These are the active "remember this device" sessions for this client.
-    Revoking one invalidates that device's cookie immediately.</p>
+    Revoking one invalidates that session's cookie immediately. The IP address and
+    user agent are those of the API client's request, which for a centralised
+    integration (e.g. an IdP) is the integration itself, not the end user's
+    browser or device.</p>
 
 <a class="btn btn-default btn-sm" ui-sref="config.clients.list">
     <span class="glyphicon glyphicon-chevron-left"></span>
@@ -34,15 +40,25 @@
             <td>
                 <button class="btn btn-danger btn-sm"
                         ng-show="checkRight('clients_delete')"
-                        data-confirmation-text="{{ 'Do you really want to revoke this session?' | translate }}"
-                        ng-click="confirmDelete(revokeSession, session.series_id)">
+                        ng-hide="showRevokeDialog[session.series_id]"
+                        ng-click="showRevokeDialog[session.series_id] = true">
                     <span class="glyphicon glyphicon-trash"></span>
                     <span translate>Revoke</span>
+                </button>
+                <button class="btn btn-danger btn-sm"
+                        ng-show="showRevokeDialog[session.series_id]"
+                        ng-click="revokeSession(session.series_id)">
+                    <span translate>Revoke session</span>
+                </button>
+                <button class="btn btn-default btn-sm"
+                        ng-show="showRevokeDialog[session.series_id]"
+                        ng-click="showRevokeDialog[session.series_id] = false">
+                    <span translate>Cancel</span>
                 </button>
             </td>
         </tr>
         <tr ng-show="sessions.length === 0">
-            <td colspan="7" translate>This client has no remembered devices.</td>
+            <td colspan="7" translate>This client has no remembered-device sessions.</td>
         </tr>
         </tbody>
     </table>

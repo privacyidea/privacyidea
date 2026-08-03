@@ -43,7 +43,6 @@ class ConditionSection:
         CONTAINER = "container"
         CONTAINER_INFO = "container_info"
         REQUEST_DATA = "Request Data"
-        CLIENT = "client"
 
     USERINFO = Section.USERINFO.value
     TOKENINFO = Section.TOKENINFO.value
@@ -53,7 +52,6 @@ class ConditionSection:
     CONTAINER = Section.CONTAINER.value
     CONTAINER_INFO = Section.CONTAINER_INFO.value
     REQUEST_DATA = Section.REQUEST_DATA.value
-    CLIENT = Section.CLIENT.value
 
     @classmethod
     def get_all_sections(cls) -> list[str]:
@@ -412,37 +410,6 @@ class PolicyConditionClass:
                     data.available_keys = list(request_environment.keys())
         return data
 
-    def get_client_data(self, client_id: str | None) -> ConditionSectionData:
-        """
-        Get the API client data for the condition.
-
-        The client is the one identified by the ``X-API-Key`` header for this
-        request (``g.client_id``). Its non-secret attributes (``id``,
-        ``display_name``, ``client_type``, ``status``, ``key_id``) can be
-        referenced by a condition.
-
-        :param client_id: the id of the API client of the request, or None
-        :return: The value from the client data and further information if it is
-            not available
-        """
-        data = ConditionSectionData("client")
-        client = None
-        if client_id:
-            from privacyidea.models import Client
-            client = Client.query.filter_by(id=client_id).first()
-        data.object_available = client is not None
-
-        if data.object_available:
-            client_dict = {"id": client.id,
-                           "display_name": client.display_name,
-                           "client_type": client.client_type,
-                           "status": client.status,
-                           "key_id": client.key_id}
-            data.value = client_dict.get(self.key)
-            if data.value is None:
-                data.available_keys = list(client_dict.keys())
-        return data
-
     def get_data_from_dict(self, dictionary: dict | None) -> ConditionSectionData:
         """
         Get the value from the request data for the condition.
@@ -461,7 +428,7 @@ class PolicyConditionClass:
 
     def match(self, policy_name: str, user: User | None, serial: str | None,
               request_header: EnvironHeaders | None, container_serial: str | None = None,
-              request_data: dict | None = None, client_id: str | None = None) -> bool:
+              request_data: dict | None = None) -> bool:
         """
         Check if the condition matches the given user, token, or request header.
 
@@ -471,7 +438,6 @@ class PolicyConditionClass:
         :param request_header: The request header to check
         :param container_serial: The serial number of the container
         :param request_data: The request data
-        :param client_id: The id of the API client of the request (g.client_id)
         :return: True if the condition matches, False otherwise
         """
         condition_matches = True
@@ -487,8 +453,6 @@ class PolicyConditionClass:
                 section_data = self.get_container_data(container_serial)
             elif self.section == ConditionSection.REQUEST_DATA:
                 section_data = self.get_data_from_dict(request_data)
-            elif self.section == ConditionSection.CLIENT:
-                section_data = self.get_client_data(client_id)
             else:  # pragma no cover
                 # We should never reach this case as the section is already evaluated in the setter
                 log.warning(f"Policy '{policy_name}' has condition with unknown section: '{self.section}'")

@@ -172,24 +172,24 @@ class APIClientAPIKeyMiddlewareTestCase(MyApiTestCase):
                                            headers={'X-API-Key': 'pi_totally_wrong'}):
             self.assertNotEqual(self.app.full_dispatch_request().status_code, 401)
         # But an endpoint that requires an identified client still rejects it.
-        with self.app.test_request_context('/auth/capabilities', method='GET',
+        with self.app.test_request_context('/validate/capabilities', method='GET',
                                            headers={'X-API-Key': 'pi_totally_wrong'}):
             self.assertEqual(self.app.full_dispatch_request().status_code, 401)
 
-    def test_04_revoked_key_ignored_but_not_identified(self):
+    def test_04_suspended_key_ignored_but_not_identified(self):
         client = self._create_client()
         with self.app.test_request_context(f'/clients/{client["id"]}',
-                                           data={"status": "revoked"},
+                                           data={"status": "suspended"},
                                            method='POST',
                                            headers={'Authorization': self.at}):
             self.assertEqual(self.app.full_dispatch_request().status_code, 200)
 
-        # A revoked key does not lock out a non-client endpoint ...
+        # A suspended key does not lock out a non-client endpoint ...
         with self.app.test_request_context('/', method='GET',
                                            headers={'X-API-Key': client["api_key"]}):
             self.assertNotEqual(self.app.full_dispatch_request().status_code, 401)
         # ... and no longer identifies a client (capabilities requires one).
-        with self.app.test_request_context('/auth/capabilities', method='GET',
+        with self.app.test_request_context('/validate/capabilities', method='GET',
                                            headers={'X-API-Key': client["api_key"]}):
             self.assertEqual(self.app.full_dispatch_request().status_code, 401)
 

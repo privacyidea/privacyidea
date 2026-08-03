@@ -632,3 +632,21 @@ accepted when set via an environment variable).
    the document structure and a size limit are enforced) so the Web UI can evolve
    its settings freely. ``PI_USER_SETTINGS_ALLOWED_KEYS`` will take effect once
    key enforcement is enabled.
+
+.. _ini_remember_device_grace:
+
+Remember-device grace window
+----------------------------
+
+``PI_REMEMBER_DEVICE_GRACE_SECONDS`` (default ``10``) controls the grace window
+of the :ref:`api_clients` "remember this device" feature. Two near-simultaneous
+requests carrying the same rotating cookie would otherwise make the second look
+like a replay (a stale counter) and destroy the session series. Within this many
+seconds, and from the same source IP, the immediately-previous counter is
+accepted without rotating, so concurrent requests converge on one token.
+
+Set it to ``0`` for strict, fail-secure behaviour (no grace: any stale counter is
+treated as theft). Widening it trades theft-detection tightness for fewer
+re-registrations when a client loses a rotation response.
+
+.. versionadded:: 3.14

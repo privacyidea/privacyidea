@@ -110,7 +110,8 @@ def identify_api_client():
     (``g.client_id = None``) rather than rejecting it - otherwise a stale key
     sent to an endpoint that does not use API-key auth (e.g. the WebUI) would
     break that request. Endpoints that require an identified client
-    (``/auth/capabilities``, the remembered-device flow) enforce it themselves.
+    (``/validate/capabilities``, ``/validate/remember_device``) enforce it
+    themselves.
     """
     g.client_id = None
     api_key = request.headers.get("X-API-Key")

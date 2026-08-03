@@ -41,8 +41,10 @@ KEY_ID_BYTES = 8
 # speed, which is why a fast keyed hash (rather than a slow KDF) is used and why
 # exposing the key id publicly leaks nothing useful about the secret.
 KEY_SECRET_BYTES = 32
-# The states a client may be in. Only "active" clients can authenticate.
-CLIENT_STATUS = ("active", "revoked", "suspended")
+# The states a client may be in. Only "active" clients can authenticate;
+# "suspended" is a reversible off-switch. Permanent removal is a delete, and a
+# compromised key is handled by rotation - so there is no separate "revoked".
+CLIENT_STATUS = ("active", "suspended")
 
 
 def _hash_secret(secret: str) -> str:
@@ -198,7 +200,7 @@ def update_client(client_id: str, display_name: str = None, status: str = None,
 
     :param client_id: the UUID of the client
     :param display_name: the new display name, if given
-    :param status: the new status ('active', 'revoked' or 'suspended'), if given
+    :param status: the new status ('active' or 'suspended'), if given
     :param config: the new config dict, if given
     :return: the updated ``Client``
     """

@@ -1323,3 +1323,49 @@ This specifies a whitespace-separated list of container info keys that should be
 :http:get:`/container/` endpoint and therefore will not be shown in the WebUI on the container details page.
 
 .. versionadded:: 3.12
+
+The following actions govern the management of :ref:`api_clients`.
+
+.. _policy_clients_list:
+
+clients_list
+~~~~~~~~~~~~
+
+type: ``bool``
+
+The administrator is allowed to list the :ref:`api_clients` and view their
+non-secret attributes as well as their remembered-device sessions. The API key
+itself is never returned.
+
+.. _policy_clients_add:
+
+clients_add
+~~~~~~~~~~~
+
+type: ``bool``
+
+The administrator is allowed to create and modify API clients (display name,
+status, configuration) and to generate their API key. The plaintext key is
+returned only once, on creation and on rotation.
+
+.. _policy_clients_delete:
+
+clients_delete
+~~~~~~~~~~~~~~
+
+type: ``bool``
+
+The administrator is allowed to delete an API client. Deleting a client also
+removes its remembered-device sessions.
+
+.. _policy_clients_rotate:
+
+clients_rotate
+~~~~~~~~~~~~~~
+
+type: ``bool``
+
+The administrator is allowed to rotate the API key of a client. The previous key
+stops working immediately and a new plaintext key is returned once.
+
+.. versionadded:: 3.14

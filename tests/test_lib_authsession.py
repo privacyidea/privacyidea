@@ -1,10 +1,10 @@
 from .base import MyTestCase
 
-from privacyidea.lib.error import AuthError
 from privacyidea.lib.clients import create_client
 from privacyidea.lib.authsession import (parse_cookie, build_cookie_value,
-                                         create_auth_session, validate_and_rotate,
-                                         get_valid_session, session_user_id)
+                                         create_auth_session, consume_remember_device_cookie,
+                                         get_valid_session, session_user_id,
+                                         cleanup_expired_auth_sessions)
 from privacyidea.models import AuthSession
 from privacyidea.models.utils import utc_now
 
@@ -53,22 +53,23 @@ class AuthSessionLibTestCase(MyTestCase):
         # 30 day default validity
         self.assertGreater(session.expires_at, utc_now() + timedelta(days=29))
 
-    def test_validate_and_rotate_success(self):
+    def test_consume_recognized_rotates(self):
         client_id = self._client_id()
         session, cookie = create_auth_session("bob", client_id)
         series_id = session.series_id
 
-        new_cookie, expires_at = validate_and_rotate(cookie, client_id, "bob")
-        self.assertEqual(new_cookie, build_cookie_value(series_id, 2))
-        self.assertEqual(expires_at, session.expires_at)
+        result = consume_remember_device_cookie(cookie, client_id, "bob")
+        self.assertEqual(result.status, "recognized")
+        self.assertEqual(result.cookie_value, build_cookie_value(series_id, 2))
+        self.assertEqual(result.expires_at, session.expires_at)
 
         stored = AuthSession.query.filter_by(series_id=series_id).first()
         self.assertEqual(stored.counter, 2)
         self.assertIsNotNone(stored.last_used_at)
 
-        # The rotated cookie validates again, bumping to 3.
-        self.assertEqual(validate_and_rotate(new_cookie, client_id, "bob")[0],
-                         build_cookie_value(series_id, 3))
+        # The rotated cookie is recognised again, bumping to 3.
+        again = consume_remember_device_cookie(result.cookie_value, client_id, "bob")
+        self.assertEqual(again.cookie_value, build_cookie_value(series_id, 3))
 
     def test_wrong_user_does_not_match(self):
         # A cookie is bound to the user it was issued for; another user presenting
@@ -76,7 +77,7 @@ class AuthSessionLibTestCase(MyTestCase):
         client_id = self._client_id()
         _session, cookie = create_auth_session("frank", client_id)
         self.assertIsNone(get_valid_session(cookie, client_id, "eve"))
-        self.assertIsNone(validate_and_rotate(cookie, client_id, "eve"))
+        self.assertEqual(consume_remember_device_cookie(cookie, client_id, "eve").status, "miss")
 
     def test_theft_detection_deletes_series(self):
         client_id = self._client_id()
@@ -85,24 +86,25 @@ class AuthSessionLibTestCase(MyTestCase):
 
         # Advance the counter twice so the original cookie is two steps stale
         # (beyond the single-step grace window).
-        new_cookie, _ = validate_and_rotate(cookie, client_id, "carol")   # -> counter 2
-        validate_and_rotate(new_cookie, client_id, "carol")               # -> counter 3
+        rotated = consume_remember_device_cookie(cookie, client_id, "carol")       # -> counter 2
+        consume_remember_device_cookie(rotated.cookie_value, client_id, "carol")   # -> counter 3
 
-        # Replaying the original counter=1 cookie (two behind) is theft.
-        self.assertRaises(AuthError, validate_and_rotate, cookie, client_id, "carol")
-        # The whole series is gone, so even the "current" cookie no longer works.
+        # Replaying the original counter=1 cookie (two behind) is theft: reported
+        # as "theft" (not raised) and the whole series is gone.
+        self.assertEqual(consume_remember_device_cookie(cookie, client_id, "carol").status, "theft")
         self.assertIsNone(AuthSession.query.filter_by(series_id=series_id).first())
 
     def test_grace_allows_previous_counter_without_rotating(self):
         client_id = self._client_id()
         session, cookie = create_auth_session("gina", client_id)
         # Rotate to counter 2.
-        validate_and_rotate(cookie, client_id, "gina")
+        consume_remember_device_cookie(cookie, client_id, "gina")
         # A concurrent request still presenting counter 1 (the previous one) is
-        # tolerated within the grace window: accepted, returns the current
-        # cookie, and does NOT rotate or delete the series.
-        result = validate_and_rotate(cookie, client_id, "gina")
-        self.assertEqual(result[0], build_cookie_value(session.series_id, 2))
+        # tolerated within the grace window: recognised as a grace hit, no new
+        # cookie handed out, and the series is neither rotated nor deleted.
+        result = consume_remember_device_cookie(cookie, client_id, "gina")
+        self.assertEqual(result.status, "grace")
+        self.assertIsNone(result.cookie_value)
         stored = AuthSession.query.filter_by(series_id=session.series_id).first()
         self.assertIsNotNone(stored)
         self.assertEqual(stored.counter, 2)
@@ -112,8 +114,8 @@ class AuthSessionLibTestCase(MyTestCase):
         try:
             client_id = self._client_id()
             session, cookie = create_auth_session("hank", client_id)
-            validate_and_rotate(cookie, client_id, "hank")   # -> counter 2
-            self.assertRaises(AuthError, validate_and_rotate, cookie, client_id, "hank")
+            consume_remember_device_cookie(cookie, client_id, "hank")   # -> counter 2
+            self.assertEqual(consume_remember_device_cookie(cookie, client_id, "hank").status, "theft")
             self.assertIsNone(AuthSession.query.filter_by(series_id=session.series_id).first())
         finally:
             self.app.config.pop("PI_REMEMBER_DEVICE_GRACE_SECONDS", None)
@@ -121,10 +123,11 @@ class AuthSessionLibTestCase(MyTestCase):
     def test_grace_requires_matching_ip(self):
         client_id = self._client_id()
         session, cookie = create_auth_session("iris", client_id, ip_address="10.0.0.1")
-        validate_and_rotate(cookie, client_id, "iris", "10.0.0.1")   # -> counter 2
+        consume_remember_device_cookie(cookie, client_id, "iris", "10.0.0.1")   # -> counter 2
         # Presenting the previous counter from a different IP is not a tolerated
         # concurrent request -> theft.
-        self.assertRaises(AuthError, validate_and_rotate, cookie, client_id, "iris", "9.9.9.9")
+        self.assertEqual(consume_remember_device_cookie(cookie, client_id, "iris", "9.9.9.9").status,
+                         "theft")
 
     def test_wrong_client_does_not_match(self):
         client_id_a = self._client_id()
@@ -132,13 +135,13 @@ class AuthSessionLibTestCase(MyTestCase):
         session, cookie = create_auth_session("dave", client_id_a)
 
         # A cookie issued for client A must not validate for client B.
-        self.assertIsNone(validate_and_rotate(cookie, client_id_b, "dave"))
+        self.assertEqual(consume_remember_device_cookie(cookie, client_id_b, "dave").status, "miss")
         # ... and client A's session is untouched.
         self.assertEqual(AuthSession.query.filter_by(series_id=session.series_id).first().counter, 1)
 
-    def test_unknown_series_returns_none(self):
+    def test_unknown_series_returns_miss(self):
         client_id = self._client_id()
-        self.assertIsNone(validate_and_rotate("doesnotexist:1", client_id, "x"))
+        self.assertEqual(consume_remember_device_cookie("doesnotexist:1", client_id, "x").status, "miss")
 
     def test_expired_session_is_removed(self):
         client_id = self._client_id()
@@ -147,5 +150,23 @@ class AuthSessionLibTestCase(MyTestCase):
         session.expires_at = utc_now() - timedelta(seconds=1)
         session.save()
 
-        self.assertIsNone(validate_and_rotate(cookie, client_id, "erin"))
+        self.assertEqual(consume_remember_device_cookie(cookie, client_id, "erin").status, "miss")
         self.assertIsNone(AuthSession.query.filter_by(series_id=series_id).first())
+
+    def test_cleanup_expired_auth_sessions(self):
+        # The periodic cleanup reclaims expired rows (which are otherwise only
+        # deleted lazily when their own cookie is presented) and leaves live
+        # sessions untouched.
+        client_id = self._client_id()
+        expired, _ = create_auth_session("jane", client_id)
+        expired.expires_at = utc_now() - timedelta(seconds=1)
+        expired.save()
+        live, _ = create_auth_session("john", client_id)
+        # Capture ids before the delete+commit expires the ORM instances.
+        expired_series = expired.series_id
+        live_series = live.series_id
+
+        deleted = cleanup_expired_auth_sessions()
+        self.assertGreaterEqual(deleted, 1)
+        self.assertIsNone(AuthSession.query.filter_by(series_id=expired_series).first())
+        self.assertIsNotNone(AuthSession.query.filter_by(series_id=live_series).first())

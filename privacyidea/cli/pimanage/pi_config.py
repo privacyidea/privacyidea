@@ -45,10 +45,12 @@ from privacyidea.lib.resolver import (save_resolver, get_resolver_list)
 from privacyidea.lib.utils import get_version_number
 from privacyidea.lib.utils.export import EXPORT_FUNCTIONS, IMPORT_FUNCTIONS
 from privacyidea.cli.pimanage.challenge import challenge_cli
+from privacyidea.cli.pimanage.authsession import authsession_cli
 
 config_cli = AppGroup("config", help="Manage the privacyIDEA server configuration")
 
 config_cli.add_command(challenge_cli)
+config_cli.add_command(authsession_cli)
 
 ca_cli = AppGroup("ca", help="Manage Certificate Authorities")
 

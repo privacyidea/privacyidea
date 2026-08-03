@@ -118,7 +118,7 @@ def update_client_api(client_id):
 
     :param client_id: path component, the id of the client.
     :jsonparam display_name: the new display name.
-    :jsonparam status: the new status ('active', 'revoked' or 'suspended').
+    :jsonparam status: the new status ('active' or 'suspended').
     :jsonparam config: the new config object.
     :status 200: the updated client in ``result.value``.
     """

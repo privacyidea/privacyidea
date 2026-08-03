@@ -185,6 +185,7 @@ class PolicyAction:
     CLIENTS_DELETE = "clients_delete"
     CLIENTS_ROTATE = "clients_rotate"
     REMEMBER_DEVICE = "remember_device"
+    REMEMBER_DEVICE_VALIDITY = "remember_device_validity"
     PREFERREDCLIENTMODE = "preferred_client_mode"
     REQUIRE_DESCRIPTION = "require_description"
     REQUIRE_DESCRIPTION_ON_EDIT = "require_description_on_edit"

@@ -624,8 +624,7 @@ class PolicyClass:
                        audit_data: dict | None = None, request_headers: EnvironHeaders | None = None,
                        serial: str | None = None, extended_condition_check: int | list[str] | None = None,
                        additional_realms: list | None = None, container_serial: str | None = None,
-                       request_data: dict | None = None, user_agent: str | None = None,
-                       client_id: str | None = None) -> list[dict]:
+                       request_data: dict | None = None, user_agent: str | None = None) -> list[dict]:
         """
         Return all policies matching the given context.
         Optionally, write the matching policies to the audit log.
@@ -714,7 +713,7 @@ class PolicyClass:
             try:
                 reduced_policies = self.filter_policies_by_conditions(reduced_policies, user_object, request_headers,
                                                                       serial, extended_condition_check,
-                                                                      container_serial, request_data, client_id)
+                                                                      container_serial, request_data)
             except PolicyError:
                 # Add the information on which actions triggered the error to the logs
                 log.error(f"Error checking extended conditions for action '{action}'.")
@@ -765,8 +764,7 @@ class PolicyClass:
                                       request_headers: EnvironHeaders | None = None, serial: str | None = None,
                                       extended_condition_check: None | int | list[str] = None,
                                       container_serial: str | None = None,
-                                      request_data: dict | None = None,
-                                      client_id: str | None = None) -> list[dict]:
+                                      request_data: dict | None = None) -> list[dict]:
         """
         Evaluates for each policy condition if it matches the actual request (user / token / request headers) and
         returns a list of all matching policies.
@@ -781,7 +779,6 @@ class PolicyClass:
             None - check all).
         :param container_serial: The serial of a container or None if not contained in the request data
         :param request_data: The request data as dictionary, if available
-        :param client_id: The id of the API client of the request (g.client_id) or None
         :return: a list of matching policy dictionaries
         """
         reduced_policies = []
@@ -802,7 +799,7 @@ class PolicyClass:
                     # We check conditions, either if we are supposed to check everything or if
                     # the section is contained in the extended condition check
                     include_policy = condition.match(policy_name, user_object, serial, request_headers,
-                                                     container_serial, request_data, client_id)
+                                                     container_serial, request_data)
 
                     if not include_policy:
                         # condition does not match request, no need to check the remaining conditions
@@ -2592,8 +2589,14 @@ def get_static_policy_definitions(scope=None):
             PolicyAction.REMEMBER_DEVICE: {
                 'type': 'bool',
                 'desc': _("Allow an API client to obtain a persistent 'remember this device' "
-                          "cookie on successful authentication. Combine with a 'client' condition "
-                          "to enable this only for specific API clients.")},
+                          "cookie on successful authentication. Requires the request to be made "
+                          "by an identified API client (the X-API-Key header): without one, no "
+                          "cookie is issued and the recognition endpoint returns 401.")},
+            PolicyAction.REMEMBER_DEVICE_VALIDITY: {
+                'type': 'int',
+                'desc': _("How many days a 'remember this device' cookie stays valid "
+                          "(default 30 if unset). Scope it with a realm/user condition to give "
+                          "different lifetimes, e.g. a shorter one for admins than for users.")},
             PolicyAction.OTPPIN: {
                 'type': 'str',
                 'value': [ACTIONVALUE.TOKENPIN, ACTIONVALUE.USERSTORE,
@@ -2857,7 +2860,9 @@ def get_static_policy_definitions(scope=None):
             },
             PolicyAction.APIKEY: {
                 'type': 'bool',
-                'desc': _('The sending of an API Auth Key is required during '
+                'desc': _('DEPRECATED (planned for removal in a future release; the X-API-Key '
+                          'API clients feature is intended to replace it): '
+                          'The sending of an API Auth Key is required during '
                           'authentication. This avoids rogue authenticate '
                           'requests against the /validate/check interface.'),
                 'group': GROUP.SETTING_ACTIONS,
@@ -3245,10 +3250,6 @@ def get_policy_condition_sections():
         },
         ConditionSection.REQUEST_DATA: {
             "description": _("The policy only matches if certain conditions on the request data are fulfilled.")
-        },
-        ConditionSection.CLIENT: {
-            "description": _("The policy only matches if certain conditions on the API client (identified by the "
-                             "X-API-Key header) are fulfilled.")
         }
     }
 
@@ -3351,7 +3352,7 @@ class Match:
                 del request_data["password"]
         return self._g.policy_object.match_policies(audit_data=audit_data, request_headers=request_headers,
                                                     pinode=self.pinode, request_data=request_data,
-                                                    client_id=self._g.get("client_id"), **self._match_kwargs)
+                                                    **self._match_kwargs)
 
     def any(self, write_to_audit_log=True):
         """

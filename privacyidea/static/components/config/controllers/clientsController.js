@@ -22,15 +22,43 @@ myApp.controller("clientsController", ["$scope", "$stateParams", "inform",
             $location.path("/config/clients/list");
         }
 
-        // The known client types offered in the creation form.
-        $scope.clientTypes = ["windows_cp", "keycloak", "entraid"];
-        // The possible client states.
-        $scope.clientStates = ["active", "suspended", "revoked"];
+        // The known client types offered in the creation form: the internal
+        // name stored on the client plus a polished label shown in the UI. The
+        // backend accepts any string, so this list is only presentation.
+        // TODO: serve this from the backend as part of a unified ecosystem
+        //       integration catalog (client types + policy user_agents +
+        //       subscriptions). See issue #5705.
+        $scope.clientTypes = [
+            {name: "windows_cp", label: "Windows Credential Provider"},
+            {name: "keycloak", label: "Keycloak"},
+            {name: "entraid", label: "Microsoft Entra ID"},
+            {name: "shibboleth", label: "Shibboleth"},
+            {name: "adfs", label: "AD FS"}
+        ];
+        // Map a stored client type to its label, falling back to the raw value
+        // for types not (or no longer) in the list above.
+        $scope.clientTypeLabel = function (type) {
+            for (var i = 0; i < $scope.clientTypes.length; i++) {
+                if ($scope.clientTypes[i].name === type) {
+                    return $scope.clientTypes[i].label;
+                }
+            }
+            return type;
+        };
+        // The possible client states. "suspended" is a reversible off-switch;
+        // permanent removal is a delete, so there is no separate "revoked".
+        $scope.clientStates = ["active", "suspended"];
 
-        $scope.params = {};
+        // Preselect the first type so the creation form is never submitted with
+        // an empty selection.
+        $scope.params = {client_type: $scope.clientTypes[0].name};
         // Holds a freshly generated API key so it can be shown to the admin
         // exactly once (after create or rotate). It is never fetched again.
         $scope.newApiKey = null;
+        // Per-row inline confirmation state, keyed by client id / session series.
+        $scope.showRotateDialog = {};
+        $scope.showDeleteDialog = {};
+        $scope.showRevokeDialog = {};
 
         $scope.getClients = function () {
             ConfigFactory.getClients(null, function (data) {
@@ -80,6 +108,7 @@ myApp.controller("clientsController", ["$scope", "$stateParams", "inform",
         };
 
         $scope.revokeSession = function (seriesId) {
+            $scope.showRevokeDialog[seriesId] = false;
             ConfigFactory.revokeClientSession($scope.sessionsClientId, seriesId, function (data) {
                 if (data.result.status === true) {
                     inform.add(gettextCatalog.getString("Session revoked."), {type: "info"});
@@ -113,7 +142,7 @@ myApp.controller("clientsController", ["$scope", "$stateParams", "inform",
         };
 
         $scope.setClientStatus = function (client) {
-            // Inline status change from the list (active / suspended / revoked).
+            // Inline status change from the list (active / suspended).
             ConfigFactory.updateClient(client.id, {status: client.status}, function (data) {
                 if (data.result.status === true) {
                     inform.add(gettextCatalog.getString("Client status updated."),
@@ -124,6 +153,7 @@ myApp.controller("clientsController", ["$scope", "$stateParams", "inform",
         };
 
         $scope.rotateClientKey = function (clientId) {
+            $scope.showRotateDialog[clientId] = false;
             ConfigFactory.rotateClientKey(clientId, function (data) {
                 if (data.result.status === true) {
                     var client = data.result.value;
@@ -137,6 +167,7 @@ myApp.controller("clientsController", ["$scope", "$stateParams", "inform",
         };
 
         $scope.delClient = function (clientId) {
+            $scope.showDeleteDialog[clientId] = false;
             ConfigFactory.delClient(clientId, function (data) {
                 $scope.getClients();
             });
@@ -179,7 +210,7 @@ myApp.controller("clientsController", ["$scope", "$stateParams", "inform",
         };
 
         $scope.deselectClient = function () {
-            $scope.params = {};
+            $scope.params = {client_type: $scope.clientTypes[0].name};
         };
 
         // listen to the reload broadcast: refresh whichever view is active.

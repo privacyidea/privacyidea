@@ -79,8 +79,7 @@ from privacyidea.lib.fido2.challenge import verify_fido2_challenge
 from privacyidea.lib.fido2.util import get_fido2_token_by_credential_id
 from privacyidea.lib.policies.helper import get_jwt_validity
 from privacyidea.lib.user import User, split_user, log_used_user
-from privacyidea.lib.policy import PolicyClass, REMOTE_USER, Match, SCOPE
-from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policy import PolicyClass, REMOTE_USER
 from privacyidea.lib.policydecorators import reset_all_user_tokens_active, reset_token_failcounters
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.realm import get_default_realm, realm_is_defined
@@ -539,46 +538,6 @@ def get_auth_token():
                         "auth": True},
                        rid=2,
                        details=details)
-
-
-@jwtauth.route('/capabilities', methods=['GET'])
-def get_capabilities():
-    """
-    Discovery endpoint for API clients.
-
-    Requires an identified API client (the ``X-API-Key`` header, resolved into
-    ``g.client_id`` by the API-key middleware). Returns the capabilities this
-    server offers to the client.
-
-    :status 200: capabilities in ``result.value``.
-    :status 401: no API client is identified.
-
-    **Example response**:
-
-    .. sourcecode:: http
-
-       HTTP/1.1 200 OK
-       Content-Type: application/json
-
-       {
-         "id": 1,
-         "jsonrpc": "2.0",
-         "result": {
-           "status": true,
-           "value": {"capabilities": {"remember_device": true}}
-         },
-         "version": "privacyIDEA unknown"
-       }
-    """
-    if g.get("client_id") is None:
-        raise AuthError(_("Authentication failure. A valid API key is required."),
-                        id=Error.AUTHENTICATE_AUTH_HEADER)
-    # Whether "remember device" is offered depends on the remember_device policy
-    # (SCOPE.AUTH); any "client" condition on that policy is evaluated against
-    # this request's g.client_id automatically.
-    remember_device = Match.generic(g, scope=SCOPE.AUTH,
-                                    action=PolicyAction.REMEMBER_DEVICE).any()
-    return send_result({"capabilities": {"remember_device": remember_device}})
 
 
 def admin_required(f):

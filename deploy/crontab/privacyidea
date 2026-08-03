@@ -7,6 +7,9 @@
 # Challenge cleanup: every day at 01:00
 0 1 * * *    privacyidea     /opt/privacyidea/bin/pi-manage config challenge cleanup > /dev/null 2>&1
 
+# Remember-device session cleanup: every day at 01:10
+10 1 * * *    privacyidea     /opt/privacyidea/bin/pi-manage config authsession cleanup > /dev/null 2>&1
+
 # Run a backup once a day at 2:15 am including the encryption key
 #15 2 * * *	privacyidea	/opt/privacyidea/bin/pi-manage backup create -e
 

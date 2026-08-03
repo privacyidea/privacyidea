@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from .base import MyApiTestCase
 
 from privacyidea.lib.clients import create_client
@@ -8,13 +10,14 @@ from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.user import User
 from privacyidea.models import AuthSession
+from privacyidea.models.utils import utc_now
 
 
 class CapabilitiesEndpointTestCase(MyApiTestCase):
 
     def _get(self, api_key=None):
         headers = {'X-API-Key': api_key} if api_key else {}
-        with self.app.test_request_context('/auth/capabilities', method='GET', headers=headers):
+        with self.app.test_request_context('/validate/capabilities', method='GET', headers=headers):
             return self.app.full_dispatch_request()
 
     def test_01_requires_api_client(self):
@@ -111,45 +114,72 @@ class PersistentCookieValidateTestCase(MyApiTestCase):
         finally:
             delete_policy("remember")
 
-    def test_05_client_condition_targets_specific_client(self):
-        # Policy only enables remember_device for windows_cp clients. The client
-        # condition uses handle_missing_data=condition_is_false so that requests
-        # without an API client simply do not match (instead of erroring).
-        set_policy("remember", scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE,
-                   conditions=[("client", "client_type", "equals", "windows_cp", True, "condition_is_false")])
-        cp_client, cp_key = create_client("cp", "windows_cp")
-        kc_client, kc_key = create_client("kc", "keycloak")
+    def test_06_no_cookie_for_userless_auth(self):
+        # A serial-only (userless) auth has no "login@realm" to bind to, and the
+        # recognition endpoint matches on that identifier, so a cookie here could
+        # never be redeemed. It must not be issued (and no dead session row left).
+        client, api_key = create_client("serial-only client", "windows_cp")
+        init_token({"type": "spass", "pin": "test", "serial": "SPASS_NOUSER"})
+        set_policy("remember", scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE)
         try:
-            # windows_cp client matches -> cookie issued.
-            self.assertEqual(len(self._cookies(self._check(cp_key))), 1)
-            # keycloak client does not match the condition -> no cookie.
-            self.assertEqual(self._cookies(self._check(kc_key)), [])
-            # A request without any API key must still authenticate fine (the
-            # condition evaluates to false, it does not raise).
-            self.assertEqual(self._cookies(self._check(api_key=None)), [])
+            with self.app.test_request_context(
+                    '/validate/check', method='POST',
+                    data={"serial": "SPASS_NOUSER", "pass": "test",
+                          "request_persistent_cookie": True},
+                    headers={'X-API-Key': api_key}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 200, res)
+                self.assertTrue(res.json['result']['value'], res.json)
+                self.assertEqual(self._cookies(res), [])
+            self.assertIsNone(AuthSession.query.filter_by(client_id=client.id).first())
         finally:
             delete_policy("remember")
+            remove_token("SPASS_NOUSER")
+
+    def test_07_validity_is_policy_configurable(self):
+        # The cookie lifetime comes from the remember_device_validity policy
+        # (scopable per realm/user), falling back to the 30-day default.
+        client, api_key = create_client("validity client", "windows_cp")
+        set_policy("remember", scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE)
+        try:
+            # Default (no validity policy) -> ~30 days.
+            self._check(api_key)
+            session = AuthSession.query.filter_by(client_id=client.id).first()
+            self.assertAlmostEqual((session.expires_at - utc_now()).days, 30, delta=1)
+
+            # With a 7-day validity policy, a newly issued cookie lasts ~7 days.
+            set_policy("remember_validity", scope=SCOPE.AUTH,
+                       action=f"{PolicyAction.REMEMBER_DEVICE_VALIDITY}=7")
+            other, other_key = create_client("validity client 2", "windows_cp")
+            self._check(other_key)
+            session2 = AuthSession.query.filter_by(client_id=other.id).first()
+            self.assertAlmostEqual((session2.expires_at - utc_now()).days, 7, delta=1)
+        finally:
+            delete_policy("remember")
+            try:
+                delete_policy("remember_validity")
+            except ResourceNotFoundError:
+                pass
 
 
-class PersistentCookieConsumptionTestCase(MyApiTestCase):
+class RememberDeviceRecognitionTestCase(MyApiTestCase):
     """
-    Consuming a presented pi_remember_device cookie on /validate/check. Redeeming
-    a recognised device to skip the second factor requires the remember_device
-    policy (set in setUp) and the cookie is bound to the authenticating user.
-    Theft detection is always active when a cookie is presented.
+    Recognition of a presented pi_remember_device cookie on the dedicated
+    /validate/remember_device endpoint. This only answers "is this device
+    remembered for this user and client?" and rotates the cookie on a hit; it is
+    not an authentication (no credential, no challenge). Recognition is offered
+    only when the remember_device policy allows it (set in setUp) and the cookie
+    is bound to the exact user. Theft detection is always active.
     """
 
     POLICY = "remember_consume"
 
     def setUp(self):
         self.setUp_user_realms()
-        init_token({"type": "spass", "pin": "test", "serial": "SPASS_CONSUME"},
-                   user=User(login="cornelius", realm=self.realm1))
         self.uid = session_user_id(User(login="cornelius", realm=self.realm1))
         set_policy(self.POLICY, scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE)
 
     def tearDown(self):
-        remove_token("SPASS_CONSUME")
         try:
             delete_policy(self.POLICY)
         except ResourceNotFoundError:
@@ -160,28 +190,34 @@ class PersistentCookieConsumptionTestCase(MyApiTestCase):
         return [v for k, v in res.headers if k == "Set-Cookie"
                 and v.startswith(PERSISTENT_COOKIE_NAME + "=")]
 
-    def _check(self, api_key=None, cookie=None, user="cornelius", password="test", expect_value=True):
+    def _recognise(self, api_key=None, cookie=None, user="cornelius", expect_value=True):
         headers = {}
         if api_key:
             headers["X-API-Key"] = api_key
         if cookie:
             headers["Cookie"] = f"{PERSISTENT_COOKIE_NAME}={cookie}"
-        with self.app.test_request_context('/validate/check', method='POST',
-                                           data={"user": user, "realm": self.realm1, "pass": password},
+        with self.app.test_request_context('/validate/remember_device', method='POST',
+                                           data={"user": user, "realm": self.realm1},
                                            headers=headers):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200, res)
             self.assertEqual(bool(res.json['result']['value']), expect_value, res.json)
+            self.assertEqual(bool(res.json['detail'].get("remembered_device")), expect_value, res.json)
             return res
+
+    def test_00_requires_api_client(self):
+        # Without an X-API-Key header, g.client_id is None -> 401.
+        with self.app.test_request_context('/validate/remember_device', method='POST',
+                                           data={"user": "cornelius", "realm": self.realm1}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401, res)
 
     def test_01_valid_cookie_is_rotated_and_recognised(self):
         client, api_key = create_client("consume client", "windows_cp")
         session, cookie = create_auth_session(self.uid, client.id)
         series = session.series_id
 
-        res = self._check(api_key=api_key, cookie=cookie)
-        # Device recognised and reported.
-        self.assertTrue(res.json['detail'].get("remembered_device"))
+        res = self._recognise(api_key=api_key, cookie=cookie)
         # Cookie rotated to counter 2.
         headers = self._cookie_headers(res)
         self.assertEqual(len(headers), 1, headers)
@@ -189,7 +225,7 @@ class PersistentCookieConsumptionTestCase(MyApiTestCase):
         # Counter incremented in the DB.
         self.assertEqual(AuthSession.query.filter_by(series_id=series).first().counter, 2)
 
-    def test_02_reused_cookie_invalidates_series_without_failing_auth(self):
+    def test_02_reused_cookie_invalidates_series(self):
         # Disable the grace window so replaying the previous counter is treated
         # strictly as reuse (with grace on it would be a tolerated duplicate).
         self.app.config["PI_REMEMBER_DEVICE_GRACE_SECONDS"] = 0
@@ -199,12 +235,10 @@ class PersistentCookieConsumptionTestCase(MyApiTestCase):
             series = session.series_id
 
             # First use rotates to counter 2.
-            self._check(api_key=api_key, cookie=cookie)
-            # Replaying the original counter=1 cookie is reuse: series is
-            # invalidated, but the request still succeeds via the real second
-            # factor (pass=test).
-            res = self._check(api_key=api_key, cookie=cookie)
-            self.assertFalse(res.json['detail'].get("remembered_device"))
+            self._recognise(api_key=api_key, cookie=cookie)
+            # Replaying the original counter=1 cookie is reuse: the series is
+            # invalidated and the device is no longer recognised.
+            res = self._recognise(api_key=api_key, cookie=cookie, expect_value=False)
             self.assertIsNone(AuthSession.query.filter_by(series_id=series).first())
             # The stale cookie is cleared from the client.
             self.assertTrue(any(h.startswith(f"{PERSISTENT_COOKIE_NAME}=;")
@@ -214,15 +248,15 @@ class PersistentCookieConsumptionTestCase(MyApiTestCase):
 
     def test_02b_concurrent_duplicate_tolerated_by_grace(self):
         # Two requests presenting the same cookie: the second still shows the
-        # previous counter but is tolerated within the grace window - accepted,
+        # previous counter but is tolerated within the grace window - recognised,
         # not treated as theft, and the series is neither rotated again nor
-        # deleted.
+        # deleted (and no new cookie is handed out).
         client, api_key = create_client("grace client", "windows_cp")
         session, cookie = create_auth_session(self.uid, client.id)
         series = session.series_id
-        self._check(api_key=api_key, cookie=cookie)          # rotates to counter 2
-        res = self._check(api_key=api_key, cookie=cookie)    # previous counter, within grace
-        self.assertTrue(res.json['detail'].get("remembered_device"))
+        self._recognise(api_key=api_key, cookie=cookie)          # rotates to counter 2
+        res = self._recognise(api_key=api_key, cookie=cookie)    # previous counter, within grace
+        self.assertEqual(self._cookie_headers(res), [])
         stored = AuthSession.query.filter_by(series_id=series).first()
         self.assertIsNotNone(stored)
         self.assertEqual(stored.counter, 2)
@@ -232,30 +266,28 @@ class PersistentCookieConsumptionTestCase(MyApiTestCase):
         _client_b, key_b = create_client("client B", "keycloak")
         session, cookie = create_auth_session(self.uid, client_a.id)
 
-        # Present A's cookie but authenticate as client B -> not matched.
-        res = self._check(api_key=key_b, cookie=cookie)
-        self.assertFalse(res.json['detail'].get("remembered_device"))
+        # Present A's cookie but as client B -> not matched.
+        self._recognise(api_key=key_b, cookie=cookie, expect_value=False)
         # A's session is untouched (not rotated, not deleted).
         self.assertEqual(AuthSession.query.filter_by(series_id=session.series_id).first().counter, 1)
 
     def test_04_no_cookie_reports_not_remembered(self):
         _client, api_key = create_client("plain client", "windows_cp")
-        res = self._check(api_key=api_key)
-        self.assertFalse(res.json['detail'].get("remembered_device"))
+        res = self._recognise(api_key=api_key, expect_value=False)
         self.assertEqual(self._cookie_headers(res), [])
 
-    def test_05_accept_is_audited_as_accept(self):
-        # A recognised device is accepted before token verification, so the audit
-        # records a clean ACCEPT (not a CHALLENGE) and no token is touched. A
-        # wrong password would normally fail - the device carries the auth.
-        client, api_key = create_client("audit accept client", "windows_cp")
+    def test_05_recognition_is_audited(self):
+        # A recognition is its own audit action and is recorded as a success,
+        # but it is not an authentication (no ACCEPT/REJECT) and touches no token.
+        client, api_key = create_client("audit recognise client", "windows_cp")
         _session, cookie = create_auth_session(self.uid, client.id)
-        self._check(api_key=api_key, cookie=cookie, password="wrong", expect_value=True)
+        self._recognise(api_key=api_key, cookie=cookie)
 
-        entry = self.find_most_recent_audit_entry(info="*Accepted by remembered device*")
+        entry = self.find_most_recent_audit_entry(info="*remembered device recognised*")
         self.assertEqual(entry["success"], 1)
-        self.assertEqual(entry["authentication"], "ACCEPT")
-        # No token was involved (no challenge fired).
+        # Not marked as an authentication.
+        self.assertFalse(entry.get("authentication"))
+        # No token was involved.
         self.assertFalse(entry.get("serial"))
 
     def test_06_reuse_is_audited(self):
@@ -265,32 +297,43 @@ class PersistentCookieConsumptionTestCase(MyApiTestCase):
         try:
             client, api_key = create_client("audit reuse client", "windows_cp")
             _session, cookie = create_auth_session(self.uid, client.id)
-            self._check(api_key=api_key, cookie=cookie)   # rotates to counter 2
-            self._check(api_key=api_key, cookie=cookie)   # stale counter 1 replayed
+            self._recognise(api_key=api_key, cookie=cookie)                      # rotates to counter 2
+            self._recognise(api_key=api_key, cookie=cookie, expect_value=False)  # stale counter 1 replayed
 
             entry = self.find_most_recent_audit_entry(action_detail="*persistent cookie reuse detected*")
             self.assertIn("persistent cookie reuse detected", entry.get("action_detail", ""))
         finally:
             self.app.config.pop("PI_REMEMBER_DEVICE_GRACE_SECONDS", None)
 
-    def test_07_no_policy_means_device_not_accepted(self):
-        # Without the remember_device policy, a recognised device does NOT skip
-        # the second factor: a wrong password fails despite a valid cookie.
+    def test_07_no_policy_means_no_recognition(self):
+        # Without the remember_device policy, recognition is not offered: a valid
+        # cookie reports "not remembered" and is left untouched (not consumed).
         delete_policy(self.POLICY)
         client, api_key = create_client("no policy consume", "windows_cp")
-        _session, cookie = create_auth_session(self.uid, client.id)
-        self._check(api_key=api_key, cookie=cookie, password="wrong", expect_value=False)
+        session, cookie = create_auth_session(self.uid, client.id)
+        res = self._recognise(api_key=api_key, cookie=cookie, expect_value=False)
+        # The cookie is neither rotated nor cleared.
+        self.assertEqual(self._cookie_headers(res), [])
+        self.assertEqual(AuthSession.query.filter_by(series_id=session.series_id).first().counter, 1)
 
     def test_08_cookie_bound_to_user_not_honoured_for_other_user(self):
-        # A cookie issued for one user must not be honoured for a different user
-        # on the same API client.
+        # A cookie issued for one user must not be recognised for a different
+        # user on the same API client.
         client, api_key = create_client("shared client", "windows_cp")
         other_uid = session_user_id(User(login="someoneelse", realm=self.realm1))
         session, cookie = create_auth_session(other_uid, client.id)
-        # cornelius presents someoneelse's cookie: it is not bound to cornelius,
-        # so it is not honoured (cornelius still authenticates via the real
-        # second factor).
-        res = self._check(api_key=api_key, cookie=cookie)
-        self.assertFalse(res.json['detail'].get("remembered_device"))
+        # cornelius presents someoneelse's cookie: it is not bound to cornelius.
+        self._recognise(api_key=api_key, cookie=cookie, expect_value=False)
         # The other user's session is untouched.
+        self.assertEqual(AuthSession.query.filter_by(series_id=session.series_id).first().counter, 1)
+
+    def test_09_deleted_user_not_recognized(self):
+        # A cookie whose bound user no longer resolves must not be recognised,
+        # even though the stored "login@realm" string still matches - otherwise
+        # deleting/removing an account would not revoke its remembered devices.
+        client, api_key = create_client("ghost client", "windows_cp")
+        ghost_uid = session_user_id(User(login="ghost", realm=self.realm1))
+        session, cookie = create_auth_session(ghost_uid, client.id)
+        self._recognise(api_key=api_key, cookie=cookie, user="ghost", expect_value=False)
+        # The session is left untouched (not rotated, not deleted).
         self.assertEqual(AuthSession.query.filter_by(series_id=session.series_id).first().counter, 1)

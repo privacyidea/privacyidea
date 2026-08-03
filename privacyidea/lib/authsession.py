@@ -31,13 +31,15 @@ API-key middleware) on every validation.
 """
 import logging
 import secrets
-from datetime import datetime
+from datetime import datetime, timedelta
+from typing import NamedTuple
 
 from flask_babel import _
 
 from privacyidea.lib.error import AuthError, ResourceNotFoundError
 from privacyidea.lib.framework import get_app_config_value
-from privacyidea.models import AuthSession
+from privacyidea.lib.sqlutils import delete_matching_rows
+from privacyidea.models import AuthSession, db
 from privacyidea.models.utils import utc_now
 
 log = logging.getLogger(__name__)
@@ -93,7 +95,7 @@ def parse_cookie(cookie_value: str) -> tuple[str, int] | tuple[None, None]:
 
 
 def create_auth_session(user_id: str, client_id: str, ip_address: str = None,
-                        user_agent: str = None) -> tuple[AuthSession, str]:
+                        user_agent: str = None, validity_days: int = None) -> tuple[AuthSession, str]:
     """
     Create and persist a new persistent authentication session.
 
@@ -101,12 +103,20 @@ def create_auth_session(user_id: str, client_id: str, ip_address: str = None,
     :param client_id: id of the API client the session is bound to
     :param ip_address: the client IP address the session was created from
     :param user_agent: the user agent the session was created from
+    :param validity_days: session lifetime in days; ``None`` (or a
+        non-positive value) uses the model default (``DEFAULT_SESSION_VALIDITY``)
     :return: a tuple of the stored ``AuthSession`` and the cookie value
         (``series_id:1``) to send to the client
     """
     series_id = secrets.token_urlsafe(SERIES_ID_BYTES)
-    session = AuthSession(series_id=series_id, user_id=user_id, client_id=client_id,
-                          ip_address=ip_address, user_agent=user_agent, counter=1)
+    expires_at = utc_now() + timedelta(days=validity_days) if validity_days and validity_days > 0 else None
+    # Truncate to the column limits so an over-long value (e.g. a very long user
+    # agent) can never raise on save and turn an already-successful auth into a
+    # 500. user_id/user_agent are Unicode(255), ip_address is Unicode(64).
+    session = AuthSession(series_id=series_id, user_id=(user_id or "")[:255], client_id=client_id,
+                          ip_address=(ip_address or None) and ip_address[:64],
+                          user_agent=(user_agent or None) and user_agent[:255], counter=1,
+                          expires_at=expires_at)
     session.save()
     return session, build_cookie_value(series_id, session.counter)
 
@@ -146,6 +156,15 @@ def get_valid_session(cookie_value: str, client_id: str, user_id: str,
       must **not** rotate in this case (it converges on the current token).
     * Any other counter mismatch is treated as replay (stolen cookie): the whole
       series is deleted and an ``AuthError`` is raised.
+
+    Accepted trade-off: because this is a rotating-token scheme, *any* stale
+    counter beyond the grace window is treated as theft - including a benign one.
+    If a client rotated the cookie but never received the response and retries
+    after the grace window, it still holds the old counter, so the series is
+    destroyed and a reuse warning is logged even though nothing was stolen. The
+    only cost is that the device must re-register; the user is never wrongly
+    authenticated. Widening ``PI_REMEMBER_DEVICE_GRACE_SECONDS`` trades
+    theft-detection tightness for fewer such re-registrations.
 
     :param cookie_value: the raw cookie value from the request
     :param client_id: the id of the API client making the request (g.client_id)
@@ -218,24 +237,55 @@ def rotate_session(session: AuthSession) -> tuple[str, datetime]:
     return build_cookie_value(session.series_id, session.counter), session.expires_at
 
 
-def validate_and_rotate(cookie_value: str, client_id: str, user_id: str,
-                        client_ip: str = None) -> tuple[str, datetime] | None:
+class ConsumeResult(NamedTuple):
     """
-    Convenience wrapper: validate a cookie (see :func:`get_valid_session`) and
-    rotate it on a fresh use. A grace-window (concurrent duplicate) hit is not
-    rotated - the current cookie value is returned unchanged.
+    Outcome of consuming a presented remember-device cookie.
 
-    :return: a ``(cookie_value, expires_at)`` tuple on success, or ``None`` if
-        there is no valid session
-    :raises AuthError: if cookie reuse (theft) is detected
+    ``status`` is one of:
+
+    * ``"recognized"`` - a fresh, valid use; ``cookie_value`` and ``expires_at``
+      carry the rotated token to send back to the client.
+    * ``"grace"`` - a tolerated concurrent/duplicate request; the client keeps
+      the cookie it has, so no new one is sent.
+    * ``"miss"`` - no valid session for this cookie; the caller should clear it.
+    * ``"theft"`` - replay detected; the series has already been invalidated and
+      the caller must clear the cookie.
     """
-    result = get_valid_session(cookie_value, client_id, user_id, client_ip)
+    status: str
+    cookie_value: str | None
+    expires_at: datetime | None
+
+
+def consume_remember_device_cookie(cookie_value: str, client_id: str, user_id: str,
+                                   client_ip: str = None) -> ConsumeResult:
+    """
+    Consume a presented remember-device cookie: validate it (see
+    :func:`get_valid_session`) and rotate it on a fresh use. This is the single
+    place a presented cookie is consumed.
+
+    Recognition only: this performs no authentication, triggers no challenge and
+    writes no audit record - the caller decides what to do with the outcome.
+
+    :param cookie_value: the raw cookie value from the request
+    :param client_id: the id of the API client making the request (g.client_id)
+    :param user_id: the identifier of the user the cookie must be bound to (see
+        :func:`session_user_id`)
+    :param client_ip: the source IP of the request (bounds the grace window)
+    :return: a :class:`ConsumeResult`. Theft is reported as ``status ==
+        "theft"`` (the series has already been invalidated) rather than raised,
+        so the caller can answer "not recognised" uniformly.
+    """
+    try:
+        result = get_valid_session(cookie_value, client_id, user_id, client_ip)
+    except AuthError:
+        return ConsumeResult("theft", None, None)
     if not result:
-        return None
+        return ConsumeResult("miss", None, None)
     session, is_grace = result
     if is_grace:
-        return build_cookie_value(session.series_id, session.counter), session.expires_at
-    return rotate_session(session)
+        return ConsumeResult("grace", None, None)
+    new_cookie, expires_at = rotate_session(session)
+    return ConsumeResult("recognized", new_cookie, expires_at)
 
 
 def set_persistent_cookie(response, cookie_value: str, expires_at) -> None:
@@ -263,6 +313,24 @@ def clear_persistent_cookie(response) -> None:
     :param response: the Flask response to clear the cookie on
     """
     response.delete_cookie(PERSISTENT_COOKIE_NAME, httponly=True, secure=True, samesite="Strict")
+
+
+def cleanup_expired_auth_sessions(chunk_size: int = None) -> int:
+    """
+    Delete expired persistent authentication sessions from the auth_sessions
+    table.
+
+    A presented cookie deletes its own expired row lazily during validation, but
+    sessions that are never presented again (abandoned or superseded) are only
+    reclaimed here. Run this periodically and out of band from request handling
+    (see the packaged crontab); the delete is chunked to avoid table-wide locks.
+
+    :param chunk_size: delete in chunks of this size to avoid deadlocks (``None``
+        runs a single delete statement)
+    :return: the number of deleted rows
+    """
+    criterion = AuthSession.expires_at < utc_now()
+    return delete_matching_rows(db.session, AuthSession.__table__, criterion, chunk_size)
 
 
 def get_client_sessions(client_id: str) -> list[AuthSession]:

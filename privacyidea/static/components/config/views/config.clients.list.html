@@ -38,7 +38,7 @@
                        title="{{ 'Rename this client' | translate }}"/>
                 <span ng-if="!checkRight('clients_add')">{{ client.display_name }}</span>
             </td>
-            <td>{{ client.client_type }}</td>
+            <td>{{ clientTypeLabel(client.client_type) }}</td>
             <td>
                 <select ng-if="checkRight('clients_add')"
                         class="form-control input-sm"
@@ -47,32 +47,68 @@
                         ng-options="state for state in clientStates"></select>
                 <span ng-if="!checkRight('clients_add')" class="label"
                       ng-class="{'label-success': client.status === 'active',
-                                 'label-warning': client.status === 'suspended',
-                                 'label-danger': client.status === 'revoked'}">
+                                 'label-warning': client.status === 'suspended'}">
                     {{ client.status }}</span>
             </td>
             <td><code>pi_{{ client.key_id }}</code></td>
             <td>{{ client.created_at | date:'yyyy-MM-dd HH:mm' }}</td>
             <td>{{ (client.last_used_at | date:'yyyy-MM-dd HH:mm') || '-' }}</td>
             <td>
+                <!-- While a confirm dialog is open for this row, only that
+                     dialog's buttons are shown (same inline pattern as the
+                     token/user detail views). -->
                 <button class="btn btn-default"
                         ng-show="checkRight('clients_list')"
+                        ng-hide="showRotateDialog[client.id] || showDeleteDialog[client.id]"
                         ng-click="showSessions(client)">
-                    <span class="glyphicon glyphicon-phone"></span>
-                    <span translate>Devices</span>
+                    <span class="glyphicon glyphicon-list-alt"></span>
+                    <span translate>Sessions</span>
                 </button>
                 <button class="btn btn-default"
                         ng-show="checkRight('clients_rotate')"
-                        ng-click="rotateClientKey(client.id)">
+                        ng-hide="showRotateDialog[client.id] || showDeleteDialog[client.id]"
+                        ng-click="showRotateDialog[client.id] = true">
                     <span class="glyphicon glyphicon-refresh"></span>
                     <span translate>Rotate key</span>
                 </button>
                 <button class="btn btn-danger"
                         ng-show="checkRight('clients_delete')"
-                        data-confirmation-text="{{ 'Do you really want to delete this client?' | translate }}"
-                        ng-click="confirmDelete(delClient, client.id)">
+                        ng-hide="showRotateDialog[client.id] || showDeleteDialog[client.id]"
+                        ng-click="showDeleteDialog[client.id] = true">
                     <span class="glyphicon glyphicon-trash"></span>
                     <span translate>Delete</span>
+                </button>
+
+                <!-- Rotate confirmation -->
+                <span ng-show="showRotateDialog[client.id]" class="text-warning">
+                    <span translate>Rotate the key? The current key stops working
+                        immediately.</span>
+                </span>
+                <button class="btn btn-warning"
+                        ng-show="showRotateDialog[client.id]"
+                        ng-click="rotateClientKey(client.id)">
+                    <span translate>Rotate key</span>
+                </button>
+                <button class="btn btn-default"
+                        ng-show="showRotateDialog[client.id]"
+                        ng-click="showRotateDialog[client.id] = false">
+                    <span translate>Cancel</span>
+                </button>
+
+                <!-- Delete confirmation -->
+                <span ng-show="showDeleteDialog[client.id]" class="text-danger">
+                    <span translate>Delete this client? Its API key and remembered
+                        sessions are removed.</span>
+                </span>
+                <button class="btn btn-danger"
+                        ng-show="showDeleteDialog[client.id]"
+                        ng-click="delClient(client.id)">
+                    <span translate>Delete client</span>
+                </button>
+                <button class="btn btn-default"
+                        ng-show="showDeleteDialog[client.id]"
+                        ng-click="showDeleteDialog[client.id] = false">
+                    <span translate>Cancel</span>
                 </button>
             </td>
         </tr>
