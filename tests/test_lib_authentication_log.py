@@ -511,6 +511,23 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertEqual(f"{head},AAA", entry.serial)
         self.assertEqual({"truncated": {"serial": "BBBBBBBBBB"}}, entry.other_info)
 
+    def test_record_dry_run_finding_swallows_a_failing_savepoint(self):
+        # A finding that cannot be serialized into the JSON column fails when the SAVEPOINT flushes. Recording a
+        # dry-run finding is a diagnostic side effect of an already-finished request, so the failure must be swallowed
+        # and must leave the session usable for the rest of that request.
+        event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, other_info={"reason": "policy"})
+        self.assertIsNone(record_dry_run_finding(event_id, {"actions": {"LOCK_USER"}}))  # a set is not serializable
+        # The session survived: a further write still goes through.
+        self.assertIsNotNone(log_authentication_event(event_type=AuthEventType.PIN_FAIL))
+
+    def test_record_dry_run_finding_swallows_a_failing_commit(self):
+        # The SAVEPOINT update succeeds but the outer commit fails: the error is swallowed and the session is rolled
+        # back, so the rest of the request can still use it.
+        event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS)
+        with mock.patch("privacyidea.models.db.session.commit", side_effect=RuntimeError("commit boom")):
+            self.assertIsNone(record_dry_run_finding(event_id, {"policy_id": 1}))
+        self.assertIsNotNone(log_authentication_event(event_type=AuthEventType.PIN_FAIL))
+
     def test_reclassify_without_serial_keeps_existing_serial(self):
         # Reclassifying with the default serial=None means "do not modify": an existing serial must survive, e.g. the
         # authorized=deny post-policy reclassifies a successful login to NOT_AUTHORIZED without passing a serial.
