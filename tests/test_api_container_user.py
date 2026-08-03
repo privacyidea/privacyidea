@@ -5,8 +5,11 @@ import json
 from privacyidea.lib.container import (create_container_template, get_template_obj, delete_container_by_serial)
 from privacyidea.lib.container import (init_container, find_container_by_serial, add_token_to_container, assign_user)
 from privacyidea.lib.containers.container_info import PI_INTERNAL, TokenContainerInfoData, RegistrationState
+from privacyidea.lib.error import Error
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
+from privacyidea.lib.realm import set_realm
+from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.token import init_token, unassign_token
 from privacyidea.lib.user import User
 from .api_container_common import (

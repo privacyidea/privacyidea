@@ -4,6 +4,7 @@
 from privacyidea.lib.container import (delete_container_by_serial)
 from privacyidea.lib.container import (init_container, find_container_by_serial, add_token_to_container)
 from privacyidea.lib.containers.container_info import PI_INTERNAL, TokenContainerInfoData, RegistrationState
+from privacyidea.lib.error import Error
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
 from privacyidea.lib.realm import set_default_realm
