@@ -209,7 +209,7 @@ export class UserUtilsPanelComponent {
       this.userService.usersResource.reload();
       return;
     } else if (this.contentService.onUserDetails()) {
-      this.userService.usersResource.reload();
+      this.userService.userResource.reload();
       this.tokenService.tokenResource.reload();
       this.tokenService.userTokenResource.reload();
       this.containerService.userContainersResource.reload();
