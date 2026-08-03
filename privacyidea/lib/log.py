@@ -121,6 +121,9 @@ SENSITIVE_KEY_NAMES = frozenset({
     # "anotpval" is the parameter holding the OTP in the check_otp signature of every token class.
     # It is listed literally because "otp" is too short to be matched inside a longer name.
     "anotpval",
+    # "apikey" (squashed) hides both the "api_key" result field and the "X-API-Key" request
+    # header, so the plaintext API client key is never written to the log.
+    "apikey",
     "answer", "answers", "authorization", "bindpw", "cakey", "cookie", "credential", "fbtoken",
     "key_enc", "key_iv", "otp", "otp1", "otp2", "otpkey", "otpvalue", "pass", "passphrase",
     "passw", "passwd", "password", "pin", "privatekey", "questions", "recoverycode", "secret",

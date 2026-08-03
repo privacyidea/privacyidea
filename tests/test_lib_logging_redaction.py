@@ -50,6 +50,17 @@ class TestRedact:
     def test_top_level_key(self):
         assert redact({"pin": TEST_PIN}) == {"pin": "HIDDEN"}
 
+    def test_api_client_key_is_hidden(self):
+        # The plaintext API client key (result field "api_key" and the "X-API-Key"
+        # request header) and the remember-device series_id must never be logged.
+        assert is_sensitive_key("api_key")
+        assert is_sensitive_key("X-API-Key")
+        assert is_sensitive_key("series_id")
+        # ... while the public, non-secret key_id stays readable.
+        assert not is_sensitive_key("key_id")
+        assert redact({"api_key": "pi_abcd_secret", "key_id": "abcd"}) == {
+            "api_key": "HIDDEN", "key_id": "abcd"}
+
     def test_nested_key(self):
         data = {"outer": {"inner": {"password": TEST_PASSWORD}}}
         assert redact(data) == {"outer": {"inner": {"password": "HIDDEN"}}}
