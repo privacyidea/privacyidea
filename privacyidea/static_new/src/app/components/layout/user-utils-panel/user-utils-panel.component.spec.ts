@@ -216,7 +216,7 @@ describe("UserUtilsPanelComponent", () => {
     it("refreshes user details route", () => {
       content.routeUrl.set(`${ROUTE_PATHS.USERS_DETAILS}/alice`);
       component.refreshPage();
-      expect(userService.usersResource.reload).toHaveBeenCalled();
+      expect(userService.userResource.reload).toHaveBeenCalled();
       expect(tokenService.tokenResource.reload).toHaveBeenCalled();
       expect(tokenService.userTokenResource.reload).toHaveBeenCalled();
       expect(containerService.userContainersResource.reload).toHaveBeenCalled();
