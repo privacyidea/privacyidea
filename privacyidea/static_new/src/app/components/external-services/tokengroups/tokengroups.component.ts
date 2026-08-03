@@ -95,7 +95,6 @@ export class TokengroupsComponent {
     this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_DETAILS + group.groupname);
   }
 
-
   isAllSelected(): boolean {
     const rows = this.tokengroupDataSource().data;
     return rows.length > 0 && this.selection().length === rows.length;
@@ -140,12 +139,11 @@ export class TokengroupsComponent {
       .afterClosed()
       .subscribe((result) => {
         if (result) {
-          selected.forEach((row) => this.tokengroupService.deleteTokengroup(row.groupname));
+          selected.forEach((row) => void this.tokengroupService.deleteTokengroup(row.groupname).catch(() => undefined));
           this.selection.set([]);
         }
       });
   }
-
 
   onFilterInput(value: string): void {
     const trimmed = (value ?? "").trim();
