@@ -316,6 +316,47 @@ def reclassify_authentication_log_event(event_id: int, event_type: AuthEventType
         db.session.rollback()
 
 
+def record_dry_run_finding(event_id: int, finding: dict) -> None:
+    """
+    Append *finding* to the ``conditional_access_dry_run`` list in an existing
+    authentication_log row's ``other_info``, alongside whatever else is already stored
+    there.
+
+    This is for the conditional-access engine's dry-run mode: a dry-run policy never
+    writes lockout state and never runs its actions, but this records what it *would*
+    have done on the request's own log row, so an admin can review a policy's real-world
+    hit rate before enforcing it.
+
+    Like :func:`reclassify_authentication_log_event`, this must never break the response
+    that triggered it: it runs inside a SAVEPOINT so a failure rolls back only this
+    update, and every error is logged and swallowed.
+
+    :param event_id: id of the entry to attach the finding to
+    :param finding: JSON-serializable dict describing what would have triggered
+    """
+    try:
+        with db.session.begin_nested():
+            entry = db.session.get(AuthenticationLog, event_id)
+            if entry is None:
+                log.info(f"Cannot record dry-run finding on authentication log entry {event_id!r}: not found.")
+                return
+            other_info = dict(entry.other_info) if entry.other_info else {}
+            findings = list(other_info.get("conditional_access_dry_run", []))
+            findings.append(finding)
+            other_info["conditional_access_dry_run"] = findings
+            entry.other_info = other_info
+    except Exception as ex:
+        log.info(f"Failed to record dry-run finding on authentication log entry {event_id!r}: {ex!r}")
+        return
+    try:
+        db.session.commit()
+    except Exception as ex:
+        # The savepoint update succeeded but the outer commit failed: roll back so the session is usable for the rest
+        # of the request.
+        log.info(f"Failed to commit the dry-run finding on authentication log entry {event_id!r}: {ex!r}")
+        db.session.rollback()
+
+
 def get_authentication_log_event(event_id: int) -> AuthenticationLog | None:
     """
     Return a single AuthenticationLog entry by event_id, or None if not found.

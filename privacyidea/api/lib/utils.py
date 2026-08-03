@@ -472,7 +472,7 @@ def conditional_access_gate(identity_resolver=None):
     return decorator
 
 
-def conditional_access_posteval(user, event_type) -> None:
+def conditional_access_posteval(user, event_type, auth_log_event_id: int | None = None) -> None:
     """
     Run the conditional-access policy engine for this request's classified
     *event_type*, after the authentication-log row for it has been written (so a
@@ -482,6 +482,10 @@ def conditional_access_posteval(user, event_type) -> None:
     This only produces side effects that the NEXT inbound request consults (it
     writes lockout state); it must never alter or break the response that already
     completed, so every error is swallowed.
+
+    :param auth_log_event_id: id of the authentication_log row this request already wrote; passed through so a
+        dry-run policy's finding can be attached to it (see
+        :func:`~privacyidea.lib.conditional_access.engine.evaluate_lockout_policies`)
     """
     from privacyidea.lib.conditional_access.engine import evaluate_lockout_policies
     from privacyidea.models import db
@@ -492,7 +496,7 @@ def conditional_access_posteval(user, event_type) -> None:
         # the engine's inner commit closes the transaction, so leaving the savepoint
         # context raises InvalidRequestError ("Can't operate on closed transaction
         # inside context manager") — which this caller would silently swallow.
-        evaluate_lockout_policies(user, event_type, source_ip=g.client_ip)
+        evaluate_lockout_policies(user, event_type, source_ip=g.client_ip, auth_log_event_id=auth_log_event_id)
     except Exception as ex:
         log.warning(f"Conditional-access policy evaluation failed: {ex!r}")
         # A failure may leave the session in an aborted state; clear it so request

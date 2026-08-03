@@ -206,12 +206,33 @@ const FILTER_TOOLTIPS: Record<string, string> = {
   attempt_id: $localize`Filter by this attempt ID`
 };
 
-// A rendered other_info row: a leaf carries `value`; a one-level-nested dict carries `children` (rendered as a
-// sub-list) instead. Nesting deeper than one level is folded into the leaf value as compact JSON.
+// Key fragments that read as acronyms rather than words when an other_info key is humanized for display.
+const INFO_KEY_ACRONYMS: Record<string, string> = {
+  ip: "IP",
+  id: "ID",
+  ca: "CA",
+  otp: "OTP",
+  pin: "PIN"
+};
+
+// When an element of a list-valued info key carries one of these, it heads that group instead of a bare ordinal and is
+// not repeated among the group's rows. A conditional-access dry-run finding is one policy's outcome, so its policy
+// name identifies it (its stage is a separate `stage_id` row).
+const INFO_GROUP_LABEL_KEYS = ["policy_name", "name"];
+
+// A rendered other_info row. A leaf carries `value`; a one-level-nested dict carries `children` (rendered as a
+// sub-list); a list of dicts (e.g. the conditional-access dry-run findings) carries `groups`, one per element.
+// Nesting deeper than that is folded into the leaf value as compact JSON.
+interface InfoRow {
+  key: string;
+  value: string;
+}
+
 interface InfoEntry {
   key: string;
   value?: string;
-  children?: { key: string; value: string }[];
+  children?: InfoRow[];
+  groups?: { label: string; rows: InfoRow[] }[];
 }
 
 @Component({
@@ -469,6 +490,11 @@ export class AuthenticationLog {
       return previous?.value ?? new MatTableDataSource(this.emptyResource());
     }
   });
+  // The Info column only earns its width when something is actually in it: it is widened for the current page when at
+  // least one entry carries other_info, and otherwise stays as narrow as the table wants.
+  readonly hasInfoValues = computed(() =>
+    this.dataSource().data.some((entry) => entry.other_info && Object.keys(entry.other_info).length > 0)
+  );
   pageSizeOptions = computed(() =>
     [...new Set([...this.tableUtilsService.pageSizeOptions(), this.authenticationLogService.pageSize()])].sort(
       (a, b) => a - b
@@ -672,15 +698,51 @@ export class AuthenticationLog {
     return value ? JSON.stringify(value) : "";
   }
 
-  // Render other_info as "key: value" rows. Scalars show as-is and arrays as a comma-separated list. A nested object
-  // (e.g. the `truncated` overflow key) becomes a one-level sub-list; anything deeper is compact JSON.
+  // Render other_info as "Key: value" rows. Scalars show as-is and scalar arrays as a comma-separated list. A nested
+  // object (e.g. the `truncated` overflow key) becomes a one-level sub-list, and a list of objects (the
+  // conditional-access dry-run findings) becomes one sub-list per element. Anything deeper is compact JSON.
   infoEntries(value: AuthenticationLogEntry["other_info"]): InfoEntry[] {
     if (!value) return [];
-    return Object.entries(value).map(([key, raw]) =>
-      this.isPlainObject(raw)
-        ? { key, children: Object.entries(raw).map(([k, v]) => ({ key: k, value: this.formatInfoValue(v) })) }
-        : { key, value: this.formatInfoValue(raw) }
-    );
+    return Object.entries(value).map(([key, raw]) => {
+      const label = this.humanizeInfoKey(key);
+      if (this.isObjectList(raw)) {
+        return { key: label, groups: raw.map((element, index) => this.infoGroup(element, index, raw.length)) };
+      }
+      if (this.isPlainObject(raw)) {
+        return { key: label, children: this.infoRows(raw) };
+      }
+      return { key: label, value: this.formatInfoValue(raw) };
+    });
+  }
+
+  // Head a group with its identifying name when it has one (see INFO_GROUP_LABEL_KEYS), else with a plain ordinal so
+  // several groups stay distinguishable. A single unnamed group needs no heading at all.
+  private infoGroup(element: Record<string, unknown>, index: number, total: number): { label: string; rows: InfoRow[] } {
+    const labelKey = INFO_GROUP_LABEL_KEYS.find((key) => typeof element[key] === "string" && element[key] !== "");
+    if (labelKey) {
+      return { label: String(element[labelKey]), rows: this.infoRows(element, labelKey) };
+    }
+    return { label: total > 1 ? `${index + 1}` : "", rows: this.infoRows(element) };
+  }
+
+  private infoRows(value: Record<string, unknown>, skipKey?: string): InfoRow[] {
+    return Object.entries(value)
+      .filter(([key]) => key !== skipKey)
+      .map(([key, raw]) => ({ key: this.humanizeInfoKey(key), value: this.formatInfoValue(raw) }));
+  }
+
+  // "policy_name" -> "Policy name", "source_ip" -> "Source IP". Keeps the raw key when it carries no underscores and
+  // is already capitalized, so acronym-only keys are not mangled.
+  private humanizeInfoKey(key: string): string {
+    const words = key.split("_").filter((word) => word.length > 0);
+    if (!words.length) return key;
+    return words
+      .map((word, index) => {
+        const upper = INFO_KEY_ACRONYMS[word.toLowerCase()];
+        if (upper) return upper;
+        return index === 0 ? word.charAt(0).toUpperCase() + word.slice(1) : word;
+      })
+      .join(" ");
   }
 
   private formatInfoValue(value: unknown): string {
@@ -688,6 +750,10 @@ export class AuthenticationLog {
     if (Array.isArray(value)) return value.map((entry) => this.formatInfoValue(entry)).join(", ");
     if (typeof value === "object") return JSON.stringify(value);
     return String(value);
+  }
+
+  private isObjectList(value: unknown): value is Record<string, unknown>[] {
+    return Array.isArray(value) && value.length > 0 && value.every((entry) => this.isPlainObject(entry));
   }
 
   private isPlainObject(value: unknown): value is Record<string, unknown> {

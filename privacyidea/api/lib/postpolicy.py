@@ -1279,7 +1279,8 @@ def is_authorized(request, response):
             # failure here can never break the (already-decided) deny response.
             try:
                 from privacyidea.lib.conditional_access.engine import evaluate_lockout_policies
-                evaluate_lockout_policies(request.User, AuthEventType.NOT_AUTHORIZED, source_ip=g.client_ip)
+                evaluate_lockout_policies(request.User, AuthEventType.NOT_AUTHORIZED, source_ip=g.client_ip,
+                                          auth_log_event_id=event_id)
             except Exception as ex:
                 log.warning(f"Lockout re-evaluation after authorization denial failed: {ex!r}")
             raise ValidateError("User is not authorized to authenticate under these conditions.")

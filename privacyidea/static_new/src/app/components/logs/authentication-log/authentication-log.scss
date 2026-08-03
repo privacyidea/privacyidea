@@ -34,13 +34,51 @@
 }
 
 .cell-scroll-info {
-  max-width: 30rem;
   overflow-wrap: break-word;
 }
 
+// Applied to the Info column's header and data cells only while some entry on the page carries other_info, so the
+// column claims its 300px when there is something to show and collapses when there is not. Both cells need it: a table
+// column is only as wide as its widest constrained cell.
+th.cell-info-sized,
+td.cell-info-sized {
+  width: 300px;
+  min-width: 300px;
+  max-width: 300px;
+}
+
+// The Info column is narrow, so the nested lists claim no horizontal space of their own: no bullets, no indentation
+// and no margins. Hierarchy is carried by the muted keys and the rules between groups instead.
 .info-list {
-  margin: 4px;
-  padding-left: 8px;
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+  line-height: 1.35;
+}
+
+// One element of a list-valued info key (e.g. a single conditional-access dry-run finding). Successive groups are
+// separated by a horizontal rule rather than a left border, which would cost width the column does not have.
+.info-group {
+  margin: 0;
+
+  & + .info-group {
+    margin-top: 2px;
+    padding-top: 2px;
+    border-top: 1px solid var(--mat-sys-outline-variant);
+  }
+}
+
+.info-group-label {
+}
+
+.info-key {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// Reclaim the cell's default padding for content. Qualified with the element so it outweighs Material's own
+// single-class cell padding.
+td.cell-info {
+  padding: 0 8px;
 }
 
 .header-label {

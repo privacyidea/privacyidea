@@ -185,9 +185,9 @@ def token(ttype=None):
         # and the conditional-access engine to the resolved token owner (the param
         # user is empty for a push answer) so per-user failure counts add up.
         owner = _push_token_owner(serial)
-        log_authentication(push_auth_event, request, user=owner, serial=serial,
-                           transaction_id=getattr(g, PUSH_AUTH_TRANSACTION_ID, None))
-        conditional_access_posteval(owner, push_auth_event)
+        event_id = log_authentication(push_auth_event, request, user=owner, serial=serial,
+                                      transaction_id=getattr(g, PUSH_AUTH_TRANSACTION_ID, None))
+        conditional_access_posteval(owner, push_auth_event, event_id)
 
     if res[0] == "json":
         return jsonify(res[1])

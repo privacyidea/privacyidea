@@ -157,7 +157,8 @@
             *matHeaderCellDef
             aria-label="{{ column.label }} Header"
             i18n-aria-label
-            mat-header-cell>
+            mat-header-cell
+            [class.cell-info-sized]="column.key === 'other_info' && hasInfoValues()">
             <div class="flex ali-center">
               <div class="header-label">
                 {{ column.label }}
@@ -231,7 +232,9 @@
             *matCellDef="let element"
             aria-label="{{ column.label }} Cell"
             i18n-aria-label
-            mat-cell>
+            mat-cell
+            [class.cell-info]="column.key === 'other_info'"
+            [class.cell-info-sized]="column.key === 'other_info' && hasInfoValues()">
             <div
               [class.cell-scroll]="scrollableColumnKeys.includes(column.key)"
               [class.cell-scroll-info]="column.key === 'other_info'">
@@ -325,24 +328,34 @@
                 @case ("other_info") {
                   @let entries = infoEntries(element.other_info);
                   @if (entries.length) {
-                    <app-copyable [copyText]="formatInfo(element.other_info)">
                       <ul class="info-list">
                         @for (entry of entries; track entry.key) {
                           <li>
-                            @if (entry.children) {
-                              {{ entry.key }}:
+                            @if (entry.groups) {
+                              <span class="info-key">{{ entry.key }}</span>
+                              @for (group of entry.groups; track $index) {
+                                <ul class="info-list info-group">
+                                  @if (group.label) {
+                                    <li class="info-group-label">{{ group.label }}</li>
+                                  }
+                                  @for (row of group.rows; track row.key) {
+                                    <li><span class="info-key">{{ row.key }}:</span> {{ row.value }}</li>
+                                  }
+                                </ul>
+                              }
+                            } @else if (entry.children) {
+                              <span class="info-key">{{ entry.key }}</span>
                               <ul class="info-list">
                                 @for (child of entry.children; track child.key) {
-                                  <li>{{ child.key }}: {{ child.value }}</li>
+                                  <li><span class="info-key">{{ child.key }}:</span> {{ child.value }}</li>
                                 }
                               </ul>
                             } @else {
-                              {{ entry.key }}: {{ entry.value }}
+                              <span class="info-key">{{ entry.key }}:</span> {{ entry.value }}
                             }
                           </li>
                         }
                       </ul>
-                    </app-copyable>
                   }
                 }
                 @default {

@@ -26,6 +26,10 @@ from datetime import datetime, timedelta
 from email import message_from_string
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
+from privacyidea.lib.conditional_access.authentication_log import (
+    log_authentication_event,
+    get_authentication_log_event,
+)
 from privacyidea.lib.conditional_access.engine import (
     AccessDecision,
     LockoutAction,
@@ -774,6 +778,49 @@ class LockoutEngineTestCase(LockoutTestCase):
         self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
         self._seed_events(AuthEventType.MFA_FAIL, 5)
         evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
+        self.assertIsNone(self._state())
+        self.assertFalse(is_user_locked(self.user))
+
+    def test_dry_run_persists_finding_to_triggering_auth_log_row(self):
+        # Passing auth_log_event_id attaches what the dry-run policy *would* have done to the request's own
+        # authentication_log row, without writing any lockout state.
+        policy, stages = self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
+        self._seed_events(AuthEventType.MFA_FAIL, 2)
+        # The triggering request's own row: seeded events (2) + this one (1) reaches the threshold (3) exactly.
+        event_id = log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver=self.user.resolver,
+                                            uid=self.user.uid, realm=self.user.realm)
+        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, auth_log_event_id=event_id)
+
+        entry = get_authentication_log_event(event_id)
+        assert entry is not None
+        findings = entry.other_info["conditional_access_dry_run"]
+        self.assertEqual(1, len(findings))
+        finding = findings[0]
+        self.assertEqual(policy.id, finding["policy_id"])
+        self.assertEqual("dry", finding["policy_name"])
+        self.assertEqual("user", finding["target"])
+        self.assertEqual(stages[0].id, finding["stage_id"])
+        self.assertEqual(3, finding["threshold"])
+        self.assertEqual(3, finding["count"])
+        self.assertEqual(["MFA_FAIL"], finding["counter_types"])
+        self.assertEqual(3600, finding["window_seconds"])
+        self.assertEqual(["LOCK_USER"], finding["actions"])
+        # Still a dry run: no lockout state is ever written.
+        self.assertIsNone(self._state())
+        self.assertFalse(is_user_locked(self.user))
+
+    def test_dry_run_without_auth_log_event_id_is_log_only(self):
+        # Regression: omitting auth_log_event_id (the default) behaves exactly as before - log-only, the
+        # authentication_log row's other_info is left untouched.
+        self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
+        self._seed_events(AuthEventType.MFA_FAIL, 2)
+        event_id = log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver=self.user.resolver,
+                                            uid=self.user.uid, realm=self.user.realm)
+        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
+
+        entry = get_authentication_log_event(event_id)
+        assert entry is not None
+        self.assertIsNone(entry.other_info)
         self.assertIsNone(self._state())
         self.assertFalse(is_user_locked(self.user))
 
