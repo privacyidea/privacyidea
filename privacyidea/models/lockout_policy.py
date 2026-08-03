@@ -51,12 +51,15 @@ class LockoutPolicy(MethodsMixin, db.Model):
     combined count over all listed types) against the stage thresholds. Admins
     can define multiple policies (e.g. "Admin Policy" vs "Default User Policy");
     policies are evaluated by ascending ``priority`` (a lower number means higher
-    precedence, matching privacyIDEA's policy engine).
+    precedence, matching privacyIDEA's policy engine). The ``priority`` is unique
+    across policies so the evaluation order - and thus which policy wins an
+    allow/deny decision - is always unambiguous.
 
     The actual thresholds and reactions live in the related
     :class:`LockoutPolicyStage` and :class:`LockoutStageAction` rows.
     """
     __tablename__ = 'lockout_policies'
+    __table_args__ = (UniqueConstraint('priority', name='uq_lockout_policy_priority'),)
     id: Mapped[int] = mapped_column(Integer, Sequence("lockoutpolicy_seq"), primary_key=True)
     name: Mapped[str] = mapped_column(Unicode(255), nullable=False, unique=True)
     time_window_seconds: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -64,7 +67,7 @@ class LockoutPolicy(MethodsMixin, db.Model):
     # With dry_run the policy is evaluated and the decision is logged,
     # but no action is enforced.
     dry_run: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    priority: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    priority: Mapped[int] = mapped_column(Integer, nullable=False)
     # The identity this policy counts and acts on: "user" or "source_ip".
     target: Mapped[str] = mapped_column(Unicode(100), nullable=False)
     # How the tracked counters are counted against the stage thresholds: per authentication_log row

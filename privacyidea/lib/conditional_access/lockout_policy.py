@@ -60,13 +60,15 @@ must be :class:`~privacyidea.lib.conditional_access.engine.LockoutAction` names;
 matches or an action that never fires).
 """
 import logging
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
 from privacyidea.lib.conditional_access.engine import LockoutAction, LockoutTarget
-from privacyidea.lib.error import ParameterError, ResourceNotFoundError
+from privacyidea.lib.error import ConflictError, ParameterError, ResourceNotFoundError
 from privacyidea.lib.log import log_with
 from privacyidea.models import db
 from privacyidea.models.lockout_policy import (LockoutPolicy, LockoutPolicyStage,
@@ -174,6 +176,25 @@ def _validate_name(name, exclude_id: int | None = None) -> str:
     if existing and existing.id != exclude_id:
         raise ParameterError(f"A lockout policy with the name '{name}' already exists.")
     return name
+
+
+def _validate_priority(priority, exclude_id: int | None = None) -> int:
+    """
+    Validate the policy priority: a strictly positive integer that is unique
+    across all policies. A shared priority would leave the evaluation order (and
+    thus which policy wins an allow/deny decision) undefined, so a collision is
+    rejected rather than silently tie-broken.
+
+    :param exclude_id: on update, the id of the policy being changed, so its own
+        current priority does not count as a collision.
+    :return: the validated priority
+    """
+    priority = _validate_positive_int(priority, "priority")
+    existing = db.session.scalar(select(LockoutPolicy).where(LockoutPolicy.priority == priority))
+    if existing and existing.id != exclude_id:
+        raise ParameterError(f"A lockout policy with priority {priority} already exists ('{existing.name}'); "
+                             "priorities must be unique.")
+    return priority
 
 
 def _validate_positive_int(value, field: str) -> int:
@@ -421,11 +442,11 @@ def list_lockout_policies(enabled: bool | None = None) -> list[dict]:
     """
     Return all lockout policies as dicts, lowest priority number first (the
     engine's evaluation order: a lower number means higher precedence, matching
-    privacyIDEA's policy engine), name as tie-breaker.
+    privacyIDEA's policy engine).
 
     :param enabled: if given, only return policies with this enabled state
     """
-    stmt = select(LockoutPolicy).order_by(LockoutPolicy.priority.asc(), LockoutPolicy.name)
+    stmt = select(LockoutPolicy).order_by(LockoutPolicy.priority.asc())
     if enabled is not None:
         stmt = stmt.where(LockoutPolicy.enabled == enabled)
     policies = db.session.scalars(stmt).all()
@@ -442,24 +463,51 @@ def get_lockout_policy(policy_id: int) -> dict:
     return lockout_policy_to_dict(_get_policy(policy_id))
 
 
+@contextmanager
+def _unique_conflict_as_400():
+    """
+    Turn a unique-constraint violation from the wrapped DB writes into a clean
+    :class:`ParameterError` (a 400, not a 500).
+
+    The app-level name/priority uniqueness checks race with concurrent writers:
+    two requests can both pass validation and only collide when the write hits
+    the database (at a ``flush`` or the ``commit``). Rolling back is the job that
+    matters here - without it the session stays poisoned and every later query in
+    the request raises - so *any* IntegrityError is handled. The per-policy child
+    constraints (counter type, stage threshold) are ordered around by the split flushes in
+    :func:`update_lockout_policy` and so are only backstopped here; the message
+    therefore names every uniqueness rule rather than guessing which one fired.
+    The original error is chained, so the traceback still identifies the
+    constraint.
+    """
+    try:
+        yield
+    except IntegrityError as ex:
+        db.session.rollback()
+        raise ParameterError("The lockout policy conflicts with existing data: name and priority must be unique "
+                             "across policies, and counter types and stage thresholds unique within a policy.") from ex
+
+
 @log_with(log)
 def create_lockout_policy(name: str, time_window_seconds: int, counter_types_to_track: list[str],
-                          stages: list[dict], target: str, enabled: bool = True,
-                          dry_run: bool = False, priority: int = 1, count_mode: str | None = None) -> int:
+                          stages: list[dict], target: str, priority: int, enabled: bool = True,
+                          dry_run: bool = False, count_mode: str | None = None) -> int:
     """
     Create a lockout policy with its stages and actions in one transaction.
 
     See the module docstring for the parameter shapes; everything is validated
     here and a :class:`ParameterError` is raised on any invalid input before
     anything is written. ``target`` is required (no silent default) so the
-    target/action compatibility is always a deliberate choice. ``count_mode``
-    defaults to the target's default when not given (see :func:`_validate_count_mode`).
+    target/action compatibility is always a deliberate choice. ``priority`` is
+    likewise required (no default) and must be unique across policies, so the
+    caller always picks a deliberate, unambiguous precedence.
+    ``count_mode`` defaults to the target's default when not given (see :func:`_validate_count_mode`).
 
     :return: the id of the new policy
     """
     name = _validate_name(name)
     time_window_seconds = _validate_positive_int(time_window_seconds, "time_window_seconds")
-    priority = _validate_positive_int(priority, "priority")
+    priority = _validate_priority(priority)
     lockout_target = _validate_target(target)
     count_mode = _validate_count_mode(count_mode, lockout_target)
     counter_types = _validate_counter_types(counter_types_to_track)
@@ -471,7 +519,8 @@ def create_lockout_policy(name: str, time_window_seconds: int, counter_types_to_
                            target=lockout_target, counter_types_to_track=counter_types,
                            count_mode=count_mode, stages=_build_stages(stage_defs))
     db.session.add(policy)
-    db.session.commit()
+    with _unique_conflict_as_400():
+        db.session.commit()
     log.info(f"Created lockout policy '{name}' (id {policy.id}).")
     return policy.id
 
@@ -515,7 +564,7 @@ def update_lockout_policy(policy_id: int, name: str | None = None,
     if time_window_seconds is not None:
         time_window_seconds = _validate_positive_int(time_window_seconds, "time_window_seconds")
     if priority is not None:
-        priority = _validate_positive_int(priority, "priority")
+        priority = _validate_priority(priority, exclude_id=policy.id)
     lockout_target = _validate_target(target) if target is not None else None
     if counter_types_to_track is not None:
         counter_types_to_track = _validate_counter_types(counter_types_to_track)
@@ -536,47 +585,124 @@ def update_lockout_policy(policy_id: int, name: str | None = None,
             count_mode = validated_mode
 
     changed_fields = []
-    if name is not None:
-        policy.name = name
-        changed_fields.append("name")
-    if time_window_seconds is not None:
-        policy.time_window_seconds = time_window_seconds
-        changed_fields.append("time_window_seconds")
-    if priority is not None:
-        policy.priority = priority
-        changed_fields.append("priority")
-    if lockout_target is not None:
-        policy.target = lockout_target
-        changed_fields.append("target")
-    if enabled is not None:
-        policy.enabled = bool(enabled)
-        changed_fields.append("enabled")
-    if dry_run is not None:
-        policy.dry_run = bool(dry_run)
-        changed_fields.append("dry_run")
-    if count_mode is not None:
-        policy.count_mode = count_mode
-        changed_fields.append("count_mode")
-    if counter_types_to_track is not None:
-        # Delete the existing rows and flush before inserting the replacements,
-        # so a single flush never holds two rows with the same
-        # (policy_id, counter_type). This keeps a replacement that reuses a
-        # counter type within the (policy_id, counter_type) unique constraint.
-        policy.counter_types = []
-        db.session.flush()
-        policy.counter_types_to_track = counter_types_to_track
-        changed_fields.append("counter_types_to_track")
-    if stages is not None:
-        # Same split-flush replacement, keeping the (policy_id, failure_threshold)
-        # unique constraint when a threshold is reused across the update.
-        policy.stages = []
-        db.session.flush()
-        policy.stages = _build_stages(stages)
-        changed_fields.append("stages")
-    db.session.commit()
+    # A name/priority collision can race past the app-level checks and surface at
+    # the first flush or the commit; convert it to a clean ParameterError (400).
+    with _unique_conflict_as_400():
+        if name is not None:
+            policy.name = name
+            changed_fields.append("name")
+        if time_window_seconds is not None:
+            policy.time_window_seconds = time_window_seconds
+            changed_fields.append("time_window_seconds")
+        if priority is not None:
+            policy.priority = priority
+            changed_fields.append("priority")
+        if lockout_target is not None:
+            policy.target = lockout_target
+            changed_fields.append("target")
+        if enabled is not None:
+            policy.enabled = bool(enabled)
+            changed_fields.append("enabled")
+        if dry_run is not None:
+            policy.dry_run = bool(dry_run)
+            changed_fields.append("dry_run")
+        if count_mode is not None:
+            policy.count_mode = count_mode
+            changed_fields.append("count_mode")
+        if counter_types_to_track is not None:
+            # Delete the existing rows and flush before inserting the replacements,
+            # so a single flush never holds two rows with the same
+            # (policy_id, counter_type). This keeps a replacement that reuses a
+            # counter type within the (policy_id, counter_type) unique constraint.
+            policy.counter_types = []
+            db.session.flush()
+            policy.counter_types_to_track = counter_types_to_track
+            changed_fields.append("counter_types_to_track")
+        if stages is not None:
+            # Same split-flush replacement, keeping the (policy_id, failure_threshold)
+            # unique constraint when a threshold is reused across the update.
+            policy.stages = []
+            db.session.flush()
+            policy.stages = _build_stages(stages)
+            changed_fields.append("stages")
+        db.session.commit()
     log.info(f"Updated lockout policy '{policy.name}' (id {policy.id}); "
              f"changed fields: {', '.join(changed_fields) or 'none'}.")
     return policy.id, changed_fields
+
+
+@log_with(log)
+def reorder_lockout_policies(policy_ids: list[int],
+                             expected_priorities: list[int] | None = None) -> None:
+    """
+    Rearrange the evaluation order of the given policies.
+
+    The listed policies take the priority values that this very set of policies
+    already holds, in ascending order: the first id gets the lowest of those
+    values (highest precedence), the last id the highest. Only the *ownership* of
+    the values changes, so the set of priorities in the table is an invariant.
+    That is what makes this safe whatever numbering the admin uses - contiguous
+    ``1,2,3`` reorders exactly like gapped ``10,20,30``, nothing is renumbered,
+    no value is ever exhausted and the uniqueness constraint is never strained.
+
+    Any subset may be passed, and policies not listed keep their priority. Only
+    the policies that actually move need to be sent: the rows whose position
+    changes are the permutation's support, which is a union of cycles, so the
+    values they collectively hold are the same before and after - sending just
+    them yields exactly the same result as sending everything. A single swap is
+    therefore two ids, and two admins rearranging disjoint parts of the list do
+    not conflict at all. Passing an already-sorted order is a no-op, which makes
+    the operation idempotent.
+
+    *expected_priorities* is an optional per-id assertion, aligned with
+    *policy_ids*: the priority each policy is expected to hold right now. It
+    turns a concurrent rearrangement from a silent overwrite into a clean
+    :class:`ConflictError`, and because it covers only the submitted policies it
+    fires solely when someone changed a row this caller is about to move.
+
+    :param policy_ids: the policies to rearrange, in the wanted evaluation order
+    :param expected_priorities: the priorities the caller last saw for those
+        policies, in the same order; omit to write unconditionally
+    :raises ParameterError: if *policy_ids* is not a list of distinct ids, or the
+        assertion does not line up with it
+    :raises ResourceNotFoundError: if any id does not exist
+    :raises ConflictError: if a policy no longer holds its asserted priority
+    """
+    if not isinstance(policy_ids, (list, tuple)) or not policy_ids:
+        raise ParameterError("'policy_ids' must be a non-empty list of policy ids.")
+    ids = [_validate_positive_int(policy_id, "policy id") for policy_id in policy_ids]
+    if len(set(ids)) != len(ids):
+        raise ParameterError("'policy_ids' must not contain the same policy twice.")
+    if expected_priorities is not None:
+        if not isinstance(expected_priorities, (list, tuple)) or len(expected_priorities) != len(ids):
+            raise ParameterError("'expected_priorities' must have one entry per policy id.")
+        expected_priorities = [_validate_positive_int(priority, "expected priority")
+                               for priority in expected_priorities]
+    policies = [_get_policy(policy_id) for policy_id in ids]
+    if expected_priorities is not None:
+        stale = [policy.name for policy, expected in zip(policies, expected_priorities)
+                 if policy.priority != expected]
+        if stale:
+            # Raise error for mismatching policy priorities.
+            names = ", ".join(f"'{name}'" for name in stale)
+            raise ConflictError("The submitted expected priorities do not match the current "
+                                f"priorities of these lockout policies: {names}.")
+    # The values these policies hold, lowest first: reassigned in the requested order.
+    priorities = sorted(policy.priority for policy in policies)
+    with _unique_conflict_as_400():
+        # Park every policy on a value that cannot collide with a live one (ids are
+        # unique and priorities are validated >= 1) before assigning the new ones: the
+        # uniqueness constraint is checked per statement, so writing the final values
+        # straight away would collide with whichever policy still holds them. The
+        # flushes force the statement order rather than leaving it to the unit of work.
+        for policy in policies:
+            policy.priority = -policy.id
+        db.session.flush()
+        for policy, priority in zip(policies, priorities):
+            policy.priority = priority
+        db.session.flush()
+        db.session.commit()
+    log.info(f"Reordered {len(policies)} lockout policies.")
 
 
 @log_with(log)

@@ -239,16 +239,24 @@
           matInput
           type="number"
           min="1"
-          [value]="editPolicy().priority"
+          step="1"
+          [appErrorState]="showPriorityError()"
+          [value]="priorityInput()"
           (input)="onPriorityInput($any($event.target).value)" />
         <app-info-hint
           matSuffix
           [text]="priorityHelp"
           [ariaLabel]="priorityHelpAriaLabel" />
-        @if (!priorityValid()) {
-          <mat-error i18n>Must be at least 1.</mat-error>
+        @if (priorityError() === "required") {
+          <mat-error i18n>A priority is required.</mat-error>
+        } @else if (priorityError() === "not-an-integer") {
+          <mat-error i18n>Priority must be a whole number of at least 1.</mat-error>
+        } @else if (!priorityUnique()) {
+          <mat-error i18n>
+            Priority {{ editPolicy().priority }} is already used by "{{ priorityConflict()?.name }}".
+          </mat-error>
         }
-        <mat-hint i18n>Order across policies, lowest first.</mat-hint>
+        <mat-hint i18n>Order across policies, lowest first. Must be unique.</mat-hint>
       </mat-form-field>
     </div>
 

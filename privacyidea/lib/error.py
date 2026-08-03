@@ -55,6 +55,7 @@ class Error:
     CA_CSR_INVALID = 504
     CA_CSR_PENDING = 505
     RESOURCE_NOT_FOUND = 601
+    CONFLICT = 602
     HSM = 707
     SELFSERVICE = 807
     DATABASE = 902
@@ -122,6 +123,17 @@ class AuthError(PrivacyIDEAError):
 
 class ResourceNotFoundError(PrivacyIDEAError):
     def __init__(self, description, id=Error.RESOURCE_NOT_FOUND):
+        PrivacyIDEAError.__init__(self, description=description, id=id)
+
+
+class ConflictError(PrivacyIDEAError):
+    """
+    The request was well-formed but the resource changed since the client read
+    it, so applying it would silently overwrite someone else's write. Maps to
+    HTTP 409 so a client can tell "reload and retry" apart from "fix your input".
+    """
+
+    def __init__(self, description, id=Error.CONFLICT):
         PrivacyIDEAError.__init__(self, description=description, id=id)
 
 
