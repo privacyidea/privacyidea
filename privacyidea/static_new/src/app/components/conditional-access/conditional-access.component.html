@@ -51,8 +51,45 @@
   </div>
 
   @if (authService.actionAllowed("lockout_policy_write")) {
-    @if (reorderMode()) {
-      <div class="flex-row margin-bottom-16 gap-8 ali-center">
+    <!-- The regular actions stay in place while rearranging and are only disabled, so the
+         toolbar does not change shape when the mode is entered. Save/Cancel take over the
+         trailing slot the "Reorder Priorities" button occupies otherwise. -->
+    <div class="flex-row margin-bottom-16 gap-8 ali-center">
+      <button
+        (click)="onCreatePolicy()"
+        class="action-button-primary button-width-l"
+        mat-stroked-button>
+        <span class="icon-badge">
+          <mat-icon class="padding-right-3">security</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+        </span>
+        <span i18n>New Conditional Access</span>
+      </button>
+      <button
+        (click)="toggleEnabledSelected()"
+        [disabled]="policySelection().length === 0 || reorderMode()"
+        class="action-button-secondary button-width-m"
+        mat-stroked-button>
+        <mat-icon>toggle_on</mat-icon>
+        <span i18n>(De)activate</span>
+      </button>
+      <button
+        (click)="toggleDryRunSelected()"
+        [disabled]="policySelection().length === 0 || reorderMode()"
+        class="action-button-secondary button-width-m"
+        mat-stroked-button>
+        <mat-icon>biotech</mat-icon>
+        <span i18n>Toggle Dry Run</span>
+      </button>
+      <button
+        (click)="deleteSelected()"
+        [disabled]="policySelection().length === 0 || reorderMode()"
+        class="action-button-delete-secondary button-width-m"
+        mat-stroked-button>
+        <mat-icon>delete_sweep</mat-icon>
+        <span i18n>Delete</span>
+      </button>
+      @if (reorderMode()) {
         <button
           (click)="saveReorder()"
           [disabled]="!hasOrderChanges() || reorderSaving()"
@@ -69,40 +106,10 @@
           <mat-icon>close</mat-icon>
           <span i18n>Cancel</span>
         </button>
-        <!-- margin-bottom-0 drops .inline-hint's own 16px so it lines up with the
-             buttons instead of sitting high in the centred row. -->
-        <span class="inline-hint margin-bottom-0">
-          {{ priorityReorderHint }}
-        </span>
-      </div>
-    } @else {
-      <div class="flex-row margin-bottom-16 gap-8">
-        <button
-          (click)="onCreatePolicy()"
-          class="action-button-primary button-width-l"
-          mat-stroked-button>
-          <span class="icon-badge">
-            <mat-icon class="padding-right-3">security</mat-icon>
-            <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
-          </span>
-          <span i18n>New Conditional Access</span>
-        </button>
-        <button
-          (click)="toggleEnabledSelected()"
-          [disabled]="policySelection().length === 0"
-          class="action-button-secondary button-width-m"
-          mat-stroked-button>
-          <mat-icon>toggle_on</mat-icon>
-          <span i18n>(De)activate</span>
-        </button>
-        <button
-          (click)="toggleDryRunSelected()"
-          [disabled]="policySelection().length === 0"
-          class="action-button-secondary button-width-m"
-          mat-stroked-button>
-          <mat-icon>biotech</mat-icon>
-          <span i18n>Toggle Dry Run</span>
-        </button>
+        <app-info-hint
+          [text]="priorityReorderHint"
+          [ariaLabel]="priorityReorderHintAriaLabel" />
+      } @else {
         <button
           (click)="startReorder()"
           [disabled]="totalLength() < 2"
@@ -111,16 +118,8 @@
           <mat-icon>swap_vert</mat-icon>
           <span i18n>Reorder Priorities</span>
         </button>
-        <button
-          (click)="deleteSelected()"
-          [disabled]="policySelection().length === 0"
-          class="action-button-delete-secondary button-width-m"
-          mat-stroked-button>
-          <mat-icon>delete_sweep</mat-icon>
-          <span i18n>Delete</span>
-        </button>
-      </div>
-    }
+      }
+    </div>
   }
 
   <table
@@ -183,6 +182,7 @@
     <ng-container matColumnDef="priority">
       <th
         *matHeaderCellDef
+        class="ca-priority-column"
         i18n
         mat-header-cell
         mat-sort-header>
@@ -190,9 +190,10 @@
       </th>
       <td
         *matCellDef="let policy"
+        class="ca-priority-column"
         mat-cell>
         <span class="ca-priority-cell">
-          <span class="margin-right-16">{{ reorderMode() ? draftPriority(policy) : policy.priority }}</span>
+          <span class="ca-priority-value">{{ reorderMode() ? draftPriority(policy) : policy.priority }}</span>
           @if (reorderMode()) {
             <button
               mat-icon-button
@@ -222,6 +223,7 @@
     <ng-container matColumnDef="time_window_seconds">
       <th
         *matHeaderCellDef
+        class="ca-time-window-column"
         i18n
         mat-header-cell
         mat-sort-header>
@@ -229,6 +231,7 @@
       </th>
       <td
         *matCellDef="let policy"
+        class="ca-time-window-column"
         mat-cell>
         {{ policy.time_window_seconds }}
       </td>
@@ -295,6 +298,7 @@
     <ng-container matColumnDef="enabled">
       <th
         *matHeaderCellDef
+        class="ca-toggle-column"
         i18n
         mat-header-cell
         mat-sort-header>
@@ -302,6 +306,7 @@
       </th>
       <td
         *matCellDef="let policy"
+        class="ca-toggle-column"
         mat-cell>
         <mat-slide-toggle
           (click)="onToggleEnabled(policy); $event.stopPropagation()"
@@ -316,12 +321,14 @@
     <ng-container matColumnDef="dry_run">
       <th
         *matHeaderCellDef
+        class="ca-toggle-column"
         i18n
         mat-header-cell>
         Dry Run
       </th>
       <td
         *matCellDef="let policy"
+        class="ca-toggle-column"
         mat-cell>
         <mat-slide-toggle
           (click)="onToggleDryRun(policy); $event.stopPropagation()"

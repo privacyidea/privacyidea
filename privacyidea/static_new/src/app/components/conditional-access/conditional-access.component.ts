@@ -41,6 +41,7 @@ import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
   ConditionalAccessPolicyService,
@@ -71,7 +72,8 @@ import {
     MatFormField,
     MatLabel,
     ClearableInputComponent,
-    MatInput
+    MatInput,
+    InfoHintComponent
   ],
   templateUrl: "./conditional-access.component.html",
   styleUrl: "./conditional-access.component.scss"
@@ -94,8 +96,8 @@ export class ConditionalAccessComponent implements OnDestroy {
   // Rows selected via the checkbox column; the "Delete Selected" table action acts on these.
   policySelection = signal<LockoutPolicy[]>([]);
 
-  priorityReorderHint = $localize`Move policies with the arrows in the Priority column to change the order they 
-    are evaluated in. Priorities are only relevant for the actions DENY and ALLOW.`;
+  priorityReorderHint = $localize`Move policies with the arrows in the Priority column to change the order they are evaluated in. Priorities are only relevant for the actions DENY and ALLOW.`;
+  priorityReorderHintAriaLabel = $localize`About rearranging priorities`;
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
@@ -439,7 +441,11 @@ export class ConditionalAccessComponent implements OnDestroy {
       });
   }
 
+  // Leaving the list for the create page ends the rearrangement either way, so drop the
+  // draft rather than block the action: exiting first also settles the pending-changes
+  // guard, so the admin is not asked to confirm a discard they just chose.
   onCreatePolicy(): void {
+    this.exitReorderMode();
     this.router.navigateByUrl(ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_NEW);
   }
 

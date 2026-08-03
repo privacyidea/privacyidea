@@ -26,12 +26,64 @@
   text-align: center;
 }
 
-// Priority value and the rearrange arrows share one line.
+// Material pads only the first and last cell of a row, so a column the auto layout squeezes
+// to its content width ends up with its value sitting on the border. Pad every cell of this
+// table instead - the checkbox column sets its own width and opts out.
+.conditional-access-table {
+  td.mat-mdc-cell:not(.ca-checkbox-cell),
+  th.mat-mdc-header-cell:not(.ca-checkbox-cell) {
+    padding-right: 16px;
+  }
+
+  // Material renders no sort arrow while sorting is off (its _renderArrow() is
+  // `!disabled || sorted`), so entering rearrange mode would otherwise narrow every
+  // sortable header by the arrow's slot and shift the whole table. Hold that slot -
+  // the 12px arrow plus its 6px margin - on top of the cell padding above.
+  th.mat-sort-header-disabled:not(.ca-checkbox-cell) {
+    padding-right: calc(16px + 18px);
+  }
+}
+
+// The column the auto layout squeezes first, so it gets a floor: the scroll container breaks
+// words anywhere, which lets the header collapse to its longest word, and rearrange mode
+// swaps the paginated data source for the full draft list, lengthening the elastic text
+// columns next to it. A floor rather than a fixed width, so the wider padding a disabled
+// sort header carries grows the column instead of clipping the label.
+.ca-time-window-column {
+  box-sizing: border-box;
+  min-width: 146px;
+  white-space: nowrap;
+}
+
+// The two toggle columns hold a fixed-size control, so they get the same floor treatment as
+// the time window column - nothing in them justifies giving up width to the elastic text
+// columns when rearrange mode swaps in the full draft list.
+.ca-toggle-column {
+  box-sizing: border-box;
+  min-width: 91px;
+  white-space: nowrap;
+}
+
+// Fixed so the column is the same width in both states and entering rearrange mode does not
+// shift every column to its right. Set on the column (border-box) rather than on the inner
+// span, so the cell padding is included instead of adding to it.
+.ca-priority-column {
+  box-sizing: border-box;
+  width: 140px;
+}
+
+// Priority value and the rearrange arrows share one line, the arrows pinned to the right of
+// the column so they line up in a single track down the table instead of stepping sideways
+// with the width of each value.
 .ca-priority-cell {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 4px;
   white-space: nowrap;
+
+  .ca-priority-value {
+    flex: 1;
+  }
 
   // The end-of-list arrows use Material's disabledInteractive, so they stay focusable and
   // report aria-disabled instead of taking the native disabled attribute (which would drop
