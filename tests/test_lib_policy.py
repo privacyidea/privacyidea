@@ -2473,6 +2473,20 @@ class PolicyTestCase(MyTestCase):
         self.assertSetEqual({"policy-cp", "policy-keycloak", "policy-no-agent"},
                             {policy["name"] for policy in policies})
 
+        # empty string user agent returns only policies without a user agent condition
+        policies = P.list_policies(scope=SCOPE.AUTH, user_agent="")
+        self.assertEqual(1, len(policies), policies)
+        self.assertSetEqual({"policy-no-agent"}, {policy["name"] for policy in policies})
+
+        # set_policy strips empty user_agent strings
+        set_policy(name="policy-empty-ua", scope=SCOPE.AUTH,
+                   action={PolicyAction.CHALLENGERESPONSE: ["hotp"]},
+                   user_agents="")
+        pol = P.list_policies(name="policy-empty-ua")
+        self.assertEqual(1, len(pol))
+        self.assertFalse(pol[0].get("user_agents"))
+
+        delete_policy("policy-empty-ua")
         delete_policy("policy-cp")
         delete_policy("policy-keycloak")
         delete_policy("policy-no-agent")
