@@ -124,6 +124,9 @@ SENSITIVE_KEY_NAMES = frozenset({
     "answer", "answers", "authorization", "bindpw", "cakey", "cookie", "credential", "fbtoken",
     "key_enc", "key_iv", "otp", "otp1", "otp2", "otpkey", "otpvalue", "pass", "passphrase",
     "passw", "passwd", "password", "pin", "privatekey", "questions", "recoverycode", "secret",
+    # "series_id" is the secret half of the remember-device cookie (series_id:counter); logging it
+    # at DEBUG would write a replayable bearer token to the log.
+    "series_id",
     "session", "sshkey", "tans",
 })
 

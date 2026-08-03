@@ -53,6 +53,17 @@ class AuthSessionLibTestCase(MyTestCase):
         # 30 day default validity
         self.assertGreater(session.expires_at, utc_now() + timedelta(days=29))
 
+    def test_series_id_is_not_logged(self):
+        # The series_id is the secret half of the remember-device cookie. It must
+        # not be written to the DEBUG log (log_with redacts it via the denylist),
+        # or the log would contain a replayable bearer token.
+        client_id = self._client_id()
+        with self.assertLogs("privacyidea.models.authsession", level="DEBUG") as captured:
+            session, _cookie = create_auth_session("kim", client_id)
+        output = "\n".join(captured.output)
+        self.assertNotIn(session.series_id, output)
+        self.assertIn("HIDDEN", output)
+
     def test_consume_recognized_rotates(self):
         client_id = self._client_id()
         session, cookie = create_auth_session("bob", client_id)
