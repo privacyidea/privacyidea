@@ -100,6 +100,24 @@ On a hit the cookie is **rotated** (the counter is incremented) and a new cookie
 is returned; the client must store it. Recognition also confirms the bound user
 still exists, so deleting or removing a user revokes their remembered devices.
 
+On a miss the answer is simply "not recognised". The cookie is only cleared (a
+``Set-Cookie`` with a past expiry) when it is genuinely dead - an unknown or
+expired series, or a detected theft. If the presented cookie is still live but
+belongs to a *different* user of the same client (a shared browser, where the
+cookie is a single browser-level value), it is a **soft miss**: the cookie is
+left untouched so that one user logging in does not wipe another user's
+remembered device.
+
+.. note:: Not clearing on a wrong-user miss is deliberate and does not weaken
+   security. A foreign cookie is never *recognised* (the user must match), the
+   cookie is a bearer token that possession already governs, and theft detection
+   only ever acts on the owning user's series - so the soft miss changes none of
+   those. Clearing a remembered device when a *different* user appears is not a
+   reliable shared-machine control; the honest levers for shared or public
+   browsers are to not enable ``remember_device`` there, to use a short
+   :ref:`policy_remember_device_validity`, or a future user-bound
+   "remember this browser" feature.
+
 Theft detection
 ~~~~~~~~~~~~~~~
 

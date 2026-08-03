@@ -917,6 +917,12 @@ def check_remember_device():
             # Tolerated concurrent/duplicate request: recognised, but do not
             # rotate (the client keeps the cookie it already has).
             recognised = True
+        elif result.status == "foreign":
+            # The cookie is live but belongs to a different user on this same
+            # client (a shared browser). Not recognised, but leave the cookie
+            # alone - clearing it would wipe the rightful user's remembered device
+            # off the shared browser just because someone else logged in.
+            pass
         elif result.status == "theft":
             # Baseline theft response: consume_remember_device_cookie has already
             # invalidated the whole series. Record it in action_detail (which the
@@ -927,7 +933,7 @@ def check_remember_device():
             g.audit_object.add_to_log({"action_detail": "persistent cookie reuse detected"},
                                       add_with_comma=True)
             cookie_action = ("clear",)
-        else:  # miss: unknown / expired / not this user's / wrong client
+        else:  # miss: the cookie is dead (unknown or expired) - clear it
             cookie_action = ("clear",)
 
     # A recognition is its own audit action ("POST /validate/remember_device") and

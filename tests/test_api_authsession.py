@@ -316,16 +316,27 @@ class RememberDeviceRecognitionTestCase(MyApiTestCase):
         self.assertEqual(self._cookie_headers(res), [])
         self.assertEqual(AuthSession.query.filter_by(series_id=session.series_id).first().counter, 1)
 
-    def test_08_cookie_bound_to_user_not_honoured_for_other_user(self):
-        # A cookie issued for one user must not be recognised for a different
-        # user on the same API client.
+    def test_08_foreign_user_cookie_is_soft_miss_not_cleared(self):
+        # Shared browser: a cookie issued for one user, presented while a
+        # different user of the same client authenticates, is not recognised -
+        # but it must be left alone (soft miss), not cleared, or one user logging
+        # in would wipe the other user's remembered device off the browser.
         client, api_key = create_client("shared client", "windows_cp")
         other_uid = session_user_id(User(login="someoneelse", realm=self.realm1))
         session, cookie = create_auth_session(other_uid, client.id)
         # cornelius presents someoneelse's cookie: it is not bound to cornelius.
-        self._recognise(api_key=api_key, cookie=cookie, expect_value=False)
-        # The other user's session is untouched.
+        res = self._recognise(api_key=api_key, cookie=cookie, expect_value=False)
+        # No clearing Set-Cookie, and the other user's session is untouched.
+        self.assertEqual(self._cookie_headers(res), [])
         self.assertEqual(AuthSession.query.filter_by(series_id=session.series_id).first().counter, 1)
+
+    def test_10_dead_cookie_is_cleared(self):
+        # A genuinely dead cookie (unknown series) is a hard miss: it is cleared
+        # so the client stops sending it.
+        _client, api_key = create_client("clear client", "windows_cp")
+        res = self._recognise(api_key=api_key, cookie="doesnotexist:1", expect_value=False)
+        self.assertTrue(any(h.startswith(f"{PERSISTENT_COOKIE_NAME}=;")
+                            for h in self._cookie_headers(res)), self._cookie_headers(res))
 
     def test_09_deleted_user_not_recognized(self):
         # A cookie whose bound user no longer resolves must not be recognised,

@@ -72,12 +72,15 @@ class AuthSessionLibTestCase(MyTestCase):
         self.assertEqual(again.cookie_value, build_cookie_value(series_id, 3))
 
     def test_wrong_user_does_not_match(self):
-        # A cookie is bound to the user it was issued for; another user presenting
-        # it must not validate (guards against cross-user authentication).
+        # A cookie is bound to the user it was issued for; another user of the
+        # same client presenting it does not validate (get_valid_session returns
+        # None) - but since the series is live for someone else on this client it
+        # is a "foreign" soft miss (not recognised, must not be cleared), not a
+        # dead "miss".
         client_id = self._client_id()
         _session, cookie = create_auth_session("frank", client_id)
         self.assertIsNone(get_valid_session(cookie, client_id, "eve"))
-        self.assertEqual(consume_remember_device_cookie(cookie, client_id, "eve").status, "miss")
+        self.assertEqual(consume_remember_device_cookie(cookie, client_id, "eve").status, "foreign")
 
     def test_theft_detection_deletes_series(self):
         client_id = self._client_id()

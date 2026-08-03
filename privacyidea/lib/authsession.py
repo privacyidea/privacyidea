@@ -247,7 +247,11 @@ class ConsumeResult(NamedTuple):
       carry the rotated token to send back to the client.
     * ``"grace"`` - a tolerated concurrent/duplicate request; the client keeps
       the cookie it has, so no new one is sent.
-    * ``"miss"`` - no valid session for this cookie; the caller should clear it.
+    * ``"foreign"`` - the series is live but bound to a *different* user on the
+      same client (a shared browser). Not recognised, but the caller must **not**
+      clear it, or one user logging in would wipe another user's cookie.
+    * ``"miss"`` - no live session for this cookie (unknown or expired); the
+      caller should clear it.
     * ``"theft"`` - replay detected; the series has already been invalidated and
       the caller must clear the cookie.
     """
@@ -280,6 +284,16 @@ def consume_remember_device_cookie(cookie_value: str, client_id: str, user_id: s
     except AuthError:
         return ConsumeResult("theft", None, None)
     if not result:
+        # A miss can mean the cookie is dead (unknown/expired) or that it simply
+        # belongs to a different user on this same client - a shared browser,
+        # where the cookie is a single browser-level value. Distinguish the two:
+        # if the series is still live for some user of this client, treat it as a
+        # "foreign" soft miss so we do not clear it and wipe that user's device.
+        series_id, _counter = parse_cookie(cookie_value)
+        if series_id:
+            other = AuthSession.query.filter_by(series_id=series_id, client_id=client_id).first()
+            if other and not (other.expires_at and other.expires_at < utc_now()):
+                return ConsumeResult("foreign", None, None)
         return ConsumeResult("miss", None, None)
     session, is_grace = result
     if is_grace:
