@@ -2,53 +2,31 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 import base64
 import json
-import mock
-from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
 
-from typing import Optional
-
+import mock
 import passlib
 from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PublicKey
 
 from privacyidea.lib.applications.offline import MachineApplication, REFILLTOKEN_LENGTH
 from privacyidea.lib.challenge import get_challenges
-from privacyidea.lib.container import (create_container_template, get_template_obj, delete_container_by_serial,
-                                       get_container_realms, set_container_states, unregister)
-from privacyidea.lib.container import (init_container, find_container_by_serial, add_token_to_container, assign_user,
-                                       add_container_realms, remove_token_from_container)
+from privacyidea.lib.container import (delete_container_by_serial)
+from privacyidea.lib.container import (init_container, find_container_by_serial)
 from privacyidea.lib.containers.container_info import PI_INTERNAL, TokenContainerInfoData, RegistrationState
-from privacyidea.lib.containers.container_states import ContainerStates
-from privacyidea.lib.containers.smartphone import SmartphoneOptions
 from privacyidea.lib.crypto import generate_keypair_ecc, decrypt_aes
-from privacyidea.lib.error import Error
 from privacyidea.lib.machine import attach_token
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.policies.conditions import ConditionSection, ConditionHandleMissingData
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
-from privacyidea.lib.privacyideaserver import add_privacyideaserver
-from privacyidea.lib.realm import set_realm, set_default_realm
-from privacyidea.lib.resolver import save_resolver
-from privacyidea.lib.serviceid import set_serviceid
 from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
-from privacyidea.lib.token import (get_one_token, get_tokens_from_serial_or_user,
-                                   get_tokeninfo, get_tokens)
-from privacyidea.lib.token import init_token, get_tokens_paginate, unassign_token
-from privacyidea.lib.tokens.papertoken import PAPERACTION
+from privacyidea.lib.token import (get_one_token, get_tokens)
+from privacyidea.lib.token import init_token
 from privacyidea.lib.tokens.pushtoken import PushAction
-from privacyidea.lib.tokens.tantoken import TANAction
 from privacyidea.lib.user import User
-from privacyidea.lib.utils.compare import PrimaryComparators
-from privacyidea.models import Realm
-from tests.base import MyApiTestCase
 from tests.test_lib_tokencontainer import MockSmartphone
-
 from .api_container_common import (
     APIContainerTest,
-    APIContainerAuthorization,
     SmartphoneRequests,
-    UNSPECIFIC_ERROR_MESSAGES,
 )
 
 
@@ -79,6 +57,8 @@ class APIContainerSynchronization(APIContainerTest):
         result = self.request_assert_success('container/register/initialize',
                                              data,
                                              self.at, 'POST')
+        self.assert_audit_entry('POST /container/register/initialize', success=1,
+                                container_serial=smartphone_serial)
         # Check if the response contains the expected values
         init_response_data = result["result"]["value"]
         self.assertIn("container_url", init_response_data)
@@ -125,6 +105,8 @@ class APIContainerSynchronization(APIContainerTest):
         result = self.request_assert_success('container/register/finalize',
                                              params,
                                              None, 'POST')
+        self.assert_audit_entry('POST /container/register/finalize', success=1,
+                                container_serial=smartphone_serial)
 
         # Check if the response contains the expected values
         self.assertIn("policies", result["result"]["value"])
@@ -167,9 +149,6 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertFalse(policies[PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER])
         self.assertFalse(policies[PolicyAction.DISABLE_CLIENT_TOKEN_DELETION])
 
-        audit_entry = self.find_most_recent_audit_entry(action='POST /container/register/finalize')
-        self.assertEqual(1, audit_entry['success'], audit_entry)
-
         delete_policy("client_policy")
 
     def test_02_register_smartphone_of_user(self):
@@ -198,6 +177,8 @@ class APIContainerSynchronization(APIContainerTest):
         result = self.request_assert_success('container/register/initialize',
                                              data,
                                              self.at, 'POST')
+        self.assert_audit_entry('POST /container/register/initialize', success=1,
+                                container_serial=smartphone_serial)
         init_response_data = result["result"]["value"]
         # Check if the url contains all relevant data
         qr_url = init_response_data["container_url"]["value"]
@@ -212,6 +193,8 @@ class APIContainerSynchronization(APIContainerTest):
         self.request_assert_success('container/register/finalize',
                                     params,
                                     None, 'POST')
+        self.assert_audit_entry('POST /container/register/finalize', success=1,
+                                container_serial=smartphone_serial)
 
         delete_policy("policy")
         delete_policy("another_policy")
@@ -223,6 +206,8 @@ class APIContainerSynchronization(APIContainerTest):
         self.request_assert_error(403, 'container/register/initialize',
                                   {"container_serial": container_serial}, self.at, 'POST',
                                   error_code=303)
+        self.assert_audit_entry('POST /container/register/initialize', success=0,
+                                container_serial=container_serial, info=self.NOT_EMPTY)
 
         # conflicting server url policies
         self.setUp_user_realms()
@@ -243,6 +228,8 @@ class APIContainerSynchronization(APIContainerTest):
         self.request_assert_error(403, 'container/register/initialize',
                                   data, self.at, 'POST',
                                   error_code=303)
+        self.assert_audit_entry('POST /container/register/initialize', success=0,
+                                container_serial=smartphone_serial, info=self.NOT_EMPTY)
         delete_policy("another_policy")
         delete_container_by_serial(smartphone_serial)
 
@@ -251,11 +238,13 @@ class APIContainerSynchronization(APIContainerTest):
                                   {}, self.at, 'POST',
                                   error_code=905,
                                   error_message="ERR905: Missing parameter: container_serial")
+        self.assert_audit_entry('POST /container/register/initialize', success=0, info=self.contains('ERR905'))
 
         # Invalid container serial
         self.request_assert_error(404, 'container/register/initialize',
                                   {"container_serial": "invalid_serial"}, self.at, 'POST',
                                   error_code=601)
+        self.assert_audit_entry('POST /container/register/initialize', success=0, info=self.NOT_EMPTY)
 
         delete_policy("policy")
 
@@ -266,6 +255,7 @@ class APIContainerSynchronization(APIContainerTest):
                                   error_code=905,
                                   error_message="ERR905: Missing parameter: container_serial",
                                   try_unspecific=False)
+        self.assert_audit_entry('POST /container/register/finalize', success=0, info=self.contains('ERR905'))
 
         # Invalid container serial
         self.request_assert_error(404, 'container/register/finalize',
@@ -274,6 +264,7 @@ class APIContainerSynchronization(APIContainerTest):
                                   None, 'POST',
                                   error_code=601,
                                   try_unspecific=True)
+        self.assert_audit_entry('POST /container/register/finalize', success=0, info=self.NOT_EMPTY)
 
     def test_05_register_finalize_invalid_challenge(self):
         # Invalid challenge
@@ -287,6 +278,8 @@ class APIContainerSynchronization(APIContainerTest):
         result = self.request_assert_success('container/register/initialize',
                                              data,
                                              self.at, 'POST')
+        self.assert_audit_entry('POST /container/register/initialize', success=1,
+                                container_serial=smartphone_serial)
         init_response_data = result["result"]["value"]
         # Finalize with invalid nonce
         mock_smph = MockSmartphone(device_brand="XY", device_model="ABC123")
@@ -298,6 +291,8 @@ class APIContainerSynchronization(APIContainerTest):
                                   None, 'POST',
                                   error_code=3002,
                                   try_unspecific=True)
+        self.assert_audit_entry('POST /container/register/finalize', success=0,
+                                container_serial=smartphone_serial, info=self.contains('ERR3002'))
 
     def test_06_register_twice_fails(self):
         # register container successfully
@@ -312,6 +307,8 @@ class APIContainerSynchronization(APIContainerTest):
         result = self.request_assert_success('container/register/initialize',
                                              data,
                                              self.at, 'POST')
+        self.assert_audit_entry('POST /container/register/initialize', success=1,
+                                container_serial=smartphone_serial)
         init_response_data = result["result"]["value"]
 
         # Finalize
@@ -322,16 +319,22 @@ class APIContainerSynchronization(APIContainerTest):
 
         self.request_assert_success('container/register/finalize',
                                     params, None, 'POST')
+        self.assert_audit_entry('POST /container/register/finalize', success=1,
+                                container_serial=smartphone_serial)
 
         # try register second time with same data
         self.request_assert_error(400, 'container/register/finalize',
                                   params, None, 'POST',
                                   try_unspecific=True)
+        self.assert_audit_entry('POST /container/register/finalize', success=0,
+                                container_serial=smartphone_serial, info=self.NOT_EMPTY)
 
         # try to reinit registration
         self.request_assert_error(400, 'container/register/initialize',
                                   data, self.at, 'POST',
                                   error_code=3000)
+        self.assert_audit_entry('POST /container/register/initialize', success=0,
+                                container_serial=smartphone_serial, info=self.contains('ERR3000'))
 
         delete_policy("policy")
 
@@ -342,12 +345,16 @@ class APIContainerSynchronization(APIContainerTest):
         self.request_assert_success(f'container/register/{mock_smph.container_serial}/terminate',
                                     {},
                                     self.at, 'POST')
+        self.assert_audit_entry('POST /container/register/<string:container_serial>/terminate', success=1,
+                                container_serial=mock_smph.container_serial)
 
     def test_08_register_terminate_fail(self):
         # Invalid container serial
         self.request_assert_error(404, "container/register/invalidSerial/terminate",
                                   {}, self.at, 'POST',
                                   error_code=601)
+        self.assert_audit_entry('POST /container/register/<string:container_serial>/terminate', success=0,
+                                info=self.NOT_EMPTY)
 
     def test_09_challenge_success(self):
         set_policy("challenge_ttl", scope="container", action={PolicyAction.CONTAINER_CHALLENGE_TTL: 3}, priority=1)
@@ -361,6 +368,8 @@ class APIContainerSynchronization(APIContainerTest):
         result = self.request_assert_success('container/challenge',
                                              {"scope": scope, "container_serial": mock_smph.container_serial}, None,
                                              'POST')
+        self.assert_audit_entry('POST /container/challenge', success=1,
+                                container_serial=mock_smph.container_serial)
 
         result_entries = result["result"]["value"].keys()
         self.assertIn("nonce", result_entries)
@@ -392,6 +401,7 @@ class APIContainerSynchronization(APIContainerTest):
                                   {"scope": scope, "container_serial": "random"}, None, "POST",
                                   error_code=601,
                                   try_unspecific=True)
+        self.assert_audit_entry('POST /container/challenge', success=0, info=self.NOT_EMPTY)
 
         # container is not registered
         smph_serial = init_container({"type": "smartphone"})["container_serial"]
@@ -400,12 +410,15 @@ class APIContainerSynchronization(APIContainerTest):
                                   {"scope": scope, "container_serial": smph_serial}, None, "POST",
                                   error_code=3001,
                                   try_unspecific=True)
+        self.assert_audit_entry('POST /container/challenge', success=0,
+                                container_serial=smph_serial, info=self.contains('ERR3001'))
 
         # Missing serial
         self.request_assert_error(400, "container/challenge",
                                   {"scope": scope}, None, "POST",
                                   error_code=905,
                                   try_unspecific=False)
+        self.assert_audit_entry('POST /container/challenge', success=0, info=self.contains('ERR905'))
 
     def register_terminate_client_success(self, smartphone_serial=None):
         # Registration
@@ -417,6 +430,8 @@ class APIContainerSynchronization(APIContainerTest):
         result = self.request_assert_success('container/challenge',
                                              {"scope": scope, "container_serial": mock_smph.container_serial}, None,
                                              'POST')
+        self.assert_audit_entry('POST /container/challenge', success=1,
+                                container_serial=mock_smph.container_serial)
 
         params = mock_smph.register_terminate(result["result"]["value"], scope)
 
@@ -424,6 +439,8 @@ class APIContainerSynchronization(APIContainerTest):
         res = self.request_assert_success('container/register/terminate/client',
                                           params,
                                           None, 'POST')
+        self.assert_audit_entry('POST /container/register/terminate/client', success=1,
+                                container_serial=mock_smph.container_serial)
         self.assertTrue(res["result"]["value"]["success"])
 
     def test_11_register_terminate_client_no_user_success(self):
@@ -492,6 +509,7 @@ class APIContainerSynchronization(APIContainerTest):
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": mock_smph.container_serial}, None,
                                              "POST")
+        self.assert_audit_entry('POST /container/challenge', success=1)
 
         params = mock_smph.register_terminate(result["result"]["value"], scope)
 
@@ -501,6 +519,7 @@ class APIContainerSynchronization(APIContainerTest):
                                   None, 'POST',
                                   error_code=303,
                                   try_unspecific=False)
+        self.assert_audit_entry('POST /container/register/terminate/client', success=0, info=self.NOT_EMPTY)
 
     def test_14_register_terminate_client_no_user_denied(self):
         # Generic policy
@@ -552,6 +571,7 @@ class APIContainerSynchronization(APIContainerTest):
         scope = "https://pi.net/container/register/terminate/client"
         self.request_assert_success('container/challenge',
                                     {"scope": scope, "container_serial": mock_smph.container_serial}, None, 'POST')
+        self.assert_audit_entry('POST /container/challenge', success=1)
 
         # Terminate without signature
         self.request_assert_error(400,
@@ -559,12 +579,14 @@ class APIContainerSynchronization(APIContainerTest):
                                   {"container_serial": mock_smph.container_serial}, None, 'POST',
                                   error_code=905,
                                   try_unspecific=True)
+        self.assert_audit_entry('POST /container/register/terminate/client', success=0, info=self.contains('ERR905'))
 
         # Terminate without container serial
         self.request_assert_error(400,
                                   "container/register/terminate/client",
                                   {"signature": "123"}, None, 'POST',
                                   error_code=905)
+        self.assert_audit_entry('POST /container/register/terminate/client', success=0, info=self.contains('ERR905'))
 
     def test_19_register_terminate_client_invalid_serial(self):
         # container does not exists
@@ -574,6 +596,7 @@ class APIContainerSynchronization(APIContainerTest):
                                   self.at, "POST",
                                   error_code=601,
                                   try_unspecific=True)
+        self.assert_audit_entry('POST /container/register/terminate/client', success=0, info=self.NOT_EMPTY)
 
         # Missing serial
         self.request_assert_error(400,
@@ -581,6 +604,7 @@ class APIContainerSynchronization(APIContainerTest):
                                   {},
                                   self.at, "POST",
                                   error_code=905)
+        self.assert_audit_entry('POST /container/register/terminate/client', success=0, info=self.contains('ERR905'))
 
     def test_20_register_terminate_client_invalid_challenge(self):
         # Registration
@@ -592,6 +616,7 @@ class APIContainerSynchronization(APIContainerTest):
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": mock_smph.container_serial}, None,
                                              'POST')
+        self.assert_audit_entry('POST /container/challenge', success=1)
         # mock with another serial
         correct_serial = mock_smph.container_serial
         mock_smph.container_serial = "random123"
@@ -603,6 +628,7 @@ class APIContainerSynchronization(APIContainerTest):
                                   params, self.at, 'POST',
                                   error_code=3002,
                                   try_unspecific=True)
+        self.assert_audit_entry('POST /container/register/terminate/client', success=0, info=self.contains('ERR3002'))
 
     def test_21_register_terminate_client_not_registered(self):
         # Registration
@@ -614,11 +640,13 @@ class APIContainerSynchronization(APIContainerTest):
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": mock_smph.container_serial}, None,
                                              "POST")
+        self.assert_audit_entry('POST /container/challenge', success=1)
 
         # server terminates
         self.request_assert_success(f"container/register/{mock_smph.container_serial}/terminate",
                                     {},
                                     self.at, 'POST')
+        self.assert_audit_entry('POST /container/register/<string:container_serial>/terminate', success=1)
 
         # client tries to terminate
         params = mock_smph.register_terminate(result["result"]["value"], scope)
@@ -626,6 +654,7 @@ class APIContainerSynchronization(APIContainerTest):
                                   params, self.at, "POST",
                                   error_code=3001,
                                   try_unspecific=True)
+        self.assert_audit_entry('POST /container/register/terminate/client', success=0, info=self.contains('ERR3001'))
 
     def test_22_register_generic_fail(self):
         set_policy("policy", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/",
@@ -639,6 +668,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.request_assert_error(501, 'container/register/initialize',
                                   data,
                                   self.at, 'POST')
+        self.assert_audit_entry('POST /container/register/initialize', success=0, info=self.NOT_EMPTY)
 
         # Finalize
         data = {"container_serial": generic_serial}
@@ -646,10 +676,13 @@ class APIContainerSynchronization(APIContainerTest):
                                   data,
                                   None, 'POST',
                                   try_unspecific=True)
+        self.assert_audit_entry('POST /container/register/finalize', success=0, info=self.NOT_EMPTY)
 
         # Terminate
         self.request_assert_error(501, f'container/register/{generic_serial}/terminate',
                                   {}, self.at, 'POST')
+        self.assert_audit_entry('POST /container/register/<string:container_serial>/terminate', success=0,
+                                info=self.NOT_EMPTY)
 
         delete_policy('policy')
 
@@ -665,6 +698,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.request_assert_error(501, 'container/register/initialize',
                                   data,
                                   self.at, 'POST')
+        self.assert_audit_entry('POST /container/register/initialize', success=0, info=self.NOT_EMPTY)
 
         # Finalize
         data = {"container_serial": yubi_serial}
@@ -672,10 +706,13 @@ class APIContainerSynchronization(APIContainerTest):
                                   data,
                                   None, 'POST',
                                   try_unspecific=True)
+        self.assert_audit_entry('POST /container/register/finalize', success=0, info=self.NOT_EMPTY)
 
         # Terminate
         self.request_assert_error(501, f'container/register/{yubi_serial}/terminate',
                                   {}, self.at, 'POST')
+        self.assert_audit_entry('POST /container/register/<string:container_serial>/terminate', success=0,
+                                info=self.NOT_EMPTY)
 
     def test_24_synchronize_success(self):
         # client rollover and deletable tokens are implicitly set to False
@@ -697,6 +734,7 @@ class APIContainerSynchronization(APIContainerTest):
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": mock_smph.container_serial}, None,
                                              "POST")
+        self.assert_audit_entry('POST /container/challenge', success=1)
 
         params = mock_smph.synchronize(result["result"]["value"], scope)
 
@@ -704,6 +742,7 @@ class APIContainerSynchronization(APIContainerTest):
         sync_time = datetime.now(timezone.utc)
         result = self.request_assert_success("container/synchronize",
                                              params, None, "POST")
+        self.assert_audit_entry('POST /container/synchronize', success=1)
         result_entries = result["result"]["value"].keys()
         self.assertEqual("AES", result["result"]["value"]["encryption_algorithm"])
         self.assertIn("encryption_params", result_entries)
@@ -734,6 +773,7 @@ class APIContainerSynchronization(APIContainerTest):
                                   params, None, "POST",
                                   error_code=905,
                                   try_unspecific=True)
+        self.assert_audit_entry('POST /container/synchronize', success=0, info=self.contains('ERR905'))
 
         # missing serial
         params = {"public_enc_key_client": "123", "signature": "0001"}
@@ -741,6 +781,7 @@ class APIContainerSynchronization(APIContainerTest):
                                   params, None, "POST",
                                   error_code=905,
                                   try_unspecific=False)
+        self.assert_audit_entry('POST /container/synchronize', success=0, info=self.contains('ERR905'))
 
     def test_26_synchronize_invalid_container(self):
         # container does not exists
@@ -749,6 +790,7 @@ class APIContainerSynchronization(APIContainerTest):
                                   params, None, "POST",
                                   error_code=601,
                                   try_unspecific=True)
+        self.assert_audit_entry('POST /container/synchronize', success=0, info=self.NOT_EMPTY)
 
     def test_27_synchronize_container_not_registered(self):
         # Registration
@@ -760,18 +802,21 @@ class APIContainerSynchronization(APIContainerTest):
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": mock_smph.container_serial}, None,
                                              "POST")
+        self.assert_audit_entry('POST /container/challenge', success=1)
 
         params = mock_smph.synchronize(result["result"]["value"], scope)
 
         # Server unregister
         self.request_assert_success(f"container/register/{mock_smph.container_serial}/terminate", {},
                                     self.at, "POST")
+        self.assert_audit_entry('POST /container/register/<string:container_serial>/terminate', success=1)
 
         # Sync
         self.request_assert_error(400, "container/synchronize",
                                   params, None, "POST",
                                   error_code=3001,
                                   try_unspecific=True)
+        self.assert_audit_entry('POST /container/synchronize', success=0, info=self.contains('ERR3001'))
 
     def test_28_synchronize_invalid_challenge(self):
         # invalid challenge
@@ -782,6 +827,7 @@ class APIContainerSynchronization(APIContainerTest):
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": mock_smph.container_serial}, None,
                                              "POST")
+        self.assert_audit_entry('POST /container/challenge', success=1)
 
         # mock client with invalid scope (wrong serial)
         params = mock_smph.synchronize(result["result"]["value"], "https://pi.net/container/register/initialize")
@@ -789,6 +835,7 @@ class APIContainerSynchronization(APIContainerTest):
                                   params, None, 'POST',
                                   error_code=3002,
                                   try_unspecific=True)
+        self.assert_audit_entry('POST /container/synchronize', success=0, info=self.contains('ERR3002'))
 
     def test_29_synchronize_man_in_the_middle(self):
         # client register successfully
@@ -799,6 +846,7 @@ class APIContainerSynchronization(APIContainerTest):
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": mock_smph.container_serial}, None,
                                              'POST')
+        self.assert_audit_entry('POST /container/challenge', success=1)
         # mock client
         params = mock_smph.synchronize(result["result"]["value"], scope)
         # man in the middle fetches client request and inserts its own public encryption key
@@ -812,6 +860,7 @@ class APIContainerSynchronization(APIContainerTest):
                                   params, None, 'POST',
                                   error_code=3002,
                                   try_unspecific=True)
+        self.assert_audit_entry('POST /container/synchronize', success=0, info=self.contains('ERR3002'))
 
     def test_30_synchronize_smartphone_with_push_fb(self):
         # Registration
@@ -837,12 +886,14 @@ class APIContainerSynchronization(APIContainerTest):
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": mock_smph.container_serial},
                                              None, "POST")
+        self.assert_audit_entry('POST /container/challenge', success=1)
 
         params = mock_smph.synchronize(result["result"]["value"], scope)
 
         # Finalize
         result = self.request_assert_success("container/synchronize",
                                              params, None, 'POST')
+        self.assert_audit_entry('POST /container/synchronize', success=1)
         result_entries = result["result"]["value"].keys()
         self.assertEqual("AES", result["result"]["value"]["encryption_algorithm"])
         self.assertIn("encryption_params", result_entries)
@@ -885,12 +936,14 @@ class APIContainerSynchronization(APIContainerTest):
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": mock_smph.container_serial}, None,
                                              "POST")
+        self.assert_audit_entry('POST /container/challenge', success=1)
 
         params = mock_smph.synchronize(result["result"]["value"], scope)
 
         # Finalize
         result = self.request_assert_success("container/synchronize",
                                              params, None, 'POST')
+        self.assert_audit_entry('POST /container/synchronize', success=1)
         result_entries = result["result"]["value"].keys()
         self.assertEqual("AES", result["result"]["value"]["encryption_algorithm"])
         self.assertIn("encryption_params", result_entries)
@@ -936,12 +989,14 @@ class APIContainerSynchronization(APIContainerTest):
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": mock_smph.container_serial}, None,
                                              "POST")
+        self.assert_audit_entry('POST /container/challenge', success=1)
 
         params = mock_smph.synchronize(result["result"]["value"], scope)
 
         # Finalize
         result = self.request_assert_success("container/synchronize",
                                              params, None, 'POST')
+        self.assert_audit_entry('POST /container/synchronize', success=1)
 
         # check result
         container_dict_server_enc = result["result"]["value"]["container_dict_server"]
@@ -989,12 +1044,14 @@ class APIContainerSynchronization(APIContainerTest):
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": mock_smph.container_serial}, None,
                                              "POST")
+        self.assert_audit_entry('POST /container/challenge', success=1)
 
         params = mock_smph.synchronize(result["result"]["value"], scope)
 
         # Finalize with missing push config
         result = self.request_assert_success("container/synchronize",
                                              params, None, 'POST')
+        self.assert_audit_entry('POST /container/synchronize', success=1)
         result_entries = result["result"]["value"].keys()
         self.assertEqual("AES", result["result"]["value"]["encryption_algorithm"])
         self.assertIn("encryption_params", result_entries)
@@ -1049,6 +1106,7 @@ class APIContainerSynchronization(APIContainerTest):
                        "realm": self.realm1,
                        "user": "hans"}
         result = self.request_assert_success("/token/init", hotp_params, self.at, "POST")
+        self.assert_audit_entry('POST /token/init', success=1)
         initial_enroll_url = result["detail"]["googleurl"]["value"]
         self.assertIn("pin=True", initial_enroll_url)
         self.assertIn("app_force_unlock=pin", initial_enroll_url)
@@ -1062,12 +1120,14 @@ class APIContainerSynchronization(APIContainerTest):
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": mock_smph.container_serial}, None,
                                              "POST")
+        self.assert_audit_entry('POST /container/challenge', success=1)
 
         params = mock_smph.synchronize(result["result"]["value"], scope)
 
         # Finalize
         result = self.request_assert_success("container/synchronize",
                                              params, None, 'POST')
+        self.assert_audit_entry('POST /container/synchronize', success=1)
         result_entries = result["result"]["value"].keys()
         self.assertEqual("AES", result["result"]["value"]["encryption_algorithm"])
         self.assertIn("encryption_params", result_entries)
@@ -1111,6 +1171,7 @@ class APIContainerSynchronization(APIContainerTest):
                                   {"scope": scope, "container_serial": generic_serial}, None, 'POST',
                                   error_code=3001,
                                   try_unspecific=True)
+        self.assert_audit_entry('POST /container/challenge', success=0, info=self.contains('ERR3001'))
 
     def test_36_yubi_sync_fail(self):
         generic_serial = init_container({"type": "generic"})["container_serial"]
@@ -1121,6 +1182,7 @@ class APIContainerSynchronization(APIContainerTest):
                                   {"scope": scope, "container_serial": generic_serial}, None, "POST",
                                   error_code=3001,
                                   try_unspecific=True)
+        self.assert_audit_entry('POST /container/challenge', success=0, info=self.contains('ERR3001'))
 
     def setup_rollover(self, smartphone_serial=None):
         # Registration
@@ -1136,6 +1198,7 @@ class APIContainerSynchronization(APIContainerTest):
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": mock_smph.container_serial}, None,
                                              "POST")
+        self.assert_audit_entry('POST /container/challenge', success=1)
         challenge_data = result["result"]["value"]
 
         # Mock old smartphone
@@ -1158,6 +1221,7 @@ class APIContainerSynchronization(APIContainerTest):
         # Init rollover
         result = self.request_assert_success("container/rollover",
                                              smartphone_params, None, 'POST')
+        self.assert_audit_entry('POST /container/rollover', success=1)
 
         init_response_data = result["result"]["value"]
         self.assertIn("container_url", init_response_data)
@@ -1189,6 +1253,7 @@ class APIContainerSynchronization(APIContainerTest):
         # Finalize rollover (finalize registration)
         self.request_assert_success('container/register/finalize',
                                     params, None, 'POST')
+        self.assert_audit_entry('POST /container/register/finalize', success=1)
 
         delete_policy("register_policy")
 
@@ -1205,6 +1270,7 @@ class APIContainerSynchronization(APIContainerTest):
                                   None, "POST",
                                   error_code=303,
                                   try_unspecific=False)
+        self.assert_audit_entry('POST /container/rollover', success=0, info=self.NOT_EMPTY)
 
         delete_policy("register_policy")
 
@@ -1390,6 +1456,7 @@ class APIContainerSynchronization(APIContainerTest):
                                   {"scope": scope, "container_serial": smartphone_serial}, None, "POST",
                                   error_code=3001,
                                   try_unspecific=True)
+        self.assert_audit_entry('POST /container/challenge', success=0, info=self.contains('ERR3001'))
 
         # Init rollover
         self.request_assert_error(400, "container/rollover",
@@ -1397,6 +1464,7 @@ class APIContainerSynchronization(APIContainerTest):
                                   None, 'POST',
                                   error_code=3001,
                                   try_unspecific=True)
+        self.assert_audit_entry('POST /container/rollover', success=0, info=self.contains('ERR3001'))
 
         delete_policy("policy")
         delete_policy("policy_rollover")
@@ -1426,6 +1494,7 @@ class APIContainerSynchronization(APIContainerTest):
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": mock_smph.container_serial}, None,
                                              "POST")
+        self.assert_audit_entry('POST /container/challenge', success=1)
         challenge_data = result["result"]["value"]
 
         # Mock smartphone with invalid nonce
@@ -1439,6 +1508,7 @@ class APIContainerSynchronization(APIContainerTest):
                                   None, 'POST',
                                   error_code=3002,
                                   try_unspecific=True)
+        self.assert_audit_entry('POST /container/rollover', success=0, info=self.contains('ERR3002'))
 
         delete_policy("policy")
         delete_policy("policy_rollover")
@@ -1468,6 +1538,7 @@ class APIContainerSynchronization(APIContainerTest):
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": mock_smph.container_serial}, None,
                                              "POST")
+        self.assert_audit_entry('POST /container/challenge', success=1)
         challenge_data = result["result"]["value"]
 
         # Mock smartphone
@@ -1481,6 +1552,7 @@ class APIContainerSynchronization(APIContainerTest):
         result = self.request_assert_success("container/rollover",
                                              params,
                                              None, 'POST')
+        self.assert_audit_entry('POST /container/rollover', success=1)
         rollover_data = result["result"]["value"]
 
         # Invalid Nonce
@@ -1494,6 +1566,7 @@ class APIContainerSynchronization(APIContainerTest):
                                   None, 'POST',
                                   error_code=3002,
                                   try_unspecific=True)
+        self.assert_audit_entry('POST /container/register/finalize', success=0, info=self.contains('ERR3002'))
 
         # Invalid time stamp
         # Mock smartphone
@@ -1506,6 +1579,7 @@ class APIContainerSynchronization(APIContainerTest):
                                   None, 'POST',
                                   error_code=3002,
                                   try_unspecific=True)
+        self.assert_audit_entry('POST /container/register/finalize', success=0, info=self.contains('ERR3002'))
 
         # Invalid passphrase
         # Mock smartphone
@@ -1518,6 +1592,7 @@ class APIContainerSynchronization(APIContainerTest):
                                   None, 'POST',
                                   error_code=3002,
                                   try_unspecific=True)
+        self.assert_audit_entry('POST /container/register/finalize', success=0, info=self.contains('ERR3002'))
 
         delete_policy("policy")
         delete_policy("policy_rollover")
@@ -1530,6 +1605,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.request_assert_error(400, "container/rollover", {}, None, 'POST',
                                   error_code=905,
                                   try_unspecific=False)
+        self.assert_audit_entry('POST /container/rollover', success=0, info=self.contains('ERR905'))
 
         delete_policy("policy")
 
@@ -1546,6 +1622,7 @@ class APIContainerSynchronization(APIContainerTest):
                        "realm": self.realm1,
                        "user": "hans"}
         result = self.request_assert_success("/token/init", hotp_params, self.at, "POST")
+        self.assert_audit_entry('POST /token/init', success=1)
         initial_enroll_url = result["detail"]["googleurl"]["value"]
         hotp = get_one_token(serial=result["detail"]["serial"])
         smartphone.add_token(hotp)
@@ -1558,11 +1635,13 @@ class APIContainerSynchronization(APIContainerTest):
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": mock_smph.container_serial}, None,
                                              "POST")
+        self.assert_audit_entry('POST /container/challenge', success=1)
 
         # Rollover init
         data = {"container_serial": mock_smph.container_serial, "rollover": True,
                 "passphrase_prompt": "Enter your phone number.", "passphrase_response": "123456789"}
         result = self.request_assert_success("container/register/initialize", data, self.at, 'POST')
+        self.assert_audit_entry('POST /container/register/initialize', success=1)
 
         init_response_data = result["result"]["value"]
         self.assertIn("container_url", init_response_data)
@@ -1594,6 +1673,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.request_assert_success('container/register/finalize',
                                     params,
                                     None, 'POST')
+        self.assert_audit_entry('POST /container/register/finalize', success=1)
         self.assertEqual(RegistrationState.ROLLOVER_COMPLETED, smartphone.registration_state)
 
         # Challenge for Sync
@@ -1601,6 +1681,7 @@ class APIContainerSynchronization(APIContainerTest):
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": mock_smph.container_serial}, None,
                                              "POST")
+        self.assert_audit_entry('POST /container/challenge', success=1)
         mock_smph.container = {"serial": mock_smph.container_serial, "type": "smartphone",
                                "tokens": [{"serial": hotp.get_serial(), "type": "HOTP", "label": hotp.get_serial(),
                                            "issuer": "privacIDEA", "pin": False, "algorithm": "SHA1", "digits": 6}]}
@@ -1609,6 +1690,7 @@ class APIContainerSynchronization(APIContainerTest):
         # Sync
         result = self.request_assert_success("container/synchronize",
                                              params, None, 'POST')
+        self.assert_audit_entry('POST /container/synchronize', success=1)
         container_dict_server_enc = result["result"]["value"]["container_dict_server"]
         pub_key_server = X25519PublicKey.from_public_bytes(
             base64.urlsafe_b64decode(result["result"]["value"]["public_server_key"]))
@@ -1650,6 +1732,7 @@ class APIContainerSynchronization(APIContainerTest):
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": mock_smph.container_serial}, None,
                                              "POST")
+        self.assert_audit_entry('POST /container/challenge', success=1)
 
         # create signature for rollover endpoint
         params = mock_smph.synchronize(result["result"]["value"], scope)
@@ -1659,6 +1742,7 @@ class APIContainerSynchronization(APIContainerTest):
                                   params, None, 'POST',
                                   error_code=3002,
                                   try_unspecific=True)
+        self.assert_audit_entry('POST /container/synchronize', success=0, info=self.contains('ERR3002'))
 
         delete_policy("policy")
         delete_policy("policy_rollover")
@@ -1682,6 +1766,7 @@ class APIContainerSynchronization(APIContainerTest):
                        "user": "hans",
                        "hashlib": "sha256"}
         result = self.request_assert_success("/token/init", hotp_params, self.at, "POST")
+        self.assert_audit_entry('POST /token/init', success=1)
         initial_enroll_url = result["detail"]["googleurl"]["value"]
         hotp = get_one_token(serial=result["detail"]["serial"])
         self.assertEqual("sha256", hotp.hashlib)
@@ -1717,6 +1802,7 @@ class APIContainerSynchronization(APIContainerTest):
         data = {"container_serial": mock_smph.container_serial, "rollover": True,
                 "passphrase_prompt": "Enter your phone number.", "passphrase_response": "123456789"}
         result = self.request_assert_success("container/register/initialize", data, self.at, "POST")
+        self.assert_audit_entry('POST /container/register/initialize', success=1)
 
         init_response_data = result["result"]["value"]
         self.assertIn("container_url", init_response_data)
@@ -1750,6 +1836,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.request_assert_success('container/register/finalize',
                                     params,
                                     None, 'POST')
+        self.assert_audit_entry('POST /container/register/finalize', success=1)
         self.assertEqual(RegistrationState.ROLLOVER_COMPLETED, smartphone.registration_state)
 
         # Try to sync with old smartphone
@@ -1757,11 +1844,13 @@ class APIContainerSynchronization(APIContainerTest):
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": mock_smph.container_serial}, None,
                                              "POST")
+        self.assert_audit_entry('POST /container/challenge', success=1)
         params = mock_smph.synchronize(result["result"]["value"], scope)
         self.request_assert_error(400, "container/synchronize",
                                   params, None, 'POST',
                                   error_code=3002,
                                   try_unspecific=True)
+        self.assert_audit_entry('POST /container/synchronize', success=0, info=self.contains('ERR3002'))
         self.assertEqual(RegistrationState.ROLLOVER_COMPLETED, smartphone.registration_state)
 
         # Sync with new smartphone
@@ -1769,6 +1858,7 @@ class APIContainerSynchronization(APIContainerTest):
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": new_mock_smph.container_serial}, None,
                                              "POST")
+        self.assert_audit_entry('POST /container/challenge', success=1)
 
         new_mock_smph.container = {"serial": new_mock_smph.container_serial, "type": "smartphone",
                                    "tokens": [{"serial": hotp.get_serial(), "type": "HOTP", "label": hotp.get_serial(),
@@ -1776,6 +1866,7 @@ class APIContainerSynchronization(APIContainerTest):
         params = new_mock_smph.synchronize(result["result"]["value"], scope)
         result = self.request_assert_success("container/synchronize",
                                              params, None, 'POST')
+        self.assert_audit_entry('POST /container/synchronize', success=1)
         container_dict_server_enc = result["result"]["value"]["container_dict_server"]
         pub_key_server = X25519PublicKey.from_public_bytes(
             base64.urlsafe_b64decode(result["result"]["value"]["public_server_key"]))
@@ -1823,6 +1914,7 @@ class APIContainerSynchronization(APIContainerTest):
         data = {"container_serial": mock_smph.container_serial, "rollover": True,
                 "passphrase_prompt": "Enter your phone number.", "passphrase_response": "123456789"}
         self.request_assert_success("container/register/initialize", data, self.at, "POST")
+        self.assert_audit_entry('POST /container/register/initialize', success=1)
 
         # register/finalize missing
 
@@ -1831,11 +1923,13 @@ class APIContainerSynchronization(APIContainerTest):
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": mock_smph.container_serial}, None,
                                              "POST")
+        self.assert_audit_entry('POST /container/challenge', success=1)
         mock_smph.container = {"serial": mock_smph.container_serial, "type": "smartphone",
                                "tokens": [{"serial": hotp.get_serial(), "type": "HOTP"}]}
         params = mock_smph.synchronize(result["result"]["value"], scope)
 
         self.request_assert_success("container/synchronize", params, None, 'POST')
+        self.assert_audit_entry('POST /container/synchronize', success=1)
         # check that token is not rolled over
         new_hotp_secret = hotp.token.get_otpkey().getKey().decode("utf-8")
         self.assertEqual(hotp_secret, new_hotp_secret)
@@ -1859,6 +1953,7 @@ class APIContainerSynchronization(APIContainerTest):
         scope = "https://pi.net/container/synchronize"
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": smartphone_serial}, None, 'POST')
+        self.assert_audit_entry('POST /container/challenge', success=1)
 
         mock_smph.container = {"serial": smartphone_serial, "type": "smartphone",
                                "tokens": [{"serial": totp.get_serial()}, {"serial": daypassword.get_serial()},
@@ -1872,6 +1967,7 @@ class APIContainerSynchronization(APIContainerTest):
             mock_dt.now.return_value = sync_time
             result = self.request_assert_success("container/synchronize",
                                                  params, None, 'POST')
+            self.assert_audit_entry('POST /container/synchronize', success=1)
         result_entries = result["result"]["value"].keys()
         self.assertEqual("AES", result["result"]["value"]["encryption_algorithm"])
         self.assertIn("encryption_params", result_entries)
@@ -1902,6 +1998,7 @@ class APIContainerSynchronization(APIContainerTest):
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": smartphone_serial}, None,
                                              "POST")
+        self.assert_audit_entry('POST /container/challenge', success=1)
 
         mock_smph.container = {"serial": smartphone_serial, "type": "smartphone",
                                "tokens": [{"serial": totp.get_serial()}, {"serial": daypassword.get_serial()},
@@ -1912,6 +2009,7 @@ class APIContainerSynchronization(APIContainerTest):
         # Sync
         self.request_assert_success("container/synchronize",
                                     params, None, 'POST')
+        self.assert_audit_entry('POST /container/synchronize', success=1)
 
         # check tokens of container: new hotp shall not be in the container
         smartphone_tokens = smartphone.get_tokens()
@@ -1939,6 +2037,7 @@ class APIContainerSynchronization(APIContainerTest):
         scope = "https://pi.net/container/synchronize"
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": smartphone_serial}, None, "POST")
+        self.assert_audit_entry('POST /container/challenge', success=1)
 
         mock_smph.container = {"serial": smartphone_serial, "type": "smartphone",
                                "tokens": [{"serial": totp.get_serial()}, {"serial": daypassword.get_serial()},
@@ -1950,6 +2049,7 @@ class APIContainerSynchronization(APIContainerTest):
         sync_time = datetime.now(timezone.utc)
         result = self.request_assert_success("container/synchronize",
                                              params, None, "POST")
+        self.assert_audit_entry('POST /container/synchronize', success=1)
         result_entries = result["result"]["value"].keys()
         self.assertEqual("AES", result["result"]["value"]["encryption_algorithm"])
         self.assertIn("encryption_params", result_entries)
@@ -2136,6 +2236,7 @@ class APIContainerSynchronization(APIContainerTest):
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": mock_smph.container_serial}, None,
                                              "POST")
+        self.assert_audit_entry('POST /container/challenge', success=1)
 
         mock_smph.container = {
             "tokens": [{"tokentype": "HOTP", "otp": list(client_token_no_serial_otps.values())[2:4], "counter": "2"},
@@ -2148,6 +2249,7 @@ class APIContainerSynchronization(APIContainerTest):
         # Finalize
         result = self.request_assert_success("container/synchronize",
                                              params, None, 'POST')
+        self.assert_audit_entry('POST /container/synchronize', success=1)
         result_entries = result["result"]["value"].keys()
         self.assertEqual("AES", result["result"]["value"]["encryption_algorithm"])
         self.assertIn("encryption_params", result_entries)
@@ -2235,6 +2337,7 @@ class APIContainerSynchronization(APIContainerTest):
         result = self.request_assert_success("container/challenge",
                                              {"scope": scope, "container_serial": mock_smph.container_serial}, None,
                                              "POST")
+        self.assert_audit_entry('POST /container/challenge', success=1)
 
         mock_smph.container = {
             "tokens": [{"tokentype": "HOTP", "otp": list(client_token_no_serial_otps.values())[2:4], "counter": "2"},
@@ -2247,6 +2350,7 @@ class APIContainerSynchronization(APIContainerTest):
         # Finalize
         result = self.request_assert_success("container/synchronize",
                                              params, None, 'POST')
+        self.assert_audit_entry('POST /container/synchronize', success=1)
         result_entries = result["result"]["value"].keys()
         self.assertEqual("AES", result["result"]["value"]["encryption_algorithm"])
         self.assertIn("encryption_params", result_entries)

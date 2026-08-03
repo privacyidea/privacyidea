@@ -24,7 +24,6 @@ import {
   inject,
   linkedSignal,
   OnDestroy,
-  signal,
   ViewChild,
   WritableSignal
 } from "@angular/core";
@@ -56,10 +55,10 @@ import { MatPaginator } from "@angular/material/paginator";
 import { Sort } from "@angular/material/sort";
 import { RouterLink } from "@angular/router";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
-import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { UserNewResolverComponent } from "@components/user/user-new-resolver/user-new-resolver.component";
 import { FilterOption } from "@core/models/filter_value_generic/filter-option";
 import { FilterValueGeneric, keywordlessTerms } from "@core/models/filter_value_generic/filter-value-generic";
@@ -133,12 +132,11 @@ export class UserTableComponent implements OnDestroy {
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly resolverService = inject(ResolverService);
   protected readonly dialog = inject(MatDialog);
-  readonly apiFilter = this.userService.apiFilterOptions;
+  readonly apiFilterKeys = this.userService.apiFilterKeys;
   readonly filterHint = inlineFilterHint();
   private basePageSizeOptions = [...this.tableUtilsService.pageSizeOptions()];
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
-  sort = signal({ active: "", direction: "" } as Sort);
   pageSizeOptions = computed(() => {
     if (!this.basePageSizeOptions.includes(this.userService.pageSize())) {
       this.basePageSizeOptions.push(this.userService.pageSize());
@@ -153,7 +151,7 @@ export class UserTableComponent implements OnDestroy {
   // Applied client-side across all columns of the fully-loaded user list, while keyword segments
   // (e.g. "username: root") go to the server via UserService.filterParams.
   readonly freeTextTerms = computed<string[]>(() =>
-    keywordlessTerms(this.userService.apiUserFilter().filterString.toLowerCase())
+    keywordlessTerms(this.userService.activeFilter().filterString.toLowerCase())
   );
 
   // Free-text-filtered users, computed once and shared by both the row list and the total count so the
@@ -178,11 +176,11 @@ export class UserTableComponent implements OnDestroy {
   usersDataSource: WritableSignal<MatTableDataSource<UserData>> = linkedSignal({
     source: () => ({
       filtered: this.filteredUsers(),
-      sort: this.sort()
+      sort: this.userService.sort()
     }),
     computation: (src, prev) => {
       // Skeleton rows (emptyResource) are shown while loading and must not be filtered.
-      const data = src.filtered ?? (prev?.value?.data ?? this.emptyResource());
+      const data = src.filtered ?? prev?.value?.data ?? this.emptyResource();
       const sorted = this.clientsideSortUserData([...data], src.sort);
       const ds = new MatTableDataSource(sorted);
       ds.paginator = this.paginator;
@@ -197,19 +195,20 @@ export class UserTableComponent implements OnDestroy {
 
   ngOnDestroy(): void {
     // Do not carry a stale (and invisible) filter over to the next visit of the page.
-    this.userService.resetFilter();
+    this.userService.clearFilter();
   }
 
   toggleFilter(filterKeyword: string): void {
-    const newValue = this.tableUtilsService.toggleKeywordInFilter({
-      keyword: filterKeyword,
-      currentValue: this.userService.apiUserFilter()
-    });
-    this.userService.apiUserFilter.set(newValue);
+    this.userService.updateFilter((current) =>
+      this.tableUtilsService.toggleKeywordInFilter({
+        keyword: filterKeyword,
+        currentValue: current
+      })
+    );
   }
 
   isFilterSelected(filter: string): boolean {
-    return this.userService.apiUserFilter().hasKey(filter);
+    return this.userService.activeFilter().hasKey(filter);
   }
 
   getFilterIconName(keyword: string): string {
