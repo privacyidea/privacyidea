@@ -796,17 +796,14 @@ class LockoutEngineTestCase(LockoutTestCase):
         findings = entry.other_info["conditional_access_dry_run"]
         self.assertEqual(1, len(findings))
         finding = findings[0]
+        # A finding is deliberately terse - it names the policy (policy_id only so the WebUI can link to its editor),
+        # the threshold it would have tripped and the actions that would have run. Everything else about the request
+        # (event type, user, source IP, time) is already on the log row itself. An unnamed stage contributes no stage
+        # key at all, and the internal stage id is never recorded.
+        self.assertEqual({"policy_id", "policy_name", "threshold", "actions"}, set(finding))
         self.assertEqual(policy.id, finding["policy_id"])
         self.assertEqual("dry", finding["policy_name"])
-        self.assertEqual("user", finding["target"])
-        # The internal stage id is not recorded; an unnamed stage contributes no stage key at all and is identified by
-        # its threshold.
-        self.assertNotIn("stage_id", finding)
-        self.assertNotIn("stage_name", finding)
         self.assertEqual(3, finding["threshold"])
-        self.assertEqual(3, finding["count"])
-        self.assertEqual(["MFA_FAIL"], finding["counter_types"])
-        self.assertEqual(3600, finding["window_seconds"])
         self.assertEqual(["LOCK_USER"], finding["actions"])
         # Still a dry run: no lockout state is ever written.
         self.assertIsNone(self._state())
@@ -900,8 +897,8 @@ class LockoutEngineTestCase(LockoutTestCase):
 
         findings = self._findings(event_id)
         self.assertEqual(1, len(findings))
-        self.assertEqual(6, findings[0]["count"])
         self.assertEqual(3, findings[0]["threshold"])
+        self.assertEqual(["LOCK_USER"], findings[0]["actions"])
         self.assertIsNone(self._state())
 
     def test_dry_run_records_on_every_request_because_it_keeps_no_dedup_state(self):
@@ -955,7 +952,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip=ip, auth_log_event_id=event_id)
 
         finding = self._findings(event_id)[0]
-        self.assertEqual("source_ip", finding["target"])
+        self.assertEqual("dry_ip", finding["policy_name"])
         self.assertEqual(["BLOCK_IP"], finding["actions"])
         # Dry run: the IP is never actually blocked.
         self.assertIsNone(self._block(ip))

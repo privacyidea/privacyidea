@@ -214,7 +214,6 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         finding = findings[0]
         self.assertEqual("ca_lock", finding["policy_name"])
         self.assertEqual(3, finding["threshold"])
-        self.assertEqual(3, finding["count"])
         self.assertEqual([str(LockoutAction.LOCK_USER)], finding["actions"])
 
         # The user can still authenticate normally afterward -- never actually locked.
@@ -691,7 +690,6 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         finding = findings[0]
         self.assertEqual("ca_pw_dry", finding["policy_name"])
         self.assertEqual(2, finding["threshold"])
-        self.assertEqual(2, finding["count"])
         self.assertEqual([str(LockoutAction.LOCK_USER)], finding["actions"])
 
     @staticmethod

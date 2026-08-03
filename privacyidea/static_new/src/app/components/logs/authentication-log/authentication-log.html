@@ -332,14 +332,25 @@
                         @for (entry of entries; track entry.key) {
                           <li>
                             @if (entry.groups) {
-                              <span class="info-key">{{ entry.key }}</span>
+                              @if (entry.key) {
+                                <span class="info-key">{{ entry.key }}</span>
+                              }
                               @for (group of entry.groups; track $index) {
                                 <ul class="info-list info-group">
-                                  @if (group.label) {
-                                    <li class="info-group-label">{{ group.label }}</li>
+                                  @if (group.label || group.prefix) {
+                                    <li class="info-group-label">
+                                      @if (group.prefix) {
+                                        <span class="info-key info-group-prefix">{{ group.prefix }}</span>
+                                      }
+                                      @if (group.link) {
+                                        <a [routerLink]="group.link">{{ group.label }}</a>
+                                      } @else {
+                                        {{ group.label }}
+                                      }
+                                    </li>
                                   }
                                   @for (row of group.rows; track row.key) {
-                                    <li><span class="info-key">{{ row.key }}:</span> {{ row.value }}</li>
+                                    <li class="info-group-row"><span class="info-key">{{ row.key }}:</span> {{ row.value }}</li>
                                   }
                                 </ul>
                               }

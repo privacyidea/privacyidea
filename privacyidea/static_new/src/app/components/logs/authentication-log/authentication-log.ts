@@ -61,6 +61,7 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
 import { MultiSelectFilterComponent } from "@components/shared/multi-select-filter/multi-select-filter.component";
 import { MultiSelectFilterOption } from "@components/shared/multi-select-filter/multi-select-filter-option";
 import { MultiSelectMenuComponent } from "@components/shared/multi-select-filter/multi-select-menu/multi-select-menu.component";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { USER_AGENT_PRESETS } from "@constants/user-agent.constants";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ClientsService, ClientsServiceInterface } from "@services/clients/clients.service";
@@ -220,19 +221,38 @@ const INFO_KEY_ACRONYMS: Record<string, string> = {
 // name identifies it (the stage it tripped is a separate `stage_name` row, when that stage is named).
 const INFO_GROUP_LABEL_KEYS = ["policy_name", "name"];
 
+// Presentation for list-valued info keys whose groups speak for themselves: the key gets no row of its own, each group
+// heading reads `prefix` followed by the group's name, and that name links to `linkPath` + the group's `linkIdKey`
+// value. So a dry-run finding reads "Dry Run: <policy>" with only the policy name linking to its editor, rather than
+// nesting under a "Conditional access dry run" label. `linkIdKey` backs the link and is not shown as a row.
+const INFO_GROUP_RENDERING: Record<string, { prefix: string; linkPath: string; linkIdKey: string }> = {
+  conditional_access_dry_run: {
+    prefix: $localize`Dry Run:`,
+    linkPath: ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_DETAILS,
+    linkIdKey: "policy_id"
+  }
+};
+
 // A rendered other_info row. A leaf carries `value`; a one-level-nested dict carries `children` (rendered as a
 // sub-list); a list of dicts (e.g. the conditional-access dry-run findings) carries `groups`, one per element.
-// Nesting deeper than that is folded into the leaf value as compact JSON.
+// Nesting deeper than that is folded into the leaf value as compact JSON. An empty `key` renders no label row.
 interface InfoRow {
   key: string;
   value: string;
+}
+
+interface InfoGroup {
+  label: string;
+  rows: InfoRow[];
+  link?: string;
+  prefix?: string;
 }
 
 interface InfoEntry {
   key: string;
   value?: string;
   children?: InfoRow[];
-  groups?: { label: string; rows: InfoRow[] }[];
+  groups?: InfoGroup[];
 }
 
 @Component({
@@ -706,7 +726,12 @@ export class AuthenticationLog {
     return Object.entries(value).map(([key, raw]) => {
       const label = this.humanizeInfoKey(key);
       if (this.isObjectList(raw)) {
-        return { key: label, groups: raw.map((element, index) => this.infoGroup(element, index, raw.length)) };
+        const rendering = INFO_GROUP_RENDERING[key];
+        return {
+          // A key with its own rendering needs no label row: its group headings carry the context instead.
+          key: rendering ? "" : label,
+          groups: raw.map((element, index) => this.infoGroup(element, index, raw.length, rendering))
+        };
       }
       if (this.isPlainObject(raw)) {
         return { key: label, children: this.infoRows(raw) };
@@ -716,18 +741,34 @@ export class AuthenticationLog {
   }
 
   // Head a group with its identifying name when it has one (see INFO_GROUP_LABEL_KEYS), else with a plain ordinal so
-  // several groups stay distinguishable. A single unnamed group needs no heading at all.
-  private infoGroup(element: Record<string, unknown>, index: number, total: number): { label: string; rows: InfoRow[] } {
+  // several groups stay distinguishable. A single unnamed group needs no heading at all. Under a *rendering* the
+  // heading is prefixed and its name links to the record it describes; the keys consumed by the heading and the link
+  // are not repeated among the rows.
+  private infoGroup(
+    element: Record<string, unknown>,
+    index: number,
+    total: number,
+    rendering?: { prefix: string; linkPath: string; linkIdKey: string }
+  ): InfoGroup {
     const labelKey = INFO_GROUP_LABEL_KEYS.find((key) => typeof element[key] === "string" && element[key] !== "");
-    if (labelKey) {
-      return { label: String(element[labelKey]), rows: this.infoRows(element, labelKey) };
+    const skipKeys = [labelKey, rendering?.linkIdKey].filter((key): key is string => !!key);
+    const name = labelKey ? String(element[labelKey]) : total > 1 ? `${index + 1}` : "";
+    if (!rendering) {
+      return { label: name, rows: this.infoRows(element, skipKeys) };
     }
-    return { label: total > 1 ? `${index + 1}` : "", rows: this.infoRows(element) };
+    const id = element[rendering.linkIdKey];
+    return {
+      label: name,
+      // The prefix always shows, even for a lone group: it is what marks the finding as a dry run.
+      prefix: rendering.prefix,
+      rows: this.infoRows(element, skipKeys),
+      link: id === null || id === undefined ? undefined : `${rendering.linkPath}${id}`
+    };
   }
 
-  private infoRows(value: Record<string, unknown>, skipKey?: string): InfoRow[] {
+  private infoRows(value: Record<string, unknown>, skipKeys: string[] = []): InfoRow[] {
     return Object.entries(value)
-      .filter(([key]) => key !== skipKey)
+      .filter(([key]) => !skipKeys.includes(key))
       .map(([key, raw]) => ({ key: this.humanizeInfoKey(key), value: this.formatInfoValue(raw) }));
   }
 

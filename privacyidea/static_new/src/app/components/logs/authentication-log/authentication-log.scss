@@ -71,6 +71,17 @@ td.cell-info-sized {
 .info-group-label {
 }
 
+// Separates the prefix from the group name that follows it. Done here rather than with trailing whitespace in the
+// prefix string, which Angular collapses between elements and translators would drop.
+.info-group-prefix {
+  margin-right: 4px;
+}
+
+// The fields of a group sit slightly inside its heading, so the heading reads as the thing they belong to.
+.info-group-row {
+  padding-left: 4px;
+}
+
 .info-key {
   color: var(--mat-sys-on-surface-variant);
 }

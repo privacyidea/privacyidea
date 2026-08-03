@@ -953,19 +953,20 @@ def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
                  f"(threshold {triggered_stage.failure_threshold}) for {subject_label}: "
                  f"{count} event(s) of {_types_label(policy.counter_types_to_track)} in {window}s.")
         if auth_log_event_id is not None:
+            # Deliberately terse: a request can trip several policies, so each finding
+            # records only what identifies the would-be outcome. The rest of the context
+            # (event type, source IP, user, time) is already on the log row itself.
             finding = {
+                # policy_id is not shown as a field; it is what lets the WebUI link the
+                # policy name to its editor.
                 "policy_id": policy.id,
                 "policy_name": policy.name,
-                "target": policy.target,
                 "threshold": triggered_stage.failure_threshold,
-                "count": count,
-                "counter_types": list(policy.counter_types_to_track),
-                "window_seconds": window,
                 "actions": [a.action_type for a in pending_actions],
             }
             if triggered_stage.name:
-                # The stage's label is only recorded when an admin gave it one; the
-                # threshold below already identifies which stage of the policy this is.
+                # Only recorded when an admin named the stage; the threshold identifies
+                # which stage of the policy this is either way.
                 finding["stage_name"] = triggered_stage.name
             record_dry_run_finding(auth_log_event_id, finding)
         return []
