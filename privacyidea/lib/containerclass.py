@@ -32,7 +32,7 @@ from privacyidea.lib.containers.container_info import (TokenContainerInfoData, P
                                                        INITIALLY_SYNCHRONIZED)
 from privacyidea.lib.containers.container_states import ContainerStates
 from privacyidea.lib.crypto import verify_ecc, decryptPassword, FAILED_TO_DECRYPT_PASSWORD, encryptPassword
-from privacyidea.lib.error import ParameterError, ResourceNotFoundError, TokenAdminError, UserError
+from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError, TokenAdminError, UserError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.machine import is_offline_token
 from privacyidea.lib.token import (create_tokenclass_object, get_tokens, get_serial_by_otp_list,
@@ -597,6 +597,8 @@ class TokenContainerClass:
         :param key: key to delete, if None all keys are deleted
         :param keep_internal: If True, entries of type PI_INTERNAL are not deleted
         :return: dictionary of deleted keys in the format {key: deleted}
+        :raises PolicyError: if a specific reserved (PI_INTERNAL) key is requested for deletion while
+            keep_internal is True. Bulk deletion (key=None) keeps internal entries silently instead.
         """
         res = {}
         if key:
@@ -613,6 +615,10 @@ class TokenContainerClass:
             if not keep_internal or ci.type != PI_INTERNAL:
                 ci.delete()
                 res[ci.key] = True
+            elif key:
+                # A specific reserved key was explicitly requested for deletion: refuse it loudly.
+                raise PolicyError(
+                    _("The key '{0!s}' is reserved for internal use and cannot be deleted.").format(ci.key))
             else:
                 log.debug(f"Container info with key {ci.key} is of type {PI_INTERNAL} and can not be deleted.")
                 res[ci.key] = False
