@@ -44,6 +44,7 @@ import logging
 from flask import request, g
 from privacyidea.lib.policy import Match, SCOPE
 from privacyidea.lib.lifecycle import call_finalizers
+from privacyidea.lib.log import redact_url
 from privacyidea.api.auth import (user_required, admin_required, jwtauth)
 from privacyidea.lib.config import ensure_no_config_object, get_privacyidea_node
 from privacyidea.lib.token import get_token_type, get_token_owner
@@ -93,7 +94,7 @@ log = logging.getLogger(__name__)
 # The decorated functions are called before and after *every* request.
 @token_blueprint.before_app_request
 def log_begin_request():
-    log.debug(f"Begin handling of request {request.full_path!r}")
+    log.debug(f"Begin handling of request {redact_url(request.full_path)!r}")
     g.startdate = datetime.datetime.now()
 
 
@@ -108,7 +109,7 @@ def teardown_request(exc):
         # Also during calling webui, there is no audit_object, yet.
         pass
     call_finalizers()
-    log.debug(f"End handling of request {request.full_path!r}")
+    log.debug(f"End handling of request {redact_url(request.full_path)!r}")
 
 
 @token_blueprint.before_request

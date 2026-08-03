@@ -40,14 +40,14 @@ import { MatInputModule } from "@angular/material/input";
 import { MatMenuModule } from "@angular/material/menu";
 import { ContainerTableActionsComponent } from "@components/container/container-table/container-table-actions/container-table-actions.component";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
-import { inlineFilterHint } from "@utils/filter-hint.utils";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
-import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { inlineFilterHint } from "@utils/filter-hint.utils";
 @Component({
   selector: "app-container-table",
   standalone: true,
@@ -91,19 +91,19 @@ export class ContainerTableComponent {
     "realms"
   );
   readonly columnKeys = [...this.tableUtilsService.getColumnKeys(this.columnsKeyMap)];
-  readonly apiFilter = this.containerService.apiFilter;
-  readonly advancedApiFilter = this.containerService.advancedApiFilter;
-  readonly filterKeywords = [...this.containerService.apiFilter, ...this.containerService.advancedApiFilter];
+  readonly apiFilterKeys = this.containerService.apiFilterKeys;
+  readonly advancedApiFilterKeys = this.containerService.advancedApiFilterKeys;
+  readonly filterKeywords = [...this.containerService.apiFilterKeys, ...this.containerService.advancedApiFilterKeys];
   readonly filterHint = inlineFilterHint();
   // The `user` and `realm` filters are exact values that the backend resolves against the user store, so
   // they are only applied when the input is confirmed with enter. All other filters are applied while typing.
   protected readonly filterInputValue = linkedSignal({
-    source: () => this.containerService.containerFilter().filterString,
+    source: () => this.containerService.activeFilter().filterString,
     computation: (filterString) => filterString
   });
-  protected readonly showFilterHint = computed(() => {
+  readonly showFilterHint = computed(() => {
     const current = this.filterInputValue().trim().toLowerCase();
-    const applied = this.containerService.containerFilter().filterString.trim().toLowerCase();
+    const applied = this.containerService.activeFilter().filterString.trim().toLowerCase();
 
     if (current !== applied) {
       return /(^|\s)user:/.test(current) || /(^|\s)realm:/.test(current);
@@ -218,11 +218,12 @@ export class ContainerTableComponent {
   }
 
   toggleFilter(filterKeyword: string): void {
-    const newValue = this.tableUtilsService.toggleKeywordInFilter({
-      keyword: filterKeyword,
-      currentValue: this.containerService.containerFilter()
-    });
-    this.containerService.containerFilter.set(newValue);
+    this.containerService.updateFilter((current) =>
+      this.tableUtilsService.toggleKeywordInFilter({
+        keyword: filterKeyword,
+        currentValue: current
+      })
+    );
   }
 
   isFilterSelected(filter: string, inputValue: FilterValue): boolean {
@@ -230,7 +231,7 @@ export class ContainerTableComponent {
   }
 
   getFilterIconName(keyword: string): string {
-    const isSelected = this.isFilterSelected(keyword, this.containerService.containerFilter());
+    const isSelected = this.isFilterSelected(keyword, this.containerService.activeFilter());
     return isSelected ? "filter_alt_off" : "filter_alt";
   }
 
@@ -240,10 +241,8 @@ export class ContainerTableComponent {
   }
 
   onItemSelected(keyword: string, value: string | undefined): void {
-    if (!value) {
-      this.containerService.containerFilter.set(this.containerService.containerFilter().removeKey(keyword));
-    } else {
-      this.containerService.containerFilter.set(this.containerService.containerFilter().addEntry(keyword, value));
-    }
+    this.containerService.updateFilter((current) =>
+      value ? current.addEntry(keyword, value) : current.removeKey(keyword)
+    );
   }
 }

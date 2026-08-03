@@ -98,15 +98,15 @@ describe("UserTableComponent", () => {
     // Read the data signal directly rather than running full template change detection: the
     // template's clear-button binding reads the live input value and trips checkNoChanges in tests.
     const namesFor = (rawFilter: string) => {
-      mockUserService.apiUserFilter.set(new FilterValue({ value: rawFilter }));
+      mockUserService.activeFilter.set(new FilterValue({ value: rawFilter }));
       return component.usersDataSource().data.map((u) => u.username);
     };
 
     it("derives free-text terms from the keyword-less part of the filter", () => {
-      mockUserService.apiUserFilter.set(new FilterValue({ value: "alice username: bob" }));
+      mockUserService.activeFilter.set(new FilterValue({ value: "alice username: bob" }));
       expect(component.freeTextTerms()).toEqual(["alice"]);
 
-      mockUserService.apiUserFilter.set(new FilterValue({ value: "username: bob" }));
+      mockUserService.activeFilter.set(new FilterValue({ value: "username: bob" }));
       expect(component.freeTextTerms()).toEqual([]);
     });
 
@@ -121,7 +121,7 @@ describe("UserTableComponent", () => {
     });
 
     it("keeps the last count and rows while the users resource has no value (loading)", () => {
-      mockUserService.apiUserFilter.set(new FilterValue({ value: "bob" }));
+      mockUserService.activeFilter.set(new FilterValue({ value: "bob" }));
       expect(component.totalLength()).toBe(1);
       expect(component.usersDataSource().data.map((u) => u.username)).toEqual(["bob"]);
 
@@ -133,9 +133,9 @@ describe("UserTableComponent", () => {
     });
 
     it("resets the filter when leaving the page", () => {
-      mockUserService.apiUserFilter.set(new FilterValue({ value: "alice" }));
+      mockUserService.activeFilter.set(new FilterValue({ value: "alice" }));
       component.ngOnDestroy();
-      expect(mockUserService.resetFilter).toHaveBeenCalled();
+      expect(mockUserService.clearFilter).toHaveBeenCalled();
     });
   });
 
