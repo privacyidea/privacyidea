@@ -70,6 +70,10 @@ TIMEOUT = "timeout"
 
 log = logging.getLogger(__name__)
 
+# Matches a single tag such as '{username}'. The tag name must not contain braces, so a match can never span across
+# the closing brace of another tag.
+TAG_PATTERN = re.compile(r"\{([^{}]+)\}")
+
 
 @dataclass
 class Error:
@@ -140,20 +144,32 @@ class RequestConfig:
 
         # replace tags in endpoint and request mapping
         if tags:
-            for tag, value in tags.items():
-                value_str = str(value)
-                self.endpoint = self.endpoint.replace(f"{{{tag}}}", value_str)
-                if isinstance(request_mapping, dict):
-                    self._replace_tags_in_dict(request_mapping, f"{{{tag}}}", value_str)
+            self.endpoint = self._substitute_tags(self.endpoint, tags)
+            if isinstance(request_mapping, dict):
+                self._replace_tags_in_dict(request_mapping, tags)
         self.request_mapping = request_mapping
 
     @staticmethod
-    def _replace_tags_in_dict(d: dict, tag: str, value: str):
+    def _substitute_tags(template: str, tags: dict) -> str:
+        """
+        Replaces all tags in the template with their value from tags. The template is traversed only once, hence a
+        placeholder contained in a substituted value is not replaced again.
+        Tags without an entry in tags are kept as they are.
+
+        :param template: string which may contain tags such as '{username}'
+        :param tags: maps the tag names to the values they are replaced with
+        :return: the template with all known tags replaced
+        """
+        return TAG_PATTERN.sub(
+            lambda match: str(tags[match.group(1)]) if match.group(1) in tags else match.group(0), template)
+
+    @staticmethod
+    def _replace_tags_in_dict(d: dict, tags: dict):
         for k in d:
             if isinstance(d[k], str):
-                d[k] = d[k].replace(tag, value)
+                d[k] = RequestConfig._substitute_tags(d[k], tags)
             elif isinstance(d[k], dict):
-                RequestConfig._replace_tags_in_dict(d[k], tag, value)
+                RequestConfig._replace_tags_in_dict(d[k], tags)
 
     @staticmethod
     def get_as_dict(value: str | dict) -> dict:

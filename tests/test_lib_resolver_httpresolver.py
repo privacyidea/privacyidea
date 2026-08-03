@@ -187,6 +187,35 @@ class RequestConfigTestCase(MyTestCase):
         self.assertEqual("Alice", config.request_mapping["displayName"])
         self.assertEqual("s3cr3t!", config.request_mapping["passwordProfile"]["password"])
 
+    def test_06_tag_values_are_not_rescanned(self):
+        # Each tag is replaced only once: if the value of a tag contains another tag, the latter must not be replaced.
+        config_dict = {
+            ENDPOINT: "http://example.com/auth/{username}",
+            METHOD: "post",
+            HEADERS: {"Content-Type": "application/json"},
+            REQUEST_MAPPING: '{"displayName": "{givenname} {surname}", '
+                             '"passwordProfile": {"password": "{password}"}}'
+        }
+        config = RequestConfig(config_dict, {}, {"givenname": "{username}", "surname": "Doe",
+                                                 "username": "{givenname}", "password": "Sup3rS3cret"})
+        self.assertEqual("{username} Doe", config.request_mapping["displayName"])
+        self.assertEqual("Sup3rS3cret", config.request_mapping["passwordProfile"]["password"])
+        self.assertEqual("http://example.com/auth/{givenname}", config.endpoint)
+
+    def test_07_unknown_tags_and_braces_are_kept(self):
+        # Tags without a value are kept as they are, and braces which are no tags must not be modified
+        config_dict = {
+            ENDPOINT: "http://example.com/users/{unknown_tag}",
+            METHOD: "post",
+            HEADERS: {"Content-Type": "application/x-www-form-urlencoded"},
+            REQUEST_MAPPING: 'scope={"a":1}&id={userid}&other={also_unknown}'
+        }
+        config = RequestConfig(config_dict, {}, {"userid": "u1"})
+        self.assertEqual("http://example.com/users/{unknown_tag}", config.endpoint)
+        self.assertEqual('{"a":1}', config.request_mapping["scope"])
+        self.assertEqual("u1", config.request_mapping["id"])
+        self.assertEqual("{also_unknown}", config.request_mapping["other"])
+
 
 class DoRequestTestCase(MyTestCase):
     """Tests _do_request routing: params go to json=, data=, or query string depending on method and Content-Type."""
