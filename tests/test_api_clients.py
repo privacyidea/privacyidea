@@ -202,6 +202,38 @@ class APIClientAPIKeyMiddlewareTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200, res)
 
+    def test_06_suspended_key_not_blocked_but_audited(self):
+        # A known key whose client is suspended does not block /validate/check,
+        # but its use is recorded in the audit log (a real, issued key still in
+        # use after it was disabled).
+        self.setUp_user_realms()
+        client = self._create_client()
+        with self.app.test_request_context(f'/clients/{client["id"]}',
+                                           data={"status": "suspended"}, method='POST',
+                                           headers={'Authorization': self.at}):
+            self.assertEqual(self.app.full_dispatch_request().status_code, 200)
+
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius", "realm": self.realm1, "pass": "x"},
+                                           headers={'X-API-Key': client["api_key"]}):
+            res = self.app.full_dispatch_request()
+            # Not blocked by the disabled key (normal validate, auth just fails).
+            self.assertEqual(res.status_code, 200, res)
+
+        entry = self.find_most_recent_audit_entry(action_detail="*suspended API key presented*")
+        self.assertIn("suspended API key presented", entry.get("action_detail", ""))
+
+    def test_07_unknown_key_is_not_audited(self):
+        # An unknown/garbage key must NOT create an audit note (avoid flooding).
+        self.setUp_user_realms()
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius", "realm": self.realm1, "pass": "x"},
+                                           headers={'X-API-Key': 'pi_deadbeef00000000_nope'}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+        entry = self.find_most_recent_audit_entry()
+        self.assertNotIn("API key presented", entry.get("action_detail", "") or "")
+
 
 class APIClientSessionsTestCase(MyApiTestCase):
     """

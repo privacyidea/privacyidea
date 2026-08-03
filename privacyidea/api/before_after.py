@@ -38,7 +38,7 @@ from .lib.utils import (get_all_params, get_before_request_config, get_optional,
 from .container import container_blueprint
 from ..lib.container import find_container_for_token, find_container_by_serial
 from ..lib.framework import get_app_config_value
-from ..lib.clients import get_active_client_by_key, touch_client
+from ..lib.clients import identify_client_by_key, touch_client
 from ..lib.policies.actions import PolicyAction
 from ..lib.user import get_user_from_param
 import logging
@@ -105,31 +105,38 @@ def identify_api_client():
     Identify the API client from the ``X-API-Key`` header for *every* request
     and expose it as ``g.client_id`` (``None`` when no valid client).
 
-    The header is an *optional* identification mechanism, so an absent, unknown,
-    inactive or revoked key simply leaves the request unidentified
-    (``g.client_id = None``) rather than rejecting it - otherwise a stale key
-    sent to an endpoint that does not use API-key auth (e.g. the WebUI) would
-    break that request. Endpoints that require an identified client
-    (``/validate/capabilities``, ``/validate/remember_device``) enforce it
-    themselves.
+    The header is an *optional* identification mechanism, so an absent, unknown
+    or disabled key simply leaves the request unidentified (``g.client_id =
+    None``) rather than rejecting it - otherwise a stale key sent to an endpoint
+    that does not use API-key auth (e.g. the WebUI) would break that request.
+    Endpoints that require an identified client (``/validate/capabilities``,
+    ``/validate/remember_device``) enforce it themselves.
+
+    A *known* key whose client is disabled (``suspended``) is stashed on
+    ``g.rejected_api_client`` so an endpoint with an audit object can record that
+    a real, previously issued key is still being used after it was disabled. An
+    unknown/invalid key is only logged (auditing every probe would flood the
+    audit log).
     """
     g.client_id = None
+    g.rejected_api_client = None
     api_key = request.headers.get("X-API-Key")
     if not api_key:
         return
 
-    client = get_active_client_by_key(api_key)
-    if not client:
-        # Unknown / inactive / revoked key: treat as unidentified, do not reject
-        # the whole request here (this is a before_app_request that runs for
-        # every endpoint app-wide).
-        log.warning("Ignoring an unknown or inactive X-API-Key.")
-        return
-
-    g.client_id = client.id
-    # Refresh the client's usage timestamp, throttled so a busy client does not
-    # issue a DB write on every single request.
-    touch_client(client)
+    client, status = identify_client_by_key(api_key)
+    if status == "active":
+        g.client_id = client.id
+        # Refresh the client's usage timestamp, throttled so a busy client does
+        # not issue a DB write on every single request.
+        touch_client(client)
+    elif client is not None:
+        # Known key, valid secret, but the client is disabled.
+        g.rejected_api_client = {"client_id": client.id, "status": status}
+        log.warning(f"A {status} API key was presented (client {client.id}).")
+    else:
+        # Unknown key_id or wrong secret: do not reject app-wide, do not audit.
+        log.warning("Ignoring an unknown or invalid X-API-Key.")
 
 
 @token_blueprint.teardown_app_request

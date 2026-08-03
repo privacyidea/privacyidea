@@ -119,15 +119,33 @@ def get_active_client_by_key(plaintext: str) -> Client | None:
     :param plaintext: the plaintext API key from the request
     :return: the matching active ``Client`` or ``None``
     """
+    client, status = identify_client_by_key(plaintext)
+    return client if status == "active" else None
+
+
+def identify_client_by_key(plaintext: str) -> tuple[Client | None, str]:
+    """
+    Classify a presented API key **without** applying the active-status filter.
+
+    Unlike :func:`get_active_client_by_key`, this does not hide a disabled
+    client: it distinguishes an *active* key from a *known but disabled* one
+    (``suspended``) so the latter can be surfaced - a real, previously issued key
+    still being presented after it was disabled is worth recording.
+
+    :param plaintext: the plaintext API key from the request
+    :return: a ``(client, status)`` tuple. ``status`` is the client's status
+        (e.g. ``"active"`` or ``"suspended"``) when the ``key_id`` is known and
+        the secret matches, or ``"unknown"`` when the ``key_id`` is unknown or
+        the secret does not match. ``client`` is the matched client (even when
+        disabled), or ``None`` for an unknown/invalid key.
+    """
     key_id, secret = parse_api_key(plaintext)
     if not key_id or not secret:
-        return None
-    client = Client.query.filter_by(key_id=key_id, status="active").first()
-    if not client:
-        return None
-    if not hmac.compare_digest(client.key_hash, _hash_secret(secret)):
-        return None
-    return client
+        return None, "unknown"
+    client = Client.query.filter_by(key_id=key_id).first()
+    if not client or not hmac.compare_digest(client.key_hash, _hash_secret(secret)):
+        return None, "unknown"
+    return client, client.status
 
 
 def create_client(display_name: str, client_type: str, config: dict = None,

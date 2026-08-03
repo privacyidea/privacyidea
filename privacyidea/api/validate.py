@@ -199,6 +199,16 @@ def before_request():
         "resolver": request.User.resolver,
         "realm": request.User.realm})
 
+    # A known API key whose client is disabled (e.g. suspended) was presented:
+    # the request is not identified (the middleware left g.client_id None), but a
+    # real, previously issued key still being used is worth recording.
+    rejected = g.get("rejected_api_client")
+    if rejected:
+        g.audit_object.add_to_log(
+            {"action_detail": f"{rejected['status']} API key presented "
+                              f"(client {rejected['client_id']})"},
+            add_with_comma=True)
+
 
 @validate_blueprint.route('/offlinerefill', methods=['POST'])
 @check_user_serial_or_cred_id_in_request(request)
