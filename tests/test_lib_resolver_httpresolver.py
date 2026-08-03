@@ -407,6 +407,82 @@ class DoRequestTestCase(MyTestCase):
         self.assertEqual(self.USERNAME, received["params"]["username"])
         self.assertEqual(self.PASSWORD, received["params"]["password"])
 
+    def _captured_query(self, method, params):
+        """Returns the query string of the request which is sent for the given params"""
+        captured = {}
+
+        def client_mock(request):
+            captured["url"] = request.url
+            return 200, {}, "{}"
+
+        responses.add_callback(getattr(responses, method.upper()), "http://example.com/api", callback=client_mock)
+        config = self._make_config(method, "application/json")
+        self._make_resolver()._do_request(config, params)
+        _, _, query = captured["url"].partition("?")
+        return query
+
+    @responses.activate
+    def test_09_get_list_params_are_sent_as_repeated_keys(self):
+        # A list must result in a repeated key, not in the string representation of the list
+        self.assertEqual("phones=1&phones=2", self._captured_query("get", {"phones": ["1", "2"]}))
+
+    @responses.activate
+    def test_10_get_params_with_value_none_are_omitted(self):
+        # requests skips entries without a value instead of sending the string "None"
+        self.assertEqual("a=x", self._captured_query("get", {"a": "x", "b": None}))
+
+    @responses.activate
+    def test_11_empty_params_do_not_add_a_query_string(self):
+        self.assertEqual("", self._captured_query("get", {}))
+        self.assertEqual("", self._captured_query("delete", None))
+
+    @responses.activate
+    def test_12_query_string_of_the_preconfigured_resolvers(self):
+        # These are the query strings the shipped resolvers send. They must not change, and they
+        # especially must not end up unencoded.
+        entra_filter = "(startswith(userPrincipalName, 'te''st') or endswith(userPrincipalName, 'te''st'))"
+        self.assertEqual("%24filter=%28startswith%28userPrincipalName%2C+%27te%27%27st%27%29+or+"
+                         "endswith%28userPrincipalName%2C+%27te%27%27st%27%29%29&%24expand=memberOf",
+                         self._captured_query("get", {"$filter": entra_filter, "$expand": "memberOf"}))
+        self.assertEqual("username=elizabeth&exact=true",
+                         self._captured_query("get", {"username": "elizabeth", "exact": True}))
+
+    @responses.activate
+    def test_13_booleans_in_the_query_string_are_lowercase(self):
+        # A JSON request mapping such as '{"exact": true}' results in a Python bool. requests would render it as
+        # 'True', but the APIs expect the JSON notation.
+        self.assertEqual("exact=true&deleted=false", self._captured_query("get", {"exact": True, "deleted": False}))
+
+    @responses.activate
+    def test_14_booleans_in_a_json_body_stay_booleans(self):
+        # In contrast to the query string, a json body must contain real booleans and not the strings "true"/"false"
+        received = {}
+
+        def client_mock(request):
+            received["body"] = json.loads(request.body)
+            return 200, {}, "{}"
+
+        responses.add_callback(responses.POST, "http://example.com/api", callback=client_mock)
+        config = self._make_config("post", "application/json", '{"accountEnabled": true, "displayName": "Alice"}')
+        self._make_resolver()._do_request(config, config.request_mapping)
+
+        self.assertEqual({"accountEnabled": True, "displayName": "Alice"}, received["body"])
+        self.assertIsInstance(received["body"]["accountEnabled"], bool)
+
+    @responses.activate
+    def test_15_booleans_in_a_form_encoded_body_are_lowercase(self):
+        received = {}
+
+        def client_mock(request):
+            received["body"] = request.body
+            return 200, {}, "{}"
+
+        responses.add_callback(responses.POST, "http://example.com/api", callback=client_mock)
+        config = self._make_config("post", "application/x-www-form-urlencoded")
+        self._make_resolver()._do_request(config, {"exact": True})
+
+        self.assertEqual("exact=true", received["body"])
+
 
 class HTTPResolverTestCase(MyTestCase):
     ENDPOINT = 'http://localhost:8080/get-data'

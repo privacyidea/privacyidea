@@ -24,7 +24,7 @@ import re
 import time
 from dataclasses import dataclass
 from enum import Enum
-from urllib.parse import quote, urlencode
+from urllib.parse import quote
 
 import requests
 from pydash import get
@@ -1006,12 +1006,29 @@ class HTTPResolver(UserIdResolver):
             mapped_response[key] = value
         return mapped_response
 
+    @staticmethod
+    def _booleans_to_lowercase(params: dict | None) -> dict | None:
+        """
+        Converts boolean values to their lowercase string representation. requests renders a Python bool with str(),
+        which results in 'True'/'False', while the APIs expect the JSON notation 'true'/'false'. Booleans can enter the
+        parameters from a JSON request mapping, e.g. '{"exact": true}'.
+        Only applicable to the query string and to a form encoded body. A json body must keep the real booleans, since
+        json.dumps already writes them in the correct notation.
+
+        :param params: The request parameters, may be None
+        :return: The request parameters with all booleans converted to 'true'/'false'
+        """
+        if not params:
+            return params
+        return {key: str(value).lower() if isinstance(value, bool) else value for key, value in params.items()}
+
     def _do_request(self, config: RequestConfig, params: dict | None, censor_log: bool = False) -> Response:
         """
         Performs the HTTP request based on the provided configuration and parameters.
 
         :param config: Configuration for the HTTP request
-        :param params: Request parameters
+        :param params: Request parameters as a dict, requests encodes them. It must not be an already encoded string,
+            since requests would use it unchanged.
         :return: The response object from the HTTP request
         """
         if config.endpoint.startswith("http"):
@@ -1026,12 +1043,18 @@ class HTTPResolver(UserIdResolver):
                 # params are dict than we can pass them as json parameters to be formatted correctly
                 json_params = params
                 params = None
+        # Only for the query string and the form encoded body. A json body keeps the real booleans.
+        params = self._booleans_to_lowercase(params)
 
         start_time = time.time()
         try:
-            # dicts passed to json or data are encoded accordingly, no manual urlencoding required
+            # The params are passed as a dict, they must not be encoded here: requests encodes a dict itself with
+            # urlencode(..., doseq=True), so it additionally handles list values (repeated keys instead of the string
+            # representation of the list) and skips entries with the value None. A pre-encoded string would be used as
+            # it is, hence the params have to stay a dict.
+            # The same applies to the request body: dicts passed to json or data are encoded by requests as well.
             if config.method == HTTPMethod.GET:
-                response = requests.get(config.endpoint, params=urlencode(params or {}), headers=config.headers,
+                response = requests.get(config.endpoint, params=params, headers=config.headers,
                                         timeout=self.timeout,
                                         verify=self.tls)
             elif config.method == HTTPMethod.POST:
@@ -1047,7 +1070,7 @@ class HTTPResolver(UserIdResolver):
                                           timeout=self.timeout,
                                           verify=self.tls)
             elif config.method == HTTPMethod.DELETE:
-                response = requests.delete(config.endpoint, params=urlencode(params or {}), headers=config.headers,
+                response = requests.delete(config.endpoint, params=params, headers=config.headers,
                                            timeout=self.timeout, verify=self.tls)
             else:  # pragma: no cover
                 # Should not happen as the method is already checked in the config object
