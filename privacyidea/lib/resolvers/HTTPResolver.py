@@ -103,7 +103,7 @@ class HTTPMethod(Enum):
 
 class RequestConfig:
 
-    def __init__(self, config: dict, default_headers: dict, tags: dict | None = None, wildcard: str = "*"):
+    def __init__(self, config: dict, default_headers: dict, tags: dict | None = None):
         config = copy.deepcopy(config)
         self._method = HTTPMethod.GET
         self.method = get_required(config, METHOD)
@@ -141,7 +141,7 @@ class RequestConfig:
         # replace tags in endpoint and request mapping
         if tags:
             for tag, value in tags.items():
-                value_str = str(value).replace("*", wildcard)
+                value_str = str(value)
                 self.endpoint = self.endpoint.replace(f"{{{tag}}}", value_str)
                 if isinstance(request_mapping, dict):
                     self._replace_tags_in_dict(request_mapping, f"{{{tag}}}", value_str)
@@ -390,7 +390,7 @@ class HTTPResolver(UserIdResolver):
             log.debug("No configuration to get user by name available.")
             return login_name
 
-        config = RequestConfig(config_get_user_by_name, self.headers, {"username": login_name}, "")
+        config = RequestConfig(config_get_user_by_name, self.headers, {"username": login_name})
         user_info = self._get_user(login_name, config, ["userid"])
         user_id = user_info.get("userid", "")
         return user_id
@@ -414,7 +414,7 @@ class HTTPResolver(UserIdResolver):
         :param attributes: list of attribute names to be returned for the user. If None, all attributes are returned.
         :return:  dictionary, if no object is found, the dictionary is empty
         """
-        config = RequestConfig(self.config_get_user_by_id, self.headers, {"userid": user_id}, "")
+        config = RequestConfig(self.config_get_user_by_id, self.headers, {"userid": user_id})
         user_info = self._get_user(user_id, config, attributes)
         return user_info
 
@@ -453,7 +453,7 @@ class HTTPResolver(UserIdResolver):
             log.debug("No configuration to list users available.")
             return []
 
-        config = RequestConfig(config_get_user_list, self.headers, search_dict, self.wildcard)
+        config = RequestConfig(config_get_user_list, self.headers, self._translate_search_wildcard(search_dict))
         user_list = self._get_user_list(search_dict, config, attributes)
         return user_list
 
@@ -475,7 +475,7 @@ class HTTPResolver(UserIdResolver):
             return uid
 
         # Prepare request
-        config = RequestConfig(config_create_user, self.headers, attributes, self.wildcard)
+        config = RequestConfig(config_create_user, self.headers, attributes)
         config.headers.update(self._get_auth_header())
         request_params = config.request_mapping if config.request_mapping else {}
         request_params.update(self._pi_user_to_user_store_user(attributes))
@@ -512,7 +512,7 @@ class HTTPResolver(UserIdResolver):
             return success
 
         # Prepare Request
-        config = RequestConfig(config_delete_user, self.headers, {"userid": uid}, "")
+        config = RequestConfig(config_delete_user, self.headers, {"userid": uid})
         config.headers.update(self._get_auth_header())
         params = config.request_mapping if config.request_mapping else {}
 
@@ -544,7 +544,7 @@ class HTTPResolver(UserIdResolver):
             return success
 
         # Prepare Request
-        config = RequestConfig(config_edit_user, self.headers, {"userid": uid}, "")
+        config = RequestConfig(config_edit_user, self.headers, {"userid": uid})
         config.headers.update(self._get_auth_header())
         request_params = config.request_mapping if config.request_mapping else {}
         request_params.update(self._pi_user_to_user_store_user(attributes))
@@ -576,7 +576,7 @@ class HTTPResolver(UserIdResolver):
 
         # Prepare Request
         config = RequestConfig(self.config_user_auth, self.headers,
-                               {"userid": uid, "username": username, "password": password}, self.wildcard)
+                               {"userid": uid, "username": username, "password": password})
         request_params = config.request_mapping if config.request_mapping else {}
 
         # Request
@@ -802,7 +802,7 @@ class HTTPResolver(UserIdResolver):
             if param.get(CONFIG_USER_AUTH):
                 try:
                     RequestConfig(param.get(CONFIG_USER_AUTH), resolver.headers, {"username": test_username,
-                                                                                  "password": "test"}, "")
+                                                                                  "password": "test"})
                 except Exception as e:
                     description = f"Failed to load config to check user password: {e}"
                     return False, description
@@ -841,7 +841,7 @@ class HTTPResolver(UserIdResolver):
         """
         # Request
         user_id = user.get(self.attribute_mapping_pi_to_user_store.get("userid", ""), "")
-        config = RequestConfig(self.config_get_user_groups, self.headers, {"userid": user_id}, "")
+        config = RequestConfig(self.config_get_user_groups, self.headers, {"userid": user_id})
         config.headers.update(self._get_auth_header())
         params = config.request_mapping if config.request_mapping else {}
 
@@ -936,7 +936,7 @@ class HTTPResolver(UserIdResolver):
             return auth_header
 
         config = RequestConfig(self.authorization_config, {"Content-Type": "application/x-www-form-urlencoded"},
-                               {"username": self.username, "password": self.password}, "")
+                               {"username": self.username, "password": self.password})
 
         response = self._do_request(config, config.request_mapping, censor_log=True)
 
@@ -1080,6 +1080,18 @@ class HTTPResolver(UserIdResolver):
         :return: List of dictionaries containing user attributes
         """
         return response
+
+    def _translate_search_wildcard(self, search_dict: dict | None) -> dict:
+        """
+        Replaces the privacyIDEA wildcard '*' in the search values with the wildcard used by the user store.
+        Only search values may be translated this way. Other values, such as passwords, must be passed unchanged.
+
+        :param search_dict: dictionary containing search criteria for user attributes
+        :return: a new dictionary with the translated search values
+        """
+        if not search_dict:
+            return {}
+        return {key: str(value).replace("*", self.wildcard) for key, value in search_dict.items()}
 
     def _get_search_params(self, search_dict: dict) -> dict:
         """

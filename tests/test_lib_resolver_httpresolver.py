@@ -1248,6 +1248,69 @@ class HTTPResolverTestCase(MyTestCase):
         self.assertFalse(resolver.checkPass("111-aaa-333", "testpassword", "testuser"))
 
     @responses.activate
+    def test_24b_check_pass_password_with_asterisk(self):
+        # The search wildcard must not be applied to credentials: an asterisk in the password has to be sent as is
+        resolver = HTTPResolver()
+        config = copy.deepcopy(self.advanced_config)
+        resolver.loadConfig(config)
+        resolver.wildcard = ""
+
+        received = {}
+
+        def callback(request):
+            received.update(json.loads(request.body))
+            return 200, {}, json.dumps({"access_token": "12345"})
+
+        responses.add_callback(responses.POST, "https://example.com/auth", callback=callback)
+
+        self.assertTrue(resolver.checkPass("111-aaa-333", "P*ssw*rd", "al*ice"))
+        self.assertEqual("P*ssw*rd", received["password"])
+        self.assertEqual("al*ice", received["username"])
+
+    @responses.activate
+    def test_24c_get_auth_header_password_with_asterisk(self):
+        # Same for the service account credentials used to authorize against the user store. This path stripped
+        # asterisks unconditionally, independent of the wildcard configured for the resolver.
+        resolver = HTTPResolver()
+        config = copy.deepcopy(self.advanced_config)
+        config[CONFIG_AUTHORIZATION] = {METHOD: HTTPMethod.POST.value, ENDPOINT: "/token",
+                                        REQUEST_MAPPING: "username={username}&password={password}",
+                                        RESPONSE_MAPPING: '{"Authorization": "Bearer {access_token}"}',
+                                        HEADERS: '{"Content-Type": "application/x-www-form-urlencoded"}'}
+        config[USERNAME] = "adm*in"
+        config[PASSWORD] = "s*cr*t"
+        resolver.loadConfig(config)
+
+        received = {}
+
+        def callback(request):
+            from urllib.parse import parse_qs
+            received.update({k: v[0] for k, v in parse_qs(request.body).items()})
+            return 200, {}, json.dumps({"access_token": "12345"})
+
+        responses.add_callback(responses.POST, "https://example.com/token", callback=callback)
+
+        self.assertEqual({"Authorization": "Bearer 12345"}, resolver._get_auth_header())
+        self.assertEqual("adm*in", received["username"])
+        self.assertEqual("s*cr*t", received["password"])
+
+    @responses.activate
+    def test_24d_get_user_list_translates_search_wildcard(self):
+        # search values are still translated to the wildcard of the user store, also when they are
+        # used as a tag in the endpoint
+        resolver = HTTPResolver()
+        config = copy.deepcopy(self.advanced_config)
+        config[CONFIG_GET_USER_LIST] = {METHOD: HTTPMethod.GET.value, ENDPOINT: "/users/{username}"}
+        resolver.loadConfig(config)
+        resolver.wildcard = "%"
+
+        responses.add(responses.GET, "https://example.com/users/test%", status=200,
+                      body="""[{"login": "testuser", "id": "1234"}]""")
+        users = resolver.getUserList({"username": "test*"})
+        self.assertEqual(1, len(users))
+        self.assertEqual("https://example.com/users/test%25?login=test%25", responses.calls[0].request.url)
+
+    @responses.activate
     def test_25_get_user_groups(self):
         instance = HTTPResolver()
         config = copy.deepcopy(self.advanced_config)
@@ -2219,6 +2282,24 @@ class EntraIDResolverTestCase(MyTestCase):
         self.assertEqual("123456789", uid)
 
     @responses.activate
+    def test_16b_add_user_password_with_asterisk(self):
+        # The initial password is interpolated into passwordProfile via the {password} tag. The wildcard must not be
+        # applied to it.
+        resolver = self.set_up_resolver()
+        received = {}
+
+        def callback(request):
+            received.update(json.loads(request.body))
+            return 201, {"Content-Type": "application/json"}, json.dumps({"id": "123456789"})
+
+        responses.add_callback(responses.POST, "https://graph.microsoft.com/v1.0/users", callback=callback)
+
+        user_data = {"username": "AdeleV@contoso.com", "givenname": "Adele", "surname": "Vance",
+                     "password": "xWw*vJ]6NMw+bWH-d"}
+        self.assertEqual("123456789", resolver.add_user(user_data))
+        self.assertEqual("xWw*vJ]6NMw+bWH-d", received["passwordProfile"]["password"])
+
+    @responses.activate
     def test_17_add_user_fails(self):
         resolver = self.set_up_resolver()
 
@@ -2368,6 +2449,26 @@ class EntraIDResolverTestCase(MyTestCase):
                                callback=self.check_pass_callback)
 
         self.assertTrue(resolver.checkPass("111-aaa-333", "testpassword", "testuser"))
+
+    @responses.activate
+    def test_23b_check_pass_credentials_with_asterisk(self):
+        # EntraID does not support wildcards, so its wildcard is an empty string. It must not be applied to the
+        # credentials: an asterisk in the username or password has to reach the token endpoint unchanged.
+        from urllib.parse import parse_qs
+        resolver = self.set_up_resolver()
+        self.assertEqual("", resolver.wildcard)
+        received = {}
+
+        def callback(request):
+            received.update({k: v[0] for k, v in parse_qs(request.body).items()})
+            return 200, {}, json.dumps({"token_type": "Bearer", "access_token": "12345"})
+
+        responses.add_callback(responses.POST, "https://login.microsoftonline.com/organization/oauth2/v2.0/token",
+                               callback=callback)
+
+        self.assertTrue(resolver.checkPass("111-aaa-333", "P*ssw*rd", "al*ice"))
+        self.assertEqual("P*ssw*rd", received["password"])
+        self.assertEqual("al*ice", received["username"])
 
     @responses.activate
     def test_24_check_pass_fails(self):
@@ -3050,6 +3151,26 @@ class KeycloakResolverTestCase(MyTestCase):
         responses.add_callback(responses.POST, "http://localhost:8080/realms/master/protocol/openid-connect/token",
                                callback=special_char_callback)
         self.assertTrue(resolver.checkPass("111-aaa-333", "P@ss+w0rd&secret=1", "testuser"))
+
+    @responses.activate
+    def test_23c_check_pass_credentials_with_asterisk(self):
+        # Keycloak does not support wildcards, so its wildcard is an empty string. It must not be applied to the
+        # credentials: an asterisk in the username or password has to reach the token endpoint unchanged.
+        from urllib.parse import parse_qs
+        resolver = self.set_up_resolver()
+        self.assertEqual("", resolver.wildcard)
+        received = {}
+
+        def callback(request):
+            received.update({k: v[0] for k, v in parse_qs(request.body).items()})
+            return 200, {}, json.dumps({"token_type": "Bearer", "access_token": "12345"})
+
+        responses.add_callback(responses.POST, "http://localhost:8080/realms/master/protocol/openid-connect/token",
+                               callback=callback)
+
+        self.assertTrue(resolver.checkPass("111-aaa-333", "P*ssw*rd", "al*ice"))
+        self.assertEqual("P*ssw*rd", received["password"])
+        self.assertEqual("al*ice", received["username"])
 
     @responses.activate
     def test_24_testconnection(self):
