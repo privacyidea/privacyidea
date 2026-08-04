@@ -29,13 +29,13 @@
         subscriptSizing="dynamic">
         <mat-label i18n>Filter Users...</mat-label>
         <app-clearable-input
-          (clearButtonClick)="userService.resetFilter()"
+          (clearButtonClick)="userService.clearFilter()"
           [showClearButton]="filterHTMLInputElement.value.length > 0">
           <input
             #filterHTMLInputElement
-            [appFilterAutocomplete]="userService.apiFilterOptions"
+            [appFilterAutocomplete]="userService.apiFilterKeys"
             (input)="userService.handleFilterInput($event)"
-            [value]="userService.apiUserFilter().filterString"
+            [value]="userService.filterDraft().filterString"
             aria-label="Filter Input"
             i18n-aria-label
             i18n-placeholder
@@ -68,7 +68,7 @@
               <div class="flex ali-center">
                 {{ column.label }}
                 <div class="margin-left-16 flex">
-                  @if (apiFilter.includes(column.key)) {
+                  @if (apiFilterKeys.includes(column.key)) {
                     <button
                       (click)="onFilterClick(column.key)"
                       aria-label="Filter by {{ column.label }}"
@@ -82,13 +82,13 @@
                     </button>
                   }
                   <button
-                    (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
+                    (click)="tableUtilsService.onSortButtonClick(column.key, userService.sort)"
                     aria-label="Sort by {{ column.label }}"
                     i18n-aria-label
                     class="sort-button"
                     mat-icon-button
                     type="button">
-                    <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
+                    <mat-icon>{{ tableUtilsService.getSortIcon(column.key, userService.sort()) }}</mat-icon>
                   </button>
                 </div>
               </div>

@@ -150,41 +150,15 @@ export class TableUtilsService implements TableUtilsServiceInterface {
     );
   }
 
+  // A keyword such as "machineid & resolver" is a label for two keys that are filtered together.
   toggleKeywordInFilter(args: { keyword: string; currentValue: FilterValue }): FilterValue {
     const { keyword, currentValue } = args;
-
-    if (keyword.includes("&")) {
-      const keywords = keyword.split("&").map((k) => k.trim());
-      let newValue = currentValue;
-      for (const key of keywords) {
-        newValue = this.toggleKeywordInFilter({ keyword: key, currentValue: newValue });
-      }
-      return newValue;
-    }
-    if (currentValue.hasKey(keyword)) {
-      return currentValue.removeKey(keyword);
-    } else {
-      return currentValue.addKey(keyword);
-    }
+    return currentValue.toggleKeys(keyword.split("&").map((key) => key.trim()));
   }
 
   public toggleBooleanInFilter(args: { keyword: string; currentValue: FilterValue }): FilterValue {
     const { keyword, currentValue } = args;
-    const booleanValue = currentValue.getValueOfKey(keyword)?.toLowerCase();
-
-    if (!booleanValue) {
-      return currentValue.addEntry(keyword, "true");
-    } else {
-      const existingValue = booleanValue;
-
-      if (existingValue === "true") {
-        return currentValue.addEntry(keyword, "false");
-      } else if (existingValue === "false") {
-        return currentValue.removeKey(keyword);
-      } else {
-        return currentValue.addEntry(keyword, "true");
-      }
-    }
+    return currentValue.toggleBooleanKey(keyword);
   }
 
   isLink(columnKey: string): boolean {
