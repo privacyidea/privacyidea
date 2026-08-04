@@ -33,13 +33,21 @@ describe("UiPreferencesService", () => {
   let authService: MockAuthService;
   let userSettingsService: MockUserSettingsService;
   let themeService: { applyStoredTheme: jest.Mock };
-  let appearanceService: { applyStoredDepth: jest.Mock; applyStoredCorners: jest.Mock };
+  let appearanceService: {
+    applyStoredDepth: jest.Mock;
+    applyStoredLightSource: jest.Mock;
+    applyStoredCorners: jest.Mock;
+  };
   let navigateSpy: jest.SpyInstance;
 
   const create = (locale: string): void => {
     TestBed.resetTestingModule();
     themeService = { applyStoredTheme: jest.fn() };
-    appearanceService = { applyStoredDepth: jest.fn(), applyStoredCorners: jest.fn() };
+    appearanceService = {
+      applyStoredDepth: jest.fn(),
+      applyStoredLightSource: jest.fn(),
+      applyStoredCorners: jest.fn()
+    };
     TestBed.configureTestingModule({
       providers: [
         provideZonelessChangeDetection(),
@@ -117,11 +125,12 @@ describe("UiPreferencesService", () => {
 
   it("should apply the stored appearance levels", () => {
     create("en");
-    userSettingsService.settings.set({ depth: "flat", corner_radius: "square" });
+    userSettingsService.settings.set({ depth: "flat", light_source: "8", corner_radius: "square" });
 
     service.sync();
 
     expect(appearanceService.applyStoredDepth).toHaveBeenCalledWith("flat");
+    expect(appearanceService.applyStoredLightSource).toHaveBeenCalledWith("8");
     expect(appearanceService.applyStoredCorners).toHaveBeenCalledWith("square");
   });
 
@@ -132,6 +141,7 @@ describe("UiPreferencesService", () => {
     service.sync();
 
     expect(appearanceService.applyStoredDepth).not.toHaveBeenCalled();
+    expect(appearanceService.applyStoredLightSource).not.toHaveBeenCalled();
     expect(appearanceService.applyStoredCorners).not.toHaveBeenCalled();
   });
 

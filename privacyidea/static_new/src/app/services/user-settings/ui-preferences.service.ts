@@ -126,6 +126,9 @@ export class UiPreferencesService implements UiPreferencesServiceInterface {
         if (settings.depth !== undefined) {
           this.appearanceService.applyStoredDepth(settings.depth);
         }
+        if (settings.light_source !== undefined) {
+          this.appearanceService.applyStoredLightSource(settings.light_source);
+        }
         if (settings.corner_radius !== undefined) {
           this.appearanceService.applyStoredCorners(settings.corner_radius);
         }

@@ -72,6 +72,7 @@ KNOWN_SETTING_KEYS = {
     "locale",
     "show_loading_urls",
     "depth",
+    "light_source",
     "corner_radius",
     "starting_page",
     "token_columns",

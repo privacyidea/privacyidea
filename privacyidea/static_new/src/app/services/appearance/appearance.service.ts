@@ -40,8 +40,24 @@ import {
  * of sunken ones (the dashboard well, detail cards) together. At "flat" the raised
  * surfaces carry a hairline ring instead of a shadow and the recesses disappear.
  */
-export const DEPTH_LEVELS = ["flat", "subtle", "default", "strong"] as const;
+export const DEPTH_LEVELS = ["flat", "subtle", "default", "strong", "very-strong"] as const;
 export type DepthLevel = (typeof DEPTH_LEVELS)[number];
+
+/**
+ * Stops of the light-source dial. Each level is its index as a string, and the angle it
+ * stands for is index * LIGHT_SOURCE_STEP_ANGLE degrees, measured from due right and
+ * growing clockwise. styles.scss generates one html.light-source-<index> block per stop
+ * from a matching $light-source-steps -- keep the two counts in step.
+ */
+export const LIGHT_SOURCE_STEPS = 18;
+export const LIGHT_SOURCE_STEP_ANGLE = 360 / LIGHT_SOURCE_STEPS;
+export const LIGHT_SOURCE_LEVELS: readonly string[] = Array.from({ length: LIGHT_SOURCE_STEPS }, (_, index) =>
+  String(index)
+);
+export type LightSourceLevel = string;
+
+/** 17 * 20 = 340 degrees: light from just above the right. */
+export const DEFAULT_LIGHT_SOURCE = "17";
 
 /** The global corner radius. */
 export const CORNER_LEVELS = ["square", "default", "round", "extra-round"] as const;
@@ -57,7 +73,8 @@ interface LevelGroup<T extends string> {
 }
 
 /**
- * Owns the appearance the user picks in the UI settings: depth and corner radius.
+ * Owns the appearance the user picks in the UI settings: depth, light source and
+ * corner radius.
  * Each group is applied as a class on the HTML element, which the
  * stylesheet turns into the matching design-token values -- the tokens themselves
  * stay theme-aware, so a level does not freeze a light-mode tone into dark mode.
@@ -83,6 +100,13 @@ export class AppearanceService {
     settingKey: "depth",
     level: signal<DepthLevel>("default")
   };
+  private readonly lightSourceGroup: LevelGroup<LightSourceLevel> = {
+    levels: LIGHT_SOURCE_LEVELS,
+    fallback: DEFAULT_LIGHT_SOURCE,
+    classPrefix: "light-source-",
+    settingKey: "light_source",
+    level: signal<LightSourceLevel>(DEFAULT_LIGHT_SOURCE)
+  };
   private readonly cornerGroup: LevelGroup<CornerLevel> = {
     levels: CORNER_LEVELS,
     fallback: "default",
@@ -92,6 +116,7 @@ export class AppearanceService {
   };
 
   public readonly depth: Signal<DepthLevel> = this.depthGroup.level.asReadonly();
+  public readonly lightSource: Signal<LightSourceLevel> = this.lightSourceGroup.level.asReadonly();
   public readonly corners: Signal<CornerLevel> = this.cornerGroup.level.asReadonly();
 
   /**
@@ -103,11 +128,16 @@ export class AppearanceService {
   public initializeAppearance(): void {
     const cached = this.readCachedAppearance();
     this.applyStoredDepth(cached["depth"]);
+    this.applyStoredLightSource(cached["light_source"]);
     this.applyStoredCorners(cached["corner_radius"]);
   }
 
   public setDepth(level: DepthLevel): void {
     this.set(this.depthGroup, level);
+  }
+
+  public setLightSource(level: LightSourceLevel): void {
+    this.set(this.lightSourceGroup, level);
   }
 
   public setCorners(level: CornerLevel): void {
@@ -122,8 +152,19 @@ export class AppearanceService {
     this.apply(this.depthGroup, level);
   }
 
+  public applyStoredLightSource(level: unknown): void {
+    this.apply(this.lightSourceGroup, level);
+  }
+
   public applyStoredCorners(level: unknown): void {
     this.apply(this.cornerGroup, level);
+  }
+
+  /** Puts every appearance group back on its default level, and stores that. */
+  public resetToDefaults(): void {
+    this.setDepth(this.depthGroup.fallback);
+    this.setLightSource(this.lightSourceGroup.fallback);
+    this.setCorners(this.cornerGroup.fallback);
   }
 
   private set<T extends string>(group: LevelGroup<T>, level: T): void {
@@ -148,6 +189,7 @@ export class AppearanceService {
       APP_APPEARANCE_COOKIE_NAME,
       JSON.stringify({
         depth: this.depthGroup.level(),
+        light_source: this.lightSourceGroup.level(),
         corner_radius: this.cornerGroup.level()
       })
     );

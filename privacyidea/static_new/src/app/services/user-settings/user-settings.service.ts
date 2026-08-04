@@ -24,7 +24,14 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { catchError, map, Observable, of, shareReplay, tap, throwError } from "rxjs";
 
-export type UserSettingKey = "theme" | "locale" | "show_loading_urls" | "depth" | "corner_radius" | "dashboard";
+export type UserSettingKey =
+  | "theme"
+  | "locale"
+  | "show_loading_urls"
+  | "depth"
+  | "light_source"
+  | "corner_radius"
+  | "dashboard";
 
 export type UserSettings = Partial<Record<UserSettingKey, unknown>>;
 
