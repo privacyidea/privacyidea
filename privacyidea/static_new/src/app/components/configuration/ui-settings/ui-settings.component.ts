@@ -21,6 +21,7 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatSelectModule } from "@angular/material/select";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
+import { MatTooltipModule } from "@angular/material/tooltip";
 import { UI_LOCALES } from "@core/locale";
 import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
 import { ThemeService } from "@services/theme/theme.service";
@@ -28,7 +29,14 @@ import { UiPreferencesService, UiPreferencesServiceInterface } from "@services/u
 
 @Component({
   selector: "app-ui-settings",
-  imports: [DetailsCardComponent, MatFormFieldModule, MatIconModule, MatSelectModule, MatSlideToggleModule],
+  imports: [
+    DetailsCardComponent,
+    MatFormFieldModule,
+    MatIconModule,
+    MatSelectModule,
+    MatSlideToggleModule,
+    MatTooltipModule
+  ],
   templateUrl: "./ui-settings.component.html",
   styleUrl: "./ui-settings.component.scss"
 })
@@ -39,8 +47,9 @@ export class UISettingsComponent {
   protected readonly preferredLocale = this.uiPreferencesService.preferredLocale;
   protected readonly showLoadingUrls = this.uiPreferencesService.showLoadingUrls;
   protected readonly theme = this.themeService.visualTheme;
+  // Names the mode the toggle switches to, so it reads as the action it performs.
   protected readonly themeToggleLabel = computed(() =>
-    this.theme() === "dark" ? $localize`Switch to light theme` : $localize`Switch to dark theme`
+    this.theme() === "dark" ? $localize`Switch to light mode` : $localize`Switch to dark mode`
   );
 
   protected toggleTheme(): void {
