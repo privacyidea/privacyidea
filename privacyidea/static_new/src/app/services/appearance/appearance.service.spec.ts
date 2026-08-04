@@ -101,9 +101,11 @@ describe("AppearanceService", () => {
     expect(userSettingsService.settings()?.light_source).toBe("12");
   });
 
-  it("should offer a stop per dial position", () => {
-    expect(LIGHT_SOURCE_LEVELS).toHaveLength(LIGHT_SOURCE_STEPS);
-    expect(LIGHT_SOURCE_LEVELS[0]).toBe("0");
+  it("should offer a stop per dial position except the horizontal ones", () => {
+    expect(LIGHT_SOURCE_LEVELS).toHaveLength(LIGHT_SOURCE_STEPS - 2);
+    expect(LIGHT_SOURCE_LEVELS).not.toContain("0");
+    expect(LIGHT_SOURCE_LEVELS).not.toContain(String(LIGHT_SOURCE_STEPS / 2));
+    expect(LIGHT_SOURCE_LEVELS[0]).toBe("1");
     expect(LIGHT_SOURCE_LEVELS.at(-1)).toBe(String(LIGHT_SOURCE_STEPS - 1));
   });
 
