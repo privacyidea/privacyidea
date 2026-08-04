@@ -448,7 +448,11 @@ def build_ca_context(user, internal_admin: bool | None = None) -> "CAContext":
     from privacyidea.lib.conditional_access.context import CAContext
     source_ip = None
     if has_request_context():
-        source_ip = g.client_ip
+        # g.get, not g.client_ip: a request context is not a guarantee that before_request got as far
+        # as setting it (an AuthError raised early leaves it unset, which is why
+        # hardening_action_active re-derives it), and this must never turn an authentication into a
+        # 500. A missing source IP simply means source_ip-target policies do not apply.
+        source_ip = g.get("client_ip")
         if internal_admin is None:
             internal_admin = g.get("resolved_user", {}).get("is_local_admin", False)
     return CAContext(user=user or None, source_ip=source_ip,
