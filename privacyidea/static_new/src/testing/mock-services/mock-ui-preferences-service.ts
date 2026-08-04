@@ -21,6 +21,8 @@ import { UiPreferencesServiceInterface } from "@services/user-settings/ui-prefer
 
 export class MockUiPreferencesService implements UiPreferencesServiceInterface {
   readonly preferredLocale = signal("en");
+  readonly showLoadingUrls = signal(false);
+  setShowLoadingUrls = jest.fn((show: boolean) => this.showLoadingUrls.set(show));
   normalizeLocaleUrl = jest.fn();
   sync = jest.fn();
   switchLocale = jest.fn();

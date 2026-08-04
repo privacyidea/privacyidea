@@ -20,6 +20,7 @@ import { Component, computed, inject } from "@angular/core";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatSelectModule } from "@angular/material/select";
+import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { UI_LOCALES } from "@core/locale";
 import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
 import { ThemeService } from "@services/theme/theme.service";
@@ -27,7 +28,7 @@ import { UiPreferencesService, UiPreferencesServiceInterface } from "@services/u
 
 @Component({
   selector: "app-ui-settings",
-  imports: [DetailsCardComponent, MatFormFieldModule, MatIconModule, MatSelectModule],
+  imports: [DetailsCardComponent, MatFormFieldModule, MatIconModule, MatSelectModule, MatSlideToggleModule],
   templateUrl: "./ui-settings.component.html",
   styleUrl: "./ui-settings.component.scss"
 })
@@ -36,6 +37,7 @@ export class UISettingsComponent {
   private readonly uiPreferencesService: UiPreferencesServiceInterface = inject(UiPreferencesService);
   protected readonly locales = UI_LOCALES;
   protected readonly preferredLocale = this.uiPreferencesService.preferredLocale;
+  protected readonly showLoadingUrls = this.uiPreferencesService.showLoadingUrls;
   protected readonly theme = this.themeService.visualTheme;
   protected readonly themeToggleLabel = computed(() =>
     this.theme() === "dark" ? $localize`Switch to light theme` : $localize`Switch to dark theme`
@@ -43,6 +45,10 @@ export class UISettingsComponent {
 
   protected toggleTheme(): void {
     this.themeService.setTheme(this.theme() === "dark" ? "light" : "dark");
+  }
+
+  protected setShowLoadingUrls(show: boolean): void {
+    this.uiPreferencesService.setShowLoadingUrls(show);
   }
 
   protected selectLocale(code: string): void {

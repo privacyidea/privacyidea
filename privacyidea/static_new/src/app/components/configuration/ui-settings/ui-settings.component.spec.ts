@@ -34,6 +34,8 @@ describe("UISettingsComponent", () => {
     theme: () => "light" | "dark";
     toggleTheme: () => void;
     selectLocale: (code: string) => void;
+    showLoadingUrls: () => boolean;
+    setShowLoadingUrls: (show: boolean) => void;
   }
 
   const testable = (): TestableSettings => component as unknown as TestableSettings;
@@ -79,6 +81,13 @@ describe("UISettingsComponent", () => {
     testable().toggleTheme();
 
     expect(themeService.setTheme).toHaveBeenCalledWith("light");
+  });
+
+  it("should toggle the pending-request list", () => {
+    testable().setShowLoadingUrls(true);
+
+    expect(uiPreferencesService.setShowLoadingUrls).toHaveBeenCalledWith(true);
+    expect(testable().showLoadingUrls()).toBe(true);
   });
 
   it("should preselect the preferred locale", () => {
