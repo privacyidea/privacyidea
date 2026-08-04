@@ -136,6 +136,39 @@ const caseNotes: Record<string, FilterCaseNote> = {
 // again or are dropped, remove this set along with the whole "unsupported" mechanism.
 const unsupportedKeys = new Set(["userid", "resolver"]);
 
+function toParamValue(key: string, value: string): string {
+  if (booleanKeys.has(key)) {
+    return toBooleanParam(value) ?? value;
+  }
+  if (exactMatchKeys.has(key)) {
+    return value;
+  }
+  // The tokenrealm query param accepts a comma-separated list, so every entry is wildcarded on its own.
+  if (key === "tokenrealm") {
+    return StringUtils.splitFilterList(value)
+      .map((entry) => `*${entry}*`)
+      .join(",");
+  }
+  return `*${value}*`;
+}
+
+// A single token type maps to the `type` query param, multiple to `type_list`.
+function toTypeParams(filterEntries: [string, string][]): Record<string, string> {
+  const filterValues = new Map(filterEntries);
+  const types = [
+    ...StringUtils.splitFilterList(filterValues.get("type")),
+    ...StringUtils.splitFilterList(filterValues.get("type_list"))
+  ];
+  const uniqueTypes = Array.from(new Set(types));
+  if (uniqueTypes.length === 1) {
+    return { type: `*${uniqueTypes[0]}*` };
+  }
+  if (uniqueTypes.length > 1) {
+    return { type_list: uniqueTypes.join(",") };
+  }
+  return {};
+}
+
 export interface Tokens {
   count: number;
   current: number;
@@ -465,18 +498,17 @@ export class TokenService extends FilterableTableService implements TokenService
   override readonly filterParams = computed<Record<string, string>>(
     () => {
       const allowed = [...this.allFilterKeys(), "infokey", "infovalue"];
-      const plainKeys = exactMatchKeys;
-      const entries = this.activeFilter()
-        .allEntries.filter(([key]) => allowed.includes(key))
+      const filterEntries = this.activeFilter().allEntries;
+      const entries = filterEntries
+        // Filter unknown keys, token types are handled by toTypeParams
+        .filter(([key]) => allowed.includes(key) && key !== "type" && key !== "type_list")
+        // Normalize values
         .map(([key, value]) => [key, (value ?? "").toString().trim()] as const)
+        // Remove empty values
         .filter(([key, v]) => (key === "container_serial" ? true : StringUtils.validFilterValue(v)))
-        .map(([key, v]) => {
-          if (booleanKeys.has(key)) {
-            return [key, toBooleanParam(v) ?? v] as const;
-          }
-          return [key, plainKeys.has(key) ? v : `*${v}*`] as const;
-        });
-      return Object.fromEntries(entries) as Record<string, string>;
+        // Convert to query param values
+        .map(([key, v]) => [key, toParamValue(key, v)] as const);
+      return { ...Object.fromEntries(entries), ...toTypeParams(filterEntries) };
     },
     { equal: filterParamsEqual }
   );

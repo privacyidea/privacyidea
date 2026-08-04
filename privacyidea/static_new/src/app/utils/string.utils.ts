@@ -32,6 +32,14 @@ export class StringUtils {
     return !/^\**$/.test(value.trim());
   }
 
+  static splitFilterList(value: string | null | undefined): string[] {
+    // Splits a comma-separated filter value into its valid entries
+    return (value ?? "")
+      .split(",")
+      .map((entry) => entry.trim())
+      .filter((entry) => StringUtils.validFilterValue(entry));
+  }
+
   static splitOnce(str: string, delimiter: string): { head: string; tail: string } {
     /*
      * Splits the string at the first occurrence of the delimiter.
