@@ -82,6 +82,9 @@ class PersistentCookieValidateTestCase(MyApiTestCase):
             self.assertIn("HttpOnly", cookie)
             self.assertIn("Secure", cookie)
             self.assertIn("SameSite=Strict", cookie)
+            # Both a relative Max-Age (which the client needs) and an Expires.
+            self.assertIn("Max-Age=", cookie)
+            self.assertIn("Expires=", cookie)
             self.assertNotIn(api_key, cookie)
 
             session = AuthSession.query.filter_by(client_id=client.id).first()

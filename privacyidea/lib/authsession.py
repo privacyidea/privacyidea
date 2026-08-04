@@ -313,8 +313,15 @@ def set_persistent_cookie(response, cookie_value: str, expires_at) -> None:
     :param cookie_value: the ``series_id:counter`` value
     :param expires_at: the cookie's expiry (a datetime)
     """
+    # Emit both Max-Age and Expires: Max-Age is a relative lifetime that takes
+    # precedence per RFC 6265 and is robust against client clock skew, which a
+    # non-browser client (e.g. a credential provider relaying the cookie) needs;
+    # Expires stays as a fallback. On a rotation this is the *remaining* lifetime,
+    # since the window is fixed at issuance.
+    max_age = max(0, int((expires_at - utc_now()).total_seconds()))
     response.set_cookie(PERSISTENT_COOKIE_NAME, cookie_value,
-                        expires=expires_at, httponly=True, secure=True, samesite="Strict")
+                        max_age=max_age, expires=expires_at,
+                        httponly=True, secure=True, samesite="Strict")
 
 
 def clear_persistent_cookie(response) -> None:

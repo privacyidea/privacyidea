@@ -80,7 +80,9 @@ Issuing the cookie
 On a successful :http:post:`/validate/check` where the client sends
 ``request_persistent_cookie=1``, privacyIDEA issues a cookie when the client is
 identified, the policy allows it and the authenticating user is resolvable. The
-cookie is ``HttpOnly`` + ``Secure`` + ``SameSite=Strict`` and holds only a
+cookie is ``HttpOnly`` + ``Secure`` + ``SameSite=Strict``, carries both a
+relative ``Max-Age`` and an ``Expires`` (a non-browser client should rely on
+``Max-Age``), and holds only a
 rotating ``series_id:counter`` token — **never** the API key.
 
 Opt in **once per device** (the establishing login), not on every request: each
