@@ -20,10 +20,10 @@
 <span class="sort-header-label" [appTruncationTooltip]="hasHintTooltip() ? '' : label()">{{ label() }}</span>
 <button
   (click)="toggle()"
+  aria-label="Sort by {{ label() }}"
   class="sort-button"
-  i18n-matTooltip
+  i18n-aria-label
   mat-icon-button
-  matTooltip="Sort by {{ label() }}"
   type="button"
 >
   <mat-icon>{{ icon() }}</mat-icon>

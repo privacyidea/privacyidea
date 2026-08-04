@@ -171,13 +171,13 @@ describe("TableSortHeaderComponent", () => {
     buttons()[0].click();
     fixture.detectChanges();
 
-    expect(icons()[0]).toBe("keyboard_arrow_upward");
+    expect(icons()[0]).toBe("keyboard_arrow_up");
     expect(names()).toEqual(["alpha", "beta"]);
 
     buttons()[0].click();
     fixture.detectChanges();
 
-    expect(icons()[0]).toBe("keyboard_arrow_downward");
+    expect(icons()[0]).toBe("keyboard_arrow_down");
     expect(names()).toEqual(["beta", "alpha"]);
   });
 
@@ -198,6 +198,6 @@ describe("TableSortHeaderComponent", () => {
     buttons()[1].click();
     fixture.detectChanges();
 
-    expect(icons()).toEqual(["unfold_more", "keyboard_arrow_upward"]);
+    expect(icons()).toEqual(["unfold_more", "keyboard_arrow_up"]);
   });
 });

@@ -19,14 +19,13 @@
 import { Component, computed, input } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
-import { MatTooltip } from "@angular/material/tooltip";
 import { TableSortState } from "@components/dashboard/widgets/table-sort/table-sort";
 import { TruncationTooltipDirective } from "@components/shared/directives/truncation-tooltip.directive";
 
 @Component({
   selector: "app-table-sort-header",
   standalone: true,
-  imports: [MatIconButton, MatIcon, MatTooltip, TruncationTooltipDirective],
+  imports: [MatIconButton, MatIcon, TruncationTooltipDirective],
   templateUrl: "./table-sort-header.component.html",
   styleUrl: "./table-sort-header.component.scss"
 })
@@ -40,7 +39,7 @@ export class TableSortHeaderComponent {
     if (this.sortState().active() !== this.key()) {
       return "unfold_more";
     }
-    return this.sortState().direction() === "asc" ? "keyboard_arrow_upward" : "keyboard_arrow_downward";
+    return this.sortState().direction() === "asc" ? "keyboard_arrow_up" : "keyboard_arrow_down";
   });
 
   protected toggle(): void {
