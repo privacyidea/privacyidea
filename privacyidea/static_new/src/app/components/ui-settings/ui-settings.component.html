@@ -28,13 +28,17 @@
       i18n-title
       title="Theme">
       <div class="settings-row">
-        <app-selector-buttons
-          class="input-width-m"
-          [initialValue]="theme()"
-          [values]="themeValues"
-          [labels]="themeLabels"
-          [icons]="themeIcons"
-          (selected)="selectTheme($event)" />
+        <label class="theme-toggle">
+          <input
+            (change)="toggleTheme()"
+            [attr.aria-label]="themeToggleLabel()"
+            [checked]="theme() === 'dark'"
+            type="checkbox" />
+          <span class="theme-toggle__button"></span>
+          <span class="theme-toggle__label">
+            <mat-icon>{{ theme() === "dark" ? "dark_mode" : "light_mode" }}</mat-icon>
+          </span>
+        </label>
       </div>
     </app-details-card>
 

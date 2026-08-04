@@ -32,7 +32,7 @@ describe("UISettingsComponent", () => {
   interface TestableSettings {
     preferredLocale: () => string;
     theme: () => "light" | "dark";
-    selectTheme: (mode: "light" | "dark") => void;
+    toggleTheme: () => void;
     selectLocale: (code: string) => void;
   }
 
@@ -67,10 +67,18 @@ describe("UISettingsComponent", () => {
     expect(testable().theme()).toBe("dark");
   });
 
-  it("should apply a picked theme", () => {
-    testable().selectTheme("dark");
+  it("should toggle from light to dark", () => {
+    testable().toggleTheme();
 
     expect(themeService.setTheme).toHaveBeenCalledWith("dark");
+  });
+
+  it("should toggle from dark to light", () => {
+    themeService.visualTheme.set("dark");
+
+    testable().toggleTheme();
+
+    expect(themeService.setTheme).toHaveBeenCalledWith("light");
   });
 
   it("should preselect the preferred locale", () => {

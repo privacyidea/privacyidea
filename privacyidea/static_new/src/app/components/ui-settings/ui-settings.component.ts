@@ -16,18 +16,18 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject } from "@angular/core";
+import { Component, computed, inject } from "@angular/core";
 import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatIconModule } from "@angular/material/icon";
 import { MatSelectModule } from "@angular/material/select";
 import { UI_LOCALES } from "@core/locale";
-import { SelectorButtonsComponent } from "@components/policies/policy-edit-page/policy-panels/edit-action-tab/selector-buttons/selector-buttons.component";
 import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
 import { ThemeService } from "@services/theme/theme.service";
 import { UiPreferencesService, UiPreferencesServiceInterface } from "@services/user-settings/ui-preferences.service";
 
 @Component({
   selector: "app-ui-settings",
-  imports: [DetailsCardComponent, MatFormFieldModule, MatSelectModule, SelectorButtonsComponent],
+  imports: [DetailsCardComponent, MatFormFieldModule, MatIconModule, MatSelectModule],
   templateUrl: "./ui-settings.component.html",
   styleUrl: "./ui-settings.component.scss"
 })
@@ -37,14 +37,12 @@ export class UISettingsComponent {
   protected readonly locales = UI_LOCALES;
   protected readonly preferredLocale = this.uiPreferencesService.preferredLocale;
   protected readonly theme = this.themeService.visualTheme;
-  protected readonly themeValues = ["light", "dark"];
-  protected readonly themeLabels = [$localize`Light`, $localize`Dark`];
-  protected readonly themeIcons = ["light_mode", "dark_mode"];
+  protected readonly themeToggleLabel = computed(() =>
+    this.theme() === "dark" ? $localize`Switch to light theme` : $localize`Switch to dark theme`
+  );
 
-  protected selectTheme(mode: string | undefined): void {
-    if (mode === "light" || mode === "dark") {
-      this.themeService.setTheme(mode);
-    }
+  protected toggleTheme(): void {
+    this.themeService.setTheme(this.theme() === "dark" ? "light" : "dark");
   }
 
   protected selectLocale(code: string): void {
