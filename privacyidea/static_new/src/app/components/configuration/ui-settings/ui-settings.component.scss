@@ -18,20 +18,21 @@
  **/
 
 @use "styles";
+@use "table";
 
 .settings-container {
   @include styles.main-component-style;
   display: flex;
   flex-direction: column;
   gap: var(--global-gap);
-  // Overrides the mixin's --content-max-height: the six-card grid sits better in a
-  // slightly shorter container.
-  max-height: 78vh;
+  // A shorter container than the mixin's --content-max-height, in the same
+  // min(vh, calc(100vh - fixed-chrome)) shape: the vh wins at normal zoom, and the calc
+  // takes over once zoom shrinks the viewport enough that the toolbars would push the
+  // content off the bottom. A flat vh cuts the last card off at 200%.
+  max-height: min(78vh, calc(100vh - 192px));
+  max-width: 518px;
 }
 
-// Six cards, so the columns are set here -- the global grid class declares none, which
-// would stack them into a single scrolling column. The min() keeps a viewport narrower
-// than one card from widening the track past the container into a horizontal scroll.
 .settings-header {
   display: flex;
   flex-direction: row;
@@ -39,8 +40,27 @@
   gap: var(--half-global-gap);
 }
 
+// The cards carry the standardized widths, so they flow in rows rather than sitting in the
+// global class's grid, which declares no columns. Theme (xs) and language (s) fit a row
+// together; anything wider wraps to the next one.
 .details-cards-grid {
-  grid-template-columns: repeat(auto-fit, minmax(min(var(--card-width-s), 100%), 1fr));
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--global-gap);
+}
+
+.settings-card-xs {
+  @include table.card-width(xs);
+}
+
+.settings-card-s {
+  @include table.card-width(s);
+}
+
+.settings-card-m {
+  @include table.card-width(m);
 }
 
 app-details-card {

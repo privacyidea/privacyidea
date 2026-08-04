@@ -73,11 +73,15 @@ body {
   // 81vh at ~100% zoom, shrinking to ≈62vh at 200%. SS override below (flat 88vh).
   --detail-max-height: min(86vh, calc(100vh - 160px));
 
-  // Standardized detail-card widths, applied via the card-width() mixin.
-  --card-width-s: 400px;
-  --card-width-m: 585px;
-  --card-width-l: 728px;
-  --card-width-xl: 932px;
+  // Standardized detail-card widths, applied via the card-width() mixin. Every size is a
+  // whole number of the smallest one plus the 16px gaps between them, so cards of different
+  // sizes still line up on the same column grid however they wrap:
+  // xs..xl are the first five steps of n * 162px + (n - 1) * 16px.
+  --card-width-xs: 162px;
+  --card-width-s: 340px;
+  --card-width-m: 518px;
+  --card-width-l: 696px;
+  --card-width-xl: 874px;
 
   // Pre-baked Material elevation shadows (0..24) as CSS variables.
   // Generated at build time so that elevation can be re-skinned at runtime
@@ -136,26 +140,59 @@ body {
     inset var(--depth-x-3) var(--depth-y-3) var(--depth-blur-3) var(--mat-sys-shadow),
     inset calc(-1 * var(--depth-x-3)) calc(-1 * var(--depth-y-3)) var(--depth-blur-3) var(--mat-sys-light);
   // Side glow of the surfaces that hang off a bar rather than floating above the page
-  // (the active toolbar tab, the util groups): a purely horizontal lift, because their
-  // bottom edge meets the bar and only their top corners are rounded. Scales with
-  // --depth-scale; it lights both sides, so the light direction does not apply.
+  // (the active toolbar tab, the secondary toolbar, the util groups): a purely horizontal
+  // lift, because their bottom edge meets the bar and only their top corners are rounded.
+  // It lights both sides, so the light direction does not apply.
+  //
+  // Matched to --elevation-5's edge, with the vertical bleed suppressed by geometry:
+  //   * spread exceeds the blur by 2px, so neither the blur nor its soft tail reaches past
+  //     the top or bottom edge (cancelling the blur exactly still left an #f8f8f8 band);
+  //   * the offset exceeds the spread by 10px, pushing the shadow rect that far beyond the
+  //     left and right edges -- 2.5 blur sigmas, so the edge pixel sits at the full shadow
+  //     tone instead of somewhere on the blur's falloff. At 4px it landed on the blur's
+  //     half-strength point and read #dadada against --elevation-5's #d1d1d1.
   --side-glow:
-    calc(-8px * var(--depth-scale)) 0 calc(8px * var(--depth-scale)) -8px var(--nav-item-border),
-    calc(8px * var(--depth-scale)) 0 calc(8px * var(--depth-scale)) -8px var(--nav-item-border);
+    calc(-20px * var(--depth-scale)) 0 calc(8px * var(--depth-scale)) calc(-10px * var(--depth-scale))
+      var(--mat-sys-shadow),
+    calc(20px * var(--depth-scale)) 0 calc(8px * var(--depth-scale)) calc(-10px * var(--depth-scale))
+      var(--mat-sys-shadow);
+  // Surfaces are shaded as well as shadowed, the way neumorphism.io does it: a gradient
+  // running from the lit corner to the shadowed one, lighter-to-darker on a raised surface
+  // and darker-to-lighter on a recessed one. The gradient runs 90deg behind the dial angle,
+  // which puts its light end on the corner the light comes from, and the tint grows with
+  // --depth-scale, so at the flat step both stops collapse to one colour.
+  --depth-gradient-angle: calc(var(--dial-angle, 340deg) - 90deg);
+  --depth-tint: clamp(0%, calc(12% * var(--depth-scale)), 100%);
+  --surface-raised: linear-gradient(
+    var(--depth-gradient-angle),
+    color-mix(in srgb, var(--mat-sys-light) var(--depth-tint), var(--table-color)),
+    color-mix(in srgb, var(--mat-sys-shadow) var(--depth-tint), var(--table-color))
+  );
+
   // Recessed surfaces also darken with depth: the deeper the recess, the more of the
   // surrounding container tone is mixed into the card white. The multipliers are
   // sized so the deep steps approach the surrounding tone without overshooting it, which
   // is what the clamp guards. At scale 0 both collapse to the card white, which is what
   // makes "flat" read as flat.
-  --inset-surface-5: color-mix(
+  --inset-tone-5: color-mix(
     in srgb,
     var(--mat-sys-surface-container-high) clamp(0%, calc(40% * var(--depth-scale)), 100%),
     var(--mat-sys-surface-container-lowest)
   );
-  --inset-surface-3: color-mix(
+  --inset-tone-3: color-mix(
     in srgb,
     var(--mat-sys-surface-container) clamp(0%, calc(50% * var(--depth-scale)), 100%),
     var(--mat-sys-surface-container-lowest)
+  );
+  --inset-surface-5: linear-gradient(
+    var(--depth-gradient-angle),
+    color-mix(in srgb, var(--mat-sys-shadow) var(--depth-tint), var(--inset-tone-5)),
+    color-mix(in srgb, var(--mat-sys-light) var(--depth-tint), var(--inset-tone-5))
+  );
+  --inset-surface-3: linear-gradient(
+    var(--depth-gradient-angle),
+    color-mix(in srgb, var(--mat-sys-shadow) var(--depth-tint), var(--inset-tone-3)),
+    color-mix(in srgb, var(--mat-sys-light) var(--depth-tint), var(--inset-tone-3))
   );
 
   --double-global-padding: calc(var(--global-padding) * 2);
@@ -281,12 +318,28 @@ html.depth-flat {
   --side-glow: -1px 0 0 0 var(--mat-sys-outline-variant), 1px 0 0 0 var(--mat-sys-outline-variant);
 }
 
+// The secondary toolbar spans the full width, so at the flat step its side hairlines fall
+// outside the viewport. It takes a line on the edge it shares with the primary toolbar
+// instead -- a real border rather than a shadow, so nothing can clip it or paint over it.
+// Global rather than component-scoped so it outranks the toolbar's own box-shadow rule.
+html.depth-flat .secondary-toolbar {
+  box-shadow: none;
+  border-top: 1px solid var(--mat-sys-outline-variant);
+}
+
+// The secondary toolbar spans the full width, so at the flat step its side hairlines fall
+// outside the viewport. It takes a bottom line instead, the edge that separates it from the
+// content below. Global rather than component-scoped so it outranks the toolbar's own rule.
+html.depth-flat .secondary-toolbar {
+  box-shadow: 0 1px 0 0 var(--mat-sys-outline-variant);
+}
+
 html.depth-subtle {
   --depth-scale: 0.3;
 }
 
 html.depth-default {
-  --depth-scale: 0.55;
+  --depth-scale: 0.6;
 }
 
 html.depth-strong {
@@ -294,7 +347,7 @@ html.depth-strong {
 }
 
 html.depth-very-strong {
-  --depth-scale: 1.3;
+  --depth-scale: 1.2;
 }
 
 // Where the light comes from, as one stop of a rotary dial: --dial-angle points at it
@@ -336,7 +389,7 @@ $corner-radii: (
   padding: var(--global-padding);
   border-radius: var(--border-radius);
   box-shadow: var(--elevation-5);
-  background-color: var(--table-color);
+  background: var(--surface-raised);
   max-width: var(--max-width);
   // Cap at the viewport-aware content height (see --content-max-height) and
   // scroll internally when taller. Viewport-relative rather than `100%` so it

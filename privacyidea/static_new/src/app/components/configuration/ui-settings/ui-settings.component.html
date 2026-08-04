@@ -38,6 +38,7 @@
 
   <div class="details-cards-grid">
     <app-details-card
+      class="settings-card-xs"
       i18n-title
       title="Theme">
       <div class="settings-row">
@@ -58,6 +59,7 @@
     </app-details-card>
 
     <app-details-card
+      class="settings-card-s"
       i18n-title
       title="Language">
       <div class="settings-row">
@@ -80,6 +82,7 @@
     </app-details-card>
 
     <app-details-card
+      class="settings-card-m"
       i18n-title
       title="Pending requests">
       <div class="settings-row">
@@ -91,68 +94,71 @@
         </mat-slide-toggle>
       </div>
     </app-details-card>
+
+    <app-details-card
+      class="settings-card-m"
+      i18n-title
+      title="Corners">
+      <div class="settings-row">
+        <mat-button-toggle-group
+          (change)="selectCorners($event.value)"
+          [hideSingleSelectionIndicator]="true"
+          [value]="corners()"
+          aria-label="Corners"
+          i18n-aria-label>
+          @for (level of cornerLevels; track level.value) {
+            <mat-button-toggle [value]="level.value">{{ level.label }}</mat-button-toggle>
+          }
+        </mat-button-toggle-group>
+      </div>
+    </app-details-card>
+
+    <app-details-card
+      class="settings-card-m"
+      i18n-title
+      title="Depth">
+      <div class="settings-row">
+        <mat-button-toggle-group
+          (change)="selectDepth($event.value)"
+          [hideSingleSelectionIndicator]="true"
+          [value]="depth()"
+          aria-label="Depth"
+          i18n-aria-label>
+          @for (level of depthLevels; track level.value) {
+            <mat-button-toggle [value]="level.value">{{ level.label }}</mat-button-toggle>
+          }
+        </mat-button-toggle-group>
+      </div>
+    </app-details-card>
+
+    <app-details-card
+      class="settings-card-m"
+      i18n-title
+      title="Light source">
+      <div class="settings-row">
+        <fieldset class="light-dial">
+          <legend
+            class="light-dial__hidden-text"
+            i18n>
+            Light source
+          </legend>
+          @for (level of lightSourceLevels; track level.value) {
+            <label
+              [class]="'light-dial__slot light-dial__slot--' + level.value"
+              [matTooltip]="level.label">
+              <input
+                (change)="selectLightSource(level.value)"
+                [checked]="lightSource() === level.value"
+                name="light-source"
+                type="radio" />
+              <span class="light-dial__hidden-text">{{ level.label }}</span>
+            </label>
+          }
+          <span class="light-dial__glow"></span>
+          <span class="light-dial__pointer"></span>
+          <span class="light-dial__knob"></span>
+        </fieldset>
+      </div>
+    </app-details-card>
   </div>
-
-  <app-details-card
-    i18n-title
-    title="Corners">
-    <div class="settings-row">
-      <mat-button-toggle-group
-        (change)="selectCorners($event.value)"
-        [hideSingleSelectionIndicator]="true"
-        [value]="corners()"
-        aria-label="Corners"
-        i18n-aria-label>
-        @for (level of cornerLevels; track level.value) {
-          <mat-button-toggle [value]="level.value">{{ level.label }}</mat-button-toggle>
-        }
-      </mat-button-toggle-group>
-    </div>
-  </app-details-card>
-
-  <app-details-card
-    i18n-title
-    title="Depth">
-    <div class="settings-row">
-      <mat-button-toggle-group
-        (change)="selectDepth($event.value)"
-        [hideSingleSelectionIndicator]="true"
-        [value]="depth()"
-        aria-label="Depth"
-        i18n-aria-label>
-        @for (level of depthLevels; track level.value) {
-          <mat-button-toggle [value]="level.value">{{ level.label }}</mat-button-toggle>
-        }
-      </mat-button-toggle-group>
-    </div>
-  </app-details-card>
-
-  <app-details-card
-    i18n-title
-    title="Light source">
-    <div class="settings-row">
-      <fieldset class="light-dial">
-        <legend
-          class="light-dial__hidden-text"
-          i18n>
-          Light source
-        </legend>
-        @for (level of lightSourceLevels; track level.value) {
-          <label
-            [class]="'light-dial__slot light-dial__slot--' + level.value"
-            [matTooltip]="level.label">
-            <input
-              (change)="selectLightSource(level.value)"
-              [checked]="lightSource() === level.value"
-              name="light-source"
-              type="radio" />
-            <span class="light-dial__hidden-text">{{ level.label }}</span>
-          </label>
-        }
-        <span class="light-dial__glow"></span>
-        <span class="light-dial__pointer"></span>
-        <span class="light-dial__knob"></span>
-      </fieldset>
-    </div>
-  </app-details-card>
 </div>
