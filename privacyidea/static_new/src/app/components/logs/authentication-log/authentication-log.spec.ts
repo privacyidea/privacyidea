@@ -21,7 +21,10 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { PageEvent } from "@angular/material/paginator";
 import { MatTableDataSource } from "@angular/material/table";
 import { ROUTE_PATHS } from "@app/route_paths";
-import { AuthenticationLogEntry, AuthenticationLogService } from "@services/authentication-log/authentication-log.service";
+import {
+  AuthenticationLogEntry,
+  AuthenticationLogService
+} from "@services/authentication-log/authentication-log.service";
 import { AuthService } from "@services/auth/auth.service";
 import { ClientsService } from "@services/clients/clients.service";
 import { ContentService } from "@services/content/content.service";
@@ -232,15 +235,15 @@ describe("AuthenticationLog", () => {
     component.dataSource.set(
       new MatTableDataSource([
         ...rows,
-        { id: 3, event_type: "PIN_FAIL", timestamp: "2026-08-03T09:00:02Z", other_info: { conditional_access_dry_run: [] } }
+        {
+          id: 3,
+          event_type: "PIN_FAIL",
+          timestamp: "2026-08-03T09:00:02Z",
+          other_info: { conditional_access_dry_run: [] }
+        }
       ])
     );
     expect(component.hasInfoValues()).toBe(true);
-  });
-
-  it("formatInfo serializes other_info and tolerates null", () => {
-    expect(component.formatInfo({ a: 1 })).toBe('{"a":1}');
-    expect(component.formatInfo(null)).toBe("");
   });
 
   it("infoEntries renders key/value rows, CSV arrays, a sub-list for nested dicts and JSON for deeper nesting", () => {
@@ -316,10 +319,7 @@ describe("AuthenticationLog", () => {
         { policy_id: 3, policy_name: "Email Notification Test", threshold: 6 }
       ]
     });
-    expect(entries[0].groups?.map((group) => group.label)).toEqual([
-      "Permanent IP Block",
-      "Email Notification Test"
-    ]);
+    expect(entries[0].groups?.map((group) => group.label)).toEqual(["Permanent IP Block", "Email Notification Test"]);
     // Every group carries the prefix, so each finding is individually marked as a dry run.
     expect(entries[0].groups?.map((group) => group.prefix)).toEqual(["Dry Run:", "Dry Run:"]);
     expect(entries[0].groups?.map((group) => group.link)).toEqual([

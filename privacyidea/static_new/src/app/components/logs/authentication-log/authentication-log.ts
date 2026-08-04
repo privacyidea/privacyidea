@@ -361,7 +361,9 @@ export class AuthenticationLog {
   // The date-range picker's start/end mirror the slider *window* (its min/max), not the narrowed filter, so dragging
   // the slider leaves the picked range in place — the picker only ever defines the outer bounds. Empty when no time
   // filter is active; the end stays open while the window runs up to "now".
-  readonly rangePickerStart = computed<Date | null>(() => (this.hasTimeFilter() ? new Date(this.windowStartMs()) : null));
+  readonly rangePickerStart = computed<Date | null>(() =>
+    this.hasTimeFilter() ? new Date(this.windowStartMs()) : null
+  );
   readonly rangePickerEnd = computed<Date | null>(() =>
     this.hasTimeFilter() && !this.openEndedWindow() ? new Date(this.windowEndMs()) : null
   );
@@ -379,7 +381,9 @@ export class AuthenticationLog {
       // Only a range ending at ~now reads as a "Last X" period; a historical range stays "Custom range".
       if (now - endMs < MS_PER_DAY) {
         const duration = endMs - new Date(fromIso).getTime();
-        const preset = PRESET_LABELS.find((entry) => Math.abs(duration - entry.ms) <= Math.max(entry.ms * 0.05, MS_PER_DAY));
+        const preset = PRESET_LABELS.find(
+          (entry) => Math.abs(duration - entry.ms) <= Math.max(entry.ms * 0.05, MS_PER_DAY)
+        );
         if (preset) {
           return preset.label;
         }
@@ -712,10 +716,6 @@ export class AuthenticationLog {
   getEventTypeClass(value: string): string {
     const outcome = this.outcomeByEventType().get(value);
     return outcome ? (OUTCOME_CLASS[outcome] ?? "") : "";
-  }
-
-  formatInfo(value: AuthenticationLogEntry["other_info"]): string {
-    return value ? JSON.stringify(value) : "";
   }
 
   // Render other_info as "Key: value" rows. Scalars show as-is and scalar arrays as a comma-separated list. A nested
