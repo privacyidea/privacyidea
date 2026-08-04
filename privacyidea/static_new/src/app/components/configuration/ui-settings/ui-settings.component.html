@@ -63,5 +63,18 @@
         </mat-form-field>
       </div>
     </app-details-card>
+
+    <app-details-card
+      i18n-title
+      title="Pending requests">
+      <div class="settings-row">
+        <mat-slide-toggle
+          (change)="setShowLoadingUrls($event.checked)"
+          [checked]="showLoadingUrls()"
+          i18n>
+          Show the endpoints being requested
+        </mat-slide-toggle>
+      </div>
+    </app-details-card>
   </div>
 </div>

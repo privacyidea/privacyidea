@@ -13,7 +13,23 @@
   }
 }
 
+:host {
+  // Tint shared by the progress bar and the pending-request list, so the two read
+  // as one unobtrusive indicator.
+  --loading-indicator-color: var(--mat-sys-primary);
+  --loading-indicator-opacity: 0.33;
+}
+
 .progress-bar {
+  // Four times the Material default of 4px: a bar pinned to the very bottom edge is
+  // easy to miss, and the tokens keep the `top` calc below in sync with it.
+  --mat-progress-bar-track-height: 16px;
+  --mat-progress-bar-active-indicator-height: 16px;
+  --mat-progress-bar-active-indicator-color: var(--loading-indicator-color);
+  --mat-progress-bar-track-color: transparent;
+
+  opacity: var(--loading-indicator-opacity);
+
   position: fixed;
   top: calc(
     100% - max(var(--mat-progress-bar-track-height, 4px), var(--mat-progress-bar-active-indicator-height, 4px))
@@ -25,17 +41,21 @@
 
 .loading-urls-container {
   position: fixed;
-  bottom: 1vh;
-  right: 0;
+  bottom: 2vh;
+  right: 1vh;
   z-index: 9999;
+}
+
+.loading-url__count {
+  font-variant-numeric: tabular-nums;
 }
 
 .loading-url {
   margin-left: auto;
   margin-right: var(--global-padding);
   margin-bottom: 2px;
-  color: var(--mat-sys-primary);
-  opacity: 0.33;
+  color: var(--loading-indicator-color);
+  opacity: var(--loading-indicator-opacity);
 }
 
 .admin-layout {

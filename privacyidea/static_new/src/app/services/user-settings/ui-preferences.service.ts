@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { computed, inject, Injectable, LOCALE_ID, Signal } from "@angular/core";
+import { computed, inject, Injectable, LOCALE_ID, Signal, signal } from "@angular/core";
 import {
   clearLocaleAttempt,
   isKnownLocale,
@@ -34,6 +34,10 @@ import { UserSettingsService, UserSettingsServiceInterface } from "@services/use
 
 export interface UiPreferencesServiceInterface {
   readonly preferredLocale: Signal<string>;
+
+  readonly showLoadingUrls: Signal<boolean>;
+
+  setShowLoadingUrls(show: boolean): void;
 
   normalizeLocaleUrl(): void;
 
@@ -57,6 +61,7 @@ export class UiPreferencesService implements UiPreferencesServiceInterface {
   private readonly userSettingsService: UserSettingsServiceInterface = inject(UserSettingsService);
   private readonly themeService = inject(ThemeService);
   private readonly localeId = inject(LOCALE_ID);
+  private readonly _showLoadingUrls = signal(false);
 
   /** The locale of the bundle the app is currently running in. */
   public readonly currentLocale = normalizeLocale(this.localeId);
@@ -77,6 +82,18 @@ export class UiPreferencesService implements UiPreferencesServiceInterface {
     }
     return this.currentLocale;
   });
+
+  /**
+   * Whether the endpoints of the requests in flight are listed next to the loading
+   * bar. A diagnostic aid, off unless the user asked for it.
+   */
+  public readonly showLoadingUrls: Signal<boolean> = this._showLoadingUrls.asReadonly();
+
+  /** Turns the pending-request list on or off and remembers the choice. */
+  public setShowLoadingUrls(show: boolean): void {
+    this._showLoadingUrls.set(show);
+    this.userSettingsService.setSetting("show_loading_urls", show).subscribe({ error: () => undefined });
+  }
 
   /**
    * Aligns the URL with the bundle that is actually running. A path asking for a locale the
@@ -101,6 +118,7 @@ export class UiPreferencesService implements UiPreferencesServiceInterface {
         if (settings.theme !== undefined) {
           this.themeService.applyStoredTheme(settings.theme);
         }
+        this._showLoadingUrls.set(settings.show_loading_urls === true);
         this.applyLocale(settings.locale);
       },
       error: () => undefined

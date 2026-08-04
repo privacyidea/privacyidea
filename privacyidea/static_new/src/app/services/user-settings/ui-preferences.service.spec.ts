@@ -84,6 +84,33 @@ describe("UiPreferencesService", () => {
     expect(themeService.applyStoredTheme).not.toHaveBeenCalled();
   });
 
+  it("should apply the stored pending-request preference", () => {
+    create("en");
+    userSettingsService.settings.set({ show_loading_urls: true });
+
+    service.sync();
+
+    expect(service.showLoadingUrls()).toBe(true);
+  });
+
+  it("should treat an absent pending-request preference as off", () => {
+    create("en");
+    userSettingsService.settings.set({});
+
+    service.sync();
+
+    expect(service.showLoadingUrls()).toBe(false);
+  });
+
+  it("should store a changed pending-request preference", () => {
+    create("en");
+
+    service.setShowLoadingUrls(true);
+
+    expect(service.showLoadingUrls()).toBe(true);
+    expect(userSettingsService.settings()?.show_loading_urls).toBe(true);
+  });
+
   it("should do nothing while nobody is logged in", () => {
     create("en");
     authService.isAuthenticated.set(false);
