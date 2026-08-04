@@ -28,7 +28,9 @@
       i18n-title
       title="Theme">
       <div class="settings-row">
-        <label class="theme-toggle">
+        <label
+          [matTooltip]="themeToggleLabel()"
+          class="theme-toggle">
           <input
             (change)="toggleTheme()"
             [attr.aria-label]="themeToggleLabel()"
@@ -72,7 +74,7 @@
           (change)="setShowLoadingUrls($event.checked)"
           [checked]="showLoadingUrls()"
           i18n>
-          Show the endpoints being requested
+          Show endpoints being requested
         </mat-slide-toggle>
       </div>
     </app-details-card>
