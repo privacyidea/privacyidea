@@ -963,7 +963,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
             conditions=[{"condition_type": str(ConditionType.USER_ROLE),
                          "operator": str(ConditionOperator.NOT_IN),
                          "value": [str(AuthLogUserRole.ADMIN_INTERNAL)]}],
-            target=LockoutTarget.SOURCE_IP)
+            target=LockoutTarget.SOURCE_IP, priority=1)
 
         # The local DB admin gets in: pre-auth the role is admin-internal, taken
         # from g.resolved_user (before_request already looked the name up), so the

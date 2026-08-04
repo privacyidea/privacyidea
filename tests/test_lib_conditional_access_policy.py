@@ -688,9 +688,9 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         return {"condition_type": str(condition_type), "operator": str(operator),
                 "value": value if value is not None else [str(AuthLogUserRole.USER)], **extra}
 
-    def _create_with_conditions(self, name, conditions):
+    def _create_with_conditions(self, name, conditions, priority=1):
         return create_lockout_policy(name, 600, ["PIN_FAIL"], [_stage()], target=LockoutTarget.USER,
-                                     conditions=conditions)
+                                     priority=priority, conditions=conditions)
 
     def test_29_conditions_round_trip(self):
         policy_id = self._create_with_conditions("Conditioned", [self._condition()])
@@ -702,7 +702,7 @@ class LockoutPolicyCrudTestCase(MyTestCase):
 
     def test_30_conditions_are_optional(self):
         policy_id = create_lockout_policy("Unconditioned", 600, ["PIN_FAIL"], [_stage()],
-                                          target=LockoutTarget.USER)
+                                          target=LockoutTarget.USER, priority=1)
         self.assertListEqual([], get_lockout_policy(policy_id)["conditions"])
 
     def test_31_condition_values_are_deduplicated(self):

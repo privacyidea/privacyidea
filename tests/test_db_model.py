@@ -832,13 +832,13 @@ class LockoutPolicyTestCase(MyTestCase):
         reloaded.delete()
 
     def test_04_conditions_round_trip_and_cascade(self):
-        # A policy carries its applicability conditions as child rows. An unkeyed
-        # condition stores the empty string in "key", and the JSON value holds the
-        # list the set-membership operators compare against.
+        # A policy carries its applicability conditions as child rows, the JSON value
+        # holding the list the set-membership operators compare against.
         policy = LockoutPolicy(name="Realm scoped policy",
                                counter_types_to_track=[AuthEventType.MFA_FAIL],
                                time_window_seconds=600,
                                target=LockoutTarget.USER,
+                               priority=3,
                                conditions=[
                                    LockoutPolicyCondition(condition_type="USER_REALM", operator="IN",
                                                           value=["sales", "support"]),
@@ -863,11 +863,13 @@ class LockoutPolicyTestCase(MyTestCase):
     def test_05_condition_is_unique_per_type(self):
         # Conditions are ANDed, so two of the same type on one policy could only
         # narrow to a contradiction; the (policy_id, condition_type) constraint
-        # rejects them.
+        # rejects them. Every other not-null column is filled in, so the
+        # IntegrityError can only be that constraint.
         policy = LockoutPolicy(name="Duplicate condition policy",
                                counter_types_to_track=[AuthEventType.MFA_FAIL],
                                time_window_seconds=600,
                                target=LockoutTarget.USER,
+                               priority=4,
                                conditions=[
                                    LockoutPolicyCondition(condition_type="USER_REALM", operator="IN",
                                                           value=["sales"]),
