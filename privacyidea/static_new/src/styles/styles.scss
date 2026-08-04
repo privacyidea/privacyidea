@@ -101,8 +101,8 @@ body {
   --depth-dir-y: 1;
 
   // The direction factors are the components of a unit vector (see the html.light-source-*
-  // blocks), so a diagonal light contributes 0.7071 per axis. The base distances are sized
-  // for that: 3/6/10px land on the 2/4/7px the slots had when the factors were plain +-1.
+  // blocks), so a diagonal light contributes 0.7071 per axis. These are the distances at
+  // scale 1; every step of the depth setting sits below that, so the shadows stay soft.
   --depth-x-3: calc(3px * var(--depth-scale) * var(--depth-dir-x));
   --depth-y-3: calc(3px * var(--depth-scale) * var(--depth-dir-y));
   --depth-blur-3: calc(6px * var(--depth-scale));
@@ -144,10 +144,9 @@ body {
     calc(8px * var(--depth-scale)) 0 calc(8px * var(--depth-scale)) -8px var(--nav-item-border);
   // Recessed surfaces also darken with depth: the deeper the recess, the more of the
   // surrounding container tone is mixed into the card white. The multipliers are
-  // calibrated so scale 1 reproduces the original tones (surface-container-low for
-  // level 5, the container/white midpoint for level 3) and the clamp keeps the deepest
-  // steps from overshooting the tone they mix toward. At scale 0 both collapse to the
-  // card white, which is what makes "flat" read as flat.
+  // sized so the deep steps approach the surrounding tone without overshooting it, which
+  // is what the clamp guards. At scale 0 both collapse to the card white, which is what
+  // makes "flat" read as flat.
   --inset-surface-5: color-mix(
     in srgb,
     var(--mat-sys-surface-container-high) clamp(0%, calc(40% * var(--depth-scale)), 100%),
@@ -283,19 +282,19 @@ html.depth-flat {
 }
 
 html.depth-subtle {
-  --depth-scale: 0.5;
+  --depth-scale: 0.3;
 }
 
 html.depth-default {
-  --depth-scale: 1;
+  --depth-scale: 0.55;
 }
 
 html.depth-strong {
-  --depth-scale: 1.75;
+  --depth-scale: 0.9;
 }
 
 html.depth-very-strong {
-  --depth-scale: 2.5;
+  --depth-scale: 1.3;
 }
 
 // Where the light comes from, as one stop of a rotary dial: --dial-angle points at it

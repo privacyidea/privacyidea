@@ -82,7 +82,7 @@ export class UISettingsComponent {
     { value: "extra-round", label: $localize`Extra round` }
   ];
   // Names the mode the toggle switches to, so it reads as the action it performs.
-  protected readonly resetTooltip = $localize`Reset the appearance to its defaults`;
+  protected readonly resetTooltip = $localize`Reset all UI settings to their defaults`;
   protected readonly themeToggleLabel = computed(() =>
     this.theme() === "dark" ? $localize`Switch to light mode` : $localize`Switch to dark mode`
   );
@@ -91,8 +91,13 @@ export class UISettingsComponent {
     this.themeService.setTheme(this.theme() === "dark" ? "light" : "dark");
   }
 
-  protected resetAppearance(): void {
+  protected resetSettings(): void {
     this.appearanceService.resetToDefaults();
+    this.themeService.setTheme("light");
+    this.uiPreferencesService.setShowLoadingUrls(false);
+    // Last, because a language other than the one running is a full-page navigation,
+    // which would cancel the requests above.
+    this.uiPreferencesService.switchLocale("en");
   }
 
   protected selectDepth(level: DepthLevel): void {
