@@ -68,6 +68,40 @@
 
     <app-details-card
       i18n-title
+      title="Depth">
+      <div class="settings-row">
+        <mat-button-toggle-group
+          (change)="selectDepth($event.value)"
+          [hideSingleSelectionIndicator]="true"
+          [value]="depth()"
+          aria-label="Depth"
+          i18n-aria-label>
+          @for (level of depthLevels; track level.value) {
+            <mat-button-toggle [value]="level.value">{{ level.label }}</mat-button-toggle>
+          }
+        </mat-button-toggle-group>
+      </div>
+    </app-details-card>
+
+    <app-details-card
+      i18n-title
+      title="Corners">
+      <div class="settings-row">
+        <mat-button-toggle-group
+          (change)="selectCorners($event.value)"
+          [hideSingleSelectionIndicator]="true"
+          [value]="corners()"
+          aria-label="Corners"
+          i18n-aria-label>
+          @for (level of cornerLevels; track level.value) {
+            <mat-button-toggle [value]="level.value">{{ level.label }}</mat-button-toggle>
+          }
+        </mat-button-toggle-group>
+      </div>
+    </app-details-card>
+
+    <app-details-card
+      i18n-title
       title="Pending requests">
       <div class="settings-row">
         <mat-slide-toggle

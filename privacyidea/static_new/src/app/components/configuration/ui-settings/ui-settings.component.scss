@@ -24,6 +24,16 @@
   display: flex;
   flex-direction: column;
   gap: var(--global-gap);
+  // Overrides the mixin's --content-max-height: the six-card grid sits better in a
+  // slightly shorter container.
+  max-height: 78vh;
+}
+
+// Six cards, so the columns are set here -- the global grid class declares none, which
+// would stack them into a single scrolling column. The min() keeps a viewport narrower
+// than one card from widening the track past the container into a horizontal scroll.
+.details-cards-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(var(--card-width-s), 100%), 1fr));
 }
 
 app-details-card {

@@ -91,13 +91,18 @@ body {
   // deep dashboard recess; --inset-shadow-3 is a shallower step between it and flat.
   // Each level pairs with an --inset-surface-* background tone that sits between the
   // surrounding grey and a card's white, so the recess reads correctly.
+  //
+  // Both levels scale with --inset-depth, which the UI settings drive through the
+  // html.depth-* blocks below. At depth 1 the geometry is the original one; at 0 the
+  // offsets and blurs collapse and nothing is painted.
+  --inset-depth: 1;
   --inset-shadow-5:
-    inset 0 3px 5px -1px var(--dashboard-shadow-color),
-    inset 0 5px 8px 0 var(--dashboard-shadow-color),
-    inset 0 1px 14px 0 var(--dashboard-shadow-color);
+    inset 0 calc(3px * var(--inset-depth)) calc(5px * var(--inset-depth)) -1px var(--dashboard-shadow-color),
+    inset 0 calc(5px * var(--inset-depth)) calc(8px * var(--inset-depth)) 0 var(--dashboard-shadow-color),
+    inset 0 calc(1px * var(--inset-depth)) calc(14px * var(--inset-depth)) 0 var(--dashboard-shadow-color);
   --inset-shadow-3:
-    inset 0 2px 4px -1px var(--dashboard-shadow-color),
-    inset 0 1px 6px 0 var(--dashboard-shadow-color);
+    inset 0 calc(2px * var(--inset-depth)) calc(4px * var(--inset-depth)) -1px var(--dashboard-shadow-color),
+    inset 0 calc(1px * var(--inset-depth)) calc(6px * var(--inset-depth)) 0 var(--dashboard-shadow-color);
   --inset-surface-5: var(--mat-sys-surface-container-low);
   // Midpoint of the surrounding grey (surface-container, #e6e6e6 in light mode) and
   // the card white (surface-container-lowest, #fafafa): #f0f0f0.
@@ -202,6 +207,65 @@ body {
   --drawer-width-self-service: 256px;
 
   --mat-menu-container-color: var(--mat-sys-surface-container-low);
+}
+
+// Appearance levels the user picks in UI Settings. AppearanceService stamps one class
+// per group on <html>, which outranks the :root defaults above and is inherited by the
+// CDK overlay container, so Material panels follow along. Every value stays a var()
+// reference: writing literal shadows here would freeze one theme's tone into the other.
+
+// One depth scale drives both directions: the raised --elevation-* slots and the
+// recessed --inset-depth multiplier. Every step keeps the elevation slots ordered
+// (3 < 5 < 8) -- the app steps 5 -> 8 to express a hover lift, so an unordered step
+// would stop hovers from reading as lifts.
+//
+// "flat" replaces the shadows with a hairline ring: a spread-only box-shadow rather
+// than a real border, so the ~49 containers that consume --elevation-5 keep their
+// box size. The 2px ring on slot 8 keeps the hover lift perceptible without depth.
+html.depth-flat {
+  --elevation-3: 0 0 0 1px var(--mat-sys-outline-variant);
+  --elevation-5: 0 0 0 1px var(--mat-sys-outline-variant);
+  --elevation-8: 0 0 0 2px var(--mat-sys-outline-variant);
+  --inset-depth: 0;
+}
+
+html.depth-subtle {
+  --elevation-3: var(--mat-elevation-2);
+  --elevation-5: var(--mat-elevation-3);
+  --elevation-8: var(--mat-elevation-5);
+  --inset-depth: 0.5;
+}
+
+html.depth-default {
+  --elevation-3: var(--mat-elevation-3);
+  --elevation-5: var(--mat-elevation-5);
+  --elevation-8: var(--mat-elevation-8);
+  --inset-depth: 1;
+}
+
+html.depth-strong {
+  --elevation-3: var(--mat-elevation-5);
+  --elevation-5: var(--mat-elevation-8);
+  --elevation-8: var(--mat-elevation-12);
+  --inset-depth: 1.75;
+}
+
+// Capped at 12px: --border-radius feeds --mat-sys-corner-extra-small, and beyond 12px
+// Material's outlined form fields widen their notch gap and horizontal padding, which
+// shifts the input text instead of just rounding a corner. "square" is 0px rather than
+// a bare 0 because the value lands inside Material's max() calls, where a unitless zero
+// is not a length and would invalidate the declaration.
+$corner-radii: (
+  "square": 0px,
+  "default": 4px,
+  "round": 8px,
+  "extra-round": 12px
+);
+
+@each $name, $radius in $corner-radii {
+  html.corner-#{$name} {
+    --border-radius: #{$radius};
+  }
 }
 
 @mixin main-component-style {

@@ -18,6 +18,7 @@
  **/
 import { provideZonelessChangeDetection, signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { AppearanceService, CornerLevel, DepthLevel } from "@services/appearance/appearance.service";
 import { ThemeService } from "@services/theme/theme.service";
 import { UiPreferencesService } from "@services/user-settings/ui-preferences.service";
 import { MockUiPreferencesService } from "@testing/mock-services/mock-ui-preferences-service";
@@ -28,6 +29,12 @@ describe("UISettingsComponent", () => {
   let component: UISettingsComponent;
   let uiPreferencesService: MockUiPreferencesService;
   let themeService: { visualTheme: ReturnType<typeof signal<"light" | "dark">>; setTheme: jest.Mock };
+  let appearanceService: {
+    depth: ReturnType<typeof signal<DepthLevel>>;
+    corners: ReturnType<typeof signal<CornerLevel>>;
+    setDepth: jest.Mock;
+    setCorners: jest.Mock;
+  };
 
   interface TestableSettings {
     preferredLocale: () => string;
@@ -36,17 +43,28 @@ describe("UISettingsComponent", () => {
     selectLocale: (code: string) => void;
     showLoadingUrls: () => boolean;
     setShowLoadingUrls: (show: boolean) => void;
+    depth: () => DepthLevel;
+    corners: () => CornerLevel;
+    selectDepth: (level: DepthLevel) => void;
+    selectCorners: (level: CornerLevel) => void;
   }
 
   const testable = (): TestableSettings => component as unknown as TestableSettings;
 
   beforeEach(async () => {
     themeService = { visualTheme: signal<"light" | "dark">("light"), setTheme: jest.fn() };
+    appearanceService = {
+      depth: signal<DepthLevel>("default"),
+      corners: signal<CornerLevel>("default"),
+      setDepth: jest.fn((level: DepthLevel) => appearanceService.depth.set(level)),
+      setCorners: jest.fn((level: CornerLevel) => appearanceService.corners.set(level))
+    };
     await TestBed.configureTestingModule({
       imports: [UISettingsComponent],
       providers: [
         provideZonelessChangeDetection(),
         { provide: ThemeService, useValue: themeService },
+        { provide: AppearanceService, useValue: appearanceService },
         { provide: UiPreferencesService, useClass: MockUiPreferencesService }
       ]
     }).compileComponents();
@@ -81,6 +99,20 @@ describe("UISettingsComponent", () => {
     testable().toggleTheme();
 
     expect(themeService.setTheme).toHaveBeenCalledWith("light");
+  });
+
+  it("should apply a picked depth level", () => {
+    testable().selectDepth("flat");
+
+    expect(appearanceService.setDepth).toHaveBeenCalledWith("flat");
+    expect(testable().depth()).toBe("flat");
+  });
+
+  it("should apply a picked corner radius", () => {
+    testable().selectCorners("square");
+
+    expect(appearanceService.setCorners).toHaveBeenCalledWith("square");
+    expect(testable().corners()).toBe("square");
   });
 
   it("should toggle the pending-request list", () => {
