@@ -82,7 +82,7 @@ export class UISettingsComponent {
     { value: "extra-round", label: $localize`Extra round` }
   ];
   // Names the mode the toggle switches to, so it reads as the action it performs.
-  protected readonly resetTooltip = $localize`Reset all UI settings to their defaults`;
+  protected readonly resetTooltip = $localize`Reset UI settings to defaults`;
   protected readonly themeToggleLabel = computed(() =>
     this.theme() === "dark" ? $localize`Switch to light mode` : $localize`Switch to dark mode`
   );
