@@ -6,7 +6,7 @@ from flask.cli import AppGroup
 from privacyidea.lib.container import get_container_generator
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.containers.container_info import TokenContainerInfoData
-from privacyidea.lib.error import ResolverError
+from privacyidea.lib.error import PolicyError, ResolverError
 from privacyidea.lib.utils import is_true
 
 
@@ -167,8 +167,11 @@ def delete_info(ctx, key):
     """
     for clist in ctx.obj['containers']:
         for container in clist:
-            container.delete_container_info(key=key)
-            click.echo(f"Deleted info {key} for container {container.serial}")
+            try:
+                container.delete_container_info(key=key)
+                click.echo(f"Deleted info {key} for container {container.serial}")
+            except PolicyError as e:
+                click.echo(f"Cannot delete info {key} for container {container.serial}: {e}")
 
 
 @findcontainer.command('set_description')
