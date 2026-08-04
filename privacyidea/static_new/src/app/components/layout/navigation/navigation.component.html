@@ -249,21 +249,6 @@
   </mat-toolbar>
 }
 
-@if (activeSection() === "settings") {
-  <mat-toolbar
-    class="secondary-toolbar"
-    appOverflowNav>
-    <ng-container *ngTemplateOutlet="footerText"></ng-container>
-    <a
-      [ngClass]="contentService.routeUrl() === ROUTE_PATHS.SETTINGS ? 'sub-nav-active' : ''"
-      [routerLink]="[ROUTE_PATHS.SETTINGS]">
-      <mat-icon>settings</mat-icon>
-      <span i18n>Settings</span>
-    </a>
-    <ng-container *ngTemplateOutlet="supportDocs"></ng-container>
-  </mat-toolbar>
-}
-
 @if (activeSection() === "token") {
   <mat-toolbar
     class="secondary-toolbar"
@@ -651,6 +636,14 @@
           <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
         <span i18n>Create Periodic Task</span>
+      </a>
+    }
+    @if (contentService.routeUrl() === ROUTE_PATHS.SETTINGS) {
+      <a
+        class="sub-nav-active"
+        [routerLink]="[ROUTE_PATHS.SETTINGS]">
+        <mat-icon>settings</mat-icon>
+        <span i18n>UI Settings</span>
       </a>
     }
     <ng-container *ngTemplateOutlet="supportDocs"></ng-container>

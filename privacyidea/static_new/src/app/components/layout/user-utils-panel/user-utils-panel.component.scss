@@ -72,7 +72,6 @@ $font-size-default: 14px;
 .node-text {
   @include text-label;
   width: 64px;
-  max-width: 12rem;
   overflow: hidden;
   text-overflow: ellipsis;
 }

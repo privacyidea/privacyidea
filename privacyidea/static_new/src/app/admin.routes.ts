@@ -85,10 +85,6 @@ export const routes: Routes = [
     canDeactivate: [pendingChangesGuard]
   },
   {
-    path: "settings",
-    component: SettingsComponent
-  },
-  {
     path: "tokens",
     children: [
       { path: "", component: TokenTableComponent },
@@ -177,6 +173,7 @@ export const routes: Routes = [
       },
       { path: "subscription", component: SubscriptionComponent },
       { path: "system", component: SystemConfigComponent, canDeactivate: [pendingChangesGuard] },
+      { path: "ui-settings", component: SettingsComponent },
       { path: "tokens", component: TokenTypeConfigComponent, canDeactivate: [pendingChangesGuard] }
     ]
   },
