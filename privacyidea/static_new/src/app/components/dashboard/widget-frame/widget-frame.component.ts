@@ -22,6 +22,7 @@ import { Component, computed, inject, input, viewChild } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatProgressSpinner } from "@angular/material/progress-spinner";
+import { MatTooltip } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
 import { DashboardWidget, WidgetInstance } from "@models/dashboard";
 import { DashboardLayoutService, DashboardLayoutServiceInterface } from "@services/dashboard/dashboard-layout.service";
@@ -30,7 +31,7 @@ import { WidgetRegistryService, WidgetRegistryServiceInterface } from "@services
 @Component({
   selector: "app-widget-frame",
   standalone: true,
-  imports: [NgComponentOutlet, MatIcon, MatIconButton, MatProgressSpinner, CdkDragHandle, RouterLink],
+  imports: [NgComponentOutlet, MatIcon, MatIconButton, MatProgressSpinner, MatTooltip, CdkDragHandle, RouterLink],
   templateUrl: "./widget-frame.component.html",
   styleUrl: "./widget-frame.component.scss"
 })
@@ -65,6 +66,11 @@ export class WidgetFrameComponent {
   protected readonly canReload = computed(() => {
     const instance = this.outlet()?.componentInstance as DashboardWidget | undefined;
     return instance?.canReload() ?? true;
+  });
+
+  protected readonly refreshFailed = computed(() => {
+    const instance = this.outlet()?.componentInstance as DashboardWidget | undefined;
+    return instance?.refreshFailed() ?? false;
   });
 
   protected readonly headerIcon = computed(() => this.widgetType()?.headerIcon ?? null);

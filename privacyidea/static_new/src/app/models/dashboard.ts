@@ -31,7 +31,10 @@ export type WidgetTypeId =
   | "administration"
   | "policies"
   | "events"
-  | "subscriptions";
+  | "subscriptions"
+  | "certificate-health"
+  | "resolver-timing"
+  | "notification-delivery";
 
 export interface WidgetSize {
   cols: number;
@@ -51,6 +54,7 @@ export abstract class DashboardWidget {
   readonly state = signal<WidgetState>("loading");
   readonly loading = computed(() => this.state() === "loading");
   readonly partialLoading = computed(() => false);
+  readonly refreshFailed = computed(() => false);
   readonly canReload = computed(() => true);
   readonly titleRoute = computed<string | null>(() => null);
 

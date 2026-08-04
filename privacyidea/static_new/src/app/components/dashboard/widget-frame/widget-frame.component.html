@@ -50,6 +50,17 @@
           i18n-aria-label />
       }
 
+      @if (refreshFailed()) {
+        <mat-icon
+          class="widget-action widget-stale"
+          matTooltip="Refresh failed"
+          i18n-matTooltip
+          aria-label="Refresh failed"
+          i18n-aria-label>
+          warning
+        </mat-icon>
+      }
+
       @if (showReload()) {
         <button
           mat-icon-button
