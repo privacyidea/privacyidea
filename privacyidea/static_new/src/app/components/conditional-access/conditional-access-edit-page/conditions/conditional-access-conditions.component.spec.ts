@@ -203,6 +203,21 @@ describe("ConditionalAccessConditionsComponent", () => {
     expect(spy).toHaveBeenCalledWith([]);
   });
 
+  // Replacing an existing condition maps over the list, so the pass-through arm has to keep a sibling
+  // of another type intact. Distinct from the append case below, which never runs the map at all.
+  it("should keep the other condition untouched when replacing one of two", () => {
+    setConditions([
+      { id: 1, condition_type: "USER_REALM", operator: "IN", value: ["sales"] },
+      { id: 2, condition_type: "USER_ROLE", operator: "IN", value: ["user"] }
+    ]);
+    const spy = jest.spyOn(component.conditionsChange, "emit");
+    component.onValuesChange("USER_REALM", ["support"]);
+    expect(spy).toHaveBeenCalledWith([
+      { id: 1, condition_type: "USER_REALM", operator: "IN", value: ["support"] },
+      { id: 2, condition_type: "USER_ROLE", operator: "IN", value: ["user"] }
+    ]);
+  });
+
   it("should leave the other type's condition untouched when one is edited", () => {
     setConditions([{ condition_type: "USER_ROLE", operator: "IN", value: ["user"] }]);
     const spy = jest.spyOn(component.conditionsChange, "emit");

@@ -290,6 +290,18 @@ describe("ConditionalAccessPolicyService", () => {
       ).toEqual([]);
     });
 
+    // A type the endpoint does not serve has no operators and no choices, so the editor falls back to
+    // its own labels rather than rendering an empty toggle group.
+    it("should return no operators and no choices for an unserved condition type", async () => {
+      await load();
+      expect(service.operatorsForConditionType("NOT_SERVED")).toEqual([]);
+      expect(service.choicesForConditionType("NOT_SERVED")).toBeNull();
+    });
+
+    it("should treat absent conditions as nothing stale", () => {
+      expect(service.staleConditionValues(undefined)).toEqual([]);
+    });
+
     it("should report nothing stale before /conditiontypes has answered", () => {
       expect(
         service.staleConditionValues([{ condition_type: "USER_REALM", operator: "IN", value: ["deleted"] }])
@@ -371,6 +383,7 @@ describe("ConditionalAccessPolicyService", () => {
       expect(id).toBeUndefined();
       expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to save conditional-access policy. bad name");
     });
+
   });
 
   describe("deletePolicy", () => {
@@ -445,6 +458,7 @@ describe("ConditionalAccessPolicyService", () => {
       expect(result).toBe(false);
       httpMock.expectNone(`${service.baseUrl}/1`);
     });
+
   });
 
   describe("enablePolicy / disablePolicy", () => {
@@ -544,5 +558,6 @@ describe("ConditionalAccessPolicyService", () => {
       expect(notificationServiceMock.success).not.toHaveBeenCalled();
       expect(reload).toHaveBeenCalled();
     });
+
   });
 });
