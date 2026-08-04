@@ -206,6 +206,8 @@ export interface ResolverServiceInterface {
 
   postResolverTest(data: ResolverData): Observable<PiResponse<boolean, { description: string }>>;
 
+  listResolvers(): Observable<PiResponse<Resolvers>>;
+
   postResolver(resolverName: string, data: ResolverData): Observable<PiResponse<number>>;
 
   deleteResolver(resolverName: string): Observable<PiResponse<number>>;
@@ -331,6 +333,10 @@ export class ResolverService implements ResolverServiceInterface {
           return throwError(() => error);
         })
       );
+  }
+
+  listResolvers(): Observable<PiResponse<Resolvers>> {
+    return this.http.get<PiResponse<Resolvers>>(this.resolverBaseUrl, { headers: this.authService.getHeaders() });
   }
 
   postResolver(resolverName: string, data: ResolverData): Observable<PiResponse<number>> {

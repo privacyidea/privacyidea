@@ -479,6 +479,48 @@ describe("TokenService", () => {
       expect(req.request.params.has("type_list")).toBe(false);
       req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
     });
+    it("sends a single token type as a wildcarded type param", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(new FilterValue({ value: "type: hotp" }));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("type")).toBe("*hotp*");
+      expect(req.request.params.has("type_list")).toBe(false);
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("sends multiple token types as type_list instead of type", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(new FilterValue({ value: "type: hotp,totp" }));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("type_list")).toBe("hotp,totp");
+      expect(req.request.params.has("type")).toBe(false);
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("merges the type and type_list keywords into a single deduplicated list", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(new FilterValue({ value: "type: hotp type_list: totp,hotp" }));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("type_list")).toBe("hotp,totp");
+      expect(req.request.params.has("type")).toBe(false);
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("wildcard-wraps every token realm of a comma-separated list on its own", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(new FilterValue({ value: "tokenrealm: realm1,realm2" }));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("tokenrealm")).toBe("*realm1*,*realm2*");
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
   });
 
   describe("tokenTypeOptions() ordering", () => {
