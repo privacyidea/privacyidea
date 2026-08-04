@@ -111,13 +111,17 @@ $breakpoint-compact: 1822px;
 }
 
 .nav-item {
-  height: 41px;
+  height: 42px;
   padding: 12px 0;
   @include flex-center;
 
   &.active {
     background-color: var(--mat-sys-surface-container-lowest);
     box-shadow: var(--side-glow);
+    // The glow keeps its full blur but only reaches sideways: clipped flush with the top and
+    // bottom edges, with room left on both sides. Without this its downward tail relies on
+    // the secondary toolbar painting over it, which the util groups above it do not do.
+    clip-path: inset(0 -40px);
     border-top-right-radius: var(--border-radius);
     border-top-left-radius: var(--border-radius);
   }

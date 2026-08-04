@@ -57,7 +57,7 @@ export const LIGHT_SOURCE_LEVELS: readonly string[] = Array.from({ length: LIGHT
 export type LightSourceLevel = string;
 
 /** 17 * 20 = 340 degrees: light from just above the right. */
-export const DEFAULT_LIGHT_SOURCE = "17";
+export const DEFAULT_LIGHT_SOURCE = "16";
 
 /** The global corner radius. */
 export const CORNER_LEVELS = ["square", "default", "round", "extra-round"] as const;
