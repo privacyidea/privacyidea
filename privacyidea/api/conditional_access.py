@@ -43,6 +43,7 @@ from privacyidea.lib.conditional_access.lockout_policy import (list_lockout_poli
                                                                update_lockout_policy,
                                                                delete_lockout_policy,
                                                                get_target_constraints)
+from privacyidea.lib.conditional_access.conditions import get_condition_types
 from privacyidea.lib.conditional_access.lockout_policy_template import list_lockout_policy_templates
 from privacyidea.lib.conditional_access.lockout_state import (list_locked_users_paginate, DEFAULT_PAGE_SIZE,
                                                               user_matches_scopes, get_user_lockout_dict,
@@ -135,6 +136,28 @@ def list_action_types():
     action_types = [action.value for action in LockoutAction]
     g.audit_object.log({"success": True, "info": f"{len(action_types)} action types"})
     return send_result(action_types)
+
+
+@conditional_access_blueprint.route('conditiontypes', methods=['GET'])
+@prepolicy(check_base_action, request, PolicyAction.LOCKOUT_POLICY_READ)
+@log_with(log)
+def list_condition_types():
+    """
+    Return the available policy condition types with, for each, its translated
+    label, the operators it permits, whether it takes a key, and the currently
+    valid values - so the policy editor is built from server metadata rather than
+    a duplicated client-side list.
+
+    ``choices`` is resolved per call, so a realm created or deleted since the last
+    request is reflected immediately.
+
+    Requires the admin policy action :ref:`policy_lockout_policy_read`.
+
+    :status 200: mapping of condition type to its metadata in ``result.value``
+    """
+    condition_types = get_condition_types()
+    g.audit_object.log({"success": True, "info": f"{len(condition_types)} condition types"})
+    return send_result(condition_types)
 
 
 @conditional_access_blueprint.route('targets', methods=['GET'])
@@ -244,6 +267,12 @@ def create_policy():
     :jsonparam priority: evaluation priority; lower numbers are evaluated first (default 1).
     :jsonparam target: the identity the policy counts and acts on - ``user``
         (per-user brute force) or ``source_ip`` (password spraying). Required.
+    :jsonparam conditions: list of conditions restricting which requests the
+        policy applies to, each ``{"condition_type": <ConditionType>,
+        "operator": "IN"|"NOT_IN", "value": [<str>, ...]}``. All of them must
+        hold. Optional; omitted or empty, the policy applies to every request.
+        See :http:get:`/conditionalaccess/conditiontypes` for the available types
+        and their valid values.
     :status 200: the id of the new policy in ``result.value``
     :status 400: invalid or missing parameter
     """
@@ -256,6 +285,7 @@ def create_policy():
         time_window_seconds=get_required(params, "time_window_seconds"),
         counter_types_to_track=_get_json_param(params, "counter_types_to_track", required=True),
         stages=_get_json_param(params, "stages", required=True),
+        conditions=_get_json_param(params, "conditions"),
         enabled=is_true(enabled) if enabled is not None else True,
         dry_run=is_true(dry_run) if dry_run is not None else False,
         priority=get_optional(params, "priority", default=1),
@@ -272,9 +302,11 @@ def update_policy(policy_id):
     """
     Partially update a conditional-access lockout policy. Only the given
     parameters are changed and all others are left untouched;
-    ``counter_types_to_track`` and ``stages`` are replaced as a whole when
-    given. Enabling or disabling a policy is done through this endpoint by
-    sending ``{"enabled": true}`` / ``{"enabled": false}``.
+    ``counter_types_to_track``, ``stages`` and ``conditions`` are replaced as a
+    whole when given - sending ``{"conditions": []}`` therefore removes every
+    condition and widens the policy to all requests. Enabling or disabling a
+    policy is done through this endpoint by sending ``{"enabled": true}`` /
+    ``{"enabled": false}``.
 
     Requires the admin policy action :ref:`policy_lockout_policy_write`.
     Parameters are as for creating a policy, all optional. ``target`` may be
@@ -295,6 +327,7 @@ def update_policy(policy_id):
         time_window_seconds=get_optional(params, "time_window_seconds"),
         counter_types_to_track=_get_json_param(params, "counter_types_to_track"),
         stages=_get_json_param(params, "stages"),
+        conditions=_get_json_param(params, "conditions"),
         enabled=is_true(enabled) if enabled is not None else None,
         dry_run=is_true(dry_run) if dry_run is not None else None,
         priority=get_optional(params, "priority"),

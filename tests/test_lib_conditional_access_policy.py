@@ -20,6 +20,9 @@ Tests for the conditional-access lockout-policy CRUD layer
 (:mod:`privacyidea.lib.conditional_access.lockout_policy`).
 """
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
+from privacyidea.lib.conditional_access.authentication_log import AuthLogUserRole
+from privacyidea.lib.conditional_access.conditions import (ConditionOperator, ConditionType,
+                                                           get_condition_types)
 from privacyidea.lib.conditional_access.engine import LockoutAction, LockoutTarget
 from privacyidea.lib.conditional_access.lockout_policy import (_ACTIONS_BY_TARGET,
                                                                _COUNT_MODES_BY_TARGET,
@@ -33,8 +36,9 @@ from privacyidea.lib.conditional_access.lockout_policy import (_ACTIONS_BY_TARGE
                                                                update_lockout_policy)
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError
 from privacyidea.models import db
-from privacyidea.models.lockout_policy import (LockoutPolicy, LockoutPolicyCounterType,
-                                               LockoutPolicyStage, LockoutStageAction)
+from privacyidea.models.lockout_policy import (LockoutPolicy, LockoutPolicyCondition,
+                                               LockoutPolicyCounterType, LockoutPolicyStage,
+                                               LockoutStageAction)
 from .base import MyTestCase
 
 
@@ -60,7 +64,8 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         # so a persistent object a test loaded (e.g. via a rejected update) cannot collide with a later test that
         # reuses the same primary key - mirroring the per-request session teardown that isolates this in production.
         db.session.rollback()
-        for model in (LockoutStageAction, LockoutPolicyStage, LockoutPolicyCounterType, LockoutPolicy):
+        for model in (LockoutStageAction, LockoutPolicyStage, LockoutPolicyCondition,
+                      LockoutPolicyCounterType, LockoutPolicy):
             db.session.query(model).delete()
         db.session.commit()
         db.session.expunge_all()
@@ -122,7 +127,7 @@ class LockoutPolicyCrudTestCase(MyTestCase):
             target=LockoutTarget.USER)
         policy = get_lockout_policy(policy_id)
         by_threshold = {stage["failure_threshold"]: stage for stage in policy["stages"]}
-        self.assertTrue(by_threshold[3]["actions"][0]["retrigger_above_threshold"])   # DENY
+        self.assertTrue(by_threshold[3]["actions"][0]["retrigger_above_threshold"])  # DENY
         self.assertFalse(by_threshold[5]["actions"][0]["retrigger_above_threshold"])  # LOCK_USER
 
     def test_02_create_validation_errors(self):
@@ -391,3 +396,118 @@ class LockoutPolicyCrudTestCase(MyTestCase):
                              constraints[LockoutTarget.SOURCE_IP.value]["count_modes"])
         self.assertIn(LockoutAction.BLOCK_IP.value, constraints[LockoutTarget.SOURCE_IP.value]["actions"])
         self.assertIn(LockoutAction.LOCK_USER.value, constraints[LockoutTarget.USER.value]["actions"])
+
+    # --- conditions -----------------------------------------------------------
+
+    @staticmethod
+    def _condition(condition_type=ConditionType.USER_ROLE, operator=ConditionOperator.IN, value=None, **extra):
+        return {"condition_type": str(condition_type), "operator": str(operator),
+                "value": value if value is not None else [str(AuthLogUserRole.USER)], **extra}
+
+    def _create_with_conditions(self, name, conditions):
+        return create_lockout_policy(name, 600, ["PIN_FAIL"], [_stage()], target=LockoutTarget.USER,
+                                     conditions=conditions)
+
+    def test_11_conditions_round_trip(self):
+        policy_id = self._create_with_conditions("Conditioned", [self._condition()])
+        conditions = get_lockout_policy(policy_id)["conditions"]
+        self.assertEqual(1, len(conditions))
+        self.assertEqual(str(ConditionType.USER_ROLE), conditions[0]["condition_type"])
+        self.assertEqual(str(ConditionOperator.IN), conditions[0]["operator"])
+        self.assertListEqual([str(AuthLogUserRole.USER)], conditions[0]["value"])
+
+    def test_11_conditions_are_optional(self):
+        policy_id = create_lockout_policy("Unconditioned", 600, ["PIN_FAIL"], [_stage()],
+                                          target=LockoutTarget.USER)
+        self.assertListEqual([], get_lockout_policy(policy_id)["conditions"])
+
+    def test_11_condition_values_are_deduplicated(self):
+        self.setUp_user_realms()
+        policy_id = self._create_with_conditions(
+            "Deduplicated", [self._condition(ConditionType.USER_REALM, value=["realm1", "realm1", " realm1 "])])
+        # Surrounding whitespace is stripped and the duplicates collapse to one entry.
+        self.assertListEqual([self.realm1], get_lockout_policy(policy_id)["conditions"][0]["value"])
+
+    def test_11_condition_value_case_must_match_exactly(self):
+        # Realm names are canonically lower-case, so a differently-cased value is a
+        # typo and is reported rather than silently rewritten.
+        self.setUp_user_realms()
+        self.assertRaises(ParameterError, self._create_with_conditions,
+                          "Miscased", [self._condition(ConditionType.USER_REALM, value=["REALM1"])])
+
+    def test_11_unknown_condition_type_is_rejected(self):
+        self.assertRaises(ParameterError, self._create_with_conditions,
+                          "Bad type", [self._condition("NO_SUCH_TYPE")])
+
+    def test_11_operator_not_allowed_for_type_is_rejected(self):
+        self.assertRaises(ParameterError, self._create_with_conditions,
+                          "Bad operator", [self._condition(operator="MATCHES")])
+
+    def test_11_unknown_value_is_rejected(self):
+        # A misspelled role would silently never match, so it fails at write time.
+        self.assertRaises(ParameterError, self._create_with_conditions,
+                          "Bad value", [self._condition(value=["superuser"])])
+        self.setUp_user_realms()
+        self.assertRaises(ParameterError, self._create_with_conditions,
+                          "Bad realm", [self._condition(ConditionType.USER_REALM, value=["nosuchrealm"])])
+
+    def test_11_malformed_condition_is_rejected(self):
+        for conditions in ([self._condition(value=[])],  # empty value list
+                           [self._condition(value="user")],  # not a list
+                           [self._condition(value=[1])],  # non-string entry
+                           [self._condition(unknown_key="x")],  # unknown key
+                           [self._condition(key="somekey")],  # conditions take no sub-key
+                           ["not a dict"]):
+            self.assertRaises(ParameterError, self._create_with_conditions, "Malformed", conditions)
+        self.assertRaises(ParameterError, self._create_with_conditions, "Malformed", "not a list")
+
+    def test_11_duplicate_condition_type_is_rejected(self):
+        self.assertRaises(ParameterError, self._create_with_conditions, "Duplicate",
+                          [self._condition(value=[str(AuthLogUserRole.USER)]),
+                           self._condition(operator=ConditionOperator.NOT_IN,
+                                           value=[str(AuthLogUserRole.ADMIN_INTERNAL)])])
+
+    def test_11_update_replaces_conditions_wholesale(self):
+        policy_id = self._create_with_conditions("Updatable", [self._condition()])
+        # Reusing the same condition type across the update must stay within the
+        # (policy_id, condition_type, key) unique constraint.
+        _, changed = update_lockout_policy(
+            policy_id, conditions=[self._condition(operator=ConditionOperator.NOT_IN,
+                                                   value=[str(AuthLogUserRole.ADMIN_INTERNAL)])])
+        self.assertIn("conditions", changed)
+        conditions = get_lockout_policy(policy_id)["conditions"]
+        self.assertEqual(1, len(conditions))
+        self.assertEqual(str(ConditionOperator.NOT_IN), conditions[0]["operator"])
+
+    def test_11_update_can_clear_conditions(self):
+        policy_id = self._create_with_conditions("Clearable", [self._condition()])
+        update_lockout_policy(policy_id, conditions=[])
+        self.assertListEqual([], get_lockout_policy(policy_id)["conditions"])
+
+    def test_11_update_leaves_conditions_untouched_when_omitted(self):
+        policy_id = self._create_with_conditions("Untouched", [self._condition()])
+        _, changed = update_lockout_policy(policy_id, name="Renamed")
+        self.assertNotIn("conditions", changed)
+        self.assertEqual(1, len(get_lockout_policy(policy_id)["conditions"]))
+
+    def test_11_invalid_conditions_do_not_partially_apply(self):
+        policy_id = self._create_with_conditions("Atomic", [self._condition()])
+        self.assertRaises(ParameterError, update_lockout_policy, policy_id,
+                          name="NewName", conditions=[self._condition(value=["nope"])])
+        db.session.rollback()
+        # Neither the rename nor the conditions were written.
+        policy = get_lockout_policy(policy_id)
+        self.assertEqual("Atomic", policy["name"])
+        self.assertEqual(1, len(policy["conditions"]))
+
+    def test_12_condition_type_metadata(self):
+        self.setUp_user_realms()
+        metadata = get_condition_types()
+        self.assertSetEqual({t.value for t in ConditionType}, set(metadata))
+        realm_entry = metadata[ConditionType.USER_REALM.value]
+        self.assertSetEqual({"label", "operators", "choices"}, set(realm_entry))
+        self.assertListEqual([ConditionOperator.IN.value, ConditionOperator.NOT_IN.value],
+                             [operator["name"] for operator in realm_entry["operators"]])
+        self.assertIn(self.realm1, realm_entry["choices"])
+        self.assertListEqual(sorted(role.value for role in AuthLogUserRole),
+                             metadata[ConditionType.USER_ROLE.value]["choices"])

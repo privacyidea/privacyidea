@@ -1,10 +1,11 @@
 """v3.14: Add conditional access lockout policy tables
 
-Create the four tables of the lockout policy framework:
+Create the five tables of the lockout policy framework:
 lockout_policies (the policy container), lockout_policy_counter_types (the
 failure counter types a policy tracks, normalized for an indexed per-request
-lookup), lockout_policy_stages (the failure thresholds within a policy) and
-lockout_stage_actions (the reactions when a stage is triggered).
+lookup), lockout_policy_conditions (the restrictions on which requests a policy
+applies to at all), lockout_policy_stages (the failure thresholds within a
+policy) and lockout_stage_actions (the reactions when a stage is triggered).
 
 Revision ID: 173d32328846
 Revises: 0147d78cbace
@@ -29,14 +30,17 @@ depends_on = None
 # SQLAlchemy emits SELECT nextval(...) on every ORM insert on backends
 # that support sequences (Postgres + MariaDB 10.3+).
 SEQUENCES = ['lockoutpolicy_seq', 'lockoutpolicycountertype_seq',
-             'lockoutpolicystage_seq', 'lockoutstageaction_seq']
+             'lockoutpolicycondition_seq', 'lockoutpolicystage_seq',
+             'lockoutstageaction_seq']
 # Drop order: children before parents (foreign keys).
 TABLES = ['lockout_stage_actions', 'lockout_policy_stages',
-          'lockout_policy_counter_types', 'lockout_policies']
+          'lockout_policy_conditions', 'lockout_policy_counter_types',
+          'lockout_policies']
 # Each table's id column is backed by the sequence its model declares.
 TABLE_SEQUENCES = {
     'lockout_policies': 'lockoutpolicy_seq',
     'lockout_policy_counter_types': 'lockoutpolicycountertype_seq',
+    'lockout_policy_conditions': 'lockoutpolicycondition_seq',
     'lockout_policy_stages': 'lockoutpolicystage_seq',
     'lockout_stage_actions': 'lockoutstageaction_seq',
 }
@@ -110,6 +114,20 @@ def upgrade():
         sa.PrimaryKeyConstraint('id'),
         sa.UniqueConstraint('policy_id', 'counter_type', name='uq_lockout_counter_type_policy'),
         sa.Index('ix_lockout_counter_type_lookup', 'counter_type', 'policy_id'),
+    )
+    _create_table(
+        'lockout_policy_conditions',
+        _id_column(is_postgres, 'lockoutpolicycondition_seq'),
+        sa.Column('policy_id', sa.Integer(), nullable=False),
+        sa.Column('condition_type', sa.Unicode(length=50), nullable=False),
+        sa.Column('operator', sa.Unicode(length=20), nullable=False),
+        sa.Column('value', sa.JSON(), nullable=True),
+        sa.ForeignKeyConstraint(['policy_id'], ['lockout_policies.id'], ondelete='CASCADE'),
+        sa.PrimaryKeyConstraint('id'),
+        # A policy carries at most one condition of each type; they are ANDed, so a
+        # second one on the same value could only narrow to a contradiction.
+        sa.UniqueConstraint('policy_id', 'condition_type', name='uq_lockout_condition_policy'),
+        sa.Index('ix_lockout_policy_conditions_policy_id', 'policy_id'),
     )
     _create_table(
         'lockout_policy_stages',

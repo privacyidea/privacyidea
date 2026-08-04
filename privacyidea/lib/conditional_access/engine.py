@@ -25,10 +25,13 @@ from enum import Enum
 from typing import TYPE_CHECKING
 
 from sqlalchemy import func, select
+from sqlalchemy.orm import selectinload
 
 from privacyidea.lib import _
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
 from privacyidea.lib.conditional_access.authentication_log import _naive_utc
+from privacyidea.lib.conditional_access.conditions import policy_matches_context
+from privacyidea.lib.conditional_access.context import CAContext
 from privacyidea.models import (AuthenticationLog, BlockList, LockoutPolicy, LockoutPolicyCounterType,
                                 LockoutStageAction, UserLockoutState, db)
 from privacyidea.models.utils import utc_now
@@ -661,8 +664,7 @@ def is_ip_blocked(source_ip: str | None, now: datetime | None = None, *, clear_e
     return get_ip_block(source_ip, now=now, clear_expired=clear_expired) is not None
 
 
-def evaluate_access_decision(user: "User", source_ip: str | None = None,
-                             now: datetime | None = None) -> "AccessDecision":
+def evaluate_access_decision(context: CAContext, now: datetime | None = None) -> "AccessDecision":
     """
     Pre-auth conditional-access decision for the current request: should it be
     denied, explicitly allowed, or left to the normal flow?
@@ -695,29 +697,32 @@ def evaluate_access_decision(user: "User", source_ip: str | None = None,
     Both targets decide here: a ``user`` policy is keyed on the resolved
     ``(resolver, uid, realm)`` user (an unresolved user - unknown login, local
     admin - is never decided by a user policy), while a ``source_ip`` policy is
-    keyed on *source_ip* and therefore applies even when the user is unresolved
-    (the spraying/enumeration case). A never-block source IP is exempt from an IP
-    ``DENY``, mirroring the ``BLOCK_IP`` allowlist.
+    keyed on the context's source IP and therefore applies even when the user is
+    unresolved (the spraying/enumeration case). A never-block source IP is exempt
+    from an IP ``DENY``, mirroring the ``BLOCK_IP`` allowlist.
 
-    :param user: the authenticating user; only ``user``-target policies need it
-    :param source_ip: the resolved client IP; ``source_ip``-target policies decide on it
+    :param context: what is known about the request under evaluation (see
+        :class:`~privacyidea.lib.conditional_access.context.CAContext`); a
+        ``user`` policy needs its user resolved, a ``source_ip`` policy its
+        source IP
     :param now: the reference time; defaults to :func:`utc_now`
     :return: the :class:`AccessDecision` for this request
     """
     now = _naive_utc(now) if now is not None else utc_now()
     policies = db.session.scalars(
         select(LockoutPolicy)
+        .options(selectinload(LockoutPolicy.conditions))
         .where(LockoutPolicy.enabled.is_(True))
         .order_by(LockoutPolicy.priority.asc())
     ).all()
     for policy in policies:
-        decision = _policy_access_decision(policy, user, source_ip, now)
+        decision = _policy_access_decision(policy, context, now)
         if decision is not None:
             return decision
     return AccessDecision.CONTINUE
 
 
-def _policy_access_decision(policy: LockoutPolicy, user: "User", source_ip: str | None,
+def _policy_access_decision(policy: LockoutPolicy, context: CAContext,
                             now: datetime) -> "AccessDecision | None":
     """
     The ALLOW/DENY decision a single policy contributes pre-auth, or ``None`` if
@@ -732,21 +737,25 @@ def _policy_access_decision(policy: LockoutPolicy, user: "User", source_ip: str 
     exact threshold count. The highest-priority stage with a met ALLOW/DENY action
     supplies the decision.
     """
+    # Applicability first: a policy whose conditions exclude this request
+    # contributes no decision, and costs no counting query.
+    if not policy_matches_context(policy, context):
+        return None
     if policy.target == LockoutTarget.SOURCE_IP:
         # IP-scoped: decide on the source IP regardless of user resolution. A
         # never-block IP is never denied by an IP policy (mirrors the BLOCK_IP
         # allowlist), so it contributes no decision.
-        if not source_ip or is_ip_never_block(source_ip):
+        if not context.source_ip or is_ip_never_block(context.source_ip):
             return None
-        count = _policy_count_ip(policy, source_ip, now)
-        subject_label = f"source IP {source_ip}"
+        count = _policy_count_ip(policy, context.source_ip, now)
+        subject_label = f"source IP {context.source_ip}"
     else:
         # User-scoped: keyed on the resolved user, so an unresolved user is never
         # decided by a user policy.
-        if not _resolved(user):
+        if not _resolved(context.user):
             return None
-        count = _policy_count(policy, user, now)
-        subject_label = repr(user)
+        count = _policy_count(policy, context.user, now)
+        subject_label = repr(context.user)
     decision = next((d for d in (_stage_access_decision(stage, count) for stage in policy.stages)
                      if d is not None), None)
     if decision is None:
@@ -784,7 +793,7 @@ def _stage_access_decision(stage, count: int) -> "AccessDecision | None":
     return AccessDecision.ALLOW if has_allow else None
 
 
-def evaluate_lockout_policies(user: "User", event_type, source_ip: str | None = None,
+def evaluate_lockout_policies(context: CAContext, event_type,
                               now: datetime | None = None) -> list[str]:
     """
     Evaluate every enabled lockout policy that tracks *event_type* and execute
@@ -811,11 +820,13 @@ def evaluate_lockout_policies(user: "User", event_type, source_ip: str | None = 
     function itself only guards individual DB writes (see
     :func:`_upsert_user_lockout_state`).
 
-    :param user: the authenticating user; ``user``-target policies need it
-        resolved, ``source_ip``-target policies act on the IP regardless
+    :param context: what is known about the request under evaluation (see
+        :class:`~privacyidea.lib.conditional_access.context.CAContext`);
+        ``user``-target policies need its user resolved, ``source_ip``-target
+        policies act on its source IP regardless, and the ``BLOCK_IP`` action
+        blocks that IP
     :param event_type: the classified outcome of the request
         (:class:`AuthEventType`)
-    :param source_ip: the resolved client IP; the ``BLOCK_IP`` action blocks it
     :param now: the reference time; defaults to :func:`utc_now`
     :return: the de-duplicated, order-preserving list of user-facing notices
         produced by executed actions (empty if nothing was triggered/notified)
@@ -831,6 +842,7 @@ def evaluate_lockout_policies(user: "User", event_type, source_ip: str | None = 
     # is then computed in _evaluate_policy.
     policies = db.session.scalars(
         select(LockoutPolicy)
+        .options(selectinload(LockoutPolicy.conditions))
         .join(LockoutPolicy.counter_types)
         .where(LockoutPolicy.enabled.is_(True),
                LockoutPolicyCounterType.counter_type == event_type)
@@ -838,7 +850,7 @@ def evaluate_lockout_policies(user: "User", event_type, source_ip: str | None = 
     ).all()
     notices: list[str] = []
     for policy in policies:
-        notices.extend(_evaluate_policy(policy, user, event_type, source_ip, now))
+        notices.extend(_evaluate_policy(policy, context, event_type, now))
     # De-duplicate while preserving order: several policies tracking the same
     # user can emit the same notice in one request.
     seen: set[str] = set()
@@ -873,8 +885,8 @@ def _stage_pending_actions(stage, count: int) -> list:
             if _action_threshold_met(action, stage.failure_threshold, count)]
 
 
-def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
-                     source_ip: str | None, now: datetime) -> list[str]:
+def _evaluate_policy(policy: LockoutPolicy, context: CAContext, event_type: str,
+                     now: datetime) -> list[str]:
     """
     Evaluate a single policy: count the user's events over the policy window,
     find the triggered stage, de-duplicate, then execute the stage's *pending*
@@ -890,7 +902,13 @@ def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
     :return: the user-facing notices produced by the executed actions (empty if
         no stage triggered, in dry-run, or when de-duplicated away).
     """
+    # Applicability first: a policy whose conditions exclude this request neither
+    # counts nor acts, and costs no counting query.
+    if not policy_matches_context(policy, context):
+        return []
     window = policy.time_window_seconds
+    user = context.user
+    source_ip = context.source_ip
     if policy.target == LockoutTarget.SOURCE_IP:
         if not source_ip:
             # An IP-targeted policy cannot count or act without a source IP.
@@ -952,7 +970,11 @@ def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
     # again. Otherwise an expired or admin-lifted lock would leave a dead zone in
     # which the offender could re-reach the threshold without being re-locked /
     # re-blocked.
-    user_state = db.session.get(UserLockoutState, (user.resolver, user.uid, user.realm))
+    # Only a resolved user can carry a lockout-state row (it is keyed by the
+    # (resolver, uid, realm) tuple), so an unresolved one — which a source-IP
+    # policy still evaluates for — simply has no user de-dup.
+    user_state = (db.session.get(UserLockoutState, (user.resolver, user.uid, user.realm))
+                  if _resolved(user) else None)
     user_incident_active = (user_state is not None
                             and (user_state.lock_expires_at is None
                                  or user_state.lock_expires_at > now))
@@ -983,8 +1005,8 @@ def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
     log.info(f"Policy {policy.name!r} triggered stage {triggered_stage.id} "
              f"(threshold {triggered_stage.failure_threshold}) for {subject_label}: "
              f"{count} event(s) of {_types_label(policy.counter_types_to_track)} in {window}s.")
-    tags = _base_action_tags(policy, triggered_stage, user, event_type, count, source_ip, now)
-    return _execute_stage_actions(triggered_stage, pending_actions, user, source_ip, now, tags)
+    tags = _base_action_tags(policy, triggered_stage, context, event_type, count, now)
+    return _execute_stage_actions(triggered_stage, pending_actions, context, now, tags)
 
 
 def _lock_duration_seconds(action_value) -> int | None:
@@ -1027,8 +1049,8 @@ def _safe_format(template: str, tags: dict) -> str:
         return template
 
 
-def _base_action_tags(policy: LockoutPolicy, stage, user: "User", event_type: str,
-                      count: int, source_ip: str | None, now: datetime) -> dict:
+def _base_action_tags(policy: LockoutPolicy, stage, context: CAContext, event_type: str,
+                      count: int, now: datetime) -> dict:
     """
     Build the ``{tag}`` substitution context available to EMAIL_* templates. Only
     fields already loaded on the request are included here; the resolver-backed
@@ -1043,11 +1065,12 @@ def _base_action_tags(policy: LockoutPolicy, stage, user: "User", event_type: st
     available tags in the policy editor and rejecting unknown ``{tags}`` when a
     template is saved belong to the policy CRUD/editor layer, not here.)
     """
+    user = context.user
     return {
-        "username": user.login,
-        "realm": user.realm or "",
-        "resolver": user.resolver or "",
-        "client_ip": source_ip or "",
+        "username": user.login if user else "",
+        "realm": (user.realm if user else "") or "",
+        "resolver": (user.resolver if user else "") or "",
+        "client_ip": context.source_ip or "",
         "count": count,
         "threshold": stage.failure_threshold,
         "event_type": event_type,
@@ -1154,7 +1177,7 @@ def _send_lockout_email(action_type: "LockoutAction", stage_action: LockoutStage
     return None
 
 
-def _execute_stage_actions(stage, actions, user: "User", source_ip: str | None, now: datetime,
+def _execute_stage_actions(stage, actions, context: CAContext, now: datetime,
                            tags: dict) -> list[str]:
     """
     Execute the given *actions* of a triggered *stage* (the stage's pending
@@ -1167,6 +1190,8 @@ def _execute_stage_actions(stage, actions, user: "User", source_ip: str | None, 
         (empty if no email action ran or none was delivered).
     """
     notices: list[str] = []
+    user = context.user
+    source_ip = context.source_ip
     for action in actions:
         try:
             action_type = LockoutAction(action.action_type)

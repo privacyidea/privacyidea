@@ -56,7 +56,8 @@ from urllib.parse import quote
 from flask import g, current_app, make_response, Request
 from flask_babel import _, lazy_gettext
 
-from privacyidea.api.lib.utils import get_all_params, log_authentication, hardening_action_active
+from privacyidea.api.lib.utils import (get_all_params, log_authentication, hardening_action_active,
+                                       build_ca_context)
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import reclassify_authentication_log_event
 from privacyidea.config import ConfigKey
@@ -1279,7 +1280,7 @@ def is_authorized(request, response):
             # failure here can never break the (already-decided) deny response.
             try:
                 from privacyidea.lib.conditional_access.engine import evaluate_lockout_policies
-                evaluate_lockout_policies(request.User, AuthEventType.NOT_AUTHORIZED, source_ip=g.client_ip)
+                evaluate_lockout_policies(build_ca_context(request.User), AuthEventType.NOT_AUTHORIZED)
             except Exception as ex:
                 log.warning(f"Lockout re-evaluation after authorization denial failed: {ex!r}")
             raise ValidateError("User is not authorized to authenticate under these conditions.")

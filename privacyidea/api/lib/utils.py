@@ -408,6 +408,49 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
     )
 
 
+def build_ca_context(user, internal_admin: bool | None = None) -> "CAContext":
+    """
+    Assemble the :class:`~privacyidea.lib.conditional_access.context.CAContext`
+    for the current request — the single parameter object the conditional-access
+    engine evaluates against.
+
+    This is the one place that reads Flask state (``g`` / ``request``) for the
+    engine, keeping the lib layer free of it. Outside a request context (an event
+    recorded from outside a view, e.g. the push_wait flow) the request-scoped
+    fields are simply ``None``; nothing here raises.
+
+    ``internal_admin`` flags a local database admin, which
+    :func:`_determine_user_role` cannot infer from the user object alone (such an
+    admin has no realm to match against ``SUPERUSER_REALM``). Left at ``None`` it
+    is taken from ``g.resolved_user``, which ``/auth``'s ``before_request`` fills
+    in from its own ``db_admin_exists`` lookup — so the **pre-auth** check
+    classifies a local admin correctly without a second query, and endpoints that
+    never see one (``/validate/*``, where ``g.resolved_user`` is absent) fall back
+    to ``False``. Pass it explicitly to override, as ``/auth`` does after the
+    credential check, where the flag is *verified* rather than merely claimed.
+
+    Note the pre-auth value is a claimed identity: it says an admin of that name
+    exists and no realm was given, not that the password was right. That is the
+    same standing as the admin-realm classification, which likewise reads the
+    realm before any credential is checked, and it is what lets a break-glass
+    condition (``USER_ROLE NOT_IN [admin-internal]``) exempt the emergency account
+    from a pre-auth DENY.
+
+    :param user: the authenticating user
+    :param internal_admin: True for a local database admin; ``None`` to derive it
+        from the request
+    :return: the context describing this request
+    """
+    from privacyidea.lib.conditional_access.context import CAContext
+    source_ip = None
+    if has_request_context():
+        source_ip = g.client_ip
+        if internal_admin is None:
+            internal_admin = g.get("resolved_user", {}).get("is_local_admin", False)
+    return CAContext(user=user or None, source_ip=source_ip,
+                     user_role=str(_determine_user_role(user, bool(internal_admin))))
+
+
 def conditional_access_precheck(user) -> "Response | None":
     """
     Reject a request pre-auth (before any token logic and before the failcounter /
@@ -439,7 +482,7 @@ def conditional_access_precheck(user) -> "Response | None":
         g.audit_object.log({"success": False,
                             "info": "Rejected: source IP is blocked"})
         return send_result(False, rid=2, details={})
-    if evaluate_access_decision(user, g.client_ip) == AccessDecision.DENY:
+    if evaluate_access_decision(build_ca_context(user)) == AccessDecision.DENY:
         log.info(f"Denying authentication for {user!r} by conditional-access policy.")
         g.audit_object.log({"success": False,
                             "info": "Rejected: denied by conditional-access policy"})
@@ -492,7 +535,7 @@ def conditional_access_posteval(user, event_type) -> None:
         # the engine's inner commit closes the transaction, so leaving the savepoint
         # context raises InvalidRequestError ("Can't operate on closed transaction
         # inside context manager") — which this caller would silently swallow.
-        evaluate_lockout_policies(user, event_type, source_ip=g.client_ip)
+        evaluate_lockout_policies(build_ca_context(user), event_type)
     except Exception as ex:
         log.warning(f"Conditional-access policy evaluation failed: {ex!r}")
         # A failure may leave the session in an aborted state; clear it so request

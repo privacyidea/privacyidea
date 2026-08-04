@@ -24,6 +24,7 @@ from datetime import timedelta
 
 from mock import mock
 from sqlalchemy import func, delete, select
+from sqlalchemy.exc import IntegrityError
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.engine import LockoutTarget
@@ -45,7 +46,8 @@ from privacyidea.models import (Token,
                                 Challenge, PasswordReset, ClientApplication, UserCache,
                                 EventCounter, MonitoringStats, PolicyCondition, db,
                                 Tokengroup, TokenTokengroup, Serviceid, TokenInfo,
-                                LockoutPolicy, LockoutPolicyStage, LockoutStageAction)
+                                LockoutPolicy, LockoutPolicyCondition, LockoutPolicyStage,
+                                LockoutStageAction)
 from .base import MyTestCase
 
 
@@ -826,3 +828,50 @@ class LockoutPolicyTestCase(MyTestCase):
         self.assertEqual([AuthEventType.PASSWORD_FAIL, AuthEventType.MFA_FAIL, AuthEventType.TOKEN_ONLY_FAIL],
                          reloaded.counter_types_to_track)
         reloaded.delete()
+
+    def test_04_conditions_round_trip_and_cascade(self):
+        # A policy carries its applicability conditions as child rows. An unkeyed
+        # condition stores the empty string in "key", and the JSON value holds the
+        # list the set-membership operators compare against.
+        policy = LockoutPolicy(name="Realm scoped policy",
+                               counter_types_to_track=[AuthEventType.MFA_FAIL],
+                               time_window_seconds=600,
+                               target=LockoutTarget.USER,
+                               conditions=[
+                                   LockoutPolicyCondition(condition_type="USER_REALM", operator="IN",
+                                                          value=["sales", "support"]),
+                                   LockoutPolicyCondition(condition_type="USER_ROLE", operator="NOT_IN",
+                                                          value=["admin-internal"]),
+                               ])
+        policy_id = policy.save()
+
+        reloaded = LockoutPolicy.query.filter_by(name="Realm scoped policy").one()
+        self.assertEqual(2, len(reloaded.conditions))
+        realm_condition, role_condition = reloaded.conditions
+        self.assertEqual("USER_REALM", realm_condition.condition_type)
+        self.assertEqual("IN", realm_condition.operator)
+        self.assertListEqual(["sales", "support"], realm_condition.value)
+        self.assertEqual("NOT_IN", role_condition.operator)
+        self.assertEqual(policy_id, realm_condition.policy.id)
+
+        # Deleting the policy takes its conditions with it.
+        reloaded.delete()
+        self.assertEqual([], LockoutPolicyCondition.query.filter_by(policy_id=policy_id).all())
+
+    def test_05_condition_is_unique_per_type(self):
+        # Conditions are ANDed, so two of the same type on one policy could only
+        # narrow to a contradiction; the (policy_id, condition_type) constraint
+        # rejects them.
+        policy = LockoutPolicy(name="Duplicate condition policy",
+                               counter_types_to_track=[AuthEventType.MFA_FAIL],
+                               time_window_seconds=600,
+                               target=LockoutTarget.USER,
+                               conditions=[
+                                   LockoutPolicyCondition(condition_type="USER_REALM", operator="IN",
+                                                          value=["sales"]),
+                                   LockoutPolicyCondition(condition_type="USER_REALM", operator="NOT_IN",
+                                                          value=["support"]),
+                               ])
+        db.session.add(policy)
+        self.assertRaises(IntegrityError, db.session.commit)
+        db.session.rollback()

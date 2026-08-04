@@ -54,7 +54,9 @@ class LockoutPolicy(MethodsMixin, db.Model):
     precedence, matching privacyIDEA's policy engine).
 
     The actual thresholds and reactions live in the related
-    :class:`LockoutPolicyStage` and :class:`LockoutStageAction` rows.
+    :class:`LockoutPolicyStage` and :class:`LockoutStageAction` rows, and the
+    related :class:`LockoutPolicyCondition` rows restrict *to whom* the policy
+    applies at all.
     """
     __tablename__ = 'lockout_policies'
     id: Mapped[int] = mapped_column(Integer, Sequence("lockoutpolicy_seq"), primary_key=True)
@@ -91,6 +93,63 @@ class LockoutPolicy(MethodsMixin, db.Model):
     counter_types_to_track: AssociationProxy[list[str]] = association_proxy(
         "counter_types", "counter_type",
         creator=lambda counter_type: LockoutPolicyCounterType(counter_type=counter_type))
+    # Restrictions on *whether* this policy applies to a request at all, evaluated
+    # against the request context before anything is counted. All of them must
+    # match (AND); no rows at all means the policy applies to everyone.
+    conditions: Mapped[list["LockoutPolicyCondition"]] = relationship(
+        "LockoutPolicyCondition",
+        back_populates="policy",
+        cascade="all, delete-orphan",
+        order_by="LockoutPolicyCondition.id")
+
+
+class LockoutPolicyCondition(MethodsMixin, db.Model):
+    """
+    One restriction on which requests a :class:`LockoutPolicy` applies to, e.g.
+    "only for users of the realms sales and support" or "not for admins".
+
+    This is the *applicability* axis, orthogonal to the counting one: conditions
+    decide **whether** a policy is evaluated for a request, while the counter
+    types, the count mode and the stage thresholds decide **what** trips it.
+    Keeping them separate is what lets the two compose - a policy can restrict
+    itself to a realm *and* still require a threshold of failures.
+
+    All of a policy's conditions must match (AND); a policy with no conditions
+    applies to everyone, which is why adding this table leaves existing policies
+    behaving exactly as before.
+
+    The row is deliberately generic so a new kind of condition is a new
+    ``condition_type`` in the registry rather than a schema change:
+
+    * ``condition_type`` names what to read from the request context (e.g.
+      ``USER_REALM``, ``USER_ROLE``). A policy carries **at most one condition of
+      each type**, enforced by the unique constraint: two conditions on the same
+      value could only narrow to a contradiction, since they are ANDed.
+    * ``operator`` names how to compare, and determines the shape of ``value``:
+      a list for the set-membership operators (``IN`` / ``NOT_IN``), a scalar for
+      future comparison operators, ``NULL`` for future zero-arity ones.
+    * ``value`` is JSON rather than a normalized child table because nothing
+      filters on it in SQL - conditions are evaluated in Python against the
+      request context - so normalizing would only add a join.
+
+    A condition type with an *open* key space (an HTTP header name, a userinfo
+    attribute) would need a ``key`` column alongside ``condition_type``, and the
+    unique constraint widened to include it. None of the types defined today is
+    keyed, so the column is deliberately absent rather than carried empty; adding
+    it later is a column plus a constraint rebuild.
+    """
+    __tablename__ = 'lockout_policy_conditions'
+    __table_args__ = (
+        UniqueConstraint('policy_id', 'condition_type', name='uq_lockout_condition_policy'),
+    )
+    id: Mapped[int] = mapped_column(Integer, Sequence("lockoutpolicycondition_seq"), primary_key=True)
+    policy_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey('lockout_policies.id', ondelete='CASCADE'), nullable=False, index=True)
+    condition_type: Mapped[str] = mapped_column(Unicode(50), nullable=False)
+    operator: Mapped[str] = mapped_column(Unicode(20), nullable=False)
+    value: Mapped[Any | None] = mapped_column(JSON, nullable=True)
+
+    policy: Mapped["LockoutPolicy"] = relationship("LockoutPolicy", back_populates="conditions")
 
 
 class LockoutPolicyCounterType(MethodsMixin, db.Model):

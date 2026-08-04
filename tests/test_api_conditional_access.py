@@ -23,6 +23,8 @@ policy stage and lock the user.
 """
 from datetime import datetime, timedelta
 
+from privacyidea.lib.conditional_access.authentication_log import AuthLogUserRole
+from privacyidea.lib.conditional_access.conditions import ConditionOperator, ConditionType
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import (get_authentication_logs, log_authentication_event)
 from privacyidea.lib.conditional_access.engine import (LockoutAction, LockoutTarget,
@@ -38,6 +40,7 @@ from privacyidea.models.authentication_log import AuthenticationLog
 from privacyidea.models.lockout_policy import (
     BlockList,
     LockoutPolicy,
+    LockoutPolicyCondition,
     LockoutPolicyCounterType,
     LockoutPolicyStage,
     LockoutStageAction,
@@ -90,7 +93,8 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
     @staticmethod
     def _clear() -> None:
         for model in (UserLockoutState, BlockList, LockoutStageAction, LockoutPolicyStage,
-                      LockoutPolicyCounterType, LockoutPolicy, AuthenticationLog):
+                      LockoutPolicyCondition, LockoutPolicyCounterType, LockoutPolicy,
+                      AuthenticationLog):
             db.session.query(model).delete()
         db.session.commit()
 
@@ -610,7 +614,8 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
     @staticmethod
     def _clear():
         for model in (UserLockoutState, BlockList, LockoutStageAction, LockoutPolicyStage,
-                      LockoutPolicyCounterType, LockoutPolicy, AuthenticationLog):
+                      LockoutPolicyCondition, LockoutPolicyCounterType, LockoutPolicy,
+                      AuthenticationLog):
             db.session.query(model).delete()
         db.session.commit()
 
@@ -942,3 +947,30 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
             self.assertTrue(is_user_locked(self.user))
         finally:
             delete_smtpserver("lockoutmail")
+
+    def test_break_glass_local_admin_is_exempt_from_pre_auth_deny(self):
+        # A blanket source-IP DENY that exempts local admins, written the obvious
+        # way. It must be a source_ip target: a user-target policy already skips a
+        # local admin because their User() never resolves, so the role would not be
+        # consulted at all. Loopback is on the never-block list, hence 10.0.0.5.
+        create_lockout_policy(
+            name="ca_deny_ip", time_window_seconds=3600,
+            counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
+            stages=[{"failure_threshold": 0, "priority": 1,
+                     "actions": [{"action_type": str(LockoutAction.DENY), "action_value": None}]}],
+            conditions=[{"condition_type": str(ConditionType.USER_ROLE),
+                         "operator": str(ConditionOperator.NOT_IN),
+                         "value": [str(AuthLogUserRole.ADMIN_INTERNAL)]}],
+            target=LockoutTarget.SOURCE_IP)
+
+        # The local DB admin gets in: pre-auth the role is admin-internal, taken
+        # from g.resolved_user (before_request already looked the name up), so the
+        # NOT_IN condition does not match and the policy does not apply.
+        res = self._auth(self.testadmin, self.testadminpw, remote_addr="10.0.0.5")
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertTrue(res.json["result"]["value"]["token"], res.json)
+
+        # A regular user from the same IP is not exempt and is denied.
+        res = self._auth("cornelius", "test", remote_addr="10.0.0.5")
+        self.assertEqual(401, res.status_code, res.json)
+        self.assertIn("conditional-access", res.json["result"]["error"]["message"])

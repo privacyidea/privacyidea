@@ -25,6 +25,7 @@ from datetime import timedelta
 
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventOutcome,
                                                                            outcome_of)
+from privacyidea.lib.conditional_access.context import CAContext
 from privacyidea.lib.conditional_access.engine import (
     AccessDecision,
     LockoutAction,
@@ -181,7 +182,7 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
         self._create("password_bruteforce")
         self._seed_events(AuthEventType.PASSWORD_FAIL, 6, timestamp=now)
         self._seed_events(AuthEventType.PIN_FAIL, 4, timestamp=now)
-        evaluate_lockout_policies(self.user, AuthEventType.PIN_FAIL, now=now)
+        evaluate_lockout_policies(CAContext(self.user), AuthEventType.PIN_FAIL, now=now)
         status = get_user_lockout(self.user, now=now)
         self.assertIsNotNone(status, "user not locked on combined count")
         self.assertFalse(status.permanent, "lock is permanent, expected timed")
@@ -191,7 +192,7 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
         now = utc_now()
         self._create("password_bruteforce")
         self._seed_events(AuthEventType.PASSWORD_FAIL, 9, timestamp=now)
-        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, now=now)
+        evaluate_lockout_policies(CAContext(self.user), AuthEventType.PASSWORD_FAIL, now=now)
         self.assertFalse(is_user_locked(self.user, now=now), "user locked below threshold")
 
     def test_password_bruteforce_failures_outside_window_not_counted(self):
@@ -199,7 +200,7 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
         now = utc_now()
         self._create("password_bruteforce")
         self._seed_events(AuthEventType.PASSWORD_FAIL, 10, timestamp=now - timedelta(seconds=1000))
-        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, now=now)
+        evaluate_lockout_policies(CAContext(self.user), AuthEventType.PASSWORD_FAIL, now=now)
         self.assertFalse(is_user_locked(self.user, now=now), "user locked on aged-out failures")
 
     # --- MFA brute-force template (progressive) -------------------------------
@@ -211,17 +212,17 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
         self._create("mfa_bruteforce")
 
         self._seed_events(AuthEventType.MFA_FAIL, 3, timestamp=now)
-        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, now=now)
+        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=now)
         self.assertEqual(600, get_user_lockout(self.user, now=now).seconds_remaining,
                          "first stage: wrong lock duration")
 
         self._seed_events(AuthEventType.MFA_FAIL, 2, timestamp=now)  # total 5
-        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, now=now)
+        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=now)
         self.assertEqual(1800, get_user_lockout(self.user, now=now).seconds_remaining,
                          "second stage: did not escalate to 1800s")
 
         self._seed_events(AuthEventType.MFA_FAIL, 5, timestamp=now)  # total 10
-        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, now=now)
+        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=now)
         self.assertTrue(get_user_lockout(self.user, now=now).permanent,
                         "third stage: did not escalate to permanent lock")
 
@@ -235,7 +236,7 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
             now = utc_now()
             self._create("mfa_bruteforce", configure_email=True)
             self._seed_events(AuthEventType.MFA_FAIL, 5, timestamp=now)
-            notices = evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, now=now)
+            notices = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=now)
             status = get_user_lockout(self.user, now=now)
             self.assertFalse(status.permanent, "lock is permanent, expected timed")
             self.assertEqual(1800, status.seconds_remaining, "wrong lock duration")
@@ -256,7 +257,7 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
             now = utc_now()
             self._create("mfa_bruteforce", configure_email=True)
             self._seed_events(AuthEventType.MFA_FAIL, 10, timestamp=now)
-            evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, now=now)
+            evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=now)
             status = get_user_lockout(self.user, now=now)
             self.assertTrue(status.permanent, "lock not permanent")
             self.assertIsNone(status.seconds_remaining, "permanent lock has remaining time")
@@ -273,7 +274,7 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
         now = utc_now()
         self._create("mfa_bruteforce")  # email deliberately left unconfigured
         self._seed_events(AuthEventType.MFA_FAIL, 5, timestamp=now)
-        notices = evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, now=now)
+        notices = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=now)
         self.assertEqual(1800, get_user_lockout(self.user, now=now).seconds_remaining,
                          "lock did not fire without SMTP configured")
         self.assertEqual([], notices, "unexpected login notice")
@@ -288,14 +289,14 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
         self._seed_attempts(AuthEventType.LOGIN_SUCCESS, 10, timestamp=now, start=0)
         self._seed_attempts(AuthEventType.MFA_FAIL, 5, timestamp=now, start=10)
         self._seed_attempts(AuthEventType.CHALLENGE_TRIGGERED, 5, timestamp=now, start=15)
-        self.assertEqual(AccessDecision.DENY, evaluate_access_decision(self.user, now=now))
+        self.assertEqual(AccessDecision.DENY, evaluate_access_decision(CAContext(self.user), now=now))
         self.assertFalse(is_user_locked(self.user, now=now), "a rate limit must not lock the account")
 
     def test_user_rate_limiting_below_threshold_continues(self):
         now = utc_now()
         self._create("user_rate_limiting")
         self._seed_attempts(AuthEventType.LOGIN_SUCCESS, 19, timestamp=now)
-        self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(self.user, now=now))
+        self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(CAContext(self.user), now=now))
 
     # --- per-user failed-attempt rate limit (DENY) ----------------------------
 
@@ -305,7 +306,7 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
         self._create("user_failed_rate_limiting")
         self._seed_attempts(AuthEventType.PASSWORD_FAIL, 5, timestamp=now, start=0)
         self._seed_attempts(AuthEventType.CHALLENGE_ANSWERED_FAIL, 5, timestamp=now, start=5)
-        self.assertEqual(AccessDecision.DENY, evaluate_access_decision(self.user, now=now))
+        self.assertEqual(AccessDecision.DENY, evaluate_access_decision(CAContext(self.user), now=now))
 
     def test_user_failed_rate_limiting_ignores_successful_attempts(self):
         # Successful attempts reduce to LOGIN_SUCCESS (not a tracked failure type), so a busy successful client is
@@ -314,7 +315,7 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
         self._create("user_failed_rate_limiting")
         self._seed_attempts(AuthEventType.MFA_FAIL, 9, timestamp=now, start=0)
         self._seed_attempts(AuthEventType.LOGIN_SUCCESS, 50, timestamp=now, start=9)
-        self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(self.user, now=now))
+        self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(CAContext(self.user), now=now))
 
     # --- per-IP failed-attempt rate limit (distinct accounts, DENY) - ships dry-run ---
 
@@ -326,7 +327,7 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
         policy_id = self._create("ip_failed_rate_limiting")
         self.assertTrue(get_lockout_policy(policy_id)["dry_run"], "ip_failed_rate_limiting must ship as dry-run")
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=25, timestamp=now)
-        self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(self.user, source_ip=ip, now=now))
+        self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(CAContext(self.user, ip), now=now))
 
     def test_ip_failed_rate_limiting_denies_after_distinct_failed_accounts_when_enforced(self):
         # Once an admin enables enforcement: distinct accounts the IP failed against, real or probed, are counted -
@@ -338,14 +339,14 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=10, timestamp=now)
         self._seed_ip_unknown_events(ip, AuthEventType.USER_UNKNOWN,
                                      [f"ghost{i}" for i in range(10)], timestamp=now)
-        self.assertEqual(AccessDecision.DENY, evaluate_access_decision(self.user, source_ip=ip, now=now))
+        self.assertEqual(AccessDecision.DENY, evaluate_access_decision(CAContext(self.user, ip), now=now))
 
     def test_ip_failed_rate_limiting_below_threshold_continues_when_enforced(self):
         now = utc_now()
         ip = "203.0.113.41"
         self._create("ip_failed_rate_limiting", enforce=True)
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=19, timestamp=now)
-        self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(self.user, source_ip=ip, now=now))
+        self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(CAContext(self.user, ip), now=now))
 
     # --- per-IP rate limit (all outcomes, distinct accounts) - ships dry-run ---
 
@@ -357,7 +358,7 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
         policy_id = self._create("ip_rate_limiting")
         self.assertTrue(get_lockout_policy(policy_id)["dry_run"], "ip_rate_limiting must ship as dry-run")
         self._seed_ip_events(ip, AuthEventType.LOGIN_SUCCESS, n_users=35, timestamp=now)
-        self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(self.user, source_ip=ip, now=now))
+        self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(CAContext(self.user, ip), now=now))
 
     # --- user enumeration template (source_ip target) -------------------------
 
@@ -367,7 +368,7 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
         self._create("user_enumeration")
         self._seed_ip_unknown_events(ip, AuthEventType.USER_UNKNOWN,
                                      [f"ghost{i}" for i in range(10)], timestamp=now)
-        evaluate_lockout_policies(self.user, AuthEventType.USER_UNKNOWN, source_ip=ip, now=now)
+        evaluate_lockout_policies(CAContext(self.user, ip), AuthEventType.USER_UNKNOWN, now=now)
         status = get_ip_block(ip, now=now)
         self.assertIsNotNone(status, "IP not blocked after distinct unknown usernames")
         self.assertFalse(status.permanent, "block is permanent, expected timed")
@@ -379,7 +380,7 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
         self._create("user_enumeration")
         self._seed_ip_unknown_events(ip, AuthEventType.USER_UNKNOWN,
                                      [f"ghost{i}" for i in range(9)], timestamp=now)
-        evaluate_lockout_policies(self.user, AuthEventType.USER_UNKNOWN, source_ip=ip, now=now)
+        evaluate_lockout_policies(CAContext(self.user, ip), AuthEventType.USER_UNKNOWN, now=now)
         self.assertFalse(is_ip_blocked(ip, now=now), "IP blocked below the distinct-unknown-username threshold")
 
     def test_user_enumeration_repeated_unknown_username_is_one_distinct(self):
@@ -389,7 +390,7 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
         ip = "203.0.113.32"
         self._create("user_enumeration")
         self._seed_ip_unknown_events(ip, AuthEventType.USER_UNKNOWN, ["ghost"] * 30, timestamp=now)
-        evaluate_lockout_policies(self.user, AuthEventType.USER_UNKNOWN, source_ip=ip, now=now)
+        evaluate_lockout_policies(CAContext(self.user, ip), AuthEventType.USER_UNKNOWN, now=now)
         self.assertFalse(is_ip_blocked(ip, now=now), "IP blocked on repeated same-username volume")
 
     # --- password spraying template (source_ip target) ------------------------
@@ -399,7 +400,7 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
         ip = "203.0.113.21"
         self._create("password_spraying")
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=19, timestamp=now)
-        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip=ip, now=now)
+        evaluate_lockout_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL, now=now)
         self.assertFalse(is_ip_blocked(ip, now=now), "IP blocked below the distinct-user threshold")
 
     def test_password_spraying_blocks_ip_after_distinct_users(self):
@@ -410,7 +411,7 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
         self._create("password_spraying")
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=12, timestamp=now)
         self._seed_ip_events(ip, AuthEventType.PIN_FAIL, n_users=8, timestamp=now, start=12)
-        evaluate_lockout_policies(self.user, AuthEventType.PIN_FAIL, source_ip=ip, now=now)
+        evaluate_lockout_policies(CAContext(self.user, ip), AuthEventType.PIN_FAIL, now=now)
         status = get_ip_block(ip, now=now)
         self.assertIsNotNone(status, "IP not blocked on combined distinct-user count")
         self.assertFalse(status.permanent, "block is permanent, expected timed")
@@ -423,5 +424,5 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
         ip = "203.0.113.23"
         self._create("password_spraying")
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=5, per_user=10, timestamp=now)
-        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip=ip, now=now)
+        evaluate_lockout_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL, now=now)
         self.assertFalse(is_ip_blocked(ip, now=now), "IP blocked on event count instead of distinct users")
