@@ -160,14 +160,26 @@ export interface LockoutPolicy {
 }
 
 // The shape sent to create/update; id is only present (and ignored server-side) on update.
-export type LockoutPolicySaveParams = Omit<LockoutPolicy, "id"> & { id?: number };
+// priority is number | null in the draft: a new policy starts with no priority so the admin
+// is forced to pick a deliberate, unique value (the backend requires it and 400s otherwise).
+export type LockoutPolicySaveParams = Omit<LockoutPolicy, "id" | "priority"> & {
+  id?: number;
+  priority: number | null;
+};
+
+// What a shipped template carries: a create payload minus the priority, which the
+// catalog deliberately omits so the admin picks a unique one. Optional (not just
+// nullable) because the key is absent from the response altogether.
+export type LockoutPolicyTemplateParams = Omit<LockoutPolicySaveParams, "priority"> & {
+  priority?: number | null;
+};
 
 // A ready-made policy the backend ships (GET /conditionalaccess/template); "policy"
 // is a full create payload a client prefills, edits and POSTs as a normal policy.
 export interface LockoutPolicyTemplate {
   key: string;
   description: string;
-  policy: LockoutPolicySaveParams;
+  policy: LockoutPolicyTemplateParams;
 }
 
 export const EMPTY_LOCKOUT_POLICY: LockoutPolicySaveParams = {
@@ -175,7 +187,7 @@ export const EMPTY_LOCKOUT_POLICY: LockoutPolicySaveParams = {
   time_window_seconds: 600,
   enabled: true,
   dry_run: false,
-  priority: 1,
+  priority: null,
   target: "user",
   count_mode: "PER_REQUEST",
   counter_types_to_track: [],
@@ -215,6 +227,8 @@ export interface ConditionalAccessPolicyServiceInterface {
   deleteWithConfirmDialog(policy: { id: number; name: string }): Promise<void>;
 
   deleteSelectedWithConfirmDialog(policies: { id: number; name: string }[]): Promise<boolean>;
+
+  reorderPolicies(policyIds: number[], expectedPriorities?: number[]): Promise<boolean>;
 
   enablePolicy(id: number): Promise<void>;
 
@@ -504,6 +518,45 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
     } catch {
       this.notificationService.error($localize`Failed to disable conditional-access policy.`);
       this.policiesResource.reload();
+    }
+  }
+
+  // Rearrange the evaluation order: the listed policies take the priority values this
+  // same set already holds, in the given order. Only these policies change, so a single
+  // swap sends two ids. See reorder_lockout_policies() for the invariant.
+  //
+  // expectedPriorities asserts what each policy held when the caller read it, so a
+  // concurrent rearrangement comes back as a 409 instead of silently overwriting the
+  // other admin. It covers only the submitted policies, so two admins reordering
+  // different parts of the list do not get in each other's way.
+  async reorderPolicies(policyIds: number[], expectedPriorities?: number[]): Promise<boolean> {
+    const headers = this.authService.getHeaders();
+    try {
+      await lastValueFrom(
+        this.http.put<PiResponse<boolean>>(
+          `${this.baseUrl}/order`,
+          { policy_ids: policyIds, ...(expectedPriorities ? { expected_priorities: expectedPriorities } : {}) },
+          { headers }
+        )
+      );
+      this.notificationService.success($localize`Successfully saved the new conditional-access policy order.`);
+      this.policiesResource.reload();
+      return true;
+    } catch (error) {
+      const httpError = error as HttpErrorResponse;
+      const body = httpError.error as PiResponse<boolean> | undefined;
+      const message = body?.result?.error?.message || "";
+      // The API states the conflict but deliberately gives no advice on what to do about
+      // it, so the wording for this client belongs here, keyed off the status code. The
+      // reload below is what makes "refreshed" true, and the edit page re-seeds its draft
+      // from it (see the reseed effect in ConditionalAccessComponent).
+      this.notificationService.error(
+        httpError.status === 409
+          ? $localize`Someone else changed priorities while you were rearranging them. The list has been refreshed - please redo your changes. `
+          : $localize`Failed to reorder conditional-access policies. ` + message
+      );
+      this.policiesResource.reload();
+      return false;
     }
   }
 }

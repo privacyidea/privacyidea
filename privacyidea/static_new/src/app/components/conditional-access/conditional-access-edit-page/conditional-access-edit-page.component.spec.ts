@@ -68,7 +68,8 @@ const EMPTY_TEMPLATE_POLICY: LockoutPolicySaveParams = {
   time_window_seconds: 900,
   enabled: true,
   dry_run: false,
-  priority: 1,
+  // Templates carry no policy-level priority: the admin must pick a unique one.
+  priority: null,
   target: "user",
   count_mode: "PER_REQUEST",
   counter_types_to_track: ["PASSWORD_FAIL"],
@@ -204,11 +205,75 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
     expect(component.editPolicy().time_window_seconds).toBe(36000);
   });
 
-  it("should update priority for valid input only", () => {
+  it("should update priority, clearing to null on empty, non-numeric or decimal input", () => {
     component.onPriorityInput("5");
     expect(component.editPolicy().priority).toBe(5);
     component.onPriorityInput("abc");
-    expect(component.editPolicy().priority).toBe(5);
+    expect(component.editPolicy().priority).toBeNull();
+    component.onPriorityInput("");
+    expect(component.editPolicy().priority).toBeNull();
+    // A decimal must not be silently truncated to a passing integer.
+    component.onPriorityInput("1.5");
+    expect(component.editPolicy().priority).toBeNull();
+  });
+
+  it("should keep the typed text so an invalid priority is explained, not wiped", () => {
+    component.onPriorityInput("1.5");
+    expect(component.priorityInput()).toBe("1.5");
+    expect(component.priorityError()).toBe("not-an-integer");
+    component.onPriorityInput("abc");
+    expect(component.priorityInput()).toBe("abc");
+    expect(component.priorityError()).toBe("not-an-integer");
+    // 0 and negatives are out of range, not malformed, but are reported the same way.
+    component.onPriorityInput("0");
+    expect(component.priorityError()).toBe("not-an-integer");
+    component.onPriorityInput("2");
+    expect(component.priorityError()).toBeNull();
+  });
+
+  it("should distinguish an empty priority from an invalid one", () => {
+    component.onPriorityInput("");
+    expect(component.priorityError()).toBe("required");
+    component.onPriorityInput("   ");
+    expect(component.priorityError()).toBe("required");
+  });
+
+  it("should show the existing priority in the field in edit mode", () => {
+    expect(component.priorityInput()).toBe(String(mockPolicy.priority));
+  });
+
+  // mat-form-field only projects <mat-error> while its control is in an error state, so
+  // asserting on the signals alone would pass with nothing rendered. These read the DOM.
+  const renderedErrors = (): string[] =>
+    Array.from(fixture.nativeElement.querySelectorAll("mat-error")).map((element) =>
+      (element as HTMLElement).textContent!.trim()
+    );
+
+  it("should render the priority error message in the DOM, not just compute it", () => {
+    component.onPriorityInput("1.5");
+    fixture.detectChanges();
+    expect(component.priorityError()).toBe("not-an-integer");
+    expect(renderedErrors()).toContain("Priority must be a whole number of at least 1.");
+  });
+
+  it("should render the required-priority message when the field is cleared", () => {
+    component.onPriorityInput("");
+    fixture.detectChanges();
+    expect(renderedErrors()).toContain("A priority is required.");
+  });
+
+  it("should render the collision message naming the conflicting policy", () => {
+    policyServiceMock.policies.set([mockPolicy, { ...mockPolicy, id: 99, name: "Other", priority: 4 }]);
+    component.onPriorityInput("4");
+    fixture.detectChanges();
+    expect(component.priorityUnique()).toBe(false);
+    expect(renderedErrors().join(" ")).toContain("Other");
+  });
+
+  it("should render no priority error for a valid, free priority", () => {
+    component.onPriorityInput("42");
+    fixture.detectChanges();
+    expect(renderedErrors()).toEqual([]);
   });
 
   it("should toggle dry_run without calling the enable/disable endpoints", () => {
@@ -415,10 +480,38 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
     expect(policyServiceMock.disablePolicy).not.toHaveBeenCalled();
   });
 
-  it("should become valid once name, a counter type and a stage are set", () => {
+  it("should become valid once name, a counter type, a stage and a priority are set", () => {
     component.updateEditPolicy({ name: "New Policy" });
     component.onCounterTypesChange(["PIN_FAIL"]);
     component.onStagesChange([{ failure_threshold: 5, priority: 1, actions: [] }]);
+    component.onPriorityInput("1");
+    expect(component.canSave()).toBe(true);
+  });
+
+  it("should stay invalid until a priority is entered (no default)", () => {
+    component.updateEditPolicy({ name: "New Policy" });
+    component.onCounterTypesChange(["PIN_FAIL"]);
+    component.onStagesChange([{ failure_threshold: 5, priority: 1, actions: [] }]);
+    expect(component.editPolicy().priority).toBeNull();
+    expect(component.priorityValid()).toBe(false);
+    expect(component.canSave()).toBe(false);
+    component.onPriorityInput("1");
+    expect(component.priorityValid()).toBe(true);
+    expect(component.canSave()).toBe(true);
+  });
+
+  it("should block saving when the priority collides with an existing policy", () => {
+    policyServiceMock.policies.set([{ ...mockPolicy, id: 99, priority: 3 }]);
+    component.updateEditPolicy({ name: "New Policy" });
+    component.onCounterTypesChange(["PIN_FAIL"]);
+    component.onStagesChange([{ failure_threshold: 5, priority: 1, actions: [] }]);
+    component.onPriorityInput("3");
+    expect(component.priorityUnique()).toBe(false);
+    expect(component.priorityConflict()?.name).toBe("Brute Force");
+    expect(component.canSave()).toBe(false);
+    // a free priority number clears the collision
+    component.onPriorityInput("4");
+    expect(component.priorityUnique()).toBe(true);
     expect(component.canSave()).toBe(true);
   });
 
@@ -438,7 +531,8 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
           time_window_seconds: 900,
           enabled: true,
           dry_run: false,
-          priority: 1,
+          // Templates carry no policy-level priority.
+          priority: null,
           target: "user",
           count_mode: "PER_REQUEST",
           counter_types_to_track: ["PASSWORD_FAIL"],
@@ -450,6 +544,8 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
     component.applyTemplate("password_bruteforce");
     expect(component.editPolicy().name).toBe("Password Brute-Force");
     expect(component.editPolicy().stages.length).toBe(1);
+    // The admin must still pick a priority: the template leaves it empty.
+    expect(component.editPolicy().priority).toBeNull();
     expect(component.editPolicy().conditions).toBeUndefined();
     expect(component.selectedTemplateKey()).toBe("password_bruteforce");
 

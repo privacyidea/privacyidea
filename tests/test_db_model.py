@@ -769,7 +769,8 @@ class LockoutPolicyTestCase(MyTestCase):
         policy = LockoutPolicy(name="Default MFA Lockout Policy",
                                counter_types_to_track=[AuthEventType.MFA_FAIL],
                                time_window_seconds=3600,
-                               target=LockoutTarget.USER)
+                               target=LockoutTarget.USER,
+                               priority=1)
         policy_id = policy.save()
         self.assertGreaterEqual(policy_id, 1)
 
@@ -777,9 +778,9 @@ class LockoutPolicyTestCase(MyTestCase):
         policy = LockoutPolicy.query.filter_by(name="Default MFA Lockout Policy").one()
         self.assertTrue(policy.enabled)
         self.assertFalse(policy.dry_run)
-        self.assertEqual(1, policy.priority)
         self.assertEqual(["MFA_FAIL"], policy.counter_types_to_track)
         self.assertEqual(3600, policy.time_window_seconds)
+        self.assertEqual(1, policy.priority)
 
         # Add two stages with different thresholds
         stage5 = LockoutPolicyStage(policy_id=policy_id, failure_threshold=5)
@@ -821,7 +822,8 @@ class LockoutPolicyTestCase(MyTestCase):
                                counter_types_to_track=[AuthEventType.PASSWORD_FAIL, AuthEventType.MFA_FAIL,
                                                        AuthEventType.TOKEN_ONLY_FAIL],
                                time_window_seconds=900,
-                               target=LockoutTarget.USER)
+                               target=LockoutTarget.USER,
+                               priority=2)
         policy.save()
 
         reloaded = LockoutPolicy.query.filter_by(name="Multi counter policy").one()

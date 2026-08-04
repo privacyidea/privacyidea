@@ -482,4 +482,67 @@ describe("ConditionalAccessPolicyService", () => {
       expect(notificationServiceMock.error).toHaveBeenCalled();
     });
   });
+
+  describe("reorderPolicies", () => {
+    it("should PUT the id order to the order URL", async () => {
+      const reload = jest.spyOn(service.policiesResource, "reload").mockImplementation(() => true);
+      const promise = service.reorderPolicies([2, 1]);
+
+      const req = httpMock.expectOne(`${service.baseUrl}/order`);
+      expect(req.request.method).toBe("PUT");
+      // The client sends an order, never target priority numbers.
+      expect(req.request.body).toEqual({ policy_ids: [2, 1] });
+      req.flush(MockPiResponse.fromValue(true));
+
+      expect(await promise).toBe(true);
+      expect(notificationServiceMock.success).toHaveBeenCalled();
+      expect(reload).toHaveBeenCalled();
+    });
+
+    it("should send expected_priorities as a concurrency assertion when given", async () => {
+      const reload = jest.spyOn(service.policiesResource, "reload").mockImplementation(() => true);
+      const promise = service.reorderPolicies([2, 1], [20, 10]);
+
+      const req = httpMock.expectOne(`${service.baseUrl}/order`);
+      // The priorities are an assertion about current state, never values to write.
+      expect(req.request.body).toEqual({ policy_ids: [2, 1], expected_priorities: [20, 10] });
+      req.flush(MockPiResponse.fromValue(true));
+
+      expect(await promise).toBe(true);
+      expect(reload).toHaveBeenCalled();
+    });
+
+    it("should surface a 409 conflict as a failed reorder", async () => {
+      jest.spyOn(service.policiesResource, "reload").mockImplementation(() => true);
+      const promise = service.reorderPolicies([2, 1], [20, 10]);
+      const req = httpMock.expectOne(`${service.baseUrl}/order`);
+      req.flush(MockPiResponse.fromError({ message: "The evaluation order changed since it was loaded" }), {
+        status: 409,
+        statusText: "Conflict"
+      });
+
+      expect(await promise).toBe(false);
+      // The client supplies the "what now" wording for a conflict; the API only states the
+      // mismatch. Asserted as "not the generic failure text" so rewording the copy does not
+      // break the test - what matters is that a 409 is handled distinctly.
+      const shown = notificationServiceMock.error.mock.calls[0][0] as string;
+      expect(shown).not.toContain("Failed to reorder");
+      expect(shown).toContain("refreshed");
+    });
+
+    it("should notify and reload on error so the table cannot show a stale order", async () => {
+      const reload = jest.spyOn(service.policiesResource, "reload").mockImplementation(() => true);
+      const promise = service.reorderPolicies([2, 1]);
+      const req = httpMock.expectOne(`${service.baseUrl}/order`);
+      req.flush(MockPiResponse.fromError({ message: "unknown policy" }), {
+        status: 404,
+        statusText: "Not Found"
+      });
+
+      expect(await promise).toBe(false);
+      expect(notificationServiceMock.error).toHaveBeenCalled();
+      expect(notificationServiceMock.success).not.toHaveBeenCalled();
+      expect(reload).toHaveBeenCalled();
+    });
+  });
 });

@@ -102,4 +102,6 @@ export class MockConditionalAccessPolicyService implements ConditionalAccessPoli
   enablePolicy = jest.fn(async (): Promise<void> => Promise.resolve());
 
   disablePolicy = jest.fn(async (): Promise<void> => Promise.resolve());
+
+  reorderPolicies = jest.fn(async (_: number[]): Promise<boolean> => Promise.resolve(true));
 }

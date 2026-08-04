@@ -30,6 +30,7 @@ from werkzeug.test import TestResponse
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
 from privacyidea.lib.conditional_access.engine import LockoutAction
+from privacyidea.lib.conditional_access.lockout_policy import create_lockout_policy, list_lockout_policies
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
 from privacyidea.models import db
@@ -80,6 +81,7 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         body = {"name": name,
                 "time_window_seconds": 600,
                 "target": "user",
+                "priority": 1,
                 "counter_types_to_track": [str(AuthEventType.PIN_FAIL)],
                 "stages": [{"failure_threshold": 5,
                             "actions": [{"action_type": str(LockoutAction.LOCK_USER),
@@ -119,6 +121,20 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         res = self._request("policy", method="POST", json_data=self._policy_body(name="Dup"))
         self.assertEqual(400, res.status_code, res.json)
 
+    def test_create_duplicate_priority_is_400(self):
+        # Priorities are unique across policies, so the evaluation order is never
+        # ambiguous. The rejection names the policy already holding the priority.
+        self._create_policy(name="First", priority=7)
+        res = self._request("policy", method="POST",
+                            json_data=self._policy_body(name="Second", priority=7))
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertIn("First", res.json["result"]["error"]["message"])
+
+    def test_create_free_priority_is_accepted(self):
+        # The counterpart: a priority no other policy holds goes through.
+        self._create_policy(name="First", priority=7)
+        self._create_policy(name="Second", priority=8)
+
     # --- target (user vs source_ip) --------------------------------------------
 
     def test_create_source_ip_policy(self):
@@ -136,6 +152,13 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         # target is required (not defaulted): it decides counting and allowed actions.
         body = self._policy_body()
         del body["target"]
+        res = self._request("policy", method="POST", json_data=body)
+        self.assertEqual(400, res.status_code, res.json)
+
+    def test_create_without_priority_is_400(self):
+        # priority is a required create param (unique precedence, no default).
+        body = self._policy_body()
+        del body["priority"]
         res = self._request("policy", method="POST", json_data=body)
         self.assertEqual(400, res.status_code, res.json)
 
@@ -216,9 +239,10 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
                          spray["policy"]["stages"][0]["actions"][0]["action_type"])
 
     def test_template_policy_posts_verbatim(self):
-        # the real client flow: fetch the catalog once, POST a template's policy
+        # the real client flow: fetch the catalog once, add a priority, POST a template's policy
         catalog = {entry["key"]: entry for entry in self._request("template").json["result"]["value"]}
-        res = self._request("policy", method="POST", json_data=catalog["password_bruteforce"]["policy"])
+        policy = {**catalog["password_bruteforce"]["policy"], "priority": 1}
+        res = self._request("policy", method="POST", json_data=policy)
         self.assertEqual(200, res.status_code, res.json)
 
     # --- GET /policy and /policy/<id> (read) -----------------------------------
@@ -339,6 +363,26 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
                             json_data={"time_window_seconds": -1})
         self.assertEqual(400, res.status_code, res.json)
 
+    def test_patch_to_used_priority_is_400(self):
+        # Moving a policy onto a priority another policy holds collides; the
+        # target policy keeps its own priority.
+        self._create_policy(name="Holder", priority=3)
+        policy_id = self._create_policy(name="Mover", priority=4)
+        res = self._request(f"policy/{policy_id}", method="PATCH", json_data={"priority": 3})
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertIn("Holder", res.json["result"]["error"]["message"])
+        self.assertEqual(4, self._request(f"policy/{policy_id}").json["result"]["value"]["priority"])
+
+    def test_patch_keeping_own_priority_is_allowed(self):
+        # Re-sending a policy's current priority is not a self-collision.
+        policy_id = self._create_policy(name="Solo", priority=3)
+        res = self._request(f"policy/{policy_id}", method="PATCH",
+                            json_data={"name": "Solo2", "priority": 3})
+        self.assertEqual(200, res.status_code, res.json)
+        policy = self._request(f"policy/{policy_id}").json["result"]["value"]
+        self.assertEqual("Solo2", policy["name"])
+        self.assertEqual(3, policy["priority"])
+
     # --- DELETE /policy/<id> ---------------------------------------------------
 
     def test_delete_removes_policy_and_children(self):
@@ -359,6 +403,7 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         # the positive-int validation rejects it. This documents that behavior.
         data = {"name": "Form Policy",
                 "time_window_seconds": "600",
+                "priority": "1",
                 "counter_types_to_track": json.dumps(["PIN_FAIL"]),
                 "stages": json.dumps([{"failure_threshold": 5,
                                        "actions": [{"action_type": "LOCK_USER",
@@ -371,11 +416,146 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
     def test_create_form_encoded_malformed_json_is_400(self):
         data = {"name": "Form Policy",
                 "time_window_seconds": "600",
+                "priority": "1",
                 "counter_types_to_track": json.dumps(["PIN_FAIL"]),
                 "stages": "{not json"}
         with self.app.test_request_context("/conditionalaccess/policy", method="POST", data=data,
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
+        self.assertEqual(400, res.status_code, res.json)
+
+    # --- PUT /policy/order (reorder) --------------------------------------------
+
+    def _order(self) -> list[tuple[str, int]]:
+        """
+        The current evaluation order as (name, priority) pairs.
+        """
+        return [(policy["name"], policy["priority"]) for policy in list_lockout_policies()]
+
+    def _numbered(self, *priorities) -> list[int]:
+        """
+        Create one policy per given priority, named after it, and return their ids.
+        """
+        return [create_lockout_policy(
+            name=f"P{priority}", time_window_seconds=600,
+            counter_types_to_track=[str(AuthEventType.PIN_FAIL)],
+            stages=[{"failure_threshold": 5,
+                     "actions": [{"action_type": str(LockoutAction.LOCK_USER),
+                                  "action_value": {"lock_duration_seconds": 300}}]}],
+            target="user", priority=priority) for priority in priorities]
+
+    def test_reorder_swaps_two_policies(self):
+        first, second = self._numbered(1, 2)
+        res = self._request("policy/order", method="PUT", json_data={"policy_ids": [second, first]})
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertTrue(res.json["result"]["value"])
+        self.assertListEqual([("P2", 1), ("P1", 2)], self._order())
+
+    def test_reorder_subset_leaves_other_policies_untouched(self):
+        self._numbered(1, 2, 3)
+        ids = {policy["name"]: policy["id"] for policy in list_lockout_policies()}
+        res = self._request("policy/order", method="PUT",
+                            json_data={"policy_ids": [ids["P3"], ids["P2"]]})
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertListEqual([("P1", 1), ("P3", 2), ("P2", 3)], self._order())
+
+    def test_reorder_preserves_gapped_numbering(self):
+        low, mid, high = self._numbered(10, 20, 30)
+        self._request("policy/order", method="PUT", json_data={"policy_ids": [high, low, mid]})
+        self.assertListEqual([("P30", 10), ("P10", 20), ("P20", 30)], self._order())
+
+    def test_reorder_is_idempotent(self):
+        first, second = self._numbered(1, 2)
+        for _ in range(2):
+            res = self._request("policy/order", method="PUT", json_data={"policy_ids": [first, second]})
+            self.assertEqual(200, res.status_code, res.json)
+        self.assertListEqual([("P1", 1), ("P2", 2)], self._order())
+
+    def test_reorder_without_policy_ids_is_400(self):
+        res = self._request("policy/order", method="PUT", json_data={})
+        self.assertEqual(400, res.status_code, res.json)
+
+    def test_reorder_empty_list_is_400(self):
+        res = self._request("policy/order", method="PUT", json_data={"policy_ids": []})
+        self.assertEqual(400, res.status_code, res.json)
+
+    def test_reorder_duplicate_id_is_400(self):
+        first, second = self._numbered(1, 2)
+        res = self._request("policy/order", method="PUT", json_data={"policy_ids": [first, first]})
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertListEqual([("P1", 1), ("P2", 2)], self._order())
+
+    def test_reorder_unknown_id_is_404(self):
+        first, second = self._numbered(1, 2)
+        res = self._request("policy/order", method="PUT",
+                            json_data={"policy_ids": [second, first, 424242]})
+        self.assertEqual(404, res.status_code, res.json)
+        # nothing was moved
+        self.assertListEqual([("P1", 1), ("P2", 2)], self._order())
+
+    def test_reorder_route_coexists_with_the_policy_id_route(self):
+        # 'policy/<policy_id>' uses a string converter, so the literal 'policy/order'
+        # also matches it. Only PUT is routed to the reorder endpoint; the other verbs
+        # fall through to the id route and must fail cleanly on the non-numeric id
+        # rather than acting on some policy.
+        first, second = self._numbered(1, 2)
+        self.assertEqual(200, self._request("policy/order", method="PUT",
+                                            json_data={"policy_ids": [second, first]}).status_code)
+        for method in ("GET", "PATCH", "DELETE"):
+            res = self._request("policy/order", method=method, json_data={})
+            self.assertEqual(400, res.status_code, f"{method}: {res.json}")
+            self.assertIn("Invalid policy id", res.json["result"]["error"]["message"])
+        # the reorder above is still the only change that happened
+        self.assertListEqual([("P2", 1), ("P1", 2)], self._order())
+
+    def test_reorder_requires_write_permission(self):
+        first, second = self._numbered(1, 2)
+        set_policy("ca_read_only", scope=SCOPE.ADMIN, action=str(PolicyAction.LOCKOUT_POLICY_READ))
+        try:
+            res = self._request("policy/order", method="PUT", json_data={"policy_ids": [second, first]})
+            self.assertEqual(403, res.status_code, res.json)
+        finally:
+            delete_policy("ca_read_only")
+
+    def test_reorder_with_matching_expected_priorities(self):
+        first, second = self._numbered(1, 2)
+        res = self._request("policy/order", method="PUT",
+                            json_data={"policy_ids": [second, first], "expected_priorities": [2, 1]})
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertListEqual([("P2", 1), ("P1", 2)], self._order())
+
+    def test_reorder_with_stale_expected_priorities_is_409(self):
+        # Another admin rearranged in between: refuse rather than silently overwriting.
+        first, second = self._numbered(1, 2)
+        self._request("policy/order", method="PUT", json_data={"policy_ids": [second, first]})
+        res = self._request("policy/order", method="PUT",
+                            json_data={"policy_ids": [second, first], "expected_priorities": [2, 1]})
+        self.assertEqual(409, res.status_code, res.json)
+        message = res.json["result"]["error"]["message"]
+        # Names the mismatching policy; deliberately no priority numbers and no advice
+        # about what the client should do next.
+        self.assertIn("P2", message)
+        self.assertIn("expected priorities", message)
+        self.assertNotIn("Reload", message)
+        self.assertListEqual([("P2", 1), ("P1", 2)], self._order())
+
+    def test_reorder_of_disjoint_rows_does_not_conflict(self):
+        # Two admins rearranging different parts of the list both succeed - the whole
+        # reason the client sends only the rows it moved.
+        self._numbered(1, 2, 3, 4)
+        ids = {policy["name"]: policy["id"] for policy in list_lockout_policies()}
+        self.assertEqual(200, self._request("policy/order", method="PUT",
+                                            json_data={"policy_ids": [ids["P4"], ids["P3"]],
+                                                       "expected_priorities": [4, 3]}).status_code)
+        self.assertEqual(200, self._request("policy/order", method="PUT",
+                                            json_data={"policy_ids": [ids["P2"], ids["P1"]],
+                                                       "expected_priorities": [2, 1]}).status_code)
+        self.assertListEqual([("P2", 1), ("P1", 2), ("P4", 3), ("P3", 4)], self._order())
+
+    def test_reorder_mismatched_expected_priorities_length_is_400(self):
+        first, second = self._numbered(1, 2)
+        res = self._request("policy/order", method="PUT",
+                            json_data={"policy_ids": [second, first], "expected_priorities": [2]})
         self.assertEqual(400, res.status_code, res.json)
 
     # --- authorization ---------------------------------------------------------
