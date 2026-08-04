@@ -1,0 +1,82 @@
+# SPDX-FileCopyrightText: (C) 2026 NetKnights GmbH <https://netknights.it>
+#
+# SPDX-License-Identifier: CC0-1.0
+#
+# THROWAWAY / EXPERIMENTAL. Builds the single-node privacyIDEA image from this
+# branch's deploy/docker setup and pushes it to the *private* GHCR as a "-dev"
+# image, for personal testing while the branch is unmerged. Not an official
+# artifact. Delete this file to stop.
+#
+# Trigger: every push to the docker-update branch (so "merge master in, push"
+# yields a fresh image) plus a manual button.
+
+name: Docker dev image (throwaway)
+
+on:
+  push:
+    branches:
+      - 'docker-update'
+  workflow_dispatch:
+
+# Only one build per ref at a time; newer pushes cancel older builds.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    name: Build and push -dev image
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      # fetch-depth: 0 so setuptools-scm can derive the version from git tags
+      # (the Dockerfile copies .git and builds the package with it).
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Compute image name and tags
+        id: meta
+        run: |
+          # GHCR requires a lowercase owner; the repo owner may contain capitals.
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          image="ghcr.io/${owner}/privacyidea-dev"
+          echo "image=${image}" >> "$GITHUB_OUTPUT"
+          echo "sha_tag=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          echo "Building ${image}:docker-update and :sha-${GITHUB_SHA::7}"
+
+      - name: Log in to GHCR
+        # Values are passed through env (not interpolated into the script) so
+        # they are runtime data, never spliced into the shell source.
+        env:
+          ACTOR: ${{ github.actor }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "$TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
+
+      - name: Build image
+        # Same Dockerfile and repo-root context the compose stack builds from.
+        # A moving "docker-update" tag for convenience, plus an immutable
+        # "sha-<short>" tag to pin a specific build.
+        env:
+          IMAGE: ${{ steps.meta.outputs.image }}
+          SHA_TAG: ${{ steps.meta.outputs.sha_tag }}
+        run: |
+          docker build \
+            -f deploy/docker/Dockerfile \
+            -t "$IMAGE:docker-update" \
+            -t "$IMAGE:$SHA_TAG" \
+            .
+
+      - name: Push image
+        env:
+          IMAGE: ${{ steps.meta.outputs.image }}
+        run: docker push --all-tags "$IMAGE"
+
+      - name: Log out of GHCR
+        if: always()
+        run: docker logout ghcr.io

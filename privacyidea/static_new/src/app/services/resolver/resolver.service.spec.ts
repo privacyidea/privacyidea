@@ -23,6 +23,7 @@ import { TestBed } from "@angular/core/testing";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
+import { NotificationService } from "@services/notification/notification.service";
 import { MockPiResponse } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockContentService } from "@testing/mock-services/mock-content-service";
@@ -88,6 +89,81 @@ describe("ResolverService", () => {
     expect(req.request.method).toBe("DELETE");
     expect(req.request.headers.get("Authorization")).toBe("test-token");
     req.flush({});
+  });
+
+  it("should list resolvers", () => {
+    resolverService.listResolvers().subscribe();
+    const req = httpMock.expectOne(resolverService.resolverBaseUrl);
+    expect(req.request.method).toBe("GET");
+    expect(req.request.headers.get("Authorization")).toBe("test-token");
+    req.flush(MockPiResponse.fromValue<Resolvers>({}));
+  });
+
+  it("should get the default resolver config", () => {
+    resolverService.getDefaultResolverConfig("ldapresolver").subscribe();
+    const req = httpMock.expectOne(resolverService.resolverBaseUrl + "ldapresolver/default");
+    expect(req.request.method).toBe("GET");
+    expect(req.request.headers.get("Authorization")).toBe("test-token");
+    req.flush({});
+  });
+
+  describe("request error handling", () => {
+    let notify: jest.SpyInstance;
+
+    beforeEach(() => {
+      jest.spyOn(console, "error").mockReturnValue(undefined);
+      notify = jest.spyOn(TestBed.inject(NotificationService), "error").mockReturnValue(undefined);
+    });
+
+    it("should notify and rethrow when the resolver test fails", async () => {
+      const promise = lastValueFrom(resolverService.postResolverTest());
+      const req = httpMock.expectOne(resolverService.resolverBaseUrl + "test");
+      req.flush({ result: { error: { message: "nope" } } }, { status: 400, statusText: "Bad Request" });
+
+      await expect(promise).rejects.toBeTruthy();
+      expect(notify).toHaveBeenCalledWith("Failed to test resolver. nope");
+    });
+
+    it("should notify and rethrow when saving a resolver fails", async () => {
+      const promise = lastValueFrom(resolverService.postResolver("r1", {}));
+      const req = httpMock.expectOne(resolverService.resolverBaseUrl + "r1");
+      req.flush({ result: { error: { message: "bad" } } }, { status: 400, statusText: "Bad Request" });
+
+      await expect(promise).rejects.toBeTruthy();
+      expect(notify).toHaveBeenCalledWith("Failed to save resolver. bad");
+    });
+
+    it("should notify and rethrow when deleting a resolver fails", async () => {
+      const promise = lastValueFrom(resolverService.deleteResolver("r1"));
+      const req = httpMock.expectOne(resolverService.resolverBaseUrl + "r1");
+      req.flush({ result: { error: { message: "denied" } } }, { status: 403, statusText: "Forbidden" });
+
+      await expect(promise).rejects.toBeTruthy();
+      expect(notify).toHaveBeenCalledWith("Failed to delete resolver. denied");
+    });
+
+    it("should notify and rethrow when fetching the default config fails", async () => {
+      const promise = lastValueFrom(resolverService.getDefaultResolverConfig("ldapresolver"));
+      const req = httpMock.expectOne(resolverService.resolverBaseUrl + "ldapresolver/default");
+      req.flush({ result: { error: { message: "oops" } } }, { status: 500, statusText: "Server Error" });
+
+      await expect(promise).rejects.toBeTruthy();
+      expect(notify).toHaveBeenCalledWith("Failed to get default resolver config. oops");
+    });
+  });
+
+  it("should not request the resolvers resource outside of a users route", () => {
+    contentService.routeUrl.set(ROUTE_PATHS.TOKENS);
+    TestBed.tick();
+
+    httpMock.expectNone(resolverService.resolverBaseUrl);
+  });
+
+  it("should not request the resolvers resource without the resolverread right", () => {
+    (authService.actionAllowed as jest.Mock).mockReturnValue(false);
+    TestBed.tick();
+
+    httpMock.expectNone(resolverService.resolverBaseUrl);
   });
 
   it("should get resolvers", async () => {
