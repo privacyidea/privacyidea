@@ -25,7 +25,7 @@ import { UserSettingsService } from "@services/user-settings/user-settings.servi
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockUserSettingsService } from "@testing/mock-services/mock-user-settings-service";
 
-import { AppearanceService } from "./appearance.service";
+import { AppearanceService, DEFAULT_LIGHT_SOURCE, LIGHT_SOURCE_LEVELS, LIGHT_SOURCE_STEPS } from "./appearance.service";
 
 class DomRendererFactory implements RendererFactory2 {
   createRenderer(): Renderer2 {
@@ -74,6 +74,7 @@ describe("AppearanceService", () => {
 
   it("should start on the default levels", () => {
     expect(service.depth()).toBe("default");
+    expect(service.lightSource()).toBe(DEFAULT_LIGHT_SOURCE);
     expect(service.corners()).toBe("default");
   });
 
@@ -84,6 +85,47 @@ describe("AppearanceService", () => {
     expect(html().classList.contains("depth-strong")).toBe(true);
     expect(cachedAppearance()["depth"]).toBe("strong");
     expect(userSettingsService.settings()?.depth).toBe("strong");
+  });
+
+  it("should apply the deepest depth level", () => {
+    service.setDepth("very-strong");
+
+    expect(html().classList.contains("depth-very-strong")).toBe(true);
+    expect(userSettingsService.settings()?.depth).toBe("very-strong");
+  });
+
+  it("should apply a picked light source", () => {
+    service.setLightSource("12");
+
+    expect(html().classList.contains("light-source-12")).toBe(true);
+    expect(userSettingsService.settings()?.light_source).toBe("12");
+  });
+
+  it("should offer a stop per dial position", () => {
+    expect(LIGHT_SOURCE_LEVELS).toHaveLength(LIGHT_SOURCE_STEPS);
+    expect(LIGHT_SOURCE_LEVELS[0]).toBe("0");
+    expect(LIGHT_SOURCE_LEVELS.at(-1)).toBe(String(LIGHT_SOURCE_STEPS - 1));
+  });
+
+  it("should fall back to the default stop for a level off the dial", () => {
+    service.applyStoredLightSource(String(LIGHT_SOURCE_STEPS));
+
+    expect(service.lightSource()).toBe(DEFAULT_LIGHT_SOURCE);
+    expect(html().classList.contains(`light-source-${DEFAULT_LIGHT_SOURCE}`)).toBe(true);
+  });
+
+  it("should put every group back on its default", () => {
+    service.setDepth("very-strong");
+    service.setLightSource("3");
+    service.setCorners("square");
+
+    service.resetToDefaults();
+
+    expect(service.depth()).toBe("default");
+    expect(service.lightSource()).toBe(DEFAULT_LIGHT_SOURCE);
+    expect(service.corners()).toBe("default");
+    expect(html().classList.contains("depth-default")).toBe(true);
+    expect(userSettingsService.settings()?.corner_radius).toBe("default");
   });
 
   it("should apply a picked corner radius", () => {
@@ -129,12 +171,16 @@ describe("AppearanceService", () => {
   });
 
   it("should initialize from the cached appearance", () => {
-    writeCookie(APP_APPEARANCE_COOKIE_NAME, JSON.stringify({ depth: "flat", corner_radius: "round" }));
+    writeCookie(
+      APP_APPEARANCE_COOKIE_NAME,
+      JSON.stringify({ depth: "flat", light_source: "8", corner_radius: "round" })
+    );
     create();
 
     service.initializeAppearance();
 
     expect(service.depth()).toBe("flat");
+    expect(service.lightSource()).toBe("8");
     expect(service.corners()).toBe("round");
     expect(html().classList.contains("corner-round")).toBe(true);
   });
@@ -174,6 +220,7 @@ describe("AppearanceService", () => {
     service.initializeAppearance();
 
     expect(html().classList.contains("depth-default")).toBe(true);
+    expect(html().classList.contains(`light-source-${DEFAULT_LIGHT_SOURCE}`)).toBe(true);
     expect(html().classList.contains("corner-default")).toBe(true);
   });
 });

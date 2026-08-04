@@ -1,3 +1,4 @@
+@use "sass:math";
 @use "sass:meta";
 @use "@angular/material" as mat;
 @use "@angular/material/core/style/elevation" as mat-elevation;
@@ -18,6 +19,10 @@
 @include meta.load-css("overflow.scss");
 @include meta.load-css("snackbar.scss");
 @include meta.load-css("animations.scss");
+
+// Stops of the light-source dial, shared with ui-settings.component.scss.
+$light-source-steps: 18;
+$light-source-step-angle: math.div(360, $light-source-steps);
 
 html,
 body {
@@ -81,33 +86,78 @@ body {
     --mat-elevation-#{$z}: #{mat-elevation.get-box-shadow($z)};
   }
 
-  // User-tunable "current" elevations. Override at runtime to change look & feel.
-  --elevation-3: var(--mat-elevation-3);
-  --elevation-5: var(--mat-elevation-5);
-  --elevation-8: var(--mat-elevation-8);
-
-  // Inset-shadow scale for recessed "well" surfaces, the inward counterpart of the
-  // --elevation-* scale (higher number = deeper recess). --inset-shadow-5 is the
-  // deep dashboard recess; --inset-shadow-3 is a shallower step between it and flat.
-  // Each level pairs with an --inset-surface-* background tone that sits between the
-  // surrounding grey and a card's white, so the recess reads correctly.
+  // Neumorphic shadow geometry, following the neumorphism.io formula: a dark shadow cast
+  // toward one corner, a light highlight mirrored to the opposite one, and a blur three
+  // times the offset distance. --mat-sys-shadow (#cccccc / #000000) and --mat-sys-light
+  // (#ffffff / #242424) are the theme's two tones, so the pair inverts in dark mode.
   //
-  // Both levels scale with --inset-depth, which the UI settings drive through the
-  // html.depth-* blocks below. At depth 1 the geometry is the original one; at 0 the
-  // offsets and blurs collapse and nothing is painted.
-  --inset-depth: 1;
+  // Two knobs drive it, both set by the UI settings through the html.depth-* and
+  // html.light-source-* blocks below: --depth-scale for how far the shadows reach (0
+  // collapses every offset and blur, so nothing is painted) and --depth-dir-x/-y for
+  // which corner the light comes from. The three slots keep the app's 3 < 5 < 8
+  // ordering, which is how it expresses a hover lift.
+  --depth-scale: 1;
+  --depth-dir-x: 1;
+  --depth-dir-y: 1;
+
+  // The direction factors are the components of a unit vector (see the html.light-source-*
+  // blocks), so a diagonal light contributes 0.7071 per axis. The base distances are sized
+  // for that: 3/6/10px land on the 2/4/7px the slots had when the factors were plain +-1.
+  --depth-x-3: calc(3px * var(--depth-scale) * var(--depth-dir-x));
+  --depth-y-3: calc(3px * var(--depth-scale) * var(--depth-dir-y));
+  --depth-blur-3: calc(6px * var(--depth-scale));
+  --depth-x-5: calc(6px * var(--depth-scale) * var(--depth-dir-x));
+  --depth-y-5: calc(6px * var(--depth-scale) * var(--depth-dir-y));
+  --depth-blur-5: calc(12px * var(--depth-scale));
+  --depth-x-8: calc(10px * var(--depth-scale) * var(--depth-dir-x));
+  --depth-y-8: calc(10px * var(--depth-scale) * var(--depth-dir-y));
+  --depth-blur-8: calc(21px * var(--depth-scale));
+
+  // User-tunable "current" elevations. Override at runtime to change look & feel.
+  --elevation-3:
+    var(--depth-x-3) var(--depth-y-3) var(--depth-blur-3) var(--mat-sys-shadow),
+    calc(-1 * var(--depth-x-3)) calc(-1 * var(--depth-y-3)) var(--depth-blur-3) var(--mat-sys-light);
+  --elevation-5:
+    var(--depth-x-5) var(--depth-y-5) var(--depth-blur-5) var(--mat-sys-shadow),
+    calc(-1 * var(--depth-x-5)) calc(-1 * var(--depth-y-5)) var(--depth-blur-5) var(--mat-sys-light);
+  --elevation-8:
+    var(--depth-x-8) var(--depth-y-8) var(--depth-blur-8) var(--mat-sys-shadow),
+    calc(-1 * var(--depth-x-8)) calc(-1 * var(--depth-y-8)) var(--depth-blur-8) var(--mat-sys-light);
+
+  // Inset-shadow scale for recessed "well" surfaces: the same neumorphic pairs turned
+  // inward (neumorphism.io's "pressed" mode), so a surface reads as sunk into the page
+  // rather than floating above it. --inset-shadow-5 is the deep dashboard recess;
+  // --inset-shadow-3 is a shallower step between it and flat. Each level pairs with an
+  // --inset-surface-* background tone, so the recess reads correctly.
   --inset-shadow-5:
-    inset 0 calc(3px * var(--inset-depth)) calc(5px * var(--inset-depth)) -1px var(--dashboard-shadow-color),
-    inset 0 calc(5px * var(--inset-depth)) calc(8px * var(--inset-depth)) 0 var(--dashboard-shadow-color),
-    inset 0 calc(1px * var(--inset-depth)) calc(14px * var(--inset-depth)) 0 var(--dashboard-shadow-color);
+    inset var(--depth-x-5) var(--depth-y-5) var(--depth-blur-5) var(--mat-sys-shadow),
+    inset calc(-1 * var(--depth-x-5)) calc(-1 * var(--depth-y-5)) var(--depth-blur-5) var(--mat-sys-light);
   --inset-shadow-3:
-    inset 0 calc(2px * var(--inset-depth)) calc(4px * var(--inset-depth)) -1px var(--dashboard-shadow-color),
-    inset 0 calc(1px * var(--inset-depth)) calc(6px * var(--inset-depth)) 0 var(--dashboard-shadow-color);
-  --inset-surface-5: var(--mat-sys-surface-container-low);
-  // Midpoint of the surrounding grey (surface-container, #e6e6e6 in light mode) and
-  // the card white (surface-container-lowest, #fafafa): #f0f0f0.
-  --inset-surface-3: color-mix(in srgb, var(--mat-sys-surface-container) 50%,
-    var(--mat-sys-surface-container-lowest) 50%);
+    inset var(--depth-x-3) var(--depth-y-3) var(--depth-blur-3) var(--mat-sys-shadow),
+    inset calc(-1 * var(--depth-x-3)) calc(-1 * var(--depth-y-3)) var(--depth-blur-3) var(--mat-sys-light);
+  // Side glow of the surfaces that hang off a bar rather than floating above the page
+  // (the active toolbar tab, the util groups): a purely horizontal lift, because their
+  // bottom edge meets the bar and only their top corners are rounded. Scales with
+  // --depth-scale; it lights both sides, so the light direction does not apply.
+  --side-glow:
+    calc(-8px * var(--depth-scale)) 0 calc(8px * var(--depth-scale)) -8px var(--nav-item-border),
+    calc(8px * var(--depth-scale)) 0 calc(8px * var(--depth-scale)) -8px var(--nav-item-border);
+  // Recessed surfaces also darken with depth: the deeper the recess, the more of the
+  // surrounding container tone is mixed into the card white. The multipliers are
+  // calibrated so scale 1 reproduces the original tones (surface-container-low for
+  // level 5, the container/white midpoint for level 3) and the clamp keeps the deepest
+  // steps from overshooting the tone they mix toward. At scale 0 both collapse to the
+  // card white, which is what makes "flat" read as flat.
+  --inset-surface-5: color-mix(
+    in srgb,
+    var(--mat-sys-surface-container-high) clamp(0%, calc(40% * var(--depth-scale)), 100%),
+    var(--mat-sys-surface-container-lowest)
+  );
+  --inset-surface-3: color-mix(
+    in srgb,
+    var(--mat-sys-surface-container) clamp(0%, calc(50% * var(--depth-scale)), 100%),
+    var(--mat-sys-surface-container-lowest)
+  );
 
   --double-global-padding: calc(var(--global-padding) * 2);
   --global-padding: 16px;
@@ -214,40 +264,55 @@ body {
 // CDK overlay container, so Material panels follow along. Every value stays a var()
 // reference: writing literal shadows here would freeze one theme's tone into the other.
 
-// One depth scale drives both directions: the raised --elevation-* slots and the
-// recessed --inset-depth multiplier. Every step keeps the elevation slots ordered
-// (3 < 5 < 8) -- the app steps 5 -> 8 to express a hover lift, so an unordered step
-// would stop hovers from reading as lifts.
+// One depth scale drives every shadow: the raised --elevation-* slots, the recessed
+// --inset-shadow-* pairs, the --inset-surface-* tones and the --side-glow.
 //
-// "flat" replaces the shadows with a hairline ring: a spread-only box-shadow rather
-// than a real border, so the ~49 containers that consume --elevation-5 keep their
-// box size. The 2px ring on slot 8 keeps the hover lift perceptible without depth.
+// "flat" additionally replaces the shadows with a hairline ring: a spread-only
+// box-shadow rather than a real border, so the ~49 containers that consume
+// --elevation-5 keep their box size. The 2px ring on slot 8 keeps the hover lift
+// perceptible without depth.
 html.depth-flat {
+  --depth-scale: 0;
   --elevation-3: 0 0 0 1px var(--mat-sys-outline-variant);
   --elevation-5: 0 0 0 1px var(--mat-sys-outline-variant);
   --elevation-8: 0 0 0 2px var(--mat-sys-outline-variant);
-  --inset-depth: 0;
+  // The glow scales to nothing at this level, so its surfaces get hairlines on the two
+  // sides it lit instead. Left and right only: they hang off a bar, so a line along the
+  // bottom edge would fence them off from it.
+  --side-glow: -1px 0 0 0 var(--mat-sys-outline-variant), 1px 0 0 0 var(--mat-sys-outline-variant);
 }
 
 html.depth-subtle {
-  --elevation-3: var(--mat-elevation-2);
-  --elevation-5: var(--mat-elevation-3);
-  --elevation-8: var(--mat-elevation-5);
-  --inset-depth: 0.5;
+  --depth-scale: 0.5;
 }
 
 html.depth-default {
-  --elevation-3: var(--mat-elevation-3);
-  --elevation-5: var(--mat-elevation-5);
-  --elevation-8: var(--mat-elevation-8);
-  --inset-depth: 1;
+  --depth-scale: 1;
 }
 
 html.depth-strong {
-  --elevation-3: var(--mat-elevation-5);
-  --elevation-5: var(--mat-elevation-8);
-  --elevation-8: var(--mat-elevation-12);
-  --inset-depth: 1.75;
+  --depth-scale: 1.75;
+}
+
+html.depth-very-strong {
+  --depth-scale: 2.5;
+}
+
+// Where the light comes from, as one stop of a rotary dial: --dial-angle points at it
+// (0deg is due right, growing clockwise) and the shadow falls the opposite way, which is
+// why the direction factors are the negated unit vector of that angle. Sass evaluates the
+// trigonometry at build time, so no calc() runs in the browser.
+//
+// AppearanceService offers the same number of stops (LIGHT_SOURCE_STEPS); keep the two in
+// step. Index 17 is 340deg, the default.
+@for $i from 0 through $light-source-steps - 1 {
+  $angle: $i * $light-source-step-angle;
+
+  html.light-source-#{$i} {
+    --dial-angle: #{$angle}deg;
+    --depth-dir-x: #{-1 * math.cos($angle * 1deg)};
+    --depth-dir-y: #{-1 * math.sin($angle * 1deg)};
+  }
 }
 
 // Capped at 12px: --border-radius feeds --mat-sys-corner-extra-small, and beyond 12px

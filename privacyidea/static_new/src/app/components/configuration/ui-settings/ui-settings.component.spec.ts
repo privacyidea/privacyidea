@@ -18,7 +18,14 @@
  **/
 import { provideZonelessChangeDetection, signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { AppearanceService, CornerLevel, DepthLevel } from "@services/appearance/appearance.service";
+import {
+  AppearanceService,
+  CornerLevel,
+  DEFAULT_LIGHT_SOURCE,
+  DepthLevel,
+  LIGHT_SOURCE_STEPS,
+  LightSourceLevel
+} from "@services/appearance/appearance.service";
 import { ThemeService } from "@services/theme/theme.service";
 import { UiPreferencesService } from "@services/user-settings/ui-preferences.service";
 import { MockUiPreferencesService } from "@testing/mock-services/mock-ui-preferences-service";
@@ -31,8 +38,11 @@ describe("UISettingsComponent", () => {
   let themeService: { visualTheme: ReturnType<typeof signal<"light" | "dark">>; setTheme: jest.Mock };
   let appearanceService: {
     depth: ReturnType<typeof signal<DepthLevel>>;
+    lightSource: ReturnType<typeof signal<LightSourceLevel>>;
     corners: ReturnType<typeof signal<CornerLevel>>;
     setDepth: jest.Mock;
+    resetToDefaults: jest.Mock;
+    setLightSource: jest.Mock;
     setCorners: jest.Mock;
   };
 
@@ -44,8 +54,11 @@ describe("UISettingsComponent", () => {
     showLoadingUrls: () => boolean;
     setShowLoadingUrls: (show: boolean) => void;
     depth: () => DepthLevel;
+    lightSource: () => LightSourceLevel;
     corners: () => CornerLevel;
+    resetAppearance: () => void;
     selectDepth: (level: DepthLevel) => void;
+    selectLightSource: (level: LightSourceLevel) => void;
     selectCorners: (level: CornerLevel) => void;
   }
 
@@ -55,8 +68,11 @@ describe("UISettingsComponent", () => {
     themeService = { visualTheme: signal<"light" | "dark">("light"), setTheme: jest.fn() };
     appearanceService = {
       depth: signal<DepthLevel>("default"),
+      lightSource: signal<LightSourceLevel>(DEFAULT_LIGHT_SOURCE),
       corners: signal<CornerLevel>("default"),
+      resetToDefaults: jest.fn(),
       setDepth: jest.fn((level: DepthLevel) => appearanceService.depth.set(level)),
+      setLightSource: jest.fn((level: LightSourceLevel) => appearanceService.lightSource.set(level)),
       setCorners: jest.fn((level: CornerLevel) => appearanceService.corners.set(level))
     };
     await TestBed.configureTestingModule({
@@ -101,11 +117,52 @@ describe("UISettingsComponent", () => {
     expect(themeService.setTheme).toHaveBeenCalledWith("light");
   });
 
+  it("should reset the appearance to its defaults", () => {
+    testable().resetAppearance();
+
+    expect(appearanceService.resetToDefaults).toHaveBeenCalled();
+  });
+
   it("should apply a picked depth level", () => {
     testable().selectDepth("flat");
 
     expect(appearanceService.setDepth).toHaveBeenCalledWith("flat");
     expect(testable().depth()).toBe("flat");
+  });
+
+  it("should apply a picked light source", () => {
+    testable().selectLightSource("12");
+
+    expect(appearanceService.setLightSource).toHaveBeenCalledWith("12");
+    expect(testable().lightSource()).toBe("12");
+  });
+
+  it("should render the light-source dial as a native radio group", () => {
+    const radios = fixture.nativeElement.querySelectorAll<HTMLInputElement>(".light-dial__slot input");
+
+    expect(radios).toHaveLength(LIGHT_SOURCE_STEPS);
+    // One group, so the arrow keys turn the dial.
+    expect([...radios].every((radio) => radio.name === "light-source")).toBe(true);
+    expect([...radios].filter((radio) => radio.checked)).toHaveLength(1);
+  });
+
+  it("should mark the stored light source as the checked position", () => {
+    appearanceService.lightSource.set("17");
+    fixture.detectChanges();
+
+    const checked = fixture.nativeElement.querySelector<HTMLInputElement>(".light-dial__slot input:checked");
+    const slot = checked?.closest(".light-dial__slot");
+
+    expect(slot?.className).toContain("light-dial__slot--17");
+  });
+
+  it("should apply the light source of the turned-to position", () => {
+    const radios = fixture.nativeElement.querySelectorAll<HTMLInputElement>(".light-dial__slot input");
+
+    radios[2].checked = true;
+    radios[2].dispatchEvent(new Event("change"));
+
+    expect(appearanceService.setLightSource).toHaveBeenCalledWith("2");
   });
 
   it("should apply a picked corner radius", () => {
