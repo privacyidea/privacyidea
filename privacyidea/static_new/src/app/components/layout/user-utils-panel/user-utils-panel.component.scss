@@ -19,7 +19,7 @@ $font-size-default: 14px;
 }
 
 .utils-group {
-  height: 41px;
+  height: 42px;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -27,6 +27,10 @@ $font-size-default: 14px;
   padding: 12px;
   background-color: var(--table-color);
   box-shadow: var(--side-glow);
+  // --side-glow is a full-blur shadow with only its vertical offset dropped, so it still
+  // bleeds above and below. Clipping flush with the top and bottom edges while leaving room
+  // on both sides keeps the blur at full strength and confines it to the sides.
+  clip-path: inset(0 -40px);
   border-top-right-radius: var(--border-radius);
   border-top-left-radius: var(--border-radius);
 }

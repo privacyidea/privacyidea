@@ -144,18 +144,14 @@ body {
   // lift, because their bottom edge meets the bar and only their top corners are rounded.
   // It lights both sides, so the light direction does not apply.
   //
-  // Matched to --elevation-5's edge, with the vertical bleed suppressed by geometry:
-  //   * spread exceeds the blur by 2px, so neither the blur nor its soft tail reaches past
-  //     the top or bottom edge (cancelling the blur exactly still left an #f8f8f8 band);
-  //   * the offset exceeds the spread by 10px, pushing the shadow rect that far beyond the
-  //     left and right edges -- 2.5 blur sigmas, so the edge pixel sits at the full shadow
-  //     tone instead of somewhere on the blur's falloff. At 4px it landed on the blur's
-  //     half-strength point and read #dadada against --elevation-5's #d1d1d1.
+  // --elevation-5 with the vertical offset dropped: same --depth-x-5 offset (so it follows
+  // the light source), same --depth-blur-5, no spread. The shadow falls on the side away from
+  // the light and the highlight on the side facing it, and they swap when the dial passes the
+  // vertical -- with the light straight up or down there is no horizontal component left and
+  // the glow fades out, which is what a purely horizontal lift should do.
   --side-glow:
-    calc(-20px * var(--depth-scale)) 0 calc(8px * var(--depth-scale)) calc(-10px * var(--depth-scale))
-      var(--mat-sys-shadow),
-    calc(20px * var(--depth-scale)) 0 calc(8px * var(--depth-scale)) calc(-10px * var(--depth-scale))
-      var(--mat-sys-shadow);
+    var(--depth-x-5) 0 var(--depth-blur-5) var(--mat-sys-shadow),
+    calc(-1 * var(--depth-x-5)) 0 var(--depth-blur-5) var(--mat-sys-light);
   // Surfaces are shaded as well as shadowed, the way neumorphism.io does it: a gradient
   // running from the lit corner to the shadowed one, lighter-to-darker on a raised surface
   // and darker-to-lighter on a recessed one. The gradient runs 90deg behind the dial angle,
