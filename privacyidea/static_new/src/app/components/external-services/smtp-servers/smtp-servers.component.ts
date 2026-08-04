@@ -39,7 +39,7 @@ import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-t
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
-import { switchMap } from "rxjs";
+import { finalize, switchMap } from "rxjs";
 
 @Component({
   selector: "app-smtp",
@@ -89,7 +89,9 @@ export class SmtpServersComponent {
   });
 
   private readonly renderedRows = toSignal(
-    toObservable(this.smtpDataSource).pipe(switchMap((dataSource) => dataSource.connect())),
+    toObservable(this.smtpDataSource).pipe(
+      switchMap((dataSource) => dataSource.connect().pipe(finalize(() => dataSource.disconnect())))
+    ),
     { initialValue: [] as SmtpServer[] }
   );
 

@@ -43,7 +43,7 @@ import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-t
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
-import { switchMap } from "rxjs";
+import { finalize, switchMap } from "rxjs";
 
 @Component({
   selector: "app-radius-servers",
@@ -94,7 +94,9 @@ export class RadiusServersComponent {
   });
 
   private readonly renderedRows = toSignal(
-    toObservable(this.radiusDataSource).pipe(switchMap((dataSource) => dataSource.connect())),
+    toObservable(this.radiusDataSource).pipe(
+      switchMap((dataSource) => dataSource.connect().pipe(finalize(() => dataSource.disconnect())))
+    ),
     { initialValue: [] as RadiusServer[] }
   );
 

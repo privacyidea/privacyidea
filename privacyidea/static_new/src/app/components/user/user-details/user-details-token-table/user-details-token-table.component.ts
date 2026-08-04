@@ -17,7 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass } from "@angular/common";
-import { AfterViewInit, Component, computed, effect, inject, linkedSignal, signal, WritableSignal} from "@angular/core";
+import { AfterViewInit, Component, effect, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { toSignal } from "@angular/core/rxjs-interop";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatIcon } from "@angular/material/icon";
@@ -113,9 +114,13 @@ export class UserDetailsTokenTableComponent implements AfterViewInit {
       return new MatTableDataSource<TokenDetails>(userTokenResource.result?.value?.tokens ?? []);
     }
   });
+  private readonly renderedRows = toSignal(this.dataSource.connect(), {
+    initialValue: [] as ContainerDetailToken[]
+  });
+
   selector = new RowSelector<ContainerDetailToken>({
     keyGetter: (row) => row.serial,
-    visibleRows: computed(() => this.userTokenData().data as unknown as ContainerDetailToken[])
+    visibleRows: this.renderedRows
   });
 
   constructor() {

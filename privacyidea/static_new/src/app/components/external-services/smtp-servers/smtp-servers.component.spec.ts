@@ -28,12 +28,7 @@ import { DialogService } from "@services/dialog/dialog.service";
 import { SmtpService } from "@services/smtp/smtp.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
-import {
-  MockAuthService,
-  MockDialogService,
-  MockSmtpService,
-  MockTableUtilsService
-} from "@testing/mock-services";
+import { MockAuthService, MockDialogService, MockSmtpService, MockTableUtilsService } from "@testing/mock-services";
 import { Subject } from "rxjs";
 
 describe("SmtpServersComponent", () => {
@@ -109,6 +104,22 @@ describe("SmtpServersComponent", () => {
     component.selector.selectAllRows();
 
     expect(component.selector.selectedRows().map((row) => row.identifier)).toEqual(["server1"]);
+  });
+
+  it("should keep tracking the rendered rows after the data source is rebuilt", async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    smtpServiceMock.smtpServers.set([
+      { ...smtpServiceMock.smtpServers()[0], identifier: "server3" },
+      { ...smtpServiceMock.smtpServers()[1], identifier: "server4" }
+    ]);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    component.selector.selectAllRows();
+
+    expect(component.selector.selectedRows().map((row) => row.identifier)).toEqual(["server3", "server4"]);
   });
 
   it("should display servers from service", () => {

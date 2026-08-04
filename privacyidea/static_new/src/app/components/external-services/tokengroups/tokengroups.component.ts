@@ -37,7 +37,7 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
 import { RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { Tokengroup, TokengroupService, TokengroupServiceInterface } from "@services/tokengroup/tokengroup.service";
-import { switchMap } from "rxjs";
+import { finalize, switchMap } from "rxjs";
 
 @Component({
   selector: "app-tokengroups",
@@ -89,7 +89,9 @@ export class TokengroupsComponent {
   });
 
   private readonly renderedRows = toSignal(
-    toObservable(this.tokengroupDataSource).pipe(switchMap((dataSource) => dataSource.connect())),
+    toObservable(this.tokengroupDataSource).pipe(
+      switchMap((dataSource) => dataSource.connect().pipe(finalize(() => dataSource.disconnect())))
+    ),
     { initialValue: [] as Tokengroup[] }
   );
 

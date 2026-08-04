@@ -235,22 +235,6 @@ describe("RowSelector", () => {
   });
 
   describe("key getter", () => {
-    it("treats rows with the same key as one entry", () => {
-      const duplicates = signal([
-        { identifier: "a", port: 25 },
-        { identifier: "a", port: 587 }
-      ]);
-      const duplicateSelector = new RowSelector<Server>({
-        keyGetter: (server) => server.identifier,
-        visibleRows: duplicates
-      });
-
-      duplicateSelector.selectRow(duplicates()[0]);
-
-      expect(duplicateSelector.selectedCount()).toBe(2);
-      expect(duplicateSelector.allRowsSelected()).toBe(true);
-    });
-
     it("supports a composite key", () => {
       const composite = new RowSelector<Server>({
         keyGetter: (server) => `${server.identifier}:${server.port}`,

@@ -43,7 +43,7 @@ import {
   PeriodicTaskServiceInterface
 } from "@services/periodic-task/periodic-task.service";
 import { RowSelector } from "@services/table-utils/row-selector";
-import { firstValueFrom, lastValueFrom, switchMap } from "rxjs";
+import { finalize, firstValueFrom, lastValueFrom, switchMap } from "rxjs";
 
 @Component({
   selector: "app-periodic-task",
@@ -116,7 +116,9 @@ export class PeriodicTaskComponent implements OnInit {
   });
 
   private readonly renderedRows = toSignal(
-    toObservable(this.periodicTasksDataSource).pipe(switchMap((dataSource) => dataSource.connect())),
+    toObservable(this.periodicTasksDataSource).pipe(
+      switchMap((dataSource) => dataSource.connect().pipe(finalize(() => dataSource.disconnect())))
+    ),
     { initialValue: [] as PeriodicTask[] }
   );
 
