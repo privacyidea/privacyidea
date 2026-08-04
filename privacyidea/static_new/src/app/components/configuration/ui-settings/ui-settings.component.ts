@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, inject } from "@angular/core";
+import { MatButtonToggleModule } from "@angular/material/button-toggle";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatSelectModule } from "@angular/material/select";
@@ -24,6 +25,7 @@ import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { UI_LOCALES } from "@core/locale";
 import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
+import { AppearanceService, CornerLevel, DepthLevel } from "@services/appearance/appearance.service";
 import { ThemeService } from "@services/theme/theme.service";
 import { UiPreferencesService, UiPreferencesServiceInterface } from "@services/user-settings/ui-preferences.service";
 
@@ -31,6 +33,7 @@ import { UiPreferencesService, UiPreferencesServiceInterface } from "@services/u
   selector: "app-ui-settings",
   imports: [
     DetailsCardComponent,
+    MatButtonToggleModule,
     MatFormFieldModule,
     MatIconModule,
     MatSelectModule,
@@ -42,11 +45,26 @@ import { UiPreferencesService, UiPreferencesServiceInterface } from "@services/u
 })
 export class UISettingsComponent {
   private readonly themeService = inject(ThemeService);
+  private readonly appearanceService = inject(AppearanceService);
   private readonly uiPreferencesService: UiPreferencesServiceInterface = inject(UiPreferencesService);
   protected readonly locales = UI_LOCALES;
   protected readonly preferredLocale = this.uiPreferencesService.preferredLocale;
   protected readonly showLoadingUrls = this.uiPreferencesService.showLoadingUrls;
   protected readonly theme = this.themeService.visualTheme;
+  protected readonly depth = this.appearanceService.depth;
+  protected readonly corners = this.appearanceService.corners;
+  protected readonly depthLevels: { value: DepthLevel; label: string }[] = [
+    { value: "flat", label: $localize`Flat` },
+    { value: "subtle", label: $localize`Subtle` },
+    { value: "default", label: $localize`Default` },
+    { value: "strong", label: $localize`Strong` }
+  ];
+  protected readonly cornerLevels: { value: CornerLevel; label: string }[] = [
+    { value: "square", label: $localize`Square` },
+    { value: "default", label: $localize`Default` },
+    { value: "round", label: $localize`Round` },
+    { value: "extra-round", label: $localize`Extra round` }
+  ];
   // Names the mode the toggle switches to, so it reads as the action it performs.
   protected readonly themeToggleLabel = computed(() =>
     this.theme() === "dark" ? $localize`Switch to light mode` : $localize`Switch to dark mode`
@@ -54,6 +72,14 @@ export class UISettingsComponent {
 
   protected toggleTheme(): void {
     this.themeService.setTheme(this.theme() === "dark" ? "light" : "dark");
+  }
+
+  protected selectDepth(level: DepthLevel): void {
+    this.appearanceService.setDepth(level);
+  }
+
+  protected selectCorners(level: CornerLevel): void {
+    this.appearanceService.setCorners(level);
   }
 
   protected setShowLoadingUrls(show: boolean): void {

@@ -28,6 +28,7 @@ import {
   normalizeLocale,
   rememberLocale
 } from "@core/locale";
+import { AppearanceService } from "@services/appearance/appearance.service";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ThemeService } from "@services/theme/theme.service";
 import { UserSettingsService, UserSettingsServiceInterface } from "@services/user-settings/user-settings.service";
@@ -60,6 +61,7 @@ export class UiPreferencesService implements UiPreferencesServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly userSettingsService: UserSettingsServiceInterface = inject(UserSettingsService);
   private readonly themeService = inject(ThemeService);
+  private readonly appearanceService = inject(AppearanceService);
   private readonly localeId = inject(LOCALE_ID);
   private readonly _showLoadingUrls = signal(false);
 
@@ -119,6 +121,14 @@ export class UiPreferencesService implements UiPreferencesServiceInterface {
           this.themeService.applyStoredTheme(settings.theme);
         }
         this._showLoadingUrls.set(settings.show_loading_urls === true);
+        // Absent keys are left alone rather than reset: for a principal without stored
+        // settings the cookie-cached appearance is all there is.
+        if (settings.depth !== undefined) {
+          this.appearanceService.applyStoredDepth(settings.depth);
+        }
+        if (settings.corner_radius !== undefined) {
+          this.appearanceService.applyStoredCorners(settings.corner_radius);
+        }
         this.applyLocale(settings.locale);
       },
       error: () => undefined
