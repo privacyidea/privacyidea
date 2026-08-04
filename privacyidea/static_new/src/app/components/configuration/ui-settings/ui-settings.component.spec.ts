@@ -56,7 +56,7 @@ describe("UISettingsComponent", () => {
     depth: () => DepthLevel;
     lightSource: () => LightSourceLevel;
     corners: () => CornerLevel;
-    resetAppearance: () => void;
+    resetSettings: () => void;
     selectDepth: (level: DepthLevel) => void;
     selectLightSource: (level: LightSourceLevel) => void;
     selectCorners: (level: CornerLevel) => void;
@@ -117,10 +117,13 @@ describe("UISettingsComponent", () => {
     expect(themeService.setTheme).toHaveBeenCalledWith("light");
   });
 
-  it("should reset the appearance to its defaults", () => {
-    testable().resetAppearance();
+  it("should reset every UI setting to its default", () => {
+    testable().resetSettings();
 
     expect(appearanceService.resetToDefaults).toHaveBeenCalled();
+    expect(themeService.setTheme).toHaveBeenCalledWith("light");
+    expect(uiPreferencesService.setShowLoadingUrls).toHaveBeenCalledWith(false);
+    expect(uiPreferencesService.switchLocale).toHaveBeenCalledWith("en");
   });
 
   it("should apply a picked depth level", () => {
