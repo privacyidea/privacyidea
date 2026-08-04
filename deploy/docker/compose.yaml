@@ -148,10 +148,11 @@ services:
       # (e.g. "6h", "90m", "2d") to run on a fixed interval instead; it takes
       # precedence over PI_CRON_AUDIT_HOUR.
       # Amount: watermark-based by default; set PI_CRON_AUDIT_AGE (days) for
-      # age-based rotation instead, e.g. PI_CRON_AUDIT_AGE=90.
+      # age-based rotation instead, e.g. PI_CRON_AUDIT_AGE: 90.
       #PI_CRON_AUDIT_ROTATE: "true"
       #PI_CRON_AUDIT_HOUR: "2"
       #PI_CRON_AUDIT_INTERVAL: "6h"
+      #PI_CRON_AUDIT_AGE: 90
       #PI_CRON_AUDIT_HIGHWATERMARK: "50000"
       #PI_CRON_AUDIT_LOWWATERMARK: "25000"
       #PI_CRON_AUDIT_CHUNKSIZE: ""
