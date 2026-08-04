@@ -23,8 +23,8 @@
 .progress-bar {
   // Four times the Material default of 4px: a bar pinned to the very bottom edge is
   // easy to miss, and the tokens keep the `top` calc below in sync with it.
-  --mat-progress-bar-track-height: 16px;
-  --mat-progress-bar-active-indicator-height: 16px;
+  --mat-progress-bar-track-height: 14px;
+  --mat-progress-bar-active-indicator-height: 14px;
   --mat-progress-bar-active-indicator-color: var(--loading-indicator-color);
   --mat-progress-bar-track-color: transparent;
 
