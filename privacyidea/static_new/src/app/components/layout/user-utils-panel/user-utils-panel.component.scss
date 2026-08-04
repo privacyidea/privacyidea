@@ -66,10 +66,12 @@ $font-size-default: 14px;
   @include text-label;
   font-weight: bold;
   margin-left: -8px;
+  margin-right: 8px;
 }
 
 .node-text {
   @include text-label;
+  width: 64px;
   max-width: 12rem;
   overflow: hidden;
   text-overflow: ellipsis;
