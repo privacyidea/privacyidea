@@ -684,11 +684,16 @@ class LockoutPolicyCrudTestCase(MyTestCase):
     # --- conditions -----------------------------------------------------------
 
     @staticmethod
-    def _condition(condition_type=ConditionType.USER_ROLE, operator=ConditionOperator.IN, value=None, **extra):
+    def _condition(condition_type: ConditionType | str = ConditionType.USER_ROLE,
+                   operator: ConditionOperator | str = ConditionOperator.IN,
+                   value: list | str | None = None, **extra) -> dict:
         return {"condition_type": str(condition_type), "operator": str(operator),
                 "value": value if value is not None else [str(AuthLogUserRole.USER)], **extra}
 
-    def _create_with_conditions(self, name, conditions, priority=1):
+    def _create_with_conditions(self, name: str, conditions: list | str, priority: int = 1) -> int:
+        """Create a policy carrying *conditions*, which is deliberately not narrowed to ``list[dict]``:
+        several tests pass malformed input (a bare string, a list of non-dicts) to assert it is
+        rejected. Returns the new policy id."""
         return create_lockout_policy(name, 600, ["PIN_FAIL"], [_stage()], target=LockoutTarget.USER,
                                      priority=priority, conditions=conditions)
 

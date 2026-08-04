@@ -25,10 +25,13 @@ from collections.abc import Sequence
 from datetime import datetime, timedelta
 from email import message_from_string
 
+from unittest import mock
+
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
 from privacyidea.lib.conditional_access.authentication_log import AuthLogUserRole
-from privacyidea.lib.conditional_access.conditions import (ConditionOperator, ConditionType,
-                                                           condition_matches, policy_matches_context)
+from privacyidea.lib.conditional_access.conditions import (CONDITION_TYPES, ConditionOperator, ConditionType,
+                                                           ConditionTypeSpec, condition_matches,
+                                                           policy_conditions_are_scopable, policy_matches_context)
 from privacyidea.lib.conditional_access.context import CAContext
 from privacyidea.lib.conditional_access.engine import (
     AccessDecision,
@@ -61,6 +64,7 @@ from privacyidea.models.lockout_policy import (
     BlockList,
     LockoutPolicy,
     LockoutPolicyCondition,
+    LockoutPolicyStage,
     LockoutStageAction,
     UserLockoutState,
 )
@@ -1401,7 +1405,8 @@ class LockoutEngineTestCase(LockoutTestCase):
     # --- policy conditions (applicability) ------------------------------------
 
     @staticmethod
-    def _condition(condition_type, operator, value):
+    def _condition(condition_type: ConditionType | str, operator: ConditionOperator | str,
+                   value: list[str] | None) -> LockoutPolicyCondition:
         return LockoutPolicyCondition(condition_type=str(condition_type), operator=str(operator), value=value)
 
     def test_policy_without_conditions_applies_to_everyone(self):
@@ -1492,36 +1497,176 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertEqual([], evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL))
         self.assertFalse(is_user_locked(self.user))
 
-    def test_conditions_gate_a_source_ip_policy_but_not_its_count(self):
-        # A source-IP policy is gated by the *requesting* context like any other, even though its
-        # subject is the IP: the realm condition decides whether the policy is evaluated at all.
-        # What a condition does NOT do is scope the counting query - the IP's rows are counted
-        # across every realm. Both halves are asserted because the second is a known limitation,
-        # not an accident: scoping the count is a separate, still-open change, and this test has to
-        # be updated deliberately when it lands.
-        ip = "10.0.0.9"
-        self._make_policy(
-            name="spray realm1 only", counter_type=AuthEventType.MFA_FAIL,
+    def _spray_policy(self, *, threshold: int = 3,
+                      operator: ConditionOperator = ConditionOperator.IN,
+                      values: list[str] | None = None,
+                      condition_type: ConditionType | str = ConditionType.USER_REALM
+                      ) -> tuple[LockoutPolicy, list[LockoutPolicyStage]]:
+        """
+        A source-IP spraying policy scoped by one condition, blocking the IP once the scoped count
+        reaches *threshold* distinct accounts.
+
+        :param threshold: distinct accounts at which the BLOCK_IP stage fires
+        :param operator: the :class:`ConditionOperator` the condition compares with
+        :param values: the condition's values; defaults to ``[self.realm1]``
+        :param condition_type: the :class:`ConditionType` the condition reads
+        :return: the ``(policy, stages)`` tuple :meth:`_make_policy` returns
+        """
+        return self._make_policy(
+            name="scoped spray", counter_type=AuthEventType.MFA_FAIL,
             target=LockoutTarget.SOURCE_IP, count_mode=CountMode.DISTINCT_USERS,
-            conditions=[self._condition(ConditionType.USER_REALM, ConditionOperator.IN, [self.realm1])],
-            stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.BLOCK_IP, 600)]),))
-        # Three distinct accounts targeted from one IP, only one of them in realm1.
-        for index, realm in enumerate((self.realm1, self.realm2, self.realm2)):
+            conditions=[self._condition(condition_type, operator,
+                                        values if values is not None else [self.realm1])],
+            stages=(StageDefinition(threshold, 1, [StageActionDefinition(LockoutAction.BLOCK_IP, 600)]),))
+
+    def _seed_ip_accounts(self, ip: str, realms: Sequence[str | None], role: str | None = None) -> None:
+        """
+        Insert one MFA_FAIL row per entry of *realms*, each a distinct account (``sprayed0``..) from
+        *ip*, so a DISTINCT_USERS count over that IP equals ``len(realms)`` before any scoping.
+
+        :param ip: the source IP all rows are written for
+        :param realms: one realm per row; ``None`` writes a NULL realm, which is what a login naming
+            no realm produces and what the missing-value rule is exercised against
+        :param role: the ``user_role`` to stamp on every row, or ``None`` to leave it unset
+        :return: None; the rows are committed
+        """
+        for index, realm in enumerate(realms):
             db.session.add(AuthenticationLog(event_type=str(AuthEventType.MFA_FAIL), source_ip=ip,
-                                             username=f"sprayed{index}", realm=realm, timestamp=utc_now()))
+                                             username=f"sprayed{index}", realm=realm, user_role=role,
+                                             timestamp=utc_now()))
         db.session.commit()
 
-        # Seen on a realm2 request: the condition excludes it, so the policy never runs.
+    def test_conditions_scope_a_source_ip_count_to_the_rows_they_describe(self):
+        # Having passed the gate, a source-IP policy counts only the history its conditions describe.
+        # Its subject is the IP, whose rows span many users, so this is what makes it count what the
+        # admin asked for: three realm1 accounts reach the threshold, the two realm2 ones are ignored.
+        ip = "10.0.0.9"
+        self._spray_policy(threshold=3)
+        self._seed_ip_accounts(ip, (self.realm1, self.realm1, self.realm1, self.realm2, self.realm2))
+
+        evaluate_lockout_policies(CAContext(User("cornelius", self.realm1), source_ip=ip),
+                                  AuthEventType.MFA_FAIL)
+        self.assertTrue(is_ip_blocked(ip))
+
+    def test_conditions_exclude_rows_outside_them_from_a_source_ip_count(self):
+        # The complement: five realm2 accounts plus two realm1 ones is seven rows, which would trip a
+        # threshold of 3 unscoped. Scoped to realm1 the count is 2 and nothing fires.
+        ip = "10.0.0.10"
+        self._spray_policy(threshold=3)
+        self._seed_ip_accounts(ip, (self.realm1, self.realm1,
+                                    self.realm2, self.realm2, self.realm2, self.realm2, self.realm2))
+
+        evaluate_lockout_policies(CAContext(User("cornelius", self.realm1), source_ip=ip),
+                                  AuthEventType.MFA_FAIL)
+        self.assertFalse(is_ip_blocked(ip))
+
+    def test_a_source_ip_policy_is_still_gated_by_its_conditions(self):
+        # Scoping is *in addition to* the gate, not instead of it: a request the conditions exclude is
+        # not judged by the policy at all, whatever the IP's history looks like.
+        ip = "10.0.0.14"
+        self._spray_policy(threshold=3)
+        self._seed_ip_accounts(ip, (self.realm1, self.realm1, self.realm1))
+
         evaluate_lockout_policies(CAContext(User("cornelius", self.realm2), source_ip=ip),
                                   AuthEventType.MFA_FAIL)
         self.assertFalse(is_ip_blocked(ip))
 
-        # Seen on a realm1 request: the policy applies, and the count is the IP's three distinct
-        # accounts - the two realm2 ones included. Were the count scoped to realm1 it would be 1
-        # and the threshold of 3 would not be reached.
+    def test_positive_condition_excludes_rows_with_no_value_from_the_count(self):
+        # The IN half of the missing-value rule, on the counting side: a row whose realm is NULL is in
+        # no set, so an IN-scoped count skips it - matching the gate, which does not apply an IN policy
+        # to a request carrying no realm. Three NULL-realm accounts therefore never reach a threshold
+        # of 2, however many of them there are.
+        ip = "10.0.0.15"
+        self._spray_policy(threshold=2, operator=ConditionOperator.IN, values=[self.realm1])
+        self._seed_ip_accounts(ip, (None, None, None))
+
         evaluate_lockout_policies(CAContext(User("cornelius", self.realm1), source_ip=ip),
                                   AuthEventType.MFA_FAIL)
+        self.assertFalse(is_ip_blocked(ip))
+
+    def test_negated_condition_gates_and_counts_rows_with_no_value_alike(self):
+        # The gate and the filter cannot disagree, because matches_missing and the SQL are aligned on a
+        # missing value: NOT_IN admits a request carrying no realm, and its filter admits the NULL-realm
+        # rows such requests write. Plain "realm NOT IN (...)" is false for NULL in SQL, which would
+        # have excluded exactly the enumeration traffic the exemption is written to catch.
+        ip = "10.0.0.11"
+        self._spray_policy(threshold=3, operator=ConditionOperator.NOT_IN, values=[self.realm2])
+        self._seed_ip_accounts(ip, (None, None, None))
+
+        evaluate_lockout_policies(CAContext(User(), source_ip=ip), AuthEventType.MFA_FAIL)
         self.assertTrue(is_ip_blocked(ip))
+
+    def test_role_condition_scopes_a_source_ip_count(self):
+        # Scoping is registry-driven, so the role condition narrows through its own log column.
+        ip = "10.0.0.12"
+        self._spray_policy(threshold=2, condition_type=ConditionType.USER_ROLE,
+                           values=[str(AuthLogUserRole.USER)])
+        context = CAContext(User("cornelius", self.realm1), source_ip=ip,
+                            user_role=str(AuthLogUserRole.USER))
+        self._seed_ip_accounts(ip, (self.realm1, self.realm1), role=str(AuthLogUserRole.ADMIN_EXTERNAL))
+        evaluate_lockout_policies(context, AuthEventType.MFA_FAIL)
+        # Both rows are admin-external, so a user-role scope counts none of them.
+        self.assertFalse(is_ip_blocked(ip))
+
+        self._seed_ip_accounts(ip, (self.realm1, self.realm1), role=str(AuthLogUserRole.USER))
+        evaluate_lockout_policies(context, AuthEventType.MFA_FAIL)
+        self.assertTrue(is_ip_blocked(ip))
+
+    def test_scoping_leaves_a_user_target_outcome_unchanged(self):
+        # For a user target the filters are redundant: the subject is one (resolver, uid, realm)
+        # identity, so the realm is pinned and with it the role - an admin realm holds only admins, and
+        # an internal admin has no realm, so no identity is ever both. They are still applied, and the
+        # point of this test is that they must not exclude the subject's *own* rows: a policy conditioned
+        # on the realm and role it is already scoped to has to keep firing exactly as an unconditioned
+        # one would.
+        self._make_policy(
+            name="scoped to its own subject", counter_type=AuthEventType.MFA_FAIL,
+            conditions=[self._condition(ConditionType.USER_REALM, ConditionOperator.IN, [self.realm1]),
+                        self._condition(ConditionType.USER_ROLE, ConditionOperator.IN,
+                                        [str(AuthLogUserRole.USER)])],
+            stages=(StageDefinition(2, 1, [StageActionDefinition(LockoutAction.LOCK_USER, 600)]),))
+        for _ in range(2):
+            db.session.add(AuthenticationLog(event_type=str(AuthEventType.MFA_FAIL),
+                                             resolver=self.user.resolver, uid=self.user.uid,
+                                             realm=self.user.realm, user_role=str(AuthLogUserRole.USER),
+                                             timestamp=utc_now()))
+        db.session.commit()
+
+        evaluate_lockout_policies(CAContext(self.user, user_role=str(AuthLogUserRole.USER)),
+                                  AuthEventType.MFA_FAIL)
+        self.assertTrue(is_user_locked(self.user))
+
+    def test_a_user_target_policy_still_gates_on_its_conditions(self):
+        self._make_policy(
+            name="other realm only", counter_type=AuthEventType.MFA_FAIL,
+            conditions=[self._condition(ConditionType.USER_REALM, ConditionOperator.IN, [self.realm2])],
+            stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.LOCK_USER, 600)]),))
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        self.assertEqual([], evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL))
+        self.assertFalse(is_user_locked(self.user))
+
+    def test_a_condition_that_cannot_be_a_predicate_leaves_the_count_unscoped(self):
+        # A condition type the log does not record cannot narrow a query, so such a policy counts
+        # everything the subject did and relies on the gate alone - the behaviour it had before scoping
+        # existed. All or nothing: honouring only the scopable conditions of a mixed policy would count
+        # rows the admin excluded. Simulated with a spec carrying no log_column.
+        ip = "10.0.0.13"
+        unscopable = ConditionTypeSpec(name="CLIENT_LABEL", label="Client label",
+                                       operators=frozenset({ConditionOperator.IN}),
+                                       resolve=lambda context: "kiosk", choices=None)
+        self.assertIsNone(unscopable.log_column)
+        with mock.patch.dict(CONDITION_TYPES, {"CLIENT_LABEL": unscopable}):
+            policy = self._make_policy(
+                name="unscopable", counter_type=AuthEventType.MFA_FAIL,
+                target=LockoutTarget.SOURCE_IP, count_mode=CountMode.DISTINCT_USERS,
+                conditions=[self._condition("CLIENT_LABEL", ConditionOperator.IN, ["kiosk"])],
+                stages=(StageDefinition(2, 1, [StageActionDefinition(LockoutAction.BLOCK_IP, 600)]),))[0]
+            self.assertFalse(policy_conditions_are_scopable(policy))
+            # Two accounts in different realms: unscoped they both count and the threshold is reached.
+            self._seed_ip_accounts(ip, (self.realm1, self.realm2))
+            evaluate_lockout_policies(CAContext(User("cornelius", self.realm1), source_ip=ip),
+                                      AuthEventType.MFA_FAIL)
+            self.assertTrue(is_ip_blocked(ip))
 
     def test_conditions_gate_the_pre_auth_decision(self):
         # A DENY at threshold 0 always fires for a matching context, and contributes

@@ -48,6 +48,23 @@ probe *non-existent* usernames, which resolve to no realm at all. Were a missing
 value to make the condition fail, the exemption would swallow exactly the traffic
 the policy was written for. Treating "no realm" as "not sales" keeps it applying.
 
+That one rule governs **both** things a condition does, so they can never
+contradict each other - but note they ask it about different subjects:
+
+============  ======================================  =====================================
+operator      gate: the *request* carries no value    count: a *log row*'s column is NULL
+============  ======================================  =====================================
+``IN``        no match - the policy does not apply    row is not counted
+``NOT_IN``    matches - the policy applies            row is counted
+============  ======================================  =====================================
+
+:attr:`OperatorSpec.matches_missing` states it for the gate and
+:attr:`OperatorSpec.sql` for the count; the second needs the null case spelled out
+because SQL's three-valued logic makes ``col NOT IN (...)`` *false* for ``NULL``,
+which would have inverted the exemption in the query relative to Python. So a
+request the gate admits is one whose rows the filter admits - what differs is only
+that the gate reads one value (this request's) while the filter reads each row's.
+
 **Nothing here raises.** This runs on the authentication hot path, pre-auth and
 post-response, and the engine is built so that conditional access can never break
 an authentication. An unknown condition type, an unknown operator, or a failing
@@ -62,8 +79,11 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
+from sqlalchemy import or_
+
 from privacyidea.lib import lazy_gettext
 from privacyidea.lib.conditional_access.authentication_log import AuthLogUserRole
+from privacyidea.models import AuthenticationLog
 
 if TYPE_CHECKING:
     from privacyidea.lib.conditional_access.context import CAContext
@@ -116,11 +136,18 @@ class OperatorSpec:
         by treating a missing value as one that belongs to no set: it is in
         nothing (``IN`` -> False) and it is not in anything (``NOT_IN`` -> True).
         See the module docstring for why that is also the safe reading.
+    :ivar sql: ``(column, values) -> ColumnElement`` - the same comparison as a SQL
+        predicate, for scoping the counting query (see :func:`condition_sql_filters`).
+        It must agree with :attr:`matches_missing` on a ``NULL`` column, which SQL
+        does **not** give for free: ``col NOT IN (...)`` is *false* for ``NULL``
+        under three-valued logic, so ``NOT_IN`` has to spell the null case out or
+        the exemption would silently invert in SQL relative to Python.
     """
     name: str
     label: object
     apply: Callable[[Any, Any], bool]
     matches_missing: bool
+    sql: Callable[[Any, list[str]], Any]
 
 
 OPERATORS: dict[str, OperatorSpec] = {
@@ -128,12 +155,17 @@ OPERATORS: dict[str, OperatorSpec] = {
         name=ConditionOperator.IN,
         label=lazy_gettext("is one of"),
         apply=lambda actual, values: actual in values,
-        matches_missing=False),
+        matches_missing=False,
+        # A NULL column is in nothing, and IN already excludes it.
+        sql=lambda column, values: column.in_(values)),
     ConditionOperator.NOT_IN: OperatorSpec(
         name=ConditionOperator.NOT_IN,
         label=lazy_gettext("is not one of"),
         apply=lambda actual, values: actual not in values,
-        matches_missing=True),
+        matches_missing=True,
+        # A NULL column is not in anything, so it must count - which NOT IN alone
+        # would not do (see the sql docstring above).
+        sql=lambda column, values: or_(column.is_(None), column.notin_(values))),
 }
 
 
@@ -162,12 +194,19 @@ class ConditionTypeSpec:
         ``is None`` and not a truthiness test. What a ``None`` then *means* is the
         operator's call, not the type's - see
         :attr:`OperatorSpec.matches_missing`.
+    :ivar log_column: the ``authentication_log`` column holding the same value this
+        type reads from the request, or ``None`` when there is none. It is what lets
+        a condition scope the *counting* query and not just gate the request (see
+        :func:`condition_sql_filters`); a type without one stays gate-only, which is
+        the right default for a value the log does not record since a predicate cannot
+        be written for it at all.
     """
     name: str
     label: object
     operators: frozenset[str]
     resolve: Callable[["CAContext"], Any]
     choices: Callable[[], list[str]] | None = None
+    log_column: Any | None = None
 
 
 class ConditionType(str, Enum):
@@ -211,13 +250,15 @@ CONDITION_TYPES: dict[str, ConditionTypeSpec] = {
         label=lazy_gettext("User realm"),
         operators=frozenset({ConditionOperator.IN, ConditionOperator.NOT_IN}),
         resolve=_resolve_user_realm,
-        choices=_realm_choices),
+        choices=_realm_choices,
+        log_column=AuthenticationLog.realm),
     ConditionType.USER_ROLE: ConditionTypeSpec(
         name=ConditionType.USER_ROLE,
         label=lazy_gettext("User role"),
         operators=frozenset({ConditionOperator.IN, ConditionOperator.NOT_IN}),
         resolve=_resolve_user_role,
-        choices=lambda: sorted(AuthLogUserRole)),
+        choices=lambda: sorted(AuthLogUserRole),
+        log_column=AuthenticationLog.user_role),
 }
 
 
@@ -277,6 +318,78 @@ def get_condition_types() -> dict[str, dict]:
             "choices": spec.choices() if spec.choices else None,
         } for spec in CONDITION_TYPES.values()
     }
+
+
+def policy_conditions_are_scopable(policy: "LockoutPolicy") -> bool:
+    """
+    Whether *every* condition of *policy* can be expressed as a predicate on the
+    authentication log, so the policy's count can be narrowed to the rows its
+    conditions describe instead of the policy merely being gated on the current
+    request (see :func:`condition_sql_filters`).
+
+    All or nothing, deliberately: a policy mixing a scopable condition with one
+    that is not cannot have "half" of its conditions honoured by the query, and
+    silently applying only the scopable half would count rows the admin excluded.
+    Such a policy therefore stays on the gate-only path, which is the behaviour it
+    had before scoping existed.
+
+    A policy with no conditions is *not* scopable - there is nothing to scope, and
+    the caller must not take the scoped path for it.
+
+    :param policy: the policy whose conditions are inspected
+    :return: True only if the policy has at least one condition and every one of
+        them names a known type with a ``log_column`` and a known operator, i.e.
+        :func:`condition_sql_filters` can express all of them. False means the
+        count must be left unscoped.
+    """
+    if not policy.conditions:
+        return False
+    return all(
+        (spec := CONDITION_TYPES.get(condition.condition_type)) is not None
+        and spec.log_column is not None
+        and condition.operator in OPERATORS
+        for condition in policy.conditions
+    )
+
+
+def condition_sql_filters(policy: "LockoutPolicy") -> list:
+    """
+    The policy's conditions as SQL predicates on ``authentication_log``, for
+    narrowing which rows a count considers.
+
+    This is the *counting* half of a condition, applied in addition to - never
+    instead of - the applicability half (:func:`policy_matches_context`). The two
+    ask the same question of different subjects: gating asks it of the request in
+    front of us, scoping asks it of each row of the subject's history. Both use the
+    one missing-value rule, so they cannot disagree (see the module docstring).
+
+    It is what a ``source_ip`` policy needs to count what its admin asked for: the
+    subject is the IP, whose rows span many identities, realms and roles, so without
+    a filter a narrowly scoped policy would still count the IP's entire history. For
+    a ``user`` policy the predicates are redundant - the subject pins the realm, and
+    with it the role - but harmless, which is why there is one rule for both.
+
+    Only call this when :func:`policy_conditions_are_scopable` is true. A condition
+    without a ``log_column`` is logged and skipped here rather than silently
+    widening the count, but relying on that would count rows the admin excluded.
+
+    :param policy: the policy whose conditions are translated; its ``conditions``
+        relationship is read, nothing is written
+    :return: one SQLAlchemy predicate per condition, to be ANDed into the counting
+        query's ``WHERE``. Empty when the policy has no conditions, or when none of
+        them can be expressed against the log.
+    """
+    filters = []
+    for condition in policy.conditions:
+        spec = CONDITION_TYPES.get(condition.condition_type)
+        operator = OPERATORS.get(condition.operator)
+        if spec is None or spec.log_column is None or operator is None:
+            log.warning(f"Policy {policy.name!r} carries a condition that cannot scope a count "
+                        f"({condition.condition_type!r} / {condition.operator!r}); it is not applied to the query.")
+            continue
+        values = condition.value if isinstance(condition.value, (list, tuple)) else []
+        filters.append(operator.sql(spec.log_column, list(values)))
+    return filters
 
 
 def policy_matches_context(policy: "LockoutPolicy", context: "CAContext") -> bool:
