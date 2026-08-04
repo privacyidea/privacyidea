@@ -39,6 +39,7 @@ import {
   ConditionalAccessPolicyServiceInterface,
   CountMode,
   EMPTY_LOCKOUT_POLICY,
+  LockoutPolicyCondition,
   LockoutPolicySaveParams,
   LockoutPolicyStage,
   LockoutTarget
@@ -46,6 +47,7 @@ import {
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { deepCopy } from "@utils/deep-copy.utils";
+import { ConditionalAccessConditionsComponent } from "./conditions/conditional-access-conditions.component";
 import { ConditionalAccessStagesListComponent } from "./stages-list/conditional-access-stages-list.component";
 
 type TimeUnit = "seconds" | "minutes" | "hours";
@@ -87,6 +89,7 @@ const COUNT_MODE_LABELS: Record<string, string> = {
     StickyHeaderDirective,
     InfoHintComponent,
     ClearButtonComponent,
+    ConditionalAccessConditionsComponent,
     ConditionalAccessStagesListComponent
   ],
   templateUrl: "./conditional-access-edit-page.component.html",
@@ -197,6 +200,12 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     }
     return allowed.includes(this.editPolicy().count_mode);
   });
+  // Every condition value must still be one the backend accepts: _validate_condition_value rejects a
+  // value outside the type's current vocabulary, and the editor PATCHes the whole policy, so a policy
+  // naming a deleted realm would 400 on *any* save. Surfacing it here says why instead of letting the
+  // save fail - mirroring countModeValid / targetActionsValid, which exist for the same reason.
+  readonly staleConditionValues = computed(() => this.policyService.staleConditionValues(this.editPolicy().conditions));
+  conditionValuesValid = computed(() => this.staleConditionValues().length === 0);
   // Only the highest-priority stage whose threshold is met ever fires, so two stages
   // sharing a threshold would leave one permanently dead; the backend rejects it too
   // (uq_lockout_stage_policy_threshold), so block it here.
@@ -215,7 +224,8 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
       this.stagesValid() &&
       this.stageThresholdsUnique() &&
       this.targetActionsValid() &&
-      this.countModeValid()
+      this.countModeValid() &&
+      this.conditionValuesValid()
   );
 
   nameTouched = signal(false);
@@ -240,16 +250,12 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
         this.editPolicyId = id;
         const found = this.policyService.policies().find((p) => String(p.id) === id);
         if (found) {
-          this.policy.set(deepCopy(found));
-          this.editPolicy.set(deepCopy(found));
-          this.syncTimeWindowFromSeconds(found.time_window_seconds);
+          this.loadPolicy(found);
         }
       } else {
         this.isNewPolicy.set(true);
         this.editPolicyId = null;
-        this.policy.set(deepCopy(EMPTY_LOCKOUT_POLICY));
-        this.editPolicy.set(deepCopy(EMPTY_LOCKOUT_POLICY));
-        this.syncTimeWindowFromSeconds(EMPTY_LOCKOUT_POLICY.time_window_seconds);
+        this.loadPolicy(EMPTY_LOCKOUT_POLICY);
       }
     });
 
@@ -259,9 +265,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
       if (!this.isNewPolicy() && this.editPolicyId && !this.hasChanges()) {
         const found = policies.find((p) => String(p.id) === this.editPolicyId);
         if (found) {
-          this.policy.set(deepCopy(found));
-          this.editPolicy.set(deepCopy(found));
-          this.syncTimeWindowFromSeconds(found.time_window_seconds);
+          this.loadPolicy(found);
         }
       }
     });
@@ -269,6 +273,21 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     this.pendingChangesService.registerHasChanges(() => this.hasChanges());
     this.pendingChangesService.registerSave(this.savePolicy.bind(this));
     this.pendingChangesService.registerValidChanges(() => this.canSave());
+  }
+
+  // Seed both the pristine and the working copy from one policy, each its own deep copy so editing
+  // one cannot reach into the other.
+  private loadPolicy(policy: LockoutPolicySaveParams): void {
+    const loaded = deepCopy(policy);
+    // The read endpoint spells "no conditions" as an empty list where this editor's model has no key
+    // at all. Collapsing the two on the way in keeps the JSON diff hasChanges() makes from reporting
+    // a change when the only difference is that spelling.
+    if (!loaded.conditions?.length) {
+      delete loaded.conditions;
+    }
+    this.policy.set(loaded);
+    this.editPolicy.set(deepCopy(loaded));
+    this.syncTimeWindowFromSeconds(loaded.time_window_seconds);
   }
 
   ngOnDestroy(): void {
@@ -281,6 +300,12 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
 
   onStagesChange(stages: LockoutPolicyStage[]): void {
     this.updateEditPolicy({ stages });
+  }
+
+  // No conditions is the absence of the key, not an empty list - so a policy that never had any is
+  // not reported as changed just because a condition was added and removed again.
+  onConditionsChange(conditions: LockoutPolicyCondition[]): void {
+    this.updateEditPolicy({ conditions: conditions.length ? conditions : undefined });
   }
 
   onCounterTypesChange(counterTypes: string[]): void {
@@ -377,10 +402,20 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     // fire, so derive each stage's priority from its (unique) failure_threshold — a
     // higher threshold gets a higher priority and therefore wins when several match.
     const policy = this.editPolicy();
-    const payload = {
+    const payload: LockoutPolicySaveParams = {
       ...policy,
       stages: policy.stages.map((stage) => ({ ...stage, priority: stage.failure_threshold }))
     };
+    if (!payload.conditions?.length) {
+      // The backend replaces conditions only when the key is present, so an empty list is not the
+      // same as no key: omit it for a policy with no conditions, but send an explicit empty list to
+      // clear ones that are stored - otherwise removing the last condition would silently not save.
+      if (this.policy().conditions?.length) {
+        payload.conditions = [];
+      } else {
+        delete payload.conditions;
+      }
+    }
     return new Promise((resolve) => {
       this.policyService.savePolicy(payload).then((id) => {
         if (id !== undefined) {

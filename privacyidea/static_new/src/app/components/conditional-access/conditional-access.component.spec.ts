@@ -22,7 +22,10 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideRouter, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService } from "@services/auth/auth.service";
-import { ConditionalAccessPolicyService, LockoutPolicy } from "@services/conditional-access/conditional-access-policy.service";
+import {
+  ConditionalAccessPolicyService,
+  LockoutPolicy
+} from "@services/conditional-access/conditional-access-policy.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
@@ -54,7 +57,8 @@ describe("ConditionalAccessComponent", () => {
     target: "user",
     count_mode: "PER_REQUEST",
     counter_types_to_track: ["PIN_FAIL"],
-    stages: [{ failure_threshold: 5, priority: 1, actions: [] }]
+    stages: [{ failure_threshold: 5, priority: 1, actions: [] }],
+    conditions: []
   };
 
   beforeEach(async () => {
@@ -110,7 +114,9 @@ describe("ConditionalAccessComponent", () => {
 
   it("should navigate to the edit page for a policy", () => {
     component.onEditPolicy(samplePolicy);
-    expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_DETAILS + samplePolicy.id);
+    expect(router.navigateByUrl).toHaveBeenCalledWith(
+      ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_DETAILS + samplePolicy.id
+    );
   });
 
   it("should disable an enabled policy on toggle", () => {
@@ -268,6 +274,43 @@ describe("ConditionalAccessComponent", () => {
       component.toggleEnabledSelected();
       component.toggleDryRunSelected();
       expect(dialogServiceMock.openDialog).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("stale conditions", () => {
+    beforeEach(() => {
+      policyServiceMock.conditionTypes.set({
+        USER_REALM: {
+          label: "User realm",
+          operators: [{ name: "IN", label: "is one of" }],
+          choices: ["sales"]
+        }
+      });
+    });
+
+    it("should not flag a policy whose condition values all still exist", () => {
+      const policy: LockoutPolicy = {
+        ...samplePolicy,
+        conditions: [{ condition_type: "USER_REALM", operator: "IN", value: ["sales"] }]
+      };
+      expect(component.hasStaleConditions(policy)).toBe(false);
+    });
+
+    it("should flag a policy referencing a value that is gone", () => {
+      const policy: LockoutPolicy = {
+        ...samplePolicy,
+        conditions: [{ condition_type: "USER_REALM", operator: "IN", value: ["sales", "deleted"] }]
+      };
+      expect(component.hasStaleConditions(policy)).toBe(true);
+    });
+
+    it("should render the warning icon only for a flagged row", () => {
+      policyServiceMock.policies.set([
+        { ...samplePolicy, id: 1, conditions: [{ condition_type: "USER_REALM", operator: "IN", value: ["deleted"] }] },
+        { ...samplePolicy, id: 2, name: "Fine", conditions: [] }
+      ]);
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelectorAll(".ca-stale-condition-icon").length).toBe(1);
     });
   });
 });

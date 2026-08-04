@@ -125,14 +125,24 @@
       <td
         *matCellDef="let policy"
         mat-cell>
-        <a
-          role="button"
-          tabindex="0"
-          (click)="onEditPolicy(policy)"
-          (keydown.enter)="onEditPolicy(policy)"
-          class="flex ali-center">
-          {{ policy.name }}
-        </a>
+        <div class="ca-name-cell">
+          <a
+            role="button"
+            tabindex="0"
+            (click)="onEditPolicy(policy)"
+            (keydown.enter)="onEditPolicy(policy)"
+            class="flex ali-center">
+            {{ policy.name }}
+          </a>
+          @if (hasStaleConditions(policy)) {
+            <mat-icon
+              [attr.aria-label]="staleConditionsTooltip"
+              [matTooltip]="staleConditionsTooltip"
+              class="ca-stale-condition-icon">
+              warning
+            </mat-icon>
+          }
+        </div>
       </td>
     </ng-container>
 

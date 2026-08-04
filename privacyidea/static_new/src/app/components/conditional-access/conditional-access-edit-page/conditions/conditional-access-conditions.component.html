@@ -1,0 +1,80 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div class="ca-conditions">
+  @for (row of rows(); track row.type) {
+    <div class="ca-condition-row">
+      <!-- Label and operator are grouped so the label centres on the toggle whatever its height,
+           while the group as a whole stays top-aligned with the value select. -->
+      <div class="ca-condition-subject">
+        <span class="ca-condition-label">{{ row.label }}</span>
+        <mat-button-toggle-group
+          [attr.aria-label]="row.operatorAriaLabel"
+          [value]="selectedOperator(row.type)"
+          (change)="onOperatorChange(row.type, $event.value)">
+          @for (operator of operatorOptions(row.type); track operator.name) {
+            <mat-button-toggle [value]="operator.name">{{ operator.label }}</mat-button-toggle>
+          }
+        </mat-button-toggle-group>
+      </div>
+
+      <mat-form-field
+        appearance="fill"
+        class="ca-condition-values"
+        subscriptSizing="dynamic">
+        <mat-label>{{ row.valuesLabel }}</mat-label>
+        <mat-select
+          multiple
+          [value]="selectedValues(row.type)"
+          (selectionChange)="onValuesChange(row.type, $event.value)">
+          @for (value of valueOptions(row.type); track value) {
+            <mat-option [value]="value">
+              {{ valueLabel(row, value) }}
+              @if (isStaleValue(row.type, value)) {
+                <span
+                  class="ca-condition-stale-tag"
+                  i18n>
+                  (no longer valid)
+                </span>
+              }
+            </mat-option>
+          }
+        </mat-select>
+        <!-- stopPropagation, or the click falls through to the form field and opens the select again. -->
+        @if (selectedValues(row.type).length > 0) {
+          <app-clear-button
+            (clearButtonClick)="onValuesChange(row.type, []); $event.stopPropagation()"
+            [toolTipText]="row.clearToolTip"
+            matSuffix />
+        }
+        <!--
+          Rendered as a hint rather than a mat-error: a mat-select without a form control never enters
+          errorState, so a mat-error would be silently dropped. As a hint it both shows and lands in
+          the form field's aria-describedby, so it is announced with the control it belongs to.
+        -->
+        @if (staleValuesFor(row.type).length > 0) {
+          <mat-hint class="ca-condition-stale">
+            <span i18n>No longer valid: {{ staleValuesFor(row.type).join(", ") }}. Remove to save this policy.</span>
+          </mat-hint>
+        } @else {
+          <mat-hint>{{ hintFor(row) }}</mat-hint>
+        }
+      </mat-form-field>
+    </div>
+  }
+</div>

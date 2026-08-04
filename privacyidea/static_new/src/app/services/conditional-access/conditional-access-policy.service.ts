@@ -94,6 +94,54 @@ export interface LockoutPolicyStage {
   actions: LockoutStageAction[];
 }
 
+// The condition types and operators this WebUI ships hand-written wording for (mirroring
+// ConditionType / ConditionOperator in privacyidea.lib.conditional_access.conditions).
+//
+// These are deliberately NOT the type of any value read off the wire: that registry is open by design
+// ("adding a condition kind is a registry entry, not a schema change"), the editor builds its rows
+// from /conditiontypes, and a served value outside these unions is a case the UI handles rather than a
+// type error. condition_type and operator are therefore plain strings below.
+//
+// What they are for is the reverse direction - locking the *client's* own tables to the vocabulary it
+// claims to support. KnownConditionOperator keyed over a full (non-Partial) Record is what makes
+// "every operator rendered with bespoke copy has that copy" a compile-time rule; KnownConditionType
+// keys the copy table so a mistyped key is caught rather than silently never matching.
+export type KnownConditionType = "USER_REALM" | "USER_ROLE";
+export type KnownConditionOperator = "IN" | "NOT_IN";
+
+// One comparison a condition type permits, with the label the backend has already translated.
+export interface ConditionOperatorMeta {
+  name: string;
+  label: string;
+}
+
+// What /conditionalaccess/conditiontypes serves per condition type: its translated label, the
+// operators it permits and the values that are valid *right now* (null for a type whose values cannot
+// be enumerated). "choices" is resolved server-side per request, so a realm deleted since the last
+// load shows up as unknown rather than silently staying selectable.
+export interface ConditionTypeMeta {
+  label: string;
+  operators: ConditionOperatorMeta[];
+  choices: string[] | null;
+}
+
+// One restriction on which requests a policy applies to. All of a policy's conditions must hold
+// (AND); a policy with no conditions applies to every request. The backend rejects an empty "value"
+// list, so "no restriction on this type" is expressed by omitting the condition, not by an empty one.
+export interface LockoutPolicyCondition {
+  id?: number;
+  condition_type: string;
+  operator: string;
+  value: string[];
+}
+
+// The values one condition references that are no longer valid, e.g. a realm that has since been
+// deleted. Grouped by condition type so the editor can put the message under the right control.
+export interface StaleConditionValues {
+  condition_type: string;
+  values: string[];
+}
+
 export interface LockoutPolicy {
   id: number;
   name: string;
@@ -105,6 +153,10 @@ export interface LockoutPolicy {
   count_mode: CountMode;
   counter_types_to_track: AuthEventType[];
   stages: LockoutPolicyStage[];
+  // Which requests the policy applies to at all. Optional: a policy without any restriction simply
+  // has none, which is why the shipped templates carry no conditions key and why an editor with
+  // nothing selected omits it from the payload rather than sending an empty list.
+  conditions?: LockoutPolicyCondition[];
 }
 
 // The shape sent to create/update; id is only present (and ignored server-side) on update.
@@ -143,10 +195,18 @@ export interface ConditionalAccessPolicyServiceInterface {
   readonly targets: Signal<LockoutTarget[]>;
   readonly templatesResource: HttpResourceRef<PiResponse<LockoutPolicyTemplate[]> | undefined>;
   readonly templates: Signal<LockoutPolicyTemplate[]>;
+  readonly conditionTypesResource: HttpResourceRef<PiResponse<Record<string, ConditionTypeMeta>> | undefined>;
+  readonly conditionTypes: Signal<Record<string, ConditionTypeMeta>>;
 
   actionsForTarget(target: LockoutTarget): LockoutActionType[];
 
   countModesForTarget(target: LockoutTarget): CountMode[];
+
+  operatorsForConditionType(conditionType: string): ConditionOperatorMeta[];
+
+  choicesForConditionType(conditionType: string): string[] | null;
+
+  staleConditionValues(conditions: LockoutPolicyCondition[] | undefined): StaleConditionValues[];
 
   savePolicy(policy: LockoutPolicySaveParams): Promise<number | undefined>;
 
@@ -174,6 +234,7 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
   readonly actionTypesUrl = environment.proxyUrl + "/conditionalaccess/actiontypes";
   readonly targetsUrl = environment.proxyUrl + "/conditionalaccess/targets";
   readonly templatesUrl = environment.proxyUrl + "/conditionalaccess/template";
+  readonly conditionTypesUrl = environment.proxyUrl + "/conditionalaccess/conditiontypes";
 
   readonly policiesResource = httpResource<PiResponse<LockoutPolicy[]>>(() => {
     if (!this.authService.actionAllowed("lockout_policy_read")) {
@@ -276,6 +337,24 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
     () => this.templatesResource.value()?.result?.value ?? []
   );
 
+  // The condition vocabulary: per condition type its label, its operators and the values that are
+  // valid right now. Fetched rather than hard-coded because the realm list changes as realms are
+  // created and deleted, and a stale selection list would invite a condition that can never match.
+  readonly conditionTypesResource = httpResource<PiResponse<Record<string, ConditionTypeMeta>>>(() => {
+    if (!this.authService.actionAllowed("lockout_policy_read") || !this.contentService.onConditionalAccess()) {
+      return undefined;
+    }
+    return {
+      url: this.conditionTypesUrl,
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
+  });
+
+  readonly conditionTypes: Signal<Record<string, ConditionTypeMeta>> = computed(
+    () => this.conditionTypesResource.value()?.result?.value ?? {}
+  );
+
   // Actions allowed for a target; falls back to the full list until /targets loads,
   // so the select is never empty on first paint.
   actionsForTarget(target: LockoutTarget): LockoutActionType[] {
@@ -284,6 +363,35 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
 
   countModesForTarget(target: LockoutTarget): CountMode[] {
     return this.countModesByTarget()[target] ?? [];
+  }
+
+  // The operators a condition type permits, with their translated labels. Empty until
+  // /conditiontypes loads; the editor falls back to its own labels so the control is never blank.
+  operatorsForConditionType(conditionType: string): ConditionOperatorMeta[] {
+    return this.conditionTypes()[conditionType]?.operators ?? [];
+  }
+
+  // The values currently valid for a condition type. null means "not enumerable" - either the type
+  // genuinely has an open value space, or /conditiontypes has not loaded yet. Both are answered the
+  // same way on purpose: nothing can be judged unknown without a vocabulary to judge it against.
+  choicesForConditionType(conditionType: string): string[] | null {
+    return this.conditionTypes()[conditionType]?.choices ?? null;
+  }
+
+  // The condition values that are no longer valid, e.g. a realm deleted after the policy was
+  // written. These matter because the backend rejects them on write (_validate_condition_value),
+  // so such a policy cannot be saved at all until they are dealt with - and because a condition
+  // naming a value that no longer exists silently stopped doing what it was written to do.
+  staleConditionValues(conditions: LockoutPolicyCondition[] | undefined): StaleConditionValues[] {
+    return (conditions ?? [])
+      .map((condition) => {
+        const choices = this.choicesForConditionType(condition.condition_type);
+        return {
+          condition_type: condition.condition_type,
+          values: choices === null ? [] : condition.value.filter((value) => !choices.includes(value))
+        };
+      })
+      .filter((stale) => stale.values.length > 0);
   }
 
   constructor() {

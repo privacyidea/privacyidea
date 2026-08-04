@@ -252,6 +252,18 @@
       </mat-form-field>
     </div>
 
+    <h4 i18n>Conditions</h4>
+    <p
+      class="ca-section-hint"
+      i18n>
+      Conditions restrict which requests this policy applies to at all - they are checked before anything is counted.
+      All of them must hold. Leave a condition empty to place no restriction on it; a policy with no conditions applies
+      to every request.
+    </p>
+    <app-conditional-access-conditions
+      [conditions]="editPolicy().conditions ?? []"
+      (conditionsChange)="onConditionsChange($event)" />
+
     <h4 i18n>Stages &amp; Actions</h4>
     <p
       class="ca-section-hint"

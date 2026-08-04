@@ -20,12 +20,16 @@ import { signal } from "@angular/core";
 import {
   AuthEventType,
   ConditionalAccessPolicyServiceInterface,
+  ConditionOperatorMeta,
+  ConditionTypeMeta,
   CountMode,
   LockoutActionType,
   LockoutPolicy,
+  LockoutPolicyCondition,
   LockoutPolicySaveParams,
   LockoutPolicyTemplate,
   LockoutTarget,
+  StaleConditionValues,
   TargetConstraints
 } from "@services/conditional-access/conditional-access-policy.service";
 import { MockHttpResourceRef, MockPiResponse } from "@testing/mock-services/mock-utils";
@@ -56,6 +60,30 @@ export class MockConditionalAccessPolicyService implements ConditionalAccessPoli
   templatesResource = new MockHttpResourceRef(MockPiResponse.fromValue<LockoutPolicyTemplate[]>([]));
 
   templates = signal<LockoutPolicyTemplate[]>([]);
+
+  conditionTypesResource = new MockHttpResourceRef(MockPiResponse.fromValue<Record<string, ConditionTypeMeta>>({}));
+
+  conditionTypes = signal<Record<string, ConditionTypeMeta>>({});
+
+  operatorsForConditionType = jest.fn(
+    (conditionType: string): ConditionOperatorMeta[] => this.conditionTypes()[conditionType]?.operators ?? []
+  );
+
+  choicesForConditionType = jest.fn(
+    (conditionType: string): string[] | null => this.conditionTypes()[conditionType]?.choices ?? null
+  );
+
+  staleConditionValues = jest.fn((conditions: LockoutPolicyCondition[] | undefined): StaleConditionValues[] =>
+    (conditions ?? [])
+      .map((condition) => {
+        const choices = this.choicesForConditionType(condition.condition_type);
+        return {
+          condition_type: condition.condition_type,
+          values: choices === null ? [] : condition.value.filter((value) => !choices.includes(value))
+        };
+      })
+      .filter((stale) => stale.values.length > 0)
+  );
 
   actionsForTarget = jest.fn(
     (target: LockoutTarget): LockoutActionType[] => this.actionsByTarget()[target] ?? this.actionTypes()
