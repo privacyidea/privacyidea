@@ -31,6 +31,7 @@ import string
 import threading
 import time
 from copy import copy
+from typing import TYPE_CHECKING
 from urllib.parse import unquote
 
 import jwt
@@ -64,6 +65,9 @@ from privacyidea.lib.policies.actions import PolicyAction
 from ...lib.error import (ConflictError, PolicyError, ResourceNotFoundError,
                           PrivacyIDEAError, AuthError, Error)
 from ...lib.log import log_with
+
+if TYPE_CHECKING:
+    from privacyidea.lib.conditional_access.context import CAContext
 
 log = logging.getLogger(__name__)
 ENCODING = "utf-8"

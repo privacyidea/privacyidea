@@ -57,9 +57,10 @@ evaluate": a policy is never applied on the strength of a condition that could n
 be checked.
 """
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 from privacyidea.lib import lazy_gettext
 from privacyidea.lib.conditional_access.authentication_log import AuthLogUserRole
