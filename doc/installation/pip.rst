@@ -54,6 +54,36 @@ Now you can install the required privacyIDEA version from
 
 The requirements are also available after the installation at ``/opt/privacyidea/lib/privacyidea/requirements.txt``.
 
+.. _pip_extras:
+
+Optional features (extras)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Some features need optional dependencies that are not installed by default. They
+are declared as pip *extras* and installed on demand::
+
+    (privacyidea)$ pip install "privacyidea[postgres]"    # PostgreSQL driver (psycopg2)
+    (privacyidea)$ pip install "privacyidea[kerberos]"    # SASL-Kerberos bind for LDAP resolvers (gssapi)
+    (privacyidea)$ pip install "privacyidea[hsm]"          # PKCS#11 hardware security module support (PyKCS11)
+
+Extras can be combined, e.g. ``pip install "privacyidea[postgres,kerberos]"``.
+
+The ``kerberos`` and ``hsm`` extras build native extensions that link against
+system libraries, so the matching OS packages must be present:
+
+* ``kerberos`` (``gssapi``): pip usually installs a prebuilt wheel, but the host
+  still needs the MIT Kerberos runtime libraries (``libkrb5`` / ``krb5-libs``) and
+  a valid ``/etc/krb5.conf`` for the realm. If pip has to build from source,
+  additionally install the Kerberos development headers (``libkrb5-dev`` /
+  ``krb5-devel``), ``krb5-config`` and a C compiler.
+* ``hsm`` (``PyKCS11``): additionally needs your HSM vendor's PKCS#11 module.
+
+.. note::
+
+    The official Docker image already includes the ``kerberos`` extra and the
+    Kerberos runtime libraries, so a containerized deployment only needs a
+    mounted ``krb5.conf``.
+
 .. _pip_configuration:
 
 Configuration
