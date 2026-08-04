@@ -21,11 +21,11 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ThemeService } from "@services/theme/theme.service";
 import { UiPreferencesService } from "@services/user-settings/ui-preferences.service";
 import { MockUiPreferencesService } from "@testing/mock-services/mock-ui-preferences-service";
-import { SettingsComponent } from "./settings.component";
+import { UISettingsComponent } from "./ui-settings.component";
 
-describe("SettingsComponent", () => {
-  let fixture: ComponentFixture<SettingsComponent>;
-  let component: SettingsComponent;
+describe("UISettingsComponent", () => {
+  let fixture: ComponentFixture<UISettingsComponent>;
+  let component: UISettingsComponent;
   let uiPreferencesService: MockUiPreferencesService;
   let themeService: { visualTheme: ReturnType<typeof signal<"light" | "dark">>; setTheme: jest.Mock };
 
@@ -41,7 +41,7 @@ describe("SettingsComponent", () => {
   beforeEach(async () => {
     themeService = { visualTheme: signal<"light" | "dark">("light"), setTheme: jest.fn() };
     await TestBed.configureTestingModule({
-      imports: [SettingsComponent],
+      imports: [UISettingsComponent],
       providers: [
         provideZonelessChangeDetection(),
         { provide: ThemeService, useValue: themeService },
@@ -50,7 +50,7 @@ describe("SettingsComponent", () => {
     }).compileComponents();
 
     uiPreferencesService = TestBed.inject(UiPreferencesService) as unknown as MockUiPreferencesService;
-    fixture = TestBed.createComponent(SettingsComponent);
+    fixture = TestBed.createComponent(UISettingsComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

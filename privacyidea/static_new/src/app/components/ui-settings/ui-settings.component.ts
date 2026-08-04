@@ -26,12 +26,12 @@ import { ThemeService } from "@services/theme/theme.service";
 import { UiPreferencesService, UiPreferencesServiceInterface } from "@services/user-settings/ui-preferences.service";
 
 @Component({
-  selector: "app-settings",
+  selector: "app-ui-settings",
   imports: [DetailsCardComponent, MatFormFieldModule, MatSelectModule, SelectorButtonsComponent],
-  templateUrl: "./settings.component.html",
-  styleUrl: "./settings.component.scss"
+  templateUrl: "./ui-settings.component.html",
+  styleUrl: "./ui-settings.component.scss"
 })
-export class SettingsComponent {
+export class UISettingsComponent {
   private readonly themeService = inject(ThemeService);
   private readonly uiPreferencesService: UiPreferencesServiceInterface = inject(UiPreferencesService);
   protected readonly locales = UI_LOCALES;
