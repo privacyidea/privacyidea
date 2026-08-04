@@ -45,10 +45,11 @@
 }
 
 .auth-failed-cell {
+  height: 18px;
   display: flex;
-  flex-wrap: wrap;
-  gap: calc(var(--global-gap) / 2);
-  justify-content: flex-end;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: calc(var(--global-gap) / 4);
   font-weight: normal;
 
   a {
@@ -59,8 +60,4 @@
       text-decoration: underline;
     }
   }
-}
-
-.auth-separator {
-  opacity: 0.4;
 }
