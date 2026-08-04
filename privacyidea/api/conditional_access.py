@@ -145,9 +145,8 @@ def list_action_types():
 def list_condition_types():
     """
     Return the available policy condition types with, for each, its translated
-    label, the operators it permits, whether it takes a key, and the currently
-    valid values - so the policy editor is built from server metadata rather than
-    a duplicated client-side list.
+    label, the operators it permits and the currently valid values - so the policy
+    editor is built from server metadata rather than a duplicated client-side list.
 
     ``choices`` is resolved per call, so a realm created or deleted since the last
     request is reflected immediately.

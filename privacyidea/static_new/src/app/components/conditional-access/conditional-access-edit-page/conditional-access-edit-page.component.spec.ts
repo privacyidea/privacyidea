@@ -384,7 +384,7 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
     // only when the key is present, so clearing them takes an explicit empty list.
     it("should send an empty list when the stored policy's last condition is removed", async () => {
       policyServiceMock.policies.set([
-        { ...mockPolicy, conditions: [{ id: 3, condition_type: "USER_REALM", operator: "IN", value: ["sales"] }] }
+        { ...mockPolicy, conditions: [{ condition_type: "USER_REALM", operator: "IN", value: ["sales"] }] }
       ]);
       paramMap$.next(convertToParamMap({ id: String(mockPolicy.id) }));
       fixture.detectChanges();
@@ -419,14 +419,14 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
     // widens an exemption and from an IN narrows enforcement, neither of which the admin asked for.
     it("should keep a stale value on the loaded policy instead of dropping it", () => {
       policyServiceMock.policies.set([
-        { ...mockPolicy, conditions: [{ id: 3, condition_type: "USER_REALM", operator: "NOT_IN", value: ["deleted"] }] }
+        { ...mockPolicy, conditions: [{ condition_type: "USER_REALM", operator: "NOT_IN", value: ["deleted"] }] }
       ]);
       paramMap$.next(convertToParamMap({ id: String(mockPolicy.id) }));
       fixture.detectChanges();
       // toMatchObject rather than toEqual: Signal Forms stamps its own identity symbols onto the
       // objects of the model it wraps, which an exact comparison would trip over.
       expect(component.editPolicy().conditions).toMatchObject([
-        { id: 3, condition_type: "USER_REALM", operator: "NOT_IN", value: ["deleted"] }
+        { condition_type: "USER_REALM", operator: "NOT_IN", value: ["deleted"] }
       ]);
       expect(component.hasChanges()).toBe(false);
       expect(component.canSave()).toBe(false);

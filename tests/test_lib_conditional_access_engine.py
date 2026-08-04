@@ -1492,6 +1492,37 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertEqual([], evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL))
         self.assertFalse(is_user_locked(self.user))
 
+    def test_conditions_gate_a_source_ip_policy_but_not_its_count(self):
+        # A source-IP policy is gated by the *requesting* context like any other, even though its
+        # subject is the IP: the realm condition decides whether the policy is evaluated at all.
+        # What a condition does NOT do is scope the counting query - the IP's rows are counted
+        # across every realm. Both halves are asserted because the second is a known limitation,
+        # not an accident: scoping the count is a separate, still-open change, and this test has to
+        # be updated deliberately when it lands.
+        ip = "10.0.0.9"
+        self._make_policy(
+            name="spray realm1 only", counter_type=AuthEventType.MFA_FAIL,
+            target=LockoutTarget.SOURCE_IP, count_mode=CountMode.DISTINCT_USERS,
+            conditions=[self._condition(ConditionType.USER_REALM, ConditionOperator.IN, [self.realm1])],
+            stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.BLOCK_IP, 600)]),))
+        # Three distinct accounts targeted from one IP, only one of them in realm1.
+        for index, realm in enumerate((self.realm1, self.realm2, self.realm2)):
+            db.session.add(AuthenticationLog(event_type=str(AuthEventType.MFA_FAIL), source_ip=ip,
+                                             username=f"sprayed{index}", realm=realm, timestamp=utc_now()))
+        db.session.commit()
+
+        # Seen on a realm2 request: the condition excludes it, so the policy never runs.
+        evaluate_lockout_policies(CAContext(User("cornelius", self.realm2), source_ip=ip),
+                                  AuthEventType.MFA_FAIL)
+        self.assertFalse(is_ip_blocked(ip))
+
+        # Seen on a realm1 request: the policy applies, and the count is the IP's three distinct
+        # accounts - the two realm2 ones included. Were the count scoped to realm1 it would be 1
+        # and the threshold of 3 would not be reached.
+        evaluate_lockout_policies(CAContext(User("cornelius", self.realm1), source_ip=ip),
+                                  AuthEventType.MFA_FAIL)
+        self.assertTrue(is_ip_blocked(ip))
+
     def test_conditions_gate_the_pre_auth_decision(self):
         # A DENY at threshold 0 always fires for a matching context, and contributes
         # no decision at all for one its realm condition excludes.

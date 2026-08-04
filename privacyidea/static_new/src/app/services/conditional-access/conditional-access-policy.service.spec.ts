@@ -54,7 +54,7 @@ describe("ConditionalAccessPolicyService", () => {
         actions: [{ id: 1, action_type: "LOCK_USER", action_value: { lock_duration_seconds: 600 } }]
       }
     ],
-    conditions: [{ id: 1, condition_type: "USER_REALM", operator: "IN", value: ["sales"] }]
+    conditions: [{ condition_type: "USER_REALM", operator: "IN", value: ["sales"] }]
   };
 
   beforeEach(() => {
@@ -383,7 +383,6 @@ describe("ConditionalAccessPolicyService", () => {
       expect(id).toBeUndefined();
       expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to save conditional-access policy. bad name");
     });
-
   });
 
   describe("deletePolicy", () => {
@@ -458,7 +457,6 @@ describe("ConditionalAccessPolicyService", () => {
       expect(result).toBe(false);
       httpMock.expectNone(`${service.baseUrl}/1`);
     });
-
   });
 
   describe("enablePolicy / disablePolicy", () => {
@@ -558,6 +556,5 @@ describe("ConditionalAccessPolicyService", () => {
       expect(notificationServiceMock.success).not.toHaveBeenCalled();
       expect(reload).toHaveBeenCalled();
     });
-
   });
 });

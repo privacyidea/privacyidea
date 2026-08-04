@@ -99,11 +99,15 @@ class LockoutPolicy(MethodsMixin, db.Model):
     # Restrictions on *whether* this policy applies to a request at all, evaluated
     # against the request context before anything is counted. All of them must
     # match (AND); no rows at all means the policy applies to everyone.
+    # Ordered by condition_type rather than by id: they are ANDed, so evaluation order
+    # is irrelevant, and a canonical order means the same set of conditions always
+    # reads back identically no matter what order it was written in - which is what
+    # lets a client compare a policy against its own draft without sorting first.
     conditions: Mapped[list["LockoutPolicyCondition"]] = relationship(
         "LockoutPolicyCondition",
         back_populates="policy",
         cascade="all, delete-orphan",
-        order_by="LockoutPolicyCondition.id")
+        order_by="LockoutPolicyCondition.condition_type")
 
 
 class LockoutPolicyCondition(MethodsMixin, db.Model):

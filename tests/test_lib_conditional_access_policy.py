@@ -696,9 +696,21 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         policy_id = self._create_with_conditions("Conditioned", [self._condition()])
         conditions = get_lockout_policy(policy_id)["conditions"]
         self.assertEqual(1, len(conditions))
+        # No id is served: nothing addresses a condition, and an update replaces them wholesale.
+        self.assertSetEqual({"condition_type", "operator", "value"}, set(conditions[0]))
         self.assertEqual(str(ConditionType.USER_ROLE), conditions[0]["condition_type"])
         self.assertEqual(str(ConditionOperator.IN), conditions[0]["operator"])
         self.assertListEqual([str(AuthLogUserRole.USER)], conditions[0]["value"])
+
+    def test_29a_conditions_are_served_in_condition_type_order(self):
+        # A canonical order, whichever order they were written in: they are ANDed, so order means
+        # nothing, and a stable serialization is what lets a client diff a policy against its draft.
+        self.setUp_user_realms()
+        policy_id = self._create_with_conditions(
+            "Ordered", [self._condition(ConditionType.USER_ROLE),
+                        self._condition(ConditionType.USER_REALM, value=[self.realm1])])
+        self.assertListEqual([str(ConditionType.USER_REALM), str(ConditionType.USER_ROLE)],
+                             [c["condition_type"] for c in get_lockout_policy(policy_id)["conditions"]])
 
     def test_30_conditions_are_optional(self):
         policy_id = create_lockout_policy("Unconditioned", 600, ["PIN_FAIL"], [_stage()],
@@ -740,6 +752,7 @@ class LockoutPolicyCrudTestCase(MyTestCase):
                            [self._condition(value="user")],  # not a list
                            [self._condition(value=[1])],  # non-string entry
                            [self._condition(unknown_key="x")],  # unknown key
+                           [self._condition(id=3)],  # conditions carry no id, so it is not accepted either
                            [self._condition(key="somekey")],  # conditions take no sub-key
                            ["not a dict"]):
             self.assertRaises(ParameterError, self._create_with_conditions, "Malformed", conditions)
@@ -754,7 +767,7 @@ class LockoutPolicyCrudTestCase(MyTestCase):
     def test_38_update_replaces_conditions_wholesale(self):
         policy_id = self._create_with_conditions("Updatable", [self._condition()])
         # Reusing the same condition type across the update must stay within the
-        # (policy_id, condition_type, key) unique constraint.
+        # (policy_id, condition_type) unique constraint.
         _, changed = update_lockout_policy(
             policy_id, conditions=[self._condition(operator=ConditionOperator.NOT_IN,
                                                    value=[str(AuthLogUserRole.ADMIN_INTERNAL)])])

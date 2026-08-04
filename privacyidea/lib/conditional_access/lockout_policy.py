@@ -145,11 +145,14 @@ def lockout_policy_to_dict(policy: LockoutPolicy) -> dict:
     result = {column: getattr(policy, column) for column in policy.__table__.columns.keys()}
     result["counter_types_to_track"] = list(policy.counter_types_to_track)
     # Conditions restrict which requests the policy applies to; an empty list means
-    # it applies to everyone. Insertion order is preserved (the relationship is
-    # ordered by id) since they are ANDed and thus order-independent.
+    # it applies to everyone. Unlike a stage, a condition carries no id here: nothing
+    # addresses one (no foreign key points at the table, and within a policy the
+    # condition type is already unique), and an update replaces them wholesale, so an
+    # id would only be a value that churns on every write. They are served in
+    # condition_type order - a canonical order for an ANDed set, so the same
+    # conditions always serialize identically and a client can diff the response.
     result["conditions"] = [
         {
-            "id": condition.id,
             "condition_type": condition.condition_type,
             "operator": condition.operator,
             "value": condition.value,
@@ -474,7 +477,7 @@ def _validate_conditions(conditions) -> list[ConditionDefinition]:
     for condition in conditions:
         if not isinstance(condition, dict):
             raise ParameterError("Each condition must be a dictionary.")
-        unknown = set(condition) - allowed_keys - {"id"}
+        unknown = set(condition) - allowed_keys
         if unknown:
             raise ParameterError(f"Unknown condition key(s): {', '.join(sorted(unknown))}.")
         condition_type = condition.get("condition_type")
@@ -762,7 +765,7 @@ def update_lockout_policy(policy_id: int, name: str | None = None,
             changed_fields.append("stages")
         if conditions is not None:
             # Same split-flush replacement, keeping the
-            # (policy_id, condition_type, key) unique constraint when a condition type
+            # (policy_id, condition_type) unique constraint when a condition type
             # is reused across the update.
             policy.conditions = []
             db.session.flush()

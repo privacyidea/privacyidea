@@ -183,9 +183,12 @@ def _resolve_user_realm(context: "CAContext") -> Any:
     """
     The realm of the authenticating user, or ``None`` when there is none to read.
 
-    A request always carries a user object - an empty one when nothing resolved -
-    so "no realm" arrives as an empty string rather than an absent attribute, and
-    is reported here as ``None`` like any other unusable value.
+    "No realm" reaches this in two shapes, both reported as ``None``: the context
+    may carry no user at all (:func:`~privacyidea.api.lib.utils.build_ca_context`
+    collapses an empty user object to ``None``), or a user whose realm is empty.
+    Note a user is *not* empty merely because they could not be resolved - a login
+    naming a realm that exists keeps that realm, which is what lets a realm
+    condition still apply to an unknown username in a known realm.
     """
     user = context.user
     return user.realm if user and user.realm else None

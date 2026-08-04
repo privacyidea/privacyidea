@@ -251,22 +251,18 @@ export class ConditionalAccessConditionsComponent {
       this.conditionsChange.emit(this.conditions().filter((condition) => condition.condition_type !== type));
       return;
     }
-    const existing = this.conditionFor(type);
-    // Spreading the existing condition keeps its id, so the pristine/working comparison the edit page
-    // makes (a JSON diff) does not report a change that is not one.
     this.emitUpsert(type, {
-      ...existing,
       condition_type: type,
       operator: this.selectedOperator(type),
       value: values
     });
   }
 
+  // Emitted in condition_type order, the same canonical order the backend serves them in. They are
+  // ANDed, so order carries no meaning - but without a fixed one, removing and re-adding a condition
+  // would reorder the array and the edit page's JSON diff would report a change that is not one.
   private emitUpsert(type: string, condition: LockoutPolicyCondition): void {
-    const conditions = this.conditions();
-    const emitted = conditions.some((existing) => existing.condition_type === type)
-      ? conditions.map((existing) => (existing.condition_type === type ? condition : existing))
-      : [...conditions, condition];
-    this.conditionsChange.emit(emitted);
+    const others = this.conditions().filter((existing) => existing.condition_type !== type);
+    this.conditionsChange.emit([...others, condition].sort((a, b) => a.condition_type.localeCompare(b.condition_type)));
   }
 }

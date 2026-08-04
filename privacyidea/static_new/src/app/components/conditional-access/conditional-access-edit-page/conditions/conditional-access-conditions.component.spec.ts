@@ -128,7 +128,7 @@ describe("ConditionalAccessConditionsComponent", () => {
   });
 
   it("should read the operator and values from an existing condition", () => {
-    setConditions([{ id: 7, condition_type: "USER_REALM", operator: "NOT_IN", value: ["sales"] }]);
+    setConditions([{ condition_type: "USER_REALM", operator: "NOT_IN", value: ["sales"] }]);
     expect(component.selectedOperator("USER_REALM")).toBe("NOT_IN");
     expect(component.selectedValues("USER_REALM")).toEqual(["sales"]);
   });
@@ -164,18 +164,18 @@ describe("ConditionalAccessConditionsComponent", () => {
     expect(component.selectedOperator("USER_REALM")).toBe("IN");
   });
 
-  it("should keep the condition id when the operator of an existing condition changes", () => {
-    setConditions([{ id: 7, condition_type: "USER_REALM", operator: "IN", value: ["sales"] }]);
+  it("should replace the operator of an existing condition, keeping its values", () => {
+    setConditions([{ condition_type: "USER_REALM", operator: "IN", value: ["sales"] }]);
     const spy = jest.spyOn(component.conditionsChange, "emit");
     component.onOperatorChange("USER_REALM", "NOT_IN");
-    expect(spy).toHaveBeenCalledWith([{ id: 7, condition_type: "USER_REALM", operator: "NOT_IN", value: ["sales"] }]);
+    expect(spy).toHaveBeenCalledWith([{ condition_type: "USER_REALM", operator: "NOT_IN", value: ["sales"] }]);
   });
 
-  it("should keep the condition id when its values change", () => {
-    setConditions([{ id: 7, condition_type: "USER_REALM", operator: "IN", value: ["sales"] }]);
+  it("should replace the values of an existing condition, keeping its operator", () => {
+    setConditions([{ condition_type: "USER_REALM", operator: "NOT_IN", value: ["sales"] }]);
     const spy = jest.spyOn(component.conditionsChange, "emit");
     component.onValuesChange("USER_REALM", ["support"]);
-    expect(spy).toHaveBeenCalledWith([{ id: 7, condition_type: "USER_REALM", operator: "IN", value: ["support"] }]);
+    expect(spy).toHaveBeenCalledWith([{ condition_type: "USER_REALM", operator: "NOT_IN", value: ["support"] }]);
   });
 
   // The backend rejects an empty value list, so "no restriction" has to be the absence of the
@@ -203,29 +203,46 @@ describe("ConditionalAccessConditionsComponent", () => {
     expect(spy).toHaveBeenCalledWith([]);
   });
 
-  // Replacing an existing condition maps over the list, so the pass-through arm has to keep a sibling
-  // of another type intact. Distinct from the append case below, which never runs the map at all.
   it("should keep the other condition untouched when replacing one of two", () => {
     setConditions([
-      { id: 1, condition_type: "USER_REALM", operator: "IN", value: ["sales"] },
-      { id: 2, condition_type: "USER_ROLE", operator: "IN", value: ["user"] }
+      { condition_type: "USER_REALM", operator: "IN", value: ["sales"] },
+      { condition_type: "USER_ROLE", operator: "IN", value: ["user"] }
     ]);
     const spy = jest.spyOn(component.conditionsChange, "emit");
     component.onValuesChange("USER_REALM", ["support"]);
     expect(spy).toHaveBeenCalledWith([
-      { id: 1, condition_type: "USER_REALM", operator: "IN", value: ["support"] },
-      { id: 2, condition_type: "USER_ROLE", operator: "IN", value: ["user"] }
+      { condition_type: "USER_REALM", operator: "IN", value: ["support"] },
+      { condition_type: "USER_ROLE", operator: "IN", value: ["user"] }
     ]);
   });
 
-  it("should leave the other type's condition untouched when one is edited", () => {
+  // Emitted in condition_type order, matching how the backend serves them: appending in edit order
+  // would let "remove then re-add" reorder the array, which the edit page's JSON diff would read as
+  // an unsaved change even though the conditions are identical (they are ANDed, so order is nothing).
+  it("should emit a newly added condition in condition_type order, not appended", () => {
     setConditions([{ condition_type: "USER_ROLE", operator: "IN", value: ["user"] }]);
     const spy = jest.spyOn(component.conditionsChange, "emit");
     component.onValuesChange("USER_REALM", ["sales"]);
     expect(spy).toHaveBeenCalledWith([
-      { condition_type: "USER_ROLE", operator: "IN", value: ["user"] },
-      { condition_type: "USER_REALM", operator: "IN", value: ["sales"] }
+      { condition_type: "USER_REALM", operator: "IN", value: ["sales"] },
+      { condition_type: "USER_ROLE", operator: "IN", value: ["user"] }
     ]);
+  });
+
+  it("should report no change after a condition is removed and re-added", () => {
+    const original: LockoutPolicyCondition[] = [
+      { condition_type: "USER_REALM", operator: "IN", value: ["sales"] },
+      { condition_type: "USER_ROLE", operator: "IN", value: ["user"] }
+    ];
+    setConditions(original);
+
+    // Clear the realm row, feed the result back in as the parent would, then re-add it.
+    const spy = jest.spyOn(component.conditionsChange, "emit");
+    component.onValuesChange("USER_REALM", []);
+    setConditions(spy.mock.calls[0][0]);
+    component.onValuesChange("USER_REALM", ["sales"]);
+
+    expect(spy.mock.calls[1][0]).toEqual(original);
   });
 
   it("should offer the backend's choices plus any value the policy references that is gone", () => {

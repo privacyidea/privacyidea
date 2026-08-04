@@ -129,7 +129,6 @@ export interface ConditionTypeMeta {
 // (AND); a policy with no conditions applies to every request. The backend rejects an empty "value"
 // list, so "no restriction on this type" is expressed by omitting the condition, not by an empty one.
 export interface LockoutPolicyCondition {
-  id?: number;
   condition_type: string;
   operator: string;
   value: string[];
