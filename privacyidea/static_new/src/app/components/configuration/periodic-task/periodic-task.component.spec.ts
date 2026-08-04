@@ -18,7 +18,6 @@
  **/
 
 import { provideHttpClient } from "@angular/common/http";
-import { MatCheckboxChange } from "@angular/material/checkbox";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideRouter, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
@@ -154,9 +153,10 @@ describe("PeriodicTaskComponent", () => {
     expect(component.periodicTasks()).toEqual([]);
   });
 
-  it("isAllSelected is false when there are no selectable tasks at all", () => {
-    // default mock state: resource value is an empty list → no selectable ids
-    expect(component.isAllSelected()).toBe(false);
+  it("reports no all-selected state when there are no selectable tasks at all", () => {
+    // default mock state: resource value is an empty list → no selectable rows
+    expect(component.selector.allRowsSelected()).toBe(false);
+    expect(component.selector.hasVisibleRows()).toBe(false);
   });
 
   describe("matchesFilter", () => {
@@ -254,59 +254,36 @@ describe("PeriodicTaskComponent", () => {
   });
 
   describe("Selection", () => {
-    it("updateSelection adds the task id when the checkbox is checked", () => {
-      const task: PeriodicTask = { ...EMPTY_PERIODIC_TASK, id: 5 };
-      component.updateSelection({ checked: true } as MatCheckboxChange, task);
-      expect(component.selectedTaskIds().has(5)).toBe(true);
-    });
+    const showTasks = async (tasks: PeriodicTask[]) => {
+      periodicTaskService.setPeriodicTasks(tasks);
+      fixture.detectChanges();
+      await fixture.whenStable();
+    };
 
-    it("updateSelection removes the task id when the checkbox is unchecked", () => {
-      const task: PeriodicTask = { ...EMPTY_PERIODIC_TASK, id: 5 };
-      component.selectedTaskIds.set(new Set([5]));
-      component.updateSelection({ checked: false } as MatCheckboxChange, task);
-      expect(component.selectedTaskIds().has(5)).toBe(false);
-    });
-
-    it("updateSelection is a no-op when the task has no id", () => {
-      const task: PeriodicTask = { ...EMPTY_PERIODIC_TASK, id: null };
-      component.updateSelection({ checked: true } as MatCheckboxChange, task);
-      expect(component.selectedTaskIds().size).toBe(0);
-    });
-
-    it("isAllSelected is false when nothing is selected", () => {
-      periodicTaskService.setPeriodicTasks([
+    it("leaves tasks without an id out of the selectable rows", async () => {
+      await showTasks([
         { ...EMPTY_PERIODIC_TASK, id: 1, name: "a" },
-        { ...EMPTY_PERIODIC_TASK, id: 2, name: "b" }
+        { ...EMPTY_PERIODIC_TASK, id: null, name: "no-id" }
       ]);
-      expect(component.isAllSelected()).toBe(false);
+
+      component.selector.selectAllRows();
+
+      expect(component.selector.selectedRows().map((task) => task.name)).toEqual(["a"]);
+      expect(component.selector.allRowsSelected()).toBe(true);
     });
 
-    it("isAllSelected is true when every selectable task is selected", () => {
-      periodicTaskService.setPeriodicTasks([
-        { ...EMPTY_PERIODIC_TASK, id: 1, name: "a" },
-        { ...EMPTY_PERIODIC_TASK, id: 2, name: "b" }
+    it("only selects the tasks left by the filter", async () => {
+      await showTasks([
+        { ...EMPTY_PERIODIC_TASK, id: 1, name: "nightly-stats" },
+        { ...EMPTY_PERIODIC_TASK, id: 2, name: "hourly-cleanup" }
       ]);
-      component.selectedTaskIds.set(new Set([1, 2]));
-      expect(component.isAllSelected()).toBe(true);
-    });
+      component.onFilterInput("nightly");
+      fixture.detectChanges();
+      await fixture.whenStable();
 
-    it("masterToggle selects all when nothing is selected", () => {
-      periodicTaskService.setPeriodicTasks([
-        { ...EMPTY_PERIODIC_TASK, id: 1, name: "a" },
-        { ...EMPTY_PERIODIC_TASK, id: 2, name: "b" }
-      ]);
-      component.masterToggle();
-      expect(component.selectedTaskIds()).toEqual(new Set([1, 2]));
-    });
+      component.selector.selectAllRows();
 
-    it("masterToggle clears the selection when everything is selected", () => {
-      periodicTaskService.setPeriodicTasks([
-        { ...EMPTY_PERIODIC_TASK, id: 1, name: "a" },
-        { ...EMPTY_PERIODIC_TASK, id: 2, name: "b" }
-      ]);
-      component.selectedTaskIds.set(new Set([1, 2]));
-      component.masterToggle();
-      expect(component.selectedTaskIds().size).toBe(0);
+      expect(component.selector.selectedRows().map((task) => task.name)).toEqual(["nightly-stats"]);
     });
   });
 
@@ -318,7 +295,9 @@ describe("PeriodicTaskComponent", () => {
 
     it("aborts when the user cancels the confirmation dialog", async () => {
       periodicTaskService.setPeriodicTasks([{ ...EMPTY_PERIODIC_TASK, id: 1, name: "doomed" }]);
-      component.selectedTaskIds.set(new Set([1]));
+      fixture.detectChanges();
+      await fixture.whenStable();
+      component.selector.selectAllRows();
       (dialogService.openDialog as jest.Mock).mockReturnValueOnce({ afterClosed: () => of(undefined) });
       await component.deleteSelected();
       expect(periodicTaskService.deletePeriodicTask).not.toHaveBeenCalled();
@@ -330,14 +309,16 @@ describe("PeriodicTaskComponent", () => {
         { ...EMPTY_PERIODIC_TASK, id: 1, name: "a" },
         { ...EMPTY_PERIODIC_TASK, id: 2, name: "b" }
       ]);
-      component.selectedTaskIds.set(new Set([1, 2]));
+      fixture.detectChanges();
+      await fixture.whenStable();
+      component.selector.selectAllRows();
       (dialogService.openDialog as jest.Mock).mockReturnValueOnce({ afterClosed: () => of(true) });
       await component.deleteSelected();
       expect(periodicTaskService.deletePeriodicTask).toHaveBeenCalledTimes(2);
       expect(periodicTaskService.deletePeriodicTask).toHaveBeenCalledWith(1);
       expect(periodicTaskService.deletePeriodicTask).toHaveBeenCalledWith(2);
       expect(notificationService.success).toHaveBeenCalledTimes(2);
-      expect(component.selectedTaskIds().size).toBe(0);
+      expect(component.selector.hasSelection()).toBe(false);
       expect(periodicTaskService.periodicTasksResource.reload).toHaveBeenCalled();
     });
   });

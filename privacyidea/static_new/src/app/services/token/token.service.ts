@@ -35,7 +35,11 @@ import { ContentService, ContentServiceInterface, DetailsUser } from "@services/
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
-import { FilterableTableService, FilterableTableServiceInterface } from "@services/table-utils/filterable-table-service";
+import {
+  FilterableTableService,
+  FilterableTableServiceInterface
+} from "@services/table-utils/filterable-table-service";
+import { RowSelector } from "@services/table-utils/row-selector";
 import { FilterCaseNote } from "@utils/filter-hint.utils";
 import { filterParamsEqual, toBooleanParam, withDefaultRealm } from "@utils/filter.utils";
 import { StringUtils } from "@utils/string.utils";
@@ -300,7 +304,7 @@ export interface TokenServiceInterface extends FilterableTableServiceInterface {
   tokenResource: HttpResourceRef<PiResponse<Tokens> | undefined>;
   tokenSerialResource: HttpResourceRef<PiResponse<Tokens> | undefined>;
   tokenResourceValue: Signal<Tokens | null>;
-  tokenSelection: WritableSignal<TokenDetails[]>;
+  tokenSelection: RowSelector<TokenDetails>;
   selectedToken: WritableSignal<string | null>;
   tokenOptions: Signal<string[]>;
   filteredTokenOptions: Signal<string[]>;
@@ -669,12 +673,9 @@ export class TokenService extends FilterableTableService implements TokenService
     return this.tokenResource.value()?.result?.value || null;
   });
 
-  tokenSelection: WritableSignal<TokenDetails[]> = linkedSignal({
-    source: () => ({
-      routeUrl: this.contentService.routeUrl(),
-      tokenResource: this.tokenResourceValue()
-    }),
-    computation: () => []
+  tokenSelection = new RowSelector<TokenDetails>({
+    keyGetter: (token) => token.serial,
+    visibleRows: computed(() => this.tokenResourceValue()?.tokens ?? [])
   });
 
   selectedToken = signal<string | null>(null);

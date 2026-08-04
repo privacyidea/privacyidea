@@ -123,30 +123,12 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     expect(selfFixture.componentInstance).toBeTruthy();
   });
 
-  it("isAllSelected/toggleAllRows/toggleRow work as expected", () => {
+  it("exposes the selection held by the token service", () => {
     const tokens = [{ serial: "T-1" } as TokenDetails, { serial: "T-2" } as TokenDetails];
-    tokenService.tokenResourceValue.set({
-      tokens,
-      count: 2,
-      current: 1
-    });
-    tableFixture.detectChanges();
+    tokenService.setTokenSelection(tokens);
 
-    expect(table.isAllSelected()).toBe(false);
-
-    table.toggleAllRows();
-    expect(table.tokenSelection()).toEqual(tokens);
-    expect(table.isAllSelected()).toBe(true);
-
-    table.toggleRow(tokens[0]);
-    expect(table.tokenSelection()).toEqual([tokens[1]]);
-    expect(table.isAllSelected()).toBe(false);
-
-    table.toggleRow(tokens[0]);
-    expect(table.tokenSelection()).toEqual(tokens.reverse());
-
-    table.toggleAllRows();
-    expect(table.tokenSelection()).toEqual([]);
+    expect(table.tokenSelection).toBe(tokenService.tokenSelection);
+    expect(table.tokenSelection.selectedRows().map((token) => token.serial)).toEqual(["T-1", "T-2"]);
   });
 
   it("toggleActive calls service and reloads when allowed & not revoked/locked", () => {

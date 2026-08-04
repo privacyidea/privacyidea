@@ -18,6 +18,7 @@
  **/
 
 import { Component, computed, ElementRef, inject, signal, ViewChild, WritableSignal } from "@angular/core";
+import { toObservable, toSignal } from "@angular/core/rxjs-interop";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatTooltipModule } from "@angular/material/tooltip";
@@ -36,7 +37,9 @@ import { CopyableComponent } from "@components/shared/copyable/copyable.componen
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { switchMap } from "rxjs";
 
 @Component({
   selector: "app-sms-gateways",
@@ -79,8 +82,6 @@ export class SmsGatewaysComponent {
 
   displayedColumns: string[] = ["select", "name", "description", "providermodule"];
 
-  selection = signal<SmsGateway[]>([]);
-
   smsDataSource = computed(() => {
     const gateways = this.smsGatewayService.smsGateways();
     const dataSource = new MatTableDataSource(gateways);
@@ -88,6 +89,13 @@ export class SmsGatewaysComponent {
     dataSource.sort = this.sort;
     return dataSource;
   });
+
+  private readonly renderedRows = toSignal(
+    toObservable(this.smsDataSource).pipe(switchMap((dataSource) => dataSource.connect())),
+    { initialValue: [] as SmsGateway[] }
+  );
+
+  selector = new RowSelector<SmsGateway>({ keyGetter: (gateway) => gateway.name, visibleRows: this.renderedRows });
 
   onCreateNewGateway(): void {
     this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SMS_NEW);
@@ -97,34 +105,8 @@ export class SmsGatewaysComponent {
     this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SMS_DETAILS + gateway.name);
   }
 
-  isAllSelected(): boolean {
-    const rows = this.smsDataSource().data;
-    return rows.length > 0 && this.selection().length === rows.length;
-  }
-
-  toggleAllRows(): void {
-    if (this.isAllSelected()) {
-      this.selection.set([]);
-    } else {
-      this.selection.set([...this.smsDataSource().data]);
-    }
-  }
-
-  toggleRow(gateway: SmsGateway): void {
-    const current = this.selection();
-    if (current.includes(gateway)) {
-      this.selection.set(current.filter((row) => row !== gateway));
-    } else {
-      this.selection.set([...current, gateway]);
-    }
-  }
-
-  isSelected(gateway: SmsGateway): boolean {
-    return this.selection().includes(gateway);
-  }
-
   deleteSelected(): void {
-    const selected = this.selection();
+    const selected = this.selector.selectedRows();
     if (selected.length === 0) {
       return;
     }
@@ -144,7 +126,7 @@ export class SmsGatewaysComponent {
           selected.forEach(
             (gateway) => void this.smsGatewayService.deleteSmsGateway(gateway.name).catch(() => undefined)
           );
-          this.selection.set([]);
+          this.selector.deselectAllRows();
         }
       });
   }

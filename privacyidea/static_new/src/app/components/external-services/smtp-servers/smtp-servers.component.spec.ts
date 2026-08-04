@@ -101,16 +101,14 @@ describe("SmtpServersComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should toggle row and all-row selection", () => {
-    const row = component.smtpDataSource().data[0];
-    component.toggleRow(row);
-    expect(component.isSelected(row)).toBe(true);
-    component.toggleRow(row);
-    expect(component.isSelected(row)).toBe(false);
-    component.toggleAllRows();
-    expect(component.isAllSelected()).toBe(true);
-    component.toggleAllRows();
-    expect(component.selection().length).toBe(0);
+  it("should only select the rows left by the filter", async () => {
+    component.onFilterInput("server1");
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    component.selector.selectAllRows();
+
+    expect(component.selector.selectedRows().map((row) => row.identifier)).toEqual(["server1"]);
   });
 
   it("should display servers from service", () => {
@@ -136,7 +134,7 @@ describe("SmtpServersComponent", () => {
 
   it("should delete server after confirmation", async () => {
     const server = smtpServiceMock.smtpServers()[0];
-    component.selection.set([server]);
+    component.selector.selectRow(server);
     component.deleteSelected();
     expect(dialogServiceMock.openDialog).toHaveBeenCalled();
     confirmClosed.next(true);

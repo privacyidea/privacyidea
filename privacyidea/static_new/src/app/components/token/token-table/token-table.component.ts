@@ -191,27 +191,6 @@ export class TokenTableComponent {
     return this.basePageSizeOptions;
   });
 
-  isAllSelected() {
-    return this.tokenSelection().length === this.tokenDataSource().data.length;
-  }
-
-  toggleAllRows() {
-    if (this.isAllSelected()) {
-      this.tokenSelection.set([]);
-    } else {
-      this.tokenSelection.set([...this.tokenDataSource().data]);
-    }
-  }
-
-  toggleRow(tokenDetails: TokenDetails): void {
-    const current = this.tokenSelection();
-    if (current.includes(tokenDetails)) {
-      this.tokenSelection.set(current.filter((r) => r !== tokenDetails));
-    } else {
-      this.tokenSelection.set([...current, tokenDetails]);
-    }
-  }
-
   toggleActive(tokenDetails: TokenDetails): void {
     if (
       !tokenDetails.revoked &&

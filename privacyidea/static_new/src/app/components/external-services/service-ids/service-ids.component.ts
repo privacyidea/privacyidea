@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, ElementRef, inject, signal, ViewChild, WritableSignal } from "@angular/core";
+import { toObservable, toSignal } from "@angular/core/rxjs-interop";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatTooltipModule } from "@angular/material/tooltip";
@@ -35,7 +36,9 @@ import { CopyableComponent } from "@components/shared/copyable/copyable.componen
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { switchMap } from "rxjs";
 
 @Component({
   selector: "app-service-ids",
@@ -71,18 +74,29 @@ export class ServiceIdsComponent {
   totalLength: WritableSignal<number> = computed(
     () => this.serviceIdService.serviceIds().length
   ) as WritableSignal<number>;
+
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
+
   displayedColumns: string[] = ["select", "id", "servicename", "description"];
 
-  selection = signal<ServiceId[]>([]);
   serviceIdDataSource = computed(() => {
     const services = this.serviceIdService.serviceIds();
     const dataSource = new MatTableDataSource(services);
     dataSource.paginator = this.paginator;
     dataSource.sort = this.sort;
     return dataSource;
+  });
+
+  private readonly renderedRows = toSignal(
+    toObservable(this.serviceIdDataSource).pipe(switchMap((dataSource) => dataSource.connect())),
+    { initialValue: [] as ServiceId[] }
+  );
+
+  selector = new RowSelector<ServiceId>({
+    keyGetter: (service) => service.servicename,
+    visibleRows: this.renderedRows
   });
 
   onCreateNewServiceId(): void {
@@ -93,34 +107,8 @@ export class ServiceIdsComponent {
     this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_DETAILS + serviceId.servicename);
   }
 
-  isAllSelected(): boolean {
-    const rows = this.serviceIdDataSource().data;
-    return rows.length > 0 && this.selection().length === rows.length;
-  }
-
-  toggleAllRows(): void {
-    if (this.isAllSelected()) {
-      this.selection.set([]);
-    } else {
-      this.selection.set([...this.serviceIdDataSource().data]);
-    }
-  }
-
-  toggleRow(row: ServiceId): void {
-    const current = this.selection();
-    if (current.includes(row)) {
-      this.selection.set(current.filter((selected) => selected !== row));
-    } else {
-      this.selection.set([...current, row]);
-    }
-  }
-
-  isSelected(row: ServiceId): boolean {
-    return this.selection().includes(row);
-  }
-
   deleteSelected(): void {
-    const selected = this.selection();
+    const selected = this.selector.selectedRows();
     if (selected.length === 0) {
       return;
     }
@@ -138,7 +126,7 @@ export class ServiceIdsComponent {
       .subscribe((result) => {
         if (result) {
           selected.forEach((row) => void this.serviceIdService.deleteServiceId(row.servicename).catch(() => undefined));
-          this.selection.set([]);
+          this.selector.deselectAllRows();
         }
       });
   }

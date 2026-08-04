@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass } from "@angular/common";
-import { AfterViewInit, Component, effect, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { AfterViewInit, Component, computed, effect, inject, linkedSignal, signal, WritableSignal} from "@angular/core";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatIcon } from "@angular/material/icon";
@@ -42,6 +42,7 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerDetailToken } from "@services/container/container.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
@@ -102,11 +103,6 @@ export class UserDetailsTokenTableComponent implements AfterViewInit {
   dataSource = new MatTableDataSource<ContainerDetailToken>([]);
   sort = signal({ active: "serial", direction: "asc" } as Sort);
   apiFilterKeys = this.tokenService.apiFilterKeys;
-  selection: WritableSignal<ContainerDetailToken[]> = linkedSignal({
-    source: () =>
-      this.tokenService.userTokenResource.hasValue() ? this.tokenService.userTokenResource.value() : undefined,
-    computation: () => []
-  });
   userTokenData: WritableSignal<MatTableDataSource<TokenDetails>> = linkedSignal({
     source: () =>
       this.tokenService.userTokenResource.hasValue() ? this.tokenService.userTokenResource.value() : undefined,
@@ -116,6 +112,10 @@ export class UserDetailsTokenTableComponent implements AfterViewInit {
       }
       return new MatTableDataSource<TokenDetails>(userTokenResource.result?.value?.tokens ?? []);
     }
+  });
+  selector = new RowSelector<ContainerDetailToken>({
+    keyGetter: (row) => row.serial,
+    visibleRows: computed(() => this.userTokenData().data as unknown as ContainerDetailToken[])
   });
 
   constructor() {
@@ -140,41 +140,20 @@ export class UserDetailsTokenTableComponent implements AfterViewInit {
     (this.dataSource as unknown as { _sort: WritableSignal<Sort> })._sort = this.sort;
   }
 
-  isAllSelected(): boolean {
-    return this.selection().length === this.dataSource.data.length && this.dataSource.data.length > 0;
-  }
-
-  toggleAllRows(): void {
-    if (this.isAllSelected()) {
-      this.selection.set([]);
-    } else {
-      this.selection.set([...this.dataSource.data]);
-    }
-  }
-
-  toggleRow(row: ContainerDetailToken): void {
-    const current = this.selection();
-    if (current.includes(row)) {
-      this.selection.set(current.filter((r) => r !== row));
-    } else {
-      this.selection.set([...current, row]);
-    }
-  }
-
   deleteSelected(): void {
-    const serials = this.selection().map((r) => r.serial);
+    const serials = this.selector.selectedRows().map((r) => r.serial);
     this.tokenService.bulkDeleteWithConfirmDialog(serials, () => this.tokenService.userTokenResource.reload());
   }
 
   unassignSelected(): void {
-    const serials = this.selection().map((r) => r.serial);
+    const serials = this.selector.selectedRows().map((r) => r.serial);
     forkJoin(serials.map((s) => this.runBulkAction(s, this.tokenService.unassignUser(s, false)))).subscribe({
       next: (results) => this.finishBulkAction("unassign", results)
     });
   }
 
   toggleActiveSelected(): void {
-    const rows = this.selection();
+    const rows = this.selector.selectedRows();
     forkJoin(
       rows.map((r) => this.runBulkAction(r.serial, this.tokenService.toggleActive(r.serial, r.active, false)))
     ).subscribe({
@@ -183,7 +162,7 @@ export class UserDetailsTokenTableComponent implements AfterViewInit {
   }
 
   resetFailcountSelected(): void {
-    const serials = this.selection().map((r) => r.serial);
+    const serials = this.selector.selectedRows().map((r) => r.serial);
     forkJoin(serials.map((s) => this.runBulkAction(s, this.tokenService.resetFailCount(s, false)))).subscribe({
       next: (results) => this.finishBulkAction("reset fail count", results)
     });

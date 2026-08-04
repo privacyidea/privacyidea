@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, ElementRef, inject, signal, ViewChild, WritableSignal } from "@angular/core";
+import { toObservable, toSignal } from "@angular/core/rxjs-interop";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatIconModule } from "@angular/material/icon";
@@ -33,8 +34,10 @@ import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/con
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { Tokengroup, TokengroupService, TokengroupServiceInterface } from "@services/tokengroup/tokengroup.service";
+import { switchMap } from "rxjs";
 
 @Component({
   selector: "app-tokengroups",
@@ -77,8 +80,6 @@ export class TokengroupsComponent {
 
   displayedColumns: string[] = ["select", "id", "groupname", "description"];
 
-  selection = signal<Tokengroup[]>([]);
-
   tokengroupDataSource = computed(() => {
     const groups = this.tokengroupService.tokengroups();
     const dataSource = new MatTableDataSource(groups);
@@ -86,6 +87,13 @@ export class TokengroupsComponent {
     dataSource.sort = this.sort;
     return dataSource;
   });
+
+  private readonly renderedRows = toSignal(
+    toObservable(this.tokengroupDataSource).pipe(switchMap((dataSource) => dataSource.connect())),
+    { initialValue: [] as Tokengroup[] }
+  );
+
+  selector = new RowSelector<Tokengroup>({ keyGetter: (group) => group.groupname, visibleRows: this.renderedRows });
 
   onCreateNewTokengroup(): void {
     this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_NEW);
@@ -95,34 +103,8 @@ export class TokengroupsComponent {
     this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_DETAILS + group.groupname);
   }
 
-  isAllSelected(): boolean {
-    const rows = this.tokengroupDataSource().data;
-    return rows.length > 0 && this.selection().length === rows.length;
-  }
-
-  toggleAllRows(): void {
-    if (this.isAllSelected()) {
-      this.selection.set([]);
-    } else {
-      this.selection.set([...this.tokengroupDataSource().data]);
-    }
-  }
-
-  toggleRow(row: Tokengroup): void {
-    const current = this.selection();
-    if (current.includes(row)) {
-      this.selection.set(current.filter((selected) => selected !== row));
-    } else {
-      this.selection.set([...current, row]);
-    }
-  }
-
-  isSelected(row: Tokengroup): boolean {
-    return this.selection().includes(row);
-  }
-
   deleteSelected(): void {
-    const selected = this.selection();
+    const selected = this.selector.selectedRows();
     if (selected.length === 0) {
       return;
     }
@@ -140,7 +122,7 @@ export class TokengroupsComponent {
       .subscribe((result) => {
         if (result) {
           selected.forEach((row) => void this.tokengroupService.deleteTokengroup(row.groupname).catch(() => undefined));
-          this.selection.set([]);
+          this.selector.deselectAllRows();
         }
       });
   }

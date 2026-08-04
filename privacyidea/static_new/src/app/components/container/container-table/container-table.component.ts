@@ -161,30 +161,6 @@ export class ContainerTableComponent {
     realms: "container_realm"
   } as const;
 
-  isAllSelected() {
-    return (
-      this.containerSelection().length === this.containerDataSource().data.length &&
-      this.containerDataSource().data.length > 0
-    );
-  }
-
-  toggleAllRows() {
-    if (this.isAllSelected()) {
-      this.containerSelection.set([]);
-    } else {
-      this.containerSelection.set([...this.containerDataSource().data]);
-    }
-  }
-
-  toggleRow(row: ContainerDetailData): void {
-    const current = this.containerSelection();
-    if (current.includes(row)) {
-      this.containerSelection.set(current.filter((r) => r !== row));
-    } else {
-      this.containerSelection.set([...current, row]);
-    }
-  }
-
   handleStateClick(element: ContainerDetailData) {
     this.containerService.toggleActive(element.serial, element.states).subscribe({
       next: () => {
