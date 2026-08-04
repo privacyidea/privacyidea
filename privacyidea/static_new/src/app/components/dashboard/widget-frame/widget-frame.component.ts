@@ -22,6 +22,7 @@ import { Component, computed, inject, input, viewChild } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatProgressSpinner } from "@angular/material/progress-spinner";
+import { MatTooltip } from "@angular/material/tooltip";
 import { WidgetInstance, WidgetState } from "@models/dashboard";
 import { DashboardLayoutService, DashboardLayoutServiceInterface } from "@services/dashboard/dashboard-layout.service";
 import { WidgetRegistryService, WidgetRegistryServiceInterface } from "@services/dashboard/widget-registry.service";
@@ -30,13 +31,14 @@ interface DashboardWidgetLike {
   state?: () => WidgetState;
   loading?: () => boolean;
   partialLoading?: () => boolean;
+  refreshFailed?: () => boolean;
   reload?: () => void;
 }
 
 @Component({
   selector: "app-widget-frame",
   standalone: true,
-  imports: [NgComponentOutlet, MatIcon, MatIconButton, MatProgressSpinner, CdkDragHandle],
+  imports: [NgComponentOutlet, MatIcon, MatIconButton, MatProgressSpinner, MatTooltip, CdkDragHandle],
   templateUrl: "./widget-frame.component.html",
   styleUrl: "./widget-frame.component.scss"
 })
@@ -66,6 +68,11 @@ export class WidgetFrameComponent {
   protected readonly partialLoading = computed(() => {
     const instance = this.outlet()?.componentInstance as DashboardWidgetLike | undefined;
     return instance?.partialLoading?.() ?? false;
+  });
+
+  protected readonly refreshFailed = computed(() => {
+    const instance = this.outlet()?.componentInstance as DashboardWidgetLike | undefined;
+    return instance?.refreshFailed?.() ?? false;
   });
 
   protected readonly headerIcon = computed(() => this.widgetType()?.headerIcon ?? null);

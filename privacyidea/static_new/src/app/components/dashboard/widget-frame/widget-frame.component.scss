@@ -87,6 +87,10 @@
   }
 }
 
+.widget-stale {
+  color: var(--yellow-light-active);
+}
+
 .widget-loading {
   box-sizing: border-box;
   padding: 5px;

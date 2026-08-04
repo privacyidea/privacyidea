@@ -20,6 +20,7 @@ import { signal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
 import { SmsGateway, SmsGatewayServiceInterface, SmsProviders } from "@services/sms-gateway/sms-gateway.service";
 import { MockHttpResourceRef, MockPiResponse } from "@testing/mock-services/mock-utils";
+import { of } from "rxjs";
 
 export class MockSmsGatewayService implements SmsGatewayServiceInterface {
   smsGatewayResource = new MockHttpResourceRef<PiResponse<SmsGateway[]> | undefined>(
@@ -33,4 +34,5 @@ export class MockSmsGatewayService implements SmsGatewayServiceInterface {
   smsGateways = signal<SmsGateway[]>([]);
   postSmsGateway = jest.fn(async (): Promise<void> => Promise.resolve());
   deleteSmsGateway = jest.fn(async (): Promise<void> => Promise.resolve());
+  listSmsGateways = jest.fn().mockReturnValue(of(MockPiResponse.fromValue<SmsGateway[]>([])));
 }
