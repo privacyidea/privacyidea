@@ -23,7 +23,7 @@ import {
   CornerLevel,
   DEFAULT_LIGHT_SOURCE,
   DepthLevel,
-  LIGHT_SOURCE_STEPS,
+  LIGHT_SOURCE_LEVELS,
   LightSourceLevel
 } from "@services/appearance/appearance.service";
 import { ThemeService } from "@services/theme/theme.service";
@@ -143,7 +143,7 @@ describe("UISettingsComponent", () => {
   it("should render the light-source dial as a native radio group", () => {
     const radios = fixture.nativeElement.querySelectorAll<HTMLInputElement>(".light-dial__slot input");
 
-    expect(radios).toHaveLength(LIGHT_SOURCE_STEPS);
+    expect(radios).toHaveLength(LIGHT_SOURCE_LEVELS.length);
     // One group, so the arrow keys turn the dial.
     expect([...radios].every((radio) => radio.name === "light-source")).toBe(true);
     expect([...radios].filter((radio) => radio.checked)).toHaveLength(1);
@@ -165,7 +165,7 @@ describe("UISettingsComponent", () => {
     radios[2].checked = true;
     radios[2].dispatchEvent(new Event("change"));
 
-    expect(appearanceService.setLightSource).toHaveBeenCalledWith("2");
+    expect(appearanceService.setLightSource).toHaveBeenCalledWith(LIGHT_SOURCE_LEVELS[2]);
   });
 
   it("should apply a picked corner radius", () => {

@@ -48,15 +48,18 @@ export type DepthLevel = (typeof DEPTH_LEVELS)[number];
  * stands for is index * LIGHT_SOURCE_STEP_ANGLE degrees, measured from due right and
  * growing clockwise. styles.scss generates one html.light-source-<index> block per stop
  * from a matching $light-source-steps -- keep the two counts in step.
+ *
+ * The two purely horizontal stops, 0 and 180 degrees, are left out: they cast no vertical
+ * offset at all, which reads as a missing shadow rather than a low light.
  */
 export const LIGHT_SOURCE_STEPS = 18;
 export const LIGHT_SOURCE_STEP_ANGLE = 360 / LIGHT_SOURCE_STEPS;
-export const LIGHT_SOURCE_LEVELS: readonly string[] = Array.from({ length: LIGHT_SOURCE_STEPS }, (_, index) =>
-  String(index)
-);
+export const LIGHT_SOURCE_LEVELS: readonly string[] = Array.from({ length: LIGHT_SOURCE_STEPS }, (_, index) => index)
+  .filter((index) => index * LIGHT_SOURCE_STEP_ANGLE !== 0 && index * LIGHT_SOURCE_STEP_ANGLE !== 180)
+  .map(String);
 export type LightSourceLevel = string;
 
-/** 17 * 20 = 340 degrees: light from just above the right. */
+/** 16 * 20 = 320 degrees: light from above the right. */
 export const DEFAULT_LIGHT_SOURCE = "16";
 
 /** The global corner radius. */

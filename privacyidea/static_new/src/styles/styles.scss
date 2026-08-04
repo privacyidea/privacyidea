@@ -356,10 +356,14 @@ html.depth-very-strong {
 @for $i from 0 through $light-source-steps - 1 {
   $angle: $i * $light-source-step-angle;
 
-  html.light-source-#{$i} {
-    --dial-angle: #{$angle}deg;
-    --depth-dir-x: #{-1 * math.cos($angle * 1deg)};
-    --depth-dir-y: #{-1 * math.sin($angle * 1deg)};
+  // The two purely horizontal angles are not offered as stops (see LIGHT_SOURCE_LEVELS):
+  // with no vertical offset the shadows read as missing rather than low.
+  @if $angle != 0 and $angle != 180 {
+    html.light-source-#{$i} {
+      --dial-angle: #{$angle}deg;
+      --depth-dir-x: #{-1 * math.cos($angle * 1deg)};
+      --depth-dir-y: #{-1 * math.sin($angle * 1deg)};
+    }
   }
 }
 
