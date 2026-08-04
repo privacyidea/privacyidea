@@ -30,13 +30,13 @@
         <mat-label i18n>Filter Tokens...</mat-label>
         <app-clearable-input
           (clearButtonClick)="tokenService.clearFilter()"
-          [showClearButton]="tokenService.tokenFilter().isNotEmpty">
+          [showClearButton]="tokenService.filterDraft().isNotEmpty">
           <input
             #filterHTMLInputElement
             [appFilterAutocomplete]="filterKeywords"
             (input)="onFilterInput($event)"
-            (keyup.enter)="tokenService.handleFilterInput($event)"
-            [value]="tokenService.tokenFilter().filterString"
+            (keyup.enter)="tokenService.applyFilterInput($event)"
+            [value]="tokenService.filterDraft().filterString"
             aria-label="Filter Input"
             i18n-aria-label
             i18n-placeholder
@@ -48,9 +48,9 @@
         @if (showFilterHint()) {
           <mat-hint
             align="end"
-            i18n
-            >Press enter to apply the filter</mat-hint
-          >
+            i18n>
+            Press enter to apply the filter
+          </mat-hint>
         }
       </mat-form-field>
       <button
@@ -104,7 +104,7 @@
                 <div class="flex ali-center">
                   {{ column.label }}
                   <div class="margin-left-16 flex">
-                    @if (apiFilterKeyMap[column.key] && tokenService.apiFilter.includes(apiFilterKeyMap[column.key])) {
+                    @if (apiFilterKeyMap[column.key] && tokenService.apiFilterKeys.includes(apiFilterKeyMap[column.key])) {
                       @if (apiFilterKeyMap[column.key] === "realm" || apiFilterKeyMap[column.key] === "tokenrealm") {
                         <button
                           [matMenuTriggerData]="{ keyword: apiFilterKeyMap[column.key] }"
@@ -348,7 +348,7 @@
 </mat-menu>
 
 <mat-menu #advancedFilterMenu="matMenu">
-  @for (keyword of advancedApiFilter; track keyword) {
+  @for (keyword of advancedApiFilterKeys; track keyword) {
     <button
       (click)="onKeywordClick(keyword)"
       [attr.aria-disabled]="isUnsupportedKeyword(keyword)"

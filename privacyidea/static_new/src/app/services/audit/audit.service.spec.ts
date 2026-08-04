@@ -68,7 +68,7 @@ describe("AuditService (signals & helpers)", () => {
   it("filterParams ignores unknown keys and wildcard‑wraps allowed ones", () => {
     expect(auditService.filterParams()).toEqual({});
 
-    auditService.auditFilter.set(new FilterValue({ value: "foo: bar action: LOGIN user: alice" }));
+    auditService.activeFilter.set(new FilterValue({ value: "foo: bar action: LOGIN user: alice" }));
     expect(auditService.filterParams()).toEqual({
       action: "*LOGIN*",
       user: "*alice*"
@@ -100,7 +100,7 @@ describe("AuditService (signals & helpers)", () => {
 
   it("auditResource becomes active and derived params update", () => {
     content.routeUrl.set("/logs/audit");
-    auditService.auditFilter.set(new FilterValue({ value: "serial: otp123" }));
+    auditService.activeFilter.set(new FilterValue({ value: "serial: otp123" }));
     auditService.auditResource.reload();
 
     expect(auditService.auditResource.value()).toBeUndefined();
@@ -110,15 +110,15 @@ describe("AuditService (signals & helpers)", () => {
     expect(auditService.pageIndex()).toBe(1);
   });
 
-  it("resets pageIndex to 1 when auditFilter change", () => {
+  it("resets pageIndex to 1 when activeFilter change", () => {
     auditService.pageIndex.set(3);
-    auditService.auditFilter.set(new FilterValue({ value: "user: bob success: true" }));
+    auditService.activeFilter.set(new FilterValue({ value: "user: bob success: true" }));
 
     expect(auditService.pageIndex()).toBe(1);
   });
 
   it("should not include empty filter values in filterParams", () => {
-    auditService.auditFilter.set({
+    auditService.activeFilter.set({
       filterMap: new Map([
         ["action", ""],
         ["authentication", "ACCEPT"],
@@ -136,7 +136,7 @@ describe("AuditService (signals & helpers)", () => {
 
   it("downloadCSV triggers a GET request with correct params and headers after dialog confirmation", async () => {
     const getHeadersMock = jest.spyOn(authService, "getHeaders").mockReturnValue(new HttpHeaders());
-    auditService.auditFilter.set(new FilterValue({ value: "action: LOGIN" }));
+    auditService.activeFilter.set(new FilterValue({ value: "action: LOGIN" }));
 
     auditService.downloadCSV();
 

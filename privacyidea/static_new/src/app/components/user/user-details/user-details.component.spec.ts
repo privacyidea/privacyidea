@@ -239,7 +239,7 @@ describe("UserDetailsComponent", () => {
 
     component.showUserAuditLog();
 
-    expect(auditServiceMock.auditFilter().value).toBe("user: Alice");
+    expect(auditServiceMock.activeFilter().value).toBe("user: Alice");
   });
 
   it("showUserAuthenticationLog sets username and realm filter for the current user", () => {
