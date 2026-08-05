@@ -3,7 +3,6 @@
 
 .details-container {
   @include styles.main-component-style;
-  max-height: var(--table-max-height);
   display: flex;
   flex-direction: column;
 }

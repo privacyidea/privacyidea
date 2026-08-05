@@ -7,12 +7,13 @@
 
 .edit-event-handler-container {
   @include styles.main-component-style;
-  // Shared detail/edit-page cap. See --detail-max-height in styles.scss.
-  max-height: var(--detail-max-height);
   display: grid;
   position: relative;
   box-sizing: border-box;
-  width: min(calc(2 * var(--input-width-l) + var(--global-gap) + 2 * var(--global-padding)), calc(100vw - 4 * var(--global-padding)));
+  width: min(
+    calc(2 * var(--input-width-l) + var(--global-gap) + 2 * var(--global-padding)),
+    calc(100vw - 4 * var(--global-padding))
+  );
 }
 
 .header-row {
@@ -33,7 +34,6 @@
   align-items: center;
   gap: var(--global-gap);
 }
-
 
 .event-details {
   display: grid;

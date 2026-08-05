@@ -25,12 +25,9 @@
   display: flex;
   flex-direction: column;
   gap: var(--global-gap);
-  // A shorter container than the mixin's --content-max-height, in the same
-  // min(vh, calc(100vh - fixed-chrome)) shape: the vh wins at normal zoom, and the calc
-  // takes over once zoom shrinks the viewport enough that the toolbars would push the
-  // content off the bottom. A flat vh cuts the last card off at 200%.
-  max-height: min(78vh, calc(100vh - 192px));
-  max-width: 518px;
+  // Wide enough for the xs + s card pair of the first row (162 + 16 + 340), which is the
+  // m step of the card scale. Height is the mixin's cap; the cards scroll inside it.
+  max-width: var(--card-width-m);
 }
 
 .settings-header {

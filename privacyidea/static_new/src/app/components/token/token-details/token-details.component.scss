@@ -11,20 +11,13 @@
 
 .details-container {
   @include styles.main-component-style;
-  // Shared detail/edit-page cap. See --detail-max-height in styles.scss.
-  max-height: var(--detail-max-height);
   display: flex;
   flex-direction: column;
   // Width is fixed to the rendered top-row width by the component (see
   // fitWidthToTopRow) so the panel hugs the cards with no trailing whitespace.
   // Falls back to the full available width until that measurement runs.
   width: 100%;
-  box-sizing: border-box;
   height: 100%;
-
-  :host-context(body.self-service-layout) & {
-    max-height: var(--content-max-height) !important;
-  }
 
   .mat-mdc-select-value-text {
     font-size: 14px;
@@ -39,7 +32,6 @@
   .details-table {
     @include table.details-key-value-columns;
   }
-
 }
 
 .details-header h3 {
@@ -98,7 +90,9 @@
   }
 }
 
-.details-card--machine { display: contents; }
+.details-card--machine {
+  display: contents;
+}
 
 // Scoped under .details-grid so this beats the grid's `> *` flex rule (which,
 // after view-encapsulation attributes, is more specific than a lone class).

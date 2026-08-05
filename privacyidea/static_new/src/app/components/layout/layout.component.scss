@@ -1,18 +1,6 @@
 @use "styles";
 @use "table";
 
-.layout {
-  &:has(.self-service-layout) {
-    --max-width: calc(
-      100vw - var(--drawer-width-self-service) - 2 * var(--double-global-padding) - 2 * var(--global-padding)
-    );
-  }
-
-  &:has(.admin-layout) {
-    --max-width: calc(100vw - 2 * var(--double-global-padding) - 2 * var(--global-padding));
-  }
-}
-
 :host {
   // Tint shared by the progress bar and the pending-request list, so the two read
   // as one unobtrusive indicator.
@@ -67,6 +55,13 @@
 // Fills the space below the toolbar(s). The routed component stretches to it
 // (align-items: stretch) so its container can reach the bottom, inset by the
 // single --global-padding — no hard-coded toolbar heights.
+//
+// A size container, which is what routed pages measure themselves against:
+// `flex: 1` already makes this box exactly what the toolbars leave over, so
+// 100cqw/100cqh (see main-component-style) is the page's share of the window
+// without anyone restating the chrome. Size containment costs nothing here —
+// the box takes its width from the column and its height from `flex: 1`, so it
+// never depended on its content.
 .admin-content {
   flex: 1;
   min-height: 0;
@@ -75,6 +70,7 @@
   align-items: stretch;
   padding: var(--global-padding);
   overflow: hidden;
+  container-type: size;
 }
 
 // NOTE: the routed host is styled from global styles (styles.scss), not here —
@@ -93,6 +89,9 @@
   }
 }
 
+// The self-service counterpart of .admin-content: same size container, so the same
+// routed pages cap themselves against the space beside the drawer instead of the
+// space below the toolbars, with no self-service-specific numbers anywhere.
 .selfservice-content-container {
   display: flex;
   justify-content: center;
@@ -102,4 +101,5 @@
   box-sizing: border-box;
   overflow: hidden;
   padding: var(--global-padding);
+  container-type: size;
 }

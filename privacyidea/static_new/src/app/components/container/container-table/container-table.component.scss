@@ -7,15 +7,11 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  max-height: var(--table-max-height);
 
-  :host-context(body.self-service-layout) & {
-    height: auto;
-    max-height: var(--table-max-height);
-
-    .table-scroll-region {
-      flex: 0 1 auto;
-    }
+  // Self-service lists a handful of containers, so the scroll region shrinks to its
+  // rows instead of stretching the table to the full height of the region.
+  :host-context(body.self-service-layout) & .table-scroll-region {
+    flex: 0 1 auto;
   }
 }
 
