@@ -16,17 +16,18 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+@use "styles";
+
+// Widgets stand on the recessed dashboard field, so they are the raised half of the pair,
+// at the same depth as the page containers elsewhere in the app.
 .widget-frame {
+  @include styles.card-raised(5);
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   height: 100%;
   width: 100%;
   overflow: hidden;
-  background: var(--mat-sys-surface-container-lowest);
-  border: 1px solid var(--mat-sys-surface-container-highest);
-  border-radius: var(--border-radius);
-  box-shadow: var(--elevation-5);
 }
 
 .widget-header {
@@ -37,7 +38,9 @@
   gap: var(--half-global-gap);
   min-height: 38px;
   padding: var(--quarter-global-padding) var(--global-padding);
-  border-bottom: 1px solid var(--mat-sys-surface-container-highest);
+  // A divider inside the card rather than an outline around it, in the same tone as every
+  // other divider in the app.
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
 
   &.draggable {
     cursor: move;

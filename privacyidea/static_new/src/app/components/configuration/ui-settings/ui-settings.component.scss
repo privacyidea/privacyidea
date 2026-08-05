@@ -61,11 +61,6 @@
   @include table.card-width(m);
 }
 
-app-details-card {
-  background: var(--inset-surface-3);
-  box-shadow: var(--inset-shadow-3);
-}
-
 .theme-toggle {
   position: relative;
   display: inline-block;

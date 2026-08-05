@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 @use "buttons";
+@use "styles";
 
 :host {
   display: block;
@@ -25,16 +26,17 @@
   font-size: 14px;
 }
 
+// The deep end of the shared inset scale, which this recess is the reference for: the
+// field the widgets stand on, shaded from the shadowed corner to the lit one like every
+// other recessed surface, so the gradient deepens and flattens with the depth setting.
 .dashboard-page {
+  @include styles.card-recessed(5);
   display: flex;
   flex-direction: column;
   gap: var(--global-gap);
   box-sizing: border-box;
   height: 100%;
   width: 100%;
-  border-radius: var(--border-radius);
-  // The deep end of the shared inset scale, which this recess is the reference for.
-  box-shadow: var(--inset-shadow-5);
 }
 
 .dashboard-scroll-wrapper {

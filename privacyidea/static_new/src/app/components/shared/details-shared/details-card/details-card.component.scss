@@ -16,14 +16,16 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+@use "styles";
+
+// Details cards always sit inside a raised page container, so they read as wells sunk into
+// it. The shallow step: they are one level in, not the deep recess the dashboard field is.
 :host {
+  @include styles.card-recessed(3);
   display: flex;
   flex-direction: column;
   min-width: 0;
   box-sizing: border-box;
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: var(--border-radius);
-  background: var(--mat-sys-surface-container-lowest);
   padding: var(--half-global-padding);
 
   ::ng-deep app-edit-buttons {

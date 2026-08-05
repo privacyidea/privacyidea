@@ -72,7 +72,7 @@ body {
 
   // Neumorphic shadow geometry, following the neumorphism.io formula: a dark shadow cast
   // toward one corner, a light highlight mirrored to the opposite one, and a blur three
-  // times the offset distance. --mat-sys-shadow (#cccccc / #000000) and --mat-sys-light
+  // times the offset distance. --mat-sys-shadow (#cccccc / #0d0d0d) and --mat-sys-light
   // (#f5f5f5 / #242424) are the theme's two tones, so the pair inverts in dark mode.
   //
   // Two knobs drive it, both set by the UI settings through the html.depth-* and
@@ -282,12 +282,16 @@ body {
 // "flat" additionally replaces the shadows with a hairline ring: a spread-only
 // box-shadow rather than a real border, so the ~49 containers that consume
 // --elevation-5 keep their box size. The 2px ring on slot 8 keeps the hover lift
-// perceptible without depth.
+// perceptible without depth. The recessed slots get the same ring turned inward, so a
+// well is still bounded once its inset shadow has scaled to nothing -- this is the
+// outline the card mixins deliberately leave to this step.
 html.depth-flat {
   --depth-scale: 0;
   --elevation-3: 0 0 0 1px var(--mat-sys-outline-variant);
   --elevation-5: 0 0 0 1px var(--mat-sys-outline-variant);
   --elevation-8: 0 0 0 2px var(--mat-sys-outline-variant);
+  --inset-shadow-3: inset 0 0 0 1px var(--mat-sys-outline-variant);
+  --inset-shadow-5: inset 0 0 0 1px var(--mat-sys-outline-variant);
   // The glow scales to nothing at this level, so its surfaces get hairlines on the two
   // sides it lit instead. Left and right only: they hang off a bar, so a line along the
   // bottom edge would fence them off from it.
@@ -295,19 +299,15 @@ html.depth-flat {
 }
 
 // The secondary toolbar spans the full width, so at the flat step its side hairlines fall
-// outside the viewport. It takes a line on the edge it shares with the primary toolbar
-// instead -- a real border rather than a shadow, so nothing can clip it or paint over it.
-// Global rather than component-scoped so it outranks the toolbar's own box-shadow rule.
+// outside the viewport. It takes lines on the two edges that are visible instead: the one it
+// shares with the primary toolbar and the one that separates it from the content below. The
+// top line is drawn inside the box, where the primary toolbar above cannot paint over it;
+// both are shadows rather than borders, so the toolbar keeps its height. Global rather than
+// component-scoped so it outranks the toolbar's own box-shadow rule.
 html.depth-flat .secondary-toolbar {
-  box-shadow: none;
-  border-top: 1px solid var(--mat-sys-outline-variant);
-}
-
-// The secondary toolbar spans the full width, so at the flat step its side hairlines fall
-// outside the viewport. It takes a bottom line instead, the edge that separates it from the
-// content below. Global rather than component-scoped so it outranks the toolbar's own rule.
-html.depth-flat .secondary-toolbar {
-  box-shadow: 0 1px 0 0 var(--mat-sys-outline-variant);
+  box-shadow:
+    0 1px 0 0 var(--mat-sys-outline-variant),
+    inset 0 1px 0 0 var(--mat-sys-outline-variant);
 }
 
 html.depth-subtle {
@@ -385,6 +385,34 @@ $corner-radii: (
   max-width: 100cqw;
   max-height: 100cqh;
   overflow: auto;
+}
+
+// The two card treatments of the neumorphism.io model: a card is set apart from its parent
+// by being raised above it or sunk into it, never by being outlined. Which one applies
+// follows from the nesting — a card on the recessed dashboard field is raised, a card
+// inside a raised page container is recessed — so the two stay distinguishable however
+// deep the stack goes.
+//
+// Neither declares a border: the outline belongs to the flat depth step alone, where
+// --elevation-* and --inset-shadow-* collapse to a hairline ring (see html.depth-flat),
+// and it appears exactly when there is no depth left to convey the card's edge. A card
+// that draws its own border would double that ring at the flat step and fence itself off
+// from the shadow at every other one.
+//
+// $slot picks the step of the shared 3 < 5 < 8 depth scale, so a card can sit shallower or
+// deeper than the default without stating a shadow of its own.
+@mixin card-raised($slot: 5) {
+  border: 0;
+  border-radius: var(--border-radius);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-#{$slot});
+}
+
+@mixin card-recessed($slot: 3) {
+  border: 0;
+  border-radius: var(--border-radius);
+  background: var(--inset-surface-#{$slot});
+  box-shadow: var(--inset-shadow-#{$slot});
 }
 
 // Global (unencapsulated) so it can match the router-outlet's dynamically

@@ -63,7 +63,12 @@ html {
     --mat-sys-on-surface: light-dark(hsl(0, 0%, 10%), hsl(0, 0%, 90%));
     --mat-sys-on-surface-variant: light-dark(hsl(0, 0%, 30%), hsl(0, 0%, 80%));
     --mat-sys-on-primary-container: light-dark(hsl(198, 66%, 10%), hsl(198, 66%, 80%));
-    --mat-sys-shadow: light-dark(#cccccc, #000000);
+    // Shadow half of every neumorphic shadow pair (see --elevation-* in styles.scss). Both
+    // tones sit a few points off the card they are cast from rather than at the end of the
+    // scale: 80% against the light theme's 98% card, and a dark grey rather than black
+    // against the dark theme's 10% one, which is what keeps a shadow reading as shade on
+    // the page instead of a hole punched through it.
+    --mat-sys-shadow: light-dark(#cccccc, #0d0d0d);
 
     --mat-sys-outline: light-dark(hsl(246, 4%, 48%), hsl(0, 0%, 40%));
     --nav-item-border: light-dark(#d0d0d0, #333333);
@@ -200,7 +205,7 @@ html {
     --mat-sys-on-surface: hsl(0, 0%, 90%);
     --mat-sys-on-surface-variant: hsl(0, 0%, 80%);
     --mat-sys-on-primary-container: hsl(198, 66%, 80%);
-    --mat-sys-shadow: #000000;
+    --mat-sys-shadow: #0d0d0d;
     --mat-sys-outline: hsl(0, 0%, 40%);
     --nav-item-border: #363636;
 
