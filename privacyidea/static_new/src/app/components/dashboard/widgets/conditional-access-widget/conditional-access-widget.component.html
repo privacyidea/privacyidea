@@ -1,0 +1,280 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+<app-widget-state [state]="state()">
+  @let caSummary = summary();
+
+  <table class="ca-table">
+    <tbody>
+      @if (caSummary.policies; as policies) {
+        <tr>
+          <td>
+            <a
+              [routerLink]="routePaths.POLICIES_CONDITIONAL_ACCESS"
+              i18n
+              >Enforcing policies</a
+            >
+          </td>
+          <td>{{ policies.enforcing }}</td>
+        </tr>
+        @if (policies.dryRun) {
+          <tr>
+            <td
+              class="ca-sub-label"
+              i18n>
+              dry run only
+            </td>
+            <td>
+              <span
+                class="highlight-warning"
+                matTooltip="A dry-run policy records what it would have done, but never locks or blocks."
+                i18n-matTooltip
+                >{{ policies.dryRun }}</span
+              >
+            </td>
+          </tr>
+        }
+        @if (policies.disabled) {
+          <tr>
+            <td
+              class="ca-sub-label"
+              i18n>
+              disabled
+            </td>
+            <td>
+              <span class="highlight-disabled">{{ policies.disabled }}</span>
+            </td>
+          </tr>
+        }
+      }
+      @if (caSummary.lockedUsers; as lockedUsers) {
+        <tr>
+          <td>
+            <a
+              [routerLink]="routePaths.LOCKED_USERS"
+              i18n
+              >Users locked</a
+            >
+          </td>
+          <td>
+            <span [class]="restrictionClass(lockedUsers.inForce)">{{ lockedUsers.inForce }}</span>
+          </td>
+        </tr>
+        @if (lockedUsers.permanent) {
+          <tr>
+            <td
+              class="ca-sub-label"
+              i18n>
+              permanent
+            </td>
+            <td>{{ lockedUsers.permanent }}</td>
+          </tr>
+        }
+      }
+      @if (caSummary.blockedIps; as blockedIps) {
+        <tr>
+          <td>
+            <a
+              [routerLink]="routePaths.BLOCKLIST"
+              i18n
+              >IPs blocked</a
+            >
+          </td>
+          <td>
+            <span [class]="restrictionClass(blockedIps.inForce)">{{ blockedIps.inForce }}</span>
+          </td>
+        </tr>
+        @if (blockedIps.permanent) {
+          <tr>
+            <td
+              class="ca-sub-label"
+              i18n>
+              permanent
+            </td>
+            <td>{{ blockedIps.permanent }}</td>
+          </tr>
+        }
+      }
+      @if (staleRecords()) {
+        <tr>
+          <td i18n>Expired records</td>
+          <td>
+            <span
+              class="highlight-disabled"
+              matTooltip="Locks and blocks that have run out. They restrict nobody and can be purged on the locked-users and blocklist pages."
+              i18n-matTooltip
+              >{{ staleRecords() }}</span
+            >
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+
+  @if (caSummary.blockedIps) {
+    <p class="ca-section-title">
+      <span i18n>Blocklist activity</span>
+      <span
+        class="ca-range-count"
+        i18n
+        >{{ blocksInRange() }} blocked in range</span
+      >
+    </p>
+    <div class="ca-range">
+      <button
+        mat-icon-button
+        class="ca-range-preset"
+        [matMenuTriggerFor]="startPresetMenu"
+        matTooltip="Start of the shown range"
+        i18n-matTooltip
+        aria-label="Start of the shown range"
+        i18n-aria-label
+        type="button">
+        <mat-icon>first_page</mat-icon>
+      </button>
+      <mat-menu #startPresetMenu>
+        @for (preset of startPresets; track preset.label) {
+          <button
+            mat-menu-item
+            (click)="applyStartPreset(preset)"
+            type="button">
+            {{ preset.label }}
+          </button>
+        }
+      </mat-menu>
+
+      <div class="ca-slider-with-histogram">
+        <!-- Blocks per bucket behind the slider; decorative, hidden from assistive tech. -->
+        <div
+          class="ca-activity-histogram"
+          [attr.aria-hidden]="true">
+          @for (bar of activityHistogram(); track $index) {
+            <div
+              class="ca-activity-bar"
+              [style.height.%]="bar * 100"></div>
+          }
+        </div>
+        <mat-slider
+          class="ca-range-slider"
+          [min]="0"
+          [max]="sliderSteps"
+          step="1"
+          discrete
+          [displayWith]="formatSliderThumb">
+          <input
+            matSliderStartThumb
+            aria-label="Range start"
+            i18n-aria-label
+            [value]="rangeStart()"
+            (valueChange)="onRangeStartInput($event)" />
+          <input
+            matSliderEndThumb
+            aria-label="Range end"
+            i18n-aria-label
+            [value]="rangeEnd()"
+            (valueChange)="onRangeEndInput($event)" />
+        </mat-slider>
+        <div class="ca-range-summary">
+          <span>{{ rangeSummaryFrom() }}</span>
+          <span class="ca-range-summary-sep">→</span>
+          <span>{{ rangeSummaryTo() }}</span>
+        </div>
+      </div>
+
+      <button
+        mat-icon-button
+        class="ca-range-preset"
+        [matMenuTriggerFor]="endPresetMenu"
+        matTooltip="End of the shown range"
+        i18n-matTooltip
+        aria-label="End of the shown range"
+        i18n-aria-label
+        type="button">
+        <mat-icon>last_page</mat-icon>
+      </button>
+      <mat-menu #endPresetMenu>
+        @for (preset of endPresets; track preset.label) {
+          <button
+            mat-menu-item
+            (click)="applyEndPreset(preset)"
+            type="button">
+            {{ preset.label }}
+          </button>
+        }
+      </mat-menu>
+    </div>
+
+    <p
+      class="ca-section-title"
+      i18n>
+      Blocklist highlights
+    </p>
+    <table class="ca-table">
+      <tbody>
+        @for (entry of caSummary.blocklistHighlights; track entry.identifier) {
+          <tr>
+            <td>
+              <a
+                [routerLink]="routePaths.AUTHENTICATION_LOG"
+                (click)="showAuthenticationLog(entry)"
+                matTooltip="Show this IP's authentication log"
+                i18n-matTooltip
+                >{{ entry.identifier }}</a
+              >
+            </td>
+            <td>
+              @if (entry.permanent) {
+                <span
+                  class="highlight-false"
+                  i18n
+                  >permanent</span
+                >
+              } @else {
+                <span
+                  class="highlight-warning"
+                  [matTooltip]="blockedUntilTooltip(entry)"
+                  i18n
+                  >temporary</span
+                >
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td
+              colspan="2"
+              class="ca-sub-label"
+              i18n>
+              No IP is currently blocked.
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+    @if (hiddenBlocklistCount(); as hidden) {
+      <p class="ca-more">
+        <a
+          [routerLink]="routePaths.BLOCKLIST"
+          i18n
+          >{{ hidden }} more blocked</a
+        >
+      </p>
+    }
+  }
+</app-widget-state>

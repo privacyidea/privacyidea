@@ -33,7 +33,8 @@ export type WidgetTypeId =
   | "subscriptions"
   | "certificate-health"
   | "resolver-timing"
-  | "notification-delivery";
+  | "notification-delivery"
+  | "conditional-access";
 
 export interface WidgetSize {
   cols: number;
@@ -64,7 +65,9 @@ export abstract class DashboardWidget {
   static readonly maxSize: WidgetSize = { cols: DASHBOARD_COLUMNS, rows: Number.POSITIVE_INFINITY };
   static readonly pinned: boolean = false;
   static readonly fixedPosition: { x: number; y: number } | null = null;
-  static readonly requiredAction: PolicyAction | null = null;
+  // The right(s) a widget needs to be offered at all. A list means any one of them is enough, for a widget that
+  // summarizes several separately-governed areas: it then shows only the parts the admin may read.
+  static readonly requiredAction: PolicyAction | PolicyAction[] | null = null;
 
   abstract reload(): void;
 }

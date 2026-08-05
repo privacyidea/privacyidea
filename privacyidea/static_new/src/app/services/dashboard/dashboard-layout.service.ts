@@ -120,7 +120,14 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
 
   public isWidgetTypeAllowed(type: string): boolean {
     const requiredAction = this.registry.get(type)?.requiredAction;
-    return !requiredAction || this.auth.actionAllowed(requiredAction);
+    // Length rather than truthiness, so an empty list reads as "no requirement" like null does.
+    if (!requiredAction?.length) {
+      return true;
+    }
+    // A widget may name several rights (see DashboardWidget.requiredAction): any one of them makes it useful,
+    // because it renders the parts the admin is allowed to read and leaves out the rest.
+    const actions = Array.isArray(requiredAction) ? requiredAction : [requiredAction];
+    return actions.some((action) => this.auth.actionAllowed(action));
   }
 
   public pruneForbiddenWidgets(): void {

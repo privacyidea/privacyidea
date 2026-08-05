@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { signal } from "@angular/core";
+import { PiResponse } from "@app/app.component";
 import {
   AuthEventType,
   ConditionalAccessPolicyServiceInterface,
@@ -29,6 +30,7 @@ import {
   TargetConstraints
 } from "@services/conditional-access/conditional-access-policy.service";
 import { MockHttpResourceRef, MockPiResponse } from "@testing/mock-services/mock-utils";
+import { Observable, of } from "rxjs";
 
 export class MockConditionalAccessPolicyService implements ConditionalAccessPolicyServiceInterface {
   policiesResource = new MockHttpResourceRef(MockPiResponse.fromValue<LockoutPolicy[]>([]));
@@ -62,6 +64,10 @@ export class MockConditionalAccessPolicyService implements ConditionalAccessPoli
   );
 
   countModesForTarget = jest.fn((target: LockoutTarget): CountMode[] => this.countModesByTarget()[target] ?? []);
+
+  getPolicies = jest.fn(
+    (): Observable<PiResponse<LockoutPolicy[]>> => of(MockPiResponse.fromValue<LockoutPolicy[]>(this.policies()))
+  );
 
   savePolicy = jest.fn(async (_: LockoutPolicySaveParams): Promise<number | undefined> => Promise.resolve(1));
 
