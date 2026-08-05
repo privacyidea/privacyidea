@@ -45,6 +45,7 @@ import { AuthResponse, AuthService, AuthServiceInterface, PasswordLoginParams } 
 import { ConfigService } from "@services/config/config.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { SessionTimerService, SessionTimerServiceInterface } from "@services/session-timer/session-timer.service";
+import { UiPreferencesService, UiPreferencesServiceInterface } from "@services/user-settings/ui-preferences.service";
 import { ValidateService, ValidateServiceInterface, WebAuthnSignRequest } from "@services/validate/validate.service";
 import { catchError, EMPTY, filter, Subscription, switchMap, take, timeout, timer } from "rxjs";
 
@@ -78,6 +79,7 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
   private readonly router = inject(Router);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly sessionTimerService: SessionTimerServiceInterface = inject(SessionTimerService);
+  private readonly uiPreferencesService: UiPreferencesServiceInterface = inject(UiPreferencesService);
   private readonly validateService: ValidateServiceInterface = inject(ValidateService);
   protected readonly configService = inject(ConfigService);
   private transactionId = "";
@@ -309,6 +311,9 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
       // Successful auth -> log in
       this.showOtpField.set(false);
       this.sessionTimerService.initialTimerStart();
+      // Applies the stored theme and, if the user prefers another language, loads
+      // that locale bundle instead of continuing into the app.
+      this.uiPreferencesService.sync();
       this.router.navigateByUrl(resolveLandingPath(this.authService)).then();
     } else if (challengesTriggered(response)) {
       // Setup depending on what kind of challenges were triggered

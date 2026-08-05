@@ -150,6 +150,25 @@ describe("SmtpService", () => {
     expect(notificationService.error).toHaveBeenCalledWith("Failed to send test email. Something went wrong");
   });
 
+  it("should return false when the SMTP test responds without a positive result", async () => {
+    const params = { ...buildSmtpServer(), sender: "test@test.com", recipient: "to@test.com" };
+    const promise = service.testSmtpServer(params);
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/smtpserver/send_test_email`);
+    req.flush({ result: { value: false } });
+
+    await expect(promise).resolves.toBe(false);
+    expect(notificationService.success).not.toHaveBeenCalled();
+  });
+
+  it("should list SMTP servers", () => {
+    service.listSmtpServers().subscribe();
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/smtpserver/`);
+    expect(req.request.method).toBe("GET");
+    req.flush(MockPiResponse.fromValue({}));
+  });
+
   describe("smtpServers", () => {
     it("smsGateways falls back to default when resource empty", () => {
       expect(service.smtpServers()).toEqual([]);
@@ -190,6 +209,17 @@ describe("SmtpService", () => {
         status: 403,
         statusText: "Permission denied"
       });
+      await Promise.resolve();
+
+      expect(service.smtpServers()).toEqual([]);
+    });
+
+    it("should return an empty list when the resource resolves without a value", async () => {
+      contentService.onExternalSmtp = signal(true);
+      TestBed.tick();
+
+      const req = httpMock.expectOne((r) => r.url === "/smtpserver/");
+      req.flush({ result: { status: true } });
       await Promise.resolve();
 
       expect(service.smtpServers()).toEqual([]);

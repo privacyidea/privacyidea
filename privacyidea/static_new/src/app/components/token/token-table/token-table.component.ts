@@ -50,9 +50,11 @@ import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-t
 import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { FilterValue } from "@core/models/filter_value/filter_value";
+import { MultiSelectFilterComponent } from "@components/shared/multi-select-filter/multi-select-filter.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { filterColumnHint, inlineFilterHint } from "@utils/filter-hint.utils";
 import { withDefaultRealm } from "@utils/filter.utils";
+import { StringUtils } from "@utils/string.utils";
 import { TokenTableActionsComponent } from "./token-table-actions/token-table-actions.component";
 
 const columnKeysMap = [
@@ -85,6 +87,7 @@ const columnKeysMap = [
     ScrollToTopDirective,
     ClearableInputComponent,
     CopyableComponent,
+    MultiSelectFilterComponent,
     TokenTableActionsComponent,
     MatIconButton,
     MatMenuModule,
@@ -111,6 +114,7 @@ export class TokenTableComponent {
     (keyword) => !this.tokenService.unsupportedKeys.has(keyword) && !keyword.includes(" ")
   );
   readonly filterHint = inlineFilterHint();
+  readonly tokenTypeFilterOptions = computed(() => this.tokenService.tokenTypeOptions().map((type) => type.key));
   private basePageSizeOptions = [...this.tableUtilsService.pageSizeOptions()];
   @ViewChild("filterHTMLInputElement", { static: false })
   filterInput!: ElementRef<HTMLInputElement>;
@@ -332,6 +336,16 @@ export class TokenTableComponent {
         });
       }
     }
+  }
+
+  selectedFilterValues(keyword: string): string[] {
+    return StringUtils.splitFilterList(this.tokenService.filterDraft().getValueOfKey(keyword));
+  }
+
+  setFilterValues(keyword: string, values: string[]): void {
+    this.tokenService.updateFilter((current) =>
+      values.length ? current.addEntry(keyword, values.join(",")) : current.removeKey(keyword)
+    );
   }
 
   onItemSelected(keyword: string, value: string): void {

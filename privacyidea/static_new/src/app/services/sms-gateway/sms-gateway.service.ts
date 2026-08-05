@@ -23,7 +23,7 @@ import { environment } from "@env/environment";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
-import { lastValueFrom } from "rxjs";
+import { lastValueFrom, Observable } from "rxjs";
 
 export interface SmsProviderParameter {
   values?: string[];
@@ -69,6 +69,8 @@ export interface SmsGatewayServiceInterface {
   postSmsGateway(gateway: SmsGatewayPayload): Promise<void>;
 
   deleteSmsGateway(name: string): Promise<void>;
+
+  listSmsGateways(): Observable<PiResponse<SmsGateway[]>>;
 }
 
 @Injectable()
@@ -137,5 +139,11 @@ export class SmsGatewayService implements SmsGatewayServiceInterface {
         this.notificationService.error($localize`Failed to delete SMS gateway. ` + message);
         throw new Error("delete-failed");
       });
+  }
+
+  listSmsGateways(): Observable<PiResponse<SmsGateway[]>> {
+    return this.http.get<PiResponse<SmsGateway[]>>(this.baseUrl + "/", {
+      headers: this.authService.getHeaders()
+    });
   }
 }
