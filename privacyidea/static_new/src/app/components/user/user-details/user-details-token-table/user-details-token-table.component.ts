@@ -17,7 +17,16 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass } from "@angular/common";
-import { AfterViewInit, Component, effect, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
+import {
+  AfterViewInit,
+  Component,
+  computed,
+  effect,
+  inject,
+  linkedSignal,
+  signal,
+  WritableSignal
+} from "@angular/core";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatIcon } from "@angular/material/icon";
@@ -38,6 +47,8 @@ import {
 } from "@angular/material/table";
 import { MatTooltip } from "@angular/material/tooltip";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { isInitialLoad, TableState } from "@core/models/table_state/table-state";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerDetailToken } from "@services/container/container.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
@@ -72,7 +83,8 @@ interface BulkActionResult {
     MatTooltip,
     NgClass,
     MatHeaderCellDef,
-    MatNoDataRow
+    MatNoDataRow,
+    TableStateComponent
   ],
   templateUrl: "./user-details-token-table.component.html",
   styleUrl: "./user-details-token-table.component.scss"
@@ -118,9 +130,22 @@ export class UserDetailsTokenTableComponent implements AfterViewInit {
     }
   });
 
+  readonly tableState = new TableState({
+    resource: this.tokenService.userTokenResource,
+    count: () => this.userTokenData().data.length,
+    allowed: () => this.authService.actionAllowed("tokenlist")
+  });
+  private readonly emptyRows = computed<ContainerDetailToken[]>(
+    () => this.tableUtilsService.emptyDataSource<ContainerDetailToken>(5, this.columnsKeyMap).data
+  );
+
   constructor() {
     effect(() => {
       if (!this.userTokenData) {
+        return;
+      }
+      if (!this.tokenService.userTokenResource.hasValue()) {
+        this.dataSource.data = isInitialLoad(this.tokenService.userTokenResource) ? this.emptyRows() : [];
         return;
       }
       const base = this.userTokenData().data ?? [];

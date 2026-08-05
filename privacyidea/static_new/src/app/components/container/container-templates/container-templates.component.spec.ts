@@ -40,9 +40,11 @@ describe("ContainerTemplatesComponent", () => {
   ];
 
   const templatesSignal = signal<ContainerTemplate[]>(mockTemplates);
+  const templatesLoaded = signal(true);
 
   const mockContainerTemplateService = {
-    templates: templatesSignal
+    templates: templatesSignal,
+    templatesResource: { hasValue: () => templatesLoaded() }
   };
 
   const mockAuthService = {
@@ -55,6 +57,7 @@ describe("ContainerTemplatesComponent", () => {
 
   beforeEach(async () => {
     templatesSignal.set(mockTemplates);
+    templatesLoaded.set(true);
     await TestBed.configureTestingModule({
       imports: [ContainerTemplatesComponent],
       providers: [
@@ -76,6 +79,7 @@ describe("ContainerTemplatesComponent", () => {
 
   it("should show skeleton rows when service returns no templates", () => {
     templatesSignal.set([]);
+    templatesLoaded.set(false);
     fixture.detectChanges();
 
     const rows = fixture.debugElement.queryAll(By.css("tr[mat-row]"));
@@ -86,6 +90,7 @@ describe("ContainerTemplatesComponent", () => {
 
   it("should disable header checkbox when in skeleton state", () => {
     templatesSignal.set([]);
+    templatesLoaded.set(false);
     fixture.detectChanges();
 
     const headerCheckbox = fixture.debugElement.query(By.css("th.mat-column-select mat-checkbox"));

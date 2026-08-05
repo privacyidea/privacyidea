@@ -63,7 +63,6 @@
           <ng-container [matColumnDef]="column.key">
             <th
               *matHeaderCellDef
-              attr.aria-label="{{ column.label }} Header"
               mat-header-cell>
               <div class="flex ali-center">
                 {{ column.label }}
@@ -98,7 +97,6 @@
               [ngClass]="{
                 'table-checkbox': column.key === 'select'
               }"
-              attr.aria-label="{{ column.label }} Cell"
               mat-cell>
               <div>
                 @switch (column.key) {
@@ -136,21 +134,22 @@
         }
         <tr
           *matHeaderRowDef="columnKeys; sticky: true"
-          aria-label="Header Row"
           mat-header-row></tr>
         <tr
           *matRowDef="let row; columns: columnKeys"
-          aria-label="Data Row"
+          [class.skeleton-row]="!row.username"
           mat-row></tr>
-        <tr
-          *matNoDataRow
-          aria-label="No Data Row">
-          <td
-            [attr.colspan]="columnKeys.length"
-            aria-label="No Data Cell"
-            i18n
-            i18n-aria-label>
-            No data matching the filter.
+        <tr *matNoDataRow>
+          <td [attr.colspan]="columnKeys.length">
+            <app-user-table-actions />
+            <app-table-state
+              [status]="tableState.rowStatus()"
+              [table]="tableState"
+              heading="No users in this realm"
+              hint="Users are read from the resolvers of the selected realm."
+              i18n-heading
+              i18n-hint
+              icon="group" />
           </td>
         </tr>
       </table>

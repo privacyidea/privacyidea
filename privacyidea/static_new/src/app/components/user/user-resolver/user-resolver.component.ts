@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, inject, linkedSignal, signal, viewChild, WritableSignal } from "@angular/core";
+import { Component, computed, inject, linkedSignal, signal, viewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
@@ -27,11 +27,13 @@ import { MatSelectModule } from "@angular/material/select";
 import { MatSort, MatSortModule } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { Router } from "@angular/router";
+import { Router, RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { isInitialLoad, TableState } from "@core/models/table_state/table-state";
 import { ResolverTableActionsComponent } from "@components/user/user-resolver/resolver-table-actions/resolver-table-actions.component";
 import { AuthService } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
@@ -59,7 +61,9 @@ const columnKeysMap = [
     MatTooltipModule,
     ClearableInputComponent,
     ScrollToTopDirective,
-    ResolverTableActionsComponent
+    ResolverTableActionsComponent,
+    TableStateComponent,
+    RouterLink
   ],
   templateUrl: "./user-resolver.component.html",
   styleUrl: "./user-resolver.component.scss"
@@ -87,6 +91,12 @@ export class UserResolversComponent {
       sort: this.sort()
     }),
     computation: (source) => {
+      if (isInitialLoad(this.resolverService.resolversResource)) {
+        return this.tableUtilsService.emptyDataSource<Resolver>(
+          this.tableUtilsService.pageSizeOptions()[1] ?? 10,
+          this.columnKeysMap
+        );
+      }
       const dataSource = new MatTableDataSource(source.resolvers ?? []);
       dataSource.paginator = source.paginator ?? null;
       dataSource.sort = source.sort ?? null;
@@ -106,6 +116,17 @@ export class UserResolversComponent {
       return dataSource;
     }
   });
+
+  readonly ROUTE_PATHS = ROUTE_PATHS;
+  readonly tableState = new TableState({
+    resource: this.resolverService.resolversResource,
+    count: () => this.resolverService.resolvers().length,
+    allowed: () => this.authService.actionAllowed("resolverread"),
+    resetFilter: () => this.resetFilter()
+  });
+  readonly emptyHint = computed(() =>
+    this.authService.actionAllowed("resolverwrite") ? $localize`Create a resolver to read users from a user store.` : ""
+  );
 
   onFilterInput(value: string): void {
     this.filterString.set(value);

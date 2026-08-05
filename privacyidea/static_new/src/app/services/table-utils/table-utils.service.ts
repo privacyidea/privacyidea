@@ -91,7 +91,10 @@ type KeysOfColumns<C extends readonly ColumnDef[]> = {
 export interface TableUtilsServiceInterface {
   pageSizeOptions: WritableSignal<number[]>;
 
-  emptyDataSource<T>(pageSize: number, columnsKeyMap: { key: string; label: string }[]): MatTableDataSource<T>;
+  emptyDataSource<T>(
+    pageSize: number,
+    columnsKeyMap: readonly (Readonly<{ key: string; label: string }> | string)[]
+  ): MatTableDataSource<T>;
 
   toggleKeywordInFilter(args: { keyword: string; currentValue: FilterValue }): FilterValue;
 
@@ -138,12 +141,15 @@ export class TableUtilsService implements TableUtilsServiceInterface {
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   pageSizeOptions = signal([5, 10, 25, 50]);
 
-  emptyDataSource<T>(pageSize: number, columnsKeyMap: { key: string; label: string }[]): MatTableDataSource<T> {
+  emptyDataSource<T>(
+    pageSize: number,
+    columnsKeyMap: readonly (Readonly<{ key: string; label: string }> | string)[]
+  ): MatTableDataSource<T> {
     return new MatTableDataSource(
       Array.from({ length: pageSize }, () => {
         const emptyRow: Record<string, string> = {};
         columnsKeyMap.forEach((column) => {
-          emptyRow[column.key] = "";
+          emptyRow[typeof column === "string" ? column : column.key] = "";
         });
         return emptyRow as T;
       })
@@ -380,7 +386,11 @@ export class TableUtilsService implements TableUtilsServiceInterface {
     return sort.direction === "asc" ? "keyboard_arrow_upward" : "keyboard_arrow_downward";
   }
 
-  onSortButtonClick(columnKey: string, sort: WritableSignal<Sort>, fallback: Sort = { active: "serial", direction: "asc" }): void {
+  onSortButtonClick(
+    columnKey: string,
+    sort: WritableSignal<Sort>,
+    fallback: Sort = { active: "serial", direction: "asc" }
+  ): void {
     const current = sort();
     let direction: Sort["direction"] = "asc";
 

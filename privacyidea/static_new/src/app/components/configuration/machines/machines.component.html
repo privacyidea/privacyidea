@@ -132,16 +132,19 @@
       mat-header-row></tr>
     <tr
       *matRowDef="let row; columns: displayedColumns"
+      [class.skeleton-row]="!row.resolver_name"
       mat-row></tr>
 
-    <tr
-      *matNoDataRow
-      class="mat-row">
-      <td
-        class="mat-cell"
-        colspan="5"
-        i18n>
-        No machines found.
+    <tr *matNoDataRow>
+      <td colspan="5">
+        <app-table-state
+          [status]="tableState.rowStatus()"
+          [table]="tableState"
+          heading="No machines yet"
+          hint="Machines are read from the machine resolvers. Configure a machine resolver to see machines here."
+          i18n-heading
+          i18n-hint
+          icon="computer" />
       </td>
     </tr>
   </table>

@@ -92,7 +92,6 @@
         <ng-container [matColumnDef]="column.key">
           <th
             *matHeaderCellDef
-            attr.aria-label="{{ column.label }} Header"
             mat-header-cell>
             <div class="flex ali-center">
               {{ column.label }}
@@ -111,7 +110,6 @@
           <td
             *matCellDef="let element"
             [ngClass]="{ 'input-width-l': column.key === 'description' }"
-            attr.aria-label="{{ column.label }} Cell"
             mat-cell>
             <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
               @switch (column.key) {
@@ -168,13 +166,18 @@
         mat-header-row></tr>
       <tr
         *matRowDef="let row; columns: displayedColumns"
+        [class.skeleton-row]="!row.serial"
         mat-row></tr>
 
       <tr *matNoDataRow>
-        <td
-          [attr.colspan]="displayedColumns.length"
-          i18n>
-          No data matching the filter.
+        <td [attr.colspan]="displayedColumns.length">
+          <app-table-state
+            [status]="tableState.rowStatus()"
+            [table]="tableState"
+            heading="No containers assigned to this user"
+            hint="Assign a container to this user to see it here."
+            i18n-heading
+            i18n-hint />
         </td>
       </tr>
     </table>

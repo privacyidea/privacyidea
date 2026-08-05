@@ -62,7 +62,6 @@
         <ng-container [matColumnDef]="column.key">
           <th
             *matHeaderCellDef
-            attr.aria-label="{{ column.label }} Header"
             mat-header-cell>
             <div class="flex ali-center">
               {{ column.label }}
@@ -94,7 +93,6 @@
           </th>
           <td
             *matCellDef="let element"
-            attr.aria-label="{{ column.label }} Cell"
             mat-cell>
             <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
               @switch (column.key) {
@@ -128,24 +126,21 @@
       }
       <tr
         *matHeaderRowDef="displayedColumns; sticky: true"
-        aria-label="Header Row"
-        i18n-aria-label
         mat-header-row></tr>
       <tr
         *matRowDef="let row; columns: displayedColumns"
-        aria-label="Data Row"
-        i18n-aria-label
+        [class.skeleton-row]="!row.transaction_id"
         mat-row></tr>
-      <tr
-        *matNoDataRow
-        aria-label="No Data Row"
-        i18n-aria-label>
-        <td
-          [attr.colspan]="displayedColumns.length"
-          aria-label="No Data Cell"
-          i18n
-          i18n-aria-label>
-          No data matching the filter.
+      <tr *matNoDataRow>
+        <td [attr.colspan]="displayedColumns.length">
+          <app-table-state
+            [status]="tableState.rowStatus()"
+            [table]="tableState"
+            heading="No challenges yet"
+            hint="Challenges appear here while a user is answering a challenge-response request."
+            i18n-heading
+            i18n-hint
+            icon="pending_actions" />
         </td>
       </tr>
     </table>

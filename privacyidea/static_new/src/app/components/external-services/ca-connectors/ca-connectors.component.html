@@ -137,16 +137,30 @@
       mat-header-row></tr>
     <tr
       *matRowDef="let row; columns: displayedColumns"
+      [class.skeleton-row]="!row.connectorname"
       mat-row></tr>
 
-    <tr
-      *matNoDataRow
-      class="mat-row">
-      <td
-        class="mat-cell"
-        colspan="3"
-        i18n>
-        No CA connectors found.
+    <tr *matNoDataRow>
+      <td colspan="3">
+        <app-table-state
+          [status]="tableState.rowStatus()"
+          [table]="tableState"
+          heading="No CA connectors yet"
+          hint="Create a CA connector to issue and manage certificates from privacyIDEA."
+          i18n-heading
+          i18n-hint
+          icon="assured_workload">
+          <button
+            (click)="openEditDialog()"
+            class="action-button-primary button-width-l"
+            mat-stroked-button>
+            <span class="icon-badge">
+              <mat-icon class="padding-right-3">assured_workload</mat-icon>
+              <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+            </span>
+            <span i18n>Create CA Connector</span>
+          </button>
+        </app-table-state>
       </td>
     </tr>
   </table>

@@ -39,6 +39,8 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { isInitialLoad, TableState } from "@core/models/table_state/table-state";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 
@@ -58,7 +60,8 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
     MatLabel,
     ClearableInputComponent,
     MatInput,
-    CopyableComponent
+    CopyableComponent,
+    TableStateComponent
   ],
   templateUrl: "./privacyidea-servers.component.html",
   styleUrl: "./privacyidea-servers.component.scss"
@@ -75,6 +78,12 @@ export class PrivacyideaServersComponent {
   totalLength: WritableSignal<number> = computed(
     () => this.privacyideaServerService.remoteServerOptions().length
   ) as WritableSignal<number>;
+  readonly tableState = new TableState({
+    resource: this.privacyideaServerService.remoteServerResource,
+    count: () => this.privacyideaServerService.remoteServerOptions().length,
+    allowed: () => this.authService.actionAllowed("privacyideaserver_read"),
+    resetFilter: () => this.resetFilter()
+  });
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
@@ -85,6 +94,12 @@ export class PrivacyideaServersComponent {
   selection = signal<PrivacyideaServer[]>([]);
 
   privacyideaDataSource = computed(() => {
+    if (isInitialLoad(this.privacyideaServerService.remoteServerResource)) {
+      return this.tableUtilsService.emptyDataSource<PrivacyideaServer>(
+        this.pageSizeOptions()[1] ?? 10,
+        this.displayedColumns
+      );
+    }
     const servers = this.privacyideaServerService.remoteServerOptions();
     const dataSource = new MatTableDataSource(servers);
     dataSource.paginator = this.paginator;

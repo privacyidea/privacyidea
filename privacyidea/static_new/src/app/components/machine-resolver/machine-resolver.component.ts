@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, inject, linkedSignal, signal, viewChild, WritableSignal } from "@angular/core";
+import { Component, computed, inject, linkedSignal, signal, viewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
@@ -31,6 +31,8 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { isInitialLoad, TableState } from "@core/models/table_state/table-state";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import {
@@ -38,6 +40,7 @@ import {
   MachineResolverService,
   MachineResolverServiceInterface
 } from "@services/machine-resolver/machine-resolver.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { lastValueFrom } from "rxjs";
 
 const columnKeysMap = [
@@ -61,7 +64,8 @@ const columnKeysMap = [
     MatTooltipModule,
     ClearableInputComponent,
     ScrollToTopDirective,
-    RouterLink
+    RouterLink,
+    TableStateComponent
   ]
 })
 export class MachineResolverComponent {
@@ -73,11 +77,24 @@ export class MachineResolverComponent {
   readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly router = inject(Router);
+  private readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
 
   paginator = viewChild(MatPaginator);
   sort = viewChild(MatSort);
 
   filterString = signal<string>("");
+
+  readonly tableState = new TableState({
+    resource: this.machineResolverService.machineResolverResource,
+    count: () => this.machineResolverService.machineResolvers().length,
+    allowed: () => this.authService.actionAllowed("mresolverread"),
+    resetFilter: () => this.resetFilter()
+  });
+  readonly emptyHint = computed(() =>
+    this.authService.actionAllowed("mresolverwrite")
+      ? $localize`Create a machine resolver to read machines from a machine store.`
+      : ""
+  );
 
   machineResolversDataSource: WritableSignal<MatTableDataSource<MachineResolver>> = linkedSignal({
     source: () => ({
@@ -86,6 +103,12 @@ export class MachineResolverComponent {
       sort: this.sort()
     }),
     computation: (source) => {
+      if (isInitialLoad(this.machineResolverService.machineResolverResource)) {
+        return this.tableUtilsService.emptyDataSource<MachineResolver>(
+          this.tableUtilsService.pageSizeOptions()[1] ?? 10,
+          this.columnKeysMap
+        );
+      }
       const dataSource = new MatTableDataSource(source.machineResolvers ?? []);
       dataSource.paginator = source.paginator ?? null;
       dataSource.sort = source.sort ?? null;

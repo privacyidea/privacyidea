@@ -56,7 +56,6 @@
           <ng-container [matColumnDef]="column.key">
             <th
               *matHeaderCellDef
-              attr.aria-label="{{ column.label }} Header"
               mat-header-cell>
               <div
                 [ngClass]="{ 'just-center': column.key === 'actions' }"
@@ -82,7 +81,6 @@
                 'width-100': column.key === 'resolvers',
                 'actions-cell': column.key === 'actions'
               }"
-              attr.aria-label="{{ column.label }} Cell"
               mat-cell>
               @switch (column.key) {
                 @case ("name") {
@@ -356,30 +354,28 @@
 
         <tr
           *matHeaderRowDef="columnKeys; sticky: true"
-          aria-label="Header Row"
           mat-header-row></tr>
 
         <tr
           *matRowDef="let row; columns: columnKeys"
-          aria-label="Data Row"
+          [class.skeleton-row]="!row.name"
           mat-row></tr>
 
         <tr
           *matFooterRowDef="columnKeys"
-          aria-label="Create Realm Footer Row"
           class="new-realm-footer-row"
           mat-footer-row></tr>
 
-        <tr
-          *matNoDataRow
-          aria-label="No Data Row"
-          mat-no-data-row>
-          <td
-            [attr.colspan]="columnKeys.length"
-            aria-label="No Data Cell"
-            i18n
-            i18n-aria-label>
-            No data matching the filter.
+        <tr *matNoDataRow>
+          <td [attr.colspan]="columnKeys.length">
+            <app-table-state
+              [status]="tableState.rowStatus()"
+              [table]="tableState"
+              heading="No realms yet"
+              hint="Create your first realm in the row below."
+              i18n-heading
+              i18n-hint
+              variant="row" />
           </td>
         </tr>
       </table>

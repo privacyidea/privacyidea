@@ -79,7 +79,6 @@
         <ng-container [matColumnDef]="column.key">
           <th
             *matHeaderCellDef
-            attr.aria-label="{{ column.label }} Header"
             mat-header-cell>
             <div class="flex ali-center">
               {{ column.label }}
@@ -111,7 +110,6 @@
           </th>
           <td
             *matCellDef="let element"
-            attr.aria-label="{{ column.label }} Cell"
             mat-cell>
             <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
               @switch (column.key) {
@@ -161,24 +159,21 @@
       }
       <tr
         *matHeaderRowDef="displayedColumns"
-        aria-label="Header Row"
-        i18n-aria-label
         mat-header-row></tr>
       <tr
         *matRowDef="let row; columns: displayedColumns"
-        aria-label="Data Row"
-        i18n-aria-label
+        [class.skeleton-row]="!row.serial"
         mat-row></tr>
-      <tr
-        *matNoDataRow
-        aria-label="No Data Row"
-        i18n-aria-label>
-        <td
-          [attr.colspan]="displayedColumns.length"
-          aria-label="No Data Cell"
-          i18n
-          i18n-aria-label>
-          No data matching the filter.
+      <tr *matNoDataRow>
+        <td [attr.colspan]="displayedColumns.length">
+          <app-table-state
+            [status]="tableState.rowStatus()"
+            [table]="tableState"
+            heading="No SSH applications yet"
+            hint="Attach an SSH token to a service ID in the token details to see it here."
+            i18n-heading
+            i18n-hint
+            icon="terminal" />
         </td>
       </tr>
     </table>

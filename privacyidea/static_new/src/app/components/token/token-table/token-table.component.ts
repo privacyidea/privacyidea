@@ -32,6 +32,8 @@ import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { MatSortModule, Sort } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { RouterLink } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
@@ -49,6 +51,8 @@ import { CopyableComponent } from "@components/shared/copyable/copyable.componen
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { filterColumnHint, inlineFilterHint } from "@utils/filter-hint.utils";
@@ -90,7 +94,9 @@ const columnKeysMap = [
     MatMenuModule,
     MatDividerModule,
     MatTooltipModule,
-    ScrollEdgesDirective
+    ScrollEdgesDirective,
+    TableStateComponent,
+    RouterLink
   ],
   templateUrl: "./token-table.component.html",
   styleUrl: "./token-table.component.scss"
@@ -117,6 +123,10 @@ export class TokenTableComponent {
   tokenSelection = this.tokenService.tokenSelection;
   tokenResource = this.tokenService.tokenResource;
   activeFilter = this.tokenService.activeFilter;
+  readonly ROUTE_PATHS = ROUTE_PATHS;
+  readonly emptyHint = computed(() =>
+    this.authService.tokenEnrollmentAllowed() ? $localize`Enroll your first token to get started.` : ""
+  );
   pageSize = this.tokenService.pageSize;
   pageIndex = this.tokenService.pageIndex;
   sort = this.tokenService.sort;
@@ -162,7 +172,7 @@ export class TokenTableComponent {
   tokenDataSource: WritableSignal<MatTableDataSource<TokenDetails>> = linkedSignal({
     source: () => ({ value: this.tokenService.tokenResourceValue(), error: this.tokenResource.error() }),
     computation: (src, previous) => {
-      if (src.error) {
+      if (src.error || !this.authService.actionAllowed("tokenlist")) {
         return new MatTableDataSource<TokenDetails>([]);
       }
       if (src.value) {
@@ -182,6 +192,13 @@ export class TokenTableComponent {
       }
       return previous?.value ?? 0;
     }
+  });
+  readonly tableState = new TableState({
+    resource: this.tokenResource,
+    count: () => this.totalLength(),
+    filterActive: () => !this.activeFilter().isEmpty,
+    allowed: () => this.authService.actionAllowed("tokenlist"),
+    resetFilter: () => this.tokenService.clearFilter()
   });
   pageSizeOptions = computed(() => {
     if (!this.basePageSizeOptions.includes(this.pageSize())) {

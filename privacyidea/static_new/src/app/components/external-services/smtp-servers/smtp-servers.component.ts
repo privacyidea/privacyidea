@@ -35,6 +35,8 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { isInitialLoad, TableState } from "@core/models/table_state/table-state";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 
@@ -54,7 +56,8 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
     MatLabel,
     ClearableInputComponent,
     MatInput,
-    CopyableComponent
+    CopyableComponent,
+    TableStateComponent
   ],
   templateUrl: "./smtp-servers.component.html",
   styleUrl: "./smtp-servers.component.scss"
@@ -70,6 +73,12 @@ export class SmtpServersComponent {
   filterString = signal<string>("");
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
   totalLength: WritableSignal<number> = computed(() => this.smtpService.smtpServers().length) as WritableSignal<number>;
+  readonly tableState = new TableState({
+    resource: this.smtpService.smtpServerResource,
+    count: () => this.smtpService.smtpServers().length,
+    allowed: () => this.authService.actionAllowed("smtpserver_read"),
+    resetFilter: () => this.resetFilter()
+  });
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
@@ -80,6 +89,9 @@ export class SmtpServersComponent {
   selection = signal<SmtpServer[]>([]);
 
   smtpDataSource = computed(() => {
+    if (isInitialLoad(this.smtpService.smtpServerResource)) {
+      return this.tableUtilsService.emptyDataSource<SmtpServer>(this.pageSizeOptions()[1] ?? 10, this.displayedColumns);
+    }
     const servers = this.smtpService.smtpServers();
     const dataSource = new MatTableDataSource(servers);
     dataSource.paginator = this.paginator;

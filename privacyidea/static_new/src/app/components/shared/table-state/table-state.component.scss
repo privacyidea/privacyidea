@@ -1,0 +1,40 @@
+:host {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  min-height: 15rem;
+}
+
+.table-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--half-global-gap);
+  padding: var(--double-global-padding) var(--global-padding);
+  text-align: center;
+}
+
+.table-state-icon {
+  --table-state-icon-size: 56px;
+  font-size: var(--table-state-icon-size);
+  width: var(--table-state-icon-size);
+  height: var(--table-state-icon-size);
+  color: var(--mat-sys-on-surface-variant);
+  opacity: 0.55;
+}
+
+.table-state-icon-error {
+  color: var(--mat-sys-error);
+}
+
+.table-state-heading {
+  margin: 0;
+}
+
+.table-state-hint {
+  margin: 0 0 var(--half-global-gap);
+  max-width: 40rem;
+  color: var(--mat-sys-on-surface-variant);
+}

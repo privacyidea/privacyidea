@@ -72,8 +72,6 @@
         <ng-container [matColumnDef]="column.key">
           <th
             *matHeaderCellDef
-            attr.aria-label="{{ column.label }} Header"
-            i18n-attr.aria-label
             mat-header-cell>
             <div class="flex ali-center">
               {{ column.label }}
@@ -90,15 +88,15 @@
           </th>
           <td
             *matCellDef="let element"
-            attr.aria-label="{{ column.label }} Cell"
-            i18n-attr.aria-label
             mat-cell>
             <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
               @switch (column.key) {
                 @case ("serial") {
                   <app-copyable [copyText]="element.status !== 'missing' ? element.token.serial : ''">
-                    @if (element.status !== "missing" &&
-                    (element.token.username === authService.username() || authService.role() === "admin")) {
+                    @if (
+                      element.status !== "missing" &&
+                      (element.token.username === authService.username() || authService.role() === "admin")
+                    ) {
                       <a
                         (click)="contentService.tokenSelected(element.token.serial)"
                         (keydown.enter)="contentService.tokenSelected(element.token.serial)"
@@ -132,7 +130,9 @@
                     @if (element.status !== "missing") {
                       @if (element.token[column.key]) {
                         <a
-                          (click)="contentService.userSelected(element.token[column.key], element.token['user_realm'])"
+                          (click)="
+                            contentService.userSelected(element.token[column.key], element.token['user_realm'])
+                          "
                           (keydown.enter)="
                             contentService.userSelected(element.token[column.key], element.token['user_realm'])
                           "
@@ -181,8 +181,6 @@
       <ng-container matColumnDef="actions">
         <th
           *matHeaderCellDef
-          aria-label="Actions Column Header"
-          i18n-aria-label
           mat-header-cell>
           <div
             class="flex just-center"
@@ -192,8 +190,6 @@
         </th>
         <td
           *matCellDef="let element"
-          aria-label="Actions Button Cell"
-          i18n-aria-label
           mat-cell>
           <div class="flex-row just-center">
             @if (element.status !== "missing") {
@@ -222,25 +218,21 @@
 
       <tr
         *matHeaderRowDef="displayedColumns"
-        aria-label="Header Row"
-        i18n-aria-label
         mat-header-row></tr>
       <tr
         *matRowDef="let row; columns: displayedColumns"
+        [class.skeleton-row]="!row.token.serial"
         [ngClass]="'comparison-status-' + row.status"
-        aria-label="Data Row"
-        i18n-aria-label
         mat-row></tr>
-      <tr
-        *matNoDataRow
-        aria-label="No Data Row"
-        i18n-aria-label>
-        <td
-          [attr.colspan]="displayedColumns.length"
-          aria-label="No Data Cell"
-          i18n
-          i18n-aria-label>
-          No data matching the filter.
+      <tr *matNoDataRow>
+        <td [attr.colspan]="displayedColumns.length">
+          <app-table-state
+            [status]="tableState.rowStatus()"
+            [table]="tableState"
+            heading="No tokens in this container"
+            hint="Add a token to this container to see it here."
+            i18n-heading
+            i18n-hint />
         </td>
       </tr>
     </table>

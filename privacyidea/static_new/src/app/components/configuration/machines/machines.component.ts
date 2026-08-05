@@ -32,6 +32,8 @@ import { MatInputModule } from "@angular/material/input";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { isInitialLoad, TableState } from "@core/models/table_state/table-state";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { Machine, MachineService, MachineServiceInterface } from "@services/machine/machine.service";
@@ -51,7 +53,8 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
     MatFormFieldModule,
     MatInputModule,
     ClearableInputComponent,
-    CopyableComponent
+    CopyableComponent,
+    TableStateComponent
   ],
   templateUrl: "./machines.component.html",
   styleUrl: "./machines.component.scss"
@@ -69,6 +72,12 @@ export class MachinesComponent {
   totalLength: WritableSignal<number> = computed(
     () => this.machineService.machines()?.length ?? 0
   ) as WritableSignal<number>;
+  readonly tableState = new TableState({
+    resource: this.machineService.machinesResource,
+    count: () => this.machineService.machines()?.length ?? 0,
+    allowed: () => this.authService.actionAllowed("machinelist"),
+    resetFilter: () => this.resetFilter()
+  });
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
@@ -77,6 +86,9 @@ export class MachinesComponent {
   displayedColumns: string[] = ["hostname", "ip", "id", "resolver_name"];
 
   machineDataSource = computed(() => {
+    if (isInitialLoad(this.machineService.machinesResource)) {
+      return this.tableUtilsService.emptyDataSource<Machine>(this.pageSize(), this.displayedColumns);
+    }
     const machines = this.machineService.machines() ?? [];
     const dataSource = new MatTableDataSource(machines);
     dataSource.paginator = this.paginator;

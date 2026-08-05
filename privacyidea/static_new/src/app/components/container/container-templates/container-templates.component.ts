@@ -25,8 +25,10 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { MatSortModule, Sort } from "@angular/material/sort";
 import { MatTableModule } from "@angular/material/table";
-import { Router } from "@angular/router";
+import { Router, RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { isInitialLoad, TableState } from "@core/models/table_state/table-state";
 import { FilterOption } from "@core/models/filter_value_generic/filter-option";
 import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -93,7 +95,9 @@ const containerTemplateFilterOptions: FilterOption<ContainerTemplate>[] = [
     ContainerTemplatesTableActionsComponent,
     MatCheckbox,
     ViewTemplateTokensComponent,
-    MatPaginatorModule
+    MatPaginatorModule,
+    TableStateComponent,
+    RouterLink
   ],
   templateUrl: "./container-templates.component.html",
   styleUrl: "./container-templates.component.scss"
@@ -117,6 +121,14 @@ export class ContainerTemplatesComponent {
   readonly filter = signal<FilterValueGeneric<ContainerTemplate>>(
     new FilterValueGeneric({ availableFilters: containerTemplateFilterOptions })
   );
+
+  readonly ROUTE_PATHS = ROUTE_PATHS;
+  readonly tableState = new TableState({
+    resource: this.containerTemplateService.templatesResource,
+    count: () => this.containerTemplateService.templates().length,
+    allowed: () => this.authService.actionAllowed("container_template_list"),
+    resetFilter: () => this.onFilterChange(this.filter().clear())
+  });
   readonly pageIndex = signal(0);
   readonly pageSize = signal(10);
   readonly pageSizeOptions = signal([5, 10, 25, 100]);
@@ -139,7 +151,9 @@ export class ContainerTemplatesComponent {
 
   readonly filteredContainerTemplates = computed(() => {
     const templates = this.containerTemplateService.templates();
-    if (templates.length === 0) return this.emptyResource();
+    if (templates.length === 0) {
+      return isInitialLoad(this.containerTemplateService.templatesResource) ? this.emptyResource() : [];
+    }
     return this.filter().hasActiveFilters ? this.filter().filterItems(templates) : templates;
   });
 

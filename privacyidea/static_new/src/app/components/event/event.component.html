@@ -185,7 +185,34 @@
     <tr
       *matRowDef="let row; columns: columnKeys()"
       [ngClass]="detailedView() ? 'detailed-row' : 'compact-row'"
+      [class.skeleton-row]="!row.name"
       class="example-element-row"
       mat-row></tr>
+
+    <tr *matNoDataRow>
+      <td [attr.colspan]="columnKeys().length">
+        <app-table-state
+          [status]="tableState.rowStatus()"
+          [table]="tableState"
+          heading="No event handlers yet"
+          hint="Create an event handler to react to events, for example to notify a user after an enrollment."
+          i18n-heading
+          i18n-hint
+          icon="flag">
+          @if (authService.actionAllowed("eventhandling_write")) {
+            <button
+              (click)="onCreateNewEventHandler()"
+              class="action-button-primary button-width-xl"
+              mat-stroked-button>
+              <span class="icon-badge">
+                <mat-icon class="padding-right-3">flag</mat-icon>
+                <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+              </span>
+              <span i18n>Create New Event Handler</span>
+            </button>
+          }
+        </app-table-state>
+      </td>
+    </tr>
   </table>
 </div>

@@ -56,7 +56,6 @@
         <th
           *matHeaderCellDef
           [ngClass]="{ 'col-even': colIdx % 2 === 0, 'col-odd': colIdx % 2 !== 0 }"
-          attr.aria-label="{{ column.label }} Header"
           mat-header-cell
           mat-sort-header>
           {{ column.label }}
@@ -98,18 +97,19 @@
       mat-header-row></tr>
     <tr
       *matRowDef="let row; columns: columnKeys"
+      [class.skeleton-row]="!row.application"
       mat-row></tr>
 
-    <tr
-      *matNoDataRow
-      aria-label="No Data Row"
-      i18n-aria-label>
-      <td
-        [attr.colspan]="columnKeys.length"
-        aria-label="No Data Cell"
-        i18n
-        i18n-aria-label>
-        No data matching the filter.
+    <tr *matNoDataRow>
+      <td [attr.colspan]="columnKeys.length">
+        <app-table-state
+          [status]="tableState.rowStatus()"
+          [table]="tableState"
+          heading="No known clients yet"
+          hint="Clients appear here once they have authenticated against the /validate/check endpoint."
+          i18n-heading
+          i18n-hint
+          icon="lan" />
       </td>
     </tr>
   </table>

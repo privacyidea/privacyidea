@@ -152,16 +152,30 @@
       mat-header-row></tr>
     <tr
       *matRowDef="let row; columns: displayedColumns"
+      [class.skeleton-row]="!row.groupname"
       mat-row></tr>
 
-    <tr
-      *matNoDataRow
-      class="mat-row">
-      <td
-        class="mat-cell"
-        colspan="4"
-        i18n>
-        No tokengroups found.
+    <tr *matNoDataRow>
+      <td colspan="4">
+        <app-table-state
+          [status]="tableState.rowStatus()"
+          [table]="tableState"
+          heading="No token groups yet"
+          hint="Create a token group to group tokens for policies and machine assignments."
+          i18n-heading
+          i18n-hint
+          icon="local_police">
+          <button
+            (click)="onCreateNewTokengroup()"
+            class="action-button-primary button-width-l"
+            mat-stroked-button>
+            <span class="icon-badge">
+              <mat-icon class="padding-right-3">local_police</mat-icon>
+              <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+            </span>
+            <span i18n>Create Token Group</span>
+          </button>
+        </app-table-state>
       </td>
     </tr>
   </table>

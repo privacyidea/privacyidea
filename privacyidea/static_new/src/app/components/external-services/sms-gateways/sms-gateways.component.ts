@@ -35,6 +35,8 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { isInitialLoad, TableState } from "@core/models/table_state/table-state";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 
@@ -54,7 +56,8 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
     MatLabel,
     ClearableInputComponent,
     MatInput,
-    CopyableComponent
+    CopyableComponent,
+    TableStateComponent
   ],
   templateUrl: "./sms-gateways.component.html",
   styleUrl: "./sms-gateways.component.scss"
@@ -72,6 +75,12 @@ export class SmsGatewaysComponent {
   totalLength: WritableSignal<number> = computed(
     () => this.smsGatewayService.smsGateways().length
   ) as WritableSignal<number>;
+  readonly tableState = new TableState({
+    resource: this.smsGatewayService.smsGatewayResource,
+    count: () => this.smsGatewayService.smsGateways().length,
+    allowed: () => this.authService.actionAllowed("smsgateway_read"),
+    resetFilter: () => this.resetFilter()
+  });
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
@@ -82,6 +91,9 @@ export class SmsGatewaysComponent {
   selection = signal<SmsGateway[]>([]);
 
   smsDataSource = computed(() => {
+    if (isInitialLoad(this.smsGatewayService.smsGatewayResource)) {
+      return this.tableUtilsService.emptyDataSource<SmsGateway>(this.pageSizeOptions()[1] ?? 10, this.displayedColumns);
+    }
     const gateways = this.smsGatewayService.smsGateways();
     const dataSource = new MatTableDataSource(gateways);
     dataSource.paginator = this.paginator;

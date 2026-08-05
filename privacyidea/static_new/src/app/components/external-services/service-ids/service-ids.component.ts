@@ -34,6 +34,8 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { isInitialLoad, TableState } from "@core/models/table_state/table-state";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 
@@ -54,7 +56,8 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
     ClearableInputComponent,
     MatInput,
     CopyableComponent,
-    RouterLink
+    RouterLink,
+    TableStateComponent
   ],
   templateUrl: "./service-ids.component.html",
   styleUrl: "./service-ids.component.scss"
@@ -71,6 +74,12 @@ export class ServiceIdsComponent {
   totalLength: WritableSignal<number> = computed(
     () => this.serviceIdService.serviceIds().length
   ) as WritableSignal<number>;
+  readonly tableState = new TableState({
+    resource: this.serviceIdService.serviceIdResource,
+    count: () => this.serviceIdService.serviceIds().length,
+    allowed: () => this.authService.actionAllowed("serviceid_list"),
+    resetFilter: () => this.resetFilter()
+  });
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
@@ -78,6 +87,9 @@ export class ServiceIdsComponent {
 
   selection = signal<ServiceId[]>([]);
   serviceIdDataSource = computed(() => {
+    if (isInitialLoad(this.serviceIdService.serviceIdResource)) {
+      return this.tableUtilsService.emptyDataSource<ServiceId>(this.pageSizeOptions()[1] ?? 10, this.displayedColumns);
+    }
     const services = this.serviceIdService.serviceIds();
     const dataSource = new MatTableDataSource(services);
     dataSource.paginator = this.paginator;

@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { CommonModule, NgClass } from "@angular/common";
-import { Component, effect, inject, linkedSignal, signal, ViewChild, WritableSignal } from "@angular/core";
+import { Component, computed, effect, inject, linkedSignal, signal, ViewChild, WritableSignal } from "@angular/core";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { MatSort, MatSortHeader, MatSortModule } from "@angular/material/sort";
 import {
@@ -36,6 +36,8 @@ import {
 } from "@angular/material/table";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { isInitialLoad, TableState } from "@core/models/table_state/table-state";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuditService } from "@services/audit/audit.service";
 import { AuthService } from "@services/auth/auth.service";
@@ -105,7 +107,8 @@ interface FlattenedClientRow {
     MatTooltip,
     MatIcon,
     ClearableInputComponent,
-    LocalDateTimePipe
+    LocalDateTimePipe,
+    TableStateComponent
   ]
 })
 export class ClientsComponent {
@@ -124,6 +127,10 @@ export class ClientsComponent {
       this.clientDataSource().sort = this.sort;
     });
   }
+
+  readonly emptyRows = computed<FlattenedClientRow[]>(() =>
+    Array.from({ length: 10 }, () => ({ application: "", isFirst: true, rowspan: 1 }) as FlattenedClientRow)
+  );
 
   // Flattens the grouped client data for the material table, from ClientsDict
   flattenedClientRowsFromDict = (dict: ClientsDict): FlattenedClientRow[] => {
@@ -161,8 +168,18 @@ export class ClientsComponent {
         };
         return dataSource;
       }
-      return previous?.value ?? new MatTableDataSource([] as FlattenedClientRow[]);
+      if (!isInitialLoad(this.clientService.clientsResource)) {
+        return new MatTableDataSource<FlattenedClientRow>([]);
+      }
+      return previous?.value ?? new MatTableDataSource(this.emptyRows());
     }
+  });
+
+  readonly tableState = new TableState({
+    resource: this.clientService.clientsResource,
+    count: () => this.clientDataSource().data.length,
+    allowed: () => this.authService.actionAllowed("clienttype"),
+    resetFilter: () => this.clearFilter()
   });
 
   filterValue = "";

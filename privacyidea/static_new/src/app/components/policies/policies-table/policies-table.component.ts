@@ -28,10 +28,12 @@ import { MatSortModule, Sort } from "@angular/material/sort";
 import { MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
 
-import { Router } from "@angular/router";
+import { Router, RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { isInitialLoad, TableState } from "@core/models/table_state/table-state";
 import { FilterOption } from "@core/models/filter_value_generic/filter-option";
 import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -62,7 +64,9 @@ import { ViewConditionsColumnComponent } from "./view-conditions-column/view-con
     PolicyFilterComponent,
     ViewConditionsColumnComponent,
     CopyButtonComponent,
-    HighlightPipe
+    HighlightPipe,
+    TableStateComponent,
+    RouterLink
   ],
   templateUrl: "./policies-table.component.html",
   styleUrl: "./policies-table.component.scss"
@@ -95,6 +99,19 @@ export class PoliciesTableComponent {
     new FilterValueGeneric({ availableFilters: policyFilterOptions })
   );
 
+  readonly ROUTE_PATHS = ROUTE_PATHS;
+  readonly tableState = new TableState({
+    resource: this.policyService.allPoliciesResource,
+    count: () => this.policyService.allPolicies().length,
+    allowed: () => this.authService.actionAllowed("policyread"),
+    resetFilter: () => this.onFilterUpdate(this.filter().clear())
+  });
+  readonly emptyHint = computed(() =>
+    this.authService.actionAllowed("policywrite")
+      ? $localize`Create a policy to control what users and administrators are allowed to do.`
+      : ""
+  );
+
   // Terms to visually highlight per dense column: the keyword-less search terms plus that column's
   // own keyword value. Short columns (name/scope/priority/active) are not highlighted on purpose.
   readonly highlightTerms = computed(() => {
@@ -118,7 +135,9 @@ export class PoliciesTableComponent {
 
   readonly policiesListFiltered = computed(() => {
     const all = this.policyService.allPolicies();
-    if (all.length === 0) return this.emptyResource();
+    if (all.length === 0) {
+      return isInitialLoad(this.policyService.allPoliciesResource) ? this.emptyResource() : [];
+    }
     return this.filter().filterItems(all);
   });
 

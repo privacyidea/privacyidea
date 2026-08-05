@@ -50,6 +50,8 @@ import { ContainerDetailsTokenActionsComponent } from "@components/container/con
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { isInitialLoad, TableState } from "@core/models/table_state/table-state";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
   ContainerDetailToken,
@@ -89,7 +91,8 @@ interface ContainerDetailTokenData {
     MatTooltipModule,
     MatInput,
     ClearableInputComponent,
-    ContainerDetailsTokenActionsComponent
+    ContainerDetailsTokenActionsComponent,
+    TableStateComponent
   ],
   templateUrl: "./container-details-token-table.component.html",
   styleUrl: "./container-details-token-table.component.scss"
@@ -152,6 +155,20 @@ export class ContainerDetailsTokenTableComponent implements AfterViewInit {
     computation: (source, previous) => {
       const { sortedData, comparison, containerSerial } = source;
       const ds = previous?.value ?? new MatTableDataSource<ContainerDetailTokenData>([]);
+
+      if (!this.containerService.containerDetailsResource.hasValue()) {
+        if (!isInitialLoad(this.containerService.containerDetailsResource)) {
+          ds.data = [];
+          return ds;
+        }
+        ds.data = Array.from({ length: 5 }, () => ({
+          token: {} as ContainerDetailToken,
+          columnKey: "",
+          status: "correct" as ComparisonStatus
+        }));
+        return ds;
+      }
+
       const comp = comparison?.[containerSerial];
 
       if (!comp || comp.tokens.equal) {
@@ -202,6 +219,13 @@ export class ContainerDetailsTokenTableComponent implements AfterViewInit {
       ds.data = mappedData;
       return ds;
     }
+  });
+
+  readonly tableState = new TableState({
+    resource: this.containerService.containerDetailsResource,
+    count: () => this.dataSource().data.length,
+    allowed: () => this.authService.actionAllowed("container_list"),
+    resetFilter: () => this.clearFilter()
   });
 
   isAssignableToAllToken = computed<boolean>(() => {

@@ -118,17 +118,31 @@
 
       <tr
         *matRowDef="let row; columns: columnKeys"
+        [class.skeleton-row]="!row.resolvername"
         mat-row></tr>
 
-      <tr
-        *matNoDataRow
-        mat-no-data-row>
-        <td
-          [attr.colspan]="columnKeys.length"
-          aria-label="No Data Cell"
-          i18n-aria-label
-          i18n>
-          No data matching the filter.
+      <tr *matNoDataRow>
+        <td [attr.colspan]="columnKeys.length">
+          <app-table-state
+            [hint]="emptyHint()"
+            [status]="tableState.rowStatus()"
+            [table]="tableState"
+            heading="No machine resolvers yet"
+            i18n-heading
+            icon="lan">
+            @if (authService.actionAllowed("mresolverwrite")) {
+              <button
+                (click)="onNewMachineResolver()"
+                class="action-button-primary button-width-l"
+                mat-stroked-button>
+                <span class="icon-badge">
+                  <mat-icon class="padding-right-3">lan</mat-icon>
+                  <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+                </span>
+                <span i18n>New Machine Resolver</span>
+              </button>
+            }
+          </app-table-state>
         </td>
       </tr>
     </table>

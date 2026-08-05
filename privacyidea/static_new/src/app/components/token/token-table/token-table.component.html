@@ -22,289 +22,294 @@
   aria-label="Token Table"
   class="token-table-layout"
   i18n-aria-label>
-  @if (authService.actionAllowed("tokenlist")) {
-    <div class="filter-paginator-container">
-      <mat-form-field
-        class="token-table-filter"
-        subscriptSizing="dynamic">
-        <mat-label i18n>Filter Tokens...</mat-label>
-        <app-clearable-input
-          (clearButtonClick)="tokenService.clearFilter()"
-          [showClearButton]="tokenService.filterDraft().isNotEmpty">
-          <input
-            #filterHTMLInputElement
-            [appFilterAutocomplete]="filterKeywords"
-            (input)="onFilterInput($event)"
-            (keyup.enter)="tokenService.applyFilterInput($event)"
-            [value]="tokenService.filterDraft().filterString"
-            aria-label="Filter Input"
-            i18n-aria-label
-            i18n-placeholder
-            id="token-filter-input"
-            matInput
-            placeholder="Example query: 'type: hotp userid: 1000'" />
-        </app-clearable-input>
-        <mat-hint>{{ filterHint }}</mat-hint>
-        @if (showFilterHint()) {
-          <mat-hint
-            align="end"
-            i18n>
-            Press enter to apply the filter
-          </mat-hint>
-        }
-      </mat-form-field>
-      <button
-        [matMenuTriggerFor]="advancedFilterMenu"
-        aria-label="More Filter"
-        class="margin-left-8"
-        i18n-aria-label
-        i18n-matTooltip
-        mat-icon-button
-        matTooltip="More Filter">
-        <mat-icon>filter_list</mat-icon>
-      </button>
-      <mat-paginator
-        (page)="onPageEvent($event)"
-        [length]="totalLength()"
-        [pageIndex]="pageIndex()"
-        [pageSizeOptions]="pageSizeOptions()"
-        [pageSize]="pageSize()"
-        showFirstLastButtons />
-    </div>
-    <div class="margin-bottom-16">
-      <app-token-table-actions />
-    </div>
-    <div
-      appScrollEdges
-      class="table-scroll-region">
-      <table
-        [dataSource]="tokenDataSource()"
-        aria-label="Token Data Table"
-        class="token-table"
-        i18n-aria-label
-        mat-table>
-        @for (column of columnKeysMap; track column) {
-          <ng-container [matColumnDef]="column.key">
-            @if (column.key === "select") {
-              <th
-                *matHeaderCellDef
-                class="table-checkbox"
-                mat-header-cell>
-                <mat-checkbox
-                  (change)="$event ? toggleAllRows() : null"
-                  aria-label="Select all tokens"
-                  i18n-aria-label
-                  [checked]="isAllSelected()"
-                  [disabled]="totalLength() === 0"
-                  [indeterminate]="tokenSelection().length > 0 && !isAllSelected()" />
-              </th>
-            } @else {
-              <th
-                *matHeaderCellDef
-                attr.aria-label="{{ column.label }} Header"
-                mat-header-cell>
-                <div class="flex ali-center">
-                  {{ column.label }}
-                  <div class="margin-left-16 flex">
-                    @if (apiFilterKeyMap[column.key] && tokenService.apiFilterKeys.includes(apiFilterKeyMap[column.key])) {
-                      @if (apiFilterKeyMap[column.key] === "realm" || apiFilterKeyMap[column.key] === "tokenrealm") {
-                        <button
-                          [matMenuTriggerData]="{ keyword: apiFilterKeyMap[column.key] }"
-                          [matMenuTriggerFor]="realmMenu"
-                          aria-label="Filter by {{ column.label }}"
-                          i18n-aria-label
-                          class="filter-button"
-                          mat-icon-button>
-                          <mat-icon class="keyword-button-icon margin-left-0"> filter_list</mat-icon>
-                        </button>
-                      } @else if (apiFilterKeyMap[column.key] === "type") {
-                        <button
-                          [matMenuTriggerData]="{ keyword: apiFilterKeyMap[column.key] }"
-                          [matMenuTriggerFor]="typeMenu"
-                          aria-label="Filter by {{ column.label }}"
-                          i18n-aria-label
-                          class="filter-button"
-                          mat-icon-button>
-                          <mat-icon class="keyword-button-icon margin-left-0"> filter_list</mat-icon>
-                        </button>
-                      } @else {
-                        <button
-                          (click)="onKeywordClick(apiFilterKeyMap[column.key])"
-                          aria-label="Filter by {{ column.label }}"
-                          i18n-aria-label
-                          class="filter-button"
-                          mat-icon-button>
-                          <mat-icon class="keyword-button-icon margin-left-0">
-                            {{ getFilterIconName(apiFilterKeyMap[column.key]) }}
-                          </mat-icon>
-                        </button>
-                      }
-                    }
-                    <button
-                      (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
-                      aria-label="Sort by {{ column.label }}"
-                      i18n-aria-label
-                      class="sort-button"
-                      mat-icon-button
-                      type="button">
-                      <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
-                    </button>
-                  </div>
-                </div>
-              </th>
-            }
-            <td
-              *matCellDef="let tokenDetails"
-              [ngClass]="{
-                'table-checkbox': column.key === 'select',
-                'width-300': column.key === 'description',
-                'container_serial-width': column.key === 'container_serial'
-              }"
-              attr.aria-label="{{ column.label }} Cell"
-              class="max-width-300"
-              mat-cell>
-              <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
-                @switch (column.key) {
-                  @case ("select") {
-                    <mat-checkbox
-                      (change)="$event ? toggleRow(tokenDetails) : null"
-                      (click)="$event.stopPropagation()"
-                      attr.aria-label="Select token {{ tokenDetails.serial }}"
-                      [checked]="tokenSelection().includes(tokenDetails)"
-                      [disabled]="totalLength() === 0" />
-                  }
-                  @case ("serial") {
-                    <app-copyable [copyText]="tokenDetails.serial">
-                      <a
-                        (click)="contentService.tokenSelected(tokenDetails.serial)"
-                        (keydown.enter)="contentService.tokenSelected(tokenDetails.serial)"
-                        (keydown.space)="$event.preventDefault(); contentService.tokenSelected(tokenDetails.serial)"
-                        attr.aria-label="{{ column.label }} Link"
-                        class="flex ali-center"
-                        role="button"
-                        tabindex="0">
-                        {{ tokenDetails[column.key] }}
-                      </a>
-                    </app-copyable>
-                  }
-                  @case ("active") {
-                    @if (authService.actionAllowed("enable") && authService.actionAllowed("disable")) {
-                      <span
-                        (click)="toggleActive(tokenDetails)"
-                        (keydown.enter)="toggleActive(tokenDetails)"
-                        (keydown.space)="$event.preventDefault(); toggleActive(tokenDetails)"
-                        [ngClass]="tableUtilsService.getClassForColumn(column.key, tokenDetails)"
-                        role="button"
-                        tabindex="0">
-                        {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
-                      </span>
-                    }
-                  }
-                  @case ("failcount") {
-                    @if (authService.actionAllowed("reset")) {
-                      <span
-                        (click)="resetFailCount(tokenDetails)"
-                        (keydown.enter)="resetFailCount(tokenDetails)"
-                        (keydown.space)="$event.preventDefault(); resetFailCount(tokenDetails)"
-                        [ngClass]="tableUtilsService.getClassForColumn(column.key, tokenDetails)"
-                        role="button"
-                        tabindex="0">
-                        {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
-                      </span>
-                    }
-                  }
-                  @case ("realms") {
-                    <div [ngClass]="{ 'realm-list': (tokenDetails[column.key]?.length || 0) > 1 }">
-                      @for (realm of tokenDetails[column.key]; track realm; let idx = $index) {
-                        <app-copyable [copyText]="realm">
-                          <span attr.aria-label="{{ column.label }} Link">
-                            {{ realm }}
-                          </span>
-                        </app-copyable>
-                      }
-                    </div>
-                  }
-                  @case ("container_serial") {
-                    <app-copyable [copyText]="tokenDetails.container_serial">
-                      <a
-                        (click)="contentService.navigateContainerDetails(tokenDetails.container_serial)"
-                        (keydown.enter)="contentService.navigateContainerDetails(tokenDetails.container_serial)"
-                        (keydown.space)="
-                          $event.preventDefault();
-                          contentService.navigateContainerDetails(tokenDetails.container_serial)
-                        "
-                        attr.aria-label="{{ column.label }} Link"
-                        role="button"
-                        tabindex="0">
-                        {{ tokenDetails[column.key] }}
-                      </a>
-                    </app-copyable>
-                  }
-                  @case ("username") {
-                    <app-copyable [copyText]="tokenDetails[column.key]">
-                      <a
-                        (click)="contentService.userSelected(tokenDetails[column.key], tokenDetails['user_realm'])"
-                        (keydown.enter)="
-                          contentService.userSelected(tokenDetails[column.key], tokenDetails['user_realm'])
-                        "
-                        (keydown.space)="
-                          $event.preventDefault();
-                          contentService.userSelected(tokenDetails[column.key], tokenDetails['user_realm'])
-                        "
-                        attr.aria-label="{{ column.label }} Link"
-                        role="button"
-                        tabindex="0">
-                        {{ tokenDetails[column.key] }}
-                      </a>
-                    </app-copyable>
-                  }
-                  @default {
-                    @if (tableUtilsService.isLink(column.key)) {
-                      <a
-                        attr.aria-label="{{ column.label }} Link"
-                        href="#">
-                        {{ tokenDetails[column.key] }}
-                      </a>
+  <div class="filter-paginator-container">
+    <mat-form-field
+      class="token-table-filter"
+      subscriptSizing="dynamic">
+      <mat-label i18n>Filter Tokens...</mat-label>
+      <app-clearable-input
+        (clearButtonClick)="tokenService.clearFilter()"
+        [showClearButton]="tokenService.filterDraft().isNotEmpty">
+        <input
+          #filterHTMLInputElement
+          [appFilterAutocomplete]="filterKeywords"
+          (input)="onFilterInput($event)"
+          (keyup.enter)="tokenService.applyFilterInput($event)"
+          [value]="tokenService.filterDraft().filterString"
+          aria-label="Filter Input"
+          i18n-aria-label
+          i18n-placeholder
+          id="token-filter-input"
+          matInput
+          placeholder="Example query: 'type: hotp userid: 1000'" />
+      </app-clearable-input>
+      <mat-hint>{{ filterHint }}</mat-hint>
+      @if (showFilterHint()) {
+        <mat-hint
+          align="end"
+          i18n>
+          Press enter to apply the filter
+        </mat-hint>
+      }
+    </mat-form-field>
+    <button
+      [matMenuTriggerFor]="advancedFilterMenu"
+      aria-label="More Filter"
+      class="margin-left-8"
+      i18n-aria-label
+      i18n-matTooltip
+      mat-icon-button
+      matTooltip="More Filter">
+      <mat-icon>filter_list</mat-icon>
+    </button>
+    <mat-paginator
+      (page)="onPageEvent($event)"
+      [length]="totalLength()"
+      [pageIndex]="pageIndex()"
+      [pageSizeOptions]="pageSizeOptions()"
+      [pageSize]="pageSize()"
+      showFirstLastButtons />
+  </div>
+  <div class="margin-bottom-16">
+    <app-token-table-actions />
+  </div>
+  <div
+    appScrollEdges
+    class="table-scroll-region">
+    <table
+      [dataSource]="tokenDataSource()"
+      aria-label="Token Data Table"
+      class="token-table"
+      i18n-aria-label
+      mat-table>
+      @for (column of columnKeysMap; track column) {
+        <ng-container [matColumnDef]="column.key">
+          @if (column.key === "select") {
+            <th
+              *matHeaderCellDef
+              class="table-checkbox"
+              mat-header-cell>
+              <mat-checkbox
+                (change)="$event ? toggleAllRows() : null"
+                aria-label="Select all tokens"
+                i18n-aria-label
+                [checked]="isAllSelected()"
+                [disabled]="totalLength() === 0"
+                [indeterminate]="tokenSelection().length > 0 && !isAllSelected()" />
+            </th>
+          } @else {
+            <th
+              *matHeaderCellDef
+              mat-header-cell>
+              <div class="flex ali-center">
+                {{ column.label }}
+                <div class="margin-left-16 flex">
+                  @if (
+                    apiFilterKeyMap[column.key] && tokenService.apiFilterKeys.includes(apiFilterKeyMap[column.key])
+                  ) {
+                    @if (apiFilterKeyMap[column.key] === "realm" || apiFilterKeyMap[column.key] === "tokenrealm") {
+                      <button
+                        [matMenuTriggerData]="{ keyword: apiFilterKeyMap[column.key] }"
+                        [matMenuTriggerFor]="realmMenu"
+                        aria-label="Filter by {{ column.label }}"
+                        i18n-aria-label
+                        class="filter-button"
+                        mat-icon-button>
+                        <mat-icon class="keyword-button-icon margin-left-0"> filter_list</mat-icon>
+                      </button>
+                    } @else if (apiFilterKeyMap[column.key] === "type") {
+                      <button
+                        [matMenuTriggerData]="{ keyword: apiFilterKeyMap[column.key] }"
+                        [matMenuTriggerFor]="typeMenu"
+                        aria-label="Filter by {{ column.label }}"
+                        i18n-aria-label
+                        class="filter-button"
+                        mat-icon-button>
+                        <mat-icon class="keyword-button-icon margin-left-0"> filter_list</mat-icon>
+                      </button>
                     } @else {
-                      <span>
-                        {{ tokenDetails[column.key] }}
-                      </span>
+                      <button
+                        (click)="onKeywordClick(apiFilterKeyMap[column.key])"
+                        aria-label="Filter by {{ column.label }}"
+                        i18n-aria-label
+                        class="filter-button"
+                        mat-icon-button>
+                        <mat-icon class="keyword-button-icon margin-left-0">
+                          {{ getFilterIconName(apiFilterKeyMap[column.key]) }}
+                        </mat-icon>
+                      </button>
                     }
+                  }
+                  <button
+                    (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
+                    aria-label="Sort by {{ column.label }}"
+                    i18n-aria-label
+                    class="sort-button"
+                    mat-icon-button
+                    type="button">
+                    <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
+                  </button>
+                </div>
+              </div>
+            </th>
+          }
+          <td
+            *matCellDef="let tokenDetails"
+            [ngClass]="{
+              'table-checkbox': column.key === 'select',
+              'width-300': column.key === 'description',
+              'container_serial-width': column.key === 'container_serial'
+            }"
+            class="max-width-300"
+            mat-cell>
+            <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
+              @switch (column.key) {
+                @case ("select") {
+                  <mat-checkbox
+                    (change)="$event ? toggleRow(tokenDetails) : null"
+                    (click)="$event.stopPropagation()"
+                    attr.aria-label="Select token {{ tokenDetails.serial }}"
+                    [checked]="tokenSelection().includes(tokenDetails)"
+                    [disabled]="totalLength() === 0" />
+                }
+                @case ("serial") {
+                  <app-copyable [copyText]="tokenDetails.serial">
+                    <a
+                      (click)="contentService.tokenSelected(tokenDetails.serial)"
+                      (keydown.enter)="contentService.tokenSelected(tokenDetails.serial)"
+                      (keydown.space)="$event.preventDefault(); contentService.tokenSelected(tokenDetails.serial)"
+                      attr.aria-label="{{ column.label }} Link"
+                      class="flex ali-center"
+                      role="button"
+                      tabindex="0">
+                      {{ tokenDetails[column.key] }}
+                    </a>
+                  </app-copyable>
+                }
+                @case ("active") {
+                  @if (authService.actionAllowed("enable") && authService.actionAllowed("disable")) {
+                    <span
+                      (click)="toggleActive(tokenDetails)"
+                      (keydown.enter)="toggleActive(tokenDetails)"
+                      (keydown.space)="$event.preventDefault(); toggleActive(tokenDetails)"
+                      [ngClass]="tableUtilsService.getClassForColumn(column.key, tokenDetails)"
+                      role="button"
+                      tabindex="0">
+                      {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
+                    </span>
                   }
                 }
-              </div>
-            </td>
-          </ng-container>
-        }
-        <tr
-          *matHeaderRowDef="columnKeys; sticky: true"
-          aria-label="Header Row"
-          i18n-aria-label
-          mat-header-row></tr>
-
-        <tr
-          *matRowDef="let row; columns: columnKeys"
-          aria-label="Data Row"
-          i18n-aria-label
-          mat-row></tr>
-
-        <tr
-          *matNoDataRow
-          aria-label="No Data Row"
-          i18n-aria-label>
-          <td
-            [attr.colspan]="columnKeys.length"
-            aria-label="No Data Cell"
-            i18n
-            i18n-aria-label>
-            No data matching the filter.
+                @case ("failcount") {
+                  @if (authService.actionAllowed("reset")) {
+                    <span
+                      (click)="resetFailCount(tokenDetails)"
+                      (keydown.enter)="resetFailCount(tokenDetails)"
+                      (keydown.space)="$event.preventDefault(); resetFailCount(tokenDetails)"
+                      [ngClass]="tableUtilsService.getClassForColumn(column.key, tokenDetails)"
+                      role="button"
+                      tabindex="0">
+                      {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
+                    </span>
+                  }
+                }
+                @case ("realms") {
+                  <div [ngClass]="{ 'realm-list': (tokenDetails[column.key]?.length || 0) > 1 }">
+                    @for (realm of tokenDetails[column.key]; track realm; let idx = $index) {
+                      <app-copyable [copyText]="realm">
+                        <span attr.aria-label="{{ column.label }} Link">
+                          {{ realm }}
+                        </span>
+                      </app-copyable>
+                    }
+                  </div>
+                }
+                @case ("container_serial") {
+                  <app-copyable [copyText]="tokenDetails.container_serial">
+                    <a
+                      (click)="contentService.navigateContainerDetails(tokenDetails.container_serial)"
+                      (keydown.enter)="contentService.navigateContainerDetails(tokenDetails.container_serial)"
+                      (keydown.space)="
+                        $event.preventDefault();
+                        contentService.navigateContainerDetails(tokenDetails.container_serial)
+                      "
+                      attr.aria-label="{{ column.label }} Link"
+                      role="button"
+                      tabindex="0">
+                      {{ tokenDetails[column.key] }}
+                    </a>
+                  </app-copyable>
+                }
+                @case ("username") {
+                  <app-copyable [copyText]="tokenDetails[column.key]">
+                    <a
+                      (click)="contentService.userSelected(tokenDetails[column.key], tokenDetails['user_realm'])"
+                      (keydown.enter)="
+                        contentService.userSelected(tokenDetails[column.key], tokenDetails['user_realm'])
+                      "
+                      (keydown.space)="
+                        $event.preventDefault();
+                        contentService.userSelected(tokenDetails[column.key], tokenDetails['user_realm'])
+                      "
+                      attr.aria-label="{{ column.label }} Link"
+                      role="button"
+                      tabindex="0">
+                      {{ tokenDetails[column.key] }}
+                    </a>
+                  </app-copyable>
+                }
+                @default {
+                  @if (tableUtilsService.isLink(column.key)) {
+                    <a
+                      attr.aria-label="{{ column.label }} Link"
+                      href="#">
+                      {{ tokenDetails[column.key] }}
+                    </a>
+                  } @else {
+                    <span>
+                      {{ tokenDetails[column.key] }}
+                    </span>
+                  }
+                }
+              }
+            </div>
           </td>
-        </tr>
-      </table>
-    </div>
-  } @else {
-    <div i18n>You do not have the permission to view the token list.</div>
-  }
+        </ng-container>
+      }
+      <tr
+        *matHeaderRowDef="columnKeys; sticky: true"
+        mat-header-row></tr>
+
+      <tr
+        *matRowDef="let row; columns: columnKeys"
+        [class.skeleton-row]="!row.serial"
+        mat-row></tr>
+
+      <tr *matNoDataRow>
+        <td [attr.colspan]="columnKeys.length">
+          <app-table-state
+            [hint]="emptyHint()"
+            [status]="tableState.rowStatus()"
+            [table]="tableState"
+            heading="No tokens yet"
+            i18n-heading
+            icon="shield">
+            @if (authService.tokenEnrollmentAllowed()) {
+              <button
+                [routerLink]="[ROUTE_PATHS.TOKENS_ENROLLMENT]"
+                class="action-button-primary button-width-l"
+                mat-stroked-button>
+                <span class="icon-badge">
+                  <mat-icon class="padding-right-3">shield</mat-icon>
+                  <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+                </span>
+                <span i18n>Enroll Token</span>
+              </button>
+            }
+          </app-table-state>
+        </td>
+      </tr>
+    </table>
+  </div>
 </div>
 
 <mat-menu #realmMenu="matMenu">

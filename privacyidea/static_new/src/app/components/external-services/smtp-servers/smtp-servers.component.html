@@ -186,16 +186,30 @@
       mat-header-row></tr>
     <tr
       *matRowDef="let row; columns: displayedColumns"
+      [class.skeleton-row]="!row.identifier"
       mat-row></tr>
 
-    <tr
-      *matNoDataRow
-      class="mat-row">
-      <td
-        class="mat-cell"
-        colspan="6"
-        i18n>
-        No SMTP servers found.
+    <tr *matNoDataRow>
+      <td colspan="6">
+        <app-table-state
+          [status]="tableState.rowStatus()"
+          [table]="tableState"
+          heading="No SMTP servers yet"
+          hint="Create an SMTP server to send emails and one-time passwords."
+          i18n-heading
+          i18n-hint
+          icon="email">
+          <button
+            (click)="onCreateNewServer()"
+            class="action-button-primary button-width-l"
+            mat-stroked-button>
+            <span class="icon-badge">
+              <mat-icon class="padding-right-3">email</mat-icon>
+              <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+            </span>
+            <span i18n>Create SMTP Server</span>
+          </button>
+        </app-table-state>
       </td>
     </tr>
   </table>

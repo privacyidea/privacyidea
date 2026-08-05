@@ -162,16 +162,30 @@
       mat-header-row></tr>
     <tr
       *matRowDef="let row; columns: displayedColumns"
+      [class.skeleton-row]="!row.servicename"
       mat-row></tr>
 
-    <tr
-      *matNoDataRow
-      class="mat-row">
-      <td
-        class="mat-cell"
-        colspan="4"
-        i18n>
-        No service IDs found.
+    <tr *matNoDataRow>
+      <td colspan="4">
+        <app-table-state
+          [status]="tableState.rowStatus()"
+          [table]="tableState"
+          heading="No service IDs yet"
+          hint="Create a service ID to attach SSH tokens to it."
+          i18n-heading
+          i18n-hint
+          icon="storage">
+          <button
+            (click)="onCreateNewServiceId()"
+            class="action-button-primary button-width-l"
+            mat-stroked-button>
+            <span class="icon-badge">
+              <mat-icon class="padding-right-3">storage</mat-icon>
+              <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+            </span>
+            <span i18n>Create Service ID</span>
+          </button>
+        </app-table-state>
       </td>
     </tr>
   </table>

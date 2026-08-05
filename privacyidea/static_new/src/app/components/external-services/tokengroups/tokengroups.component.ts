@@ -31,6 +31,8 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { isInitialLoad, TableState } from "@core/models/table_state/table-state";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
@@ -52,7 +54,8 @@ import { Tokengroup, TokengroupService, TokengroupServiceInterface } from "@serv
     MatLabel,
     ClearableInputComponent,
     MatInput,
-    CopyableComponent
+    CopyableComponent,
+    TableStateComponent
   ],
   templateUrl: "./tokengroups.component.html",
   styleUrl: "./tokengroups.component.scss"
@@ -70,6 +73,12 @@ export class TokengroupsComponent {
   totalLength: WritableSignal<number> = computed(
     () => this.tokengroupService.tokengroups().length
   ) as WritableSignal<number>;
+  readonly tableState = new TableState({
+    resource: this.tokengroupService.tokengroupResource,
+    count: () => this.tokengroupService.tokengroups().length,
+    allowed: () => this.authService.actionAllowed("tokengroup_list"),
+    resetFilter: () => this.resetFilter()
+  });
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
@@ -80,6 +89,9 @@ export class TokengroupsComponent {
   selection = signal<Tokengroup[]>([]);
 
   tokengroupDataSource = computed(() => {
+    if (isInitialLoad(this.tokengroupService.tokengroupResource)) {
+      return this.tableUtilsService.emptyDataSource<Tokengroup>(this.pageSizeOptions()[1] ?? 10, this.displayedColumns);
+    }
     const groups = this.tokengroupService.tokengroups();
     const dataSource = new MatTableDataSource(groups);
     dataSource.paginator = this.paginator;

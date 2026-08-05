@@ -52,7 +52,7 @@
       @for (column of columnKeysMap; track column) {
         <ng-container [matColumnDef]="column.key">
           <th
-            *matHeaderCellDef attr.aria-label="{{ column.label }} Header" mat-header-cell>
+            *matHeaderCellDef mat-header-cell>
             <div class="flex ali-center">
               {{ column.label }}
               @if (!["number", "log_level", "clearance_level", "sig_check", "missing_line", "thread_id"].includes(
@@ -76,7 +76,7 @@
           <td
             *matCellDef="let element; let row" [ngClass]="{
               'table-checkbox': column.key === 'select'
-            }" attr.aria-label="{{ column.label }} Cell" mat-cell>
+            }" mat-cell>
             <div>
               @switch (column.key) {
                 @case ("success") {
@@ -205,14 +205,19 @@
         </ng-container>
       }
       <tr
-        *matHeaderRowDef="columnKeys; sticky: true" aria-label="Header Row" i18n-aria-label mat-header-row></tr>
+        *matHeaderRowDef="columnKeys; sticky: true" mat-header-row></tr>
       <tr
-        *matRowDef="let row; columns: columnKeys" aria-label="Data Row" i18n-aria-label mat-row></tr>
-      <tr
-        *matNoDataRow aria-label="No Data Row" i18n-aria-label>
-        <td
-          [attr.colspan]="columnKeys.length" aria-label="No Data Cell" i18n i18n-aria-label>
-          No data matching the filter.
+        *matRowDef="let row; columns: columnKeys" [class.skeleton-row]="!row.startdate" mat-row></tr>
+      <tr *matNoDataRow>
+        <td [attr.colspan]="columnKeys.length">
+          <app-table-state
+            [status]="tableState.rowStatus()"
+            [table]="tableState"
+            heading="No audit entries yet"
+            hint="Your authentications and token actions are recorded in the audit log."
+            i18n-heading
+            i18n-hint
+            icon="receipt_long" />
         </td>
       </tr>
     </table>

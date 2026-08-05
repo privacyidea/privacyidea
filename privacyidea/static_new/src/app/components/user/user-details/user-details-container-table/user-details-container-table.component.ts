@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass } from "@angular/common";
-import { Component, effect, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { Component, computed, effect, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatIcon } from "@angular/material/icon";
@@ -39,6 +39,8 @@ import {
 import { MatTooltip } from "@angular/material/tooltip";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { isInitialLoad, TableState } from "@core/models/table_state/table-state";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
   ContainerDetailData,
@@ -71,7 +73,8 @@ import { forkJoin } from "rxjs";
     MatIcon,
     MatIconButton,
     MatButton,
-    MatCheckbox
+    MatCheckbox,
+    TableStateComponent
   ],
   templateUrl: "./user-details-container-table.component.html",
   styleUrl: "./user-details-container-table.component.scss"
@@ -118,12 +121,26 @@ export class UserDetailsContainerTableComponent {
     computation: () => []
   });
 
+  readonly tableState = new TableState({
+    resource: this.containerService.userContainersResource,
+    count: () => this.userContainers().length,
+    allowed: () => this.authService.actionAllowed("container_list")
+  });
+  private readonly emptyRows = computed<ContainerDetailData[]>(
+    () => this.tableUtilsService.emptyDataSource<ContainerDetailData>(5, this.columnsKeyMap).data
+  );
+
   constructor() {
     (this.dataSource as unknown as { _sort: WritableSignal<Sort> })._sort = this.sort;
 
     effect(() => {
       const base = this.userContainers();
-      this.dataSource.data = this.clientsideSortContainerData(base, this.sort());
+      const resource = this.containerService.userContainersResource;
+      if (resource.hasValue()) {
+        this.dataSource.data = this.clientsideSortContainerData(base, this.sort());
+      } else {
+        this.dataSource.data = isInitialLoad(resource) ? this.emptyRows() : [];
+      }
     });
 
     effect(() => {

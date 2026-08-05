@@ -446,6 +446,16 @@ th:nth-child(even) {
   width: 42px;
 }
 
+// Placeholder rows shown while a table loads for the first time: the row keeps its
+// height so the table does not jump, but no cell content is visible or interactive.
+tr.skeleton-row {
+  pointer-events: none;
+
+  td > * {
+    visibility: hidden;
+  }
+}
+
 .cdk-overlay-pane {
   position: absolute !important;
   z-index: 1;
@@ -598,7 +608,8 @@ th:nth-child(even) {
     padding-left: 16px !important;
   }
 
-  .details-table .mat-mdc-form-field:not(.height-77):not(.height-115):not(.height-126):not(.height-136):not(.height-137) {
+  .details-table
+    .mat-mdc-form-field:not(.height-77):not(.height-115):not(.height-126):not(.height-136):not(.height-137) {
     --mat-form-field-container-height: 52px;
     --mat-form-field-container-vertical-padding: 8px;
   }

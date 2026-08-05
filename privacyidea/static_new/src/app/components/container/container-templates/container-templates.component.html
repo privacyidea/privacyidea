@@ -142,16 +142,24 @@
       *matRowDef="let row; columns: columnKeys()"
       [class.skeleton-row]="!row.name"></tr>
 
-    <tr
-      *matNoDataRow
-      aria-label="No Data Row"
-      i18n-aria-label>
-      <td
-        [attr.colspan]="columnKeys().length"
-        aria-label="No Data Cell"
-        i18n
-        i18n-aria-label>
-        No data matching the filter.
+    <tr *matNoDataRow>
+      <td [attr.colspan]="columnKeys().length">
+        <app-table-state
+          [status]="tableState.rowStatus()"
+          [table]="tableState"
+          heading="No container templates yet"
+          hint="Create a template to roll out containers with a predefined set of tokens."
+          i18n-heading
+          i18n-hint
+          icon="note_add">
+          <button
+            [routerLink]="[ROUTE_PATHS.CONTAINERS_TEMPLATES_CREATE]"
+            class="action-button-primary button-width-m"
+            mat-stroked-button>
+            <mat-icon>note_add</mat-icon>
+            <span i18n>Create Template</span>
+          </button>
+        </app-table-state>
       </td>
     </tr>
   </table>

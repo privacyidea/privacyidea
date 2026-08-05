@@ -41,6 +41,7 @@ import {
   MatTable,
   MatTableDataSource
 } from "@angular/material/table";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { UserData, UserService, UserServiceInterface } from "@services/user/user.service";
@@ -59,6 +60,8 @@ import { CopyableComponent } from "@components/shared/copyable/copyable.componen
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { isInitialLoad, TableState } from "@core/models/table_state/table-state";
 import { UserNewResolverComponent } from "@components/user/user-new-resolver/user-new-resolver.component";
 import { FilterOption } from "@core/models/filter_value_generic/filter-option";
 import { FilterValueGeneric, keywordlessTerms } from "@core/models/filter_value_generic/filter-value-generic";
@@ -119,7 +122,8 @@ const userFilterOptions: FilterOption<UserData>[] = columnKeysMap.map(
     RouterLink,
     MatIcon,
     MatIconButton,
-    ScrollEdgesDirective
+    ScrollEdgesDirective,
+    TableStateComponent
   ],
   templateUrl: "./user-table.component.html",
   styleUrl: "./user-table.component.scss"
@@ -131,6 +135,7 @@ export class UserTableComponent implements OnDestroy {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly resolverService = inject(ResolverService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly dialog = inject(MatDialog);
   readonly apiFilterKeys = this.userService.apiFilterKeys;
   readonly filterHint = inlineFilterHint();
@@ -166,6 +171,13 @@ export class UserTableComponent implements OnDestroy {
     source: () => this.filteredUsers(),
     computation: (filtered, previous) => (filtered ? filtered.length : (previous?.value ?? 0))
   });
+  readonly tableState = new TableState({
+    resource: this.userService.usersResource,
+    count: () => this.totalLength(),
+    filterActive: () => !this.userService.activeFilter().isEmpty,
+    allowed: () => this.authService.actionAllowed("userlist"),
+    resetFilter: () => this.userService.clearFilter()
+  });
   emptyResource: WritableSignal<UserData[]> = linkedSignal({
     source: this.userService.pageSize,
     computation: (pageSize: number) =>
@@ -180,7 +192,8 @@ export class UserTableComponent implements OnDestroy {
     }),
     computation: (src, prev) => {
       // Skeleton rows (emptyResource) are shown while loading and must not be filtered.
-      const data = src.filtered ?? prev?.value?.data ?? this.emptyResource();
+      const data =
+        src.filtered ?? (isInitialLoad(this.userService.usersResource) ? (prev?.value?.data ?? this.emptyResource()) : []);
       const sorted = this.clientsideSortUserData([...data], src.sort);
       const ds = new MatTableDataSource(sorted);
       ds.paginator = this.paginator;
