@@ -20,9 +20,10 @@ Unit tests for the dedicated conditional-access database session
 (:mod:`privacyidea.lib.conditional_access.session`).
 """
 from sqlalchemy import select
+from sqlalchemy.exc import OperationalError
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
-from privacyidea.lib.conditional_access.session import close_ca_session, get_ca_session
+from privacyidea.lib.conditional_access.session import close_ca_session, get_ca_session, guarded_write
 from privacyidea.lib.lifecycle import call_finalizers
 from privacyidea.models import db
 from privacyidea.models.authentication_log import AuthenticationLog
@@ -82,3 +83,124 @@ class ConditionalAccessSessionTestCase(MyTestCase):
         # Covers the callers that never run a request (pi-manage, scripts, periodic tasks), for which
         # call_finalizers() is never invoked.
         self.assertIn(close_ca_session, self.app.teardown_appcontext_funcs)
+
+
+class GuardedWriteTestCase(MyTestCase):
+
+    def setUp(self):
+        self._clear()
+
+    def tearDown(self):
+        close_ca_session()
+        self._clear()
+
+    @staticmethod
+    def _clear():
+        db.session.rollback()
+        db.session.execute(AuthenticationLog.__table__.delete())
+        db.session.commit()
+
+    @staticmethod
+    def _entry(username):
+        return AuthenticationLog(event_type=AuthEventType.LOGIN_SUCCESS, username=username)
+
+    def _stored_usernames(self):
+        return db.session.scalars(select(AuthenticationLog.username).order_by(AuthenticationLog.username)).all()
+
+    def test_01_commits_on_success(self):
+        with guarded_write("an authentication log entry") as outcome:
+            get_ca_session().add(self._entry("alice"))
+
+        self.assertTrue(outcome.succeeded)
+        self.assertIsNone(outcome.error)
+        self.assertListEqual(["alice"], self._stored_usernames())
+
+    def test_02_rolls_back_and_swallows_on_failure(self):
+        error = RuntimeError("write failed")
+        with guarded_write("an authentication log entry") as outcome:
+            get_ca_session().add(self._entry("alice"))
+            raise error
+
+        # error should be caught by the guarded write, hence we should reach here otherwise the test fail
+        self.assertFalse(outcome.succeeded)
+        self.assertIs(error, outcome.error)
+        self.assertListEqual([], self._stored_usernames())
+
+    def test_03_reraise_propagates_and_still_rolls_back(self):
+        with self.assertRaises(RuntimeError):
+            with guarded_write("an authentication log entry", reraise=True):
+                get_ca_session().add(self._entry("alice"))
+                raise RuntimeError("write failed")
+
+        self.assertListEqual([], self._stored_usernames())
+
+    def test_04_session_is_usable_after_a_failure(self):
+        with guarded_write("an authentication log entry"):
+            get_ca_session().add(self._entry("alice"))
+            raise RuntimeError("write failed")
+
+        # error should be caught by the guarded write, hence we should reach here otherwise the test fail
+        with guarded_write("an authentication log entry") as outcome:
+            get_ca_session().add(self._entry("bob"))
+
+        self.assertTrue(outcome.succeeded)
+        self.assertListEqual(["bob"], self._stored_usernames())
+
+    def test_05_commit_does_not_commit_pending_request_work(self):
+        # The whole point of the dedicated session: a conditional-access commit must not persist whatever else
+        # the request happens to have pending on db.session.
+        db.session.add(self._entry("pending-on-request-session"))
+
+        with guarded_write("an authentication log entry") as outcome:
+            get_ca_session().add(self._entry("alice"))
+
+        self.assertTrue(outcome.succeeded)
+        db.session.rollback()
+        self.assertListEqual(["alice"], self._stored_usernames())
+
+    def test_06_rollback_does_not_discard_pending_request_work(self):
+        # The mirror image: a failed conditional-access write must not roll back the request's own changes.
+        pending = self._entry("pending-on-request-session")
+        db.session.add(pending)
+
+        with guarded_write("an authentication log entry") as outcome:
+            get_ca_session().add(self._entry("alice"))
+            raise RuntimeError("write failed")
+
+        # error should be caught by the guarded write, hence we should reach here otherwise the test fail
+        self.assertFalse(outcome.succeeded)
+        self.assertIn(pending, db.session.new)
+        db.session.commit()
+        self.assertListEqual(["pending-on-request-session"], self._stored_usernames())
+
+    def test_07_write_lock_on_the_request_session_is_a_contained_failure(self):
+        # Two sessions means two connections. On SQLite, which locks the whole database for writing, a request
+        # session that has flushed without committing blocks the conditional-access write: it waits out the
+        # driver's lock timeout (5s by default) and then fails. The entry is lost, but the failure stays
+        # contained - it is swallowed, the request's own work survives, and the session remains usable.
+        # Callers must therefore release the request session before writing; see the next test.
+        pending = self._entry("flushed-on-request-session")
+        db.session.add(pending)
+        db.session.flush()
+
+        with guarded_write("an authentication log entry") as outcome:
+            get_ca_session().add(self._entry("alice"))
+
+        self.assertFalse(outcome.succeeded)
+        self.assertIsInstance(outcome.error, OperationalError)
+        db.session.commit()
+        self.assertListEqual(["flushed-on-request-session"], self._stored_usernames())
+
+    def test_08_commits_once_the_request_session_released_its_lock(self):
+        # The mitigation for the above: with the request session committed (or rolled back) first, there is no
+        # competing write lock and the conditional-access write goes through. This is why request teardown has to
+        # release db.session before flushing the conditional-access writes.
+        db.session.add(self._entry("flushed-on-request-session"))
+        db.session.flush()
+        db.session.commit()
+
+        with guarded_write("an authentication log entry") as outcome:
+            get_ca_session().add(self._entry("alice"))
+
+        self.assertTrue(outcome.succeeded)
+        self.assertListEqual(["alice", "flushed-on-request-session"], self._stored_usernames())

@@ -26,6 +26,9 @@ The session is bound to the very same engine as ``db.session`` -- same database,
 transaction is separate; nothing here implies (or supports) storing the conditional-access tables elsewhere.
 """
 import logging
+from collections.abc import Iterator
+from contextlib import contextmanager
+from dataclasses import dataclass
 
 from sqlalchemy.orm import Session
 
@@ -73,6 +76,57 @@ def close_ca_session(*_args) -> None:
     session = get_request_local_store().pop(_SESSION_KEY, None)
     if session is not None:
         session.close()
+
+
+@dataclass
+class WriteOutcome:
+    """
+    Result of a :func:`guarded_write` block: whether the writes were committed, and the exception that prevented it
+    otherwise. A caller that only needs "best effort" can ignore it entirely.
+    """
+    succeeded: bool = False
+    error: Exception | None = None
+
+
+@contextmanager
+def guarded_write(description: str, session: Session | None = None,
+                  reraise: bool = False) -> Iterator[WriteOutcome]:
+    """
+    Run a block of conditional-access writes as one transaction: commit it on success, roll it back on failure.
+
+    Failures are swallowed by default, because these writes happen while an authentication response is in flight and
+    must never break it -- a lost log entry or lockout row is bad, a failed authentication is worse. The session is
+    left usable either way, so the rest of the request (and the audit entry it still has to write) is unaffected.
+
+    Wrap **one** write per block, not a whole group of them: committing each separately means only one row lock is
+    ever held at a time. A block that locked a ``UserLockoutState`` row and a ``BlockList`` row together (as one
+    triggered stage can) would let two concurrent requests acquire them in opposite order and deadlock on InnoDB.
+
+    Note the caller must not hold a flushed-but-uncommitted write on ``db.session`` when this runs: on SQLite, which
+    locks the whole database for writing, the commit then waits out the driver's lock timeout and fails (see
+    ``GuardedWriteTestCase.test_07``). Reads on ``db.session`` are harmless.
+
+    :param description: what is being written, as a noun phrase for the log message, e.g.
+        ``f"the user lockout state for {user!r}"``
+    :param session: the session to write on; defaults to the conditional-access session
+    :param reraise: propagate the failure after rolling back. For management and CLI paths, where an admin is
+        waiting for the outcome and a silent failure would be indistinguishable from "nothing matched".
+    """
+    session = session or get_ca_session()
+    outcome = WriteOutcome()
+    try:
+        yield outcome
+        session.commit()
+        outcome.succeeded = True
+    except Exception as ex:
+        outcome.error = ex
+        log.warning(f"Failed to write {description}: {ex!r}")
+        try:
+            session.rollback()
+        except Exception as rollback_error:
+            log.warning(f"Rolling back the failed write of {description} failed as well: {rollback_error!r}")
+        if reraise:
+            raise
 
 
 def init_ca_session(app) -> None:
