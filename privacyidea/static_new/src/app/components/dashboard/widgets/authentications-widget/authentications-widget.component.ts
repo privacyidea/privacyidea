@@ -68,6 +68,10 @@ export class AuthenticationsWidgetComponent extends DashboardWidget implements O
 
   private readonly dataRef = signal<DashboardDataRef<AuthenticationResponses> | null>(null);
   override readonly partialLoading = computed(() => this.dataRef()?.revalidating() ?? false);
+  override readonly refreshFailed = computed(() => {
+    const ref = this.dataRef();
+    return !!ref && ref.error() && ref.value() !== undefined;
+  });
 
   readonly counts = computed<AuthenticationCounts>(() => {
     const results = this.dataRef()?.value();
@@ -88,18 +92,15 @@ export class AuthenticationsWidgetComponent extends DashboardWidget implements O
         return;
       }
       const value = ref.value();
-      if (value !== undefined) {
-        this.state.set(Object.values(value).every((response) => response.result?.status === true) ? "ready" : "error");
-      } else if (ref.error()) {
-        this.state.set("error");
-      } else {
-        this.state.set("loading");
+      if (value === undefined) {
+        this.state.set(ref.error() ? "error" : "loading");
+        return;
       }
+      this.state.set(Object.values(value).every((response) => response.result?.status === true) ? "ready" : "error");
     });
   }
 
   override reload(): void {
-    this.store.invalidate("dashboard:authentications");
     this.ngOnInit();
   }
 

@@ -109,14 +109,14 @@ describe("ClientsComponent", () => {
     expect(result.comment).toBe("Keycloak/25.0.1");
   });
 
-  it("should call auditService.auditFilter.set with correct IP filter", () => {
-    const spy = jest.spyOn(component.auditService.auditFilter, "set");
+  it("should call auditService.activeFilter.set with correct IP filter", () => {
+    const spy = jest.spyOn(component.auditService.activeFilter, "set");
     component.showInAuditLog("ip", "1.2.3.4");
     expect(spy).toHaveBeenCalledWith(new FilterValue({ value: "client: 1.2.3.4" }));
   });
 
-  it("should call auditService.auditFilter.set with correct user agent filter", () => {
-    const spy = jest.spyOn(component.auditService.auditFilter, "set");
+  it("should call auditService.activeFilter.set with correct user agent filter", () => {
+    const spy = jest.spyOn(component.auditService.activeFilter, "set");
     component.showInAuditLog("application", "privacyIDEA-Keycloak/1.5.1 Keycloak/25.0.1");
     expect(spy).toHaveBeenCalledWith(
       new FilterValue({
@@ -125,8 +125,8 @@ describe("ClientsComponent", () => {
     );
   });
 
-  it("should not set auditFilter for not covered columns", () => {
-    const spy = jest.spyOn(component.auditService.auditFilter, "set");
+  it("should not set activeFilter for not covered columns", () => {
+    const spy = jest.spyOn(component.auditService.activeFilter, "set");
     component.showInAuditLog("hostname", "host");
     expect(spy).not.toHaveBeenCalled();
   });

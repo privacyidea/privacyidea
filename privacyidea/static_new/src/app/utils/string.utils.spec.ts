@@ -30,6 +30,26 @@ describe("StringUtils", () => {
     expect(result).toBe("Token with serial 1234 successfully enrolled for user alice.");
   });
 
+  describe("splitFilterList", () => {
+    it("should split a comma-separated value into trimmed entries", () => {
+      expect(StringUtils.splitFilterList("hotp, totp ,push")).toEqual(["hotp", "totp", "push"]);
+    });
+
+    it("should return a single entry for a value without a comma", () => {
+      expect(StringUtils.splitFilterList("hotp")).toEqual(["hotp"]);
+    });
+
+    it("should drop empty and asterisk-only entries", () => {
+      expect(StringUtils.splitFilterList("hotp,,  ,*,***,totp")).toEqual(["hotp", "totp"]);
+    });
+
+    it("should return an empty array for empty, null or undefined input", () => {
+      expect(StringUtils.splitFilterList("")).toEqual([]);
+      expect(StringUtils.splitFilterList(null)).toEqual([]);
+      expect(StringUtils.splitFilterList(undefined)).toEqual([]);
+    });
+  });
+
   describe("splitOnce", () => {
     it("should split at the first occurrence of the delimiter", () => {
       const result = StringUtils.splitOnce("foo:bar:baz", ":");

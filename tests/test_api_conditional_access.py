@@ -108,22 +108,23 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
 
     @staticmethod
     def _make_lock_policy(*, counter_type, threshold: int, duration: int, window: int = 3600,
-                          dry_run: bool = False) -> None:
+                          dry_run: bool = False, priority: int = 1) -> None:
         create_lockout_policy(
             name="ca_lock", time_window_seconds=window,
             counter_types_to_track=_counter_types(counter_type),
             stages=[{"failure_threshold": threshold, "priority": 1,
                      "actions": [{"action_type": str(LockoutAction.LOCK_USER), "action_value": duration}]}],
-            target=LockoutTarget.USER, dry_run=dry_run)
+            target=LockoutTarget.USER, dry_run=dry_run, priority=priority)
 
     @staticmethod
-    def _make_block_ip_policy(*, counter_type, threshold: int, duration: int, window: int = 3600) -> None:
+    def _make_block_ip_policy(*, counter_type, threshold: int, duration: int, window: int = 3600,
+                              priority: int = 1) -> None:
         create_lockout_policy(
             name="ca_blockip", time_window_seconds=window,
             counter_types_to_track=_counter_types(counter_type),
             stages=[{"failure_threshold": threshold, "priority": 1,
                      "actions": [{"action_type": str(LockoutAction.BLOCK_IP), "action_value": duration}]}],
-            target=LockoutTarget.SOURCE_IP)
+            target=LockoutTarget.SOURCE_IP, priority=priority)
 
     @staticmethod
     def _make_decision_policy(*, name: str, counter_type, threshold: int, action,
@@ -233,8 +234,8 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         # users) are set so cornelius's single failing request - as the third distinct
         # user on the pre-sprayed IP - trips BOTH at once.
         ip = "203.0.113.9"
-        self._make_lock_policy(counter_type=AuthEventType.MFA_FAIL, threshold=1, duration=600)
-        self._make_block_ip_policy(counter_type=AuthEventType.MFA_FAIL, threshold=3, duration=900)
+        self._make_lock_policy(counter_type=AuthEventType.MFA_FAIL, threshold=1, duration=600, priority=1)
+        self._make_block_ip_policy(counter_type=AuthEventType.MFA_FAIL, threshold=3, duration=900, priority=2)
         _seed_ip_spray(self.user, AuthEventType.MFA_FAIL, ip, n_users=2)
         with self.assertNoLogs("privacyidea.api.lib.utils", level="WARNING"):
             body = self._check({"user": "cornelius", "pass": "pin000000"}, remote_addr=ip)
@@ -482,8 +483,8 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         # lock never engages. Intentional: the stateless DENY self-heals as the
         # failures age out of its window, whereas the lock would persist.
         self._make_decision_policy(name="ca_deny", counter_type=AuthEventType.MFA_FAIL,
-                                   threshold=3, action=LockoutAction.DENY)
-        self._make_lock_policy(counter_type=AuthEventType.MFA_FAIL, threshold=5, duration=600)
+                                   threshold=3, action=LockoutAction.DENY, priority=1)
+        self._make_lock_policy(counter_type=AuthEventType.MFA_FAIL, threshold=5, duration=600, priority=2)
 
         for _ in range(3):
             body = self._check({"user": "cornelius", "pass": "pin000000"})
@@ -650,22 +651,22 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
             return self.app.full_dispatch_request()
 
     @staticmethod
-    def _make_password_policy(*, threshold, duration=600, window=3600):
+    def _make_password_policy(*, threshold, duration=600, window=3600, priority=1):
         create_lockout_policy(
             name="ca_pw", time_window_seconds=window,
             counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
             stages=[{"failure_threshold": threshold, "priority": 1,
                      "actions": [{"action_type": str(LockoutAction.LOCK_USER), "action_value": duration}]}],
-            target=LockoutTarget.USER)
+            target=LockoutTarget.USER, priority=priority)
 
     @staticmethod
-    def _make_dry_run_password_policy(*, threshold, duration=600, window=3600):
+    def _make_dry_run_password_policy(*, threshold, duration=600, window=3600, priority=1):
         create_lockout_policy(
             name="ca_pw_dry", time_window_seconds=window,
             counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
             stages=[{"failure_threshold": threshold, "priority": 1,
                      "actions": [{"action_type": str(LockoutAction.LOCK_USER), "action_value": duration}]}],
-            target=LockoutTarget.USER, dry_run=True)
+            target=LockoutTarget.USER, dry_run=True, priority=priority)
 
     def test_dry_run_finding_persisted_on_auth_login(self):
         # /auth calls the engine directly rather than through conditional_access_posteval, so it
@@ -702,13 +703,13 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
             target=LockoutTarget.USER, priority=priority)
 
     @staticmethod
-    def _make_block_ip_policy(*, threshold, duration=600, window=3600):
+    def _make_block_ip_policy(*, threshold, duration=600, window=3600, priority=1):
         create_lockout_policy(
             name="ca_block_ip", time_window_seconds=window,
             counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
             stages=[{"failure_threshold": threshold, "priority": 1,
                      "actions": [{"action_type": str(LockoutAction.BLOCK_IP), "action_value": duration}]}],
-            target=LockoutTarget.SOURCE_IP)
+            target=LockoutTarget.SOURCE_IP, priority=priority)
 
     def test_locked_user_rejected_at_auth(self):
         db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
@@ -955,7 +956,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
                                       "action_value": {"smtp_identifier": "lockoutmail",
                                                        "recipient_group": "soc@example.com",
                                                        "subject": "alert", "body": "alert"}}]}],
-                target=LockoutTarget.USER)
+                target=LockoutTarget.USER, priority=1)
 
             # 1st failure is below the threshold: plain rejection, no email, no notice.
             res = self._auth("cornelius", "wrongpass")
@@ -990,7 +991,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
                                       "action_value": {"smtp_identifier": "lockoutmail",
                                                        "recipient_group": "soc@example.com",
                                                        "subject": "s", "body": "b"}}]}],
-                target=LockoutTarget.USER)
+                target=LockoutTarget.USER, priority=1)
 
             self._auth("cornelius", "wrongpass")  # 1st failure: below the threshold
             res = self._auth("cornelius", "wrongpass")  # 2nd: trips the stage -> lock + email

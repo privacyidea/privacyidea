@@ -34,7 +34,7 @@ import { MachineService, MachineServiceInterface } from "@services/machine/machi
 export class TokenApplicationsActionsComponent {
   protected readonly machineService: MachineServiceInterface = inject(MachineService);
 
-  readonly advancedApiFilter = this.machineService.advancedApiFilter;
+  readonly advancedApiFilterKeys = this.machineService.advancedApiFilterKeys;
 
   onAdvancedFilterClick(filterKeyword: string): void {
     this.machineService.toggleFilter(filterKeyword);

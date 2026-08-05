@@ -219,7 +219,7 @@ $button-low-contrast-variant: linear-gradient(
   cursor: pointer;
   border-radius: 50%;
   background-color: transparent;
-  color: var(--mat-sys-on-surface-variant);
+  color: var(--mat-sys-on-surface);
   box-shadow: none !important;
   transition: background-color 0.2s ease-in-out;
 
@@ -229,7 +229,7 @@ $button-low-contrast-variant: linear-gradient(
 }
 
 .logout-btn {
-  color: var(--mat-sys-on-surface-variant);
+  color: var(--mat-sys-on-surface);
   background-color: transparent;
   transition: background-color 0.2s ease-in-out;
 
@@ -464,7 +464,12 @@ $button-low-contrast-variant: linear-gradient(
   }
 }
 
-.sort-button {
+// Compact icon buttons that sit inline with table text (column sorting, the
+// conditional-access priority arrows). The touch target is pinned to the visible
+// 24px box: Material's default 48px target would overhang the neighbouring cell
+// content and pull the ripple/hover layer out of line with the icon.
+.sort-button,
+.reorder-button {
   top: 0;
   right: 2px;
   height: 24px;

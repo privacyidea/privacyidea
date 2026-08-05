@@ -366,7 +366,7 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
   }
 
   public showUserAuditLog() {
-    this.auditService.auditFilter.set(new FilterValue({ value: `user: ${this.userService.detailsUser().username}` }));
+    this.auditService.setFilter(new FilterValue({ value: `user: ${this.userService.detailsUser().username}` }));
   }
 
   public showUserAuthenticationLog() {

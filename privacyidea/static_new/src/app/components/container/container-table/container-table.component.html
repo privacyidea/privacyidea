@@ -29,13 +29,13 @@
         <mat-label i18n>Filter Containers...</mat-label>
         <app-clearable-input
           (clearButtonClick)="containerService.clearFilter()"
-          [showClearButton]="containerService.containerFilter().isNotEmpty">
+          [showClearButton]="containerService.filterDraft().isNotEmpty">
           <input
             #filterHTMLInputElement
             [appFilterAutocomplete]="filterKeywords"
             (input)="onFilterInput($event)"
-            (keyup.enter)="containerService.handleFilterInput($event)"
-            [value]="containerService.containerFilter().filterString"
+            (keyup.enter)="containerService.applyFilterInput($event)"
+            [value]="containerService.filterDraft().filterString"
             aria-label="Filter Input"
             i18n-aria-label
             i18n-placeholder
@@ -103,7 +103,7 @@
                   {{ column.label }}
                   <div class="margin-left-16 flex">
                     @if (
-                      apiFilterKeyMap[column.key] && containerService.apiFilter.includes(apiFilterKeyMap[column.key])
+                      apiFilterKeyMap[column.key] && containerService.apiFilterKeys.includes(apiFilterKeyMap[column.key])
                     ) {
                       @if (apiFilterKeyMap[column.key] === "type") {
                         <button
@@ -323,7 +323,7 @@
 <mat-menu
   #advancedFilterMenu="matMenu"
   class="button-width-m">
-  @for (keyword of advancedApiFilter; track keyword) {
+  @for (keyword of advancedApiFilterKeys; track keyword) {
     <button
       (click)="onKeywordClick(keyword)"
       mat-menu-item>

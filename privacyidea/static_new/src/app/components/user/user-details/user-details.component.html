@@ -337,13 +337,13 @@
           <mat-label i18n>Assign Token to User</mat-label>
           <app-clearable-input
             (clearButtonClick)="tokenService.clearFilter()"
-            [showClearButton]="tokenService.tokenFilter().isNotEmpty">
+            [showClearButton]="tokenService.filterDraft().isNotEmpty">
             <input
               #filterHTMLInputElement
               #tokenAutoTrigger="matAutocompleteTrigger"
               (input)="tokenService.handleFilterInput($event)"
               [matAutocomplete]="tokenAuto"
-              [value]="tokenService.tokenFilter().filterString"
+              [value]="tokenService.filterDraft().filterString"
               i18n-placeholder
               matInput
               placeholder="Example query: 'type: hotp serial: 123'" />

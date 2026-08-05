@@ -560,24 +560,26 @@ class PolicyClass:
                 pinode, [p.get('name') for p in reduced_policies]))
 
         # Match the user agent
-        new_policies = []
-        for policy in reduced_policies:
-            policy_matches = False
-            # The policy either matches if it has no user agents defined or if the user agent is contained in the list
-            if not policy.get("user_agents"):
-                # If no user agent is defined, we match this policy
-                policy_matches = True
-            elif user_agent:
-                policy_agents = [agent.lower() for agent in policy.get("user_agents") if agent]
-                if user_agent.lower() in policy_agents:
+        if user_agent is not None:
+            new_policies = []
+            for policy in reduced_policies:
+                policy_matches = False
+                # The policy either matches if it has no user agents defined
+                # or if the user agent is contained in the list
+                if not policy.get("user_agents"):
+                    # If no user agent is defined, we match this policy
                     policy_matches = True
+                elif user_agent:
+                    policy_agents = [agent.lower() for agent in policy.get("user_agents") if agent]
+                    if user_agent.lower() in policy_agents:
+                        policy_matches = True
 
-            if policy_matches:
-                new_policies.append(policy)
+                if policy_matches:
+                    new_policies.append(policy)
 
-        reduced_policies = new_policies
-        log.debug("Policies after matching the user_agent={!s}: {!s}".format(
-            user_agent, [p.get('name') for p in reduced_policies]))
+            reduced_policies = new_policies
+            log.debug("Policies after matching the user_agent={!s}: {!s}".format(
+                user_agent, [p.get('name') for p in reduced_policies]))
 
         # Match the client IP.
         # Client IPs may be direct match, may be located in subnets or may
@@ -1444,6 +1446,9 @@ def set_policy(name: str | None = None, scope: str | None = None, action: str | 
         # Remove None or empty values
         user_agents = [user_agent for user_agent in user_agents if user_agent]
         user_agents = ", ".join(user_agents)
+    if isinstance(user_agents, str):
+        # Remove empty or whitespace-only entries from a comma-separated string
+        user_agents = ", ".join([ua.strip() for ua in user_agents.split(",") if ua.strip()])
     # Evaluate condition parameter and convert tuple into PolicyConditionClass object
     conditions_data = []
     if conditions is not None:
@@ -3322,6 +3327,15 @@ class Match:
 
     def __init__(self, g, **kwargs):
         self._g = g
+        # In a policy-matching context the user_agent must always be a string
+        # so that list_policies applies the user-agent filter.  The classmethods
+        # pass g.get("user_agent") which may be None when the attribute was
+        # never set (e.g. outside a request context).  Coerce None to "" so
+        # that only generic (no-UA) policies match in that case; callers that
+        # truly want *no* filtering (e.g. config export) invoke list_policies
+        # directly with user_agent=None.
+        if kwargs.get("user_agent") is None:
+            kwargs["user_agent"] = ""
         self._match_kwargs = kwargs
         self.pinode = get_privacyidea_node()
 
