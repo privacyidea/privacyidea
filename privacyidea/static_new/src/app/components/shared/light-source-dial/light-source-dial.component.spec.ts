@@ -24,6 +24,8 @@ describe("LightSourceDialComponent", () => {
   let fixture: ComponentFixture<LightSourceDialComponent>;
   let component: LightSourceDialComponent;
 
+  const host = (): HTMLElement => fixture.nativeElement;
+
   const items: LightSourceDialItem[] = [
     { slot: 1, value: "a", label: "Item A" },
     { slot: 5, value: "b", label: "Item B" },
@@ -48,22 +50,22 @@ describe("LightSourceDialComponent", () => {
   });
 
   it("should render one radio per item, in a single native group", () => {
-    const radios = fixture.nativeElement.querySelectorAll<HTMLInputElement>(".dial__slot input");
+    const radios = host().querySelectorAll<HTMLInputElement>(".dial__slot input");
 
     expect(radios).toHaveLength(items.length);
-    expect([...radios].every((radio) => radio.name === "light-source-dial")).toBe(true);
+    expect(Array.from(radios).every((radio) => radio.name === "light-source-dial")).toBe(true);
   });
 
   it("should honor a custom group name", () => {
     fixture.componentRef.setInput("groupName", "appearance-preset");
     fixture.detectChanges();
 
-    const radios = fixture.nativeElement.querySelectorAll<HTMLInputElement>(".dial__slot input");
-    expect([...radios].every((radio) => radio.name === "appearance-preset")).toBe(true);
+    const radios = host().querySelectorAll<HTMLInputElement>(".dial__slot input");
+    expect(Array.from(radios).every((radio) => radio.name === "appearance-preset")).toBe(true);
   });
 
   it("should place each slot at its stop's angle", () => {
-    const slots = fixture.nativeElement.querySelectorAll<HTMLElement>(".dial__slot");
+    const slots = host().querySelectorAll<HTMLElement>(".dial__slot");
 
     expect(slots[0].className).toContain("dial__slot--1");
     expect(slots[1].className).toContain("dial__slot--5");
@@ -74,7 +76,7 @@ describe("LightSourceDialComponent", () => {
     fixture.componentRef.setInput("selected", "b");
     fixture.detectChanges();
 
-    const checked = [...fixture.nativeElement.querySelectorAll<HTMLInputElement>(".dial__slot input")].filter(
+    const checked = Array.from(host().querySelectorAll<HTMLInputElement>(".dial__slot input")).filter(
       (radio) => radio.checked
     );
 
@@ -86,7 +88,7 @@ describe("LightSourceDialComponent", () => {
     fixture.componentRef.setInput("selected", "does-not-exist");
     fixture.detectChanges();
 
-    const checked = [...fixture.nativeElement.querySelectorAll<HTMLInputElement>(".dial__slot input")].filter(
+    const checked = Array.from(host().querySelectorAll<HTMLInputElement>(".dial__slot input")).filter(
       (radio) => radio.checked
     );
 
@@ -97,7 +99,7 @@ describe("LightSourceDialComponent", () => {
     const values: string[] = [];
     component.pick.subscribe((value) => values.push(value));
 
-    const radios = fixture.nativeElement.querySelectorAll<HTMLInputElement>(".dial__slot input");
+    const radios = host().querySelectorAll<HTMLInputElement>(".dial__slot input");
     radios[2].checked = true;
     radios[2].dispatchEvent(new Event("change"));
 
@@ -105,7 +107,7 @@ describe("LightSourceDialComponent", () => {
   });
 
   it("should use each item's label as its tooltip and accessible text", () => {
-    const labels = fixture.nativeElement.querySelectorAll<HTMLElement>(".dial__hidden-text");
+    const labels = host().querySelectorAll<HTMLElement>(".dial__hidden-text");
     // First hidden-text node is the legend; the rest are one per slot.
     expect(labels[1].textContent?.trim()).toBe("Item A");
     expect(labels[2].textContent?.trim()).toBe("Item B");

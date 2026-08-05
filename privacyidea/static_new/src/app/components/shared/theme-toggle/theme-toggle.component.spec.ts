@@ -26,7 +26,10 @@ describe("ThemeToggleComponent", () => {
   let component: ThemeToggleComponent;
   let themeService: { visualTheme: ReturnType<typeof signal<"light" | "dark">>; setTheme: jest.Mock };
 
-  const input = (): HTMLInputElement => fixture.nativeElement.querySelector<HTMLInputElement>(".theme-toggle input");
+  const host = (): HTMLElement => fixture.nativeElement;
+
+  const input = (): HTMLInputElement =>
+    host().querySelector<HTMLInputElement>(".theme-toggle input") as HTMLInputElement;
 
   beforeEach(async () => {
     themeService = { visualTheme: signal<"light" | "dark">("light"), setTheme: jest.fn() };
@@ -47,7 +50,7 @@ describe("ThemeToggleComponent", () => {
 
   it("should show the light icon and read as unchecked in light mode", () => {
     expect(input().checked).toBe(false);
-    expect(fixture.nativeElement.textContent).toContain("light_mode");
+    expect(host().textContent).toContain("light_mode");
   });
 
   it("should press in and show the dark icon once dark mode is in effect", () => {
@@ -55,7 +58,7 @@ describe("ThemeToggleComponent", () => {
     fixture.detectChanges();
 
     expect(input().checked).toBe(true);
-    expect(fixture.nativeElement.textContent).toContain("dark_mode");
+    expect(host().textContent).toContain("dark_mode");
   });
 
   it("should switch to dark from light", () => {

@@ -46,6 +46,8 @@ describe("UISettingsComponent", () => {
     setCorners: jest.Mock;
   };
 
+  const host = (): HTMLElement => fixture.nativeElement;
+
   interface TestableSettings {
     preferredLocale: () => string;
     selectLocale: (code: string) => void;
@@ -95,7 +97,7 @@ describe("UISettingsComponent", () => {
 
   // Toggling is covered by ThemeToggleComponent's own spec.
   it("should offer the shared theme knob", () => {
-    expect(fixture.nativeElement.querySelector("app-theme-toggle .theme-toggle input")).toBeTruthy();
+    expect(host().querySelector("app-theme-toggle .theme-toggle input")).toBeTruthy();
   });
 
   it("should reset every UI setting to its default", () => {
@@ -124,14 +126,14 @@ describe("UISettingsComponent", () => {
   // The dial's own rendering is covered by LightSourceDialComponent's spec; this checks the
   // wiring into it.
   it("should hand the dial one item per light-source stop, keyed by the current value", () => {
-    const radios = fixture.nativeElement.querySelectorAll<HTMLInputElement>(".dial__slot input");
+    const radios = host().querySelectorAll<HTMLInputElement>(".dial__slot input");
 
     expect(radios).toHaveLength(LIGHT_SOURCE_LEVELS.length);
-    expect([...radios].filter((radio) => radio.checked)).toHaveLength(1);
+    expect(Array.from(radios).filter((radio) => radio.checked)).toHaveLength(1);
   });
 
   it("should apply the light source turned to on the dial", () => {
-    const radios = fixture.nativeElement.querySelectorAll<HTMLInputElement>(".dial__slot input");
+    const radios = host().querySelectorAll<HTMLInputElement>(".dial__slot input");
 
     radios[2].checked = true;
     radios[2].dispatchEvent(new Event("change"));

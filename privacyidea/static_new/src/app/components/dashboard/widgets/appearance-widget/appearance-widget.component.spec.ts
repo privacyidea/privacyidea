@@ -44,6 +44,8 @@ describe("AppearanceWidgetComponent", () => {
   };
   let themeService: { visualTheme: ReturnType<typeof signal<"light" | "dark">>; setTheme: jest.Mock };
 
+  const host = (): HTMLElement => fixture.nativeElement;
+
   const instance: WidgetInstance = { id: "appearance-1", type: "appearance", x: 0, y: 0, cols: 6, rows: 6 };
 
   beforeEach(async () => {
@@ -102,7 +104,7 @@ describe("AppearanceWidgetComponent", () => {
   });
 
   it("should offer exactly one preset per light-source stop", () => {
-    const radios = fixture.nativeElement.querySelectorAll<HTMLInputElement>(".dial__slot input");
+    const radios = host().querySelectorAll<HTMLInputElement>(".dial__slot input");
     expect(radios).toHaveLength(LIGHT_SOURCE_LEVELS.length);
   });
 
@@ -112,7 +114,7 @@ describe("AppearanceWidgetComponent", () => {
     appearanceService.lightSource.set(DEFAULT_LIGHT_SOURCE);
     fixture.detectChanges();
 
-    const checked = [...fixture.nativeElement.querySelectorAll<HTMLInputElement>(".dial__slot input")].filter(
+    const checked = Array.from(host().querySelectorAll<HTMLInputElement>(".dial__slot input")).filter(
       (radio) => radio.checked
     );
     expect(checked).toHaveLength(1);
@@ -124,7 +126,7 @@ describe("AppearanceWidgetComponent", () => {
     appearanceService.corners.set("square");
     fixture.detectChanges();
 
-    const checked = [...fixture.nativeElement.querySelectorAll<HTMLInputElement>(".dial__slot input")].filter(
+    const checked = Array.from(host().querySelectorAll<HTMLInputElement>(".dial__slot input")).filter(
       (radio) => radio.checked
     );
     expect(checked).toHaveLength(0);
@@ -133,7 +135,7 @@ describe("AppearanceWidgetComponent", () => {
   it("should apply the preset's depth, corners and light source together on selection", () => {
     // First in generation order is flat depth with square corners, seven stops before the
     // default light source.
-    const radios = fixture.nativeElement.querySelectorAll<HTMLInputElement>(".dial__slot input");
+    const radios = host().querySelectorAll<HTMLInputElement>(".dial__slot input");
 
     radios[0].checked = true;
     radios[0].dispatchEvent(new Event("change"));
@@ -149,20 +151,20 @@ describe("AppearanceWidgetComponent", () => {
     appearanceService.lightSource.set(DEFAULT_LIGHT_SOURCE);
     fixture.detectChanges();
 
-    const checked = fixture.nativeElement.querySelector<HTMLInputElement>(".dial__slot input:checked");
+    const checked = host().querySelector<HTMLInputElement>(".dial__slot input:checked");
 
     expect(checked?.closest(".dial__slot")?.className).toContain(`dial__slot--${DEFAULT_LIGHT_SOURCE}`);
   });
 
   // The knob's own behaviour is covered by ThemeToggleComponent's spec; this checks it is there.
   it("should offer the shared theme knob next to the dial", () => {
-    expect(fixture.nativeElement.querySelector("app-theme-toggle .theme-toggle input")).toBeTruthy();
+    expect(host().querySelector("app-theme-toggle .theme-toggle input")).toBeTruthy();
   });
 
   it("should reset the appearance and the theme, and nothing else", () => {
-    const reset = fixture.nativeElement.querySelector<HTMLButtonElement>("button");
+    const reset = host().querySelector<HTMLButtonElement>("button");
 
-    reset.click();
+    reset?.click();
 
     expect(appearanceService.resetToDefaults).toHaveBeenCalled();
     expect(themeService.setTheme).toHaveBeenCalledWith("light");
@@ -177,7 +179,7 @@ describe("AppearanceWidgetComponent", () => {
       appearanceService.corners.set(corner);
       fixture.detectChanges();
 
-      const checked = [...fixture.nativeElement.querySelectorAll<HTMLInputElement>(".dial__slot input")].filter(
+      const checked = Array.from(host().querySelectorAll<HTMLInputElement>(".dial__slot input")).filter(
         (radio) => radio.checked
       );
       expect(checked).toHaveLength(0);
