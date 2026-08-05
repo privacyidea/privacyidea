@@ -19,13 +19,6 @@ $margin-left-small: 10px;
 $padding-top-small: 8px;
 $description-width: 18rem;
 
-@mixin table-container-styles {
-  padding: var(--global-padding);
-  border-radius: var(--border-radius);
-  box-shadow: var(--elevation-5);
-  background-color: var(--table-color);
-}
-
 // Striped key/value Material table used inside the token and container detail
 // cards, so both render identical rows.
 @mixin details-key-value-table {
@@ -521,8 +514,15 @@ th:nth-child(even) {
   }
 }
 
-.details-card-title {
-  margin: 0 0 4px;
+// Every card title, in one place: the .details-card-title class where a component sets it,
+// and the bare headings of a table header that sits inside a card, which are card titles too
+// -- without this they fall back to the browser's em-based h3/h4 margins, which read as a gap
+// the size of the title. Scoped by app-details-card so the page-level .details-header, which
+// is a page heading rather than a card title, keeps its own spacing.
+.details-card-title,
+app-details-card .details-header h3,
+app-details-card .details-header h4 {
+  margin: var(--half-global-padding);
 }
 
 .details-cards-column {
@@ -597,7 +597,8 @@ th:nth-child(even) {
     padding-left: 16px !important;
   }
 
-  .details-table .mat-mdc-form-field:not(.height-77):not(.height-115):not(.height-126):not(.height-136):not(.height-137) {
+  .details-table
+    .mat-mdc-form-field:not(.height-77):not(.height-115):not(.height-126):not(.height-136):not(.height-137) {
     --mat-form-field-container-height: 52px;
     --mat-form-field-container-vertical-padding: 8px;
   }

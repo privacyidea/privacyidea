@@ -72,16 +72,16 @@ $edit-grid-layout: 60px 1.2fr 2fr 1.2fr 2fr 1.2fr 60px;
   gap: 12px;
 }
 
+// A card inside the conditions card, so one step deeper than it, at the s step of the card
+// scale so these line up with the cards on the rest of the pages.
 .readonly-condition-item {
-  background-color: var(--mat-sys-surface-container-low);
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: 8px;
+  @include styles.card-recessed(5);
   display: flex;
-  flex: 1 1 350px;
+  flex: 1 1 var(--card-width-s);
   flex-direction: column;
   gap: 8px;
   max-width: 100%;
-  min-width: 350px;
+  min-width: var(--card-width-s);
   padding: 10px 12px;
 }
 

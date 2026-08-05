@@ -1,10 +1,7 @@
 @use "cards";
 
-.expansion-panel {
-  box-shadow: var(--box-shadow) !important;
-}
-
-// A well inside a raised page container, so it is sunk into it rather than outlined.
+// The content group inside an expansion panel: the panel is a raised surface, so the group
+// standing in it is sunk into it at the shallow step, like a group on a page container.
 .expansion-well {
   @include cards.card-recessed(3);
   padding: 16px;
@@ -18,9 +15,11 @@
   padding: var(--expansion-panel-header-padding, 0 24px);
 }
 
+// An expansion panel floats over the page it opens on rather than sitting in it, so it is
+// raised at the shallow step -- the same lift a sticky header takes. Its content is the part
+// that recesses (see .expansion-well above and cards.scss for the ladder).
 .mat-expansion-panel {
-  background: var(--mat-expansion-container-background-color, var(--mat-sys-surface-container-low));
-  border: var(--expansion-panel-border);
+  @include cards.card-raised(3);
   --mat-expansion-container-shape: var(--border-radius);
 }
 

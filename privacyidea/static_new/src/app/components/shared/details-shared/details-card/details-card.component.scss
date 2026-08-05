@@ -43,10 +43,6 @@
   }
 }
 
-.details-card-title {
-  margin: 0 0 var(--quarter-global-padding);
-}
-
 .details-card-toggle {
   display: flex;
   align-items: center;
@@ -58,10 +54,6 @@
   cursor: pointer;
   color: inherit;
   font: inherit;
-
-  .details-card-title {
-    margin: 0;
-  }
 
   &:disabled {
     cursor: default;

@@ -2,13 +2,10 @@
 @use "table";
 
 .application-table-container {
-  @include table.table-container-styles;
+  // A group inside the token-applications page container, so it is sunk into it rather than
+  // raised again like a page container of its own.
+  @include styles.card-recessed(3);
   @include table.base-table-structure(".token-table", ".token-table-filter", ".table-scroll-container");
-
-  & {
-    padding: unset;
-    box-shadow: unset;
-  }
 
   .application-table-filter {
     width: 32.7rem;

@@ -60,11 +60,11 @@
   }
 }
 
+// The parameter table is a group on the page, so it is sunk into it.
 .table-wrapper {
+  @include styles.card-recessed(3);
   margin-top: 8px;
   overflow: auto;
-  border: 1px solid var(--mat-sys-outline-variant);
-  background-color: var(--mat-sys-surface-container);
 }
 
 .actions-cell {

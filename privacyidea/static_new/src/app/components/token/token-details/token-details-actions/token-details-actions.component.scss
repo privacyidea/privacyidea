@@ -12,10 +12,10 @@
   flex: 0 0 100%;
 }
 
-// The action panels sit inside recessed details cards, so they are the raised half of the
-// pair, one step shallower than the container they stand in.
+// The action panels are grid items of the details grid, so they sit on the page next to the
+// details cards rather than inside them: same level, same shallow recess.
 .actions-status-row {
-  @include styles.card-raised(3);
+  @include styles.card-recessed(3);
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
@@ -51,7 +51,7 @@
 .test-sync-section {
   app-resync-token-action,
   app-test-otp-pin-action {
-    @include styles.card-raised(3);
+    @include styles.card-recessed(3);
     display: flex;
     flex-direction: column;
     align-items: stretch;
@@ -81,7 +81,7 @@
 }
 
 .passkey-test-panel {
-  @include styles.card-raised(3);
+  @include styles.card-recessed(3);
   display: flex;
   flex-direction: column;
   align-items: flex-start;

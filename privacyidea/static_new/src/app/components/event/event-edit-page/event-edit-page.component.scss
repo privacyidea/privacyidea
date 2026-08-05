@@ -24,10 +24,6 @@
   gap: var(--global-gap);
 }
 
-.edit-event-handler-container .sticky-header.is-sticky {
-  box-shadow: var(--elevation-8) !important;
-}
-
 .action-buttons {
   display: grid;
   grid-template-columns: auto 1fr 1fr;

@@ -62,9 +62,9 @@ tr.example-detail-row td {
   margin-top: 16px;
 }
 
-// A chip standing on the table surface, so it is the raised half of the pair.
+// A group of token facts standing on the page container, so it takes the shallow recess.
 .token-item {
-  @include styles.card-raised(3);
+  @include styles.card-recessed(3);
   display: flex;
   flex-direction: row;
   align-items: center;

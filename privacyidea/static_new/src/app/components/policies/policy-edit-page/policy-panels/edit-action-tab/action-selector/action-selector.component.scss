@@ -1,3 +1,5 @@
+// Transparent: the expansion panels it holds are the cards, so a surface here would put a
+// second one behind them at the same level.
 .action-selector-container {
   display: flex;
   flex-direction: column;
@@ -5,9 +7,11 @@
   background-color: transparent;
   box-shadow: none;
   padding: 0;
+  color: var(--mat-sys-on-surface);
+  min-width: 0;
+  overflow: auto;
   --mat-expansion-container-background-color: transparent;
   --mat-expansion-container-elevation-shadow: none;
-  --expansion-panel-border: 1px solid var(--mat-sys-outline-variant);
   --expansion-panel-header-padding: var(--half-global-padding) var(--three-quarters-global-padding);
 }
 

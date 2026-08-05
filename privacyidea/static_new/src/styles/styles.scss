@@ -118,9 +118,14 @@ body {
 
   // Inset-shadow scale for recessed "well" surfaces: the same neumorphic pairs turned
   // inward (neumorphism.io's "pressed" mode), so a surface reads as sunk into the page
-  // rather than floating above it. --inset-shadow-5 is the deep dashboard recess;
-  // --inset-shadow-3 is a shallower step between it and flat. Each level pairs with an
-  // --inset-surface-* background tone, so the recess reads correctly.
+  // rather than floating above it. The three slots are the three nesting levels a card can
+  // sit at inside a raised page container -- 3 for a group on the page, 5 for a group
+  // inside a group, 8 for one level deeper again -- so a card's depth is read off how far
+  // in it is rather than chosen per component. Each level pairs with an --inset-surface-*
+  // background tone, so the recess reads correctly.
+  --inset-shadow-8:
+    inset var(--depth-x-8) var(--depth-y-8) var(--depth-blur-8) var(--mat-sys-shadow),
+    inset calc(-1 * var(--depth-x-8)) calc(-1 * var(--depth-y-8)) var(--depth-blur-8) var(--mat-sys-light);
   --inset-shadow-5:
     inset var(--depth-x-5) var(--depth-y-5) var(--depth-blur-5) var(--mat-sys-shadow),
     inset calc(-1 * var(--depth-x-5)) calc(-1 * var(--depth-y-5)) var(--depth-blur-5) var(--mat-sys-light);
@@ -154,10 +159,16 @@ body {
   );
 
   // Recessed surfaces also darken with depth: the deeper the recess, the more of the
-  // surrounding container tone is mixed into the card white. The multipliers are
-  // sized so the deep steps approach the surrounding tone without overshooting it, which
-  // is what the clamp guards. At scale 0 both collapse to the card white, which is what
-  // makes "flat" read as flat.
+  // surrounding container tone is mixed into the card white. Each level reaches for a
+  // darker tone than the one above it, so nesting stays legible on tone alone even where
+  // the shadows are soft. The multipliers are sized so the deep steps approach the
+  // surrounding tone without overshooting it, which is what the clamp guards. At scale 0
+  // they all collapse to the card white, which is what makes "flat" read as flat.
+  --inset-tone-8: color-mix(
+    in srgb,
+    var(--mat-sys-surface-container-highest) clamp(0%, calc(45% * var(--depth-tone-scale)), 100%),
+    var(--mat-sys-surface-container-lowest)
+  );
   --inset-tone-5: color-mix(
     in srgb,
     var(--mat-sys-surface-container-high) clamp(0%, calc(40% * var(--depth-tone-scale)), 100%),
@@ -167,6 +178,11 @@ body {
     in srgb,
     var(--mat-sys-surface-container) clamp(0%, calc(50% * var(--depth-tone-scale)), 100%),
     var(--mat-sys-surface-container-lowest)
+  );
+  --inset-surface-8: linear-gradient(
+    var(--depth-gradient-angle),
+    color-mix(in srgb, var(--mat-sys-shadow) var(--depth-tint), var(--inset-tone-8)),
+    color-mix(in srgb, var(--mat-sys-light) var(--depth-tint), var(--inset-tone-8))
   );
   --inset-surface-5: linear-gradient(
     var(--depth-gradient-angle),
@@ -262,7 +278,6 @@ body {
     inset var(--light-distance) var(--light-distance) var(--blur) var(--grey-light-active);
 
   --box-shadow-header: 4px 2px var(--blur) var(--mat-sys-shadow);
-  --box-dialog-shadow: 0px 4px 20px var(--mat-sys-shadow-color-high);
   --table-color: var(--mat-sys-surface-container-lowest);
 
   --mat-form-field-filled-container-color: var(surface-container-low);
@@ -300,6 +315,7 @@ html.depth-flat {
   --elevation-8: 0 0 0 2px var(--mat-sys-outline-variant);
   --inset-shadow-3: inset 0 0 0 1px var(--mat-sys-outline-variant);
   --inset-shadow-5: inset 0 0 0 1px var(--mat-sys-outline-variant);
+  --inset-shadow-8: inset 0 0 0 2px var(--mat-sys-outline-variant);
   // The glow scales to nothing at this level, so its surfaces get hairlines on the two
   // sides it lit instead. Left and right only: they hang off a bar, so a line along the
   // bottom edge would fence them off from it.
@@ -918,11 +934,19 @@ body.self-service-layout {
   margin: 0 0 var(--third-global-padding) 0;
 }
 
+// While it is scrolled up against the top of its container the header floats over the page
+// rather than sitting in it, so it lifts to the shallow step of the raised scale -- above
+// the cards on the page but below the page container itself, which is what keeps it reading
+// as part of the page it is pinned to. It is flush with the content until then, so the
+// shadow only appears with .is-sticky and fades in over the transition.
 .sticky-header {
   position: sticky;
   top: 0;
   z-index: 100;
-  background-color: var(--mat-sys-surface-container-lowest);
+  // The same shading as the page container it is pinned to, since it is raised like one and
+  // is built from the same card tone: flush with the container while the content is scrolled
+  // to the top, and still a lit surface rather than a flat fill once it has lifted.
+  background: var(--surface-raised);
   padding: 16px;
   transition: box-shadow 0.3s ease-in-out;
   border-radius: var(--border-radius);

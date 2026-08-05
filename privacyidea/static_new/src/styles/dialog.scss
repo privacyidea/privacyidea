@@ -1,20 +1,11 @@
+// A dialog floats above the page on its own scrim, which is what separates it from the
+// content behind it, so it needs no more than the shallow step to lift off that scrim. The
+// tone is the flat card white rather than --surface-raised: over a scrim there is no surface
+// behind it for a gradient to read against.
 .mat-mdc-dialog-surface {
   border-radius: var(--border-radius) !important;
-  box-shadow: var(--box-dialog-shadow) !important;
+  box-shadow: var(--elevation-3) !important;
   background-color: var(--mat-sys-surface-container-lowest) !important;
-}
-
-@mixin dialog-container-styles {
-  padding: var(--global-padding);
-  border-radius: var(--border-radius);
-  box-shadow: var(--elevation-5);
-  background-color: var(--table-color);
-
-  // subtract double global padding to preserve margin around the component
-  // subtract single global padding which is the defined padding above to correctly get the displayed width of the component
-  max-width: calc(100vw - var(--overlay-margin) - 2 * var(--double-global-padding) - 2 * var(--global-padding));
-  max-height: calc(100vh - 2 * var(--double-global-padding) - 2 * var(--global-padding));
-  overflow: auto;
 }
 
 .width-36 {

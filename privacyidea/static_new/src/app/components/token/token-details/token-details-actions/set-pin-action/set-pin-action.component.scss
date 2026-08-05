@@ -7,9 +7,9 @@
   width: fit-content;
 }
 
-// A panel inside a recessed details card, so it is the raised half of the pair.
+// A grid item of the details grid, so it sits on the page beside the details cards.
 .set-pin-panel {
-  @include styles.card-raised(3);
+  @include styles.card-recessed(3);
   display: flex;
   flex-direction: column;
   align-items: flex-start;

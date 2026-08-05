@@ -1,3 +1,5 @@
+@use "styles";
+
 .added-actions-list-container {
   .gap-div-8px {
     width: 8px;
@@ -23,21 +25,15 @@
     height: 36px;
   }
 
-  .action-card {
-    padding: 0px var(--global-padding);
-  }
-
   --mat-expansion-container-background-color: transparent;
   --mat-expansion-container-elevation-shadow: none;
-  --expansion-panel-border: 1px solid var(--mat-sys-outline-variant);
   --expansion-panel-header-padding: var(--half-global-padding) var(--three-quarters-global-padding);
 
+  // A card inside the expansion panel, which is raised, so it takes the shallow recess.
   .action-card-in-panel {
-    border-radius: var(--border-radius);
-    box-shadow: var(--elevation-3);
+    @include styles.card-recessed(3);
     font-weight: 500;
     padding: 0 var(--global-padding);
-    background-color: var(--mat-sys-surface-container-low);
   }
 
   .action-card-in-panel-selected {

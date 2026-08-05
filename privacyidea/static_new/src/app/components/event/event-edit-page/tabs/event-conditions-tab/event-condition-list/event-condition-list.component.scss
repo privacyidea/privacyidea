@@ -1,13 +1,5 @@
 @use "styles";
 
-// override hover style for read only view to not change on hover
-.selected-actions-container .action-card:hover {
-  background-color: var(--mat-sys-surface-container) !important;
-  color: var(--mat-sys-on-surface) !important;
-  cursor: default !important;
-  max-height: 100%;
-}
-
 .condition-name-container {
   display: flex;
   align-items: center;
@@ -25,11 +17,12 @@
   gap: var(--global-gap);
 }
 
+// A card inside the conditions expansion panel, which is raised, so it takes the shallow
+// recess.
 .action-card-row-grid {
   // appearance
+  @include styles.card-recessed(3);
   padding: var(--half-global-padding) var(--global-padding);
-  border: 1px solid var(--mat-sys-surface-container-highest);
-  border-radius: var(--border-radius);
   // layout
   display: grid;
   grid-template-columns: auto auto;

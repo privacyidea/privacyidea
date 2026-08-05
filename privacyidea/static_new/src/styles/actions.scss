@@ -2,19 +2,6 @@
 This file contains all styles for actions as used e.g. in policies, event handlers, periodic tasks, etc.
 */
 
-.action-selector-container {
-  background-color: var(--mat-sys-surface-container);
-  border-radius: var(--border-radius);
-  box-shadow: var(--mat-sys-level2);
-  color: var(--mat-sys-on-surface);
-  display: flex;
-  flex-direction: column;
-  gap: calc(var(--global-gap) / 2);
-  min-width: 0;
-  overflow: auto;
-  padding: var(--three-quarters-global-padding);
-}
-
 .selected-actions-container {
   display: flex;
   flex-direction: column;
@@ -23,43 +10,7 @@ This file contains all styles for actions as used e.g. in policies, event handle
   flex: 1;
 }
 
-.action-card {
-  padding: var(--half-global-padding) var(--global-padding);
-  border-radius: var(--border-radius);
-  background-color: var(--mat-sys-surface-container);
-  color: var(--mat-sys-on-surface);
-  box-shadow: var(--mat-sys-level2);
-}
-
-.action-card:not(.no-hover):hover {
-  background-color: var(--mat-sys-primary-light);
-  color: var(--mat-sys-on-primary) !important;
-  --mat-icon-button-icon-color: currentColor;
-  cursor: pointer;
-}
-
-.action-card-selected {
-  background-color: var(--mat-sys-primary-base);
-  color: var(--mat-sys-on-primary) !important;
-  --mat-icon-button-icon-color: currentColor;
-}
-
-// The row inside an action card showing label and value
-.action-card-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.action-card-row:not(:last-child) {
-  padding-bottom: var(--half-global-padding);
-}
-
-.action-card-row:not(:first-child) {
-  padding-top: var(--half-global-padding);
-}
-
-// Label and value inside an action card row
+// Label and value of one action, shown side by side in a row
 .action-label {
   padding: var(--quarter-global-padding) 0px;
 }
@@ -68,128 +19,6 @@ This file contains all styles for actions as used e.g. in policies, event handle
   padding: var(--quarter-global-padding) 0px;
   text-align: right;
   flex-grow: 1;
-}
-
-.action-detail-column {
-  background-color: var(--mat-sys-surface-container);
-  border-radius: var(--border-radius);
-  box-shadow: var(--mat-sys-level2);
-  color: var(--mat-sys-on-surface);
-  display: flex;
-  flex-direction: column;
-  gap: var(--global-gap);
-  min-width: 0;
-  padding: var(--three-quarters-global-padding);
-}
-
-.action-detail-title {
-  display: flex;
-  align-items: center;
-  gap: var(--global-gap);
-}
-
-.action-detail-title h3 {
-  margin: 0;
-  padding: 0.25rem 0;
-}
-
-.action-detail-title-buttons {
-  flex-grow: 1;
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--half-global-gap);
-}
-
-.action-detail-title-buttons button[mat-icon-button] {
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-}
-
-.action-docu,
-.action-notes {
-  padding: 1rem;
-  border-radius: 0.25rem;
-  border: 1px solid;
-}
-
-.action-docu code,
-.action-notes code,
-.action-detail-card code {
-  display: inline-block;
-  background-color: rgba(0, 0, 0, 0.08);
-  padding: 0.2em 0.4em;
-  margin: 0;
-  font-size: 85%;
-  border-radius: 3px;
-  font-family: "Courier New", Courier, monospace;
-}
-
-.action-docu em,
-.action-notes em,
-.action-detail-card em {
-  display: inline;
-  font-style: italic;
-}
-
-.action-docu p,
-.action-notes p,
-.action-detail-card p {
-  margin-block-start: 1em;
-  margin-block-end: 1em;
-}
-
-.action-docu a,
-.action-notes a,
-.action-detail-card a {
-  color: var(--mat-sys-primary);
-  text-decoration: underline;
-}
-
-.action-docu strong,
-.action-docu b,
-.action-notes strong,
-.action-notes b,
-.action-detail-card strong,
-.action-detail-card b {
-  font-weight: bold;
-}
-
-.action-docu ul,
-.action-docu ol,
-.action-notes ul,
-.action-notes ol,
-.action-detail-card ul,
-.action-detail-card ol {
-  padding-inline-start: 40px;
-}
-
-.action-docu li,
-.action-notes li,
-.action-detail-card li {
-  margin-bottom: 0.5em;
-}
-
-.action-docu {
-  background-color: #e7f3fe;
-  border-color: #d0e5fc;
-  color: #31708f;
-}
-
-.action-notes {
-  background-color: #fef3e7;
-  border-color: #fce8d3;
-  color: #8a6d3b;
-}
-
-.action-detail-card {
-  background-color: var(--mat-sys-surface-container-high);
-  border-radius: var(--border-radius);
-  box-shadow: var(--mat-sys-level2);
-  padding: var(--global-padding);
 }
 
 .action-value-input {

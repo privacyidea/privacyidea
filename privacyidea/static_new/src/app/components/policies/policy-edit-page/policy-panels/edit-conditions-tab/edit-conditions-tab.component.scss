@@ -7,11 +7,9 @@
   min-width: 350px;
 }
 
+// One card per condition kind, sitting on the page container.
 .conditions-container {
-  background-color: transparent;
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: var(--border-radius);
-  box-shadow: none;
+  @include styles.card-recessed(3);
   padding: var(--half-global-padding) var(--three-quarters-global-padding);
 
   .conditions-title {
