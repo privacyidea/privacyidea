@@ -19,7 +19,8 @@
 import { signal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
 import { SmtpServer, SmtpServers } from "@services/smtp/smtp.service";
-import { MockHttpResourceRef } from "./mock-utils";
+import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
+import { of } from "rxjs";
 
 export class MockSmtpService {
   smtpServerResource = new MockHttpResourceRef<PiResponse<SmtpServers> | undefined>(undefined);
@@ -27,4 +28,5 @@ export class MockSmtpService {
   postSmtpServer = jest.fn(async (): Promise<void> => Promise.resolve());
   testSmtpServer = jest.fn(async (): Promise<boolean> => Promise.resolve(true));
   deleteSmtpServer = jest.fn(async (): Promise<void> => Promise.resolve());
+  listSmtpServers = jest.fn().mockReturnValue(of(MockPiResponse.fromValue<SmtpServers>({})));
 }

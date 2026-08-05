@@ -470,6 +470,31 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     expect(tokenService.activeFilter().hasKey("type")).toBe(false);
   });
 
+  it("selectedFilterValues splits a comma-separated filter value into its entries", () => {
+    tokenService.activeFilter.set(new FilterValue({ value: "type: hotp,totp" }));
+    expect(table.selectedFilterValues("type")).toEqual(["hotp", "totp"]);
+
+    tokenService.activeFilter.set(new FilterValue({ value: "type: hotp" }));
+    expect(table.selectedFilterValues("type")).toEqual(["hotp"]);
+
+    tokenService.activeFilter.set(new FilterValue());
+    expect(table.selectedFilterValues("type")).toEqual([]);
+  });
+
+  it("setFilterValues writes the selection as a comma-separated value and drops the key when empty", () => {
+    tokenService.activeFilter.set(new FilterValue());
+
+    table.setFilterValues("tokenrealm", ["realm1", "realm2"]);
+    expect(tokenService.activeFilter().getValueOfKey("tokenrealm")).toBe("realm1,realm2");
+
+    table.setFilterValues("tokenrealm", []);
+    expect(tokenService.activeFilter().hasKey("tokenrealm")).toBe(false);
+  });
+
+  it("tokenTypeFilterOptions offers the token type keys", () => {
+    expect(table.tokenTypeFilterOptions()).toEqual(["hotp", "totp", "push"]);
+  });
+
   describe("filterColumnTooltip", () => {
     beforeEach(() => {
       tokenService.exactMatchKeys = new Set(["realm"]);
