@@ -1068,6 +1068,7 @@ class PIManageConditionalAccessTestCase(CliTestCase):
 
     def test_06_unlock_non_existing_user_works(self):
         db.session.add(UserLockoutState(resolver="test", realm="nope", username="ghost", uid="1234"))
+        db.session.commit()
         runner = self.app.test_cli_runner()
         res = runner.invoke(pi_manage,
                             ["conditionalaccess", "unlock-user", "ghost", "--realm", "nope", "--resolver", "test"])

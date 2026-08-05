@@ -16,6 +16,7 @@
 # SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 import logging
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
@@ -24,8 +25,9 @@ from sqlalchemy import and_, delete, false, func, or_, select
 from sqlalchemy.orm import InstrumentedAttribute
 from sqlalchemy.sql import ColumnElement
 
-from privacyidea.models import AuthenticationLog, authentication_log_column_length, db
+from privacyidea.models import AuthenticationLog, authentication_log_column_length
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.session import get_ca_session, guarded_write
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.sqlutils import delete_matching_rows
 
@@ -95,7 +97,8 @@ class AuthenticationLogVisibilityScope:
 @dataclass
 class AuthenticationLogPage:
     """One page of an authentication-log query plus its pagination metadata."""
-    auth_logs: list[AuthenticationLog]
+    # A Sequence, not a list: this is what Session.scalars(...).all() returns.
+    auth_logs: Sequence[AuthenticationLog]
     count: int
     current: int
     prev: int | None
@@ -191,8 +194,8 @@ def log_authentication_event(event_type: AuthEventType,
     Create a new authentication log entry and return its id.
 
     Writing the authentication log must never break the authentication itself, so a failure to write the entry is
-    logged and swallowed: the insert runs inside a SAVEPOINT, so a failure rolls back only the entry while leaving any
-    other pending writes of the request untouched, and ``None`` is returned instead of an id.
+    logged and swallowed and ``None`` is returned instead of an id. The insert runs on the conditional-access
+    session, so neither the commit nor a rollback touches the request's own pending writes.
     """
     fields = {
         "event_type": event_type,
@@ -215,22 +218,9 @@ def log_authentication_event(event_type: AuthEventType,
         if result.overflow is not None:
             overflow[column] = result.overflow
     entry = AuthenticationLog(**stored, other_info=_store_overflow(other_info, overflow))
-    try:
-        with db.session.begin_nested():
-            db.session.add(entry)
-        entry_id = entry.id
-    except Exception as ex:
-        log.warning(f"Failed to write the authentication log entry: {ex!r}")
-        return None
-    try:
-        db.session.commit()
-    except Exception as ex:
-        # The savepoint flush succeeded but the outer commit failed: roll back so the session is usable for the rest
-        # of the request, and report no id since the entry was not persisted.
-        log.warning(f"Failed to commit the authentication log entry: {ex!r}")
-        db.session.rollback()
-        return None
-    return entry_id
+    with guarded_write("the authentication log entry") as outcome:
+        get_ca_session().add(entry)
+    return entry.id if outcome.succeeded else None
 
 
 def get_attempt_id_for_transaction(transaction_id: str) -> str | None:
@@ -249,16 +239,18 @@ def get_attempt_id_for_transaction(transaction_id: str) -> str | None:
                    AuthenticationLog.attempt_id.is_not(None))
             .order_by(AuthenticationLog.id.desc())
             .limit(1))
-    return db.session.scalar(stmt)
+    return get_ca_session().scalar(stmt)
 
 
 def delete_authentication_log_event(event_id: int) -> None:
     """
     Delete a single authentication log entry by id.
+
+    A management operation, so a failure surfaces to the caller instead of being swallowed.
     """
     stmt = delete(AuthenticationLog).where(AuthenticationLog.id == event_id)
-    db.session.execute(stmt)
-    db.session.commit()
+    with guarded_write(f"the deletion of authentication log entry {event_id}", reraise=True):
+        get_ca_session().execute(stmt)
 
 
 def reclassify_authentication_log_event(event_id: int, event_type: AuthEventType,
@@ -270,57 +262,47 @@ def reclassify_authentication_log_event(event_id: int, event_type: AuthEventType
     ``enroll_via_multichallenge``, where a successful authentication (logged as ``LOGIN_SUCCESS`` in check()'s finally)
     is turned into an enrollment challenge by a post-policy.
 
-    Like the insert, this must never break the response: a failure is logged and swallowed, and runs inside a
-    SAVEPOINT so it rolls back only this update.
+    Like the insert, this must never break the response: a failure is logged and swallowed, and it runs on the
+    conditional-access session so a rollback leaves the request's own pending writes alone.
 
     :param event_id: id of the entry to reclassify
     :param event_type: the new event type
     :param serial: the new serial (default None)
     :param transaction_id: the new transaction_id (default None)
     """
-    try:
-        with db.session.begin_nested():
-            entry = db.session.get(AuthenticationLog, event_id)
-            if entry is None:
-                log.info(f"Cannot reclassify authentication log entry {event_id!r}: not found.")
-                return
-            overflow: dict[str, str] = {}
+    # The lookup is inside the guarded block so a failing read cannot break the response either.
+    with guarded_write(f"authentication log entry {event_id} reclassified to {event_type}"):
+        entry = get_ca_session().get(AuthenticationLog, event_id)
+        if entry is None:
+            log.info(f"Cannot reclassify authentication log entry {event_id!r}: not found.")
+            return
+        overflow: dict[str, str] = {}
 
-            truncated_event_type = _truncate("event_type", event_type)
-            entry.event_type = truncated_event_type.stored
-            if truncated_event_type.overflow is not None:
-                overflow["event_type"] = truncated_event_type.overflow
+        truncated_event_type = _truncate("event_type", event_type)
+        entry.event_type = truncated_event_type.stored
+        if truncated_event_type.overflow is not None:
+            overflow["event_type"] = truncated_event_type.overflow
 
-            if serial is not None:
-                truncated_serial = _truncate("serial", serial, separator=",")
-                entry.serial = truncated_serial.stored
-                if truncated_serial.overflow is not None:
-                    overflow["serial"] = truncated_serial.overflow
+        if serial is not None:
+            truncated_serial = _truncate("serial", serial, separator=",")
+            entry.serial = truncated_serial.stored
+            if truncated_serial.overflow is not None:
+                overflow["serial"] = truncated_serial.overflow
 
-            if transaction_id:
-                truncated_transaction_id = _truncate("transaction_id", transaction_id)
-                entry.transaction_id = truncated_transaction_id.stored
-                if truncated_transaction_id.overflow is not None:
-                    overflow["transaction_id"] = truncated_transaction_id.overflow
+        if transaction_id:
+            truncated_transaction_id = _truncate("transaction_id", transaction_id)
+            entry.transaction_id = truncated_transaction_id.stored
+            if truncated_transaction_id.overflow is not None:
+                overflow["transaction_id"] = truncated_transaction_id.overflow
 
-            entry.other_info = _store_overflow(entry.other_info, overflow)
-    except Exception as ex:
-        log.info(f"Failed to reclassify the authentication log entry to {event_type}: {ex!r}")
-        return
-    try:
-        db.session.commit()
-    except Exception as ex:
-        # The savepoint update succeeded but the outer commit failed: roll back so the session is usable for the rest
-        # of the request.
-        log.info(f"Failed to commit the reclassified authentication log entry to {event_type}: {ex!r}")
-        db.session.rollback()
+        entry.other_info = _store_overflow(entry.other_info, overflow)
 
 
 def get_authentication_log_event(event_id: int) -> AuthenticationLog | None:
     """
     Return a single AuthenticationLog entry by event_id, or None if not found.
     """
-    return db.session.get(AuthenticationLog, event_id)
+    return get_ca_session().get(AuthenticationLog, event_id)
 
 
 def _wildcard_pattern(value: str) -> str:
@@ -464,7 +446,7 @@ def get_authentication_logs(resolver: str | list[str] | None = None,
                             attempt_id: str | list[str] | None = None,
                             client_label: str | list[str] | None = None,
                             start_time: datetime | None = None,
-                            end_time: datetime | None = None) -> list[AuthenticationLog]:
+                            end_time: datetime | None = None) -> Sequence[AuthenticationLog]:
     """
     Return authentication log entries matching all provided filter criteria, ordered by id (i.e. chronologically).
     All parameters are optional; omitting a parameter means no filtering on that field. Each scalar filter accepts a
@@ -478,7 +460,7 @@ def get_authentication_logs(resolver: str | list[str] | None = None,
                                     client_label=client_label,
                                     start_time=start_time, end_time=end_time)
     stmt = select(AuthenticationLog).where(*conditions).order_by(AuthenticationLog.id)
-    return db.session.scalars(stmt).all()
+    return get_ca_session().scalars(stmt).all()
 
 
 def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
@@ -531,7 +513,7 @@ def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
         conditions.append(_visibility_condition(visibility_scopes))
     stmt = select(AuthenticationLog).where(*conditions)
 
-    count = db.session.scalar(select(func.count()).select_from(AuthenticationLog).where(*conditions))
+    count = get_ca_session().scalar(select(func.count()).select_from(AuthenticationLog).where(*conditions))
 
     order_column = SORTABLE_COLUMNS.get(sort_column)
     if order_column is None:
@@ -545,7 +527,7 @@ def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
     page = max(1, page)
     page_size = max(1, page_size)
     offset = (page - 1) * page_size
-    auth_logs = db.session.scalars(stmt.limit(page_size).offset(offset)).all()
+    auth_logs = get_ca_session().scalars(stmt.limit(page_size).offset(offset)).all()
     return AuthenticationLogPage(auth_logs=auth_logs,
                                  count=count,
                                  current=page,
@@ -595,7 +577,7 @@ def delete_authentication_logs(resolver: str | list[str] | None = None,
         raise ParameterError("Refusing to delete the whole authentication log: at least one filter is required.")
     if visibility_scopes is not None:
         conditions.append(_visibility_condition(visibility_scopes))
-    return delete_matching_rows(db.session, AuthenticationLog.__table__, and_(*conditions), chunk_size)
+    return delete_matching_rows(get_ca_session(), AuthenticationLog.__table__, and_(*conditions), chunk_size)
 
 
 def cleanup_authentication_log(older_than: datetime, chunk_size: int | None = None) -> int:
@@ -608,4 +590,4 @@ def cleanup_authentication_log(older_than: datetime, chunk_size: int | None = No
     :return: the number of deleted rows
     """
     criterion = AuthenticationLog.timestamp < _naive_utc(older_than)
-    return delete_matching_rows(db.session, AuthenticationLog.__table__, criterion, chunk_size)
+    return delete_matching_rows(get_ca_session(), AuthenticationLog.__table__, criterion, chunk_size)

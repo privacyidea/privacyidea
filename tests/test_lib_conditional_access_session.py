@@ -36,6 +36,7 @@ class ConditionalAccessSessionTestCase(MyTestCase):
         close_ca_session()
         db.session.execute(AuthenticationLog.__table__.delete())
         db.session.commit()
+        super().tearDown()
 
     def test_01_session_is_cached_per_app_context(self):
         session = get_ca_session()
@@ -93,6 +94,7 @@ class GuardedWriteTestCase(MyTestCase):
     def tearDown(self):
         close_ca_session()
         self._clear()
+        super().tearDown()
 
     @staticmethod
     def _clear():
