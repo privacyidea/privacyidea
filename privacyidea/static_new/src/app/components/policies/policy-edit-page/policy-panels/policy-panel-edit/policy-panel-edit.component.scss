@@ -6,8 +6,7 @@
   flex-direction: column;
   gap: var(--half-global-gap);
 
-  // Name, priority and description are one group of fields, so they get a card of their own
-  // on the page rather than floating loose above the tabs.
+  // Name, priority and description are one group of fields, so they get a card of their own.
   .policy-metadata-group {
     @include styles.card-recessed(3);
     display: flex;

@@ -8,8 +8,7 @@
   flex-direction: column;
   overflow: hidden;
 
-  // Self-service lists a handful of containers, so the scroll region shrinks to its
-  // rows instead of stretching the table to the full height of the region.
+  // Self-service lists few containers, so the scroll region shrinks to its rows.
   :host-context(body.self-service-layout) & .table-scroll-region {
     flex: 0 1 auto;
   }
@@ -62,7 +61,7 @@ tr.example-detail-row td {
   margin-top: 16px;
 }
 
-// A group of token facts standing on the page container, so it takes the shallow recess.
+// A group of token facts on the page container, so the shallow recess.
 .token-item {
   @include styles.card-recessed(3);
   display: flex;

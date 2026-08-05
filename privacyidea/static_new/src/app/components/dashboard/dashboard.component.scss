@@ -26,9 +26,7 @@
   font-size: 14px;
 }
 
-// The deep end of the shared inset scale, which this recess is the reference for: the
-// field the widgets stand on, shaded from the shadowed corner to the lit one like every
-// other recessed surface, so the gradient deepens and flattens with the depth setting.
+// The field the widgets stand on: a deep recess, so the widgets on it read as raised.
 .dashboard-page {
   @include styles.card-recessed(5);
   display: flex;

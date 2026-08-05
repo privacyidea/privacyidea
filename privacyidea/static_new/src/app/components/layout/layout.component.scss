@@ -2,15 +2,14 @@
 @use "table";
 
 :host {
-  // Tint shared by the progress bar and the pending-request list, so the two read
-  // as one unobtrusive indicator.
+  // Tint shared by the progress bar and the pending-request list, so the two read as one.
   --loading-indicator-color: var(--mat-sys-primary);
   --loading-indicator-opacity: 0.33;
 }
 
 .progress-bar {
-  // Four times the Material default of 4px: a bar pinned to the very bottom edge is
-  // easy to miss, and the tokens keep the `top` calc below in sync with it.
+  // Four times the Material default of 4px, since a bar pinned to the bottom edge is easy to
+  // miss. The `top` calc below reads the same token, so the two stay in sync.
   --mat-progress-bar-track-height: 14px;
   --mat-progress-bar-active-indicator-height: 14px;
   --mat-progress-bar-active-indicator-color: var(--loading-indicator-color);
@@ -56,12 +55,10 @@
 // (align-items: stretch) so its container can reach the bottom, inset by the
 // single --global-padding — no hard-coded toolbar heights.
 //
-// A size container, which is what routed pages measure themselves against:
-// `flex: 1` already makes this box exactly what the toolbars leave over, so
-// 100cqw/100cqh (see main-component-style) is the page's share of the window
-// without anyone restating the chrome. Size containment costs nothing here —
-// the box takes its width from the column and its height from `flex: 1`, so it
-// never depended on its content.
+// A size container, which is what routed pages measure themselves against: `flex: 1` makes this
+// box exactly what the toolbars leave over, so 100cqw/100cqh (see main-component-style) is the
+// page's share of the window. Containment is free here, since the box takes its width from the
+// column and its height from `flex: 1`.
 .admin-content {
   flex: 1;
   min-height: 0;
@@ -89,9 +86,8 @@
   }
 }
 
-// The self-service counterpart of .admin-content: same size container, so the same
-// routed pages cap themselves against the space beside the drawer instead of the
-// space below the toolbars, with no self-service-specific numbers anywhere.
+// The self-service counterpart of .admin-content: the same size container, so a routed page
+// caps itself against the space beside the drawer instead of the space below the toolbars.
 .selfservice-content-container {
   display: flex;
   justify-content: center;

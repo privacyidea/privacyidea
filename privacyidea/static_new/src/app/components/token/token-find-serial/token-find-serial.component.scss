@@ -6,9 +6,8 @@
   display: grid;
 }
 
-// The optional narrowing parameters are one group, so they get a card of their own on the
-// page instead of sitting loose under the search row. Sized to the two-column input row it
-// holds, plus the card's own padding.
+// The optional narrowing parameters are one group, so they get a card of their own. Sized to
+// the two-column input row it holds, plus the card's own padding.
 .search-config-card {
   @include styles.card-recessed(3);
   box-sizing: border-box;

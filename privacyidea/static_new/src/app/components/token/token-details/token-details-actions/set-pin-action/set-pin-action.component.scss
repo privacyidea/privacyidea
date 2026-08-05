@@ -7,7 +7,7 @@
   width: fit-content;
 }
 
-// A grid item of the details grid, so it sits on the page beside the details cards.
+// A grid item of the details grid, so it sits beside the details cards at the same recess.
 .set-pin-panel {
   @include styles.card-recessed(3);
   display: flex;

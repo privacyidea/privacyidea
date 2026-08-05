@@ -22,13 +22,11 @@ import { MatTooltip } from "@angular/material/tooltip";
 import { ThemeService } from "@services/theme/theme.service";
 
 /**
- * The round light/dark knob of the UI settings, shared with the dashboard appearance widget
- * so both wear the same control rather than two takes on it. It presses in when dark mode is
- * on -- the raised and recessed halves of the depth scale on one element, so the knob shows
- * the state it is in the same way the rest of the app shows depth.
+ * Round light/dark knob, used by UI Settings and the dashboard appearance widget. It is raised
+ * in light mode and pressed in when dark mode is on, so it carries its state as depth.
  *
- * Distinct from ThemeSwitcherComponent, the plain icon button the self-service utility panel
- * puts in a toolbar, where a 72px knob would not fit.
+ * ThemeSwitcherComponent is the plain icon button for a toolbar, where a 72px knob would not
+ * fit.
  */
 @Component({
   selector: "app-theme-toggle",

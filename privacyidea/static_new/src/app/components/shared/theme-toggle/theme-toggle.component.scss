@@ -47,7 +47,7 @@
     width: 56px;
     margin-left: -28px;
     margin-top: -28px;
-    // Circular, so this does not follow --border-radius the way a card does.
+    // Circular, so it does not follow --border-radius.
     border-radius: 50%;
     background: var(--mat-sys-surface-container-lowest);
     box-shadow: var(--elevation-5);

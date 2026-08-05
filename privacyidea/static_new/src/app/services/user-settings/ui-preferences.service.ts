@@ -85,10 +85,7 @@ export class UiPreferencesService implements UiPreferencesServiceInterface {
     return this.currentLocale;
   });
 
-  /**
-   * Whether the endpoints of the requests in flight are listed next to the loading
-   * bar. A diagnostic aid, off unless the user asked for it.
-   */
+  /** Whether the endpoints in flight are listed next to the loading bar. Off by default. */
   public readonly showLoadingUrls: Signal<boolean> = this._showLoadingUrls.asReadonly();
 
   /** Turns the pending-request list on or off and remembers the choice. */
@@ -121,8 +118,8 @@ export class UiPreferencesService implements UiPreferencesServiceInterface {
           this.themeService.applyStoredTheme(settings.theme);
         }
         this._showLoadingUrls.set(settings.show_loading_urls === true);
-        // Absent keys are left alone rather than reset: for a principal without stored
-        // settings the cookie-cached appearance is all there is.
+        // An absent key keeps the cookie-cached appearance, which is all a principal without
+        // stored settings has.
         if (settings.depth !== undefined) {
           this.appearanceService.applyStoredDepth(settings.depth);
         }

@@ -34,9 +34,8 @@
 }
 
 // The two buttons flank the dial, so they read as belonging to it rather than to the widget
-// header above. Every part of the row keeps its own size and the space the widget gains on a
-// resize goes into the gaps between them, which is what spreads the buttons out to the edges
-// as it widens. The gap is the floor, for the width where there is nothing to spread.
+// header. Every part keeps its own size, so the width the widget gains on a resize goes into
+// the space between them and spreads the buttons out to the edges.
 .appearance-widget__row {
   display: flex;
   flex-direction: row;

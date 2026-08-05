@@ -1,27 +1,21 @@
-// The two card treatments of the neumorphism.io model: a card is set apart from its parent
-// by being raised above it or sunk into it, never by being outlined.
+// The two card treatments: a surface is set apart from its parent by being raised above it or
+// sunk into it, never by an outline. Neither mixin sets a border, because at the flat depth
+// step the shadow tokens collapse to a hairline ring (html.depth-flat in styles.scss) and a
+// card drawing its own border would double that ring.
 //
-// Neither declares a border: the outline belongs to the flat depth step alone, where
-// --elevation-* and --inset-shadow-* collapse to a hairline ring (see html.depth-flat),
-// and it appears exactly when there is no depth left to convey the card's edge. A card
-// that draws its own border would double that ring at the flat step and fence itself off
-// from the shadow at every other one.
+// $slot picks a step of the shared 3 < 5 < 8 depth scale, and which step a surface takes
+// follows from where it sits:
 //
-// $slot picks the step of the shared 3 < 5 < 8 depth scale, and which step a surface takes
-// follows from where it sits rather than from what it is:
+//   page container     raised 5   routed pages and the table containers on them
+//   dialog             raised 3   lifts off its own scrim, which does the separating
+//   sticky header      raised 3   floats over the page while scrolled
+//   expansion panel    raised 3   floats over the page too; its content recesses
+//   group on a page    inset 3    a set of fields or controls, also inside a raised panel
+//   group in a group   inset 5    one level further in
+//   group in that      inset 8    the deepest step
 //
-//   page container       raised 5    the routed page and the table containers on it
-//   dialog surface       raised 3    lifts off its own scrim, which does the separating
-//   sticky header        raised 3    floats over the page it belongs to while scrolled
-//   expansion panel      raised 3    floats over the page too; its content is what recesses
-//   group on the page    inset 3     a card holding a set of fields or controls, and the
-//                                    same for a group inside a raised panel
-//   group in a group     inset 5     one level further in
-//   group in that        inset 8     as deep as the ladder goes
-//
-// So a card never picks a depth to look right next to its neighbours; it counts how many
-// cards it is inside. Anything standing on a recessed surface inverts -- the dashboard
-// field is a deep recess, so the widgets on it are raised.
+// So a card counts how many cards it is inside. Anything standing on a recessed surface
+// inverts: the dashboard field is a deep recess, so the widgets on it are raised.
 @mixin card-raised($slot: 5) {
   border: 0;
   border-radius: var(--border-radius);

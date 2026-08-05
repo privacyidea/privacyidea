@@ -77,10 +77,8 @@ export class LoadingService implements LoadingServiceInterface {
   }
 
   /**
-   * The endpoints currently being requested, in the order their first request
-   * started. Requests differing only in their query parameters -- a paginated
-   * list reloading, several detail fetches -- hit the same endpoint and are
-   * counted into one entry instead of stacking up as near-identical lines.
+   * The endpoints being requested, in the order their first request started. Requests that
+   * differ only in their query parameters share an endpoint and are counted into one entry.
    */
   getLoadingGroups(): LoadingGroup[] {
     const groups = new Map<string, LoadingGroup>();

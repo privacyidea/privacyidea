@@ -131,8 +131,8 @@ describe("AppearanceWidgetComponent", () => {
   });
 
   it("should apply the preset's depth, corners and light source together on selection", () => {
-    // First in generation order is flat depth with square corners; the rotation puts it on
-    // the stop seven places before the default light source.
+    // First in generation order is flat depth with square corners, seven stops before the
+    // default light source.
     const radios = fixture.nativeElement.querySelectorAll<HTMLInputElement>(".dial__slot input");
 
     radios[0].checked = true;
@@ -154,8 +154,7 @@ describe("AppearanceWidgetComponent", () => {
     expect(checked?.closest(".dial__slot")?.className).toContain(`dial__slot--${DEFAULT_LIGHT_SOURCE}`);
   });
 
-  // The knob's own behaviour is covered by ThemeToggleComponent's spec; this only checks that
-  // the widget offers it, beside the dial.
+  // The knob's own behaviour is covered by ThemeToggleComponent's spec; this checks it is there.
   it("should offer the shared theme knob next to the dial", () => {
     expect(fixture.nativeElement.querySelector("app-theme-toggle .theme-toggle input")).toBeTruthy();
   });

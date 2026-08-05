@@ -44,14 +44,10 @@ interface AppearancePreset {
   lightSource: LightSourceLevel;
 }
 
-// Depth and corner radius each have their own scale (5 depths, 4 corner radii), so pairing
-// every depth with every corner gives 5 * 4 = 20 combinations -- one more than the dial has
-// stops for (LIGHT_SOURCE_LEVELS, 16). Four of those twenty are left out: very-strong depth
-// casts a shadow heavy enough that it reads wrong at either end of the corner scale (square
-// or extra-round), and flat depth -- a hairline ring, no shadow at all -- has nothing left
-// to distinguish it from a corner already rounded enough to be its own shape (round or
-// extra-round). Leaving those four out brings the count to exactly sixteen, so every dial
-// stop carries one preset with none left over and none doubled up.
+// 5 depths * 4 corner radii = 20 pairs, four more than the dial's 16 stops
+// (LIGHT_SOURCE_LEVELS). The four left out read wrong: very-strong casts too heavy a shadow for
+// either end of the corner scale, and flat, with no shadow at all, leaves a strongly rounded
+// corner nothing to set it apart. That leaves exactly one preset per stop.
 const EXCLUDED_PAIRS = new Set<string>([
   "very-strong:square",
   "very-strong:extra-round",
@@ -63,9 +59,9 @@ const DEPTH_CORNER_PAIRS: readonly Omit<AppearancePreset, "lightSource">[] = DEP
   CORNER_LEVELS.filter((corner) => !EXCLUDED_PAIRS.has(`${depth}:${corner}`)).map((corner) => ({ depth, corner }))
 );
 
-// The pairs walk the two scales in order, but which stop that order starts on is arbitrary,
-// so it is turned until the all-defaults pair sits on the default light source: the stop the
-// app itself starts on, so an untouched appearance shows the dial already pointing at it.
+// The pairs walk the two scales in order, which leaves the stop that order starts on
+// arbitrary. Turn it until the all-defaults pair sits on the default light source, so an
+// untouched appearance shows the dial already pointing at it.
 const DIAL_ROTATION =
   (LIGHT_SOURCE_LEVELS.indexOf(DEFAULT_LIGHT_SOURCE) -
     DEPTH_CORNER_PAIRS.findIndex((pair) => pair.depth === "default" && pair.corner === "default") +
@@ -97,12 +93,9 @@ function presetLabel(preset: AppearancePreset): string {
 }
 
 /**
- * A dashboard shortcut for the depth + corner-radius + light-source trio of UI Settings,
- * reusing its rotary dial. Turning the dial does not just change the light direction: each
- * of its sixteen stops is a whole appearance preset (see APPEARANCE_PRESETS above), so one
- * click applies all three settings at once. Like UI Settings itself this changes the live,
- * app-wide appearance for the current user -- it is a second control surface for the same
- * global setting, not an isolated preview.
+ * Dashboard shortcut for the depth, corner-radius and light-source settings. Each of the dial's
+ * sixteen stops is a whole appearance preset (APPEARANCE_PRESETS above), so one click applies
+ * all three at once, live and app-wide for the current user rather than as a preview.
  */
 @Component({
   selector: "app-appearance-widget",
@@ -114,8 +107,8 @@ export class AppearanceWidgetComponent extends DashboardWidget {
   static override readonly type = "appearance";
   static override readonly title = $localize`Appearance`;
   static override readonly icon = "palette";
-  // The dial is a fixed circle, so the widget grows by spreading its row rather than by
-  // scaling anything: the minimum is the width the three controls need side by side.
+  // The dial is a fixed circle, so the widget grows by spreading its row. The minimum is the
+  // width the three controls need side by side.
   static override readonly defaultSize: WidgetSize = { cols: 6, rows: 6 };
   static override readonly minSize: WidgetSize = { cols: 6, rows: 6 };
   static override readonly maxSize: WidgetSize = { cols: 12, rows: 8 };
@@ -141,22 +134,20 @@ export class AppearanceWidgetComponent extends DashboardWidget {
   );
 
   // No stop is marked when the live appearance is one of the pairs the dial leaves out, which
-  // the full UI Settings page can still set.
+  // UI Settings can still set.
   protected readonly selected = computed(() => this.currentPreset()?.lightSource);
 
   constructor() {
     super();
-    // Nothing is fetched: every value this widget shows comes from AppearanceService's
-    // already-live signals.
+    // Nothing to fetch: every value comes from AppearanceService's live signals.
     this.state.set("ready");
   }
 
   reload(): void {
-    // No data to refresh -- the dial already reflects the live appearance reactively.
+    // No data to refresh; the dial follows AppearanceService's signals.
   }
 
-  // The widget's own two concerns only: the language and the pending-request list it does not
-  // offer are left where they are, so this undoes what the widget itself can do and no more.
+  // Only what this widget controls: the language and the pending-request list are left alone.
   protected resetAppearance(): void {
     this.appearanceService.resetToDefaults();
     this.themeService.setTheme("light");

@@ -18,8 +18,7 @@
  **/
 @use "styles";
 
-// Details cards always sit inside a raised page container, so they read as wells sunk into
-// it. The shallow step: they are one level in, not the deep recess the dashboard field is.
+// One level inside the raised page container, so the shallow recess.
 :host {
   @include styles.card-recessed(3);
   display: flex;

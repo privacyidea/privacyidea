@@ -36,8 +36,8 @@ $corner-size-stacked: 132px;
   text-align: center;
   font-weight: bold;
   text-transform: uppercase;
-  // The pre-baked Material level, not the tunable --elevation-8: the debug ribbon is a
-  // build-state warning, so the UI settings must not be able to flatten it away.
+  // The pre-baked Material level, not the tunable --elevation-8: a build-state warning must
+  // not be flattened by the depth setting.
   box-shadow: var(--mat-elevation-8);
   pointer-events: auto;
   border: none;

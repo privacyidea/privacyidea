@@ -12,8 +12,7 @@
   flex: 0 0 100%;
 }
 
-// The action panels are grid items of the details grid, so they sit on the page next to the
-// details cards rather than inside them: same level, same shallow recess.
+// A grid item of the details grid, so it sits beside the details cards at the same recess.
 .actions-status-row {
   @include styles.card-recessed(3);
   display: flex;

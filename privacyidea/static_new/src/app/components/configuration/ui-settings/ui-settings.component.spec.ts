@@ -121,8 +121,8 @@ describe("UISettingsComponent", () => {
     expect(testable().lightSource()).toBe("12");
   });
 
-  // The dial's own rendering (radio semantics, checked slot, tooltip labels) is covered by
-  // LightSourceDialComponent's own spec; this only checks the wiring into it.
+  // The dial's own rendering is covered by LightSourceDialComponent's spec; this checks the
+  // wiring into it.
   it("should hand the dial one item per light-source stop, keyed by the current value", () => {
     const radios = fixture.nativeElement.querySelectorAll<HTMLInputElement>(".dial__slot input");
 

@@ -36,21 +36,18 @@ import {
 } from "@services/user-settings/user-settings.service";
 
 /**
- * How much depth the UI has: drives the drop shadows of raised surfaces and the recess
- * of sunken ones (the dashboard well, detail cards) together. At "flat" the raised
- * surfaces carry a hairline ring instead of a shadow and the recesses disappear.
+ * How much depth the UI has: the drop shadows of raised surfaces and the recess of sunken ones
+ * together. At "flat" a raised surface carries a hairline ring instead of a shadow.
  */
 export const DEPTH_LEVELS = ["flat", "subtle", "default", "strong", "very-strong"] as const;
 export type DepthLevel = (typeof DEPTH_LEVELS)[number];
 
 /**
- * Stops of the light-source dial. Each level is its index as a string, and the angle it
- * stands for is index * LIGHT_SOURCE_STEP_ANGLE degrees, measured from due right and
- * growing clockwise. styles.scss generates one html.light-source-<index> block per stop
- * from a matching $light-source-steps -- keep the two counts in step.
- *
- * The two purely horizontal stops, 0 and 180 degrees, are left out: they cast no vertical
- * offset at all, which reads as a missing shadow rather than a low light.
+ * Stops of the light-source dial. A level is its index as a string; its angle is
+ * index * LIGHT_SOURCE_STEP_ANGLE degrees, from due right and growing clockwise. styles.scss
+ * generates one html.light-source-<index> block per stop from $light-source-steps, so keep the
+ * two counts in step. The two purely horizontal stops, 0 and 180 degrees, are left out: with no
+ * vertical offset a shadow reads as missing rather than low.
  */
 export const LIGHT_SOURCE_STEPS = 18;
 export const LIGHT_SOURCE_STEP_ANGLE = 360 / LIGHT_SOURCE_STEPS;
@@ -76,15 +73,14 @@ interface LevelGroup<T extends string> {
 }
 
 /**
- * Owns the appearance the user picks in the UI settings: depth, light source and
- * corner radius.
- * Each group is applied as a class on the HTML element, which the
- * stylesheet turns into the matching design-token values -- the tokens themselves
- * stay theme-aware, so a level does not freeze a light-mode tone into dark mode.
+ * Owns the appearance the user picks in UI Settings: depth, light source and corner radius.
+ * Each group is a class on the <html> element, which the stylesheet turns into design-token
+ * values; the tokens stay theme-aware, so a level does not freeze a light-mode tone into dark
+ * mode.
  *
- * Mirrors ThemeService: the levels are cached in a cookie so the first paint after a
- * reload already carries them, and for an authenticated principal they are stored as
- * user settings, so they follow them to their other devices.
+ * The levels are cached in a cookie, so the first paint after a reload already carries them,
+ * and are stored as user settings for an authenticated principal, so they follow them to their
+ * other devices.
  */
 @Injectable({
   providedIn: "root"
@@ -123,10 +119,9 @@ export class AppearanceService {
   public readonly corners: Signal<CornerLevel> = this.cornerGroup.level.asReadonly();
 
   /**
-   * Applies the appearance cached in the browser. For an authenticated principal the
-   * stored user settings are the authoritative source, but they only arrive after
-   * login -- the cache keeps the login screen and the first paint from showing a
-   * different appearance than the one the user picked.
+   * Applies the appearance cached in the cookie. The stored user settings are authoritative for
+   * an authenticated principal but only arrive after login, so the cache is what dresses the
+   * login screen and the first paint.
    */
   public initializeAppearance(): void {
     const cached = this.readCachedAppearance();
@@ -179,8 +174,8 @@ export class AppearanceService {
 
   private apply<T extends string>(group: LevelGroup<T>, level: unknown): void {
     const applied = group.levels.includes(level as T) ? (level as T) : group.fallback;
-    // Every level of the group goes first: leaving a stale class behind would let
-    // declaration order in the stylesheet decide which level wins.
+    // Remove all of them first: a stale class would let stylesheet order decide which level
+    // wins.
     group.levels.forEach((offered) => this.renderer.removeClass(this.htmlElement, `${group.classPrefix}${offered}`));
     this.renderer.addClass(this.htmlElement, `${group.classPrefix}${applied}`);
     group.level.set(applied);
@@ -205,8 +200,7 @@ export class AppearanceService {
     }
     try {
       const parsed: unknown = JSON.parse(cached);
-      // A hand-edited or truncated cookie must not keep the app from starting: an
-      // unusable cache is answered like an absent one, which applies the defaults.
+      // An unusable cookie is answered like an absent one, so the defaults apply.
       return typeof parsed === "object" && parsed !== null ? (parsed as Record<string, unknown>) : {};
     } catch {
       return {};

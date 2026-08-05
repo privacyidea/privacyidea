@@ -20,10 +20,9 @@ import { Component, input, output } from "@angular/core";
 import { MatTooltip } from "@angular/material/tooltip";
 
 /**
- * One clickable stop on the dial. `slot` is its position on the shared 18-stop angle
- * circle (see $light-source-steps in styles.scss) -- 1..17, skipping 0 and 9, the two
- * purely horizontal stops every consumer of this dial leaves out. A dial does not have to
- * fill every stop: the appearance widget uses all sixteen, but nothing requires that.
+ * One clickable stop on the dial. `slot` is its index on the 18-stop angle circle (see
+ * $light-source-steps in styles.scss): 1 to 17 without 9, the two purely horizontal angles
+ * being left out. A dial need not fill every stop.
  */
 export interface LightSourceDialItem {
   slot: number;
@@ -32,16 +31,11 @@ export interface LightSourceDialItem {
 }
 
 /**
- * The rotary light-source selector, factored out of UI Settings so a second dial (the
- * dashboard appearance widget) can reuse the exact same circle instead of a second copy of
- * its Sass. What a stop *means* is entirely up to the caller: UI Settings' items are the
- * angles themselves, the widget's are whole appearance presets that happen to occupy the
- * dial's sixteen stops one-for-one.
+ * Rotary selector for the light source. What a stop stands for is up to the caller: UI Settings
+ * offers the angles themselves, the dashboard appearance widget whole appearance presets.
  *
- * The pointer and glow read the ambient --dial-angle custom property, the same one
- * html.light-source-* sets on <html>, rather than a locally-scoped variable -- both current
- * consumers apply the selection to that same global setting, so the dial showing the live
- * value is correct, not a leak.
+ * Pointer and glow read --dial-angle off <html>, so the dial shows the light source in effect;
+ * both callers apply a pick to that same global setting.
  */
 @Component({
   selector: "app-light-source-dial",

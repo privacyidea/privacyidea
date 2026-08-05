@@ -27,9 +27,8 @@ $font-size-default: 14px;
   padding: 12px;
   background-color: var(--table-color);
   box-shadow: var(--side-glow);
-  // --side-glow is a full-blur shadow with only its vertical offset dropped, so it still
-  // bleeds above and below. Clipping flush with the top and bottom edges while leaving room
-  // on both sides keeps the blur at full strength and confines it to the sides.
+  // --side-glow drops only its vertical offset, so its blur still bleeds above and below.
+  // Clipping flush with those edges, with room left on both sides, confines it to the sides.
   clip-path: inset(0 -40px);
   border-top-right-radius: var(--border-radius);
   border-top-left-radius: var(--border-radius);

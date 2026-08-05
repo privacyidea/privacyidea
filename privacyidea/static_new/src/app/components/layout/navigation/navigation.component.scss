@@ -118,9 +118,8 @@ $breakpoint-compact: 1822px;
   &.active {
     background-color: var(--mat-sys-surface-container-lowest);
     box-shadow: var(--side-glow);
-    // The glow keeps its full blur but only reaches sideways: clipped flush with the top and
-    // bottom edges, with room left on both sides. Without this its downward tail relies on
-    // the secondary toolbar painting over it, which the util groups above it do not do.
+    // Clipped flush with the top and bottom edges, with room left on both sides: the glow keeps
+    // its full blur, reaches sideways only, and leaves no tail for the util groups to cover.
     clip-path: inset(0 -40px);
     border-top-right-radius: var(--border-radius);
     border-top-left-radius: var(--border-radius);
@@ -132,9 +131,8 @@ $breakpoint-compact: 1822px;
   gap: 4px;
   flex-shrink: 0;
   margin-left: auto;
-  // The secondary toolbar is a later sibling in the same stacking context, so it would
-  // paint its background and glow over the util groups hanging off this toolbar. Lifting
-  // this section makes the groups float above that shadow instead.
+  // The secondary toolbar is a later sibling in the same stacking context, so it would paint
+  // over the util groups hanging off this toolbar. Lifting this section puts them above it.
   position: relative;
   z-index: 1000;
 }

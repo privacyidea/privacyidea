@@ -17,8 +17,7 @@
   gap: var(--global-gap);
 }
 
-// A card inside the conditions expansion panel, which is raised, so it takes the shallow
-// recess.
+// A card inside a raised expansion panel, so the shallow recess.
 .action-card-row-grid {
   // appearance
   @include styles.card-recessed(3);
