@@ -85,6 +85,7 @@ from privacyidea.api.user import user_blueprint
 from privacyidea.api.validate import validate_blueprint
 from privacyidea.config import config, DockerConfig, ConfigKey, DefaultConfigValues
 from privacyidea.lib import queue
+from privacyidea.lib.conditional_access.session import init_ca_session
 from privacyidea.lib.crypto import init_hsm
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG, DOCKER_LOGGING_CONFIG
@@ -417,6 +418,7 @@ def create_app(config_name="development",
 
     # Set up Plug-Ins
     db.init_app(app)
+    init_ca_session(app)
 
     # TODO: This is not necessary except for the pi-manage command line util
     # Try to get the path of the migration directory from the installed package
@@ -539,6 +541,7 @@ def create_docker_app():
 
     # Set up Plug-Ins
     db.init_app(app)
+    init_ca_session(app)
 
     Versioned(app, format='%(path)s?v=%(version)s')
 
