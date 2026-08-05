@@ -217,24 +217,36 @@ const INFO_KEY_ACRONYMS: Record<string, string> = {
 };
 
 // When an element of a list-valued info key carries one of these, it heads that group instead of a bare ordinal and is
-// not repeated among the group's rows. A conditional-access dry-run finding is one policy's outcome, so its policy
-// name identifies it (the stage it tripped is a separate `stage_name` row, when that stage is named).
+// not repeated among the group's rows. A conditional-access finding is one policy's outcome, so its policy name
+// identifies it (the stage it tripped is a separate `stage_name` row, when that stage is named).
 const INFO_GROUP_LABEL_KEYS = ["policy_name", "name"];
 
 // Presentation for list-valued info keys whose groups speak for themselves: the key gets no row of its own, each group
 // heading reads `prefix` followed by the group's name, and that name links to `linkPath` + the group's `linkIdKey`
-// value. So a dry-run finding reads "Dry Run: <policy>" with only the policy name linking to its editor, rather than
-// nesting under a "Conditional access dry run" label. `linkIdKey` backs the link and is not shown as a row.
-const INFO_GROUP_RENDERING: Record<string, { prefix: string; linkPath: string; linkIdKey: string }> = {
-  conditional_access_dry_run: {
-    prefix: $localize`Dry Run:`,
+// value. So a finding reads "Conditional Access: <policy>" with only the policy name linking to its editor, rather
+// than nesting under a "Conditional access findings" label. A group flagged by `dryRunKey` heads with `dryRunPrefix`
+// instead, so an unenforced finding is not mistaken for one that acted. `linkIdKey` and `dryRunKey` back the heading
+// and are not shown as rows.
+const INFO_GROUP_RENDERING: Record<string, InfoGroupRendering> = {
+  conditional_access_findings: {
+    prefix: $localize`Conditional Access:`,
+    dryRunPrefix: $localize`Dry Run:`,
+    dryRunKey: "dry_run",
     linkPath: ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_DETAILS,
     linkIdKey: "policy_id"
   }
 };
 
+interface InfoGroupRendering {
+  prefix: string;
+  dryRunPrefix: string;
+  dryRunKey: string;
+  linkPath: string;
+  linkIdKey: string;
+}
+
 // A rendered other_info row. A leaf carries `value`; a one-level-nested dict carries `children` (rendered as a
-// sub-list); a list of dicts (e.g. the conditional-access dry-run findings) carries `groups`, one per element.
+// sub-list); a list of dicts (e.g. the conditional-access findings) carries `groups`, one per element.
 // Nesting deeper than that is folded into the leaf value as compact JSON. An empty `key` renders no label row.
 interface InfoRow {
   key: string;
@@ -720,7 +732,7 @@ export class AuthenticationLog {
 
   // Render other_info as "Key: value" rows. Scalars show as-is and scalar arrays as a comma-separated list. A nested
   // object (e.g. the `truncated` overflow key) becomes a one-level sub-list, and a list of objects (the
-  // conditional-access dry-run findings) becomes one sub-list per element. Anything deeper is compact JSON.
+  // conditional-access findings) becomes one sub-list per element. Anything deeper is compact JSON.
   infoEntries(value: AuthenticationLogEntry["other_info"]): InfoEntry[] {
     if (!value) return [];
     return Object.entries(value).map(([key, raw]) => {
@@ -748,10 +760,10 @@ export class AuthenticationLog {
     element: Record<string, unknown>,
     index: number,
     total: number,
-    rendering?: { prefix: string; linkPath: string; linkIdKey: string }
+    rendering?: InfoGroupRendering
   ): InfoGroup {
     const labelKey = INFO_GROUP_LABEL_KEYS.find((key) => typeof element[key] === "string" && element[key] !== "");
-    const skipKeys = [labelKey, rendering?.linkIdKey].filter((key): key is string => !!key);
+    const skipKeys = [labelKey, rendering?.linkIdKey, rendering?.dryRunKey].filter((key): key is string => !!key);
     const name = labelKey ? String(element[labelKey]) : total > 1 ? `${index + 1}` : "";
     if (!rendering) {
       return { label: name, rows: this.infoRows(element, skipKeys) };
@@ -759,8 +771,8 @@ export class AuthenticationLog {
     const id = element[rendering.linkIdKey];
     return {
       label: name,
-      // The prefix always shows, even for a lone group: it is what marks the finding as a dry run.
-      prefix: rendering.prefix,
+      // The prefix always shows, even for a lone group: it is what marks the finding as a dry run or as enforced.
+      prefix: element[rendering.dryRunKey] ? rendering.dryRunPrefix : rendering.prefix,
       rows: this.infoRows(element, skipKeys),
       link: id === null || id === undefined ? undefined : `${rendering.linkPath}${id}`
     };

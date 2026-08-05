@@ -28,7 +28,7 @@ from sqlalchemy import func, select
 
 from privacyidea.lib import _
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
-from privacyidea.lib.conditional_access.authentication_log import _naive_utc, record_dry_run_finding
+from privacyidea.lib.conditional_access.authentication_log import _naive_utc, record_conditional_access_finding
 from privacyidea.models import (AuthenticationLog, BlockList, LockoutPolicy, LockoutPolicyCounterType,
                                 LockoutStageAction, UserLockoutState, db)
 from privacyidea.models.utils import utc_now
@@ -757,7 +757,7 @@ def _policy_access_decision(policy: LockoutPolicy, user: "User", source_ip: str 
         # e.g. /validate/polltransaction, never write one at all), so there is nothing yet to attach a finding to
         # here; this dry-run finding is log-only. Contrast the post-response stage-action dry-run path
         # (_evaluate_policy, below), which runs after the row exists and persists its finding onto it via
-        # record_dry_run_finding.
+        # record_conditional_access_finding.
         log.info(f"[dry-run] policy {policy.name!r} would return {decision} for {subject_label}: "
                  f"{count} event(s) of {types} in {policy.time_window_seconds}s.")
         return None
@@ -899,7 +899,7 @@ def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
     keeping the user locked for every further failure at 8 or more.
 
     :param auth_log_event_id: id of the authentication_log row this request already wrote; a triggered dry-run
-        finding is attached to it (see :func:`record_dry_run_finding`) when given, otherwise only logged
+        finding is attached to it (see :func:`record_conditional_access_finding`) when given, otherwise only logged
     :return: the user-facing notices produced by the executed actions (empty if
         no stage triggered, in dry-run, or when de-duplicated away).
     """
@@ -963,12 +963,15 @@ def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
                 "policy_name": policy.name,
                 "threshold": triggered_stage.failure_threshold,
                 "actions": [a.action_type for a in pending_actions],
+                # The findings key is shared with enforced policies, so each finding says whether its
+                # actions actually ran.
+                "dry_run": True,
             }
             if triggered_stage.name:
                 # Only recorded when an admin named the stage; the threshold identifies
                 # which stage of the policy this is either way.
                 finding["stage_name"] = triggered_stage.name
-            record_dry_run_finding(auth_log_event_id, finding)
+            record_conditional_access_finding(auth_log_event_id, finding)
         return []
 
     dedup_window_start = now - timedelta(seconds=window)

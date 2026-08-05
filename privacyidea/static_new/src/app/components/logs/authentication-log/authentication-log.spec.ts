@@ -239,7 +239,7 @@ describe("AuthenticationLog", () => {
           id: 3,
           event_type: "PIN_FAIL",
           timestamp: "2026-08-03T09:00:02Z",
-          other_info: { conditional_access_dry_run: [] }
+          other_info: { conditional_access_findings: [] }
         }
       ])
     );
@@ -280,19 +280,20 @@ describe("AuthenticationLog", () => {
   it("infoEntries renders a dry-run finding as a 'Dry Run:' prefix plus the linked policy, with no parent label row", () => {
     expect(
       component.infoEntries({
-        conditional_access_dry_run: [
+        conditional_access_findings: [
           {
             policy_id: 7,
             policy_name: "Brute Force PIN Lockout",
             stage_name: "Lock 10 min",
             threshold: 5,
-            actions: ["LOCK_USER"]
+            actions: ["LOCK_USER"],
+            dry_run: true
           }
         ]
       })
     ).toEqual([
       {
-        // No "Conditional access dry run" row: the heading carries that context.
+        // No "Conditional access findings" row: the heading carries that context.
         key: "",
         groups: [
           {
@@ -300,7 +301,8 @@ describe("AuthenticationLog", () => {
             prefix: "Dry Run:",
             label: "Brute Force PIN Lockout",
             link: `${ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_DETAILS}7`,
-            // policy_name heads the group and policy_id backs the link, so neither is repeated as a row.
+            // policy_name heads the group, policy_id backs the link and dry_run picks the prefix, so none of them is
+            // repeated as a row.
             rows: [
               { key: "Stage name", value: "Lock 10 min" },
               { key: "Threshold", value: "5" },
@@ -312,11 +314,11 @@ describe("AuthenticationLog", () => {
     ]);
   });
 
-  it("infoEntries heads every dry-run group by its own policy, so the label is not a positional index", () => {
+  it("infoEntries heads every finding group by its own policy, so the label is not a positional index", () => {
     const entries = component.infoEntries({
-      conditional_access_dry_run: [
-        { policy_id: 7, policy_name: "Permanent IP Block", threshold: 7 },
-        { policy_id: 3, policy_name: "Email Notification Test", threshold: 6 }
+      conditional_access_findings: [
+        { policy_id: 7, policy_name: "Permanent IP Block", threshold: 7, dry_run: true },
+        { policy_id: 3, policy_name: "Email Notification Test", threshold: 6, dry_run: true }
       ]
     });
     expect(entries[0].groups?.map((group) => group.label)).toEqual(["Permanent IP Block", "Email Notification Test"]);
@@ -328,13 +330,21 @@ describe("AuthenticationLog", () => {
     ]);
   });
 
-  it("infoEntries omits the dry-run heading link when the finding carries no policy id", () => {
+  it("infoEntries omits the heading link when the finding carries no policy id", () => {
     const groups = component.infoEntries({
-      conditional_access_dry_run: [{ policy_name: "Legacy finding", threshold: 4 }]
+      conditional_access_findings: [{ policy_name: "Legacy finding", threshold: 4, dry_run: true }]
     })[0].groups;
     expect(groups?.[0].label).toBe("Legacy finding");
     expect(groups?.[0].prefix).toBe("Dry Run:");
     expect(groups?.[0].link).toBeUndefined();
+  });
+
+  it("infoEntries heads an enforced finding with the plain conditional-access prefix", () => {
+    const groups = component.infoEntries({
+      conditional_access_findings: [{ policy_id: 7, policy_name: "Brute Force PIN Lockout", threshold: 5 }]
+    })[0].groups;
+    expect(groups?.[0].prefix).toBe("Conditional Access:");
+    expect(groups?.[0].label).toBe("Brute Force PIN Lockout");
   });
 
   it("infoEntries falls back to an ordinal label for unnamed groups and omits it for a lone one", () => {

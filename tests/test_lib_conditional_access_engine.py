@@ -793,14 +793,16 @@ class LockoutEngineTestCase(LockoutTestCase):
 
         entry = get_authentication_log_event(event_id)
         assert entry is not None
-        findings = entry.other_info["conditional_access_dry_run"]
+        findings = entry.other_info["conditional_access_findings"]
         self.assertEqual(1, len(findings))
         finding = findings[0]
         # A finding is deliberately terse - it names the policy (policy_id only so the WebUI can link to its editor),
         # the threshold it would have tripped and the actions that would have run. Everything else about the request
         # (event type, user, source IP, time) is already on the log row itself. An unnamed stage contributes no stage
-        # key at all, and the internal stage id is never recorded.
-        self.assertEqual({"policy_id", "policy_name", "threshold", "actions"}, set(finding))
+        # key at all, and the internal stage id is never recorded. dry_run marks it as not enforced, since the
+        # findings key is shared with enforced policies.
+        self.assertEqual({"policy_id", "policy_name", "threshold", "actions", "dry_run"}, set(finding))
+        self.assertTrue(finding["dry_run"])
         self.assertEqual(policy.id, finding["policy_id"])
         self.assertEqual("dry", finding["policy_name"])
         self.assertEqual(3, finding["threshold"])
@@ -833,7 +835,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         """The dry-run findings recorded on *event_id*, or [] when none were."""
         entry = get_authentication_log_event(event_id)
         assert entry is not None
-        return (entry.other_info or {}).get("conditional_access_dry_run", [])
+        return (entry.other_info or {}).get("conditional_access_findings", [])
 
     def test_dry_run_records_one_finding_per_matching_policy(self):
         # Several dry-run policies tracking the same event all evaluate on one request, so the request's row collects
@@ -929,7 +931,7 @@ class LockoutEngineTestCase(LockoutTestCase):
 
         other_info = get_authentication_log_event(event_id).other_info
         self.assertEqual("pre-existing", other_info["reason"])
-        self.assertEqual(1, len(other_info["conditional_access_dry_run"]))
+        self.assertEqual(1, len(other_info["conditional_access_findings"]))
 
     def test_dry_run_finding_lists_every_pending_action_of_the_stage(self):
         self._make_policy(

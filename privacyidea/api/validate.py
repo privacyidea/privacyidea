@@ -573,7 +573,8 @@ def check():
         # Write the single authentication-log row for this request, then let the
         # conditional-access engine react to the classified outcome.
         _log_authentication_event(context)
-        conditional_access_posteval(context["user"], context[AUTH_EVENT_TYPE_KEY], g.auth_log_event_id)
+        conditional_access_posteval(context["user"], context[AUTH_EVENT_TYPE_KEY],
+                                    getattr(g, "auth_log_event_id", None))
     return response
 
 

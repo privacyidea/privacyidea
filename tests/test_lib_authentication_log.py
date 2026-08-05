@@ -24,7 +24,7 @@ from privacyidea.lib.conditional_access.authentication_log import (
     log_authentication_event,
     delete_authentication_log_event,
     reclassify_authentication_log_event,
-    record_dry_run_finding,
+    record_conditional_access_finding,
     get_authentication_log_event,
     get_authentication_logs,
     get_authentication_logs_paginate,
@@ -511,21 +511,21 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertEqual(f"{head},AAA", entry.serial)
         self.assertEqual({"truncated": {"serial": "BBBBBBBBBB"}}, entry.other_info)
 
-    def test_record_dry_run_finding_swallows_a_failing_savepoint(self):
+    def test_record_conditional_access_finding_swallows_a_failing_savepoint(self):
         # A finding that cannot be serialized into the JSON column fails when the SAVEPOINT flushes. Recording a
         # dry-run finding is a diagnostic side effect of an already-finished request, so the failure must be swallowed
         # and must leave the session usable for the rest of that request.
         event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, other_info={"reason": "policy"})
-        self.assertIsNone(record_dry_run_finding(event_id, {"actions": {"LOCK_USER"}}))  # a set is not serializable
+        self.assertIsNone(record_conditional_access_finding(event_id, {"actions": {"LOCK_USER"}}))  # a set is not serializable
         # The session survived: a further write still goes through.
         self.assertIsNotNone(log_authentication_event(event_type=AuthEventType.PIN_FAIL))
 
-    def test_record_dry_run_finding_swallows_a_failing_commit(self):
+    def test_record_conditional_access_finding_swallows_a_failing_commit(self):
         # The SAVEPOINT update succeeds but the outer commit fails: the error is swallowed and the session is rolled
         # back, so the rest of the request can still use it.
         event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS)
         with mock.patch("privacyidea.models.db.session.commit", side_effect=RuntimeError("commit boom")):
-            self.assertIsNone(record_dry_run_finding(event_id, {"policy_id": 1}))
+            self.assertIsNone(record_conditional_access_finding(event_id, {"policy_id": 1}))
         self.assertIsNotNone(log_authentication_event(event_type=AuthEventType.PIN_FAIL))
 
     def test_reclassify_without_serial_keeps_existing_serial(self):
@@ -538,40 +538,40 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertEqual(AuthEventType.NOT_AUTHORIZED, entry.event_type)
         self.assertEqual("TOK001", entry.serial)
 
-    def test_record_dry_run_finding_on_row_with_no_prior_other_info(self):
+    def test_record_conditional_access_finding_on_row_with_no_prior_other_info(self):
         event_id = log_authentication_event(event_type=AuthEventType.PASSWORD_FAIL, resolver="res1", uid="user1",
                                             realm="realm1")
-        record_dry_run_finding(event_id, {"policy_id": 1, "policy_name": "p1"})
+        record_conditional_access_finding(event_id, {"policy_id": 1, "policy_name": "p1"})
         entry = get_authentication_log_event(event_id)
         assert entry is not None
-        self.assertEqual({"conditional_access_dry_run": [{"policy_id": 1, "policy_name": "p1"}]}, entry.other_info)
+        self.assertEqual({"conditional_access_findings": [{"policy_id": 1, "policy_name": "p1"}]}, entry.other_info)
 
-    def test_record_dry_run_finding_preserves_existing_other_info(self):
+    def test_record_conditional_access_finding_preserves_existing_other_info(self):
         # An existing other_info key (e.g. from a caller-supplied value, or a serial-overflow "truncated" key) must
-        # survive alongside the new "conditional_access_dry_run" key rather than being clobbered.
+        # survive alongside the new "conditional_access_findings" key rather than being clobbered.
         max_serial = authentication_log_column_length["serial"]
         serial = "S" * (max_serial + 5)
         event_id = log_authentication_event(event_type=AuthEventType.PASSWORD_FAIL, serial=serial,
                                             other_info={"reason": "policy"})
-        record_dry_run_finding(event_id, {"policy_id": 1})
+        record_conditional_access_finding(event_id, {"policy_id": 1})
         entry = get_authentication_log_event(event_id)
         assert entry is not None
         self.assertEqual({"reason": "policy",
                           "truncated": {"serial": "SSSSS"},
-                          "conditional_access_dry_run": [{"policy_id": 1}]}, entry.other_info)
+                          "conditional_access_findings": [{"policy_id": 1}]}, entry.other_info)
 
-    def test_record_dry_run_finding_twice_accumulates_a_list(self):
+    def test_record_conditional_access_finding_twice_accumulates_a_list(self):
         event_id = log_authentication_event(event_type=AuthEventType.PASSWORD_FAIL, resolver="res1", uid="user1",
                                             realm="realm1")
-        record_dry_run_finding(event_id, {"policy_id": 1})
-        record_dry_run_finding(event_id, {"policy_id": 2})
+        record_conditional_access_finding(event_id, {"policy_id": 1})
+        record_conditional_access_finding(event_id, {"policy_id": 2})
         entry = get_authentication_log_event(event_id)
         assert entry is not None
-        self.assertEqual([{"policy_id": 1}, {"policy_id": 2}], entry.other_info["conditional_access_dry_run"])
+        self.assertEqual([{"policy_id": 1}, {"policy_id": 2}], entry.other_info["conditional_access_findings"])
 
-    def test_record_dry_run_finding_on_missing_event_id_is_a_silent_noop(self):
+    def test_record_conditional_access_finding_on_missing_event_id_is_a_silent_noop(self):
         # A non-existent event_id must not raise; it is logged and swallowed, same as reclassify.
-        record_dry_run_finding(999999999, {"policy_id": 1})
+        record_conditional_access_finding(999999999, {"policy_id": 1})
 
 
 class AuthenticationLogDBTestCase(MyTestCase):

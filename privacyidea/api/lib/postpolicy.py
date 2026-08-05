@@ -1272,7 +1272,7 @@ def is_authorized(request, response):
             if event_id:
                 reclassify_authentication_log_event(event_id, AuthEventType.NOT_AUTHORIZED)
             else:
-                log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=request.User)
+                event_id = log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=request.User)
             # check()'s finally already ran the lockout engine on the pre-authz outcome (e.g. LOGIN_SUCCESS), so the
             # denial above was never seen by it. Re-evaluate with the corrected NOT_AUTHORIZED outcome so a policy
             # tracking it counts this attempt. Deferred import avoids a bootstrap circular import; guarded so a

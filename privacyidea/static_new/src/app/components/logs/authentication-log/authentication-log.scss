@@ -68,9 +68,6 @@ td.cell-info-sized {
   }
 }
 
-.info-group-label {
-}
-
 // Separates the prefix from the group name that follows it. Done here rather than with trailing whitespace in the
 // prefix string, which Angular collapses between elements and translators would drop.
 .info-group-prefix {

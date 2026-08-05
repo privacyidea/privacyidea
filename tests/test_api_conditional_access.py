@@ -209,7 +209,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         # The triggering (third) row carries the dry-run finding.
         triggering_entry = entries[-1]
         self.assertIsNotNone(triggering_entry.other_info)
-        findings = triggering_entry.other_info["conditional_access_dry_run"]
+        findings = triggering_entry.other_info["conditional_access_findings"]
         self.assertEqual(1, len(findings))
         finding = findings[0]
         self.assertEqual("ca_lock", finding["policy_name"])
@@ -685,7 +685,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         # The triggering (second) row carries the finding.
         triggering_entry = entries[-1]
         self.assertIsNotNone(triggering_entry.other_info)
-        findings = triggering_entry.other_info["conditional_access_dry_run"]
+        findings = triggering_entry.other_info["conditional_access_findings"]
         self.assertEqual(1, len(findings))
         finding = findings[0]
         self.assertEqual("ca_pw_dry", finding["policy_name"])
