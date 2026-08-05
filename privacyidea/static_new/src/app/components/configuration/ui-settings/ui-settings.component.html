@@ -42,19 +42,7 @@
       i18n-title
       title="Theme">
       <div class="settings-row">
-        <label
-          [matTooltip]="themeToggleLabel()"
-          class="theme-toggle">
-          <input
-            (change)="toggleTheme()"
-            [attr.aria-label]="themeToggleLabel()"
-            [checked]="theme() === 'dark'"
-            type="checkbox" />
-          <span class="theme-toggle__button"></span>
-          <span class="theme-toggle__label">
-            <mat-icon>{{ theme() === "dark" ? "dark_mode" : "light_mode" }}</mat-icon>
-          </span>
-        </label>
+        <app-theme-toggle />
       </div>
     </app-details-card>
 
@@ -136,28 +124,13 @@
       i18n-title
       title="Light source">
       <div class="settings-row">
-        <fieldset class="light-dial">
-          <legend
-            class="light-dial__hidden-text"
-            i18n>
-            Light source
-          </legend>
-          @for (level of lightSourceLevels; track level.value) {
-            <label
-              [class]="'light-dial__slot light-dial__slot--' + level.value"
-              [matTooltip]="level.label">
-              <input
-                (change)="selectLightSource(level.value)"
-                [checked]="lightSource() === level.value"
-                name="light-source"
-                type="radio" />
-              <span class="light-dial__hidden-text">{{ level.label }}</span>
-            </label>
-          }
-          <span class="light-dial__glow"></span>
-          <span class="light-dial__pointer"></span>
-          <span class="light-dial__knob"></span>
-        </fieldset>
+        <app-light-source-dial
+          [items]="lightSourceDialItems"
+          [selected]="lightSource()"
+          groupName="light-source"
+          legend="Light source"
+          i18n-legend
+          (pick)="selectLightSource($event)" />
       </div>
     </app-details-card>
   </div>

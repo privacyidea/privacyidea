@@ -48,8 +48,6 @@ describe("UISettingsComponent", () => {
 
   interface TestableSettings {
     preferredLocale: () => string;
-    theme: () => "light" | "dark";
-    toggleTheme: () => void;
     selectLocale: (code: string) => void;
     showLoadingUrls: () => boolean;
     setShowLoadingUrls: (show: boolean) => void;
@@ -95,26 +93,9 @@ describe("UISettingsComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should show the theme in effect", () => {
-    expect(testable().theme()).toBe("light");
-
-    themeService.visualTheme.set("dark");
-
-    expect(testable().theme()).toBe("dark");
-  });
-
-  it("should toggle from light to dark", () => {
-    testable().toggleTheme();
-
-    expect(themeService.setTheme).toHaveBeenCalledWith("dark");
-  });
-
-  it("should toggle from dark to light", () => {
-    themeService.visualTheme.set("dark");
-
-    testable().toggleTheme();
-
-    expect(themeService.setTheme).toHaveBeenCalledWith("light");
+  // Toggling is covered by ThemeToggleComponent's own spec.
+  it("should offer the shared theme knob", () => {
+    expect(fixture.nativeElement.querySelector("app-theme-toggle .theme-toggle input")).toBeTruthy();
   });
 
   it("should reset every UI setting to its default", () => {
@@ -140,27 +121,17 @@ describe("UISettingsComponent", () => {
     expect(testable().lightSource()).toBe("12");
   });
 
-  it("should render the light-source dial as a native radio group", () => {
-    const radios = fixture.nativeElement.querySelectorAll<HTMLInputElement>(".light-dial__slot input");
+  // The dial's own rendering (radio semantics, checked slot, tooltip labels) is covered by
+  // LightSourceDialComponent's own spec; this only checks the wiring into it.
+  it("should hand the dial one item per light-source stop, keyed by the current value", () => {
+    const radios = fixture.nativeElement.querySelectorAll<HTMLInputElement>(".dial__slot input");
 
     expect(radios).toHaveLength(LIGHT_SOURCE_LEVELS.length);
-    // One group, so the arrow keys turn the dial.
-    expect([...radios].every((radio) => radio.name === "light-source")).toBe(true);
     expect([...radios].filter((radio) => radio.checked)).toHaveLength(1);
   });
 
-  it("should mark the stored light source as the checked position", () => {
-    appearanceService.lightSource.set("17");
-    fixture.detectChanges();
-
-    const checked = fixture.nativeElement.querySelector<HTMLInputElement>(".light-dial__slot input:checked");
-    const slot = checked?.closest(".light-dial__slot");
-
-    expect(slot?.className).toContain("light-dial__slot--17");
-  });
-
-  it("should apply the light source of the turned-to position", () => {
-    const radios = fixture.nativeElement.querySelectorAll<HTMLInputElement>(".light-dial__slot input");
+  it("should apply the light source turned to on the dial", () => {
+    const radios = fixture.nativeElement.querySelectorAll<HTMLInputElement>(".dial__slot input");
 
     radios[2].checked = true;
     radios[2].dispatchEvent(new Event("change"));

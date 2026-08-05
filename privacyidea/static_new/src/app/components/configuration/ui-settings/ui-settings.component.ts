@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, inject } from "@angular/core";
+import { Component, inject } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatButtonToggleModule } from "@angular/material/button-toggle";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -26,6 +26,11 @@ import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { UI_LOCALES } from "@core/locale";
 import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
+import {
+  LightSourceDialComponent,
+  LightSourceDialItem
+} from "@components/shared/light-source-dial/light-source-dial.component";
+import { ThemeToggleComponent } from "@components/shared/theme-toggle/theme-toggle.component";
 import {
   AppearanceService,
   CornerLevel,
@@ -41,13 +46,15 @@ import { UiPreferencesService, UiPreferencesServiceInterface } from "@services/u
   selector: "app-ui-settings",
   imports: [
     DetailsCardComponent,
+    LightSourceDialComponent,
     MatButtonModule,
     MatButtonToggleModule,
     MatFormFieldModule,
     MatIconModule,
     MatSelectModule,
     MatSlideToggleModule,
-    MatTooltipModule
+    MatTooltipModule,
+    ThemeToggleComponent
   ],
   templateUrl: "./ui-settings.component.html",
   styleUrl: "./ui-settings.component.scss"
@@ -59,7 +66,6 @@ export class UISettingsComponent {
   protected readonly locales = UI_LOCALES;
   protected readonly preferredLocale = this.uiPreferencesService.preferredLocale;
   protected readonly showLoadingUrls = this.uiPreferencesService.showLoadingUrls;
-  protected readonly theme = this.themeService.visualTheme;
   protected readonly depth = this.appearanceService.depth;
   protected readonly lightSource = this.appearanceService.lightSource;
   protected readonly corners = this.appearanceService.corners;
@@ -71,25 +77,20 @@ export class UISettingsComponent {
     { value: "very-strong", label: $localize`Very strong` }
   ];
   // The angle is the whole label: a bare number needs no translation, and the dial itself
-  // is named by the card title and the group's legend.
-  protected readonly lightSourceLevels: { value: LightSourceLevel; label: string }[] = LIGHT_SOURCE_LEVELS.map(
-    (value) => ({ value, label: `${Number(value) * LIGHT_SOURCE_STEP_ANGLE}°` })
-  );
+  // is named by the card title and the group's legend. slot === value here, since this
+  // dial's items are the raw angle stops rather than something else placed onto them.
+  protected readonly lightSourceDialItems: LightSourceDialItem[] = LIGHT_SOURCE_LEVELS.map((value) => ({
+    slot: Number(value),
+    value,
+    label: `${Number(value) * LIGHT_SOURCE_STEP_ANGLE}°`
+  }));
   protected readonly cornerLevels: { value: CornerLevel; label: string }[] = [
     { value: "square", label: $localize`Square` },
     { value: "default", label: $localize`Default` },
     { value: "round", label: $localize`Round` },
     { value: "extra-round", label: $localize`Extra round` }
   ];
-  // Names the mode the toggle switches to, so it reads as the action it performs.
   protected readonly resetTooltip = $localize`Reset UI settings to defaults`;
-  protected readonly themeToggleLabel = computed(() =>
-    this.theme() === "dark" ? $localize`Switch to light mode` : $localize`Switch to dark mode`
-  );
-
-  protected toggleTheme(): void {
-    this.themeService.setTheme(this.theme() === "dark" ? "light" : "dark");
-  }
 
   protected resetSettings(): void {
     this.appearanceService.resetToDefaults();

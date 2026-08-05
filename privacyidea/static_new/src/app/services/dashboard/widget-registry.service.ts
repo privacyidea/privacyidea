@@ -18,6 +18,7 @@
  **/
 import { Injectable } from "@angular/core";
 import { AdministrationWidgetComponent } from "@components/dashboard/widgets/administration-widget/administration-widget.component";
+import { AppearanceWidgetComponent } from "@components/dashboard/widgets/appearance-widget/appearance-widget.component";
 import { AuthenticationsWidgetComponent } from "@components/dashboard/widgets/authentications-widget/authentications-widget.component";
 import { CertificateHealthWidgetComponent } from "@components/dashboard/widgets/certificate-health-widget/certificate-health-widget.component";
 import { EventsWidgetComponent } from "@components/dashboard/widgets/events-widget/events-widget.component";
@@ -49,7 +50,8 @@ export class WidgetRegistryService implements WidgetRegistryServiceInterface {
     SubscriptionsWidgetComponent,
     CertificateHealthWidgetComponent,
     ResolverTimingWidgetComponent,
-    NotificationDeliveryWidgetComponent
+    NotificationDeliveryWidgetComponent,
+    AppearanceWidgetComponent
   ];
 
   public get(type: string): WidgetComponentType | undefined {
