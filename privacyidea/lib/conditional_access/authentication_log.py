@@ -178,6 +178,90 @@ def _store_overflow(other_info: dict | None, overflow: dict[str, str]) -> dict |
     return merged
 
 
+@dataclass
+class PendingAuthEvent:
+    """
+    One authentication-log row, described but not yet written.
+
+    The values are held **raw**: truncation to the column lengths happens when the row is built
+    (:func:`_build_entry`), so a value a later request stage lengthens - a post-policy extending ``serial``, say - is
+    cut against its final length rather than an intermediate one. ``other_info`` is likewise the caller's dict, which
+    the row build merges any truncation overflow into.
+
+    *row_id* is ``None`` until the event has been written and carries the row's id afterwards, so it doubles as the
+    "already persisted" flag (see :meth:`ConditionalAccessContext.flush`).
+    """
+    event_type: AuthEventType
+    transaction_id: str | None = None
+    resolver: str | None = None
+    uid: str | None = None
+    realm: str | None = None
+    username: str | None = None
+    user_role: str | None = None
+    source_ip: str | None = None
+    client_label: str | None = None
+    serial: str | None = None
+    attempt_id: str | None = None
+    other_info: dict | None = None
+    row_id: int | None = None
+
+
+# The columns of an entry that are truncated to their column length, and the separator to cut on (see _truncate).
+_TRUNCATED_COLUMNS = {
+    "event_type": None,
+    "transaction_id": None,
+    "resolver": None,
+    "uid": None,
+    "realm": None,
+    "username": None,
+    "user_role": None,
+    "source_ip": None,
+    "client_label": None,
+    # A comma-joined serial list: cut on the last whole serial that fits.
+    "serial": ",",
+    "attempt_id": None,
+}
+
+
+def _build_entry(event: PendingAuthEvent) -> AuthenticationLog:
+    """
+    Build the :class:`AuthenticationLog` row for *event*, truncating every column to its length and folding the
+    overflow into ``other_info`` so nothing is silently lost.
+    """
+    stored: dict[str, str | None] = {}
+    overflow: dict[str, str] = {}
+    for column, separator in _TRUNCATED_COLUMNS.items():
+        result = _truncate(column, getattr(event, column), separator=separator)
+        stored[column] = result.stored
+        if result.overflow is not None:
+            overflow[column] = result.overflow
+    return AuthenticationLog(**stored, other_info=_store_overflow(event.other_info, overflow))
+
+
+def write_authentication_events(events: Sequence[PendingAuthEvent]) -> bool:
+    """
+    Write *events* as **one** transaction, in the given order, and record each row's id on its event.
+
+    Writing the authentication log must never break the authentication itself, so a failure is logged and swallowed
+    and the events keep ``row_id is None``. The insert runs on the conditional-access session, so neither the commit
+    nor a rollback touches the request's own pending writes.
+
+    :return: whether the transaction was committed
+    """
+    if not events:
+        return True
+    entries = [_build_entry(event) for event in events]
+    label = ("the authentication log entry" if len(entries) == 1
+             else f"the {len(entries)} authentication log entries")
+    with guarded_write(label) as outcome:
+        get_ca_session().add_all(entries)
+    if not outcome.succeeded:
+        return False
+    for event, entry in zip(events, entries):
+        event.row_id = entry.id
+    return True
+
+
 def log_authentication_event(event_type: AuthEventType,
                              transaction_id: str | None = None,
                              resolver: str | None = None,
@@ -191,36 +275,16 @@ def log_authentication_event(event_type: AuthEventType,
                              attempt_id: str | None = None,
                              other_info: dict | None = None) -> int | None:
     """
-    Create a new authentication log entry and return its id.
+    Create a new authentication log entry and return its id, or ``None`` if it could not be written.
 
-    Writing the authentication log must never break the authentication itself, so a failure to write the entry is
-    logged and swallowed and ``None`` is returned instead of an id. The insert runs on the conditional-access
-    session, so neither the commit nor a rollback touches the request's own pending writes.
+    The single-event convenience wrapper over :func:`write_authentication_events`, for callers that have no request
+    context to collect on (the CLI, tests, and lib code outside a view).
     """
-    fields = {
-        "event_type": event_type,
-        "transaction_id": transaction_id,
-        "resolver": resolver,
-        "uid": uid,
-        "realm": realm,
-        "username": username,
-        "user_role": user_role,
-        "source_ip": source_ip,
-        "client_label": client_label,
-        "serial": serial,
-        "attempt_id": attempt_id,
-    }
-    stored: dict[str, str | None] = {}
-    overflow: dict[str, str] = {}
-    for column, value in fields.items():
-        result = _truncate(column, value, separator="," if column == "serial" else None)
-        stored[column] = result.stored
-        if result.overflow is not None:
-            overflow[column] = result.overflow
-    entry = AuthenticationLog(**stored, other_info=_store_overflow(other_info, overflow))
-    with guarded_write("the authentication log entry") as outcome:
-        get_ca_session().add(entry)
-    return entry.id if outcome.succeeded else None
+    event = PendingAuthEvent(event_type=event_type, transaction_id=transaction_id, resolver=resolver, uid=uid,
+                             realm=realm, username=username, user_role=user_role, source_ip=source_ip,
+                             client_label=client_label, serial=serial, attempt_id=attempt_id, other_info=other_info)
+    write_authentication_events([event])
+    return event.row_id
 
 
 def get_attempt_id_for_transaction(transaction_id: str) -> str | None:

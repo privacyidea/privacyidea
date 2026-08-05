@@ -38,8 +38,9 @@ from flask import jsonify, current_app, Response, Request, request, g, has_reque
 from flask_babel import _
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
-from privacyidea.lib.conditional_access.authentication_log import (log_authentication_event, AuthLogUserRole,
+from privacyidea.lib.conditional_access.authentication_log import (AuthLogUserRole, PendingAuthEvent,
                                                                    get_attempt_id_for_transaction)
+from privacyidea.lib.conditional_access.request_context import get_ca_context
 from privacyidea.lib.user import User
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.config import get_from_config, SYSCONF
@@ -393,7 +394,7 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
                 resolved = True
         except Exception as ex:
             log.debug(f"Could not resolve the token owner for the authentication log: {ex!r}")
-    return log_authentication_event(
+    event = PendingAuthEvent(
         event_type=event_type,
         transaction_id=transaction_id,
         resolver=user.resolver if resolved else None,
@@ -406,6 +407,12 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
         serial=serial,
         attempt_id=attempt_id,
     )
+    # Staged on the request's conditional-access context and written straight away. Deferring the write to request
+    # teardown - the point of collecting them - is a separate step; for now the timing is unchanged.
+    context = get_ca_context()
+    context.stage(event)
+    context.flush()
+    return event.row_id
 
 
 def conditional_access_precheck(user) -> "Response | None":
