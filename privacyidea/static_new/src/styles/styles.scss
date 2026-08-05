@@ -5,6 +5,7 @@
 @use "theme";
 @use "material-icons/iconfont/material-icons.scss";
 @forward "table" show base-table-structure;
+@forward "cards";
 
 @include meta.load-css("mixins.scss");
 @include meta.load-css("buttons.scss");
@@ -84,6 +85,13 @@ body {
   --depth-dir-x: 1;
   --depth-dir-y: 1;
 
+  // Shading runs one step ahead of the shadows: at every level the surface tones and
+  // gradients are the ones the next stronger level's shadows are paired with, so the
+  // background carries more of the depth than the blur has to. The html.depth-* blocks set
+  // both scales; only "flat" ties them together, at 0, because a flat surface has to read
+  // as one colour.
+  --depth-tone-scale: var(--depth-scale);
+
   // The direction factors are the components of a unit vector (see the html.light-source-*
   // blocks), so a diagonal light contributes 0.7071 per axis. These are the distances at
   // scale 1; every step of the depth setting sits below that, so the shadows stay soft.
@@ -136,9 +144,9 @@ body {
   // running from the lit corner to the shadowed one, lighter-to-darker on a raised surface
   // and darker-to-lighter on a recessed one. The gradient runs 90deg behind the dial angle,
   // which puts its light end on the corner the light comes from, and the tint grows with
-  // --depth-scale, so at the flat step both stops collapse to one colour.
+  // --depth-tone-scale, so at the flat step both stops collapse to one colour.
   --depth-gradient-angle: calc(var(--dial-angle, 340deg) - 90deg);
-  --depth-tint: clamp(0%, calc(12% * var(--depth-scale)), 100%);
+  --depth-tint: clamp(0%, calc(12% * var(--depth-tone-scale)), 100%);
   --surface-raised: linear-gradient(
     var(--depth-gradient-angle),
     color-mix(in srgb, var(--mat-sys-light) var(--depth-tint), var(--table-color)),
@@ -152,12 +160,12 @@ body {
   // makes "flat" read as flat.
   --inset-tone-5: color-mix(
     in srgb,
-    var(--mat-sys-surface-container-high) clamp(0%, calc(40% * var(--depth-scale)), 100%),
+    var(--mat-sys-surface-container-high) clamp(0%, calc(40% * var(--depth-tone-scale)), 100%),
     var(--mat-sys-surface-container-lowest)
   );
   --inset-tone-3: color-mix(
     in srgb,
-    var(--mat-sys-surface-container) clamp(0%, calc(50% * var(--depth-scale)), 100%),
+    var(--mat-sys-surface-container) clamp(0%, calc(50% * var(--depth-tone-scale)), 100%),
     var(--mat-sys-surface-container-lowest)
   );
   --inset-surface-5: linear-gradient(
@@ -310,20 +318,27 @@ html.depth-flat .secondary-toolbar {
     inset 0 1px 0 0 var(--mat-sys-outline-variant);
 }
 
+// Each level's tone scale is the next level's shadow scale, and very strong tops the ladder
+// out with a step of its own -- the darkest surface the system offers, one beyond what any
+// shadow reaches.
 html.depth-subtle {
   --depth-scale: 0.3;
+  --depth-tone-scale: 0.6;
 }
 
 html.depth-default {
   --depth-scale: 0.6;
+  --depth-tone-scale: 0.9;
 }
 
 html.depth-strong {
   --depth-scale: 0.9;
+  --depth-tone-scale: 1.2;
 }
 
 html.depth-very-strong {
   --depth-scale: 1.2;
+  --depth-tone-scale: 1.5;
 }
 
 // Where the light comes from, as one stop of a rotary dial: --dial-angle points at it
@@ -385,34 +400,6 @@ $corner-radii: (
   max-width: 100cqw;
   max-height: 100cqh;
   overflow: auto;
-}
-
-// The two card treatments of the neumorphism.io model: a card is set apart from its parent
-// by being raised above it or sunk into it, never by being outlined. Which one applies
-// follows from the nesting — a card on the recessed dashboard field is raised, a card
-// inside a raised page container is recessed — so the two stay distinguishable however
-// deep the stack goes.
-//
-// Neither declares a border: the outline belongs to the flat depth step alone, where
-// --elevation-* and --inset-shadow-* collapse to a hairline ring (see html.depth-flat),
-// and it appears exactly when there is no depth left to convey the card's edge. A card
-// that draws its own border would double that ring at the flat step and fence itself off
-// from the shadow at every other one.
-//
-// $slot picks the step of the shared 3 < 5 < 8 depth scale, so a card can sit shallower or
-// deeper than the default without stating a shadow of its own.
-@mixin card-raised($slot: 5) {
-  border: 0;
-  border-radius: var(--border-radius);
-  background: var(--surface-raised);
-  box-shadow: var(--elevation-#{$slot});
-}
-
-@mixin card-recessed($slot: 3) {
-  border: 0;
-  border-radius: var(--border-radius);
-  background: var(--inset-surface-#{$slot});
-  box-shadow: var(--inset-shadow-#{$slot});
 }
 
 // Global (unencapsulated) so it can match the router-outlet's dynamically

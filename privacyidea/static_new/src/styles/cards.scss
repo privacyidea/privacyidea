@@ -1,0 +1,27 @@
+// The two card treatments of the neumorphism.io model: a card is set apart from its parent
+// by being raised above it or sunk into it, never by being outlined. Which one applies
+// follows from the nesting — a card on the recessed dashboard field is raised, a card
+// inside a raised page container is recessed — so the two stay distinguishable however
+// deep the stack goes.
+//
+// Neither declares a border: the outline belongs to the flat depth step alone, where
+// --elevation-* and --inset-shadow-* collapse to a hairline ring (see html.depth-flat),
+// and it appears exactly when there is no depth left to convey the card's edge. A card
+// that draws its own border would double that ring at the flat step and fence itself off
+// from the shadow at every other one.
+//
+// $slot picks the step of the shared 3 < 5 < 8 depth scale, so a card can sit shallower or
+// deeper than the default without stating a shadow of its own.
+@mixin card-raised($slot: 5) {
+  border: 0;
+  border-radius: var(--border-radius);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-#{$slot});
+}
+
+@mixin card-recessed($slot: 3) {
+  border: 0;
+  border-radius: var(--border-radius);
+  background: var(--inset-surface-#{$slot});
+  box-shadow: var(--inset-shadow-#{$slot});
+}

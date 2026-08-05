@@ -16,10 +16,8 @@
 }
 
 .well {
-  background-color: var(--mat-sys-surface-container-low);
-  border: 1px solid var(--mat-sys-outline-variant);
+  @include styles.card-recessed(3);
   padding: 1rem;
-  border-radius: var(--border-radius);
   display: grid;
   gap: 16px;
 
