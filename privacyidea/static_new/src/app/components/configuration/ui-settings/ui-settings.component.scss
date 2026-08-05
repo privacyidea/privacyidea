@@ -26,8 +26,9 @@
   flex-direction: column;
   gap: var(--global-gap);
   // Wide enough for the xs + s card pair of the first row (162 + 16 + 340), which is the
-  // m step of the card scale. Height is the mixin's cap; the cards scroll inside it.
-  max-width: var(--card-width-m);
+  // m step of the card scale, plus the container's own padding (the mixin measures
+  // border-box). Height is the mixin's cap; the cards scroll inside it.
+  max-width: calc(var(--card-width-m) + 2 * var(--global-padding));
 }
 
 .settings-header {

@@ -4,7 +4,7 @@
 .system-config-container {
   @include styles.main-component-style;
   display: grid;
-  min-width: 616px;
+  min-width: calc(616px + 2 * var(--global-padding));
 }
 
 .system-config-scroll-container {

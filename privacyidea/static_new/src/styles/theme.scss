@@ -9,7 +9,10 @@ html {
     --rose-ripple: light-dark(#f4d7e0, #433d3e);
     --sky-bg: light-dark(#edf3f5, #283034);
 
-    --mat-sys-light: light-dark(#ffffff, #242424);
+    // Highlight half of every neumorphic shadow pair (see --elevation-* in styles.scss).
+    // Off-white, a couple of points below the card tone: it reads as a lit edge against the
+    // 90% page background without glaring, and pairs with --mat-sys-shadow at 80%.
+    --mat-sys-light: light-dark(#f5f5f5, #242424);
 
     --mat-sys-primary-dark: light-dark(hsl(198, 66%, 25%), hsl(198, 66%, 60%));
     --mat-sys-primary-base: light-dark(hsl(198, 66%, 30%), hsl(198, 66%, 55%));
@@ -78,7 +81,7 @@ html {
     --rose-ripple: #f4d7e0;
     --sky-bg: #edf3f5;
 
-    --mat-sys-light: #ffffff;
+    --mat-sys-light: #f5f5f5;
 
     --mat-sys-primary-dark: hsl(198, 66%, 25%);
     --mat-sys-primary-base: hsl(198, 66%, 30%);

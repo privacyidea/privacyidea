@@ -7,7 +7,7 @@
 
 .user-new-resolver-container {
   @include styles.main-component-style;
-  min-width: 632px;
+  min-width: calc(632px + 2 * var(--global-padding));
 
   @media (max-width: 1000px) {
     min-width: unset;

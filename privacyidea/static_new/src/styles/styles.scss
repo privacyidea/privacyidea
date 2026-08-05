@@ -73,7 +73,7 @@ body {
   // Neumorphic shadow geometry, following the neumorphism.io formula: a dark shadow cast
   // toward one corner, a light highlight mirrored to the opposite one, and a blur three
   // times the offset distance. --mat-sys-shadow (#cccccc / #000000) and --mat-sys-light
-  // (#ffffff / #242424) are the theme's two tones, so the pair inverts in dark mode.
+  // (#f5f5f5 / #242424) are the theme's two tones, so the pair inverts in dark mode.
   //
   // Two knobs drive it, both set by the UI settings through the html.depth-* and
   // html.light-source-* blocks below: --depth-scale for how far the shadows reach (0
@@ -374,7 +374,8 @@ $corner-radii: (
 // spelled out here. Hence no toolbar heights, viewport fractions or per-page offsets: a
 // page that gains a secondary toolbar, gets zoomed, or wraps its container in another
 // layout div needs no recalibration. border-box makes the two caps mean the box the user
-// sees, padding included.
+// sees, padding included — so a page that sizes its container to fit a given content width
+// asks for that width plus `2 * var(--global-padding)`.
 @mixin main-component-style {
   box-sizing: border-box;
   padding: var(--global-padding);
