@@ -61,6 +61,7 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
 import { MultiSelectFilterComponent } from "@components/shared/multi-select-filter/multi-select-filter.component";
 import { MultiSelectFilterOption } from "@components/shared/multi-select-filter/multi-select-filter-option";
 import { MultiSelectMenuComponent } from "@components/shared/multi-select-filter/multi-select-menu/multi-select-menu.component";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { USER_AGENT_PRESETS } from "@constants/user-agent.constants";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ClientsService, ClientsServiceInterface } from "@services/clients/clients.service";
@@ -206,12 +207,64 @@ const FILTER_TOOLTIPS: Record<string, string> = {
   attempt_id: $localize`Filter by this attempt ID`
 };
 
-// A rendered other_info row: a leaf carries `value`; a one-level-nested dict carries `children` (rendered as a
-// sub-list) instead. Nesting deeper than one level is folded into the leaf value as compact JSON.
+// Key fragments that read as acronyms rather than words when an other_info key is humanized for display.
+const INFO_KEY_ACRONYMS: Record<string, string> = {
+  ip: "IP",
+  id: "ID",
+  ca: "CA",
+  otp: "OTP",
+  pin: "PIN"
+};
+
+// When an element of a list-valued info key carries one of these, it heads that group instead of a bare ordinal and is
+// not repeated among the group's rows. A conditional-access finding is one policy's outcome, so its policy name
+// identifies it (the stage it tripped is a separate `stage_name` row, when that stage is named).
+const INFO_GROUP_LABEL_KEYS = ["policy_name", "name"];
+
+// Presentation for list-valued info keys whose groups speak for themselves: the key gets no row of its own, each group
+// heading reads `prefix` followed by the group's name, and that name links to `linkPath` + the group's `linkIdKey`
+// value. So a finding reads "Conditional Access: <policy>" with only the policy name linking to its editor, rather
+// than nesting under a "Conditional access findings" label. A group flagged by `dryRunKey` heads with `dryRunPrefix`
+// instead, so an unenforced finding is not mistaken for one that acted. `linkIdKey` and `dryRunKey` back the heading
+// and are not shown as rows.
+const INFO_GROUP_RENDERING: Record<string, InfoGroupRendering> = {
+  conditional_access_findings: {
+    prefix: $localize`Conditional Access:`,
+    dryRunPrefix: $localize`Dry Run:`,
+    dryRunKey: "dry_run",
+    linkPath: ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_DETAILS,
+    linkIdKey: "policy_id"
+  }
+};
+
+interface InfoGroupRendering {
+  prefix: string;
+  dryRunPrefix: string;
+  dryRunKey: string;
+  linkPath: string;
+  linkIdKey: string;
+}
+
+// A rendered other_info row. A leaf carries `value`; a one-level-nested dict carries `children` (rendered as a
+// sub-list); a list of dicts (e.g. the conditional-access findings) carries `groups`, one per element.
+// Nesting deeper than that is folded into the leaf value as compact JSON. An empty `key` renders no label row.
+interface InfoRow {
+  key: string;
+  value: string;
+}
+
+interface InfoGroup {
+  label: string;
+  rows: InfoRow[];
+  link?: string;
+  prefix?: string;
+}
+
 interface InfoEntry {
   key: string;
   value?: string;
-  children?: { key: string; value: string }[];
+  children?: InfoRow[];
+  groups?: InfoGroup[];
 }
 
 @Component({
@@ -320,7 +373,9 @@ export class AuthenticationLog {
   // The date-range picker's start/end mirror the slider *window* (its min/max), not the narrowed filter, so dragging
   // the slider leaves the picked range in place — the picker only ever defines the outer bounds. Empty when no time
   // filter is active; the end stays open while the window runs up to "now".
-  readonly rangePickerStart = computed<Date | null>(() => (this.hasTimeFilter() ? new Date(this.windowStartMs()) : null));
+  readonly rangePickerStart = computed<Date | null>(() =>
+    this.hasTimeFilter() ? new Date(this.windowStartMs()) : null
+  );
   readonly rangePickerEnd = computed<Date | null>(() =>
     this.hasTimeFilter() && !this.openEndedWindow() ? new Date(this.windowEndMs()) : null
   );
@@ -338,7 +393,9 @@ export class AuthenticationLog {
       // Only a range ending at ~now reads as a "Last X" period; a historical range stays "Custom range".
       if (now - endMs < MS_PER_DAY) {
         const duration = endMs - new Date(fromIso).getTime();
-        const preset = PRESET_LABELS.find((entry) => Math.abs(duration - entry.ms) <= Math.max(entry.ms * 0.05, MS_PER_DAY));
+        const preset = PRESET_LABELS.find(
+          (entry) => Math.abs(duration - entry.ms) <= Math.max(entry.ms * 0.05, MS_PER_DAY)
+        );
         if (preset) {
           return preset.label;
         }
@@ -469,6 +526,11 @@ export class AuthenticationLog {
       return previous?.value ?? new MatTableDataSource(this.emptyResource());
     }
   });
+  // The Info column only earns its width when something is actually in it: it is widened for the current page when at
+  // least one entry carries other_info, and otherwise stays as narrow as the table wants.
+  readonly hasInfoValues = computed(() =>
+    this.dataSource().data.some((entry) => entry.other_info && Object.keys(entry.other_info).length > 0)
+  );
   pageSizeOptions = computed(() =>
     [...new Set([...this.tableUtilsService.pageSizeOptions(), this.authenticationLogService.pageSize()])].sort(
       (a, b) => a - b
@@ -668,19 +730,72 @@ export class AuthenticationLog {
     return outcome ? (OUTCOME_CLASS[outcome] ?? "") : "";
   }
 
-  formatInfo(value: AuthenticationLogEntry["other_info"]): string {
-    return value ? JSON.stringify(value) : "";
-  }
-
-  // Render other_info as "key: value" rows. Scalars show as-is and arrays as a comma-separated list. A nested object
-  // (e.g. the `truncated` overflow key) becomes a one-level sub-list; anything deeper is compact JSON.
+  // Render other_info as "Key: value" rows. Scalars show as-is and scalar arrays as a comma-separated list. A nested
+  // object (e.g. the `truncated` overflow key) becomes a one-level sub-list, and a list of objects (the
+  // conditional-access findings) becomes one sub-list per element. Anything deeper is compact JSON.
   infoEntries(value: AuthenticationLogEntry["other_info"]): InfoEntry[] {
     if (!value) return [];
-    return Object.entries(value).map(([key, raw]) =>
-      this.isPlainObject(raw)
-        ? { key, children: Object.entries(raw).map(([k, v]) => ({ key: k, value: this.formatInfoValue(v) })) }
-        : { key, value: this.formatInfoValue(raw) }
-    );
+    return Object.entries(value).map(([key, raw]) => {
+      const label = this.humanizeInfoKey(key);
+      if (this.isObjectList(raw)) {
+        const rendering = INFO_GROUP_RENDERING[key];
+        return {
+          // A key with its own rendering needs no label row: its group headings carry the context instead.
+          key: rendering ? "" : label,
+          groups: raw.map((element, index) => this.infoGroup(element, index, raw.length, rendering))
+        };
+      }
+      if (this.isPlainObject(raw)) {
+        return { key: label, children: this.infoRows(raw) };
+      }
+      return { key: label, value: this.formatInfoValue(raw) };
+    });
+  }
+
+  // Head a group with its identifying name when it has one (see INFO_GROUP_LABEL_KEYS), else with a plain ordinal so
+  // several groups stay distinguishable. A single unnamed group needs no heading at all. Under a *rendering* the
+  // heading is prefixed and its name links to the record it describes; the keys consumed by the heading and the link
+  // are not repeated among the rows.
+  private infoGroup(
+    element: Record<string, unknown>,
+    index: number,
+    total: number,
+    rendering?: InfoGroupRendering
+  ): InfoGroup {
+    const labelKey = INFO_GROUP_LABEL_KEYS.find((key) => typeof element[key] === "string" && element[key] !== "");
+    const skipKeys = [labelKey, rendering?.linkIdKey, rendering?.dryRunKey].filter((key): key is string => !!key);
+    const name = labelKey ? String(element[labelKey]) : total > 1 ? `${index + 1}` : "";
+    if (!rendering) {
+      return { label: name, rows: this.infoRows(element, skipKeys) };
+    }
+    const id = element[rendering.linkIdKey];
+    return {
+      label: name,
+      // The prefix always shows, even for a lone group: it is what marks the finding as a dry run or as enforced.
+      prefix: element[rendering.dryRunKey] ? rendering.dryRunPrefix : rendering.prefix,
+      rows: this.infoRows(element, skipKeys),
+      link: id === null || id === undefined ? undefined : `${rendering.linkPath}${id}`
+    };
+  }
+
+  private infoRows(value: Record<string, unknown>, skipKeys: string[] = []): InfoRow[] {
+    return Object.entries(value)
+      .filter(([key]) => !skipKeys.includes(key))
+      .map(([key, raw]) => ({ key: this.humanizeInfoKey(key), value: this.formatInfoValue(raw) }));
+  }
+
+  // "policy_name" -> "Policy name", "source_ip" -> "Source IP". Keeps the raw key when it carries no underscores and
+  // is already capitalized, so acronym-only keys are not mangled.
+  private humanizeInfoKey(key: string): string {
+    const words = key.split("_").filter((word) => word.length > 0);
+    if (!words.length) return key;
+    return words
+      .map((word, index) => {
+        const upper = INFO_KEY_ACRONYMS[word.toLowerCase()];
+        if (upper) return upper;
+        return index === 0 ? word.charAt(0).toUpperCase() + word.slice(1) : word;
+      })
+      .join(" ");
   }
 
   private formatInfoValue(value: unknown): string {
@@ -688,6 +803,10 @@ export class AuthenticationLog {
     if (Array.isArray(value)) return value.map((entry) => this.formatInfoValue(entry)).join(", ");
     if (typeof value === "object") return JSON.stringify(value);
     return String(value);
+  }
+
+  private isObjectList(value: unknown): value is Record<string, unknown>[] {
+    return Array.isArray(value) && value.length > 0 && value.every((entry) => this.isPlainObject(entry));
   }
 
   private isPlainObject(value: unknown): value is Record<string, unknown> {

@@ -387,6 +387,39 @@ def delete_authentication_log_event(event_id: int) -> None:
         get_ca_session().execute(stmt)
 
 
+def record_conditional_access_finding(event_id: int, finding: dict) -> None:
+    """
+    Append *finding* to the ``conditional_access_findings`` list in an existing
+    authentication_log row's ``other_info``, alongside whatever else is already stored
+    there.
+
+    This records what a conditional-access policy did to the request on the request's own
+    log row. A dry-run finding carries ``dry_run: True``: a dry-run policy never writes
+    lockout state and never runs its actions, so the finding records what it *would* have
+    done, letting an admin review a policy's real-world hit rate before enforcing it.
+
+    Like the insert, this must never break the response that triggered it: a failure is logged and swallowed, and it
+    runs on the conditional-access session so a rollback leaves the request's own pending writes alone.
+
+    The engine runs *after* the row was written (that ordering is what lets its counts include this request's own
+    event), so the finding has to be an ``UPDATE`` on the stored row rather than a field on the staged event. Once the
+    engine hands its findings back to the API layer instead of writing them itself, this becomes a mutation of
+    ``PendingAuthEvent.other_info`` before the row is ever written, and this function goes away.
+
+    :param event_id: id of the entry to attach the finding to
+    :param finding: JSON-serializable dict describing what the policy did (or, in dry run, would have done)
+    """
+    # The lookup is inside the guarded block so a failing read cannot break the response either.
+    with guarded_write(f"the conditional-access finding on authentication log entry {event_id}"):
+        entry = get_ca_session().get(AuthenticationLog, event_id)
+        if entry is None:
+            log.info(f"Cannot record conditional-access finding on authentication log entry {event_id!r}: not found.")
+            return
+        other_info = dict(entry.other_info) if entry.other_info else {}
+        other_info["conditional_access_findings"] = [*other_info.get("conditional_access_findings", []), finding]
+        entry.other_info = other_info
+
+
 def get_authentication_log_event(event_id: int) -> AuthenticationLog | None:
     """
     Return a single AuthenticationLog entry by event_id, or None if not found.

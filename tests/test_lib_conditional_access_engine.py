@@ -26,6 +26,10 @@ from datetime import datetime, timedelta
 from email import message_from_string
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
+from privacyidea.lib.conditional_access.authentication_log import (
+    log_authentication_event,
+    get_authentication_log_event,
+)
 from privacyidea.lib.conditional_access.engine import (
     AccessDecision,
     LockoutAction,
@@ -776,6 +780,304 @@ class LockoutEngineTestCase(LockoutTestCase):
         evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
         self.assertIsNone(self._state())
         self.assertFalse(is_user_locked(self.user))
+
+    def test_dry_run_persists_finding_to_triggering_auth_log_row(self):
+        # Passing auth_log_event_id attaches what the dry-run policy *would* have done to the request's own
+        # authentication_log row, without writing any lockout state.
+        policy, _stages = self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
+        self._seed_events(AuthEventType.MFA_FAIL, 2)
+        # The triggering request's own row: seeded events (2) + this one (1) reaches the threshold (3) exactly.
+        event_id = log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver=self.user.resolver,
+                                            uid=self.user.uid, realm=self.user.realm)
+        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, auth_log_event_id=event_id)
+
+        entry = get_authentication_log_event(event_id)
+        assert entry is not None
+        findings = entry.other_info["conditional_access_findings"]
+        self.assertEqual(1, len(findings))
+        finding = findings[0]
+        # A finding is deliberately terse - it names the policy (policy_id only so the WebUI can link to its editor),
+        # the threshold it would have tripped and the actions that would have run. Everything else about the request
+        # (event type, user, source IP, time) is already on the log row itself. An unnamed stage contributes no stage
+        # key at all, and the internal stage id is never recorded. dry_run marks it as not enforced, since the
+        # findings key is shared with enforced policies.
+        self.assertEqual({"policy_id", "policy_name", "threshold", "actions", "dry_run"}, set(finding))
+        self.assertTrue(finding["dry_run"])
+        self.assertEqual(policy.id, finding["policy_id"])
+        self.assertEqual("dry", finding["policy_name"])
+        self.assertEqual(3, finding["threshold"])
+        self.assertEqual(["LOCK_USER"], finding["actions"])
+        # Still a dry run: no lockout state is ever written.
+        self.assertIsNone(self._state())
+        self.assertFalse(is_user_locked(self.user))
+
+    def test_dry_run_without_auth_log_event_id_is_log_only(self):
+        # Regression: omitting auth_log_event_id (the default) behaves exactly as before - log-only, the
+        # authentication_log row's other_info is left untouched.
+        self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
+        self._seed_events(AuthEventType.MFA_FAIL, 2)
+        event_id = log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver=self.user.resolver,
+                                            uid=self.user.uid, realm=self.user.realm)
+        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
+
+        entry = get_authentication_log_event(event_id)
+        assert entry is not None
+        self.assertIsNone(entry.other_info)
+        self.assertIsNone(self._state())
+        self.assertFalse(is_user_locked(self.user))
+
+    def _log_row(self, event_type=AuthEventType.MFA_FAIL):
+        """Write the triggering request's own authentication-log row and return its id."""
+        return log_authentication_event(event_type=event_type, resolver=self.user.resolver,
+                                       uid=self.user.uid, realm=self.user.realm)
+
+    def _findings(self, event_id):
+        """The dry-run findings recorded on *event_id*, or [] when none were."""
+        entry = get_authentication_log_event(event_id)
+        assert entry is not None
+        return (entry.other_info or {}).get("conditional_access_findings", [])
+
+    def test_dry_run_records_one_finding_per_matching_policy(self):
+        # Several dry-run policies tracking the same event all evaluate on one request, so the request's row collects
+        # one finding per policy that would have triggered.
+        self._make_policy(name="dry_a", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
+        self._make_policy(name="dry_b", counter_type=AuthEventType.MFA_FAIL, dry_run=True, priority=2,
+                          stages=(StageDefinition(2, 1, [StageActionDefinition(LockoutAction.PERMANENT_LOCK_USER)]),))
+        self._seed_events(AuthEventType.MFA_FAIL, 2)
+        event_id = self._log_row()  # count reaches 3: dry_a's threshold 3 exactly, dry_b's 2 is already passed
+        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, auth_log_event_id=event_id)
+
+        findings = self._findings(event_id)
+        # dry_b's PERMANENT_LOCK_USER is fire-once at threshold 2 and the count is 3, so only dry_a matches.
+        self.assertEqual(["dry_a"], [finding["policy_name"] for finding in findings])
+        self.assertIsNone(self._state())
+
+    def test_dry_run_finding_records_the_stage_name_when_the_stage_has_one(self):
+        # A named stage puts its label in the finding, so an admin reading the log sees "Lock 10 min" rather than an
+        # internal id.
+        self._make_policy(
+            name="dry_named", counter_type=AuthEventType.MFA_FAIL, dry_run=True,
+            stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.LOCK_USER, 600)],
+                                    name="Lock 10 min"),))
+        self._seed_events(AuthEventType.MFA_FAIL, 2)
+        event_id = self._log_row()
+        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, auth_log_event_id=event_id)
+
+        finding = self._findings(event_id)[0]
+        self.assertEqual("Lock 10 min", finding["stage_name"])
+        self.assertNotIn("stage_id", finding)
+
+    def test_dry_run_below_threshold_records_nothing(self):
+        self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
+        self._seed_events(AuthEventType.MFA_FAIL, 1)
+        event_id = self._log_row()  # count 2, below the threshold of 3
+        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, auth_log_event_id=event_id)
+
+        self.assertIsNone(get_authentication_log_event(event_id).other_info)
+        self.assertIsNone(self._state())
+
+    def test_dry_run_fire_once_records_nothing_above_threshold(self):
+        # A fire-once action (the default) only fires at the EXACT threshold, and dry-run enforces nothing that would
+        # stop the count climbing. So once the count has passed the threshold a dry-run policy records nothing until
+        # the window rolls over or a success resets it - the same semantics as a live fire-once policy.
+        self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
+        self._seed_events(AuthEventType.MFA_FAIL, 5)
+        event_id = self._log_row()  # count 6, well past the threshold of 3
+        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, auth_log_event_id=event_id)
+
+        self.assertEqual([], self._findings(event_id))
+
+    def test_dry_run_retrigger_records_a_finding_above_threshold(self):
+        # With a re-triggering action the dry run keeps reporting for as long as the count stays at or above the
+        # threshold, which is what makes dry-run usable for sizing a policy.
+        _, stages = self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
+        stages[0].actions[0].retrigger_above_threshold = True
+        db.session.commit()
+        self._seed_events(AuthEventType.MFA_FAIL, 5)
+        event_id = self._log_row()  # count 6 >= threshold 3
+        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, auth_log_event_id=event_id)
+
+        findings = self._findings(event_id)
+        self.assertEqual(1, len(findings))
+        self.assertEqual(3, findings[0]["threshold"])
+        self.assertEqual(["LOCK_USER"], findings[0]["actions"])
+        self.assertIsNone(self._state())
+
+    def test_dry_run_records_on_every_request_because_it_keeps_no_dedup_state(self):
+        # Dry-run neither reads nor writes the de-dup state, so two successive qualifying requests both record. (A live
+        # policy would suppress the second via UserLockoutState.)
+        _, stages = self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
+        stages[0].actions[0].retrigger_above_threshold = True
+        db.session.commit()
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+
+        first = self._log_row()
+        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, auth_log_event_id=first)
+        second = self._log_row()
+        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, auth_log_event_id=second)
+
+        self.assertEqual(1, len(self._findings(first)))
+        self.assertEqual(1, len(self._findings(second)))
+        self.assertIsNone(self._state())
+
+    def test_dry_run_finding_appends_without_clobbering_existing_other_info(self):
+        # The finding is merged into whatever the row already carries (e.g. a truncation overflow), never replacing it.
+        self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
+        self._seed_events(AuthEventType.MFA_FAIL, 2)
+        event_id = log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver=self.user.resolver,
+                                           uid=self.user.uid, realm=self.user.realm,
+                                           other_info={"reason": "pre-existing"})
+        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, auth_log_event_id=event_id)
+
+        other_info = get_authentication_log_event(event_id).other_info
+        self.assertEqual("pre-existing", other_info["reason"])
+        self.assertEqual(1, len(other_info["conditional_access_findings"]))
+
+    def test_dry_run_finding_lists_every_pending_action_of_the_stage(self):
+        self._make_policy(
+            name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True,
+            stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.LOCK_USER, 600),
+                                           StageActionDefinition(LockoutAction.PERMANENT_LOCK_USER)]),))
+        self._seed_events(AuthEventType.MFA_FAIL, 2)
+        event_id = self._log_row()
+        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, auth_log_event_id=event_id)
+
+        self.assertEqual(["LOCK_USER", "PERMANENT_LOCK_USER"], self._findings(event_id)[0]["actions"])
+
+    def test_dry_run_source_ip_policy_records_a_finding_without_blocking(self):
+        ip = "10.10.0.5"
+        self._make_policy(name="dry_ip", counter_type=AuthEventType.PASSWORD_FAIL, dry_run=True,
+                          target=LockoutTarget.SOURCE_IP,
+                          stages=(StageDefinition(2, 1, [StageActionDefinition(LockoutAction.BLOCK_IP, 600)]),))
+        self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=2, per_user=1)
+        event_id = self._log_row(AuthEventType.PASSWORD_FAIL)
+        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip=ip, auth_log_event_id=event_id)
+
+        finding = self._findings(event_id)[0]
+        self.assertEqual("dry_ip", finding["policy_name"])
+        self.assertEqual(["BLOCK_IP"], finding["actions"])
+        # Dry run: the IP is never actually blocked.
+        self.assertIsNone(self._block(ip))
+
+    def test_dry_run_returns_no_notices(self):
+        self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        self.assertEqual([], evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL))
+
+    @smtpmock.activate
+    def test_dry_run_email_action_records_the_finding_but_sends_nothing(self):
+        # Dry-run must not produce the side effect itself: the finding names EMAIL_ADMIN, but no mail is sent and no
+        # user-facing notice is returned.
+        smtpmock.setdata(response={})
+        add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
+        db.session.add(Admin(username="ca_dry_adm", email="dryadm@example.com"))
+        db.session.commit()
+        try:
+            self._make_policy(
+                name="dry_mail", counter_type=AuthEventType.MFA_FAIL, dry_run=True,
+                stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.EMAIL_ADMIN,
+                                                                     {"smtp_identifier": "lockoutmail",
+                                                                      "subject": "s", "body": "b"})]),))
+            self._seed_events(AuthEventType.MFA_FAIL, 2)
+            event_id = self._log_row()
+            notices = evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, auth_log_event_id=event_id)
+
+            self.assertEqual(["EMAIL_ADMIN"], self._findings(event_id)[0]["actions"])
+            self.assertEqual([], notices)
+            # Nothing was handed to the SMTP layer at all (the mock reports no recipient).
+            self.assertIsNone(smtpmock.get_sent_recipient())
+        finally:
+            delete_smtpserver("lockoutmail")
+            db.session.query(Admin).filter_by(username="ca_dry_adm").delete()
+            db.session.commit()
+
+    def test_dry_run_does_not_suppress_a_live_policy_on_the_same_request(self):
+        # A dry-run policy is inert, not blocking: an enforcing policy tripped by the same request still locks.
+        self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True, priority=1)
+        self._make_policy(name="live", counter_type=AuthEventType.MFA_FAIL, priority=2)
+        self._seed_events(AuthEventType.MFA_FAIL, 2)
+        event_id = self._log_row()
+        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, auth_log_event_id=event_id)
+
+        self.assertEqual(["dry"], [finding["policy_name"] for finding in self._findings(event_id)])
+        self.assertTrue(is_user_locked(self.user))
+
+    # --- per-action fire-once / re-trigger semantics ---------------------------
+
+    def test_retrigger_action_also_fires_at_the_exact_threshold(self):
+        # "At or above" includes the threshold itself, so a re-triggering action fires on the first qualifying request
+        # too, not only above it.
+        _, stages = self._make_policy(name="lock3", counter_type=AuthEventType.MFA_FAIL)
+        stages[0].actions[0].retrigger_above_threshold = True
+        db.session.commit()
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
+        self.assertTrue(is_user_locked(self.user))
+
+    def test_fire_once_and_retrigger_actions_in_one_stage_are_decided_separately(self):
+        # The flag is per action: above the threshold only the re-triggering LOCK_USER still fires, while the
+        # fire-once EMAIL_ADMIN stays silent - one stage that keeps a user locked but emails only once.
+        _, stages = self._make_policy(
+            name="mixed", counter_type=AuthEventType.MFA_FAIL,
+            stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.LOCK_USER, 600,
+                                                                 retrigger_above_threshold=True),
+                                           StageActionDefinition(LockoutAction.EMAIL_ADMIN,
+                                                                 {"smtp_identifier": "nosuch"},
+                                                                 retrigger_above_threshold=False)]),))
+        lock_action, email_action = stages[0].actions[0], stages[0].actions[1]
+        self.assertTrue(lock_action.retrigger_above_threshold)
+        self.assertFalse(email_action.retrigger_above_threshold)
+
+        # At a count above the threshold only the re-triggering action is pending, so the stage still fires (the
+        # unreachable SMTP identifier would raise if the email action were executed, and is guarded per action).
+        self._seed_events(AuthEventType.MFA_FAIL, 5)
+        event_id = self._log_row()
+        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, auth_log_event_id=event_id)
+        self.assertTrue(is_user_locked(self.user))
+
+    def test_dry_run_finding_reports_only_the_pending_actions(self):
+        # Mirrors the live behaviour above: above the threshold the fire-once action is not pending, so the finding
+        # lists only the re-triggering one.
+        self._make_policy(
+            name="dry_mixed", counter_type=AuthEventType.MFA_FAIL, dry_run=True,
+            stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.LOCK_USER, 600,
+                                                                 retrigger_above_threshold=True),
+                                           StageActionDefinition(LockoutAction.PERMANENT_LOCK_USER, None,
+                                                                 retrigger_above_threshold=False)]),))
+        self._seed_events(AuthEventType.MFA_FAIL, 5)
+        event_id = self._log_row()  # count 6 > threshold 3
+        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, auth_log_event_id=event_id)
+
+        self.assertEqual(["LOCK_USER"], self._findings(event_id)[0]["actions"])
+
+    def test_retrigger_stage_selection_prefers_the_highest_priority_pending_stage(self):
+        # Both stages re-trigger and both thresholds are passed, so the most severe (highest-priority) stage is the one
+        # that fires; only that one stage's actions run per policy per request.
+        _, stages = self._make_policy(
+            name="tiers", counter_type=AuthEventType.MFA_FAIL,
+            stages=(StageDefinition(5, 2, [StageActionDefinition(LockoutAction.LOCK_USER, 1800,
+                                                                 retrigger_above_threshold=True)]),
+                    StageDefinition(3, 1, [StageActionDefinition(LockoutAction.LOCK_USER, 600,
+                                                                 retrigger_above_threshold=True)])))
+        severe_stage = stages[0]
+        self._seed_events(AuthEventType.MFA_FAIL, 6)  # past both thresholds
+        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
+
+        self.assertEqual(severe_stage.id, self._state().last_stage_triggered)
+
+    def test_retrigger_falls_back_to_the_lower_stage_when_the_severe_one_is_not_pending(self):
+        # The severe stage is fire-once at 15 and the count is 6, so it is not pending; the re-triggering stage at 3 is,
+        # and it fires instead.
+        _, stages = self._make_policy(
+            name="tiers", counter_type=AuthEventType.MFA_FAIL,
+            stages=(StageDefinition(15, 2, [StageActionDefinition(LockoutAction.LOCK_USER, 1800)]),
+                    StageDefinition(3, 1, [StageActionDefinition(LockoutAction.LOCK_USER, 600,
+                                                                 retrigger_above_threshold=True)])))
+        mild_stage = stages[1]
+        self._seed_events(AuthEventType.MFA_FAIL, 6)
+        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
+
+        self.assertEqual(mild_stage.id, self._state().last_stage_triggered)
 
     def test_permanent_lock_action(self):
         self._make_policy(name="perm", counter_type=AuthEventType.MFA_FAIL,

@@ -29,7 +29,7 @@ from sqlalchemy import func, select
 
 from privacyidea.lib import _
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
-from privacyidea.lib.conditional_access.authentication_log import _naive_utc
+from privacyidea.lib.conditional_access.authentication_log import _naive_utc, record_conditional_access_finding
 from privacyidea.lib.conditional_access.session import get_ca_session, guarded_write
 from privacyidea.models import (AuthenticationLog, BlockList, LockoutPolicy, LockoutPolicyCounterType,
                                 LockoutStageAction, UserLockoutState)
@@ -755,6 +755,11 @@ def _policy_access_decision(policy: LockoutPolicy, user: "User", source_ip: str 
         return None
     types = _types_label(policy.counter_types_to_track)
     if policy.dry_run:
+        # This decision runs pre-auth, before this request's authentication_log row is written (some callers,
+        # e.g. /validate/polltransaction, never write one at all), so there is nothing yet to attach a finding to
+        # here; this dry-run finding is log-only. Contrast the post-response stage-action dry-run path
+        # (_evaluate_policy, below), which runs after the row exists and persists its finding onto it via
+        # record_conditional_access_finding.
         log.info(f"[dry-run] policy {policy.name!r} would return {decision} for {subject_label}: "
                  f"{count} event(s) of {types} in {policy.time_window_seconds}s.")
         return None
@@ -787,7 +792,8 @@ def _stage_access_decision(stage, count: int) -> "AccessDecision | None":
 
 
 def evaluate_lockout_policies(user: "User", event_type, source_ip: str | None = None,
-                              now: datetime | None = None) -> list[str]:
+                              now: datetime | None = None,
+                              auth_log_event_id: int | None = None) -> list[str]:
     """
     Evaluate every enabled lockout policy that tracks *event_type* and execute
     the actions of the triggered stage, if any. This runs post-response, *after*
@@ -819,6 +825,9 @@ def evaluate_lockout_policies(user: "User", event_type, source_ip: str | None = 
         (:class:`AuthEventType`)
     :param source_ip: the resolved client IP; the ``BLOCK_IP`` action blocks it
     :param now: the reference time; defaults to :func:`utc_now`
+    :param auth_log_event_id: id of the authentication_log row this request already wrote, so a dry-run policy's
+        finding can be attached to it; omit it (the default) and dry-run findings are only logged, not persisted
+        - mirrors how ``source_ip`` is optional
     :return: the de-duplicated, order-preserving list of user-facing notices
         produced by executed actions (empty if nothing was triggered/notified)
     """
@@ -840,7 +849,7 @@ def evaluate_lockout_policies(user: "User", event_type, source_ip: str | None = 
     ).all()
     notices: list[str] = []
     for policy in policies:
-        notices.extend(_evaluate_policy(policy, user, event_type, source_ip, now))
+        notices.extend(_evaluate_policy(policy, user, event_type, source_ip, now, auth_log_event_id))
     # De-duplicate while preserving order: several policies tracking the same
     # user can emit the same notice in one request.
     seen: set[str] = set()
@@ -876,11 +885,13 @@ def _stage_pending_actions(stage, count: int) -> list:
 
 
 def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
-                     source_ip: str | None, now: datetime) -> list[str]:
+                     source_ip: str | None, now: datetime,
+                     auth_log_event_id: int | None = None) -> list[str]:
     """
     Evaluate a single policy: count the user's events over the policy window,
     find the triggered stage, de-duplicate, then execute the stage's *pending*
-    actions (or, in dry-run, only log them).
+    actions (or, in dry-run, only log them and, if *auth_log_event_id* is given,
+    persist the finding to that authentication_log row).
 
     Each action decides for itself whether it fires (see
     :func:`_action_threshold_met`): by default an action triggers once, when the
@@ -889,6 +900,8 @@ def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
     threshold. So one stage can, for example, email once at threshold 8 while
     keeping the user locked for every further failure at 8 or more.
 
+    :param auth_log_event_id: id of the authentication_log row this request already wrote; a triggered dry-run
+        finding is attached to it (see :func:`record_conditional_access_finding`) when given, otherwise only logged
     :return: the user-facing notices produced by the executed actions (empty if
         no stage triggered, in dry-run, or when de-duplicated away).
     """
@@ -941,6 +954,26 @@ def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
         log.info(f"[dry-run] policy {policy.name!r} would trigger stage {triggered_stage.id} "
                  f"(threshold {triggered_stage.failure_threshold}) for {subject_label}: "
                  f"{count} event(s) of {_types_label(policy.counter_types_to_track)} in {window}s.")
+        if auth_log_event_id is not None:
+            # Deliberately terse: a request can trip several policies, so each finding
+            # records only what identifies the would-be outcome. The rest of the context
+            # (event type, source IP, user, time) is already on the log row itself.
+            finding = {
+                # policy_id is not shown as a field; it is what lets the WebUI link the
+                # policy name to its editor.
+                "policy_id": policy.id,
+                "policy_name": policy.name,
+                "threshold": triggered_stage.failure_threshold,
+                "actions": [a.action_type for a in pending_actions],
+                # The findings key is shared with enforced policies, so each finding says whether its
+                # actions actually ran.
+                "dry_run": True,
+            }
+            if triggered_stage.name:
+                # Only recorded when an admin named the stage; the threshold identifies
+                # which stage of the policy this is either way.
+                finding["stage_name"] = triggered_stage.name
+            record_conditional_access_finding(auth_log_event_id, finding)
         return []
 
     dedup_window_start = now - timedelta(seconds=window)

@@ -187,6 +187,10 @@ class ConditionalAccessContext:
         Every error is swallowed: this only writes state that the *next* request consults and must never affect the
         response that already completed.
 
+        The event's ``row_id`` is handed to the engine so a policy can attach a finding to the row it just judged (a
+        dry-run policy records what it *would* have done). It is available because :meth:`flush` ran first; when the
+        row could not be written it stays ``None`` and the engine only logs the finding.
+
         NOTE: should conditional access ever log events of its own (a rejection by the lockout pre-check, say), those
         event types must be filtered out here - evaluating them would let a lock feed itself.
         """
@@ -198,7 +202,8 @@ class ConditionalAccessContext:
         # import-order cycle during app startup.
         from privacyidea.lib.conditional_access.engine import evaluate_lockout_policies
         try:
-            return evaluate_lockout_policies(self.principal.user, event.event_type, source_ip=self.source_ip) or []
+            return evaluate_lockout_policies(self.principal.user, event.event_type, source_ip=self.source_ip,
+                                             auth_log_event_id=event.row_id) or []
         except Exception as ex:
             log.warning(f"Conditional-access policy evaluation failed: {ex!r}")
             return []

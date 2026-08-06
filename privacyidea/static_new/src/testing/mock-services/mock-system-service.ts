@@ -21,7 +21,10 @@ import { signal, WritableSignal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
 import { CaConnectors } from "@services/ca-connector/ca-connector.service";
 import {
+  CertificateHealthEntry,
   NodeInfo,
+  NotificationDeliveryHealth,
+  ResolverTimingEntry,
   SystemConfigInit,
   SystemConfigResponse,
   SystemServiceInterface
@@ -87,4 +90,12 @@ export class MockSystemService implements SystemServiceInterface {
   saveSystemConfig = jest.fn(() => of(MockPiResponse.fromValue<Record<string, "insert" | "update">>({})));
   deleteSystemConfig = jest.fn(() => of(MockPiResponse.fromValue(true)));
   deleteUserCache = jest.fn(() => of(MockPiResponse.fromValue({ status: true, deleted: 0 })));
+
+  getCertificateHealth = jest.fn().mockReturnValue(of(MockPiResponse.fromValue<CertificateHealthEntry[]>([])));
+  getResolverTiming = jest.fn().mockReturnValue(of(MockPiResponse.fromValue<ResolverTimingEntry[]>([])));
+  getNotificationDelivery = jest
+    .fn()
+    .mockReturnValue(
+      of(MockPiResponse.fromValue<NotificationDeliveryHealth>({ push: [], sms: [], email: [], since_seconds: 3600 }))
+    );
 }

@@ -55,6 +55,10 @@ export class PoliciesWidgetComponent extends DashboardWidget implements OnInit {
 
   private readonly dataRef = signal<DashboardDataRef<PiResponse<PolicyDetail[]>> | null>(null);
   override readonly partialLoading = computed(() => this.dataRef()?.revalidating() ?? false);
+  override readonly refreshFailed = computed(() => {
+    const ref = this.dataRef();
+    return !!ref && ref.error() && ref.value() !== undefined;
+  });
 
   readonly policies = computed<PolicyPartition>(() => {
     const all = this.dataRef()?.value()?.result?.value ?? [];
@@ -78,18 +82,15 @@ export class PoliciesWidgetComponent extends DashboardWidget implements OnInit {
         return;
       }
       const value = ref.value();
-      if (value !== undefined) {
-        this.state.set(value.result?.status === true ? "ready" : "error");
-      } else if (ref.error()) {
-        this.state.set("error");
-      } else {
-        this.state.set("loading");
+      if (value === undefined) {
+        this.state.set(ref.error() ? "error" : "loading");
+        return;
       }
+      this.state.set(value.result?.status === true ? "ready" : "error");
     });
   }
 
   override reload(): void {
-    this.store.invalidate("dashboard:policies");
     this.ngOnInit();
   }
 

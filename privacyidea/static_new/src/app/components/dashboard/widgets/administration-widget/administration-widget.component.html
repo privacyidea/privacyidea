@@ -22,14 +22,22 @@
     <table class="admin-table">
       <thead>
         <tr>
-          <th i18n>Date</th>
-          <th i18n>Administrator</th>
-          <th i18n>Action</th>
-          <th i18n>Detail</th>
+          <th>
+            <app-table-sort-header key="date" [sortState]="sort" label="Date" i18n-label />
+          </th>
+          <th>
+            <app-table-sort-header key="administrator" [sortState]="sort" label="Administrator" i18n-label />
+          </th>
+          <th>
+            <app-table-sort-header key="action" [sortState]="sort" label="Action" i18n-label />
+          </th>
+          <th>
+            <app-table-sort-header key="action_detail" [sortState]="sort" label="Detail" i18n-label />
+          </th>
         </tr>
       </thead>
       <tbody>
-        @for (entry of entries(); track entry.number) {
+        @for (entry of sortedEntries(); track entry.number) {
           <tr>
             <td>{{ entry.date | localDateTime }}</td>
             <td>{{ entry.administrator }}</td>

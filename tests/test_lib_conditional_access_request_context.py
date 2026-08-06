@@ -275,16 +275,20 @@ class ConditionalAccessContextTestCase(MyTestCase):
         # The evaluation reads the classification off the event, so a reclassification cannot leave it evaluating an
         # outcome that no longer holds - there is no second copy to keep in step.
         context = ConditionalAccessContext()
-        context.stage(self._event("alice", AuthEventType.LOGIN_SUCCESS))
+        event = context.stage(self._event("alice", AuthEventType.LOGIN_SUCCESS))
         context.principal = AuthPrincipal(user=User("cornelius", self.realm1))
         context.source_ip = "10.0.0.1"
+        context.flush()
 
         context.reclassify(AuthEventType.NOT_AUTHORIZED)
         with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies") as evaluate:
             evaluate.return_value = []
             context.run_post_eval()
 
-        evaluate.assert_called_once_with(context.principal.user, AuthEventType.NOT_AUTHORIZED, source_ip="10.0.0.1")
+        # The row id goes along so a policy can attach a finding to the row it just judged; it is available because
+        # flush() ran first.
+        evaluate.assert_called_once_with(context.principal.user, AuthEventType.NOT_AUTHORIZED,
+                                         source_ip="10.0.0.1", auth_log_event_id=event.row_id)
 
     def test_21_reclassify_applies_only_the_fields_given(self):
         context = ConditionalAccessContext()
