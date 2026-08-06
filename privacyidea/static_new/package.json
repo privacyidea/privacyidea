@@ -10,6 +10,7 @@
     "test:coverage": "jest --coverage",
     "start-hmr": "ng serve --hmr --port 4200",
     "lint": "ng lint",
+    "i18n:extract": "ng extract-i18n",
     "format:check": "prettier --check \"src/**/*.{ts,html,scss,css,json}\"",
     "format:write": "prettier --write \"src/**/*.{ts,html,scss,css,json}\""
   },
@@ -44,6 +45,7 @@
     "eslint": "^10.0.3",
     "jest": "^30.3.0",
     "jest-environment-jsdom": "^30.3.0",
+    "ng-extract-i18n-merge": "^3.4.0",
     "prettier": "3.8.1",
     "typescript": "~5.9.3",
     "typescript-eslint": "8.56.1"

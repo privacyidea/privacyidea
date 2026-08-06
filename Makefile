@@ -41,6 +41,9 @@ translate-server:
 	# create the .mo file
 	(cd privacyidea; pybabel compile -d translations)
 
+translate-webui-next:
+	(cd privacyidea/static_new; npm run i18n:extract)
+
 pypi:
 	make doc-man
 	rm -fr dist

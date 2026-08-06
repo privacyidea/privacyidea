@@ -1,0 +1,92 @@
+# SPDX-FileCopyrightText: (C) 2026 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: CC0-1.0
+#
+# Guards against i18n drift in the new WebUI.
+#
+# Angular derives the message id of an unlabelled i18n string from its text,
+# including leading and trailing whitespace. Reformatting a template therefore
+# retires an id and mints a new one, and the localized build only warns about
+# the now-missing translation (i18nMissingTranslation defaults to "warning"),
+# so the string silently falls back to English in all 12 locales. This job
+# re-runs the extraction and fails if src/locale is not already in sync.
+#
+# Note for maintainers: src/locale is co-owned by Weblate (component
+# privacyidea-webui-next). A Weblate pull request that re-serializes a file in
+# Weblate's own XLIFF dialect will fail this check until the file is
+# normalized by running the extraction locally.
+name: WebUI i18n drift
+on:
+  pull_request:
+    branches:
+      - 'master'
+      - 'branch-*'
+
+permissions:
+  contents: read
+
+jobs:
+  i18n-drift:
+    # No `paths:` filter, for the same reason as webui-lockfile-sync.yml: a
+    # path-filtered required check never reports on PRs outside those paths and
+    # blocks the merge indefinitely. The change detection below short-circuits
+    # the expensive steps.
+    name: i18n extraction drift check
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      # Check out the PR's own head commit, NOT the pull_request merge ref, so
+      # we validate the files that will actually be committed to the branch.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Detect WebUI source changes
+        id: changed
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          # Fetch the base branch ref (fetching a bare commit SHA is not
+          # universally supported) and diff against the merge-base so we see
+          # exactly what this PR changed, independent of how far base advanced.
+          git fetch --no-tags --quiet origin "$BASE_REF"
+          base=$(git merge-base "origin/$BASE_REF" HEAD)
+          # angular.json carries the extract-i18n configuration; package-lock
+          # pins the Angular version, whose extractor output is not guaranteed
+          # byte-stable across releases.
+          if git diff --name-only "$base" HEAD -- \
+               privacyidea/static_new/src \
+               privacyidea/static_new/angular.json \
+               privacyidea/static_new/package-lock.json | grep -q .; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No WebUI source changes; nothing to verify."
+          fi
+      - name: Set up Node.js
+        if: steps.changed.outputs.changed == 'true'
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          # Pin to the same major line as the release build (python-dist.yml)
+          # so the extraction runs on the toolchain that actually ships.
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: privacyidea/static_new/package-lock.json
+      - name: Install dependencies
+        if: steps.changed.outputs.changed == 'true'
+        run: npm ci
+        working-directory: ./privacyidea/static_new
+      - name: Re-extract and merge translation files
+        if: steps.changed.outputs.changed == 'true'
+        run: npm run i18n:extract
+        working-directory: ./privacyidea/static_new
+      - name: Fail on i18n drift
+        if: steps.changed.outputs.changed == 'true'
+        run: |
+          if ! git diff --exit-code privacyidea/static_new/src/locale; then
+            echo "::error::Extracted messages differ from the committed translation files."
+            echo "Run 'npm run i18n:extract' in privacyidea/static_new and commit src/locale."
+            echo "A message marked state=\"new\" means its English source changed and the"
+            echo "existing translation needs review, not that the file is broken."
+            exit 1
+          fi
