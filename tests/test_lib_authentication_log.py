@@ -15,37 +15,38 @@
 #
 # SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 
 import mock
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import (
-    log_authentication_event,
-    delete_authentication_log_event,
+    AuthenticationLogVisibilityScope,
+    AuthLogUserRole,
     PendingAuthEvent,
-    update_authentication_events,
-    write_authentication_events,
-    record_conditional_access_finding,
+    cleanup_authentication_log,
+    delete_authentication_log_event,
+    delete_authentication_logs,
     get_authentication_log_event,
     get_authentication_logs,
     get_authentication_logs_paginate,
-    delete_authentication_logs,
-    cleanup_authentication_log,
-    AuthenticationLogVisibilityScope,
-    AuthLogUserRole,
+    log_authentication_event,
+    record_conditional_access_finding,
+    update_authentication_events,
+    write_authentication_events,
 )
 from privacyidea.lib.conditional_access.session import get_ca_session
 from privacyidea.lib.error import ParameterError
 from privacyidea.models import authentication_log_column_length
+
 from .base import MyTestCase
 
 
 class AuthenticationLogTestCase(MyTestCase):
 
     def tearDown(self):
-        from privacyidea.models.authentication_log import AuthenticationLog
         from privacyidea.models import db
+        from privacyidea.models.authentication_log import AuthenticationLog
         db.session.query(AuthenticationLog).delete()
         db.session.commit()
 
@@ -538,6 +539,36 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertEqual(AuthEventType.NOT_AUTHORIZED, entry.event_type)
         self.assertEqual("TOK001", entry.serial)
 
+    def test_amending_a_written_event_keeps_conditional_access_findings(self):
+        # Findings are appended on the stored row after insert, so a later event update must not clobber them.
+        event = PendingAuthEvent(event_type=AuthEventType.LOGIN_SUCCESS, other_info={"reason": "before"})
+        write_authentication_events([event])
+        record_conditional_access_finding(event.row_id, {"policy_id": 1})
+
+        event.event_type = AuthEventType.NOT_AUTHORIZED
+        update_authentication_events([event])
+
+        entry = get_authentication_log_event(event.row_id)
+        self.assertIsNotNone(entry)
+        self.assertEqual(AuthEventType.NOT_AUTHORIZED, entry.event_type)
+        self.assertEqual({"reason": "before", "conditional_access_findings": [{"policy_id": 1}]},
+                         entry.other_info)
+
+    def test_amending_other_info_keeps_conditional_access_findings(self):
+        # Updating event.other_info should merge with findings already written out-of-band on the stored row.
+        event = PendingAuthEvent(event_type=AuthEventType.LOGIN_SUCCESS,
+                                 other_info={"reason": "before", "random": "value"})
+        write_authentication_events([event])
+        record_conditional_access_finding(event.row_id, {"policy_id": 1})
+
+        event.other_info = {"reason": "after", "note": "updated"}
+        update_authentication_events([event])
+
+        entry = get_authentication_log_event(event.row_id)
+        self.assertIsNotNone(entry)
+        self.assertEqual({"reason": "after", "note": "updated",
+                          "conditional_access_findings": [{"policy_id": 1}]}, entry.other_info)
+
     def test_record_conditional_access_finding_swallows_an_unserializable_finding(self):
         # A finding that cannot be serialized into the JSON column fails when the write flushes. Recording a finding is
         # a diagnostic side effect of an already-finished request, so the failure must be swallowed and must leave the
@@ -596,8 +627,8 @@ class AuthenticationLogTestCase(MyTestCase):
 class AuthenticationLogDBTestCase(MyTestCase):
 
     def tearDown(self):
-        from privacyidea.models.authentication_log import AuthenticationLog
         from privacyidea.models import db
+        from privacyidea.models.authentication_log import AuthenticationLog
         db.session.query(AuthenticationLog).delete()
         db.session.commit()
 
@@ -643,8 +674,8 @@ class AuthenticationLogDBTestCase(MyTestCase):
 class AuthenticationLogPaginateTestCase(MyTestCase):
 
     def tearDown(self):
-        from privacyidea.models.authentication_log import AuthenticationLog
         from privacyidea.models import db
+        from privacyidea.models.authentication_log import AuthenticationLog
         db.session.query(AuthenticationLog).delete()
         db.session.commit()
         super().tearDown()
@@ -790,8 +821,8 @@ class AuthenticationLogPaginateTestCase(MyTestCase):
 class AuthenticationLogDeleteTestCase(MyTestCase):
 
     def tearDown(self):
-        from privacyidea.models.authentication_log import AuthenticationLog
         from privacyidea.models import db
+        from privacyidea.models.authentication_log import AuthenticationLog
         db.session.query(AuthenticationLog).delete()
         db.session.commit()
         super().tearDown()

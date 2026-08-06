@@ -246,6 +246,9 @@ _TRUNCATED_COLUMNS = {
     "attempt_id": None,
 }
 
+# other_info keys written out-of-band on the stored row after insert; event updates must not clobber them.
+_OUT_OF_BAND_OTHER_INFO_KEYS = {"conditional_access_findings"}
+
 
 def _row_values(event: PendingAuthEvent) -> dict:
     """
@@ -261,6 +264,23 @@ def _row_values(event: PendingAuthEvent) -> dict:
         if result.overflow is not None:
             overflow[column] = result.overflow
     return {**stored, "other_info": _store_overflow(event.other_info, overflow)}
+
+
+def _merge_other_info_for_update(stored: dict | None, updated: dict | None) -> dict | None:
+    """
+    Merge *updated* into the existing stored value for ``other_info`` while preserving out-of-band keys that the
+    event does not carry (currently conditional-access findings appended after insert).
+
+    If *updated* explicitly sets one of those keys, that explicit value wins.
+    """
+    if not isinstance(updated, dict):
+        return updated
+    merged = dict(updated)
+    if isinstance(stored, dict):
+        for key in _OUT_OF_BAND_OTHER_INFO_KEYS:
+            if key in stored and key not in merged:
+                merged[key] = stored[key]
+    return merged
 
 
 def _build_entry(event: PendingAuthEvent) -> AuthenticationLog:
@@ -323,7 +343,10 @@ def update_authentication_events(events: Sequence[PendingAuthEvent]) -> bool:
             if entry is None:
                 log.info(f"Cannot update authentication log entry {event.row_id!r}: not found.")
                 continue
-            for column, value in _row_values(event).items():
+            values = _row_values(event)
+            stored_other_info = getattr(entry, "other_info", None)
+            values["other_info"] = _merge_other_info_for_update(stored_other_info, values["other_info"])
+            for column, value in values.items():
                 setattr(entry, column, value)
     if not outcome.succeeded:
         return False
