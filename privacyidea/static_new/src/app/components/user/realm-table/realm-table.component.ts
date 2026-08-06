@@ -68,11 +68,19 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
-import { RealmRow, Realms, RealmService, RealmServiceInterface, ResolverGroup } from "@services/realm/realm.service";
+import {
+  REALM_CUSTOM_ATTRIBUTES_ERROR_CODE,
+  RealmRow,
+  Realms,
+  RealmService,
+  RealmServiceInterface,
+  ResolverGroup
+} from "@services/realm/realm.service";
 import { ResolverService, ResolverServiceInterface } from "@services/resolver/resolver.service";
 import { NodeInfo, SystemService, SystemServiceInterface } from "@services/system/system.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { concat, last, lastValueFrom, take } from "rxjs";
+import { RealmDeleteAttributesDialogComponent } from "./realm-delete-attributes-dialog/realm-delete-attributes-dialog.component";
 
 interface ResolverWithPriority {
   name: string;
@@ -551,16 +559,7 @@ export class RealmTableComponent implements OnDestroy, OnInit {
       .subscribe({
         next: (result) => {
           if (!result) return;
-          this.realmService.deleteRealm(row.name).subscribe({
-            next: () => {
-              this._notificationService.success($localize`Realm "${row.name}" deleted.`);
-              this.realmService.realmResource.reload?.();
-            },
-            error: (err: HttpErrorResponse) => {
-              const message = err.error?.result?.error?.message || err.message;
-              this._notificationService.error($localize`Failed to delete realm. ${message}`);
-            }
-          });
+          this._deleteRealm(row.name);
         }
       });
   }
@@ -593,6 +592,39 @@ export class RealmTableComponent implements OnDestroy, OnInit {
   }
 
   // --- Private Helpers ---
+  private _deleteRealm(realmName: string, deleteCustomAttributes = false): void {
+    this.realmService.deleteRealm(realmName, deleteCustomAttributes).subscribe({
+      next: () => {
+        this._notificationService.success($localize`Realm "${realmName}" deleted.`);
+        this.realmService.realmResource.reload?.();
+      },
+      error: (err: HttpErrorResponse) => {
+        const error = err.error?.result?.error;
+        if (!deleteCustomAttributes && error?.code === REALM_CUSTOM_ATTRIBUTES_ERROR_CODE) {
+          this._confirmDeleteCustomAttributes(realmName, error.message);
+          return;
+        }
+        const message = error?.message || err.message;
+        this._notificationService.error($localize`Failed to delete realm. ${message}`);
+      }
+    });
+  }
+
+  private _confirmDeleteCustomAttributes(realmName: string, message: string): void {
+    this.dialogService
+      .openDialog({
+        component: RealmDeleteAttributesDialogComponent,
+        data: { realmName, message }
+      })
+      .afterClosed()
+      .subscribe({
+        next: (confirmed) => {
+          if (!confirmed) return;
+          this._deleteRealm(realmName, true);
+        }
+      });
+  }
+
   private _clientsideSortRealmData(data: RealmRow[], s: Sort): RealmRow[] {
     if (!s.direction) return data;
     const dir = s.direction === "desc" ? -1 : 1;

@@ -685,11 +685,12 @@ def get_auth_token():
         # log_authentication below is a no-op and no row is added over the one the token already wrote.
         auth_event_type = AuthEventType.LOGIN_SUCCESS if (
                 admin_auth or user_auth) else AuthEventType.UNKNOWN_FAIL_REASON
-    log_authentication(auth_event_type, request, user=user, serial=serials or details.get("serial"),
-                       transaction_id=(get_optional(request.all_data, "transaction_id")
-                                       or details.get("transaction_id") or log_transaction_id),
-                       username=login_name,
-                       internal_admin=internal_admin)
+    auth_log_event_id = log_authentication(auth_event_type, request, user=user,
+                                           serial=serials or details.get("serial"),
+                                           transaction_id=(get_optional(request.all_data, "transaction_id")
+                                                           or details.get("transaction_id") or log_transaction_id),
+                                           username=login_name,
+                                           internal_admin=internal_admin)
 
     # Feed the classified outcome to the lockout engine (after the log row is written so the
     # count includes it). It writes lockout state for the next request and returns any
@@ -698,8 +699,9 @@ def get_auth_token():
     # login response.
     lockout_notices = []
     try:
-        lockout_notices = evaluate_lockout_policies(
-            build_ca_context(user, internal_admin=internal_admin), auth_event_type) or []
+        lockout_notices = evaluate_lockout_policies(build_ca_context(user, internal_admin=internal_admin),
+                                                    auth_event_type, source_ip=g.client_ip,
+                                                    auth_log_event_id=auth_log_event_id) or []
     except Exception as ex:
         log.warning(f"Conditional-access policy evaluation failed: {ex!r}")
 

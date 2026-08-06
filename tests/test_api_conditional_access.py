@@ -112,13 +112,13 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
 
     @staticmethod
     def _make_lock_policy(*, counter_type, threshold: int, duration: int, window: int = 3600,
-                          priority: int = 1) -> None:
+                          dry_run: bool = False, priority: int = 1) -> None:
         create_lockout_policy(
             name="ca_lock", time_window_seconds=window,
             counter_types_to_track=_counter_types(counter_type),
             stages=[{"failure_threshold": threshold, "priority": 1,
                      "actions": [{"action_type": str(LockoutAction.LOCK_USER), "action_value": duration}]}],
-            target=LockoutTarget.USER, priority=priority)
+            target=LockoutTarget.USER, dry_run=dry_run, priority=priority)
 
     @staticmethod
     def _make_block_ip_policy(*, counter_type, threshold: int, duration: int, window: int = 3600,
@@ -196,6 +196,34 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         body = self._check({"user": "cornelius", "pass": "pin755224"})
         self.assertFalse(body["result"]["value"], body)
         self.assertEqual(logs_before, len(get_authentication_logs()))
+
+    def test_dry_run_lock_policy_persists_finding_but_never_locks(self):
+        # A dry-run LOCK_USER policy never locks the user, but the triggering request's own
+        # authentication_log row records what the policy would have done.
+        self._make_lock_policy(counter_type=AuthEventType.MFA_FAIL, threshold=3, duration=600, dry_run=True)
+
+        for _ in range(3):
+            body = self._check({"user": "cornelius", "pass": "pin000000"})
+            self.assertFalse(body["result"]["value"], body)
+
+        entries = get_authentication_logs()
+        self.assertEqual([AuthEventType.MFA_FAIL] * 3, [entry.event_type for entry in entries])
+        # Never actually enforced.
+        self.assertFalse(is_user_locked(self.user))
+
+        # The triggering (third) row carries the dry-run finding.
+        triggering_entry = entries[-1]
+        self.assertIsNotNone(triggering_entry.other_info)
+        findings = triggering_entry.other_info["conditional_access_findings"]
+        self.assertEqual(1, len(findings))
+        finding = findings[0]
+        self.assertEqual("ca_lock", finding["policy_name"])
+        self.assertEqual(3, finding["threshold"])
+        self.assertEqual([str(LockoutAction.LOCK_USER)], finding["actions"])
+
+        # The user can still authenticate normally afterward -- never actually locked.
+        body = self._check({"user": "cornelius", "pass": "pin755224"})
+        self.assertTrue(body["result"]["value"], body)
 
     def test_lockout_write_does_not_corrupt_transaction(self):
         # Regression: conditional_access_posteval wrapped the engine (which commits
@@ -635,6 +663,40 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
             stages=[{"failure_threshold": threshold, "priority": 1,
                      "actions": [{"action_type": str(LockoutAction.LOCK_USER), "action_value": duration}]}],
             target=LockoutTarget.USER, priority=priority)
+
+    @staticmethod
+    def _make_dry_run_password_policy(*, threshold, duration=600, window=3600, priority=1):
+        create_lockout_policy(
+            name="ca_pw_dry", time_window_seconds=window,
+            counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
+            stages=[{"failure_threshold": threshold, "priority": 1,
+                     "actions": [{"action_type": str(LockoutAction.LOCK_USER), "action_value": duration}]}],
+            target=LockoutTarget.USER, dry_run=True, priority=priority)
+
+    def test_dry_run_finding_persisted_on_auth_login(self):
+        # /auth calls the engine directly rather than through conditional_access_posteval, so it
+        # needs the row id of the login's own authentication_log entry threaded in as well.
+        # Without it a dry-run policy tripped by a WebUI login records nothing.
+        self._make_dry_run_password_policy(threshold=2)
+
+        for _ in range(2):
+            res = self._auth("cornelius", "wrongpassword")
+            self.assertEqual(401, res.status_code, res)
+
+        entries = get_authentication_logs()
+        self.assertEqual([AuthEventType.PASSWORD_FAIL] * 2, [entry.event_type for entry in entries])
+        # Dry-run never enforces, so the login stays refused on credentials only.
+        self.assertFalse(is_user_locked(self.user))
+
+        # The triggering (second) row carries the finding.
+        triggering_entry = entries[-1]
+        self.assertIsNotNone(triggering_entry.other_info)
+        findings = triggering_entry.other_info["conditional_access_findings"]
+        self.assertEqual(1, len(findings))
+        finding = findings[0]
+        self.assertEqual("ca_pw_dry", finding["policy_name"])
+        self.assertEqual(2, finding["threshold"])
+        self.assertEqual([str(LockoutAction.LOCK_USER)], finding["actions"])
 
     @staticmethod
     def _make_decision_policy(*, name, threshold, action, priority=1, window=3600):

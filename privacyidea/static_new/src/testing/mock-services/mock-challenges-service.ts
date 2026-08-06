@@ -16,18 +16,30 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { signal } from "@angular/core";
+import { Signal, signal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
 import { PiResponse } from "@app/app.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { Challenges, ChallengesServiceInterface } from "@services/token/challenges/challenges.service";
 import { of } from "rxjs";
+import { Debouncer } from "@utils/debounce.utils";
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 
 export class MockChallengesService implements ChallengesServiceInterface {
-  apiFilter = ["serial", "transaction_id"];
-  advancedApiFilter: string[] = [];
-  challengesFilter = signal(new FilterValue());
+  apiFilterKeys = ["serial", "transaction_id"];
+  advancedApiFilterKeys: string[] = [];
+  hiddenApiFilterKeys: string[] = [];
+  apiFilterKeyMap: Record<string, string> = {};
+  exactMatchKeys = new Set<string>();
+  allFilterKeys: Signal<string[]> = signal([
+    ...this.apiFilterKeys,
+    ...this.advancedApiFilterKeys,
+    ...this.hiddenApiFilterKeys
+  ]);
+  activeFilter = signal(new FilterValue());
+  filterDebouncer = new Debouncer(this.activeFilter);
+  filterDraft = this.activeFilter;
+  filterParams = signal<Record<string, string>>({});
   pageSize = signal(10);
   pageIndex = signal(0);
   sort = signal<Sort>({ active: "timestamp", direction: "asc" });
@@ -35,11 +47,23 @@ export class MockChallengesService implements ChallengesServiceInterface {
     MockPiResponse.fromValue<Challenges>({ challenges: [], count: 0, current: 0 })
   );
   clearFilter = jest.fn().mockImplementation(() => {
-    this.challengesFilter.set(new FilterValue());
+    this.activeFilter.set(new FilterValue());
+  });
+  setFilter = jest.fn().mockImplementation((filter: FilterValue) => {
+    this.activeFilter.set(filter);
+  });
+  updateFilter = jest.fn().mockImplementation((computeFilter: (current: FilterValue) => FilterValue) => {
+    this.activeFilter.set(computeFilter(this.activeFilter()));
+  });
+  filterFromInput = jest.fn().mockImplementation(($event: Event) => {
+    const input = $event.target as HTMLInputElement;
+    return this.activeFilter().copyWith({ value: input.value });
   });
   handleFilterInput = jest.fn().mockImplementation(($event: Event) => {
-    const input = $event.target as HTMLInputElement;
-    this.challengesFilter.set(this.challengesFilter().copyWith({ value: input.value }));
+    this.activeFilter.set(this.filterFromInput($event));
+  });
+  applyFilterInput = jest.fn().mockImplementation(($event: Event) => {
+    this.activeFilter.set(this.filterFromInput($event));
   });
   deleteExpiredChallenges = jest.fn().mockReturnValue(of(MockPiResponse.fromValue<unknown>(true)));
 }

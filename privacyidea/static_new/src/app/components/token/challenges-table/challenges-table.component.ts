@@ -27,8 +27,8 @@ import { MatPaginator, MatPaginatorModule, PageEvent } from "@angular/material/p
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
-import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
@@ -81,9 +81,9 @@ export class ChallengesTableComponent {
   columnsKeyMap = columnKeysMap;
   displayedColumns = columnKeysMap.map((c) => c.key);
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
-  apiFilter = this.challengesService.apiFilter;
+  apiFilterKeys = this.challengesService.apiFilterKeys;
   readonly filterHint = inlineFilterHint();
-  advancedApiFilter = this.challengesService.advancedApiFilter;
+  advancedApiFilterKeys = this.challengesService.advancedApiFilterKeys;
   tokenSerial = this.tokenService.tokenSerial;
   pageSize = this.challengesService.pageSize;
   pageIndex = this.challengesService.pageIndex;
@@ -121,11 +121,12 @@ export class ChallengesTableComponent {
   }
 
   toggleFilter(filterKeyword: string): void {
-    const newValue = this.tableUtilsService.toggleKeywordInFilter({
-      keyword: filterKeyword,
-      currentValue: this.challengesService.challengesFilter()
-    });
-    this.challengesService.challengesFilter.set(newValue);
+    this.challengesService.updateFilter((current) =>
+      this.tableUtilsService.toggleKeywordInFilter({
+        keyword: filterKeyword,
+        currentValue: current
+      })
+    );
   }
 
   isFilterSelected(filter: string, inputValue: FilterValue): boolean {
@@ -133,7 +134,7 @@ export class ChallengesTableComponent {
   }
 
   getFilterIconName(keyword: string): string {
-    const isSelected = this.isFilterSelected(keyword, this.challengesService.challengesFilter());
+    const isSelected = this.isFilterSelected(keyword, this.challengesService.activeFilter());
     return isSelected ? "filter_alt_off" : "filter_alt";
   }
 

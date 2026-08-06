@@ -16,38 +16,37 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { LOCALE_ID } from "@angular/core";
+import { provideZonelessChangeDetection } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { LanguageSwitcherComponent, LOCALE_COOKIE_NAME } from "./language-switcher.component";
+import { UiPreferencesService } from "@services/user-settings/ui-preferences.service";
+import { MockUiPreferencesService } from "@testing/mock-services/mock-ui-preferences-service";
+import { LanguageSwitcherComponent } from "./language-switcher.component";
 
 describe("LanguageSwitcherComponent", () => {
-  let navigateSpy: jest.SpyInstance;
+  let fixture: ComponentFixture<LanguageSwitcherComponent>;
+  let uiPreferencesService: MockUiPreferencesService;
 
   interface TestableSwitcher {
-    currentLocale: string;
+    preferredLocale: () => string;
     switchTo: (code: string) => void;
-    navigate: (url: string) => void;
   }
 
   const create = (locale: string): TestableSwitcher => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       imports: [LanguageSwitcherComponent],
-      providers: [{ provide: LOCALE_ID, useValue: locale }]
+      providers: [
+        provideZonelessChangeDetection(),
+        { provide: UiPreferencesService, useClass: MockUiPreferencesService }
+      ]
     });
-    const fixture: ComponentFixture<LanguageSwitcherComponent> = TestBed.createComponent(LanguageSwitcherComponent);
+    uiPreferencesService = TestBed.inject(UiPreferencesService) as unknown as MockUiPreferencesService;
+    uiPreferencesService.preferredLocale.set(locale);
+    fixture = TestBed.createComponent(LanguageSwitcherComponent);
     fixture.detectChanges();
     // Members are protected (template-only); access them through the instance for testing.
-    const component = fixture.componentInstance as unknown as TestableSwitcher;
-    navigateSpy = jest.spyOn(component, "navigate").mockImplementation(() => undefined);
-    return component;
+    return fixture.componentInstance as unknown as TestableSwitcher;
   };
-
-  beforeEach(() => {
-    // Clear the locale cookie and reset the URL to a known root between tests.
-    document.cookie = `${LOCALE_COOKIE_NAME}=; path=/; max-age=0`;
-    window.history.replaceState({}, "", "/");
-  });
 
   afterEach(() => {
     jest.clearAllMocks();
@@ -57,50 +56,14 @@ describe("LanguageSwitcherComponent", () => {
     expect(create("en")).toBeTruthy();
   });
 
-  it("reports the compiled locale as current", () => {
-    expect(create("de").currentLocale).toBe("de");
-    expect(create("zh-Hant").currentLocale).toBe("zh-Hant");
+  it("marks the preferred locale as the selected one", () => {
+    expect(create("de").preferredLocale()).toBe("de");
+    expect(create("zh-Hant").preferredLocale()).toBe("zh-Hant");
   });
 
-  it("normalizes English region variants to 'en'", () => {
-    expect(create("en-US").currentLocale).toBe("en");
-    expect(create("en").currentLocale).toBe("en");
-  });
-
-  it("switching to another locale sets the cookie and navigates to that bundle", () => {
+  it("hands a selected language to the UI preferences", () => {
     create("en").switchTo("de");
-    expect(document.cookie).toContain(`${LOCALE_COOKIE_NAME}=de`);
-    expect(navigateSpy).toHaveBeenCalledWith("/app/v2/de/");
-  });
 
-  it("switching to English navigates to the subpath-less base", () => {
-    create("de").switchTo("en");
-    expect(document.cookie).toContain(`${LOCALE_COOKIE_NAME}=en`);
-    expect(navigateSpy).toHaveBeenCalledWith("/app/v2/");
-  });
-
-  it("selecting the current locale is a no-op", () => {
-    create("de").switchTo("de");
-    expect(navigateSpy).not.toHaveBeenCalled();
-    expect(document.cookie).not.toContain(`${LOCALE_COOKIE_NAME}=de`);
-  });
-
-  it("preserves the current in-app route and query string when switching", () => {
-    window.history.replaceState({}, "", "/app/v2/de/tokens/details/OATH0001?foo=bar");
-    create("de").switchTo("fr");
-    expect(navigateSpy).toHaveBeenCalledWith("/app/v2/fr/tokens/details/OATH0001?foo=bar");
-  });
-
-  it("maps the route correctly when leaving English (no locale subpath)", () => {
-    window.history.replaceState({}, "", "/app/v2/tokens");
-    create("en").switchTo("de");
-    expect(navigateSpy).toHaveBeenCalledWith("/app/v2/de/tokens");
-  });
-
-  it("does not double the locale prefix when a foreign locale segment is in the URL", () => {
-    // e.g. the English bundle served in place at a non-English URL after a missing-bundle fallback.
-    window.history.replaceState({}, "", "/app/v2/zh-Hant/tokens");
-    create("en").switchTo("de");
-    expect(navigateSpy).toHaveBeenCalledWith("/app/v2/de/tokens");
+    expect(uiPreferencesService.switchLocale).toHaveBeenCalledWith("de");
   });
 });

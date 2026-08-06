@@ -198,4 +198,21 @@ describe("AdministrationWidgetComponent", () => {
 
     expect(auditMock.fetchAuditPage).toHaveBeenCalledTimes(ADMIN_AREAS.length);
   });
+
+  it("should sort entries through each TableSort column accessor", () => {
+    const entries: AuditData[] = [
+      { number: 1, date: "2026-01-01 08:00:00", administrator: "bob", action: "POST /system", action_detail: "delete" },
+      { number: 2, date: "2026-01-02 08:00:00", administrator: "amy", action: "POST /realm", action_detail: "create" }
+    ];
+    stubAreas([entries, [], [], [], []]);
+    fixture.detectChanges();
+
+    for (const column of ["date", "administrator", "action", "action_detail"] as const) {
+      component.sort.toggle(column);
+      expect(component.sortedEntries().length).toBe(2);
+    }
+
+    component.sort.toggle("administrator");
+    expect(component.sortedEntries().map((entry) => entry.administrator)).toEqual(["amy", "bob"]);
+  });
 });

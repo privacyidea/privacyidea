@@ -55,6 +55,7 @@ import { TokengroupsComponent } from "@components/external-services/tokengroups/
 import { MachineResolverDetailsComponent } from "@components/machine-resolver/machine-resolver-details/machine-resolver-details.component";
 import { MachineResolverComponent } from "@components/machine-resolver/machine-resolver.component";
 import { PolicyEditPageComponent } from "@components/policies/policy-edit-page/policy-edit-page.component";
+import { UISettingsComponent } from "@components/ui-settings/ui-settings.component";
 import { PoliciesTableComponent } from "@components/policies/policies-table/policies-table.component";
 import { ConditionalAccessComponent } from "@components/conditional-access/conditional-access.component";
 import { ConditionalAccessEditPageComponent } from "@components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component";
@@ -193,6 +194,7 @@ export const routes: Routes = [
       },
       { path: "subscription", component: SubscriptionComponent },
       { path: "system", component: SystemConfigComponent, canDeactivate: [pendingChangesGuard] },
+      { path: "ui-settings", component: UISettingsComponent },
       { path: "tokens", component: TokenTypeConfigComponent, canDeactivate: [pendingChangesGuard] }
     ]
   },

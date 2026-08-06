@@ -35,6 +35,7 @@ export class MockResolverService implements ResolverServiceInterface {
   userAttributes = signal<string[]>([]);
 
   postResolverTest = jest.fn(() => of(MockPiResponse.fromValue<boolean, { description: string }>(true, { description: "ok" })));
+  listResolvers = jest.fn().mockReturnValue(of(MockPiResponse.fromValue<Resolvers>({})));
   postResolver = jest.fn(() => of(MockPiResponse.fromValue<number>(1)));
   deleteResolver = jest.fn(() => of(MockPiResponse.fromValue<number>(1)));
   getDefaultResolverConfig = jest.fn(() => of({} as PiResponse<unknown>));

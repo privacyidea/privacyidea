@@ -19,17 +19,32 @@
 import { provideZonelessChangeDetection } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
 import { WidgetInstance } from "@models/dashboard";
+import { UserSettingsService } from "@services/user-settings/user-settings.service";
+import { MockUserSettingsService } from "@testing/mock-services/mock-user-settings-service";
+import { throwError } from "rxjs";
 import { DashboardPersistenceService } from "./dashboard-persistence.service";
 
 describe("DashboardPersistenceService", () => {
   let service: DashboardPersistenceService;
+  let userSettings: MockUserSettingsService;
 
   const sampleWidgets = (): WidgetInstance[] => [{ id: "w1", type: "tokens", x: 0, y: 0, cols: 6, rows: 8 }];
 
+  const loadedWidgets = (): WidgetInstance[] | null => {
+    let result: WidgetInstance[] | null = null;
+    service.load().subscribe((widgets) => (result = widgets));
+    return result;
+  };
+
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [provideZonelessChangeDetection(), DashboardPersistenceService]
+      providers: [
+        provideZonelessChangeDetection(),
+        { provide: UserSettingsService, useClass: MockUserSettingsService },
+        DashboardPersistenceService
+      ]
     });
+    userSettings = TestBed.inject(UserSettingsService) as unknown as MockUserSettingsService;
     service = TestBed.inject(DashboardPersistenceService);
   });
 
@@ -37,44 +52,50 @@ describe("DashboardPersistenceService", () => {
     expect(service).toBeTruthy();
   });
 
-  it("should return null before anything is saved", () => {
-    expect(service.load()).toBeNull();
+  it("should return null when no dashboard setting is stored", () => {
+    expect(loadedWidgets()).toBeNull();
+  });
+
+  it("should store the widgets under the dashboard setting key", () => {
+    const widgets = sampleWidgets();
+    service.save(widgets).subscribe();
+
+    expect(userSettings.settings()?.["dashboard"]).toEqual({ widgets });
   });
 
   it("should return the saved widgets", () => {
     const widgets = sampleWidgets();
-    service.save(widgets);
+    service.save(widgets).subscribe();
 
-    expect(service.load()).toEqual(widgets);
+    expect(loadedWidgets()).toEqual(widgets);
   });
 
-  it("should store a clone so later mutations of the input do not leak in", () => {
-    const widgets = sampleWidgets();
-    service.save(widgets);
+  it("should ignore a stored setting that is not a widget list", () => {
+    userSettings.settings.set({ dashboard: { widgets: "nonsense" } });
 
-    widgets[0].x = 99;
-    widgets.push({ id: "w2", type: "events", x: 0, y: 0, cols: 8, rows: 5 });
-
-    const loaded = service.load();
-    expect(loaded).toHaveLength(1);
-    expect(loaded?.[0].x).toBe(0);
+    expect(loadedWidgets()).toBeNull();
   });
 
-  it("should return a fresh clone on each load so callers cannot mutate the store", () => {
-    service.save(sampleWidgets());
+  it("should drop stored entries that are not valid widgets", () => {
+    userSettings.settings.set({
+      dashboard: { widgets: [...sampleWidgets(), { id: "broken", type: "tokens" }, null] }
+    });
 
-    const first = service.load();
-    first![0].x = 42;
-
-    const second = service.load();
-    expect(second?.[0].x).toBe(0);
-    expect(second).not.toBe(first);
+    expect(loadedWidgets()).toEqual(sampleWidgets());
   });
 
-  it("should overwrite previously saved widgets", () => {
-    service.save(sampleWidgets());
-    service.save([]);
+  it("should fall back to null when loading fails", () => {
+    jest.spyOn(userSettings, "getSetting").mockReturnValue(throwError(() => new Error("boom")));
 
-    expect(service.load()).toEqual([]);
+    expect(loadedWidgets()).toBeNull();
+  });
+
+  it("should swallow a failing save so the layout stays usable", () => {
+    jest.spyOn(userSettings, "setSetting").mockReturnValue(throwError(() => new Error("boom")));
+
+    let completed = false;
+    service.save(sampleWidgets()).subscribe({ complete: () => (completed = true) });
+
+    expect(completed).toBe(true);
   });
 });

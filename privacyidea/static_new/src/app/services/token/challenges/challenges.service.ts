@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
-import { computed, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { computed, inject, Injectable, linkedSignal, signal } from "@angular/core";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
@@ -26,10 +26,10 @@ import { Observable } from "rxjs";
 import { Sort } from "@angular/material/sort";
 import { PiResponse } from "@app/app.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
-import { StringUtils } from "@utils/string.utils";
+import { FilterableTableService, FilterableTableServiceInterface } from "@services/table-utils/filterable-table-service";
+import { filterParamsEqual } from "@utils/filter.utils";
 
-const apiFilter = ["serial", "transaction_id"];
-const advancedApiFilter: string[] = [];
+const apiFilterKeys = ["serial", "transaction_id"];
 
 export interface Challenges {
   challenges: Challenge[];
@@ -52,31 +52,20 @@ export interface Challenge {
   transaction_id: string;
 }
 
-export interface ChallengesServiceInterface {
-  apiFilter: string[];
-  advancedApiFilter: string[];
-  challengesFilter: WritableSignal<FilterValue>;
-  pageSize: WritableSignal<number>;
-  pageIndex: WritableSignal<number>;
-  sort: WritableSignal<Sort>;
+export interface ChallengesServiceInterface extends FilterableTableServiceInterface {
   challengesResource: HttpResourceRef<PiResponse<Challenges> | undefined>;
-
-  clearFilter(): void;
-
-  handleFilterInput($event: Event): void;
 
   deleteExpiredChallenges(): Observable<PiResponse<{ status: boolean; deleted: number }>>;
 }
 
 @Injectable()
-export class ChallengesService implements ChallengesServiceInterface {
+export class ChallengesService extends FilterableTableService implements ChallengesServiceInterface {
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly http = inject(HttpClient);
-  readonly apiFilter = apiFilter;
-  readonly advancedApiFilter = advancedApiFilter;
-  challengesFilter = linkedSignal({
+  readonly apiFilterKeys = apiFilterKeys;
+  readonly activeFilter = linkedSignal({
     source: this.contentService.routeUrl,
     computation: () => new FilterValue()
   });
@@ -86,7 +75,7 @@ export class ChallengesService implements ChallengesServiceInterface {
   });
   pageIndex = linkedSignal({
     source: () => ({
-      filterValue: this.challengesFilter(),
+      filterValue: this.activeFilter(),
       pageSize: this.pageSize(),
       routeUrl: this.contentService.routeUrl()
     }),
@@ -94,26 +83,14 @@ export class ChallengesService implements ChallengesServiceInterface {
   });
   sort = signal({ active: "timestamp", direction: "asc" } as Sort);
   tokenBaseUrl = this.tokenService.tokenBaseUrl;
-  filterParams = computed(() => {
-    const allowed = [...this.apiFilter, ...this.advancedApiFilter];
-
-    const pairs = Array.from(this.challengesFilter().filterMap.entries())
-      .filter(([key]) => allowed.includes(key))
-      .map(([key, value]) => [key, (value ?? "").toString().trim()] as const)
-      .filter(([, v]) => StringUtils.validFilterValue(v));
-
-    const result = { params: {} as Record<string, string>, serial: "" };
-
-    for (const [key, v] of pairs) {
-      if (key === "serial") {
-        result.serial = `*${v}*`;
-      } else {
-        result.params[key] = `*${v}*`;
-      }
-    }
-
-    return result;
-  });
+  // The serial goes into the endpoint path rather than the query string.
+  readonly requestParams = computed(
+    () => {
+      const { serial = "", ...params } = this.filterParams();
+      return { params, serial };
+    },
+    { equal: (a, b) => a.serial === b.serial && filterParamsEqual(a.params, b.params) }
+  );
 
   challengesResource = httpResource<PiResponse<Challenges>>(() => {
     // Only load challenges on the challenges route.
@@ -121,7 +98,7 @@ export class ChallengesService implements ChallengesServiceInterface {
       return undefined;
     }
 
-    const { params: filterParams, serial } = this.filterParams();
+    const { params: filterParams, serial } = this.requestParams();
     const url = serial
       ? `${this.tokenBaseUrl}challenges/${encodeURIComponent(serial)}`
       : `${this.tokenBaseUrl}challenges/`;
@@ -141,16 +118,6 @@ export class ChallengesService implements ChallengesServiceInterface {
       }
     };
   });
-
-  clearFilter(): void {
-    this.challengesFilter.set(new FilterValue());
-  }
-
-  handleFilterInput($event: Event): void {
-    const input = $event.target as HTMLInputElement;
-    const newFilter = this.challengesFilter().copyWith({ value: input.value });
-    this.challengesFilter.set(newFilter);
-  }
 
   deleteExpiredChallenges(): Observable<PiResponse<{ status: boolean; deleted: number }>> {
     return this.http.delete<PiResponse<{
