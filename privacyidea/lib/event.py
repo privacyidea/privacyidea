@@ -22,11 +22,13 @@
 #
 import functools
 import logging
+import traceback
 
 from sqlalchemy import select, delete
 
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.config import get_config_object
+from privacyidea.lib.error import HandlerAbortError
 from privacyidea.lib.utils import fetch_one_resource
 from privacyidea.lib.utils.export import (register_import, register_export)
 from privacyidea.models import EventHandler, db, save_config_timestamp, EventHandlerOption, EventHandlerCondition
@@ -72,25 +74,45 @@ class event:
                 # The action is determined by the event configuration
                 # In the options we can pass the mailserver configuration
                 options = {"request": self.request, "g": self.g, "handler_def": e_handler_def}
-                if event_handler.check_condition(options=options):
-                    log.debug(f"Pre-Handling event {self.eventname} with options {options}")
-                    # create a new audit object for this action
-                    event_audit = getAudit(self.g.audit_object.config)
-                    # copy all values from the original audit entry
-                    event_audit_data = dict(self.g.audit_object.audit_data)
-                    event_audit_data["action"] = (f"PRE-EVENT {self.eventname}>>"
-                                                  f"{e_handler_def.get('handlermodule')}:{e_handler_def.get('action')}")
-                    event_audit_data["action_detail"] = f"{e_handler_def.get('options')}"
-                    event_audit_data["info"] = e_handler_def.get("name")
-                    event_audit.log(event_audit_data)
-
-                    result = event_handler.do(e_handler_def.get("action"), options=options)
-                    if event_handler.run_details:
-                        event_audit_data["info"] += f" ({event_handler.run_details})"
+                try:
+                    if event_handler.check_condition(options=options):
+                        log.debug(f"Pre-Handling event {self.eventname} with options {options}")
+                        # create a new audit object for this action
+                        event_audit = getAudit(self.g.audit_object.config)
+                        # copy all values from the original audit entry
+                        event_audit_data = dict(self.g.audit_object.audit_data)
+                        event_audit_data["action"] = (f"PRE-EVENT {self.eventname}>>"
+                                                      f"{e_handler_def.get('handlermodule')}:{e_handler_def.get('action')}")
+                        event_audit_data["action_detail"] = f"{e_handler_def.get('options')}"
+                        event_audit_data["info"] = e_handler_def.get("name")
                         event_audit.log(event_audit_data)
-                    # set audit object to success
-                    event_audit.log({"success": result})
-                    event_audit.finalize_log()
+
+                        result = event_handler.do(e_handler_def.get("action"), options=options)
+                        if event_handler.run_details:
+                            event_audit_data["info"] += f" ({event_handler.run_details})"
+                            event_audit.log(event_audit_data)
+                        # set audit object to success
+                        event_audit.log({"success": result})
+                        event_audit.finalize_log()
+                except HandlerAbortError:
+                    raise
+                except Exception as e:
+                    log.warning(f"Pre-event handler {e_handler_def.get('name')!r} "
+                                f"({e_handler_def.get('handlermodule')}:"
+                                f"{e_handler_def.get('action')}) failed: {e!r}")
+                    log.debug(traceback.format_exc())
+                    try:
+                        event_audit = getAudit(self.g.audit_object.config)
+                        event_audit_data = dict(self.g.audit_object.audit_data)
+                        event_audit_data["action"] = (f"PRE-EVENT {self.eventname}>>"
+                                                      f"{e_handler_def.get('handlermodule')}:{e_handler_def.get('action')}")
+                        event_audit_data["action_detail"] = f"{e_handler_def.get('options')}"
+                        event_audit_data["info"] = f"{e_handler_def.get('name')} ({e!r})"
+                        event_audit.log(event_audit_data)
+                        event_audit.log({"success": False})
+                        event_audit.finalize_log()
+                    except Exception as audit_exc:
+                        log.error(f"Failed to audit handler failure: {audit_exc!r}")
 
             f_result = func(*args, **kwds)
 
@@ -106,27 +128,47 @@ class event:
                            "g": self.g,
                            "response": f_result,
                            "handler_def": e_handler_def}
-                if event_handler.check_condition(options=options):
-                    log.debug(f"Post-Handling event {self.eventname} with options {options}")
-                    # create a new audit object
-                    event_audit = getAudit(self.g.audit_object.config)
-                    # copy all values from the original audit entry
-                    event_audit_data = dict(self.g.audit_object.audit_data)
-                    event_audit_data["action"] = (f"POST-EVENT {self.eventname}>>"
-                                                  f"{e_handler_def.get('handlermodule')}:{e_handler_def.get('action')}")
-                    event_audit_data["action_detail"] = f"{e_handler_def.get('options')}"
-                    event_audit_data["info"] = e_handler_def.get("name")
-                    event_audit.log(event_audit_data)
-
-                    result = event_handler.do(e_handler_def.get("action"), options=options)
-                    if event_handler.run_details:
-                        event_audit_data["info"] += f" ({event_handler.run_details})"
+                try:
+                    if event_handler.check_condition(options=options):
+                        log.debug(f"Post-Handling event {self.eventname} with options {options}")
+                        # create a new audit object
+                        event_audit = getAudit(self.g.audit_object.config)
+                        # copy all values from the original audit entry
+                        event_audit_data = dict(self.g.audit_object.audit_data)
+                        event_audit_data["action"] = (f"POST-EVENT {self.eventname}>>"
+                                                      f"{e_handler_def.get('handlermodule')}:{e_handler_def.get('action')}")
+                        event_audit_data["action_detail"] = f"{e_handler_def.get('options')}"
+                        event_audit_data["info"] = e_handler_def.get("name")
                         event_audit.log(event_audit_data)
-                    # In case the handler has modified the response
-                    f_result = options.get("response")
-                    # set audit object to success
-                    event_audit.log({"success": result})
-                    event_audit.finalize_log()
+
+                        result = event_handler.do(e_handler_def.get("action"), options=options)
+                        if event_handler.run_details:
+                            event_audit_data["info"] += f" ({event_handler.run_details})"
+                            event_audit.log(event_audit_data)
+                        # In case the handler has modified the response
+                        f_result = options.get("response")
+                        # set audit object to success
+                        event_audit.log({"success": result})
+                        event_audit.finalize_log()
+                except HandlerAbortError:
+                    raise
+                except Exception as e:
+                    log.warning(f"Post-event handler {e_handler_def.get('name')!r} "
+                                f"({e_handler_def.get('handlermodule')}:"
+                                f"{e_handler_def.get('action')}) failed: {e!r}")
+                    log.debug(traceback.format_exc())
+                    try:
+                        event_audit = getAudit(self.g.audit_object.config)
+                        event_audit_data = dict(self.g.audit_object.audit_data)
+                        event_audit_data["action"] = (f"POST-EVENT {self.eventname}>>"
+                                                      f"{e_handler_def.get('handlermodule')}:{e_handler_def.get('action')}")
+                        event_audit_data["action_detail"] = f"{e_handler_def.get('options')}"
+                        event_audit_data["info"] = f"{e_handler_def.get('name')} ({e!r})"
+                        event_audit.log(event_audit_data)
+                        event_audit.log({"success": False})
+                        event_audit.finalize_log()
+                    except Exception as audit_exc:
+                        log.error(f"Failed to audit handler failure: {audit_exc!r}")
 
             return f_result
 
