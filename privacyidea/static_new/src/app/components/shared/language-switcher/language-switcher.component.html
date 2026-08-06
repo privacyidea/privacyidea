@@ -30,10 +30,10 @@
   @for (locale of locales; track locale.code) {
     <button
       (click)="switchTo(locale.code)"
-      [disabled]="locale.code === currentLocale"
+      [disabled]="locale.code === preferredLocale()"
       mat-menu-item>
       <span>{{ locale.label }}</span>
-      @if (locale.code === currentLocale) {
+      @if (locale.code === preferredLocale()) {
         <mat-icon>check</mat-icon>
       }
     </button>
