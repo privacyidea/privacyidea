@@ -21,6 +21,7 @@ Unit tests for the dedicated conditional-access database session
 """
 from sqlalchemy import select
 from sqlalchemy.exc import OperationalError
+from unittest import mock
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.session import close_ca_session, get_ca_session, guarded_write
@@ -234,3 +235,20 @@ class GuardedWriteTestCase(MyTestCase):
 
         self.assertTrue(outcome.succeeded)
         self.assertListEqual(["alice", "flushed-on-request-session"], self._stored_usernames())
+
+    def test_09_rollback_failure_is_swallowed_and_logged(self):
+        # Cover the contained-failure path where the original write fails and rollback fails as well.
+        session = get_ca_session()
+        with mock.patch.object(session, "rollback", side_effect=RuntimeError("rollback failed")) as rollback_mock:
+            with mock.patch("privacyidea.lib.conditional_access.session.log.warning") as warning_mock:
+                with guarded_write("an authentication log entry") as outcome:
+                    session.add(self._entry("alice"))
+                    raise RuntimeError("write failed")
+
+        self.assertFalse(outcome.succeeded)
+        self.assertIsInstance(outcome.error, RuntimeError)
+        self.assertEqual("write failed", str(outcome.error))
+        rollback_mock.assert_called_once()
+        self.assertTrue(any("Rolling back the failed write of an authentication log entry failed as well"
+                            in call.args[0] for call in warning_mock.call_args_list))
+
