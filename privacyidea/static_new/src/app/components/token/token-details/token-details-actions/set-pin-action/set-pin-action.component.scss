@@ -7,7 +7,7 @@
   width: fit-content;
 }
 
-// A grid item of the details grid, so it sits beside the details cards at the same recess.
+// Sits on the raised token-details page container, beside the details cards, so the shallow recess.
 .set-pin-panel {
   @include styles.card-recessed(3);
   display: flex;

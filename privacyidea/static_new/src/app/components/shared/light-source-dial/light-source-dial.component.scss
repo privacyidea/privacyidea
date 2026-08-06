@@ -19,9 +19,7 @@
 
 @use "styles";
 
-// One stop per angle the light can be cast from, laid out as spokes around a dial. The pointer
-// follows --dial-angle from the applied html.light-source-* class, so the dial shows the setting
-// in effect; it wears the depth tokens itself, so it previews the shadows it aims.
+// The dial face: a reset fieldset that every spoke, the pointer and the knob position against.
 .dial {
   position: relative;
   width: 168px;
@@ -35,8 +33,8 @@
   box-shadow: var(--inset-shadow-5);
 }
 
-// Labels for screen readers only; the visible affordance is the tick ring and a tooltip per
-// spoke. The radios form a native group, so arrow keys turn the dial.
+// Legend and stop labels, for screen readers only; on screen the tick ring and the tooltips carry
+// them. The radios stay a named native group, so arrow keys turn the dial.
 .dial__hidden-text {
   position: absolute;
   width: 1px;
@@ -48,8 +46,8 @@
   white-space: nowrap;
 }
 
-// One spoke per stop: an arm from the centre to the rim, rotated into place. Only its outer
-// end takes clicks, so the spokes cannot cover each other near the middle.
+// One spoke per stop: an arm from the centre to the rim, rotated into place. Only its outer end
+// takes clicks, so the spokes cannot cover each other near the middle.
 .dial__slot {
   position: absolute;
   left: 50%;
@@ -71,7 +69,7 @@
     cursor: pointer;
   }
 
-  // Tick on the rim, drawn along the spoke.
+  // Tick on the rim, at the spoke's outer end.
   &::after {
     content: "";
     position: absolute;
@@ -101,9 +99,17 @@
   }
 }
 
-// The arm carrying the pointer dot and the glow. Both rotate around the dial centre and
-// ignore pointer events, so the spokes underneath stay clickable. --dial-angle is
-// inherited from the html class, so it must not be declared on the dial itself.
+// Arms carrying the pointer dot and the glow. Both rotate by --dial-angle inherited from the
+// html.light-source-* class, so declaring it here would cut the dial off from the light source in
+// effect. Neither takes pointer events, so the spokes underneath stay clickable.
+//
+// --dial-angle is global, so it also points at light sources no stop of this dial stands for.
+// With nothing checked the pointer is hidden rather than aimed at a stop that does not apply.
+.dial:not(:has(input:checked)) .dial__pointer,
+.dial:not(:has(input:checked)) .dial__glow {
+  display: none;
+}
+
 .dial__pointer,
 .dial__glow {
   position: absolute;

@@ -29,7 +29,7 @@
   --mat-expansion-container-elevation-shadow: none;
   --expansion-panel-header-padding: var(--half-global-padding) var(--three-quarters-global-padding);
 
-  // A card inside a raised expansion panel, so the shallow recess.
+  // The panel above is flattened by the tokens above; this card carries the recess instead.
   .action-card-in-panel {
     @include styles.card-recessed(3);
     font-weight: 500;

@@ -1,4 +1,5 @@
-// No surface of its own: the expansion panels it holds are the cards.
+// Neither this container nor the expansion panels it holds paint a surface. Material paints a panel
+// from the two tokens below, so setting them here is what flattens it.
 .action-selector-container {
   display: flex;
   flex-direction: column;

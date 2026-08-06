@@ -123,8 +123,7 @@ describe("UISettingsComponent", () => {
     expect(testable().lightSource()).toBe("12");
   });
 
-  // The dial's own rendering is covered by LightSourceDialComponent's spec; this checks the
-  // wiring into it.
+  // The dial's own rendering is covered by LightSourceDialComponent's spec; this checks the wiring.
   it("should hand the dial one item per light-source stop, keyed by the current value", () => {
     const radios = host().querySelectorAll<HTMLInputElement>(".dial__slot input");
 

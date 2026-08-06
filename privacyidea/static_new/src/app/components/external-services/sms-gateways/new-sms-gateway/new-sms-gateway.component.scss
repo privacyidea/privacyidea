@@ -60,7 +60,6 @@
   }
 }
 
-// The parameter table is a group on the page container, so recessed.
 .table-wrapper {
   @include styles.card-recessed(3);
   margin-top: 8px;

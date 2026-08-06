@@ -25,8 +25,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--global-gap);
-  // Wide enough for the xs + s card pair of the first row (162 + 16 + 340 = the m step), plus
-  // the container's own padding, which the mixin measures border-box.
+  // Fits the xs + s card pair (162 + 16 + 340 = the m step) plus the border-box padding the mixin sets.
   max-width: calc(var(--card-width-m) + 2 * var(--global-padding));
 }
 
@@ -37,8 +36,7 @@
   gap: var(--half-global-gap);
 }
 
-// The cards carry their own widths, so they flow in rows rather than in the global class's
-// grid, which declares no columns. Theme (xs) and language (s) share a row; wider cards wrap.
+// The cards carry their own widths and wrap into rows; the global class is a grid with no columns.
 .details-cards-grid {
   display: flex;
   flex-direction: row;
@@ -59,9 +57,8 @@
   @include table.card-width(m);
 }
 
-// Every selector on the page follows the corner-radius setting and marks its selection in the
-// same blue as the language select's chosen option. Setting Material's tokens rather than
-// border-radius/background keeps this independent of stylesheet order.
+// Set as Material tokens, not as border-radius/background: Material paints the toggles from these,
+// so plain properties would depend on stylesheet order.
 mat-button-toggle-group {
   --mat-button-toggle-shape: var(--border-radius);
   --mat-button-toggle-selected-state-background-color: var(--mat-sys-primary-light);

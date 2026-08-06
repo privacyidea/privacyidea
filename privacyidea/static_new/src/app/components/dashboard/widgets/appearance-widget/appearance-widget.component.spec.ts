@@ -120,21 +120,18 @@ describe("AppearanceWidgetComponent", () => {
     expect(checked).toHaveLength(1);
   });
 
-  it("should follow the light source when depth and corners match no preset", () => {
+  it("should mark nothing when depth and corners match no preset", () => {
     // very-strong + square is one of the four pairs the dial itself never applies.
     appearanceService.depth.set("very-strong");
     appearanceService.corners.set("square");
     appearanceService.lightSource.set("12");
     fixture.detectChanges();
 
-    const checked = host().querySelector<HTMLInputElement>(".dial__slot input:checked");
-
-    expect(checked?.closest(".dial__slot")?.className).toContain("dial__slot--12");
+    expect(host().querySelector(".dial__slot input:checked")).toBeNull();
   });
 
   it("should apply the preset's depth, corners and light source together on selection", () => {
-    // First in generation order is flat depth with square corners, seven stops before the
-    // default light source.
+    // First in generation order: flat depth, square corners, seven stops before the default one.
     const radios = host().querySelectorAll<HTMLInputElement>(".dial__slot input");
 
     radios[0].checked = true;

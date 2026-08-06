@@ -108,7 +108,7 @@ describe("LightSourceDialComponent", () => {
 
   it("should use each item's label as its tooltip and accessible text", () => {
     const labels = host().querySelectorAll<HTMLElement>(".dial__hidden-text");
-    // First hidden-text node is the legend; the rest are one per slot.
+    // Index 0 is the legend; the rest are one per slot, in item order.
     expect(labels[1].textContent?.trim()).toBe("Item A");
     expect(labels[2].textContent?.trim()).toBe("Item B");
     expect(labels[3].textContent?.trim()).toBe("Item C");

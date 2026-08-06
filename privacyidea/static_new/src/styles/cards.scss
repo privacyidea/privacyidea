@@ -1,7 +1,5 @@
 // The two card treatments: a surface is set apart from its parent by being raised above it or
-// sunk into it, never by an outline. Neither mixin sets a border, because at the flat depth
-// step the shadow tokens collapse to a hairline ring (html.depth-flat in styles.scss) and a
-// card drawing its own border would double that ring.
+// sunk into it, never by an outline, so neither mixin sets a border.
 //
 // $slot picks a step of the shared 3 < 5 < 8 depth scale, and which step a surface takes
 // follows from where it sits:
@@ -14,8 +12,8 @@
 //   group in a group   inset 5    one level further in
 //   group in that      inset 8    the deepest step
 //
-// So a card counts how many cards it is inside. Anything standing on a recessed surface
-// inverts: the dashboard field is a deep recess, so the widgets on it are raised.
+// A card counts how many cards it is inside, and standing on a recessed surface inverts that:
+// the dashboard field is recessed, so the widgets on it are raised.
 @mixin card-raised($slot: 5) {
   border: 0;
   border-radius: var(--border-radius);

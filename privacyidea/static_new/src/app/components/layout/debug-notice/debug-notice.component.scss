@@ -36,8 +36,7 @@ $corner-size-stacked: 132px;
   text-align: center;
   font-weight: bold;
   text-transform: uppercase;
-  // The pre-baked Material level, not the tunable --elevation-8: a build-state warning must
-  // not be flattened by the depth setting.
+  // The pre-baked Material shadow, not the tunable --elevation-8: the depth setting cannot flatten it.
   box-shadow: var(--mat-elevation-8);
   pointer-events: auto;
   border: none;

@@ -18,7 +18,7 @@
  **/
 @use "styles";
 
-// Widgets stand on the recessed dashboard field, so they are raised, like a page container.
+// Widgets stand on the recessed dashboard field, so they are raised.
 .widget-frame {
   @include styles.card-raised(5);
   box-sizing: border-box;
@@ -37,7 +37,6 @@
   gap: var(--half-global-gap);
   min-height: 38px;
   padding: var(--quarter-global-padding) var(--global-padding);
-  // A divider inside the card, not an outline around it.
   border-bottom: 1px solid var(--mat-sys-outline-variant);
 
   &.draggable {

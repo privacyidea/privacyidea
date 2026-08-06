@@ -17,7 +17,6 @@
   }
 }
 
-// A group inside the raised details container, so the shallow recess.
 .details-section {
   @include styles.card-recessed(3);
   display: grid;

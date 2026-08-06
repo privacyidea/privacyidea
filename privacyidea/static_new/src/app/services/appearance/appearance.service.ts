@@ -37,17 +37,17 @@ import {
 
 /**
  * How much depth the UI has: the drop shadows of raised surfaces and the recess of sunken ones
- * together. At "flat" a raised surface carries a hairline ring instead of a shadow.
+ * together. Every level needs its own html.depth-<level> block in styles/styles.scss.
  */
 export const DEPTH_LEVELS = ["flat", "subtle", "default", "strong", "very-strong"] as const;
 export type DepthLevel = (typeof DEPTH_LEVELS)[number];
 
 /**
  * Stops of the light-source dial. A level is its index as a string; its angle is
- * index * LIGHT_SOURCE_STEP_ANGLE degrees, from due right and growing clockwise. styles.scss
- * generates one html.light-source-<index> block per stop from $light-source-steps, so keep the
- * two counts in step. The two purely horizontal stops, 0 and 180 degrees, are left out: with no
- * vertical offset a shadow reads as missing rather than low.
+ * index * LIGHT_SOURCE_STEP_ANGLE degrees, from due right and growing clockwise. The two purely
+ * horizontal stops, 0 and 180 degrees, are left out. styles/styles.scss generates the matching
+ * html.light-source-<index> blocks from $light-source-steps and skips the same two angles, so both
+ * the count and the exclusions have to stay in step.
  */
 export const LIGHT_SOURCE_STEPS = 18;
 export const LIGHT_SOURCE_STEP_ANGLE = 360 / LIGHT_SOURCE_STEPS;
@@ -56,14 +56,14 @@ export const LIGHT_SOURCE_LEVELS: readonly string[] = Array.from({ length: LIGHT
   .map(String);
 export type LightSourceLevel = string;
 
-/** 16 * 20 = 320 degrees: light from above the right. */
+/** 16 * 20 = 320 degrees: light from the upper right. */
 export const DEFAULT_LIGHT_SOURCE = "16";
 
-/** The global corner radius. */
+/** Levels of the global corner radius; the names are the $corner-radii keys in styles/styles.scss. */
 export const CORNER_LEVELS = ["square", "default", "round", "extra-round"] as const;
 export type CornerLevel = (typeof CORNER_LEVELS)[number];
 
-/** One group of mutually exclusive levels, and how it reaches the DOM and the store. */
+/** One group of mutually exclusive levels, exactly one of which is a class on <html> at a time. */
 interface LevelGroup<T extends string> {
   levels: readonly T[];
   fallback: T;
@@ -73,14 +73,10 @@ interface LevelGroup<T extends string> {
 }
 
 /**
- * Owns the appearance the user picks in UI Settings: depth, light source and corner radius.
- * Each group is a class on the <html> element, which the stylesheet turns into design-token
- * values; the tokens stay theme-aware, so a level does not freeze a light-mode tone into dark
- * mode.
- *
- * The levels are cached in a cookie, so the first paint after a reload already carries them,
- * and are stored as user settings for an authenticated principal, so they follow them to their
- * other devices.
+ * Owns the appearance the user picks in UI Settings: depth, light source and corner radius. Each
+ * group is a class on the <html> element, which the stylesheet turns into design-token values. A
+ * cookie caches the levels for the first paint; for an authenticated principal the stored user
+ * settings are authoritative and override that cache once they arrive.
  */
 @Injectable({
   providedIn: "root"
@@ -118,11 +114,7 @@ export class AppearanceService {
   public readonly lightSource: Signal<LightSourceLevel> = this.lightSourceGroup.level.asReadonly();
   public readonly corners: Signal<CornerLevel> = this.cornerGroup.level.asReadonly();
 
-  /**
-   * Applies the appearance cached in the cookie. The stored user settings are authoritative for
-   * an authenticated principal but only arrive after login, so the cache is what dresses the
-   * login screen and the first paint.
-   */
+  /** Applies the cookie-cached levels at bootstrap, before any stored setting can arrive. */
   public initializeAppearance(): void {
     const cached = this.readCachedAppearance();
     this.applyStoredDepth(cached["depth"]);
@@ -142,10 +134,7 @@ export class AppearanceService {
     this.set(this.cornerGroup, level);
   }
 
-  /**
-   * Applies a level that is already stored (user setting or cookie) without writing it
-   * back to the backend. An unknown value falls back to the default level.
-   */
+  /** Applies a stored level (user setting or cookie) without writing it back; unknown values fall back. */
   public applyStoredDepth(level: unknown): void {
     this.apply(this.depthGroup, level);
   }
@@ -158,7 +147,6 @@ export class AppearanceService {
     this.apply(this.cornerGroup, level);
   }
 
-  /** Puts every appearance group back on its default level, and stores that. */
   public resetToDefaults(): void {
     this.setDepth(this.depthGroup.fallback);
     this.setLightSource(this.lightSourceGroup.fallback);
@@ -174,8 +162,7 @@ export class AppearanceService {
 
   private apply<T extends string>(group: LevelGroup<T>, level: unknown): void {
     const applied = group.levels.includes(level as T) ? (level as T) : group.fallback;
-    // Remove all of them first: a stale class would let stylesheet order decide which level
-    // wins.
+    // Remove all of them first: a stale class would let stylesheet order decide which level wins.
     group.levels.forEach((offered) => this.renderer.removeClass(this.htmlElement, `${group.classPrefix}${offered}`));
     this.renderer.addClass(this.htmlElement, `${group.classPrefix}${applied}`);
     group.level.set(applied);
@@ -200,7 +187,7 @@ export class AppearanceService {
     }
     try {
       const parsed: unknown = JSON.parse(cached);
-      // An unusable cookie is answered like an absent one, so the defaults apply.
+      // A cookie that is not a JSON object reads as an absent one, so the fallback levels apply.
       return typeof parsed === "object" && parsed !== null ? (parsed as Record<string, unknown>) : {};
     } catch {
       return {};

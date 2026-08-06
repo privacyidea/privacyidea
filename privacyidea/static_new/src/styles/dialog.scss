@@ -1,6 +1,5 @@
-// A dialog has its own scrim to separate it from the content behind, so the shallow step is
-// enough to lift it off. The tone is the flat card white rather than --surface-raised: over a
-// scrim there is nothing behind it for a gradient to read against.
+// A dialog sits on its own scrim, which does the separating, so the shallow step is enough to
+// lift it and its surface stays one flat card tone with no depth gradient.
 .mat-mdc-dialog-surface {
   border-radius: var(--border-radius) !important;
   box-shadow: var(--elevation-3) !important;

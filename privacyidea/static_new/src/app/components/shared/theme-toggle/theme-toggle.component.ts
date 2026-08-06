@@ -22,11 +22,10 @@ import { MatTooltip } from "@angular/material/tooltip";
 import { ThemeService } from "@services/theme/theme.service";
 
 /**
- * Round light/dark knob, used by UI Settings and the dashboard appearance widget. It is raised
- * in light mode and pressed in when dark mode is on, so it carries its state as depth.
+ * Checkbox styled as a round knob that switches light and dark mode; checked means dark. Used by
+ * UI Settings and the dashboard appearance widget.
  *
- * ThemeSwitcherComponent is the plain icon button for a toolbar, where a 72px knob would not
- * fit.
+ * ThemeSwitcherComponent is the icon-button form of the same switch, used in the user utils panel.
  */
 @Component({
   selector: "app-theme-toggle",
@@ -38,7 +37,7 @@ export class ThemeToggleComponent {
   private readonly themeService = inject(ThemeService);
 
   protected readonly theme = this.themeService.visualTheme;
-  // Names the mode the toggle switches to, so it reads as the action it performs.
+  // Names the mode a click switches to, not the current one; serves as both tooltip and aria-label.
   protected readonly label = computed(() =>
     this.theme() === "dark" ? $localize`Switch to light mode` : $localize`Switch to dark mode`
   );

@@ -12,7 +12,6 @@
   flex: 0 0 100%;
 }
 
-// A grid item of the details grid, so it sits beside the details cards at the same recess.
 .actions-status-row {
   @include styles.card-recessed(3);
   display: flex;

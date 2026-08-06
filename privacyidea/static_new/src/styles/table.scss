@@ -514,12 +514,9 @@ th:nth-child(even) {
   }
 }
 
-// Every card title in one place: the .details-card-title class where a component sets it, and
-// the header of a table inside a card, which is a card title too and whose bare headings would
-// otherwise fall back to the browser's em-based h3/h4 margins. Scoped by app-details-card so
-// the page-level .details-header, a page heading rather than a card title, keeps its own
-// spacing. A header split into several headings so a value can carry its own colour is one
-// title: the margin goes on the row and the pieces get none.
+// Card titles. The margin goes on the row and the h3/h4 reset below keeps the browser's em-based
+// heading margins out of it. Scoped by app-details-card, so a page-level .details-header keeps
+// its own spacing.
 .details-card-title,
 app-details-card .details-header {
   margin: var(--half-global-padding);

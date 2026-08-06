@@ -26,7 +26,7 @@
   font-size: 14px;
 }
 
-// The field the widgets stand on: a deep recess, so the widgets on it read as raised.
+// The field the widgets stand on, recessed at the deep step.
 .dashboard-page {
   @include styles.card-recessed(5);
   display: flex;

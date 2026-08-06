@@ -2,7 +2,7 @@
 @use "table";
 
 .application-table-container {
-  // A group inside the token-applications page container, so recessed rather than raised.
+  // Sits inside the raised token-applications page container, so the shallow recess.
   @include styles.card-recessed(3);
   @include table.base-table-structure(".token-table", ".token-table-filter", ".table-scroll-container");
 

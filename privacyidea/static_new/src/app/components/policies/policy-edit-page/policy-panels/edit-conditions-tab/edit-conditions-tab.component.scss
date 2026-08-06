@@ -7,7 +7,7 @@
   min-width: 350px;
 }
 
-// One card per condition kind, sitting on the page container.
+// One card per condition kind, on the page container.
 .conditions-container {
   @include styles.card-recessed(3);
   padding: var(--half-global-padding) var(--three-quarters-global-padding);

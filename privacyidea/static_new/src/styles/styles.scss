@@ -54,9 +54,8 @@ body {
   --light-distance: -4px;
   --shadow-distance: 2px;
 
-  // Card widths, applied via the card-width() mixin: the first five steps of
-  // n * 162px + (n - 1) * 16px, so cards of different sizes line up on the same grid however
-  // they wrap.
+  // Card widths, applied via the card-width() mixin: n * 162px + (n - 1) * 16px for n = 1..5, so
+  // cards of different sizes line up on the same grid however they wrap.
   --card-width-xs: 162px;
   --card-width-s: 340px;
   --card-width-m: 518px;
@@ -70,24 +69,21 @@ body {
     --mat-elevation-#{$z}: #{mat-elevation.get-box-shadow($z)};
   }
 
-  // Shadow geometry: a dark shadow toward one corner, a light highlight mirrored to the
-  // opposite one, blur three times the offset. --mat-sys-shadow and --mat-sys-light are the
-  // theme's two tones, so the pair inverts in dark mode.
-  //
-  // Two knobs, both set by the html.depth-* and html.light-source-* blocks below:
-  // --depth-scale for how far the shadows reach (0 paints nothing) and --depth-dir-x/-y for
-  // which corner the light comes from. The slots keep the app's 3 < 5 < 8 ordering.
+  // Shadow geometry: a dark shadow toward one corner, a light highlight mirrored to the opposite
+  // one, blur roughly twice the offset. --mat-sys-shadow and --mat-sys-light are the theme's two
+  // tones, so the pair inverts in dark mode. --depth-scale (how far the shadows reach) and
+  // --depth-dir-x/-y (which corner the light comes from) are set by the html.depth-* and
+  // html.light-source-* blocks below.
   --depth-scale: 1;
   --depth-dir-x: 1;
   --depth-dir-y: 1;
 
-  // The tones run one step ahead of the shadows: at every level the surface tones and
-  // gradients are the ones the next stronger level's shadows pair with. "flat" keeps the
-  // ladder but drops the gradient, so there tone is all that separates the levels.
+  // Strength of the surface tints and the inset tones, defaulting to the shadow scale. Every
+  // html.depth-* level sets its own value.
   --depth-tone-scale: var(--depth-scale);
 
-  // --depth-dir-x/-y are unit-vector components, so a diagonal light contributes 0.7071 per
-  // axis. These are the distances at scale 1; every depth level sits below that.
+  // --depth-dir-x/-y are unit-vector components, so a diagonal light splits the offset 0.7071
+  // per axis.
   --depth-x-3: calc(3px * var(--depth-scale) * var(--depth-dir-x));
   --depth-y-3: calc(3px * var(--depth-scale) * var(--depth-dir-y));
   --depth-blur-3: calc(6px * var(--depth-scale));
@@ -109,9 +105,9 @@ body {
     var(--depth-x-8) var(--depth-y-8) var(--depth-blur-8) var(--mat-sys-shadow),
     calc(-1 * var(--depth-x-8)) calc(-1 * var(--depth-y-8)) var(--depth-blur-8) var(--mat-sys-light);
 
-  // The same pairs turned inward, for surfaces sunk into the page. The three slots are the
-  // three nesting levels a card can sit at: 3 for a group on the page container, 5 for a
-  // group inside a group, 8 for one deeper again. Each pairs with an --inset-surface-* tone.
+  // The same pairs turned inward, for surfaces sunk into the page. The slots are the nesting
+  // levels a card can sit at: 3 for a group on the page container, 5 for a group inside a group,
+  // 8 for one deeper again. Each pairs with the matching --inset-surface-* tone.
   --inset-shadow-8:
     inset var(--depth-x-8) var(--depth-y-8) var(--depth-blur-8) var(--mat-sys-shadow),
     inset calc(-1 * var(--depth-x-8)) calc(-1 * var(--depth-y-8)) var(--depth-blur-8) var(--mat-sys-light);
@@ -121,17 +117,14 @@ body {
   --inset-shadow-3:
     inset var(--depth-x-3) var(--depth-y-3) var(--depth-blur-3) var(--mat-sys-shadow),
     inset calc(-1 * var(--depth-x-3)) calc(-1 * var(--depth-y-3)) var(--depth-blur-3) var(--mat-sys-light);
-  // For the surfaces that hang off a bar instead of floating above the page (the active
-  // toolbar tab, the secondary toolbar, the util groups): --elevation-5 with the vertical offset
-  // dropped, so it lifts sideways only, since their bottom edge meets the bar. The shadow falls
-  // on the side away from the light and the highlight on the side facing it; with the light
-  // straight up or down no horizontal component is left and the glow fades out.
+  // --elevation-5 with the vertical offset dropped, for surfaces whose bottom edge meets a bar
+  // (the active toolbar tab, the util groups). With the light straight up or down there is no
+  // horizontal component left and the glow disappears.
   --side-glow:
     var(--depth-x-5) 0 var(--depth-blur-5) var(--mat-sys-shadow),
     calc(-1 * var(--depth-x-5)) 0 var(--depth-blur-5) var(--mat-sys-light);
-  // Surfaces are shaded as well as shadowed: a gradient from the lit corner to the shadowed
-  // one, light to dark when raised and dark to light when recessed. It runs 90deg behind the
-  // dial angle, which puts its light end on the corner the light comes from.
+  // Surface shading: a gradient running light to dark when raised and dark to light when
+  // recessed. 90deg behind the dial angle puts its light end on the corner the light comes from.
   --depth-gradient-angle: calc(var(--dial-angle, 340deg) - 90deg);
   --depth-tint: clamp(0%, calc(12% * var(--depth-tone-scale)), 100%);
   --surface-raised: linear-gradient(
@@ -140,10 +133,8 @@ body {
     color-mix(in srgb, var(--mat-sys-shadow) var(--depth-tint), var(--table-color))
   );
 
-  // A recess darkens with depth: the deeper it is, the more of the surrounding container tone
-  // is mixed into the card white, so nesting stays legible where the shadows are soft. The
-  // clamp keeps the deep steps from overshooting that tone. At scale 0 they all collapse to
-  // the card white.
+  // Each step mixes more of the surrounding container tone into the card white, so nesting stays
+  // legible where the shadows are soft. The clamp stops a deep step overshooting that tone.
   --inset-tone-8: color-mix(
     in srgb,
     var(--mat-sys-surface-container-highest) clamp(0%, calc(45% * var(--depth-tone-scale)), 100%),
@@ -274,31 +265,27 @@ body {
   --mat-menu-container-color: var(--mat-sys-surface-container-low);
 }
 
-// Appearance levels the user picks in UI Settings. AppearanceService stamps one class per
-// group on <html>: it outranks the :root defaults above and the CDK overlay container
-// inherits it, so Material panels follow along. Every value stays a var() reference, so a
-// level cannot freeze one theme's tone into the other.
+// Appearance levels the user picks in UI Settings. AppearanceService stamps one class per group
+// on <html>: it outranks the :root defaults above, and the CDK overlay container inherits it so
+// Material panels follow along. Every value stays a var() reference, so a level cannot freeze
+// one theme's tone into the other.
 
-// One depth scale drives every shadow: --elevation-*, --inset-shadow-*, --inset-surface-*
-// and --side-glow. "flat" swaps the blurred shadows for a two-pixel hard pair, offset only, so
-// boxes keep their size and nothing is outlined. The three slots collapse onto that one pair,
-// which leaves the inset tones to say how deep a surface sits.
+// --depth-scale drives --elevation-*, --inset-shadow-*, --side-glow and, through --depth-tint,
+// the --surface-raised / --inset-surface-* gradients. "flat" overrides the shadow slots with one
+// hard 1px pair, so all three collapse onto the same shadow and the inset tones alone say how
+// deep a surface sits.
 html.depth-flat {
   --depth-scale: 0;
-  // No shadows left to separate the recess levels, so tone carries them alone: the tone ladder
-  // stays at full strength while the tint drops to nothing, which leaves every surface one flat
-  // colour and each inset level a step darker than the one above it.
+  // Tone alone separates the levels here: the ladder at full strength, the tint at nothing, so
+  // every surface is one flat colour and each inset level a step darker than the one above.
   --depth-tone-scale: 1;
   --depth-tint: 0%;
 
-  // Every slot is the shadow-and-light pair at two hard pixels, no blur, still aimed by the
-  // light source: shade on the side away from it, highlight on the side facing it, and that
-  // pair is what draws a surface's edge here.
-  //
-  // Offset and spread each take one of those pixels. An offset alone would only translate the
-  // surface's own shape, so its rounded corners would pull each band short of the corner; the
-  // spread grows the shape instead, carrying the band around. Matching the two keeps the bands
-  // off each other's side, since the spread reaches exactly as far back as the offset moved.
+  // One hard pair per slot, still aimed by the light source, and the only thing drawing a
+  // surface's edge here. Keep offset and spread equal: an offset alone only translates the
+  // surface's own shape, so its rounded corners pull each band short of the corner, and the
+  // spread that carries the band around reaches exactly as far back as the offset moved, which
+  // is what keeps the two bands off each other's side.
   --flat-light: var(--mat-sys-surface-container);
   --flat-pair:
     calc(1px * var(--depth-dir-x)) calc(1px * var(--depth-dir-y)) 0 1px var(--mat-sys-shadow),
@@ -313,26 +300,25 @@ html.depth-flat {
   --inset-shadow-3: var(--flat-inset-pair);
   --inset-shadow-5: var(--flat-inset-pair);
   --inset-shadow-8: var(--flat-inset-pair);
-  // The same pair, horizontal only: these surfaces hang off a bar, so their bottom edge meets
-  // it and only the sides are theirs to draw.
+  // The same pair, horizontal and with no spread: these surfaces hang off a bar, and a spread
+  // would draw a line along the bottom edge they share with it.
   --side-glow:
-    calc(2px * var(--depth-dir-x)) 0 0 0 var(--mat-sys-shadow),
-    calc(-2px * var(--depth-dir-x)) 0 0 0 var(--flat-light);
+    calc(1px * var(--depth-dir-x)) 0 0 0 var(--mat-sys-shadow),
+    calc(-1px * var(--depth-dir-x)) 0 0 0 var(--flat-light);
 }
 
-// The secondary toolbar spans the full width, so side hairlines would fall outside the
-// viewport. It takes its two visible edges instead: the line it shares with the primary
-// toolbar, drawn inside the box where the toolbar above cannot paint over it, and the line
-// separating it from the content below. Shadows rather than borders, so they add no height.
-// Global so it outranks the toolbar's own box-shadow rule.
+// Full-width, so only the top and bottom edges are visible: the line it shares with the primary
+// toolbar, drawn inset where the toolbar above cannot paint over it, and the line to the content
+// below. Shadows rather than borders so they add no height, and global so it outranks the
+// toolbar's own box-shadow rule.
 html.depth-flat .secondary-toolbar {
   box-shadow:
     0 1px 0 0 var(--mat-sys-outline-variant),
     inset 0 1px 0 0 var(--mat-sys-outline-variant);
 }
 
-// Each level's tone scale is the next level's shadow scale; very strong tops the ladder out
-// with a tone step of its own.
+// Each level's tone scale is the next level's shadow scale; very-strong tops the ladder out with
+// a tone step of its own.
 html.depth-subtle {
   --depth-scale: 0.3;
   --depth-tone-scale: 0.6;
@@ -353,16 +339,14 @@ html.depth-very-strong {
   --depth-tone-scale: 1.5;
 }
 
-// Where the light comes from, as one stop of a rotary dial: --dial-angle points at it (0deg
-// due right, growing clockwise) and the shadow falls the opposite way, hence the negated unit
-// vector. Sass does the trigonometry at build time, so no calc() runs in the browser.
-//
-// AppearanceService offers the same stops (LIGHT_SOURCE_STEPS); keep the two counts in step.
+// One stop of the light-source dial: --dial-angle points at the light (0deg due right, growing
+// clockwise) and the shadow falls the opposite way, hence the negated unit vector.
+// $light-source-steps must stay in step with AppearanceService's LIGHT_SOURCE_STEPS.
 @for $i from 0 through $light-source-steps - 1 {
   $angle: $i * $light-source-step-angle;
 
-  // No stop for the two purely horizontal angles (see LIGHT_SOURCE_LEVELS): with no vertical
-  // offset the shadows read as missing rather than low.
+  // 0 and 180 are skipped, matching LIGHT_SOURCE_LEVELS: a purely horizontal light leaves the
+  // shadows no vertical offset at all.
   @if $angle != 0 and $angle != 180 {
     html.light-source-#{$i} {
       --dial-angle: #{$angle}deg;
@@ -372,10 +356,10 @@ html.depth-very-strong {
   }
 }
 
-// Capped at 12px: --border-radius feeds --mat-sys-corner-extra-small, and above that
-// Material's outlined form fields widen their notch gap and padding, shifting the input text
-// instead of rounding a corner. "square" is 0px rather than a bare 0 because the value lands
-// inside Material's max() calls, where a unitless zero is not a length.
+// Capped at 12px: --border-radius feeds --mat-sys-corner-extra-small, and above that Material's
+// outlined form fields widen their notch gap and padding, shifting the input text instead of
+// rounding a corner. "square" is 0px, not a bare 0, because the value lands inside Material's
+// max() calls, where a unitless zero is not a length.
 $corner-radii: (
   "square": 0px,
   "default": 4px,
@@ -389,15 +373,11 @@ $corner-radii: (
   }
 }
 
-// The outer container of a routed page: a raised surface that fills the content region the
-// layout hands it and scrolls inside it.
-//
-// That region is a size container (`.admin-content` / `.selfservice-content-container` in
-// layout.component.scss), so 100cq* is whatever the toolbars, the self-service drawer and the
-// region's own padding leave over, measured by the browser rather than spelled out here. No
-// toolbar heights or viewport fractions to recalibrate. border-box makes the caps mean the
-// box the user sees, so a page sizing its container to a content width asks for that width
-// plus `2 * var(--global-padding)`.
+// The outer container of a routed page. `.admin-content` / `.selfservice-content-container`
+// (layout.component.scss) are size containers, so 100cq* is whatever the toolbars, the
+// self-service drawer and the region's own padding leave over. With border-box the caps measure
+// the padded box, so a page sizing its container to a content width must add
+// `2 * var(--global-padding)`.
 @mixin main-component-style {
   box-sizing: border-box;
   padding: var(--global-padding);
@@ -409,11 +389,10 @@ $corner-radii: (
   overflow: auto;
 }
 
-// Global (unencapsulated) so it can match the router-outlet's dynamically inserted
-// component. Gives the routed host a definite height, so components that fill via
-// `height: 100%` (e.g. token-details, dashboard) can stretch to the bottom.
-// main-component-style's cap does not go through this chain: it measures the content region
-// itself (100cqh), so a page may put as many wrappers as it likes in between.
+// Global (unencapsulated) so it can match the router-outlet's dynamically inserted component.
+// Gives the routed host a definite height, so components that fill via `height: 100%` (e.g.
+// token-details, dashboard) reach the bottom. main-component-style's cap does not depend on this
+// chain: it measures the content region itself, so any number of wrappers may sit in between.
 .admin-content > *:not(router-outlet) {
   height: 100%;
   min-height: 0;
@@ -924,16 +903,12 @@ body.self-service-layout {
   margin: 0 0 var(--third-global-padding) 0;
 }
 
-// Pinned against the top of its container, the header floats over the page rather than
-// sitting in it, so it takes the shallow raised step: above the cards on the page, below the
-// page container. Until then it is flush with the content, so the shadow arrives with
-// .is-sticky and fades in.
+// The raised step arrives with .is-sticky and is faded in by the transition; unpinned the header
+// carries the page container's own shading and is flush with it.
 .sticky-header {
   position: sticky;
   top: 0;
   z-index: 100;
-  // The same shading as the page container it is pinned to: flush with it at the top of the
-  // scroll, still a lit surface once lifted.
   background: var(--surface-raised);
   padding: 16px;
   transition: box-shadow 0.3s ease-in-out;

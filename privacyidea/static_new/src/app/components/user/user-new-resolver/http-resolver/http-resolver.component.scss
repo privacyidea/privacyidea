@@ -42,7 +42,7 @@
   align-items: center;
 }
 
-// A group inside a raised expansion panel, so the shallow recess.
+// Sits inside a raised expansion panel, so the shallow recess.
 .auth-panel-body {
   @include styles.card-recessed(3);
   padding: 16px;

@@ -33,9 +33,7 @@
   height: 100%;
 }
 
-// The two buttons flank the dial, so they read as belonging to it rather than to the widget
-// header. Every part keeps its own size, so the width the widget gains on a resize goes into
-// the space between them and spreads the buttons out to the edges.
+// Each control keeps its own size, so the width a resize adds goes into the gaps between them.
 .appearance-widget__row {
   display: flex;
   flex-direction: row;

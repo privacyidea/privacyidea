@@ -76,9 +76,7 @@ export class UISettingsComponent {
     { value: "strong", label: $localize`Strong` },
     { value: "very-strong", label: $localize`Very strong` }
   ];
-  // The angle is the whole label: a bare number needs no translation, and the card title and
-  // the legend already name the dial. slot and value are the same here, since the items are the
-  // angle stops themselves.
+  // One item per angle stop, so slot and value coincide; the label is the bare angle, untranslated.
   protected readonly lightSourceDialItems: LightSourceDialItem[] = LIGHT_SOURCE_LEVELS.map((value) => ({
     slot: Number(value),
     value,
@@ -96,8 +94,7 @@ export class UISettingsComponent {
     this.appearanceService.resetToDefaults();
     this.themeService.setTheme("light");
     this.uiPreferencesService.setShowLoadingUrls(false);
-    // Last, because switching to another language is a full-page navigation, which would cancel
-    // the requests above.
+    // Last: switching locale is a full-page navigation, which would cancel the requests above.
     this.uiPreferencesService.switchLocale("en");
   }
 

@@ -20,7 +20,7 @@ import { HttpEvent } from "@angular/common/http";
 import { Injectable } from "@angular/core";
 import { Observable, Subscription } from "rxjs";
 
-/** Requests in flight against one endpoint, collapsed into a single entry. */
+/** The requests in flight against one endpoint, collapsed into a single counted entry. */
 export interface LoadingGroup {
   endpoint: string;
   count: number;
@@ -76,10 +76,7 @@ export class LoadingService implements LoadingServiceInterface {
     this.notifyListeners();
   }
 
-  /**
-   * The endpoints being requested, in the order their first request started. Requests that
-   * differ only in their query parameters share an endpoint and are counted into one entry.
-   */
+  /** Grouped by the URL before the query string; ordered by the first request to each endpoint. */
   getLoadingGroups(): LoadingGroup[] {
     const groups = new Map<string, LoadingGroup>();
     this.loadings.forEach((loading) => {
