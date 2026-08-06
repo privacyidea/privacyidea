@@ -1080,7 +1080,7 @@ def trigger_challenge():
     # last challenge it created).
     challenge_serials = [challenge_info["serial"] for challenge_info in details["multi_challenge"]]
 
-    event_id = log_authentication(
+    log_authentication(
         event_type,
         request,
         user=user,
