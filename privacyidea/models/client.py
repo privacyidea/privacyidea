@@ -20,7 +20,7 @@ from typing import Any
 from uuid import uuid4
 
 from sqlalchemy import JSON, DateTime, Unicode
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, validates
 
 from privacyidea.models import db
 from privacyidea.models.utils import MethodsMixin, utc_now
@@ -64,3 +64,12 @@ class Client(MethodsMixin, db.Model):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
     last_used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     config: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
+
+    @validates("config")
+    def _coerce_config(self, _key, value):
+        # config is always a dict, never None. nullable=False alone does not
+        # guarantee that on a JSON column: SQLAlchemy stores a Python None as a
+        # JSON null (a non-NULL cell), so a None passed by any caller would slip
+        # past the constraint and read back as None. Normalise it here so the
+        # invariant holds regardless of the constructor call site.
+        return {} if value is None else value

@@ -162,6 +162,8 @@ def create_client(display_name: str, client_type: str, config: dict = None,
         plaintext key is returned here only and must be shown to the admin once.
     """
     key = generate_api_key(prefix)
+    # config may be None here; the Client model normalises it to {} (see its
+    # config validator), so client.config is always a dict.
     client = Client(display_name=display_name, client_type=client_type,
                     key_id=key["key_id"], key_hash=key["key_hash"],
                     config=config)
