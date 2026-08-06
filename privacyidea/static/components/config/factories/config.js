@@ -1055,7 +1055,7 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
                 });
             },
             updateClient: function (clientId, params, callback) {
-                $http.post(clientsUrl + "/" + clientId, params, {
+                $http.patch(clientsUrl + "/" + clientId, params, {
                     headers: {
                         'PI-Authorization': AuthFactory.getAuthToken(),
                         'Content-Type': 'application/json'
