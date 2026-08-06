@@ -35,7 +35,7 @@ import logging
 from flask import Blueprint, request, g
 
 from .lib.utils import send_result
-from ..lib.error import ParameterError
+from ..lib.error import ParameterError, PolicyError, ResourceNotFoundError
 from ..lib.params import get_optional, get_required
 from ..lib.log import log_with
 from ..lib.event import event
@@ -43,12 +43,35 @@ from ..lib.policies.actions import PolicyAction
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.clients import (get_client, get_clients, create_client, update_client,
                            rotate_client_key, delete_client, client_to_dict)
-from ..lib.remembered_device import (get_client_devices, revoke_client_device, revoke_client_devices,
-                               revoke_devices, device_to_dict, user_identity)
+from ..lib.remembered_device import (get_client_device, get_client_devices, revoke_client_device,
+                               revoke_client_devices, revoke_devices, device_to_dict, user_identity)
 from ..lib.realm import get_realm_id
 from ..lib.user import User
 
 log = logging.getLogger(__name__)
+
+
+def _allowed_revoke_realm_ids():
+    """
+    The realm ids the acting admin may revoke remembered devices in, or ``None``
+    when unrestricted.
+
+    ``check_base_action`` realm-scopes the revoke endpoints that carry a ``realm``
+    (or ``user``) in the request, but the single-device and unfiltered per-client
+    revokes carry neither - so a realm-scoped admin would otherwise revoke across
+    realms. This computes the admin's allowed realms (mirroring the tokenlist
+    scoping) so those two paths can enforce the same restriction.
+    """
+    from ..lib.policy import Match, SCOPE
+    if not g.policy_object.list_policies(scope=SCOPE.ADMIN, active=True):
+        return None
+    realm_ids = set()
+    for pol in Match.admin(g, action=PolicyAction.REMEMBERED_DEVICE_REVOKE).policies():
+        if not pol.get("realm"):
+            return None
+        realm_ids.update(get_realm_id(name) for name in pol.get("realm"))
+    realm_ids.discard(None)
+    return realm_ids
 
 clients_blueprint = Blueprint('clients_blueprint', __name__)
 
@@ -260,24 +283,35 @@ def revoke_client_remembered_devices_api(client_id):
     realm = get_optional(request.all_data, "realm")
     user = get_optional(request.all_data, "user")
 
-    realm_id = resolver = user_id = None
     if user:
         # Narrow to one user's resolver-stable identity. If the user does not
         # resolve there is nothing to target by login (its devices, if any, are
-        # already unrecognisable and reaped by expiry / realm deletion).
+        # already unrecognisable and reaped by expiry / realm deletion). This
+        # request carries the realm, so check_base_action already realm-scoped it.
         identity = user_identity(User(login=user, realm=realm))
         if not identity:
             raise ParameterError(f"The user {user!r} does not resolve in realm {realm!r}.")
         resolver, user_id, realm_id = identity
+        count = revoke_client_devices(client_id, realm_id=realm_id, resolver=resolver, user_id=user_id)
     elif realm:
+        # Also realm-scoped by check_base_action. A mistyped realm must not
+        # silently widen the scope: an unknown realm would drop the filter and
+        # revoke *all* of the client's devices instead of none.
         realm_id = get_realm_id(realm)
-        # A mistyped realm must not silently widen the scope: without this an
-        # unknown realm (realm_id=None) would drop the filter and revoke *all* of
-        # the client's devices instead of none.
         if realm_id is None:
             raise ParameterError(f"The realm {realm!r} does not exist.")
-
-    count = revoke_client_devices(client_id, realm_id=realm_id, resolver=resolver, user_id=user_id)
+        count = revoke_client_devices(client_id, realm_id=realm_id)
+    else:
+        # Unfiltered "revoke all": no realm in the request, so check_base_action
+        # could not realm-scope it. Enforce the admin's realm restriction here so
+        # a realm-scoped admin revokes only within their allowed realms rather
+        # than wiping every realm's devices on the client.
+        allowed_realm_ids = _allowed_revoke_realm_ids()
+        if allowed_realm_ids is None:
+            count = revoke_client_devices(client_id)
+        else:
+            count = sum(revoke_client_devices(client_id, realm_id=realm_id)
+                        for realm_id in allowed_realm_ids)
 
     g.audit_object.log({"success": True, "info": f"Client ID: {client_id}"})
     return send_result(count)
@@ -297,8 +331,18 @@ def revoke_client_remembered_device_api(client_id, series_id):
     :param client_id: path component, the id of the client.
     :param series_id: path component, the series id of the device.
     :status 200: ``result.value`` is the series id of the revoked remembered device.
+    :status 403: the acting admin may not revoke in the device's realm.
     :status 404: no such device exists for this client.
     """
+    # The request carries no realm, so check_base_action could not realm-scope it:
+    # enforce the admin's realm restriction against the device's own realm.
+    device = get_client_device(client_id, series_id)
+    if not device:
+        raise ResourceNotFoundError(f"The device {series_id!r} does not exist for this client.")
+    allowed_realm_ids = _allowed_revoke_realm_ids()
+    if allowed_realm_ids is not None and device.realm_id not in allowed_realm_ids:
+        raise PolicyError("You are not allowed to revoke remembered devices in this device's realm.")
+
     r = revoke_client_device(client_id, series_id)
 
     g.audit_object.log({"success": True, "info": f"{client_id}: revoked remembered device"})

@@ -515,3 +515,49 @@ class APIClientRememberedDevicesTestCase(MyApiTestCase):
             self.assertIsNotNone(RememberedDevice.query.filter_by(series_id=keep).first())
         finally:
             delete_policy("clients_scoped")
+
+    def test_17_revoke_all_for_client_respects_admin_realm_scope(self):
+        # Per-client "revoke all" carries no realm, so a realm-restricted admin
+        # must not be able to use it to wipe devices belonging to other realms:
+        # the revoke is limited to the admin's allowed realms (here none apply, so
+        # the realm1 device survives and nothing is revoked).
+        set_realm("xcscope", [{"name": self.resolvername1}])
+        client, _ = create_client("scoped all client", "windows_cp")
+        keep = self._device(client.id, "cornelius", realm=self.realm1).series_id
+        set_policy("clients_scoped", scope=SCOPE.ADMIN,
+                   action=PolicyAction.REMEMBERED_DEVICE_REVOKE, realm="xcscope")
+        try:
+            res = self._revoke_all(client.id)
+            self.assertEqual(200, res.status_code, res)
+            self.assertEqual(0, res.json['result']['value'])
+            self.assertIsNotNone(RememberedDevice.query.filter_by(series_id=keep).first())
+        finally:
+            delete_policy("clients_scoped")
+
+    def test_18_revoke_single_respects_admin_realm_scope(self):
+        set_realm("xcscope", [{"name": self.resolvername1}])
+        client, _ = create_client("scoped single client", "windows_cp")
+        series = self._device(client.id, "cornelius", realm=self.realm1).series_id
+        set_policy("clients_scoped", scope=SCOPE.ADMIN,
+                   action=PolicyAction.REMEMBERED_DEVICE_REVOKE, realm="xcscope")
+        try:
+            with self.app.test_request_context(f'/clients/{client.id}/remembered_devices/{series}',
+                                               method='DELETE', headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(403, res.status_code, res)
+            self.assertIsNotNone(RememberedDevice.query.filter_by(series_id=series).first())
+        finally:
+            delete_policy("clients_scoped")
+
+    def test_19_revoke_by_user_respects_admin_realm_scope(self):
+        set_realm("xcscope", [{"name": self.resolvername1}])
+        client, _ = create_client("scoped user client", "windows_cp")
+        keep = self._device(client.id, "cornelius", realm=self.realm1).series_id
+        set_policy("clients_scoped", scope=SCOPE.ADMIN,
+                   action=PolicyAction.REMEMBERED_DEVICE_REVOKE, realm="xcscope")
+        try:
+            res = self._revoke_devices(user="cornelius", realm=self.realm1)
+            self.assertEqual(403, res.status_code, res)
+            self.assertIsNotNone(RememberedDevice.query.filter_by(series_id=keep).first())
+        finally:
+            delete_policy("clients_scoped")

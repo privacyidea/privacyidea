@@ -432,6 +432,18 @@ def cleanup_expired_remembered_devices(chunk_size: int = None) -> int:
     return delete_matching_rows(db.session, RememberedDevice.__table__, criterion, chunk_size)
 
 
+def get_client_device(client_id: str, series_id: str) -> "RememberedDevice | None":
+    """
+    Return a single remembered device of a client, or ``None``. Scoped to
+    ``client_id`` so a client id cannot reach another client's device.
+
+    :param client_id: the id of the API client the device must belong to
+    :param series_id: the series id of the device
+    :return: the ``RememberedDevice`` or ``None``
+    """
+    return RememberedDevice.query.filter_by(series_id=series_id, client_id=client_id).first()
+
+
 def get_client_devices(client_id: str) -> list[RememberedDevice]:
     """
     Return all remembered devices belonging to a client, newest first.
