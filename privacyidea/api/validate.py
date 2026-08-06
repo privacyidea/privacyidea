@@ -116,9 +116,9 @@ from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
 from privacyidea.api.lib.utils import (get_all_params, get_before_request_config, get_optional_one_of, get_optional,
                                        INTERNAL_OPTION_KEYS)
 from privacyidea.api.recover import recover_blueprint
-from privacyidea.lib.authsession import (create_auth_session, set_persistent_cookie,
+from privacyidea.lib.remembered_device import (create_remembered_device, set_persistent_cookie,
                                          clear_persistent_cookie, consume_remember_device_cookie,
-                                         session_user_identity, PERSISTENT_COOKIE_NAME, RememberStatus)
+                                         user_identity, PERSISTENT_COOKIE_NAME, RememberStatus)
 from privacyidea.api.register import register_blueprint
 from privacyidea.lib.applications.offline import MachineApplication
 from privacyidea.lib.challenge import get_challenges, extract_answered_challenges, cancel_enrollment_via_multichallenge
@@ -770,11 +770,11 @@ def _resolve_persistent_cookie(user: User, success: bool) -> tuple | None:
         return None
     if not is_true(get_optional(request.all_data, "request_persistent_cookie")):
         return None
-    identity = session_user_identity(user)
+    identity = user_identity(user)
     if not identity:
         # The recognition endpoint binds and matches on the resolver-stable user
-        # identity, so a session for a userless (serial-only) auth could never be
-        # recognised. Do not issue a cookie that can never be redeemed.
+        # identity, so a remembered device for a userless (serial-only) auth could
+        # never be recognised. Do not issue a cookie that can never be redeemed.
         return None
     if not Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE, user_object=user).any():
         return None
@@ -788,12 +788,12 @@ def _resolve_persistent_cookie(user: User, success: bool) -> tuple | None:
             validity_days = int(list(validity_pols)[0])
         except (ValueError, TypeError):
             validity_days = None
-    session, cookie_value = create_auth_session(identity,
-                                                client_id=g.client_id,
-                                                ip_address=g.client_ip,
-                                                user_agent=g.get("user_agent"),
-                                                validity_days=validity_days)
-    return "set", cookie_value, session.expires_at
+    device, cookie_value = create_remembered_device(identity,
+                                                    client_id=g.client_id,
+                                                    ip_address=g.client_ip,
+                                                    user_agent=g.get("user_agent"),
+                                                    validity_days=validity_days)
+    return "set", cookie_value, device.expires_at
 
 
 def _apply_persistent_cookie(response, action):
@@ -901,10 +901,10 @@ def check_remember_device():
     # recognise, so a cookie-less poll does not pay for a discarded evaluation.
     # Resolving the user to a stable identity (resolver, user_id, realm) is itself
     # the existence check: a deleted/removed account no longer resolves, so
-    # session_user_identity returns None and its remembered devices stop being
+    # user_identity returns None and its remembered devices stop being
     # recognised - i.e. deleting the account revokes them.
     presented = request.cookies.get(PERSISTENT_COOKIE_NAME)
-    identity = session_user_identity(user)
+    identity = user_identity(user)
 
     if presented and identity and Match.user(g, scope=SCOPE.AUTH,
                                              action=PolicyAction.REMEMBER_DEVICE,

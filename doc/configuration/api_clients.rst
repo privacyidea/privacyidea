@@ -42,7 +42,7 @@ one — rotation invalidates the previous key immediately.
 
 A client has a status of ``active`` or ``suspended``; only ``active`` clients
 authenticate. ``suspended`` is a reversible off-switch. To remove a client
-permanently, delete it (which also removes its remembered-device sessions); to
+permanently, delete it (which also removes its remembered devices); to
 replace a compromised key, rotate it.
 
 An absent, unknown or inactive ``X-API-Key`` simply leaves the request
@@ -89,7 +89,7 @@ relative ``Max-Age`` and an ``Expires`` (a non-browser client should rely on
 rotating ``series_id:counter`` token — **never** the API key.
 
 Opt in **once per device** (the establishing login), not on every request: each
-opt-in creates a new session, so opting in on every login accumulates sessions.
+opt-in creates a new remembered device, so opting in on every login accumulates them.
 
 Recognising the device
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -102,7 +102,7 @@ whether to skip the second factor (enforcing the first factor remains the
 client's responsibility).
 
 On a hit the cookie is **rotated** (the counter is incremented) and a new cookie
-is returned; the client must store it. A session is bound to the user's
+is returned; the client must store it. A remembered device is bound to the user's
 resolver-stable identity (resolver, user id and realm), not to the login name,
 so a remembered device survives a login rename and is never recognised for a
 *different* account that later reuses a freed login. Recognition also confirms
@@ -131,7 +131,7 @@ Theft detection
 ~~~~~~~~~~~~~~~
 
 The counter must match the value stored server-side. Presenting a **stale**
-counter (the hallmark of a replayed or cloned cookie) causes the whole session
+counter (the hallmark of a replayed or cloned cookie) causes the whole device
 series to be deleted, so neither the attacker nor the legitimate client can use
 it again; the device must then re-register.
 
@@ -143,30 +143,31 @@ trade-off — a legitimate client whose rotation response was lost and that retr
 never wrongly authenticated.
 
 
-Viewing and revoking sessions
------------------------------
+Viewing and revoking remembered devices
+----------------------------------------
 
-Each remembered device is a session bound to a client and the user's
-resolver-stable identity (resolver, user id and realm). An administrator with
-:ref:`policy_clients_list` can view a client's sessions — in the WebUI on the
-client's *Sessions* view, or over :http:get:`/clients/(client_id)/sessions`.
+Each remembered device is bound to a client and the user's resolver-stable
+identity (resolver, user id and realm). An administrator with
+:ref:`policy_clients_list` can view a client's remembered devices — in the WebUI
+on the client's *Remembered devices* view, or over
+:http:get:`/clients/(client_id)/remembered_devices`.
 
 Revoking (which requires :ref:`policy_clients_delete`) invalidates the affected
 device cookies immediately, and comes in two forms:
 
-* a single session, with :http:delete:`/clients/(client_id)/sessions/(series_id)`;
-* all of a client's sessions at once, with
-  :http:delete:`/clients/(client_id)/sessions` — optionally narrowed to one
+* a single device, with :http:delete:`/clients/(client_id)/remembered_devices/(series_id)`;
+* all of a client's remembered devices at once, with
+  :http:delete:`/clients/(client_id)/remembered_devices` — optionally narrowed to one
   ``realm`` or to one ``user`` (together with ``realm``). This is a single
-  atomic, server-side delete scoped to the client, so it also catches sessions
+  atomic, server-side delete scoped to the client, so it also catches devices
   created between listing and revoking — useful for incident response ("re-MFA
   every remembered device for this realm now").
 
-.. note:: The IP address and user agent shown for a session are those of the API
+.. note:: The IP address and user agent shown for a device are those of the API
    client's request. For a centralised integration such as an IdP that is the
    integration itself, not the end user's browser or device.
 
-Sessions are also removed automatically when they expire, when the user or the
+Remembered devices are also removed automatically when they expire, when the user or the
 client is deleted, or on theft detection. Expired rows are reclaimed by a
-periodic cleanup (``pi-manage config authsession cleanup``), shipped as a daily
+periodic cleanup (``pi-manage config remembered_device cleanup``), shipped as a daily
 job in the packaged crontab.

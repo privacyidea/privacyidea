@@ -16,16 +16,16 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 This module implements persistent ("remember this device") authentication
-sessions using a rotating-token scheme.
+devices using a rotating-token scheme.
 
-A session is represented by a cookie of the form ``series_id:counter``. The
-``series_id`` identifies the row in the ``auth_sessions`` table; the ``counter``
+A device is represented by a cookie of the form ``series_id:counter``. The
+``series_id`` identifies the row in the ``remembered_devices`` table; the ``counter``
 is bumped on every use, both in the cookie and in the database. If a request
 presents a valid ``series_id`` with a stale ``counter``, the token has been
 replayed - a sign the cookie was stolen - so the whole series is deleted and
 authentication fails.
 
-The cookie never carries the API key. A session is bound to a specific API
+The cookie never carries the API key. A device is bound to a specific API
 client via ``client_id``, which is matched against ``g.client_id`` (set by the
 API-key middleware) on every validation.
 """
@@ -40,7 +40,7 @@ from flask_babel import _
 from privacyidea.lib.error import AuthError, ParameterError, ResourceNotFoundError
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.sqlutils import delete_matching_rows
-from privacyidea.models import AuthSession, Realm, db
+from privacyidea.models import RememberedDevice, Realm, db
 
 if TYPE_CHECKING:
     from privacyidea.lib.user import User
@@ -48,7 +48,7 @@ from privacyidea.models.utils import utc_now
 
 log = logging.getLogger(__name__)
 
-# Name of the cookie carrying the persistent session token.
+# Name of the cookie carrying the remembered device token.
 PERSISTENT_COOKIE_NAME = "pi_remember_device"
 # Number of random bytes in a series id.
 SERIES_ID_BYTES = 32
@@ -57,14 +57,14 @@ SERIES_ID_BYTES = 32
 # them as cookie theft. Overridable via PI_REMEMBER_DEVICE_GRACE_SECONDS in
 # pi.cfg; set to 0 for strict fail-secure (no grace).
 DEFAULT_GRACE_SECONDS = 10
-# Column limits of the identity binding, mirroring the auth_sessions model. The
+# Column limits of the identity binding, mirroring the remembered_devices model. The
 # identity is a lookup key, so it is stored and matched verbatim (never
-# truncated); a user whose identity would overflow simply gets no session.
+# truncated); a user whose identity would overflow simply gets no device.
 RESOLVER_MAX_LEN = 120
 USER_ID_MAX_LEN = 320
-# Hard cap on a session's configured validity, so an absurd
+# Hard cap on a device's configured validity, so an absurd
 # remember_device_validity policy value cannot overflow timedelta.
-MAX_SESSION_VALIDITY_DAYS = 3650
+MAX_DEVICE_VALIDITY_DAYS = 3650
 
 
 def _grace_window_seconds() -> int:
@@ -89,7 +89,7 @@ def build_cookie_value(series_id: str, counter: int) -> str:
 
 def parse_cookie(cookie_value: str) -> tuple[str, int] | tuple[None, None]:
     """
-    Parse a persistent-session cookie of the form ``series_id:counter``.
+    Parse a remember-device cookie of the form ``series_id:counter``.
 
     :param cookie_value: the raw cookie value
     :return: a ``(series_id, counter)`` tuple, or ``(None, None)`` if malformed
@@ -121,9 +121,9 @@ class UserIdentity(NamedTuple):
     realm_id: int
 
 
-def session_user_identity(user: "User | None") -> "UserIdentity | None":
+def user_identity(user: "User | None") -> "UserIdentity | None":
     """
-    Build the resolver-stable identity a persistent session binds to.
+    Build the resolver-stable identity a remembered device binds to.
 
     :param user: the ``User`` object (or None)
     :return: a :class:`UserIdentity`, or ``None`` if the user does not resolve to
@@ -134,7 +134,7 @@ def session_user_identity(user: "User | None") -> "UserIdentity | None":
     resolver, user_id = user.resolver, str(user.uid)
     if len(resolver) > RESOLVER_MAX_LEN or len(user_id) > USER_ID_MAX_LEN:
         # The identity is a lookup key stored verbatim; one that does not fit the
-        # column could never be matched, so bind no session to it rather than
+        # column could never be matched, so bind no device to it rather than
         # issue a cookie that is silently never recognised.
         log.warning(f"Remember-device unavailable for a user of realm_id {user.realm_id}: "
                     f"identity exceeds the storable length.")
@@ -142,71 +142,71 @@ def session_user_identity(user: "User | None") -> "UserIdentity | None":
     return UserIdentity(resolver, user_id, user.realm_id)
 
 
-def create_auth_session(identity: "UserIdentity", client_id: str, ip_address: str = None,
-                        user_agent: str = None, validity_days: int = None) -> tuple[AuthSession, str]:
+def create_remembered_device(identity: "UserIdentity", client_id: str, ip_address: str = None,
+                        user_agent: str = None, validity_days: int = None) -> tuple[RememberedDevice, str]:
     """
-    Create and persist a new persistent authentication session.
+    Create and persist a new remembered device.
 
     :param identity: the resolver-stable identity of the authenticated user (see
-        :func:`session_user_identity`)
-    :param client_id: id of the API client the session is bound to
-    :param ip_address: the client IP address the session was created from
-    :param user_agent: the user agent the session was created from
-    :param validity_days: session lifetime in days; ``None`` (or a
-        non-positive value) uses the model default (``DEFAULT_SESSION_VALIDITY``)
-    :return: a tuple of the stored ``AuthSession`` and the cookie value
+        :func:`user_identity`)
+    :param client_id: id of the API client the device is bound to
+    :param ip_address: the client IP address the device was created from
+    :param user_agent: the user agent the device was created from
+    :param validity_days: device lifetime in days; ``None`` (or a
+        non-positive value) uses the model default (``DEFAULT_DEVICE_VALIDITY``)
+    :return: a tuple of the stored ``RememberedDevice`` and the cookie value
         (``series_id:1``) to send to the client
     """
     series_id = secrets.token_urlsafe(SERIES_ID_BYTES)
     if validity_days and validity_days > 0:
         # Cap the validity so an absurd policy value cannot overflow timedelta and
         # turn an already-successful auth into a 500.
-        expires_at = utc_now() + timedelta(days=min(validity_days, MAX_SESSION_VALIDITY_DAYS))
+        expires_at = utc_now() + timedelta(days=min(validity_days, MAX_DEVICE_VALIDITY_DAYS))
     else:
         expires_at = None
-    # The identity is a lookup key and is stored verbatim (session_user_identity
+    # The identity is a lookup key and is stored verbatim (user_identity
     # has already ensured it fits its columns). Only the free-form metadata
     # (ip/user agent) is truncated, so an over-long value there can never raise on
     # save and turn an already-successful auth into a 500.
-    session = AuthSession(series_id=series_id, client_id=client_id,
+    device = RememberedDevice(series_id=series_id, client_id=client_id,
                           resolver=identity.resolver, user_id=identity.user_id,
                           realm_id=identity.realm_id,
                           ip_address=(ip_address or None) and ip_address[:64],
                           user_agent=(user_agent or None) and user_agent[:255], counter=1,
                           expires_at=expires_at)
-    session.save()
-    return session, build_cookie_value(series_id, session.counter)
+    device.save()
+    return device, build_cookie_value(series_id, device.counter)
 
 
-class ValidSession(NamedTuple):
+class ValidDevice(NamedTuple):
     """
-    A live session matched by :func:`get_valid_session`.
+    A live device matched by :func:`get_valid_device`.
 
     ``is_grace`` is ``False`` for a fresh use (the caller should rotate the
     token) and ``True`` for a tolerated grace-window hit (the caller must
     **not** rotate).
     """
-    session: AuthSession
+    device: RememberedDevice
     is_grace: bool
 
 
-def get_valid_session(cookie_value: str, client_id: str, identity: "UserIdentity",
-                      client_ip: str = None) -> "ValidSession | None":
+def get_valid_device(cookie_value: str, client_id: str, identity: "UserIdentity",
+                      client_ip: str = None) -> "ValidDevice | None":
     """
-    Look up and validate a persistent-session cookie **without** rotating it.
+    Look up and validate a remember-device cookie **without** rotating it.
 
-    The session is matched on ``series_id`` **and** ``client_id`` **and** the
+    The device is matched on ``series_id`` **and** ``client_id`` **and** the
     full user identity (``resolver`` / ``user_id`` / ``realm_id``) so a cookie
     only ever validates for the client it was issued to and the user it was
     issued for.
 
-    * Returns ``None`` if no matching session exists or it has expired (an
-      expired session is deleted).
+    * Returns ``None`` if no matching device exists or it has expired (an
+      expired device is deleted).
     * If the presented counter matches the stored one, returns
-      ``(session, False)`` (a fresh use; the caller should rotate it).
+      ``(device, False)`` (a fresh use; the caller should rotate it).
     * If the presented counter is the immediately-previous one and the request
       arrives within the grace window from the same source IP, returns
-      ``(session, True)`` - a tolerated concurrent/duplicate request. The caller
+      ``(device, True)`` - a tolerated concurrent/duplicate request. The caller
       must **not** rotate in this case (it converges on the current token).
     * Any other counter mismatch is treated as replay (stolen cookie): the whole
       series is deleted and an ``AuthError`` is raised.
@@ -223,11 +223,11 @@ def get_valid_session(cookie_value: str, client_id: str, identity: "UserIdentity
     :param cookie_value: the raw cookie value from the request
     :param client_id: the id of the API client making the request (g.client_id)
     :param identity: the resolver-stable identity the cookie must be bound to
-        (see :func:`session_user_identity`)
+        (see :func:`user_identity`)
     :param client_ip: the source IP of the request; used to bound the grace
-        window (a grace hit must come from the IP the session was last used from)
-    :return: ``None`` if there is no live session for this cookie (unknown or
-        expired); otherwise a :class:`ValidSession` ``(session, is_grace)`` where
+        window (a grace hit must come from the IP the device was last used from)
+    :return: ``None`` if there is no live device for this cookie (unknown or
+        expired); otherwise a :class:`ValidDevice` ``(device, is_grace)`` where
         ``is_grace`` is ``False`` for a fresh use (the caller should rotate the
         token) and ``True`` for a tolerated grace-window hit (the caller must
         **not** rotate - it converges on the current token)
@@ -237,70 +237,70 @@ def get_valid_session(cookie_value: str, client_id: str, identity: "UserIdentity
     if not series_id or counter is None or not identity:
         return None
 
-    session = AuthSession.query.filter_by(series_id=series_id, client_id=client_id,
+    device = RememberedDevice.query.filter_by(series_id=series_id, client_id=client_id,
                                           resolver=identity.resolver, user_id=identity.user_id,
                                           realm_id=identity.realm_id).first()
-    if not session:
+    if not device:
         return None
 
-    if session.expires_at and session.expires_at < utc_now():
+    if device.expires_at and device.expires_at < utc_now():
         # Never log the series_id: it is the secret half of the cookie. Correlate
         # on the (non-secret) client_id instead.
-        log.info(f"Persistent session for client {client_id!r} expired; removing it.")
-        session.delete()
+        log.info(f"Remembered device for client {client_id!r} expired; removing it.")
+        device.delete()
         return None
 
-    if session.counter == counter:
-        return ValidSession(session, False)
+    if device.counter == counter:
+        return ValidDevice(device, False)
 
-    if _is_within_grace(session, counter, client_ip):
+    if _is_within_grace(device, counter, client_ip):
         # Concurrent/duplicate request presenting the just-superseded counter -
         # tolerate it without rotating (single-step, time- and IP-bounded).
         # last_used_at is deliberately NOT refreshed here: the window stays
         # anchored to the rotation, so a client that never persists the rotated
         # cookie is tolerated only briefly and then treated as theft, rather than
         # being kept alive indefinitely (which would defeat rotation).
-        log.debug(f"Persistent session for client {client_id!r}: accepting previous "
+        log.debug(f"Remembered device for client {client_id!r}: accepting previous "
                   f"counter within the grace window.")
-        return ValidSession(session, True)
+        return ValidDevice(device, True)
 
     # Any other counter mismatch means the cookie was replayed. Invalidate the
     # whole series so neither the legitimate client nor the attacker can use it.
-    log.warning(f"Persistent session token reuse detected for client {client_id!r}; "
-                f"deleting the session.")
-    session.delete()
-    raise AuthError(_("Authentication failure. Session token reuse detected."))
+    log.warning(f"Remembered device token reuse detected for client {client_id!r}; "
+                f"deleting the device.")
+    device.delete()
+    raise AuthError(_("Authentication failure. Device token reuse detected."))
 
 
-def _is_within_grace(session: AuthSession, counter: int, client_ip: str) -> bool:
+def _is_within_grace(device: RememberedDevice, counter: int, client_ip: str) -> bool:
     """
     Whether a presented ``counter`` qualifies for the grace window: it must be
-    exactly the immediately-previous counter, the session must have been used
+    exactly the immediately-previous counter, the device must have been used
     within the grace window, and (when both are known) the source IP must match
-    the one the session was last used from.
+    the one the device was last used from.
     """
     grace = _grace_window_seconds()
-    if grace <= 0 or counter != session.counter - 1 or session.last_used_at is None:
+    if grace <= 0 or counter != device.counter - 1 or device.last_used_at is None:
         return False
-    if (utc_now() - session.last_used_at).total_seconds() > grace:
+    if (utc_now() - device.last_used_at).total_seconds() > grace:
         return False
-    if session.ip_address and client_ip and session.ip_address != client_ip:
+    if device.ip_address and client_ip and device.ip_address != client_ip:
         return False
     return True
 
 
-def rotate_session(session: AuthSession) -> tuple[str, datetime]:
+def rotate_device(device: RememberedDevice) -> tuple[str, datetime]:
     """
-    Rotate a validated session: bump the counter, refresh ``last_used_at`` and
+    Rotate a validated device: bump the counter, refresh ``last_used_at`` and
     return the new cookie value plus its expiry.
 
-    :param session: a session returned by :func:`get_valid_session`
+    :param device: a device returned by :func:`get_valid_device`
     :return: a ``(new_cookie_value, expires_at)`` tuple
     """
-    session.counter += 1
-    session.last_used_at = utc_now()
-    session.save()
-    return build_cookie_value(session.series_id, session.counter), session.expires_at
+    device.counter += 1
+    device.last_used_at = utc_now()
+    device.save()
+    return build_cookie_value(device.series_id, device.counter), device.expires_at
 
 
 class RememberStatus(str, enum.Enum):
@@ -314,7 +314,7 @@ class RememberStatus(str, enum.Enum):
     * ``FOREIGN`` - the series is live but bound to a *different* user on the
       same client (a shared browser). Not recognised, but the caller must **not**
       clear it, or one user logging in would wipe another user's cookie.
-    * ``MISS`` - no live session for this cookie (unknown or expired); the caller
+    * ``MISS`` - no live device for this cookie (unknown or expired); the caller
       should clear it.
     * ``THEFT`` - replay detected; the series has already been invalidated and
       the caller must clear the cookie.
@@ -343,7 +343,7 @@ def consume_remember_device_cookie(cookie_value: str, client_id: str, identity: 
                                    client_ip: str = None) -> ConsumeResult:
     """
     Consume a presented remember-device cookie: validate it (see
-    :func:`get_valid_session`) and rotate it on a fresh use. This is the single
+    :func:`get_valid_device`) and rotate it on a fresh use. This is the single
     place a presented cookie is consumed.
 
     Recognition only: this performs no authentication, triggers no challenge and
@@ -352,14 +352,14 @@ def consume_remember_device_cookie(cookie_value: str, client_id: str, identity: 
     :param cookie_value: the raw cookie value from the request
     :param client_id: the id of the API client making the request (g.client_id)
     :param identity: the resolver-stable identity the cookie must be bound to
-        (see :func:`session_user_identity`)
+        (see :func:`user_identity`)
     :param client_ip: the source IP of the request (bounds the grace window)
     :return: a :class:`ConsumeResult`. Theft is reported as ``status ==
         "theft"`` (the series has already been invalidated) rather than raised,
         so the caller can answer "not recognised" uniformly.
     """
     try:
-        result = get_valid_session(cookie_value, client_id, identity, client_ip)
+        result = get_valid_device(cookie_value, client_id, identity, client_ip)
     except AuthError:
         return ConsumeResult(RememberStatus.THEFT, None, None)
     if not result:
@@ -370,19 +370,19 @@ def consume_remember_device_cookie(cookie_value: str, client_id: str, identity: 
         # "foreign" soft miss so we do not clear it and wipe that user's device.
         series_id, _counter = parse_cookie(cookie_value)
         if series_id:
-            other = AuthSession.query.filter_by(series_id=series_id, client_id=client_id).first()
+            other = RememberedDevice.query.filter_by(series_id=series_id, client_id=client_id).first()
             if other and not (other.expires_at and other.expires_at < utc_now()):
                 return ConsumeResult(RememberStatus.FOREIGN, None, None)
         return ConsumeResult(RememberStatus.MISS, None, None)
     if result.is_grace:
         return ConsumeResult(RememberStatus.GRACE, None, None)
-    new_cookie, expires_at = rotate_session(result.session)
+    new_cookie, expires_at = rotate_device(result.device)
     return ConsumeResult(RememberStatus.RECOGNIZED, new_cookie, expires_at)
 
 
 def set_persistent_cookie(response, cookie_value: str, expires_at) -> None:
     """
-    Attach the persistent-session cookie to a response.
+    Attach the remember-device cookie to a response.
 
     The cookie is ``HttpOnly``, ``Secure`` and ``SameSite=Strict`` and never
     contains the API key - only the ``series_id:counter`` token.
@@ -404,7 +404,7 @@ def set_persistent_cookie(response, cookie_value: str, expires_at) -> None:
 
 def clear_persistent_cookie(response) -> None:
     """
-    Remove the persistent-session cookie from the client.
+    Remove the remember-device cookie from the client.
 
     Used when a presented cookie is invalid, expired or has been invalidated
     (e.g. after reuse detection), so the client stops sending it.
@@ -414,13 +414,13 @@ def clear_persistent_cookie(response) -> None:
     response.delete_cookie(PERSISTENT_COOKIE_NAME, httponly=True, secure=True, samesite="Strict")
 
 
-def cleanup_expired_auth_sessions(chunk_size: int = None) -> int:
+def cleanup_expired_remembered_devices(chunk_size: int = None) -> int:
     """
-    Delete expired persistent authentication sessions from the auth_sessions
+    Delete expired remembered devices from the remembered_devices
     table.
 
     A presented cookie deletes its own expired row lazily during validation, but
-    sessions that are never presented again (abandoned or superseded) are only
+    devices that are never presented again (abandoned or superseded) are only
     reclaimed here. Run this periodically and out of band from request handling
     (see the packaged crontab); the delete is chunked to avoid table-wide locks.
 
@@ -428,58 +428,58 @@ def cleanup_expired_auth_sessions(chunk_size: int = None) -> int:
         runs a single delete statement)
     :return: the number of deleted rows
     """
-    criterion = AuthSession.expires_at < utc_now()
-    return delete_matching_rows(db.session, AuthSession.__table__, criterion, chunk_size)
+    criterion = RememberedDevice.expires_at < utc_now()
+    return delete_matching_rows(db.session, RememberedDevice.__table__, criterion, chunk_size)
 
 
-def get_client_sessions(client_id: str) -> list[AuthSession]:
+def get_client_devices(client_id: str) -> list[RememberedDevice]:
     """
-    Return all persistent sessions belonging to a client, newest first.
+    Return all remembered devices belonging to a client, newest first.
 
     :param client_id: the id of the API client
-    :return: a list of ``AuthSession`` objects
+    :return: a list of ``RememberedDevice`` objects
     """
-    return AuthSession.query.filter_by(client_id=client_id).order_by(AuthSession.created_at.desc()).all()
+    return RememberedDevice.query.filter_by(client_id=client_id).order_by(RememberedDevice.created_at.desc()).all()
 
 
-def revoke_client_session(client_id: str, series_id: str) -> str:
+def revoke_client_device(client_id: str, series_id: str) -> str:
     """
-    Revoke (delete) a single persistent session of a client.
+    Revoke (delete) a single remembered device of a client.
 
     The lookup is scoped to ``client_id`` so a client's id can never be used to
-    revoke a session that belongs to a different client.
+    revoke a device that belongs to a different client.
 
-    :param client_id: the id of the API client the session must belong to
-    :param series_id: the series id of the session to revoke
-    :return: the series id of the revoked session
-    :raises ResourceNotFoundError: if no such session exists for this client
+    :param client_id: the id of the API client the device must belong to
+    :param series_id: the series id of the device to revoke
+    :return: the series id of the revoked remembered device
+    :raises ResourceNotFoundError: if no such device exists for this client
     """
-    session = AuthSession.query.filter_by(series_id=series_id, client_id=client_id).first()
-    if not session:
-        raise ResourceNotFoundError(f"The session {series_id!r} does not exist for this client.")
-    session.delete()
+    device = RememberedDevice.query.filter_by(series_id=series_id, client_id=client_id).first()
+    if not device:
+        raise ResourceNotFoundError(f"The device {series_id!r} does not exist for this client.")
+    device.delete()
     return series_id
 
 
-def revoke_client_sessions(client_id: str, realm_id: int = None, resolver: str = None,
+def revoke_client_devices(client_id: str, realm_id: int = None, resolver: str = None,
                            user_id: str = None) -> int:
     """
-    Revoke (delete) persistent sessions of a client in bulk, optionally narrowed
+    Revoke (delete) remembered devices of a client in bulk, optionally narrowed
     to a single realm or a single ``(resolver, user_id, realm_id)`` identity.
 
     The delete is always scoped to ``client_id`` so a client's id can never be
-    used to revoke another client's sessions. Unlike collecting series ids in the
+    used to revoke another client's devices. Unlike collecting series ids in the
     caller and deleting them one by one, this is a single atomic server-side
-    delete, so sessions created between listing and revoking are still caught -
+    delete, so devices created between listing and revoking are still caught -
     which is the point of a bulk revoke (incident response).
 
-    :param client_id: the id of the API client whose sessions to revoke
-    :param realm_id: if given, only sessions bound to this realm are revoked
+    :param client_id: the id of the API client whose devices to revoke
+    :param realm_id: if given, only devices bound to this realm are revoked
     :param resolver: if given (with ``user_id`` and ``realm_id``), narrows to one
         user's identity
     :param user_id: if given (with ``resolver`` and ``realm_id``), narrows to one
         user's identity
-    :return: the number of revoked sessions
+    :return: the number of revoked remembered devices
     """
     criteria = {"client_id": client_id}
     if realm_id is not None:
@@ -488,25 +488,25 @@ def revoke_client_sessions(client_id: str, realm_id: int = None, resolver: str =
         criteria["resolver"] = resolver
     if user_id is not None:
         criteria["user_id"] = user_id
-    count = AuthSession.query.filter_by(**criteria).delete(synchronize_session=False)
+    count = RememberedDevice.query.filter_by(**criteria).delete(synchronize_session=False)
     db.session.commit()
     return count
 
 
-def revoke_sessions(realm_id: int = None, resolver: str = None, user_id: str = None) -> int:
+def revoke_devices(realm_id: int = None, resolver: str = None, user_id: str = None) -> int:
     """
-    Revoke (delete) persistent sessions across **all** clients, filtered by realm
+    Revoke (delete) remembered devices across **all** clients, filtered by realm
     and/or a ``(resolver, user_id, realm_id)`` user identity. This is the
-    client-independent counterpart to :func:`revoke_client_sessions`, for
+    client-independent counterpart to :func:`revoke_client_devices`, for
     realm-wide or per-user incident response and offboarding.
 
-    Refuses to run with no filter at all, so it can never wipe every session on
+    Refuses to run with no filter at all, so it can never wipe every device on
     the system by omission.
 
-    :param realm_id: if given, restrict to sessions bound to this realm
+    :param realm_id: if given, restrict to devices bound to this realm
     :param resolver: if given, restrict to this resolver (part of a user identity)
     :param user_id: if given, restrict to this resolver user id (part of a user identity)
-    :return: the number of revoked sessions
+    :return: the number of revoked remembered devices
     :raises ParameterError: if no filter is given
     """
     criteria = {}
@@ -517,15 +517,15 @@ def revoke_sessions(realm_id: int = None, resolver: str = None, user_id: str = N
     if user_id is not None:
         criteria["user_id"] = user_id
     if not criteria:
-        raise ParameterError("Refusing to revoke sessions without a realm or user filter.")
-    count = AuthSession.query.filter_by(**criteria).delete(synchronize_session=False)
+        raise ParameterError("Refusing to revoke devices without a realm or user filter.")
+    count = RememberedDevice.query.filter_by(**criteria).delete(synchronize_session=False)
     db.session.commit()
     return count
 
 
-def session_to_dict(session: AuthSession) -> dict:
+def device_to_dict(device: RememberedDevice) -> dict:
     """
-    Serialise a persistent session for API output. The rotating token
+    Serialise a remembered device for API output. The rotating token
     (``counter``) is intentionally not exposed; ``series_id`` is only an
     identifier used to target revocation.
 
@@ -534,22 +534,22 @@ def session_to_dict(session: AuthSession) -> dict:
     ``user`` login for display. The login is resolved on read (it can change in
     the backing store), so it may be ``None`` if the account no longer resolves.
 
-    :param session: the ``AuthSession`` to serialise
+    :param device: the ``RememberedDevice`` to serialise
     :return: a JSON-serialisable dict
     """
-    realm = Realm.query.filter_by(id=session.realm_id).first()
+    realm = Realm.query.filter_by(id=device.realm_id).first()
     realm_name = realm.name if realm else None
     return {
-        "series_id": session.series_id,
-        "resolver": session.resolver,
-        "user_id": session.user_id,
+        "series_id": device.series_id,
+        "resolver": device.resolver,
+        "user_id": device.user_id,
         "realm": realm_name,
-        "user": _resolve_login(session.resolver, session.user_id, realm_name),
-        "ip_address": session.ip_address,
-        "user_agent": session.user_agent,
-        "created_at": session.created_at.isoformat() if session.created_at else None,
-        "last_used_at": session.last_used_at.isoformat() if session.last_used_at else None,
-        "expires_at": session.expires_at.isoformat() if session.expires_at else None,
+        "user": _resolve_login(device.resolver, device.user_id, realm_name),
+        "ip_address": device.ip_address,
+        "user_agent": device.user_agent,
+        "created_at": device.created_at.isoformat() if device.created_at else None,
+        "last_used_at": device.last_used_at.isoformat() if device.last_used_at else None,
+        "expires_at": device.expires_at.isoformat() if device.expires_at else None,
     }
 
 

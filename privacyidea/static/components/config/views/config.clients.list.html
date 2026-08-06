@@ -60,9 +60,9 @@
                 <button class="btn btn-default"
                         ng-show="checkRight('clients_list')"
                         ng-hide="showRotateDialog[client.id] || showDeleteDialog[client.id]"
-                        ng-click="showSessions(client)">
+                        ng-click="showRememberedDevices(client)">
                     <span class="glyphicon glyphicon-list-alt"></span>
-                    <span translate>Sessions</span>
+                    <span translate>Remembered devices</span>
                 </button>
                 <button class="btn btn-default"
                         ng-show="checkRight('clients_rotate')"
@@ -98,7 +98,7 @@
                 <!-- Delete confirmation -->
                 <span ng-show="showDeleteDialog[client.id]" class="text-danger">
                     <span translate>Delete this client? Its API key and remembered
-                        sessions are removed.</span>
+                        devices are removed.</span>
                 </span>
                 <button class="btn btn-danger"
                         ng-show="showDeleteDialog[client.id]"

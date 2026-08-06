@@ -20,30 +20,30 @@
 import click
 from flask.cli import AppGroup
 
-from privacyidea.models import AuthSession
+from privacyidea.models import RememberedDevice
 from privacyidea.models.utils import utc_now
-from privacyidea.lib.authsession import cleanup_expired_auth_sessions
+from privacyidea.lib.remembered_device import cleanup_expired_remembered_devices
 
-authsession_cli = AppGroup("authsession", help="Manage persistent 'remember device' sessions")
+remembered_device_cli = AppGroup("remembered_device", help="Manage remembered devices")
 
 
-@authsession_cli.command("cleanup",
-                         help="Delete all expired persistent 'remember device' sessions "
+@remembered_device_cli.command("cleanup",
+                         help="Delete all expired remembered devices "
                               "from the database. Run periodically (see the packaged crontab).")
 @click.option('--chunksize', type=int,
               help="Delete entries in chunks of the given size to avoid deadlocks")
 @click.option('--dryrun', is_flag=True,
               help="Do not actually delete, only show what would be done.")
-def cleanup_auth_sessions(chunksize: int, dryrun: bool = False) -> int:
+def cleanup_remembered_devices(chunksize: int, dryrun: bool = False) -> int:
     """
-    Delete all expired persistent authentication sessions from the
-    auth_sessions table.
+    Delete all expired remembered devices from the
+    remembered_devices table.
     """
-    criterion = AuthSession.expires_at < utc_now()
+    criterion = RememberedDevice.expires_at < utc_now()
     if dryrun:
-        row_count = AuthSession.query.filter(criterion).count()
-        click.echo(f"Would delete {row_count!s} expired session entries.")
+        row_count = RememberedDevice.query.filter(criterion).count()
+        click.echo(f"Would delete {row_count!s} expired remembered-device entries.")
     else:
-        row_count = cleanup_expired_auth_sessions(chunk_size=chunksize)
+        row_count = cleanup_expired_remembered_devices(chunk_size=chunksize)
         click.echo(f"{row_count!s} entries deleted.")
     return row_count

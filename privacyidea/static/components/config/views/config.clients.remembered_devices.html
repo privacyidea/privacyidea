@@ -1,12 +1,12 @@
-<!-- Hide any freshly-shown API key when navigating onto the sessions view. -->
+<!-- Hide any freshly-shown API key when navigating onto the remembered-devices view. -->
 <div ng-init="dismissApiKey()"></div>
 
 <h3>
-    <span translate>Remembered-device sessions for</span>
-    "{{ sessionsClientName }}"
+    <span translate>Remembered devices for</span>
+    "{{ rememberedDevicesClientName }}"
 </h3>
-<p translate>These are the active "remember this device" sessions for this client.
-    Revoking one invalidates that session's cookie immediately. The IP address and
+<p translate>These are the active "remember this device" entries for this client.
+    Revoking one invalidates that device's cookie immediately. The IP address and
     user agent are those of the API client's request, which for a centralised
     integration (e.g. an IdP) is the integration itself, not the end user's
     browser or device.</p>
@@ -30,35 +30,35 @@
         </tr>
         </thead>
         <tbody>
-        <tr ng-repeat="session in sessions">
-            <td>{{ session.user_id }}</td>
-            <td>{{ session.ip_address || '-' }}</td>
-            <td>{{ session.user_agent || '-' }}</td>
-            <td>{{ session.created_at | date:'yyyy-MM-dd HH:mm' }}</td>
-            <td>{{ (session.last_used_at | date:'yyyy-MM-dd HH:mm') || '-' }}</td>
-            <td>{{ session.expires_at | date:'yyyy-MM-dd HH:mm' }}</td>
+        <tr ng-repeat="device in rememberedDevices">
+            <td>{{ device.user_id }}</td>
+            <td>{{ device.ip_address || '-' }}</td>
+            <td>{{ device.user_agent || '-' }}</td>
+            <td>{{ device.created_at | date:'yyyy-MM-dd HH:mm' }}</td>
+            <td>{{ (device.last_used_at | date:'yyyy-MM-dd HH:mm') || '-' }}</td>
+            <td>{{ device.expires_at | date:'yyyy-MM-dd HH:mm' }}</td>
             <td>
                 <button class="btn btn-danger btn-sm"
                         ng-show="checkRight('clients_delete')"
-                        ng-hide="showRevokeDialog[session.series_id]"
-                        ng-click="showRevokeDialog[session.series_id] = true">
+                        ng-hide="showRevokeDialog[device.series_id]"
+                        ng-click="showRevokeDialog[device.series_id] = true">
                     <span class="glyphicon glyphicon-trash"></span>
                     <span translate>Revoke</span>
                 </button>
                 <button class="btn btn-danger btn-sm"
-                        ng-show="showRevokeDialog[session.series_id]"
-                        ng-click="revokeSession(session.series_id)">
-                    <span translate>Revoke session</span>
+                        ng-show="showRevokeDialog[device.series_id]"
+                        ng-click="revokeRememberedDevice(device.series_id)">
+                    <span translate>Revoke device</span>
                 </button>
                 <button class="btn btn-default btn-sm"
-                        ng-show="showRevokeDialog[session.series_id]"
-                        ng-click="showRevokeDialog[session.series_id] = false">
+                        ng-show="showRevokeDialog[device.series_id]"
+                        ng-click="showRevokeDialog[device.series_id] = false">
                     <span translate>Cancel</span>
                 </button>
             </td>
         </tr>
-        <tr ng-show="sessions.length === 0">
-            <td colspan="7" translate>This client has no remembered-device sessions.</td>
+        <tr ng-show="rememberedDevices.length === 0">
+            <td colspan="7" translate>This client has no remembered devices.</td>
         </tr>
         </tbody>
     </table>

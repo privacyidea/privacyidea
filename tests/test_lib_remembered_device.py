@@ -1,22 +1,22 @@
 from .base import MyTestCase
 
 from privacyidea.lib.clients import create_client
-from privacyidea.lib.authsession import (parse_cookie, build_cookie_value,
-                                         create_auth_session, consume_remember_device_cookie,
-                                         get_valid_session, session_user_identity, UserIdentity,
-                                         cleanup_expired_auth_sessions,
-                                         RESOLVER_MAX_LEN, USER_ID_MAX_LEN, MAX_SESSION_VALIDITY_DAYS)
+from privacyidea.lib.remembered_device import (parse_cookie, build_cookie_value,
+                                         create_remembered_device, consume_remember_device_cookie,
+                                         get_valid_device, user_identity, UserIdentity,
+                                         cleanup_expired_remembered_devices,
+                                         RESOLVER_MAX_LEN, USER_ID_MAX_LEN, MAX_DEVICE_VALIDITY_DAYS)
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.user import User
-from privacyidea.models import AuthSession
+from privacyidea.models import RememberedDevice
 from privacyidea.models.utils import utc_now
 
 from datetime import timedelta
 
 
-class AuthSessionLibTestCase(MyTestCase):
+class RememberedDeviceLibTestCase(MyTestCase):
     """
-    Order-independent: every test creates its own client and session. Sessions
+    Order-independent: every test creates its own client and device. Devices
     are bound to the resolver-stable identity (resolver, user_id, realm_id), so a
     real realm is set up to supply a valid realm_id; the ``user_id`` values are
     arbitrary resolver ids (the cookie mechanics never resolve them).
@@ -27,7 +27,7 @@ class AuthSessionLibTestCase(MyTestCase):
         self.realm_id = User(login="cornelius", realm=self.realm1).realm_id
 
     def _client_id(self):
-        client, _key = create_client("session client", "windows_cp")
+        client, _key = create_client("device client", "windows_cp")
         return client.id
 
     def _identity(self, user_id, resolver=None, realm_id=None):
@@ -47,60 +47,60 @@ class AuthSessionLibTestCase(MyTestCase):
         # an embedded colon in the counter half is not a valid integer
         self.assertEqual((None, None), parse_cookie("series:1:2"))
 
-    def test_session_user_identity(self):
+    def test_user_identity(self):
         # A resolvable user maps to the (resolver, uid, realm_id) triple - the
         # resolver-stable identity, not the login.
         user = User(login="cornelius", realm=self.realm1)
-        identity = session_user_identity(user)
+        identity = user_identity(user)
         self.assertEqual(user.resolver, identity.resolver)
         self.assertEqual(str(user.uid), identity.user_id)
         self.assertEqual(user.realm_id, identity.realm_id)
         # No resolvable user -> no identity to bind to.
-        self.assertIsNone(session_user_identity(None))
-        self.assertIsNone(session_user_identity(User()))
+        self.assertIsNone(user_identity(None))
+        self.assertIsNone(user_identity(User()))
 
-    def test_session_user_identity_rejects_overlong(self):
+    def test_user_identity_rejects_overlong(self):
         # The identity is a lookup key stored verbatim; one that would overflow
         # its column yields no identity (so no unmatchable cookie is issued).
         long_uid = User(login="cornelius", realm=self.realm1)
         long_uid.uid = "x" * (USER_ID_MAX_LEN + 1)
-        self.assertIsNone(session_user_identity(long_uid))
+        self.assertIsNone(user_identity(long_uid))
         long_resolver = User(login="cornelius", realm=self.realm1)
         long_resolver.resolver = "y" * (RESOLVER_MAX_LEN + 1)
-        self.assertIsNone(session_user_identity(long_resolver))
+        self.assertIsNone(user_identity(long_resolver))
 
     def test_validity_is_capped(self):
         # An absurd validity must not overflow timedelta (which would 500 the
-        # auth); it is capped at MAX_SESSION_VALIDITY_DAYS.
+        # auth); it is capped at MAX_DEVICE_VALIDITY_DAYS.
         client_id = self._client_id()
-        session, _cookie = create_auth_session(self._identity("cap"), client_id, validity_days=10 ** 12)
-        days = (session.expires_at - utc_now()).days
-        self.assertLessEqual(days, MAX_SESSION_VALIDITY_DAYS)
-        self.assertGreater(days, MAX_SESSION_VALIDITY_DAYS - 2)
+        device, _cookie = create_remembered_device(self._identity("cap"), client_id, validity_days=10 ** 12)
+        days = (device.expires_at - utc_now()).days
+        self.assertLessEqual(days, MAX_DEVICE_VALIDITY_DAYS)
+        self.assertGreater(days, MAX_DEVICE_VALIDITY_DAYS - 2)
 
-    def test_create_auth_session(self):
+    def test_create_remembered_device(self):
         client_id = self._client_id()
-        session, cookie = create_auth_session(self._identity("alice"), client_id,
+        device, cookie = create_remembered_device(self._identity("alice"), client_id,
                                               ip_address="10.0.0.1", user_agent="curl")
-        self.assertEqual(1, session.counter)
-        self.assertEqual(cookie, build_cookie_value(session.series_id, 1))
-        # The session is bound to the full resolver-stable identity.
-        self.assertEqual(self.resolvername1, session.resolver)
-        self.assertEqual("alice", session.user_id)
-        self.assertEqual(self.realm_id, session.realm_id)
-        self.assertEqual(session.client_id, client_id)
+        self.assertEqual(1, device.counter)
+        self.assertEqual(cookie, build_cookie_value(device.series_id, 1))
+        # The device is bound to the full resolver-stable identity.
+        self.assertEqual(self.resolvername1, device.resolver)
+        self.assertEqual("alice", device.user_id)
+        self.assertEqual(self.realm_id, device.realm_id)
+        self.assertEqual(device.client_id, client_id)
         # 30 day default validity
-        self.assertGreater(session.expires_at, utc_now() + timedelta(days=29))
+        self.assertGreater(device.expires_at, utc_now() + timedelta(days=29))
 
     def test_series_id_is_not_logged(self):
         # The series_id is the secret half of the remember-device cookie. It must
         # not be written to the DEBUG log (log_with redacts it via the denylist),
         # or the log would contain a replayable bearer token.
         client_id = self._client_id()
-        with self.assertLogs("privacyidea.models.authsession", level="DEBUG") as captured:
-            session, _cookie = create_auth_session(self._identity("kim"), client_id)
+        with self.assertLogs("privacyidea.models.remembered_device", level="DEBUG") as captured:
+            device, _cookie = create_remembered_device(self._identity("kim"), client_id)
         output = "\n".join(captured.output)
-        self.assertNotIn(session.series_id, output)
+        self.assertNotIn(device.series_id, output)
         self.assertIn("HIDDEN", output)
 
     def test_theft_log_does_not_leak_series_id(self):
@@ -111,26 +111,26 @@ class AuthSessionLibTestCase(MyTestCase):
         try:
             client_id = self._client_id()
             nemo = self._identity("nemo")
-            session, cookie = create_auth_session(nemo, client_id)
+            device, cookie = create_remembered_device(nemo, client_id)
             consume_remember_device_cookie(cookie, client_id, nemo)   # -> counter 2
-            with self.assertLogs("privacyidea.lib.authsession", level="DEBUG") as captured:
+            with self.assertLogs("privacyidea.lib.remembered_device", level="DEBUG") as captured:
                 consume_remember_device_cookie(cookie, client_id, nemo)   # replay -> theft
-            self.assertNotIn(session.series_id, "\n".join(captured.output))
+            self.assertNotIn(device.series_id, "\n".join(captured.output))
         finally:
             self.app.config.pop("PI_REMEMBER_DEVICE_GRACE_SECONDS", None)
 
     def test_consume_recognized_rotates(self):
         client_id = self._client_id()
         bob = self._identity("bob")
-        session, cookie = create_auth_session(bob, client_id)
-        series_id = session.series_id
+        device, cookie = create_remembered_device(bob, client_id)
+        series_id = device.series_id
 
         result = consume_remember_device_cookie(cookie, client_id, bob)
         self.assertEqual("recognized", result.status)
         self.assertEqual(result.cookie_value, build_cookie_value(series_id, 2))
-        self.assertEqual(result.expires_at, session.expires_at)
+        self.assertEqual(result.expires_at, device.expires_at)
 
-        stored = AuthSession.query.filter_by(series_id=series_id).first()
+        stored = RememberedDevice.query.filter_by(series_id=series_id).first()
         self.assertEqual(2, stored.counter)
         self.assertIsNotNone(stored.last_used_at)
 
@@ -140,14 +140,14 @@ class AuthSessionLibTestCase(MyTestCase):
 
     def test_wrong_user_does_not_match(self):
         # A cookie is bound to the user it was issued for; another user of the
-        # same client presenting it does not validate (get_valid_session returns
+        # same client presenting it does not validate (get_valid_device returns
         # None) - but since the series is live for someone else on this client it
         # is a "foreign" soft miss (not recognised, must not be cleared), not a
         # dead "miss".
         client_id = self._client_id()
-        _session, cookie = create_auth_session(self._identity("frank"), client_id)
+        _device, cookie = create_remembered_device(self._identity("frank"), client_id)
         eve = self._identity("eve")
-        self.assertIsNone(get_valid_session(cookie, client_id, eve))
+        self.assertIsNone(get_valid_device(cookie, client_id, eve))
         self.assertEqual("foreign", consume_remember_device_cookie(cookie, client_id, eve).status)
 
     def test_cross_realm_does_not_match(self):
@@ -159,16 +159,16 @@ class AuthSessionLibTestCase(MyTestCase):
         other_realm_id = User(login="cornelius", realm="realm_other").realm_id
         self.assertNotEqual(self.realm_id, other_realm_id)
         client_id = self._client_id()
-        session, cookie = create_auth_session(self._identity("cornelius"), client_id)
+        device, cookie = create_remembered_device(self._identity("cornelius"), client_id)
         other = self._identity("cornelius", realm_id=other_realm_id)
         self.assertEqual("foreign", consume_remember_device_cookie(cookie, client_id, other).status)
-        self.assertIsNotNone(AuthSession.query.filter_by(series_id=session.series_id).first())
+        self.assertIsNotNone(RememberedDevice.query.filter_by(series_id=device.series_id).first())
 
     def test_theft_detection_deletes_series(self):
         client_id = self._client_id()
         carol = self._identity("carol")
-        session, cookie = create_auth_session(carol, client_id)
-        series_id = session.series_id
+        device, cookie = create_remembered_device(carol, client_id)
+        series_id = device.series_id
 
         # Advance the counter twice so the original cookie is two steps stale
         # (beyond the single-step grace window).
@@ -178,7 +178,7 @@ class AuthSessionLibTestCase(MyTestCase):
         # Replaying the original counter=1 cookie (two behind) is theft: reported
         # as "theft" (not raised) and the whole series is gone.
         self.assertEqual("theft", consume_remember_device_cookie(cookie, client_id, carol).status)
-        self.assertIsNone(AuthSession.query.filter_by(series_id=series_id).first())
+        self.assertIsNone(RememberedDevice.query.filter_by(series_id=series_id).first())
 
     def test_forged_higher_counter_is_theft(self):
         # An attacker holding the current cookie cannot mint a "fresh" one by
@@ -186,16 +186,16 @@ class AuthSessionLibTestCase(MyTestCase):
         # valid rotation, it is treated as theft and destroys the series.
         client_id = self._client_id()
         mallory = self._identity("mallory")
-        session, _cookie = create_auth_session(mallory, client_id)
-        series_id = session.series_id
-        forged = build_cookie_value(series_id, session.counter + 1)
+        device, _cookie = create_remembered_device(mallory, client_id)
+        series_id = device.series_id
+        forged = build_cookie_value(series_id, device.counter + 1)
         self.assertEqual("theft", consume_remember_device_cookie(forged, client_id, mallory).status)
-        self.assertIsNone(AuthSession.query.filter_by(series_id=series_id).first())
+        self.assertIsNone(RememberedDevice.query.filter_by(series_id=series_id).first())
 
     def test_grace_allows_previous_counter_without_rotating(self):
         client_id = self._client_id()
         gina = self._identity("gina")
-        session, cookie = create_auth_session(gina, client_id)
+        device, cookie = create_remembered_device(gina, client_id)
         # Rotate to counter 2.
         consume_remember_device_cookie(cookie, client_id, gina)
         # A concurrent request still presenting counter 1 (the previous one) is
@@ -204,7 +204,7 @@ class AuthSessionLibTestCase(MyTestCase):
         result = consume_remember_device_cookie(cookie, client_id, gina)
         self.assertEqual("grace", result.status)
         self.assertIsNone(result.cookie_value)
-        stored = AuthSession.query.filter_by(series_id=session.series_id).first()
+        stored = RememberedDevice.query.filter_by(series_id=device.series_id).first()
         self.assertIsNotNone(stored)
         self.assertEqual(2, stored.counter)
 
@@ -213,17 +213,17 @@ class AuthSessionLibTestCase(MyTestCase):
         try:
             client_id = self._client_id()
             hank = self._identity("hank")
-            session, cookie = create_auth_session(hank, client_id)
+            device, cookie = create_remembered_device(hank, client_id)
             consume_remember_device_cookie(cookie, client_id, hank)   # -> counter 2
             self.assertEqual("theft", consume_remember_device_cookie(cookie, client_id, hank).status)
-            self.assertIsNone(AuthSession.query.filter_by(series_id=session.series_id).first())
+            self.assertIsNone(RememberedDevice.query.filter_by(series_id=device.series_id).first())
         finally:
             self.app.config.pop("PI_REMEMBER_DEVICE_GRACE_SECONDS", None)
 
     def test_grace_requires_matching_ip(self):
         client_id = self._client_id()
         iris = self._identity("iris")
-        session, cookie = create_auth_session(iris, client_id, ip_address="10.0.0.1")
+        device, cookie = create_remembered_device(iris, client_id, ip_address="10.0.0.1")
         consume_remember_device_cookie(cookie, client_id, iris, "10.0.0.1")   # -> counter 2
         # Presenting the previous counter from a different IP is not a tolerated
         # concurrent request -> theft.
@@ -235,69 +235,69 @@ class AuthSessionLibTestCase(MyTestCase):
         # elapsed is theft, not a tolerated duplicate.
         client_id = self._client_id()
         kate = self._identity("kate")
-        session, cookie = create_auth_session(kate, client_id, ip_address="10.0.0.1")
+        device, cookie = create_remembered_device(kate, client_id, ip_address="10.0.0.1")
         consume_remember_device_cookie(cookie, client_id, kate, "10.0.0.1")   # -> counter 2
         # Age the last use well beyond the (default 10s) grace window.
-        stored = AuthSession.query.filter_by(series_id=session.series_id).first()
+        stored = RememberedDevice.query.filter_by(series_id=device.series_id).first()
         stored.last_used_at = utc_now() - timedelta(hours=1)
         stored.save()
         self.assertEqual("theft", consume_remember_device_cookie(cookie, client_id, kate, "10.0.0.1").status)
-        self.assertIsNone(AuthSession.query.filter_by(series_id=session.series_id).first())
+        self.assertIsNone(RememberedDevice.query.filter_by(series_id=device.series_id).first())
 
     def test_grace_without_stored_ip_is_not_ip_bound(self):
-        # When the session has no recorded source IP, the grace window cannot be
+        # When the device has no recorded source IP, the grace window cannot be
         # IP-bound, so a previous-counter duplicate is tolerated regardless of the
         # request IP (it stays single-step and time-bounded). This pins that IP is
         # only enforced when it is actually known.
         client_id = self._client_id()
         liam = self._identity("liam")
-        session, cookie = create_auth_session(liam, client_id)   # no ip_address recorded
+        device, cookie = create_remembered_device(liam, client_id)   # no ip_address recorded
         consume_remember_device_cookie(cookie, client_id, liam, "10.0.0.1")   # -> counter 2
         result = consume_remember_device_cookie(cookie, client_id, liam, "9.9.9.9")
         self.assertEqual("grace", result.status)
-        self.assertIsNotNone(AuthSession.query.filter_by(series_id=session.series_id).first())
+        self.assertIsNotNone(RememberedDevice.query.filter_by(series_id=device.series_id).first())
 
     def test_wrong_client_does_not_match(self):
         client_id_a = self._client_id()
         client_id_b = self._client_id()
         dave = self._identity("dave")
-        session, cookie = create_auth_session(dave, client_id_a)
+        device, cookie = create_remembered_device(dave, client_id_a)
 
         # A cookie issued for client A must not validate for client B.
         self.assertEqual("miss", consume_remember_device_cookie(cookie, client_id_b, dave).status)
-        # ... and client A's session is untouched.
-        self.assertEqual(1, AuthSession.query.filter_by(series_id=session.series_id).first().counter)
+        # ... and client A's device is untouched.
+        self.assertEqual(1, RememberedDevice.query.filter_by(series_id=device.series_id).first().counter)
 
     def test_unknown_series_returns_miss(self):
         client_id = self._client_id()
         self.assertEqual("miss", consume_remember_device_cookie("doesnotexist:1", client_id,
                                                                 self._identity("x")).status)
 
-    def test_expired_session_is_removed(self):
+    def test_expired_device_is_removed(self):
         client_id = self._client_id()
         erin = self._identity("erin")
-        session, cookie = create_auth_session(erin, client_id)
-        series_id = session.series_id
-        session.expires_at = utc_now() - timedelta(seconds=1)
-        session.save()
+        device, cookie = create_remembered_device(erin, client_id)
+        series_id = device.series_id
+        device.expires_at = utc_now() - timedelta(seconds=1)
+        device.save()
 
         self.assertEqual("miss", consume_remember_device_cookie(cookie, client_id, erin).status)
-        self.assertIsNone(AuthSession.query.filter_by(series_id=series_id).first())
+        self.assertIsNone(RememberedDevice.query.filter_by(series_id=series_id).first())
 
-    def test_cleanup_expired_auth_sessions(self):
+    def test_cleanup_expired_remembered_devices(self):
         # The periodic cleanup reclaims expired rows (which are otherwise only
         # deleted lazily when their own cookie is presented) and leaves live
-        # sessions untouched.
+        # devices untouched.
         client_id = self._client_id()
-        expired, _ = create_auth_session(self._identity("jane"), client_id)
+        expired, _ = create_remembered_device(self._identity("jane"), client_id)
         expired.expires_at = utc_now() - timedelta(seconds=1)
         expired.save()
-        live, _ = create_auth_session(self._identity("john"), client_id)
+        live, _ = create_remembered_device(self._identity("john"), client_id)
         # Capture ids before the delete+commit expires the ORM instances.
         expired_series = expired.series_id
         live_series = live.series_id
 
-        deleted = cleanup_expired_auth_sessions()
+        deleted = cleanup_expired_remembered_devices()
         self.assertGreaterEqual(deleted, 1)
-        self.assertIsNone(AuthSession.query.filter_by(series_id=expired_series).first())
-        self.assertIsNotNone(AuthSession.query.filter_by(series_id=live_series).first())
+        self.assertIsNone(RememberedDevice.query.filter_by(series_id=expired_series).first())
+        self.assertIsNotNone(RememberedDevice.query.filter_by(series_id=live_series).first())

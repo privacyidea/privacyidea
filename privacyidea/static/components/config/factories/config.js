@@ -1090,8 +1090,8 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
                     AuthFactory.authError(error.data)
                 });
             },
-            getClientSessions: function (clientId, callback) {
-                $http.get(clientsUrl + "/" + clientId + "/sessions", {
+            getClientRememberedDevices: function (clientId, callback) {
+                $http.get(clientsUrl + "/" + clientId + "/remembered_devices", {
                     headers: {
                         'PI-Authorization': AuthFactory.getAuthToken(),
                         'Content-Type': 'application/json'
@@ -1102,8 +1102,8 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
                     AuthFactory.authError(error.data)
                 });
             },
-            revokeClientSession: function (clientId, seriesId, callback) {
-                $http.delete(clientsUrl + "/" + clientId + "/sessions/" + seriesId, {
+            revokeClientRememberedDevice: function (clientId, seriesId, callback) {
+                $http.delete(clientsUrl + "/" + clientId + "/remembered_devices/" + seriesId, {
                     headers: {
                         'PI-Authorization': AuthFactory.getAuthToken(),
                         'Content-Type': 'application/json'

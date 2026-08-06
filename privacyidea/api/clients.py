@@ -41,8 +41,8 @@ from ..lib.policies.actions import PolicyAction
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.clients import (get_client, get_clients, create_client, update_client,
                            rotate_client_key, delete_client, client_to_dict)
-from ..lib.authsession import (get_client_sessions, revoke_client_session, revoke_client_sessions,
-                               revoke_sessions, session_to_dict, session_user_identity)
+from ..lib.remembered_device import (get_client_devices, revoke_client_device, revoke_client_devices,
+                               revoke_devices, device_to_dict, user_identity)
 from ..lib.realm import get_realm_id
 from ..lib.user import User
 
@@ -161,28 +161,28 @@ def rotate_client_api(client_id):
     return send_result(result)
 
 
-@clients_blueprint.route('/sessions', methods=['DELETE'])
+@clients_blueprint.route('/remembered_devices', methods=['DELETE'])
 @prepolicy(check_base_action, request, PolicyAction.CLIENTS_DELETE)
-@event("clients_sessions_revoke_realm", request, g)
+@event("clients_remembered_devices_revoke", request, g)
 @log_with(log)
-def revoke_sessions_api():
+def revoke_remembered_devices_api():
     """
-    Revoke persistent "remember device" sessions across **all** clients, scoped
-    to a realm or to a single user. This is the client-independent bulk revoke,
+    Revoke remembered devices across **all** clients, scoped to a realm or to a
+    single user. This is the client-independent bulk revoke,
     for realm-wide incident response or offboarding a single user.
 
     A ``realm`` is always required (a user is identified within a realm), so this
-    can never wipe every session on the system at once. The acting
+    can never wipe every device on the system at once. The acting
     administrator's realm restrictions apply: the :ref:`policy_clients_delete`
     action is matched against the requested ``realm``, so a realm-scoped admin
-    cannot revoke another realm's sessions.
+    cannot revoke another realm's devices.
 
     Requires admin authentication and the policy action :ref:`policy_clients_delete`.
 
-    :query realm: the realm whose sessions to revoke (required).
+    :query realm: the realm whose devices to revoke (required).
     :query user: optional login to restrict the revocation to a single user
         within the realm.
-    :status 200: ``result.value`` is the number of revoked sessions.
+    :status 200: ``result.value`` is the number of revoked remembered devices.
     """
     realm = get_required(request.all_data, "realm")
     realm_id = get_realm_id(realm)
@@ -192,25 +192,25 @@ def revoke_sessions_api():
     user = get_optional(request.all_data, "user")
     resolver = user_id = None
     if user:
-        identity = session_user_identity(User(login=user, realm=realm))
+        identity = user_identity(User(login=user, realm=realm))
         if not identity:
             raise ParameterError(f"The user {user!r} does not resolve in realm {realm!r}.")
         resolver, user_id, realm_id = identity
 
-    count = revoke_sessions(realm_id=realm_id, resolver=resolver, user_id=user_id)
+    count = revoke_devices(realm_id=realm_id, resolver=resolver, user_id=user_id)
 
     info = f"realm: {realm}, user: {user}" if user else f"realm: {realm}"
     g.audit_object.log({"success": True, "info": info})
     return send_result(count)
 
 
-@clients_blueprint.route('/<client_id>/sessions', methods=['GET'])
+@clients_blueprint.route('/<client_id>/remembered_devices', methods=['GET'])
 @prepolicy(check_base_action, request, PolicyAction.CLIENTS_LIST)
-@event("clients_sessions_list", request, g)
+@event("clients_remembered_devices_list", request, g)
 @log_with(log)
-def list_client_sessions_api(client_id):
+def list_client_remembered_devices_api(client_id):
     """
-    List the persistent "remember device" sessions of a client.
+    List the remembered devices of a client.
 
     The rotating token is never included; each entry carries only the
     ``series_id`` (used to target revocation) and non-sensitive metadata
@@ -219,29 +219,29 @@ def list_client_sessions_api(client_id):
     Requires admin authentication and the policy action :ref:`policy_clients_list`.
 
     :param client_id: path component, the id of the client.
-    :status 200: a list of sessions in ``result.value``.
+    :status 200: a list of devices in ``result.value``.
     :status 404: no client with that id exists.
     """
     # Ensure the client exists (404 otherwise).
     get_client(client_id)
-    sessions = get_client_sessions(client_id)
+    devices = get_client_devices(client_id)
 
     g.audit_object.log({"success": True, "info": f"Client ID: {client_id}"})
-    return send_result([session_to_dict(session) for session in sessions])
+    return send_result([device_to_dict(device) for device in devices])
 
 
-@clients_blueprint.route('/<client_id>/sessions', methods=['DELETE'])
+@clients_blueprint.route('/<client_id>/remembered_devices', methods=['DELETE'])
 @prepolicy(check_base_action, request, PolicyAction.CLIENTS_DELETE)
-@event("clients_sessions_revoke_all", request, g)
+@event("clients_remembered_devices_revoke_all", request, g)
 @log_with(log)
-def revoke_client_sessions_api(client_id):
+def revoke_client_remembered_devices_api(client_id):
     """
-    Revoke persistent sessions of a client in bulk. Without a filter this revokes
+    Revoke remembered devices of a client in bulk. Without a filter this revokes
     **all** of the client's remembered devices; it can be narrowed to one realm
     (``realm``) or to one user (``user`` together with ``realm``).
 
     The delete is a single atomic, server-side operation scoped to the client, so
-    a client id cannot revoke another client's sessions, and sessions created
+    a client id cannot revoke another client's devices, and devices created
     between listing and revoking are still caught.
 
     Requires admin authentication and the policy action :ref:`policy_clients_delete`.
@@ -250,7 +250,7 @@ def revoke_client_sessions_api(client_id):
     :query realm: optional, restrict the revocation to this realm.
     :query user: optional, restrict the revocation to this user (login); requires
         ``realm`` so the user resolves unambiguously.
-    :status 200: ``result.value`` is the number of revoked sessions.
+    :status 200: ``result.value`` is the number of revoked remembered devices.
     :status 404: no client with that id exists.
     """
     # Ensure the client exists (404 otherwise).
@@ -261,9 +261,9 @@ def revoke_client_sessions_api(client_id):
     realm_id = resolver = user_id = None
     if user:
         # Narrow to one user's resolver-stable identity. If the user does not
-        # resolve there is nothing to target by login (its sessions, if any, are
+        # resolve there is nothing to target by login (its devices, if any, are
         # already unrecognisable and reaped by expiry / realm deletion).
-        identity = session_user_identity(User(login=user, realm=realm))
+        identity = user_identity(User(login=user, realm=realm))
         if not identity:
             raise ParameterError(f"The user {user!r} does not resolve in realm {realm!r}.")
         resolver, user_id, realm_id = identity
@@ -271,35 +271,35 @@ def revoke_client_sessions_api(client_id):
         realm_id = get_realm_id(realm)
         # A mistyped realm must not silently widen the scope: without this an
         # unknown realm (realm_id=None) would drop the filter and revoke *all* of
-        # the client's sessions instead of none.
+        # the client's devices instead of none.
         if realm_id is None:
             raise ParameterError(f"The realm {realm!r} does not exist.")
 
-    count = revoke_client_sessions(client_id, realm_id=realm_id, resolver=resolver, user_id=user_id)
+    count = revoke_client_devices(client_id, realm_id=realm_id, resolver=resolver, user_id=user_id)
 
     g.audit_object.log({"success": True, "info": f"Client ID: {client_id}"})
     return send_result(count)
 
 
-@clients_blueprint.route('/<client_id>/sessions/<series_id>', methods=['DELETE'])
+@clients_blueprint.route('/<client_id>/remembered_devices/<series_id>', methods=['DELETE'])
 @prepolicy(check_base_action, request, PolicyAction.CLIENTS_DELETE)
-@event("clients_sessions_revoke", request, g)
+@event("clients_remembered_device_revoke", request, g)
 @log_with(log)
-def revoke_client_session_api(client_id, series_id):
+def revoke_client_remembered_device_api(client_id, series_id):
     """
-    Revoke a single persistent session of a client. The revocation is scoped to
-    the client, so a client id cannot be used to revoke another client's session.
+    Revoke a single remembered device of a client. The revocation is scoped to
+    the client, so a client id cannot be used to revoke another client's device.
 
     Requires admin authentication and the policy action :ref:`policy_clients_delete`.
 
     :param client_id: path component, the id of the client.
-    :param series_id: path component, the series id of the session.
-    :status 200: ``result.value`` is the series id of the revoked session.
-    :status 404: no such session exists for this client.
+    :param series_id: path component, the series id of the device.
+    :status 200: ``result.value`` is the series id of the revoked remembered device.
+    :status 404: no such device exists for this client.
     """
-    r = revoke_client_session(client_id, series_id)
+    r = revoke_client_device(client_id, series_id)
 
-    g.audit_object.log({"success": True, "info": f"{client_id}: revoked session"})
+    g.audit_object.log({"success": True, "info": f"{client_id}: revoked remembered device"})
     return send_result(r)
 
 

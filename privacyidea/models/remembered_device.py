@@ -26,16 +26,16 @@ from privacyidea.models.utils import MethodsMixin, utc_now
 
 log = logging.getLogger(__name__)
 
-# Default lifetime of a persistent authentication session.
-DEFAULT_SESSION_VALIDITY = timedelta(days=30)
+# Default lifetime of a remembered device.
+DEFAULT_DEVICE_VALIDITY = timedelta(days=30)
 
 
-class AuthSession(MethodsMixin, db.Model):
+class RememberedDevice(MethodsMixin, db.Model):
     """
-    A persistent ("remember this device") authentication session bound to a
+    A persistent ("remember this device") authentication device bound to a
     specific API client.
 
-    The session implements a rotating-token scheme: the client stores a cookie
+    The device implements a rotating-token scheme: the client stores a cookie
     of the form ``series_id:counter``. On every use the counter is incremented
     both in the cookie and in this row. If a request presents the correct
     ``series_id`` but a stale ``counter``, the token has been replayed (the
@@ -50,9 +50,9 @@ class AuthSession(MethodsMixin, db.Model):
     the remembered device on a rename and, worse, could recognise a *different*
     account that later reuses a freed login. ``user_id`` is therefore the
     resolver's immutable id (as in :class:`TokenOwner`), and ``realm_id`` is a
-    foreign key so a deleted realm cascades its sessions away.
+    foreign key so a deleted realm cascades its devices away.
     """
-    __tablename__ = 'auth_sessions'
+    __tablename__ = 'remembered_devices'
     series_id: Mapped[str] = mapped_column(Unicode(64), primary_key=True)
     counter: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     client_id: Mapped[str] = mapped_column(Unicode(36), ForeignKey("clients.id", ondelete="CASCADE"),
@@ -78,4 +78,4 @@ class AuthSession(MethodsMixin, db.Model):
         self.realm_id = realm_id
         self.ip_address = ip_address
         self.user_agent = user_agent
-        self.expires_at = expires_at if expires_at is not None else utc_now() + DEFAULT_SESSION_VALIDITY
+        self.expires_at = expires_at if expires_at is not None else utc_now() + DEFAULT_DEVICE_VALIDITY

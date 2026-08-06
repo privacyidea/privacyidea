@@ -3,12 +3,12 @@ from unittest import mock
 from .base import MyApiTestCase
 
 from privacyidea.lib.clients import hash_api_key, create_client
-from privacyidea.lib.authsession import create_auth_session, session_user_identity
+from privacyidea.lib.remembered_device import create_remembered_device, user_identity
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.user import User
-from privacyidea.models import Client, AuthSession
+from privacyidea.models import Client, RememberedDevice
 
 
 class APIClientsTestCase(MyApiTestCase):
@@ -302,42 +302,42 @@ class APIClientAPIKeyMiddlewareTestCase(MyApiTestCase):
         self.assertNotIn("API key presented", entry.get("action_detail", "") or "")
 
 
-class APIClientSessionsTestCase(MyApiTestCase):
+class APIClientRememberedDevicesTestCase(MyApiTestCase):
     """
-    Listing and revoking a client's persistent remember-device sessions.
-    Order-independent: each test creates its own client(s) and sessions.
+    Listing and revoking a client's persistent remember-device devices.
+    Order-independent: each test creates its own client(s) and devices.
     """
 
     def setUp(self):
         self.setUp_user_realms()
-        # Sessions bind to a resolver-stable identity, so use a real user.
-        self.identity = session_user_identity(User(login="cornelius", realm=self.realm1))
+        # Devices bind to a resolver-stable identity, so use a real user.
+        self.identity = user_identity(User(login="cornelius", realm=self.realm1))
 
-    def _session(self, client_id, login="cornelius", realm=None):
-        identity = session_user_identity(User(login=login, realm=realm or self.realm1))
-        session, _cookie = create_auth_session(identity, client_id)
-        return session
+    def _device(self, client_id, login="cornelius", realm=None):
+        identity = user_identity(User(login=login, realm=realm or self.realm1))
+        device, _cookie = create_remembered_device(identity, client_id)
+        return device
 
     def _revoke_all(self, client_id, **params):
-        with self.app.test_request_context(f'/clients/{client_id}/sessions',
+        with self.app.test_request_context(f'/clients/{client_id}/remembered_devices',
                                            query_string=params, method='DELETE',
                                            headers={'Authorization': self.at}):
             return self.app.full_dispatch_request()
 
-    def test_01_list_sessions(self):
-        client, _key = create_client("sessions client", "windows_cp")
-        session, _cookie = create_auth_session(self.identity, client.id, ip_address="10.0.0.9",
+    def test_01_list_devices(self):
+        client, _key = create_client("devices client", "windows_cp")
+        device, _cookie = create_remembered_device(self.identity, client.id, ip_address="10.0.0.9",
                                                user_agent="curl")
 
-        with self.app.test_request_context(f'/clients/{client.id}/sessions',
+        with self.app.test_request_context(f'/clients/{client.id}/remembered_devices',
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res)
-            sessions = res.json['result']['value']
-            self.assertEqual(1, len(sessions))
-            entry = sessions[0]
-            self.assertEqual(entry["series_id"], session.series_id)
+            devices = res.json['result']['value']
+            self.assertEqual(1, len(devices))
+            entry = devices[0]
+            self.assertEqual(entry["series_id"], device.series_id)
             # The stored identity is the resolver-stable triple; the login is
             # resolved best-effort for display.
             self.assertEqual(self.identity.user_id, entry["user_id"])
@@ -348,49 +348,49 @@ class APIClientSessionsTestCase(MyApiTestCase):
             # The rotating token/counter must never be exposed.
             self.assertNotIn("counter", entry)
 
-    def test_02_revoke_session(self):
+    def test_02_revoke_device(self):
         client, _key = create_client("revoke client", "windows_cp")
-        session, _cookie = create_auth_session(self.identity, client.id)
+        device, _cookie = create_remembered_device(self.identity, client.id)
 
-        with self.app.test_request_context(f'/clients/{client.id}/sessions/{session.series_id}',
+        with self.app.test_request_context(f'/clients/{client.id}/remembered_devices/{device.series_id}',
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res)
-            self.assertEqual(res.json['result']['value'], session.series_id)
+            self.assertEqual(res.json['result']['value'], device.series_id)
 
-        self.assertIsNone(AuthSession.query.filter_by(series_id=session.series_id).first())
+        self.assertIsNone(RememberedDevice.query.filter_by(series_id=device.series_id).first())
 
     def test_03_revoke_is_scoped_to_client(self):
         client_a, _ = create_client("client A", "windows_cp")
         client_b, _ = create_client("client B", "keycloak")
-        session, _cookie = create_auth_session(self.identity, client_a.id)
+        device, _cookie = create_remembered_device(self.identity, client_a.id)
 
-        # Try to revoke A's session via B's id -> 404, and A's session survives.
-        with self.app.test_request_context(f'/clients/{client_b.id}/sessions/{session.series_id}',
+        # Try to revoke A's device via B's id -> 404, and A's device survives.
+        with self.app.test_request_context(f'/clients/{client_b.id}/remembered_devices/{device.series_id}',
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(404, res.status_code, res)
-        self.assertIsNotNone(AuthSession.query.filter_by(series_id=session.series_id).first())
+        self.assertIsNotNone(RememberedDevice.query.filter_by(series_id=device.series_id).first())
 
-    def test_04_sessions_missing_client_404(self):
-        with self.app.test_request_context('/clients/does-not-exist/sessions',
+    def test_04_devices_missing_client_404(self):
+        with self.app.test_request_context('/clients/does-not-exist/remembered_devices',
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(404, res.status_code, res)
 
-    def test_05_revoke_all_sessions(self):
+    def test_05_revoke_all_devices(self):
         client, _key = create_client("revoke-all client", "windows_cp")
-        self._session(client.id, "cornelius")
-        self._session(client.id, "shadow")
+        self._device(client.id, "cornelius")
+        self._device(client.id, "shadow")
 
         res = self._revoke_all(client.id)
         self.assertEqual(200, res.status_code, res)
-        # All of the client's sessions are revoked, and the count is reported.
+        # All of the client's devices are revoked, and the count is reported.
         self.assertEqual(2, res.json['result']['value'])
-        self.assertEqual([], AuthSession.query.filter_by(client_id=client.id).all())
+        self.assertEqual([], RememberedDevice.query.filter_by(client_id=client.id).all())
 
         entry = self.find_most_recent_audit_entry(info=f"*Client ID: {client.id}*")
         self.assertEqual(1, entry["success"])
@@ -398,41 +398,41 @@ class APIClientSessionsTestCase(MyApiTestCase):
     def test_06_revoke_all_is_scoped_to_client(self):
         client_a, _ = create_client("all client A", "windows_cp")
         client_b, _ = create_client("all client B", "keycloak")
-        self._session(client_a.id)
-        keep = self._session(client_b.id)
+        self._device(client_a.id)
+        keep = self._device(client_b.id)
 
         res = self._revoke_all(client_a.id)
         self.assertEqual(200, res.status_code, res)
         self.assertEqual(1, res.json['result']['value'])
-        # Client B's session is untouched.
-        self.assertIsNotNone(AuthSession.query.filter_by(series_id=keep.series_id).first())
+        # Client B's device is untouched.
+        self.assertIsNotNone(RememberedDevice.query.filter_by(series_id=keep.series_id).first())
 
     def test_07_revoke_all_narrowed_to_user(self):
         client, _key = create_client("by-user client", "windows_cp")
         # Capture series ids up front: the bulk delete+commit expires the ORM rows.
-        target_series = self._session(client.id, "cornelius").series_id
-        keep_series = self._session(client.id, "shadow").series_id
+        target_series = self._device(client.id, "cornelius").series_id
+        keep_series = self._device(client.id, "shadow").series_id
 
         res = self._revoke_all(client.id, user="cornelius", realm=self.realm1)
         self.assertEqual(200, res.status_code, res)
         # Only cornelius's device is revoked; shadow's survives.
         self.assertEqual(1, res.json['result']['value'])
-        self.assertIsNone(AuthSession.query.filter_by(series_id=target_series).first())
-        self.assertIsNotNone(AuthSession.query.filter_by(series_id=keep_series).first())
+        self.assertIsNone(RememberedDevice.query.filter_by(series_id=target_series).first())
+        self.assertIsNotNone(RememberedDevice.query.filter_by(series_id=keep_series).first())
 
     def test_08_revoke_all_narrowed_to_realm(self):
         set_realm("realm_other", [{"name": self.resolvername1}])
         client, _key = create_client("by-realm client", "windows_cp")
         # Capture series ids up front: the bulk delete+commit expires the ORM rows.
-        target_series = self._session(client.id, "cornelius", realm=self.realm1).series_id
-        keep_series = self._session(client.id, "cornelius", realm="realm_other").series_id
+        target_series = self._device(client.id, "cornelius", realm=self.realm1).series_id
+        keep_series = self._device(client.id, "cornelius", realm="realm_other").series_id
 
         res = self._revoke_all(client.id, realm=self.realm1)
         self.assertEqual(200, res.status_code, res)
         # Only the realm1 device is revoked; the one in the other realm survives.
         self.assertEqual(1, res.json['result']['value'])
-        self.assertIsNone(AuthSession.query.filter_by(series_id=target_series).first())
-        self.assertIsNotNone(AuthSession.query.filter_by(series_id=keep_series).first())
+        self.assertIsNone(RememberedDevice.query.filter_by(series_id=target_series).first())
+        self.assertIsNotNone(RememberedDevice.query.filter_by(series_id=keep_series).first())
 
     def test_09_revoke_all_unknown_user_is_400(self):
         client, _key = create_client("bad-user client", "windows_cp")
@@ -446,14 +446,14 @@ class APIClientSessionsTestCase(MyApiTestCase):
 
     def test_11_revoke_all_unknown_realm_is_400(self):
         client, _key = create_client("unknown-realm client", "windows_cp")
-        keep_series = self._session(client.id, "cornelius").series_id
+        keep_series = self._device(client.id, "cornelius").series_id
         res = self._revoke_all(client.id, realm="nosuchrealm")
         # An unknown realm must be rejected, not silently widened to revoke-all.
         self.assertEqual(400, res.status_code, res)
-        self.assertIsNotNone(AuthSession.query.filter_by(series_id=keep_series).first())
+        self.assertIsNotNone(RememberedDevice.query.filter_by(series_id=keep_series).first())
 
-    def _revoke_sessions(self, **params):
-        with self.app.test_request_context('/clients/sessions',
+    def _revoke_devices(self, **params):
+        with self.app.test_request_context('/clients/remembered_devices',
                                            query_string=params, method='DELETE',
                                            headers={'Authorization': self.at}):
             return self.app.full_dispatch_request()
@@ -464,41 +464,41 @@ class APIClientSessionsTestCase(MyApiTestCase):
         set_realm("xcother", [{"name": self.resolvername1}])
         client_a, _ = create_client("xc realm A", "windows_cp")
         client_b, _ = create_client("xc realm B", "keycloak")
-        a1 = self._session(client_a.id, "cornelius", realm="xcrealm").series_id
-        b1 = self._session(client_b.id, "cornelius", realm="xcrealm").series_id
-        other = self._session(client_a.id, "cornelius", realm="xcother").series_id
+        a1 = self._device(client_a.id, "cornelius", realm="xcrealm").series_id
+        b1 = self._device(client_b.id, "cornelius", realm="xcrealm").series_id
+        other = self._device(client_a.id, "cornelius", realm="xcother").series_id
 
-        res = self._revoke_sessions(realm="xcrealm")
+        res = self._revoke_devices(realm="xcrealm")
         self.assertEqual(200, res.status_code, res)
-        # Both xcrealm sessions are revoked across clients; the other realm survives.
+        # Both xcrealm devices are revoked across clients; the other realm survives.
         self.assertEqual(2, res.json['result']['value'])
-        self.assertIsNone(AuthSession.query.filter_by(series_id=a1).first())
-        self.assertIsNone(AuthSession.query.filter_by(series_id=b1).first())
-        self.assertIsNotNone(AuthSession.query.filter_by(series_id=other).first())
+        self.assertIsNone(RememberedDevice.query.filter_by(series_id=a1).first())
+        self.assertIsNone(RememberedDevice.query.filter_by(series_id=b1).first())
+        self.assertIsNotNone(RememberedDevice.query.filter_by(series_id=other).first())
 
     def test_13_revoke_by_user_across_clients(self):
         set_realm("xcuser", [{"name": self.resolvername1}])
         client_a, _ = create_client("xc user A", "windows_cp")
         client_b, _ = create_client("xc user B", "keycloak")
-        a = self._session(client_a.id, "cornelius", realm="xcuser").series_id
-        b = self._session(client_b.id, "cornelius", realm="xcuser").series_id
-        keep = self._session(client_a.id, "shadow", realm="xcuser").series_id
+        a = self._device(client_a.id, "cornelius", realm="xcuser").series_id
+        b = self._device(client_b.id, "cornelius", realm="xcuser").series_id
+        keep = self._device(client_a.id, "shadow", realm="xcuser").series_id
 
-        res = self._revoke_sessions(user="cornelius", realm="xcuser")
+        res = self._revoke_devices(user="cornelius", realm="xcuser")
         self.assertEqual(200, res.status_code, res)
         # cornelius's devices on both clients are revoked; shadow's survives.
         self.assertEqual(2, res.json['result']['value'])
-        self.assertIsNone(AuthSession.query.filter_by(series_id=a).first())
-        self.assertIsNone(AuthSession.query.filter_by(series_id=b).first())
-        self.assertIsNotNone(AuthSession.query.filter_by(series_id=keep).first())
+        self.assertIsNone(RememberedDevice.query.filter_by(series_id=a).first())
+        self.assertIsNone(RememberedDevice.query.filter_by(series_id=b).first())
+        self.assertIsNotNone(RememberedDevice.query.filter_by(series_id=keep).first())
 
     def test_14_revoke_requires_realm(self):
         # An unscoped call must be refused (never a system-wide wipe by omission).
-        res = self._revoke_sessions()
+        res = self._revoke_devices()
         self.assertEqual(400, res.status_code, res)
 
     def test_15_revoke_unknown_realm_is_400(self):
-        res = self._revoke_sessions(realm="nosuchrealm")
+        res = self._revoke_devices(realm="nosuchrealm")
         self.assertEqual(400, res.status_code, res)
 
     def test_16_revoke_respects_admin_realm_scope(self):
@@ -506,12 +506,12 @@ class APIClientSessionsTestCase(MyApiTestCase):
         # revoke targeting realm1 (the acting admin's realm restriction applies).
         set_realm("xcscope", [{"name": self.resolvername1}])
         client, _ = create_client("scoped client", "windows_cp")
-        keep = self._session(client.id, "cornelius", realm=self.realm1).series_id
+        keep = self._device(client.id, "cornelius", realm=self.realm1).series_id
         set_policy("clients_scoped", scope=SCOPE.ADMIN,
                    action=PolicyAction.CLIENTS_DELETE, realm="xcscope")
         try:
-            res = self._revoke_sessions(realm=self.realm1)
+            res = self._revoke_devices(realm=self.realm1)
             self.assertEqual(403, res.status_code, res)
-            self.assertIsNotNone(AuthSession.query.filter_by(series_id=keep).first())
+            self.assertIsNotNone(RememberedDevice.query.filter_by(series_id=keep).first())
         finally:
             delete_policy("clients_scoped")

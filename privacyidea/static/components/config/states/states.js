@@ -344,9 +344,9 @@ angular.module('privacyideaApp.configStates', ['ui.router', 'privacyideaApp.vers
                     url: "/add/",
                     templateUrl: configpath + "config.clients.add.html" + versioningSuffixProviderProvider.$get().$get()
                 })
-                .state('config.clients.sessions', {
-                    url: "/sessions/:clientid",
-                    templateUrl: configpath + "config.clients.sessions.html" + versioningSuffixProviderProvider.$get().$get()
+                .state('config.clients.remembered_devices', {
+                    url: "/remembered_devices/:clientid",
+                    templateUrl: configpath + "config.clients.remembered_devices.html" + versioningSuffixProviderProvider.$get().$get()
                 })
                 .state('config.privacyideaserver', {
                     url: "/privacyideaserver",

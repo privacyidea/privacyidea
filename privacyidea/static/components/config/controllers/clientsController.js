@@ -55,7 +55,7 @@ myApp.controller("clientsController", ["$scope", "$stateParams", "inform",
         // Holds a freshly generated API key so it can be shown to the admin
         // exactly once (after create or rotate). It is never fetched again.
         $scope.newApiKey = null;
-        // Per-row inline confirmation state, keyed by client id / session series.
+        // Per-row inline confirmation state, keyed by client id / device series.
         $scope.showRotateDialog = {};
         $scope.showDeleteDialog = {};
         $scope.showRevokeDialog = {};
@@ -89,36 +89,36 @@ myApp.controller("clientsController", ["$scope", "$stateParams", "inform",
             });
         };
 
-        $scope.sessions = [];
-        $scope.sessionsClientId = $stateParams.clientid || "";
-        $scope.sessionsClientName = $scope.sessionsClientId;
+        $scope.rememberedDevices = [];
+        $scope.rememberedDevicesClientId = $stateParams.clientid || "";
+        $scope.rememberedDevicesClientName = $scope.rememberedDevicesClientId;
 
-        $scope.loadSessions = function (clientId) {
-            $scope.sessionsClientId = clientId;
-            ConfigFactory.getClientSessions(clientId, function (data) {
-                $scope.sessions = data.result.value;
+        $scope.loadRememberedDevices = function (clientId) {
+            $scope.rememberedDevicesClientId = clientId;
+            ConfigFactory.getClientRememberedDevices(clientId, function (data) {
+                $scope.rememberedDevices = data.result.value;
             });
         };
 
-        $scope.showSessions = function (client) {
-            $scope.sessionsClientName = client.display_name;
-            $scope.loadSessions(client.id);
-            $state.go('config.clients.sessions', {clientid: client.id});
+        $scope.showRememberedDevices = function (client) {
+            $scope.rememberedDevicesClientName = client.display_name;
+            $scope.loadRememberedDevices(client.id);
+            $state.go('config.clients.remembered_devices', {clientid: client.id});
         };
 
-        $scope.revokeSession = function (seriesId) {
+        $scope.revokeRememberedDevice = function (seriesId) {
             $scope.showRevokeDialog[seriesId] = false;
-            ConfigFactory.revokeClientSession($scope.sessionsClientId, seriesId, function (data) {
+            ConfigFactory.revokeClientRememberedDevice($scope.rememberedDevicesClientId, seriesId, function (data) {
                 if (data.result.status === true) {
-                    inform.add(gettextCatalog.getString("Session revoked."), {type: "info"});
-                    $scope.loadSessions($scope.sessionsClientId);
+                    inform.add(gettextCatalog.getString("Remembered device revoked."), {type: "info"});
+                    $scope.loadRememberedDevices($scope.rememberedDevicesClientId);
                 }
             });
         };
 
-        // Deep-link or page refresh directly onto the sessions view.
+        // Deep-link or page refresh directly onto the remembered-devices view.
         if ($stateParams.clientid) {
-            $scope.loadSessions($stateParams.clientid);
+            $scope.loadRememberedDevices($stateParams.clientid);
         }
 
         $scope.saveClient = function () {
@@ -214,8 +214,8 @@ myApp.controller("clientsController", ["$scope", "$stateParams", "inform",
 
         // listen to the reload broadcast: refresh whichever view is active.
         $scope.$on("piReload", function () {
-            if ($state.includes('config.clients.sessions') && $scope.sessionsClientId) {
-                $scope.loadSessions($scope.sessionsClientId);
+            if ($state.includes('config.clients.remembered_devices') && $scope.rememberedDevicesClientId) {
+                $scope.loadRememberedDevices($scope.rememberedDevicesClientId);
             } else {
                 $scope.getClients();
             }
