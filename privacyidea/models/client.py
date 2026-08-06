@@ -14,7 +14,7 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
-import logging
+import enum
 from datetime import datetime
 from typing import Any
 from uuid import uuid4
@@ -22,11 +22,22 @@ from uuid import uuid4
 from sqlalchemy import JSON, DateTime, Unicode
 from sqlalchemy.orm import Mapped, mapped_column
 
-from privacyidea.lib.log import log_with
 from privacyidea.models import db
 from privacyidea.models.utils import MethodsMixin, utc_now
 
-log = logging.getLogger(__name__)
+
+class ClientStatus(str, enum.Enum):
+    """
+    The states a client may be in. Only ``ACTIVE`` clients can authenticate;
+    ``SUSPENDED`` is a reversible off-switch. Permanent removal is a delete, and
+    a compromised key is handled by rotation - so there is deliberately no
+    separate "revoked" state.
+
+    Inherits from ``str`` so members compare equal to their plain string value
+    (e.g. ``ClientStatus.ACTIVE == "active"``) and serialise to it in JSON.
+    """
+    ACTIVE = "active"
+    SUSPENDED = "suspended"
 
 
 class Client(MethodsMixin, db.Model):
@@ -49,17 +60,7 @@ class Client(MethodsMixin, db.Model):
     client_type: Mapped[str] = mapped_column(Unicode(64), default='', nullable=False)
     key_id: Mapped[str] = mapped_column(Unicode(32), unique=True, index=True, nullable=False)
     key_hash: Mapped[str] = mapped_column(Unicode(64), nullable=False)
-    status: Mapped[str] = mapped_column(Unicode(16), default='active', nullable=False)
+    status: Mapped[str] = mapped_column(Unicode(16), default=ClientStatus.ACTIVE.value, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
     last_used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     config: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
-
-    @log_with(log)
-    def __init__(self, display_name, client_type, key_id, key_hash,
-                 status='active', config=None):
-        self.display_name = display_name
-        self.client_type = client_type
-        self.key_id = key_id
-        self.key_hash = key_hash
-        self.status = status
-        self.config = config if config is not None else {}

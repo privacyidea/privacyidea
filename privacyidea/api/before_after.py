@@ -39,6 +39,7 @@ from .container import container_blueprint
 from ..lib.container import find_container_for_token, find_container_by_serial
 from ..lib.framework import get_app_config_value
 from ..lib.clients import identify_client_by_key, touch_client
+from ..models import ClientStatus
 from ..lib.policies.actions import PolicyAction
 from ..lib.user import get_user_from_param
 import logging
@@ -127,7 +128,7 @@ def identify_api_client():
 
     try:
         client, status = identify_client_by_key(api_key)
-        if status == "active":
+        if status == ClientStatus.ACTIVE:
             g.client_id = client.id
             # Refresh the client's usage timestamp, throttled so a busy client
             # does not issue a DB write on every single request.

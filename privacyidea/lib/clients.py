@@ -28,7 +28,7 @@ import secrets
 
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError
 from privacyidea.lib.framework import get_app_config_value
-from privacyidea.models import Client
+from privacyidea.models import Client, ClientStatus
 from privacyidea.models.utils import utc_now
 
 log = logging.getLogger(__name__)
@@ -41,10 +41,10 @@ KEY_ID_BYTES = 8
 # speed, which is why a fast keyed hash (rather than a slow KDF) is used and why
 # exposing the key id publicly leaks nothing useful about the secret.
 KEY_SECRET_BYTES = 32
-# The states a client may be in. Only "active" clients can authenticate;
-# "suspended" is a reversible off-switch. Permanent removal is a delete, and a
-# compromised key is handled by rotation - so there is no separate "revoked".
-CLIENT_STATUS = ("active", "suspended")
+# Sentinel status returned by identify_client_by_key for a key that is not a
+# known, valid client (unknown key id or a secret that does not match). It is a
+# classification result, not a stored ClientStatus.
+STATUS_UNKNOWN = "unknown"
 
 
 def _hash_secret(secret: str) -> str:
@@ -120,7 +120,7 @@ def get_active_client_by_key(plaintext: str) -> Client | None:
     :return: the matching active ``Client`` or ``None``
     """
     client, status = identify_client_by_key(plaintext)
-    return client if status == "active" else None
+    return client if status == ClientStatus.ACTIVE else None
 
 
 def identify_client_by_key(plaintext: str) -> tuple[Client | None, str]:
@@ -134,17 +134,18 @@ def identify_client_by_key(plaintext: str) -> tuple[Client | None, str]:
 
     :param plaintext: the plaintext API key from the request
     :return: a ``(client, status)`` tuple. ``status`` is the client's status
-        (e.g. ``"active"`` or ``"suspended"``) when the ``key_id`` is known and
-        the secret matches, or ``"unknown"`` when the ``key_id`` is unknown or
-        the secret does not match. ``client`` is the matched client (even when
-        disabled), or ``None`` for an unknown/invalid key.
+        (a :class:`~privacyidea.models.ClientStatus` value such as ``"active"``
+        or ``"suspended"``) when the ``key_id`` is known and the secret matches,
+        or ``STATUS_UNKNOWN`` when the ``key_id`` is unknown or the secret does
+        not match. ``client`` is the matched client (even when disabled), or
+        ``None`` for an unknown/invalid key.
     """
     key_id, secret = parse_api_key(plaintext)
     if not key_id or not secret:
-        return None, "unknown"
+        return None, STATUS_UNKNOWN
     client = Client.query.filter_by(key_id=key_id).first()
     if not client or not hmac.compare_digest(client.key_hash, _hash_secret(secret)):
-        return None, "unknown"
+        return None, STATUS_UNKNOWN
     return client, client.status
 
 
@@ -226,9 +227,10 @@ def update_client(client_id: str, display_name: str = None, status: str = None,
     if display_name is not None:
         client.display_name = display_name
     if status is not None:
-        if status not in CLIENT_STATUS:
+        try:
+            client.status = ClientStatus(status).value
+        except ValueError:
             raise ParameterError(f"Unknown client status {status!r}.")
-        client.status = status
     if config is not None:
         client.config = config
     client.save()
