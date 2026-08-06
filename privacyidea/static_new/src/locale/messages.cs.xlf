@@ -7956,6 +7956,13 @@
           <context context-type="sourcefile">src/app/components/token/resync-otp-token-dialog/resync-otp-token-dialog.component.html</context>
         </context-group>
       </trans-unit>
+      <trans-unit id="8930760083008761036" datatype="html">
+        <source> No matching tokens </source>
+        <target state="new"> No matching tokens </target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/shared/container-add-token/container-add-token.component.html</context>
+        </context-group>
+      </trans-unit>
       <trans-unit id="8931149642822594643" datatype="html">
         <source>Token Applications Offline</source>
         <target>Aplikace tokenů offline</target>
