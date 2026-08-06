@@ -282,48 +282,6 @@ class ChallengeDataEncryptionTestCase(MyTestCase):
         db.session.delete(c)
         db.session.commit()
 
-    def test_06_challenge_legacy_plaintext_data_readable(self):
-        """Legacy unencrypted data (pre-migration) can still be read."""
-        c = Challenge(serial="LEGACY01", transaction_id="tid_enc_006",
-                      validitytime=120)
-        c.save()
-
-        # Bypass set_data() and write plaintext directly to _data (pre-migration state)
-        c._data = "654321"  # raw plaintext OTP
-        db.session.commit()
-
-        # data property should fall back to returning raw value when decryption fails
-        self.assertEqual(c.data, "654321")
-
-        # get_data() wraps non-dict JSON values in {"value": ...}
-        retrieved = c.get_data()
-        self.assertEqual(retrieved, {"value": 654321})
-
-        # Clean up
-        db.session.delete(c)
-        db.session.commit()
-
-    def test_07_challenge_legacy_json_data_readable(self):
-        """Legacy unencrypted JSON data (pre-migration) can still be read."""
-        c = Challenge(serial="LEGACY02", transaction_id="tid_enc_007",
-                      validitytime=120)
-        c.save()
-
-        # Bypass set_data() and write plaintext JSON directly to _data
-        legacy_data = {"user_verification": "preferred"}
-        c._data = json.dumps(legacy_data)
-        db.session.commit()
-
-        # data property should return the raw JSON string (decryption fails, falls back)
-        self.assertEqual(c.data, json.dumps(legacy_data))
-
-        # get_data() should parse the JSON
-        retrieved = c.get_data()
-        self.assertEqual(retrieved, legacy_data)
-
-        # Clean up
-        db.session.delete(c)
-        db.session.commit()
 
     def test_08_data_property_setter_encrypts(self):
         """Assigning to c.data via the property setter encrypts the value."""

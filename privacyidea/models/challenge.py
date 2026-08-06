@@ -60,15 +60,11 @@ class Challenge(MethodsMixin, db.Model):
 
     @property
     def data(self):
-        """Return the decrypted challenge data, or the raw value for legacy data."""
+        """Return the decrypted challenge data as a JSON string, or empty string."""
         raw = self._data
         if not raw:
             return raw
-        decrypted = decryptPassword(raw)
-        if decrypted and not decrypted.startswith("FAILED TO DECRYPT"):
-            return decrypted
-        # Legacy unencrypted data or decryption failure - return as-is
-        return raw
+        return decryptPassword(raw)
 
     @data.setter
     def data(self, value):
@@ -135,24 +131,12 @@ class Challenge(MethodsMixin, db.Model):
         """
         Get the decrypted challenge data as a dict.
 
-        Always returns a dict. For legacy challenges that stored raw strings
-        or non-dict JSON values, the data is wrapped in ``{"value": <data>}``.
-
         :return: The challenge data as a dict. Returns ``{}`` if no data is stored.
         :rtype: dict
         """
         if not self.data:
             return {}
-        raw = self.data
-        try:
-            data = json.loads(raw)
-            if isinstance(data, dict):
-                return data
-            # Legacy: non-dict JSON value (e.g. an int or string)
-            return {"value": data}
-        except (json.JSONDecodeError, UnicodeDecodeError, ValueError):
-            # Legacy unencrypted or non-JSON data
-            return {"value": raw}
+        return json.loads(self.data)
 
     def get_session(self):
         return self.session

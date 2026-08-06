@@ -359,23 +359,12 @@ class ChallengeDTO:
         """
         Get the challenge data as a dict.
 
-        Always returns a dict. For legacy challenges that stored raw strings
-        or non-dict JSON values, the data is wrapped in ``{"value": <data>}``.
-
         :return: The challenge data as a dict. Returns ``{}`` if no data is stored.
         :rtype: dict
         """
         if not self.data:
             return {}
-        try:
-            data = json.loads(self.data)
-            if isinstance(data, dict):
-                return data
-            # Legacy: non-dict JSON value (e.g. an int or string)
-            return {"value": data}
-        except (json.JSONDecodeError, ValueError):
-            # Legacy non-JSON data
-            return {"value": self.data}
+        return json.loads(self.data)
 
     def get_otp_status(self) -> tuple[int, bool]:
         return self.received_count, self.otp_valid
