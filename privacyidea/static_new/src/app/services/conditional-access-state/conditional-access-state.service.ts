@@ -100,6 +100,7 @@ export interface ConditionalAccessStateServiceInterface {
   lockedUsersPageIndex: WritableSignal<number>;
   lockedUsersResource: HttpResourceRef<PiResponse<LockedUsersPage> | undefined>;
   countLockedUsers(states: LockState[]): Observable<PiResponse<LockedUsersPage>>;
+  fetchLockedUsers(states: LockState[], pageSize?: number): Observable<PiResponse<LockedUsersPage>>;
   purgeUserLockouts(): Observable<number>;
   blocklistResource: HttpResourceRef<PiResponse<BlocklistEntry[]> | undefined>;
   fetchBlocklist(includeExpired?: boolean): Observable<PiResponse<BlocklistEntry[]>>;
@@ -219,6 +220,15 @@ export class ConditionalAccessStateService implements ConditionalAccessStateServ
     return this.http.get<PiResponse<LockedUsersPage>>(this.conditionalAccessBaseUrl + "lockout/users", {
       headers: this.authService.getHeaders(),
       params: { states: states.join(","), page: 1, page_size: 1 }
+    });
+  }
+
+  // The most recently locked users in the given state(s), for callers that need the records rather than only the
+  // total (the dashboard widget's highlights list).
+  fetchLockedUsers(states: LockState[], pageSize = 20): Observable<PiResponse<LockedUsersPage>> {
+    return this.http.get<PiResponse<LockedUsersPage>>(this.conditionalAccessBaseUrl + "lockout/users", {
+      headers: this.authService.getHeaders(),
+      params: { states: states.join(","), page: 1, page_size: pageSize, sort_column: "locked_at", sort_order: "desc" }
     });
   }
 

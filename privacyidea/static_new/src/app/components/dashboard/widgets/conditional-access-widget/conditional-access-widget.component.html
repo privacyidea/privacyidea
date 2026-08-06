@@ -18,11 +18,9 @@
 -->
 
 <app-widget-state [state]="state()">
-  @let caSummary = summary();
-
   <table class="ca-table">
     <tbody>
-      @if (caSummary.policies; as policies) {
+      @if (summary().policies; as policies) {
         <tr>
           <td>
             <a
@@ -63,7 +61,7 @@
           </tr>
         }
       }
-      @if (caSummary.lockedUsers; as lockedUsers) {
+      @if (summary().lockedUsers; as lockedUsers) {
         <tr>
           <td>
             <a
@@ -87,7 +85,7 @@
           </tr>
         }
       }
-      @if (caSummary.blockedIps; as blockedIps) {
+      @if (summary().blockedIps; as blockedIps) {
         <tr>
           <td>
             <a
@@ -127,13 +125,13 @@
     </tbody>
   </table>
 
-  @if (caSummary.blockedIps) {
+  @if (summary().blockedIps) {
     <p class="ca-section-title">
-      <span i18n>Blocklist activity</span>
+      <span i18n>Blocks and locks over time</span>
       <span
         class="ca-range-count"
         i18n
-        >{{ blocksInRange() }} blocked in range</span
+        >{{ restrictionsInRange() }} in range</span
       >
     </p>
     <div class="ca-range">
@@ -220,22 +218,37 @@
       </mat-menu>
     </div>
 
-    <p
-      class="ca-section-title"
-      i18n>
-      Blocklist highlights
+    <p class="ca-section-title">
+      <span i18n>Restrictions in force</span>
+      <app-info-hint
+        text="IPs and users still blocked or locked, restricted within the selected range. Newest first, expired ones left out."
+        i18n-text
+        ariaLabel="About the restrictions in force"
+        i18n-ariaLabel />
     </p>
     <table class="ca-table">
       <tbody>
-        @for (entry of caSummary.blocklistHighlights; track entry.identifier) {
+        @for (entry of summary().highlights; track entry.kind + entry.label) {
           <tr>
             <td>
+              @if (entry.kind === "ip") {
+                <!-- "IP" reads through the block glyph's open circle, so the row says what kind of subject it is. -->
+                <span class="icon-block-ip">
+                  <span
+                    class="icon-block-ip-text"
+                    aria-hidden="true"
+                    >IP</span
+                  >
+                  <mat-icon class="ca-kind-icon">block</mat-icon>
+                </span>
+              } @else {
+                <mat-icon class="ca-kind-icon">lock_person</mat-icon>
+              }
               <a
-                [routerLink]="routePaths.AUTHENTICATION_LOG"
-                (click)="showAuthenticationLog(entry)"
-                matTooltip="Show this IP's authentication log"
-                i18n-matTooltip
-                >{{ entry.identifier }}</a
+                [routerLink]="highlightLink(entry)"
+                (click)="highlightClicked(entry)"
+                [matTooltip]="highlightTooltip(entry)"
+                >{{ entry.label }}</a
               >
             </td>
             <td>
@@ -248,7 +261,7 @@
               } @else {
                 <span
                   class="highlight-warning"
-                  [matTooltip]="blockedUntilTooltip(entry)"
+                  [matTooltip]="expiresTooltip(entry)"
                   i18n
                   >temporary</span
                 >
@@ -261,18 +274,18 @@
               colspan="2"
               class="ca-sub-label"
               i18n>
-              No IP is currently blocked.
+              No IP is blocked and no user locked in the selected time range.
             </td>
           </tr>
         }
       </tbody>
     </table>
-    @if (hiddenBlocklistCount(); as hidden) {
+    @if (hiddenHighlightCount(); as hidden) {
       <p class="ca-more">
         <a
           [routerLink]="routePaths.BLOCKLIST"
           i18n
-          >{{ hidden }} more blocked</a
+          >{{ hidden }} more in force</a
         >
       </p>
     }

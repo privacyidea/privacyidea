@@ -19,6 +19,7 @@
 import { provideZonelessChangeDetection } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideRouter } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { DashboardWidget, WidgetInstance } from "@models/dashboard";
 import { AuthService } from "@services/auth/auth.service";
 import { AuthenticationLogService } from "@services/authentication-log/authentication-log.service";
@@ -197,7 +198,7 @@ describe("ConditionalAccessWidgetComponent", () => {
     ]);
     create();
 
-    expect(component.summary().blocklistHighlights.map((entry) => entry.identifier)).toEqual(["10.0.0.2", "10.0.0.1"]);
+    expect(component.summary().highlights.map((entry) => entry.label)).toEqual(["10.0.0.2", "10.0.0.1"]);
   });
 
   it("should cap the highlights and report how many blocks it does not show", () => {
@@ -208,15 +209,67 @@ describe("ConditionalAccessWidgetComponent", () => {
     );
     create();
 
-    expect(component.summary().blocklistHighlights).toHaveLength(4);
-    expect(component.hiddenBlocklistCount()).toBe(3);
-    expect(fixture.nativeElement.textContent).toContain("3 more blocked");
+    // Seven blocks plus the five locks in force, four of them shown.
+    expect(component.summary().highlights).toHaveLength(4);
+    expect(component.hiddenHighlightCount()).toBe(8);
+    expect(fixture.nativeElement.textContent).toContain("8 more in force");
   });
 
-  it("should not report hidden blocks when the highlights show them all", () => {
+  it("should not report hidden restrictions when the highlights show them all", () => {
+    stateMock.setLockedUsersCount(["permanent"], 0);
+    stateMock.setLockedUsersCount(["temporary"], 0);
     create();
-    expect(component.hiddenBlocklistCount()).toBe(0);
-    expect(fixture.nativeElement.textContent).not.toContain("more blocked");
+    expect(component.hiddenHighlightCount()).toBe(0);
+    expect(fixture.nativeElement.textContent).not.toContain("more in force");
+  });
+
+  it("should list the locked users alongside the blocked IPs, most recent first", () => {
+    stateMock.setLockedUsers([
+      {
+        resolver: "resolver1",
+        uid: "1000",
+        realm: "defrealm",
+        username: "cornelius",
+        permanent: false,
+        lock_expires_at: new Date(Date.now() + MS_PER_HOUR).toISOString(),
+        seconds_remaining: 600,
+        locked_at: hoursAgo(1)
+      }
+    ]);
+    create();
+
+    const highlights = component.summary().highlights;
+    expect(highlights.map((entry) => entry.label)).toEqual(["cornelius@defrealm", "10.0.0.1", "10.0.0.2"]);
+    expect(highlights[0].kind).toBe("user");
+    expect(component.highlightLink(highlights[0])).toBe(ROUTE_PATHS.LOCKED_USERS);
+    expect(component.highlightLink(highlights[1])).toBe(ROUTE_PATHS.AUTHENTICATION_LOG);
+    expect(fixture.nativeElement.textContent).toContain("cornelius@defrealm");
+    // A blocked IP is marked by "IP" reading through the block glyph; a locked user by the lock icon alone.
+    expect(fixture.nativeElement.querySelectorAll(".icon-block-ip-text")).toHaveLength(2);
+    expect(fixture.nativeElement.querySelector(".icon-block-ip-text").textContent).toBe("IP");
+  });
+
+  it("should leave a locked user outside the selected range out of the list once the range is narrowed", () => {
+    stateMock.setLockedUsers([
+      {
+        resolver: "resolver1",
+        uid: "1000",
+        realm: "defrealm",
+        username: "ancient",
+        permanent: true,
+        lock_expires_at: null,
+        seconds_remaining: null,
+        locked_at: hoursAgo(400)
+      }
+    ]);
+    create();
+    // The window reaches back to the oldest record, so the lock is in range until the range is narrowed.
+    expect(component.summary().highlights.map((entry) => entry.label)).toContain("ancient@defrealm");
+
+    component.applyStartPreset({ label: "Last 24 hours", ageMs: 86_400_000 });
+    fixture.detectChanges();
+
+    expect(component.summary().highlights.map((entry) => entry.label)).not.toContain("ancient@defrealm");
   });
 
   it("should render the counts, the highlighted IPs and their state", () => {
@@ -250,14 +303,22 @@ describe("ConditionalAccessWidgetComponent", () => {
   it("should tell the admin when nothing is blocked", () => {
     stateMock.setBlocklistEntries([]);
     create();
-    expect(fixture.nativeElement.textContent).toContain("No IP is currently blocked.");
+    expect(fixture.nativeElement.textContent).toContain(
+      "No IP is blocked and no user locked in the selected time range."
+    );
   });
 
   it("should name the expiry of a temporary block in its tooltip", () => {
     create();
     const expiry = new Date(Date.now() + MS_PER_HOUR).toISOString();
-    const tooltip = component.blockedUntilTooltip(makeBlock({ block_expires_at: expiry }));
-    expect(tooltip).toContain("Blocked until");
+    const tooltip = component.expiresTooltip({
+      label: "10.0.0.1",
+      permanent: false,
+      at: hoursAgo(1),
+      expiresAt: expiry,
+      kind: "ip"
+    });
+    expect(tooltip).toContain("In force until");
     expect(tooltip).not.toContain(expiry);
   });
 
@@ -283,14 +344,34 @@ describe("ConditionalAccessWidgetComponent", () => {
       expect(bars.every((bar) => bar >= 0 && bar <= 1)).toBe(true);
       // Two distinct block times on record (two fixtures share one), so two buckets carry a bar.
       expect(bars.filter((bar) => bar > 0)).toHaveLength(2);
-      expect(component.blocksInRange()).toBe(3);
+      expect(component.restrictionsInRange()).toBe(3);
+    });
+
+    it("should bucket lock times alongside the block times", () => {
+      stateMock.setLockedUsers([
+        {
+          resolver: "resolver1",
+          uid: "1000",
+          realm: "defrealm",
+          username: "cornelius",
+          permanent: false,
+          lock_expires_at: new Date(Date.now() + MS_PER_HOUR).toISOString(),
+          seconds_remaining: 600,
+          locked_at: hoursAgo(4)
+        }
+      ]);
+      create();
+
+      // Two block buckets plus the lock's own bucket, and the lock counts towards the in-range total.
+      expect(component.activityHistogram().filter((bar) => bar > 0)).toHaveLength(3);
+      expect(component.restrictionsInRange()).toBe(4);
     });
 
     it("should render one element per bucket and the range summary ending at now", () => {
       create();
       expect(fixture.nativeElement.querySelectorAll(".ca-activity-bar")).toHaveLength(32);
       expect(component.rangeSummaryTo()).toBe("now");
-      expect(fixture.nativeElement.textContent).toContain("3 blocked in range");
+      expect(fixture.nativeElement.textContent).toContain("3 in range");
     });
 
     it("should narrow the counted blocks and the highlights when the start thumb moves in", () => {
@@ -299,9 +380,11 @@ describe("ConditionalAccessWidgetComponent", () => {
       component.onRangeStartInput(99);
       fixture.detectChanges();
 
-      expect(component.blocksInRange()).toBe(0);
-      expect(component.summary().blocklistHighlights).toEqual([]);
-      expect(fixture.nativeElement.textContent).toContain("No IP is currently blocked.");
+      expect(component.restrictionsInRange()).toBe(0);
+      expect(component.summary().highlights).toEqual([]);
+      expect(fixture.nativeElement.textContent).toContain(
+        "No IP is blocked and no user locked in the selected time range."
+      );
     });
 
     it("should keep the thumbs from crossing", () => {
@@ -345,7 +428,7 @@ describe("ConditionalAccessWidgetComponent", () => {
       expect(component.windowStartMs()).toBe(start);
       expect(component.rangeSummaryTo()).not.toBe("now");
       // Everything on record is younger than the new end, so nothing is left in range.
-      expect(component.blocksInRange()).toBe(0);
+      expect(component.restrictionsInRange()).toBe(0);
     });
 
     it("should drag the other end along rather than let a preset invert the window", () => {
@@ -444,7 +527,7 @@ describe("ConditionalAccessWidgetComponent", () => {
       fixture.detectChanges();
 
       expect(component.refreshFailed()).toBe(false);
-      expect(component.summary().blocklistHighlights.map((entry) => entry.identifier)).toEqual(["10.0.0.7"]);
+      expect(component.summary().highlights.map((entry) => entry.label)).toEqual(["10.0.0.7"]);
     });
   });
 });

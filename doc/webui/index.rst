@@ -203,17 +203,18 @@ enforcing:
 * **Expired records** - locks and blocks whose time has run out. They
   restrict nobody, and are what the purge action on the *Locked Users*
   and *Blocklist* pages removes.
-* **Blocklist activity** - a histogram of when blocks were issued,
-  bucketed across the shown window, with a range slider on top of it. The
-  icon button at each end of the slider opens presets for that end of the
-  window (*Last 24 hours* ... *All recorded blocks* on the left, *Up to
-  now* / *Up to 24 hours ago* / *Up to 7 days ago* on the right); the
-  thumbs narrow the selection inside the window. The header counts the
-  blocks issued in the selected range.
-* **Blocklist highlights** - the four most recently blocked IPs still in
-  force inside the selected range. Each links to the authentication log
-  pre-filtered on that source IP; a footer names how many further blocks
-  the list does not show.
+* **Blocks and locks over time** - a histogram of when restrictions were
+  imposed (blocked IPs and the recent locks), bucketed across the shown
+  window, with a range slider on top of it. The icon button at each end of
+  the slider opens presets for that end of the window (*Last 24 hours* ...
+  *Everything on record* on the left, *Up to now* / *Up to 24 hours ago* /
+  *Up to 7 days ago* on the right); the thumbs narrow the selection inside
+  the window. The header counts what falls in the selected range.
+* **Restrictions in force** - the four most recent restrictions still in
+  force that were imposed inside the selected range, blocked IPs and
+  locked users in one list. An IP links to the authentication log
+  pre-filtered on that source IP, a user to the *Locked Users* page; a
+  footer names how many further restrictions the list does not show.
 
 Every row links to the page it summarises. The three areas are governed
 by separate rights (``lockout_policy_read``, ``user_lockout_read``,

@@ -27,6 +27,7 @@ import { RouterLink } from "@angular/router";
 import { PiResponse } from "@app/app.component";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { WidgetStateComponent } from "@components/dashboard/widgets/widget-state/widget-state.component";
+import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { DashboardWidget, WidgetSize } from "@models/dashboard";
 import {
@@ -72,7 +73,7 @@ export const WINDOW_START_PRESETS: readonly RangePreset[] = [
   { label: $localize`Last 24 hours`, ageMs: MS_PER_DAY },
   { label: $localize`Last 7 days`, ageMs: 7 * MS_PER_DAY },
   { label: $localize`Last 30 days`, ageMs: 30 * MS_PER_DAY },
-  { label: $localize`All recorded blocks`, ageMs: null }
+  { label: $localize`Everything on record`, ageMs: null }
 ];
 
 export const WINDOW_END_PRESETS: readonly RangePreset[] = [
@@ -93,7 +94,18 @@ interface ConditionalAccessResponses {
   permanentLocks: PiResponse<LockedUsersPage> | null;
   temporaryLocks: PiResponse<LockedUsersPage> | null;
   expiredLocks: PiResponse<LockedUsersPage> | null;
+  recentLocks: PiResponse<LockedUsersPage> | null;
   blocklist: PiResponse<BlocklistEntry[]> | null;
+}
+
+// One row of the highlights list: a blocked IP or a locked user, reduced to what the row shows. `at` is when the
+// restriction was imposed (the sort key and what the range filter tests), `link` where the row leads.
+export interface RestrictionHighlight {
+  label: string;
+  permanent: boolean;
+  at: string;
+  expiresAt: string | null;
+  kind: "ip" | "user";
 }
 
 export interface PolicySummary {
@@ -116,7 +128,7 @@ export interface ConditionalAccessSummary {
   policies: PolicySummary | null;
   lockedUsers: StateSummary | null;
   blockedIps: StateSummary | null;
-  blocklistHighlights: BlocklistEntry[];
+  highlights: RestrictionHighlight[];
 }
 
 function countOf(response: PiResponse<LockedUsersPage> | null): number {
@@ -131,6 +143,7 @@ function isExpired(entry: BlocklistEntry): boolean {
   selector: "app-conditional-access-widget",
   standalone: true,
   imports: [
+    InfoHintComponent,
     MatIcon,
     MatIconButton,
     MatMenu,
@@ -192,11 +205,27 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
             inForce: enforced.length
           }
         : null,
-      // The entries still in force and blocked inside the selected range, most recently blocked first: what an admin
-      // looking at the dashboard is asking about. Expired rows are left to the blocklist page, where they get purged.
-      blocklistHighlights: enforced
-        .filter((entry) => this.inSelectedRange(entry.blocked_at))
-        .sort((a, b) => (a.blocked_at < b.blocked_at ? 1 : a.blocked_at > b.blocked_at ? -1 : 0))
+      // The restrictions still in force that were imposed inside the selected range - blocked IPs and locked users
+      // in one list, most recent first: what an admin looking at the dashboard is asking about. Expired rows are left
+      // to the blocklist / locked-users pages, where they get purged.
+      highlights: [
+        ...enforced.map<RestrictionHighlight>((entry) => ({
+          label: entry.identifier,
+          permanent: entry.permanent,
+          at: entry.blocked_at,
+          expiresAt: entry.block_expires_at,
+          kind: "ip"
+        })),
+        ...(responses?.recentLocks?.result?.value?.locked_users ?? []).map<RestrictionHighlight>((entry) => ({
+          label: entry.realm ? `${entry.username}@${entry.realm}` : entry.username,
+          permanent: entry.permanent,
+          at: entry.locked_at,
+          expiresAt: entry.lock_expires_at,
+          kind: "user"
+        }))
+      ]
+        .filter((entry) => this.inSelectedRange(entry.at))
+        .sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0))
         .slice(0, HIGHLIGHT_COUNT)
     };
   });
@@ -205,13 +234,18 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
 
   readonly sliderSteps = SLIDER_STEPS;
 
-  // Every block on record, whatever its state: the histogram is about when blocks were issued, not about which of
-  // them still bite.
-  private readonly blockTimes = computed<number[]>(() =>
-    (this.dataRef()?.value()?.blocklist?.result?.value ?? [])
-      .map((entry) => new Date(entry.blocked_at).getTime())
-      .filter((time) => !Number.isNaN(time))
-  );
+  // When restrictions were imposed: every block on record, whatever its state, plus the locks the highlights page
+  // carries. The histogram is about when they were imposed, not about which of them still bite. Locks are limited to
+  // that page, so an older lock outside it is not charted.
+  private readonly restrictionTimes = computed<number[]>(() => {
+    const responses = this.dataRef()?.value();
+    return [
+      ...(responses?.blocklist?.result?.value ?? []).map((entry) => entry.blocked_at),
+      ...(responses?.recentLocks?.result?.value?.locked_users ?? []).map((entry) => entry.locked_at)
+    ]
+      .map((timestamp) => new Date(timestamp).getTime())
+      .filter((time) => !Number.isNaN(time));
+  });
 
   // A "now" sampled once per load, so the window maths and the bar positions read a stable present.
   private readonly nowMs = computed(() => {
@@ -222,9 +256,9 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
   // The window the slider spans: from the oldest recorded block (at least a day back) up to now, until a preset
   // moves either end. Writable, so dragging the thumbs narrows the selection without re-zooming the window.
   readonly windowStartMs = linkedSignal(() => {
-    const oldest = Math.min(...this.blockTimes());
+    const times = this.restrictionTimes();
     const end = this.nowMs();
-    return this.blockTimes().length ? Math.min(end - MS_PER_DAY, oldest) : end - DEFAULT_WINDOW_MS;
+    return times.length ? Math.min(end - MS_PER_DAY, Math.min(...times)) : end - DEFAULT_WINDOW_MS;
   });
   readonly windowEndMs = linkedSignal(() => this.nowMs());
 
@@ -241,12 +275,12 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
   readonly selectedFromMs = computed(() => this.positionToMs(this.rangeStart()));
   readonly selectedToMs = computed(() => this.positionToMs(this.rangeEnd()));
 
-  // Bars behind the slider: the recorded blocks bucketed across the window, each normalized to the busiest bucket.
+  // Bars behind the slider: the recorded restrictions bucketed across the window, normalized to the busiest bucket.
   readonly activityHistogram = computed<number[]>(() => {
     const bins = new Array<number>(ACTIVITY_BINS).fill(0);
     const start = this.windowStartMs();
     const span = Math.max(1, this.windowEndMs() - start);
-    for (const time of this.blockTimes()) {
+    for (const time of this.restrictionTimes()) {
       const fraction = (time - start) / span;
       if (fraction < 0 || fraction > 1) {
         continue;
@@ -257,9 +291,10 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
     return bins.map((count) => count / max);
   });
 
-  // How many blocks were issued inside the selected range, so the histogram carries a number and not just a shape.
-  readonly blocksInRange = computed<number>(
-    () => this.blockTimes().filter((time) => time >= this.selectedFromMs() && time <= this.selectedToMs()).length
+  // How many restrictions were imposed inside the selected range, so the histogram carries a number and not just a
+  // shape.
+  readonly restrictionsInRange = computed<number>(
+    () => this.restrictionTimes().filter((time) => time >= this.selectedFromMs() && time <= this.selectedToMs()).length
   );
 
   readonly startPresets = WINDOW_START_PRESETS;
@@ -275,7 +310,7 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
   // Move one end of the window. A preset with no age reaches back to the oldest recorded block; the ends never cross,
   // so picking a start inside the current end (or the other way round) drags the other end along.
   applyStartPreset(preset: RangePreset): void {
-    const start = preset.ageMs === null ? this.oldestBlockMs() : this.nowMs() - preset.ageMs;
+    const start = preset.ageMs === null ? this.oldestRestrictionMs() : this.nowMs() - preset.ageMs;
     this.windowStartMs.set(start);
     if (this.windowEndMs() <= start) {
       this.windowEndMs.set(this.nowMs());
@@ -300,8 +335,8 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
 
   formatSliderThumb = (position: number): string => this.summaryFormat(this.positionToMs(position));
 
-  private oldestBlockMs(): number {
-    const times = this.blockTimes();
+  private oldestRestrictionMs(): number {
+    const times = this.restrictionTimes();
     return times.length ? Math.min(...times) : this.nowMs() - DEFAULT_WINDOW_MS;
   }
 
@@ -328,11 +363,12 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
     return (summary.lockedUsers?.expired ?? 0) + (summary.blockedIps?.expired ?? 0);
   });
 
-  // The blocks in force that did not fit in the highlights list, so the widget can say how much it is not showing
-  // instead of implying the list is the whole blocklist.
-  readonly hiddenBlocklistCount = computed<number>(() => {
+  // The restrictions in force that did not fit in the highlights list, so the widget can say how much it is not
+  // showing instead of implying the list is everything that is in force.
+  readonly hiddenHighlightCount = computed<number>(() => {
     const summary = this.summary();
-    return Math.max(0, (summary.blockedIps?.inForce ?? 0) - summary.blocklistHighlights.length);
+    const inForce = (summary.blockedIps?.inForce ?? 0) + (summary.lockedUsers?.inForce ?? 0);
+    return Math.max(0, inForce - summary.highlights.length);
   });
 
   constructor() {
@@ -375,22 +411,38 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
           temporaryLocks: canReadLockouts ? this.stateService.countLockedUsers(["temporary"]) : of(null),
           expiredLocks: canReadLockouts ? this.stateService.countLockedUsers(["expired"]) : of(null),
           // Expired entries are included so the widget can report the stale rows a purge would remove.
+          // The records behind the highlights list: the most recent locks still in force, so a lock shows up next
+          // to a blocked IP. The counts above stay exact regardless of how many records this page holds.
+          recentLocks: canReadLockouts ? this.stateService.fetchLockedUsers(["permanent", "temporary"]) : of(null),
           blocklist: canReadBlocklist ? this.stateService.fetchBlocklist(true) : of(null)
         })
       )
     );
   }
 
-  // Pre-seed the authentication-log filter with this entry's source IP so the log opens on that IP's events
-  // only, mirroring the blocklist page. The navigation itself is the template's routerLink.
-  protected showAuthenticationLog(entry: BlocklistEntry): void {
-    this.authenticationLogService.authenticationLogFilter.set(
-      new FilterValue().addEntry("source_ip", entry.identifier)
-    );
+  // Where a highlight row leads: an IP to its own events in the authentication log (the filter is pre-seeded in
+  // highlightClicked), a locked user to the locked-users page.
+  highlightLink(entry: RestrictionHighlight): string {
+    return entry.kind === "ip" ? ROUTE_PATHS.AUTHENTICATION_LOG : ROUTE_PATHS.LOCKED_USERS;
   }
 
-  blockedUntilTooltip(entry: BlocklistEntry): string {
-    return $localize`Blocked until ${formatLocalDateTime(entry.block_expires_at)}`;
+  // Pre-seed the authentication-log filter with a highlighted IP so the log opens on that IP's events only,
+  // mirroring the blocklist page. The navigation itself is the template's routerLink.
+  highlightClicked(entry: RestrictionHighlight): void {
+    if (entry.kind === "ip") {
+      this.authenticationLogService.authenticationLogFilter.set(new FilterValue().addEntry("source_ip", entry.label));
+    }
+  }
+
+  highlightTooltip(entry: RestrictionHighlight): string {
+    if (entry.kind === "ip") {
+      return $localize`Blocked ${formatLocalDateTime(entry.at)} - show this IP's authentication log`;
+    }
+    return $localize`Locked ${formatLocalDateTime(entry.at)} - show the locked users`;
+  }
+
+  expiresTooltip(entry: RestrictionHighlight): string {
+    return $localize`In force until ${formatLocalDateTime(entry.expiresAt)}`;
   }
 
   // A restriction in force is what an admin needs to notice, so any non-zero count is flagged; zero reads as
