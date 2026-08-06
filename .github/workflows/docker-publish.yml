@@ -1,0 +1,83 @@
+# SPDX-FileCopyrightText: (C) 2026 NetKnights GmbH <https://netknights.it>
+#
+# SPDX-License-Identifier: CC0-1.0
+#
+# Builds the single-node Docker image from a release tag and pushes it to GHCR.
+# Only fires on semver release tags (v1.2.3); dev/pre-release tags are ignored.
+# The image is tagged with the bare version number (e.g. 3.13.3).
+
+name: Docker publish
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Git tag to build from (e.g. v3.13.3)'
+        required: true
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    name: Build and push image
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Determine ref and version
+        id: meta
+        run: |
+          ref="${{ github.event.inputs.tag || github.ref_name }}"
+          # Strip leading 'v'
+          version="${ref#v}"
+
+          # Reject dev / pre-release tags (e.g. 3.13dev0, 3.13.3dev1)
+          if echo "$version" | grep -qE 'dev|alpha|beta|rc'; then
+            echo "::error::Skipping pre-release tag: ${ref}"
+            exit 1
+          fi
+
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          image="ghcr.io/${owner}/privacyidea"
+
+          echo "ref=${ref}" >> "$GITHUB_OUTPUT"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "image=${image}" >> "$GITHUB_OUTPUT"
+          echo "Building ${image}:${version} from ${ref}"
+
+      # fetch-depth: 0 so setuptools-scm can derive the version from git tags
+      # (the Dockerfile copies .git and builds the package with it).
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ steps.meta.outputs.ref }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Log in to GHCR
+        env:
+          ACTOR: ${{ github.actor }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "$TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
+
+      - name: Build and push
+        env:
+          IMAGE: ${{ steps.meta.outputs.image }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          docker build \
+            -f deploy/docker/Dockerfile \
+            -t "$IMAGE:$VERSION" \
+            .
+          docker push "$IMAGE:$VERSION"
+
+      - name: Log out of GHCR
+        if: always()
+        run: docker logout ghcr.io
