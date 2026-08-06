@@ -288,7 +288,8 @@ class EventDecoratorExceptionHandlingTestCase(MyTestCase):
             return Response('{"result": {"value": true}}')
 
         with patch("privacyidea.lib.event.get_handler_object") as mock_get_handler, \
-                patch("privacyidea.lib.event.getAudit") as mock_get_audit:
+                patch("privacyidea.lib.event.getAudit") as mock_get_audit, \
+                patch("privacyidea.lib.event.log") as mock_log:
             mock_handler = MagicMock()
             mock_handler.check_condition.return_value = True
             mock_handler.do.side_effect = RuntimeError("handler explodes")
@@ -303,6 +304,54 @@ class EventDecoratorExceptionHandlingTestCase(MyTestCase):
             # Should still not raise - the outer except catches the audit failure
             result = my_api_function()
             self.assertIn(b"true", result.data)
+
+            # Verify that log.error was called with the audit failure message
+            error_calls = [str(call) for call in mock_log.error.call_args_list]
+            self.assertTrue(
+                any("Failed to audit handler failure" in call for call in error_calls),
+                f"Expected 'Failed to audit handler failure' in log.error calls: {error_calls}"
+            )
+
+        from privacyidea.lib.event import delete_event
+        delete_event(eid)
+
+    def test_audit_failure_in_pre_event_except_block_logs_error(self):
+        """If auditing a pre-event handler failure itself fails, log.error is called."""
+        eid = set_event("double_failure_pre", "token_init", "UserNotification", "sendmail",
+                        conditions={}, options={},
+                        position="pre")
+
+        g = self._setup_g_with_event_config()
+        req = self._make_request()
+
+        @event("token_init", req, g)
+        def my_api_function():
+            return Response('{"result": {"value": true}}')
+
+        with patch("privacyidea.lib.event.get_handler_object") as mock_get_handler, \
+                patch("privacyidea.lib.event.getAudit") as mock_get_audit, \
+                patch("privacyidea.lib.event.log") as mock_log:
+            mock_handler = MagicMock()
+            mock_handler.check_condition.return_value = True
+            mock_handler.do.side_effect = RuntimeError("pre-handler explodes")
+            mock_handler.run_details = ""
+            mock_get_handler.return_value = mock_handler
+
+            # Make the audit object raise when logging the failure
+            mock_audit_obj = MagicMock()
+            mock_audit_obj.log.side_effect = RuntimeError("audit DB is down")
+            mock_get_audit.return_value = mock_audit_obj
+
+            # Should still not raise
+            result = my_api_function()
+            self.assertIn(b"true", result.data)
+
+            # Verify log.error was called for the audit failure
+            error_calls = [str(call) for call in mock_log.error.call_args_list]
+            self.assertTrue(
+                any("Failed to audit handler failure" in call for call in error_calls),
+                f"Expected 'Failed to audit handler failure' in log.error calls: {error_calls}"
+            )
 
         from privacyidea.lib.event import delete_event
         delete_event(eid)
@@ -349,3 +398,84 @@ class ScriptHandlerAbortErrorTestCase(MyTestCase):
         # Should raise HandlerAbortError specifically (subclass of ServerError)
         with self.assertRaises(HandlerAbortError):
             t_handler.do(script_name, options=options)
+
+    def test_script_handler_popen_failure_with_raise_error(self):
+        """When Popen itself raises and raise_error=True, HandlerAbortError is raised."""
+        from privacyidea.lib.eventhandler.scripthandler import ScriptEventHandler, SCRIPT_WAIT
+        import os
+
+        g = FakeFlaskG()
+        g.audit_object = getAudit(self.app.config)
+        g.audit_object.audit_data = {}
+        g.logged_in_user = {"username": "admin", "role": "admin", "realm": ""}
+
+        builder = EnvironBuilder(method='POST', data={'serial': 'SPASS01'}, headers={})
+        req = Request(builder.get_environ())
+        req.all_data = {"serial": "SPASS01", "type": "spass"}
+        req.User = User()
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {
+                       "options": {
+                           "background": SCRIPT_WAIT,
+                           "raise_error": True,
+                           "realm": "1",
+                           "serial": "1",
+                           "logged_in_user": "1",
+                           "logged_in_role": "1"}
+                   }}
+
+        # Use a script name that does not exist to trigger the except block
+        script_name = "nonexistent_script_that_does_not_exist.sh"
+        d = os.path.join(os.getcwd(), "tests/testdata/scripts/")
+        self.app.config['PI_SCRIPT_HANDLER_DIRECTORY'] = d
+        t_handler = ScriptEventHandler()
+
+        # Popen raises FileNotFoundError -> caught -> re-raised as HandlerAbortError
+        with self.assertRaises(HandlerAbortError) as cm:
+            t_handler.do(script_name, options=options)
+        self.assertIn("Failed to start script", str(cm.exception))
+
+    def test_script_handler_popen_failure_without_raise_error(self):
+        """When Popen itself raises but raise_error=False, exception is swallowed."""
+        from privacyidea.lib.eventhandler.scripthandler import ScriptEventHandler, SCRIPT_WAIT
+        import os
+
+        g = FakeFlaskG()
+        g.audit_object = getAudit(self.app.config)
+        g.audit_object.audit_data = {}
+        g.logged_in_user = {"username": "admin", "role": "admin", "realm": ""}
+
+        builder = EnvironBuilder(method='POST', data={'serial': 'SPASS01'}, headers={})
+        req = Request(builder.get_environ())
+        req.all_data = {"serial": "SPASS01", "type": "spass"}
+        req.User = User()
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {
+                       "options": {
+                           "background": SCRIPT_WAIT,
+                           "raise_error": False,
+                           "realm": "1",
+                           "serial": "1",
+                           "logged_in_user": "1",
+                           "logged_in_role": "1"}
+                   }}
+
+        # Use a script that does not exist to trigger Popen raising FileNotFoundError
+        script_name = "nonexistent_script_that_does_not_exist.sh"
+        d = os.path.join(os.getcwd(), "tests/testdata/scripts/")
+        self.app.config['PI_SCRIPT_HANDLER_DIRECTORY'] = d
+        t_handler = ScriptEventHandler()
+
+        # Should NOT raise - exception is swallowed when raise_error is False
+        result = t_handler.do(script_name, options=options)
+        self.assertTrue(result)
