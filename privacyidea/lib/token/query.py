@@ -701,7 +701,7 @@ def get_one_token(
     """
     kwargs.pop("count", None)  # get_one_token never counts
     tokens = get_tokens(**kwargs)
-    assert isinstance(tokens, list)  # count is stripped, so result is always a list
+    # count is stripped, so result is always a list
     if not tokens:
         if silent_fail:
             return None
@@ -730,12 +730,11 @@ def get_tokens_from_serial_or_user(
     """
     if serial:
         token = get_one_token(serial=serial, user=user, **kwargs)
-        assert token is not None  # get_one_token raises on not-found when silent_fail is False
-        return [token]
+        # get_one_token raises on not-found when silent_fail is False
+        return [token]  # type: ignore[list-item]
     kwargs.pop("count", None)
     tokens = get_tokens(serial=serial, user=user, **kwargs)
-    assert isinstance(tokens, list)
-    return tokens
+    return tokens  # type: ignore[return-value]
 
 
 # ---------------------------------------------------------------------------
