@@ -573,7 +573,8 @@ def check():
         # Write the single authentication-log row for this request, then let the
         # conditional-access engine react to the classified outcome.
         _log_authentication_event(context)
-        conditional_access_posteval(context["user"], context[AUTH_EVENT_TYPE_KEY])
+        conditional_access_posteval(context["user"], context[AUTH_EVENT_TYPE_KEY],
+                                    getattr(g, "auth_log_event_id", None))
     return response
 
 
@@ -1081,7 +1082,7 @@ def trigger_challenge():
     # last challenge it created).
     challenge_serials = [challenge_info["serial"] for challenge_info in details["multi_challenge"]]
 
-    log_authentication(
+    event_id = log_authentication(
         event_type,
         request,
         user=user,
@@ -1090,7 +1091,7 @@ def trigger_challenge():
     )
     # Let the conditional-access engine react to the classified outcome (e.g. a
     # policy tracking NO_TOKEN); side effects only, never breaks this response.
-    conditional_access_posteval(user, event_type)
+    conditional_access_posteval(user, event_type, event_id)
 
     r = send_result(triggered_challenges, rid=2, details=details)
     g.audit_object.log({

@@ -19,7 +19,12 @@
 import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { PageEvent } from "@angular/material/paginator";
-import { AuthenticationLogService } from "@services/authentication-log/authentication-log.service";
+import { MatTableDataSource } from "@angular/material/table";
+import { ROUTE_PATHS } from "@app/route_paths";
+import {
+  AuthenticationLogEntry,
+  AuthenticationLogService
+} from "@services/authentication-log/authentication-log.service";
 import { AuthService } from "@services/auth/auth.service";
 import { ClientsService } from "@services/clients/clients.service";
 import { ContentService } from "@services/content/content.service";
@@ -160,10 +165,12 @@ describe("AuthenticationLog", () => {
   });
 
   it("shows the User Role filter button for an admin and hides it in self-service", () => {
+    // fixture.nativeElement is typed `any`, so it is narrowed here: an untyped call cannot take a type argument, and
+    // without one the found element would be `unknown`.
     const userRoleButton = () =>
-      Array.from(fixture.nativeElement.querySelectorAll<HTMLButtonElement>(".actions-container button")).find(
-        (button) => button.textContent?.includes("User Role")
-      );
+      Array.from(
+        (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>(".actions-container button")
+      ).find((button) => button.textContent?.includes("User Role"));
     expect(userRoleButton()).toBeTruthy();
     authService.role.set("user");
     fixture.detectChanges();
@@ -215,9 +222,28 @@ describe("AuthenticationLog", () => {
     expect(badges[0].classList).toContain("role-badge-admin-internal");
   });
 
-  it("formatInfo serializes other_info and tolerates null", () => {
-    expect(component.formatInfo({ a: 1 })).toBe('{"a":1}');
-    expect(component.formatInfo(null)).toBe("");
+  it("hasInfoValues only reports true when an entry on the page actually carries other_info", () => {
+    // The table swaps in a fresh MatTableDataSource per page, so the signal must be re-set (not mutated in place) for
+    // the computed to see new rows.
+    const rows: AuthenticationLogEntry[] = [
+      { id: 1, event_type: "LOGIN_SUCCESS", timestamp: "2026-08-03T09:00:00Z", other_info: null },
+      { id: 2, event_type: "PIN_FAIL", timestamp: "2026-08-03T09:00:01Z", other_info: {} }
+    ];
+    component.dataSource.set(new MatTableDataSource(rows));
+    expect(component.hasInfoValues()).toBe(false);
+
+    component.dataSource.set(
+      new MatTableDataSource([
+        ...rows,
+        {
+          id: 3,
+          event_type: "PIN_FAIL",
+          timestamp: "2026-08-03T09:00:02Z",
+          other_info: { conditional_access_findings: [] }
+        }
+      ])
+    );
+    expect(component.hasInfoValues()).toBe(true);
   });
 
   it("infoEntries renders key/value rows, CSV arrays, a sub-list for nested dicts and JSON for deeper nesting", () => {
@@ -230,16 +256,141 @@ describe("AuthenticationLog", () => {
         n: 3
       })
     ).toEqual([
-      { key: "serial", value: "TOTP001" },
-      { key: "roles", value: "admin, user" },
+      { key: "Serial", value: "TOTP001" },
+      { key: "Roles", value: "admin, user" },
       {
-        key: "truncated",
+        key: "Truncated",
         children: [
-          { key: "username", value: "abc" },
-          { key: "deep", value: '{"x":1}' }
+          { key: "Username", value: "abc" },
+          { key: "Deep", value: '{"x":1}' }
         ]
       },
-      { key: "n", value: "3" }
+      { key: "N", value: "3" }
+    ]);
+  });
+
+  it("infoEntries humanizes snake_case keys and uppercases acronym fragments", () => {
+    expect(component.infoEntries({ policy_name: "p", source_ip: "1.2.3.4", stage_id: 7 })).toEqual([
+      { key: "Policy name", value: "p" },
+      { key: "Source IP", value: "1.2.3.4" },
+      { key: "Stage ID", value: "7" }
+    ]);
+  });
+
+  it("infoEntries renders a dry-run finding as a 'Dry Run:' prefix plus the linked policy, with no parent label row", () => {
+    expect(
+      component.infoEntries({
+        conditional_access_findings: [
+          {
+            policy_id: 7,
+            policy_name: "Brute Force PIN Lockout",
+            stage_name: "Lock 10 min",
+            threshold: 5,
+            actions: ["LOCK_USER"],
+            dry_run: true
+          }
+        ]
+      })
+    ).toEqual([
+      {
+        // No "Conditional access findings" row: the heading carries that context.
+        key: "",
+        groups: [
+          {
+            // The prefix is separate from the label so only the policy name becomes the link.
+            prefix: "Dry Run:",
+            label: "Brute Force PIN Lockout",
+            link: `${ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_DETAILS}7`,
+            // policy_name heads the group, policy_id backs the link and dry_run picks the prefix, so none of them is
+            // repeated as a row.
+            rows: [
+              { key: "Stage name", value: "Lock 10 min" },
+              { key: "Threshold", value: "5" },
+              { key: "Actions", value: "LOCK_USER" }
+            ]
+          }
+        ]
+      }
+    ]);
+  });
+
+  it("infoEntries heads every finding group by its own policy, so the label is not a positional index", () => {
+    const entries = component.infoEntries({
+      conditional_access_findings: [
+        { policy_id: 7, policy_name: "Permanent IP Block", threshold: 7, dry_run: true },
+        { policy_id: 3, policy_name: "Email Notification Test", threshold: 6, dry_run: true }
+      ]
+    });
+    expect(entries[0].groups?.map((group) => group.label)).toEqual(["Permanent IP Block", "Email Notification Test"]);
+    // Every group carries the prefix, so each finding is individually marked as a dry run.
+    expect(entries[0].groups?.map((group) => group.prefix)).toEqual(["Dry Run:", "Dry Run:"]);
+    expect(entries[0].groups?.map((group) => group.link)).toEqual([
+      `${ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_DETAILS}7`,
+      `${ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_DETAILS}3`
+    ]);
+  });
+
+  it("infoEntries omits the heading link when the finding carries no policy id", () => {
+    const groups = component.infoEntries({
+      conditional_access_findings: [{ policy_name: "Legacy finding", threshold: 4, dry_run: true }]
+    })[0].groups;
+    expect(groups?.[0].label).toBe("Legacy finding");
+    expect(groups?.[0].prefix).toBe("Dry Run:");
+    expect(groups?.[0].link).toBeUndefined();
+  });
+
+  it("infoEntries heads an enforced finding with the plain conditional-access prefix", () => {
+    const groups = component.infoEntries({
+      conditional_access_findings: [{ policy_id: 7, policy_name: "Brute Force PIN Lockout", threshold: 5 }]
+    })[0].groups;
+    expect(groups?.[0].prefix).toBe("Conditional Access:");
+    expect(groups?.[0].label).toBe("Brute Force PIN Lockout");
+  });
+
+  it("infoEntries falls back to an ordinal label for unnamed groups and omits it for a lone one", () => {
+    expect(component.infoEntries({ items: [{ a: 1 }] })[0].groups).toEqual([
+      { label: "", rows: [{ key: "A", value: "1" }] }
+    ]);
+    expect(component.infoEntries({ items: [{ a: 1 }, { a: 2 }] })[0].groups?.map((group) => group.label)).toEqual([
+      "1",
+      "2"
+    ]);
+  });
+
+  it("infoEntries numbers the groups of a multi-element object list and flattens nested arrays", () => {
+    const entries = component.infoEntries({
+      items: [
+        { policy_id: 1, actions: ["LOCK_USER"] },
+        { policy_id: 3, actions: ["EMAIL_ADMIN", "LOCK_USER"] }
+      ]
+    });
+    expect(entries).toEqual([
+      {
+        key: "Items",
+        groups: [
+          {
+            label: "1",
+            rows: [
+              { key: "Policy ID", value: "1" },
+              { key: "Actions", value: "LOCK_USER" }
+            ]
+          },
+          {
+            label: "2",
+            rows: [
+              { key: "Policy ID", value: "3" },
+              { key: "Actions", value: "EMAIL_ADMIN, LOCK_USER" }
+            ]
+          }
+        ]
+      }
+    ]);
+  });
+
+  it("infoEntries keeps a scalar array as a CSV value rather than treating it as groups", () => {
+    expect(component.infoEntries({ tags: ["a", "b"], empty: [] })).toEqual([
+      { key: "Tags", value: "a, b" },
+      { key: "Empty", value: "" }
     ]);
   });
 
