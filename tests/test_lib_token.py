@@ -1960,7 +1960,7 @@ class TokenTestCase(MyTestCase):
             return [token.token.id for l2 in token_list for token in l2]
 
         # serial72 token has invalid type. Check behavior and remove it.
-        self.assertEqual(list(get_tokens_paginated_generator(serial_wildcard="serial*")), [[]])
+        self.assertEqual(list(get_tokens_paginated_generator(serial_wildcard="serial*")), [])
         # We need to remove the token directly in the DB since `remove_token()` would check the type
         db.session.query(Token).filter_by(serial="serial72").delete()
         db.session.commit()
