@@ -82,8 +82,8 @@ body {
   --depth-dir-y: 1;
 
   // The tones run one step ahead of the shadows: at every level the surface tones and
-  // gradients are the ones the next stronger level's shadows pair with. Only "flat" ties the
-  // two scales together, at 0, so a flat surface is one colour.
+  // gradients are the ones the next stronger level's shadows pair with. "flat" keeps the
+  // ladder but drops the gradient, so there tone is all that separates the levels.
   --depth-tone-scale: var(--depth-scale);
 
   // --depth-dir-x/-y are unit-vector components, so a diagonal light contributes 0.7071 per
@@ -280,21 +280,44 @@ body {
 // level cannot freeze one theme's tone into the other.
 
 // One depth scale drives every shadow: --elevation-*, --inset-shadow-*, --inset-surface-*
-// and --side-glow. "flat" also swaps the shadows for a hairline ring, spread-only so boxes keep
-// their size, and turns that ring inward on the recessed slots, so a well stays bounded with no
-// inset shadow left. Slot 8 takes 2px to keep the hover lift perceptible. This ring is the only
-// outline a card gets.
+// and --side-glow. "flat" swaps the blurred shadows for a two-pixel hard pair, offset only, so
+// boxes keep their size and nothing is outlined. The three slots collapse onto that one pair,
+// which leaves the inset tones to say how deep a surface sits.
 html.depth-flat {
   --depth-scale: 0;
-  --elevation-3: 0 0 0 1px var(--mat-sys-outline-variant);
-  --elevation-5: 0 0 0 1px var(--mat-sys-outline-variant);
-  --elevation-8: 0 0 0 2px var(--mat-sys-outline-variant);
-  --inset-shadow-3: inset 0 0 0 1px var(--mat-sys-outline-variant);
-  --inset-shadow-5: inset 0 0 0 1px var(--mat-sys-outline-variant);
-  --inset-shadow-8: inset 0 0 0 2px var(--mat-sys-outline-variant);
-  // Hairlines on the two sides the glow lit. Sides only: these surfaces hang off a bar, so a
-  // line along the bottom edge would fence them off from it.
-  --side-glow: -1px 0 0 0 var(--mat-sys-outline-variant), 1px 0 0 0 var(--mat-sys-outline-variant);
+  // No shadows left to separate the recess levels, so tone carries them alone: the tone ladder
+  // stays at full strength while the tint drops to nothing, which leaves every surface one flat
+  // colour and each inset level a step darker than the one above it.
+  --depth-tone-scale: 1;
+  --depth-tint: 0%;
+
+  // Every slot is the shadow-and-light pair at two hard pixels, no blur, still aimed by the
+  // light source: shade on the side away from it, highlight on the side facing it, and that
+  // pair is what draws a surface's edge here.
+  //
+  // Offset and spread each take one of those pixels. An offset alone would only translate the
+  // surface's own shape, so its rounded corners would pull each band short of the corner; the
+  // spread grows the shape instead, carrying the band around. Matching the two keeps the bands
+  // off each other's side, since the spread reaches exactly as far back as the offset moved.
+  --flat-light: var(--mat-sys-surface-container);
+  --flat-pair:
+    calc(1px * var(--depth-dir-x)) calc(1px * var(--depth-dir-y)) 0 1px var(--mat-sys-shadow),
+    calc(-1px * var(--depth-dir-x)) calc(-1px * var(--depth-dir-y)) 0 1px var(--flat-light);
+  --flat-inset-pair:
+    inset calc(1px * var(--depth-dir-x)) calc(1px * var(--depth-dir-y)) 0 1px var(--mat-sys-shadow),
+    inset calc(-1px * var(--depth-dir-x)) calc(-1px * var(--depth-dir-y)) 0 1px var(--flat-light);
+
+  --elevation-3: var(--flat-pair);
+  --elevation-5: var(--flat-pair);
+  --elevation-8: var(--flat-pair);
+  --inset-shadow-3: var(--flat-inset-pair);
+  --inset-shadow-5: var(--flat-inset-pair);
+  --inset-shadow-8: var(--flat-inset-pair);
+  // The same pair, horizontal only: these surfaces hang off a bar, so their bottom edge meets
+  // it and only the sides are theirs to draw.
+  --side-glow:
+    calc(2px * var(--depth-dir-x)) 0 0 0 var(--mat-sys-shadow),
+    calc(-2px * var(--depth-dir-x)) 0 0 0 var(--flat-light);
 }
 
 // The secondary toolbar spans the full width, so side hairlines would fall outside the

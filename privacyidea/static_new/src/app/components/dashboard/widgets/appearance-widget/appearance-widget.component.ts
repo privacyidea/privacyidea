@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, inject } from "@angular/core";
+import { Component, inject } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
@@ -124,18 +124,10 @@ export class AppearanceWidgetComponent extends DashboardWidget {
     label: presetLabel(preset)
   }));
 
-  private readonly currentPreset = computed<AppearancePreset | undefined>(() =>
-    APPEARANCE_PRESETS.find(
-      (preset) =>
-        preset.depth === this.appearanceService.depth() &&
-        preset.corner === this.appearanceService.corners() &&
-        preset.lightSource === this.appearanceService.lightSource()
-    )
-  );
-
-  // No stop is marked when the live appearance is one of the pairs the dial leaves out, which
-  // UI Settings can still set.
-  protected readonly selected = computed(() => this.currentPreset()?.lightSource);
+  // The marked stop is the light source in effect, the one the pointer is aimed at. Depth and
+  // corners are set independently on the UI Settings page, so most live appearances match no
+  // whole preset, and keying the mark to the light source alone keeps the dial following them.
+  protected readonly selected = this.appearanceService.lightSource;
 
   constructor() {
     super();

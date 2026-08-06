@@ -1,5 +1,15 @@
 @use "cards";
 
+// Material paints the panel's surface and shadow itself, from these two tokens, and its
+// shadow rule outranks a bare .mat-expansion-panel selector. So the raised step is handed to
+// the tokens rather than declared directly, which is also what makes a panel follow the depth
+// setting. The defaults go on :root, so a container can still give its panels a surface of
+// their own by setting the tokens, which inherit.
+:root {
+  --mat-expansion-container-background-color: var(--surface-raised);
+  --mat-expansion-container-elevation-shadow: var(--elevation-3);
+}
+
 // The content group inside an expansion panel: the panel is raised, so the group standing in
 // it takes the shallow recess, like a group on a page container.
 .expansion-well {
@@ -8,7 +18,7 @@
 }
 
 .mat-expansion-panel:not(.mat-expanded) .mat-expansion-panel-header:hover {
-  background: var(--mat-expansion-container-background-color, var(--mat-sys-surface-container-high));
+  background: var(--mat-sys-surface-container-high);
 }
 
 .mat-expansion-panel-header {

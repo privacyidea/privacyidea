@@ -108,7 +108,7 @@ describe("AppearanceWidgetComponent", () => {
     expect(radios).toHaveLength(LIGHT_SOURCE_LEVELS.length);
   });
 
-  it("should check the preset matching the live depth, corners and light source", () => {
+  it("should check the stop of the light source in effect", () => {
     appearanceService.depth.set("default");
     appearanceService.corners.set("default");
     appearanceService.lightSource.set(DEFAULT_LIGHT_SOURCE);
@@ -120,16 +120,16 @@ describe("AppearanceWidgetComponent", () => {
     expect(checked).toHaveLength(1);
   });
 
-  it("should check nothing when the live appearance matches no preset", () => {
-    // very-strong + square is one of the four excluded pairs.
+  it("should follow the light source when depth and corners match no preset", () => {
+    // very-strong + square is one of the four pairs the dial itself never applies.
     appearanceService.depth.set("very-strong");
     appearanceService.corners.set("square");
+    appearanceService.lightSource.set("12");
     fixture.detectChanges();
 
-    const checked = Array.from(host().querySelectorAll<HTMLInputElement>(".dial__slot input")).filter(
-      (radio) => radio.checked
-    );
-    expect(checked).toHaveLength(0);
+    const checked = host().querySelector<HTMLInputElement>(".dial__slot input:checked");
+
+    expect(checked?.closest(".dial__slot")?.className).toContain("dial__slot--12");
   });
 
   it("should apply the preset's depth, corners and light source together on selection", () => {
@@ -170,19 +170,17 @@ describe("AppearanceWidgetComponent", () => {
     expect(themeService.setTheme).toHaveBeenCalledWith("light");
   });
 
-  it("should never offer very-strong depth paired with square or extra-round corners", () => {
+  it("should never apply very-strong or flat with the corners they read wrong at", () => {
     const excluded = ["very-strong:square", "very-strong:extra-round", "flat:round", "flat:extra-round"];
+    const radios = Array.from(host().querySelectorAll<HTMLInputElement>(".dial__slot input"));
 
-    for (const pair of excluded) {
-      const [depth, corner] = pair.split(":") as [DepthLevel, CornerLevel];
-      appearanceService.depth.set(depth);
-      appearanceService.corners.set(corner);
-      fixture.detectChanges();
+    for (const radio of radios) {
+      radio.checked = true;
+      radio.dispatchEvent(new Event("change"));
 
-      const checked = Array.from(host().querySelectorAll<HTMLInputElement>(".dial__slot input")).filter(
-        (radio) => radio.checked
-      );
-      expect(checked).toHaveLength(0);
+      const depth = appearanceService.setDepth.mock.lastCall?.[0];
+      const corner = appearanceService.setCorners.mock.lastCall?.[0];
+      expect(excluded).not.toContain(`${depth}:${corner}`);
     }
   });
 
