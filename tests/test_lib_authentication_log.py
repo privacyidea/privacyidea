@@ -23,7 +23,9 @@ from privacyidea.lib.conditional_access.authentication_event_types import AuthEv
 from privacyidea.lib.conditional_access.authentication_log import (
     log_authentication_event,
     delete_authentication_log_event,
-    reclassify_authentication_log_event,
+    PendingAuthEvent,
+    update_authentication_events,
+    write_authentication_events,
     get_authentication_log_event,
     get_authentication_logs,
     get_authentication_logs_paginate,
@@ -503,25 +505,33 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertEqual("S" * max_serial, entry.serial)
         self.assertEqual({"truncated": {"serial": "SSSSS"}}, entry.other_info)
 
-    def test_reclassify_preserves_serial_overflow(self):
-        # Reclassification truncates the same way as the insert and preserves the serial overflow into the entry's
+    def test_amending_a_written_event_preserves_serial_overflow(self):
+        # An amended row truncates the same way as the insert and preserves the serial overflow into the entry's
         # existing other_info.
-        event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, serial="TOK001")
+        event = PendingAuthEvent(event_type=AuthEventType.LOGIN_SUCCESS, serial="TOK001")
+        write_authentication_events([event])
         max_serial = authentication_log_column_length["serial"]
         head = "S" * (max_serial - 4)
-        reclassify_authentication_log_event(event_id, AuthEventType.ENROLLMENT_TRIGGERED,
-                                            serial=f"{head},AAA,BBBBBBBBBB")
-        entry = get_authentication_log_event(event_id)
+
+        event.event_type = AuthEventType.ENROLLMENT_TRIGGERED
+        event.serial = f"{head},AAA,BBBBBBBBBB"
+        update_authentication_events([event])
+
+        entry = get_authentication_log_event(event.row_id)
         assert entry is not None
         self.assertEqual(f"{head},AAA", entry.serial)
         self.assertEqual({"truncated": {"serial": "BBBBBBBBBB"}}, entry.other_info)
 
-    def test_reclassify_without_serial_keeps_existing_serial(self):
-        # Reclassifying with the default serial=None means "do not modify": an existing serial must survive, e.g. the
-        # authorized=deny post-policy reclassifies a successful login to NOT_AUTHORIZED without passing a serial.
-        event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, serial="TOK001")
-        reclassify_authentication_log_event(event_id, AuthEventType.NOT_AUTHORIZED)
-        entry = get_authentication_log_event(event_id)
+    def test_amending_only_the_event_type_keeps_the_serial(self):
+        # Amending just the classification must leave the rest of the row alone, e.g. the authorized=deny post-policy
+        # corrects a successful login to NOT_AUTHORIZED without touching the serial.
+        event = PendingAuthEvent(event_type=AuthEventType.LOGIN_SUCCESS, serial="TOK001")
+        write_authentication_events([event])
+
+        event.event_type = AuthEventType.NOT_AUTHORIZED
+        update_authentication_events([event])
+
+        entry = get_authentication_log_event(event.row_id)
         assert entry is not None
         self.assertEqual(AuthEventType.NOT_AUTHORIZED, entry.event_type)
         self.assertEqual("TOK001", entry.serial)

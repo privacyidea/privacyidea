@@ -19,13 +19,16 @@
 Unit tests for the per-request conditional-access buffer
 (:mod:`privacyidea.lib.conditional_access.request_context`).
 """
+import mock
 from sqlalchemy import select
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import (PendingAuthEvent, get_authentication_logs,
                                                                   write_authentication_events)
-from privacyidea.lib.conditional_access.request_context import ConditionalAccessContext, get_ca_context
-from privacyidea.lib.conditional_access.session import close_ca_session
+from privacyidea.lib.conditional_access.request_context import (AuthPrincipal, ConditionalAccessContext,
+                                                              get_ca_context)
+from privacyidea.lib.conditional_access.session import close_ca_session, get_ca_session
+from privacyidea.lib.user import User
 from privacyidea.models import db
 from privacyidea.models.authentication_log import AuthenticationLog, authentication_log_column_length
 from .base import MyTestCase
@@ -164,3 +167,199 @@ class ConditionalAccessContextTestCase(MyTestCase):
 
     def test_12_write_authentication_events_with_no_events_succeeds(self):
         self.assertTrue(write_authentication_events([]))
+
+    def test_13_amending_a_written_event_marks_it_changed(self):
+        context = ConditionalAccessContext()
+        event = context.stage(self._event("alice"))
+        context.flush()
+
+        self.assertTrue(event.written)
+        self.assertFalse(event.changed)
+
+        event.event_type = AuthEventType.NOT_AUTHORIZED
+
+        self.assertTrue(event.changed)
+        self.assertListEqual([event], context.amended)
+        self.assertListEqual([], context.unwritten)
+
+    def test_14_amending_before_the_write_does_not_mark_it_changed(self):
+        # Only an assignment made after the row exists needs an UPDATE; before that it just lands in the INSERT.
+        context = ConditionalAccessContext()
+        event = context.stage(self._event("alice"))
+        event.event_type = AuthEventType.NOT_AUTHORIZED
+
+        self.assertFalse(event.changed)
+        context.flush()
+
+        self.assertListEqual([], context.amended)
+        self.assertEqual(1, len(get_authentication_logs()))
+
+    def test_15_flush_updates_the_stored_row_of_an_amended_event(self):
+        # The point of the whole exercise: a post-policy correcting the classification after the row was written
+        # still ends up in the database, and does not add a second row.
+        context = ConditionalAccessContext()
+        event = context.stage(self._event("alice", AuthEventType.LOGIN_SUCCESS))
+        context.flush()
+        row_id = event.row_id
+
+        event.event_type = AuthEventType.NOT_AUTHORIZED
+        event.serial = "SER123"
+        self.assertTrue(context.flush())
+
+        entries = get_authentication_logs()
+        self.assertEqual(1, len(entries))
+        self.assertEqual(row_id, entries[0].id)
+        self.assertEqual(str(AuthEventType.NOT_AUTHORIZED), entries[0].event_type)
+        self.assertEqual("SER123", entries[0].serial)
+        self.assertFalse(event.changed)
+
+    def test_16_flush_is_idempotent_after_an_update(self):
+        context = ConditionalAccessContext()
+        event = context.stage(self._event("alice"))
+        context.flush()
+        event.username = "renamed"
+        context.flush()
+
+        self.assertTrue(context.flush())
+        self.assertListEqual(["renamed"], [entry.username for entry in get_authentication_logs()])
+
+    def test_17_failed_update_keeps_the_event_changed_for_a_retry(self):
+        context = ConditionalAccessContext()
+        event = context.stage(self._event("alice"))
+        context.flush()
+
+        # event_type is NOT NULL, so writing this amendment fails.
+        event.event_type = None
+        self.assertFalse(context.flush())
+        self.assertTrue(event.changed)
+
+        # The stored row still holds the last value that could be written.
+        self.assertListEqual([str(AuthEventType.LOGIN_SUCCESS)],
+                             [entry.event_type for entry in get_authentication_logs()])
+
+        # A later flush retries it, and now succeeds.
+        event.event_type = AuthEventType.NOT_AUTHORIZED
+        self.assertTrue(context.flush())
+        self.assertFalse(event.changed)
+        self.assertListEqual([str(AuthEventType.NOT_AUTHORIZED)],
+                             [entry.event_type for entry in get_authentication_logs()])
+
+    def test_18_amending_applies_truncation_like_a_fresh_row(self):
+        context = ConditionalAccessContext()
+        event = context.stage(self._event("alice"))
+        context.flush()
+
+        oversized = "Y" * (authentication_log_column_length["resolver"] + 30)
+        event.resolver = oversized
+        context.flush()
+
+        entry = db.session.scalars(select(AuthenticationLog)).one()
+        self.assertEqual(authentication_log_column_length["resolver"], len(entry.resolver))
+        self.assertEqual(oversized[authentication_log_column_length["resolver"]:],
+                         entry.other_info["truncated"]["resolver"])
+
+    def test_19_update_of_a_deleted_row_is_survived(self):
+        context = ConditionalAccessContext()
+        event = context.stage(self._event("alice"))
+        context.flush()
+        db.session.execute(AuthenticationLog.__table__.delete())
+        db.session.commit()
+
+        event.username = "renamed"
+
+        self.assertTrue(context.flush())
+        self.assertFalse(event.changed)
+        self.assertListEqual([], list(get_authentication_logs()))
+
+    def test_20_post_eval_uses_the_events_current_classification(self):
+        # The evaluation reads the classification off the event, so a reclassification cannot leave it evaluating an
+        # outcome that no longer holds - there is no second copy to keep in step.
+        context = ConditionalAccessContext()
+        context.stage(self._event("alice", AuthEventType.LOGIN_SUCCESS))
+        context.principal = AuthPrincipal(user=User("cornelius", self.realm1))
+        context.source_ip = "10.0.0.1"
+
+        context.reclassify(AuthEventType.NOT_AUTHORIZED)
+        with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies") as evaluate:
+            evaluate.return_value = []
+            context.run_post_eval()
+
+        evaluate.assert_called_once_with(context.principal.user, AuthEventType.NOT_AUTHORIZED, source_ip="10.0.0.1")
+
+    def test_21_reclassify_applies_only_the_fields_given(self):
+        context = ConditionalAccessContext()
+        event = context.stage(self._event("alice"))
+        event.serial = "TOK001"
+
+        context.reclassify(AuthEventType.ENROLLMENT_TRIGGERED, transaction_id="txn-1")
+
+        self.assertEqual(AuthEventType.ENROLLMENT_TRIGGERED, event.event_type)
+        self.assertEqual("txn-1", event.transaction_id)
+        # Not passed, so untouched rather than cleared.
+        self.assertEqual("TOK001", event.serial)
+
+    def test_22_reclassify_without_a_staged_event_is_a_noop(self):
+        # Nothing to correct: a caller with no event of its own has to stage one.
+        context = ConditionalAccessContext()
+        context.reclassify(AuthEventType.NOT_AUTHORIZED)
+        self.assertFalse(context.has_data)
+
+    def test_23_post_eval_without_a_staged_event_does_nothing(self):
+        # Staging an event is the signal to evaluate, so a request that logged nothing evaluates nothing.
+        context = ConditionalAccessContext()
+        with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies") as evaluate:
+            self.assertListEqual([], context.run_post_eval())
+        evaluate.assert_not_called()
+
+    def test_24_post_eval_does_not_repeat_the_same_classification(self):
+        # /auth runs it in-view for the notices; request teardown must not repeat that same evaluation.
+        context = ConditionalAccessContext()
+        context.stage(self._event("alice"))
+        with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies") as evaluate:
+            evaluate.return_value = ["a notice"]
+            self.assertListEqual(["a notice"], context.run_post_eval())
+            self.assertListEqual([], context.run_post_eval())
+        self.assertEqual(1, evaluate.call_count)
+
+    def test_24b_post_eval_runs_again_for_a_corrected_classification(self):
+        # The guard is "once per classification", not "once": if a post-policy corrects the outcome after an endpoint
+        # already evaluated in-view, teardown has to evaluate the correction - otherwise the engine is left having
+        # judged an outcome that no longer holds.
+        context = ConditionalAccessContext()
+        context.stage(self._event("alice", AuthEventType.LOGIN_SUCCESS))
+        with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies") as evaluate:
+            evaluate.return_value = []
+            context.run_post_eval()
+            context.reclassify(AuthEventType.NOT_AUTHORIZED)
+            context.run_post_eval()
+            # ... and still not a third time for the same corrected outcome.
+            context.run_post_eval()
+
+        self.assertListEqual([AuthEventType.LOGIN_SUCCESS, AuthEventType.NOT_AUTHORIZED],
+                             [call.args[1] for call in evaluate.call_args_list])
+
+    def test_25_engine_error_is_swallowed(self):
+        # The evaluation only writes state the *next* request consults, so a failure must never surface on the
+        # response that already completed.
+        context = ConditionalAccessContext()
+        context.stage(self._event("alice"))
+        with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies",
+                        side_effect=RuntimeError("engine boom")):
+            self.assertListEqual([], context.run_post_eval())
+
+    def test_26_evaluation_counts_over_a_committed_read_view(self):
+        # What keeps the counts off a stale snapshot: finalize() flushes before evaluating, and that commit ends the
+        # read transaction the pre-checks opened. Without it, MySQL/MariaDB REPEATABLE READ would hide from the count
+        # rows a concurrent request committed since - which is why no explicit read-view reset is needed here.
+        context = ConditionalAccessContext()
+        context.stage(self._event("alice"))
+        get_ca_session().execute(select(AuthenticationLog)).all()
+        self.assertTrue(get_ca_session().in_transaction())
+
+        with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies") as evaluate:
+            evaluate.return_value = []
+            context.finalize()
+
+        evaluate.assert_called_once()
+        # The flush committed, so the counting started from a fresh transaction rather than the pre-check's snapshot.
+        self.assertFalse(context.unwritten)

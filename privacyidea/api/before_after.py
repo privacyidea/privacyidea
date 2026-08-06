@@ -37,6 +37,7 @@ from .lib.utils import (get_all_params, get_before_request_config, get_optional,
                         logged_in_user_from_token)
 from .container import container_blueprint
 from ..lib.container import find_container_for_token, find_container_by_serial
+from ..lib.conditional_access.request_context import peek_ca_context, reset_ca_context
 from ..lib.framework import get_app_config_value
 from ..lib.policies.actions import PolicyAction
 from ..lib.user import get_user_from_param
@@ -102,6 +103,7 @@ def log_begin_request():
 
 @token_blueprint.teardown_app_request
 def teardown_request(exc):
+    _finalize_conditional_access()
     try:
         if g.audit_object.has_data:
             g.audit_object.finalize_log()
@@ -112,6 +114,33 @@ def teardown_request(exc):
         pass
     call_finalizers()
     log.debug(f"End handling of request {redact_url(request.full_path)!r}")
+
+
+def _finalize_conditional_access():
+    """
+    Write the authentication-log rows this request staged, then let the conditional-access engine react to them.
+
+    This runs before the audit entry is written, so a later change can record the engine's outcome on it, and before
+    ``call_finalizers`` closes the conditional-access session. Requests that logged no authentication event have no
+    buffer and skip it entirely.
+
+    The buffer is then discarded, because it describes *this* request. It lives on ``g``, and ``g`` is per app
+    context rather than per request: Flask reuses an app context that is already pushed, so several requests can share
+    one - every request dispatched by a test, for instance. Without the reset the second request would re-flush the
+    first one's events and find its policy evaluation already done. The conditional-access session is released the
+    same way, by ``call_finalizers`` below.
+    """
+    context = peek_ca_context()
+    if context is None:
+        return
+    try:
+        if context.has_data:
+            context.finalize()
+    except Exception as ex:
+        # Teardown must not raise: the response has already been sent.
+        log.warning(f"Finalizing the conditional-access work of this request failed: {ex!r}")
+    finally:
+        reset_ca_context()
 
 
 @token_blueprint.before_request

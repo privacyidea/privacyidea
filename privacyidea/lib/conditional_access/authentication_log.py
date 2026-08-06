@@ -181,15 +181,18 @@ def _store_overflow(other_info: dict | None, overflow: dict[str, str]) -> dict |
 @dataclass
 class PendingAuthEvent:
     """
-    One authentication-log row, described but not yet written.
+    One authentication-log row, described here rather than written straight away.
 
-    The values are held **raw**: truncation to the column lengths happens when the row is built
-    (:func:`_build_entry`), so a value a later request stage lengthens - a post-policy extending ``serial``, say - is
-    cut against its final length rather than an intermediate one. ``other_info`` is likewise the caller's dict, which
-    the row build merges any truncation overflow into.
+    The event is the **source of truth for its row**: assigning to a field is all a later request stage has to do,
+    whether or not the row exists yet. Until it exists the assignment simply lands in the eventual ``INSERT``; once it
+    exists the event is marked :attr:`changed` and the next flush issues an ``UPDATE``. Without that, an assignment
+    after the row was written would be lost twice over - skipped by the next flush *and* invisible to the stored row,
+    since :func:`_build_entry` copies the values into a separate ORM object.
 
-    *row_id* is ``None`` until the event has been written and carries the row's id afterwards, so it doubles as the
-    "already persisted" flag (see :meth:`ConditionalAccessContext.flush`).
+    The values are held **raw**: truncation to the column lengths happens when the row is built, so a value a later
+    stage lengthens - a post-policy extending ``serial``, say - is cut against its final length rather than an
+    intermediate one. ``other_info`` is likewise the caller's dict, which the row build merges truncation overflow
+    into.
     """
     event_type: AuthEventType
     transaction_id: str | None = None
@@ -203,7 +206,28 @@ class PendingAuthEvent:
     serial: str | None = None
     attempt_id: str | None = None
     other_info: dict | None = None
+    # Id of the stored row, set once it has been committed; None means "not written yet".
     row_id: int | None = None
+    # Set when a field is assigned after the row was written, i.e. the stored row no longer matches this event.
+    _changed: bool = field(init=False, default=False, repr=False, compare=False)
+
+    def __setattr__(self, name: str, value) -> None:
+        # ``row_id`` and the flag itself are bookkeeping rather than row content, so they never mark the event
+        # changed. ``self.__dict__`` is read directly because the dataclass __init__ assigns the fields through here
+        # too, at which point ``row_id`` does not exist yet.
+        if name not in ("row_id", "_changed") and self.__dict__.get("row_id") is not None:
+            object.__setattr__(self, "_changed", True)
+        object.__setattr__(self, name, value)
+
+    @property
+    def written(self) -> bool:
+        """Whether the row has been committed."""
+        return self.row_id is not None
+
+    @property
+    def changed(self) -> bool:
+        """Whether the stored row is out of date because a field was assigned after it was written."""
+        return self.written and self._changed
 
 
 # The columns of an entry that are truncated to their column length, and the separator to cut on (see _truncate).
@@ -223,10 +247,11 @@ _TRUNCATED_COLUMNS = {
 }
 
 
-def _build_entry(event: PendingAuthEvent) -> AuthenticationLog:
+def _row_values(event: PendingAuthEvent) -> dict:
     """
-    Build the :class:`AuthenticationLog` row for *event*, truncating every column to its length and folding the
-    overflow into ``other_info`` so nothing is silently lost.
+    The column values to store for *event*: every column truncated to its length, with the cut-off remainder folded
+    into ``other_info`` so nothing is silently lost. Shared by the insert and the update path, so an amended event is
+    truncated exactly like a fresh one.
     """
     stored: dict[str, str | None] = {}
     overflow: dict[str, str] = {}
@@ -235,16 +260,21 @@ def _build_entry(event: PendingAuthEvent) -> AuthenticationLog:
         stored[column] = result.stored
         if result.overflow is not None:
             overflow[column] = result.overflow
-    return AuthenticationLog(**stored, other_info=_store_overflow(event.other_info, overflow))
+    return {**stored, "other_info": _store_overflow(event.other_info, overflow)}
+
+
+def _build_entry(event: PendingAuthEvent) -> AuthenticationLog:
+    """Build the :class:`AuthenticationLog` row for *event*."""
+    return AuthenticationLog(**_row_values(event))
 
 
 def write_authentication_events(events: Sequence[PendingAuthEvent]) -> bool:
     """
-    Write *events* as **one** transaction, in the given order, and record each row's id on its event.
+    Insert *events* as **one** transaction, in the given order, and record each row's id on its event.
 
     Writing the authentication log must never break the authentication itself, so a failure is logged and swallowed
-    and the events keep ``row_id is None``. The insert runs on the conditional-access session, so neither the commit
-    nor a rollback touches the request's own pending writes.
+    and the events keep ``row_id is None`` - which makes them eligible for a later retry. The insert runs on the
+    conditional-access session, so neither the commit nor a rollback touches the request's own pending writes.
 
     :return: whether the transaction was committed
     """
@@ -253,12 +283,52 @@ def write_authentication_events(events: Sequence[PendingAuthEvent]) -> bool:
     entries = [_build_entry(event) for event in events]
     label = ("the authentication log entry" if len(entries) == 1
              else f"the {len(entries)} authentication log entries")
+    # The ids are read inside the guarded block, from an explicit flush that assigns the primary keys, and only
+    # published to the events once the commit succeeded. Reading them after the commit instead would leave a failure
+    # there unguarded, and an event whose row *was* committed but never stamped would be re-inserted by the next
+    # flush.
+    row_ids: list[int] = []
     with guarded_write(label) as outcome:
-        get_ca_session().add_all(entries)
+        session = get_ca_session()
+        session.add_all(entries)
+        session.flush()
+        row_ids = [entry.id for entry in entries]
     if not outcome.succeeded:
         return False
-    for event, entry in zip(events, entries):
-        event.row_id = entry.id
+    for event, row_id in zip(events, row_ids):
+        event.row_id = row_id
+    return True
+
+
+def update_authentication_events(events: Sequence[PendingAuthEvent]) -> bool:
+    """
+    Re-write the stored rows of *events* that were amended after being written, as **one** transaction, and clear
+    their changed flag.
+
+    This is what makes a :class:`PendingAuthEvent` the source of truth for its row: a later request stage - a
+    post-policy correcting the classification, say - just assigns to the event, and the row is brought back in line
+    here. Like the insert, a failure is logged and swallowed; the events keep their changed flag, so a later flush
+    retries them.
+
+    :return: whether the transaction was committed
+    """
+    if not events:
+        return True
+    label = ("the amended authentication log entry" if len(events) == 1
+             else f"the {len(events)} amended authentication log entries")
+    with guarded_write(label) as outcome:
+        session = get_ca_session()
+        for event in events:
+            entry = session.get(AuthenticationLog, event.row_id)
+            if entry is None:
+                log.info(f"Cannot update authentication log entry {event.row_id!r}: not found.")
+                continue
+            for column, value in _row_values(event).items():
+                setattr(entry, column, value)
+    if not outcome.succeeded:
+        return False
+    for event in events:
+        event._changed = False
     return True
 
 
@@ -315,51 +385,6 @@ def delete_authentication_log_event(event_id: int) -> None:
     stmt = delete(AuthenticationLog).where(AuthenticationLog.id == event_id)
     with guarded_write(f"the deletion of authentication log entry {event_id}", reraise=True):
         get_ca_session().execute(stmt)
-
-
-def reclassify_authentication_log_event(event_id: int, event_type: AuthEventType,
-                                        serial: str | None = None, transaction_id: str | None = None) -> None:
-    """
-    Override the classification of an existing entry written earlier in the same request.
-
-    This is for the case where a later request stage changes the outcome of an already-logged event — specifically
-    ``enroll_via_multichallenge``, where a successful authentication (logged as ``LOGIN_SUCCESS`` in check()'s finally)
-    is turned into an enrollment challenge by a post-policy.
-
-    Like the insert, this must never break the response: a failure is logged and swallowed, and it runs on the
-    conditional-access session so a rollback leaves the request's own pending writes alone.
-
-    :param event_id: id of the entry to reclassify
-    :param event_type: the new event type
-    :param serial: the new serial (default None)
-    :param transaction_id: the new transaction_id (default None)
-    """
-    # The lookup is inside the guarded block so a failing read cannot break the response either.
-    with guarded_write(f"authentication log entry {event_id} reclassified to {event_type}"):
-        entry = get_ca_session().get(AuthenticationLog, event_id)
-        if entry is None:
-            log.info(f"Cannot reclassify authentication log entry {event_id!r}: not found.")
-            return
-        overflow: dict[str, str] = {}
-
-        truncated_event_type = _truncate("event_type", event_type)
-        entry.event_type = truncated_event_type.stored
-        if truncated_event_type.overflow is not None:
-            overflow["event_type"] = truncated_event_type.overflow
-
-        if serial is not None:
-            truncated_serial = _truncate("serial", serial, separator=",")
-            entry.serial = truncated_serial.stored
-            if truncated_serial.overflow is not None:
-                overflow["serial"] = truncated_serial.overflow
-
-        if transaction_id:
-            truncated_transaction_id = _truncate("transaction_id", transaction_id)
-            entry.transaction_id = truncated_transaction_id.stored
-            if truncated_transaction_id.overflow is not None:
-                overflow["transaction_id"] = truncated_transaction_id.overflow
-
-        entry.other_info = _store_overflow(entry.other_info, overflow)
 
 
 def get_authentication_log_event(event_id: int) -> AuthenticationLog | None:
