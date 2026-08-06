@@ -11,6 +11,13 @@ $font-size-default: 14px;
   font-size: $font-size-default;
 }
 
+.utils-group,
+.utils-group-self-service {
+  .mat-mdc-icon-button {
+    --mat-icon-button-icon-color: var(--mat-sys-on-surface);
+  }
+}
+
 .utils-group {
   display: flex;
   flex-direction: row;
@@ -58,12 +65,13 @@ $font-size-default: 14px;
 .profile-text {
   @include text-label;
   font-weight: bold;
-  margin-right: var(--global-gap);
+  margin-left: -8px;
+  margin-right: 8px;
 }
 
 .node-text {
   @include text-label;
-  max-width: 12rem;
+  width: 64px;
   overflow: hidden;
   text-overflow: ellipsis;
 }

@@ -226,6 +226,11 @@ $breakpoint-compact: 1822px;
   display: none !important;
 }
 
+.docs-button-icon,
+.translate-button {
+  --mat-icon-button-icon-color: var(--mat-sys-on-surface);
+}
+
 .more-button {
   flex-shrink: 0;
 }

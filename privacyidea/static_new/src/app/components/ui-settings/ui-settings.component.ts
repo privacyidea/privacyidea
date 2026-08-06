@@ -16,26 +16,36 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject } from "@angular/core";
-import { MatButtonModule } from "@angular/material/button";
+import { Component, computed, inject } from "@angular/core";
+import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
-import { MatMenuModule } from "@angular/material/menu";
-import { MatTooltipModule } from "@angular/material/tooltip";
+import { MatSelectModule } from "@angular/material/select";
 import { UI_LOCALES } from "@core/locale";
+import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
+import { ThemeService } from "@services/theme/theme.service";
 import { UiPreferencesService, UiPreferencesServiceInterface } from "@services/user-settings/ui-preferences.service";
 
 @Component({
-  selector: "app-language-switcher",
-  standalone: true,
-  imports: [MatButtonModule, MatIconModule, MatMenuModule, MatTooltipModule],
-  templateUrl: "./language-switcher.component.html"
+  selector: "app-ui-settings",
+  imports: [DetailsCardComponent, MatFormFieldModule, MatIconModule, MatSelectModule],
+  templateUrl: "./ui-settings.component.html",
+  styleUrl: "./ui-settings.component.scss"
 })
-export class LanguageSwitcherComponent {
+export class UISettingsComponent {
+  private readonly themeService = inject(ThemeService);
   private readonly uiPreferencesService: UiPreferencesServiceInterface = inject(UiPreferencesService);
   protected readonly locales = UI_LOCALES;
   protected readonly preferredLocale = this.uiPreferencesService.preferredLocale;
+  protected readonly theme = this.themeService.visualTheme;
+  protected readonly themeToggleLabel = computed(() =>
+    this.theme() === "dark" ? $localize`Switch to light theme` : $localize`Switch to dark theme`
+  );
 
-  protected switchTo(code: string): void {
+  protected toggleTheme(): void {
+    this.themeService.setTheme(this.theme() === "dark" ? "light" : "dark");
+  }
+
+  protected selectLocale(code: string): void {
     this.uiPreferencesService.switchLocale(code);
   }
 }

@@ -16,6 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-export const APP_THEME_COOKIE_NAME = "pi_ui_theme";
-export const BEARER_TOKEN_STORAGE_KEY = "bearer_token";
-export const AUTH_DATA_STORAGE_KEY = "auth_data";
+import { signal } from "@angular/core";
+import { UiPreferencesServiceInterface } from "@services/user-settings/ui-preferences.service";
+
+export class MockUiPreferencesService implements UiPreferencesServiceInterface {
+  readonly preferredLocale = signal("en");
+  normalizeLocaleUrl = jest.fn();
+  sync = jest.fn();
+  switchLocale = jest.fn();
+}
