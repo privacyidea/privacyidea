@@ -16,6 +16,20 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-export const APP_THEME_COOKIE_NAME = "pi_ui_theme";
-export const BEARER_TOKEN_STORAGE_KEY = "bearer_token";
-export const AUTH_DATA_STORAGE_KEY = "auth_data";
+
+/** Lifetime of a remembered UI preference. */
+const ONE_YEAR_IN_SECONDS = 31536000;
+
+/** The value of a cookie, or null when it is not set. */
+export function readCookie(name: string): string | null {
+  const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+/**
+ * Stores a UI preference for a year. These are readable by the backend, which picks the
+ * locale bundle to serve from them, so they cannot live in local storage.
+ */
+export function writeCookie(name: string, value: string, maxAgeInSeconds = ONE_YEAR_IN_SECONDS): void {
+  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAgeInSeconds}; SameSite=Lax`;
+}
