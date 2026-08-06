@@ -176,6 +176,12 @@ class GuardedWriteTestCase(MyTestCase):
         self.assertListEqual(["pending-on-request-session"], self._stored_usernames())
 
     def test_07_write_lock_on_the_request_session_is_a_contained_failure(self):
+        # Database write locking behavior is SQLite-specific. On MariaDB and PostgreSQL, row-level locking
+        # allows concurrent writes and this test does not apply.
+        if db.engine.dialect.name != "sqlite":
+            self.skipTest("Database write locking behavior is SQLite-specific. On MariaDB and PostgreSQL, "
+                          "row-level locking allows concurrent writes and this test does not apply.")
+
         # Two sessions means two connections. On SQLite, which locks the whole database for writing, a request
         # session that has flushed without committing blocks the conditional-access write: it waits out the
         # driver's lock timeout (5s by default) and then fails. The entry is lost, but the failure stays
@@ -192,6 +198,28 @@ class GuardedWriteTestCase(MyTestCase):
         self.assertIsInstance(outcome.error, OperationalError)
         db.session.commit()
         self.assertListEqual(["flushed-on-request-session"], self._stored_usernames())
+
+    def test_07b_flushed_lock_succeeds_on_non_sqlite(self):
+        # On MariaDB and PostgreSQL with row-level locking, a conditional-access write succeeds even when the
+        # request session has a flushed-but-uncommitted transaction (the opposite of SQLite behavior in test_07).
+        # This documents the production database behavior.
+        if db.engine.dialect.name == "sqlite":
+            self.skipTest("This test documents non-SQLite (row-level locking) behavior. "
+                          "See test_07 for SQLite's database-level locking behavior.")
+
+        # Add and flush work on the request session without committing
+        pending = self._entry("flushed-on-request-session")
+        db.session.add(pending)
+        db.session.flush()
+
+        # The conditional-access write succeeds despite the lock, because MariaDB/PostgreSQL use row-level locking
+        with guarded_write("an authentication log entry") as outcome:
+            get_ca_session().add(self._entry("alice"))
+
+        # On production databases, the write succeeds and both entries are stored
+        self.assertTrue(outcome.succeeded)
+        db.session.commit()
+        self.assertListEqual(["alice", "flushed-on-request-session"], self._stored_usernames())
 
     def test_08_commits_once_the_request_session_released_its_lock(self):
         # The mitigation for the above: with the request session committed (or rolled back) first, there is no
