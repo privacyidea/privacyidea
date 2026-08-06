@@ -21,7 +21,7 @@ import { Component, inject, linkedSignal, output, WritableSignal } from "@angula
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
-import { MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
+import { MatFormField, MatHint, MatLabel, MatSuffix } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatPaginator, PageEvent } from "@angular/material/paginator";
@@ -44,6 +44,7 @@ import { TokenDetails, TokenService, TokenServiceInterface } from "@services/tok
     MatLabel,
     MatOption,
     MatPaginator,
+    MatSuffix,
     NgClass,
     ClearableInputComponent
   ],

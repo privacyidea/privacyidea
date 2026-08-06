@@ -18,7 +18,7 @@
  **/
 import { provideZonelessChangeDetection } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
+import { MatAutocomplete } from "@angular/material/autocomplete";
 import { MatCheckbox, MatCheckboxChange } from "@angular/material/checkbox";
 import { MatPaginator } from "@angular/material/paginator";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
@@ -144,21 +144,14 @@ describe("ContainerAddTokenComponent", () => {
     expect(tokenService.activeFilter().hiddenFilterMap.get("type_list")).toBe("hotp,webauthn");
   });
 
-  it("renders the paginator inside the autocomplete panel and writes page events to the token service", () => {
+  it("renders the paginator next to the filter input and writes page events to the token service", () => {
     tokenService.tokenResourceValue.set({ count: 22, current: 1, tokens: [] });
-
-    const trigger = fixture.debugElement
-      .query(By.directive(MatAutocompleteTrigger))
-      .injector.get(MatAutocompleteTrigger);
-    trigger.openPanel();
     fixture.detectChanges();
 
-    const panel = document.querySelector(".mat-mdc-autocomplete-panel") as HTMLElement;
-    expect(panel.querySelector("mat-paginator")).not.toBeNull();
+    const paginator = fixture.debugElement.query(By.directive(MatPaginator));
+    expect(paginator.nativeElement.closest(".mat-mdc-form-field-icon-suffix")).not.toBeNull();
 
-    fixture.debugElement
-      .query(By.directive(MatPaginator))
-      .componentInstance.page.emit({ pageIndex: 1, pageSize: 5, length: 22 });
+    paginator.componentInstance.page.emit({ pageIndex: 1, pageSize: 5, length: 22 });
 
     expect(tokenService.eventPageSize()).toBe(5);
     expect(tokenService.pageIndex()).toBe(1);

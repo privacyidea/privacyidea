@@ -23,7 +23,7 @@
       i18n>
       Add Token
     </h4>
-    <div class="flex-row filter-paginator-container">
+    <div class="flex-row margin-bottom-16">
       <section>
         <mat-checkbox
           [checked]="showOnlyTokenInContainer()"
@@ -32,7 +32,7 @@
         </mat-checkbox>
       </section>
     </div>
-    <mat-form-field class="margin-bottom-16 input-width-xl">
+    <mat-form-field class="add-token-filter-field width-100">
       <mat-label i18n>Add Token to Container</mat-label>
       <app-clearable-input
         (clearButtonClick)="clearFilter()"
@@ -47,6 +47,17 @@
           matInput
           placeholder="Example query: 'type: hotp serial: 123'" />
       </app-clearable-input>
+      <div
+        matSuffix
+        class="add-token-paginator"
+        (mousedown)="$event.preventDefault()">
+        <mat-paginator
+          (page)="onPageEvent($event)"
+          [hidePageSize]="true"
+          [length]="total()"
+          [pageIndex]="pageIndex()"
+          [pageSize]="pageSize()"></mat-paginator>
+      </div>
       @if (showOnlyTokenInContainer()) {
         <mat-hint i18n> Adding a token removes it from its previous container</mat-hint>
       }
@@ -54,16 +65,6 @@
         #tokenAuto="matAutocomplete"
         class="token-option-panel"
         (opened)="applyCompatibleTokenTypesFilter()">
-        <div
-          class="token-option-paginator"
-          (mousedown)="$event.preventDefault()">
-          <mat-paginator
-            (page)="onPageEvent($event)"
-            [hidePageSize]="true"
-            [length]="total()"
-            [pageIndex]="pageIndex()"
-            [pageSize]="pageSize()"></mat-paginator>
-        </div>
         @if (tokenOptions().length === 0) {
           <mat-option
             [disabled]="true"
@@ -85,9 +86,11 @@
               i18n>
               {{ option["active"] ? "active" : "deactivated" }}
             </span>
-            <span class="token-option-span">
-              {{ option["username"] }}
-            </span>
+            @if (option["username"]) {
+              <span class="token-option-span">
+                {{ option["username"] }}
+              </span>
+            }
             <mat-icon>add</mat-icon>
           </mat-option>
         }
