@@ -24,9 +24,11 @@ response of the creation and the rotation endpoints. It is never stored and can
 never be retrieved again; if it is lost, the key must be rotated.
 
 All endpoints require admin authentication. Listing is gated by the admin policy
-action :ref:`policy_clients_list`, creation/modification by
-:ref:`policy_clients_add`, deletion by :ref:`policy_clients_delete` and key
-rotation by :ref:`policy_clients_rotate`.
+action :ref:`policy_api_client_list`, creation by :ref:`policy_api_client_add`,
+modification by :ref:`policy_api_client_edit`, deletion by
+:ref:`policy_api_client_delete` and key rotation by
+:ref:`policy_api_client_rotate`. The remembered-device endpoints are gated by
+:ref:`policy_remembered_device_list` and :ref:`policy_remembered_device_revoke`.
 """
 import logging
 
@@ -52,8 +54,8 @@ clients_blueprint = Blueprint('clients_blueprint', __name__)
 
 
 @clients_blueprint.route('/', methods=['POST'])
-@prepolicy(check_base_action, request, PolicyAction.CLIENTS_ADD)
-@event("clients_add", request, g)
+@prepolicy(check_base_action, request, PolicyAction.API_CLIENT_ADD)
+@event("api_client_add", request, g)
 @log_with(log)
 def create_client_api():
     """
@@ -63,7 +65,7 @@ def create_client_api():
     ``result.value.api_key``. This is the only time the key is exposed, so it
     must be shown to the administrator and cannot be retrieved later.
 
-    Requires admin authentication and the policy action :ref:`policy_clients_add`.
+    Requires admin authentication and the policy action :ref:`policy_api_client_add`.
 
     :jsonparam display_name: a human readable name for the client.
     :jsonparam client_type: the type of client, e.g. 'windows_cp', 'keycloak', 'entraid'.
@@ -85,8 +87,8 @@ def create_client_api():
 
 @clients_blueprint.route('/<client_id>', methods=['GET'])
 @clients_blueprint.route('/', methods=['GET'])
-@prepolicy(check_base_action, request, PolicyAction.CLIENTS_LIST)
-@event("clients_list", request, g)
+@prepolicy(check_base_action, request, PolicyAction.API_CLIENT_LIST)
+@event("api_client_list", request, g)
 @log_with(log)
 def list_clients_api(client_id=None):
     """
@@ -95,7 +97,7 @@ def list_clients_api(client_id=None):
 
     The API key is never included; only the non-sensitive ``key_id`` is.
 
-    Requires admin authentication and the policy action :ref:`policy_clients_list`.
+    Requires admin authentication and the policy action :ref:`policy_api_client_list`.
 
     :param client_id: optional path component selecting a single client.
     :status 200: a list of clients in ``result.value``.
@@ -110,8 +112,8 @@ def list_clients_api(client_id=None):
 
 
 @clients_blueprint.route('/<client_id>', methods=['PATCH'])
-@prepolicy(check_base_action, request, PolicyAction.CLIENTS_ADD)
-@event("clients_update", request, g)
+@prepolicy(check_base_action, request, PolicyAction.API_CLIENT_EDIT)
+@event("api_client_edit", request, g)
 @log_with(log)
 def update_client_api(client_id):
     """
@@ -119,7 +121,7 @@ def update_client_api(client_id):
     config); only the fields present in the request are changed. The API key is
     not affected; use the rotate endpoint to replace it.
 
-    Requires admin authentication and the policy action :ref:`policy_clients_add`.
+    Requires admin authentication and the policy action :ref:`policy_api_client_edit`.
 
     :param client_id: path component, the id of the client.
     :jsonparam display_name: the new display name.
@@ -139,8 +141,8 @@ def update_client_api(client_id):
 
 
 @clients_blueprint.route('/<client_id>/rotate', methods=['POST'])
-@prepolicy(check_base_action, request, PolicyAction.CLIENTS_ROTATE)
-@event("clients_rotate", request, g)
+@prepolicy(check_base_action, request, PolicyAction.API_CLIENT_ROTATE)
+@event("api_client_rotate", request, g)
 @log_with(log)
 def rotate_client_api(client_id):
     """
@@ -148,7 +150,7 @@ def rotate_client_api(client_id):
     and a new plaintext key is returned in ``result.value.api_key``. As with
     creation, this is the only time the new key is exposed.
 
-    Requires admin authentication and the policy action :ref:`policy_clients_rotate`.
+    Requires admin authentication and the policy action :ref:`policy_api_client_rotate`.
 
     :param client_id: path component, the id of the client.
     :status 200: the client (including the new ``api_key``) in ``result.value``.
@@ -162,8 +164,8 @@ def rotate_client_api(client_id):
 
 
 @clients_blueprint.route('/remembered_devices', methods=['DELETE'])
-@prepolicy(check_base_action, request, PolicyAction.CLIENTS_DELETE)
-@event("clients_remembered_devices_revoke", request, g)
+@prepolicy(check_base_action, request, PolicyAction.REMEMBERED_DEVICE_REVOKE)
+@event("remembered_device_revoke_bulk", request, g)
 @log_with(log)
 def revoke_remembered_devices_api():
     """
@@ -173,11 +175,11 @@ def revoke_remembered_devices_api():
 
     A ``realm`` is always required (a user is identified within a realm), so this
     can never wipe every device on the system at once. The acting
-    administrator's realm restrictions apply: the :ref:`policy_clients_delete`
+    administrator's realm restrictions apply: the :ref:`policy_remembered_device_revoke`
     action is matched against the requested ``realm``, so a realm-scoped admin
     cannot revoke another realm's devices.
 
-    Requires admin authentication and the policy action :ref:`policy_clients_delete`.
+    Requires admin authentication and the policy action :ref:`policy_remembered_device_revoke`.
 
     :query realm: the realm whose devices to revoke (required).
     :query user: optional login to restrict the revocation to a single user
@@ -205,8 +207,8 @@ def revoke_remembered_devices_api():
 
 
 @clients_blueprint.route('/<client_id>/remembered_devices', methods=['GET'])
-@prepolicy(check_base_action, request, PolicyAction.CLIENTS_LIST)
-@event("clients_remembered_devices_list", request, g)
+@prepolicy(check_base_action, request, PolicyAction.REMEMBERED_DEVICE_LIST)
+@event("remembered_device_list", request, g)
 @log_with(log)
 def list_client_remembered_devices_api(client_id):
     """
@@ -216,7 +218,7 @@ def list_client_remembered_devices_api(client_id):
     ``series_id`` (used to target revocation) and non-sensitive metadata
     (user, IP, user agent, created / last used / expiry).
 
-    Requires admin authentication and the policy action :ref:`policy_clients_list`.
+    Requires admin authentication and the policy action :ref:`policy_remembered_device_list`.
 
     :param client_id: path component, the id of the client.
     :status 200: a list of devices in ``result.value``.
@@ -231,8 +233,8 @@ def list_client_remembered_devices_api(client_id):
 
 
 @clients_blueprint.route('/<client_id>/remembered_devices', methods=['DELETE'])
-@prepolicy(check_base_action, request, PolicyAction.CLIENTS_DELETE)
-@event("clients_remembered_devices_revoke_all", request, g)
+@prepolicy(check_base_action, request, PolicyAction.REMEMBERED_DEVICE_REVOKE)
+@event("remembered_device_revoke_all", request, g)
 @log_with(log)
 def revoke_client_remembered_devices_api(client_id):
     """
@@ -244,7 +246,7 @@ def revoke_client_remembered_devices_api(client_id):
     a client id cannot revoke another client's devices, and devices created
     between listing and revoking are still caught.
 
-    Requires admin authentication and the policy action :ref:`policy_clients_delete`.
+    Requires admin authentication and the policy action :ref:`policy_remembered_device_revoke`.
 
     :param client_id: path component, the id of the client.
     :query realm: optional, restrict the revocation to this realm.
@@ -282,15 +284,15 @@ def revoke_client_remembered_devices_api(client_id):
 
 
 @clients_blueprint.route('/<client_id>/remembered_devices/<series_id>', methods=['DELETE'])
-@prepolicy(check_base_action, request, PolicyAction.CLIENTS_DELETE)
-@event("clients_remembered_device_revoke", request, g)
+@prepolicy(check_base_action, request, PolicyAction.REMEMBERED_DEVICE_REVOKE)
+@event("remembered_device_revoke", request, g)
 @log_with(log)
 def revoke_client_remembered_device_api(client_id, series_id):
     """
     Revoke a single remembered device of a client. The revocation is scoped to
     the client, so a client id cannot be used to revoke another client's device.
 
-    Requires admin authentication and the policy action :ref:`policy_clients_delete`.
+    Requires admin authentication and the policy action :ref:`policy_remembered_device_revoke`.
 
     :param client_id: path component, the id of the client.
     :param series_id: path component, the series id of the device.
@@ -304,14 +306,14 @@ def revoke_client_remembered_device_api(client_id, series_id):
 
 
 @clients_blueprint.route('/<client_id>', methods=['DELETE'])
-@prepolicy(check_base_action, request, PolicyAction.CLIENTS_DELETE)
-@event("clients_delete", request, g)
+@prepolicy(check_base_action, request, PolicyAction.API_CLIENT_DELETE)
+@event("api_client_delete", request, g)
 @log_with(log)
 def delete_client_api(client_id):
     """
     Delete the client with the given id.
 
-    Requires admin authentication and the policy action :ref:`policy_clients_delete`.
+    Requires admin authentication and the policy action :ref:`policy_api_client_delete`.
 
     :param client_id: path component, the id of the client.
     :status 200: ``result.value`` is the id of the deleted client.

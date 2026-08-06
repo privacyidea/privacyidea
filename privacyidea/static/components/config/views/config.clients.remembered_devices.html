@@ -16,6 +16,52 @@
     <span translate>Back to clients</span>
 </a>
 
+<button class="btn btn-danger btn-sm"
+        ng-show="checkRight('remembered_device_revoke')"
+        ng-hide="ui.revokeAllDialog"
+        ng-disabled="rememberedDevices.length === 0"
+        ng-click="ui.revokeAllDialog = true">
+    <span class="glyphicon glyphicon-trash"></span>
+    <span translate>Revoke all for this client</span>
+</button>
+<span ng-show="ui.revokeAllDialog">
+    <button class="btn btn-danger btn-sm" ng-click="revokeAllForClient()">
+        <span translate>Confirm: revoke all remembered devices of this client</span>
+    </button>
+    <button class="btn btn-default btn-sm" ng-click="ui.revokeAllDialog = false">
+        <span translate>Cancel</span>
+    </button>
+</span>
+
+<div class="form-inline" style="margin-top: 1em;">
+    <label translate>Realm</label>
+    <select class="form-control input-sm" ng-model="ui.realm"
+            ng-change="applyRealmFilter()"
+            ng-options="r for r in realmList">
+        <option value="">{{ 'All realms'|translate }}</option>
+    </select>
+    <span ng-show="ui.realm && checkRight('remembered_device_revoke')">
+        <button class="btn btn-danger btn-sm"
+                ng-hide="ui.revokeRealmDialog"
+                ng-disabled="rememberedDevicesFiltered.length === 0"
+                ng-click="ui.revokeRealmDialog = true">
+            <span class="glyphicon glyphicon-trash"></span>
+            <span translate>Revoke all in realm</span> {{ ui.realm }}
+        </button>
+        <button class="btn btn-danger btn-sm"
+                ng-show="ui.revokeRealmDialog"
+                ng-click="revokeAllForSelectedRealm()">
+            <span translate>Confirm: revoke all in</span> {{ ui.realm }}
+            <span translate>(across all clients)</span>
+        </button>
+        <button class="btn btn-default btn-sm"
+                ng-show="ui.revokeRealmDialog"
+                ng-click="ui.revokeRealmDialog = false">
+            <span translate>Cancel</span>
+        </button>
+    </span>
+</div>
+
 <div class="table-responsive" style="margin-top: 1em;">
     <table class="table table-bordered table-responsive table-striped">
         <thead>
@@ -30,8 +76,14 @@
         </tr>
         </thead>
         <tbody>
-        <tr ng-repeat="device in rememberedDevices">
-            <td>{{ device.user_id }}</td>
+        <tr ng-repeat="device in rememberedDevicesFiltered">
+            <td>
+                <a ng-if="device.user"
+                   ui-sref="user.details({username: device.user, realmname: device.realm})">
+                    {{ device.user }}@{{ device.realm }}</a>
+                <span ng-if="!device.user" title="{{ 'This account no longer resolves.'|translate }}">
+                    {{ device.user_id }}@{{ device.realm }}</span>
+            </td>
             <td>{{ device.ip_address || '-' }}</td>
             <td>{{ device.user_agent || '-' }}</td>
             <td>{{ device.created_at | date:'yyyy-MM-dd HH:mm' }}</td>
@@ -39,26 +91,34 @@
             <td>{{ device.expires_at | date:'yyyy-MM-dd HH:mm' }}</td>
             <td>
                 <button class="btn btn-danger btn-sm"
-                        ng-show="checkRight('clients_delete')"
+                        ng-show="checkRight('remembered_device_revoke')"
                         ng-hide="showRevokeDialog[device.series_id]"
                         ng-click="showRevokeDialog[device.series_id] = true">
                     <span class="glyphicon glyphicon-trash"></span>
                     <span translate>Revoke</span>
                 </button>
-                <button class="btn btn-danger btn-sm"
-                        ng-show="showRevokeDialog[device.series_id]"
-                        ng-click="revokeRememberedDevice(device.series_id)">
-                    <span translate>Revoke device</span>
-                </button>
-                <button class="btn btn-default btn-sm"
-                        ng-show="showRevokeDialog[device.series_id]"
-                        ng-click="showRevokeDialog[device.series_id] = false">
-                    <span translate>Cancel</span>
-                </button>
+                <div class="btn-group-vertical" ng-show="showRevokeDialog[device.series_id]">
+                    <button class="btn btn-danger btn-sm"
+                            ng-click="revokeRememberedDevice(device.series_id)">
+                        <span translate>This device</span>
+                    </button>
+                    <button class="btn btn-danger btn-sm" ng-if="device.user"
+                            ng-click="revokeAllForUser(device)"
+                            title="{{ 'Revoke this user\'s remembered devices on all clients'|translate }}">
+                        <span translate>All for</span> {{ device.user }}@{{ device.realm }}
+                    </button>
+                    <button class="btn btn-default btn-sm"
+                            ng-click="showRevokeDialog[device.series_id] = false">
+                        <span translate>Cancel</span>
+                    </button>
+                </div>
             </td>
         </tr>
-        <tr ng-show="rememberedDevices.length === 0">
-            <td colspan="7" translate>This client has no remembered devices.</td>
+        <tr ng-show="rememberedDevicesFiltered.length === 0">
+            <td colspan="7" ng-if="!ui.realm" translate>This client has no remembered devices.</td>
+            <td colspan="7" ng-if="ui.realm">
+                <span translate>This client has no remembered devices in realm</span> {{ ui.realm }}.
+            </td>
         </tr>
         </tbody>
     </table>

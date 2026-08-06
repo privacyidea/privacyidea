@@ -502,13 +502,13 @@ class APIClientRememberedDevicesTestCase(MyApiTestCase):
         self.assertEqual(400, res.status_code, res)
 
     def test_16_revoke_respects_admin_realm_scope(self):
-        # A clients_delete admin policy scoped to a different realm must block a
+        # A remembered_device_revoke admin policy scoped to a different realm must block a
         # revoke targeting realm1 (the acting admin's realm restriction applies).
         set_realm("xcscope", [{"name": self.resolvername1}])
         client, _ = create_client("scoped client", "windows_cp")
         keep = self._device(client.id, "cornelius", realm=self.realm1).series_id
         set_policy("clients_scoped", scope=SCOPE.ADMIN,
-                   action=PolicyAction.CLIENTS_DELETE, realm="xcscope")
+                   action=PolicyAction.REMEMBERED_DEVICE_REVOKE, realm="xcscope")
         try:
             res = self._revoke_devices(realm=self.realm1)
             self.assertEqual(403, res.status_code, res)

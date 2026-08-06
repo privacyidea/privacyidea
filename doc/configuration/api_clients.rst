@@ -25,9 +25,9 @@ Managing API clients
 ---------------------
 
 API clients are managed in the WebUI or over the ``/clients`` REST API.
-The admin actions :ref:`policy_clients_list`,
-:ref:`policy_clients_add`, :ref:`policy_clients_delete` and
-:ref:`policy_clients_rotate` control who may do what.
+The admin actions :ref:`policy_api_client_list`, :ref:`policy_api_client_add`,
+:ref:`policy_api_client_edit`, :ref:`policy_api_client_delete` and
+:ref:`policy_api_client_rotate` control who may do what.
 
 The API key has the form ``pi_<key_id>_<secret>``:
 
@@ -148,11 +148,11 @@ Viewing and revoking remembered devices
 
 Each remembered device is bound to a client and the user's resolver-stable
 identity (resolver, user id and realm). An administrator with
-:ref:`policy_clients_list` can view a client's remembered devices — in the WebUI
-on the client's *Remembered devices* view, or over
+:ref:`policy_remembered_device_list` can view a client's remembered devices — in
+the WebUI on the client's *Remembered devices* view, or over
 :http:get:`/clients/(client_id)/remembered_devices`.
 
-Revoking (which requires :ref:`policy_clients_delete`) invalidates the affected
+Revoking (which requires :ref:`policy_remembered_device_revoke`) invalidates the affected
 device cookies immediately, and comes in two forms:
 
 * a single device, with :http:delete:`/clients/(client_id)/remembered_devices/(series_id)`;

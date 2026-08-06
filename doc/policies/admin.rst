@@ -1326,46 +1326,76 @@ This specifies a whitespace-separated list of container info keys that should be
 
 The following actions govern the management of :ref:`api_clients`.
 
-.. _policy_clients_list:
+.. _policy_api_client_list:
 
-clients_list
-~~~~~~~~~~~~
+api_client_list
+~~~~~~~~~~~~~~~
 
 type: ``bool``
 
 The administrator is allowed to list the :ref:`api_clients` and view their
-non-secret attributes as well as their remembered-device sessions. The API key
-itself is never returned.
+non-secret attributes. The API key itself is never returned.
 
-.. _policy_clients_add:
+.. _policy_api_client_add:
 
-clients_add
-~~~~~~~~~~~
-
-type: ``bool``
-
-The administrator is allowed to create and modify API clients (display name,
-status, configuration) and to generate their API key. The plaintext key is
-returned only once, on creation and on rotation.
-
-.. _policy_clients_delete:
-
-clients_delete
+api_client_add
 ~~~~~~~~~~~~~~
 
 type: ``bool``
 
-The administrator is allowed to delete an API client. Deleting a client also
-removes its remembered-device sessions.
+The administrator is allowed to create API clients and generate their API key.
+The plaintext key is returned only once, on creation.
 
-.. _policy_clients_rotate:
+.. _policy_api_client_edit:
 
-clients_rotate
-~~~~~~~~~~~~~~
+api_client_edit
+~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+The administrator is allowed to modify an existing API client (display name,
+status, configuration). The API key is not affected.
+
+.. _policy_api_client_rotate:
+
+api_client_rotate
+~~~~~~~~~~~~~~~~~
 
 type: ``bool``
 
 The administrator is allowed to rotate the API key of a client. The previous key
 stops working immediately and a new plaintext key is returned once.
+
+.. _policy_api_client_delete:
+
+api_client_delete
+~~~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+The administrator is allowed to delete an API client. Deleting a client also
+removes its remembered devices.
+
+.. _policy_remembered_device_list:
+
+remembered_device_list
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+The administrator is allowed to list the remembered devices of an API client
+(the persistent "remember this device" sessions), including their non-secret
+metadata. The rotating token is never returned.
+
+.. _policy_remembered_device_revoke:
+
+remembered_device_revoke
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+The administrator is allowed to revoke remembered devices: a single device, all
+of a client's devices, or - across all clients - every device of a realm or of a
+single user. Realm-scoped admins can only revoke within their allowed realms.
 
 .. versionadded:: 3.14

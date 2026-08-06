@@ -92,16 +92,47 @@ myApp.controller("clientsController", ["$scope", "$stateParams", "inform",
         $scope.rememberedDevices = [];
         $scope.rememberedDevicesClientId = $stateParams.clientid || "";
         $scope.rememberedDevicesClientName = $scope.rememberedDevicesClientId;
+        $scope.realmList = [];
+        $scope.rememberedDevices = [];
+        $scope.rememberedDevicesFiltered = [];
+        // This view renders in a *child* scope of the clients controller (the
+        // child states render in a nested ui-view). Bare scope primitives set from
+        // the template (ng-model / ng-click) would shadow a copy on that child
+        // scope and never reach the controller. So all template-mutated view state
+        // lives on this single object: a dotted model mutates the shared object.
+        // ui.realm null = all realms (the ng-options empty option).
+        $scope.ui = {realm: null, revokeAllDialog: false, revokeRealmDialog: false};
+
+        // Filter in the controller rather than via an ng-repeat filter (the latter
+        // did not track the selection). Recomputed on load and on every
+        // realm-selector change (ng-change).
+        $scope.applyRealmFilter = function () {
+            if (!$scope.ui.realm) {
+                $scope.rememberedDevicesFiltered = $scope.rememberedDevices;
+            } else {
+                $scope.rememberedDevicesFiltered = $scope.rememberedDevices.filter(function (device) {
+                    return device.realm === $scope.ui.realm;
+                });
+            }
+        };
+
+        $scope.getRealmList = function () {
+            ConfigFactory.getRealms(function (data) {
+                $scope.realmList = Object.keys(data.result.value || {}).sort();
+            });
+        };
 
         $scope.loadRememberedDevices = function (clientId) {
             $scope.rememberedDevicesClientId = clientId;
             ConfigFactory.getClientRememberedDevices(clientId, function (data) {
                 $scope.rememberedDevices = data.result.value;
+                $scope.applyRealmFilter();
             });
         };
 
         $scope.showRememberedDevices = function (client) {
             $scope.rememberedDevicesClientName = client.display_name;
+            $scope.getRealmList();
             $scope.loadRememberedDevices(client.id);
             $state.go('config.clients.remembered_devices', {clientid: client.id});
         };
@@ -116,8 +147,49 @@ myApp.controller("clientsController", ["$scope", "$stateParams", "inform",
             });
         };
 
+        // Bulk revoke. "For this client" is scoped to the client being viewed;
+        // "for user" and "in realm" revoke across all clients (offboarding /
+        // realm-wide incident response), so they reload the current list after.
+        $scope.revokeAllForClient = function () {
+            $scope.ui.revokeAllDialog = false;
+            ConfigFactory.revokeAllClientRememberedDevices($scope.rememberedDevicesClientId, function (data) {
+                if (data.result.status === true) {
+                    inform.add(gettextCatalog.getString("Revoked {{count}} remembered device(s).",
+                        {count: data.result.value}), {type: "info"});
+                    $scope.loadRememberedDevices($scope.rememberedDevicesClientId);
+                }
+            });
+        };
+
+        $scope.revokeAllForUser = function (device) {
+            $scope.showRevokeDialog[device.series_id] = false;
+            ConfigFactory.revokeRememberedDevices({user: device.user, realm: device.realm}, function (data) {
+                if (data.result.status === true) {
+                    inform.add(gettextCatalog.getString("Revoked {{count}} remembered device(s) for the user.",
+                        {count: data.result.value}), {type: "info"});
+                    $scope.loadRememberedDevices($scope.rememberedDevicesClientId);
+                }
+            });
+        };
+
+        $scope.revokeAllForSelectedRealm = function () {
+            $scope.ui.revokeRealmDialog = false;
+            ConfigFactory.revokeRememberedDevices({realm: $scope.ui.realm}, function (data) {
+                if (data.result.status === true) {
+                    inform.add(gettextCatalog.getString("Revoked {{count}} remembered device(s) in the realm.",
+                        {count: data.result.value}), {type: "info"});
+                    // Reset the confirm + the realm selection so the view returns to
+                    // "all realms" and the toolbar collapses after the revoke.
+                    $scope.ui.revokeRealmDialog = false;
+                    $scope.ui.realm = null;
+                    $scope.loadRememberedDevices($scope.rememberedDevicesClientId);
+                }
+            });
+        };
+
         // Deep-link or page refresh directly onto the remembered-devices view.
         if ($stateParams.clientid) {
+            $scope.getRealmList();
             $scope.loadRememberedDevices($stateParams.clientid);
         }
 

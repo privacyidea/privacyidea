@@ -189,7 +189,7 @@
                 </li>
                 <li role="presentation"
                     ng-class="{ active: $state.includes('config.clients')}"
-                    ng-show="checkRight('clients_list')">
+                    ng-show="checkRight('api_client_list')">
                     <a ui-sref="config.clients">
                         <span class="glyphicon glyphicon-cloud"></span>
                         <span translate>API Clients</span>
@@ -203,7 +203,7 @@
                                translate>List API clients</a></li>
                         <li role="presentation"
                             ng-class="{ active: $state.includes('config.clients.add')}"
-                            ng-show="checkRight('clients_add')">
+                            ng-show="checkRight('api_client_add')">
                             <a ui-sref="config.clients.add"
                                ng-click="deselectClient()"
                                translate>

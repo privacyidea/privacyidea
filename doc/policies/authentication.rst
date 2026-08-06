@@ -1102,7 +1102,7 @@ Allow an API client to obtain a persistent "remember this device" cookie on a
 successful authentication at :http:post:`/validate/check` (the client must send
 ``request_persistent_cookie=1``). The feature is off by default and requires the
 request to be made by an identified API client (the ``X-API-Key`` header, see
-the :ref:`policy_clients_list` admin actions): without a client, no cookie is
+the :ref:`policy_api_client_list` admin action): without a client, no cookie is
 issued and the recognition endpoint returns ``401``.
 
 The cookie holds only a rotating ``series_id:counter`` token (never the API key)

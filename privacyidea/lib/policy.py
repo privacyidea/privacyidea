@@ -287,7 +287,7 @@ class GROUP:
     SETTING_ACTIONS = "setting actions"
     TOKENGROUP = "tokengroup"
     SERVICEID = "service ID"
-    CLIENTS = "clients"
+    CLIENTS = "API clients"
     CONTAINER = "container"
     REGISTRATION = "registration and synchronization"
     SMARTPHONE = "smartphone"
@@ -2162,24 +2162,40 @@ def get_static_policy_definitions(scope=None):
                 'desc': _("The Admin is allowed delete a service ID definition."),
                 'mainmenu': [MAIN_MENU.CONFIG],
                 'group': GROUP.SERVICEID},
-            PolicyAction.CLIENTS_LIST: {
+            PolicyAction.API_CLIENT_LIST: {
                 'type': 'bool',
-                'desc': _("The Admin is allowed to list the API clients."),
+                'desc': _("The Admin is allowed to list API clients."),
                 'mainmenu': [MAIN_MENU.CONFIG],
                 'group': GROUP.CLIENTS},
-            PolicyAction.CLIENTS_ADD: {
+            PolicyAction.API_CLIENT_ADD: {
                 'type': 'bool',
-                'desc': _("The Admin is allowed to create and modify API clients."),
+                'desc': _("The Admin is allowed to create API clients."),
                 'mainmenu': [MAIN_MENU.CONFIG],
                 'group': GROUP.CLIENTS},
-            PolicyAction.CLIENTS_DELETE: {
+            PolicyAction.API_CLIENT_EDIT: {
                 'type': 'bool',
-                'desc': _("The Admin is allowed to delete an API client."),
+                'desc': _("The Admin is allowed to modify API clients (display name, status, config)."),
                 'mainmenu': [MAIN_MENU.CONFIG],
                 'group': GROUP.CLIENTS},
-            PolicyAction.CLIENTS_ROTATE: {
+            PolicyAction.API_CLIENT_ROTATE: {
                 'type': 'bool',
                 'desc': _("The Admin is allowed to rotate the API key of a client."),
+                'mainmenu': [MAIN_MENU.CONFIG],
+                'group': GROUP.CLIENTS},
+            PolicyAction.API_CLIENT_DELETE: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed to delete API clients."),
+                'mainmenu': [MAIN_MENU.CONFIG],
+                'group': GROUP.CLIENTS},
+            PolicyAction.REMEMBERED_DEVICE_LIST: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed to list the remembered devices of API clients."),
+                'mainmenu': [MAIN_MENU.CONFIG],
+                'group': GROUP.CLIENTS},
+            PolicyAction.REMEMBERED_DEVICE_REVOKE: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed to revoke remembered devices (of a client, "
+                          "or realm-wide / per user across all clients)."),
                 'mainmenu': [MAIN_MENU.CONFIG],
                 'group': GROUP.CLIENTS},
             PolicyAction.TOKENGROUPS: {

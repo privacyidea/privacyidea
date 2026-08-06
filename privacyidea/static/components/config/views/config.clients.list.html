@@ -32,20 +32,20 @@
         <tbody>
         <tr ng-repeat="client in clients">
             <td>
-                <input ng-if="checkRight('clients_add')" class="form-control input-sm"
+                <input ng-if="checkRight('api_client_edit')" class="form-control input-sm"
                        ng-model="client.display_name"
                        ng-blur="renameClient(client)"
                        title="{{ 'Rename this client' | translate }}"/>
-                <span ng-if="!checkRight('clients_add')">{{ client.display_name }}</span>
+                <span ng-if="!checkRight('api_client_edit')">{{ client.display_name }}</span>
             </td>
             <td>{{ clientTypeLabel(client.client_type) }}</td>
             <td>
-                <select ng-if="checkRight('clients_add')"
+                <select ng-if="checkRight('api_client_edit')"
                         class="form-control input-sm"
                         ng-model="client.status"
                         ng-change="setClientStatus(client)"
                         ng-options="state for state in clientStates"></select>
-                <span ng-if="!checkRight('clients_add')" class="label"
+                <span ng-if="!checkRight('api_client_edit')" class="label"
                       ng-class="{'label-success': client.status === 'active',
                                  'label-warning': client.status === 'suspended'}">
                     {{ client.status }}</span>
@@ -58,21 +58,21 @@
                      dialog's buttons are shown (same inline pattern as the
                      token/user detail views). -->
                 <button class="btn btn-default"
-                        ng-show="checkRight('clients_list')"
+                        ng-show="checkRight('remembered_device_list')"
                         ng-hide="showRotateDialog[client.id] || showDeleteDialog[client.id]"
                         ng-click="showRememberedDevices(client)">
                     <span class="glyphicon glyphicon-list-alt"></span>
                     <span translate>Remembered devices</span>
                 </button>
                 <button class="btn btn-default"
-                        ng-show="checkRight('clients_rotate')"
+                        ng-show="checkRight('api_client_rotate')"
                         ng-hide="showRotateDialog[client.id] || showDeleteDialog[client.id]"
                         ng-click="showRotateDialog[client.id] = true">
                     <span class="glyphicon glyphicon-refresh"></span>
                     <span translate>Rotate key</span>
                 </button>
                 <button class="btn btn-danger"
-                        ng-show="checkRight('clients_delete')"
+                        ng-show="checkRight('api_client_delete')"
                         ng-hide="showRotateDialog[client.id] || showDeleteDialog[client.id]"
                         ng-click="showDeleteDialog[client.id] = true">
                     <span class="glyphicon glyphicon-trash"></span>
