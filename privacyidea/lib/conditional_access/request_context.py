@@ -140,8 +140,13 @@ class ConditionalAccessContext:
         updated = update_authentication_events(self.amended)
         return inserted and updated
 
+    def reclassify(self, event_type, **fields) -> None:
+        """
+        Correct the outcome of this request: assign *event_type* (and any other *fields*) to the staged event.
+
         Nothing else has to be updated - the policy evaluation reads the classification straight off the event (see
-        :meth:`run_post_eval`), so correcting the event is all there is to it. *fields* are applied only when given, so
+        :meth:`run_posteval`), so correcting the event is all there is to it. *fields* are applied only when given, so
+        a post-policy that has no serial of its own does not clear the logged one.
 
         With nothing staged this is a no-op: a caller with no event of its own must stage one instead.
         """
