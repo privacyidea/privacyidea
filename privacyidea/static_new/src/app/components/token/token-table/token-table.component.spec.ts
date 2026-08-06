@@ -321,17 +321,17 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     tableFixture.detectChanges();
 
     expect(tokenService.presetFilter()).toBeNull();
-    expect(tokenService.tokenFilter()).toBe(preset);
+    expect(tokenService.activeFilter()).toBe(preset);
   });
 
   it("does not touch the current filter when there is no preset filter to apply", () => {
-    const currentFilter = tokenService.tokenFilter();
+    const currentFilter = tokenService.activeFilter();
 
     contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS);
     tableFixture.detectChanges();
 
     expect(tokenService.presetFilter()).toBeNull();
-    expect(tokenService.tokenFilter()).toBe(currentFilter);
+    expect(tokenService.activeFilter()).toBe(currentFilter);
   });
 
   it("shows a hint while user:/realm: filter syntax is typed but not yet applied", () => {
@@ -371,7 +371,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
       keyword: "active",
       currentValue: expect.any(FilterValue)
     });
-    expect(tokenService.tokenFilter()).toBe(booleanResult);
+    expect(tokenService.activeFilter()).toBe(booleanResult);
 
     const keywordResult = new FilterValue().addEntry("description", "foo");
     tableUtilsService.toggleKeywordInFilter.mockReturnValue(keywordResult);
@@ -380,7 +380,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
       keyword: "description",
       currentValue: expect.any(FilterValue)
     });
-    expect(tokenService.tokenFilter()).toBe(keywordResult);
+    expect(tokenService.activeFilter()).toBe(keywordResult);
   });
 
   it("toggleFilter adds the default realm when a user filter without a realm is set", () => {
@@ -388,7 +388,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
 
     table.toggleFilter("user");
 
-    const result = tokenService.tokenFilter();
+    const result = tokenService.activeFilter();
     expect(result.getValueOfKey("user")).toBe("bob");
     expect(result.getValueOfKey("realm")).toBe("realm1");
   });
@@ -400,7 +400,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
 
     table.toggleFilter("user");
 
-    expect(tokenService.tokenFilter().getValueOfKey("realm")).toBe("sub");
+    expect(tokenService.activeFilter().getValueOfKey("realm")).toBe("sub");
   });
 
   it("isFilterSelected reports whether a keyword is present in a filter value", () => {
@@ -410,19 +410,19 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
   });
 
   it("getFilterIconName reflects the active/assigned boolean state and generic selection state", () => {
-    tokenService.tokenFilter.set(new FilterValue());
+    tokenService.activeFilter.set(new FilterValue());
     expect(table.getFilterIconName("active")).toBe("filter_alt");
 
-    tokenService.tokenFilter.set(new FilterValue().addEntry("active", "true"));
+    tokenService.activeFilter.set(new FilterValue().addEntry("active", "true"));
     expect(table.getFilterIconName("active")).toBe("screen_rotation_alt");
 
-    tokenService.tokenFilter.set(new FilterValue().addEntry("assigned", "false"));
+    tokenService.activeFilter.set(new FilterValue().addEntry("assigned", "false"));
     expect(table.getFilterIconName("assigned")).toBe("filter_alt_off");
 
-    tokenService.tokenFilter.set(new FilterValue());
+    tokenService.activeFilter.set(new FilterValue());
     expect(table.getFilterIconName("description")).toBe("filter_alt");
 
-    tokenService.tokenFilter.set(new FilterValue().addEntry("description", "foo"));
+    tokenService.activeFilter.set(new FilterValue().addEntry("description", "foo"));
     expect(table.getFilterIconName("description")).toBe("filter_alt_off");
   });
 
@@ -463,10 +463,64 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     const focusSpy = jest.spyOn(table.filterInput.nativeElement, "focus");
 
     table.onItemSelected("type", "hotp");
-    expect(tokenService.tokenFilter().getValueOfKey("type")).toBe("hotp");
+    expect(tokenService.activeFilter().getValueOfKey("type")).toBe("hotp");
     expect(focusSpy).toHaveBeenCalled();
 
     table.onItemSelected("type", "");
-    expect(tokenService.tokenFilter().hasKey("type")).toBe(false);
+    expect(tokenService.activeFilter().hasKey("type")).toBe(false);
+  });
+
+  it("selectedFilterValues splits a comma-separated filter value into its entries", () => {
+    tokenService.activeFilter.set(new FilterValue({ value: "type: hotp,totp" }));
+    expect(table.selectedFilterValues("type")).toEqual(["hotp", "totp"]);
+
+    tokenService.activeFilter.set(new FilterValue({ value: "type: hotp" }));
+    expect(table.selectedFilterValues("type")).toEqual(["hotp"]);
+
+    tokenService.activeFilter.set(new FilterValue());
+    expect(table.selectedFilterValues("type")).toEqual([]);
+  });
+
+  it("setFilterValues writes the selection as a comma-separated value and drops the key when empty", () => {
+    tokenService.activeFilter.set(new FilterValue());
+
+    table.setFilterValues("tokenrealm", ["realm1", "realm2"]);
+    expect(tokenService.activeFilter().getValueOfKey("tokenrealm")).toBe("realm1,realm2");
+
+    table.setFilterValues("tokenrealm", []);
+    expect(tokenService.activeFilter().hasKey("tokenrealm")).toBe(false);
+  });
+
+  it("tokenTypeFilterOptions offers the token type keys", () => {
+    expect(table.tokenTypeFilterOptions()).toEqual(["hotp", "totp", "push"]);
+  });
+
+  describe("filterColumnTooltip", () => {
+    beforeEach(() => {
+      tokenService.exactMatchKeys = new Set(["realm"]);
+      tokenService.booleanKeys = new Set(["active"]);
+      tokenService.caseNotes = { serial: "usually-insensitive", "infokey & infovalue": "usually-sensitive" };
+    });
+
+    it("reports boolean keywords as true/false", () => {
+      expect(table.filterColumnTooltip("Active", "active")).toBe("Filter by Active\ntrue or false");
+    });
+
+    it("passes the exact-match flag through", () => {
+      expect(table.filterColumnTooltip("Realm", "realm")).toBe("Filter by Realm\nexact match");
+    });
+
+    it("passes the per-keyword case note through", () => {
+      expect(table.filterColumnTooltip("Serial", "serial")).toBe(
+        "Filter by Serial\npartial match, usually case-insensitive"
+      );
+      expect(table.filterColumnTooltip("infokey & infovalue", "infokey & infovalue")).toBe(
+        "Filter by infokey & infovalue\npartial match, usually case-sensitive"
+      );
+    });
+
+    it("names partial matching for keywords without further deviation", () => {
+      expect(table.filterColumnTooltip("Description", "description")).toBe("Filter by Description\npartial match");
+    });
   });
 });

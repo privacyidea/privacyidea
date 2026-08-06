@@ -33,11 +33,11 @@ import {
   ContainerRegisterData,
   ContainerService,
   ContainerType,
-  TemplateComparisonResult,
-  toWildcardParam
+  TemplateComparisonResult
 } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
+import { RealmService } from "@services/realm/realm.service";
 import { Tokens, TokenService } from "@services/token/token.service";
 import { UserService } from "@services/user/user.service";
 import {
@@ -46,9 +46,11 @@ import {
   MockLocalService,
   MockNotificationService,
   MockPiResponse,
+  MockRealmService,
   MockTokenService,
   MockUserService
 } from "@testing/mock-services";
+import { toWildcardParam } from "@utils/filter.utils";
 import { lastValueFrom, of, throwError } from "rxjs";
 
 describe("ContainerService", () => {
@@ -72,6 +74,7 @@ describe("ContainerService", () => {
         { provide: TokenService, useClass: MockTokenService },
         { provide: ContentService, useClass: MockContentService },
         { provide: UserService, useClass: MockUserService },
+        { provide: RealmService, useClass: MockRealmService },
         MockLocalService,
         MockNotificationService
       ]
@@ -403,44 +406,84 @@ describe("ContainerService", () => {
   });
 
   it("filterParams converts blank values and drops unknown keys", () => {
-    containerService.containerFilter.set(new FilterValue({ value: "type: generic description: foo: bar" }));
+    containerService.activeFilter.set(new FilterValue({ value: "type: generic description: foo: bar" }));
     const filterParams = containerService.filterParams();
     expect(filterParams).toEqual({ type: "generic" });
   });
 
   it("filterParams maps a single type to the scalar `type` param", () => {
-    containerService.containerFilter.set(new FilterValue({ value: "type: smartphone" }));
+    containerService.activeFilter.set(new FilterValue({ value: "type: smartphone" }));
     expect(containerService.filterParams()).toEqual({ type: "smartphone" });
   });
 
   it("filterParams preserves `*` wildcards on a single type", () => {
-    containerService.containerFilter.set(new FilterValue({ value: "type: smart*" }));
+    containerService.activeFilter.set(new FilterValue({ value: "type: smart*" }));
     expect(containerService.filterParams()).toEqual({ type: "smart*" });
   });
 
   it("filterParams maps multiple comma-separated types to `type_list`", () => {
-    containerService.containerFilter.set(new FilterValue({ value: "type: smartphone,yubikey" }));
+    containerService.activeFilter.set(new FilterValue({ value: "type: smartphone,yubikey" }));
     expect(containerService.filterParams()).toEqual({ type_list: "smartphone,yubikey" });
   });
 
   it("filterParams trims whitespace and de-duplicates the type list", () => {
-    containerService.containerFilter.set(new FilterValue({ value: "type: ' smartphone , yubikey , smartphone '" }));
+    containerService.activeFilter.set(new FilterValue({ value: "type: ' smartphone , yubikey , smartphone '" }));
     expect(containerService.filterParams()).toEqual({ type_list: "smartphone,yubikey" });
   });
 
   it("filterParams accepts `types` as a synonym for `type` (single)", () => {
-    containerService.containerFilter.set(new FilterValue({ value: "types: generic" }));
+    containerService.activeFilter.set(new FilterValue({ value: "types: generic" }));
     expect(containerService.filterParams()).toEqual({ type: "generic" });
   });
 
   it("filterParams accepts `types` as a synonym for `type` (multiple)", () => {
-    containerService.containerFilter.set(new FilterValue({ value: "types: smartphone,yubikey" }));
+    containerService.activeFilter.set(new FilterValue({ value: "types: smartphone,yubikey" }));
     expect(containerService.filterParams()).toEqual({ type_list: "smartphone,yubikey" });
   });
 
   it("filterParams merges `type` and `types` values into a single type_list", () => {
-    containerService.containerFilter.set(new FilterValue({ value: "type: smartphone types: yubikey" }));
+    containerService.activeFilter.set(new FilterValue({ value: "type: smartphone types: yubikey" }));
     expect(containerService.filterParams()).toEqual({ type_list: "smartphone,yubikey" });
+  });
+
+  describe("handleFilterInput realm handling", () => {
+    const filterInputEvent = (value: string): Event => ({ target: { value } as HTMLInputElement }) as unknown as Event;
+
+    it("adds the default realm when filtering by user without a realm", () => {
+      containerService.handleFilterInput(filterInputEvent("user: alice"));
+
+      expect(containerService.filterDraft().filterMap.get("realm")).toBe("realm1");
+    });
+
+    it("keeps an explicitly given realm", () => {
+      containerService.handleFilterInput(filterInputEvent("user: alice realm: otherrealm"));
+
+      expect(containerService.filterDraft().filterMap.get("realm")).toBe("otherrealm");
+    });
+
+    it("does not default the realm when no user filter is set", () => {
+      containerService.handleFilterInput(filterInputEvent("type: generic"));
+
+      expect(containerService.filterDraft().hasKey("realm")).toBe(false);
+    });
+
+    it("keeps a realm that is filtered without a user", () => {
+      containerService.handleFilterInput(filterInputEvent("realm: otherrealm"));
+
+      expect(containerService.filterDraft().filterMap.get("realm")).toBe("otherrealm");
+    });
+  });
+
+  it("filterParams sends user and realm as exact values", () => {
+    containerService.activeFilter.set(new FilterValue({ value: "user: alice realm: realm1" }));
+
+    expect(containerService.filterParams()).toEqual({ user: "alice", realm: "realm1" });
+  });
+
+  it("filterParams keeps realm and container_realm apart", () => {
+    containerService.activeFilter.set(new FilterValue({ value: "realm: realm1 container_realm: realm2" }));
+
+    expect(containerService.filterParams()).toEqual({ realm: "realm1", container_realm: "*realm2*" });
   });
 
   it("pageSize falls back to 10 for invalid eventPageSize", () => {
@@ -456,7 +499,7 @@ describe("ContainerService", () => {
   it("pageIndex resets to 0 when filter changes", () => {
     containerService.pageIndex.set(2);
     expect(containerService.pageIndex()).toBe(2);
-    containerService.containerFilter.set(new FilterValue({ value: "type: x" }));
+    containerService.activeFilter.set(new FilterValue({ value: "type: x" }));
     expect(containerService.pageIndex()).toBe(0);
   });
 
@@ -483,11 +526,12 @@ describe("ContainerService", () => {
   });
 
   it("filterParams handles wildcards and converts blank values", () => {
-    (containerService.apiFilter as string[]).push("desc");
-    containerService.containerFilter.set(new FilterValue({ value: "desc: foo token_serial: 123 type: user: Bob" }));
+    (containerService.apiFilterKeys as string[]).push("desc");
+    containerService.activeFilter.set(new FilterValue({ value: "desc: foo token_serial: 123 type: user: Bob" }));
     expect(containerService.filterParams()).toEqual({
       desc: "*foo*",
-      token_serial: "*123*"
+      token_serial: "*123*",
+      user: "Bob"
     });
   });
 
@@ -586,7 +630,7 @@ describe("ContainerService", () => {
   });
 
   it("filterParams wildcards non-ID fields", () => {
-    containerService.containerFilter.set(new FilterValue({ value: "container_serial: S1 desc: foo" }));
+    containerService.activeFilter.set(new FilterValue({ value: "container_serial: S1 desc: foo" }));
     expect(containerService.filterParams()).toEqual({
       container_serial: "*S1*",
       desc: "*foo*"
@@ -726,7 +770,7 @@ describe("ContainerService", () => {
   });
 
   it("should not include empty filter values in filterParams", () => {
-    containerService.containerFilter.set({
+    containerService.activeFilter.set({
       filterMap: new Map([
         ["container_serial", ""],
         ["type", "generic"],

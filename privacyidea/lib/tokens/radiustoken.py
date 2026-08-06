@@ -66,7 +66,6 @@ from privacyidea.lib import _
 from privacyidea.lib.policy import SCOPE, GROUP
 from privacyidea.lib.policies.actions import PolicyAction
 
-
 log = logging.getLogger(__name__)
 
 
@@ -131,7 +130,7 @@ class RadiusTokenClass(RemoteTokenClass):
 
         return ret
 
-    @log_with(log, hide_args_keywords={'param': 'pin'})
+    @log_with(log)
     def update(self, param):
         # New value
         radius_identifier = get_optional(param, "radius.identifier")
@@ -278,7 +277,7 @@ class RadiusTokenClass(RemoteTokenClass):
 
         return challenge_response
 
-    @log_with(log, hide_kwargs=['passw'])
+    @log_with(log)
     @check_token_locked
     def check_challenge_response(self, user=None, passw=None, options=None):
         """

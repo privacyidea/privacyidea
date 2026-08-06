@@ -316,19 +316,25 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
   }
 
   enrollNewToken() {
-    this.userService.selectedUserRealm.set(this.userService.detailsUser().realm);
-    this.userService.selectionFilter.set(this.userService.detailsUser().username);
-    this.router.navigateByUrl(ROUTE_PATHS.TOKENS_ENROLLMENT).then();
+    const detailsUser = this.userService.detailsUser();
+    this.router
+      .navigate([ROUTE_PATHS.TOKENS_ENROLLMENT], {
+        queryParams: { realm: detailsUser.realm, user: detailsUser.username }
+      })
+      .then();
   }
 
   createNewContainer() {
-    this.userService.selectedUserRealm.set(this.userService.detailsUser().realm);
-    this.userService.selectionFilter.set(this.userService.detailsUser().username);
-    this.router.navigateByUrl(ROUTE_PATHS.CONTAINERS_CREATE).then();
+    const detailsUser = this.userService.detailsUser();
+    this.router
+      .navigate([ROUTE_PATHS.CONTAINERS_CREATE], {
+        queryParams: { realm: detailsUser.realm, user: detailsUser.username }
+      })
+      .then();
   }
 
   showUserAuditLog() {
-    this.auditService.auditFilter.set(new FilterValue({ value: `user: ${this.userService.detailsUser().username}` }));
+    this.auditService.setFilter(new FilterValue({ value: `user: ${this.userService.detailsUser().username}` }));
   }
 
   editMode = signal(false);

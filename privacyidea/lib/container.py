@@ -22,6 +22,7 @@ import importlib
 import json
 import logging
 import os
+from dataclasses import dataclass
 from datetime import timezone, datetime
 from collections.abc import Generator
 
@@ -179,7 +180,12 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
     """
     Generates a sql query to filter containers by the given parameters.
 
-    :param user: container owner, optional
+    :param user: container owner, optional. The realm, the resolver and the user id of the user are applied
+        independently, hence a user object carrying only a realm lists the containers of all users of that
+        realm. Note that a user object with only a resolver is empty (User.is_empty ignores the resolver)
+        and therefore does not filter at all. Since only assigned containers have an owner, a user object
+        never matches an unassigned container, and neither does a realm that does not exist. Raises a
+        UserError if a login name is given that can not be resolved to a user id.
     :param serial: container serial (case-insensitive and allows '*' as wildcard), optional
     :param ctype: container type filter (case-insensitive and allows '*' as wildcard), optional
     :param ctype_exact: exact container type filter list (case-insensitive; matches any type in the list), optional.
@@ -209,15 +215,34 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
     stmt = select(TokenContainer)
     realm1 = aliased(Realm)
     if user:
-        stmt = stmt.join(TokenContainer.owners).where(TokenContainerOwner.user_id == user.uid)
+        realm_db = None
         if user.realm:
             realm_db = db.session.execute(
                 select(realm1).where(func.lower(realm1.name) == user.realm.lower())
             ).scalar_one_or_none()
+        if user.realm and not realm_db:
+            # No user can be in a realm that does not exist: like every other filter, an unknown value
+            # matches nothing.
+            stmt = stmt.where(false())
+        else:
+            if user.login and not user.uid:
+                # A username was requested, but it can not be resolved to a user id: neither the realm nor
+                # the resolver of the user may be used as a fallback filter, because the query would then
+                # return the containers of all users of that realm or resolver.
+                raise UserError("The user can not be found in any resolver in this realm!")
+            # The realm, the resolver and the user id are applied independently, so that the containers of
+            # all users of a realm can be listed without specifying a username.
+            stmt = stmt.join(TokenContainer.owners)
             if realm_db:
                 stmt = stmt.where(TokenContainerOwner.realm_id == realm_db.id)
-        if user.resolver:
-            stmt = stmt.where(func.lower(TokenContainerOwner.resolver) == user.resolver.lower())
+            if user.resolver:
+                if "*" in user.resolver:
+                    stmt = stmt.where(TokenContainerOwner.resolver.ilike(
+                        convert_wildcard_to_sql_like(user.resolver), escape=SQL_LIKE_ESCAPE))
+                else:
+                    stmt = stmt.where(func.lower(TokenContainerOwner.resolver) == user.resolver.lower())
+            if user.uid:
+                stmt = stmt.where(TokenContainerOwner.user_id == user.uid)
 
     if serial and serial.strip("*"):
         if "*" in serial:
@@ -381,7 +406,12 @@ def get_all_containers(user: User = None, serial: str = None, ctype: str = None,
     the next or previous page. If page and pagesize are both smaller than 0, no pagination is used.
     The containers are filtered by the given parameters.
 
-    :param user: container owner, optional
+    :param user: container owner, optional. The realm, the resolver and the user id of the user are applied
+        independently, hence a user object carrying only a realm lists the containers of all users of that
+        realm. Note that a user object with only a resolver is empty (User.is_empty ignores the resolver)
+        and therefore does not filter at all. Since only assigned containers have an owner, a user object
+        never matches an unassigned container, and neither does a realm that does not exist. Raises a
+        UserError if a login name is given that can not be resolved to a user id.
     :param serial: container serial (case-insensitive and allows '*' as wildcard), optional
     :param ctype: container type filter (case-insensitive and allows '*' as wildcard), optional
     :param ctype_exact: exact container type filter list (case-insensitive; matches any type in the list), optional.
@@ -1075,39 +1105,61 @@ def add_container_states(serial: str, states: list[str]) -> dict[str, bool]:
     return res
 
 
-def set_container_realms(serial: str, realms: list[str],
-                         allowed_realms: list[str] | None = []) -> dict[str, bool]:
+@dataclass
+class ContainerRealmsResult:
     """
-    Set the realms of a container.
+    Outcome of setting the realms of a container, relative to the requested realms.
+
+    :ivar attached: all realms attached to the container after the update
+    :ivar not_added: requested realms that could not be attached (not allowed to set, or unknown realm)
+    :ivar removed: realms that were detached from the container
+    :ivar not_removed: attached realms that were not requested and could not be removed (not allowed to
+        remove, or the realm of an assigned user); a subset of ``attached``
+    """
+    attached: list[str]
+    not_added: list[str]
+    removed: list[str]
+    not_removed: list[str]
+
+    @property
+    def success(self) -> bool:
+        """True if the container's realms match the requested realms exactly."""
+        return not self.not_added and not self.not_removed
+
+
+def set_container_realms(serial: str, realms: list[str],
+                         allowed_realms: list[str] | None = None) -> ContainerRealmsResult:
+    """
+    Set the realms of a container to the requested realms.
+
+    Realms the caller is not allowed to manage (not in ``allowed_realms``) are neither added nor removed:
+    a requested realm outside the allowed realms is not attached, and an existing realm outside the allowed
+    realms is kept. Realms of an assigned user can never be removed. Deviations from the request are
+    reported in the returned :class:`ContainerRealmsResult`.
 
     :param serial: serial of the container
-    :param realms: new realms as list of str
-    :param allowed_realms: A list of realms the admin is allowed to set (None if all realms are allowed), optional
-    :returns: Dictionary in the format {realm: success}, the entry 'deleted' indicates whether existing realms were
-              deleted.
+    :param realms: requested realms as list of str
+    :param allowed_realms: realms the caller is allowed to manage, or None if all realms are allowed
+    :return: a :class:`ContainerRealmsResult` describing which realms are attached, and which requested
+        realms could not be added, were removed, or could not be removed
     """
     container = find_container_by_serial(serial)
-    old_realms = [realm.name for realm in container.realms]
+    requested = {realm for realm in realms if realm}
+    old_realms = {realm.name for realm in container.realms}
 
-    # Check if admin is allowed to set the realms
-    matching_realms = realms
-    res_failed = {}
     if allowed_realms:
-        matching_realms = list(set(realms).intersection(allowed_realms))
-        excluded_realms = list(set(realms) - set(matching_realms))
-        if len(excluded_realms) > 0:
-            log.info(f"User is not allowed to set realms {excluded_realms} for container {serial}.")
-            res_failed = {realm: False for realm in excluded_realms}
+        # Only manage realms the caller is allowed to: keep existing realms outside their scope untouched.
+        target = (requested & set(allowed_realms)) | (old_realms - set(allowed_realms))
+    else:
+        target = requested
 
-        # Check if admin is allowed to remove the old realms
-        not_allowed_realms = set(old_realms) - set(allowed_realms)
-        # Add realms that are not allowed to be removed to the set list
-        matching_realms = list(set(matching_realms).union(not_allowed_realms))
+    container.set_realms(list(target), add=False)
+    attached = {realm.name for realm in container.realms}
 
-    # Set realms
-    res = container.set_realms(matching_realms, add=False)
-    res.update(res_failed)
-    return res
+    return ContainerRealmsResult(attached=sorted(attached),
+                                 not_added=sorted(requested - attached),
+                                 removed=sorted(old_realms - attached),
+                                 not_removed=sorted(attached - requested))
 
 
 def add_container_realms(serial: str, realms: list[str], allowed_realms: list[str] | None) -> dict[str, bool]:

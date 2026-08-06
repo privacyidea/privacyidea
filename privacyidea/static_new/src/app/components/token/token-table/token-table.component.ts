@@ -47,9 +47,14 @@ import { MatInputModule } from "@angular/material/input";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { FilterValue } from "@core/models/filter_value/filter_value";
+import { MultiSelectFilterComponent } from "@components/shared/multi-select-filter/multi-select-filter.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { filterColumnHint, inlineFilterHint } from "@utils/filter-hint.utils";
+import { withDefaultRealm } from "@utils/filter.utils";
+import { StringUtils } from "@utils/string.utils";
 import { TokenTableActionsComponent } from "./token-table-actions/token-table-actions.component";
 
 const columnKeysMap = [
@@ -70,6 +75,7 @@ const columnKeysMap = [
   selector: "app-token-table",
   standalone: true,
   imports: [
+    FilterAutocompleteDirective,
     MatTableModule,
     MatFormFieldModule,
     MatInputModule,
@@ -81,6 +87,7 @@ const columnKeysMap = [
     ScrollToTopDirective,
     ClearableInputComponent,
     CopyableComponent,
+    MultiSelectFilterComponent,
     TokenTableActionsComponent,
     MatIconButton,
     MatMenuModule,
@@ -102,13 +109,18 @@ export class TokenTableComponent {
   readonly columnKeysMap = columnKeysMap;
   readonly columnKeys: string[] = columnKeysMap.map((column) => column.key);
   readonly apiFilterKeyMap = this.tokenService.apiFilterKeyMap;
-  readonly advancedApiFilter = this.tokenService.advancedApiFilter;
+  readonly advancedApiFilterKeys = this.tokenService.advancedApiFilterKeys;
+  readonly filterKeywords = [...this.tokenService.apiFilterKeys, ...this.tokenService.advancedApiFilterKeys].filter(
+    (keyword) => !this.tokenService.unsupportedKeys.has(keyword) && !keyword.includes(" ")
+  );
+  readonly filterHint = inlineFilterHint();
+  readonly tokenTypeFilterOptions = computed(() => this.tokenService.tokenTypeOptions().map((type) => type.key));
   private basePageSizeOptions = [...this.tableUtilsService.pageSizeOptions()];
   @ViewChild("filterHTMLInputElement", { static: false })
   filterInput!: ElementRef<HTMLInputElement>;
   tokenSelection = this.tokenService.tokenSelection;
   tokenResource = this.tokenService.tokenResource;
-  tokenFilter = this.tokenService.tokenFilter;
+  activeFilter = this.tokenService.activeFilter;
   pageSize = this.tokenService.pageSize;
   pageIndex = this.tokenService.pageIndex;
   sort = this.tokenService.sort;
@@ -121,17 +133,17 @@ export class TokenTableComponent {
       const preset = this.tokenService.presetFilter();
       if (preset) {
         this.tokenService.presetFilter.set(null);
-        this.tokenService.tokenFilter.set(preset);
+        this.tokenService.setFilter(preset);
       }
     });
   }
   protected readonly filterInputValue = linkedSignal({
-    source: () => this.tokenService.tokenFilter().filterString,
+    source: () => this.tokenService.activeFilter().filterString,
     computation: (v) => v
   });
   protected readonly showFilterHint = computed(() => {
     const current = this.filterInputValue().trim().toLowerCase();
-    const applied = this.tokenService.tokenFilter().filterString.trim().toLowerCase();
+    const applied = this.tokenService.activeFilter().filterString.trim().toLowerCase();
 
     if (current !== applied) {
       const hasUser = /(^|\s)user:/.test(current);
@@ -255,52 +267,65 @@ export class TokenTableComponent {
   }
 
   toggleFilter(filterKeyword: string): void {
-    let newValue;
-    if (filterKeyword === "active") {
-      newValue = this.tableUtilsService.toggleBooleanInFilter({
-        keyword: filterKeyword,
-        currentValue: this.tokenService.tokenFilter()
-      });
-    } else {
-      newValue = this.tableUtilsService.toggleKeywordInFilter({
-        keyword: filterKeyword,
-        currentValue: this.tokenService.tokenFilter()
-      });
-    }
+    this.tokenService.updateFilter((current) => {
+      let newValue =
+        filterKeyword === "active"
+          ? this.tableUtilsService.toggleBooleanInFilter({
+              keyword: filterKeyword,
+              currentValue: current
+            })
+          : this.tableUtilsService.toggleKeywordInFilter({
+              keyword: filterKeyword,
+              currentValue: current
+            });
 
-    if (filterKeyword === "user" && newValue.hasKey("user") && !newValue.hasKey("realm")) {
-      const defaultRealm = this.realmService.defaultRealm();
-      if (defaultRealm) {
-        newValue = newValue.addEntry("realm", defaultRealm);
+      if (filterKeyword === "user") {
+        newValue = withDefaultRealm(newValue, this.realmService.defaultRealm());
       }
-    }
 
-    this.tokenService.tokenFilter.set(newValue);
+      return newValue;
+    });
   }
 
   isFilterSelected(filter: string, inputValue: FilterValue): boolean {
     return inputValue.hasKey(filter);
   }
 
+  filterColumnTooltip(label: string, keyword: string): string {
+    return filterColumnHint(label, {
+      exactMatch: this.tokenService.exactMatchKeys.has(keyword),
+      isBoolean: this.tokenService.booleanKeys.has(keyword),
+      isUnsupported: this.tokenService.unsupportedKeys.has(keyword),
+      caseNote: this.tokenService.caseNotes[keyword]
+    });
+  }
+
+  isUnsupportedKeyword(keyword: string): boolean {
+    return this.tokenService.unsupportedKeys.has(keyword);
+  }
+
   getFilterIconName(keyword: string): string {
     if (keyword === "active" || keyword === "assigned") {
-      const value = this.tokenService.tokenFilter()?.getValueOfKey(keyword)?.toLowerCase();
-      if (!value) {
+      const value = this.tokenService.activeFilter().booleanValueOfKey(keyword);
+      if (value === undefined) {
         return "filter_alt";
       }
-      return value === "true" ? "screen_rotation_alt" : value === "false" ? "filter_alt_off" : "filter_alt";
+      return value ? "screen_rotation_alt" : "filter_alt_off";
     } else {
-      const isSelected = this.isFilterSelected(keyword, this.tokenService.tokenFilter());
+      const isSelected = this.isFilterSelected(keyword, this.tokenService.activeFilter());
       return isSelected ? "filter_alt_off" : "filter_alt";
     }
   }
 
   onKeywordClick(filterKeyword: string): void {
+    if (this.isUnsupportedKeyword(filterKeyword)) {
+      return;
+    }
     this.toggleFilter(filterKeyword);
     const inputElement = this.filterInput?.nativeElement;
     if (inputElement) {
       inputElement.focus();
-      if (filterKeyword === "user" && this.tokenService.tokenFilter().hasKey("user")) {
+      if (filterKeyword === "user" && this.tokenService.activeFilter().hasKey("user")) {
         setTimeout(() => {
           const filterString = inputElement.value;
           const userIndex = filterString.indexOf("user:");
@@ -313,15 +338,20 @@ export class TokenTableComponent {
     }
   }
 
+  selectedFilterValues(keyword: string): string[] {
+    return StringUtils.splitFilterList(this.tokenService.filterDraft().getValueOfKey(keyword));
+  }
+
+  setFilterValues(keyword: string, values: string[]): void {
+    this.tokenService.updateFilter((current) =>
+      values.length ? current.addEntry(keyword, values.join(",")) : current.removeKey(keyword)
+    );
+  }
+
   onItemSelected(keyword: string, value: string): void {
-    const currentFilter = this.tokenService.tokenFilter();
-    let newValue;
-    if (value) {
-      newValue = currentFilter.addEntry(keyword, value);
-    } else {
-      newValue = currentFilter.removeKey(keyword);
-    }
-    this.tokenService.tokenFilter.set(newValue);
+    this.tokenService.updateFilter((current) =>
+      value ? current.addEntry(keyword, value) : current.removeKey(keyword)
+    );
     this.filterInput?.nativeElement.focus();
   }
 }

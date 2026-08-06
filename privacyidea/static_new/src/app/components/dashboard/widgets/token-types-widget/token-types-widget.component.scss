@@ -29,6 +29,23 @@
   @include widget.stat-table;
 }
 
+.count-unknown {
+  color: var(--mat-sys-outline);
+  font-weight: 400;
+  font-style: italic;
+}
+
+.count-stale {
+  display: inline-flex;
+  align-items: flex-start;
+  color: var(--mat-sys-outline);
+}
+
+.stale-marker {
+  font-size: 0.75em;
+  line-height: 1;
+}
+
 .empty-hint {
   margin: 0;
   padding: var(--quarter-global-padding) var(--global-padding);

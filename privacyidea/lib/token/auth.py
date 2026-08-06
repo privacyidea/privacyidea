@@ -143,7 +143,7 @@ def check_otp(serial: str, otpval: str) -> tuple[bool, dict]:
 @libpolicy(auth_lastauth)
 @libpolicy(auth_user_passthru)
 @libpolicy(force_challenge_response)
-@log_with(log, hide_kwargs=["passw"])
+@log_with(log)
 def check_user_pass(user: User, passw: str, options: dict | None = None) -> tuple[bool, dict]:
     """
     This function checks the otp for a given user.

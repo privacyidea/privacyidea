@@ -133,8 +133,36 @@ describe("RealmService", () => {
 
     const req = httpMock.expectOne(`${environment.proxyUrl}/realm/${encodeURIComponent(realmName)}`);
     expect(req.request.method).toBe("DELETE");
+    expect(req.request.params.keys()).toEqual([]);
 
     req.flush({ result: 1 });
+  });
+
+  it("deleteRealm sends delete_custom_attributes when requested", () => {
+    const realmName = "realm with space/ä";
+    realmService.deleteRealm(realmName, true).subscribe();
+
+    const req = httpMock.expectOne(
+      `${environment.proxyUrl}/realm/${encodeURIComponent(realmName)}?delete_custom_attributes=1`
+    );
+    expect(req.request.method).toBe("DELETE");
+    expect(req.request.params.get("delete_custom_attributes")).toBe("1");
+
+    req.flush({ result: 1 });
+  });
+
+  it("deleteRealm propagates errors without notifying", () => {
+    const realmName = "realmA";
+    const errors: unknown[] = [];
+    realmService.deleteRealm(realmName).subscribe({ error: (err) => errors.push(err) });
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/realm/${realmName}`);
+    req.flush(
+      { result: { error: { code: 908, message: "Realm 'realmA' contains custom user attributes (department)." } } },
+      { status: 400, statusText: "Bad Request" }
+    );
+
+    expect(errors.length).toBe(1);
   });
 
   it("setDefaultRealm sends POST to encoded defaultrealm URL with empty body", () => {

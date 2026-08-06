@@ -23,6 +23,36 @@ To enable the new WebUI, edit the configuration file `pi.cfg` and add the follow
     PI_TEMPLATE_FOLDER = "static_new/dist/privacyidea-webui/browser/"
 
 
+.. _new_webui_asset_delivery:
+
+Serving the static assets efficiently
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The new WebUI is a compiled single-page application whose static assets
+(JavaScript and CSS) are served without compression by the application server.
+For optimal load performance, enable compression and caching for these assets
+**at your web server / reverse proxy**.
+
+* **Compression.** Enable gzip and, if available, brotli for the JavaScript and
+  CSS responses (``application/javascript``, ``text/css``). This typically
+  reduces the transferred size by a factor of four to five.
+
+  * *Apache:* enable ``mod_deflate`` (and ``mod_brotli`` if available) for those
+    MIME types.
+  * *nginx:* set ``gzip on;`` (and ``brotli on;`` with the brotli module) and
+    include ``application/javascript`` and ``text/css`` in ``gzip_types``.
+
+* **Caching.** The build emits content-hashed file names (for example
+  ``main-<hash>.js``), which are safe to cache indefinitely. Sending
+  ``Cache-Control: public, max-age=31536000, immutable`` for the hashed assets
+  lets returning users skip the download entirely. Do **not** apply long caching
+  to ``index.html``, so that a new deployment is picked up immediately.
+
+Each UI language is a separately compiled bundle, so users only download the
+assets for their selected language; the settings above apply equally to all
+languages.
+
+
 .. _dashboard:
 
 Dashboard
