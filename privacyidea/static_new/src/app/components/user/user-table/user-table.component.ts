@@ -25,6 +25,7 @@ import {
   linkedSignal,
   OnDestroy,
   ViewChild,
+  viewChild,
   WritableSignal
 } from "@angular/core";
 import {
@@ -140,7 +141,7 @@ export class UserTableComponent implements OnDestroy {
   readonly apiFilterKeys = this.userService.apiFilterKeys;
   readonly filterHint = inlineFilterHint();
   private basePageSizeOptions = [...this.tableUtilsService.pageSizeOptions()];
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  readonly paginator = viewChild(MatPaginator);
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
   pageSizeOptions = computed(() => {
     if (!this.basePageSizeOptions.includes(this.userService.pageSize())) {
@@ -188,7 +189,8 @@ export class UserTableComponent implements OnDestroy {
   usersDataSource: WritableSignal<MatTableDataSource<UserData>> = linkedSignal({
     source: () => ({
       filtered: this.filteredUsers(),
-      sort: this.userService.sort()
+      sort: this.userService.sort(),
+      paginator: this.paginator()
     }),
     computation: (src, prev) => {
       // Skeleton rows (emptyResource) are shown while loading and must not be filtered.
@@ -196,7 +198,7 @@ export class UserTableComponent implements OnDestroy {
         src.filtered ?? (isInitialLoad(this.userService.usersResource) ? (prev?.value?.data ?? this.emptyResource()) : []);
       const sorted = this.clientsideSortUserData([...data], src.sort);
       const ds = new MatTableDataSource(sorted);
-      ds.paginator = this.paginator;
+      ds.paginator = src.paginator ?? null;
       return ds;
     }
   });

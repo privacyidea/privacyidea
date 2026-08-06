@@ -78,6 +78,9 @@ describe("PoliciesTableComponent", () => {
     mockDialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
     router = TestBed.inject(Router) as unknown as MockRouter;
 
+    const mockAuthService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    mockAuthService.actionAllowed.mockImplementation((action: string) => action === "policyread");
+
     mockPolicyService.allPolicies.set(mockPolicies);
 
     fixture = TestBed.createComponent(PoliciesTableComponent);

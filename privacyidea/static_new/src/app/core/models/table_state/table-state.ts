@@ -41,6 +41,12 @@ export interface TableStateOptions {
 export class TableState {
   readonly status: Signal<TableStatus>;
   readonly rowStatus: Signal<TableStatus>;
+  /**
+   * False while a standalone state panel takes the place of the whole table area - filter, paginator,
+   * actions and table alike - because nothing the user does to them brings rows back.
+   * The filtered state keeps them, because the filter is what the user has to change to get rows back.
+   */
+  readonly showTable: Signal<boolean>;
 
   constructor(private readonly options: TableStateOptions) {
     this.status = computed(() => {
@@ -59,6 +65,10 @@ export class TableState {
       return this.options.filterActive?.() ? "filtered" : "empty";
     });
     this.rowStatus = computed(() => (this.status() === "ready" ? "filtered" : this.status()));
+    this.showTable = computed(() => {
+      const status = this.status();
+      return status !== "empty" && status !== "denied" && status !== "error";
+    });
   }
 
   get canResetFilter(): boolean {

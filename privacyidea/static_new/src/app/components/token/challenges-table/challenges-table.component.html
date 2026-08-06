@@ -19,130 +19,135 @@
 <div
   appScrollToTop
   class="challenges-table-container">
-  <div class="filter-paginator-container">
-    <mat-form-field
-      subscriptSizing="dynamic"
-      appearance="fill"
-      class="challenges-table-filter">
-      <mat-label i18n>Filter Challenges...</mat-label>
-      <app-clearable-input
-        (clearButtonClick)="challengesService.clearFilter()"
-        [showClearButton]="challengesService.filterDraft().isNotEmpty">
-        <input
-          #filterHTMLInputElement
-          (input)="challengesService.handleFilterInput($event)"
-          [value]="challengesService.filterDraft().filterString"
-          i18n-placeholder
-          matInput
-          placeholder="Example query: 'transaction_id: 00000000000000000001'" />
-      </app-clearable-input>
-      <mat-hint>{{ filterHint }}</mat-hint>
-    </mat-form-field>
-    <mat-paginator
-      (page)="onPageEvent($event)"
-      [length]="length()"
-      [pageIndex]="pageIndex()"
-      [pageSizeOptions]="pageSizeOptions()"
-      [pageSize]="pageSize()"
-      showFirstLastButtons></mat-paginator>
-  </div>
-  <div class="margin-bottom-16">
-    <app-challenges-table-actions />
-  </div>
-  <div
-    class="table-scroll-region"
-    appScrollEdges>
-    <table
-      [dataSource]="challengesDataSource()"
-      aria-label="Token Challenges Table"
-      class="challenges-table"
-      i18n-aria-label
-      mat-table>
-      @for (column of columnsKeyMap; track column) {
-        <ng-container [matColumnDef]="column.key">
-          <th
-            *matHeaderCellDef
-            mat-header-cell>
-            <div class="flex ali-center">
-              {{ column.label }}
-              <div class="margin-left-16 flex">
-                @if (apiFilterKeys.includes(column.key)) {
+  @if (tableState.showTable()) {
+    <div class="filter-paginator-container">
+      <mat-form-field
+        subscriptSizing="dynamic"
+        appearance="fill"
+        class="challenges-table-filter">
+        <mat-label i18n>Filter Challenges...</mat-label>
+        <app-clearable-input
+          (clearButtonClick)="challengesService.clearFilter()"
+          [showClearButton]="challengesService.filterDraft().isNotEmpty">
+          <input
+            #filterHTMLInputElement
+            (input)="challengesService.handleFilterInput($event)"
+            [value]="challengesService.filterDraft().filterString"
+            i18n-placeholder
+            matInput
+            placeholder="Example query: 'transaction_id: 00000000000000000001'" />
+        </app-clearable-input>
+        <mat-hint>{{ filterHint }}</mat-hint>
+      </mat-form-field>
+      <mat-paginator
+        (page)="onPageEvent($event)"
+        [length]="length()"
+        [pageIndex]="pageIndex()"
+        [pageSizeOptions]="pageSizeOptions()"
+        [pageSize]="pageSize()"
+        showFirstLastButtons></mat-paginator>
+    </div>
+    <div class="margin-bottom-16">
+      <app-challenges-table-actions />
+    </div>
+    <div
+      class="table-scroll-region"
+      appScrollEdges>
+      <table
+        [dataSource]="challengesDataSource()"
+        aria-label="Token Challenges Table"
+        class="challenges-table"
+        i18n-aria-label
+        mat-table>
+        @for (column of columnsKeyMap; track column) {
+          <ng-container [matColumnDef]="column.key">
+            <th
+              *matHeaderCellDef
+              mat-header-cell>
+              <div class="flex ali-center">
+                {{ column.label }}
+                <div class="margin-left-16 flex">
+                  @if (apiFilterKeys.includes(column.key)) {
+                    <button
+                      (click)="onKeywordClick(column.key)"
+                      aria-label="Filter by {{ column.label }}"
+                      i18n-aria-label
+                      class="filter-button"
+                      mat-icon-button
+                      type="button">
+                      <mat-icon class="keyword-button-icon margin-left-0">
+                        {{ getFilterIconName(column.key) }}
+                      </mat-icon>
+                    </button>
+                  }
                   <button
-                    (click)="onKeywordClick(column.key)"
-                    aria-label="Filter by {{ column.label }}"
+                    (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
+                    aria-label="Sort by {{ column.label }}"
                     i18n-aria-label
-                    class="filter-button"
+                    class="sort-button"
                     mat-icon-button
                     type="button">
-                    <mat-icon class="keyword-button-icon margin-left-0">
-                      {{ getFilterIconName(column.key) }}
-                    </mat-icon>
+                    <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
                   </button>
-                }
-                <button
-                  (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
-                  aria-label="Sort by {{ column.label }}"
-                  i18n-aria-label
-                  class="sort-button"
-                  mat-icon-button
-                  type="button">
-                  <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
-                </button>
+                </div>
               </div>
-            </div>
-          </th>
-          <td
-            *matCellDef="let element"
-            mat-cell>
-            <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
-              @switch (column.key) {
-                @case ("serial") {
-                  <app-copyable [copyText]="element.serial">
-                    <a
-                      role="button"
-                      tabindex="0"
-                      (click)="serialClicked(element)"
-                      (keydown.enter)="serialClicked(element)"
-                      (keydown.space)="$event.preventDefault(); serialClicked(element)"
-                      class="flex ali-center">
-                      {{ element.serial }}
-                    </a>
-                  </app-copyable>
+            </th>
+            <td
+              *matCellDef="let element"
+              mat-cell>
+              <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
+                @switch (column.key) {
+                  @case ("serial") {
+                    <app-copyable [copyText]="element.serial">
+                      <a
+                        role="button"
+                        tabindex="0"
+                        (click)="serialClicked(element)"
+                        (keydown.enter)="serialClicked(element)"
+                        (keydown.space)="$event.preventDefault(); serialClicked(element)"
+                        class="flex ali-center">
+                        {{ element.serial }}
+                      </a>
+                    </app-copyable>
+                  }
+                  @case ("otp_received") {
+                    <div class="flex just-center width-100">
+                      <span [ngClass]="[element[column.key] ? 'highlight-true' : 'highlight-false']">
+                        {{ element[column.key] }}
+                      </span>
+                    </div>
+                  }
+                  @default {
+                    <span>{{ element[column.key] }}</span>
+                  }
                 }
-                @case ("otp_received") {
-                  <div class="flex just-center width-100">
-                    <span [ngClass]="[element[column.key] ? 'highlight-true' : 'highlight-false']">
-                      {{ element[column.key] }}
-                    </span>
-                  </div>
-                }
-                @default {
-                  <span>{{ element[column.key] }}</span>
-                }
-              }
-            </div>
+              </div>
+            </td>
+          </ng-container>
+        }
+        <tr
+          *matHeaderRowDef="displayedColumns; sticky: true"
+          mat-header-row></tr>
+        <tr
+          *matRowDef="let row; columns: displayedColumns"
+          [class.skeleton-row]="!row.transaction_id"
+          mat-row></tr>
+        <tr *matNoDataRow>
+          <td [attr.colspan]="displayedColumns.length">
+            <app-table-state
+              [status]="tableState.rowStatus()"
+              [table]="tableState" />
           </td>
-        </ng-container>
-      }
-      <tr
-        *matHeaderRowDef="displayedColumns; sticky: true"
-        mat-header-row></tr>
-      <tr
-        *matRowDef="let row; columns: displayedColumns"
-        [class.skeleton-row]="!row.transaction_id"
-        mat-row></tr>
-      <tr *matNoDataRow>
-        <td [attr.colspan]="displayedColumns.length">
-          <app-table-state
-            [status]="tableState.rowStatus()"
-            [table]="tableState"
-            heading="No challenges yet"
-            hint="Challenges appear here while a user is answering a challenge-response request."
-            i18n-heading
-            i18n-hint
-            icon="pending_actions" />
-        </td>
-      </tr>
-    </table>
-  </div>
+        </tr>
+      </table>
+    </div>
+  } @else {
+    <app-table-state
+      [table]="tableState"
+      heading="No challenges yet"
+      hint="Challenges appear here while a user is answering a challenge-response request."
+      i18n-heading
+      i18n-hint
+      icon="pending_actions" />
+  }
 </div>

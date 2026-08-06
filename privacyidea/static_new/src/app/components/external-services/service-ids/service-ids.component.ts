@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, ElementRef, inject, signal, ViewChild, WritableSignal } from "@angular/core";
+import { Component, computed, ElementRef, inject, signal, ViewChild, viewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatTooltipModule } from "@angular/material/tooltip";
@@ -80,7 +80,7 @@ export class ServiceIdsComponent {
     allowed: () => this.authService.actionAllowed("serviceid_list"),
     resetFilter: () => this.resetFilter()
   });
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  readonly paginator = viewChild(MatPaginator);
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
   displayedColumns: string[] = ["select", "id", "servicename", "description"];
@@ -92,7 +92,7 @@ export class ServiceIdsComponent {
     }
     const services = this.serviceIdService.serviceIds();
     const dataSource = new MatTableDataSource(services);
-    dataSource.paginator = this.paginator;
+    dataSource.paginator = this.paginator() ?? null;
     dataSource.sort = this.sort;
     return dataSource;
   });

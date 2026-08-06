@@ -36,4 +36,6 @@ export class TableStateComponent {
   readonly hint = input<string>("");
 
   readonly currentStatus = computed(() => this.status() ?? this.table().status());
+  /** The projected call to action stays available where the list is empty for good, not where it failed or was filtered away. */
+  readonly showsProjectedAction = computed(() => this.currentStatus() === "empty" || this.currentStatus() === "denied");
 }

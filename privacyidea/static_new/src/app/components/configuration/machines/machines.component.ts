@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, ElementRef, inject, signal, ViewChild, WritableSignal } from "@angular/core";
+import { Component, computed, ElementRef, inject, signal, ViewChild, viewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { MatPaginator, MatPaginatorModule } from "@angular/material/paginator";
@@ -79,7 +79,7 @@ export class MachinesComponent {
     resetFilter: () => this.resetFilter()
   });
 
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  readonly paginator = viewChild(MatPaginator);
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef;
 
@@ -91,7 +91,7 @@ export class MachinesComponent {
     }
     const machines = this.machineService.machines() ?? [];
     const dataSource = new MatTableDataSource(machines);
-    dataSource.paginator = this.paginator;
+    dataSource.paginator = this.paginator() ?? null;
     dataSource.sort = this.sort;
     return dataSource;
   });

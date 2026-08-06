@@ -18,7 +18,7 @@
  **/
 import { NgClass } from "@angular/common";
 import { Component, computed, inject } from "@angular/core";
-import { MatIconButton } from "@angular/material/button";
+import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatDialog } from "@angular/material/dialog";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -49,6 +49,7 @@ import { TokenTableComponent } from "./token-table.component";
     NgClass,
     CopyableComponent,
     MatCheckboxModule,
+    MatButton,
     MatIconButton,
     MatIcon,
     MatTooltip,

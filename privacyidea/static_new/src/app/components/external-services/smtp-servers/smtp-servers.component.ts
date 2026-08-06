@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, ElementRef, inject, signal, ViewChild, WritableSignal } from "@angular/core";
+import { Component, computed, ElementRef, inject, signal, ViewChild, viewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatIconModule } from "@angular/material/icon";
@@ -80,7 +80,7 @@ export class SmtpServersComponent {
     resetFilter: () => this.resetFilter()
   });
 
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  readonly paginator = viewChild(MatPaginator);
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
 
@@ -94,7 +94,7 @@ export class SmtpServersComponent {
     }
     const servers = this.smtpService.smtpServers();
     const dataSource = new MatTableDataSource(servers);
-    dataSource.paginator = this.paginator;
+    dataSource.paginator = this.paginator() ?? null;
     dataSource.sort = this.sort;
     return dataSource;
   });

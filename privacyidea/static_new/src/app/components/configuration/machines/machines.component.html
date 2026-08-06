@@ -19,133 +19,138 @@
 <div
   appScrollToTop
   class="machines-container">
-  <div class="header-row">
-    <div class="filter-paginator-container">
-      <div class="flex-row ali-center">
-        <mat-form-field
-          subscriptSizing="dynamic"
-          class="table-filter">
-          <mat-label i18n>Filter Machines...</mat-label>
-          <app-clearable-input
-            (clearButtonClick)="resetFilter()"
-            [showClearButton]="filterString().length > 0">
-            <input
-              #filterHTMLInputElement
-              (input)="onFilterInput(filterHTMLInputElement.value)"
-              [value]="filterString()"
-              aria-label="Filter Input"
-              i18n-aria-label
-              i18n-placeholder
-              matInput
-              placeholder="Filter by hostname, IP or resolver" />
-          </app-clearable-input>
-        </mat-form-field>
+  @if (tableState.showTable()) {
+    <div class="header-row">
+      <div class="filter-paginator-container">
+        <div class="flex-row ali-center">
+          <mat-form-field
+            subscriptSizing="dynamic"
+            class="table-filter">
+            <mat-label i18n>Filter Machines...</mat-label>
+            <app-clearable-input
+              (clearButtonClick)="resetFilter()"
+              [showClearButton]="filterString().length > 0">
+              <input
+                #filterHTMLInputElement
+                (input)="onFilterInput(filterHTMLInputElement.value)"
+                [value]="filterString()"
+                aria-label="Filter Input"
+                i18n-aria-label
+                i18n-placeholder
+                matInput
+                placeholder="Filter by hostname, IP or resolver" />
+            </app-clearable-input>
+          </mat-form-field>
+        </div>
+        <mat-paginator
+          [length]="totalLength()"
+          [pageSizeOptions]="pageSizeOptions()"
+          [pageSize]="pageSize()"
+          showFirstLastButtons />
       </div>
-      <mat-paginator
-        [length]="totalLength()"
-        [pageSizeOptions]="pageSizeOptions()"
-        [pageSize]="pageSize()"
-        showFirstLastButtons />
     </div>
-  </div>
-  <table
-    [dataSource]="machineDataSource()"
-    class="machines-table"
-    mat-table
-    matSort>
-    <ng-container matColumnDef="hostname">
-      <th
-        *matHeaderCellDef
-        i18n
-        mat-header-cell
-        mat-sort-header>
-        Hostname
-      </th>
-      <td
-        *matCellDef="let machine"
-        mat-cell>
-        <app-copyable [copyText]="machine.hostname.join(', ')">
-          <a
-            (click)="openDetailsDialog(machine)"
-            (keydown.enter)="openDetailsDialog(machine)"
-            (keydown.space)="$event.preventDefault(); openDetailsDialog(machine)"
-            class="flex ali-center clickable"
-            role="button"
-            tabindex="0">
-            {{ machine.hostname.join(", ") }}
-          </a>
-        </app-copyable>
-      </td>
-    </ng-container>
+    <table
+      [dataSource]="machineDataSource()"
+      class="machines-table"
+      mat-table
+      matSort>
+      <ng-container matColumnDef="hostname">
+        <th
+          *matHeaderCellDef
+          i18n
+          mat-header-cell
+          mat-sort-header>
+          Hostname
+        </th>
+        <td
+          *matCellDef="let machine"
+          mat-cell>
+          <app-copyable [copyText]="machine.hostname.join(', ')">
+            <a
+              (click)="openDetailsDialog(machine)"
+              (keydown.enter)="openDetailsDialog(machine)"
+              (keydown.space)="$event.preventDefault(); openDetailsDialog(machine)"
+              class="flex ali-center clickable"
+              role="button"
+              tabindex="0">
+              {{ machine.hostname.join(", ") }}
+            </a>
+          </app-copyable>
+        </td>
+      </ng-container>
 
-    <ng-container matColumnDef="ip">
-      <th
-        *matHeaderCellDef
-        i18n
-        mat-header-cell
-        mat-sort-header>
-        IP Address
-      </th>
-      <td
-        *matCellDef="let machine"
-        mat-cell>
-        <app-copyable [copyText]="machine.ip">
-          <span>{{ machine.ip }}</span>
-        </app-copyable>
-      </td>
-    </ng-container>
+      <ng-container matColumnDef="ip">
+        <th
+          *matHeaderCellDef
+          i18n
+          mat-header-cell
+          mat-sort-header>
+          IP Address
+        </th>
+        <td
+          *matCellDef="let machine"
+          mat-cell>
+          <app-copyable [copyText]="machine.ip">
+            <span>{{ machine.ip }}</span>
+          </app-copyable>
+        </td>
+      </ng-container>
 
-    <ng-container matColumnDef="id">
-      <th
-        *matHeaderCellDef
-        i18n
-        mat-header-cell
-        mat-sort-header>
-        ID
-      </th>
-      <td
-        *matCellDef="let machine"
-        mat-cell>
-        {{ machine.id }}
-      </td>
-    </ng-container>
+      <ng-container matColumnDef="id">
+        <th
+          *matHeaderCellDef
+          i18n
+          mat-header-cell
+          mat-sort-header>
+          ID
+        </th>
+        <td
+          *matCellDef="let machine"
+          mat-cell>
+          {{ machine.id }}
+        </td>
+      </ng-container>
 
-    <ng-container matColumnDef="resolver_name">
-      <th
-        *matHeaderCellDef
-        i18n
-        mat-header-cell
-        mat-sort-header>
-        Machine Resolver
-      </th>
-      <td
-        *matCellDef="let machine"
-        mat-cell>
-        <app-copyable [copyText]="machine.resolver_name">
-          <span>{{ machine.resolver_name }}</span>
-        </app-copyable>
-      </td>
-    </ng-container>
+      <ng-container matColumnDef="resolver_name">
+        <th
+          *matHeaderCellDef
+          i18n
+          mat-header-cell
+          mat-sort-header>
+          Machine Resolver
+        </th>
+        <td
+          *matCellDef="let machine"
+          mat-cell>
+          <app-copyable [copyText]="machine.resolver_name">
+            <span>{{ machine.resolver_name }}</span>
+          </app-copyable>
+        </td>
+      </ng-container>
 
-    <tr
-      *matHeaderRowDef="displayedColumns"
-      mat-header-row></tr>
-    <tr
-      *matRowDef="let row; columns: displayedColumns"
-      [class.skeleton-row]="!row.resolver_name"
-      mat-row></tr>
+      <tr
+        *matHeaderRowDef="displayedColumns"
+        mat-header-row></tr>
+      <tr
+        *matRowDef="let row; columns: displayedColumns"
+        [class.skeleton-row]="!row.resolver_name"
+        mat-row></tr>
 
-    <tr *matNoDataRow>
-      <td colspan="5">
-        <app-table-state
-          [status]="tableState.rowStatus()"
-          [table]="tableState"
-          heading="No machines yet"
-          hint="Machines are read from the machine resolvers. Configure a machine resolver to see machines here."
-          i18n-heading
-          i18n-hint
-          icon="computer" />
-      </td>
-    </tr>
-  </table>
+      <tr *matNoDataRow>
+        <td colspan="5">
+          <app-table-state
+            [status]="tableState.rowStatus()"
+            [table]="tableState" />
+        </td>
+      </tr>
+    </table>
+  } @else {
+    <app-table-state
+      [table]="tableState"
+      heading="No machines yet"
+      hint="Machines are read from the machine resolvers. Configure a machine resolver to see machines here."
+      i18n-heading
+      i18n-hint
+      icon="computer" />
+  }
 </div>

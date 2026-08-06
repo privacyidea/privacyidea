@@ -41,7 +41,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
 import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 import { NgClass } from "@angular/common";
-import { MatIconButton } from "@angular/material/button";
+import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
@@ -90,6 +90,7 @@ const columnKeysMap = [
     ClearableInputComponent,
     CopyableComponent,
     TokenTableActionsComponent,
+    MatButton,
     MatIconButton,
     MatMenuModule,
     MatDividerModule,

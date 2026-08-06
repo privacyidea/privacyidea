@@ -47,6 +47,9 @@ describe("ClientsComponent", () => {
       ]
     }).compileComponents();
 
+    const authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+    authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["clienttype"] });
+
     fixture = TestBed.createComponent(ClientsComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();

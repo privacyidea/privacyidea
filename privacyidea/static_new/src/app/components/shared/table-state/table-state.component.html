@@ -36,7 +36,6 @@
           {{ hint() }}
         </p>
       }
-      <ng-content />
     }
     @case ("filtered") {
       <mat-icon
@@ -105,5 +104,8 @@
         You do not have the permission to view this list.
       </p>
     }
+  }
+  @if (showsProjectedAction()) {
+    <ng-content />
   }
 </div>

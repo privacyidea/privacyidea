@@ -218,6 +218,9 @@ describe("AuditComponent (template rendering)", () => {
       ]
     }).compileComponents();
 
+    const authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+    authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["auditlog"] });
+
     fixture = TestBed.createComponent(AuditComponent);
     component = fixture.componentInstance;
     mockAuditService = TestBed.inject(MockAuditService);

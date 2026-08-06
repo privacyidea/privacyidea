@@ -44,11 +44,12 @@ describe("ContainerTemplatesComponent", () => {
 
   const mockContainerTemplateService = {
     templates: templatesSignal,
-    templatesResource: { hasValue: () => templatesLoaded() }
+    templatesResource: { hasValue: () => templatesLoaded(), error: () => null, reload: jest.fn() }
   };
 
   const mockAuthService = {
-    isAdmin: signal(true)
+    isAdmin: signal(true),
+    actionAllowed: () => true
   };
 
   const mockDialogService = {
