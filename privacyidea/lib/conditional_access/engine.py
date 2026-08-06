@@ -843,8 +843,7 @@ def _stage_access_decision(stage, count: int) -> "AccessDecision | None":
     return AccessDecision.ALLOW if has_allow else None
 
 
-def evaluate_lockout_policies(context: CAContext, event_type, source_ip: str | None = None,
-                              now: datetime | None = None,
+def evaluate_lockout_policies(context: CAContext, event_type, now: datetime | None = None,
                               auth_log_event_id: int | None = None) -> list[str]:
     """
     Evaluate every enabled lockout policy that tracks *event_type* and execute
@@ -881,7 +880,6 @@ def evaluate_lockout_policies(context: CAContext, event_type, source_ip: str | N
     :param now: the reference time; defaults to :func:`utc_now`
     :param auth_log_event_id: id of the authentication_log row this request already wrote, so a dry-run policy's
         finding can be attached to it; omit it (the default) and dry-run findings are only logged, not persisted
-        - mirrors how ``source_ip`` is optional
     :return: the de-duplicated, order-preserving list of user-facing notices
         produced by executed actions (empty if nothing was triggered/notified)
     """
@@ -904,7 +902,7 @@ def evaluate_lockout_policies(context: CAContext, event_type, source_ip: str | N
     ).all()
     notices: list[str] = []
     for policy in policies:
-        notices.extend(_evaluate_policy(policy, context, event_type, source_ip, now, auth_log_event_id))
+        notices.extend(_evaluate_policy(policy, context, event_type, now, auth_log_event_id))
     # De-duplicate while preserving order: several policies tracking the same
     # user can emit the same notice in one request.
     seen: set[str] = set()
@@ -939,8 +937,7 @@ def _stage_pending_actions(stage, count: int) -> list:
             if _action_threshold_met(action, stage.failure_threshold, count)]
 
 
-def _evaluate_policy(policy: LockoutPolicy, context: CAContext, event_type: str,
-                     source_ip: str | None, now: datetime,
+def _evaluate_policy(policy: LockoutPolicy, context: CAContext, event_type: str, now: datetime,
                      auth_log_event_id: int | None = None) -> list[str]:
     """
     Evaluate a single policy: count the user's events over the policy window,

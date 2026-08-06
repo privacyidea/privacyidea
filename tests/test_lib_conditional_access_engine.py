@@ -799,7 +799,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         # The triggering request's own row: seeded events (2) + this one (1) reaches the threshold (3) exactly.
         event_id = log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver=self.user.resolver,
                                             uid=self.user.uid, realm=self.user.realm)
-        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, auth_log_event_id=event_id)
+        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL, auth_log_event_id=event_id)
 
         entry = get_authentication_log_event(event_id)
         assert entry is not None
@@ -828,7 +828,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         self._seed_events(AuthEventType.MFA_FAIL, 2)
         event_id = log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver=self.user.resolver,
                                             uid=self.user.uid, realm=self.user.realm)
-        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
+        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
 
         entry = get_authentication_log_event(event_id)
         assert entry is not None
@@ -855,7 +855,7 @@ class LockoutEngineTestCase(LockoutTestCase):
                           stages=(StageDefinition(2, 1, [StageActionDefinition(LockoutAction.PERMANENT_LOCK_USER)]),))
         self._seed_events(AuthEventType.MFA_FAIL, 2)
         event_id = self._log_row()  # count reaches 3: dry_a's threshold 3 exactly, dry_b's 2 is already passed
-        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, auth_log_event_id=event_id)
+        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL, auth_log_event_id=event_id)
 
         findings = self._findings(event_id)
         # dry_b's PERMANENT_LOCK_USER is fire-once at threshold 2 and the count is 3, so only dry_a matches.
@@ -871,7 +871,7 @@ class LockoutEngineTestCase(LockoutTestCase):
                                     name="Lock 10 min"),))
         self._seed_events(AuthEventType.MFA_FAIL, 2)
         event_id = self._log_row()
-        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, auth_log_event_id=event_id)
+        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL, auth_log_event_id=event_id)
 
         finding = self._findings(event_id)[0]
         self.assertEqual("Lock 10 min", finding["stage_name"])
@@ -881,7 +881,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
         self._seed_events(AuthEventType.MFA_FAIL, 1)
         event_id = self._log_row()  # count 2, below the threshold of 3
-        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, auth_log_event_id=event_id)
+        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL, auth_log_event_id=event_id)
 
         self.assertIsNone(get_authentication_log_event(event_id).other_info)
         self.assertIsNone(self._state())
@@ -893,7 +893,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
         self._seed_events(AuthEventType.MFA_FAIL, 5)
         event_id = self._log_row()  # count 6, well past the threshold of 3
-        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, auth_log_event_id=event_id)
+        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL, auth_log_event_id=event_id)
 
         self.assertEqual([], self._findings(event_id))
 
@@ -905,7 +905,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         db.session.commit()
         self._seed_events(AuthEventType.MFA_FAIL, 5)
         event_id = self._log_row()  # count 6 >= threshold 3
-        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, auth_log_event_id=event_id)
+        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL, auth_log_event_id=event_id)
 
         findings = self._findings(event_id)
         self.assertEqual(1, len(findings))
@@ -922,9 +922,9 @@ class LockoutEngineTestCase(LockoutTestCase):
         self._seed_events(AuthEventType.MFA_FAIL, 3)
 
         first = self._log_row()
-        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, auth_log_event_id=first)
+        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL, auth_log_event_id=first)
         second = self._log_row()
-        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, auth_log_event_id=second)
+        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL, auth_log_event_id=second)
 
         self.assertEqual(1, len(self._findings(first)))
         self.assertEqual(1, len(self._findings(second)))
@@ -937,7 +937,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         event_id = log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver=self.user.resolver,
                                            uid=self.user.uid, realm=self.user.realm,
                                            other_info={"reason": "pre-existing"})
-        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, auth_log_event_id=event_id)
+        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL, auth_log_event_id=event_id)
 
         other_info = get_authentication_log_event(event_id).other_info
         self.assertEqual("pre-existing", other_info["reason"])
@@ -950,7 +950,7 @@ class LockoutEngineTestCase(LockoutTestCase):
                                            StageActionDefinition(LockoutAction.PERMANENT_LOCK_USER)]),))
         self._seed_events(AuthEventType.MFA_FAIL, 2)
         event_id = self._log_row()
-        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, auth_log_event_id=event_id)
+        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL, auth_log_event_id=event_id)
 
         self.assertEqual(["LOCK_USER", "PERMANENT_LOCK_USER"], self._findings(event_id)[0]["actions"])
 
@@ -961,7 +961,8 @@ class LockoutEngineTestCase(LockoutTestCase):
                           stages=(StageDefinition(2, 1, [StageActionDefinition(LockoutAction.BLOCK_IP, 600)]),))
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=2, per_user=1)
         event_id = self._log_row(AuthEventType.PASSWORD_FAIL)
-        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip=ip, auth_log_event_id=event_id)
+        evaluate_lockout_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL,
+                                  auth_log_event_id=event_id)
 
         finding = self._findings(event_id)[0]
         self.assertEqual("dry_ip", finding["policy_name"])
@@ -972,7 +973,7 @@ class LockoutEngineTestCase(LockoutTestCase):
     def test_dry_run_returns_no_notices(self):
         self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        self.assertEqual([], evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL))
+        self.assertEqual([], evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL))
 
     @smtpmock.activate
     def test_dry_run_email_action_records_the_finding_but_sends_nothing(self):
@@ -990,7 +991,8 @@ class LockoutEngineTestCase(LockoutTestCase):
                                                                       "subject": "s", "body": "b"})]),))
             self._seed_events(AuthEventType.MFA_FAIL, 2)
             event_id = self._log_row()
-            notices = evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, auth_log_event_id=event_id)
+            notices = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL,
+                                                auth_log_event_id=event_id)
 
             self.assertEqual(["EMAIL_ADMIN"], self._findings(event_id)[0]["actions"])
             self.assertEqual([], notices)
@@ -1007,7 +1009,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         self._make_policy(name="live", counter_type=AuthEventType.MFA_FAIL, priority=2)
         self._seed_events(AuthEventType.MFA_FAIL, 2)
         event_id = self._log_row()
-        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, auth_log_event_id=event_id)
+        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL, auth_log_event_id=event_id)
 
         self.assertEqual(["dry"], [finding["policy_name"] for finding in self._findings(event_id)])
         self.assertTrue(is_user_locked(self.user))
@@ -1021,7 +1023,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         stages[0].actions[0].retrigger_above_threshold = True
         db.session.commit()
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
+        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
         self.assertTrue(is_user_locked(self.user))
 
     def test_fire_once_and_retrigger_actions_in_one_stage_are_decided_separately(self):
@@ -1042,7 +1044,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         # unreachable SMTP identifier would raise if the email action were executed, and is guarded per action).
         self._seed_events(AuthEventType.MFA_FAIL, 5)
         event_id = self._log_row()
-        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, auth_log_event_id=event_id)
+        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL, auth_log_event_id=event_id)
         self.assertTrue(is_user_locked(self.user))
 
     def test_dry_run_finding_reports_only_the_pending_actions(self):
@@ -1056,7 +1058,7 @@ class LockoutEngineTestCase(LockoutTestCase):
                                                                  retrigger_above_threshold=False)]),))
         self._seed_events(AuthEventType.MFA_FAIL, 5)
         event_id = self._log_row()  # count 6 > threshold 3
-        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, auth_log_event_id=event_id)
+        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL, auth_log_event_id=event_id)
 
         self.assertEqual(["LOCK_USER"], self._findings(event_id)[0]["actions"])
 
@@ -1071,7 +1073,7 @@ class LockoutEngineTestCase(LockoutTestCase):
                                                                  retrigger_above_threshold=True)])))
         severe_stage = stages[0]
         self._seed_events(AuthEventType.MFA_FAIL, 6)  # past both thresholds
-        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
+        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
 
         self.assertEqual(severe_stage.id, self._state().last_stage_triggered)
 
@@ -1085,7 +1087,7 @@ class LockoutEngineTestCase(LockoutTestCase):
                                                                  retrigger_above_threshold=True)])))
         mild_stage = stages[1]
         self._seed_events(AuthEventType.MFA_FAIL, 6)
-        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
+        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
 
         self.assertEqual(mild_stage.id, self._state().last_stage_triggered)
 

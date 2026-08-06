@@ -700,7 +700,7 @@ def get_auth_token():
     lockout_notices = []
     try:
         lockout_notices = evaluate_lockout_policies(build_ca_context(user, internal_admin=internal_admin),
-                                                    auth_event_type, source_ip=g.client_ip,
+                                                    auth_event_type,
                                                     auth_log_event_id=auth_log_event_id) or []
     except Exception as ex:
         log.warning(f"Conditional-access policy evaluation failed: {ex!r}")
