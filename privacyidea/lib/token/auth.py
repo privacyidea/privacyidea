@@ -626,7 +626,7 @@ def challenge_text_replace(message: str, user: User | None, token_obj: TokenClas
 
 
 def create_challenge(serial: str, transaction_id: str = None, challenge: str = '',
-                     data=None, session: str = '',
+                     data: dict | None = None, session: str = '',
                      validitytime: int = 120) -> "Challenge":
     """
     Create a new challenge and persist it - to Redis if available, to the DB otherwise.

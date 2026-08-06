@@ -406,7 +406,7 @@ class ChallengeDTO:
         self.otp_valid = valid
         self.save()
 
-    def set_data(self, data):
+    def set_data(self, data: dict | None):
         """
         Set the challenge data. Must be a dict (or None/empty).
         Mirrors Challenge.set_data (models/challenge.py).
