@@ -128,18 +128,6 @@ def identify_api_client():
 
     try:
         client, status = identify_client_by_key(api_key)
-        if status == ClientStatus.ACTIVE:
-            g.client_id = client.id
-            # Refresh the client's usage timestamp, throttled so a busy client
-            # does not issue a DB write on every single request.
-            touch_client(client)
-        elif client is not None:
-            # Known key, valid secret, but the client is disabled.
-            g.rejected_api_client = {"client_id": client.id, "status": status}
-            log.warning(f"A {status} API key was presented (client {client.id}).")
-        else:
-            # Unknown key_id or wrong secret: do not reject app-wide, do not audit.
-            log.warning("Ignoring an unknown or invalid X-API-Key.")
     except Exception as exc:
         # Identification is optional and runs in a global before-request hook, so
         # a failure here (e.g. a transient DB error) must never turn an otherwise
@@ -147,6 +135,24 @@ def identify_api_client():
         log.warning(f"Could not resolve the X-API-Key; treating the request as unidentified: {exc}")
         g.client_id = None
         g.rejected_api_client = None
+        return
+
+    if status == ClientStatus.ACTIVE:
+        g.client_id = client.id
+        # Refresh the client's usage timestamp, throttled so a busy client does
+        # not issue a DB write on every request. This is best-effort and isolated:
+        # a write failure here must not un-identify an otherwise valid client.
+        try:
+            touch_client(client)
+        except Exception as exc:
+            log.warning(f"Could not update the client's last_used_at timestamp: {exc}")
+    elif client is not None:
+        # Known key, valid secret, but the client is disabled.
+        g.rejected_api_client = {"client_id": client.id, "status": status}
+        log.warning(f"A {status} API key was presented (client {client.id}).")
+    else:
+        # Unknown key_id or wrong secret: do not reject app-wide, do not audit.
+        log.warning("Ignoring an unknown or invalid X-API-Key.")
 
 
 @token_blueprint.teardown_app_request

@@ -57,6 +57,14 @@ SERIES_ID_BYTES = 32
 # them as cookie theft. Overridable via PI_REMEMBER_DEVICE_GRACE_SECONDS in
 # pi.cfg; set to 0 for strict fail-secure (no grace).
 DEFAULT_GRACE_SECONDS = 10
+# Column limits of the identity binding, mirroring the auth_sessions model. The
+# identity is a lookup key, so it is stored and matched verbatim (never
+# truncated); a user whose identity would overflow simply gets no session.
+RESOLVER_MAX_LEN = 120
+USER_ID_MAX_LEN = 320
+# Hard cap on a session's configured validity, so an absurd
+# remember_device_validity policy value cannot overflow timedelta.
+MAX_SESSION_VALIDITY_DAYS = 3650
 
 
 def _grace_window_seconds() -> int:
@@ -123,7 +131,15 @@ def session_user_identity(user: "User | None") -> "UserIdentity | None":
     """
     if not user or not user.resolver or not user.uid or not user.realm_id:
         return None
-    return UserIdentity(user.resolver, str(user.uid), user.realm_id)
+    resolver, user_id = user.resolver, str(user.uid)
+    if len(resolver) > RESOLVER_MAX_LEN or len(user_id) > USER_ID_MAX_LEN:
+        # The identity is a lookup key stored verbatim; one that does not fit the
+        # column could never be matched, so bind no session to it rather than
+        # issue a cookie that is silently never recognised.
+        log.warning(f"Remember-device unavailable for a user of realm_id {user.realm_id}: "
+                    f"identity exceeds the storable length.")
+        return None
+    return UserIdentity(resolver, user_id, user.realm_id)
 
 
 def create_auth_session(identity: "UserIdentity", client_id: str, ip_address: str = None,
@@ -142,12 +158,18 @@ def create_auth_session(identity: "UserIdentity", client_id: str, ip_address: st
         (``series_id:1``) to send to the client
     """
     series_id = secrets.token_urlsafe(SERIES_ID_BYTES)
-    expires_at = utc_now() + timedelta(days=validity_days) if validity_days and validity_days > 0 else None
-    # Truncate string fields to their column limits so an over-long value (e.g. a
-    # very long user agent) can never raise on save and turn an already-successful
-    # auth into a 500.
+    if validity_days and validity_days > 0:
+        # Cap the validity so an absurd policy value cannot overflow timedelta and
+        # turn an already-successful auth into a 500.
+        expires_at = utc_now() + timedelta(days=min(validity_days, MAX_SESSION_VALIDITY_DAYS))
+    else:
+        expires_at = None
+    # The identity is a lookup key and is stored verbatim (session_user_identity
+    # has already ensured it fits its columns). Only the free-form metadata
+    # (ip/user agent) is truncated, so an over-long value there can never raise on
+    # save and turn an already-successful auth into a 500.
     session = AuthSession(series_id=series_id, client_id=client_id,
-                          resolver=identity.resolver[:120], user_id=identity.user_id[:320],
+                          resolver=identity.resolver, user_id=identity.user_id,
                           realm_id=identity.realm_id,
                           ip_address=(ip_address or None) and ip_address[:64],
                           user_agent=(user_agent or None) and user_agent[:255], counter=1,
@@ -219,7 +241,9 @@ def get_valid_session(cookie_value: str, client_id: str, identity: "UserIdentity
         return None
 
     if session.expires_at and session.expires_at < utc_now():
-        log.info(f"Persistent session {series_id!r} expired; removing it.")
+        # Never log the series_id: it is the secret half of the cookie. Correlate
+        # on the (non-secret) client_id instead.
+        log.info(f"Persistent session for client {client_id!r} expired; removing it.")
         session.delete()
         return None
 
@@ -229,14 +253,18 @@ def get_valid_session(cookie_value: str, client_id: str, identity: "UserIdentity
     if _is_within_grace(session, counter, client_ip):
         # Concurrent/duplicate request presenting the just-superseded counter -
         # tolerate it without rotating (single-step, time- and IP-bounded).
-        log.debug(f"Persistent session {series_id!r}: accepting previous counter "
-                  f"within the grace window.")
+        # last_used_at is deliberately NOT refreshed here: the window stays
+        # anchored to the rotation, so a client that never persists the rotated
+        # cookie is tolerated only briefly and then treated as theft, rather than
+        # being kept alive indefinitely (which would defeat rotation).
+        log.debug(f"Persistent session for client {client_id!r}: accepting previous "
+                  f"counter within the grace window.")
         return ValidSession(session, True)
 
     # Any other counter mismatch means the cookie was replayed. Invalidate the
     # whole series so neither the legitimate client nor the attacker can use it.
-    log.warning(f"Persistent session token reuse detected for series {series_id!r} "
-                f"(client {client_id!r}); deleting the session.")
+    log.warning(f"Persistent session token reuse detected for client {client_id!r}; "
+                f"deleting the session.")
     session.delete()
     raise AuthError(_("Authentication failure. Session token reuse detected."))
 

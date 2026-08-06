@@ -652,4 +652,11 @@ strict, fail-secure behaviour (no grace: any stale counter is treated as theft).
 Widening it trades theft-detection tightness for fewer re-registrations when a
 client loses a rotation response.
 
+The window is anchored to the rotation, not to the last request: it is not
+refreshed on each grace hit. A client that never stores the rotated cookie (and
+so keeps presenting the previous counter) is therefore tolerated only for this
+many seconds and is then treated as theft, forcing the device to re-register.
+This is intentional — refreshing the window on every stale request would keep a
+never-rotating (or stolen) cookie alive indefinitely and defeat the rotation.
+
 .. versionadded:: 3.14

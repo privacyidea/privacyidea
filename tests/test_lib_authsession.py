@@ -4,7 +4,8 @@ from privacyidea.lib.clients import create_client
 from privacyidea.lib.authsession import (parse_cookie, build_cookie_value,
                                          create_auth_session, consume_remember_device_cookie,
                                          get_valid_session, session_user_identity, UserIdentity,
-                                         cleanup_expired_auth_sessions)
+                                         cleanup_expired_auth_sessions,
+                                         RESOLVER_MAX_LEN, USER_ID_MAX_LEN, MAX_SESSION_VALIDITY_DAYS)
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.user import User
 from privacyidea.models import AuthSession
@@ -58,6 +59,25 @@ class AuthSessionLibTestCase(MyTestCase):
         self.assertIsNone(session_user_identity(None))
         self.assertIsNone(session_user_identity(User()))
 
+    def test_session_user_identity_rejects_overlong(self):
+        # The identity is a lookup key stored verbatim; one that would overflow
+        # its column yields no identity (so no unmatchable cookie is issued).
+        long_uid = User(login="cornelius", realm=self.realm1)
+        long_uid.uid = "x" * (USER_ID_MAX_LEN + 1)
+        self.assertIsNone(session_user_identity(long_uid))
+        long_resolver = User(login="cornelius", realm=self.realm1)
+        long_resolver.resolver = "y" * (RESOLVER_MAX_LEN + 1)
+        self.assertIsNone(session_user_identity(long_resolver))
+
+    def test_validity_is_capped(self):
+        # An absurd validity must not overflow timedelta (which would 500 the
+        # auth); it is capped at MAX_SESSION_VALIDITY_DAYS.
+        client_id = self._client_id()
+        session, _cookie = create_auth_session(self._identity("cap"), client_id, validity_days=10 ** 12)
+        days = (session.expires_at - utc_now()).days
+        self.assertLessEqual(days, MAX_SESSION_VALIDITY_DAYS)
+        self.assertGreater(days, MAX_SESSION_VALIDITY_DAYS - 2)
+
     def test_create_auth_session(self):
         client_id = self._client_id()
         session, cookie = create_auth_session(self._identity("alice"), client_id,
@@ -82,6 +102,22 @@ class AuthSessionLibTestCase(MyTestCase):
         output = "\n".join(captured.output)
         self.assertNotIn(session.series_id, output)
         self.assertIn("HIDDEN", output)
+
+    def test_theft_log_does_not_leak_series_id(self):
+        # The series_id is the secret half of the cookie. The theft/replay log
+        # path must not write it verbatim - the SENSITIVE_KEY_NAMES redaction only
+        # covers structured keys, not f-string messages.
+        self.app.config["PI_REMEMBER_DEVICE_GRACE_SECONDS"] = 0
+        try:
+            client_id = self._client_id()
+            nemo = self._identity("nemo")
+            session, cookie = create_auth_session(nemo, client_id)
+            consume_remember_device_cookie(cookie, client_id, nemo)   # -> counter 2
+            with self.assertLogs("privacyidea.lib.authsession", level="DEBUG") as captured:
+                consume_remember_device_cookie(cookie, client_id, nemo)   # replay -> theft
+            self.assertNotIn(session.series_id, "\n".join(captured.output))
+        finally:
+            self.app.config.pop("PI_REMEMBER_DEVICE_GRACE_SECONDS", None)
 
     def test_consume_recognized_rotates(self):
         client_id = self._client_id()

@@ -89,7 +89,6 @@ myApp.controller("clientsController", ["$scope", "$stateParams", "inform",
             });
         };
 
-        // --- persistent "remember device" sessions ---
         $scope.sessions = [];
         $scope.sessionsClientId = $stateParams.clientid || "";
         $scope.sessionsClientName = $scope.sessionsClientId;

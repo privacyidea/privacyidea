@@ -101,6 +101,20 @@ class APIClientsTestCase(MyApiTestCase):
             # An invalid status is a bad parameter (400), not a missing resource (404).
             self.assertEqual(400, res.status_code, res)
 
+    def test_03c_update_empty_display_name_is_noop(self):
+        value = self._create_client()
+        client_id = value["id"]
+        with self.app.test_request_context(f'/clients/{client_id}',
+                                           data={"display_name": "", "status": "suspended"},
+                                           method='PATCH',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            updated = res.json['result']['value']
+            # An empty display_name is ignored (not blanked); status still changes.
+            self.assertEqual("My CP", updated["display_name"])
+            self.assertEqual("suspended", updated["status"])
+
     def test_04_rotate_key_invalidates_old(self):
         created = self._create_client()
         client_id = created["id"]
@@ -229,6 +243,18 @@ class APIClientAPIKeyMiddlewareTestCase(MyApiTestCase):
                                                headers={'X-API-Key': client["api_key"]}):
                 res = self.app.full_dispatch_request()
                 self.assertNotEqual(res.status_code, 500, res)
+
+    def test_05c_touch_client_failure_does_not_unidentify(self):
+        # Refreshing last_used_at is best-effort: a write failure there must not
+        # degrade an otherwise-valid active client to unidentified.
+        client = self._create_client()
+        with mock.patch("privacyidea.api.before_after.touch_client",
+                        side_effect=Exception("DB write failed")):
+            with self.app.test_request_context('/validate/capabilities', method='GET',
+                                               headers={'X-API-Key': client["api_key"]}):
+                res = self.app.full_dispatch_request()
+                # Still identified: capabilities is reachable (200), not a 401.
+                self.assertEqual(200, res.status_code, res)
 
     def test_06_suspended_key_not_blocked_but_audited(self):
         # A known key whose client is suspended does not block /validate/check,
@@ -404,3 +430,11 @@ class APIClientSessionsTestCase(MyApiTestCase):
     def test_10_revoke_all_missing_client_404(self):
         res = self._revoke_all("does-not-exist")
         self.assertEqual(404, res.status_code, res)
+
+    def test_11_revoke_all_unknown_realm_is_400(self):
+        client, _key = create_client("unknown-realm client", "windows_cp")
+        keep_series = self._session(client.id, "cornelius").series_id
+        res = self._revoke_all(client.id, realm="nosuchrealm")
+        # An unknown realm must be rejected, not silently widened to revoke-all.
+        self.assertEqual(400, res.status_code, res)
+        self.assertIsNotNone(AuthSession.query.filter_by(series_id=keep_series).first())

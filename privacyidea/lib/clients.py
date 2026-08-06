@@ -224,7 +224,10 @@ def update_client(client_id: str, display_name: str = None, status: str = None,
     :return: the updated ``Client``
     """
     client = get_client(client_id)
-    if display_name is not None:
+    # A present-but-empty display_name is treated as "no change" rather than
+    # blanking the name (a PATCH sending it alongside other fields must not wipe
+    # it); an intentional clear is not a supported operation.
+    if display_name:
         client.display_name = display_name
     if status is not None:
         try:

@@ -226,6 +226,11 @@ def revoke_client_sessions_api(client_id):
         resolver, user_id, realm_id = identity
     elif realm:
         realm_id = get_realm_id(realm)
+        # A mistyped realm must not silently widen the scope: without this an
+        # unknown realm (realm_id=None) would drop the filter and revoke *all* of
+        # the client's sessions instead of none.
+        if realm_id is None:
+            raise ParameterError(f"The realm {realm!r} does not exist.")
 
     count = revoke_client_sessions(client_id, realm_id=realm_id, resolver=resolver, user_id=user_id)
 
