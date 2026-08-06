@@ -35,7 +35,7 @@
 // matter at a glance stay the top-level ones.
 .ca-sub-label {
   color: var(--mat-sys-on-surface-variant);
-  padding-left: calc(var(--global-padding) * 2);
+  padding-left: 24px !important;
 }
 
 .ca-section-title {
