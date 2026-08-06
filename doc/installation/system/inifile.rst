@@ -645,8 +645,11 @@ like a replay (a stale counter) and destroy the session series. Within this many
 seconds, and from the same source IP, the immediately-previous counter is
 accepted without rotating, so concurrent requests converge on one token.
 
-Set it to ``0`` for strict, fail-secure behaviour (no grace: any stale counter is
-treated as theft). Widening it trades theft-detection tightness for fewer
-re-registrations when a client loses a rotation response.
+This is an advanced knob with a sensible default; most deployments never need to
+change it. It is a system-wide protocol tolerance, not a per-user or per-realm
+setting, so it is configured here rather than by policy. Set it to ``0`` for
+strict, fail-secure behaviour (no grace: any stale counter is treated as theft).
+Widening it trades theft-detection tightness for fewer re-registrations when a
+client loses a rotation response.
 
 .. versionadded:: 3.14

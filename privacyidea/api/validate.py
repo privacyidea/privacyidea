@@ -118,7 +118,7 @@ from privacyidea.api.lib.utils import (get_all_params, get_before_request_config
 from privacyidea.api.recover import recover_blueprint
 from privacyidea.lib.authsession import (create_auth_session, set_persistent_cookie,
                                          clear_persistent_cookie, consume_remember_device_cookie,
-                                         session_user_id, PERSISTENT_COOKIE_NAME)
+                                         session_user_identity, PERSISTENT_COOKIE_NAME, RememberStatus)
 from privacyidea.api.register import register_blueprint
 from privacyidea.lib.applications.offline import MachineApplication
 from privacyidea.lib.challenge import get_challenges, extract_answered_challenges, cancel_enrollment_via_multichallenge
@@ -770,11 +770,11 @@ def _resolve_persistent_cookie(user: User, success: bool) -> tuple | None:
         return None
     if not is_true(get_optional(request.all_data, "request_persistent_cookie")):
         return None
-    user_id = session_user_id(user)
-    if not user_id:
-        # The recognition endpoint binds and matches on "login@realm", so a
-        # session for a userless (serial-only) auth could never be recognised.
-        # Do not issue a cookie that can never be redeemed.
+    identity = session_user_identity(user)
+    if not identity:
+        # The recognition endpoint binds and matches on the resolver-stable user
+        # identity, so a session for a userless (serial-only) auth could never be
+        # recognised. Do not issue a cookie that can never be redeemed.
         return None
     if not Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE, user_object=user).any():
         return None
@@ -788,7 +788,7 @@ def _resolve_persistent_cookie(user: User, success: bool) -> tuple | None:
             validity_days = int(list(validity_pols)[0])
         except (ValueError, TypeError):
             validity_days = None
-    session, cookie_value = create_auth_session(user_id=user_id,
+    session, cookie_value = create_auth_session(identity,
                                                 client_id=g.client_id,
                                                 ip_address=g.client_ip,
                                                 user_agent=g.get("user_agent"),
@@ -899,31 +899,31 @@ def check_remember_device():
     # Only evaluate the remember_device policy (which also writes a policy-match
     # audit entry) once we know there is actually a cookie and a bindable user to
     # recognise, so a cookie-less poll does not pay for a discarded evaluation.
-    # user.exist() is required: a session is bound to the "login@realm" string,
-    # so without it a deleted/removed account would keep matching by string and
-    # skip the second factor. Confirming the user still resolves means deleting
-    # the account revokes its remembered devices.
+    # Resolving the user to a stable identity (resolver, user_id, realm) is itself
+    # the existence check: a deleted/removed account no longer resolves, so
+    # session_user_identity returns None and its remembered devices stop being
+    # recognised - i.e. deleting the account revokes them.
     presented = request.cookies.get(PERSISTENT_COOKIE_NAME)
-    user_id = session_user_id(user)
+    identity = session_user_identity(user)
 
-    if presented and user_id and user.exist() and Match.user(g, scope=SCOPE.AUTH,
-                                                             action=PolicyAction.REMEMBER_DEVICE,
-                                                             user_object=user).any():
-        result = consume_remember_device_cookie(presented, g.client_id, user_id, g.get("client_ip"))
-        if result.status == "recognized":
+    if presented and identity and Match.user(g, scope=SCOPE.AUTH,
+                                             action=PolicyAction.REMEMBER_DEVICE,
+                                             user_object=user).any():
+        result = consume_remember_device_cookie(presented, g.client_id, identity, g.get("client_ip"))
+        if result.status == RememberStatus.RECOGNIZED:
             recognised = True
             cookie_action = ("set", result.cookie_value, result.expires_at)
-        elif result.status == "grace":
+        elif result.status == RememberStatus.GRACE:
             # Tolerated concurrent/duplicate request: recognised, but do not
             # rotate (the client keeps the cookie it already has).
             recognised = True
-        elif result.status == "foreign":
+        elif result.status == RememberStatus.FOREIGN:
             # The cookie is live but belongs to a different user on this same
             # client (a shared browser). Not recognised, but leave the cookie
             # alone - clearing it would wipe the rightful user's remembered device
             # off the shared browser just because someone else logged in.
             pass
-        elif result.status == "theft":
+        elif result.status == RememberStatus.THEFT:
             # Baseline theft response: consume_remember_device_cookie has already
             # invalidated the whole series. Record it in action_detail (which the
             # error path does not overwrite) and drop the cookie. This is the seam

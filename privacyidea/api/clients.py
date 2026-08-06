@@ -33,6 +33,7 @@ import logging
 from flask import Blueprint, request, g
 
 from .lib.utils import send_result
+from ..lib.error import ParameterError
 from ..lib.params import get_optional, get_required
 from ..lib.log import log_with
 from ..lib.event import event
@@ -40,7 +41,10 @@ from ..lib.policies.actions import PolicyAction
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.clients import (get_client, get_clients, create_client, update_client,
                            rotate_client_key, delete_client, client_to_dict)
-from ..lib.authsession import get_client_sessions, revoke_client_session, session_to_dict
+from ..lib.authsession import (get_client_sessions, revoke_client_session, revoke_client_sessions,
+                               session_to_dict, session_user_identity)
+from ..lib.realm import get_realm_id
+from ..lib.user import User
 
 log = logging.getLogger(__name__)
 
@@ -105,14 +109,15 @@ def list_clients_api(client_id=None):
     return send_result([client_to_dict(client) for client in clients])
 
 
-@clients_blueprint.route('/<client_id>', methods=['POST'])
+@clients_blueprint.route('/<client_id>', methods=['PATCH'])
 @prepolicy(check_base_action, request, PolicyAction.CLIENTS_ADD)
 @event("clients_update", request, g)
 @log_with(log)
 def update_client_api(client_id):
     """
-    Update the metadata of an existing client (display name, status or config).
-    The API key is not affected; use the rotate endpoint to replace it.
+    Partially update the metadata of an existing client (display name, status or
+    config); only the fields present in the request are changed. The API key is
+    not affected; use the rotate endpoint to replace it.
 
     Requires admin authentication and the policy action :ref:`policy_clients_add`.
 
@@ -180,6 +185,52 @@ def list_client_sessions_api(client_id):
 
     g.audit_object.log({"success": True, "info": f"Client ID: {client_id}"})
     return send_result([session_to_dict(session) for session in sessions])
+
+
+@clients_blueprint.route('/<client_id>/sessions', methods=['DELETE'])
+@prepolicy(check_base_action, request, PolicyAction.CLIENTS_DELETE)
+@event("clients_sessions_revoke_all", request, g)
+@log_with(log)
+def revoke_client_sessions_api(client_id):
+    """
+    Revoke persistent sessions of a client in bulk. Without a filter this revokes
+    **all** of the client's remembered devices; it can be narrowed to one realm
+    (``realm``) or to one user (``user`` together with ``realm``).
+
+    The delete is a single atomic, server-side operation scoped to the client, so
+    a client id cannot revoke another client's sessions, and sessions created
+    between listing and revoking are still caught.
+
+    Requires admin authentication and the policy action :ref:`policy_clients_delete`.
+
+    :param client_id: path component, the id of the client.
+    :query realm: optional, restrict the revocation to this realm.
+    :query user: optional, restrict the revocation to this user (login); requires
+        ``realm`` so the user resolves unambiguously.
+    :status 200: ``result.value`` is the number of revoked sessions.
+    :status 404: no client with that id exists.
+    """
+    # Ensure the client exists (404 otherwise).
+    get_client(client_id)
+    realm = get_optional(request.all_data, "realm")
+    user = get_optional(request.all_data, "user")
+
+    realm_id = resolver = user_id = None
+    if user:
+        # Narrow to one user's resolver-stable identity. If the user does not
+        # resolve there is nothing to target by login (its sessions, if any, are
+        # already unrecognisable and reaped by expiry / realm deletion).
+        identity = session_user_identity(User(login=user, realm=realm))
+        if not identity:
+            raise ParameterError(f"The user {user!r} does not resolve in realm {realm!r}.")
+        resolver, user_id, realm_id = identity
+    elif realm:
+        realm_id = get_realm_id(realm)
+
+    count = revoke_client_sessions(client_id, realm_id=realm_id, resolver=resolver, user_id=user_id)
+
+    g.audit_object.log({"success": True, "info": f"Client ID: {client_id}"})
+    return send_result(count)
 
 
 @clients_blueprint.route('/<client_id>/sessions/<series_id>', methods=['DELETE'])

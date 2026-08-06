@@ -29,6 +29,7 @@ The cookie never carries the API key. A session is bound to a specific API
 client via ``client_id``, which is matched against ``g.client_id`` (set by the
 API-key middleware) on every validation.
 """
+import enum
 import logging
 import secrets
 from datetime import datetime, timedelta
@@ -39,7 +40,7 @@ from flask_babel import _
 from privacyidea.lib.error import AuthError, ResourceNotFoundError
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.sqlutils import delete_matching_rows
-from privacyidea.models import AuthSession, db
+from privacyidea.models import AuthSession, Realm, db
 
 if TYPE_CHECKING:
     from privacyidea.lib.user import User
@@ -97,12 +98,41 @@ def parse_cookie(cookie_value: str) -> tuple[str, int] | tuple[None, None]:
     return series_id, counter
 
 
-def create_auth_session(user_id: str, client_id: str, ip_address: str = None,
+class UserIdentity(NamedTuple):
+    """
+    The resolver-stable identity a remembered device is bound to.
+
+    Binding on ``(resolver, user_id, realm_id)`` - where ``user_id`` is the
+    resolver's immutable id, **not** the login - means a remembered device
+    survives a login rename and can never be recognised for a *different* account
+    that later reuses a freed login name. This mirrors how a token is bound to
+    its owner (:class:`~privacyidea.models.TokenOwner`).
+    """
+    resolver: str
+    user_id: str
+    realm_id: int
+
+
+def session_user_identity(user: "User | None") -> "UserIdentity | None":
+    """
+    Build the resolver-stable identity a persistent session binds to.
+
+    :param user: the ``User`` object (or None)
+    :return: a :class:`UserIdentity`, or ``None`` if the user does not resolve to
+        one - a userless (serial-only) auth, or an account that no longer exists
+    """
+    if not user or not user.resolver or not user.uid or not user.realm_id:
+        return None
+    return UserIdentity(user.resolver, str(user.uid), user.realm_id)
+
+
+def create_auth_session(identity: "UserIdentity", client_id: str, ip_address: str = None,
                         user_agent: str = None, validity_days: int = None) -> tuple[AuthSession, str]:
     """
     Create and persist a new persistent authentication session.
 
-    :param user_id: identifier of the authenticated user
+    :param identity: the resolver-stable identity of the authenticated user (see
+        :func:`session_user_identity`)
     :param client_id: id of the API client the session is bound to
     :param ip_address: the client IP address the session was created from
     :param user_agent: the user agent the session was created from
@@ -113,10 +143,12 @@ def create_auth_session(user_id: str, client_id: str, ip_address: str = None,
     """
     series_id = secrets.token_urlsafe(SERIES_ID_BYTES)
     expires_at = utc_now() + timedelta(days=validity_days) if validity_days and validity_days > 0 else None
-    # Truncate to the column limits so an over-long value (e.g. a very long user
-    # agent) can never raise on save and turn an already-successful auth into a
-    # 500. user_id/user_agent are Unicode(255), ip_address is Unicode(64).
-    session = AuthSession(series_id=series_id, user_id=(user_id or "")[:255], client_id=client_id,
+    # Truncate string fields to their column limits so an over-long value (e.g. a
+    # very long user agent) can never raise on save and turn an already-successful
+    # auth into a 500.
+    session = AuthSession(series_id=series_id, client_id=client_id,
+                          resolver=identity.resolver[:120], user_id=identity.user_id[:320],
+                          realm_id=identity.realm_id,
                           ip_address=(ip_address or None) and ip_address[:64],
                           user_agent=(user_agent or None) and user_agent[:255], counter=1,
                           expires_at=expires_at)
@@ -124,30 +156,27 @@ def create_auth_session(user_id: str, client_id: str, ip_address: str = None,
     return session, build_cookie_value(series_id, session.counter)
 
 
-def session_user_id(user: "User | None") -> str | None:
+class ValidSession(NamedTuple):
     """
-    Build the stable identifier a persistent session is bound to for a user.
+    A live session matched by :func:`get_valid_session`.
 
-    A remembered device is bound to the exact authenticating user (login **and**
-    realm), so a cookie can only ever authenticate the user it was issued for -
-    never a different user who happens to share the same API client / device.
-
-    :param user: the ``User`` object (or None)
-    :return: ``"login@realm"`` or ``None`` if there is no resolvable user
+    ``is_grace`` is ``False`` for a fresh use (the caller should rotate the
+    token) and ``True`` for a tolerated grace-window hit (the caller must
+    **not** rotate).
     """
-    if not user or not getattr(user, "login", None):
-        return None
-    return f"{user.login}@{user.realm or ''}"
+    session: AuthSession
+    is_grace: bool
 
 
-def get_valid_session(cookie_value: str, client_id: str, user_id: str,
-                      client_ip: str = None) -> tuple[AuthSession, bool] | None:
+def get_valid_session(cookie_value: str, client_id: str, identity: "UserIdentity",
+                      client_ip: str = None) -> "ValidSession | None":
     """
     Look up and validate a persistent-session cookie **without** rotating it.
 
-    The session is matched on ``series_id`` **and** ``client_id`` **and**
-    ``user_id`` so a cookie only ever validates for the client it was issued to
-    and the user it was issued for.
+    The session is matched on ``series_id`` **and** ``client_id`` **and** the
+    full user identity (``resolver`` / ``user_id`` / ``realm_id``) so a cookie
+    only ever validates for the client it was issued to and the user it was
+    issued for.
 
     * Returns ``None`` if no matching session exists or it has expired (an
       expired session is deleted).
@@ -171,22 +200,21 @@ def get_valid_session(cookie_value: str, client_id: str, user_id: str,
 
     :param cookie_value: the raw cookie value from the request
     :param client_id: the id of the API client making the request (g.client_id)
-    :param user_id: the identifier of the authenticating user (see
-        :func:`session_user_id`)
+    :param identity: the resolver-stable identity the cookie must be bound to
+        (see :func:`session_user_identity`)
     :param client_ip: the source IP of the request; used to bound the grace
         window (a grace hit must come from the IP the session was last used from)
     :return: ``None`` if there is no live session for this cookie (unknown or
-        expired); otherwise a ``(session, is_grace)`` tuple, where ``is_grace``
-        is ``False`` for a fresh use (the caller should rotate the token) and
-        ``True`` for a tolerated grace-window hit (the caller must **not** rotate)
+        expired); otherwise a :class:`ValidSession`
     :raises AuthError: if cookie reuse (theft) is detected
     """
     series_id, counter = parse_cookie(cookie_value)
-    if not series_id or counter is None or not user_id:
+    if not series_id or counter is None or not identity:
         return None
 
     session = AuthSession.query.filter_by(series_id=series_id, client_id=client_id,
-                                          user_id=user_id).first()
+                                          resolver=identity.resolver, user_id=identity.user_id,
+                                          realm_id=identity.realm_id).first()
     if not session:
         return None
 
@@ -196,14 +224,14 @@ def get_valid_session(cookie_value: str, client_id: str, user_id: str,
         return None
 
     if session.counter == counter:
-        return session, False
+        return ValidSession(session, False)
 
     if _is_within_grace(session, counter, client_ip):
         # Concurrent/duplicate request presenting the just-superseded counter -
         # tolerate it without rotating (single-step, time- and IP-bounded).
         log.debug(f"Persistent session {series_id!r}: accepting previous counter "
                   f"within the grace window.")
-        return session, True
+        return ValidSession(session, True)
 
     # Any other counter mismatch means the cookie was replayed. Invalidate the
     # whole series so neither the legitimate client nor the attacker can use it.
@@ -244,30 +272,43 @@ def rotate_session(session: AuthSession) -> tuple[str, datetime]:
     return build_cookie_value(session.series_id, session.counter), session.expires_at
 
 
-class ConsumeResult(NamedTuple):
+class RememberStatus(str, enum.Enum):
     """
-    Outcome of consuming a presented remember-device cookie.
+    Outcome status of consuming a presented remember-device cookie.
 
-    ``status`` is one of:
-
-    * ``"recognized"`` - a fresh, valid use; ``cookie_value`` and ``expires_at``
+    * ``RECOGNIZED`` - a fresh, valid use; ``cookie_value`` and ``expires_at``
       carry the rotated token to send back to the client.
-    * ``"grace"`` - a tolerated concurrent/duplicate request; the client keeps
-      the cookie it has, so no new one is sent.
-    * ``"foreign"`` - the series is live but bound to a *different* user on the
+    * ``GRACE`` - a tolerated concurrent/duplicate request; the client keeps the
+      cookie it has, so no new one is sent.
+    * ``FOREIGN`` - the series is live but bound to a *different* user on the
       same client (a shared browser). Not recognised, but the caller must **not**
       clear it, or one user logging in would wipe another user's cookie.
-    * ``"miss"`` - no live session for this cookie (unknown or expired); the
-      caller should clear it.
-    * ``"theft"`` - replay detected; the series has already been invalidated and
+    * ``MISS`` - no live session for this cookie (unknown or expired); the caller
+      should clear it.
+    * ``THEFT`` - replay detected; the series has already been invalidated and
       the caller must clear the cookie.
+
+    Inherits from ``str`` so members compare equal to their plain string value
+    (e.g. ``RememberStatus.RECOGNIZED == "recognized"``).
     """
-    status: str
+    RECOGNIZED = "recognized"
+    GRACE = "grace"
+    FOREIGN = "foreign"
+    MISS = "miss"
+    THEFT = "theft"
+
+
+class ConsumeResult(NamedTuple):
+    """
+    Outcome of consuming a presented remember-device cookie. See
+    :class:`RememberStatus` for the meaning of each ``status``.
+    """
+    status: RememberStatus
     cookie_value: str | None
     expires_at: datetime | None
 
 
-def consume_remember_device_cookie(cookie_value: str, client_id: str, user_id: str,
+def consume_remember_device_cookie(cookie_value: str, client_id: str, identity: "UserIdentity",
                                    client_ip: str = None) -> ConsumeResult:
     """
     Consume a presented remember-device cookie: validate it (see
@@ -279,17 +320,17 @@ def consume_remember_device_cookie(cookie_value: str, client_id: str, user_id: s
 
     :param cookie_value: the raw cookie value from the request
     :param client_id: the id of the API client making the request (g.client_id)
-    :param user_id: the identifier of the user the cookie must be bound to (see
-        :func:`session_user_id`)
+    :param identity: the resolver-stable identity the cookie must be bound to
+        (see :func:`session_user_identity`)
     :param client_ip: the source IP of the request (bounds the grace window)
     :return: a :class:`ConsumeResult`. Theft is reported as ``status ==
         "theft"`` (the series has already been invalidated) rather than raised,
         so the caller can answer "not recognised" uniformly.
     """
     try:
-        result = get_valid_session(cookie_value, client_id, user_id, client_ip)
+        result = get_valid_session(cookie_value, client_id, identity, client_ip)
     except AuthError:
-        return ConsumeResult("theft", None, None)
+        return ConsumeResult(RememberStatus.THEFT, None, None)
     if not result:
         # A miss can mean the cookie is dead (unknown/expired) or that it simply
         # belongs to a different user on this same client - a shared browser,
@@ -300,13 +341,12 @@ def consume_remember_device_cookie(cookie_value: str, client_id: str, user_id: s
         if series_id:
             other = AuthSession.query.filter_by(series_id=series_id, client_id=client_id).first()
             if other and not (other.expires_at and other.expires_at < utc_now()):
-                return ConsumeResult("foreign", None, None)
-        return ConsumeResult("miss", None, None)
-    session, is_grace = result
-    if is_grace:
-        return ConsumeResult("grace", None, None)
-    new_cookie, expires_at = rotate_session(session)
-    return ConsumeResult("recognized", new_cookie, expires_at)
+                return ConsumeResult(RememberStatus.FOREIGN, None, None)
+        return ConsumeResult(RememberStatus.MISS, None, None)
+    if result.is_grace:
+        return ConsumeResult(RememberStatus.GRACE, None, None)
+    new_cookie, expires_at = rotate_session(result.session)
+    return ConsumeResult(RememberStatus.RECOGNIZED, new_cookie, expires_at)
 
 
 def set_persistent_cookie(response, cookie_value: str, expires_at) -> None:
@@ -390,21 +430,79 @@ def revoke_client_session(client_id: str, series_id: str) -> str:
     return series_id
 
 
+def revoke_client_sessions(client_id: str, realm_id: int = None, resolver: str = None,
+                           user_id: str = None) -> int:
+    """
+    Revoke (delete) persistent sessions of a client in bulk, optionally narrowed
+    to a single realm or a single ``(resolver, user_id, realm_id)`` identity.
+
+    The delete is always scoped to ``client_id`` so a client's id can never be
+    used to revoke another client's sessions. Unlike collecting series ids in the
+    caller and deleting them one by one, this is a single atomic server-side
+    delete, so sessions created between listing and revoking are still caught -
+    which is the point of a bulk revoke (incident response).
+
+    :param client_id: the id of the API client whose sessions to revoke
+    :param realm_id: if given, only sessions bound to this realm are revoked
+    :param resolver: if given (with ``user_id`` and ``realm_id``), narrows to one
+        user's identity
+    :param user_id: if given (with ``resolver`` and ``realm_id``), narrows to one
+        user's identity
+    :return: the number of revoked sessions
+    """
+    criteria = {"client_id": client_id}
+    if realm_id is not None:
+        criteria["realm_id"] = realm_id
+    if resolver is not None:
+        criteria["resolver"] = resolver
+    if user_id is not None:
+        criteria["user_id"] = user_id
+    count = AuthSession.query.filter_by(**criteria).delete(synchronize_session=False)
+    db.session.commit()
+    return count
+
+
 def session_to_dict(session: AuthSession) -> dict:
     """
     Serialise a persistent session for API output. The rotating token
     (``counter``) is intentionally not exposed; ``series_id`` is only an
     identifier used to target revocation.
 
+    The bound user is reported both as the resolver-stable identity it is stored
+    as (``resolver`` / ``user_id`` / ``realm``) and, best-effort, as the current
+    ``user`` login for display. The login is resolved on read (it can change in
+    the backing store), so it may be ``None`` if the account no longer resolves.
+
     :param session: the ``AuthSession`` to serialise
     :return: a JSON-serialisable dict
     """
+    realm = Realm.query.filter_by(id=session.realm_id).first()
+    realm_name = realm.name if realm else None
     return {
         "series_id": session.series_id,
+        "resolver": session.resolver,
         "user_id": session.user_id,
+        "realm": realm_name,
+        "user": _resolve_login(session.resolver, session.user_id, realm_name),
         "ip_address": session.ip_address,
         "user_agent": session.user_agent,
         "created_at": session.created_at.isoformat() if session.created_at else None,
         "last_used_at": session.last_used_at.isoformat() if session.last_used_at else None,
         "expires_at": session.expires_at.isoformat() if session.expires_at else None,
     }
+
+
+def _resolve_login(resolver: str, user_id: str, realm_name: str) -> str | None:
+    """
+    Best-effort resolution of a stored ``(resolver, user_id, realm)`` identity to
+    the current login, for display only. Returns ``None`` if the account no
+    longer resolves (e.g. it was deleted).
+    """
+    if not realm_name:
+        return None
+    # Imported lazily: privacyidea.lib.user pulls in a large part of the library.
+    from privacyidea.lib.user import User
+    try:
+        return User(uid=user_id, resolver=resolver, realm=realm_name).login or None
+    except Exception:  # noqa: BLE001 - display resolution must never break the listing
+        return None

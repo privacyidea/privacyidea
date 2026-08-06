@@ -102,8 +102,12 @@ whether to skip the second factor (enforcing the first factor remains the
 client's responsibility).
 
 On a hit the cookie is **rotated** (the counter is incremented) and a new cookie
-is returned; the client must store it. Recognition also confirms the bound user
-still exists, so deleting or removing a user revokes their remembered devices.
+is returned; the client must store it. A session is bound to the user's
+resolver-stable identity (resolver, user id and realm), not to the login name,
+so a remembered device survives a login rename and is never recognised for a
+*different* account that later reuses a freed login. Recognition also confirms
+the bound user still resolves, so deleting or removing a user revokes their
+remembered devices.
 
 On a miss the answer is simply "not recognised". The cookie is only cleared (a
 ``Set-Cookie`` with a past expiry) when it is genuinely dead - an unknown or
@@ -142,11 +146,21 @@ never wrongly authenticated.
 Viewing and revoking sessions
 -----------------------------
 
-Each remembered device is a session bound to ``(client, user)``. An administrator
-with :ref:`policy_clients_list` can view a client's sessions — in the WebUI on the
-client's *Sessions* view, or over :http:get:`/clients/(client_id)/sessions` — and
-revoke individual ones with :http:delete:`/clients/(client_id)/sessions/(series_id)`.
-Revoking a session invalidates that device's cookie immediately.
+Each remembered device is a session bound to a client and the user's
+resolver-stable identity (resolver, user id and realm). An administrator with
+:ref:`policy_clients_list` can view a client's sessions — in the WebUI on the
+client's *Sessions* view, or over :http:get:`/clients/(client_id)/sessions`.
+
+Revoking (which requires :ref:`policy_clients_delete`) invalidates the affected
+device cookies immediately, and comes in two forms:
+
+* a single session, with :http:delete:`/clients/(client_id)/sessions/(series_id)`;
+* all of a client's sessions at once, with
+  :http:delete:`/clients/(client_id)/sessions` — optionally narrowed to one
+  ``realm`` or to one ``user`` (together with ``realm``). This is a single
+  atomic, server-side delete scoped to the client, so it also catches sessions
+  created between listing and revoking — useful for incident response ("re-MFA
+  every remembered device for this realm now").
 
 .. note:: The IP address and user agent shown for a session are those of the API
    client's request. For a centralised integration such as an IdP that is the

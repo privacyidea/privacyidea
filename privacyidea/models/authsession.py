@@ -43,13 +43,24 @@ class AuthSession(MethodsMixin, db.Model):
 
     The cookie never contains the API key; the binding to the client is stored
     server-side in ``client_id`` and checked against ``g.client_id``.
+
+    The remembered user is bound by the resolver-stable identity
+    ``(resolver, user_id, realm_id)`` - **not** by the login name. The login is a
+    mutable, reusable label in an external user store: binding to it would drop
+    the remembered device on a rename and, worse, could recognise a *different*
+    account that later reuses a freed login. ``user_id`` is therefore the
+    resolver's immutable id (as in :class:`TokenOwner`), and ``realm_id`` is a
+    foreign key so a deleted realm cascades its sessions away.
     """
     __tablename__ = 'auth_sessions'
     series_id: Mapped[str] = mapped_column(Unicode(64), primary_key=True)
     counter: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
-    user_id: Mapped[str] = mapped_column(Unicode(255), nullable=False)
     client_id: Mapped[str] = mapped_column(Unicode(36), ForeignKey("clients.id", ondelete="CASCADE"),
                                            index=True, nullable=False)
+    resolver: Mapped[str] = mapped_column(Unicode(120), index=True, nullable=False)
+    user_id: Mapped[str] = mapped_column(Unicode(320), index=True, nullable=False)
+    realm_id: Mapped[int] = mapped_column(Integer, ForeignKey("realm.id", ondelete="CASCADE"),
+                                          index=True, nullable=False)
     ip_address: Mapped[str | None] = mapped_column(Unicode(64))
     user_agent: Mapped[str | None] = mapped_column(Unicode(255))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
@@ -57,12 +68,14 @@ class AuthSession(MethodsMixin, db.Model):
     expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
 
     @log_with(log)
-    def __init__(self, series_id, user_id, client_id, ip_address=None,
-                 user_agent=None, counter=1, expires_at=None):
+    def __init__(self, series_id, client_id, resolver, user_id, realm_id,
+                 ip_address=None, user_agent=None, counter=1, expires_at=None):
         self.series_id = series_id
         self.counter = counter
-        self.user_id = user_id
         self.client_id = client_id
+        self.resolver = resolver
+        self.user_id = user_id
+        self.realm_id = realm_id
         self.ip_address = ip_address
         self.user_agent = user_agent
         self.expires_at = expires_at if expires_at is not None else utc_now() + DEFAULT_SESSION_VALIDITY

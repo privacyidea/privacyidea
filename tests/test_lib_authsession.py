@@ -3,52 +3,71 @@ from .base import MyTestCase
 from privacyidea.lib.clients import create_client
 from privacyidea.lib.authsession import (parse_cookie, build_cookie_value,
                                          create_auth_session, consume_remember_device_cookie,
-                                         get_valid_session, session_user_id,
+                                         get_valid_session, session_user_identity, UserIdentity,
                                          cleanup_expired_auth_sessions)
+from privacyidea.lib.realm import set_realm
+from privacyidea.lib.user import User
 from privacyidea.models import AuthSession
 from privacyidea.models.utils import utc_now
 
 from datetime import timedelta
 
 
-class _FakeUser:
-    def __init__(self, login, realm):
-        self.login = login
-        self.realm = realm
-
-
 class AuthSessionLibTestCase(MyTestCase):
     """
-    Order-independent: every test creates its own client and session.
+    Order-independent: every test creates its own client and session. Sessions
+    are bound to the resolver-stable identity (resolver, user_id, realm_id), so a
+    real realm is set up to supply a valid realm_id; the ``user_id`` values are
+    arbitrary resolver ids (the cookie mechanics never resolve them).
     """
+
+    def setUp(self):
+        self.setUp_user_realms()
+        self.realm_id = User(login="cornelius", realm=self.realm1).realm_id
 
     def _client_id(self):
         client, _key = create_client("session client", "windows_cp")
         return client.id
 
-    def test_parse_cookie(self):
-        self.assertEqual(parse_cookie("abc:5"), ("abc", 5))
-        # series ids from token_urlsafe may contain - and _ but never ':'
-        self.assertEqual(parse_cookie("aB-c_d:42"), ("aB-c_d", 42))
-        # malformed
-        self.assertEqual(parse_cookie(""), (None, None))
-        self.assertEqual(parse_cookie(None), (None, None))
-        self.assertEqual(parse_cookie("noseparator"), (None, None))
-        self.assertEqual(parse_cookie("series:notanumber"), (None, None))
-        self.assertEqual(parse_cookie(":5"), (None, None))
+    def _identity(self, user_id, resolver=None, realm_id=None):
+        return UserIdentity(resolver or self.resolvername1, user_id,
+                            realm_id if realm_id is not None else self.realm_id)
 
-    def test_session_user_id(self):
-        self.assertEqual(session_user_id(_FakeUser("alice", "realm1")), "alice@realm1")
-        self.assertIsNone(session_user_id(None))
-        self.assertIsNone(session_user_id(_FakeUser("", "realm1")))
+    def test_parse_cookie(self):
+        self.assertEqual(("abc", 5), parse_cookie("abc:5"))
+        # series ids from token_urlsafe may contain - and _ but never ':'
+        self.assertEqual(("aB-c_d", 42), parse_cookie("aB-c_d:42"))
+        # malformed
+        self.assertEqual((None, None), parse_cookie(""))
+        self.assertEqual((None, None), parse_cookie(None))
+        self.assertEqual((None, None), parse_cookie("noseparator"))
+        self.assertEqual((None, None), parse_cookie("series:notanumber"))
+        self.assertEqual((None, None), parse_cookie(":5"))
+        # an embedded colon in the counter half is not a valid integer
+        self.assertEqual((None, None), parse_cookie("series:1:2"))
+
+    def test_session_user_identity(self):
+        # A resolvable user maps to the (resolver, uid, realm_id) triple - the
+        # resolver-stable identity, not the login.
+        user = User(login="cornelius", realm=self.realm1)
+        identity = session_user_identity(user)
+        self.assertEqual(user.resolver, identity.resolver)
+        self.assertEqual(str(user.uid), identity.user_id)
+        self.assertEqual(user.realm_id, identity.realm_id)
+        # No resolvable user -> no identity to bind to.
+        self.assertIsNone(session_user_identity(None))
+        self.assertIsNone(session_user_identity(User()))
 
     def test_create_auth_session(self):
         client_id = self._client_id()
-        session, cookie = create_auth_session("alice", client_id,
+        session, cookie = create_auth_session(self._identity("alice"), client_id,
                                               ip_address="10.0.0.1", user_agent="curl")
-        self.assertEqual(session.counter, 1)
+        self.assertEqual(1, session.counter)
         self.assertEqual(cookie, build_cookie_value(session.series_id, 1))
-        self.assertEqual(session.user_id, "alice")
+        # The session is bound to the full resolver-stable identity.
+        self.assertEqual(self.resolvername1, session.resolver)
+        self.assertEqual("alice", session.user_id)
+        self.assertEqual(self.realm_id, session.realm_id)
         self.assertEqual(session.client_id, client_id)
         # 30 day default validity
         self.assertGreater(session.expires_at, utc_now() + timedelta(days=29))
@@ -59,27 +78,28 @@ class AuthSessionLibTestCase(MyTestCase):
         # or the log would contain a replayable bearer token.
         client_id = self._client_id()
         with self.assertLogs("privacyidea.models.authsession", level="DEBUG") as captured:
-            session, _cookie = create_auth_session("kim", client_id)
+            session, _cookie = create_auth_session(self._identity("kim"), client_id)
         output = "\n".join(captured.output)
         self.assertNotIn(session.series_id, output)
         self.assertIn("HIDDEN", output)
 
     def test_consume_recognized_rotates(self):
         client_id = self._client_id()
-        session, cookie = create_auth_session("bob", client_id)
+        bob = self._identity("bob")
+        session, cookie = create_auth_session(bob, client_id)
         series_id = session.series_id
 
-        result = consume_remember_device_cookie(cookie, client_id, "bob")
-        self.assertEqual(result.status, "recognized")
+        result = consume_remember_device_cookie(cookie, client_id, bob)
+        self.assertEqual("recognized", result.status)
         self.assertEqual(result.cookie_value, build_cookie_value(series_id, 2))
         self.assertEqual(result.expires_at, session.expires_at)
 
         stored = AuthSession.query.filter_by(series_id=series_id).first()
-        self.assertEqual(stored.counter, 2)
+        self.assertEqual(2, stored.counter)
         self.assertIsNotNone(stored.last_used_at)
 
         # The rotated cookie is recognised again, bumping to 3.
-        again = consume_remember_device_cookie(result.cookie_value, client_id, "bob")
+        again = consume_remember_device_cookie(result.cookie_value, client_id, bob)
         self.assertEqual(again.cookie_value, build_cookie_value(series_id, 3))
 
     def test_wrong_user_does_not_match(self):
@@ -89,82 +109,143 @@ class AuthSessionLibTestCase(MyTestCase):
         # is a "foreign" soft miss (not recognised, must not be cleared), not a
         # dead "miss".
         client_id = self._client_id()
-        _session, cookie = create_auth_session("frank", client_id)
-        self.assertIsNone(get_valid_session(cookie, client_id, "eve"))
-        self.assertEqual(consume_remember_device_cookie(cookie, client_id, "eve").status, "foreign")
+        _session, cookie = create_auth_session(self._identity("frank"), client_id)
+        eve = self._identity("eve")
+        self.assertIsNone(get_valid_session(cookie, client_id, eve))
+        self.assertEqual("foreign", consume_remember_device_cookie(cookie, client_id, eve).status)
+
+    def test_cross_realm_does_not_match(self):
+        # The realm is part of the identity: the same resolver + user_id in a
+        # *different* realm must not be recognised, so a device remembered in one
+        # realm is not honoured in another. The series stays live for its own
+        # realm (a soft "foreign" miss), so it is not cleared.
+        set_realm("realm_other", [{"name": self.resolvername1}])
+        other_realm_id = User(login="cornelius", realm="realm_other").realm_id
+        self.assertNotEqual(self.realm_id, other_realm_id)
+        client_id = self._client_id()
+        session, cookie = create_auth_session(self._identity("cornelius"), client_id)
+        other = self._identity("cornelius", realm_id=other_realm_id)
+        self.assertEqual("foreign", consume_remember_device_cookie(cookie, client_id, other).status)
+        self.assertIsNotNone(AuthSession.query.filter_by(series_id=session.series_id).first())
 
     def test_theft_detection_deletes_series(self):
         client_id = self._client_id()
-        session, cookie = create_auth_session("carol", client_id)
+        carol = self._identity("carol")
+        session, cookie = create_auth_session(carol, client_id)
         series_id = session.series_id
 
         # Advance the counter twice so the original cookie is two steps stale
         # (beyond the single-step grace window).
-        rotated = consume_remember_device_cookie(cookie, client_id, "carol")       # -> counter 2
-        consume_remember_device_cookie(rotated.cookie_value, client_id, "carol")   # -> counter 3
+        rotated = consume_remember_device_cookie(cookie, client_id, carol)       # -> counter 2
+        consume_remember_device_cookie(rotated.cookie_value, client_id, carol)   # -> counter 3
 
         # Replaying the original counter=1 cookie (two behind) is theft: reported
         # as "theft" (not raised) and the whole series is gone.
-        self.assertEqual(consume_remember_device_cookie(cookie, client_id, "carol").status, "theft")
+        self.assertEqual("theft", consume_remember_device_cookie(cookie, client_id, carol).status)
+        self.assertIsNone(AuthSession.query.filter_by(series_id=series_id).first())
+
+    def test_forged_higher_counter_is_theft(self):
+        # An attacker holding the current cookie cannot mint a "fresh" one by
+        # incrementing the counter: a counter ahead of the stored value is not a
+        # valid rotation, it is treated as theft and destroys the series.
+        client_id = self._client_id()
+        mallory = self._identity("mallory")
+        session, _cookie = create_auth_session(mallory, client_id)
+        series_id = session.series_id
+        forged = build_cookie_value(series_id, session.counter + 1)
+        self.assertEqual("theft", consume_remember_device_cookie(forged, client_id, mallory).status)
         self.assertIsNone(AuthSession.query.filter_by(series_id=series_id).first())
 
     def test_grace_allows_previous_counter_without_rotating(self):
         client_id = self._client_id()
-        session, cookie = create_auth_session("gina", client_id)
+        gina = self._identity("gina")
+        session, cookie = create_auth_session(gina, client_id)
         # Rotate to counter 2.
-        consume_remember_device_cookie(cookie, client_id, "gina")
+        consume_remember_device_cookie(cookie, client_id, gina)
         # A concurrent request still presenting counter 1 (the previous one) is
         # tolerated within the grace window: recognised as a grace hit, no new
         # cookie handed out, and the series is neither rotated nor deleted.
-        result = consume_remember_device_cookie(cookie, client_id, "gina")
-        self.assertEqual(result.status, "grace")
+        result = consume_remember_device_cookie(cookie, client_id, gina)
+        self.assertEqual("grace", result.status)
         self.assertIsNone(result.cookie_value)
         stored = AuthSession.query.filter_by(series_id=session.series_id).first()
         self.assertIsNotNone(stored)
-        self.assertEqual(stored.counter, 2)
+        self.assertEqual(2, stored.counter)
 
     def test_grace_disabled_treats_previous_counter_as_theft(self):
         self.app.config["PI_REMEMBER_DEVICE_GRACE_SECONDS"] = 0
         try:
             client_id = self._client_id()
-            session, cookie = create_auth_session("hank", client_id)
-            consume_remember_device_cookie(cookie, client_id, "hank")   # -> counter 2
-            self.assertEqual(consume_remember_device_cookie(cookie, client_id, "hank").status, "theft")
+            hank = self._identity("hank")
+            session, cookie = create_auth_session(hank, client_id)
+            consume_remember_device_cookie(cookie, client_id, hank)   # -> counter 2
+            self.assertEqual("theft", consume_remember_device_cookie(cookie, client_id, hank).status)
             self.assertIsNone(AuthSession.query.filter_by(series_id=session.series_id).first())
         finally:
             self.app.config.pop("PI_REMEMBER_DEVICE_GRACE_SECONDS", None)
 
     def test_grace_requires_matching_ip(self):
         client_id = self._client_id()
-        session, cookie = create_auth_session("iris", client_id, ip_address="10.0.0.1")
-        consume_remember_device_cookie(cookie, client_id, "iris", "10.0.0.1")   # -> counter 2
+        iris = self._identity("iris")
+        session, cookie = create_auth_session(iris, client_id, ip_address="10.0.0.1")
+        consume_remember_device_cookie(cookie, client_id, iris, "10.0.0.1")   # -> counter 2
         # Presenting the previous counter from a different IP is not a tolerated
         # concurrent request -> theft.
-        self.assertEqual(consume_remember_device_cookie(cookie, client_id, "iris", "9.9.9.9").status,
-                         "theft")
+        self.assertEqual("theft", consume_remember_device_cookie(cookie, client_id, iris, "9.9.9.9").status)
+
+    def test_grace_window_expires_and_previous_counter_becomes_theft(self):
+        # The grace window is a short time window, not a standing exemption: the
+        # previous counter presented from the same IP but after the window has
+        # elapsed is theft, not a tolerated duplicate.
+        client_id = self._client_id()
+        kate = self._identity("kate")
+        session, cookie = create_auth_session(kate, client_id, ip_address="10.0.0.1")
+        consume_remember_device_cookie(cookie, client_id, kate, "10.0.0.1")   # -> counter 2
+        # Age the last use well beyond the (default 10s) grace window.
+        stored = AuthSession.query.filter_by(series_id=session.series_id).first()
+        stored.last_used_at = utc_now() - timedelta(hours=1)
+        stored.save()
+        self.assertEqual("theft", consume_remember_device_cookie(cookie, client_id, kate, "10.0.0.1").status)
+        self.assertIsNone(AuthSession.query.filter_by(series_id=session.series_id).first())
+
+    def test_grace_without_stored_ip_is_not_ip_bound(self):
+        # When the session has no recorded source IP, the grace window cannot be
+        # IP-bound, so a previous-counter duplicate is tolerated regardless of the
+        # request IP (it stays single-step and time-bounded). This pins that IP is
+        # only enforced when it is actually known.
+        client_id = self._client_id()
+        liam = self._identity("liam")
+        session, cookie = create_auth_session(liam, client_id)   # no ip_address recorded
+        consume_remember_device_cookie(cookie, client_id, liam, "10.0.0.1")   # -> counter 2
+        result = consume_remember_device_cookie(cookie, client_id, liam, "9.9.9.9")
+        self.assertEqual("grace", result.status)
+        self.assertIsNotNone(AuthSession.query.filter_by(series_id=session.series_id).first())
 
     def test_wrong_client_does_not_match(self):
         client_id_a = self._client_id()
         client_id_b = self._client_id()
-        session, cookie = create_auth_session("dave", client_id_a)
+        dave = self._identity("dave")
+        session, cookie = create_auth_session(dave, client_id_a)
 
         # A cookie issued for client A must not validate for client B.
-        self.assertEqual(consume_remember_device_cookie(cookie, client_id_b, "dave").status, "miss")
+        self.assertEqual("miss", consume_remember_device_cookie(cookie, client_id_b, dave).status)
         # ... and client A's session is untouched.
-        self.assertEqual(AuthSession.query.filter_by(series_id=session.series_id).first().counter, 1)
+        self.assertEqual(1, AuthSession.query.filter_by(series_id=session.series_id).first().counter)
 
     def test_unknown_series_returns_miss(self):
         client_id = self._client_id()
-        self.assertEqual(consume_remember_device_cookie("doesnotexist:1", client_id, "x").status, "miss")
+        self.assertEqual("miss", consume_remember_device_cookie("doesnotexist:1", client_id,
+                                                                self._identity("x")).status)
 
     def test_expired_session_is_removed(self):
         client_id = self._client_id()
-        session, cookie = create_auth_session("erin", client_id)
+        erin = self._identity("erin")
+        session, cookie = create_auth_session(erin, client_id)
         series_id = session.series_id
         session.expires_at = utc_now() - timedelta(seconds=1)
         session.save()
 
-        self.assertEqual(consume_remember_device_cookie(cookie, client_id, "erin").status, "miss")
+        self.assertEqual("miss", consume_remember_device_cookie(cookie, client_id, erin).status)
         self.assertIsNone(AuthSession.query.filter_by(series_id=series_id).first())
 
     def test_cleanup_expired_auth_sessions(self):
@@ -172,10 +253,10 @@ class AuthSessionLibTestCase(MyTestCase):
         # deleted lazily when their own cookie is presented) and leaves live
         # sessions untouched.
         client_id = self._client_id()
-        expired, _ = create_auth_session("jane", client_id)
+        expired, _ = create_auth_session(self._identity("jane"), client_id)
         expired.expires_at = utc_now() - timedelta(seconds=1)
         expired.save()
-        live, _ = create_auth_session("john", client_id)
+        live, _ = create_auth_session(self._identity("john"), client_id)
         # Capture ids before the delete+commit expires the ORM instances.
         expired_series = expired.series_id
         live_series = live.series_id

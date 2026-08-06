@@ -3,7 +3,9 @@ from unittest import mock
 from .base import MyApiTestCase
 
 from privacyidea.lib.clients import hash_api_key, create_client
-from privacyidea.lib.authsession import create_auth_session
+from privacyidea.lib.authsession import create_auth_session, session_user_identity
+from privacyidea.lib.realm import set_realm
+from privacyidea.lib.user import User
 from privacyidea.models import Client, AuthSession
 
 
@@ -20,31 +22,36 @@ class APIClientsTestCase(MyApiTestCase):
                                            method='POST',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200, res)
+            self.assertEqual(200, res.status_code, res)
             return res.json['result']['value']
 
     def test_01_create_client_returns_key_once(self):
         value = self._create_client()
         # The plaintext key is returned exactly once, on creation.
         self.assertIn("api_key", value)
-        self.assertEqual(value["display_name"], "My CP")
-        self.assertEqual(value["client_type"], "windows_cp")
-        self.assertEqual(value["status"], "active")
+        self.assertEqual("My CP", value["display_name"])
+        self.assertEqual("windows_cp", value["client_type"])
+        self.assertEqual("active", value["status"])
         self.assertNotIn("key_hash", value)
         client_id = value["id"]
         api_key = value["api_key"]
 
         # The key has the form pi_<key_id>_<secret>; the key_id is exposed, the
         # secret is not.
-        self.assertEqual(api_key, f"pi_{value['key_id']}_{api_key.split('_', 2)[2]}")
+        self.assertEqual(f"pi_{value['key_id']}_{api_key.split('_', 2)[2]}", api_key)
         self.assertTrue(api_key.startswith(f"pi_{value['key_id']}_"), api_key)
+
+        # Creation is audited (never with the plaintext key in it).
+        create_audit = self.find_most_recent_audit_entry(info="*windows_cp: My CP*")
+        self.assertEqual(1, create_audit["success"])
+        self.assertNotIn(api_key, str(create_audit))
 
         # The plaintext key is not retrievable via the API afterwards.
         with self.app.test_request_context(f'/clients/{client_id}',
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200, res)
+            self.assertEqual(200, res.status_code, res)
             client = res.json['result']['value'][0]
             self.assertNotIn("api_key", client)
             self.assertNotIn("key_hash", client)
@@ -64,7 +71,7 @@ class APIClientsTestCase(MyApiTestCase):
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200, res)
+            self.assertEqual(200, res.status_code, res)
             ids = [c["id"] for c in res.json['result']['value']]
             self.assertIn(a["id"], ids)
             self.assertIn(b["id"], ids)
@@ -74,23 +81,25 @@ class APIClientsTestCase(MyApiTestCase):
         with self.app.test_request_context(f'/clients/{client_id}',
                                            data={"display_name": "Renamed CP",
                                                  "status": "suspended"},
-                                           method='POST',
+                                           method='PATCH',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200, res)
+            self.assertEqual(200, res.status_code, res)
             value = res.json['result']['value']
-            self.assertEqual(value["display_name"], "Renamed CP")
-            self.assertEqual(value["status"], "suspended")
+            self.assertEqual("Renamed CP", value["display_name"])
+            self.assertEqual("suspended", value["status"])
+        entry = self.find_most_recent_audit_entry(info=f"*Client ID: {client_id}*")
+        self.assertEqual(1, entry["success"])
 
     def test_03b_update_invalid_status_is_400(self):
         client_id = self._create_client()["id"]
         with self.app.test_request_context(f'/clients/{client_id}',
                                            data={"status": "bogus"},
-                                           method='POST',
+                                           method='PATCH',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             # An invalid status is a bad parameter (400), not a missing resource (404).
-            self.assertEqual(res.status_code, 400, res)
+            self.assertEqual(400, res.status_code, res)
 
     def test_04_rotate_key_invalidates_old(self):
         created = self._create_client()
@@ -101,9 +110,12 @@ class APIClientsTestCase(MyApiTestCase):
                                            method='POST',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200, res)
+            self.assertEqual(200, res.status_code, res)
             new_key = res.json['result']['value']["api_key"]
             self.assertNotEqual(new_key, created["api_key"])
+        rotate_audit = self.find_most_recent_audit_entry(info=f"*Client ID: {client_id}*")
+        self.assertEqual(1, rotate_audit["success"])
+        self.assertNotIn(new_key, str(rotate_audit))
 
         # Rotation replaces both the public key id and the stored secret hash.
         stored = Client.query.filter_by(id=client_id).first()
@@ -117,8 +129,10 @@ class APIClientsTestCase(MyApiTestCase):
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200, res)
+            self.assertEqual(200, res.status_code, res)
             self.assertEqual(res.json['result']['value'], client_id)
+        entry = self.find_most_recent_audit_entry(info=f"*Client ID: {client_id}*")
+        self.assertEqual(1, entry["success"])
 
         self.assertIsNone(Client.query.filter_by(id=client_id).first())
 
@@ -127,7 +141,7 @@ class APIClientsTestCase(MyApiTestCase):
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 404, res)
+            self.assertEqual(404, res.status_code, res)
 
     def test_07_create_requires_auth(self):
         # Without an admin auth token the endpoint must not be reachable.
@@ -136,7 +150,7 @@ class APIClientsTestCase(MyApiTestCase):
                                                  "client_type": "keycloak"},
                                            method='POST'):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 401, res)
+            self.assertEqual(401, res.status_code, res)
 
 
 class APIClientAPIKeyMiddlewareTestCase(MyApiTestCase):
@@ -148,7 +162,7 @@ class APIClientAPIKeyMiddlewareTestCase(MyApiTestCase):
                                            method='POST',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200, res)
+            self.assertEqual(200, res.status_code, res)
             return res.json['result']['value']
 
     def test_01_missing_header_allows_legacy(self):
@@ -176,15 +190,15 @@ class APIClientAPIKeyMiddlewareTestCase(MyApiTestCase):
         # But an endpoint that requires an identified client still rejects it.
         with self.app.test_request_context('/validate/capabilities', method='GET',
                                            headers={'X-API-Key': 'pi_totally_wrong'}):
-            self.assertEqual(self.app.full_dispatch_request().status_code, 401)
+            self.assertEqual(401, self.app.full_dispatch_request().status_code)
 
     def test_04_suspended_key_ignored_but_not_identified(self):
         client = self._create_client()
         with self.app.test_request_context(f'/clients/{client["id"]}',
                                            data={"status": "suspended"},
-                                           method='POST',
+                                           method='PATCH',
                                            headers={'Authorization': self.at}):
-            self.assertEqual(self.app.full_dispatch_request().status_code, 200)
+            self.assertEqual(200, self.app.full_dispatch_request().status_code)
 
         # A suspended key does not lock out a non-client endpoint ...
         with self.app.test_request_context('/', method='GET',
@@ -193,7 +207,7 @@ class APIClientAPIKeyMiddlewareTestCase(MyApiTestCase):
         # ... and no longer identifies a client (capabilities requires one).
         with self.app.test_request_context('/validate/capabilities', method='GET',
                                            headers={'X-API-Key': client["api_key"]}):
-            self.assertEqual(self.app.full_dispatch_request().status_code, 401)
+            self.assertEqual(401, self.app.full_dispatch_request().status_code)
 
     def test_05_stale_key_does_not_break_authenticated_request(self):
         # A request authenticated by other means (admin JWT) succeeds even if it
@@ -202,7 +216,7 @@ class APIClientAPIKeyMiddlewareTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at,
                                                     'X-API-Key': 'pi_totally_wrong'}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200, res)
+            self.assertEqual(200, res.status_code, res)
 
     def test_05b_key_resolution_error_does_not_500(self):
         # Identification is optional: an error while resolving the X-API-Key
@@ -223,16 +237,16 @@ class APIClientAPIKeyMiddlewareTestCase(MyApiTestCase):
         self.setUp_user_realms()
         client = self._create_client()
         with self.app.test_request_context(f'/clients/{client["id"]}',
-                                           data={"status": "suspended"}, method='POST',
+                                           data={"status": "suspended"}, method='PATCH',
                                            headers={'Authorization': self.at}):
-            self.assertEqual(self.app.full_dispatch_request().status_code, 200)
+            self.assertEqual(200, self.app.full_dispatch_request().status_code)
 
         with self.app.test_request_context('/validate/check', method='POST',
                                            data={"user": "cornelius", "realm": self.realm1, "pass": "x"},
                                            headers={'X-API-Key': client["api_key"]}):
             res = self.app.full_dispatch_request()
             # Not blocked by the disabled key (normal validate, auth just fails).
-            self.assertEqual(res.status_code, 200, res)
+            self.assertEqual(200, res.status_code, res)
 
         entry = self.find_most_recent_audit_entry(action_detail="*suspended API key presented*")
         self.assertIn("suspended API key presented", entry.get("action_detail", ""))
@@ -244,7 +258,7 @@ class APIClientAPIKeyMiddlewareTestCase(MyApiTestCase):
                                            data={"user": "cornelius", "realm": self.realm1, "pass": "x"},
                                            headers={'X-API-Key': 'pi_deadbeef00000000_nope'}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200, res)
+            self.assertEqual(200, res.status_code, res)
         entry = self.find_most_recent_audit_entry()
         self.assertNotIn("API key presented", entry.get("action_detail", "") or "")
 
@@ -255,34 +269,55 @@ class APIClientSessionsTestCase(MyApiTestCase):
     Order-independent: each test creates its own client(s) and sessions.
     """
 
+    def setUp(self):
+        self.setUp_user_realms()
+        # Sessions bind to a resolver-stable identity, so use a real user.
+        self.identity = session_user_identity(User(login="cornelius", realm=self.realm1))
+
+    def _session(self, client_id, login="cornelius", realm=None):
+        identity = session_user_identity(User(login=login, realm=realm or self.realm1))
+        session, _cookie = create_auth_session(identity, client_id)
+        return session
+
+    def _revoke_all(self, client_id, **params):
+        with self.app.test_request_context(f'/clients/{client_id}/sessions',
+                                           query_string=params, method='DELETE',
+                                           headers={'Authorization': self.at}):
+            return self.app.full_dispatch_request()
+
     def test_01_list_sessions(self):
         client, _key = create_client("sessions client", "windows_cp")
-        session, _cookie = create_auth_session("alice", client.id, ip_address="10.0.0.9",
+        session, _cookie = create_auth_session(self.identity, client.id, ip_address="10.0.0.9",
                                                user_agent="curl")
 
         with self.app.test_request_context(f'/clients/{client.id}/sessions',
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200, res)
+            self.assertEqual(200, res.status_code, res)
             sessions = res.json['result']['value']
-            self.assertEqual(len(sessions), 1)
+            self.assertEqual(1, len(sessions))
             entry = sessions[0]
             self.assertEqual(entry["series_id"], session.series_id)
-            self.assertEqual(entry["user_id"], "alice")
-            self.assertEqual(entry["ip_address"], "10.0.0.9")
+            # The stored identity is the resolver-stable triple; the login is
+            # resolved best-effort for display.
+            self.assertEqual(self.identity.user_id, entry["user_id"])
+            self.assertEqual(self.identity.resolver, entry["resolver"])
+            self.assertEqual(self.realm1, entry["realm"])
+            self.assertEqual("cornelius", entry["user"])
+            self.assertEqual("10.0.0.9", entry["ip_address"])
             # The rotating token/counter must never be exposed.
             self.assertNotIn("counter", entry)
 
     def test_02_revoke_session(self):
         client, _key = create_client("revoke client", "windows_cp")
-        session, _cookie = create_auth_session("bob", client.id)
+        session, _cookie = create_auth_session(self.identity, client.id)
 
         with self.app.test_request_context(f'/clients/{client.id}/sessions/{session.series_id}',
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200, res)
+            self.assertEqual(200, res.status_code, res)
             self.assertEqual(res.json['result']['value'], session.series_id)
 
         self.assertIsNone(AuthSession.query.filter_by(series_id=session.series_id).first())
@@ -290,14 +325,14 @@ class APIClientSessionsTestCase(MyApiTestCase):
     def test_03_revoke_is_scoped_to_client(self):
         client_a, _ = create_client("client A", "windows_cp")
         client_b, _ = create_client("client B", "keycloak")
-        session, _cookie = create_auth_session("carol", client_a.id)
+        session, _cookie = create_auth_session(self.identity, client_a.id)
 
         # Try to revoke A's session via B's id -> 404, and A's session survives.
         with self.app.test_request_context(f'/clients/{client_b.id}/sessions/{session.series_id}',
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 404, res)
+            self.assertEqual(404, res.status_code, res)
         self.assertIsNotNone(AuthSession.query.filter_by(series_id=session.series_id).first())
 
     def test_04_sessions_missing_client_404(self):
@@ -305,4 +340,67 @@ class APIClientSessionsTestCase(MyApiTestCase):
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 404, res)
+            self.assertEqual(404, res.status_code, res)
+
+    def test_05_revoke_all_sessions(self):
+        client, _key = create_client("revoke-all client", "windows_cp")
+        self._session(client.id, "cornelius")
+        self._session(client.id, "shadow")
+
+        res = self._revoke_all(client.id)
+        self.assertEqual(200, res.status_code, res)
+        # All of the client's sessions are revoked, and the count is reported.
+        self.assertEqual(2, res.json['result']['value'])
+        self.assertEqual([], AuthSession.query.filter_by(client_id=client.id).all())
+
+        entry = self.find_most_recent_audit_entry(info=f"*Client ID: {client.id}*")
+        self.assertEqual(1, entry["success"])
+
+    def test_06_revoke_all_is_scoped_to_client(self):
+        client_a, _ = create_client("all client A", "windows_cp")
+        client_b, _ = create_client("all client B", "keycloak")
+        self._session(client_a.id)
+        keep = self._session(client_b.id)
+
+        res = self._revoke_all(client_a.id)
+        self.assertEqual(200, res.status_code, res)
+        self.assertEqual(1, res.json['result']['value'])
+        # Client B's session is untouched.
+        self.assertIsNotNone(AuthSession.query.filter_by(series_id=keep.series_id).first())
+
+    def test_07_revoke_all_narrowed_to_user(self):
+        client, _key = create_client("by-user client", "windows_cp")
+        # Capture series ids up front: the bulk delete+commit expires the ORM rows.
+        target_series = self._session(client.id, "cornelius").series_id
+        keep_series = self._session(client.id, "shadow").series_id
+
+        res = self._revoke_all(client.id, user="cornelius", realm=self.realm1)
+        self.assertEqual(200, res.status_code, res)
+        # Only cornelius's device is revoked; shadow's survives.
+        self.assertEqual(1, res.json['result']['value'])
+        self.assertIsNone(AuthSession.query.filter_by(series_id=target_series).first())
+        self.assertIsNotNone(AuthSession.query.filter_by(series_id=keep_series).first())
+
+    def test_08_revoke_all_narrowed_to_realm(self):
+        set_realm("realm_other", [{"name": self.resolvername1}])
+        client, _key = create_client("by-realm client", "windows_cp")
+        # Capture series ids up front: the bulk delete+commit expires the ORM rows.
+        target_series = self._session(client.id, "cornelius", realm=self.realm1).series_id
+        keep_series = self._session(client.id, "cornelius", realm="realm_other").series_id
+
+        res = self._revoke_all(client.id, realm=self.realm1)
+        self.assertEqual(200, res.status_code, res)
+        # Only the realm1 device is revoked; the one in the other realm survives.
+        self.assertEqual(1, res.json['result']['value'])
+        self.assertIsNone(AuthSession.query.filter_by(series_id=target_series).first())
+        self.assertIsNotNone(AuthSession.query.filter_by(series_id=keep_series).first())
+
+    def test_09_revoke_all_unknown_user_is_400(self):
+        client, _key = create_client("bad-user client", "windows_cp")
+        res = self._revoke_all(client.id, user="ghost", realm=self.realm1)
+        # A user that does not resolve cannot be targeted by login.
+        self.assertEqual(400, res.status_code, res)
+
+    def test_10_revoke_all_missing_client_404(self):
+        res = self._revoke_all("does-not-exist")
+        self.assertEqual(404, res.status_code, res)

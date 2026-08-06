@@ -24,8 +24,13 @@ def upgrade():
             # so no database sequence is required.
             sa.Column('series_id', sa.Unicode(length=64), nullable=False),
             sa.Column('counter', sa.Integer(), nullable=False),
-            sa.Column('user_id', sa.Unicode(length=255), nullable=False),
             sa.Column('client_id', sa.Unicode(length=36), nullable=False),
+            # The remembered user is bound by the resolver-stable identity
+            # (resolver, user_id, realm_id), not by the login name - mirroring
+            # how tokenowner binds a user. user_id is the resolver's immutable id.
+            sa.Column('resolver', sa.Unicode(length=120), nullable=False),
+            sa.Column('user_id', sa.Unicode(length=320), nullable=False),
+            sa.Column('realm_id', sa.Integer(), nullable=False),
             sa.Column('ip_address', sa.Unicode(length=64), nullable=True),
             sa.Column('user_agent', sa.Unicode(length=255), nullable=True),
             sa.Column('created_at', sa.DateTime(), nullable=False),
@@ -35,8 +40,14 @@ def upgrade():
             # A session belongs to exactly one client; deleting the client
             # removes its sessions.
             sa.ForeignKeyConstraint(['client_id'], ['clients.id'], ondelete='CASCADE'),
-            # Sessions are looked up by (series_id, client_id).
+            # A session belongs to a realm; deleting the realm removes its sessions.
+            sa.ForeignKeyConstraint(['realm_id'], ['realm.id'], ondelete='CASCADE'),
+            # Sessions are looked up by (series_id, client_id); the user-identity
+            # and realm columns are indexed for revoke-by-user / revoke-by-realm.
             sa.Index('ix_auth_sessions_client_id', 'client_id'),
+            sa.Index('ix_auth_sessions_resolver', 'resolver'),
+            sa.Index('ix_auth_sessions_user_id', 'user_id'),
+            sa.Index('ix_auth_sessions_realm_id', 'realm_id'),
         )
     except (OperationalError, ProgrammingError) as ex:
         if "already exists" in str(ex.orig).lower():
