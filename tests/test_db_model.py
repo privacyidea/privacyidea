@@ -411,7 +411,7 @@ class TokenModelTestCase(MyTestCase):
         self.assertEqual(20, len(c.get_transaction_id()), c.transaction_id)
 
         c.set_data({"some": "data"})
-        self.assertEqual({"some": "data"}, c.get_data())
+        self.assertDictEqual({"some": "data"}, c.get_data())
         self.assertIn("some", c.data)
         c.set_session("session")
         self.assertEqual("session", c.get_session(), c.session)
