@@ -132,15 +132,14 @@
   resolver and the documented API.
 
 * **HTTP API change** - `GET /container/` now filters by the realm of the assigned user when `realm`
-  is given without `user`, listing the containers of all users of that realm. Previously such a
-  request returned an empty list, because the realm was only ever applied together with a resolved
-  user id. Note that `realm` (the realm of the assigned user) and `container_realm` (the realm of the
-  container itself) are still two distinct filters. A realm that does not exist matches nothing, like
-  any other filter value that does not exist. A `user` that can not be resolved to a user id is now
-  rejected with a 400 instead of being answered with an empty list, because the request would
-  otherwise be filtered by the realm and the resolver alone and return the containers of other users.
-  Scripts that pass a stale or misspelled user name to `GET /container/` and relied on getting an
-  empty result need to handle the error.
+  is given without `user`, listing the containers of all users of that realm. Previously such a request returned an
+  empty list, because the realm was only ever applied together with a resolved user id. Note that `realm` (the realm of
+  the assigned user) and `container_realm` (the realm of the container itself) are still two distinct filters. A realm
+  that does not exist matches nothing, like any other filter value that does not exist. A `user` that can not be
+  resolved to a user id is now rejected with a 400 instead of being answered with an empty list, because the request
+  would otherwise be filtered by the realm and the resolver alone and return the containers of other users. Scripts that
+  pass a stale or misspelled user name to `GET /container/` and relied on getting an empty result need to handle the
+  error.
 
 ## Update from 3.12 to 3.13
 
@@ -257,7 +256,7 @@ Be sure to run the schema update script!
 ## Update from 3.6 to 3.7
 
 * The database schema in table "machinetoken" was changed to support a new way of handling offline tokens.
-* The notification handler can contain more complex reply_to emails. The handler optiones were adapted in the database.
+* The notification handler can contain more complex reply_to emails. The handler options were adapted in the database.
 
 Be sure to run the schema update script!
 
@@ -292,8 +291,8 @@ Be sure to run the schema update script. The current database schema now is d587
 * The SMS Gateway database tables have been enhanced with an additional constraint on the type of the options.
 
   The data in the column "Type" of the database table "smsgatewayoption"
-  will be migrated by the schema update script. If you are using SMS Gateways, check your gateway configurtion after the
-  update.
+  will be migrated by the schema update script. If you are using SMS Gateways, check your gateway configuration after
+  the update.
 
 ## Update from 3.2 to 3.3
 
@@ -333,7 +332,7 @@ Be sure to run the schema update script. The current database schema now is d587
 
   The built Ubuntu und CentOS packages are now built with Python 3. The virtual environments thus have changed. If you
   have any changes like customizations under /opt/privacyidea/lib/python2.7/ these will not be found anymore and the
-  WebUI could result in not being accessable. This could be relevant when using ``PI_CUSTOM_CSS = True``
+  WebUI could result in not being accessible. This could be relevant when using ``PI_CUSTOM_CSS = True``
   or ``PI_CUSTOMIZATION`` in your pi.cfg file.
 
   You will have to move the corresponding files to /opt/privacyidea/lib/python3.x/...
