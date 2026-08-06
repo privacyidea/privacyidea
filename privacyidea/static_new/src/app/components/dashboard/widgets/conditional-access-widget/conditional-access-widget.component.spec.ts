@@ -201,7 +201,7 @@ describe("ConditionalAccessWidgetComponent", () => {
     expect(component.summary().highlights.map((entry) => entry.label)).toEqual(["10.0.0.2", "10.0.0.1"]);
   });
 
-  it("should cap the highlights and report how many blocks it does not show", () => {
+  it("should list every block in force and report the locks it has no records for", () => {
     stateMock.setBlocklistEntries(
       Array.from({ length: 7 }, (_, index) =>
         makeBlock({ identifier: `10.0.0.${index}`, blocked_at: hoursAgo(index + 1) })
@@ -209,10 +209,11 @@ describe("ConditionalAccessWidgetComponent", () => {
     );
     create();
 
-    // Seven blocks plus the five locks in force, four of them shown.
-    expect(component.summary().highlights).toHaveLength(4);
-    expect(component.hiddenHighlightCount()).toBe(8);
-    expect(fixture.nativeElement.textContent).toContain("8 more in force");
+    // All seven blocks are listed; the five locks in force have no records in this mock, so they are the remainder.
+    expect(component.summary().highlights).toHaveLength(7);
+    expect(fixture.nativeElement.querySelectorAll(".ca-highlight-cell")).toHaveLength(7);
+    expect(component.hiddenHighlightCount()).toBe(5);
+    expect(fixture.nativeElement.textContent).toContain("5 more in force");
   });
 
   it("should not report hidden restrictions when the highlights show them all", () => {

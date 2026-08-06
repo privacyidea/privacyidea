@@ -210,11 +210,12 @@ enforcing:
   *Everything on record* on the left, *Up to now* / *Up to 24 hours ago* /
   *Up to 7 days ago* on the right); the thumbs narrow the selection inside
   the window. The header counts what falls in the selected range.
-* **Restrictions in force** - the four most recent restrictions still in
-  force that were imposed inside the selected range, blocked IPs and
-  locked users in one list. An IP links to the authentication log
+* **Restrictions in force** - every restriction still in force that was
+  imposed inside the selected range, blocked IPs and locked users in one
+  list, most recent first. An IP links to the authentication log
   pre-filtered on that source IP, a user to the *Locked Users* page; a
-  footer names how many further restrictions the list does not show.
+  footer names how many further restrictions the list does not show
+  (those outside the range, and any beyond the 100 lock records read).
 
 Every row links to the page it summarises. The three areas are governed
 by separate rights (``lockout_policy_read``, ``user_lockout_read``,

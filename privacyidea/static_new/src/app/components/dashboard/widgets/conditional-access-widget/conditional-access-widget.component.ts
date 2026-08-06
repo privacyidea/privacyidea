@@ -51,8 +51,9 @@ import { DashboardDataRef, DashboardDataStore } from "@services/dashboard/dashbo
 import { formatLocalDateTime } from "@utils/date-format.utils";
 import { forkJoin, of } from "rxjs";
 
-// How many blocklist entries the highlights list shows before deferring to the blocklist page.
-const HIGHLIGHT_COUNT = 4;
+// How many lock records are read for the list. Everything in force is listed, so this is only the ceiling past which
+// the widget defers to the locked-users page (and says so in its footer).
+const LOCK_RECORD_LIMIT = 100;
 
 const MS_PER_DAY = 86_400_000;
 // The range slider's resolution: a fixed number of positions spread over the (dynamic) window.
@@ -205,9 +206,9 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
             inForce: enforced.length
           }
         : null,
-      // The restrictions still in force that were imposed inside the selected range - blocked IPs and locked users
-      // in one list, most recent first: what an admin looking at the dashboard is asking about. Expired rows are left
-      // to the blocklist / locked-users pages, where they get purged.
+      // Every restriction still in force that was imposed inside the selected range - blocked IPs and locked users in
+      // one list, most recent first. Expired rows are left to the blocklist / locked-users pages, where they get
+      // purged.
       highlights: [
         ...enforced.map<RestrictionHighlight>((entry) => ({
           label: entry.identifier,
@@ -226,7 +227,6 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
       ]
         .filter((entry) => this.inSelectedRange(entry.at))
         .sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0))
-        .slice(0, HIGHLIGHT_COUNT)
     };
   });
 
@@ -363,8 +363,8 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
     return (summary.lockedUsers?.expired ?? 0) + (summary.blockedIps?.expired ?? 0);
   });
 
-  // The restrictions in force that did not fit in the highlights list, so the widget can say how much it is not
-  // showing instead of implying the list is everything that is in force.
+  // The restrictions in force the list does not carry: those outside the selected range, and any beyond
+  // LOCK_RECORD_LIMIT. Named in the footer, so the list is never mistaken for the whole picture.
   readonly hiddenHighlightCount = computed<number>(() => {
     const summary = this.summary();
     const inForce = (summary.blockedIps?.inForce ?? 0) + (summary.lockedUsers?.inForce ?? 0);
@@ -411,9 +411,9 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
           temporaryLocks: canReadLockouts ? this.stateService.countLockedUsers(["temporary"]) : of(null),
           expiredLocks: canReadLockouts ? this.stateService.countLockedUsers(["expired"]) : of(null),
           // Expired entries are included so the widget can report the stale rows a purge would remove.
-          // The records behind the highlights list: the most recent locks still in force, so a lock shows up next
-          // to a blocked IP. The counts above stay exact regardless of how many records this page holds.
-          recentLocks: canReadLockouts ? this.stateService.fetchLockedUsers(["permanent", "temporary"]) : of(null),
+          // The records behind the list: the locks still in force, so a lock is listed next to a blocked IP. The
+          // counts above stay exact regardless of how many records this page holds.
+          recentLocks: canReadLockouts ? this.stateService.fetchLockedUsers(["permanent", "temporary"], LOCK_RECORD_LIMIT) : of(null),
           blocklist: canReadBlocklist ? this.stateService.fetchBlocklist(true) : of(null)
         })
       )

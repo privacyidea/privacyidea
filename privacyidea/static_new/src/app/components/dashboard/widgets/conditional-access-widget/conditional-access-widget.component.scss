@@ -50,6 +50,18 @@
   color: var(--mat-sys-on-surface-variant);
 }
 
+// The cell itself stays a normal table cell, so the row keeps the same height as the state cell next to it. The
+// icon and the label form one inline-flex unit inside it, which is what keeps them together on one line.
+td.ca-highlight-cell {
+  white-space: nowrap;
+}
+
+.ca-highlight-subject {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--quarter-global-gap);
+}
+
 // The row's glyph is smaller than the navigation's, so the letters are scaled up to keep the same weight. The gap to
 // the label belongs to the stack: an inner margin would widen its box and push the centered text off the glyph.
 .icon-block-ip {
@@ -67,7 +79,6 @@
   width: 1.125rem;
   height: 1.125rem;
   vertical-align: text-bottom;
-  margin-right: var(--quarter-global-padding);
   color: var(--mat-sys-on-surface-variant);
 }
 

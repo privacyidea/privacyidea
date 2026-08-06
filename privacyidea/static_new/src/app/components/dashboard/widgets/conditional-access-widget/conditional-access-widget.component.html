@@ -230,26 +230,28 @@
       <tbody>
         @for (entry of summary().highlights; track entry.kind + entry.label) {
           <tr>
-            <td>
-              @if (entry.kind === "ip") {
-                <!-- "IP" reads through the block glyph's open circle, so the row says what kind of subject it is. -->
-                <span class="icon-block-ip">
-                  <span
-                    class="icon-block-ip-text"
-                    aria-hidden="true"
-                    >IP</span
-                  >
-                  <mat-icon class="ca-kind-icon">block</mat-icon>
-                </span>
-              } @else {
-                <mat-icon class="ca-kind-icon">lock_person</mat-icon>
-              }
-              <a
-                [routerLink]="highlightLink(entry)"
-                (click)="highlightClicked(entry)"
-                [matTooltip]="highlightTooltip(entry)"
-                >{{ entry.label }}</a
-              >
+            <td class="ca-highlight-cell">
+              <span class="ca-highlight-subject">
+                @if (entry.kind === "ip") {
+                  <!-- "IP" reads through the block glyph's open circle, so the row says what kind of subject it is. -->
+                  <span class="icon-block-ip">
+                    <span
+                      class="icon-block-ip-text"
+                      aria-hidden="true"
+                      >IP</span
+                    >
+                    <mat-icon class="ca-kind-icon">block</mat-icon>
+                  </span>
+                } @else {
+                  <mat-icon class="ca-kind-icon">lock_person</mat-icon>
+                }
+                <a
+                  [routerLink]="highlightLink(entry)"
+                  (click)="highlightClicked(entry)"
+                  [matTooltip]="highlightTooltip(entry)"
+                  >{{ entry.label }}</a
+                >
+              </span>
             </td>
             <td>
               @if (entry.permanent) {
