@@ -42,7 +42,7 @@ from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.clients import (get_client, get_clients, create_client, update_client,
                            rotate_client_key, delete_client, client_to_dict)
 from ..lib.authsession import (get_client_sessions, revoke_client_session, revoke_client_sessions,
-                               session_to_dict, session_user_identity)
+                               revoke_sessions, session_to_dict, session_user_identity)
 from ..lib.realm import get_realm_id
 from ..lib.user import User
 
@@ -159,6 +159,49 @@ def rotate_client_api(client_id):
     result = client_to_dict(client)
     result["api_key"] = api_key
     return send_result(result)
+
+
+@clients_blueprint.route('/sessions', methods=['DELETE'])
+@prepolicy(check_base_action, request, PolicyAction.CLIENTS_DELETE)
+@event("clients_sessions_revoke_realm", request, g)
+@log_with(log)
+def revoke_sessions_api():
+    """
+    Revoke persistent "remember device" sessions across **all** clients, scoped
+    to a realm or to a single user. This is the client-independent bulk revoke,
+    for realm-wide incident response or offboarding a single user.
+
+    A ``realm`` is always required (a user is identified within a realm), so this
+    can never wipe every session on the system at once. The acting
+    administrator's realm restrictions apply: the :ref:`policy_clients_delete`
+    action is matched against the requested ``realm``, so a realm-scoped admin
+    cannot revoke another realm's sessions.
+
+    Requires admin authentication and the policy action :ref:`policy_clients_delete`.
+
+    :query realm: the realm whose sessions to revoke (required).
+    :query user: optional login to restrict the revocation to a single user
+        within the realm.
+    :status 200: ``result.value`` is the number of revoked sessions.
+    """
+    realm = get_required(request.all_data, "realm")
+    realm_id = get_realm_id(realm)
+    if realm_id is None:
+        raise ParameterError(f"The realm {realm!r} does not exist.")
+
+    user = get_optional(request.all_data, "user")
+    resolver = user_id = None
+    if user:
+        identity = session_user_identity(User(login=user, realm=realm))
+        if not identity:
+            raise ParameterError(f"The user {user!r} does not resolve in realm {realm!r}.")
+        resolver, user_id, realm_id = identity
+
+    count = revoke_sessions(realm_id=realm_id, resolver=resolver, user_id=user_id)
+
+    info = f"realm: {realm}, user: {user}" if user else f"realm: {realm}"
+    g.audit_object.log({"success": True, "info": info})
+    return send_result(count)
 
 
 @clients_blueprint.route('/<client_id>/sessions', methods=['GET'])

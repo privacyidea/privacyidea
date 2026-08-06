@@ -37,7 +37,7 @@ from typing import NamedTuple, TYPE_CHECKING
 
 from flask_babel import _
 
-from privacyidea.lib.error import AuthError, ResourceNotFoundError
+from privacyidea.lib.error import AuthError, ParameterError, ResourceNotFoundError
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.sqlutils import delete_matching_rows
 from privacyidea.models import AuthSession, Realm, db
@@ -227,7 +227,10 @@ def get_valid_session(cookie_value: str, client_id: str, identity: "UserIdentity
     :param client_ip: the source IP of the request; used to bound the grace
         window (a grace hit must come from the IP the session was last used from)
     :return: ``None`` if there is no live session for this cookie (unknown or
-        expired); otherwise a :class:`ValidSession`
+        expired); otherwise a :class:`ValidSession` ``(session, is_grace)`` where
+        ``is_grace`` is ``False`` for a fresh use (the caller should rotate the
+        token) and ``True`` for a tolerated grace-window hit (the caller must
+        **not** rotate - it converges on the current token)
     :raises AuthError: if cookie reuse (theft) is detected
     """
     series_id, counter = parse_cookie(cookie_value)
@@ -485,6 +488,36 @@ def revoke_client_sessions(client_id: str, realm_id: int = None, resolver: str =
         criteria["resolver"] = resolver
     if user_id is not None:
         criteria["user_id"] = user_id
+    count = AuthSession.query.filter_by(**criteria).delete(synchronize_session=False)
+    db.session.commit()
+    return count
+
+
+def revoke_sessions(realm_id: int = None, resolver: str = None, user_id: str = None) -> int:
+    """
+    Revoke (delete) persistent sessions across **all** clients, filtered by realm
+    and/or a ``(resolver, user_id, realm_id)`` user identity. This is the
+    client-independent counterpart to :func:`revoke_client_sessions`, for
+    realm-wide or per-user incident response and offboarding.
+
+    Refuses to run with no filter at all, so it can never wipe every session on
+    the system by omission.
+
+    :param realm_id: if given, restrict to sessions bound to this realm
+    :param resolver: if given, restrict to this resolver (part of a user identity)
+    :param user_id: if given, restrict to this resolver user id (part of a user identity)
+    :return: the number of revoked sessions
+    :raises ParameterError: if no filter is given
+    """
+    criteria = {}
+    if realm_id is not None:
+        criteria["realm_id"] = realm_id
+    if resolver is not None:
+        criteria["resolver"] = resolver
+    if user_id is not None:
+        criteria["user_id"] = user_id
+    if not criteria:
+        raise ParameterError("Refusing to revoke sessions without a realm or user filter.")
     count = AuthSession.query.filter_by(**criteria).delete(synchronize_session=False)
     db.session.commit()
     return count

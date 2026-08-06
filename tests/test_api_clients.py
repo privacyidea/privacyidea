@@ -4,6 +4,8 @@ from .base import MyApiTestCase
 
 from privacyidea.lib.clients import hash_api_key, create_client
 from privacyidea.lib.authsession import create_auth_session, session_user_identity
+from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.user import User
 from privacyidea.models import Client, AuthSession
@@ -63,6 +65,8 @@ class APIClientsTestCase(MyApiTestCase):
         self.assertEqual(stored.key_id, value["key_id"])
         self.assertEqual(stored.key_hash, hash_api_key(api_key))
         self.assertNotIn(api_key.split("_", 2)[2], stored.key_hash)
+        # An omitted config is persisted as an empty dict, never None/JSON null.
+        self.assertEqual({}, stored.config)
 
     def test_02_list_contains_created_clients(self):
         a = self._create_client("List A", "keycloak")
@@ -114,6 +118,15 @@ class APIClientsTestCase(MyApiTestCase):
             # An empty display_name is ignored (not blanked); status still changes.
             self.assertEqual("My CP", updated["display_name"])
             self.assertEqual("suspended", updated["status"])
+
+    def test_03d_config_is_never_none(self):
+        # The model normalises config to a dict for any caller: nullable=False on
+        # a JSON column does not stop a Python None (it stores JSON null).
+        client = Client(display_name="x", client_type="windows_cp",
+                        key_id="k1", key_hash="h", config=None)
+        self.assertEqual({}, client.config)
+        client.config = None
+        self.assertEqual({}, client.config)
 
     def test_04_rotate_key_invalidates_old(self):
         created = self._create_client()
@@ -438,3 +451,67 @@ class APIClientSessionsTestCase(MyApiTestCase):
         # An unknown realm must be rejected, not silently widened to revoke-all.
         self.assertEqual(400, res.status_code, res)
         self.assertIsNotNone(AuthSession.query.filter_by(series_id=keep_series).first())
+
+    def _revoke_sessions(self, **params):
+        with self.app.test_request_context('/clients/sessions',
+                                           query_string=params, method='DELETE',
+                                           headers={'Authorization': self.at}):
+            return self.app.full_dispatch_request()
+
+    def test_12_revoke_by_realm_across_clients(self):
+        # Dedicated realms so the cross-client sweep only hits this test's rows.
+        set_realm("xcrealm", [{"name": self.resolvername1}])
+        set_realm("xcother", [{"name": self.resolvername1}])
+        client_a, _ = create_client("xc realm A", "windows_cp")
+        client_b, _ = create_client("xc realm B", "keycloak")
+        a1 = self._session(client_a.id, "cornelius", realm="xcrealm").series_id
+        b1 = self._session(client_b.id, "cornelius", realm="xcrealm").series_id
+        other = self._session(client_a.id, "cornelius", realm="xcother").series_id
+
+        res = self._revoke_sessions(realm="xcrealm")
+        self.assertEqual(200, res.status_code, res)
+        # Both xcrealm sessions are revoked across clients; the other realm survives.
+        self.assertEqual(2, res.json['result']['value'])
+        self.assertIsNone(AuthSession.query.filter_by(series_id=a1).first())
+        self.assertIsNone(AuthSession.query.filter_by(series_id=b1).first())
+        self.assertIsNotNone(AuthSession.query.filter_by(series_id=other).first())
+
+    def test_13_revoke_by_user_across_clients(self):
+        set_realm("xcuser", [{"name": self.resolvername1}])
+        client_a, _ = create_client("xc user A", "windows_cp")
+        client_b, _ = create_client("xc user B", "keycloak")
+        a = self._session(client_a.id, "cornelius", realm="xcuser").series_id
+        b = self._session(client_b.id, "cornelius", realm="xcuser").series_id
+        keep = self._session(client_a.id, "shadow", realm="xcuser").series_id
+
+        res = self._revoke_sessions(user="cornelius", realm="xcuser")
+        self.assertEqual(200, res.status_code, res)
+        # cornelius's devices on both clients are revoked; shadow's survives.
+        self.assertEqual(2, res.json['result']['value'])
+        self.assertIsNone(AuthSession.query.filter_by(series_id=a).first())
+        self.assertIsNone(AuthSession.query.filter_by(series_id=b).first())
+        self.assertIsNotNone(AuthSession.query.filter_by(series_id=keep).first())
+
+    def test_14_revoke_requires_realm(self):
+        # An unscoped call must be refused (never a system-wide wipe by omission).
+        res = self._revoke_sessions()
+        self.assertEqual(400, res.status_code, res)
+
+    def test_15_revoke_unknown_realm_is_400(self):
+        res = self._revoke_sessions(realm="nosuchrealm")
+        self.assertEqual(400, res.status_code, res)
+
+    def test_16_revoke_respects_admin_realm_scope(self):
+        # A clients_delete admin policy scoped to a different realm must block a
+        # revoke targeting realm1 (the acting admin's realm restriction applies).
+        set_realm("xcscope", [{"name": self.resolvername1}])
+        client, _ = create_client("scoped client", "windows_cp")
+        keep = self._session(client.id, "cornelius", realm=self.realm1).series_id
+        set_policy("clients_scoped", scope=SCOPE.ADMIN,
+                   action=PolicyAction.CLIENTS_DELETE, realm="xcscope")
+        try:
+            res = self._revoke_sessions(realm=self.realm1)
+            self.assertEqual(403, res.status_code, res)
+            self.assertIsNotNone(AuthSession.query.filter_by(series_id=keep).first())
+        finally:
+            delete_policy("clients_scoped")
