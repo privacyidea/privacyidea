@@ -54,8 +54,11 @@ that require an identified client enforce it themselves.
 ----------------------
 
 The remember-device feature lets a client skip the second factor for a device it
-has seen before, without weakening security: a stolen cookie is detectable and
-revocable.
+has seen before. This is a convenience trade-off, not a free one - requiring the
+second factor on every login is always the stronger posture. What the rotating
+cookie does provide is that a stolen cookie is detectable (theft invalidates the
+series) and revocable, so the reduced friction does not come with an
+undetectable, unrevocable long-lived token.
 
 Enabling it
 ~~~~~~~~~~~

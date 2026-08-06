@@ -32,7 +32,7 @@ API-key middleware) on every validation.
 import logging
 import secrets
 from datetime import datetime, timedelta
-from typing import NamedTuple
+from typing import NamedTuple, TYPE_CHECKING
 
 from flask_babel import _
 
@@ -40,6 +40,9 @@ from privacyidea.lib.error import AuthError, ResourceNotFoundError
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.sqlutils import delete_matching_rows
 from privacyidea.models import AuthSession, db
+
+if TYPE_CHECKING:
+    from privacyidea.lib.user import User
 from privacyidea.models.utils import utc_now
 
 log = logging.getLogger(__name__)
@@ -121,7 +124,7 @@ def create_auth_session(user_id: str, client_id: str, ip_address: str = None,
     return session, build_cookie_value(series_id, session.counter)
 
 
-def session_user_id(user) -> str | None:
+def session_user_id(user: "User | None") -> str | None:
     """
     Build the stable identifier a persistent session is bound to for a user.
 
@@ -172,6 +175,10 @@ def get_valid_session(cookie_value: str, client_id: str, user_id: str,
         :func:`session_user_id`)
     :param client_ip: the source IP of the request; used to bound the grace
         window (a grace hit must come from the IP the session was last used from)
+    :return: ``None`` if there is no live session for this cookie (unknown or
+        expired); otherwise a ``(session, is_grace)`` tuple, where ``is_grace``
+        is ``False`` for a fresh use (the caller should rotate the token) and
+        ``True`` for a tolerated grace-window hit (the caller must **not** rotate)
     :raises AuthError: if cookie reuse (theft) is detected
     """
     series_id, counter = parse_cookie(cookie_value)

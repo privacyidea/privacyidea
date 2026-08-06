@@ -39,8 +39,3 @@ dist/
 
 # Local development environment variables (use .env.example as template)
 .env
-
-# Local Docker deployment secrets and backups (never commit these)
-deploy/docker/secrets/
-deploy/docker/**/secrets/
-deploy/docker/backups/*.tar.gz

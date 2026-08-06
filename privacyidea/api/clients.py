@@ -129,7 +129,7 @@ def update_client_api(client_id):
 
     client = update_client(client_id, display_name=display_name, status=status, config=config)
 
-    g.audit_object.log({"success": True, "info": client_id})
+    g.audit_object.log({"success": True, "info": f"Client ID: {client_id}"})
     return send_result(client_to_dict(client))
 
 
@@ -150,7 +150,7 @@ def rotate_client_api(client_id):
     """
     client, api_key = rotate_client_key(client_id)
 
-    g.audit_object.log({"success": True, "info": client_id})
+    g.audit_object.log({"success": True, "info": f"Client ID: {client_id}"})
     result = client_to_dict(client)
     result["api_key"] = api_key
     return send_result(result)
@@ -178,7 +178,7 @@ def list_client_sessions_api(client_id):
     get_client(client_id)
     sessions = get_client_sessions(client_id)
 
-    g.audit_object.log({"success": True, "info": client_id})
+    g.audit_object.log({"success": True, "info": f"Client ID: {client_id}"})
     return send_result([session_to_dict(session) for session in sessions])
 
 
@@ -220,5 +220,5 @@ def delete_client_api(client_id):
     """
     r = delete_client(client_id)
 
-    g.audit_object.log({"success": True, "info": client_id})
+    g.audit_object.log({"success": True, "info": f"Client ID: {client_id}"})
     return send_result(r)
