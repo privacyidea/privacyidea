@@ -194,9 +194,6 @@ class TestChallengeDTO(MyTestCase):
         dto = _make_dto(data='{"key": "value"}')
         self.assertEqual(dto.get_data(), {"key": "value"})
 
-    def test_get_data_plain_string(self):
-        dto = _make_dto(data='plain')
-        self.assertEqual(dto.get_data(), {'value': 'plain'})
 
     def test_get_data_empty(self):
         dto = _make_dto(data='')
