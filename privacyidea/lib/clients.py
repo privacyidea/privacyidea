@@ -41,10 +41,6 @@ KEY_ID_BYTES = 8
 # speed, which is why a fast keyed hash (rather than a slow KDF) is used and why
 # exposing the key id publicly leaks nothing useful about the secret.
 KEY_SECRET_BYTES = 32
-# Sentinel status returned by identify_client_by_key for a key that is not a
-# known, valid client (unknown key id or a secret that does not match). It is a
-# classification result, not a stored ClientStatus.
-STATUS_UNKNOWN = "unknown"
 
 
 def _hash_secret(secret: str) -> str:
@@ -124,34 +120,31 @@ def get_active_client_by_key(plaintext: str) -> Client | None:
     :param plaintext: the plaintext API key from the request
     :return: the matching active ``Client`` or ``None``
     """
-    client, status = identify_client_by_key(plaintext)
-    return client if status == ClientStatus.ACTIVE else None
+    client = identify_client_by_key(plaintext)
+    return client if client and client.status == ClientStatus.ACTIVE else None
 
 
-def identify_client_by_key(plaintext: str) -> tuple[Client | None, str]:
+def identify_client_by_key(plaintext: str) -> Client | None:
     """
-    Classify a presented API key **without** applying the active-status filter.
+    Look up a presented API key **without** applying the active-status filter.
 
     Unlike :func:`get_active_client_by_key`, this does not hide a disabled
-    client: it distinguishes an *active* key from a *known but disabled* one
-    (``suspended``) so the latter can be surfaced - a real, previously issued key
+    client: it returns the matched client whatever its status, so a caller can
+    tell an *active* key from a *known but disabled* one (``suspended``) via
+    ``client.status`` and surface the latter - a real, previously issued key
     still being presented after it was disabled is worth recording.
 
     :param plaintext: the plaintext API key from the request
-    :return: a ``(client, status)`` tuple. ``status`` is the client's status
-        (a :class:`~privacyidea.models.ClientStatus` value such as ``"active"``
-        or ``"suspended"``) when the ``key_id`` is known and the secret matches,
-        or ``STATUS_UNKNOWN`` when the ``key_id`` is unknown or the secret does
-        not match. ``client`` is the matched client (even when disabled), or
-        ``None`` for an unknown/invalid key.
+    :return: the matched ``Client`` (read its ``status`` for active vs disabled),
+        or ``None`` when the ``key_id`` is unknown or the secret does not match
     """
     key_id, secret = parse_api_key(plaintext)
     if not key_id or not secret:
-        return None, STATUS_UNKNOWN
+        return None
     client = Client.query.filter_by(key_id=key_id).first()
     if not client or not hmac.compare_digest(client.key_hash, _hash_secret(secret)):
-        return None, STATUS_UNKNOWN
-    return client, client.status
+        return None
+    return client
 
 
 def create_client(display_name: str, client_type: str, config: dict = None,

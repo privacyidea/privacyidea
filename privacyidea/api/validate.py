@@ -116,10 +116,9 @@ from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
 from privacyidea.api.lib.utils import (get_all_params, get_before_request_config, get_optional_one_of, get_optional,
                                        INTERNAL_OPTION_KEYS)
 from privacyidea.api.recover import recover_blueprint
-from privacyidea.lib.remembered_device import (create_remembered_device, set_persistent_cookie,
-                                         clear_persistent_cookie, consume_remember_device_cookie,
-                                         user_identity, count_user_devices,
-                                         PERSISTENT_COOKIE_NAME, RememberStatus)
+from privacyidea.lib.remembered_device import (create_remembered_device, consume_remember_device_cookie,
+                                         user_identity, count_user_devices, apply_cookie_action,
+                                         CookieAction, PERSISTENT_COOKIE_NAME, RememberStatus)
 from privacyidea.api.register import register_blueprint
 from privacyidea.lib.applications.offline import MachineApplication
 from privacyidea.lib.challenge import get_challenges, extract_answered_challenges, cancel_enrollment_via_multichallenge
@@ -741,7 +740,7 @@ def _finalize_auth_response(context):
     cookie_action = _resolve_persistent_cookie(user, success)
 
     ret = send_result(context["result"], rid=2, details=details, **context["response_params"])
-    _apply_persistent_cookie(ret, cookie_action)
+    apply_cookie_action(ret, cookie_action)
 
     g.audit_object.log({
         "info": log_used_user(user, details.get("message")),
@@ -754,10 +753,10 @@ def _finalize_auth_response(context):
     return ret
 
 
-def _resolve_persistent_cookie(user: User, success: bool) -> tuple | None:
+def _resolve_persistent_cookie(user: User, success: bool) -> "CookieAction | None":
     """
     Decide whether to *issue* a new persistent ("remember device") cookie on a
-    successful authentication, returning ``("set", value, expires_at)`` or
+    successful authentication, returning a ``"set"`` :class:`CookieAction` or
     ``None``.
 
     ``/validate/check`` only issues cookies. A presented cookie is consumed and
@@ -810,17 +809,7 @@ def _resolve_persistent_cookie(user: User, success: bool) -> tuple | None:
                                                     ip_address=g.client_ip,
                                                     user_agent=g.get("user_agent"),
                                                     validity_days=validity_days)
-    return "set", cookie_value, device.expires_at
-
-
-def _apply_persistent_cookie(response, action):
-    """Apply the action from :func:`_resolve_persistent_cookie` to the response."""
-    if not action:
-        return
-    if action[0] == "set":
-        set_persistent_cookie(response, action[1], action[2])
-    elif action[0] == "clear":
-        clear_persistent_cookie(response)
+    return CookieAction("set", cookie_value, device.expires_at)
 
 
 @validate_blueprint.route('/capabilities', methods=['GET'])
@@ -932,7 +921,7 @@ def check_remember_device():
         result = consume_remember_device_cookie(presented, g.client_id, identity, g.get("client_ip"))
         if result.status == RememberStatus.RECOGNIZED:
             recognised = True
-            cookie_action = ("set", result.cookie_value, result.expires_at)
+            cookie_action = CookieAction("set", result.cookie_value, result.expires_at)
         elif result.status == RememberStatus.GRACE:
             # Tolerated concurrent/duplicate request: recognised, but do not
             # rotate (the client keeps the cookie it already has).
@@ -952,9 +941,9 @@ def check_remember_device():
             log.warning("Persistent device cookie reuse detected; series invalidated.")
             g.audit_object.add_to_log({"action_detail": "persistent cookie reuse detected"},
                                       add_with_comma=True)
-            cookie_action = ("clear",)
+            cookie_action = CookieAction("clear")
         else:  # miss: the cookie is dead (unknown or expired) - clear it
-            cookie_action = ("clear",)
+            cookie_action = CookieAction("clear")
 
     # A recognition is its own audit action ("POST /validate/remember_device") and
     # is intentionally not marked as an authentication (no ACCEPT/REJECT), so it
@@ -969,7 +958,7 @@ def check_remember_device():
     # (ACCEPT/REJECT): recognition is not an authentication - the answer is
     # result.value / detail.remembered_device, and the audit records no ACCEPT/REJECT.
     ret = send_result(recognised, details={"remembered_device": recognised})
-    _apply_persistent_cookie(ret, cookie_action)
+    apply_cookie_action(ret, cookie_action)
     return ret
 
 

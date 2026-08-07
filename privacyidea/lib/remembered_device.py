@@ -289,18 +289,24 @@ def _is_within_grace(device: RememberedDevice, counter: int, client_ip: str) -> 
     return True
 
 
-def rotate_device(device: RememberedDevice) -> tuple[str, datetime]:
+class RotatedCookie(NamedTuple):
+    """A rotated cookie's new value and its expiry (see :func:`rotate_device`)."""
+    value: str
+    expires_at: datetime | None
+
+
+def rotate_device(device: RememberedDevice) -> RotatedCookie:
     """
     Rotate a validated device: bump the counter, refresh ``last_used_at`` and
     return the new cookie value plus its expiry.
 
     :param device: a device returned by :func:`get_valid_device`
-    :return: a ``(new_cookie_value, expires_at)`` tuple
+    :return: a :class:`RotatedCookie` ``(value, expires_at)``
     """
     device.counter += 1
     device.last_used_at = utc_now()
     device.save()
-    return build_cookie_value(device.series_id, device.counter), device.expires_at
+    return RotatedCookie(build_cookie_value(device.series_id, device.counter), device.expires_at)
 
 
 class RememberStatus(str, enum.Enum):
@@ -376,8 +382,8 @@ def consume_remember_device_cookie(cookie_value: str, client_id: str, identity: 
         return ConsumeResult(RememberStatus.MISS, None, None)
     if result.is_grace:
         return ConsumeResult(RememberStatus.GRACE, None, None)
-    new_cookie, expires_at = rotate_device(result.device)
-    return ConsumeResult(RememberStatus.RECOGNIZED, new_cookie, expires_at)
+    rotated = rotate_device(result.device)
+    return ConsumeResult(RememberStatus.RECOGNIZED, rotated.value, rotated.expires_at)
 
 
 def set_persistent_cookie(response, cookie_value: str, expires_at) -> None:
@@ -412,6 +418,33 @@ def clear_persistent_cookie(response) -> None:
     :param response: the Flask response to clear the cookie on
     """
     response.delete_cookie(PERSISTENT_COOKIE_NAME, httponly=True, secure=True, samesite="Strict")
+
+
+class CookieAction(NamedTuple):
+    """
+    What to do with the remember-device cookie on a response: ``kind`` is
+    ``"set"`` (send ``value`` with ``expires_at``) or ``"clear"`` (drop it).
+    See :func:`apply_cookie_action`.
+    """
+    kind: str
+    value: str | None = None
+    expires_at: datetime | None = None
+
+
+def apply_cookie_action(response, action: "CookieAction | None") -> None:
+    """
+    Apply a :class:`CookieAction` to a response: set, clear, or (for ``None``)
+    leave the cookie untouched.
+
+    :param response: the Flask response to act on
+    :param action: the action to apply, or ``None`` for no change
+    """
+    if not action:
+        return
+    if action.kind == "set":
+        set_persistent_cookie(response, action.value, action.expires_at)
+    elif action.kind == "clear":
+        clear_persistent_cookie(response)
 
 
 def cleanup_expired_remembered_devices(chunk_size: int = None) -> int:
