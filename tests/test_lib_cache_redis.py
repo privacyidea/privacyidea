@@ -1120,14 +1120,17 @@ class TestChallengeDataEncryption(_RealRedisBase):
 
     def test_dict_data_is_encrypted_and_round_trips(self):
         """Push code-to-phone stores a dict; get_data() must return it intact."""
-        data_dict = {"smartphone_confirmed": True, "display_code": "4829"}
+        # The secret is spelled with non-hex characters on purpose: the stored
+        # payload is a long hex IV + ciphertext, so a short all-hex needle could
+        # turn up in it by chance and fail this assertion at random.
+        data_dict = {"smartphone_confirmed": True, "display_code": "code-4829-xyz"}
         with redis_in_store(type(self)._real_client):
             cache_challenge(serial="SE_ENC_3", transaction_id="txn-enc-003",
                             challenge="", data=json.dumps(data_dict), session="",
                             timestamp=utc_now(), expiration=utc_now() + timedelta(seconds=120))
 
             stored = self._raw_payload("txn-enc-003", "SE_ENC_3")
-            self.assertNotIn("4829", json.dumps(stored))
+            self.assertNotIn("code-4829-xyz", json.dumps(stored))
 
             challenges = get_challenges_from_cache(transaction_id="txn-enc-003")
             self.assertEqual(data_dict, challenges[0].get_data())
@@ -1163,25 +1166,6 @@ class TestChallengeDataEncryption(_RealRedisBase):
             self.assertEqual("", challenges[0].data)
             self.assertEqual({}, challenges[0].get_data())
 
-    def test_undecryptable_data_is_dropped_rather_than_returned(self):
-        """
-        An entry whose ciphertext cannot be decrypted - corruption, or a
-        different encryption key - must not hand back the failure placeholder
-        as if it were the challenge data.
-        """
-        payload = json.dumps({
-            'transaction_id': 'txn-enc-006',
-            'serial': 'SE_ENC_6',
-            'challenge': '',
-            'data': 'not-valid-ciphertext',
-            'session': '',
-            'timestamp': utc_now().isoformat(),
-            'expiration': (utc_now() + timedelta(seconds=120)).isoformat(),
-            'received_count': 0,
-            'otp_valid': False,
-        })
-        self.assertIsNone(_deserialize(payload))
-
     def test_create_challenge_does_not_leak_otp_into_redis(self):
         """The full create_challenge() path, not just the cache layer directly."""
         otp_value = "246800"
@@ -1191,3 +1175,62 @@ class TestChallengeDataEncryption(_RealRedisBase):
             stored = self._raw_payload(challenge.transaction_id, "SE_ENC_7")
             self.assertNotIn(otp_value, json.dumps(stored))
             self.assertEqual(otp_value, get_challenges(transaction_id=challenge.transaction_id)[0].data)
+
+
+class TestChallengeDataEncryptionUnit(MyTestCase):
+    """
+    Encryption behaviour that needs no Redis. Kept out of ``_RealRedisBase`` so
+    it still runs for a developer with no local Redis and in jobs that start no
+    Redis service container.
+    """
+
+    def _payload(self, data):
+        return json.dumps({
+            'transaction_id': 'txn-enc-unit',
+            'serial': 'SE_ENC_UNIT',
+            'challenge': '',
+            'data': data,
+            'session': '',
+            'timestamp': utc_now().isoformat(),
+            'expiration': (utc_now() + timedelta(seconds=120)).isoformat(),
+            'received_count': 0,
+            'otp_valid': False,
+        })
+
+    def test_undecryptable_data_is_dropped_rather_than_returned(self):
+        """
+        An entry whose ciphertext cannot be decrypted - corruption, or a
+        different encryption key - must not hand back the failure placeholder
+        as if it were the challenge data.
+        """
+        self.assertIsNone(_deserialize(self._payload('not-valid-ciphertext')))
+
+    def test_payload_round_trips_through_encryption(self):
+        dto = _make_dto(data='424242')
+        payload = dto.to_payload()
+
+        self.assertNotIn('424242', payload)
+        self.assertEqual('424242', _deserialize(payload).data)
+
+    def test_non_object_payload_is_a_cache_miss(self):
+        """
+        Valid JSON that is not an object must degrade to a miss rather than
+        raising out of the cache layer into the request.
+        """
+        for raw in ('null', '"a string"', '123', '[1, 2, 3]'):
+            with self.subTest(raw=raw):
+                self.assertIsNone(_deserialize(raw))
+
+
+class TestRedisKeyNames(MyTestCase):
+    """
+    Pin the on-the-wire key names. Everything else builds keys from these
+    constants, so without this the format could change with a green suite -
+    and workers reading a different key name find no challenges at all.
+    """
+
+    def test_txn_key_format(self):
+        self.assertEqual('pi:challenge:txn:12345', _TXN_KEY.format('12345'))
+
+    def test_serial_key_format(self):
+        self.assertEqual('pi:challenge:serial:SPASS01', _SERIAL_KEY.format('SPASS01'))
