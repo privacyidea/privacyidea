@@ -123,10 +123,18 @@ class UserSettingTestCase(MyTestCase):
         # audit log, whose CSV export is line-oriented. An echoed key must not be
         # able to forge an entry there.
         with self.assertRaises(ParameterError) as context:
-            validate_user_settings({"harmless\nforged entry": 1, "tab\there": 1})
-        self.assertNotIn("\n", context.exception.message)
-        self.assertNotIn("\t", context.exception.message)
-        self.assertIn("harmless.forged entry", context.exception.message)
+            validate_user_settings({"harmless\nforged entry": 1, "nul\x00byte": 1,
+                                    "esc\x1bsequence": 1})
+        message = context.exception.message
+        self.assertTrue(message.isprintable(), message)
+        # Escaped, not dropped: the reader can tell what was actually sent.
+        self.assertIn("harmless\\nforged entry", message)
+        self.assertIn("nul\\x00byte", message)
+        self.assertIn("esc\\x1bsequence", message)
+        # A legitimate non-ASCII key is printable and must survive unchanged
+        with self.assertRaises(ParameterError) as context:
+            validate_user_settings({"grüße": 1})
+        self.assertIn("grüße", context.exception.message)
 
     def test_08_allowed_keys_include_config(self):
         self.assertTrue(KNOWN_SETTING_KEYS.issubset(get_allowed_keys()))

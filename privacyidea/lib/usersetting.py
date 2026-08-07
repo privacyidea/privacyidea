@@ -152,14 +152,17 @@ def _describe_unknown_keys(unknown: list) -> str:
     like a name the caller actually sent. A single key that is longer than the
     budget is cut, because there is nothing whole left to keep.
 
-    Non-printable characters are replaced the way
-    :class:`privacyidea.lib.log.SecureFormatter` does it. A JSON key may contain
-    a line break, and the message reaches the audit log, whose CSV export is
-    line-oriented -- an unescaped key could forge an entry there.
+    Non-printable characters are escaped rather than dropped, so the reader sees
+    which character was sent. A JSON key may contain a line break, and the
+    message reaches the audit log, whose CSV export is line-oriented -- an
+    unescaped key could forge an entry there. The test is the same one
+    :class:`privacyidea.lib.log.SecureFormatter` uses, which covers the control
+    characters beyond the usual line-break suspects (NUL, ESC and friends).
     """
     packed = ""
     for key in unknown:
-        key = "".join(char if char.isprintable() else "." for char in key)
+        key = "".join(char if char.isprintable() else char.encode("unicode_escape").decode("ascii")
+                      for char in key)
         candidate = f"{packed}, {key}" if packed else key
         if len(candidate) > MAX_REPORTED_KEYS_LENGTH:
             if not packed:
