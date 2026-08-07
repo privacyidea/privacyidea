@@ -1889,7 +1889,10 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             self.assertEqual(200, response.status_code, response)
             # Generic failure, and the answer was never processed.
             self.assertFalse(response.json["result"]["value"], response.json)
-            self.assertEqual(logs_before, db.session.query(AuthenticationLog).count())
+            # The out-of-band answer logs its own outcome when it succeeds, so its rejection replaces that row rather
+            # than adding one: exactly one new entry, classified USER_LOCKED instead of an approval.
+            new_entries = db.session.query(AuthenticationLog).order_by(AuthenticationLog.id).all()[logs_before:]
+            self.assertListEqual([str(AuthEventType.USER_LOCKED)], [entry.event_type for entry in new_entries])
             # The challenge is still open (the answer did not consume it).
             self.assertTrue(get_challenges(transaction_id=transaction_id))
         finally:

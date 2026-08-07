@@ -1599,7 +1599,8 @@ class PasskeyAPITest(PasskeyAPITestBase):
         """A locked passkey owner is rejected at /validate/check by the
         conditional-access pre-check. The request is username-less, so the owner is
         resolved from the credential_id before any token work runs — closing the
-        credential/serial lock-evasion gap. Generic failure, no auth-log row."""
+        credential/serial lock-evasion gap. Generic failure to the client, and the log
+        records the lock as the reason rather than a passkey outcome."""
         serial = self._enroll_static_passkey()
         db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid,
                                         realm=self.user.realm, lock_expires_at=utc_now() + timedelta(seconds=600)))
@@ -1616,8 +1617,10 @@ class PasskeyAPITest(PasskeyAPITestBase):
                 self.assertFalse(res.json["result"]["value"], res.json)
                 # Generic reject: no reason leaked in the detail.
                 self.assertFalse(res.json.get("detail"), res.json)
-            # The pre-check rejects before classification -> no authentication-log row.
-            self.assertEqual(0, len(get_authentication_logs()))
+            # The rejection classifies the request: this row is the only place an admin can see why it failed, since
+            # no token work ran to log an outcome of its own.
+            self.assertListEqual([AuthEventType.USER_LOCKED],
+                                 [entry.event_type for entry in get_authentication_logs()])
         finally:
             db.session.query(UserLockoutState).delete()
             db.session.commit()
