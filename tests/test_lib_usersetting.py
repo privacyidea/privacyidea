@@ -118,6 +118,16 @@ class UserSettingTestCase(MyTestCase):
             validate_user_settings({"x" * 5000: 1})
         self.assertLess(len(context.exception.message), 500)
 
+    def test_07d_rejection_message_neutralizes_control_characters(self):
+        # A JSON key may contain a line break, and the message is written to the
+        # audit log, whose CSV export is line-oriented. An echoed key must not be
+        # able to forge an entry there.
+        with self.assertRaises(ParameterError) as context:
+            validate_user_settings({"harmless\nforged entry": 1, "tab\there": 1})
+        self.assertNotIn("\n", context.exception.message)
+        self.assertNotIn("\t", context.exception.message)
+        self.assertIn("harmless.forged entry", context.exception.message)
+
     def test_08_allowed_keys_include_config(self):
         self.assertTrue(KNOWN_SETTING_KEYS.issubset(get_allowed_keys()))
         self.assertRaises(ParameterError, validate_user_settings, {"custom_admin_key": 1})
