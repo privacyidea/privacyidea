@@ -10,8 +10,13 @@ Apache2 and Nginx are using a WSGI script to start the application.
 This script is usually located at ``/etc/privacyidea/privacyideaapp.py`` or
 ``/etc/privacyidea/privacyideaapp.wsgi`` and has the following contents:
 
-.. literalinclude:: ../../../deploy/apache/privacyideaapp.wsgi
-    :language: python
+.. code-block:: python
+
+    import sys
+    sys.stdout = sys.stderr
+    from privacyidea.app import create_app
+    # Now we can select the config file:
+    application = create_app(config_name="production", config_file="/etc/privacyidea/pi.cfg")
 
 In the ``create_app``-call you can also select another config file.
 
