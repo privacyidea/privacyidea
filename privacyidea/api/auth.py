@@ -289,7 +289,11 @@ def _conditional_access_precheck(user: User) -> None:
         raise AuthError(_lockout_error_message(lockout),
                         id=Error.AUTHENTICATE_WRONG_CREDENTIALS,
                         details={"restriction": _restriction_kind(lockout)})
-    if evaluate_access_decision(user, g.client_ip) == AccessDecision.DENY:
+    decision = evaluate_access_decision(user, g.client_ip)
+    # The decision belongs to this request's history, but its authentication-log row does not exist yet: the context
+    # keeps the outcomes until the login stages its event (a dry-run DENY lets the login continue and land on that row).
+    get_ca_context().add_outcomes(decision.outcomes)
+    if decision.decision == AccessDecision.DENY:
         log.info(f"Denying /auth login for {user!r} by conditional-access policy.")
         g.audit_object.log({"info": "Rejected: denied by conditional-access policy"})
         raise AuthError(_("Authentication failure. Access has been denied by a conditional-access policy."),

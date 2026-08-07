@@ -20,12 +20,13 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
+from typing import Any
 
 from sqlalchemy import and_, delete, false, func, or_, select
 from sqlalchemy.orm import InstrumentedAttribute
 from sqlalchemy.sql import ColumnElement
 
-from privacyidea.models import AuthenticationLog, authentication_log_column_length
+from privacyidea.models import AuthenticationLog, ConditionalAccessOutcome, authentication_log_column_length
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.session import get_ca_session, guarded_write
 from privacyidea.lib.error import ParameterError
@@ -137,7 +138,7 @@ class _TruncatedValue:
     overflow: str | None
 
 
-def _truncate(column: str, value, separator: str | None = None) -> _TruncatedValue:
+def _truncate(column: str, value: Any, separator: str | None = None) -> _TruncatedValue:
     """
     Convert *value* to a string and truncate it to the length of the given column of the authentication_log table, so a
     pathological value (e.g. a very long User-Agent or login name) can never overflow the column on insert. The cut-off
@@ -208,14 +209,17 @@ class PendingAuthEvent:
     other_info: dict | None = None
     # Id of the stored row, set once it has been committed; None means "not written yet".
     row_id: int | None = None
+    # What conditional access did to this request, waiting for the row id it has to be recorded against (see
+    # ConditionalAccessContext.flush). Not row content: it becomes rows in conditional_access_outcome, not columns here.
+    outcomes: list[ConditionalAccessOutcome] = field(default_factory=list)
     # Set when a field is assigned after the row was written, i.e. the stored row no longer matches this event.
     _changed: bool = field(init=False, default=False, repr=False, compare=False)
 
-    def __setattr__(self, name: str, value) -> None:
-        # ``row_id`` and the flag itself are bookkeeping rather than row content, so they never mark the event
-        # changed. ``self.__dict__`` is read directly because the dataclass __init__ assigns the fields through here
-        # too, at which point ``row_id`` does not exist yet.
-        if name not in ("row_id", "_changed") and self.__dict__.get("row_id") is not None:
+    def __setattr__(self, name: str, value: Any) -> None:
+        # ``row_id``, ``outcomes`` and the flag itself are bookkeeping rather than row content, so they never mark the
+        # event changed. ``self.__dict__`` is read directly because the dataclass __init__ assigns the fields through
+        # here too, at which point ``row_id`` does not exist yet.
+        if name not in ("row_id", "outcomes", "_changed") and self.__dict__.get("row_id") is not None:
             object.__setattr__(self, "_changed", True)
         object.__setattr__(self, name, value)
 
@@ -246,9 +250,6 @@ _TRUNCATED_COLUMNS = {
     "attempt_id": None,
 }
 
-# other_info keys written out-of-band on the stored row after insert; event updates must not clobber them.
-_OUT_OF_BAND_OTHER_INFO_KEYS = {"conditional_access_findings"}
-
 
 def _row_values(event: PendingAuthEvent) -> dict:
     """
@@ -264,23 +265,6 @@ def _row_values(event: PendingAuthEvent) -> dict:
         if result.overflow is not None:
             overflow[column] = result.overflow
     return {**stored, "other_info": _store_overflow(event.other_info, overflow)}
-
-
-def _merge_other_info_for_update(stored: dict | None, updated: dict | None) -> dict | None:
-    """
-    Merge *updated* into the existing stored value for ``other_info`` while preserving out-of-band keys that the
-    event does not carry (currently conditional-access findings appended after insert).
-
-    If *updated* explicitly sets one of those keys, that explicit value wins.
-    """
-    if not isinstance(updated, dict):
-        return updated
-    merged = dict(updated)
-    if isinstance(stored, dict):
-        for key in _OUT_OF_BAND_OTHER_INFO_KEYS:
-            if key in stored and key not in merged:
-                merged[key] = stored[key]
-    return merged
 
 
 def _build_entry(event: PendingAuthEvent) -> AuthenticationLog:
@@ -344,8 +328,6 @@ def update_authentication_events(events: Sequence[PendingAuthEvent]) -> bool:
                 log.info(f"Cannot update authentication log entry {event.row_id!r}: not found.")
                 continue
             values = _row_values(event)
-            stored_other_info = getattr(entry, "other_info", None)
-            values["other_info"] = _merge_other_info_for_update(stored_other_info, values["other_info"])
             for column, value in values.items():
                 setattr(entry, column, value)
     if not outcome.succeeded:
@@ -408,39 +390,6 @@ def delete_authentication_log_event(event_id: int) -> None:
     stmt = delete(AuthenticationLog).where(AuthenticationLog.id == event_id)
     with guarded_write(f"the deletion of authentication log entry {event_id}", reraise=True):
         get_ca_session().execute(stmt)
-
-
-def record_conditional_access_finding(event_id: int, finding: dict) -> None:
-    """
-    Append *finding* to the ``conditional_access_findings`` list in an existing
-    authentication_log row's ``other_info``, alongside whatever else is already stored
-    there.
-
-    This records what a conditional-access policy did to the request on the request's own
-    log row. A dry-run finding carries ``dry_run: True``: a dry-run policy never writes
-    lockout state and never runs its actions, so the finding records what it *would* have
-    done, letting an admin review a policy's real-world hit rate before enforcing it.
-
-    Like the insert, this must never break the response that triggered it: a failure is logged and swallowed, and it
-    runs on the conditional-access session so a rollback leaves the request's own pending writes alone.
-
-    The engine runs *after* the row was written (that ordering is what lets its counts include this request's own
-    event), so the finding has to be an ``UPDATE`` on the stored row rather than a field on the staged event. Once the
-    engine hands its findings back to the API layer instead of writing them itself, this becomes a mutation of
-    ``PendingAuthEvent.other_info`` before the row is ever written, and this function goes away.
-
-    :param event_id: id of the entry to attach the finding to
-    :param finding: JSON-serializable dict describing what the policy did (or, in dry run, would have done)
-    """
-    # The lookup is inside the guarded block so a failing read cannot break the response either.
-    with guarded_write(f"the conditional-access finding on authentication log entry {event_id}"):
-        entry = get_ca_session().get(AuthenticationLog, event_id)
-        if entry is None:
-            log.info(f"Cannot record conditional-access finding on authentication log entry {event_id!r}: not found.")
-            return
-        other_info = dict(entry.other_info) if entry.other_info else {}
-        other_info["conditional_access_findings"] = [*other_info.get("conditional_access_findings", []), finding]
-        entry.other_info = other_info
 
 
 def get_authentication_log_event(event_id: int) -> AuthenticationLog | None:

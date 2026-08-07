@@ -28,12 +28,13 @@ from privacyidea.lib.conditional_access.authentication_log import (get_authentic
 from privacyidea.lib.conditional_access.engine import (LockoutAction, LockoutTarget,
                                                        is_user_locked, is_ip_blocked)
 from privacyidea.lib.conditional_access.lockout_policy import create_lockout_policy
+from privacyidea.lib.conditional_access.outcome_log import get_outcomes
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, AUTHORIZED, set_policy, delete_policy
 from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
 from privacyidea.lib.token import init_token, remove_token, get_tokens
 from privacyidea.lib.user import User
-from privacyidea.models import db, Challenge
+from privacyidea.models import db, Challenge, ConditionalAccessOutcome
 from privacyidea.models.authentication_log import AuthenticationLog
 from privacyidea.models.lockout_policy import (
     BlockList,
@@ -89,8 +90,8 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
 
     @staticmethod
     def _clear() -> None:
-        for model in (UserLockoutState, BlockList, LockoutStageAction, LockoutPolicyStage,
-                      LockoutPolicyCounterType, LockoutPolicy, AuthenticationLog):
+        for model in (ConditionalAccessOutcome, UserLockoutState, BlockList, LockoutStageAction,
+                      LockoutPolicyStage, LockoutPolicyCounterType, LockoutPolicy, AuthenticationLog):
             db.session.query(model).delete()
         db.session.commit()
 
@@ -193,7 +194,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertFalse(body["result"]["value"], body)
         self.assertEqual(logs_before, len(get_authentication_logs()))
 
-    def test_dry_run_lock_policy_persists_finding_but_never_locks(self):
+    def test_dry_run_lock_policy_persists_outcome_but_never_locks(self):
         # A dry-run LOCK_USER policy never locks the user, but the triggering request's own
         # authentication_log row records what the policy would have done.
         self._make_lock_policy(counter_type=AuthEventType.MFA_FAIL, threshold=3, duration=600, dry_run=True)
@@ -207,15 +208,20 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         # Never actually enforced.
         self.assertFalse(is_user_locked(self.user))
 
-        # The triggering (third) row carries the dry-run finding.
-        triggering_entry = entries[-1]
-        self.assertIsNotNone(triggering_entry.other_info)
-        findings = triggering_entry.other_info["conditional_access_findings"]
-        self.assertEqual(1, len(findings))
-        finding = findings[0]
-        self.assertEqual("ca_lock", finding["policy_name"])
-        self.assertEqual(3, finding["threshold"])
-        self.assertEqual([str(LockoutAction.LOCK_USER)], finding["actions"])
+        # The triggering (third) request's row carries the dry-run outcome, end to end: the engine returned an outcome
+        # and the request context recorded it against the row it judged.
+        outcomes = get_outcomes(entries[-1].id)
+        self.assertEqual(1, len(outcomes))
+        outcome = outcomes[0]
+        self.assertTrue(outcome.dry_run)
+        self.assertEqual("ca_lock", outcome.policy_name)
+        self.assertEqual(3, outcome.threshold)
+        self.assertEqual(3, outcome.event_count)
+        self.assertEqual(str(LockoutAction.LOCK_USER), outcome.action_type)
+        # The expiry the lock would have had, so a dry run reads like the enforced one.
+        self.assertIsNotNone(outcome.expires_at)
+        # The earlier rows, which did not trip the threshold, carry nothing.
+        self.assertListEqual([], list(get_outcomes(entries[0].id)))
 
         # The user can still authenticate normally afterward -- never actually locked.
         body = self._check({"user": "cornelius", "pass": "pin755224"})
@@ -685,8 +691,8 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
 
     @staticmethod
     def _clear():
-        for model in (UserLockoutState, BlockList, LockoutStageAction, LockoutPolicyStage,
-                      LockoutPolicyCounterType, LockoutPolicy, AuthenticationLog):
+        for model in (ConditionalAccessOutcome, UserLockoutState, BlockList, LockoutStageAction,
+                      LockoutPolicyStage, LockoutPolicyCounterType, LockoutPolicy, AuthenticationLog):
             db.session.query(model).delete()
         db.session.commit()
 
@@ -714,9 +720,9 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
                      "actions": [{"action_type": str(LockoutAction.LOCK_USER), "action_value": duration}]}],
             target=LockoutTarget.USER, dry_run=True, priority=priority)
 
-    def test_dry_run_finding_persisted_on_auth_login(self):
+    def test_dry_run_outcome_persisted_on_auth_login(self):
         # /auth evaluates in-view rather than at request teardown (it surfaces the engine's notices in its own
-        # response), so it flushes the staged row first - the finding needs that row to exist. Without it a
+        # response), so it flushes the staged row first - the outcome needs that row to exist. Without it a
         # dry-run policy tripped by a WebUI login records nothing.
         self._make_dry_run_password_policy(threshold=2)
 
@@ -729,15 +735,14 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         # Dry-run never enforces, so the login stays refused on credentials only.
         self.assertFalse(is_user_locked(self.user))
 
-        # The triggering (second) row carries the finding.
-        triggering_entry = entries[-1]
-        self.assertIsNotNone(triggering_entry.other_info)
-        findings = triggering_entry.other_info["conditional_access_findings"]
-        self.assertEqual(1, len(findings))
-        finding = findings[0]
-        self.assertEqual("ca_pw_dry", finding["policy_name"])
-        self.assertEqual(2, finding["threshold"])
-        self.assertEqual([str(LockoutAction.LOCK_USER)], finding["actions"])
+        # The triggering (second) request's row carries the outcome. /auth flushes in-view and evaluates right after,
+        # so this also covers recording against a row that was written earlier in the same request.
+        outcomes = get_outcomes(entries[-1].id)
+        self.assertEqual(1, len(outcomes))
+        self.assertTrue(outcomes[0].dry_run)
+        self.assertEqual("ca_pw_dry", outcomes[0].policy_name)
+        self.assertEqual(2, outcomes[0].threshold)
+        self.assertEqual(str(LockoutAction.LOCK_USER), outcomes[0].action_type)
 
     @staticmethod
     def _make_decision_policy(*, name, threshold, action, priority=1, window=3600):

@@ -22,6 +22,7 @@ import os
 from datetime import datetime
 from datetime import timedelta
 from datetime import timezone
+from typing import Any
 
 from mock import mock
 from sqlalchemy import func, delete, select
@@ -840,21 +841,38 @@ class ConditionalAccessOutcomeTestCase(MyTestCase):
     the authentication_log row of the request that caused it.
     """
 
-    def _authentication_log_row(self, event_type=AuthEventType.PASSWORD_FAIL) -> int:
+    def tearDown(self):
+        # Children first: nothing cascades on SQLite.
+        db.session.rollback()
+        db.session.query(ConditionalAccessOutcome).delete()
+        db.session.query(AuthenticationLog).delete()
+        db.session.commit()
+        super().tearDown()
+
+    def _authentication_log_row(self, event_type: str = AuthEventType.PASSWORD_FAIL) -> int:
         """Write a parent authentication_log row and return its id."""
         entry = AuthenticationLog(event_type=str(event_type), username="cornelius", realm="realm1",
                                   resolver="resolver1", uid="1000", source_ip="10.0.0.1")
         return entry.save()
 
-    def _make_outcome(self, auth_log_id, **overrides) -> ConditionalAccessOutcome:
+    def _make_outcome(self, auth_log_id: int, **overrides: Any) -> ConditionalAccessOutcome:
         """An outcome carrying everything the engine always knows, so a test only states what it is about."""
         fields = {"auth_log_id": auth_log_id, "action_type": "LOCK_USER", "policy_id": 7,
                   "policy_name": "Brute Force PIN Lockout", "threshold": 5, "event_count": 6}
         return ConditionalAccessOutcome(**{**fields, **overrides})
 
+    def _store(self, outcome: ConditionalAccessOutcome) -> int:
+        """
+        Store an outcome and return its id. Spelled out rather than ``outcome.save()``: this model deliberately has no
+        MethodsMixin, because production writes must go on the conditional-access session (see record_outcomes).
+        """
+        db.session.add(outcome)
+        db.session.commit()
+        return outcome.id
+
     def test_01_minimal_outcome_and_defaults(self):
         auth_log_id = self._authentication_log_row()
-        outcome_id = self._make_outcome(auth_log_id).save()
+        outcome_id = self._store(self._make_outcome(auth_log_id))
         self.assertGreaterEqual(outcome_id, 1)
 
         outcome = ConditionalAccessOutcome.query.filter_by(id=outcome_id).one()
@@ -866,14 +884,12 @@ class ConditionalAccessOutcomeTestCase(MyTestCase):
         self.assertIsNone(outcome.stage_name)
         self.assertIsNone(outcome.expires_at)
 
-        outcome.delete()
-        AuthenticationLog.query.filter_by(id=auth_log_id).one().delete()
 
     def test_02_full_outcome_round_trip_and_to_dict(self):
         auth_log_id = self._authentication_log_row()
         expires_at = utc_now() + timedelta(seconds=600)
-        outcome_id = self._make_outcome(auth_log_id, dry_run=True, stage_name="Second strike",
-                                   expires_at=expires_at).save()
+        outcome_id = self._store(self._make_outcome(auth_log_id, dry_run=True, stage_name="Second strike",
+                                                   expires_at=expires_at))
 
         outcome = ConditionalAccessOutcome.query.filter_by(id=outcome_id).one()
         self.assertTrue(outcome.dry_run)
@@ -893,21 +909,17 @@ class ConditionalAccessOutcomeTestCase(MyTestCase):
         self.assertSetEqual(set(ConditionalAccessOutcome.__table__.columns.keys()), set(outcome_dict))
         self.assertNotIn("timestamp", outcome_dict)
 
-        outcome.delete()
-        AuthenticationLog.query.filter_by(id=auth_log_id).one().delete()
 
     def test_03_no_expiry_serializes_as_none(self):
         # An action that creates no restriction (EMAIL_*, DENY) leaves expires_at empty, and so does a permanent
         # lock - the action type is what tells the two apart.
         auth_log_id = self._authentication_log_row()
         outcome = self._make_outcome(auth_log_id, action_type="EMAIL_ADMIN")
-        outcome.save()
+        self._store(outcome)
 
         self.assertIsNone(outcome.aware_expires_at)
         self.assertIsNone(outcome.to_dict()["expires_at"])
 
-        outcome.delete()
-        AuthenticationLog.query.filter_by(id=auth_log_id).one().delete()
 
     def test_04_schema_contract(self):
         table = ConditionalAccessOutcome.__table__
@@ -943,8 +955,8 @@ class ConditionalAccessOutcomeTestCase(MyTestCase):
         auth_log_id = self._authentication_log_row()
         incomplete = self._make_outcome(auth_log_id)
         incomplete.event_count = None
-        self.assertRaises(IntegrityError, incomplete.save)
+        db.session.add(incomplete)
+        self.assertRaises(IntegrityError, db.session.commit)
         db.session.rollback()
 
         self.assertEqual([], ConditionalAccessOutcome.query.filter_by(auth_log_id=auth_log_id).all())
-        AuthenticationLog.query.filter_by(id=auth_log_id).one().delete()

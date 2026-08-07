@@ -467,7 +467,12 @@ def conditional_access_precheck(user) -> "Response | None":
         g.audit_object.log({"success": False,
                             "info": "Rejected: source IP is blocked"})
         return send_result(False, rid=2, details={})
-    if evaluate_access_decision(user, g.client_ip) == AccessDecision.DENY:
+    decision = evaluate_access_decision(user, g.client_ip)
+    # A DENY decision is part of this request's history, but no authentication-log row exists yet to record it against
+    # (and a dry-run DENY lets the request continue, so its row comes later). The context holds the outcomes until the
+    # request stages the event they belong to.
+    get_ca_context().add_outcomes(decision.outcomes)
+    if decision.decision == AccessDecision.DENY:
         log.info(f"Denying authentication for {user!r} by conditional-access policy.")
         g.audit_object.log({"success": False,
                             "info": "Rejected: denied by conditional-access policy"})

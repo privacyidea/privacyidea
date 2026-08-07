@@ -22,7 +22,7 @@ from sqlalchemy import Boolean, DateTime, ForeignKey, Identity, Index, Integer
 from sqlalchemy.orm import Mapped, mapped_column
 
 from privacyidea.models import db
-from privacyidea.models.utils import MethodsMixin, BigIntegerType, case_sensitive_unicode
+from privacyidea.models.utils import BigIntegerType, case_sensitive_unicode
 
 # Maximum length of the string columns. The lib layer truncates values to these lengths before insert (see
 # privacyidea.lib.conditional_access.outcome_log), so a pathological value can never overflow a column - the same
@@ -39,7 +39,7 @@ conditional_access_outcome_column_length = {
 }
 
 
-class ConditionalAccessOutcome(MethodsMixin, db.Model):
+class ConditionalAccessOutcome(db.Model):
     """
     History of what conditional access *did*: one row per action the engine executed for one request, plus dry-run
     rows recording what a dry-run policy *would* have done.
@@ -82,6 +82,12 @@ class ConditionalAccessOutcome(MethodsMixin, db.Model):
     authentication log does: matching must behave **identically on every backend**. MySQL/MariaDB's server-default
     collation is typically case-insensitive (``*_ci``) while SQLite, PostgreSQL and Oracle compare case-sensitively, so
     an unpinned column would make ``action_type == "lock_user"`` match on one database and not on another.
+
+    Deliberately **without** :class:`~privacyidea.models.utils.MethodsMixin`, unlike its sibling models: the mixin's
+    ``save()`` and ``delete()`` commit ``db.session``, and an outcome must be written on the conditional-access session
+    so that a failure to record history cannot roll back the request's own work. Rows are created by
+    :func:`~privacyidea.lib.conditional_access.outcome_log.record_outcomes` and removed with their parent by the
+    authentication log's delete paths; not offering the two methods is cheaper than documenting that they are wrong.
     """
     __tablename__ = "conditional_access_outcome"
     __table_args__ = (

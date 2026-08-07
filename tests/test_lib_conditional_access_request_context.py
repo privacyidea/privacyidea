@@ -23,13 +23,15 @@ import mock
 from sqlalchemy import select
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.engine import LockoutAction, LockoutEvaluation
+from privacyidea.lib.conditional_access.outcome_log import get_outcomes
 from privacyidea.lib.conditional_access.authentication_log import (PendingAuthEvent, get_authentication_logs,
                                                                   write_authentication_events)
 from privacyidea.lib.conditional_access.request_context import (AuthPrincipal, ConditionalAccessContext,
                                                               get_ca_context)
 from privacyidea.lib.conditional_access.session import close_ca_session, get_ca_session
 from privacyidea.lib.user import User
-from privacyidea.models import db
+from privacyidea.models import ConditionalAccessOutcome, db
 from privacyidea.models.authentication_log import AuthenticationLog, authentication_log_column_length
 from .base import MyTestCase
 
@@ -47,6 +49,7 @@ class ConditionalAccessContextTestCase(MyTestCase):
     @staticmethod
     def _clear():
         db.session.rollback()
+        db.session.execute(ConditionalAccessOutcome.__table__.delete())
         db.session.execute(AuthenticationLog.__table__.delete())
         db.session.commit()
 
@@ -282,13 +285,13 @@ class ConditionalAccessContextTestCase(MyTestCase):
 
         context.reclassify(AuthEventType.NOT_AUTHORIZED)
         with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies") as evaluate:
-            evaluate.return_value = []
+            evaluate.return_value = LockoutEvaluation()
             context.run_post_eval()
 
-        # The row id goes along so a policy can attach a finding to the row it just judged; it is available because
-        # flush() ran first.
+        # The engine is handed the classification and the subject only; the outcomes it returns are recorded by the
+        # context against the row of the event it judged.
         evaluate.assert_called_once_with(context.principal.user, AuthEventType.NOT_AUTHORIZED,
-                                         source_ip="10.0.0.1", auth_log_event_id=event.row_id)
+                                         source_ip="10.0.0.1")
 
     def test_21_reclassify_applies_only_the_fields_given(self):
         context = ConditionalAccessContext()
@@ -320,7 +323,7 @@ class ConditionalAccessContextTestCase(MyTestCase):
         context = ConditionalAccessContext()
         context.stage(self._event("alice"))
         with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies") as evaluate:
-            evaluate.return_value = ["a notice"]
+            evaluate.return_value = LockoutEvaluation(notices=["a notice"])
             self.assertListEqual(["a notice"], context.run_post_eval())
             self.assertListEqual([], context.run_post_eval())
         self.assertEqual(1, evaluate.call_count)
@@ -332,7 +335,7 @@ class ConditionalAccessContextTestCase(MyTestCase):
         context = ConditionalAccessContext()
         context.stage(self._event("alice", AuthEventType.LOGIN_SUCCESS))
         with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies") as evaluate:
-            evaluate.return_value = []
+            evaluate.return_value = LockoutEvaluation()
             context.run_post_eval()
             context.reclassify(AuthEventType.NOT_AUTHORIZED)
             context.run_post_eval()
@@ -361,9 +364,74 @@ class ConditionalAccessContextTestCase(MyTestCase):
         self.assertTrue(get_ca_session().in_transaction())
 
         with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies") as evaluate:
-            evaluate.return_value = []
+            evaluate.return_value = LockoutEvaluation()
             context.finalize()
 
         evaluate.assert_called_once()
         # The flush committed, so the counting started from a fresh transaction rather than the pre-check's snapshot.
         self.assertFalse(context.unwritten)
+
+    # --- conditional-access outcomes: the outcomes a request produces ----------
+
+    @staticmethod
+    def _make_outcome(action_type: str = LockoutAction.LOCK_USER) -> ConditionalAccessOutcome:
+        return ConditionalAccessOutcome(action_type=str(action_type), policy_id=1, policy_name="p", threshold=3, event_count=3)
+
+    def test_30_pre_auth_outcomes_wait_for_the_first_staged_event(self):
+        # The pre-auth decision runs before anything is logged, so its outcomes have no row yet. They are buffered on
+        # the context and taken over by the next event staged, which is the row they belong to.
+        context = ConditionalAccessContext()
+        context.add_outcomes([self._make_outcome()])
+        self.assertEqual(1, len(context.pending_outcomes))
+
+        event = context.stage(self._event("alice"))
+        self.assertListEqual([], context.pending_outcomes)
+        self.assertEqual(1, len(event.outcomes))
+
+        self.assertTrue(context.flush())
+        self.assertListEqual([str(LockoutAction.LOCK_USER)],
+                             [outcome.action_type for outcome in get_outcomes(event.row_id)])
+
+    def test_31_recorded_outcomes_are_not_written_twice(self):
+        # flush() is idempotent and runs again at teardown, so an outcome already stored must be dropped from the event.
+        context = ConditionalAccessContext()
+        context.add_outcomes([self._make_outcome()])
+        event = context.stage(self._event("alice"))
+        context.flush()
+        self.assertListEqual([], event.outcomes)
+
+        context.flush()
+        self.assertEqual(1, len(get_outcomes(event.row_id)))
+
+    def test_32_outcomes_survive_a_failed_write_for_the_next_flush(self):
+        # A failed history write must not lose the outcomes: they stay on the event and the next flush retries them.
+        context = ConditionalAccessContext()
+        context.add_outcomes([self._make_outcome()])
+        event = context.stage(self._event("alice"))
+        with mock.patch("privacyidea.lib.conditional_access.request_context.record_outcomes", return_value=False):
+            self.assertFalse(context.flush())
+        self.assertEqual(1, len(event.outcomes))
+
+        self.assertTrue(context.flush())
+        self.assertEqual(1, len(get_outcomes(event.row_id)))
+
+    def test_33_outcomes_of_a_request_that_logs_nothing_are_dropped(self):
+        # A request with no authentication event has no row to hang an outcome on - and nothing to miss: the decision is
+        # derived from prior events, so the next request that does log one re-derives it.
+        context = ConditionalAccessContext()
+        context.add_outcomes([self._make_outcome()])
+        context.finalize()
+
+        self.assertEqual(0, get_ca_session().query(ConditionalAccessOutcome).count())
+
+    def test_34_post_eval_records_what_the_engine_returned(self):
+        context = ConditionalAccessContext()
+        event = context.stage(self._event("alice"))
+        context.flush()
+        with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies") as evaluate:
+            evaluate.return_value = LockoutEvaluation(notices=["a notice"],
+                                                      outcomes=[self._make_outcome(LockoutAction.PERMANENT_LOCK_USER)])
+            self.assertListEqual(["a notice"], context.run_post_eval())
+
+        outcomes = get_outcomes(event.row_id)
+        self.assertListEqual([str(LockoutAction.PERMANENT_LOCK_USER)], [outcome.action_type for outcome in outcomes])

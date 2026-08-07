@@ -31,7 +31,6 @@ from privacyidea.lib.conditional_access.authentication_log import (
     get_authentication_logs,
     get_authentication_logs_paginate,
     log_authentication_event,
-    record_conditional_access_finding,
     update_authentication_events,
     write_authentication_events,
 )
@@ -539,89 +538,31 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertEqual(AuthEventType.NOT_AUTHORIZED, entry.event_type)
         self.assertEqual("TOK001", entry.serial)
 
-    def test_amending_a_written_event_keeps_conditional_access_findings(self):
-        # Findings are appended on the stored row after insert, so a later event update must not clobber them.
+    def test_amending_a_written_event_leaves_other_info_alone(self):
         event = PendingAuthEvent(event_type=AuthEventType.LOGIN_SUCCESS, other_info={"reason": "before"})
         write_authentication_events([event])
-        record_conditional_access_finding(event.row_id, {"policy_id": 1})
 
         event.event_type = AuthEventType.NOT_AUTHORIZED
-        update_authentication_events([event])
-
-        entry = get_authentication_log_event(event.row_id)
-        self.assertIsNotNone(entry)
-        self.assertEqual(AuthEventType.NOT_AUTHORIZED, entry.event_type)
-        self.assertEqual({"reason": "before", "conditional_access_findings": [{"policy_id": 1}]},
-                         entry.other_info)
-
-    def test_amending_other_info_keeps_conditional_access_findings(self):
-        # Updating event.other_info should merge with findings already written out-of-band on the stored row.
-        event = PendingAuthEvent(event_type=AuthEventType.LOGIN_SUCCESS,
-                                 other_info={"reason": "before", "random": "value"})
-        write_authentication_events([event])
-        record_conditional_access_finding(event.row_id, {"policy_id": 1})
-
         event.other_info = {"reason": "after", "note": "updated"}
         update_authentication_events([event])
 
         entry = get_authentication_log_event(event.row_id)
         self.assertIsNotNone(entry)
-        self.assertEqual({"reason": "after", "note": "updated",
-                          "conditional_access_findings": [{"policy_id": 1}]}, entry.other_info)
+        self.assertEqual(AuthEventType.NOT_AUTHORIZED, entry.event_type)
+        self.assertEqual({"reason": "after", "note": "updated"}, entry.other_info)
 
-    def test_record_conditional_access_finding_swallows_an_unserializable_finding(self):
-        # A finding that cannot be serialized into the JSON column fails when the write flushes. Recording a finding is
-        # a diagnostic side effect of an already-finished request, so the failure must be swallowed and must leave the
-        # session usable for the rest of that request.
-        event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, other_info={"reason": "policy"})
-        # A set is not serializable.
-        self.assertIsNone(record_conditional_access_finding(event_id, {"actions": {"LOCK_USER"}}))
-        # The session survived: a further write still goes through.
-        self.assertIsNotNone(log_authentication_event(event_type=AuthEventType.PIN_FAIL))
+    def test_outcomes_on_an_event_are_not_row_content(self):
+        # An event carries its conditional-access outcomes until the row id they are recorded against exists. They are
+        # not columns, so attaching them to an already-written event must not mark it changed and provoke an UPDATE.
+        event = PendingAuthEvent(event_type=AuthEventType.LOGIN_SUCCESS)
+        write_authentication_events([event])
+        self.assertFalse(event.changed)
 
-    def test_record_conditional_access_finding_swallows_a_failing_commit(self):
-        # The update succeeds but the commit fails: the error is swallowed and the session is rolled back, so the rest
-        # of the request can still use it. The commit is patched on the conditional-access session, which is the one
-        # these writes run on - patching db.session would no longer intercept anything.
-        event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS)
-        with mock.patch.object(get_ca_session(), "commit", side_effect=RuntimeError("commit boom")):
-            self.assertIsNone(record_conditional_access_finding(event_id, {"policy_id": 1}))
-        self.assertIsNotNone(log_authentication_event(event_type=AuthEventType.PIN_FAIL))
+        event.outcomes = ["an outcome"]
+        self.assertFalse(event.changed)
+        event.outcomes.append("another")
+        self.assertFalse(event.changed)
 
-    def test_record_conditional_access_finding_on_row_with_no_prior_other_info(self):
-        event_id = log_authentication_event(event_type=AuthEventType.PASSWORD_FAIL, resolver="res1", uid="user1",
-                                            realm="realm1")
-        record_conditional_access_finding(event_id, {"policy_id": 1, "policy_name": "p1"})
-        entry = get_authentication_log_event(event_id)
-        assert entry is not None
-        self.assertEqual({"conditional_access_findings": [{"policy_id": 1, "policy_name": "p1"}]}, entry.other_info)
-
-    def test_record_conditional_access_finding_preserves_existing_other_info(self):
-        # An existing other_info key (e.g. from a caller-supplied value, or a serial-overflow "truncated" key) must
-        # survive alongside the new "conditional_access_findings" key rather than being clobbered.
-        max_serial = authentication_log_column_length["serial"]
-        serial = "S" * (max_serial + 5)
-        event_id = log_authentication_event(event_type=AuthEventType.PASSWORD_FAIL, serial=serial,
-                                            other_info={"reason": "policy"})
-        record_conditional_access_finding(event_id, {"policy_id": 1})
-        entry = get_authentication_log_event(event_id)
-        assert entry is not None
-        self.assertEqual({"reason": "policy",
-                          "truncated": {"serial": "SSSSS"},
-                          "conditional_access_findings": [{"policy_id": 1}]}, entry.other_info)
-
-    def test_record_conditional_access_finding_twice_accumulates_a_list(self):
-        event_id = log_authentication_event(event_type=AuthEventType.PASSWORD_FAIL, resolver="res1", uid="user1",
-                                            realm="realm1")
-        record_conditional_access_finding(event_id, {"policy_id": 1})
-        record_conditional_access_finding(event_id, {"policy_id": 2})
-        entry = get_authentication_log_event(event_id)
-        assert entry is not None
-        self.assertEqual([{"policy_id": 1}, {"policy_id": 2}], entry.other_info["conditional_access_findings"])
-
-    def test_record_conditional_access_finding_on_missing_event_id_is_a_silent_noop(self):
-        # A non-existent event_id must not raise; it is logged and swallowed, same as reclassify.
-        record_conditional_access_finding(999999999, {"policy_id": 1})
 
 
 class AuthenticationLogDBTestCase(MyTestCase):

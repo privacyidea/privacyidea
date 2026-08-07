@@ -36,7 +36,7 @@ depends_on = None
 TABLE = 'conditional_access_outcome'
 
 
-def _unicode_case_sensitive(length):
+def _unicode_case_sensitive(length: int) -> sa.Unicode:
     """
     A case-sensitive string column type (mirrors models.utils.case_sensitive_unicode).
 
