@@ -37,6 +37,19 @@
       </app-clearable-input>
       <mat-hint>{{ filterHint }}</mat-hint>
     </mat-form-field>
+    @if (authService.actionAllowed("auditlog_download")) {
+      <button
+        (click)="auditService.downloadCSV()"
+        [disabled]="auditService.isDownloading()"
+        aria-label="Download Audit Log"
+        class="margin-left-8"
+        i18n-aria-label
+        i18n-matTooltip
+        mat-icon-button
+        matTooltip="Download Audit Log">
+        <mat-icon>download</mat-icon>
+      </button>
+    }
     <mat-paginator
       (page)="onPageEvent($event)"
       [length]="totalLength()"
@@ -44,18 +57,6 @@
       [pageSizeOptions]="pageSizeOptions()"
       [pageSize]="auditService.pageSize()"
       showFirstLastButtons />
-  </div>
-  <div class="margin-bottom-16">
-    @if (authService.actionAllowed("auditlog_download")) {
-      <button
-        (click)="auditService.downloadCSV()"
-        [disabled]="auditService.isDownloading()"
-        class="action-button-primary button-width-m"
-        mat-stroked-button>
-        <mat-icon>download</mat-icon>
-        <span i18n>Download</span>
-      </button>
-    }
   </div>
   <div
     appScrollEdges class="table-scroll-region">
