@@ -283,6 +283,11 @@ def revoke_client_remembered_devices_api(client_id):
     realm = get_optional(request.all_data, "realm")
     user = get_optional(request.all_data, "user")
 
+    # A user is only unambiguous within a realm (and the realm is what
+    # check_base_action scopes on), so filtering by user requires a realm.
+    if user and not realm:
+        raise ParameterError("A 'realm' is required when filtering by 'user'.")
+
     if user:
         # Narrow to one user's resolver-stable identity. If the user does not
         # resolve there is nothing to target by login (its devices, if any, are

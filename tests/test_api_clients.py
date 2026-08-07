@@ -440,6 +440,12 @@ class APIClientRememberedDevicesTestCase(MyApiTestCase):
         # A user that does not resolve cannot be targeted by login.
         self.assertEqual(400, res.status_code, res)
 
+    def test_09b_revoke_all_user_without_realm_is_400(self):
+        # Filtering by user without a realm is ambiguous and must be rejected.
+        client, _key = create_client("user-no-realm client", "windows_cp")
+        res = self._revoke_all(client.id, user="cornelius")
+        self.assertEqual(400, res.status_code, res)
+
     def test_10_revoke_all_missing_client_404(self):
         res = self._revoke_all("does-not-exist")
         self.assertEqual(404, res.status_code, res)
