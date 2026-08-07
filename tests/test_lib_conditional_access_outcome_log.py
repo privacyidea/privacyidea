@@ -20,15 +20,15 @@ Unit tests for the conditional-access outcome log
 (:mod:`privacyidea.lib.conditional_access.outcome_log`): turning the engine's outcomes into
 ``conditional_access_outcome`` rows, and the contract that every outcome belongs to an authentication-log row.
 """
-from datetime import timedelta
+from datetime import timedelta, timezone
 from typing import Any
 
-from mock import mock
+from unittest import mock
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import log_authentication_event
 from privacyidea.lib.conditional_access.engine import LockoutAction
-from privacyidea.lib.conditional_access.outcome_log import get_outcomes, record_outcomes
+from privacyidea.lib.conditional_access.outcome_log import get_outcomes, outcome_for_stage, record_outcomes
 from privacyidea.lib.conditional_access.session import get_ca_session
 from privacyidea.models import ConditionalAccessOutcome, LockoutPolicy, LockoutPolicyStage, db
 from privacyidea.models.conditional_access_outcome import conditional_access_outcome_column_length
@@ -51,6 +51,15 @@ class OutcomeLogTestCase(MyTestCase):
         db.session.commit()
         super().tearDown()
 
+    @staticmethod
+    def _policy_and_stage() -> tuple[LockoutPolicy, LockoutPolicyStage]:
+        """
+        The configuration the factory copies from, as transient objects: it reads four fields and touches no session, so
+        a database fixture would only add cleanup no assertion depends on.
+        """
+        return (LockoutPolicy(id=7, name="Brute Force PIN Lockout"),
+                LockoutPolicyStage(failure_threshold=5, name="Second strike"))
+
     def _auth_log_row(self) -> int:
         return log_authentication_event(event_type=AuthEventType.MFA_FAIL, username="cornelius", realm="realm1",
                                        resolver="resolver1", uid="1000", source_ip="10.0.0.1")
@@ -66,8 +75,8 @@ class OutcomeLogTestCase(MyTestCase):
 
     def test_every_field_of_an_outcome_round_trips(self):
         event_id = self._auth_log_row()
-        expires_at = utc_now() + timedelta(seconds=600)
-        record_outcomes([_outcome(dry_run=True, stage_name="Second strike", expires_at=expires_at)], event_id)
+        info = {"expires_at": "2026-08-07T12:34:56+00:00"}
+        record_outcomes([_outcome(dry_run=True, stage_name="Second strike", info=info)], event_id)
 
         outcome = get_outcomes(event_id)[0]
         self.assertEqual(str(LockoutAction.LOCK_USER), outcome.action_type)
@@ -77,7 +86,43 @@ class OutcomeLogTestCase(MyTestCase):
         self.assertEqual(5, outcome.threshold)
         self.assertEqual(6, outcome.event_count)
         self.assertEqual("Second strike", outcome.stage_name)
-        self.assertEqual(expires_at, outcome.expires_at)
+        self.assertEqual(info, outcome.info)
+
+    def test_outcome_for_stage_records_the_expiry_in_info(self):
+        # The expiry is a typed parameter of the factory but action-specific data in the row: it lands in `info` as an
+        # aware ISO-8601 string, since a JSON column cannot hold a datetime.
+        policy, stage = self._policy_and_stage()
+        expires_at = utc_now() + timedelta(seconds=600)
+
+        outcome = outcome_for_stage(policy, stage, LockoutAction.LOCK_USER, 6, expires_at=expires_at)
+        self.assertDictEqual({"expires_at": expires_at.replace(tzinfo=timezone.utc).isoformat()}, outcome.info)
+        # An aware value is left as it is rather than re-stamped.
+        aware = expires_at.replace(tzinfo=timezone.utc)
+        self.assertDictEqual({"expires_at": aware.isoformat()},
+                         outcome_for_stage(policy, stage, LockoutAction.BLOCK_IP, 6, expires_at=aware).info)
+
+    def test_outcome_for_stage_leaves_info_empty_without_an_expiry(self):
+        # An action that creates no restriction has nothing of its own to record, so the column stays NULL rather than
+        # holding an empty dict.
+        policy, stage = self._policy_and_stage()
+        outcome = outcome_for_stage(policy, stage, LockoutAction.EMAIL_ADMIN, 6)
+        self.assertIsNone(outcome.info)
+
+    def test_outcome_for_stage_copies_what_the_history_must_keep(self):
+        # The policy name and the stage name are denormalized copies, so the history stays readable after a rename or a
+        # deletion; the threshold identifies the stage.
+        policy, stage = self._policy_and_stage()
+        outcome = outcome_for_stage(policy, stage, LockoutAction.LOCK_USER, 6, dry_run=True)
+
+        self.assertEqual(policy.id, outcome.policy_id)
+        self.assertEqual(policy.name, outcome.policy_name)
+        self.assertEqual(stage.failure_threshold, outcome.threshold)
+        self.assertEqual(stage.name, outcome.stage_name)
+        self.assertEqual(6, outcome.event_count)
+        self.assertTrue(outcome.dry_run)
+        # Transient until recorded: the engine has no row to point at.
+        self.assertIsNone(outcome.auth_log_id)
+        self.assertIsNone(outcome.id)
 
     def test_an_enforced_outcome_is_not_flagged_as_dry_run(self):
         event_id = self._auth_log_row()

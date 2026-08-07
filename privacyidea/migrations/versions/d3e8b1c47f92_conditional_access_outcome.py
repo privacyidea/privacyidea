@@ -64,7 +64,7 @@ def upgrade():
             sa.Column('threshold', sa.Integer(), nullable=False),
             sa.Column('event_count', sa.Integer(), nullable=False),
             sa.Column('stage_name', _unicode_case_sensitive(255), nullable=True),
-            sa.Column('expires_at', sa.DateTime(), nullable=True),
+            sa.Column('info', sa.JSON(), nullable=True),
             sa.ForeignKeyConstraint(['auth_log_id'], ['authentication_log.id'], ondelete='CASCADE'),
             sa.PrimaryKeyConstraint('id'),
             sa.Index('ix_ca_outcome_authlog', 'auth_log_id'),

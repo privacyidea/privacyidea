@@ -16,9 +16,7 @@
 # SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-from datetime import datetime, timezone
-
-from sqlalchemy import Boolean, DateTime, ForeignKey, Identity, Index, Integer
+from sqlalchemy import Boolean, ForeignKey, Identity, Index, Integer, JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
 from privacyidea.models import db
@@ -76,7 +74,8 @@ class ConditionalAccessOutcome(db.Model):
 
     Everything a triggered stage knows is therefore mandatory - ``policy_id``, ``policy_name``, ``threshold``,
     ``event_count`` - because the engine always has all four when it records an outcome. Only two columns are nullable,
-    each meaning something: ``stage_name`` (the admin never named the stage) and ``expires_at`` (see below).
+    each meaning something: ``stage_name`` (the admin never named the stage) and ``info`` (the action had nothing of its
+    own to record).
 
     The string columns use :func:`~privacyidea.models.utils.case_sensitive_unicode` for the same reason the
     authentication log does: matching must behave **identically on every backend**. MySQL/MariaDB's server-default
@@ -124,25 +123,20 @@ class ConditionalAccessOutcome(db.Model):
     # Only set when an admin named the stage; the threshold identifies it either way.
     stage_name: Mapped[str | None] = mapped_column(
         case_sensitive_unicode(conditional_access_outcome_column_length["stage_name"]))
-    # When the lock or block written by *this* action ends: the only record of how long a restriction lasted once the
-    # state row is gone. Nullable because for most action types there is nothing to expire - a PERMANENT_* lock/block
-    # never does (that is what permanent means), and EMAIL_* / DENY create no restriction at all. The action type says
-    # which case a NULL is, so no sentinel value is needed.
-    expires_at: Mapped[datetime | None] = mapped_column(DateTime)
-
-    @property
-    def aware_expires_at(self) -> datetime | None:
-        """
-        Return :attr:`expires_at` as a timezone-aware UTC datetime, or ``None`` if the action set no expiry. The column
-        stores naive UTC because timezone-aware DateTime columns are not portable across all supported databases
-        (mirrors :class:`~privacyidea.models.authentication_log.AuthenticationLog`).
-        """
-        return self.expires_at.replace(tzinfo=timezone.utc) if self.expires_at else None
+    # Whatever this particular action has to say about itself, or NULL when it has nothing. A timed LOCK_USER / BLOCK_IP
+    # records ``{"expires_at": "<ISO-8601 UTC>"}`` - the only record of how long the restriction lasted once the state
+    # row is gone; a PERMANENT_* one has no expiry by definition, and EMAIL_* / DENY create no restriction at all.
+    #
+    # Deliberately a JSON bag rather than one column per action type: with seven action types and more to come, a column
+    # only two of them fill is mostly NULL, and every new action would otherwise need a migration to record its detail.
+    info: Mapped[dict | None] = mapped_column(JSON)
 
     def to_dict(self) -> dict:
         """
-        Serialize the outcome for the API response, with ``expires_at`` as an ISO-8601 UTC string.
+        Serialize the outcome for the API response.
+
+        Every column is emitted, including the ones the WebUI does not display (``info``, ``event_count``,
+        ``threshold``, ``policy_id``): what to show is the view's decision, and a client querying the history needs the
+        rest. There is no timestamp of its own - the entry this is nested under carries it.
         """
-        outcome = {name: getattr(self, name) for name in self.__table__.columns.keys()}
-        outcome["expires_at"] = self.aware_expires_at.isoformat() if self.expires_at else None
-        return outcome
+        return {name: getattr(self, name) for name in self.__table__.columns.keys()}

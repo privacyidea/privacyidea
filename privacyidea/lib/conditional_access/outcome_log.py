@@ -44,7 +44,7 @@ authentication-log row to hang it on).
 """
 import logging
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import select
 
@@ -73,11 +73,29 @@ def outcome_for_stage(policy: LockoutPolicy, stage: LockoutPolicyStage, action_t
         subclass, so a member satisfies it, and it lives in the engine - which imports *this* module
     :param event_count: the count that tripped the stage
     :param dry_run: the policy was in dry run, so nothing was actually done
-    :param expires_at: the expiry the action wrote, or would have written in dry run
+    :param expires_at: the expiry the action wrote, or would have written in dry run. Kept a typed parameter so call
+        sites stay readable, and recorded in the row's ``info`` (see :func:`_restriction_info`); an action with nothing
+        to expire simply omits it.
     """
     return ConditionalAccessOutcome(action_type=str(action_type), policy_id=policy.id, policy_name=policy.name,
                                     threshold=stage.failure_threshold, event_count=event_count,
-                                    dry_run=dry_run, stage_name=stage.name, expires_at=expires_at)
+                                    dry_run=dry_run, stage_name=stage.name,
+                                    info=_restriction_info(expires_at))
+
+
+def _restriction_info(expires_at: datetime | None) -> dict | None:
+    """
+    The ``info`` payload for an action that created a timed restriction, or ``None`` when there is nothing to record.
+
+    The expiry is stored as an **aware** ISO-8601 UTC string.
+
+    This is the one place that knows the key, so the action-specific shape of ``info`` is defined here rather than at
+    each call site (see the column's comment for the rule on what may live in it).
+    """
+    if expires_at is None:
+        return None
+    aware = expires_at if expires_at.tzinfo is not None else expires_at.replace(tzinfo=timezone.utc)
+    return {"expires_at": aware.isoformat()}
 
 
 def record_outcomes(outcomes: Sequence[ConditionalAccessOutcome], auth_log_id: int | None) -> bool:

@@ -219,7 +219,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertEqual(3, outcome.event_count)
         self.assertEqual(str(LockoutAction.LOCK_USER), outcome.action_type)
         # The expiry the lock would have had, so a dry run reads like the enforced one.
-        self.assertIsNotNone(outcome.expires_at)
+        self.assertIn("expires_at", outcome.info)
         # The earlier rows, which did not trip the threshold, carry nothing.
         self.assertListEqual([], list(get_outcomes(entries[0].id)))
 

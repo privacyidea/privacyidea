@@ -22,7 +22,7 @@ pre-check lock test, and the policy-evaluation workflow (stage selection,
 de-duplication, dry-run, and the LOCK_USER / PERMANENT_LOCK_USER actions).
 """
 from collections.abc import Sequence
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from email import message_from_string
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
@@ -799,8 +799,9 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertEqual(3, outcome.event_count)
         # An unnamed stage contributes no name; the threshold identifies the stage either way.
         self.assertIsNone(outcome.stage_name)
-        # The expiry the lock *would* have had, so a dry run is comparable with an enforced one.
-        self.assertIsNotNone(outcome.expires_at)
+        # The expiry the lock *would* have had, so a dry run is comparable with an enforced one. Action-specific
+        # detail lives in `info`, not in a column only two of the seven action types would ever fill.
+        self.assertIn("expires_at", outcome.info)
         # Still a dry run: no lockout state is ever written.
         self.assertIsNone(self._state())
         self.assertFalse(is_user_locked(self.user))
@@ -882,9 +883,9 @@ class LockoutEngineTestCase(LockoutTestCase):
 
         self.assertEqual([str(LockoutAction.LOCK_USER), str(LockoutAction.PERMANENT_LOCK_USER)],
                          [outcome.action_type for outcome in outcomes])
-        # Only the timed action carries an expiry; a permanent lock has none by definition.
-        self.assertIsNotNone(outcomes[0].expires_at)
-        self.assertIsNone(outcomes[1].expires_at)
+        # Only the timed action carries an expiry; a permanent lock has none by definition, so it records no info.
+        self.assertIn("expires_at", outcomes[0].info)
+        self.assertIsNone(outcomes[1].info)
 
     def test_dry_run_outcome_has_no_expiry_when_the_duration_is_misconfigured(self):
         # An invalid duration would make the enforced path skip the action entirely. In dry run the outcome is still
@@ -895,7 +896,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         self._seed_events(AuthEventType.MFA_FAIL, 3)
         outcome = evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL).outcomes[0]
         self.assertEqual(str(LockoutAction.LOCK_USER), outcome.action_type)
-        self.assertIsNone(outcome.expires_at)
+        self.assertIsNone(outcome.info)
 
     def test_dry_run_source_ip_policy_records_a_outcome_without_blocking(self):
         ip = "10.10.0.5"
@@ -966,8 +967,9 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertFalse(outcomes[0].dry_run)
         self.assertEqual(str(LockoutAction.LOCK_USER), outcomes[0].action_type)
         # The recorded expiry is the one that ended up in the state row, so the history says how long the lock lasted
-        # even after the row is gone.
-        self.assertEqual(self._state().lock_expires_at, outcomes[0].expires_at)
+        # even after the row is gone - as an aware ISO-8601 string, since `info` is a JSON column.
+        self.assertEqual({"expires_at": self._state().lock_expires_at.replace(tzinfo=timezone.utc).isoformat()},
+                         outcomes[0].info)
 
     def test_enforced_permanent_lock_records_no_expiry(self):
         self._make_policy(name="perma", counter_type=AuthEventType.MFA_FAIL,
@@ -977,7 +979,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         outcomes = evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL).outcomes
 
         self.assertEqual(str(LockoutAction.PERMANENT_LOCK_USER), outcomes[0].action_type)
-        self.assertIsNone(outcomes[0].expires_at)
+        self.assertIsNone(outcomes[0].info)
 
     def test_a_skipped_action_records_nothing(self):
         # A misconfigured duration makes the action a no-op, and the history must not claim a lock that never happened.
