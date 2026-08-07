@@ -15,9 +15,12 @@
 #
 # SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
+from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 
 import mock
+from sqlalchemy import event
+from sqlalchemy.exc import InvalidRequestError
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import (
@@ -34,9 +37,12 @@ from privacyidea.lib.conditional_access.authentication_log import (
     update_authentication_events,
     write_authentication_events,
 )
+from privacyidea.lib.conditional_access.engine import count_user_attempts, count_user_events
+from privacyidea.lib.conditional_access.outcome_log import get_outcomes, record_outcomes
 from privacyidea.lib.conditional_access.session import get_ca_session
 from privacyidea.lib.error import ParameterError
-from privacyidea.models import authentication_log_column_length
+from privacyidea.models import AuthenticationLog, ConditionalAccessOutcome, db, authentication_log_column_length
+from privacyidea.models.utils import utc_now
 
 from .base import MyTestCase
 
@@ -615,8 +621,10 @@ class AuthenticationLogDBTestCase(MyTestCase):
 class AuthenticationLogPaginateTestCase(MyTestCase):
 
     def tearDown(self):
-        from privacyidea.models import db
+        from privacyidea.models import ConditionalAccessOutcome, db
         from privacyidea.models.authentication_log import AuthenticationLog
+        # Children first: nothing cascades on SQLite.
+        db.session.query(ConditionalAccessOutcome).delete()
         db.session.query(AuthenticationLog).delete()
         db.session.commit()
         super().tearDown()
@@ -762,8 +770,10 @@ class AuthenticationLogPaginateTestCase(MyTestCase):
 class AuthenticationLogDeleteTestCase(MyTestCase):
 
     def tearDown(self):
-        from privacyidea.models import db
+        from privacyidea.models import ConditionalAccessOutcome, db
         from privacyidea.models.authentication_log import AuthenticationLog
+        # Children first: nothing cascades on SQLite.
+        db.session.query(ConditionalAccessOutcome).delete()
         db.session.query(AuthenticationLog).delete()
         db.session.commit()
         super().tearDown()
@@ -793,3 +803,150 @@ class AuthenticationLogDeleteTestCase(MyTestCase):
         self.assertEqual(1, deleted)
         remaining_realms = {entry.realm for entry in get_authentication_logs()}
         self.assertEqual({"realm2", None}, remaining_realms)
+
+
+class AuthenticationLogOutcomeJoinTestCase(MyTestCase):
+    """
+    How the conditional-access outcomes of a request reach a reader: only through the paginated listing, in one batched
+    query, and never on the authentication path (see the ``outcomes`` relationship and D11 of the design notes).
+    """
+
+    def tearDown(self):
+        db.session.query(ConditionalAccessOutcome).delete()
+        db.session.query(AuthenticationLog).delete()
+        db.session.commit()
+        super().tearDown()
+
+    @staticmethod
+    def _entry_with_outcomes(count: int = 1, **kwargs) -> int:
+        """Write one authentication-log row plus *count* conditional-access outcomes, and return the row id."""
+        event_id = log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res1", uid="u1",
+                                            realm="realm1", **kwargs)
+        record_outcomes([ConditionalAccessOutcome(action_type="LOCK_USER", policy_id=1, policy_name="p",
+                                                 threshold=3, event_count=3) for _ in range(count)], event_id)
+        return event_id
+
+    @staticmethod
+    @contextmanager
+    def _statements(table: str):
+        """Collect the SQL statements executed against *table* while the block runs."""
+        seen: list[str] = []
+
+        def listener(conn, cursor, statement, parameters, context, executemany):
+            if table in statement:
+                seen.append(statement)
+
+        event.listen(db.engine, "before_cursor_execute", listener)
+        try:
+            yield seen
+        finally:
+            event.remove(db.engine, "before_cursor_execute", listener)
+
+    def test_the_page_carries_the_outcomes_of_each_entry(self):
+        self._entry_with_outcomes(2)
+        page = get_authentication_logs_paginate()
+
+        entry = page.auth_logs[0]
+        self.assertEqual(2, len(entry.outcomes))
+        # to_dict of the *page* opts in, so a client sees them alongside the entry.
+        self.assertEqual(2, len(page.to_dict()["auth_logs"][0]["conditional_access_outcomes"]))
+        self.assertEqual("LOCK_USER", page.to_dict()["auth_logs"][0]["conditional_access_outcomes"][0]["action_type"])
+
+    def test_an_entry_without_outcomes_carries_an_empty_list(self):
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="realm1")
+        page = get_authentication_logs_paginate()
+        self.assertListEqual([], page.to_dict()["auth_logs"][0]["conditional_access_outcomes"])
+
+    def test_the_outcomes_of_a_whole_page_cost_one_statement(self):
+        # selectinload fetches the page's outcomes in a single extra query, so the statement count does not grow with
+        # the page size. A lazy relationship would pass every content assertion above while emitting one query per
+        # entry, which is why this asserts on statements rather than on the payload.
+        for _ in range(5):
+            self._entry_with_outcomes()
+
+        with self._statements("conditional_access_outcome") as statements:
+            page = get_authentication_logs_paginate(page_size=5)
+            self.assertEqual(5, len(page.auth_logs))
+        self.assertEqual(1, len(statements), statements)
+
+    def test_the_unpaginated_query_does_not_load_the_outcomes(self):
+        # get_authentication_logs is used by lib callers and tests, not by the log view, so it must not pay for the
+        # join - and reading the relationship afterwards is an error rather than a silent query.
+        self._entry_with_outcomes()
+
+        with self._statements("conditional_access_outcome") as statements:
+            entries = get_authentication_logs()
+        self.assertListEqual([], statements)
+        self.assertRaises(InvalidRequestError, lambda: entries[0].outcomes)
+
+    def test_to_dict_of_a_single_entry_leaves_the_outcomes_out(self):
+        # The default is off precisely because the relationship raises: an entry that was not loaded with its outcomes
+        # must not try to fetch them while being serialized.
+        event_id = self._entry_with_outcomes()
+        entry = get_authentication_log_event(event_id)
+        self.assertNotIn("conditional_access_outcomes", entry.to_dict())
+
+    def test_counting_events_never_touches_the_outcome_table(self):
+        # The engine's counting path fetches whole AuthenticationLog objects (PER_ATTEMPT), which is exactly where an
+        # eagerly configured relationship would add a fan-out query per count.
+        self._entry_with_outcomes()
+
+        with self._statements("conditional_access_outcome") as statements:
+            count_user_events("res1", "u1", "realm1", [str(AuthEventType.MFA_FAIL)], 3600)
+            count_user_attempts("res1", "u1", "realm1", [str(AuthEventType.MFA_FAIL)], 3600)
+        self.assertListEqual([], statements)
+
+    def test_deleting_one_entry_takes_its_outcomes(self):
+        kept = self._entry_with_outcomes()
+        removed = self._entry_with_outcomes()
+
+        delete_authentication_log_event(removed)
+
+        self.assertListEqual([], list(get_outcomes(removed)))
+        self.assertEqual(1, len(get_outcomes(kept)))
+
+    def test_deleting_an_entry_as_an_object_takes_its_outcomes(self):
+        # The relationship cascade covers every caller that deletes an entry as an object, not just the one delete
+        # function in this module - including MethodsMixin.delete(), which this model offers and which a future caller
+        # may well reach for. Without the cascade those paths would orphan the outcomes on SQLite, where the foreign
+        # key is not enforced.
+        kept = self._entry_with_outcomes()
+        removed = self._entry_with_outcomes()
+
+        # Loaded through db.session, because that is the session MethodsMixin.delete() commits on.
+        AuthenticationLog.query.filter_by(id=removed).one().delete()
+
+        self.assertListEqual([], list(get_outcomes(removed)))
+        self.assertEqual(1, len(get_outcomes(kept)))
+
+    def test_a_filtered_delete_takes_the_outcomes_with_it(self):
+        removed = self._entry_with_outcomes(2, username="doomed")
+        kept = self._entry_with_outcomes(username="spared")
+
+        self.assertEqual(1, delete_authentication_logs(username="doomed"))
+
+        self.assertEqual([], list(get_outcomes(removed)))
+        self.assertEqual(1, len(get_outcomes(kept)))
+
+    def test_retention_takes_the_outcomes_with_it(self):
+        removed = self._entry_with_outcomes(2)
+        # Age the row past the cutoff; its outcomes have no timestamp of their own, so they are matched through it.
+        db.session.query(AuthenticationLog).filter_by(id=removed).update({"timestamp": utc_now() - timedelta(days=10)})
+        db.session.commit()
+        kept = self._entry_with_outcomes()
+
+        self.assertEqual(1, cleanup_authentication_log(older_than=utc_now() - timedelta(days=1)))
+
+        self.assertListEqual([], list(get_outcomes(removed)))
+        self.assertEqual(1, len(get_outcomes(kept)))
+
+    def test_retention_deletes_the_outcomes_in_chunks_too(self):
+        # The chunked path is a different code path in delete_matching_rows; the children must follow it as well.
+        removed = [self._entry_with_outcomes(2) for _ in range(3)]
+        db.session.query(AuthenticationLog).filter(AuthenticationLog.id.in_(removed)).update(
+            {"timestamp": utc_now() - timedelta(days=10)})
+        db.session.commit()
+
+        self.assertEqual(3, cleanup_authentication_log(older_than=utc_now() - timedelta(days=1), chunk_size=2))
+
+        self.assertEqual(0, get_ca_session().query(ConditionalAccessOutcome).count())

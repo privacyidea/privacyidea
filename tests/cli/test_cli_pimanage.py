@@ -33,7 +33,7 @@ from privacyidea.lib.conditional_access.authentication_event_types import AuthEv
 from privacyidea.lib.lifecycle import call_finalizers
 from privacyidea.lib.resolver import (save_resolver, delete_resolver,
                                       get_resolver_list)
-from privacyidea.models import db, Challenge, AuthenticationLog
+from privacyidea.models import db, Challenge, AuthenticationLog, ConditionalAccessOutcome
 from privacyidea.models.lockout_policy import BlockList, UserLockoutState
 from privacyidea.models.utils import utc_now
 from .base import CliTestCase
@@ -931,12 +931,20 @@ class PIManageAuthLogTestCase(CliTestCase):
     Tests for ``pi-manage authlog cleanup``.
     """
 
-    def _insert(self, age_days):
-        # Insert one authentication-log entry aged the given number of days.
-        AuthenticationLog(event_type=AuthEventType.LOGIN_SUCCESS, resolver="r", uid="u", realm="rlm",
-                          timestamp=utc_now() - dt.timedelta(days=age_days)).save()
+    def _insert(self, age_days, outcomes=0):
+        # Insert one authentication-log entry aged the given number of days, with *outcomes* conditional-access
+        # outcomes hanging off it.
+        entry = AuthenticationLog(event_type=AuthEventType.LOGIN_SUCCESS, resolver="r", uid="u", realm="rlm",
+                                  timestamp=utc_now() - dt.timedelta(days=age_days))
+        entry.save()
+        for _ in range(outcomes):
+            db.session.add(ConditionalAccessOutcome(auth_log_id=entry.id, action_type="LOCK_USER", policy_id=1,
+                                                    policy_name="p", threshold=3, event_count=3))
+        db.session.commit()
 
     def tearDown(self):
+        # Children first: nothing cascades on SQLite.
+        ConditionalAccessOutcome.query.delete()
         AuthenticationLog.query.delete()
         db.session.commit()
         super().tearDown()
@@ -986,6 +994,28 @@ class PIManageAuthLogTestCase(CliTestCase):
         res = runner.invoke(pi_manage, ["authlog", "cleanup"])
         self.assertNotEqual(res.exit_code, 0, res.output)
         self.assertIn("--age", res.output, res)
+
+    def test_06_cleanup_removes_the_conditional_access_outcomes_too(self):
+        # Retention is one story for the whole authentication history: an entry's conditional-access outcomes go with
+        # it, including on SQLite, where the foreign key does not cascade and the lib deletes them explicitly.
+        self._insert(age_days=10, outcomes=2)
+        self._insert(age_days=0, outcomes=1)
+
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["authlog", "cleanup", "--age", "7"])
+
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertEqual(1, AuthenticationLog.query.count(), "only the recent entry must remain")
+        self.assertEqual(1, ConditionalAccessOutcome.query.count(), "only the recent entry's outcome must remain")
+
+    def test_07_dryrun_keeps_the_outcomes(self):
+        self._insert(age_days=10, outcomes=2)
+
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["authlog", "cleanup", "--age", "7", "--dryrun"])
+
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertEqual(2, ConditionalAccessOutcome.query.count(), "--dryrun must not delete anything")
 
 
 class PIManageConditionalAccessTestCase(CliTestCase):

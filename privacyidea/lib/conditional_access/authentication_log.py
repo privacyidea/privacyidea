@@ -23,7 +23,7 @@ from enum import Enum
 from typing import Any
 
 from sqlalchemy import and_, delete, false, func, or_, select
-from sqlalchemy.orm import InstrumentedAttribute
+from sqlalchemy.orm import InstrumentedAttribute, selectinload
 from sqlalchemy.sql import ColumnElement
 
 from privacyidea.models import AuthenticationLog, ConditionalAccessOutcome, authentication_log_column_length
@@ -108,7 +108,9 @@ class AuthenticationLogPage:
     def to_dict(self) -> dict:
         """Serialize the page (entries plus pagination metadata) for the API response."""
         return {
-            "auth_logs": [entry.to_dict() for entry in self.auth_logs],
+            # The entries were loaded with their outcomes (see get_authentication_logs_paginate), so this is the one
+            # place that may serialize them.
+            "auth_logs": [entry.to_dict(include_outcomes=True) for entry in self.auth_logs],
             "count": self.count,
             "current": self.current,
             "prev": self.prev,
@@ -387,9 +389,13 @@ def delete_authentication_log_event(event_id: int) -> None:
 
     A management operation, so a failure surfaces to the caller instead of being swallowed.
     """
-    stmt = delete(AuthenticationLog).where(AuthenticationLog.id == event_id)
     with guarded_write(f"the deletion of authentication log entry {event_id}", reraise=True):
-        get_ca_session().execute(stmt)
+        session = get_ca_session()
+        entry = session.get(AuthenticationLog, event_id)
+        if entry is not None:
+            # Deleted as an *object*, so the ``outcomes`` relationship cascade takes this request's conditional-access
+            # history with it - on every backend, without relying on a foreign key SQLite does not enforce.
+            session.delete(entry)
 
 
 def get_authentication_log_event(event_id: int) -> AuthenticationLog | None:
@@ -621,12 +627,68 @@ def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
     page = max(1, page)
     page_size = max(1, page_size)
     offset = (page - 1) * page_size
+    # The only place that loads the conditional-access outcomes. selectinload fetches them for the whole page in one
+    # extra statement (WHERE auth_log_id IN (<the page's ids>)), so the statement count does not grow with the page
+    # size. A JOIN would be wrong rather than merely slower: it multiplies each entry by its outcomes, which breaks
+    # both LIMIT and the count above.
+    stmt = stmt.options(selectinload(AuthenticationLog.outcomes))
     auth_logs = get_ca_session().scalars(stmt.limit(page_size).offset(offset)).all()
     return AuthenticationLogPage(auth_logs=auth_logs,
                                  count=count,
                                  current=page,
                                  prev=page - 1 if page > 1 else None,
                                  next=page + 1 if offset + page_size < count else None)
+
+
+def _delete_outcomes_of(criterion: ColumnElement[bool], chunk_size: int | None = None) -> int:
+    """
+    Delete the conditional-access outcomes of every authentication-log row matching *criterion*, and return how many
+    were removed.
+
+    Always called **before** the parent rows: the ``auth_log_id`` foreign key cascades on MySQL/MariaDB and PostgreSQL
+    but not on SQLite, where ``PRAGMA foreign_keys`` is off by default and privacyIDEA never enables it. Deleting the
+    children explicitly is what makes all supported backends behave the same.
+
+    An ORM ``cascade="all, delete-orphan"`` relationship would **not** do this job. That cascade is only consulted when
+    a mapped object is deleted through the session (``session.delete(entry)``); every delete path here is set-based Core
+    SQL - ``table.delete().where(...)``, or ``DeleteLimit`` when chunking - which SQLAlchemy does not run relationship
+    cascades for. Declaring one would leave the children behind on SQLite while looking like it handled them. Loading
+    every doomed parent to delete it object-by-object is the only way to make the cascade fire, and that defeats the
+    point of :func:`~privacyidea.lib.sqlutils.delete_matching_rows`: retention has to remove millions of rows with
+    bounded memory.
+
+    The children are matched through the parents (``auth_log_id IN (SELECT id FROM authentication_log WHERE …)``).
+
+    This commits separately from the parent delete (:func:`~privacyidea.lib.sqlutils.delete_matching_rows` commits per
+    call, and chunked deletes commit per chunk). A failure of the parent delete afterwards therefore leaves entries
+    whose history is already gone - acceptable for a management operation, where the alternative is holding one
+    transaction open across an unbounded number of chunked deletes.
+    """
+    return delete_matching_rows(get_ca_session(), ConditionalAccessOutcome.__table__,
+                                ConditionalAccessOutcome.auth_log_id.in_(select(AuthenticationLog.id).where(criterion)),
+                                chunk_size)
+
+
+def _delete_entries(criterion: ColumnElement[bool], chunk_size: int | None = None) -> int:
+    """
+    Delete the authentication-log rows matching *criterion* **together with their conditional-access outcomes**, and
+    return how many entries were removed.
+
+    Every set-based delete of authentication-log rows goes through here (the single-row path,
+    :func:`delete_authentication_log_event`, does both deletes in one transaction instead). That is deliberate: neither
+    an explicit call per delete path nor an ORM cascade is self-enforcing, so the one thing that can be enforced is that
+    there is a single place to route through - a new delete path calls this instead of assembling the two halves again.
+
+    :param criterion: the ``where`` clause selecting the entries to delete
+    :param chunk_size: delete in chunks of this size to avoid long locks on large tables
+    :return: the number of authentication-log entries deleted (the outcome count is logged, not returned: the caller
+        asked to delete entries, and their history is part of them)
+    """
+    outcomes = _delete_outcomes_of(criterion, chunk_size)
+    deleted = delete_matching_rows(get_ca_session(), AuthenticationLog.__table__, criterion, chunk_size)
+    if outcomes:
+        log.debug(f"Deleted {outcomes} conditional-access outcome(s) along with {deleted} authentication log entries.")
+    return deleted
 
 
 def delete_authentication_logs(resolver: str | list[str] | None = None,
@@ -671,7 +733,7 @@ def delete_authentication_logs(resolver: str | list[str] | None = None,
         raise ParameterError("Refusing to delete the whole authentication log: at least one filter is required.")
     if visibility_scopes is not None:
         conditions.append(_visibility_condition(visibility_scopes))
-    return delete_matching_rows(get_ca_session(), AuthenticationLog.__table__, and_(*conditions), chunk_size)
+    return _delete_entries(and_(*conditions), chunk_size)
 
 
 def cleanup_authentication_log(older_than: datetime, chunk_size: int | None = None) -> int:
@@ -683,5 +745,4 @@ def cleanup_authentication_log(older_than: datetime, chunk_size: int | None = No
     :param chunk_size: if given, delete in chunks of this size to avoid long locks / deadlocks on large tables
     :return: the number of deleted rows
     """
-    criterion = AuthenticationLog.timestamp < _naive_utc(older_than)
-    return delete_matching_rows(get_ca_session(), AuthenticationLog.__table__, criterion, chunk_size)
+    return _delete_entries(AuthenticationLog.timestamp < _naive_utc(older_than), chunk_size)

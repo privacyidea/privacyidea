@@ -26,10 +26,11 @@ import mock
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import log_authentication_event, AuthLogUserRole
+from privacyidea.lib.conditional_access.outcome_log import record_outcomes
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, PolicyAction
 from privacyidea.lib.realm import set_realm, delete_realm
 from privacyidea.lib.resolver import save_resolver, delete_resolver
-from privacyidea.models import db
+from privacyidea.models import ConditionalAccessOutcome, db
 from .authlog_utils import AuthLogTestCase
 
 
@@ -133,6 +134,33 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
         # timestamp is serialized as an ISO 8601 string, not a datetime
         self.assertIsInstance(entry["timestamp"], str)
         datetime.datetime.fromisoformat(entry["timestamp"])
+        # Every entry carries its conditional-access history, empty when the request tripped no policy.
+        self.assertEqual([], entry["conditional_access_outcomes"])
+
+    def test_entry_carries_its_conditional_access_outcomes(self):
+        event_id = log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res1", uid="u1",
+                                            realm=self.realm1)
+        record_outcomes([ConditionalAccessOutcome(action_type="LOCK_USER", policy_id=4, policy_name="Brute force",
+                                                 threshold=3, event_count=3, stage_name="Second strike",
+                                                 info={"expires_at": "2026-08-07T12:00:00+00:00"})], event_id)
+        try:
+            entry = next(e for e in self._get({"page_size": 50})["result"]["value"]["auth_logs"]
+                         if e["id"] == event_id)
+            outcome = entry["conditional_access_outcomes"][0]
+            self.assertEqual("LOCK_USER", outcome["action_type"])
+            self.assertEqual(4, outcome["policy_id"])
+            self.assertEqual("Brute force", outcome["policy_name"])
+            self.assertEqual("Second strike", outcome["stage_name"])
+            self.assertEqual(3, outcome["threshold"])
+            self.assertEqual(3, outcome["event_count"])
+            self.assertFalse(outcome["dry_run"])
+            # Action-specific detail rides along as the dict it was stored as.
+            self.assertDictEqual({"expires_at": "2026-08-07T12:00:00+00:00"}, outcome["info"])
+            # No timestamp of its own: the entry it hangs off carries it.
+            self.assertNotIn("timestamp", outcome)
+        finally:
+            db.session.query(ConditionalAccessOutcome).delete()
+            db.session.commit()
 
     def test_filter_by_event_type(self):
         self._seed(include_no_realm=True)
