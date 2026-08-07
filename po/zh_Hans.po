@@ -1,18 +1,20 @@
 # Ryan Gu <ryan.gu@outlook.com>, 2024.
 # sanghb <sanghb@chengda.com.cn>, 2024.
+# reducedradius <137701630+flytothehighest@users.noreply.github.com>, 2026.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
-"PO-Revision-Date: 2025-03-28 09:26+0000\n"
-"Last-Translator: Anonymous <noreply@weblate.org>\n"
+"PO-Revision-Date: 2026-08-07 12:07+0000\n"
+"Last-Translator: reducedradius "
+"<137701630+flytothehighest@users.noreply.github.com>\n"
 "Language-Team: Chinese (Simplified Han script) <https://hosted.weblate.org/"
-"projects/privacyidea/branch-3-11-webui/zh_Hans/>\n"
+"projects/privacyidea/privacyidea-webui/zh_Hans/>\n"
 "Language: zh_Hans\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Weblate 5.11-dev\n"
+"X-Generator: Weblate 2026.8.1.dev0\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -491,7 +493,7 @@ msgstr ""
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:429
 msgid "Authentication failed."
-msgstr ""
+msgstr "验证失败。"
 
 #: privacyidea/static/components/token/views/token.details.html:527
 msgid "Authentication succeeded with a different passkey:"
