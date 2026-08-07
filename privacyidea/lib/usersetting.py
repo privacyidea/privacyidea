@@ -64,10 +64,11 @@ KNOWN_SETTING_KEYS = {
     "dashboard",
 }
 
-# A rejection message echoes the offending keys and is written to the audit log,
-# whose ``info`` column holds 500 characters. PI_AUDIT_SQL_TRUNCATE is not
-# enabled by default, and without it an oversized entry is dropped instead of
-# being cut, so the echoed part is capped here.
+# A rejection message echoes the offending keys into the audit log, whose ``info``
+# column holds 500 characters. PI_AUDIT_SQL_TRUNCATE is not enabled by default, and
+# without it an entry that does not fit is dropped rather than cut. 200 keeps the
+# whole message well inside that column, leaving room for the text around the keys
+# and for what other handlers append to the same field.
 MAX_REPORTED_KEYS_LENGTH = 200
 
 
@@ -193,7 +194,8 @@ def validate_user_settings(settings: dict, check_keys: bool = True) -> None:
         allowed = get_allowed_keys()
         unknown = sorted(str(key) for key in settings if key not in allowed)
         if unknown:
-            raise ParameterError(f"Unknown setting key: {_describe_unknown_keys(unknown)}.")
+            raise ParameterError(f"Unknown setting key{'s' if len(unknown) > 1 else ''}: "
+                                 f"{_describe_unknown_keys(unknown)}.")
 
 
 def _select_for_subject(subject: SettingsSubject):
