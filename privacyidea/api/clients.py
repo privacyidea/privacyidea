@@ -315,8 +315,9 @@ def revoke_client_remembered_devices_api(client_id):
         if allowed_realm_ids is None:
             count = revoke_client_devices(client_id)
         else:
-            count = sum(revoke_client_devices(client_id, realm_id=realm_id)
-                        for realm_id in allowed_realm_ids)
+            # One atomic delete scoped to the admin's allowed realms (an empty
+            # set revokes nothing), rather than a commit-per-realm loop.
+            count = revoke_client_devices(client_id, realm_ids=list(allowed_realm_ids))
 
     g.audit_object.log({"success": True, "info": f"Client ID: {client_id}"})
     return send_result(count)

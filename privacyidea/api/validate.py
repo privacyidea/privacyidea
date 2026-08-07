@@ -118,7 +118,8 @@ from privacyidea.api.lib.utils import (get_all_params, get_before_request_config
 from privacyidea.api.recover import recover_blueprint
 from privacyidea.lib.remembered_device import (create_remembered_device, set_persistent_cookie,
                                          clear_persistent_cookie, consume_remember_device_cookie,
-                                         user_identity, PERSISTENT_COOKIE_NAME, RememberStatus)
+                                         user_identity, count_user_devices,
+                                         PERSISTENT_COOKIE_NAME, RememberStatus)
 from privacyidea.api.register import register_blueprint
 from privacyidea.lib.applications.offline import MachineApplication
 from privacyidea.lib.challenge import get_challenges, extract_answered_challenges, cancel_enrollment_via_multichallenge
@@ -778,6 +779,22 @@ def _resolve_persistent_cookie(user: User, success: bool) -> tuple | None:
         return None
     if not Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE, user_object=user).any():
         return None
+    # Optional per-user device cap (remember_device_max_devices, off by default):
+    # once the user has this many live devices for this client, opt-in issues no
+    # new cookie - the existing devices keep working. Unset / invalid / <=0 =
+    # unlimited. Each opt-in otherwise mints a new series (a client cannot be
+    # deduped reliably, and multiple devices per user are legitimate), so this is
+    # the knob for admins who want to bound that growth.
+    max_pols = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE_MAX_DEVICES,
+                          user_object=user).action_values(unique=True)
+    if max_pols:
+        try:
+            max_devices = int(list(max_pols)[0])
+        except (ValueError, TypeError):
+            max_devices = 0
+        if max_devices > 0 and count_user_devices(g.client_id, identity.resolver, identity.user_id,
+                                                   identity.realm_id) >= max_devices:
+            return None
     # The cookie lifetime is a policy value so it can differ per realm/user/client
     # (e.g. a shorter lifetime for admins). Unset / invalid -> the model default.
     validity_days = None
@@ -854,6 +871,9 @@ def get_capabilities():
     # this request's g.client_id automatically.
     remember_device = Match.generic(g, scope=SCOPE.AUTH,
                                     action=PolicyAction.REMEMBER_DEVICE).any()
+    # A successful discovery is a success in the audit log; validate's
+    # before_request seeds success=False, so record it explicitly.
+    g.audit_object.log({"success": True})
     return send_result({"capabilities": {"remember_device": remember_device}})
 
 
@@ -945,7 +965,10 @@ def check_remember_device():
         "info": "remembered device recognised" if recognised else "device not recognised",
     })
 
-    ret = send_result(recognised, rid=2, details={"remembered_device": recognised})
+    # Default rid (1) so send_result does not stamp result.authentication
+    # (ACCEPT/REJECT): recognition is not an authentication - the answer is
+    # result.value / detail.remembered_device, and the audit records no ACCEPT/REJECT.
+    ret = send_result(recognised, details={"remembered_device": recognised})
     _apply_persistent_cookie(ret, cookie_action)
     return ret
 

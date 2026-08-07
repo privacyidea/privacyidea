@@ -179,6 +179,13 @@ class APIClientsTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(401, res.status_code, res)
 
+    def test_08_key_prefix_with_underscore_rejected(self):
+        # The key format splits on the first two underscores, so a prefix
+        # containing '_' would desync key_id/secret; it must be rejected.
+        from privacyidea.lib.clients import generate_api_key
+        from privacyidea.lib.error import ParameterError
+        self.assertRaises(ParameterError, generate_api_key, prefix="win_cp")
+
 
 class APIClientAPIKeyMiddlewareTestCase(MyApiTestCase):
 
@@ -345,6 +352,9 @@ class APIClientRememberedDevicesTestCase(MyApiTestCase):
             self.assertEqual(self.realm1, entry["realm"])
             self.assertEqual("cornelius", entry["user"])
             self.assertEqual("10.0.0.9", entry["ip_address"])
+            # Timestamps are serialised UTC-aware so the WebUI does not shift them.
+            self.assertTrue(entry["expires_at"].endswith("+00:00"), entry["expires_at"])
+            self.assertTrue(entry["created_at"].endswith("+00:00"), entry["created_at"])
             # The rotating token/counter must never be exposed.
             self.assertNotIn("counter", entry)
 

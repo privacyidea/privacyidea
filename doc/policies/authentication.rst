@@ -1133,3 +1133,21 @@ regular users. The lifetime is fixed when the cookie is issued; recognition
 rotates the token but does not extend the expiry.
 
 .. versionadded:: 3.14
+
+.. _policy_remember_device_max_devices:
+
+remember_device_max_devices
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``int``
+
+The maximum number of remembered devices a single user may have per API client.
+Each opt-in on ``/validate/check`` mints a **new** device series (the server
+cannot reliably tell one client's devices apart, and a user legitimately having
+several devices is normal), so a client that opts in on every login would
+accumulate rows until they expire. Set this to cap that: once the user already
+has this many *live* devices for the client, further opt-ins issue no new cookie
+and the existing devices keep working. Unset or ``0`` means unlimited (the
+default). Scope it per realm/user like the other conditions.
+
+.. versionadded:: 3.14

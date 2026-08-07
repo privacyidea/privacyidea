@@ -44,7 +44,7 @@ from privacyidea.models import RememberedDevice, Realm, db
 
 if TYPE_CHECKING:
     from privacyidea.lib.user import User
-from privacyidea.models.utils import utc_now
+from privacyidea.models.utils import utc_now, utc_isoformat
 
 log = logging.getLogger(__name__)
 
@@ -444,6 +444,23 @@ def get_client_device(client_id: str, series_id: str) -> "RememberedDevice | Non
     return RememberedDevice.query.filter_by(series_id=series_id, client_id=client_id).first()
 
 
+def count_user_devices(client_id: str, resolver: str, user_id: str, realm_id: int) -> int:
+    """
+    Number of **live** (non-expired) remembered devices a user has on a client,
+    counted by the resolver-stable identity. Used to enforce a per-user device
+    cap at issuance (see the ``remember_device_max_devices`` policy).
+
+    :return: the count of the user's non-expired devices for this client
+    """
+    return RememberedDevice.query.filter(
+        RememberedDevice.client_id == client_id,
+        RememberedDevice.resolver == resolver,
+        RememberedDevice.user_id == user_id,
+        RememberedDevice.realm_id == realm_id,
+        (RememberedDevice.expires_at.is_(None)) | (RememberedDevice.expires_at >= utc_now()),
+    ).count()
+
+
 def get_client_devices(client_id: str) -> list[RememberedDevice]:
     """
     Return all remembered devices belonging to a client, newest first.
@@ -474,10 +491,11 @@ def revoke_client_device(client_id: str, series_id: str) -> str:
 
 
 def revoke_client_devices(client_id: str, realm_id: int = None, resolver: str = None,
-                           user_id: str = None) -> int:
+                           user_id: str = None, realm_ids: "list[int]" = None) -> int:
     """
     Revoke (delete) remembered devices of a client in bulk, optionally narrowed
-    to a single realm or a single ``(resolver, user_id, realm_id)`` identity.
+    to a single realm (``realm_id``), a set of realms (``realm_ids``), or a
+    single ``(resolver, user_id, realm_id)`` identity.
 
     The delete is always scoped to ``client_id`` so a client's id can never be
     used to revoke another client's devices. Unlike collecting series ids in the
@@ -491,16 +509,21 @@ def revoke_client_devices(client_id: str, realm_id: int = None, resolver: str = 
         user's identity
     :param user_id: if given (with ``resolver`` and ``realm_id``), narrows to one
         user's identity
+    :param realm_ids: if given, only devices bound to one of these realms are
+        revoked (used to scope an unfiltered revoke to an admin's allowed realms
+        in a single statement); an empty list revokes nothing
     :return: the number of revoked remembered devices
     """
-    criteria = {"client_id": client_id}
+    query = RememberedDevice.query.filter_by(client_id=client_id)
     if realm_id is not None:
-        criteria["realm_id"] = realm_id
+        query = query.filter_by(realm_id=realm_id)
     if resolver is not None:
-        criteria["resolver"] = resolver
+        query = query.filter_by(resolver=resolver)
     if user_id is not None:
-        criteria["user_id"] = user_id
-    count = RememberedDevice.query.filter_by(**criteria).delete(synchronize_session=False)
+        query = query.filter_by(user_id=user_id)
+    if realm_ids is not None:
+        query = query.filter(RememberedDevice.realm_id.in_(realm_ids))
+    count = query.delete(synchronize_session=False)
     db.session.commit()
     return count
 
@@ -559,9 +582,9 @@ def device_to_dict(device: RememberedDevice) -> dict:
         "user": _resolve_login(device.resolver, device.user_id, realm_name),
         "ip_address": device.ip_address,
         "user_agent": device.user_agent,
-        "created_at": device.created_at.isoformat() if device.created_at else None,
-        "last_used_at": device.last_used_at.isoformat() if device.last_used_at else None,
-        "expires_at": device.expires_at.isoformat() if device.expires_at else None,
+        "created_at": utc_isoformat(device.created_at),
+        "last_used_at": utc_isoformat(device.last_used_at),
+        "expires_at": utc_isoformat(device.expires_at),
     }
 
 

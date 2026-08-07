@@ -2618,6 +2618,12 @@ def get_static_policy_definitions(scope=None):
                 'desc': _("How many days a 'remember this device' cookie stays valid "
                           "(default 30 if unset). Scope it with a realm/user condition to give "
                           "different lifetimes, e.g. a shorter one for admins than for users.")},
+            PolicyAction.REMEMBER_DEVICE_MAX_DEVICES: {
+                'type': 'int',
+                'desc': _("Maximum number of remembered devices a single user may have per API "
+                          "client. Once the user has this many live devices for the client, "
+                          "further opt-ins on that client issue no new cookie (the existing "
+                          "devices keep working). Unset or 0 means unlimited.")},
             PolicyAction.OTPPIN: {
                 'type': 'str',
                 'value': [ACTIONVALUE.TOKENPIN, ACTIONVALUE.USERSTORE,

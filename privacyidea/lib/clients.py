@@ -29,7 +29,7 @@ import secrets
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.models import Client, ClientStatus
-from privacyidea.models.utils import utc_now
+from privacyidea.models.utils import utc_now, utc_isoformat
 
 log = logging.getLogger(__name__)
 
@@ -96,10 +96,15 @@ def generate_api_key(prefix: str = DEFAULT_KEY_PREFIX) -> dict:
     non-secret identifier used to look up the client and is safe to store and
     display; only the ``secret`` half is hashed.
 
-    :param prefix: a short prefix identifying the key (e.g. the client type)
+    :param prefix: a short prefix identifying the key (e.g. the client type). It
+        must not contain ``_``: the key is parsed by splitting on the first two
+        underscores (``prefix``, ``key_id``, ``secret``), so a prefix with an
+        underscore would desync key_id/secret and the key could never authenticate.
     :return: a dict with the ``plaintext`` key (to be shown to the admin exactly
         once), its ``key_id`` and its ``key_hash`` (both to be stored)
     """
+    if "_" in prefix:
+        raise ParameterError("The API key prefix must not contain '_'.")
     key_id = secrets.token_hex(KEY_ID_BYTES)
     secret = secrets.token_urlsafe(KEY_SECRET_BYTES)
     return {
@@ -284,7 +289,7 @@ def client_to_dict(client: Client) -> dict:
         "client_type": client.client_type,
         "key_id": client.key_id,
         "status": client.status,
-        "created_at": client.created_at.isoformat() if client.created_at else None,
-        "last_used_at": client.last_used_at.isoformat() if client.last_used_at else None,
+        "created_at": utc_isoformat(client.created_at),
+        "last_used_at": utc_isoformat(client.last_used_at),
         "config": client.config or {},
     }

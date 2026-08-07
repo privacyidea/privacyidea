@@ -69,6 +69,10 @@ normal policy, you can scope it by realm, user or other conditions. The cookie
 lifetime defaults to 30 days and can be set per scope with
 :ref:`policy_remember_device_validity`.
 
+Each opt-in creates a new remembered device, so a client that opts in on every
+login (rather than once per device) accumulates them until they expire. If that
+matters, cap it per user with :ref:`policy_remember_device_max_devices`.
+
 The feature only works for requests made by an identified API client. A client
 can discover whether it is available with :http:get:`/validate/capabilities`.
 

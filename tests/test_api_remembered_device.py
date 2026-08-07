@@ -41,6 +41,14 @@ class CapabilitiesEndpointTestCase(MyApiTestCase):
         finally:
             delete_policy("caps_remember")
 
+    def test_04_successful_capabilities_audited_as_success(self):
+        # A successful discovery must be recorded as success=1, not the
+        # success=False seeded by validate's before_request.
+        _client, api_key = create_client("caps audit client", "keycloak")
+        self.assertEqual(200, self._get(api_key).status_code)
+        entry = self.find_most_recent_audit_entry(action="*validate/capabilities*")
+        self.assertEqual(1, entry["success"])
+
 
 class PersistentCookieValidateTestCase(MyApiTestCase):
 
@@ -166,6 +174,24 @@ class PersistentCookieValidateTestCase(MyApiTestCase):
             except ResourceNotFoundError:
                 pass
 
+    def test_08_max_devices_caps_issuance(self):
+        # remember_device_max_devices caps how many live devices a user may have
+        # per client: once at the cap, opt-in issues no new cookie/row.
+        client, api_key = create_client("cap client", "windows_cp")
+        set_policy("remember", scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE)
+        set_policy("remember_max", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.REMEMBER_DEVICE_MAX_DEVICES}=1")
+        try:
+            # First opt-in issues a device.
+            self.assertEqual(1, len(self._cookies(self._check(api_key))))
+            self.assertEqual(1, RememberedDevice.query.filter_by(client_id=client.id).count())
+            # Second opt-in for the same user+client is at the cap: no cookie, no new row.
+            self.assertEqual([], self._cookies(self._check(api_key)))
+            self.assertEqual(1, RememberedDevice.query.filter_by(client_id=client.id).count())
+        finally:
+            delete_policy("remember")
+            delete_policy("remember_max")
+
 
 class RememberDeviceRecognitionTestCase(MyApiTestCase):
     """
@@ -208,6 +234,9 @@ class RememberDeviceRecognitionTestCase(MyApiTestCase):
             self.assertEqual(200, res.status_code, res)
             self.assertEqual(bool(res.json['result']['value']), expect_value, res.json)
             self.assertEqual(bool(res.json['detail'].get("remembered_device")), expect_value, res.json)
+            # Recognition is not an authentication: the response carries no
+            # result.authentication (ACCEPT/REJECT) - validity is result.value.
+            self.assertNotIn("authentication", res.json['result'], res.json)
             return res
 
     def test_00_requires_api_client(self):
