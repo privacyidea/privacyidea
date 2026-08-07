@@ -669,6 +669,11 @@ def create_challenge(serial: str, transaction_id: str = None, challenge: str = '
             serial=db_challenge.serial,
             transaction_id=db_challenge.transaction_id,
             challenge=db_challenge.challenge,
+            # ``.data`` is the decrypting property: the constructor above already
+            # encrypted the value into ``_data``, and the cache layer re-encrypts
+            # it in ChallengeDTO.to_payload(). Passing the plaintext keeps the two
+            # backends storing the same ciphertext format instead of double-
+            # encrypting on the Redis path.
             data=db_challenge.data,
             session=db_challenge.session,
             timestamp=db_challenge.timestamp,

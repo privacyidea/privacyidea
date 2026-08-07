@@ -47,6 +47,7 @@ from urllib.parse import urlparse, urlunparse
 import redis as redis_lib
 
 from privacyidea.lib.challenge_types import is_challenge_open
+from privacyidea.lib.crypto import FAILED_TO_DECRYPT_PASSWORD, decryptPassword, encryptPassword
 from privacyidea.lib.framework import get_app_config_value, get_app_local_store
 from privacyidea.lib.utils import convert_column_to_unicode
 from privacyidea.models.utils import utc_now
@@ -319,6 +320,13 @@ class ChallengeDTO:
     token classes work transparently with either backend. Challenges stored
     only in Redis have no DB row, so save() and delete() operate on Redis
     only.
+
+    ``data`` is held in plaintext on the instance and encrypted only on the
+    way into Redis (see ``to_payload``), matching the SQL model where the
+    ``data`` property is plaintext over an encrypted ``_data`` column. It can
+    carry secrets - the OTP itself for email/SMS tokens under
+    ``*.concurrent_challenges``, or the push code-to-phone display code - so
+    it must never reach the wire unencrypted.
     """
 
     def __init__(self, transaction_id: str, serial: str,
@@ -409,12 +417,19 @@ class ChallengeDTO:
 
     def to_payload(self) -> str:
         """Serialise this DTO to the JSON payload stored under the txn key.
-        Paired with ``_deserialize`` - keep the field set in sync."""
+        Paired with ``_deserialize`` - keep the field set in sync.
+
+        ``data`` is encrypted here rather than in ``set_data`` so that the
+        in-memory attribute stays plaintext, mirroring how the SQL-backed
+        ``Challenge`` keeps a plaintext ``data`` property over an encrypted
+        ``_data`` column. Every write reaches Redis through this method, so
+        this is the single place the encryption has to happen.
+        """
         return json.dumps({
             'transaction_id': self.transaction_id,
             'serial': self.serial,
             'challenge': self.challenge,
-            'data': self.data or '',
+            'data': encryptPassword(self.data) if self.data else '',
             'session': self.session or '',
             'timestamp': self.timestamp.isoformat(),
             'expiration': self.expiration.isoformat(),
@@ -686,11 +701,23 @@ def get_challenges_from_cache(serial: str = None, transaction_id: str = None,
 def _deserialize(raw: str) -> ChallengeDTO | None:
     try:
         d = json.loads(raw)
+        data = d.get('data', '')
+        if data:
+            data = decryptPassword(data)
+            if data.startswith(FAILED_TO_DECRYPT_PASSWORD):
+                # Every stored payload is encrypted, so a decrypt failure means
+                # the ciphertext is corrupt or was written under a different
+                # encryption key. Handing back the placeholder string would let
+                # a token compare a real answer against "FAILED TO DECRYPT
+                # PASSWORD!", so treat the entry as unusable instead.
+                log.warning("Could not decrypt challenge data from Redis for transaction %s.",
+                            d.get('transaction_id'))
+                return None
         return ChallengeDTO(
             transaction_id=d['transaction_id'],
             serial=d['serial'],
             challenge=d.get('challenge', ''),
-            data=d.get('data', ''),
+            data=data,
             session=d.get('session', ''),
             timestamp=datetime.fromisoformat(d['timestamp']),
             expiration=datetime.fromisoformat(d['expiration']),
