@@ -656,6 +656,7 @@ def create_challenge(serial: str, transaction_id: str = None, challenge: str = '
     """
     from privacyidea.lib.cache import cache_challenge, redis_feature_enabled
     from privacyidea.models import Challenge
+    from privacyidea.models.challenge import normalize_challenge_data
     db_challenge = Challenge(serial,
                              transaction_id=transaction_id,
                              challenge=challenge,
@@ -669,12 +670,12 @@ def create_challenge(serial: str, transaction_id: str = None, challenge: str = '
             serial=db_challenge.serial,
             transaction_id=db_challenge.transaction_id,
             challenge=db_challenge.challenge,
-            # ``.data`` is the decrypting property: the constructor above already
-            # encrypted the value into ``_data``, and the cache layer re-encrypts
-            # it in ChallengeDTO.to_payload(). Passing the plaintext keeps the two
-            # backends storing the same ciphertext format instead of double-
-            # encrypting on the Redis path.
-            data=db_challenge.data,
+            # Normalise the caller's value the same way Challenge.set_data does
+            # rather than reading it back through the decrypting ``.data``
+            # property: the cache layer encrypts in ChallengeDTO.to_payload(),
+            # so going via the property would decrypt only to re-encrypt, at the
+            # cost of an extra HSM round trip on the authentication hot path.
+            data=normalize_challenge_data(data),
             session=db_challenge.session,
             timestamp=db_challenge.timestamp,
             expiration=db_challenge.expiration,

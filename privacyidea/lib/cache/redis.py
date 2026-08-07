@@ -48,6 +48,7 @@ import redis as redis_lib
 
 from privacyidea.lib.challenge_types import is_challenge_open
 from privacyidea.lib.crypto import FAILED_TO_DECRYPT_PASSWORD, decryptPassword, encryptPassword
+from privacyidea.lib.error import HSMException
 from privacyidea.lib.framework import get_app_config_value, get_app_local_store
 from privacyidea.lib.utils import convert_column_to_unicode
 from privacyidea.models.utils import utc_now
@@ -510,6 +511,12 @@ def cache_challenge(serial: str, transaction_id: str, challenge: str, data: str,
         pipe.execute()
     except redis_lib.exceptions.RedisError as e:
         _disable_redis(e)
+    # An HSMException from to_payload()'s encryption is deliberately not caught
+    # here. Swallowing it would drop the challenge entirely: create_challenge()
+    # only falls back to the database when _disable_redis() has fired, and a
+    # failing HSM says nothing about Redis. Letting it propagate matches the
+    # database path, where Challenge.__init__ raises the same exception before
+    # the row is ever written.
 
 
 def evict_challenge(transaction_id: str, serial: str):
@@ -701,10 +708,16 @@ def get_challenges_from_cache(serial: str = None, transaction_id: str = None,
 def _deserialize(raw: str) -> ChallengeDTO | None:
     try:
         d = json.loads(raw)
+        if not isinstance(d, dict):
+            # Valid JSON, but not an object - e.g. a hand-edited key or another
+            # tool writing into the same database. Raise into the handler below
+            # so it degrades to a cache miss instead of an AttributeError on the
+            # first .get() escaping all the way to the API layer.
+            raise TypeError(f"challenge payload is {type(d).__name__}, expected object")
         data = d.get('data', '')
         if data:
             data = decryptPassword(data)
-            if data.startswith(FAILED_TO_DECRYPT_PASSWORD):
+            if data == FAILED_TO_DECRYPT_PASSWORD:
                 # Every stored payload is encrypted, so a decrypt failure means
                 # the ciphertext is corrupt or was written under a different
                 # encryption key. Handing back the placeholder string would let
@@ -769,3 +782,10 @@ def _update_challenge_in_cache(dto: ChallengeDTO):
         pipe.execute()
     except redis_lib.exceptions.RedisError as e:
         _disable_redis(e)
+    except HSMException as e:
+        # to_payload() encrypts, so a failing HSM reaches this path too. Redis
+        # is healthy, so no cooldown. The mutation stays on the in-memory DTO
+        # while the cache keeps the previous value - the same trade-off already
+        # accepted for a Redis error here, and better than turning a challenge
+        # answer into a 500 for the user.
+        log.warning("Could not encrypt challenge data for the cache: %s - the mutation was not persisted.", e)

@@ -32,13 +32,34 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 from privacyidea.lib.challenge_types import is_challenge_open
-from privacyidea.lib.crypto import get_rand_digit_str, encryptPassword, decryptPassword
+from privacyidea.lib.crypto import (FAILED_TO_DECRYPT_PASSWORD, get_rand_digit_str, encryptPassword,
+                                    decryptPassword)
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import convert_column_to_unicode
 from privacyidea.models import db
 from privacyidea.models.utils import MethodsMixin, utc_now
 
 log = logging.getLogger(__name__)
+
+
+def normalize_challenge_data(data) -> str:
+    """
+    Coerce challenge data to the string form both storage backends persist.
+
+    Callers pass strings, dicts or arbitrary serialisable values. Shared with
+    the Redis cache so that a challenge carries the same ``data`` string
+    whichever backend holds it.
+
+    :param data: The challenge data (string, dict, or other serializable value)
+    :return: The normalised string, or '' for empty input
+    """
+    if data is None or data == '':
+        return ''
+    if isinstance(data, dict):
+        return json.dumps(data)
+    if isinstance(data, str):
+        return data
+    return convert_column_to_unicode(data)
 
 
 class Challenge(MethodsMixin, db.Model):
@@ -65,7 +86,10 @@ class Challenge(MethodsMixin, db.Model):
         if not raw:
             return raw
         decrypted = decryptPassword(raw)
-        if decrypted and not decrypted.startswith("FAILED TO DECRYPT"):
+        # decryptPassword() returns the sentinel verbatim on failure, so compare
+        # for equality: a prefix match would also discard a legitimately
+        # decrypted value that happens to start with that text.
+        if decrypted and decrypted != FAILED_TO_DECRYPT_PASSWORD:
             return decrypted
         # Legacy unencrypted data or decryption failure - return as-is
         return raw
@@ -125,14 +149,8 @@ class Challenge(MethodsMixin, db.Model):
 
         :param data: The challenge data (string, dict, or other serializable value)
         """
-        if data is None or data == '':
-            self._data = ''
-        elif isinstance(data, dict):
-            self._data = encryptPassword(json.dumps(data))
-        elif isinstance(data, str):
-            self._data = encryptPassword(data)
-        else:
-            self._data = encryptPassword(convert_column_to_unicode(data))
+        normalized = normalize_challenge_data(data)
+        self._data = encryptPassword(normalized) if normalized else ''
 
     def get_data(self):
         if not self.data:
