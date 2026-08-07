@@ -295,7 +295,8 @@ class Audit(AuditBase):
                     else:
                         # All other keys are compared as strings. Only '*' is a wildcard; literal '%' and '_' are
                         # matched literally. A leading '!' negates the condition.
-                        column = getattr(LogEntry, search_key)
+                        raw_column = getattr(LogEntry, search_key)
+                        column = raw_column
                         if search_key in ["date", "startdate"]:
                             # but we cast a column with a DateTime type to an
                             # ISO-format string first
@@ -306,12 +307,13 @@ class Audit(AuditBase):
                         if "*" in search_value:
                             pattern = convert_wildcard_to_sql_like(search_value)
                             if negate:
-                                conditions.append(column.notlike(pattern, escape=SQL_LIKE_ESCAPE))
+                                conditions.append(or_(raw_column.is_(None),
+                                                      column.notlike(pattern, escape=SQL_LIKE_ESCAPE)))
                             else:
                                 conditions.append(column.like(pattern, escape=SQL_LIKE_ESCAPE))
                         else:
                             if negate:
-                                conditions.append(column != search_value)
+                                conditions.append(or_(raw_column.is_(None), column != search_value))
                             else:
                                 conditions.append(column == search_value)
                 except Exception as exx:
