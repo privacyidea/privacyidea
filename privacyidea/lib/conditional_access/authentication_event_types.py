@@ -81,6 +81,20 @@ class AuthEventType(str, Enum):
     # Default fallback, if no auth event was set somewhere, but authentication failed we log this to have failed attempt
     UNKNOWN_FAIL_REASON = "UNKNOWN_FAIL_REASON"
 
+    # --- written by conditional access itself, before any credential check ---------------------------------------
+    # These three classify a request the conditional-access pre-check turned away, which is why they are the only
+    # members no token flow ever produces (see CA_ENFORCEMENT_EVENT_TYPES). Each names the condition that ended the
+    # request, like USER_UNKNOWN or NO_TOKEN above.
+    #
+    # A user lock in force turned the request away. Note the word order: USER_LOCKED is the rejection, while the
+    # LOCK_USER action (in conditional_access_outcome.action_type) is the lock being created.
+    USER_LOCKED = "USER_LOCKED"
+    # A source-IP block in force turned the request away.
+    IP_BLOCKED = "IP_BLOCKED"
+    # A conditional-access policy's DENY action decided this single request. Named after the effect rather than the
+    # action, because DENY is a LockoutAction value stored in the adjacent outcome table.
+    ACCESS_DENIED = "ACCESS_DENIED"
+
     def __str__(self) -> str:
         return self.value
 
@@ -123,7 +137,34 @@ EVENT_TYPE_OUTCOME: dict[AuthEventType, AuthEventOutcome] = {
     AuthEventType.CHALLENGE_DECLINED: AuthEventOutcome.FAILURE,
     AuthEventType.ENROLLMENT_CANCELED_FAIL: AuthEventOutcome.FAILURE,
     AuthEventType.UNKNOWN_FAIL_REASON: AuthEventOutcome.FAILURE,
+    AuthEventType.USER_LOCKED: AuthEventOutcome.FAILURE,
+    AuthEventType.IP_BLOCKED: AuthEventOutcome.FAILURE,
+    AuthEventType.ACCESS_DENIED: AuthEventOutcome.FAILURE,
 }
+
+
+# The event types conditional access writes itself, when its pre-check rejects a request before any credential check.
+#
+# They are deliberately **not trackable** by a policy. Counting them would let a lock feed itself: a locked user's
+# rejected requests would keep the count at or above the threshold, so a timed LOCK_USER with
+# retrigger_above_threshold would refresh itself on every rejection and never expire. A successful login cannot clear
+# it either (since_last_success is unreachable for a locked user, so the count only ever grows), and a DENY policy
+# tracking ACCESS_DENIED would be judging its own prior denials. The legitimate use case - escalate to an IP block
+# after repeated attempts - is a second, higher-threshold stage on the underlying failure events.
+#
+# Excluding them from the vocabulary makes that structural rather than a warning: the policy-selection join in
+# evaluate_lockout_policies can then never match one.
+CA_ENFORCEMENT_EVENT_TYPES: frozenset[AuthEventType] = frozenset({
+    AuthEventType.USER_LOCKED,
+    AuthEventType.IP_BLOCKED,
+    AuthEventType.ACCESS_DENIED,
+})
+
+# The event types a conditional-access policy may count, i.e. everything an authentication attempt itself can produce.
+# This is what the policy CRUD validates against and what the policy editor offers; the authentication log's own
+# event-type endpoint still lists *all* types, because an admin must be able to filter for a rejection.
+TRACKABLE_EVENT_TYPES: list[AuthEventType] = [event_type for event_type in AuthEventType
+                                              if event_type not in CA_ENFORCEMENT_EVENT_TYPES]
 
 
 def outcome_of(event_type: AuthEventType) -> AuthEventOutcome:
@@ -157,7 +198,9 @@ class CountMode(str, Enum):
         return self.value
 
 
-# Request-level precedence, highest signal first.
+# Request-level precedence, highest signal first. Only the event types a token flow can produce appear here: the
+# CA_ENFORCEMENT_EVENT_TYPES classify a request the pre-check rejected before any token logic ran, so they never reach
+# reduce_request_events.
 REQUEST_EVENT_PRECEDENCE: list[AuthEventType] = [
     AuthEventType.NOT_AUTHORIZED,
     AuthEventType.ENROLLMENT_TRIGGERED,

@@ -257,6 +257,11 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
         self.assertEqual("success", by_name["LOGIN_SUCCESS"])
         self.assertEqual("failure", by_name["USER_UNKNOWN"])
         self.assertEqual("pending", by_name["CHALLENGE_TRIGGERED"])
+        # Including the ones conditional access writes for its own rejections: a policy may not count them, but an
+        # admin must be able to filter the log for them.
+        self.assertEqual("failure", by_name["USER_LOCKED"])
+        self.assertEqual("failure", by_name["IP_BLOCKED"])
+        self.assertEqual("failure", by_name["ACCESS_DENIED"])
 
     def test_event_types_accessible_to_user(self):
         self.authenticate_selfservice_user()

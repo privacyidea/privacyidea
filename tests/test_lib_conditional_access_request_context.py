@@ -424,6 +424,18 @@ class ConditionalAccessContextTestCase(MyTestCase):
 
         self.assertEqual(0, get_ca_session().query(ConditionalAccessOutcome).count())
 
+    def test_33b_post_eval_skips_an_event_conditional_access_wrote_itself(self):
+        # Evaluating a rejection would let a lock feed itself: while the user is locked every rejected request would add
+        # to the count. No policy could match one anyway (they are not in the trackable vocabulary), so this only saves
+        # the query - but it keeps the guarantee where the evaluation happens.
+        context = ConditionalAccessContext()
+        context.stage(self._event("alice", AuthEventType.USER_LOCKED))
+        context.flush()
+
+        with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies") as evaluate:
+            self.assertListEqual([], context.run_post_eval())
+        evaluate.assert_not_called()
+
     def test_34_post_eval_records_what_the_engine_returned(self):
         context = ConditionalAccessContext()
         event = context.stage(self._event("alice"))

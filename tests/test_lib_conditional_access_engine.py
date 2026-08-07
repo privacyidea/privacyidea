@@ -376,6 +376,26 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertEqual(1, self._count_attempts([AuthEventType.MFA_FAIL]))  # only a2
         self.assertEqual(1, self._count_attempts([AuthEventType.CHALLENGE_CONTINUED]))  # only a1
 
+    def test_count_attempts_ignores_a_conditional_access_rejection_row(self):
+        # The rejection rows conditional access writes for itself are not outcomes *of* the attempt and must not
+        # classify one. The representative is the latest row by id, so a rejection correlated into an existing attempt
+        # (a client retrying an answered transaction while locked) would otherwise displace the tracked failure with an
+        # untracked type and *remove* an attempt that had already been counted - which would stop an escalation from
+        # reaching its next stage once the lock expired. Excluding the type from the trackable vocabulary cannot help
+        # here: every in-window row of the subject is fetched, whatever its type.
+        self._seed_attempt("a1", [AuthEventType.MFA_FAIL])
+        self.assertEqual(1, self._count_attempts([AuthEventType.MFA_FAIL]))
+
+        self._seed_attempt("a1", [AuthEventType.USER_LOCKED])
+        self.assertEqual(1, self._count_attempts([AuthEventType.MFA_FAIL]))
+
+    def test_count_attempts_of_a_rejection_only_attempt_is_zero(self):
+        # An attempt made up of nothing but rejections contributes nothing, rather than counting as an attempt of an
+        # untracked type.
+        self._seed_attempt("only", [AuthEventType.IP_BLOCKED, AuthEventType.ACCESS_DENIED])
+        self.assertEqual(0, self._count_attempts([AuthEventType.MFA_FAIL]))
+        self.assertEqual(0, self._count_attempts([AuthEventType.IP_BLOCKED]))
+
     def test_count_attempts_combined_types_and_window(self):
         now = utc_now()
         self._seed_attempt("a1", [AuthEventType.MFA_FAIL], timestamp=now)

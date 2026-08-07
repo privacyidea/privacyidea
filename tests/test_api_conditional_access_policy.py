@@ -28,7 +28,9 @@ import json
 
 from werkzeug.test import TestResponse
 
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType,
+                                                                           CA_ENFORCEMENT_EVENT_TYPES,
+                                                                           TRACKABLE_EVENT_TYPES, CountMode)
 from privacyidea.lib.conditional_access.engine import LockoutAction
 from privacyidea.lib.conditional_access.lockout_policy import create_lockout_policy, list_lockout_policies
 from privacyidea.lib.policies.actions import PolicyAction
@@ -297,8 +299,16 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         res = self._request("eventtypes")
         self.assertEqual(200, res.status_code, res.json)
         values = res.json["result"]["value"]
-        self.assertListEqual([event_type.value for event_type in AuthEventType], values)
+        # The *trackable* subset, in definition order: what a policy may count.
+        self.assertListEqual([event_type.value for event_type in TRACKABLE_EVENT_TYPES], values)
         self.assertIn(str(AuthEventType.PIN_FAIL), values)
+
+    def test_list_event_types_omits_what_conditional_access_writes_itself(self):
+        # Offering these would invite a policy that counts its own rejections, which is a lock that feeds itself. The
+        # authentication log's own event-type list still has them, so an admin can filter for a rejection.
+        values = self._request("eventtypes").json["result"]["value"]
+        for event_type in CA_ENFORCEMENT_EVENT_TYPES:
+            self.assertNotIn(str(event_type), values)
 
     def test_list_action_types(self):
         res = self._request("actiontypes")

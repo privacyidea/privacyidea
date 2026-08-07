@@ -17,6 +17,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
+                                                                           CA_ENFORCEMENT_EVENT_TYPES,
                                                                            REQUEST_EVENT_PRECEDENCE,
                                                                            reduce_request_events,
                                                                            AuthEventOutcome, EVENT_TYPE_OUTCOME,
@@ -159,7 +160,9 @@ class RequestEventPrecedenceTestCase(MyTestCase):
 
     def test_01_precedence_covers_every_event_type(self):
         # Every AuthEventType must have a precedence rank
-        self.assertSetEqual(set(AuthEventType), set(REQUEST_EVENT_PRECEDENCE),
+        # Only the event types a token flow can produce need a precedence: the conditional-access rejections classify a
+        # request that was turned away before any token logic ran, so they never reach reduce_request_events.
+        self.assertSetEqual(set(AuthEventType) - CA_ENFORCEMENT_EVENT_TYPES, set(REQUEST_EVENT_PRECEDENCE),
                             "Add missing AuthEventType REQUEST_EVENT_PRECEDENCE list or remove unexisting ones from it.")
         # No event is listed twice (which would make its rank ambiguous).
         self.assertEqual(len(REQUEST_EVENT_PRECEDENCE), len(set(REQUEST_EVENT_PRECEDENCE)),

@@ -29,7 +29,8 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any
 
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType,
+                                                                           CA_ENFORCEMENT_EVENT_TYPES)
 from privacyidea.lib.conditional_access.authentication_log import (PendingAuthEvent, update_authentication_events,
                                                                    write_authentication_events)
 from privacyidea.lib.conditional_access.outcome_log import record_outcomes
@@ -243,11 +244,18 @@ class ConditionalAccessContext:
         it judged - which exists because :meth:`flush` ran first. Recording is guarded internally, so a failure there
         costs the history entry and nothing else.
 
-        NOTE: should conditional access ever log events of its own (a rejection by the lockout pre-check, say), those
-        event types must be filtered out here - evaluating them would let a lock feed itself.
+        The event types conditional access writes for its own rejections are skipped: evaluating them would let a lock
+        feed itself, since a locked user's rejected requests would keep the count above the threshold forever. They are
+        also absent from the trackable vocabulary, so no policy could match one anyway - this saves the query and keeps
+        the guarantee readable where the evaluation happens
+        (:data:`~privacyidea.lib.conditional_access.authentication_event_types.CA_ENFORCEMENT_EVENT_TYPES`).
         """
         event = self.latest
         if event is None or event.event_type == self._evaluated_as:
+            return []
+        if event.event_type in CA_ENFORCEMENT_EVENT_TYPES:
+            log.debug(f"Not evaluating conditional-access policies for {event.event_type}: this request was rejected "
+                      f"by conditional access itself.")
             return []
         self._evaluated_as = event.event_type
         # Deferred import: the engine pulls in the ORM models, so importing it at module level would risk an

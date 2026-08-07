@@ -29,7 +29,9 @@ from sqlalchemy import func, select
 from sqlalchemy.sql import ColumnElement
 
 from privacyidea.lib import _
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType,
+                                                                           CA_ENFORCEMENT_EVENT_TYPES,
+                                                                           CountMode)
 from privacyidea.lib.conditional_access.authentication_log import _naive_utc
 from privacyidea.lib.conditional_access.outcome_log import outcome_for_stage
 from privacyidea.lib.conditional_access.session import get_ca_session, guarded_write
@@ -356,6 +358,13 @@ def _count_matching_attempts(rows: Sequence[AuthenticationLog], tracked_types: s
     # First pass: aggregate every row into its attempt — the attempt's latest (highest-id) row, whether it succeeded,
     # and the newest LOGIN_SUCCESS row id (the reset point for since_last_success).
     for row in rows:
+        if row.event_type in CA_ENFORCEMENT_EVENT_TYPES:
+            # A row conditional access wrote for its own rejection is not an outcome *of* the attempt and must not
+            # classify one: the representative is the latest row by id, so a rejection correlated into an existing
+            # attempt (a client retrying an answered transaction while locked) would displace a tracked failure with an
+            # untracked type and *remove* an attempt that had already been counted - which would stop an escalation
+            # from reaching its next stage once the lock expired.
+            continue
         if row.event_type == AuthEventType.LOGIN_SUCCESS:
             succeeded.add(row.attempt_id)
             last_success_id = max(last_success_id, row.id)
@@ -379,12 +388,17 @@ def _count_attempts(subject: Sequence[ColumnElement[bool]], event_types: list[st
     Count whole authentication *attempts* matching *subject* whose representative event is in *event_types*, within the
     sliding window ``[window_end - window_seconds, window_end]`` (``PER_ATTEMPT``).
 
-    **All** in-window rows of the subject are fetched (every event type, not just the tracked ones - a non-tracked
-    ``LOGIN_SUCCESS`` must be able to supersede a tracked failure within its attempt), then grouped by ``attempt_id``
-    and reduced to one representative each (see :func:`_count_matching_attempts`). Only the *subject* + *timestamp*
-    predicate hits the index, so callers document the matching ``*_time`` index. The rows are the small in-window set
-    for one subject, so fetching full :class:`AuthenticationLog` objects (rather than columns) is negligible and keeps
-    the reduction working on named attributes.
+    Every in-window row of the subject is fetched, **whatever its event type** (a non-tracked ``LOGIN_SUCCESS`` must be
+    able to supersede a tracked failure within its attempt), then grouped by ``attempt_id`` and reduced to one
+    representative each (see :func:`_count_matching_attempts`). Only the *subject* + *timestamp* predicate hits the
+    index, so callers document the matching ``*_time`` index. The rows are the small in-window set for one subject, so
+    fetching full :class:`AuthenticationLog` objects (rather than columns) is negligible and keeps the reduction working
+    on named attributes.
+
+    The one exception is :data:`CA_ENFORCEMENT_EVENT_TYPES`: those rows classify a request conditional access itself
+    rejected, they can never be an attempt's representative (see :func:`_count_matching_attempts`), and excluding them
+    here rather than in Python means they cost neither a row over the wire nor an ORM object. It is an extra predicate
+    on the same index range scan, not a different plan.
     """
     window_end = _naive_utc(window_end) if window_end is not None else utc_now()
     window_start = window_end - timedelta(seconds=window_seconds)
@@ -392,7 +406,8 @@ def _count_attempts(subject: Sequence[ColumnElement[bool]], event_types: list[st
         select(AuthenticationLog)
         .where(*subject,
                AuthenticationLog.timestamp >= window_start,
-               AuthenticationLog.timestamp <= window_end)).all()
+               AuthenticationLog.timestamp <= window_end,
+               AuthenticationLog.event_type.notin_(sorted(str(event) for event in CA_ENFORCEMENT_EVENT_TYPES)))).all()
     return _count_matching_attempts(rows, set(event_types), since_last_success=since_last_success)
 
 
