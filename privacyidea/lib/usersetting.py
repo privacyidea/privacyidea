@@ -19,11 +19,12 @@
 Per-principal frontend settings.
 
 This module stores and serves the WebUI settings of whoever is logged in
-(a local admin or a resolver user). The backend is a pass-through store: it
-validates a document's shape and size on write and serves it back verbatim
-on read. It does not interpret the settings and does not supply default
-*values* -- the WebUI owns the defaults, so an absent key means "not
-customized, use the frontend default".
+(a local admin or a resolver user). The backend is a pass-through store for
+the *values*: on write it checks a document's shape, size and top-level keys
+(see :data:`KNOWN_SETTING_KEYS`), and on read it serves it back verbatim. It
+does not interpret the settings and does not supply default values -- the
+WebUI owns the defaults, so an absent key means "not customized, use the
+frontend default".
 
 The data lives in the ``usersetting`` table, one JSON document per
 principal. See :class:`privacyidea.models.usersetting.UserSetting` for the
@@ -48,32 +49,26 @@ log = logging.getLogger(__name__)
 SUBJECT_LOCAL_ADMIN = "local_admin"
 SUBJECT_USER = "user"
 
-# Hard cap on the serialized settings document, so the column cannot be abused
-# as arbitrary per-principal storage. Generous enough for a dashboard layout
-# plus a pinned-item list, which are the largest expected settings.
+# Hard cap on the serialized document, so the column cannot be abused as
+# arbitrary per-principal storage.
 MAX_SETTINGS_BYTES = 16384
 
-# pi.cfg / environment option letting admins extend the set of accepted setting
-# keys without a code change, e.g. PI_USER_SETTINGS_ALLOWED_KEYS = ["foo", "bar"].
-# Accepts a list (pi.cfg) or a comma-separated string (environment variable).
-# Placeholder for now: get_allowed_keys() is wired up but not yet enforced (see
-# the TODO in validate_user_settings).
 USER_SETTINGS_ALLOWED_KEYS_CONFIG = "PI_USER_SETTINGS_ALLOWED_KEYS"
 
-# Registry of the top-level setting keys the WebUI may store. Only used to seed
-# the (not-yet-enforced) allow-list; the backend stores the *values* verbatim
-# and never validates their structure. Admins can add further accepted keys via
-# PI_USER_SETTINGS_ALLOWED_KEYS without touching this registry.
-#
-# NOTE: these names are PLACEHOLDERS reflecting the intended settings. The
-# frontend team defines the real set; do not treat them as a committed API yet.
+# These are the keys the WebUI writes, as declared by the ``UserSettingKey`` type in
+# static_new/src/app/services/user-settings/user-settings.service.ts. A setting that
+# is added there has to be added here as well.
 KNOWN_SETTING_KEYS = {
     "theme",
-    "starting_page",
-    "token_columns",
+    "locale",
     "dashboard",
-    "pinned_items",
 }
+
+# A rejection message echoes the offending keys and is written to the audit log,
+# whose ``info`` column holds 500 characters. PI_AUDIT_SQL_TRUNCATE is not
+# enabled by default, and without it an oversized entry is dropped instead of
+# being cut, so the echoed part is capped here.
+MAX_REPORTED_KEYS_LENGTH = 200
 
 
 def get_allowed_keys() -> set:
@@ -147,14 +142,39 @@ class SettingsSubject:
                    user_id=user.uid or "", resolver=user.resolver or "", realm_id=user.realm_id)
 
 
-def validate_user_settings(settings: dict) -> None:
+def _describe_unknown_keys(unknown: list) -> str:
+    """
+    Render the unknown keys for a rejection message, staying within
+    :data:`MAX_REPORTED_KEYS_LENGTH`.
+
+    Only whole keys are listed, so the message never shows a half key that reads
+    like a name the caller actually sent. A single key that is longer than the
+    budget is cut, because there is nothing whole left to keep.
+    """
+    packed = ""
+    for key in unknown:
+        candidate = f"{packed}, {key}" if packed else key
+        if len(candidate) > MAX_REPORTED_KEYS_LENGTH:
+            if not packed:
+                return f"{key[:MAX_REPORTED_KEYS_LENGTH]}..."
+            return f"{packed}, ... ({len(unknown)} keys in total)"
+        packed = candidate
+    return packed
+
+
+def validate_user_settings(settings: dict, check_keys: bool = True) -> None:
     """
     Validate a settings document before it is stored.
 
-    For now this only enforces structure: the document must be a JSON object,
-    be JSON-serializable, and stay within :data:`MAX_SETTINGS_BYTES`. Any key
-    with any value is accepted so the frontend can iterate on the setting set
-    without a backend change.
+    The document must be a JSON object, be JSON-serializable, stay within
+    :data:`MAX_SETTINGS_BYTES`, and carry only keys from
+    :func:`get_allowed_keys`. Values are not validated -- the backend remains
+    a pass-through store.
+
+    :param check_keys: whether to enforce the key allow-list. With ``False``
+        only the structure and the size are checked, so that a key which was
+        accepted when it was written does not block later writes of unrelated
+        settings.
 
     Raises :class:`ParameterError` on the first problem found.
     """
@@ -169,10 +189,11 @@ def validate_user_settings(settings: dict) -> None:
         raise ParameterError(f"The settings must be JSON-serializable: {error}")
     if len(serialized.encode("utf-8")) > MAX_SETTINGS_BYTES:
         raise ParameterError(f"The settings exceed the maximum size of {MAX_SETTINGS_BYTES} bytes.")
-    # TODO: Enforce the top-level key allow-list once the frontend has settled
-    #  the set of settings: reject any key not in get_allowed_keys()
-    #  (KNOWN_SETTING_KEYS + PI_USER_SETTINGS_ALLOWED_KEYS). Values stay
-    #  unvalidated -- the backend remains a pass-through store.
+    if check_keys:
+        allowed = get_allowed_keys()
+        unknown = sorted(str(key) for key in settings if key not in allowed)
+        if unknown:
+            raise ParameterError(f"Unknown setting key: {_describe_unknown_keys(unknown)}.")
 
 
 def _select_for_subject(subject: SettingsSubject):
@@ -226,7 +247,7 @@ def set_user_settings(subject: SettingsSubject, settings: dict, replace: bool = 
     new_settings = _merge_settings(row.settings if row else None, settings, replace)
     # Re-validate the full document, not just the incoming delta, so the size
     # cap cannot be bypassed by accumulating keys across repeated partial writes.
-    validate_user_settings(new_settings)
+    validate_user_settings(new_settings, check_keys=False)
     if not new_settings:
         # Store absence rather than an empty document (absent == empty).
         if row is not None:
@@ -250,7 +271,7 @@ def set_user_settings(subject: SettingsSubject, settings: dict, replace: bool = 
         if row is None:
             raise
         row.settings = _merge_settings(row.settings, settings, replace)
-        validate_user_settings(row.settings)
+        validate_user_settings(row.settings, check_keys=False)
         row.save()
     return row.settings or {}
 

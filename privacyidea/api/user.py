@@ -199,11 +199,9 @@ def set_user_settings_api():
     """
     Store WebUI settings for the logged-in principal.
 
-    The settings must be a JSON object and stay within the server-side size
-    limit; key and value-type enforcement is not active yet, so any keys are
-    currently accepted (see ``PI_USER_SETTINGS_ALLOWED_KEYS``). By default the
-    given keys are merged into the existing settings; pass ``replace=1`` to
-    replace the whole document. Always scoped to the caller's own JWT identity.
+    By default the given keys are merged into the existing settings; pass
+    ``replace=1`` to replace the whole document. The values are stored as given
+    and are not validated. Always scoped to the caller's own JWT identity.
 
     Requires authentication (any role).
 
@@ -211,8 +209,9 @@ def set_user_settings_api():
     :jsonparam replace: if true, replace the whole document instead of merging.
     :status 200: the stored settings object in ``result.value`` -- the same
         shape :http:get:`/user/settings` returns.
-    :status 400: the settings are not a JSON object, not JSON-serializable, or
-        exceed the maximum size.
+    :status 400: the settings are not a JSON object, contain a key that is not
+        known (see ``PI_USER_SETTINGS_ALLOWED_KEYS``), are not
+        JSON-serializable, or exceed the maximum size.
     """
     settings = get_required(request.all_data, "settings")
     replace = is_true(get_optional(request.all_data, "replace"))

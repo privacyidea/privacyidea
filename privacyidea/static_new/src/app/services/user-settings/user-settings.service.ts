@@ -24,6 +24,11 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { catchError, map, Observable, of, shareReplay, tap, throwError } from "rxjs";
 
+/**
+ * The settings the backend accepts. It rejects any other top-level key, so a new
+ * setting has to be added to KNOWN_SETTING_KEYS in privacyidea/lib/usersetting.py
+ * as well.
+ */
 export type UserSettingKey = "theme" | "locale" | "dashboard";
 
 export type UserSettings = Partial<Record<UserSettingKey, unknown>>;
