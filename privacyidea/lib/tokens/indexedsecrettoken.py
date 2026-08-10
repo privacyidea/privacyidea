@@ -279,7 +279,7 @@ class IndexedSecretTokenClass(TokenClass):
                     # Add the challenge to the options for check_otp
                     options["challenge"] = challengeobject.challenge
                     challenge_data = challengeobject.get_data()
-                    position_str = challenge_data["positions"]
+                    position_str = challenge_data.get("positions")
                     options["data"] = [int(c) for c in position_str.split(",")]
                     # Now see if the answer is the right indexes
                     secret_string = to_unicode(self.token.get_otpkey().getKey())

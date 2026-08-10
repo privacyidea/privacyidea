@@ -416,7 +416,7 @@ class FourEyesTokenClass(TokenClass):
                 if challengeobject.is_valid():
                     # challenge is still valid
                     challenge_data = challengeobject.get_data()
-                    used_tokens = challenge_data.get("used_tokens", challenge_data)
+                    used_tokens = challenge_data.get("used_tokens", {})
                     remaining_realms = self._get_remaining_realms(used_tokens)
                     r_success = self._authenticate_remaining_realms(passw, remaining_realms, used_tokens, options)
 

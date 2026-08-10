@@ -364,7 +364,10 @@ class ChallengeDTO:
         """
         if not self.data:
             return {}
-        return json.loads(self.data)
+        try:
+            return json.loads(self.data)
+        except (json.JSONDecodeError, ValueError):
+            return {}
 
     def get_otp_status(self) -> tuple[int, bool]:
         return self.received_count, self.otp_valid

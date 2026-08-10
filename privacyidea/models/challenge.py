@@ -64,7 +64,11 @@ class Challenge(MethodsMixin, db.Model):
         raw = self._data
         if not raw:
             return raw
-        return decryptPassword(raw)
+        decrypted = decryptPassword(raw)
+        if decrypted and not decrypted.startswith("FAILED TO DECRYPT"):
+            return decrypted
+        # Legacy unencrypted data or decryption failure - return as-is
+        return raw
 
     @data.setter
     def data(self, value):
@@ -113,14 +117,13 @@ class Challenge(MethodsMixin, db.Model):
         """
         return is_challenge_open(self.is_valid(), self.otp_valid, self.get_session())
 
-    def set_data(self, data):
+    def set_data(self, data: dict | None):
         """
         Set the internal data of the challenge.
         The data is encrypted before being stored in the database since it
         may contain OTP values.
 
         :param data: The challenge data. Must be a dict (or None/empty).
-        :type data: dict or None
         """
         if not data:
             self._data = ''
@@ -134,9 +137,13 @@ class Challenge(MethodsMixin, db.Model):
         :return: The challenge data as a dict. Returns ``{}`` if no data is stored.
         :rtype: dict
         """
-        if not self.data:
+        data = self.data
+        if not data:
             return {}
-        return json.loads(self.data)
+        try:
+            return json.loads(data)
+        except (json.JSONDecodeError, ValueError):
+            return {}
 
     def get_session(self):
         return self.session
