@@ -95,6 +95,15 @@ class TestMigrationC3d4e5f6a7b8(MigrationTestBase):
         finally:
             engine.dispose()
 
+        # Downgrade must not crash; deleted rows are NOT restored
+        self._downgrade()
+
+        engine = self._engine()
+        try:
+            assert self._count_challenges(engine) == 0
+        finally:
+            engine.dispose()
+
     def test_upgrade_on_empty_table(self, flask_app):
         """upgrade() must not fail when the challenge table is already empty."""
         engine = self._engine()
@@ -113,33 +122,3 @@ class TestMigrationC3d4e5f6a7b8(MigrationTestBase):
         finally:
             engine.dispose()
 
-    def test_downgrade_is_noop(self, flask_app):
-        """downgrade() is a no-op — the table remains empty (challenges are ephemeral)."""
-        engine = self._engine()
-        try:
-            self._load_seed_and_upgrade_to_parent(engine)
-            self._insert_challenges(engine, [
-                {
-                    "id": 9010,
-                    "transaction_id": "txn_round_001",
-                    "data": "some_data",
-                    "challenge": "",
-                    "session": "",
-                    "serial": "SER001",
-                    "received_count": 0,
-                    "otp_valid": False,
-                },
-            ])
-        finally:
-            engine.dispose()
-
-        self._upgrade()
-        self._downgrade()
-
-        # After downgrade the table still exists (schema unchanged) but
-        # the deleted rows are NOT restored — challenges are ephemeral.
-        engine = self._engine()
-        try:
-            assert self._count_challenges(engine) == 0
-        finally:
-            engine.dispose()
