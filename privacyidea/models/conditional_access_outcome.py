@@ -66,8 +66,9 @@ class ConditionalAccessOutcome(db.Model):
     lockout_policies`` away, so nothing has to be written when one is deleted. ``auth_log_id``, in contrast, cascades:
     the history of a request is deleted with the request.
 
-    There is deliberately **no stage id**: :func:`~privacyidea.lib.conditional_access.lockout_policy.update_lockout_policy`
-    replaces a policy's stages as a whole, so every edit gives them fresh ids and a stored one would dangle - the same
+    There is deliberately **no stage id**:
+    :func:`~privacyidea.lib.conditional_access.lockout_policy.update_lockout_policy` replaces a policy's stages as a
+    whole, so every edit gives them fresh ids and a stored one would dangle - the same
     reason ``user_lockout_state.last_stage_triggered`` is reset by such an edit. The stage is identified by its natural
     key instead: ``(policy_id, threshold)`` is unique (``uq_lockout_stage_policy_threshold``) and survives edits, and
     the threshold is what a human reads anyway.

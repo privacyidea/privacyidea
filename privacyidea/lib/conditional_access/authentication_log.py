@@ -22,7 +22,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
 
-from sqlalchemy import and_, delete, false, func, or_, select
+from sqlalchemy import and_, false, func, or_, select
 from sqlalchemy.orm import InstrumentedAttribute, selectinload
 from sqlalchemy.sql import ColumnElement
 

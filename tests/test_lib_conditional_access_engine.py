@@ -26,10 +26,6 @@ from datetime import datetime, timedelta, timezone
 from email import message_from_string
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
-from privacyidea.lib.conditional_access.authentication_log import (
-    log_authentication_event,
-    get_authentication_log_event,
-)
 from privacyidea.lib.conditional_access.engine import (
     AccessDecision,
     LockoutAction,

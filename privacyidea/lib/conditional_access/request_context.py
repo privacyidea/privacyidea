@@ -174,9 +174,9 @@ class ConditionalAccessContext:
         Write the outcomes carried by staged events whose row now exists, and clear them so a later flush does not
         record them twice.
 
-        An outcome is only meaningful next to the request it belongs to, so one whose event has no row (the write failed)
-        stays on the event and is retried by the next flush. The list is emptied in place: assigning to the event would
-        mark it "changed" and provoke a pointless UPDATE of columns that did not move.
+        An outcome is only meaningful next to the request it belongs to, so one whose event has no row (the write
+        failed) stays on the event and is retried by the next flush. The list is emptied in place: assigning to the
+        event would mark it "changed" and provoke a pointless UPDATE of columns that did not move.
         """
         recorded = True
         for event in self.pending:

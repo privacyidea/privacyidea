@@ -886,7 +886,8 @@ def evaluate_lockout_policies(user: "User", event_type: AuthEventType | None, so
     :func:`_upsert_user_lockout_state`).
 
     Alongside the notices, every action that actually ran (or, in dry run, would have run) is returned as a
-    :class:`~privacyidea.models.conditional_access_outcome.ConditionalAccessOutcome` for the caller to record as this request's history.
+    :class:`~privacyidea.models.conditional_access_outcome.ConditionalAccessOutcome` for the caller to record as this
+    request's history.
     The engine deliberately does not write them: it never sees the id of the authentication-log row they belong to.
 
     :param user: the authenticating user; ``user``-target policies need it

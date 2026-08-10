@@ -278,7 +278,7 @@ class ConditionalAccessContextTestCase(MyTestCase):
         # The evaluation reads the classification off the event, so a reclassification cannot leave it evaluating an
         # outcome that no longer holds - there is no second copy to keep in step.
         context = ConditionalAccessContext()
-        event = context.stage(self._event("alice", AuthEventType.LOGIN_SUCCESS))
+        context.stage(self._event("alice", AuthEventType.LOGIN_SUCCESS))
         context.principal = AuthPrincipal(user=User("cornelius", self.realm1))
         context.source_ip = "10.0.0.1"
         context.flush()
@@ -375,7 +375,8 @@ class ConditionalAccessContextTestCase(MyTestCase):
 
     @staticmethod
     def _make_outcome(action_type: str = LockoutAction.LOCK_USER) -> ConditionalAccessOutcome:
-        return ConditionalAccessOutcome(action_type=str(action_type), policy_id=1, policy_name="p", threshold=3, event_count=3)
+        return ConditionalAccessOutcome(action_type=str(action_type), policy_id=1, policy_name="p", threshold=3,
+                                        event_count=3)
 
     def test_30_pre_auth_outcomes_wait_for_the_first_staged_event(self):
         # The pre-auth decision runs before anything is logged, so its outcomes have no row yet. They are buffered on

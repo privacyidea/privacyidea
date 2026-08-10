@@ -21,7 +21,6 @@
 import os
 from datetime import datetime
 from datetime import timedelta
-from datetime import timezone
 from typing import Any
 
 from mock import mock
@@ -50,7 +49,6 @@ from privacyidea.models import (Token,
                                 Tokengroup, TokenTokengroup, Serviceid, TokenInfo,
                                 LockoutPolicy, LockoutPolicyStage, LockoutStageAction,
                                 AuthenticationLog, ConditionalAccessOutcome)
-from privacyidea.models.utils import utc_now
 from .base import MyTestCase
 
 
