@@ -1,34 +1,24 @@
-This directory contains config information for building packages for different
-deployment strategies.
+This directory contains deployment files that are consumed from within this
+repository.
 
-debian
+Note that the Debian/Ubuntu packages are *not* built from here. The packaging
+sources, and the webserver, uWSGI, cron and `pi.cfg` templates that the
+`privacyidea-apache2` / `privacyidea-nginx` packages install, live in their own
+repository: https://github.com/NetKnights-GmbH/ubuntu
+
+docker
 ======
-This directory contains the privacyidea config file that is used when
-deploying privacyidea-nginx or privacyidea-apache2.
-
-debian-ubuntu
-=============
-
-To deploy on Ubuntu normal packages are built via "make builddeb".
-This directory contains the /debian/ directory to build all packages, which
-will be installed into the system.
-
-debian-virtualenv
-=================
-
-To deploy on Wheezy one package is built, that installs a virtualenv to
-/opt/privacyidea.
-This directory contains the /debian/ directory to build this virtualenv package.
-
-apache
-======
-This directory contains the config files for deploying privacyidea-apache.deb
-
-nginx + uwsgi
-=============
-These directories contain the config files for deploying privacyidea-nginx.deb
+Dockerfile, Compose setup and helper scripts for the single-node container
+deployment. See `docker/README.Docker.md`. Built and smoke-tested by the
+`docker-build` GitHub workflow.
 
 privacyidea
 ===========
-This directory contains some config examples to be deployed from setup.py
-into the python package.
+RADIUS dictionaries and the `NetKnights.pem` subscription certificate. Copied
+into `/etc/privacyidea/` by the Dockerfile; the dictionaries are also used by
+the test suite.
+
+dev
+===
+Fixtures for the local development stack, e.g. the LDAP seed data mounted by
+`compose-dev.yml`.

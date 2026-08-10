@@ -19,7 +19,6 @@
 
 import {
   Component,
-  ElementRef,
   OnDestroy,
   OnInit,
   ViewChild,
@@ -30,9 +29,8 @@ import {
   linkedSignal,
   signal
 } from "@angular/core";
-import { MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatInput } from "@angular/material/input";
-import { MatPaginator, PageEvent } from "@angular/material/paginator";
+import { MatPaginator } from "@angular/material/paginator";
 import { MatFormField } from "@angular/material/select";
 import { MatTableDataSource } from "@angular/material/table";
 import { Router } from "@angular/router";
@@ -67,7 +65,7 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
-import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { formatLocalDateTime } from "@utils/date-format.utils";
 
@@ -147,28 +145,6 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
   isEditingInfo = signal(false);
   tokenSerial = this.tokenService.tokenSerial;
   containerSerial = this.containerService.containerSerial;
-  showOnlyTokenInContainer = this.tokenService.showOnlyTokenInContainer;
-  tokenResource = this.tokenService.tokenResource;
-  pageIndex = this.tokenService.pageIndex;
-  pageSize = this.tokenService.pageSize;
-  tokenDataSource: WritableSignal<MatTableDataSource<TokenDetails>> = linkedSignal({
-    source: this.tokenService.tokenResourceValue,
-    computation: (tokenResourceValue, previous) => {
-      if (tokenResourceValue) {
-        return new MatTableDataSource(tokenResourceValue.tokens);
-      }
-      return previous?.value ?? new MatTableDataSource();
-    }
-  });
-  total: WritableSignal<number> = linkedSignal({
-    source: this.tokenService.tokenResourceValue,
-    computation: (tokenResourceValue, previous) => {
-      if (tokenResourceValue) {
-        return tokenResourceValue.count;
-      }
-      return previous?.value ?? 0;
-    }
-  });
   containerDetailResource = this.containerService.containerDetailsResource;
   containerDetails: WritableSignal<ContainerDetailData> = linkedSignal({
     source: this.containerDetailResource.value,
@@ -217,13 +193,6 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
     this.previousPageSize = this.tokenService.pageSize();
     this.tokenService.pageSize.set(5);
 
-    effect(() => {
-      this.showOnlyTokenInContainer();
-      // do not focus while in-container tokens are shown, to keep the hint visible
-      if (this.filterHTMLInputElement && !this.showOnlyTokenInContainer()) {
-        this.filterHTMLInputElement.nativeElement.focus();
-      }
-    });
     effect(() => {
       if (!this.containerDetailResource.hasValue()) return;
       const res = this.containerDetailResource.value();
@@ -351,10 +320,6 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
       this.editRegistry.anyEditing()
     );
   });
-  @ViewChild("filterHTMLInputElement")
-  filterHTMLInputElement!: ElementRef<HTMLInputElement>;
-  @ViewChild("tokenAutoTrigger", { read: MatAutocompleteTrigger })
-  tokenAutoTrigger!: MatAutocompleteTrigger;
   isEditableElement(key: string) {
     if (key === "description" && this.authService.actionAllowed("container_description")) {
       return true;
@@ -425,15 +390,6 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
         this.containerDetailResource.reload();
       }
     });
-  }
-
-  onPageEvent(event: PageEvent) {
-    this.tokenService.eventPageSize.set(event.pageSize);
-    this.pageIndex.set(event.pageIndex);
-    setTimeout(() => {
-      this.filterHTMLInputElement.nativeElement.focus();
-      this.tokenAutoTrigger.openPanel();
-    }, 0);
   }
 
   addTokenToContainer(option: TokenOption) {
