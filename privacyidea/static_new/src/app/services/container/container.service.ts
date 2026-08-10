@@ -216,6 +216,7 @@ export interface ContainerServiceInterface extends FilterableTableServiceInterfa
   selectedContainerType: WritableSignal<ContainerType | undefined>;
   containerDetailsResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined>;
   containerDetails: WritableSignal<ContainerDetails>;
+  supportedTokenTypes: Signal<string[]>;
   templateComparison: WritableSignal<TemplateComparisonResult | null>;
   addToken: (tokenSerial: string, containerSerial: string) => Observable<PiResponse<boolean>>;
   removeToken: (tokenSerial: string, containerSerial: string) => Observable<PiResponse<boolean>>;
@@ -555,6 +556,7 @@ export class ContainerService extends FilterableTableService implements Containe
     const onAllowedRoute =
       this.contentService.onContainers() ||
       this.contentService.onContainersCreate() ||
+      this.contentService.onContainersDetails() ||
       this.contentService.onContainersWizard() ||
       this.contentService.onTokensEnrollment() ||
       this.contentService.onTokenDetails();
@@ -631,6 +633,11 @@ export class ContainerService extends FilterableTableService implements Containe
       if (!containerDetail) return source.isLoading ? (previous?.value ?? empty) : empty;
       return containerDetail;
     }
+  });
+
+  supportedTokenTypes = computed<string[]>(() => {
+    const containerType = this.containerDetails().containers[0]?.type;
+    return this.containerTypeOptions().find((type) => type.containerType === containerType)?.token_types ?? [];
   });
 
   addToken(tokenSerial: string, containerSerial: string): Observable<PiResponse<boolean>> {

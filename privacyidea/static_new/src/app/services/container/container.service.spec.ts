@@ -906,6 +906,34 @@ describe("ContainerService", () => {
     });
   });
 
+  describe("supportedTokenTypes", () => {
+    const setContainerType = (type: string) => {
+      (containerService as unknown as { containerTypeOptions: WritableSignal<ContainerType[]> }).containerTypeOptions =
+        signal([
+          { containerType: "typeA", description: "Type A", token_types: ["tt1", "tt2"] },
+          { containerType: "typeB", description: "Type B", token_types: ["tt3"] }
+        ]);
+      containerService.containerDetails.set({
+        count: 1,
+        containers: [{ serial: "c1", type, realms: [], states: [], tokens: [], users: [] }] as ContainerDetailData[]
+      });
+    };
+
+    it("returns the token types of the container type of the shown container", () => {
+      setContainerType("typeA");
+      expect(containerService.supportedTokenTypes()).toEqual(["tt1", "tt2"]);
+    });
+
+    it("returns [] for an unknown container type", () => {
+      setContainerType("unknown");
+      expect(containerService.supportedTokenTypes()).toEqual([]);
+    });
+
+    it("returns [] when no container is shown", () => {
+      expect(containerService.supportedTokenTypes()).toEqual([]);
+    });
+  });
+
   describe("compatibleTypes and containersForTokenType", () => {
     let containerTypeOptionsSignal: WritableSignal<ContainerType[]>;
     let compatibleWithSelectedTokenTypeSignal: WritableSignal<string>;

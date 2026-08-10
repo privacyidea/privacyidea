@@ -152,21 +152,32 @@ function toParamValue(key: string, value: string): string {
   return `*${value}*`;
 }
 
-// A single token type maps to the `type` query param, multiple to `type_list`.
-function toTypeParams(filterEntries: [string, string][]): Record<string, string> {
-  const filterValues = new Map(filterEntries);
-  const types = [
-    ...StringUtils.splitFilterList(filterValues.get("type")),
-    ...StringUtils.splitFilterList(filterValues.get("type_list"))
-  ];
-  const uniqueTypes = Array.from(new Set(types));
-  if (uniqueTypes.length === 1) {
-    return { type: `*${uniqueTypes[0]}*` };
+// A single typed token type maps to the `type` query param, multiple to `type_list`. A hidden
+// `type_list` is the set of types the route allows at all, so it is sent as its own param and
+// the backend ands both clauses. Several typed types share the param with the allowed set and
+// are therefore narrowed down to it.
+function toTypeParams(filter: FilterValue): Record<string, string> {
+  const allowedTypes = StringUtils.splitFilterList(filter.hiddenFilterMap.get("type_list"));
+  const typedTypes = Array.from(
+    new Set([
+      ...StringUtils.splitFilterList(filter.filterMap.get("type")),
+      ...StringUtils.splitFilterList(filter.filterMap.get("type_list"))
+    ])
+  );
+  const params: Record<string, string> = {};
+  if (allowedTypes.length > 0) {
+    params["type_list"] = allowedTypes.join(",");
   }
-  if (uniqueTypes.length > 1) {
-    return { type_list: uniqueTypes.join(",") };
+  if (typedTypes.length === 1) {
+    params["type"] = `*${typedTypes[0]}*`;
+  } else if (typedTypes.length > 1) {
+    const narrowedTypes =
+      allowedTypes.length > 0 ? typedTypes.filter((type) => allowedTypes.includes(type)) : typedTypes;
+    if (narrowedTypes.length > 0) {
+      params["type_list"] = narrowedTypes.join(",");
+    }
   }
-  return {};
+  return params;
 }
 
 export interface Tokens {
@@ -498,8 +509,8 @@ export class TokenService extends FilterableTableService implements TokenService
   override readonly filterParams = computed<Record<string, string>>(
     () => {
       const allowed = [...this.allFilterKeys(), "infokey", "infovalue"];
-      const filterEntries = this.activeFilter().allEntries;
-      const entries = filterEntries
+      const activeFilter = this.activeFilter();
+      const entries = activeFilter.allEntries
         // Filter unknown keys, token types are handled by toTypeParams
         .filter(([key]) => allowed.includes(key) && key !== "type" && key !== "type_list")
         // Normalize values
@@ -508,7 +519,7 @@ export class TokenService extends FilterableTableService implements TokenService
         .filter(([key, v]) => (key === "container_serial" ? true : StringUtils.validFilterValue(v)))
         // Convert to query param values
         .map(([key, v]) => [key, toParamValue(key, v)] as const);
-      return { ...Object.fromEntries(entries), ...toTypeParams(filterEntries) };
+      return { ...Object.fromEntries(entries), ...toTypeParams(activeFilter) };
     },
     { equal: filterParamsEqual }
   );
