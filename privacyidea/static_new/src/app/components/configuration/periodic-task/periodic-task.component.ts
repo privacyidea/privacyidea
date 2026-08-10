@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, ElementRef, inject, OnInit, signal, ViewChild } from "@angular/core";
-import { toObservable, toSignal } from "@angular/core/rxjs-interop";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatIconModule } from "@angular/material/icon";
@@ -42,8 +41,8 @@ import {
   PeriodicTaskService,
   PeriodicTaskServiceInterface
 } from "@services/periodic-task/periodic-task.service";
-import { RowSelector } from "@services/table-utils/row-selector";
-import { finalize, firstValueFrom, lastValueFrom, switchMap } from "rxjs";
+import { renderedRows, RowSelector } from "@services/table-utils/row-selector";
+import { firstValueFrom, lastValueFrom } from "rxjs";
 
 @Component({
   selector: "app-periodic-task",
@@ -115,16 +114,9 @@ export class PeriodicTaskComponent implements OnInit {
     return dataSource;
   });
 
-  private readonly renderedRows = toSignal(
-    toObservable(this.periodicTasksDataSource).pipe(
-      switchMap((dataSource) => dataSource.connect().pipe(finalize(() => dataSource.disconnect())))
-    ),
-    { initialValue: [] as PeriodicTask[] }
-  );
-
   selector = new RowSelector<PeriodicTask>({
     keyGetter: (task) => task.name,
-    visibleRows: computed(() => this.renderedRows().filter((task) => task.id != null))
+    visibleRows: renderedRows(this.periodicTasksDataSource)
   });
 
   matchesFilter(task: PeriodicTask, filter: string): boolean {
@@ -154,7 +146,6 @@ export class PeriodicTaskComponent implements OnInit {
   }
 
   toggleActive(task: PeriodicTask, activate: boolean): void {
-    if (task.id == null) return;
     if (activate) {
       this.periodicTaskService.enablePeriodicTask(task.id);
     } else {
@@ -180,7 +171,6 @@ export class PeriodicTaskComponent implements OnInit {
     );
     if (!confirmed) return;
     for (const task of selectedTasks) {
-      if (task.id == null) continue;
       try {
         await firstValueFrom(this.periodicTaskService.deletePeriodicTask(task.id));
         this.notificationService.success($localize`Successfully deleted periodic task.`);

@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, ElementRef, inject, signal, ViewChild, WritableSignal } from "@angular/core";
-import { toObservable, toSignal } from "@angular/core/rxjs-interop";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatIconModule } from "@angular/material/icon";
@@ -34,10 +33,9 @@ import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/con
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
-import { RowSelector } from "@services/table-utils/row-selector";
+import { renderedRows, RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { Tokengroup, TokengroupService, TokengroupServiceInterface } from "@services/tokengroup/tokengroup.service";
-import { finalize, switchMap } from "rxjs";
 
 @Component({
   selector: "app-tokengroups",
@@ -88,14 +86,10 @@ export class TokengroupsComponent {
     return dataSource;
   });
 
-  private readonly renderedRows = toSignal(
-    toObservable(this.tokengroupDataSource).pipe(
-      switchMap((dataSource) => dataSource.connect().pipe(finalize(() => dataSource.disconnect())))
-    ),
-    { initialValue: [] as Tokengroup[] }
-  );
-
-  selector = new RowSelector<Tokengroup>({ keyGetter: (group) => group.groupname, visibleRows: this.renderedRows });
+  selector = new RowSelector<Tokengroup>({
+    keyGetter: (group) => group.groupname,
+    visibleRows: renderedRows(this.tokengroupDataSource)
+  });
 
   onCreateNewTokengroup(): void {
     this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_NEW);

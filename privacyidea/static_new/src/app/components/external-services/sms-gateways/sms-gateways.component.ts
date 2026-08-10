@@ -18,7 +18,6 @@
  **/
 
 import { Component, computed, ElementRef, inject, signal, ViewChild, WritableSignal } from "@angular/core";
-import { toObservable, toSignal } from "@angular/core/rxjs-interop";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatTooltipModule } from "@angular/material/tooltip";
@@ -37,9 +36,8 @@ import { CopyableComponent } from "@components/shared/copyable/copyable.componen
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
-import { RowSelector } from "@services/table-utils/row-selector";
+import { renderedRows, RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
-import { finalize, switchMap } from "rxjs";
 
 @Component({
   selector: "app-sms-gateways",
@@ -90,14 +88,10 @@ export class SmsGatewaysComponent {
     return dataSource;
   });
 
-  private readonly renderedRows = toSignal(
-    toObservable(this.smsDataSource).pipe(
-      switchMap((dataSource) => dataSource.connect().pipe(finalize(() => dataSource.disconnect())))
-    ),
-    { initialValue: [] as SmsGateway[] }
-  );
-
-  selector = new RowSelector<SmsGateway>({ keyGetter: (gateway) => gateway.name, visibleRows: this.renderedRows });
+  selector = new RowSelector<SmsGateway>({
+    keyGetter: (gateway) => gateway.name,
+    visibleRows: renderedRows(this.smsDataSource)
+  });
 
   onCreateNewGateway(): void {
     this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SMS_NEW);

@@ -17,6 +17,22 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { computed, linkedSignal, Signal } from "@angular/core";
+import { toObservable, toSignal } from "@angular/core/rxjs-interop";
+import { MatTableDataSource } from "@angular/material/table";
+import { finalize, switchMap } from "rxjs";
+
+/**
+ * The rows a table currently renders: filtered, sorted and reduced to the current page.
+ *
+ * Follows the data source signal, disconnecting the previous one on every swap and on destroy.
+ * Must be called in an injection context, e.g. as a field initializer.
+ */
+export function renderedRows<T>(dataSource: Signal<MatTableDataSource<T>>): Signal<readonly T[]> {
+  return toSignal(
+    toObservable(dataSource).pipe(switchMap((source) => source.connect().pipe(finalize(() => source.disconnect())))),
+    { initialValue: [] as T[] }
+  );
+}
 
 /**
  * Row selection of a table, scoped to the rows the table currently shows.
