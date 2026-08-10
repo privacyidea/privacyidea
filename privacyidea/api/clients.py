@@ -44,7 +44,7 @@ from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.clients import (get_client, get_clients, create_client, update_client,
                            rotate_client_key, delete_client, client_to_dict)
 from ..lib.remembered_device import (get_client_device, get_client_devices, revoke_client_device,
-                               revoke_client_devices, revoke_devices, device_to_dict, user_identity)
+                               revoke_client_devices, revoke_devices, devices_to_dicts, user_identity)
 from ..lib.realm import get_realm_id
 from ..lib.user import User
 
@@ -252,7 +252,7 @@ def list_client_remembered_devices_api(client_id):
     devices = get_client_devices(client_id)
 
     g.audit_object.log({"success": True, "info": f"Client ID: {client_id}"})
-    return send_result([device_to_dict(device) for device in devices])
+    return send_result(devices_to_dicts(devices))
 
 
 @clients_blueprint.route('/<client_id>/remembered_devices', methods=['DELETE'])

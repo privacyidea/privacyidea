@@ -89,7 +89,6 @@ myApp.controller("clientsController", ["$scope", "$stateParams", "inform",
             });
         };
 
-        $scope.rememberedDevices = [];
         $scope.rememberedDevicesClientId = $stateParams.clientid || "";
         $scope.rememberedDevicesClientName = $scope.rememberedDevicesClientId;
         $scope.realmList = [];

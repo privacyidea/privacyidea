@@ -87,7 +87,7 @@ def build_cookie_value(series_id: str, counter: int) -> str:
     return f"{series_id}:{counter}"
 
 
-def parse_cookie(cookie_value: str) -> tuple[str, int] | tuple[None, None]:
+def parse_cookie(cookie_value: str | None) -> tuple[str, int] | tuple[None, None]:
     """
     Parse a remember-device cookie of the form ``series_id:counter``.
 
@@ -591,7 +591,24 @@ def revoke_devices(realm_id: int = None, resolver: str = None, user_id: str = No
     return count
 
 
-def device_to_dict(device: RememberedDevice) -> dict:
+def devices_to_dicts(devices: list[RememberedDevice]) -> list[dict]:
+    """
+    Serialise a list of remembered devices, resolving all their realm names in a
+    single query instead of one per device (avoiding an N+1 pattern when listing
+    a client's devices).
+
+    :param devices: the remembered devices to serialise
+    :return: a list of JSON-serialisable dicts, in input order
+    """
+    realm_ids = {device.realm_id for device in devices if device.realm_id is not None}
+    realm_names = {}
+    if realm_ids:
+        realm_names = {realm.id: realm.name
+                       for realm in Realm.query.filter(Realm.id.in_(realm_ids)).all()}
+    return [device_to_dict(device, realm_names=realm_names) for device in devices]
+
+
+def device_to_dict(device: RememberedDevice, realm_names: dict[int, str] = None) -> dict:
     """
     Serialise a remembered device for API output. The rotating token
     (``counter``) is intentionally not exposed; ``series_id`` is only an
@@ -603,10 +620,15 @@ def device_to_dict(device: RememberedDevice) -> dict:
     the backing store), so it may be ``None`` if the account no longer resolves.
 
     :param device: the ``RememberedDevice`` to serialise
+    :param realm_names: an optional pre-resolved ``{realm_id: name}`` map (see
+        :func:`devices_to_dicts`); when omitted the realm name is looked up here
     :return: a JSON-serialisable dict
     """
-    realm = Realm.query.filter_by(id=device.realm_id).first()
-    realm_name = realm.name if realm else None
+    if realm_names is not None:
+        realm_name = realm_names.get(device.realm_id)
+    else:
+        realm = Realm.query.filter_by(id=device.realm_id).first()
+        realm_name = realm.name if realm else None
     return {
         "series_id": device.series_id,
         "resolver": device.resolver,
