@@ -130,7 +130,7 @@ class Challenge(MethodsMixin, db.Model):
         else:
             self._data = encryptPassword(json.dumps(data))
 
-    def get_data(self):
+    def get_data(self) -> dict:
         """
         Get the decrypted challenge data as a dict.
 
@@ -141,9 +141,15 @@ class Challenge(MethodsMixin, db.Model):
         if not data:
             return {}
         try:
-            return json.loads(data)
+            result = json.loads(data)
         except (json.JSONDecodeError, ValueError):
+            log.warning("Challenge %s: failed to decode data as JSON.", self.transaction_id)
             return {}
+        if not isinstance(result, dict):
+            log.warning("Challenge %s: data is not a dict (got %s). Returning empty dict.",
+                        self.transaction_id, type(result).__name__)
+            return {}
+        return result
 
     def get_session(self):
         return self.session

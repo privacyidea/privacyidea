@@ -355,7 +355,7 @@ class ChallengeDTO:
     def get_transaction_id(self) -> str:
         return self.transaction_id
 
-    def get_data(self):
+    def get_data(self) -> dict:
         """
         Get the challenge data as a dict.
 
@@ -365,9 +365,15 @@ class ChallengeDTO:
         if not self.data:
             return {}
         try:
-            return json.loads(self.data)
+            result = json.loads(self.data)
         except (json.JSONDecodeError, ValueError):
+            log.warning("ChallengeDTO %s: failed to decode data as JSON.", self.transaction_id)
             return {}
+        if not isinstance(result, dict):
+            log.warning("ChallengeDTO %s: data is not a dict (got %s). Returning empty dict.",
+                        self.transaction_id, type(result).__name__)
+            return {}
+        return result
 
     def get_otp_status(self) -> tuple[int, bool]:
         return self.received_count, self.otp_valid
