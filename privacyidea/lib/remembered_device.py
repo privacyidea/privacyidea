@@ -37,7 +37,7 @@ from typing import NamedTuple, TYPE_CHECKING
 
 from flask_babel import _
 
-from privacyidea.lib.error import AuthError, ParameterError, ResourceNotFoundError
+from privacyidea.lib.error import AuthError, ParameterError
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.sqlutils import delete_matching_rows
 from privacyidea.models import RememberedDevice, Realm, db
@@ -504,25 +504,6 @@ def get_client_devices(client_id: str) -> list[RememberedDevice]:
     return RememberedDevice.query.filter_by(client_id=client_id).order_by(RememberedDevice.created_at.desc()).all()
 
 
-def revoke_client_device(client_id: str, series_id: str) -> str:
-    """
-    Revoke (delete) a single remembered device of a client.
-
-    The lookup is scoped to ``client_id`` so a client's id can never be used to
-    revoke a device that belongs to a different client.
-
-    :param client_id: the id of the API client the device must belong to
-    :param series_id: the series id of the device to revoke
-    :return: the series id of the revoked remembered device
-    :raises ResourceNotFoundError: if no such device exists for this client
-    """
-    device = RememberedDevice.query.filter_by(series_id=series_id, client_id=client_id).first()
-    if not device:
-        raise ResourceNotFoundError(f"The device {series_id!r} does not exist for this client.")
-    device.delete()
-    return series_id
-
-
 def revoke_client_devices(client_id: str, realm_id: int = None, resolver: str = None,
                            user_id: str = None, realm_ids: "list[int]" = None) -> int:
     """
@@ -605,10 +586,21 @@ def devices_to_dicts(devices: list[RememberedDevice]) -> list[dict]:
     if realm_ids:
         realm_names = {realm.id: realm.name
                        for realm in Realm.query.filter(Realm.id.in_(realm_ids)).all()}
-    return [device_to_dict(device, realm_names=realm_names) for device in devices]
+    # Resolve each distinct user identity only once: a client accumulates a new
+    # device per opt-in, so many rows share the same (resolver, user_id, realm),
+    # and each login resolution hits the user store (an LDAP round trip for LDAP
+    # resolvers). Deduping turns an N-device listing into one lookup per user.
+    logins = {}
+    for device in devices:
+        realm_name = realm_names.get(device.realm_id)
+        identity = (device.resolver, device.user_id, realm_name)
+        if identity not in logins:
+            logins[identity] = _resolve_login(device.resolver, device.user_id, realm_name)
+    return [device_to_dict(device, realm_names=realm_names, logins=logins) for device in devices]
 
 
-def device_to_dict(device: RememberedDevice, realm_names: dict[int, str] = None) -> dict:
+def device_to_dict(device: RememberedDevice, realm_names: dict[int, str] = None,
+                   logins: dict = None) -> dict:
     """
     Serialise a remembered device for API output. The rotating token
     (``counter``) is intentionally not exposed; ``series_id`` is only an
@@ -622,6 +614,8 @@ def device_to_dict(device: RememberedDevice, realm_names: dict[int, str] = None)
     :param device: the ``RememberedDevice`` to serialise
     :param realm_names: an optional pre-resolved ``{realm_id: name}`` map (see
         :func:`devices_to_dicts`); when omitted the realm name is looked up here
+    :param logins: an optional pre-resolved ``{(resolver, user_id, realm): login}``
+        map (see :func:`devices_to_dicts`); when omitted the login is resolved here
     :return: a JSON-serialisable dict
     """
     if realm_names is not None:
@@ -629,12 +623,16 @@ def device_to_dict(device: RememberedDevice, realm_names: dict[int, str] = None)
     else:
         realm = Realm.query.filter_by(id=device.realm_id).first()
         realm_name = realm.name if realm else None
+    if logins is not None:
+        login = logins.get((device.resolver, device.user_id, realm_name))
+    else:
+        login = _resolve_login(device.resolver, device.user_id, realm_name)
     return {
         "series_id": device.series_id,
         "resolver": device.resolver,
         "user_id": device.user_id,
         "realm": realm_name,
-        "user": _resolve_login(device.resolver, device.user_id, realm_name),
+        "user": login,
         "ip_address": device.ip_address,
         "user_agent": device.user_agent,
         "created_at": utc_isoformat(device.created_at),

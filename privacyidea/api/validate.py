@@ -736,8 +736,15 @@ def _finalize_auth_response(context):
 
     serials_str = ",".join(context["serial_list"])
 
-    # Decide whether to issue a persistent "remember device" cookie.
-    cookie_action = _resolve_persistent_cookie(user, success)
+    # Decide whether to issue a persistent "remember device" cookie. This is an
+    # optional enhancement on an already-successful auth, so a failure here (e.g.
+    # a transient DB error while creating the device) must never turn that success
+    # into a 500 - fall back to issuing no cookie.
+    try:
+        cookie_action = _resolve_persistent_cookie(user, success)
+    except Exception as exc:  # noqa: BLE001 - issuance is best-effort, never fatal
+        log.warning(f"Could not issue a remember-device cookie: {exc}")
+        cookie_action = None
 
     ret = send_result(context["result"], rid=2, details=details, **context["response_params"])
     apply_cookie_action(ret, cookie_action)

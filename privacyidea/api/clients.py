@@ -43,7 +43,7 @@ from ..lib.policies.actions import PolicyAction
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.clients import (get_client, get_clients, create_client, update_client,
                            rotate_client_key, delete_client, client_to_dict)
-from ..lib.remembered_device import (get_client_device, get_client_devices, revoke_client_device,
+from ..lib.remembered_device import (get_client_device, get_client_devices,
                                revoke_client_devices, revoke_devices, devices_to_dicts, user_identity)
 from ..lib.realm import get_realm_id
 from ..lib.user import User
@@ -349,10 +349,11 @@ def revoke_client_remembered_device_api(client_id, series_id):
     if allowed_realm_ids is not None and device.realm_id not in allowed_realm_ids:
         raise PolicyError("You are not allowed to revoke remembered devices in this device's realm.")
 
-    r = revoke_client_device(client_id, series_id)
+    # Delete the row already fetched above rather than re-querying it by series id.
+    device.delete()
 
     g.audit_object.log({"success": True, "info": f"{client_id}: revoked remembered device"})
-    return send_result(r)
+    return send_result(series_id)
 
 
 @clients_blueprint.route('/<client_id>', methods=['DELETE'])
