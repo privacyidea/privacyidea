@@ -1281,7 +1281,7 @@ class TokenTestCase(MyTestCase):
         token_r2 = init_token({"type": "hotp", "genkey": True})
         token_r2.set_realms([self.realm2])
         serials = [t["serial"] for t in get_tokens_paginate(realm=self.realm2,
-                                                             allowed_realms=[self.realm1])["tokens"]]
+                                                            allowed_realms=[self.realm1])["tokens"]]
         self.assertNotIn(token_r2.get_serial(), serials)
         # filter for a user which is not contained in the allowed realms, but the token itself is
         tokens = get_tokens_paginate(user=User(login="hans", realm=self.realm2), allowed_realms=[self.realm1])["tokens"]
@@ -1382,6 +1382,69 @@ class TokenTestCase(MyTestCase):
         tok_r1.delete_token()
         tok_r2.delete_token()
         tok_r3.delete_token()
+
+    def test_41b_get_tokens_paginate_userid_resolver(self):
+        """Test that get_tokens_paginate filters by the standalone userid and
+        resolver parameters (independent of the user object)."""
+        self.setUp_user_realms()
+        self.setUp_user_realm3()
+
+        # cornelius lives in resolver1 with uid 1000
+        tok_cornelius = init_token({"type": "hotp", "genkey": True},
+                                   user=User("cornelius", self.realm1))
+        # hans lives in resolver1 with uid 1118
+        tok_hans = init_token({"type": "hotp", "genkey": True},
+                              user=User("hans", self.realm1))
+        # root lives in reso3 (realm3) with uid 0
+        tok_root = init_token({"type": "hotp", "genkey": True},
+                              user=User("root", self.realm3))
+
+        # --- filter by exact userid ---
+        tokens = get_tokens_paginate(userid="1000")["tokens"]
+        serials = [t["serial"] for t in tokens]
+        self.assertIn(tok_cornelius.get_serial(), serials)
+        self.assertNotIn(tok_hans.get_serial(), serials)
+        self.assertNotIn(tok_root.get_serial(), serials)
+
+        # --- filter by userid with wildcard ---
+        tokens = get_tokens_paginate(userid="100*")["tokens"]
+        serials = [t["serial"] for t in tokens]
+        self.assertIn(tok_cornelius.get_serial(), serials)
+        self.assertNotIn(tok_hans.get_serial(), serials)
+
+        # --- non-matching userid returns no tokens ---
+        tokens = get_tokens_paginate(userid="9999")["tokens"]
+        self.assertEqual(0, len(tokens))
+
+        # --- filter by exact resolver ---
+        tokens = get_tokens_paginate(resolver=self.resolvername3)["tokens"]
+        serials = [t["serial"] for t in tokens]
+        self.assertIn(tok_root.get_serial(), serials)
+        self.assertNotIn(tok_cornelius.get_serial(), serials)
+        self.assertNotIn(tok_hans.get_serial(), serials)
+
+        # --- filter by resolver with wildcard ---
+        tokens = get_tokens_paginate(resolver="reso*")["tokens"]
+        serials = [t["serial"] for t in tokens]
+        self.assertIn(tok_cornelius.get_serial(), serials)
+        self.assertIn(tok_hans.get_serial(), serials)
+        self.assertIn(tok_root.get_serial(), serials)
+
+        # --- non-matching resolver returns no tokens ---
+        tokens = get_tokens_paginate(resolver="nonexistent")["tokens"]
+        self.assertEqual(0, len(tokens))
+
+        # --- combine userid and resolver ---
+        tokens = get_tokens_paginate(userid="1000",
+                                     resolver=self.resolvername1)["tokens"]
+        serials = [t["serial"] for t in tokens]
+        self.assertIn(tok_cornelius.get_serial(), serials)
+        self.assertNotIn(tok_hans.get_serial(), serials)
+        self.assertNotIn(tok_root.get_serial(), serials)
+
+        tok_cornelius.delete_token()
+        tok_hans.delete_token()
+        tok_root.delete_token()
 
     def test_42_sort_tokens(self):
         # return pagination

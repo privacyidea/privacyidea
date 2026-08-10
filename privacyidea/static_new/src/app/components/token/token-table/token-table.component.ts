@@ -111,7 +111,7 @@ export class TokenTableComponent {
   readonly apiFilterKeyMap = this.tokenService.apiFilterKeyMap;
   readonly advancedApiFilterKeys = this.tokenService.advancedApiFilterKeys;
   readonly filterKeywords = [...this.tokenService.apiFilterKeys, ...this.tokenService.advancedApiFilterKeys].filter(
-    (keyword) => !this.tokenService.unsupportedKeys.has(keyword) && !keyword.includes(" ")
+    (keyword) => !keyword.includes(" ")
   );
   readonly filterHint = inlineFilterHint();
   readonly tokenTypeFilterOptions = computed(() => this.tokenService.tokenTypeOptions().map((type) => type.key));
@@ -295,14 +295,10 @@ export class TokenTableComponent {
     return filterColumnHint(label, {
       exactMatch: this.tokenService.exactMatchKeys.has(keyword),
       isBoolean: this.tokenService.booleanKeys.has(keyword),
-      isUnsupported: this.tokenService.unsupportedKeys.has(keyword),
       caseNote: this.tokenService.caseNotes[keyword]
     });
   }
 
-  isUnsupportedKeyword(keyword: string): boolean {
-    return this.tokenService.unsupportedKeys.has(keyword);
-  }
 
   getFilterIconName(keyword: string): string {
     if (keyword === "active" || keyword === "assigned") {
@@ -318,9 +314,6 @@ export class TokenTableComponent {
   }
 
   onKeywordClick(filterKeyword: string): void {
-    if (this.isUnsupportedKeyword(filterKeyword)) {
-      return;
-    }
     this.toggleFilter(filterKeyword);
     const inputElement = this.filterInput?.nativeElement;
     if (inputElement) {

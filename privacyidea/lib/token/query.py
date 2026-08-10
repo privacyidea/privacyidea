@@ -199,6 +199,24 @@ def _create_token_query(tokentype: str | None = None, token_type_list: list[str]
                     uid_str = str(uid) if isinstance(uid, int) else uid
                     sql_query = sql_query.where(TokenOwner.user_id == uid_str)
 
+    # Filtering by standalone userid parameter (independent of user object)
+    if userid and userid.strip("*") and not (user and not user.is_empty()):
+        if "*" in userid:
+            sql_query = sql_query.where(
+                TokenOwner.user_id.like(convert_wildcard_to_sql_like(userid), escape=SQL_LIKE_ESCAPE)
+            )
+        else:
+            sql_query = sql_query.where(TokenOwner.user_id == userid)
+
+    # Filtering by standalone resolver parameter (independent of user object)
+    if resolver and resolver.strip("*") and not (user and not user.is_empty()):
+        if "*" in resolver:
+            sql_query = sql_query.where(
+                TokenOwner.resolver.like(convert_wildcard_to_sql_like(resolver), escape=SQL_LIKE_ESCAPE)
+            )
+        else:
+            sql_query = sql_query.where(TokenOwner.resolver == resolver)
+
     # Filtering by token status flags
     if active is not None:
         sql_query = sql_query.where(Token.active == active)
