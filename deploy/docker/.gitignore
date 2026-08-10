@@ -1,0 +1,11 @@
+# SPDX-FileCopyrightText: (C) 2026 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: CC0-1.0
+# Compose environment overrides (may contain hostnames, tuning)
+.env
+
+# Secret files (keys, passwords) — never commit
+secrets/*
+!secrets/README.md
+
+# Backup archives
+backups/

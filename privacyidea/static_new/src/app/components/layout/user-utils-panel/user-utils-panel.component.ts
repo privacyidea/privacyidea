@@ -22,11 +22,9 @@ import { Component, computed, HostListener, inject, signal } from "@angular/core
 import { MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
-import { Router } from "@angular/router";
+import { Router, RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
-import { LanguageSwitcherComponent } from "@components/shared/language-switcher/language-switcher.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
-import { ThemeSwitcherComponent } from "@components/shared/theme-switcher/theme-switcher.component";
 import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { CaConnectorService, CaConnectorServiceInterface } from "@services/ca-connector/ca-connector.service";
@@ -37,6 +35,7 @@ import {
 } from "@services/container-template/container-template.service";
 import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { DocumentationService, DocumentationServiceInterface } from "@services/documentation/documentation.service";
 import { EventService, EventServiceInterface } from "@services/event/event.service";
@@ -76,7 +75,7 @@ const PROFILE_TEXT_BREAKPOINT = 1701;
 
 @Component({
   selector: "app-user-utils-panel",
-  imports: [MatIcon, MatIconButton, MatTooltip, LanguageSwitcherComponent, ThemeSwitcherComponent, NgClass, DatePipe],
+  imports: [MatIcon, MatIconButton, MatTooltip, NgClass, DatePipe, RouterLink],
   templateUrl: "./user-utils-panel.component.html",
   styleUrl: "./user-utils-panel.component.scss"
 })
@@ -96,6 +95,7 @@ export class UserUtilsPanelComponent {
   private readonly subscriptionService = inject(SubscriptionService);
   private readonly machineResolverService: MachineResolverServiceInterface = inject(MachineResolverService);
   private readonly containerTemplateService: ContainerTemplateServiceInterface = inject(ContainerTemplateService);
+  private readonly dashboardDataStore = inject(DashboardDataStore);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly sessionTimerService: SessionTimerServiceInterface = inject(SessionTimerService);
@@ -217,6 +217,9 @@ export class UserUtilsPanelComponent {
     }
 
     switch (this.contentService.routePath()) {
+      case ROUTE_PATHS.DASHBOARD:
+        this.dashboardDataStore.refreshAll();
+        break;
       case ROUTE_PATHS.TOKENS:
         this.tokenService.tokenResource.reload();
         break;

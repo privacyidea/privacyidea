@@ -108,6 +108,14 @@ describe("SmsGatewayService", () => {
     expect(notifyMock.error).toHaveBeenCalledWith("Failed to delete SMS gateway. Something went wrong");
   });
 
+  it("should list SMS gateways", () => {
+    service.listSmsGateways().subscribe();
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/smsgateway/`);
+    expect(req.request.method).toBe("GET");
+    req.flush(MockPiResponse.fromValue([]));
+  });
+
   describe("smsGateways", () => {
     it("smsGateways falls back to default when resource empty", () => {
       expect(service.smsGateways()).toEqual([]);

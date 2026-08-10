@@ -219,7 +219,7 @@ $button-low-contrast-variant: linear-gradient(
   cursor: pointer;
   border-radius: 50%;
   background-color: transparent;
-  color: var(--mat-sys-on-surface-variant);
+  color: var(--mat-sys-on-surface);
   box-shadow: none !important;
   transition: background-color 0.2s ease-in-out;
 
@@ -229,7 +229,7 @@ $button-low-contrast-variant: linear-gradient(
 }
 
 .logout-btn {
-  color: var(--mat-sys-on-surface-variant);
+  color: var(--mat-sys-on-surface);
   background-color: transparent;
   transition: background-color 0.2s ease-in-out;
 

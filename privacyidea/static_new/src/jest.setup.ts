@@ -87,6 +87,12 @@ global.MutationObserver = jest.fn().mockImplementation(() => ({
   takeRecords: jest.fn(() => [])
 }));
 
+// jsdom implements no layout, so Range has no getBoundingClientRect. Code that measures
+// text width (e.g. truncation detection) gets a zero-sized rect unless a spec mocks it.
+if (typeof Range.prototype.getBoundingClientRect !== "function") {
+  Range.prototype.getBoundingClientRect = () => new DOMRect();
+}
+
 if (typeof globalThis.structuredClone !== "function") {
   globalThis.structuredClone = (<T>(value: T): T => deserialize(serialize(value)) as T) as typeof structuredClone;
 }
