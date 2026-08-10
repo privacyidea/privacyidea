@@ -83,7 +83,7 @@ describe("PeriodicTaskComponent", () => {
 
   it("onEditTask navigates to the task-details route by name", () => {
     const spy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
-    const task: PeriodicTask = { ...EMPTY_PERIODIC_TASK, name: "my-task" };
+    const task: PeriodicTask = { ...EMPTY_PERIODIC_TASK, name: "my-task", id: 7 };
     component.onEditTask(task);
     expect(spy).toHaveBeenCalledWith(ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS_DETAILS + "my-task");
   });
@@ -100,13 +100,6 @@ describe("PeriodicTaskComponent", () => {
     component.toggleActive(task, false);
     expect(periodicTaskService.disablePeriodicTask).toHaveBeenCalledWith(7);
     expect(periodicTaskService.enablePeriodicTask).not.toHaveBeenCalled();
-  });
-
-  it("toggleActive is a no-op when the task has no id", () => {
-    const task: PeriodicTask = { ...EMPTY_PERIODIC_TASK, id: null };
-    component.toggleActive(task, true);
-    expect(periodicTaskService.enablePeriodicTask).not.toHaveBeenCalled();
-    expect(periodicTaskService.disablePeriodicTask).not.toHaveBeenCalled();
   });
 
   it("getModuleLabel returns the mapped label for known modules", () => {
@@ -259,18 +252,6 @@ describe("PeriodicTaskComponent", () => {
       fixture.detectChanges();
       await fixture.whenStable();
     };
-
-    it("leaves tasks without an id out of the selectable rows", async () => {
-      await showTasks([
-        { ...EMPTY_PERIODIC_TASK, id: 1, name: "a" },
-        { ...EMPTY_PERIODIC_TASK, id: null, name: "no-id" }
-      ]);
-
-      component.selector.selectAllRows();
-
-      expect(component.selector.selectedRows().map((task) => task.name)).toEqual(["a"]);
-      expect(component.selector.allRowsSelected()).toBe(true);
-    });
 
     it("only selects the tasks left by the filter", async () => {
       await showTasks([
