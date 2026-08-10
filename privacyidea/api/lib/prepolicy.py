@@ -1319,8 +1319,8 @@ def check_base_action(request=None, action=None, anonymous=False):
         resolver = resolver or params.get("resolver")
         # get the realm by the token serial:
         if not realm and params.get("serial"):
-            realm = get_realms_of_token(params.get("serial"),
-                                        only_first_realm=True)
+            token_realms = get_realms_of_token(params.get("serial"))
+            realm = token_realms[0] if token_realms else None
 
     # In this case we do not pass the user_object, since the realm is also determined
     # by the pure serial number given.
