@@ -331,3 +331,30 @@ class ChallengeDataEncryptionTestCase(MyTestCase):
         # Clean up
         db.session.delete(c)
         db.session.commit()
+
+    def test_10_get_data_returns_empty_dict_on_non_dict_json(self):
+        """get_data() returns {} if decrypted data is valid JSON but not a dict."""
+        from privacyidea.lib.crypto import encryptPassword
+
+        c = Challenge(serial="NONDICT01", transaction_id="tid_enc_010",
+                      validitytime=300)
+        c.save()
+
+        # Store a JSON list (valid JSON, but not a dict)
+        c._data = encryptPassword('[1, 2, 3]')
+        db.session.commit()
+        self.assertEqual(c.get_data(), {})
+
+        # Store a JSON integer
+        c._data = encryptPassword('42')
+        db.session.commit()
+        self.assertEqual(c.get_data(), {})
+
+        # Store a JSON string
+        c._data = encryptPassword('"just a string"')
+        db.session.commit()
+        self.assertEqual(c.get_data(), {})
+
+        # Clean up
+        db.session.delete(c)
+        db.session.commit()

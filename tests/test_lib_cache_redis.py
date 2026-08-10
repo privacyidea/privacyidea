@@ -203,6 +203,20 @@ class TestChallengeDTO(MyTestCase):
         dto = _make_dto(data='not valid json {{{')
         self.assertEqual(dto.get_data(), {})
 
+    def test_get_data_non_dict_json(self):
+        """get_data() returns {} when stored data is valid JSON but not a dict."""
+        # A JSON list
+        dto = _make_dto(data='[1, 2, 3]')
+        self.assertEqual(dto.get_data(), {})
+
+        # A JSON integer
+        dto = _make_dto(data='42')
+        self.assertEqual(dto.get_data(), {})
+
+        # A JSON string
+        dto = _make_dto(data='"just a string"')
+        self.assertEqual(dto.get_data(), {})
+
     def test_set_otp_status(self):
         dto = _make_dto()
         self.assertEqual(dto.get_otp_status(), (0, False))
