@@ -9013,15 +9013,16 @@
           <context context-type="linenumber">3,4</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="3859902578629876809" datatype="html">
+      <trans-unit id="7498550192372737113" datatype="html">
         <source><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/>First, we would like to give you some background information on privacyIDEA.<x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/> privacyIDEA is an <x id="START_BOLD_TEXT" ctype="x-b" equiv-text="&lt;b&gt;"/>Enterprise Level<x id="CLOSE_BOLD_TEXT" ctype="x-b" equiv-text="&lt;/b&gt;"/> Multi Factor Authentication System. It is open source. The core developers are employed at NetKnights GmbH, Germany. NetKnights provides the <x id="START_LINK" ctype="x-a" equiv-text="&lt;a
           href=&quot;https://netknights.it/en/produkte/privacyidea/&quot;
           target=&quot;_blank&quot;
-          &gt;"/>privacyIDEA Enterprise Edition <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> including <x id="START_BOLD_TEXT" ctype="x-b" equiv-text="&lt;b&gt;"/>Support and Service Level Agreements<x id="CLOSE_BOLD_TEXT" ctype="x-b" equiv-text="&lt;/b&gt;"/>. Moreover, NetKnights provides services, consultancy and paid programming of new features. <x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/></source>
+          &gt;"/>privacyIDEA Enterprise Edition<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a
+        &gt;"/> including <x id="START_BOLD_TEXT" ctype="x-b" equiv-text="&lt;b&gt;"/>Support and Service Level Agreements<x id="CLOSE_BOLD_TEXT" ctype="x-b" equiv-text="&lt;/b&gt;"/>. Moreover, NetKnights provides services, consultancy and paid programming of new features. <x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/></source>
         <target><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/>首先，我們想為您提供一些 privacyIDEA 的背景資訊。<x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/> privacyIDEA 是一套<x id="START_BOLD_TEXT" ctype="x-b" equiv-text="&lt;b&gt;"/>企業級<x id="CLOSE_BOLD_TEXT" ctype="x-b" equiv-text="&lt;/b&gt;"/>多重要素驗證系統。它是開放原始碼。核心開發人員受僱於德國 NetKnights GmbH。NetKnights 提供 <x id="START_LINK" ctype="x-a" equiv-text="&lt;a
           href=&quot;https://netknights.it/en/produkte/privacyidea/&quot;
           target=&quot;_blank&quot;
-          &gt;"/>privacyIDEA 企業版 <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/>，內含<x id="START_BOLD_TEXT" ctype="x-b" equiv-text="&lt;b&gt;"/>支援與服務等級協議<x id="CLOSE_BOLD_TEXT" ctype="x-b" equiv-text="&lt;/b&gt;"/>。此外，NetKnights 也提供服務、諮詢及新功能的付費開發。 <x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/></target>
+          &gt;"/>privacyIDEA 企業版<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/>，內含<x id="START_BOLD_TEXT" ctype="x-b" equiv-text="&lt;b&gt;"/>支援與服務等級協議<x id="CLOSE_BOLD_TEXT" ctype="x-b" equiv-text="&lt;/b&gt;"/>。此外，NetKnights 也提供服務、諮詢及新功能的付費開發。 <x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/welcome-dialog/welcome-dialog.component.html</context>
           <context context-type="linenumber">7,20</context>
@@ -9075,15 +9076,16 @@
           <context context-type="linenumber">68,69</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="6536896760447657758" datatype="html">
+      <trans-unit id="3221884104823666377" datatype="html">
         <source> According to the <x id="START_LINK" ctype="x-a" equiv-text="&lt;a
           href=&quot;https://github.com/privacyidea/privacyidea/blob/master/LICENSE&quot;
           target=&quot;_blank&quot;
-          &gt;"/>AGPLv3 <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/></source>
+          &gt;"/>AGPLv3<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a
+        &gt;"/></source>
         <target> 根據 <x id="START_LINK" ctype="x-a" equiv-text="&lt;a
           href=&quot;https://github.com/privacyidea/privacyidea/blob/master/LICENSE&quot;
           target=&quot;_blank&quot;
-          &gt;"/>AGPLv3 <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/></target>
+          &gt;"/>AGPLv3<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/welcome-dialog/welcome-dialog.component.html</context>
           <context context-type="linenumber">71,78</context>
@@ -9097,52 +9099,56 @@
           <context context-type="linenumber">81,83</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="7858292781288192399" datatype="html">
+      <trans-unit id="8412895463643936771" datatype="html">
         <source> The added values of the <x id="START_LINK" ctype="x-a" equiv-text="&lt;a
           href=&quot;https://netknights.it/en/produkte/privacyidea/&quot;
           target=&quot;_blank&quot;
-          &gt;"/>privacyIDEA Enterprise Edition <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> are: </source>
+          &gt;"/>privacyIDEA Enterprise Edition<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a
+        &gt;"/> are: </source>
         <target> <x id="START_LINK" ctype="x-a" equiv-text="&lt;a
           href=&quot;https://netknights.it/en/produkte/privacyidea/&quot;
           target=&quot;_blank&quot;
-          &gt;"/>privacyIDEA 企業版 <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/>的附加價值為： </target>
+          &gt;"/>privacyIDEA 企業版<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/>的附加價值為： </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/welcome-dialog/welcome-dialog.component.html</context>
           <context context-type="linenumber">84,91</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="752848652652280258" datatype="html">
+      <trans-unit id="2610617994115853962" datatype="html">
         <source><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/> Support and <x id="START_LINK" ctype="x-a" equiv-text="&lt;a
             href=&quot;https://netknights.it/en/leistungen/service-level-agreements/&quot;
             target=&quot;_blank&quot;
-            &gt;"/>Service Level Agreements by NetKnights <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> , Germany. <x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/>Stable enterprise packages for Ubuntu and RHEL allow for an easy update and secure operations.<x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/> An exclusive <x id="START_BOLD_TEXT" ctype="x-b" equiv-text="&lt;b&gt;"/>Appliance<x id="CLOSE_BOLD_TEXT" ctype="x-b" equiv-text="&lt;/b&gt;"/>-Tool, which allows easy setup of RADIUS clients, MySQL replications, backup and restore... <x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/>Exclusive timely news and bug reports.<x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/>Depending on the support level you get help with updates and yearly consultancy.<x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/> By buying the <x id="START_LINK_1" equiv-text="&lt;a
+            &gt;"/>Service Level Agreements by NetKnights<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a
+          &gt;"/>, Germany. <x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/>Stable enterprise packages for Ubuntu and RHEL allow for an easy update and secure operations.<x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/> An exclusive <x id="START_BOLD_TEXT" ctype="x-b" equiv-text="&lt;b&gt;"/>Appliance<x id="CLOSE_BOLD_TEXT" ctype="x-b" equiv-text="&lt;/b&gt;"/>-Tool, which allows easy setup of RADIUS clients, MySQL replications, backup and restore... <x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/>Exclusive timely news and bug reports.<x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/>Depending on the support level you get help with updates and yearly consultancy.<x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/> By buying the <x id="START_LINK_1" equiv-text="&lt;a
             href=&quot;https://netknights.it/en/produkte/privacyidea/&quot;
             target=&quot;_blank&quot;
-            &gt;"/>privacyIDEA Enterprise Edition <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> you ensure that professional developers can work full time on privacyIDEA, add new features and fix bugs in a timely manner. In addition, you allow for external services like code audits. <x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/></source>
+            &gt;"/>privacyIDEA Enterprise Edition<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a
+          &gt;"/> you ensure that professional developers can work full time on privacyIDEA, add new features and fix bugs in a timely manner. In addition, you allow for external services like code audits. <x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/></source>
         <target><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/> 由德國 NetKnights 提供的支援與<x id="START_LINK" ctype="x-a" equiv-text="&lt;a
             href=&quot;https://netknights.it/en/leistungen/service-level-agreements/&quot;
             target=&quot;_blank&quot;
-            &gt;"/>服務等級協議 <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/>。 <x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/>適用於 Ubuntu 和 RHEL 的穩定企業套件，可輕鬆更新並安全運作。<x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/> 一項專屬的<x id="START_BOLD_TEXT" ctype="x-b" equiv-text="&lt;b&gt;"/>應用裝置<x id="CLOSE_BOLD_TEXT" ctype="x-b" equiv-text="&lt;/b&gt;"/>工具，可輕鬆設定 RADIUS 用戶端、MySQL 複寫、備份與還原... <x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/>專屬的即時新聞與錯誤報告。<x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/>視支援等級而定，您可獲得更新方面的協助及每年的諮詢。<x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/> 透過購買 <x id="START_LINK_1" equiv-text="&lt;a
+            &gt;"/>服務等級協議<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/>。 <x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/>適用於 Ubuntu 和 RHEL 的穩定企業套件，可輕鬆更新並安全運作。<x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/> 一項專屬的<x id="START_BOLD_TEXT" ctype="x-b" equiv-text="&lt;b&gt;"/>應用裝置<x id="CLOSE_BOLD_TEXT" ctype="x-b" equiv-text="&lt;/b&gt;"/>工具，可輕鬆設定 RADIUS 用戶端、MySQL 複寫、備份與還原... <x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/>專屬的即時新聞與錯誤報告。<x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/>視支援等級而定，您可獲得更新方面的協助及每年的諮詢。<x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/> 透過購買 <x id="START_LINK_1" equiv-text="&lt;a
             href=&quot;https://netknights.it/en/produkte/privacyidea/&quot;
             target=&quot;_blank&quot;
-            &gt;"/>privacyIDEA 企業版 <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/>，您確保專業開發人員能全職投入 privacyIDEA、及時新增功能並修正錯誤。此外，您也支持了如程式碼稽核等外部服務。 <x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/></target>
+            &gt;"/>privacyIDEA 企業版<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/>，您確保專業開發人員能全職投入 privacyIDEA、及時新增功能並修正錯誤。此外，您也支持了如程式碼稽核等外部服務。 <x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/welcome-dialog/welcome-dialog.component.html</context>
-          <context context-type="linenumber">94,120</context>
+          <context context-type="linenumber">94,119</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="1330228406268326267" datatype="html">
+      <trans-unit id="243705363276623643" datatype="html">
         <source><x id="START_LINK" ctype="x-a" equiv-text="&lt;a
           href=&quot;https://netknights.it/en/unternehmen/kontakt/&quot;
           target=&quot;_blank&quot;
-          &gt;"/>Ask for the privacyIDEA Enterprise Edition, now! <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/></source>
+          &gt;"/>Ask for the privacyIDEA Enterprise Edition, now!<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a
+        &gt;"/></source>
         <target> <x id="START_LINK" ctype="x-a" equiv-text="&lt;a
           href=&quot;https://netknights.it/en/unternehmen/kontakt/&quot;
           target=&quot;_blank&quot;
-          &gt;"/>立即洽詢 privacyIDEA 企業版！ <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/></target>
+          &gt;"/>立即洽詢 privacyIDEA 企業版！<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/welcome-dialog/welcome-dialog.component.html</context>
-          <context context-type="linenumber">122,127</context>
+          <context context-type="linenumber">121,126</context>
         </context-group>
       </trans-unit>
       <trans-unit id="5252301990873981619" datatype="html">
@@ -9161,24 +9167,26 @@
           <context context-type="linenumber">143,146</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="7646301140547143726" datatype="html">
+      <trans-unit id="3852762217907570640" datatype="html">
         <source><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/><x id="START_BOLD_TEXT" ctype="x-b" equiv-text="&lt;b&gt;"/>You are using privacyIDEA with more than 50 users.<x id="CLOSE_BOLD_TEXT" ctype="x-b" equiv-text="&lt;/b&gt;"/><x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/>Thank you for your trust!<x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/> For the productive enterprise use, we recommend the <x id="START_LINK" ctype="x-a" equiv-text="&lt;a
           href=&quot;https://netknights.it/en/produkte/privacyidea/&quot;
           target=&quot;_blank&quot;
-          &gt;"/>privacyIDEA Enterprise Edition. <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/><x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/> NetKnights provides the <x id="START_LINK" ctype="x-a" equiv-text="&lt;a
+          &gt;"/>privacyIDEA Enterprise Edition<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a
+        &gt;"/>. <x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/> NetKnights provides the <x id="START_LINK" ctype="x-a" equiv-text="&lt;a
           href=&quot;https://netknights.it/en/produkte/privacyidea/&quot;
           target=&quot;_blank&quot;
-          &gt;"/>privacyIDEA Enterprise Edition <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> including <x id="START_BOLD_TEXT" ctype="x-b" equiv-text="&lt;b&gt;"/>Support and Service Level Agreements<x id="CLOSE_BOLD_TEXT" ctype="x-b" equiv-text="&lt;/b&gt;"/>. Moreover, NetKnights provides services, consultancy and paid programming of new features. <x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/></source>
+          &gt;"/>privacyIDEA Enterprise Edition<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a
+        &gt;"/> including <x id="START_BOLD_TEXT" ctype="x-b" equiv-text="&lt;b&gt;"/>Support and Service Level Agreements<x id="CLOSE_BOLD_TEXT" ctype="x-b" equiv-text="&lt;/b&gt;"/>. Moreover, NetKnights provides services, consultancy and paid programming of new features. <x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/></source>
         <target><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/><x id="START_BOLD_TEXT" ctype="x-b" equiv-text="&lt;b&gt;"/>您使用 privacyIDEA 的使用者數已超過 50 人。<x id="CLOSE_BOLD_TEXT" ctype="x-b" equiv-text="&lt;/b&gt;"/><x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/>感謝您的信任！<x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/> 對於正式的企業使用，我們推薦 <x id="START_LINK" ctype="x-a" equiv-text="&lt;a
           href=&quot;https://netknights.it/en/produkte/privacyidea/&quot;
           target=&quot;_blank&quot;
-          &gt;"/>privacyIDEA 企業版。 <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/><x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/> NetKnights 提供 <x id="START_LINK" ctype="x-a" equiv-text="&lt;a
+          &gt;"/>privacyIDEA 企業版<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/>。<x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/> NetKnights 提供 <x id="START_LINK" ctype="x-a" equiv-text="&lt;a
           href=&quot;https://netknights.it/en/produkte/privacyidea/&quot;
           target=&quot;_blank&quot;
-          &gt;"/>privacyIDEA 企業版 <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/>，內含<x id="START_BOLD_TEXT" ctype="x-b" equiv-text="&lt;b&gt;"/>支援與服務等級協議<x id="CLOSE_BOLD_TEXT" ctype="x-b" equiv-text="&lt;/b&gt;"/>。此外，NetKnights 也提供服務、諮詢及新功能的付費開發。 <x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/></target>
+          &gt;"/>privacyIDEA 企業版<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/>，內含<x id="START_BOLD_TEXT" ctype="x-b" equiv-text="&lt;b&gt;"/>支援與服務等級協議<x id="CLOSE_BOLD_TEXT" ctype="x-b" equiv-text="&lt;/b&gt;"/>。此外，NetKnights 也提供服務、諮詢及新功能的付費開發。 <x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/welcome-dialog/welcome-dialog.component.html</context>
-          <context context-type="linenumber">169,190</context>
+          <context context-type="linenumber">166,187</context>
         </context-group>
       </trans-unit>
       <trans-unit id="8102109482071322921" datatype="html">
