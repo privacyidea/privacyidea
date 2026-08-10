@@ -431,7 +431,7 @@ class CookieAction(NamedTuple):
     expires_at: datetime | None = None
 
 
-def apply_cookie_action(response, action: "CookieAction | None") -> None:
+def apply_cookie_action(response, action: CookieAction | None) -> None:
     """
     Apply a :class:`CookieAction` to a response: set, clear, or (for ``None``)
     leave the cookie untouched.

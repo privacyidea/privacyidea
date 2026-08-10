@@ -753,7 +753,7 @@ def _finalize_auth_response(context):
     return ret
 
 
-def _resolve_persistent_cookie(user: User, success: bool) -> "CookieAction | None":
+def _resolve_persistent_cookie(user: User, success: bool) -> CookieAction | None:
     """
     Decide whether to *issue* a new persistent ("remember device") cookie on a
     successful authentication, returning a ``"set"`` :class:`CookieAction` or
