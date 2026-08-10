@@ -9,3 +9,8 @@
   flex-direction: column;
   overflow: hidden;
 }
+
+.filter-paginator-container > .margin-left-8 {
+  align-self: flex-start;
+  margin-top: var(--global-padding);
+}
