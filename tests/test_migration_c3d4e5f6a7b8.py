@@ -57,7 +57,7 @@ class TestMigrationC3d4e5f6a7b8(MigrationTestBase):
                     "session": "",
                     "serial": "HOTP001",
                     "received_count": 0,
-                    "otp_valid": 0,
+                    "otp_valid": False,
                 },
                 {
                     "id": 9002,
@@ -67,7 +67,7 @@ class TestMigrationC3d4e5f6a7b8(MigrationTestBase):
                     "session": "",
                     "serial": "TOTP001",
                     "received_count": 0,
-                    "otp_valid": 0,
+                    "otp_valid": False,
                 },
                 {
                     "id": 9003,
@@ -77,7 +77,7 @@ class TestMigrationC3d4e5f6a7b8(MigrationTestBase):
                     "session": "",
                     "serial": "PUSH001",
                     "received_count": 0,
-                    "otp_valid": 0,
+                    "otp_valid": False,
                 },
             ])
 
@@ -127,7 +127,7 @@ class TestMigrationC3d4e5f6a7b8(MigrationTestBase):
                     "session": "",
                     "serial": "SER001",
                     "received_count": 0,
-                    "otp_valid": 0,
+                    "otp_valid": False,
                 },
             ])
         finally:
