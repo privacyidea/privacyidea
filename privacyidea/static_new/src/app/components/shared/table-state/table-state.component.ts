@@ -35,7 +35,15 @@ export class TableStateComponent {
   readonly heading = input<string>("");
   readonly hint = input<string>("");
 
+  /** Every state but `empty` names its own glyph; `empty` is domain-specific, so the call site supplies it. */
+  private static readonly STATUS_ICONS: Partial<Record<TableStatus, string>> = {
+    filtered: "search_off",
+    error: "error_outline",
+    denied: "lock"
+  };
+
   readonly currentStatus = computed(() => this.status() ?? this.table().status());
+  readonly resolvedIcon = computed(() => TableStateComponent.STATUS_ICONS[this.currentStatus()] ?? this.icon());
   /** The projected call to action stays available where the list is empty for good, not where it failed or was filtered away. */
   readonly showsProjectedAction = computed(() => this.currentStatus() === "empty" || this.currentStatus() === "denied");
 }

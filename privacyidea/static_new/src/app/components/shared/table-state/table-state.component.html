@@ -19,15 +19,19 @@
 <div
   class="table-state"
   role="status">
+  @if (resolvedIcon()) {
+    <span
+      [class.table-state-icon-frame-error]="currentStatus() === 'error'"
+      class="table-state-icon-frame">
+      <mat-icon
+        aria-hidden="true"
+        class="table-state-icon">
+        {{ resolvedIcon() }}
+      </mat-icon>
+    </span>
+  }
   @switch (currentStatus()) {
     @case ("empty") {
-      @if (icon()) {
-        <mat-icon
-          aria-hidden="true"
-          class="table-state-icon">
-          {{ icon() }}
-        </mat-icon>
-      }
       <h2 class="table-state-heading">
         {{ heading() }}
       </h2>
@@ -38,11 +42,6 @@
       }
     }
     @case ("filtered") {
-      <mat-icon
-        aria-hidden="true"
-        class="table-state-icon">
-        search_off
-      </mat-icon>
       <h2
         class="table-state-heading"
         i18n>
@@ -64,11 +63,6 @@
       }
     }
     @case ("error") {
-      <mat-icon
-        aria-hidden="true"
-        class="table-state-icon table-state-icon-error">
-        error_outline
-      </mat-icon>
       <h2
         class="table-state-heading"
         i18n>
@@ -88,11 +82,6 @@
       </button>
     }
     @case ("denied") {
-      <mat-icon
-        aria-hidden="true"
-        class="table-state-icon">
-        lock
-      </mat-icon>
       <h2
         class="table-state-heading"
         i18n>

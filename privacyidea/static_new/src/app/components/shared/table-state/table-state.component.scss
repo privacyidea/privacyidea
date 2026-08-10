@@ -3,7 +3,18 @@
   flex: 1 1 auto;
   align-items: center;
   justify-content: center;
+  // Compact by default. Tables that own their page opt into filling the table's
+  // footprint via `table.page-table-state-size`, so the panel is not left as a
+  // small island at the top of an otherwise empty content area.
+  min-height: var(--table-state-min-height, 15rem);
+  min-width: var(--table-state-min-width, auto);
+}
+
+// The no-data row inside a rendered table is one row among the chrome that stays
+// (filter, paginator, header), so there it keeps the compact footprint.
+:host-context(td) {
   min-height: 15rem;
+  min-width: auto;
 }
 
 .table-state {
@@ -16,25 +27,44 @@
   text-align: center;
 }
 
+// A tinted disc carries the glyph instead of a washed-out icon floating on the
+// card: filled Material glyphs lose their silhouette when scaled up and faded.
+.table-state-icon-frame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 5.5rem;
+  height: 5.5rem;
+  margin-bottom: var(--half-global-gap);
+  border-radius: 50%;
+  background-color: var(--mat-sys-primary-container);
+  color: var(--mat-sys-on-primary-container);
+}
+
+.table-state-icon-frame-error {
+  background-color: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+}
+
 .table-state-icon {
-  --table-state-icon-size: 56px;
+  --table-state-icon-size: 40px;
   font-size: var(--table-state-icon-size);
   width: var(--table-state-icon-size);
   height: var(--table-state-icon-size);
-  color: var(--mat-sys-on-surface-variant);
-  opacity: 0.55;
-}
-
-.table-state-icon-error {
-  color: var(--mat-sys-error);
+  color: inherit;
 }
 
 .table-state-heading {
   margin: 0;
+  font: var(--mat-sys-title-large);
+  // The typescale shorthand carries weight 400; a heading needs the medium step.
+  font-weight: 500;
+  color: var(--mat-sys-on-surface);
 }
 
 .table-state-hint {
   margin: 0 0 var(--half-global-gap);
   max-width: 40rem;
+  font: var(--mat-sys-body-medium);
   color: var(--mat-sys-on-surface-variant);
 }

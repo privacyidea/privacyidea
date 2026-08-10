@@ -158,6 +158,16 @@ $description-width: 18rem;
   }
 }
 
+// Sizes the standalone state panel (empty, denied, error) for a table that owns its
+// page: the panel claims the footprint the table would have had, so it reads as the
+// page content rather than as a small island at the top of an empty content area.
+// Tables embedded as one section of a details page deliberately do not opt in — there
+// the compact default keeps the section proportionate to its neighbours.
+@mixin page-table-state-size {
+  --table-state-min-height: calc(var(--table-max-height) - 2 * var(--global-padding));
+  --table-state-min-width: min(44rem, var(--max-width));
+}
+
 @mixin base-table-structure(
   $table-class: ".table",
   $filter-class: ".table-filter",
