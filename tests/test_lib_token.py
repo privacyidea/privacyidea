@@ -1442,6 +1442,27 @@ class TokenTestCase(MyTestCase):
         self.assertNotIn(tok_hans.get_serial(), serials)
         self.assertNotIn(tok_root.get_serial(), serials)
 
+        # --- userid composes with a realm-only User (realm param without user param) ---
+        # This simulates the API request: realm=realm1&userid=1000
+        realm_user = User(login="", realm=self.realm1)
+        tokens = get_tokens_paginate(user=realm_user, userid="1000")["tokens"]
+        serials = [t["serial"] for t in tokens]
+        self.assertIn(tok_cornelius.get_serial(), serials)
+        self.assertNotIn(tok_hans.get_serial(), serials)
+        self.assertNotIn(tok_root.get_serial(), serials)
+
+        # userid that doesn't match anyone in the realm returns nothing
+        tokens = get_tokens_paginate(user=realm_user, userid="9999")["tokens"]
+        self.assertEqual(0, len(tokens))
+
+        # --- resolver composes with a realm-only User ---
+        tokens = get_tokens_paginate(user=realm_user,
+                                     resolver=self.resolvername1)["tokens"]
+        serials = [t["serial"] for t in tokens]
+        self.assertIn(tok_cornelius.get_serial(), serials)
+        self.assertIn(tok_hans.get_serial(), serials)
+        self.assertNotIn(tok_root.get_serial(), serials)
+
         tok_cornelius.delete_token()
         tok_hans.delete_token()
         tok_root.delete_token()
