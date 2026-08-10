@@ -139,7 +139,8 @@ def identify_api_client():
 
     if client is None:
         # Unknown key_id or wrong secret: do not reject app-wide, do not audit.
-        log.warning("Ignoring an unknown or invalid X-API-Key.")
+        # DEBUG, not WARNING: a spoofable header on every request would flood logs.
+        log.debug("Ignoring an unknown or invalid X-API-Key.")
     elif client.status == ClientStatus.ACTIVE:
         g.client_id = client.id
         # Refresh the client's usage timestamp, throttled so a busy client does
