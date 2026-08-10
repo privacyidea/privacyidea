@@ -188,6 +188,23 @@ class RequestConfigTestCase(MyTestCase):
         self.assertEqual("Alice", config.request_mapping["displayName"])
         self.assertEqual("s3cr3t!", config.request_mapping["passwordProfile"]["password"])
 
+    def test_05b_tag_replacement_in_list_values(self):
+        # Tags are replaced at any depth of the request mapping, also inside list values and inside dicts of a list
+        config_dict = {
+            ENDPOINT: "http://example.com/users",
+            METHOD: "post",
+            HEADERS: {"Content-Type": "application/json"},
+            REQUEST_MAPPING: '{"businessPhones": ["{mobile}", "0000"], '
+                             '"identities": [{"issuerAssignedId": "{username}"}], '
+                             '"nested": [["{mobile}"]], "count": 1}'
+        }
+        config = RequestConfig(config_dict, {}, {"mobile": "+49123", "username": "alice"})
+        self.assertEqual(["+49123", "0000"], config.request_mapping["businessPhones"])
+        self.assertEqual([{"issuerAssignedId": "alice"}], config.request_mapping["identities"])
+        self.assertEqual([["+49123"]], config.request_mapping["nested"])
+        # Values which can not contain a tag keep their type
+        self.assertEqual(1, config.request_mapping["count"])
+
     def test_06_tag_values_are_not_rescanned(self):
         # Each tag is replaced only once: if the value of a tag contains another tag, the latter must not be replaced.
         config_dict = {
@@ -452,6 +469,11 @@ class DoRequestTestCase(MyTestCase):
         # A JSON request mapping such as '{"exact": true}' results in a Python bool. requests would render it as
         # 'True', but the APIs expect the JSON notation.
         self.assertEqual("exact=true&deleted=false", self._captured_query("get", {"exact": True, "deleted": False}))
+
+    @responses.activate
+    def test_13b_booleans_nested_in_the_query_string_are_lowercase(self):
+        # Booleans are also converted if they are nested in a list value of the request mapping
+        self.assertEqual("flags=true&flags=false", self._captured_query("get", {"flags": [True, False]}))
 
     @responses.activate
     def test_14_booleans_in_a_json_body_stay_booleans(self):
@@ -1399,8 +1421,8 @@ class HTTPResolverTestCase(MyTestCase):
 
     @responses.activate
     def test_24c_get_auth_header_password_with_asterisk(self):
-        # Same for the service account credentials used to authorize against the user store. This path stripped
-        # asterisks unconditionally, independent of the wildcard configured for the resolver.
+        # The service account credentials of the authorization request keep their asterisks as well, independent of
+        # the wildcard configured for the resolver.
         resolver = HTTPResolver()
         config = copy.deepcopy(self.advanced_config)
         config[CONFIG_AUTHORIZATION] = {METHOD: HTTPMethod.POST.value, ENDPOINT: "/token",
@@ -1441,6 +1463,18 @@ class HTTPResolverTestCase(MyTestCase):
         self.assertEqual("https://example.com/users/test%25?login=test%25", responses.calls[0].request.url)
 
     @responses.activate
+    def test_24e_get_user_list_with_a_non_string_search_value(self):
+        # A search value which is no string, e.g. a numeric user id, is searched for as well
+        resolver = HTTPResolver()
+        resolver.loadConfig(copy.deepcopy(self.advanced_config))
+
+        responses.add(responses.GET, "https://example.com/users", status=200,
+                      body="""[{"login": "testuser", "id": "1234"}]""")
+        users = resolver.getUserList({"userid": 1234})
+        self.assertEqual(1, len(users))
+        self.assertEqual("https://example.com/users?id=1234", responses.calls[0].request.url)
+
+    @responses.activate
     def test_25_get_user_groups(self):
         instance = HTTPResolver()
         config = copy.deepcopy(self.advanced_config)
@@ -1462,7 +1496,7 @@ class HTTPResolverTestCase(MyTestCase):
         self.assertListEqual([], groups)
 
         # SSL error
-        with mock.patch('requests.get', side_effect=SSLError("SSL error message")):
+        with mock.patch('requests.request', side_effect=SSLError("SSL error message")):
             groups = instance.get_user_groups(user)
             self.assertListEqual([], groups)
 
