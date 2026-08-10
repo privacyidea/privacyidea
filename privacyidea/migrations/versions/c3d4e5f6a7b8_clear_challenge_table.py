@@ -1,4 +1,4 @@
-"""Clear challenge table for dict-only data format
+"""v3.14: Clear challenge table for dict-only data format
 
 All challenge data is now stored as encrypted JSON dicts. Legacy challenges
 that stored raw strings or non-dict values are incompatible with the new
@@ -11,7 +11,6 @@ Revises: a1b2c3d4e5f6
 Create Date: 2026-08-06
 """
 from alembic import op
-import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = 'c3d4e5f6a7b8'
