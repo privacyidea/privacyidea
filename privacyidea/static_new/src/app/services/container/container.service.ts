@@ -36,7 +36,7 @@ import {
   FilterableTableService,
   FilterableTableServiceInterface
 } from "@services/table-utils/filterable-table-service";
-import { RowSelector } from "@services/table-utils/row-selector";
+import { loadedRows, RowSelector } from "@services/table-utils/row-selector";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { buildFilterParams, filterParamsEqual, toWildcardParam, withDefaultRealm } from "@utils/filter.utils";
@@ -548,7 +548,7 @@ export class ContainerService extends FilterableTableService implements Containe
 
   containerSelection = new RowSelector<ContainerDetailData>({
     keyGetter: (container) => container.serial,
-    visibleRows: computed(() => this.containerResource.value()?.result?.value?.containers ?? [])
+    visibleRows: loadedRows(this.containerResource, (response) => response.result?.value?.containers)
   });
 
   containerTypesResource = httpResource<PiResponse<ContainerTypes>>(() => {

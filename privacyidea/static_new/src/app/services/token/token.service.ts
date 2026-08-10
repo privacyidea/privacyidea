@@ -39,7 +39,7 @@ import {
   FilterableTableService,
   FilterableTableServiceInterface
 } from "@services/table-utils/filterable-table-service";
-import { RowSelector } from "@services/table-utils/row-selector";
+import { loadedRows, RowSelector } from "@services/table-utils/row-selector";
 import { FilterCaseNote } from "@utils/filter-hint.utils";
 import { filterParamsEqual, toBooleanParam, withDefaultRealm } from "@utils/filter.utils";
 import { StringUtils } from "@utils/string.utils";
@@ -718,7 +718,7 @@ export class TokenService extends FilterableTableService implements TokenService
 
   tokenSelection = new RowSelector<TokenDetails>({
     keyGetter: (token) => token.serial,
-    visibleRows: computed(() => this.tokenResourceValue()?.tokens ?? [])
+    visibleRows: loadedRows(this.tokenResource, (response) => response.result?.value?.tokens)
   });
 
   selectedToken = signal<string | null>(null);

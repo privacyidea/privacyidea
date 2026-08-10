@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { computed, linkedSignal, Signal } from "@angular/core";
+import { computed, linkedSignal, ResourceRef, Signal } from "@angular/core";
 import { toObservable, toSignal } from "@angular/core/rxjs-interop";
 import { MatTableDataSource } from "@angular/material/table";
 import { finalize, switchMap } from "rxjs";
@@ -32,6 +32,30 @@ export function renderedRows<T>(dataSource: Signal<MatTableDataSource<T>>): Sign
     toObservable(dataSource).pipe(switchMap((source) => source.connect().pipe(finalize(() => source.disconnect())))),
     { initialValue: [] as T[] }
   );
+}
+
+/**
+ * The rows a resource-backed table renders, held across reloads.
+ *
+ * A resource drops its value while a request is in flight, so reading it directly would empty the table
+ * on every filter, sort or page change. The previous rows stay until the next ones arrive; an error clears them.
+ */
+export function loadedRows<T, TValue>(
+  resource: ResourceRef<TValue | undefined>,
+  rowsOf: (value: TValue) => readonly T[] | undefined
+): Signal<readonly T[]> {
+  return linkedSignal<{ value: TValue | undefined; isLoading: boolean; error: unknown }, readonly T[]>({
+    source: () => ({
+      value: resource.hasValue() ? resource.value() : undefined,
+      isLoading: resource.isLoading(),
+      error: resource.error()
+    }),
+    computation: (source, previous) => {
+      if (source.error) return [];
+      if (!source.value) return source.isLoading ? (previous?.value ?? []) : [];
+      return rowsOf(source.value) ?? [];
+    }
+  });
 }
 
 /**
