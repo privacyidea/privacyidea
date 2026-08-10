@@ -38,9 +38,15 @@ Nothing here is read back on the authentication path. The engine counts over the
 table (see :class:`~privacyidea.models.conditional_access_outcome.ConditionalAccessOutcome`), so this module only ever
 writes.
 
-An admin lifting a lock or a block is **not** recorded here: that is a management operation whose interesting fact is
-*who* did it under which authorization, which the audit log records and this table has no column for (nor an
-authentication-log row to hang it on).
+Two things are deliberately **not** recorded here, so their absence is not read as a bug:
+
+* An action the engine recognized but **skipped** - an invalid lock duration, an email without a recipient, a
+  never-block IP, a stage already de-duplicated within its window. Only what happened is stored, so counting rows
+  answers "how often was this user locked" without a filter; the ``log.warning`` each skip emits is the record of the
+  misconfiguration.
+* An admin **lifting** a lock or a block. That is a management operation whose interesting fact is *who* did it under
+  which authorization, which the audit log records and this table has no column for (nor an authentication-log row to
+  hang it on).
 """
 import logging
 from collections.abc import Sequence

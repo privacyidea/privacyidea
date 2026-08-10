@@ -53,6 +53,8 @@ import {
   MatTableDataSource
 } from "@angular/material/table";
 import { RouterLink } from "@angular/router";
+import { ConditionalAccessCell } from "./cells/conditional-access-cell/conditional-access-cell";
+import { InfoCell } from "./cells/info-cell/info-cell";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
@@ -135,8 +137,21 @@ const columnKeysMap: { key: string; label: string; filterable: boolean; sortable
   { key: "serial", label: $localize`Serial`, filterable: true, sortable: true },
   { key: "transaction_id", label: $localize`Transaction ID`, filterable: true, sortable: true },
   { key: "attempt_id", label: $localize`Attempt ID`, filterable: true, sortable: true },
+  // Neither is backed by a sortable column: other_info is JSON, and the conditional-access outcomes live in their own
+  // table, read alongside each entry.
+  {
+    key: "conditional_access_outcomes",
+    label: $localize`Conditional Access Outcome`,
+    filterable: false,
+    sortable: false
+  },
   { key: "other_info", label: $localize`Info`, filterable: false, sortable: false }
 ];
+
+// The columns that render a list rather than a scalar, each by its own cell component (see ./cells). They share the
+// width treatment and the scrolling, decided here because it depends on the whole page, and their looks (cells/
+// _info-list.scss) - not their rendering.
+const INFO_COLUMN_KEYS = ["conditional_access_outcomes", "other_info"];
 
 // Local start-of-day / end-of-day ISO bounds for a date chosen in the range picker. The picker yields a native Date
 // at local midnight; the log renders timestamps in local time, so the bounds are the local day edges (inclusive end
@@ -208,65 +223,6 @@ const FILTER_TOOLTIPS: Record<string, string> = {
 };
 
 // Key fragments that read as acronyms rather than words when an other_info key is humanized for display.
-const INFO_KEY_ACRONYMS: Record<string, string> = {
-  ip: "IP",
-  id: "ID",
-  ca: "CA",
-  otp: "OTP",
-  pin: "PIN"
-};
-
-// When an element of a list-valued info key carries one of these, it heads that group instead of a bare ordinal and is
-// not repeated among the group's rows. A conditional-access finding is one policy's outcome, so its policy name
-// identifies it (the stage it tripped is a separate `stage_name` row, when that stage is named).
-const INFO_GROUP_LABEL_KEYS = ["policy_name", "name"];
-
-// Presentation for list-valued info keys whose groups speak for themselves: the key gets no row of its own, each group
-// heading reads `prefix` followed by the group's name, and that name links to `linkPath` + the group's `linkIdKey`
-// value. So a finding reads "Conditional Access: <policy>" with only the policy name linking to its editor, rather
-// than nesting under a "Conditional access findings" label. A group flagged by `dryRunKey` heads with `dryRunPrefix`
-// instead, so an unenforced finding is not mistaken for one that acted. `linkIdKey` and `dryRunKey` back the heading
-// and are not shown as rows.
-const INFO_GROUP_RENDERING: Record<string, InfoGroupRendering> = {
-  conditional_access_findings: {
-    prefix: $localize`Conditional Access:`,
-    dryRunPrefix: $localize`Dry Run:`,
-    dryRunKey: "dry_run",
-    linkPath: ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_DETAILS,
-    linkIdKey: "policy_id"
-  }
-};
-
-interface InfoGroupRendering {
-  prefix: string;
-  dryRunPrefix: string;
-  dryRunKey: string;
-  linkPath: string;
-  linkIdKey: string;
-}
-
-// A rendered other_info row. A leaf carries `value`; a one-level-nested dict carries `children` (rendered as a
-// sub-list); a list of dicts (e.g. the conditional-access findings) carries `groups`, one per element.
-// Nesting deeper than that is folded into the leaf value as compact JSON. An empty `key` renders no label row.
-interface InfoRow {
-  key: string;
-  value: string;
-}
-
-interface InfoGroup {
-  label: string;
-  rows: InfoRow[];
-  link?: string;
-  prefix?: string;
-}
-
-interface InfoEntry {
-  key: string;
-  value?: string;
-  children?: InfoRow[];
-  groups?: InfoGroup[];
-}
-
 @Component({
   selector: "app-authentication-log",
   imports: [
@@ -294,6 +250,8 @@ interface InfoEntry {
     ScrollEdgesDirective,
     DatePipe,
     ClearableInputComponent,
+    ConditionalAccessCell,
+    InfoCell,
     MultiSelectFilterComponent,
     MultiSelectMenuComponent,
     MatIcon,
@@ -311,7 +269,7 @@ interface InfoEntry {
 export class AuthenticationLog {
   readonly columnKeysMap = columnKeysMap;
   // Cells whose content can grow tall (stacked serials, long JSON) get a capped, scrollable cell.
-  readonly scrollableColumnKeys = ["serial", "other_info"];
+  readonly scrollableColumnKeys = ["serial", ...INFO_COLUMN_KEYS];
   // Client filter: show the friendly user-agent name, filter by its identifier prefix (a trailing "*" is applied by
   // the multi-select component since client_label stores the full user-agent string incl. version).
   // REVIEW: once selected, the shared filter input shows the raw stored value (e.g. `client_label: privacyIDEA-Keycloak*`)
@@ -526,10 +484,13 @@ export class AuthenticationLog {
       return previous?.value ?? new MatTableDataSource(this.emptyResource());
     }
   });
-  // The Info column only earns its width when something is actually in it: it is widened for the current page when at
-  // least one entry carries other_info, and otherwise stays as narrow as the table wants.
+  // An info-like column only earns its width when something is actually in it: it is widened for the current page when
+  // at least one entry has content for it, and otherwise stays as narrow as the table wants.
   readonly hasInfoValues = computed(() =>
     this.dataSource().data.some((entry) => entry.other_info && Object.keys(entry.other_info).length > 0)
+  );
+  readonly hasOutcomeValues = computed(() =>
+    this.dataSource().data.some((entry) => (entry.conditional_access_outcomes?.length ?? 0) > 0)
   );
   pageSizeOptions = computed(() =>
     [...new Set([...this.tableUtilsService.pageSizeOptions(), this.authenticationLogService.pageSize()])].sort(
@@ -730,87 +691,14 @@ export class AuthenticationLog {
     return outcome ? (OUTCOME_CLASS[outcome] ?? "") : "";
   }
 
-  // Render other_info as "Key: value" rows. Scalars show as-is and scalar arrays as a comma-separated list. A nested
-  // object (e.g. the `truncated` overflow key) becomes a one-level sub-list, and a list of objects (the
-  // conditional-access findings) becomes one sub-list per element. Anything deeper is compact JSON.
-  infoEntries(value: AuthenticationLogEntry["other_info"]): InfoEntry[] {
-    if (!value) return [];
-    return Object.entries(value).map(([key, raw]) => {
-      const label = this.humanizeInfoKey(key);
-      if (this.isObjectList(raw)) {
-        const rendering = INFO_GROUP_RENDERING[key];
-        return {
-          // A key with its own rendering needs no label row: its group headings carry the context instead.
-          key: rendering ? "" : label,
-          groups: raw.map((element, index) => this.infoGroup(element, index, raw.length, rendering))
-        };
-      }
-      if (this.isPlainObject(raw)) {
-        return { key: label, children: this.infoRows(raw) };
-      }
-      return { key: label, value: this.formatInfoValue(raw) };
-    });
+  // Whether *column* renders a list (Info / Conditional access) rather than a scalar, and whether the current page has
+  // anything to put in it - together they decide the width treatment.
+  isInfoColumn(column: string): boolean {
+    return INFO_COLUMN_KEYS.includes(column);
   }
 
-  // Head a group with its identifying name when it has one (see INFO_GROUP_LABEL_KEYS), else with a plain ordinal so
-  // several groups stay distinguishable. A single unnamed group needs no heading at all. Under a *rendering* the
-  // heading is prefixed and its name links to the record it describes; the keys consumed by the heading and the link
-  // are not repeated among the rows.
-  private infoGroup(
-    element: Record<string, unknown>,
-    index: number,
-    total: number,
-    rendering?: InfoGroupRendering
-  ): InfoGroup {
-    const labelKey = INFO_GROUP_LABEL_KEYS.find((key) => typeof element[key] === "string" && element[key] !== "");
-    const skipKeys = [labelKey, rendering?.linkIdKey, rendering?.dryRunKey].filter((key): key is string => !!key);
-    const name = labelKey ? String(element[labelKey]) : total > 1 ? `${index + 1}` : "";
-    if (!rendering) {
-      return { label: name, rows: this.infoRows(element, skipKeys) };
-    }
-    const id = element[rendering.linkIdKey];
-    return {
-      label: name,
-      // The prefix always shows, even for a lone group: it is what marks the finding as a dry run or as enforced.
-      prefix: element[rendering.dryRunKey] ? rendering.dryRunPrefix : rendering.prefix,
-      rows: this.infoRows(element, skipKeys),
-      link: id === null || id === undefined ? undefined : `${rendering.linkPath}${id}`
-    };
-  }
-
-  private infoRows(value: Record<string, unknown>, skipKeys: string[] = []): InfoRow[] {
-    return Object.entries(value)
-      .filter(([key]) => !skipKeys.includes(key))
-      .map(([key, raw]) => ({ key: this.humanizeInfoKey(key), value: this.formatInfoValue(raw) }));
-  }
-
-  // "policy_name" -> "Policy name", "source_ip" -> "Source IP". Keeps the raw key when it carries no underscores and
-  // is already capitalized, so acronym-only keys are not mangled.
-  private humanizeInfoKey(key: string): string {
-    const words = key.split("_").filter((word) => word.length > 0);
-    if (!words.length) return key;
-    return words
-      .map((word, index) => {
-        const upper = INFO_KEY_ACRONYMS[word.toLowerCase()];
-        if (upper) return upper;
-        return index === 0 ? word.charAt(0).toUpperCase() + word.slice(1) : word;
-      })
-      .join(" ");
-  }
-
-  private formatInfoValue(value: unknown): string {
-    if (value === null || value === undefined) return "";
-    if (Array.isArray(value)) return value.map((entry) => this.formatInfoValue(entry)).join(", ");
-    if (typeof value === "object") return JSON.stringify(value);
-    return String(value);
-  }
-
-  private isObjectList(value: unknown): value is Record<string, unknown>[] {
-    return Array.isArray(value) && value.length > 0 && value.every((entry) => this.isPlainObject(entry));
-  }
-
-  private isPlainObject(value: unknown): value is Record<string, unknown> {
-    return typeof value === "object" && value !== null && !Array.isArray(value);
+  hasColumnContent(column: string): boolean {
+    return column === "conditional_access_outcomes" ? this.hasOutcomeValues() : this.hasInfoValues();
   }
 
   // Badge for an admin principal, or null for a regular user / unknown value so the template renders nothing.

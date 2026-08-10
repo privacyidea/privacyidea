@@ -43,6 +43,7 @@ export interface AuthenticationLogEntry {
   transaction_id?: string | null;
   attempt_id?: string | null;
   other_info?: Record<string, unknown> | null;
+  conditional_access_outcomes?: Record<string, unknown>[] | null;
 }
 
 export interface AuthenticationLogPage {

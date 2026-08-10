@@ -158,7 +158,7 @@
             aria-label="{{ column.label }} Header"
             i18n-aria-label
             mat-header-cell
-            [class.cell-info-sized]="column.key === 'other_info' && hasInfoValues()">
+            [class.cell-info-sized]="isInfoColumn(column.key) && hasColumnContent(column.key)">
             <div class="flex ali-center">
               <div class="header-label">
                 {{ column.label }}
@@ -233,11 +233,11 @@
             aria-label="{{ column.label }} Cell"
             i18n-aria-label
             mat-cell
-            [class.cell-info]="column.key === 'other_info'"
-            [class.cell-info-sized]="column.key === 'other_info' && hasInfoValues()">
+            [class.cell-info]="isInfoColumn(column.key)"
+            [class.cell-info-sized]="isInfoColumn(column.key) && hasColumnContent(column.key)">
             <div
               [class.cell-scroll]="scrollableColumnKeys.includes(column.key)"
-              [class.cell-scroll-info]="column.key === 'other_info'">
+              [class.cell-scroll-info]="isInfoColumn(column.key)">
               @switch (column.key) {
                 @case ("timestamp") {
                   <span>{{ element.timestamp | date: "yyyy-MM-dd HH:mm:ss" }}</span>
@@ -325,49 +325,13 @@
                     </app-copyable>
                   }
                 }
+                @case ("conditional_access_outcomes") {
+                  <app-conditional-access-cell
+                    [entryId]="element.id"
+                    [outcomes]="element.conditional_access_outcomes" />
+                }
                 @case ("other_info") {
-                  @let entries = infoEntries(element.other_info);
-                  @if (entries.length) {
-                      <ul class="info-list">
-                        @for (entry of entries; track entry.key) {
-                          <li>
-                            @if (entry.groups) {
-                              @if (entry.key) {
-                                <span class="info-key">{{ entry.key }}</span>
-                              }
-                              @for (group of entry.groups; track $index) {
-                                <ul class="info-list info-group">
-                                  @if (group.label || group.prefix) {
-                                    <li>
-                                      @if (group.prefix) {
-                                        <span class="info-key info-group-prefix">{{ group.prefix }}</span>
-                                      }
-                                      @if (group.link) {
-                                        <a [routerLink]="group.link">{{ group.label }}</a>
-                                      } @else {
-                                        {{ group.label }}
-                                      }
-                                    </li>
-                                  }
-                                  @for (row of group.rows; track row.key) {
-                                    <li class="info-group-row"><span class="info-key">{{ row.key }}:</span> {{ row.value }}</li>
-                                  }
-                                </ul>
-                              }
-                            } @else if (entry.children) {
-                              <span class="info-key">{{ entry.key }}</span>
-                              <ul class="info-list">
-                                @for (child of entry.children; track child.key) {
-                                  <li><span class="info-key">{{ child.key }}:</span> {{ child.value }}</li>
-                                }
-                              </ul>
-                            } @else {
-                              <span class="info-key">{{ entry.key }}:</span> {{ entry.value }}
-                            }
-                          </li>
-                        }
-                      </ul>
-                  }
+                  <app-info-cell [info]="element.other_info" />
                 }
                 @default {
                   @if (element[column.key]) {
