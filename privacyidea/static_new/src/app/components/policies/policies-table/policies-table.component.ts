@@ -108,7 +108,7 @@ export class PoliciesTableComponent {
   });
   readonly emptyHint = computed(() =>
     this.authService.actionAllowed("policywrite")
-      ? $localize`Create a policy to control what users and administrators are allowed to do.`
+      ? $localize`Create a policy to control what users and administrators are allowed to do and how the system behaves.`
       : ""
   );
 
@@ -260,7 +260,10 @@ const PRIORITY_OPERATORS: readonly [string, (a: number, b: number) => boolean][]
 ];
 
 function matchesPriority(priority: number, val: string): boolean {
-  const [prefix, compare] = PRIORITY_OPERATORS.find(([p]) => val.startsWith(p)) ?? ["", (a: number, b: number) => a === b];
+  const [prefix, compare] = PRIORITY_OPERATORS.find(([p]) => val.startsWith(p)) ?? [
+    "",
+    (a: number, b: number) => a === b
+  ];
   const rest = val.substring(prefix.length).trim();
   if (!/^-?\d+$/.test(rest)) return false;
   return compare(priority, Number(rest));
@@ -286,7 +289,7 @@ function matchesConditions(item: PolicyDetail, term: string): boolean {
   if (listFields.some((list) => list?.some((entry) => entry.toLowerCase().includes(term)))) return true;
   return Boolean(
     item.time?.toLowerCase().includes(term) ||
-      item.conditions?.some((cond) => cond.some((c) => String(c).toLowerCase().includes(term)))
+    item.conditions?.some((cond) => cond.some((c) => String(c).toLowerCase().includes(term)))
   );
 }
 
