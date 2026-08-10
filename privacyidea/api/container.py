@@ -729,9 +729,10 @@ def set_realms(container_serial):
     :jsonparam realms: comma-separated list of realm names
         (whitespace tolerated; pass an empty string to remove all
         realms).
-    :status 200: dict mapping each realm to whether it was applied
-        (plus a ``deleted`` entry counting removed realms), in
-        ``result.value``.
+    :status 200: dict mapping each attached realm to ``True`` (including
+        realms kept although not requested) and each requested realm that
+        could not be attached to ``False``, plus ``deleted`` (whether any
+        realm was removed), in ``result.value``.
     """
     # Get parameters
     container_realms = get_required(request.all_data, "realms", allow_empty=True)
@@ -740,7 +741,6 @@ def set_realms(container_serial):
 
     # Set realms
     result = set_container_realms(container_serial, realm_list, allowed_realms)
-    success = False not in result.values()
 
     # Audit log
     container = find_container_by_serial(container_serial)
@@ -749,15 +749,23 @@ def set_realms(container_serial):
         g.audit_object.log({"user": owners[0].login,
                             "realm": owners[0].realm,
                             "resolver": owners[0].resolver})
-    audit_log_data = {"container_serial": container_serial,
-                      "container_type": container.type,
-                      "action_detail": f"realms={container_realms}",
-                      "success": success}
-    if not success:
-        result_str = ", ".join([f"{k}: {v}" for k, v in result.items() if not k == "deleted"])
-        audit_log_data["info"] = f"success = {result_str}"
-    g.audit_object.log(audit_log_data)
-    return send_result(result)
+    info = "; ".join(f"{label}={realms}" for label, realms in (("attached", result.attached),
+                                                               ("removed", result.removed),
+                                                               ("not added", result.not_added),
+                                                               ("not removed", result.not_removed)) if realms)
+    g.audit_object.log({"container_serial": container_serial,
+                        "container_type": container.type,
+                        "action_detail": f"realms={container_realms}",
+                        "success": result.success,
+                        "info": info})
+
+    # Response: every attached realm maps to True (including realms that could not be removed and stayed
+    # although not requested), every requested realm that could not be attached maps to False, plus
+    # whether anything was removed. The full breakdown is in the audit info.
+    response = {realm: True for realm in result.attached}
+    response.update({realm: False for realm in result.not_added})
+    response["deleted"] = bool(result.removed)
+    return send_result(response)
 
 
 @container_blueprint.route('<string:container_serial>/info/<key>', methods=['POST'])
@@ -785,8 +793,7 @@ def set_container_info(container_serial, key):
 
     # Audit log
     g.audit_object.log({"container_serial": container_serial,
-                        "key": key,
-                        "value": value,
+                        "action_detail": f"key={key}",
                         "success": res})
     return send_result(res)
 
@@ -806,16 +813,21 @@ def delete_container_info_entry(container_serial, key):
 
     :param container_serial: path component, the container serial.
     :param key: path component, the info key to delete.
-    :status 200: ``True`` on success in ``result.value``.
+    :status 200: ``True`` if the entry was deleted, ``False`` if the key does
+        not exist, in ``result.value``.
     :status 403: the key is reserved as ``PI_INTERNAL``.
     """
+    # delete_container_info raises a PolicyError (403) if the key is reserved for internal use, and
+    # returns False for a key that does not exist (a no-op), so no special-casing is needed here.
     res = delete_container_info(container_serial, key)
+    success = res[key]
 
     # Audit log
     g.audit_object.log({"container_serial": container_serial,
-                        "key": key,
-                        "success": res[key]})
-    return send_result(res[key])
+                        "action_detail": f"key={key}",
+                        "success": success})
+
+    return send_result(success)
 
 
 @container_blueprint.route('register/initialize', methods=['POST'])

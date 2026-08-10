@@ -100,7 +100,6 @@ export class PrivacyideaServersComponent {
     }
   }
 
-
   isAllSelected(): boolean {
     const rows = this.privacyideaDataSource().data;
     return rows.length > 0 && this.selection().length === rows.length;
@@ -145,12 +144,13 @@ export class PrivacyideaServersComponent {
       .afterClosed()
       .subscribe((result) => {
         if (result) {
-          selected.forEach((row) => this.privacyideaServerService.deletePrivacyideaServer(row.identifier));
+          selected.forEach(
+            (row) => void this.privacyideaServerService.deletePrivacyideaServer(row.identifier).catch(() => undefined)
+          );
           this.selection.set([]);
         }
       });
   }
-
 
   onFilterInput(value: string): void {
     const trimmed = (value ?? "").trim();

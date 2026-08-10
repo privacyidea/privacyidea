@@ -28,7 +28,7 @@
     <span i18n>Delete Expired</span>
   </button>
 
-  @if (advancedApiFilter.length > 0) {
+  @if (advancedApiFilterKeys.length > 0) {
     <button
       data-overflow-pinned
       [matMenuTriggerFor]="advancedFilterMenu"
@@ -41,7 +41,7 @@
       <span i18n>More Filter</span>
     </button>
     <mat-menu #advancedFilterMenu="matMenu">
-      @for (keyword of advancedApiFilter; track keyword) {
+      @for (keyword of advancedApiFilterKeys; track keyword) {
         <button
           (click)="onAdvancedFilterClick(keyword)"
           mat-menu-item>

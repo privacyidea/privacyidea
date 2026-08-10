@@ -34,6 +34,17 @@ import {
 import { MatButton } from "@angular/material/button";
 import { Router, RouterLink } from "@angular/router";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { EditableElement } from "@components/shared/edit-buttons/edit-buttons.component";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
+import { TokenDetails, TokenService, TokenServiceInterface, TokenTypeKey } from "@services/token/token.service";
+import { ValidateService, ValidateServiceInterface } from "@services/validate/validate.service";
+import { tokenTypes } from "@utils/token.utils";
+import { lastValueFrom, switchMap } from "rxjs";
+import { LostTokenComponent } from "./token-details-actions/lost-token/lost-token.component";
+import { TokenRolloverComponent } from "./token-details-actions/token-rollover/token-rollover.component";
 import {
   formatTokenTimestamp,
   infoDetailsKeyMap,
@@ -43,33 +54,22 @@ import {
   USER_TIMESTAMP_INFO_KEYS,
   userDetailsKeyMap
 } from "./token-details.constants";
-import { LostTokenComponent } from "./token-details-actions/lost-token/lost-token.component";
-import { TokenRolloverComponent } from "./token-details-actions/token-rollover/token-rollover.component";
 import {
   HotpMachineAssignDialogData,
   TokenHotpMachineAssignDialogComponent
 } from "./token-machine-attach-dialog/token-hotp-machine-attach-dialog/token-hotp-machine-attach-dialog";
-import { ValidateService, ValidateServiceInterface } from "@services/validate/validate.service";
-import { tokenTypes } from "@utils/token.utils";
-import { lastValueFrom, switchMap } from "rxjs";
-import { EditableElement } from "@components/shared/edit-buttons/edit-buttons.component";
-import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
-import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
-import { ContentService, ContentServiceInterface } from "@services/content/content.service";
-import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
-import { TokenDetails, TokenService, TokenServiceInterface, TokenTypeKey } from "@services/token/token.service";
 
 import { NgClass } from "@angular/common";
 import { MatIcon } from "@angular/material/icon";
 import { ROUTE_PATHS } from "@app/route_paths";
-import { DetailsEditRegistry } from "@components/shared/details-shared/field-editing/details-edit-registry.service";
 import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
-import { OverflowNavDirective } from "@components/shared/directives/overflow-nav/overflow-nav.directive";
+import { DetailsEditRegistry } from "@components/shared/details-shared/field-editing/details-edit-registry.service";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { OverflowNavDirective } from "@components/shared/directives/overflow-nav/overflow-nav.directive";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
-import { Base64Service, Base64ServiceInterface } from "@services/base64/base64.service";
 import { PolicyAction } from "@services/auth/policy-actions";
+import { Base64Service, Base64ServiceInterface } from "@services/base64/base64.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { MachineService, MachineServiceInterface } from "@services/machine/machine.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
@@ -670,7 +670,7 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   protected showTokenAuditLog() {
-    this.auditService.auditFilter.set(new FilterValue({ value: `serial: ${this.tokenSerial()}` }));
+    this.auditService.setFilter(new FilterValue({ value: `serial: ${this.tokenSerial()}` }));
   }
 
   private resetEdit(): void {

@@ -18,41 +18,66 @@
  **/
 // @services/theme/theme.service.ts
 
-import { DOCUMENT, inject, Injectable, Renderer2, RendererFactory2, signal } from "@angular/core";
-import { APP_THEME_STORAGE_KEY } from "@core/constants";
+import { DOCUMENT, inject, Injectable, Renderer2, RendererFactory2, Signal, signal } from "@angular/core";
+import { APP_THEME_COOKIE_NAME } from "@core/constants";
+import { readCookie, writeCookie } from "@core/cookie";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { UserSettingsService, UserSettingsServiceInterface } from "@services/user-settings/user-settings.service";
 
 export type ThemeMode = "light" | "dark" | "system";
+
+const THEME_MODES: ThemeMode[] = ["light", "dark", "system"];
 
 @Injectable({
   providedIn: "root"
 })
 export class ThemeService {
   public readonly currentTheme = signal<ThemeMode>("system");
-  private readonly visualTheme = signal<"light" | "dark">("light");
+  private readonly _visualTheme = signal<"light" | "dark">("light");
+  public readonly visualTheme: Signal<"light" | "dark"> = this._visualTheme.asReadonly();
   private readonly rendererFactory = inject(RendererFactory2);
   private readonly htmlElement: HTMLHtmlElement = inject(DOCUMENT).documentElement as HTMLHtmlElement;
+  private readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly userSettingsService: UserSettingsServiceInterface = inject(UserSettingsService);
   private renderer: Renderer2 = this.rendererFactory.createRenderer(null, null);
   private mediaQueryListener?: (event: MediaQueryListEvent) => void;
 
+  /**
+   * Applies the theme cached in the browser. For an administrator the stored user
+   * setting is the authoritative source, but it is only available after login -- the
+   * cache keeps the login screen and the first paint from flashing the wrong theme.
+   * For a principal of role "user" the cookie is the only place the theme lives.
+   */
   public initializeTheme(): void {
-    const savedTheme = localStorage.getItem(APP_THEME_STORAGE_KEY) as ThemeMode;
-    this.setTheme(savedTheme || "system");
+    this.applyStoredTheme(readCookie(APP_THEME_COOKIE_NAME));
   }
 
   /**
-   * Sets the theme, updates local storage, and applies the corresponding
-   * classes to the HTML element.
+   * Sets the theme, updates the cookie, and applies the corresponding classes to
+   * the HTML element. For an administrator the choice is additionally stored as the
+   * ``theme`` user setting, so it follows them to their other devices.
    * @param themeMode The themeMode to set ('light', 'dark', or 'system').
    */
   public setTheme(themeMode: ThemeMode): void {
-    const oldThemes: ThemeMode[] = ["light", "dark", "system"];
-    oldThemes.forEach((t) => this.renderer.removeClass(this.htmlElement, t));
+    this.applyStoredTheme(themeMode);
+    if (this.authService.isAuthenticated()) {
+      this.userSettingsService.setSetting("theme", themeMode).subscribe({ error: () => undefined });
+    }
+  }
 
-    this.currentTheme.set(themeMode);
-    localStorage.setItem(APP_THEME_STORAGE_KEY, themeMode);
+  /**
+   * Applies a theme that is already stored (user setting or cookie) without writing
+   * it back to the backend. Unknown values fall back to "system".
+   */
+  public applyStoredTheme(themeMode: unknown): void {
+    const mode = THEME_MODES.includes(themeMode as ThemeMode) ? (themeMode as ThemeMode) : "system";
+    THEME_MODES.forEach((t) => this.renderer.removeClass(this.htmlElement, t));
+
+    this.currentTheme.set(mode);
+    writeCookie(APP_THEME_COOKIE_NAME, mode);
 
     this.removeSystemThemeListener();
-    this.applyTheme(themeMode);
+    this.applyTheme(mode);
   }
 
   private applyTheme(theme: ThemeMode): void {
@@ -68,7 +93,7 @@ export class ThemeService {
       this.renderer.removeClass(this.htmlElement, "dark");
       this.renderer.addClass(this.htmlElement, theme);
 
-      this.visualTheme.set(theme);
+      this._visualTheme.set(theme);
     }
   }
 
@@ -76,7 +101,7 @@ export class ThemeService {
     const prefersDark = window.matchMedia("(prefers-color-scheme: dark)");
     const newVisualTheme = prefersDark.matches ? "dark" : "light";
     this.renderer.addClass(this.htmlElement, newVisualTheme);
-    this.visualTheme.set(newVisualTheme);
+    this._visualTheme.set(newVisualTheme);
   }
 
   private addSystemThemeListener(): void {
@@ -85,7 +110,7 @@ export class ThemeService {
       const newVisualTheme = event.matches ? "dark" : "light";
       this.renderer.removeClass(this.htmlElement, newVisualTheme === "light" ? "dark" : "light");
       this.renderer.addClass(this.htmlElement, newVisualTheme);
-      this.visualTheme.set(newVisualTheme);
+      this._visualTheme.set(newVisualTheme);
     };
     prefersDark.addEventListener("change", this.mediaQueryListener);
   }

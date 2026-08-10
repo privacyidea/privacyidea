@@ -27,11 +27,11 @@
       <mat-label i18n>Filter Challenges...</mat-label>
       <app-clearable-input
         (clearButtonClick)="challengesService.clearFilter()"
-        [showClearButton]="challengesService.challengesFilter().isNotEmpty">
+        [showClearButton]="challengesService.filterDraft().isNotEmpty">
         <input
           #filterHTMLInputElement
           (input)="challengesService.handleFilterInput($event)"
-          [value]="challengesService.challengesFilter().filterString"
+          [value]="challengesService.filterDraft().filterString"
           i18n-placeholder
           matInput
           placeholder="Example query: 'transaction_id: 00000000000000000001'" />
@@ -67,7 +67,7 @@
             <div class="flex ali-center">
               {{ column.label }}
               <div class="margin-left-16 flex">
-                @if (apiFilter.includes(column.key)) {
+                @if (apiFilterKeys.includes(column.key)) {
                   <button
                     (click)="onKeywordClick(column.key)"
                     aria-label="Filter by {{ column.label }}"

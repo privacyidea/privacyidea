@@ -409,7 +409,7 @@ describe("TokenService", () => {
   describe("token filter -> tokenResource request params", () => {
     it("wildcard-wraps non-ID filter fields in the outgoing request", () => {
       contentServiceMock.onTokens = signal(true);
-      tokenService.tokenFilter.set(new FilterValue({ value: "serial: otp user: alice description: vpn" }));
+      tokenService.activeFilter.set(new FilterValue({ value: "serial: otp user: alice description: vpn" }));
       TestBed.tick();
 
       const req = mockBackend.expectOne((r) => r.url === "/token/");
@@ -421,7 +421,7 @@ describe("TokenService", () => {
 
     it("omits empty / wildcard-only filter values from the outgoing request", () => {
       contentServiceMock.onTokens = signal(true);
-      tokenService.tokenFilter.set(
+      tokenService.activeFilter.set(
         new FilterValue({ value: "serial: '' type: hotp active: '  ' description: * rollout_state: ***" })
       );
       TestBed.tick();
@@ -437,7 +437,7 @@ describe("TokenService", () => {
 
     it("normalizes assigned/active boolean filters to backend format True/False", () => {
       contentServiceMock.onTokens = signal(true);
-      tokenService.tokenFilter.set(new FilterValue({ value: "assigned: false active: true serial: OTP" }));
+      tokenService.activeFilter.set(new FilterValue({ value: "assigned: false active: true serial: OTP" }));
       TestBed.tick();
 
       const req = mockBackend.expectOne((r) => r.url === "/token/");
@@ -446,11 +446,117 @@ describe("TokenService", () => {
       expect(req.request.params.get("serial")).toBe("*OTP*");
       req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
     });
+
+    it("sends a hidden type_list entry unwrapped as a comma-separated param", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(new FilterValue().updateHiddenEntry("type_list", "hotp,webauthn"));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("type_list")).toBe("hotp,webauthn");
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("combines a hidden type_list with a typed tokentype filter", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(
+        new FilterValue({ value: "type: hotp" }).updateHiddenEntry("type_list", "hotp,webauthn")
+      );
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("type_list")).toBe("hotp,webauthn");
+      expect(req.request.params.get("type")).toBe("*hotp*");
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("omits type_list when the hidden entry is empty", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(new FilterValue().updateHiddenEntry("type_list", ""));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.has("type_list")).toBe(false);
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+    it("sends a single token type as a wildcarded type param", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(new FilterValue({ value: "type: hotp" }));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("type")).toBe("*hotp*");
+      expect(req.request.params.has("type_list")).toBe(false);
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("sends multiple token types as type_list instead of type", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(new FilterValue({ value: "type: hotp,totp" }));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("type_list")).toBe("hotp,totp");
+      expect(req.request.params.has("type")).toBe(false);
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("merges the type and type_list keywords into a single deduplicated list", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(new FilterValue({ value: "type: hotp type_list: totp,hotp" }));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("type_list")).toBe("hotp,totp");
+      expect(req.request.params.has("type")).toBe(false);
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("wildcard-wraps every token realm of a comma-separated list on its own", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(new FilterValue({ value: "tokenrealm: realm1,realm2" }));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("tokenrealm")).toBe("*realm1*,*realm2*");
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+  });
+
+  describe("tokenTypeOptions() ordering", () => {
+    const flushRights = async (value: Record<string, string>) => {
+      contentServiceMock.onTokensEnrollment = signal(true);
+      TestBed.tick();
+      const req = mockBackend.expectOne((r) => r.url.endsWith("/auth/rights"));
+      req.flush(MockPiResponse.fromValue(value));
+      await Promise.resolve();
+    };
+
+    it("sorts options alphabetically by the label (text before the first colon)", async () => {
+      await flushRights({
+        hotp: "Zulu: event based",
+        totp: "Alpha: time based",
+        spass: "Mike: simple pass"
+      });
+
+      expect(tokenService.tokenTypeOptions().map((o) => o.key)).toEqual(["totp", "spass", "hotp"]);
+    });
+
+    it("uses the full info string as the label when it contains no colon", async () => {
+      await flushRights({
+        hotp: "Beta",
+        totp: "Alpha"
+      });
+
+      const options = tokenService.tokenTypeOptions();
+      expect(options.map((o) => o.key)).toEqual(["totp", "hotp"]);
+      expect(options[0].info).toBe("Alpha");
+    });
   });
 
   describe("showOnlyTokenInContainer -> token container filter", () => {
     const containerRoute = ROUTE_PATHS.CONTAINERS_DETAILS + "/CONT0001";
-    const hasContainerFilter = () => tokenService.tokenFilter().hiddenFilterMap.has("container_serial");
+    const hasContainerFilter = () => tokenService.activeFilter().hiddenFilterMap.has("container_serial");
 
     it("defaults to false on the container details route (shows only tokens not in a container)", () => {
       contentServiceMock.routeUrl.set(containerRoute);
@@ -1244,7 +1350,7 @@ describe("TokenService", () => {
     });
 
     it("only notes keywords the UI can actually look up", () => {
-      const lookupKeys = [...tokenService.apiFilter, ...tokenService.advancedApiFilter];
+      const lookupKeys = [...tokenService.apiFilterKeys, ...tokenService.advancedApiFilterKeys];
       Object.keys(tokenService.caseNotes).forEach((key) => expect(lookupKeys).toContain(key));
     });
   });

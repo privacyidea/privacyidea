@@ -1,0 +1,100 @@
+/**
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+
+@use "styles";
+
+.settings-container {
+  @include styles.main-component-style;
+  display: flex;
+  flex-direction: column;
+  gap: var(--global-gap);
+}
+
+app-details-card {
+  background: var(--inset-surface-3);
+  box-shadow: var(--inset-shadow-3);
+}
+
+.theme-toggle {
+  position: relative;
+  display: inline-block;
+  height: 72px;
+  width: 72px;
+
+  input {
+    position: absolute;
+    inset: 0;
+    height: 100%;
+    width: 100%;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 1;
+  }
+
+  &__button {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    display: block;
+    height: 56px;
+    width: 56px;
+    margin-left: -28px;
+    margin-top: -28px;
+    border-radius: 50%;
+    background: var(--mat-sys-surface-container-lowest);
+    box-shadow: var(--elevation-5);
+    transition: all 300ms cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  &__label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--mat-sys-on-surface);
+    opacity: 0.9;
+    transition: color 300ms ease-out;
+    pointer-events: none;
+  }
+
+  input:active ~ &__button,
+  input:checked ~ &__button {
+    background: var(--inset-surface-5);
+    box-shadow: var(--inset-shadow-5);
+  }
+
+  input:active ~ &__label {
+    opacity: 0.6;
+  }
+
+  input:focus-visible ~ &__button {
+    outline: 2px solid var(--mat-sys-primary);
+    outline-offset: 2px;
+  }
+}
+
+.settings-row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}

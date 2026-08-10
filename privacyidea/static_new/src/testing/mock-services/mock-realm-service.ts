@@ -32,6 +32,8 @@ export class MockRealmService implements RealmServiceInterface {
     return data ? (Object.keys(data)[0] ?? "") : "";
   });
 
+  defaultRealmResolved: Signal<boolean> = computed(() => !this.defaultRealmResource.isLoading());
+
   createRealm = jest
     .fn()
     .mockImplementation((realm: string, nodeId: string, resolvers: { name: string; priority?: number | null }[]) => {
