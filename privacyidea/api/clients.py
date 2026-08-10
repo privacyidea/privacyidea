@@ -51,22 +51,23 @@ from ..lib.user import User
 log = logging.getLogger(__name__)
 
 
-def _allowed_revoke_realm_ids():
+def _allowed_realm_ids(action):
     """
-    The realm ids the acting admin may revoke remembered devices in, or ``None``
-    when unrestricted.
+    The realm ids the acting admin may act on for ``action`` (a
+    remembered-device admin action), or ``None`` when unrestricted.
 
-    ``check_base_action`` realm-scopes the revoke endpoints that carry a ``realm``
-    (or ``user``) in the request, but the single-device and unfiltered per-client
-    revokes carry neither - so a realm-scoped admin would otherwise revoke across
-    realms. This computes the admin's allowed realms (mirroring the tokenlist
-    scoping) so those two paths can enforce the same restriction.
+    ``check_base_action`` realm-scopes the endpoints that carry a ``realm`` (or
+    ``user``) in the request, but the list, single-device and unfiltered
+    per-client revoke paths carry neither - so a realm-scoped admin would
+    otherwise see or revoke across realms. This computes the admin's allowed
+    realms for the given action (mirroring the tokenlist scoping) so those paths
+    can enforce the same restriction. An empty set means "no realms".
     """
     from ..lib.policy import Match, SCOPE
     if not g.policy_object.list_policies(scope=SCOPE.ADMIN, active=True):
         return None
     realm_ids = set()
-    for pol in Match.admin(g, action=PolicyAction.REMEMBERED_DEVICE_REVOKE).policies():
+    for pol in Match.admin(g, action=action).policies():
         if not pol.get("realm"):
             return None
         realm_ids.update(get_realm_id(name) for name in pol.get("realm"))
@@ -237,9 +238,9 @@ def list_client_remembered_devices_api(client_id):
     """
     List the remembered devices of a client.
 
-    The rotating token is never included; each entry carries only the
-    ``series_id`` (used to target revocation) and non-sensitive metadata
-    (user, IP, user agent, created / last used / expiry).
+    No part of the cookie is ever included; each entry carries only a non-secret
+    ``device_id`` (used to target revocation) and metadata (user, IP, user agent,
+    created / last used / expiry).
 
     Requires admin authentication and the policy action :ref:`policy_remembered_device_list`.
 
@@ -249,7 +250,11 @@ def list_client_remembered_devices_api(client_id):
     """
     # Ensure the client exists (404 otherwise).
     get_client(client_id)
-    devices = get_client_devices(client_id)
+    # The request carries no realm, so check_base_action could not realm-scope
+    # it: restrict the listing to the admin's allowed realms so a realm-scoped
+    # remembered_device_list admin does not see every realm's devices.
+    allowed_realm_ids = _allowed_realm_ids(PolicyAction.REMEMBERED_DEVICE_LIST)
+    devices = get_client_devices(client_id, realm_ids=allowed_realm_ids)
 
     g.audit_object.log({"success": True, "info": f"Client ID: {client_id}"})
     return send_result(devices_to_dicts(devices))
@@ -311,7 +316,7 @@ def revoke_client_remembered_devices_api(client_id):
         # could not realm-scope it. Enforce the admin's realm restriction here so
         # a realm-scoped admin revokes only within their allowed realms rather
         # than wiping every realm's devices on the client.
-        allowed_realm_ids = _allowed_revoke_realm_ids()
+        allowed_realm_ids = _allowed_realm_ids(PolicyAction.REMEMBERED_DEVICE_REVOKE)
         if allowed_realm_ids is None:
             count = revoke_client_devices(client_id)
         else:
@@ -323,37 +328,39 @@ def revoke_client_remembered_devices_api(client_id):
     return send_result(count)
 
 
-@clients_blueprint.route('/<client_id>/remembered_devices/<series_id>', methods=['DELETE'])
+@clients_blueprint.route('/<client_id>/remembered_devices/<device_id>', methods=['DELETE'])
 @prepolicy(check_base_action, request, PolicyAction.REMEMBERED_DEVICE_REVOKE)
 @event("remembered_device_revoke", request, g)
 @log_with(log)
-def revoke_client_remembered_device_api(client_id, series_id):
+def revoke_client_remembered_device_api(client_id, device_id):
     """
-    Revoke a single remembered device of a client. The revocation is scoped to
-    the client, so a client id cannot be used to revoke another client's device.
+    Revoke a single remembered device of a client, targeted by its non-secret
+    ``device_id``. The revocation is scoped to the client, so a client id cannot
+    be used to revoke another client's device.
 
     Requires admin authentication and the policy action :ref:`policy_remembered_device_revoke`.
 
     :param client_id: path component, the id of the client.
-    :param series_id: path component, the series id of the device.
-    :status 200: ``result.value`` is the series id of the revoked remembered device.
+    :param device_id: path component, the public device id (never the cookie's
+        secret series id).
+    :status 200: ``result.value`` is the device id of the revoked remembered device.
     :status 403: the acting admin may not revoke in the device's realm.
     :status 404: no such device exists for this client.
     """
     # The request carries no realm, so check_base_action could not realm-scope it:
     # enforce the admin's realm restriction against the device's own realm.
-    device = get_client_device(client_id, series_id)
+    device = get_client_device(client_id, device_id)
     if not device:
-        raise ResourceNotFoundError(f"The device {series_id!r} does not exist for this client.")
-    allowed_realm_ids = _allowed_revoke_realm_ids()
+        raise ResourceNotFoundError(f"The device {device_id!r} does not exist for this client.")
+    allowed_realm_ids = _allowed_realm_ids(PolicyAction.REMEMBERED_DEVICE_REVOKE)
     if allowed_realm_ids is not None and device.realm_id not in allowed_realm_ids:
         raise PolicyError("You are not allowed to revoke remembered devices in this device's realm.")
 
-    # Delete the row already fetched above rather than re-querying it by series id.
+    # Delete the row already fetched above rather than re-querying it.
     device.delete()
 
     g.audit_object.log({"success": True, "info": f"{client_id}: revoked remembered device"})
-    return send_result(series_id)
+    return send_result(device_id)
 
 
 @clients_blueprint.route('/<client_id>', methods=['DELETE'])

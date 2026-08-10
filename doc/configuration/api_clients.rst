@@ -154,12 +154,14 @@ Each remembered device is bound to a client and the user's resolver-stable
 identity (resolver, user id and realm). An administrator with
 :ref:`policy_remembered_device_list` can view a client's remembered devices — in
 the WebUI on the client's *Remembered devices* view, or over
-:http:get:`/clients/(client_id)/remembered_devices`.
+:http:get:`/clients/(client_id)/remembered_devices`. Each device is identified by
+a non-secret ``device_id``; the cookie's secret ``series_id`` is never returned,
+so viewing a device never exposes a usable credential.
 
 Revoking (which requires :ref:`policy_remembered_device_revoke`) invalidates the affected
 device cookies immediately, and comes in two forms:
 
-* a single device, with :http:delete:`/clients/(client_id)/remembered_devices/(series_id)`;
+* a single device, with :http:delete:`/clients/(client_id)/remembered_devices/(device_id)`;
 * all of a client's remembered devices at once, with
   :http:delete:`/clients/(client_id)/remembered_devices` — optionally narrowed to one
   ``realm`` or to one ``user`` (together with ``realm``). This is a single

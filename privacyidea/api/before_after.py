@@ -39,7 +39,7 @@ from .container import container_blueprint
 from ..lib.container import find_container_for_token, find_container_by_serial
 from ..lib.framework import get_app_config_value
 from ..lib.clients import identify_client_by_key, touch_client
-from ..models import ClientStatus
+from ..models import ClientStatus, db
 from ..lib.policies.actions import PolicyAction
 from ..lib.user import get_user_from_param
 import logging
@@ -149,6 +149,10 @@ def identify_api_client():
         try:
             touch_client(client)
         except Exception as exc:
+            # touch_client commits; a failed commit leaves the session in a failed
+            # transaction, so roll back or the real endpoint dies with
+            # PendingRollbackError - defeating the best-effort intent.
+            db.session.rollback()
             log.warning(f"Could not update the client's last_used_at timestamp: {exc}")
     else:
         # Known key, valid secret, but the client is disabled.

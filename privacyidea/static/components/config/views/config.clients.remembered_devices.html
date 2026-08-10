@@ -92,14 +92,14 @@
             <td>
                 <button class="btn btn-danger btn-sm"
                         ng-show="checkRight('remembered_device_revoke')"
-                        ng-hide="showRevokeDialog[device.series_id]"
-                        ng-click="showRevokeDialog[device.series_id] = true">
+                        ng-hide="showRevokeDialog[device.device_id]"
+                        ng-click="showRevokeDialog[device.device_id] = true">
                     <span class="glyphicon glyphicon-trash"></span>
                     <span translate>Revoke</span>
                 </button>
-                <div class="btn-group-vertical" ng-show="showRevokeDialog[device.series_id]">
+                <div class="btn-group-vertical" ng-show="showRevokeDialog[device.device_id]">
                     <button class="btn btn-danger btn-sm"
-                            ng-click="revokeRememberedDevice(device.series_id)">
+                            ng-click="revokeRememberedDevice(device.device_id)">
                         <span translate>This device</span>
                     </button>
                     <button class="btn btn-danger btn-sm" ng-if="device.user"
@@ -108,7 +108,7 @@
                         <span translate>All for</span> {{ device.user }}@{{ device.realm }}
                     </button>
                     <button class="btn btn-default btn-sm"
-                            ng-click="showRevokeDialog[device.series_id] = false">
+                            ng-click="showRevokeDialog[device.device_id] = false">
                         <span translate>Cancel</span>
                     </button>
                 </div>

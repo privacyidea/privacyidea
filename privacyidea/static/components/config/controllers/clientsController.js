@@ -55,7 +55,7 @@ myApp.controller("clientsController", ["$scope", "$stateParams", "inform",
         // Holds a freshly generated API key so it can be shown to the admin
         // exactly once (after create or rotate). It is never fetched again.
         $scope.newApiKey = null;
-        // Per-row inline confirmation state, keyed by client id / device series.
+        // Per-row inline confirmation state, keyed by client id / device id.
         $scope.showRotateDialog = {};
         $scope.showDeleteDialog = {};
         $scope.showRevokeDialog = {};
@@ -136,9 +136,9 @@ myApp.controller("clientsController", ["$scope", "$stateParams", "inform",
             $state.go('config.clients.remembered_devices', {clientid: client.id});
         };
 
-        $scope.revokeRememberedDevice = function (seriesId) {
-            $scope.showRevokeDialog[seriesId] = false;
-            ConfigFactory.revokeClientRememberedDevice($scope.rememberedDevicesClientId, seriesId, function (data) {
+        $scope.revokeRememberedDevice = function (deviceId) {
+            $scope.showRevokeDialog[deviceId] = false;
+            ConfigFactory.revokeClientRememberedDevice($scope.rememberedDevicesClientId, deviceId, function (data) {
                 if (data.result.status === true) {
                     inform.add(gettextCatalog.getString("Remembered device revoked."), {type: "info"});
                     $scope.loadRememberedDevices($scope.rememberedDevicesClientId);
@@ -161,7 +161,7 @@ myApp.controller("clientsController", ["$scope", "$stateParams", "inform",
         };
 
         $scope.revokeAllForUser = function (device) {
-            $scope.showRevokeDialog[device.series_id] = false;
+            $scope.showRevokeDialog[device.device_id] = false;
             ConfigFactory.revokeRememberedDevices({user: device.user, realm: device.realm}, function (data) {
                 if (data.result.status === true) {
                     inform.add(gettextCatalog.getString("Revoked {{count}} remembered device(s) for the user.",

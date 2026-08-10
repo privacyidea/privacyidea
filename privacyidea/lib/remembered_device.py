@@ -52,6 +52,10 @@ log = logging.getLogger(__name__)
 PERSISTENT_COOKIE_NAME = "pi_remember_device"
 # Number of random bytes in a series id.
 SERIES_ID_BYTES = 32
+# Bytes of entropy in the public device_id (the non-secret management handle
+# used to list and revoke a device). It is not a credential; randomness only
+# keeps it opaque and non-enumerable.
+DEVICE_ID_BYTES = 16
 # Default grace window (seconds) during which the immediately-previous counter
 # is still accepted, to tolerate concurrent/duplicate requests without treating
 # them as cookie theft. Overridable via PI_REMEMBER_DEVICE_GRACE_SECONDS in
@@ -158,6 +162,7 @@ def create_remembered_device(identity: "UserIdentity", client_id: str, ip_addres
         (``series_id:1``) to send to the client
     """
     series_id = secrets.token_urlsafe(SERIES_ID_BYTES)
+    device_id = secrets.token_urlsafe(DEVICE_ID_BYTES)
     if validity_days and validity_days > 0:
         # Cap the validity so an absurd policy value cannot overflow timedelta and
         # turn an already-successful auth into a 500.
@@ -168,7 +173,7 @@ def create_remembered_device(identity: "UserIdentity", client_id: str, ip_addres
     # has already ensured it fits its columns). Only the free-form metadata
     # (ip/user agent) is truncated, so an over-long value there can never raise on
     # save and turn an already-successful auth into a 500.
-    device = RememberedDevice(series_id=series_id, client_id=client_id,
+    device = RememberedDevice(series_id=series_id, device_id=device_id, client_id=client_id,
                           resolver=identity.resolver, user_id=identity.user_id,
                           realm_id=identity.realm_id,
                           ip_address=(ip_address or None) and ip_address[:64],
@@ -465,16 +470,17 @@ def cleanup_expired_remembered_devices(chunk_size: int = None) -> int:
     return delete_matching_rows(db.session, RememberedDevice.__table__, criterion, chunk_size)
 
 
-def get_client_device(client_id: str, series_id: str) -> "RememberedDevice | None":
+def get_client_device(client_id: str, device_id: str) -> "RememberedDevice | None":
     """
-    Return a single remembered device of a client, or ``None``. Scoped to
-    ``client_id`` so a client id cannot reach another client's device.
+    Return a single remembered device of a client by its public ``device_id``, or
+    ``None``. Scoped to ``client_id`` so a client id cannot reach another client's
+    device. The lookup uses ``device_id``, never the secret ``series_id``.
 
     :param client_id: the id of the API client the device must belong to
-    :param series_id: the series id of the device
+    :param device_id: the public management id of the device
     :return: the ``RememberedDevice`` or ``None``
     """
-    return RememberedDevice.query.filter_by(series_id=series_id, client_id=client_id).first()
+    return RememberedDevice.query.filter_by(device_id=device_id, client_id=client_id).first()
 
 
 def count_user_devices(client_id: str, resolver: str, user_id: str, realm_id: int) -> int:
@@ -494,14 +500,21 @@ def count_user_devices(client_id: str, resolver: str, user_id: str, realm_id: in
     ).count()
 
 
-def get_client_devices(client_id: str) -> list[RememberedDevice]:
+def get_client_devices(client_id: str, realm_ids: "list[int] | set[int]" = None) -> list[RememberedDevice]:
     """
-    Return all remembered devices belonging to a client, newest first.
+    Return the remembered devices belonging to a client, newest first, optionally
+    restricted to a set of realms.
 
     :param client_id: the id of the API client
+    :param realm_ids: if given, only devices bound to one of these realms are
+        returned (used to scope a listing to a realm-restricted admin's allowed
+        realms); ``None`` returns all, an empty set returns nothing
     :return: a list of ``RememberedDevice`` objects
     """
-    return RememberedDevice.query.filter_by(client_id=client_id).order_by(RememberedDevice.created_at.desc()).all()
+    query = RememberedDevice.query.filter_by(client_id=client_id)
+    if realm_ids is not None:
+        query = query.filter(RememberedDevice.realm_id.in_(realm_ids))
+    return query.order_by(RememberedDevice.created_at.desc()).all()
 
 
 def revoke_client_devices(client_id: str, realm_id: int = None, resolver: str = None,
@@ -602,9 +615,10 @@ def devices_to_dicts(devices: list[RememberedDevice]) -> list[dict]:
 def device_to_dict(device: RememberedDevice, realm_names: dict[int, str] = None,
                    logins: dict = None) -> dict:
     """
-    Serialise a remembered device for API output. The rotating token
-    (``counter``) is intentionally not exposed; ``series_id`` is only an
-    identifier used to target revocation.
+    Serialise a remembered device for API output. Neither the secret
+    ``series_id`` nor the rotating ``counter`` (i.e. no part of the cookie) is
+    exposed; the device is identified only by its non-secret ``device_id``, which
+    is what listing and revocation target.
 
     The bound user is reported both as the resolver-stable identity it is stored
     as (``resolver`` / ``user_id`` / ``realm``) and, best-effort, as the current
@@ -628,7 +642,7 @@ def device_to_dict(device: RememberedDevice, realm_names: dict[int, str] = None,
     else:
         login = _resolve_login(device.resolver, device.user_id, realm_name)
     return {
-        "series_id": device.series_id,
+        "device_id": device.device_id,
         "resolver": device.resolver,
         "user_id": device.user_id,
         "realm": realm_name,

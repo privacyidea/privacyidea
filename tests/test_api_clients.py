@@ -344,7 +344,9 @@ class APIClientRememberedDevicesTestCase(MyApiTestCase):
             devices = res.json['result']['value']
             self.assertEqual(1, len(devices))
             entry = devices[0]
-            self.assertEqual(entry["series_id"], device.series_id)
+            self.assertEqual(entry["device_id"], device.device_id)
+            # The secret series_id (the cookie's credential half) is never listed.
+            self.assertNotIn("series_id", entry)
             # The stored identity is the resolver-stable triple; the login is
             # resolved best-effort for display.
             self.assertEqual(self.identity.user_id, entry["user_id"])
@@ -362,12 +364,12 @@ class APIClientRememberedDevicesTestCase(MyApiTestCase):
         client, _key = create_client("revoke client", "windows_cp")
         device, _cookie = create_remembered_device(self.identity, client.id)
 
-        with self.app.test_request_context(f'/clients/{client.id}/remembered_devices/{device.series_id}',
+        with self.app.test_request_context(f'/clients/{client.id}/remembered_devices/{device.device_id}',
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res)
-            self.assertEqual(res.json['result']['value'], device.series_id)
+            self.assertEqual(res.json['result']['value'], device.device_id)
 
         self.assertIsNone(RememberedDevice.query.filter_by(series_id=device.series_id).first())
 
@@ -377,7 +379,7 @@ class APIClientRememberedDevicesTestCase(MyApiTestCase):
         device, _cookie = create_remembered_device(self.identity, client_a.id)
 
         # Try to revoke A's device via B's id -> 404, and A's device survives.
-        with self.app.test_request_context(f'/clients/{client_b.id}/remembered_devices/{device.series_id}',
+        with self.app.test_request_context(f'/clients/{client_b.id}/remembered_devices/{device.device_id}',
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -553,15 +555,15 @@ class APIClientRememberedDevicesTestCase(MyApiTestCase):
     def test_18_revoke_single_respects_admin_realm_scope(self):
         set_realm("xcscope", [{"name": self.resolvername1}])
         client, _ = create_client("scoped single client", "windows_cp")
-        series = self._device(client.id, "cornelius", realm=self.realm1).series_id
+        device = self._device(client.id, "cornelius", realm=self.realm1)
         set_policy("clients_scoped", scope=SCOPE.ADMIN,
                    action=PolicyAction.REMEMBERED_DEVICE_REVOKE, realm="xcscope")
         try:
-            with self.app.test_request_context(f'/clients/{client.id}/remembered_devices/{series}',
+            with self.app.test_request_context(f'/clients/{client.id}/remembered_devices/{device.device_id}',
                                                method='DELETE', headers={'Authorization': self.at}):
                 res = self.app.full_dispatch_request()
                 self.assertEqual(403, res.status_code, res)
-            self.assertIsNotNone(RememberedDevice.query.filter_by(series_id=series).first())
+            self.assertIsNotNone(RememberedDevice.query.filter_by(series_id=device.series_id).first())
         finally:
             delete_policy("clients_scoped")
 
@@ -577,3 +579,24 @@ class APIClientRememberedDevicesTestCase(MyApiTestCase):
             self.assertIsNotNone(RememberedDevice.query.filter_by(series_id=keep).first())
         finally:
             delete_policy("clients_scoped")
+
+    def test_20_list_respects_admin_realm_scope(self):
+        # The listing carries no realm, so a remembered_device_list admin policy
+        # scoped to one realm must not expose devices bound to other realms on the
+        # same client (the read-side analogue of the revoke realm scoping).
+        set_realm("xclist", [{"name": self.resolvername1}])
+        client, _ = create_client("scoped list client", "windows_cp")
+        in_scope = self._device(client.id, "cornelius", realm="xclist").device_id
+        out_scope = self._device(client.id, "cornelius", realm=self.realm1).device_id
+        set_policy("clients_list_scoped", scope=SCOPE.ADMIN,
+                   action=PolicyAction.REMEMBERED_DEVICE_LIST, realm="xclist")
+        try:
+            with self.app.test_request_context(f'/clients/{client.id}/remembered_devices',
+                                               method='GET', headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res)
+                listed = {entry["device_id"] for entry in res.json['result']['value']}
+            self.assertIn(in_scope, listed)
+            self.assertNotIn(out_scope, listed)
+        finally:
+            delete_policy("clients_list_scoped")

@@ -769,9 +769,9 @@ def _resolve_persistent_cookie(user: User, success: bool) -> CookieAction | None
     ``/validate/check`` only issues cookies. A presented cookie is consumed and
     rotated by the dedicated recognition endpoint (``/validate/remember_device``),
     never here, so this endpoint carries no cookie theft/rotation logic. A cookie
-    is issued when a client-bound request opts in (``request_persistent_cookie``)
-    and the ``remember_device`` policy (scope auth, with its client/user/realm
-    conditions) allows it.
+    is issued when the request is made by an identified API client, opts in
+    (``request_persistent_cookie``) and the ``remember_device`` policy (scope
+    auth, matched on user/realm) allows it.
     """
     if not success or not g.get("client_id"):
         return None
@@ -791,6 +791,10 @@ def _resolve_persistent_cookie(user: User, success: bool) -> CookieAction | None
     # unlimited. Each opt-in otherwise mints a new series (a client cannot be
     # deduped reliably, and multiple devices per user are legitimate), so this is
     # the knob for admins who want to bound that growth.
+    # Best-effort: count-then-create is not atomic, so two concurrent logins can
+    # both pass the check and overshoot the cap by the concurrency. That is an
+    # accepted trade-off - the cap bounds accumulation, it is not a security
+    # control, and serialising issuance per user is not worth the contention.
     max_pols = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE_MAX_DEVICES,
                           user_object=user).action_values(unique=True)
     if max_pols:
@@ -831,10 +835,10 @@ def get_capabilities():
     .. important::
 
        This is **client-level** discovery only. ``remember_device: true`` means
-       the feature is available to *this client* (any ``client`` condition on the
-       policy is honoured via ``g.client_id``); it is **not** a per-user
-       guarantee. A ``remember_device`` policy scoped to specific users/realms
-       still gates the feature per user at issuance (``/validate/check``) and
+       a ``remember_device`` policy exists for this server; it is **not** a
+       per-user guarantee. A ``remember_device`` policy scoped to specific
+       users/realms still gates the feature per user at issuance
+       (``/validate/check``) and
        recognition (``/validate/remember_device``). A client should treat ``true``
        as "worth attempting" and rely on those endpoints for the authoritative
        per-user answer.
@@ -862,9 +866,9 @@ def get_capabilities():
     if g.get("client_id") is None:
         raise AuthError(_("Authentication failure. A valid API key is required."),
                         id=Error.AUTHENTICATE_AUTH_HEADER)
-    # Whether "remember device" is offered depends on the remember_device policy
-    # (SCOPE.AUTH); any "client" condition on that policy is evaluated against
-    # this request's g.client_id automatically.
+    # Whether "remember device" is offered depends on whether a remember_device
+    # policy (SCOPE.AUTH) exists at all - this is a client-level "is it worth
+    # attempting" answer, not the per-user decision made at issuance/recognition.
     remember_device = Match.generic(g, scope=SCOPE.AUTH,
                                     action=PolicyAction.REMEMBER_DEVICE).any()
     # A successful discovery is a success in the audit log; validate's

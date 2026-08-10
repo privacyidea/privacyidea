@@ -53,7 +53,12 @@ class RememberedDevice(MethodsMixin, db.Model):
     foreign key so a deleted realm cascades its devices away.
     """
     __tablename__ = 'remembered_devices'
+    # series_id is the secret half of the cookie (series_id:counter) and is never
+    # exposed in an API response, URL or log. device_id is a separate, non-secret
+    # handle used to list and revoke a device, so managing a device never leaks
+    # reusable credential material.
     series_id: Mapped[str] = mapped_column(Unicode(64), primary_key=True)
+    device_id: Mapped[str] = mapped_column(Unicode(64), unique=True, index=True, nullable=False)
     counter: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     client_id: Mapped[str] = mapped_column(Unicode(36), ForeignKey("clients.id", ondelete="CASCADE"),
                                            index=True, nullable=False)
@@ -68,9 +73,10 @@ class RememberedDevice(MethodsMixin, db.Model):
     expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
 
     @log_with(log)
-    def __init__(self, series_id, client_id, resolver, user_id, realm_id,
+    def __init__(self, series_id, device_id, client_id, resolver, user_id, realm_id,
                  ip_address=None, user_agent=None, counter=1, expires_at=None):
         self.series_id = series_id
+        self.device_id = device_id
         self.counter = counter
         self.client_id = client_id
         self.resolver = resolver

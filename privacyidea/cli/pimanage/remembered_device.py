@@ -30,7 +30,7 @@ remembered_device_cli = AppGroup("remembered_device", help="Manage remembered de
 @remembered_device_cli.command("cleanup",
                          help="Delete all expired remembered devices "
                               "from the database. Run periodically (see the packaged crontab).")
-@click.option('--chunksize', type=int,
+@click.option('--chunksize', type=click.IntRange(min=1),
               help="Delete entries in chunks of the given size to avoid deadlocks")
 @click.option('--dryrun', is_flag=True,
               help="Do not actually delete, only show what would be done.")
