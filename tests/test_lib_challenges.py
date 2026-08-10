@@ -282,7 +282,6 @@ class ChallengeDataEncryptionTestCase(MyTestCase):
         db.session.delete(c)
         db.session.commit()
 
-
     def test_08_data_property_setter_encrypts(self):
         """Assigning to c.data via the property setter encrypts the value."""
         c = Challenge(serial="SETTER01", transaction_id="tid_enc_008",
@@ -308,6 +307,25 @@ class ChallengeDataEncryptionTestCase(MyTestCase):
         c.data = None
         db.session.commit()
         self.assertEqual(c._data, "")
+        self.assertEqual(c.get_data(), {})
+
+        # Clean up
+        db.session.delete(c)
+        db.session.commit()
+
+    def test_09_get_data_returns_empty_dict_on_corrupt_data(self):
+        """get_data() returns {} if decrypted data is not valid JSON."""
+        from privacyidea.lib.crypto import encryptPassword
+
+        c = Challenge(serial="CORRUPT01", transaction_id="tid_enc_009",
+                      validitytime=300)
+        c.save()
+
+        # Bypass set_data() and write non-JSON encrypted data directly
+        c._data = encryptPassword("not valid json {{{")
+        db.session.commit()
+
+        # get_data() should catch the JSONDecodeError and return {}
         self.assertEqual(c.get_data(), {})
 
         # Clean up

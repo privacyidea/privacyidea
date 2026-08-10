@@ -199,6 +199,10 @@ class TestChallengeDTO(MyTestCase):
         dto = _make_dto(data='')
         self.assertEqual(dto.get_data(), {})
 
+    def test_get_data_invalid_json(self):
+        dto = _make_dto(data='not valid json {{{')
+        self.assertEqual(dto.get_data(), {})
+
     def test_set_otp_status(self):
         dto = _make_dto()
         self.assertEqual(dto.get_otp_status(), (0, False))
