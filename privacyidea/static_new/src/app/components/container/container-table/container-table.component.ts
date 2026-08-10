@@ -16,7 +16,16 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, ElementRef, ViewChild, WritableSignal, computed, inject, linkedSignal } from "@angular/core";
+import {
+  Component,
+  ElementRef,
+  OnDestroy,
+  ViewChild,
+  WritableSignal,
+  computed,
+  inject,
+  linkedSignal
+} from "@angular/core";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { Sort } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
@@ -73,7 +82,7 @@ import { inlineFilterHint } from "@utils/filter-hint.utils";
   templateUrl: "./container-table.component.html",
   styleUrl: "./container-table.component.scss"
 })
-export class ContainerTableComponent {
+export class ContainerTableComponent implements OnDestroy {
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
@@ -160,6 +169,10 @@ export class ContainerTableComponent {
     user_realm: "realm",
     realms: "container_realm"
   } as const;
+
+  ngOnDestroy(): void {
+    this.containerSelection.deselectAllRows();
+  }
 
   handleStateClick(element: ContainerDetailData) {
     this.containerService.toggleActive(element.serial, element.states).subscribe({

@@ -23,6 +23,7 @@ import {
   ElementRef,
   inject,
   linkedSignal,
+  OnDestroy,
   ViewChild,
   WritableSignal
 } from "@angular/core";
@@ -98,7 +99,7 @@ const columnKeysMap = [
   templateUrl: "./token-table.component.html",
   styleUrl: "./token-table.component.scss"
 })
-export class TokenTableComponent {
+export class TokenTableComponent implements OnDestroy {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
@@ -194,6 +195,10 @@ export class TokenTableComponent {
     }
     return this.basePageSizeOptions;
   });
+
+  ngOnDestroy(): void {
+    this.tokenSelection.deselectAllRows();
+  }
 
   toggleActive(tokenDetails: TokenDetails): void {
     if (
