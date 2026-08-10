@@ -27,6 +27,7 @@ import {
 } from "@services/authentication-log/authentication-log.service";
 import { AuthService } from "@services/auth/auth.service";
 import { ClientsService } from "@services/clients/clients.service";
+import { ConditionalAccessPolicyService } from "@services/conditional-access/conditional-access-policy.service";
 import { ContentService } from "@services/content/content.service";
 import { RealmService } from "@services/realm/realm.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
@@ -34,6 +35,7 @@ import { FilterValue } from "@core/models/filter_value/filter_value";
 import {
   MockAuthenticationLogService,
   MockClientsService,
+  MockConditionalAccessPolicyService,
   MockContentService,
   MockPiResponse,
   MockRealmService,
@@ -49,6 +51,7 @@ describe("AuthenticationLog", () => {
   let service: MockAuthenticationLogService;
   let tableUtils: MockTableUtilsService;
   let clientsService: MockClientsService;
+  let policyService: MockConditionalAccessPolicyService;
   let authService: MockAuthService;
 
   beforeEach(async () => {
@@ -65,12 +68,14 @@ describe("AuthenticationLog", () => {
         { provide: MockContentService, useClass: MockContentService },
         { provide: MockRealmService, useClass: MockRealmService },
         { provide: MockClientsService, useClass: MockClientsService },
+        { provide: MockConditionalAccessPolicyService, useClass: MockConditionalAccessPolicyService },
         { provide: AuthService, useClass: MockAuthService },
         { provide: AuthenticationLogService, useExisting: MockAuthenticationLogService },
         { provide: TableUtilsService, useExisting: MockTableUtilsService },
         { provide: ContentService, useExisting: MockContentService },
         { provide: RealmService, useExisting: MockRealmService },
-        { provide: ClientsService, useExisting: MockClientsService }
+        { provide: ClientsService, useExisting: MockClientsService },
+        { provide: ConditionalAccessPolicyService, useExisting: MockConditionalAccessPolicyService }
       ]
     }).compileComponents();
 
@@ -79,6 +84,7 @@ describe("AuthenticationLog", () => {
     service = TestBed.inject(MockAuthenticationLogService);
     tableUtils = TestBed.inject(MockTableUtilsService);
     clientsService = TestBed.inject(MockClientsService);
+    policyService = TestBed.inject(MockConditionalAccessPolicyService);
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
     fixture.detectChanges();
   });
@@ -287,6 +293,107 @@ describe("AuthenticationLog", () => {
     expect(component.isInfoColumn("conditional_access_outcomes")).toBe(true);
     expect(component.isInfoColumn("other_info")).toBe(true);
     expect(component.isInfoColumn("serial")).toBe(false);
+  });
+
+  // --- the Conditional access column's filter ---
+
+  it("offers the action vocabulary and the policy names the backend serves, not a hardcoded list", () => {
+    expect(component.outcomeActionOptions()).toEqual([]);
+    policyService.actionTypes.set(["LOCK_USER", "BLOCK_IP"] as never);
+    policyService.policies.set([
+      { id: 2, name: "Notify" },
+      { id: 1, name: "Brute force" },
+      // Two policies can carry the same name over time; the filter offers it once.
+      { id: 3, name: "Notify" }
+    ] as never);
+
+    expect(component.outcomeActionOptions()).toEqual(["LOCK_USER", "BLOCK_IP"]);
+    expect(component.outcomePolicyOptions()).toEqual(["Brute force", "Notify"]);
+  });
+
+  it("falls back to typing a policy name for an admin who may not read the policies", () => {
+    // Without lockout_policy_read there is no list to offer, so the menu entry has to lead somewhere else.
+    const authData = authService.authData()!;
+    authService.authData.set({ ...authData, rights: ["authentication_log_read", "lockout_policy_read"] });
+    expect(component.canReadLockoutPolicies()).toBe(true);
+
+    authService.authData.set({ ...authData, rights: ["authentication_log_read"] });
+    expect(component.canReadLockoutPolicies()).toBe(false);
+  });
+
+  it("clearing the Conditional access filter drops all three of its keys at once", () => {
+    component.setFilterValues("ca_action_type", ["LOCK_USER"]);
+    component.setFilterValues("ca_policy_name", ["Brute force"]);
+    component.setDryRunFilter("false");
+    // A filter on another column is not part of this menu and must survive.
+    component.setFilterValues("username", ["alice"]);
+
+    component.clearOutcomeFilters();
+
+    const filter = service.authenticationLogFilter();
+    expect(filter.hasKey("ca_action_type")).toBe(false);
+    expect(filter.hasKey("ca_policy_name")).toBe(false);
+    expect(filter.hasKey("ca_dry_run")).toBe(false);
+    expect(filter.getValueOfKey("username")).toBe("alice");
+  });
+
+  it("dry run is an exclusive choice of two values, cleared to mean both", () => {
+    expect(component.dryRunOptions.map((option) => option.value)).toEqual(["false", "true"]);
+    expect(component.dryRunFilter()).toBe("");
+    component.setDryRunFilter("false");
+    expect(service.authenticationLogFilter().getValueOfKey("ca_dry_run")).toBe("false");
+    expect(component.dryRunFilter()).toBe("false");
+
+    component.setDryRunFilter("true");
+    expect(component.dryRunFilter()).toBe("true");
+
+    // "Both" is the absence of the key, reached by clearing the filter, so nothing must be sent then.
+    component.setDryRunFilter("");
+    expect(service.authenticationLogFilter().hasKey("ca_dry_run")).toBe(false);
+    expect(component.dryRunFilter()).toBe("");
+    expect(service.filterParams()["ca_dry_run"]).toBeUndefined();
+  });
+
+  it("stores the outcome filters as ordinary filter entries", () => {
+    // Which is what makes them typeable in the main filter input too; the service turns them into query params (see
+    // its own spec).
+    component.setFilterValues("ca_action_type", ["LOCK_USER", "BLOCK_IP"]);
+    component.setFilterValues("ca_policy_name", ["Brute force"]);
+    component.setDryRunFilter("false");
+
+    const filter = service.authenticationLogFilter();
+    expect(filter.getValueOfKey("ca_action_type")).toBe("LOCK_USER,BLOCK_IP");
+    expect(filter.getValueOfKey("ca_policy_name")).toBe("Brute force");
+    expect(filter.getValueOfKey("ca_dry_run")).toBe("false");
+  });
+
+  it("renders the Conditional access filter as one menu of its three keys, behind the shared filter icon", () => {
+    policyService.actionTypes.set(["LOCK_USER"] as never);
+    fixture.detectChanges();
+    const header: HTMLElement = fixture.nativeElement.querySelector("th.mat-column-conditional_access_outcomes");
+    const trigger: HTMLButtonElement = header.querySelector("button.filter-button")!;
+    // The same icon as the other selection filters: this menu sets several keys, so it has no set/not-set state.
+    expect(trigger.querySelector("mat-icon")?.textContent?.trim()).toBe("filter_list");
+
+    // The rule that governs a combination of these filters is stated in the menu, not left to a hover tooltip, and
+    // repeated on the trigger so it is announced before the menu is even opened.
+    expect(trigger.getAttribute("aria-label")).toContain("All conditions must match one and the same outcome.");
+
+    trigger.click();
+    fixture.detectChanges();
+    const panel: HTMLElement = document.querySelector(".mat-mdc-menu-panel")!;
+    expect(panel.querySelector('[role="note"]')?.textContent).toContain(
+      "All conditions must match one and the same outcome."
+    );
+    // A note, not an action: it must not be offered as a menu item.
+    expect(panel.querySelector('button[role="note"]')).toBeNull();
+    const items = Array.from(panel.querySelectorAll("button.mat-mdc-menu-item"));
+    expect(items.map((item) => item.textContent?.trim())).toEqual([
+      "filter_alt_offClear Filter",
+      "Action",
+      "Policy",
+      "Dry run"
+    ]);
   });
 
   it("editing start_time/end_time in the filter text drives the time filter", () => {

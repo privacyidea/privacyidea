@@ -192,6 +192,93 @@
                         [selected]="selectedFilterValues('client_label')"
                         (selectionChange)="setFilterValues('client_label', $event)"
                         (addCustom)="onAddCustomFilter('client_label')" />
+                    } @else if (column.key === "conditional_access_outcomes") {
+                      <!-- The one column with three filter keys: the icon opens a menu of the keys, and each key opens
+                           the control it needs. Nested mat-menus are keyboard-operable as they are. -->
+                      <button
+                        [attr.aria-label]="outcomeFilterLabel"
+                        [matMenuTriggerFor]="outcomeFilterMenu"
+                        class="filter-button"
+                        mat-icon-button>
+                        <!-- The same icon the other selection filters use: this menu sets several keys, so there is no
+                             single "filter set / not set" state for it to show. -->
+                        <mat-icon class="keyword-button-icon margin-left-0">filter_list</mat-icon>
+                      </button>
+                      <mat-menu #outcomeFilterMenu>
+                        <!-- Hint on how the filter behaves -->
+                        <div
+                          class="filter-menu-hint"
+                          role="note">
+                          <mat-icon>info_outline</mat-icon>
+                          <span i18n>All conditions must match one and the same outcome.</span>
+                        </div>
+                        <mat-divider />
+                        <button
+                          (click)="clearOutcomeFilters()"
+                          mat-menu-item>
+                          <mat-icon>filter_alt_off</mat-icon>
+                          <span i18n>Clear Filter</span>
+                        </button>
+                        <mat-divider />
+                        <button
+                          [matMenuTriggerFor]="outcomeActionMenu.matMenu"
+                          mat-menu-item>
+                          <span i18n>Action</span>
+                        </button>
+                        @if (canReadLockoutPolicies()) {
+                          <button
+                            [matMenuTriggerFor]="outcomePolicyMenu.matMenu"
+                            mat-menu-item>
+                            <span i18n>Policy</span>
+                          </button>
+                        } @else {
+                          <!-- Without lockout_policy_read there is no list to offer, so the key goes into the main
+                               filter input for the admin to type a name into. -->
+                          <button
+                            (click)="onAddCustomFilter('ca_policy_name')"
+                            mat-menu-item>
+                            <span i18n>Policy</span>
+                          </button>
+                        }
+                        <button
+                          [matMenuTriggerFor]="outcomeDryRunMenu"
+                          mat-menu-item>
+                          <span i18n>Dry run</span>
+                        </button>
+                      </mat-menu>
+                      <app-multi-select-menu
+                        #outcomeActionMenu
+                        [options]="outcomeActionOptions()"
+                        [selected]="selectedFilterValues('ca_action_type')"
+                        (selectionChange)="setFilterValues('ca_action_type', $event)" />
+                      <app-multi-select-menu
+                        #outcomePolicyMenu
+                        [allowCustom]="true"
+                        [options]="outcomePolicyOptions()"
+                        [selected]="selectedFilterValues('ca_policy_name')"
+                        (selectionChange)="setFilterValues('ca_policy_name', $event)"
+                        (addCustom)="onAddCustomFilter('ca_policy_name')" />
+                      <mat-menu #outcomeDryRunMenu>
+                        <button
+                          (click)="setDryRunFilter('')"
+                          mat-menu-item>
+                          <mat-icon>filter_alt_off</mat-icon>
+                          <span i18n>Clear Filter</span>
+                        </button>
+                        <mat-divider />
+                        @for (option of dryRunOptions; track option.value) {
+                          <button
+                            (click)="setDryRunFilter(option.value)"
+                            [attr.aria-checked]="dryRunFilter() === option.value"
+                            mat-menu-item
+                            role="menuitemradio">
+                            <mat-icon>
+                              {{ dryRunFilter() === option.value ? "radio_button_checked" : "radio_button_unchecked" }}
+                            </mat-icon>
+                            <span>{{ option.label }}</span>
+                          </button>
+                        }
+                      </mat-menu>
                     } @else if (column.key === "source_ip" && showSourceIpMenu()) {
                       <app-multi-select-filter
                         [label]="column.label"

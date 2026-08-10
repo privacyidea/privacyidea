@@ -53,6 +53,27 @@ td.cell-info {
   padding: 0 8px;
 }
 
+// The rule that governs the Conditional access filter menu, shown as its first line. Not a mat-menu-item: it is text,
+// not an action, so it must not be offered as one to a keyboard or a screen reader.
+.filter-menu-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: 260px;
+  padding: 8px 16px;
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.75rem;
+  line-height: 1.35;
+  white-space: normal;
+
+  .mat-icon {
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+  }
+}
+
 .header-label {
   display: flex;
   flex-direction: column;

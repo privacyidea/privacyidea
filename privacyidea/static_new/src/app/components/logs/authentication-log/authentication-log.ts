@@ -30,6 +30,7 @@ import {
 } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { provideNativeDateAdapter } from "@angular/material/core";
+import { MatDivider } from "@angular/material/divider";
 import { MatDatepickerModule } from "@angular/material/datepicker";
 import { MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
@@ -63,10 +64,13 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
 import { MultiSelectFilterComponent } from "@components/shared/multi-select-filter/multi-select-filter.component";
 import { MultiSelectFilterOption } from "@components/shared/multi-select-filter/multi-select-filter-option";
 import { MultiSelectMenuComponent } from "@components/shared/multi-select-filter/multi-select-menu/multi-select-menu.component";
-import { ROUTE_PATHS } from "@app/route_paths";
 import { USER_AGENT_PRESETS } from "@constants/user-agent.constants";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ClientsService, ClientsServiceInterface } from "@services/clients/clients.service";
+import {
+  ConditionalAccessPolicyService,
+  ConditionalAccessPolicyServiceInterface
+} from "@services/conditional-access/conditional-access-policy.service";
 import {
   AuthenticationLogEntry,
   AuthenticationLogService,
@@ -139,10 +143,12 @@ const columnKeysMap: { key: string; label: string; filterable: boolean; sortable
   { key: "attempt_id", label: $localize`Attempt ID`, filterable: true, sortable: true },
   // Neither is backed by a sortable column: other_info is JSON, and the conditional-access outcomes live in their own
   // table, read alongside each entry.
+  // The only column whose filter is not a single key: its header menu offers the three ca_* keys (see
+  // OUTCOME_FILTER_KEYS). Not sortable - the outcomes live in their own table, read alongside each entry.
   {
     key: "conditional_access_outcomes",
     label: $localize`Conditional Access Outcome`,
-    filterable: false,
+    filterable: true,
     sortable: false
   },
   { key: "other_info", label: $localize`Info`, filterable: false, sortable: false }
@@ -152,6 +158,19 @@ const columnKeysMap: { key: string; label: string; filterable: boolean; sortable
 // width treatment and the scrolling, decided here because it depends on the whole page, and their looks (cells/
 // _info-list.scss) - not their rendering.
 const INFO_COLUMN_KEYS = ["conditional_access_outcomes", "other_info"];
+
+// What the Conditional access column filters on: three keys on one column, which is why its header offers a menu of
+// them instead of the single-key toggle the other columns have. They are backend filter params (_FILTER_PARAMS in
+// api/authentication_log.py) and also typeable in the main filter input, since the log service lists them as advanced
+// filters.
+const OUTCOME_FILTER_KEYS = ["ca_action_type", "ca_policy_name", "ca_dry_run"];
+
+// The two values of the dry-run filter. "Both" is the absence of the key, so it is reached by clearing the filter -
+// the same affordance every other filter menu offers - rather than by a third pseudo-value.
+const DRY_RUN_OPTIONS: readonly MultiSelectFilterOption[] = [
+  { label: $localize`Enforced only`, value: "false" },
+  { label: $localize`Dry run only`, value: "true" }
+];
 
 // Local start-of-day / end-of-day ISO bounds for a date chosen in the range picker. The picker yields a native Date
 // at local midnight; the log renders timestamps in local time, so the bounds are the local day edges (inclusive end
@@ -254,6 +273,7 @@ const FILTER_TOOLTIPS: Record<string, string> = {
     InfoCell,
     MultiSelectFilterComponent,
     MultiSelectMenuComponent,
+    MatDivider,
     MatIcon,
     MatButtonModule,
     MatDatepickerModule,
@@ -288,6 +308,8 @@ export class AuthenticationLog {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly clientsService: ClientsServiceInterface = inject(ClientsService);
+  protected readonly conditionalAccessPolicyService: ConditionalAccessPolicyServiceInterface =
+    inject(ConditionalAccessPolicyService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   sort = this.authenticationLogService.sort;
 
@@ -523,6 +545,40 @@ export class AuthenticationLog {
 
   getFilterIconName(keyword: string): string {
     return this.authenticationLogService.authenticationLogFilter().hasKey(keyword) ? "filter_alt_off" : "filter_alt";
+  }
+
+  // The real action vocabulary and the existing policy names, both from the backend so no list is duplicated here.
+  // Empty until the resources have loaded, or for an admin without `lockout_policy_read` - which is what
+  // canReadLockoutPolicies decides the Policy entry's shape on.
+  readonly outcomeActionOptions = computed<string[]>(() => this.conditionalAccessPolicyService.actionTypes());
+  readonly outcomePolicyOptions = computed<string[]>(() =>
+    [...new Set(this.conditionalAccessPolicyService.policies().map((policy) => policy.name))].sort((a, b) =>
+      a.localeCompare(b)
+    )
+  );
+  readonly canReadLockoutPolicies = computed(() => this.authService.actionAllowed("lockout_policy_read"));
+
+  readonly dryRunOptions = DRY_RUN_OPTIONS;
+  // The trigger's accessible name carries the rule as well as the purpose, so it is heard before the menu is opened
+  // (the menu states it too, see the `note` in the template). Built here rather than as an i18n-marked attribute
+  // because a bound label is the only form the component tests can read back.
+  readonly outcomeFilterLabel = $localize`Filter by conditional access outcome. All conditions must match one and the same outcome.`;
+  // "" when the filter is not set, which is what a cleared dry-run filter means: both kinds of outcome.
+  readonly dryRunFilter = computed<string>(
+    () => this.authenticationLogService.authenticationLogFilter().getValueOfKey("ca_dry_run") ?? ""
+  );
+
+  setDryRunFilter(value: string): void {
+    this.setFilterValues("ca_dry_run", value ? [value] : []);
+  }
+
+  // Drops all three keys at once, so one entry undoes whatever was set in the submenus.
+  clearOutcomeFilters(): void {
+    let filter = this.authenticationLogService.authenticationLogFilter();
+    for (const key of OUTCOME_FILTER_KEYS) {
+      filter = filter.removeKey(key);
+    }
+    this.authenticationLogService.authenticationLogFilter.set(filter);
   }
 
   // Three-state sort cycle; clearing falls back to timestamp desc with a neutral direction so no column shows active.

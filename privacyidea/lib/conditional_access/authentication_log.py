@@ -490,6 +490,46 @@ def _filter_conditions(resolver: str | list[str] | None = None,
     return conditions
 
 
+def _outcome_condition(ca_action_type: str | list[str] | None = None,
+                       ca_policy_name: str | list[str] | None = None,
+                       ca_dry_run: bool | None = None,
+                       case_insensitive: bool = False) -> ColumnElement[bool] | None:
+    """
+    Build the condition "this entry has a conditional-access outcome like this", or ``None`` when none of the outcome
+    filters is set.
+
+    The string filters behave like every other filter on the log (a value or a list of them, ``*`` as the only
+    wildcard, *case_insensitive* for the plain values -- see :func:`match_condition`); ``ca_dry_run`` is a boolean, so
+    ``None`` means "either" rather than "unset". ``ca_action_type="*"`` therefore reads as "entries conditional access
+    acted on at all".
+
+    **All conditions apply to the same outcome row.** An entry matches when *one* of its outcomes satisfies all of
+    them, which is what the filter says: ``ca_action_type=LOCK_USER`` with ``ca_policy_name=Notify`` must not match a
+    request where *Notify* sent an email and some other policy locked the user.
+
+    An ``EXISTS`` rather than a join, for the reason the listing reads the outcomes with ``selectinload``
+    (:func:`get_authentication_logs_paginate`): a join multiplies an entry by its outcomes, which would break both the
+    page's ``LIMIT`` and the ``count`` that shares these conditions -- an entry with three matching outcomes would be
+    counted three times and appear three times.
+
+    :param ca_action_type: match outcomes with this ``action_type`` (a ``LockoutAction`` value)
+    :param ca_policy_name: match outcomes recorded for this policy name (the denormalized copy, so a deleted policy is
+        still matchable)
+    :param ca_dry_run: match only dry-run outcomes (``True``) or only enforced ones (``False``)
+    :param case_insensitive: match the plain string values case-insensitively
+    """
+    terms = [condition for column, value in ((ConditionalAccessOutcome.action_type, ca_action_type),
+                                             (ConditionalAccessOutcome.policy_name, ca_policy_name))
+             if (condition := match_condition(column, value, case_insensitive)) is not None]
+    if ca_dry_run is not None:
+        terms.append(ConditionalAccessOutcome.dry_run.is_(ca_dry_run))
+    if not terms:
+        return None
+    return (select(1)
+            .where(ConditionalAccessOutcome.auth_log_id == AuthenticationLog.id, *terms)
+            .exists())
+
+
 def _visibility_condition(scopes: list[AuthenticationLogVisibilityScope]) -> ColumnElement[bool]:
     """
     Build a single ``where`` condition restricting the visible entries to the given scopes: an entry must match all
@@ -574,6 +614,9 @@ def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
                                      transaction_id: str | list[str] | None = None,
                                      attempt_id: str | list[str] | None = None,
                                      client_label: str | list[str] | None = None,
+                                     ca_action_type: str | list[str] | None = None,
+                                     ca_policy_name: str | list[str] | None = None,
+                                     ca_dry_run: bool | None = None,
                                      start_time: datetime | None = None,
                                      end_time: datetime | None = None,
                                      visibility_scopes: list[AuthenticationLogVisibilityScope] | None = None,
@@ -589,8 +632,14 @@ def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
     ``source_ip``, ``serial``, ``transaction_id``, ``attempt_id``, ``client_label``,
     ``start_time`` and
     ``end_time`` -- behave
-    exactly like :func:`get_authentication_logs`. The remaining parameters control visibility scoping and pagination:
+    exactly like :func:`get_authentication_logs`. The ``ca_*`` parameters filter on what conditional access *did* to the
+    request and are only offered here, since this is the endpoint that reads the outcomes:
 
+    :param ca_action_type: only entries with an outcome of this action type; ``"*"`` reads as "conditional access acted
+        on this request at all"
+    :param ca_policy_name: only entries with an outcome recorded for this policy name
+    :param ca_dry_run: only entries with a dry-run outcome (``True``) or with an enforced one (``False``); ``None``
+        does not filter
     :param visibility_scopes: restrict the result to entries matching any of these scopes
         (see :func:`_visibility_condition`); ``None`` means no restriction
     :param case_insensitive: if set, plain (non-wildcard) filter values match case-insensitively; wildcard values
@@ -609,6 +658,13 @@ def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
                                     client_label=client_label,
                                     start_time=start_time, end_time=end_time,
                                     case_insensitive=case_insensitive)
+    # An EXISTS over the outcome table, kept out of _filter_conditions: those conditions are also applied to DELETE
+    # statements (see delete_authentication_logs), and "delete every entry a policy ever locked someone on" is not a
+    # retention rule anybody asked for.
+    outcome_condition = _outcome_condition(ca_action_type=ca_action_type, ca_policy_name=ca_policy_name,
+                                           ca_dry_run=ca_dry_run, case_insensitive=case_insensitive)
+    if outcome_condition is not None:
+        conditions.append(outcome_condition)
     if visibility_scopes is not None:
         conditions.append(_visibility_condition(visibility_scopes))
     stmt = select(AuthenticationLog).where(*conditions)

@@ -189,11 +189,17 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
   readonly targetsUrl = environment.proxyUrl + "/conditionalaccess/targets";
   readonly templatesUrl = environment.proxyUrl + "/conditionalaccess/template";
 
+  // The routes that read the conditional-access configuration: its own pages, and the authentication log, whose
+  // Conditional access filter offers the real policy names and action types rather than a hardcoded list.
+  private readonly onRouteUsingPolicies = computed(
+    () => this.contentService.onConditionalAccess() || this.contentService.onAuthenticationLog()
+  );
+
   readonly policiesResource = httpResource<PiResponse<LockoutPolicy[]>>(() => {
     if (!this.authService.actionAllowed("lockout_policy_read")) {
       return undefined;
     }
-    if (!this.contentService.onConditionalAccess()) {
+    if (!this.onRouteUsingPolicies()) {
       return undefined;
     }
     return {
@@ -228,7 +234,7 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
   );
 
   readonly actionTypesResource = httpResource<PiResponse<string[]>>(() => {
-    if (!this.authService.actionAllowed("lockout_policy_read") || !this.contentService.onConditionalAccess()) {
+    if (!this.authService.actionAllowed("lockout_policy_read") || !this.onRouteUsingPolicies()) {
       return undefined;
     }
     return {
