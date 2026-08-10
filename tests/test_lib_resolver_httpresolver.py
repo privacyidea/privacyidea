@@ -2394,6 +2394,25 @@ class EntraIDResolverTestCase(MyTestCase):
         correct_query = "(userPrincipalName eq 'D'' test')"
         self.assertEqual(correct_query, search_params["$filter"])
 
+    def test_14b_get_search_params_escapes_quotes_in_a_wildcard_search(self):
+        # Single quotes are escaped in a wildcard search as well, otherwise the value ends the string literal of the
+        # filter: the quote must be doubled and the asterisks must be removed
+        resolver = EntraIDResolver()
+
+        search_params = resolver._get_search_params({"username": "O'Br*"})
+        self.assertEqual("(startswith(userPrincipalName, 'O''Br') or endswith(userPrincipalName, 'O''Br'))",
+                         search_params["$filter"])
+
+        # The same for a simple query without the advanced query capabilities
+        resolver.config[CONFIG_GET_USER_LIST][HEADERS] = ""
+        search_params = resolver._get_search_params({"username": "O'Br*"})
+        self.assertEqual("startswith(userPrincipalName, 'O''Br')", search_params["$filter"])
+
+        # A value can not add further clauses to the filter
+        search_params = resolver._get_search_params({"username": "x') or startswith(userPrincipalName,'a*"})
+        self.assertEqual("startswith(userPrincipalName, 'x'') or startswith(userPrincipalName,''a')",
+                         search_params["$filter"])
+
     def test_15_get_config(self):
         resolver = EntraIDResolver()
 
