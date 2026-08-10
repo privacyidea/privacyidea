@@ -1,0 +1,15 @@
+.add-token-filter-field {
+  margin-bottom: var(--global-padding);
+}
+
+// The paginator sits in the field's suffix slot, so it must blend into the
+// filled background instead of painting its own surface behind it. The suffix
+// container sets `line-height: 0`, which the range label has to opt out of.
+.add-token-paginator {
+  line-height: normal;
+
+  .mat-mdc-paginator {
+    background: transparent;
+    color: inherit;
+  }
+}
