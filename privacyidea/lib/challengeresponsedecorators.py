@@ -104,9 +104,11 @@ def generic_challenge_response_reset_pin(wrapped_function, *args, **kwds):
             if token:
                 # Then either verify the PIN or set the PIN the first time. The
                 # PIN from the 1st response is stored in challenge.data
-                if challenge.data:
+                challenge_data = challenge.get_data()
+                pin_hash = challenge_data.get("pin_hash")
+                if pin_hash:
                     # Verify the password
-                    if verify_pass_hash(args[1], challenge.data):
+                    if verify_pass_hash(args[1], pin_hash):
                         g = options.get("g")
                         challenge.set_otp_status(True)
                         token.challenge_janitor()
@@ -143,7 +145,7 @@ def generic_challenge_response_reset_pin(wrapped_function, *args, **kwds):
                     challenge.set_otp_status(True)
                     reply_dict = _create_challenge(token, CHALLENGE_TYPE.PIN_RESET,
                                                    _("Please enter the new PIN again"),
-                                                   pass_hash(args[1]))
+                                                   {"pin_hash": pass_hash(args[1])})
                     return False, reply_dict
 
     success, reply_dict = wrapped_function(*args, **kwds)

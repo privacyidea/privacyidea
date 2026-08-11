@@ -1324,6 +1324,29 @@ describe("TokenService", () => {
       expect(tokenService.tokenResourceValue()).toEqual(responseValue);
     });
 
+    it("scopes tokenSelection to the loaded page and drops it when a new page arrives", async () => {
+      contentServiceMock.onTokens = signal(true);
+      TestBed.tick();
+
+      const firstPage = mockBackend.expectOne((r) => r.url === "/token/");
+      firstPage.flush(
+        MockPiResponse.fromValue({ count: 25, current: 1, tokens: [{ serial: "T-1" }, { serial: "T-2" }] })
+      );
+      await Promise.resolve();
+
+      tokenService.tokenSelection.selectAllRows();
+      expect(tokenService.tokenSelection.selectedRows().map((token) => token.serial)).toEqual(["T-1", "T-2"]);
+      expect(tokenService.tokenSelection.allRowsSelected()).toBe(true);
+
+      tokenService.pageIndex.set(1);
+      TestBed.tick();
+      const secondPage = mockBackend.expectOne((r) => r.url === "/token/");
+      secondPage.flush(MockPiResponse.fromValue({ count: 25, current: 2, tokens: [{ serial: "T-3" }] }));
+      await Promise.resolve();
+
+      expect(tokenService.tokenSelection.hasSelection()).toBe(false);
+    });
+
     it("should handle error state from tokenResource", async () => {
       contentServiceMock.onTokens = signal(true);
       TestBed.tick();

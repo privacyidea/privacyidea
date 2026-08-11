@@ -34,6 +34,7 @@ and the splitting sign.
 
 The code is tested in tests/test_lib_tokens_4eyes.
 """
+
 import logging
 from privacyidea.lib.params import get_optional, get_required
 from privacyidea.lib.config import get_from_config
@@ -46,7 +47,6 @@ from privacyidea.lib import _
 from privacyidea.lib.policy import SCOPE, GROUP
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.challenge import get_challenges
-import json
 import datetime
 
 log = logging.getLogger(__name__)
@@ -130,7 +130,7 @@ class FourEyesTokenClass(TokenClass):
                                 'to authenticate'),
                'init': {},
                'config': {},
-               'user':  [],
+               'user': [],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin"],
                'policy': {
@@ -373,9 +373,11 @@ class FourEyesTokenClass(TokenClass):
         challengeobject_list = get_challenges(serial=self.token.serial,
                                               transaction_id=transaction_id)
         if len(challengeobject_list) == 1:
-            remaining_realms = self._get_remaining_realms(options.get("data", {}))
+            # options["data"] is set by check_challenge_response / _authenticate_remaining_realms
+            # with the current used_tokens dict
+            used_tokens_data = options.get("data", {})
+            remaining_realms = self._get_remaining_realms(used_tokens_data)
             if remaining_realms:
-                options["data"] = json.dumps(options.get("data", {}))
                 options["message"] = f"Remaining tokens: {remaining_realms!s}"
                 return True
         return False
@@ -413,7 +415,8 @@ class FourEyesTokenClass(TokenClass):
             for challengeobject in challengeobject_list:
                 if challengeobject.is_valid():
                     # challenge is still valid
-                    used_tokens = json.loads(challengeobject_list[0].data or json.dumps({}))
+                    challenge_data = challengeobject.get_data()
+                    used_tokens = challenge_data.get("used_tokens", {})
                     remaining_realms = self._get_remaining_realms(used_tokens)
                     r_success = self._authenticate_remaining_realms(passw, remaining_realms, used_tokens, options)
 
@@ -448,10 +451,7 @@ class FourEyesTokenClass(TokenClass):
         """
         options = options or {}
         message = ""
-        if isinstance(options.get("data"), dict):
-            # In the special first chal-resp case we do not have jsonified data, yet. So we need to convert
-            options["data"] = json.dumps(options.get("data"))
-        used_tokens = json.loads(options.get("data", json.dumps({})))
+        used_tokens = options.get("data", {})
         remaining_realms = self._get_remaining_realms(used_tokens)
         if remaining_realms:
             message = "Please authenticate with another token from " \
@@ -466,7 +466,7 @@ class FourEyesTokenClass(TokenClass):
         # Create the challenge in the database
         db_challenge = create_challenge(self.token.serial,
                                         transaction_id=transactionid,
-                                        data=options.get("data"),
+                                        data={"used_tokens": used_tokens},
                                         session=options.get("session"),
                                         challenge=message,
                                         validitytime=validity)

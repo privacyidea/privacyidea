@@ -20,9 +20,8 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
-import { MatPaginator, PageEvent } from "@angular/material/paginator";
+import { PageEvent } from "@angular/material/paginator";
 import { Sort } from "@angular/material/sort";
-import { MatTableDataSource } from "@angular/material/table";
 import { ActivatedRoute, NavigationEnd, Router } from "@angular/router";
 import { of, Subject } from "rxjs";
 
@@ -204,12 +203,9 @@ describe("ContainerTableComponent (Jest)", () => {
     });
   });
 
-  describe("Selection helpers", () => {
-    it("toggleAllRows selects *then* clears every row", () => {
-      const dataSource = component.containerDataSource();
-      expect(dataSource.data.length).toBe(0);
-
-      const containerDetailData0: ContainerDetailData = {
+  describe("Selection", () => {
+    it("exposes the selection held by the container service", () => {
+      const containerDetailData: ContainerDetailData = {
         serial: "CONT-1",
         states: [],
         realms: [],
@@ -217,35 +213,11 @@ describe("ContainerTableComponent (Jest)", () => {
         type: "",
         users: []
       };
-      const containerDetailData1 = { ...containerDetailData0, serial: "CONT-2" };
-      const containerDetailData2 = { ...containerDetailData0, serial: "CONT-3" };
-      const dataSourceFilled = new MatTableDataSource<ContainerDetailData, MatPaginator>([
-        containerDetailData0,
-        containerDetailData1,
-        containerDetailData2
-      ]);
-      component.containerDataSource.set(dataSourceFilled);
+      containerService.setContainerSelection([containerDetailData, { ...containerDetailData, serial: "CONT-2" }]);
 
-      fixture.detectChanges();
-      expect(component.isAllSelected()).toBe(false);
-      component.toggleAllRows();
-      expect(component.isAllSelected()).toBe(true);
-      const elements = component.containerDataSource().data;
-      expect(component.containerSelection().length).toBe(elements.length);
-
-      component.toggleAllRows();
-      expect(component.isAllSelected()).toBe(false);
-      expect(component.containerSelection().length).toBe(0);
-    });
-
-    it("toggleRow adds and removes a single row", () => {
-      const row = component.containerDataSource().data[0];
-
-      component.toggleRow(row);
-      expect(component.containerSelection()).toContain(row);
-
-      component.toggleRow(row);
-      expect(component.containerSelection()).not.toContain(row);
+      expect(component.containerSelection).toBe(containerService.containerSelection);
+      expect(component.containerSelection.selectedRows().map((row) => row.serial)).toEqual(["CONT-1", "CONT-2"]);
+      expect(component.containerSelection.allRowsSelected()).toBe(true);
     });
   });
 });
