@@ -71,10 +71,10 @@ export interface RangePreset {
 }
 
 export const WINDOW_START_PRESETS: readonly RangePreset[] = [
-  { label: $localize`Last 24 hours`, ageMs: MS_PER_DAY },
-  { label: $localize`Last 7 days`, ageMs: 7 * MS_PER_DAY },
+  { label: $localize`Everything on record`, ageMs: null },
   { label: $localize`Last 30 days`, ageMs: 30 * MS_PER_DAY },
-  { label: $localize`Everything on record`, ageMs: null }
+  { label: $localize`Last 7 days`, ageMs: 7 * MS_PER_DAY },
+  { label: $localize`Last 24 hours`, ageMs: MS_PER_DAY }
 ];
 
 export const WINDOW_END_PRESETS: readonly RangePreset[] = [
@@ -163,6 +163,7 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
   static override readonly requiredAction = [POLICY_READ, LOCKOUT_READ, BLOCKLIST_READ];
   static override readonly title = $localize`Conditional Access`;
   static override readonly icon = "security";
+  static override readonly titleLink = ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS;
   // Tall by default: the count rows and the highlights below them only pay off when they are visible at once.
   static override readonly defaultSize: WidgetSize = { cols: 6, rows: 11 };
   static override readonly minSize: WidgetSize = { cols: 6, rows: 5 };
