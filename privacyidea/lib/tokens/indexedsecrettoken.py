@@ -279,12 +279,22 @@ class IndexedSecretTokenClass(TokenClass):
                     # Add the challenge to the options for check_otp
                     options["challenge"] = challengeobject.challenge
                     challenge_data = challengeobject.get_data()
-                    position_str = challenge_data.get("positions")
-                    options["data"] = [int(c) for c in position_str.split(",")]
+                    position_str = challenge_data.get("positions", "")
+                    try:
+                        positions = [int(c) for c in position_str.split(",")] if position_str else []
+                    except ValueError:
+                        log.warning(f"Challenge {challengeobject.transaction_id} contains invalid "
+                                    f"positions: {position_str!r}")
+                        positions = []
+                    if not positions:
+                        # Without positions there is nothing to compare, an empty answer must not pass.
+                        challengeobject.set_otp_status()
+                        continue
+                    options["data"] = positions
                     # Now see if the answer is the right indexes
                     secret_string = to_unicode(self.token.get_otpkey().getKey())
-                    if len(options["data"]) == len(passw):
-                        expected_answer = "".join([secret_string[x - 1] for x in options["data"]])
+                    if len(positions) == len(passw):
+                        expected_answer = "".join([secret_string[x - 1] for x in positions])
                         if safe_compare(passw, expected_answer):
                             r_success = 1
                             # Set valid OTP to true. We must not delete the challenge now,
