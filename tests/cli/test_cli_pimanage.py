@@ -938,7 +938,7 @@ class PIManageAuthLogTestCase(CliTestCase):
                                   timestamp=utc_now() - dt.timedelta(days=age_days))
         entry.save()
         for _ in range(outcomes):
-            db.session.add(ConditionalAccessOutcome(auth_log_id=entry.id, action_type="LOCK_USER", policy_id=1,
+            db.session.add(ConditionalAccessOutcome(auth_log_id=entry.id, action_type="LOCK_USER",
                                                     policy_name="p", threshold=3, event_count=3))
         db.session.commit()
 
