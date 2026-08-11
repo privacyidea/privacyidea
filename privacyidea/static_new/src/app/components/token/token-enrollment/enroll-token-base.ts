@@ -41,6 +41,8 @@ export abstract class EnrollTokenBase<T extends TokenEnrollmentData = TokenEnrol
 
   onEnrollmentResponse?(response: EnrollmentResponse, data: TokenEnrollmentData): Promise<EnrollmentResponse | null>;
 
+  readonly showEnrollDataInLastStep: boolean = true;
+
   readonly reopenDialog: WritableSignal<ReopenDialogAction | undefined> = signal<ReopenDialogAction | undefined>(
     undefined
   );
