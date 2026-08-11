@@ -106,6 +106,13 @@ To get only the number of challenges which would be deleted, use ``--dryrun``.
 API Keys
 --------
 
+.. deprecated:: 3.14
+   The ``pi-manage api createtoken`` JWT API keys described here (and the
+   :ref:`policy_api_key` policy) are deprecated and will be removed in a future
+   release. The :ref:`api_clients` feature (``X-API-Key``) is intended to replace
+   them — API clients are stored, individually revocable and rotatable, and
+   auditable — but it does not yet cover every use of these JWTs.
+
 You can use ``pi-manage`` to create API keys. API keys can be used to
 
 1. secure the access to the ``/validate/check`` API or
