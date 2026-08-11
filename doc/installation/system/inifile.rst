@@ -630,3 +630,31 @@ customized Web UI, can be allowed without a code change::
 The value is a list of additional allowed keys (a comma-separated string is also
 accepted when set via an environment variable). Removing a key from the list does
 not delete settings already stored under it.
+
+.. _ini_remember_device_grace:
+
+Remember-device grace window
+----------------------------
+
+``PI_REMEMBER_DEVICE_GRACE_SECONDS`` (default ``10``) controls the grace window
+of the :ref:`api_clients` "remember this device" feature. Two near-simultaneous
+requests carrying the same rotating cookie would otherwise make the second look
+like a replay (a stale counter) and destroy the session series. Within this many
+seconds, and from the same source IP, the immediately-previous counter is
+accepted without rotating, so concurrent requests converge on one token.
+
+This is an advanced knob with a sensible default; most deployments never need to
+change it. It is a system-wide protocol tolerance, not a per-user or per-realm
+setting, so it is configured here rather than by policy. Set it to ``0`` for
+strict, fail-secure behaviour (no grace: any stale counter is treated as theft).
+Widening it trades theft-detection tightness for fewer re-registrations when a
+client loses a rotation response.
+
+The window is anchored to the rotation, not to the last request: it is not
+refreshed on each grace hit. A client that never stores the rotated cookie (and
+so keeps presenting the previous counter) is therefore tolerated only for this
+many seconds and is then treated as theft, forcing the device to re-register.
+This is intentional — refreshing the window on every stale request would keep a
+never-rotating (or stolen) cookie alive indefinitely and defeat the rotation.
+
+.. versionadded:: 3.14

@@ -166,7 +166,11 @@ $scope.getAuthentication = function () {
                           $scope.authentications.users[auditentry.user + "-" + auditentry.realm].latestError = auditentry.date;
                       }
                   }
-              } else {
+              } else if (auditentry.serial &&
+                         $scope.authentications.serials.indexOf(auditentry.serial) === -1) {
+                  // Only user-less failures list a serial; skip empty ones (entries
+                  // with no serial) and de-duplicate (a token failing repeatedly),
+                  // so the ngRepeat over this plain string array has unique keys.
                   $scope.authentications.serials.push(auditentry.serial);
               }
           });
