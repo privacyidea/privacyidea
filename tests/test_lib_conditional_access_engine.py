@@ -35,7 +35,8 @@ from privacyidea.lib.conditional_access.authentication_log import (
 )
 from privacyidea.lib.conditional_access.conditions import (CONDITION_TYPES, ConditionOperator, ConditionType,
                                                            ConditionTypeSpec, condition_matches,
-                                                           policy_conditions_are_scopable, policy_matches_context)
+                                                           conditions_match_row, policy_conditions_are_scopable,
+                                                           policy_matches_context)
 from privacyidea.lib.conditional_access.context import CAContext
 from privacyidea.lib.conditional_access.engine import (
     AccessDecision,
@@ -54,6 +55,7 @@ from privacyidea.lib.conditional_access.engine import (
     is_ip_never_block,
     get_ip_block,
     _lock_duration_seconds,
+    _policy_count_ip,
     _safe_format,
     _resolve_admin_recipients,
 )
@@ -1815,11 +1817,27 @@ class LockoutEngineTestCase(LockoutTestCase):
             self._condition(ConditionType.USER_REALM, "NO_SUCH_OP", ["x"]), context, "p"))
 
     def test_non_list_condition_value_does_not_match(self):
-        # A malformed value (not a list) compares against an empty list rather than
-        # raising, so IN never matches.
-        self.assertFalse(condition_matches(
-            self._condition(ConditionType.USER_REALM, ConditionOperator.IN, "realm1"),
-            CAContext(self.user), "p"))
+        # A malformed value (not a list - only a hand-edited row gets here, since the CRUD accepts only a
+        # non-empty list of strings) is rejected outright rather than compared against an empty list. The
+        # distinction only shows on NOT_IN: an empty list would make it match *everything*, so a corrupted
+        # exemption would silently apply to every request instead of to none.
+        for operator in (ConditionOperator.IN, ConditionOperator.NOT_IN):
+            with self.subTest(operator=operator):
+                self.assertFalse(condition_matches(
+                    self._condition(ConditionType.USER_REALM, operator, "realm1"),
+                    CAContext(self.user), "p"))
+
+    def test_non_list_condition_value_does_not_match_a_row(self):
+        # The row evaluator answers a malformed value the same way as the gate, so a corrupted condition
+        # cannot gate one way and scope another.
+        row = AuthenticationLog(event_type=str(AuthEventType.MFA_FAIL), realm=self.realm1,
+                                attempt_id="att-malformed", timestamp=utc_now())
+        for priority, operator in enumerate((ConditionOperator.IN, ConditionOperator.NOT_IN), start=1):
+            with self.subTest(operator=operator):
+                policy, _ = self._make_policy(
+                    name=f"malformed {operator}", counter_type=AuthEventType.MFA_FAIL, priority=priority,
+                    conditions=[self._condition(ConditionType.USER_REALM, operator, "realm1")])
+                self.assertFalse(conditions_match_row(policy, row))
 
     def test_conditions_gate_the_post_response_engine(self):
         # A policy excluded by its realm condition neither counts nor locks.
@@ -2012,6 +2030,82 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertEqual(AccessDecision.DENY, evaluate_access_decision(CAContext(self.user)))
         self.assertEqual(AccessDecision.CONTINUE,
                          evaluate_access_decision(CAContext(User("cornelius", self.realm2))))
+
+    # --- PER_ATTEMPT scoping: conditions apply to the reduced outcome, not to the rows ------------
+
+    def _seed_ip_attempt_rows(self, source_ip: str, attempt_id: str,
+                              rows: Sequence[tuple[AuthEventType, str | None]]) -> None:
+        """
+        Insert one row per ``(event_type, realm)`` pair sharing *attempt_id*, in order, so row ids
+        increase with insertion order. Per-row realms are what make an attempt straddle a condition:
+        the rows of one attempt need not all carry the same value (see conditions_match_row).
+        """
+        for event_type, realm in rows:
+            db.session.add(AuthenticationLog(event_type=str(event_type), source_ip=source_ip,
+                                             attempt_id=attempt_id, realm=realm, timestamp=utc_now()))
+        db.session.commit()
+
+    def _attempt_policy(self, *, operator: ConditionOperator, values: list[str],
+                        counter_type=AuthEventType.MFA_FAIL):
+        """A source-IP PER_ATTEMPT policy scoped by one realm condition, for counting via _policy_count_ip."""
+        policy, _stages = self._make_policy(
+            name="attempt scoped", counter_type=counter_type,
+            target=LockoutTarget.SOURCE_IP, count_mode=CountMode.PER_ATTEMPT,
+            conditions=[self._condition(ConditionType.USER_REALM, operator, values)],
+            stages=(StageDefinition(1, 1, [StageActionDefinition(LockoutAction.BLOCK_IP, 600)]),))
+        return policy
+
+    def test_a_condition_that_would_drop_a_success_does_not_turn_the_attempt_into_a_failure(self):
+        # The reduction needs the whole attempt: a LOGIN_SUCCESS supersedes the attempt's failures. A
+        # condition applied to the *rows* could admit the failure and drop the success - NOT_IN matches a
+        # missing value, so a NULL-realm failure passes while the realm1 success does not - and the attempt
+        # would count as a failure. Applying it to the reduced outcome instead leaves the success in charge.
+        ip = "10.0.0.40"
+        self._seed_ip_attempt_rows(ip, "att-mixed", [(AuthEventType.MFA_FAIL, None),
+                                                     (AuthEventType.LOGIN_SUCCESS, self.realm1)])
+        policy = self._attempt_policy(operator=ConditionOperator.NOT_IN, values=[self.realm1])
+
+        self.assertEqual(0, _policy_count_ip(policy, ip, utc_now()))
+
+    def test_conditions_scope_a_per_attempt_count_by_the_outcome_row(self):
+        # Having kept the reduction whole, the conditions still scope: of two failed attempts the realm1
+        # one counts and the realm2 one does not.
+        ip = "10.0.0.41"
+        self._seed_ip_attempt_rows(ip, "att-r1", [(AuthEventType.MFA_FAIL, self.realm1)])
+        self._seed_ip_attempt_rows(ip, "att-r2", [(AuthEventType.MFA_FAIL, self.realm2)])
+        policy = self._attempt_policy(operator=ConditionOperator.IN, values=[self.realm1])
+
+        self.assertEqual(1, _policy_count_ip(policy, ip, utc_now()))
+
+    def test_per_attempt_scoping_reads_the_success_row_not_a_later_stray(self):
+        # A policy tracking LOGIN_SUCCESS (a rate limit tracking every type) counts succeeded attempts, so
+        # which row the condition is read from becomes visible: the attempt is classified by its success,
+        # and must be filtered by that same row rather than by the stray replay that follows it.
+        ip = "10.0.0.42"
+        self._seed_ip_attempt_rows(ip, "att-stray", [(AuthEventType.LOGIN_SUCCESS, self.realm1),
+                                                     (AuthEventType.CHALLENGE_ANSWERED_FAIL, self.realm2)])
+        policy = self._attempt_policy(operator=ConditionOperator.IN, values=[self.realm1],
+                                      counter_type=AuthEventType.LOGIN_SUCCESS)
+
+        self.assertEqual(1, _policy_count_ip(policy, ip, utc_now()))
+
+    def test_an_unscopable_condition_leaves_a_per_attempt_count_unscoped(self):
+        # Mirrors the PER_REQUEST rule: a condition that cannot be expressed against the log scopes
+        # nothing, so the count stays wide rather than silently dropping every attempt.
+        ip = "10.0.0.43"
+        self._seed_ip_attempt_rows(ip, "att-a", [(AuthEventType.MFA_FAIL, self.realm1)])
+        self._seed_ip_attempt_rows(ip, "att-b", [(AuthEventType.MFA_FAIL, self.realm2)])
+        policy = self._attempt_policy(operator=ConditionOperator.IN, values=[self.realm1])
+        with mock.patch.dict(CONDITION_TYPES,
+                             {ConditionType.USER_REALM: ConditionTypeSpec(
+                                 name=ConditionType.USER_REALM,
+                                 label=CONDITION_TYPES[ConditionType.USER_REALM].label,
+                                 operators=CONDITION_TYPES[ConditionType.USER_REALM].operators,
+                                 resolve=CONDITION_TYPES[ConditionType.USER_REALM].resolve,
+                                 choices=CONDITION_TYPES[ConditionType.USER_REALM].choices,
+                                 log_column=None)}):
+            self.assertFalse(policy_conditions_are_scopable(policy))
+            self.assertEqual(2, _policy_count_ip(policy, ip, utc_now()))
 
     def test_conditions_scope_the_pre_auth_decision_count(self):
         # The pre-auth counterpart of test_conditions_exclude_rows_outside_them_from_a_source_ip_count:

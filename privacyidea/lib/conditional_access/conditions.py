@@ -262,6 +262,34 @@ CONDITION_TYPES: dict[str, ConditionTypeSpec] = {
 }
 
 
+def _values_are_well_formed(condition: "LockoutPolicyCondition", policy_name: str) -> bool:
+    """
+    Whether a stored condition's ``value`` has the shape its operator takes - today a list, for the two
+    set-membership operators. Checked with the unknown-type/operator checks rather than at comparison
+    time, because a malformed condition is malformed whatever the request or row carries.
+
+    ``value`` is a JSON column, so its Python type is guaranteed by the CRUD layer
+    (:func:`~privacyidea.lib.conditional_access.lockout_policy._validate_condition_value` accepts only a
+    non-empty list of strings) and not by the schema. A row that reaches here with another shape was
+    hand-edited, and the only safe reading of it is that the condition does not hold: substituting an
+    empty list instead would answer ``False`` for ``IN`` but ``True`` for ``NOT_IN``, so a corrupted
+    exemption would silently apply to *everything* rather than to nothing.
+
+    When a scalar operator is added the accepted shape becomes operator-dependent, and this is where
+    that branches - mirroring the same note on ``_validate_condition_value``.
+
+    :param condition: the stored condition row
+    :param policy_name: the owning policy's name, for the log message only
+    :return: True if the value has a usable shape
+    """
+    if isinstance(condition.value, (list, tuple)):
+        return True
+    log.warning(f"Policy {policy_name!r} carries a condition whose value is not a list "
+                f"({condition.condition_type!r} / {condition.operator!r}, value {condition.value!r}); "
+                f"treating it as not matching.")
+    return False
+
+
 def condition_matches(condition: "LockoutPolicyCondition", context: "CAContext",
                       policy_name: str = "") -> bool:
     """
@@ -284,16 +312,70 @@ def condition_matches(condition: "LockoutPolicyCondition", context: "CAContext",
         log.warning(f"Policy {policy_name!r} carries a condition with an unknown type / operator "
                     f"({condition.condition_type!r} / {condition.operator!r}); treating it as not matching.")
         return False
+    if not _values_are_well_formed(condition, policy_name):
+        return False
     try:
         actual = spec.resolve(context)
         if actual is None:
             return operator.matches_missing
-        values = condition.value if isinstance(condition.value, (list, tuple)) else []
-        return operator.apply(actual, values)
+        return operator.apply(actual, condition.value)
     except Exception as ex:
         log.warning(f"Condition {condition.condition_type!r} of policy {policy_name!r} could not be "
                     f"evaluated: {ex!r}; treating it as not matching.")
         return False
+
+
+def conditions_match_row(policy: "LockoutPolicy", row) -> bool:
+    """
+    Whether every condition of *policy* holds for a single ``authentication_log`` *row*.
+
+    The row counterpart of :func:`policy_matches_context`, and the third place the same question is
+    asked (gate: the request; scope: the counted rows). It exists for ``PER_ATTEMPT`` counting, which
+    cannot use the SQL predicates of :func:`condition_sql_filters`: that counter reduces all rows
+    sharing an ``attempt_id`` to the one event that classifies the attempt, and a ``WHERE`` clause
+    filters rows *before* the reduction sees them. Dropping one row of an attempt corrupts the
+    reduction rather than narrowing it - most sharply when the dropped row is the ``LOGIN_SUCCESS``
+    that should have superseded the attempt's failures, which then counts as a failure. Applying the
+    conditions to the reduced outcome row instead leaves the reduction whole and asks the question
+    once, of the row that actually classifies the attempt.
+
+    Each condition reads its own :attr:`ConditionTypeSpec.log_column` off the row, so this is the
+    ``apply``/``matches_missing`` pair :func:`condition_matches` uses - not the ``sql`` pair. That is
+    why ``NOT_IN`` needs no null-handling here: the missing-value rule is the operator's, applied
+    directly, rather than something SQL's three-valued logic has to be talked into agreeing with.
+
+    Fails closed like its siblings: an unknown type/operator, a type without a ``log_column``, or a
+    raising comparison yields ``False`` (the row does not count) and is logged, never raises. A policy
+    with no conditions matches every row.
+
+    :param policy: the policy whose conditions are evaluated; only ``conditions`` is read
+    :param row: the :class:`~privacyidea.models.AuthenticationLog` row to test
+    :return: True if every condition holds for the row
+    """
+    for condition in policy.conditions:
+        spec = CONDITION_TYPES.get(condition.condition_type)
+        operator = OPERATORS.get(condition.operator)
+        if spec is None or operator is None or spec.log_column is None:
+            log.warning(f"Policy {policy.name!r} carries a condition that cannot be evaluated against an "
+                        f"authentication-log row ({condition.condition_type!r} / {condition.operator!r}); "
+                        f"treating it as not matching.")
+            return False
+        if not _values_are_well_formed(condition, policy.name):
+            return False
+        try:
+            # log_column is a mapped column; .key is the attribute name holding the same value on the row.
+            actual = getattr(row, spec.log_column.key)
+            if actual is None:
+                if not operator.matches_missing:
+                    return False
+                continue
+            if not operator.apply(actual, condition.value):
+                return False
+        except Exception as ex:
+            log.warning(f"Condition {condition.condition_type!r} of policy {policy.name!r} could not be "
+                        f"evaluated against an authentication-log row: {ex!r}; treating it as not matching.")
+            return False
+    return True
 
 
 def get_condition_types() -> dict[str, dict]:

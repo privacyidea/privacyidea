@@ -19,7 +19,7 @@
 import ipaddress
 import logging
 import re
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
@@ -32,6 +32,7 @@ from privacyidea.lib import _
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
 from privacyidea.lib.conditional_access.authentication_log import _naive_utc, record_conditional_access_finding
 from privacyidea.lib.conditional_access.conditions import (condition_sql_filters,
+                                                          conditions_match_row,
                                                           policy_conditions_are_scopable,
                                                           policy_matches_context)
 from privacyidea.lib.conditional_access.context import CAContext
@@ -308,18 +309,24 @@ def count_distinct_users_for_ip(source_ip: str, event_types: list[str], window_s
 
 
 def _count_matching_attempts(rows: list[AuthenticationLog], tracked_types: set[str],
-                             since_last_success: bool = False) -> int:
+                             since_last_success: bool = False,
+                             row_filter: "Callable[[AuthenticationLog], bool] | None" = None) -> int:
     """
     Reduce authentication-log rows to one representative event per attempt and count the attempts whose
     representative is in *tracked_types*.
 
     All rows sharing an ``attempt_id`` are one authentication attempt. Its representative — the event that classifies
-    the whole attempt — is :attr:`AuthEventType.LOGIN_SUCCESS` if the attempt ever logged in (a completed success is
-    terminal: a later stray answer replayed on the same, now-answered challenge maps to the same ``attempt_id`` but
-    must not undo the success), otherwise the **latest** event by row ``id``. Row ``id`` is the insertion order, which
-    orders the multichallenge steps correctly independent of event type — e.g. a wrong answer *then* a continue reads
-    as in-progress (latest = the continue), while a continue *then* a wrong answer reads as failed (latest = the fail),
-    which an event-type ranking could not distinguish.
+    the whole attempt — is the :attr:`AuthEventType.LOGIN_SUCCESS` row if the attempt ever logged in (a completed
+    success is terminal: a later stray answer replayed on the same, now-answered challenge maps to the same
+    ``attempt_id`` but must not undo the success), otherwise the **latest** row by ``id``. Row ``id`` is the insertion
+    order, which orders the multichallenge steps correctly independent of event type — e.g. a wrong answer *then* a
+    continue reads as in-progress (latest = the continue), while a continue *then* a wrong answer reads as failed
+    (latest = the fail), which an event-type ranking could not distinguish.
+
+    The representative is carried as the *row*, not just its event type, because *row_filter* has to be asked of the
+    event that classifies the attempt. For a succeeded attempt those are two different rows — the type comes from the
+    success while the latest row may be that stray replay — and a policy tracking ``LOGIN_SUCCESS`` (a rate limit
+    tracking every type) would otherwise classify by one row and filter by another.
 
     Comparisons rely on :class:`AuthEventType` being a ``str`` subclass, so the stored ``event_type`` strings match
     the enum members directly — no conversion needed.
@@ -327,33 +334,45 @@ def _count_matching_attempts(rows: list[AuthenticationLog], tracked_types: set[s
     :param rows: the authentication-log rows of the attempts to reduce
     :param tracked_types: the event types a representative must be in to count the attempt
     :param since_last_success: only count attempts whose latest row is newer than the last ``LOGIN_SUCCESS`` row
-    :return: the number of attempts whose representative event is in *tracked_types*
+    :param row_filter: an optional ``(row) -> bool`` applied to each attempt's representative row; an attempt whose
+        representative it rejects does not count. ``None`` counts every reduced attempt. This is where a policy's
+        conditions scope a ``PER_ATTEMPT`` count (see
+        :func:`~privacyidea.lib.conditional_access.conditions.conditions_match_row`) — they cannot be applied to
+        *rows* before this reduction without corrupting it.
+    :return: the number of matching attempts
     """
     latest: dict[str, AuthenticationLog] = {}
-    succeeded: set[str] = set()
+    success: dict[str, AuthenticationLog] = {}
     last_success_id = -1
-    # First pass: aggregate every row into its attempt — the attempt's latest (highest-id) row, whether it succeeded,
-    # and the newest LOGIN_SUCCESS row id (the reset point for since_last_success).
+    # First pass: aggregate every row into its attempt — the attempt's latest (highest-id) row, its latest success row
+    # if it has one, and the newest LOGIN_SUCCESS row id (the reset point for since_last_success).
     for row in rows:
         if row.event_type == AuthEventType.LOGIN_SUCCESS:
-            succeeded.add(row.attempt_id)
             last_success_id = max(last_success_id, row.id)
+            won = success.get(row.attempt_id)
+            if won is None or row.id > won.id:
+                success[row.attempt_id] = row
         current = latest.get(row.attempt_id)
         if current is None or row.id > current.id:
             latest[row.attempt_id] = row
     cutoff_id = last_success_id if since_last_success else -1
     matches = 0
-    # Second pass: over the distinct attempts, resolve each representative event and count the ones that match — and,
-    # when flooring, only those whose latest row is newer than the last successful login.
+    # Second pass: over the distinct attempts, resolve each representative row and count the ones whose event matches —
+    # when flooring, only those whose latest row is newer than the last successful login, and only those whose
+    # representative the row filter admits.
     for attempt_id, row in latest.items():
-        representative = AuthEventType.LOGIN_SUCCESS if attempt_id in succeeded else row.event_type
-        if representative in tracked_types and row.id > cutoff_id:
-            matches += 1
+        representative = success.get(attempt_id) or row
+        if representative.event_type not in tracked_types or row.id <= cutoff_id:
+            continue
+        if row_filter is not None and not row_filter(representative):
+            continue
+        matches += 1
     return matches
 
 
 def _count_attempts(subject, event_types: list[str], window_seconds: int,
-                    window_end: datetime | None = None, since_last_success: bool = False) -> int:
+                    window_end: datetime | None = None, since_last_success: bool = False,
+                    row_filter: "Callable[[AuthenticationLog], bool] | None" = None) -> int:
     """
     Count whole authentication *attempts* matching *subject* whose representative event is in *event_types*, within the
     sliding window ``[window_end - window_seconds, window_end]`` (``PER_ATTEMPT``).
@@ -364,6 +383,11 @@ def _count_attempts(subject, event_types: list[str], window_seconds: int,
     predicate hits the index, so callers document the matching ``*_time`` index. The rows are the small in-window set
     for one subject, so fetching full :class:`AuthenticationLog` objects (rather than columns) is negligible and keeps
     the reduction working on named attributes.
+
+    *subject* deliberately carries no condition predicates - unlike the row counters, which take them as
+    ``extra_filters``. Narrowing the ``WHERE`` here would hide rows from the reduction rather than from the count, and
+    an attempt reduced from a subset of its own rows is misclassified, not narrowed. Conditions arrive as *row_filter*
+    instead and are applied to the reduced representative (see :func:`_count_matching_attempts`).
     """
     window_end = _naive_utc(window_end) if window_end is not None else utc_now()
     window_start = window_end - timedelta(seconds=window_seconds)
@@ -372,13 +396,14 @@ def _count_attempts(subject, event_types: list[str], window_seconds: int,
         .where(*subject,
                AuthenticationLog.timestamp >= window_start,
                AuthenticationLog.timestamp <= window_end)).all()
-    return _count_matching_attempts(rows, set(event_types), since_last_success=since_last_success)
+    return _count_matching_attempts(rows, set(event_types), since_last_success=since_last_success,
+                                    row_filter=row_filter)
 
 
 def count_user_attempts(resolver: str, uid: str, realm: str, event_types: list[str],
                         window_seconds: int, window_end: datetime | None = None,
                         since_last_success: bool = False,
-                        extra_filters: "Sequence | None" = None) -> int:
+                        row_filter: "Callable[[AuthenticationLog], bool] | None" = None) -> int:
     """
     Count whole authentication *attempts* (not individual ``authentication_log`` rows) for one user identity whose
     representative event matches *event_types*, within a sliding time window ``[window_end - window_seconds,
@@ -396,17 +421,17 @@ def count_user_attempts(resolver: str, uid: str, realm: str, event_types: list[s
         naive UTC.
     :param since_last_success: only count attempts after the user's most recent completed login in the window (a
         successful login resets the counter); see :func:`_count_matching_attempts`
-    :param extra_filters: extra SQLAlchemy predicates ANDed into the ``WHERE``, narrowing which
-        rows count to the ones a policy's conditions describe (see
-        :func:`~privacyidea.lib.conditional_access.conditions.condition_sql_filters`). ``None`` or
-        empty counts every row of the subject.
+    :param row_filter: an optional ``(row) -> bool`` narrowing the count to the attempts a policy's conditions
+        describe. It takes a row predicate rather than the ``extra_filters`` SQL predicates the event counters take:
+        the conditions must be applied to the *reduced* representative, never to the rows the reduction reads (see
+        :func:`_count_attempts`). ``None`` counts every attempt of the subject.
     :return: the number of matching attempts
     """
     return _count_attempts([AuthenticationLog.resolver == resolver,
                             AuthenticationLog.uid == uid,
-                            AuthenticationLog.realm == realm,
-                            *(extra_filters or ())],
-                           event_types, window_seconds, window_end, since_last_success)
+                            AuthenticationLog.realm == realm],
+                           event_types, window_seconds, window_end, since_last_success,
+                           row_filter=row_filter)
 
 
 def count_ip_events(source_ip: str, event_types: list[str], window_seconds: int,
@@ -447,7 +472,8 @@ def count_ip_events(source_ip: str, event_types: list[str], window_seconds: int,
 
 
 def count_ip_attempts(source_ip: str, event_types: list[str], window_seconds: int,
-                      window_end: datetime | None = None, extra_filters: "Sequence | None" = None) -> int:
+                      window_end: datetime | None = None,
+                      row_filter: "Callable[[AuthenticationLog], bool] | None" = None) -> int:
     """
     Count whole authentication *attempts* (not individual ``authentication_log`` rows) a single *source_ip* produced
     whose representative event matches *event_types*, within the sliding window ``[window_end - window_seconds,
@@ -464,22 +490,43 @@ def count_ip_attempts(source_ip: str, event_types: list[str], window_seconds: in
     :param window_seconds: width of the look-back window in seconds
     :param window_end: the instant the window ends; defaults to :func:`utc_now`. An aware value is normalized to naive
         UTC.
-    :param extra_filters: extra SQLAlchemy predicates ANDed into the ``WHERE``, narrowing which
-        rows count to the ones a policy's conditions describe (see
-        :func:`~privacyidea.lib.conditional_access.conditions.condition_sql_filters`). ``None`` or
-        empty counts every row of the subject.
+    :param row_filter: an optional ``(row) -> bool`` narrowing the count to the attempts a policy's conditions
+        describe. It takes a row predicate rather than the ``extra_filters`` SQL predicates the event counters take:
+        the conditions must be applied to the *reduced* representative, never to the rows the reduction reads (see
+        :func:`_count_attempts`). ``None`` counts every attempt of the subject.
     :return: the number of matching attempts
     """
-    return _count_attempts([AuthenticationLog.source_ip == source_ip, *(extra_filters or ())],
-                           event_types, window_seconds, window_end)
+    return _count_attempts([AuthenticationLog.source_ip == source_ip],
+                           event_types, window_seconds, window_end, row_filter=row_filter)
+
+
+def _count_scoping(policy: LockoutPolicy) -> "tuple[list | None, Callable[[AuthenticationLog], bool] | None]":
+    """
+    The policy's conditions as the two things a counter can consume: SQL predicates for the row counters, and a row
+    predicate for the attempt counters.
+
+    Both express the same conditions and are gated by the same rule
+    (:func:`~privacyidea.lib.conditional_access.conditions.policy_conditions_are_scopable`) - a policy that cannot
+    have *all* of its conditions honoured counts unscoped either way, rather than half-scoped. They differ only in
+    *where* they can be applied: a row counter narrows its ``WHERE``, while an attempt counter must reduce whole
+    attempts first and apply the conditions to the reduced representative (see :func:`_count_attempts` for why
+    filtering rows there would misclassify attempts rather than narrow the count).
+
+    :param policy: the policy whose conditions are translated
+    :return: ``(sql_filters, row_filter)``, both ``None`` when the policy's conditions cannot scope a count
+    """
+    if not policy_conditions_are_scopable(policy):
+        return None, None
+    return condition_sql_filters(policy), lambda row: conditions_match_row(policy, row)
 
 
 def _policy_count(policy: LockoutPolicy, user: "User", window_end: datetime,
-                  since_last_success: bool = False, extra_filters: Sequence | None = None) -> int:
+                  since_last_success: bool = False) -> int:
     """
     Count a user-target policy's events (``PER_REQUEST``) or attempts (``PER_ATTEMPT``) over its window, per the
-    policy's :attr:`~privacyidea.models.lockout_policy.LockoutPolicy.count_mode`. (Source-IP policies dispatch
-    separately via :func:`_policy_count_ip`.)
+    policy's :attr:`~privacyidea.models.lockout_policy.LockoutPolicy.count_mode`, scoped to the rows the policy's
+    conditions describe (:func:`_count_scoping`). (Source-IP policies dispatch separately via
+    :func:`_policy_count_ip`.)
 
     :param policy: the policy whose ``time_window_seconds`` and ``counter_types_to_track`` are counted over
     :param user: the resolved user to count for
@@ -488,54 +535,48 @@ def _policy_count(policy: LockoutPolicy, user: "User", window_end: datetime,
         login resets the counter). Applies to both user modes — ``PER_REQUEST`` floors at the last ``LOGIN_SUCCESS``
         row, ``PER_ATTEMPT`` at the last successful attempt. (Source-IP ``DISTINCT_USERS`` deliberately never resets,
         which is why it is a separate mode and does not go through here.)
-:param extra_filters: extra SQLAlchemy predicates ANDed into the ``WHERE``, narrowing which
-        rows count to the ones a policy's conditions describe (see
-        :func:`~privacyidea.lib.conditional_access.conditions.condition_sql_filters`). ``None`` or
-        empty counts every row of the subject.
     :return: the event count (``PER_REQUEST``) or the attempt count (``PER_ATTEMPT``)
     """
+    sql_filters, row_filter = _count_scoping(policy)
     if policy.count_mode == CountMode.PER_ATTEMPT:
         return count_user_attempts(user.resolver, user.uid, user.realm,
                                    policy.counter_types_to_track, policy.time_window_seconds,
                                    window_end=window_end, since_last_success=since_last_success,
-                                   extra_filters=extra_filters)
+                                   row_filter=row_filter)
     return count_user_events(user.resolver, user.uid, user.realm,
                              policy.counter_types_to_track, policy.time_window_seconds,
                              window_end=window_end, since_last_success=since_last_success,
-                             extra_filters=extra_filters)
+                             extra_filters=sql_filters)
 
 
-def _policy_count_ip(policy: LockoutPolicy, source_ip: str, window_end: datetime,
-                     extra_filters: Sequence | None = None) -> int:
+def _policy_count_ip(policy: LockoutPolicy, source_ip: str, window_end: datetime) -> int:
     """
     Count a source-IP-target policy's subject over its window, per the policy's
     :attr:`~privacyidea.models.lockout_policy.LockoutPolicy.count_mode`: distinct targeted accounts
     (``DISTINCT_USERS``, the default and spraying/enumeration signal), individual events (``PER_REQUEST``) or whole
-    attempts (``PER_ATTEMPT``, the two volume modes = plain per-IP rate limiting). None of the three resets on a
-    successful login - a legit login by one account must not clear a signal aggregated across the whole IP - so there
-    is no ``since_last_success`` parameter, unlike the user path (:func:`_policy_count`).
+    attempts (``PER_ATTEMPT``, the two volume modes = plain per-IP rate limiting), scoped to what the policy's
+    conditions describe (:func:`_count_scoping`). None of the three resets on a successful login - a legit login by
+    one account must not clear a signal aggregated across the whole IP - so there is no ``since_last_success``
+    parameter, unlike the user path (:func:`_policy_count`).
 
     :param policy: the policy whose ``time_window_seconds`` and ``counter_types_to_track`` are counted over
     :param source_ip: the client IP to count for
     :param window_end: the instant the window ends (reference time)
-    :param extra_filters: extra SQLAlchemy predicates ANDed into the ``WHERE``, narrowing which
-        rows count to the ones a policy's conditions describe (see
-        :func:`~privacyidea.lib.conditional_access.conditions.condition_sql_filters`). ``None`` or
-        empty counts every row of the subject.
     :return: the distinct-account count (``DISTINCT_USERS``), event count (``PER_REQUEST``) or attempt count
         (``PER_ATTEMPT``)
     """
+    sql_filters, row_filter = _count_scoping(policy)
     if policy.count_mode == CountMode.PER_REQUEST:
         return count_ip_events(source_ip, policy.counter_types_to_track,
                                policy.time_window_seconds, window_end=window_end,
-                               extra_filters=extra_filters)
+                               extra_filters=sql_filters)
     if policy.count_mode == CountMode.PER_ATTEMPT:
         return count_ip_attempts(source_ip, policy.counter_types_to_track,
                                  policy.time_window_seconds, window_end=window_end,
-                                 extra_filters=extra_filters)
+                                 row_filter=row_filter)
     return count_distinct_users_for_ip(source_ip, policy.counter_types_to_track,
                                        policy.time_window_seconds, window_end=window_end,
-                                       extra_filters=extra_filters)
+                                       extra_filters=sql_filters)
 
 
 def get_user_lockout(user: "User", now: datetime | None = None, *,
@@ -786,23 +827,24 @@ def _policy_access_decision(policy: LockoutPolicy, context: CAContext,
     # contributes no decision, and costs no counting query.
     if not policy_matches_context(policy, context):
         return None
-    # The conditions scope the count here exactly as they do post-response (see _evaluate_policy for
-    # why this narrows what is counted without changing which requests the policy applies to).
-    count_filters = condition_sql_filters(policy) if policy_conditions_are_scopable(policy) else None
+    # The counts below scope themselves to the policy's conditions (see _count_scoping), exactly as the
+    # post-response path does. Both paths must scope identically: they count the same subject over the
+    # same window, so a policy that denies on one count and acts on another would be reasoning about two
+    # different histories.
     if policy.target == LockoutTarget.SOURCE_IP:
         # IP-scoped: decide on the source IP regardless of user resolution. A
         # never-block IP is never denied by an IP policy (mirrors the BLOCK_IP
         # allowlist), so it contributes no decision.
         if not context.source_ip or is_ip_never_block(context.source_ip):
             return None
-        count = _policy_count_ip(policy, context.source_ip, now, extra_filters=count_filters)
+        count = _policy_count_ip(policy, context.source_ip, now)
         subject_label = f"source IP {context.source_ip}"
     else:
         # User-scoped: keyed on the resolved user, so an unresolved user is never
         # decided by a user policy.
         if not _resolved(context.user):
             return None
-        count = _policy_count(policy, context.user, now, extra_filters=count_filters)
+        count = _policy_count(policy, context.user, now)
         subject_label = repr(context.user)
     decision = next((d for d in (_stage_access_decision(stage, count) for stage in policy.stages)
                      if d is not None), None)
@@ -964,9 +1006,10 @@ def _evaluate_policy(policy: LockoutPolicy, context: CAContext, event_type: str,
     # counts nor acts, and costs no counting query.
     if not policy_matches_context(policy, context):
         return []
-    # A condition then *also* narrows what is counted. The two
-    # halves cannot disagree: OperatorSpec.matches_missing and OperatorSpec.sql are aligned on a
-    # missing value, so a request the gate admits is one whose rows the filter admits.
+    # A condition then *also* narrows what is counted, which the counts below apply for themselves (see
+    # _count_scoping). The two halves cannot disagree: OperatorSpec.matches_missing is what answers a
+    # missing value on both sides - directly for the row predicate, and mirrored by OperatorSpec.sql for
+    # the SQL one - so a request the gate admits is one whose rows the scoping admits.
     #
     # What it changes is what a policy counts once it applies. That matters for a source-IP policy,
     # whose subject is the IP and whose rows therefore span many identities, realms and roles: without
@@ -976,7 +1019,6 @@ def _evaluate_policy(policy: LockoutPolicy, context: CAContext, event_type: str,
     # admin has no realm at all, so no identity is ever both).
     #
     # A policy whose conditions cannot all be expressed as predicates counts unscoped, as before.
-    count_filters = condition_sql_filters(policy) if policy_conditions_are_scopable(policy) else None
     window = policy.time_window_seconds
     user = context.user
     source_ip = context.source_ip
@@ -988,7 +1030,7 @@ def _evaluate_policy(policy: LockoutPolicy, context: CAContext, event_type: str,
         # Count per the policy's mode: distinct targeted accounts (spraying) or plain per-IP volume. No
         # since-last-success reset in any mode — a legit login by one account must not clear a signal aggregated
         # across the whole IP (see _policy_count_ip).
-        count = _policy_count_ip(policy, source_ip, now, extra_filters=count_filters)
+        count = _policy_count_ip(policy, source_ip, now)
         subject_label = f"source IP {source_ip}"
     else:
         if not _resolved(user):
@@ -1003,7 +1045,7 @@ def _evaluate_policy(policy: LockoutPolicy, context: CAContext, event_type: str,
         # The count is the *combined* total over all of the policy's tracked types,
         # not just the current request's event_type, so a policy tracking several
         # failure types trips on their sum.
-        count = _policy_count(policy, user, now, since_last_success=True, extra_filters=count_filters)
+        count = _policy_count(policy, user, now, since_last_success=True)
         subject_label = repr(user)
 
     # Pick the triggered stage: the highest-priority stage that has at least one
