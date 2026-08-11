@@ -153,7 +153,7 @@ describe("TokenTableActionsComponent", () => {
   describe("deleteSelectedTokens()", () => {
     it("should call bulkDeleteWithConfirmDialog with the selected token serials", () => {
       const mockTokens = [{ serial: "TOKEN1" }, { serial: "TOKEN2" }] as TokenDetails[];
-      tokenService.tokenSelection.set(mockTokens);
+      tokenService.setTokenSelection(mockTokens);
       fixture.detectChanges();
 
       component.deleteSelectedTokens();
@@ -166,7 +166,7 @@ describe("TokenTableActionsComponent", () => {
     const mockTokens = [{ serial: "TOKEN1" }] as TokenDetails[];
 
     beforeEach(() => {
-      tokenService.tokenSelection.set(mockTokens);
+      tokenService.setTokenSelection(mockTokens);
     });
 
     it("should call bulkUnassignTokens and reload when dialog result is true", () => {
@@ -182,7 +182,7 @@ describe("TokenTableActionsComponent", () => {
 
       const reloadSpy = jest.spyOn(tokenService.tokenResource, "reload");
 
-      component.tokenSelection.set(mockTokens);
+      tokenService.setTokenSelection(mockTokens);
       component.unassignSelectedTokens();
 
       expect(dialogService.openDialog).toHaveBeenCalled();
@@ -204,7 +204,7 @@ describe("TokenTableActionsComponent", () => {
 
     it("should assign tokens without an existing user", () => {
       const tokens = [{ serial: "T1", username: "" }] as TokenDetails[];
-      tokenService.tokenSelection.set(tokens);
+      tokenService.setTokenSelection(tokens);
       mockDialogResult({ username: "new_user", realm: "new_realm" });
 
       component.assignSelectedTokens();
@@ -220,7 +220,7 @@ describe("TokenTableActionsComponent", () => {
 
     it("should unassign and then re-assign tokens that already have a user", () => {
       const tokens = [{ serial: "T1", username: "old_user" }] as TokenDetails[];
-      tokenService.tokenSelection.set(tokens);
+      tokenService.setTokenSelection(tokens);
       mockDialogResult({ username: "new_user", realm: "new_realm" });
 
       component.assignSelectedTokens();
@@ -237,11 +237,11 @@ describe("TokenTableActionsComponent", () => {
 
   describe("toggleActiveSelectedTokens()", () => {
     it("should do nothing when no tokens are selected", () => {
-      tokenService.tokenSelection.set([]);
+      tokenService.setTokenSelection([]);
       component.toggleActiveSelectedTokens();
       // openDialog was already called in beforeEach default setup, reset to check
       (dialogService.openDialog as jest.Mock).mockClear();
-      tokenService.tokenSelection.set([]);
+      tokenService.setTokenSelection([]);
       component.toggleActiveSelectedTokens();
       expect(dialogService.openDialog).not.toHaveBeenCalled();
     });
@@ -251,7 +251,7 @@ describe("TokenTableActionsComponent", () => {
         { serial: "T1", active: true },
         { serial: "T2", active: false }
       ] as TokenDetails[];
-      tokenService.tokenSelection.set(tokens);
+      tokenService.setTokenSelection(tokens);
       mockDialogResult("toggle");
 
       component.toggleActiveSelectedTokens();
@@ -266,7 +266,7 @@ describe("TokenTableActionsComponent", () => {
         { serial: "T1", active: true },
         { serial: "T2", active: false }
       ] as TokenDetails[];
-      tokenService.tokenSelection.set(tokens);
+      tokenService.setTokenSelection(tokens);
       mockDialogResult("activate");
 
       component.toggleActiveSelectedTokens();
@@ -280,7 +280,7 @@ describe("TokenTableActionsComponent", () => {
         { serial: "T1", active: true },
         { serial: "T2", active: false }
       ] as TokenDetails[];
-      tokenService.tokenSelection.set(tokens);
+      tokenService.setTokenSelection(tokens);
       mockDialogResult("deactivate");
 
       component.toggleActiveSelectedTokens();
@@ -291,7 +291,7 @@ describe("TokenTableActionsComponent", () => {
 
     it("should show 'No tokens to process' when activate is chosen but all are already active", () => {
       const tokens = [{ serial: "T1", active: true }] as TokenDetails[];
-      tokenService.tokenSelection.set(tokens);
+      tokenService.setTokenSelection(tokens);
       mockDialogResult("activate");
 
       component.toggleActiveSelectedTokens();
@@ -301,7 +301,7 @@ describe("TokenTableActionsComponent", () => {
 
     it("should do nothing when dialog is cancelled", () => {
       const tokens = [{ serial: "T1", active: true }] as TokenDetails[];
-      tokenService.tokenSelection.set(tokens);
+      tokenService.setTokenSelection(tokens);
       mockDialogResult(undefined);
 
       component.toggleActiveSelectedTokens();
@@ -311,7 +311,7 @@ describe("TokenTableActionsComponent", () => {
 
     it("should handle error during toggle", () => {
       const tokens = [{ serial: "T1", active: true }] as TokenDetails[];
-      tokenService.tokenSelection.set(tokens);
+      tokenService.setTokenSelection(tokens);
       mockDialogResult("toggle");
       (tokenService.toggleActive as jest.Mock).mockReturnValue(
         throwError(() => ({ error: { result: { error: { message: "Toggle failed" } } } }))
@@ -324,7 +324,7 @@ describe("TokenTableActionsComponent", () => {
 
     it("should show generic error when error has no message", () => {
       const tokens = [{ serial: "T1", active: true }] as TokenDetails[];
-      tokenService.tokenSelection.set(tokens);
+      tokenService.setTokenSelection(tokens);
       mockDialogResult("toggle");
       (tokenService.toggleActive as jest.Mock).mockReturnValue(throwError(() => ({})));
 
@@ -337,14 +337,14 @@ describe("TokenTableActionsComponent", () => {
   describe("resetFailcounterSelectedTokens()", () => {
     it("should do nothing when no tokens are selected", () => {
       (dialogService.openDialog as jest.Mock).mockClear();
-      tokenService.tokenSelection.set([]);
+      tokenService.setTokenSelection([]);
       component.resetFailcounterSelectedTokens();
       expect(dialogService.openDialog).not.toHaveBeenCalled();
     });
 
     it("should reset failcounters on confirmation", () => {
       const tokens = [{ serial: "T1" }, { serial: "T2" }] as TokenDetails[];
-      tokenService.tokenSelection.set(tokens);
+      tokenService.setTokenSelection(tokens);
       mockDialogResult(true);
 
       component.resetFailcounterSelectedTokens();
@@ -358,7 +358,7 @@ describe("TokenTableActionsComponent", () => {
 
     it("should do nothing when dialog is cancelled", () => {
       const tokens = [{ serial: "T1" }] as TokenDetails[];
-      tokenService.tokenSelection.set(tokens);
+      tokenService.setTokenSelection(tokens);
       mockDialogResult(undefined);
 
       component.resetFailcounterSelectedTokens();
@@ -368,7 +368,7 @@ describe("TokenTableActionsComponent", () => {
 
     it("should handle error with server message", () => {
       const tokens = [{ serial: "T1" }] as TokenDetails[];
-      tokenService.tokenSelection.set(tokens);
+      tokenService.setTokenSelection(tokens);
       mockDialogResult(true);
       (tokenService.resetFailCount as jest.Mock).mockReturnValue(
         throwError(() => ({ error: { result: { error: { message: "Reset failed" } } } }))
@@ -381,7 +381,7 @@ describe("TokenTableActionsComponent", () => {
 
     it("should handle error without server message", () => {
       const tokens = [{ serial: "T1" }] as TokenDetails[];
-      tokenService.tokenSelection.set(tokens);
+      tokenService.setTokenSelection(tokens);
       mockDialogResult(true);
       (tokenService.resetFailCount as jest.Mock).mockReturnValue(throwError(() => ({})));
 
@@ -548,7 +548,7 @@ describe("TokenTableActionsComponent", () => {
   describe("unassignSelectedTokens() - additional branches", () => {
     it("should show failed and unauthorized messages", () => {
       const tokens = [{ serial: "T1" }, { serial: "T2" }, { serial: "T3" }] as TokenDetails[];
-      tokenService.tokenSelection.set(tokens);
+      tokenService.setTokenSelection(tokens);
 
       const bulkResponse = new MockPiResponse<BulkResult, unknown>({
         detail: {},
@@ -560,7 +560,7 @@ describe("TokenTableActionsComponent", () => {
       jest.spyOn(tokenService, "bulkUnassignTokens").mockReturnValue(of(bulkResponse));
       mockDialogResult(true);
 
-      component.tokenSelection.set(tokens);
+      tokenService.setTokenSelection(tokens);
       component.unassignSelectedTokens();
 
       expect(notificationService.success).toHaveBeenCalledWith(
@@ -576,7 +576,7 @@ describe("TokenTableActionsComponent", () => {
 
     it("should show plural message for multiple successful unassigns", () => {
       const tokens = [{ serial: "T1" }, { serial: "T2" }] as TokenDetails[];
-      tokenService.tokenSelection.set(tokens);
+      tokenService.setTokenSelection(tokens);
 
       const bulkResponse = new MockPiResponse<BulkResult, unknown>({
         detail: {},
@@ -588,7 +588,7 @@ describe("TokenTableActionsComponent", () => {
       jest.spyOn(tokenService, "bulkUnassignTokens").mockReturnValue(of(bulkResponse));
       mockDialogResult(true);
 
-      component.tokenSelection.set(tokens);
+      tokenService.setTokenSelection(tokens);
       component.unassignSelectedTokens();
 
       expect(notificationService.success).toHaveBeenCalledWith("Successfully unassigned 2 tokens.");
@@ -596,14 +596,14 @@ describe("TokenTableActionsComponent", () => {
 
     it("should handle error during bulk unassign", () => {
       const tokens = [{ serial: "T1" }] as TokenDetails[];
-      tokenService.tokenSelection.set(tokens);
+      tokenService.setTokenSelection(tokens);
 
       jest
         .spyOn(tokenService, "bulkUnassignTokens")
         .mockReturnValue(throwError(() => ({ error: { result: { error: { message: "Not allowed" } } } })));
       mockDialogResult(true);
 
-      component.tokenSelection.set(tokens);
+      tokenService.setTokenSelection(tokens);
       component.unassignSelectedTokens();
 
       expect(notificationService.error).toHaveBeenCalledWith("Not allowed");
@@ -611,12 +611,12 @@ describe("TokenTableActionsComponent", () => {
 
     it("should handle error without server message during bulk unassign", () => {
       const tokens = [{ serial: "T1" }] as TokenDetails[];
-      tokenService.tokenSelection.set(tokens);
+      tokenService.setTokenSelection(tokens);
 
       jest.spyOn(tokenService, "bulkUnassignTokens").mockReturnValue(throwError(() => ({})));
       mockDialogResult(true);
 
-      component.tokenSelection.set(tokens);
+      tokenService.setTokenSelection(tokens);
       component.unassignSelectedTokens();
 
       expect(notificationService.error).toHaveBeenCalledWith("An error occurred while unassigning tokens.");
@@ -624,10 +624,10 @@ describe("TokenTableActionsComponent", () => {
 
     it("should do nothing when unassign dialog is cancelled", () => {
       const tokens = [{ serial: "T1" }] as TokenDetails[];
-      tokenService.tokenSelection.set(tokens);
+      tokenService.setTokenSelection(tokens);
       mockDialogResult(undefined);
 
-      component.tokenSelection.set(tokens);
+      tokenService.setTokenSelection(tokens);
       component.unassignSelectedTokens();
 
       expect(tokenService.bulkUnassignTokens).not.toHaveBeenCalled();
@@ -637,7 +637,7 @@ describe("TokenTableActionsComponent", () => {
   describe("assignSelectedTokens() - error handling", () => {
     it("should show error notification with server message on assign failure", () => {
       const tokens = [{ serial: "T1", username: "" }] as TokenDetails[];
-      tokenService.tokenSelection.set(tokens);
+      tokenService.setTokenSelection(tokens);
 
       (tokenService.assignUser as jest.Mock).mockReturnValue(
         throwError(() => ({ error: { result: { error: { message: "Assign failed" } } } }))
@@ -651,7 +651,7 @@ describe("TokenTableActionsComponent", () => {
 
     it("should show generic error notification on assign failure without message", () => {
       const tokens = [{ serial: "T1", username: "" }] as TokenDetails[];
-      tokenService.tokenSelection.set(tokens);
+      tokenService.setTokenSelection(tokens);
 
       (tokenService.assignUser as jest.Mock).mockReturnValue(throwError(() => ({})));
       mockDialogResult({ username: "user1", realm: "realm1" });

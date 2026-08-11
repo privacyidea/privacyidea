@@ -18,7 +18,7 @@
  **/
 import { Component, computed, ElementRef, inject, OnInit, signal, ViewChild } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
-import { MatCheckbox, MatCheckboxChange } from "@angular/material/checkbox";
+import { MatCheckbox } from "@angular/material/checkbox";
 import { MatIconModule } from "@angular/material/icon";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { MatSlideToggle } from "@angular/material/slide-toggle";
@@ -28,8 +28,8 @@ import { MatTooltipModule } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
@@ -41,6 +41,7 @@ import {
   PeriodicTaskService,
   PeriodicTaskServiceInterface
 } from "@services/periodic-task/periodic-task.service";
+import { renderedRows, RowSelector } from "@services/table-utils/row-selector";
 import { firstValueFrom, lastValueFrom } from "rxjs";
 
 @Component({
@@ -75,6 +76,7 @@ export class PeriodicTaskComponent implements OnInit {
   filterString = signal<string>("");
 
   @ViewChild(MatSort) sort!: MatSort;
+
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
 
   displayedColumns: string[] = ["select", "name", "taskmodule", "interval", "nodes", "options", "active"];
@@ -112,6 +114,11 @@ export class PeriodicTaskComponent implements OnInit {
     return dataSource;
   });
 
+  selector = new RowSelector<PeriodicTask>({
+    keyGetter: (task) => task.name,
+    visibleRows: renderedRows(this.periodicTasksDataSource)
+  });
+
   matchesFilter(task: PeriodicTask, filter: string): boolean {
     const haystack = [
       task.name,
@@ -126,14 +133,6 @@ export class PeriodicTaskComponent implements OnInit {
     return haystack.includes(filter);
   }
 
-  selectedTaskIds = signal<Set<number>>(new Set());
-
-  selectableTaskIds = computed<number[]>(() =>
-    this.periodicTasks()
-      .map((t) => t.id)
-      .filter((id): id is number => id != null)
-  );
-
   ngOnInit(): void {
     this.periodicTaskService.fetchAllModuleOptions();
   }
@@ -147,7 +146,6 @@ export class PeriodicTaskComponent implements OnInit {
   }
 
   toggleActive(task: PeriodicTask, activate: boolean): void {
-    if (task.id == null) return;
     if (activate) {
       this.periodicTaskService.enablePeriodicTask(task.id);
     } else {
@@ -155,37 +153,9 @@ export class PeriodicTaskComponent implements OnInit {
     }
   }
 
-  updateSelection(event: MatCheckboxChange, task: PeriodicTask): void {
-    if (task.id == null) return;
-    const selected = new Set(this.selectedTaskIds());
-    if (event.checked) {
-      selected.add(task.id);
-    } else {
-      selected.delete(task.id);
-    }
-    this.selectedTaskIds.set(selected);
-  }
-
-  isAllSelected(): boolean {
-    const ids = this.selectableTaskIds();
-    if (ids.length === 0) return false;
-    const selected = this.selectedTaskIds();
-    return ids.every((id) => selected.has(id));
-  }
-
-  masterToggle(): void {
-    const ids = this.selectableTaskIds();
-    if (this.isAllSelected()) {
-      this.selectedTaskIds.set(new Set());
-    } else {
-      this.selectedTaskIds.set(new Set(ids));
-    }
-  }
-
   async deleteSelected(): Promise<void> {
-    const selectedIds = this.selectedTaskIds();
-    if (selectedIds.size === 0) return;
-    const selectedTasks = this.periodicTasks().filter((t) => t.id != null && selectedIds.has(t.id));
+    const selectedTasks = this.selector.selectedRows();
+    if (selectedTasks.length === 0) return;
     const confirmed = await lastValueFrom(
       this.dialogService
         .openDialog({
@@ -201,7 +171,6 @@ export class PeriodicTaskComponent implements OnInit {
     );
     if (!confirmed) return;
     for (const task of selectedTasks) {
-      if (task.id == null) continue;
       try {
         await firstValueFrom(this.periodicTaskService.deletePeriodicTask(task.id));
         this.notificationService.success($localize`Successfully deleted periodic task.`);
@@ -209,7 +178,7 @@ export class PeriodicTaskComponent implements OnInit {
         // error notification already surfaced by deletePeriodicTask
       }
     }
-    this.selectedTaskIds.set(new Set());
+    this.selector.deselectAllRows();
     this.periodicTaskService.periodicTasksResource.reload();
   }
 
