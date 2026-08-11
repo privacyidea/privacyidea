@@ -59,7 +59,7 @@ export class ContainerTableActionsComponent {
   selectedContainer = this.containerService.selectedContainerSerial;
 
   deleteSelectedContainer(): void {
-    const selectedContainers = this.containerSelection();
+    const selectedContainers = this.containerSelection.selectedRows();
     this.dialogService
       .openDialog({
         component: SimpleConfirmationDialogComponent,
@@ -81,7 +81,7 @@ export class ContainerTableActionsComponent {
                 this.notificationService.success(
                   $localize`Successfully deleted ${selectedContainers.length} containers.`
                 );
-                this.containerSelection.set([]);
+                this.containerSelection.deselectAllRows();
                 this.containerService.containerResource.reload();
               },
               error: (err) => {

@@ -54,7 +54,6 @@ from privacyidea.lib.token import create_challenge, init_token, remove_token
 from privacyidea.models import Challenge, db
 from privacyidea.models.utils import utc_now
 
-
 _TEST_REDIS_URL = os.environ.get('TEST_REDIS_URL')
 
 
@@ -195,12 +194,27 @@ class TestChallengeDTO(MyTestCase):
         dto = _make_dto(data='{"key": "value"}')
         self.assertEqual(dto.get_data(), {"key": "value"})
 
-    def test_get_data_plain_string(self):
-        dto = _make_dto(data='plain')
-        self.assertEqual(dto.get_data(), 'plain')
 
     def test_get_data_empty(self):
         dto = _make_dto(data='')
+        self.assertEqual(dto.get_data(), {})
+
+    def test_get_data_invalid_json(self):
+        dto = _make_dto(data='not valid json {{{')
+        self.assertEqual(dto.get_data(), {})
+
+    def test_get_data_non_dict_json(self):
+        """get_data() returns {} when stored data is valid JSON but not a dict."""
+        # A JSON list
+        dto = _make_dto(data='[1, 2, 3]')
+        self.assertEqual(dto.get_data(), {})
+
+        # A JSON integer
+        dto = _make_dto(data='42')
+        self.assertEqual(dto.get_data(), {})
+
+        # A JSON string
+        dto = _make_dto(data='"just a string"')
         self.assertEqual(dto.get_data(), {})
 
     def test_set_otp_status(self):
@@ -215,18 +229,6 @@ class TestChallengeDTO(MyTestCase):
         dto = _make_dto()
         dto.set_data({"mode": "push"})
         self.assertEqual(dto.get_data(), {"mode": "push"})
-
-    def test_set_data_string(self):
-        dto = _make_dto()
-        dto.set_data("raw_string")
-        self.assertEqual(dto.data, "raw_string")
-
-    def test_set_data_other_type(self):
-        # Neither str nor dict -> coerced via convert_column_to_unicode,
-        # mirroring the DB Challenge.set_data (covers the else branch).
-        dto = _make_dto()
-        dto.set_data(12345)
-        self.assertEqual(dto.data, "12345")
 
     def test_set_session(self):
         dto = _make_dto()
@@ -840,7 +842,7 @@ class TestCreateChallengeIntegration(_RealRedisBase):
         banner. Challenges only live in Redis, so count is 0."""
         with redis_in_store(self._real_client):
             create_challenge(self.serial, challenge='p_nofilt', validitytime=120)
-            unfiltered = get_challenges_paginate()       # no serial, no txn_id
+            unfiltered = get_challenges_paginate()  # no serial, no txn_id
             wildcard = get_challenges_paginate(serial='*')  # the pattern the WebUI sends
 
         for result in (unfiltered, wildcard):

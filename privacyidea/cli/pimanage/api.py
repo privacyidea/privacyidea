@@ -51,7 +51,15 @@ def api_createtoken(ctx, role, days, realm, username):
     Create an API authentication token
     for administrative or validate use.
     Possible roles are "admin" or "validate".
+
+    .. deprecated::
+        This command (and the ``api_key_required`` policy) is deprecated and will
+        be removed in a future release. The X-API-Key API clients feature is
+        intended to replace it; it does not yet cover this use case.
     """
+    click.secho("WARNING: 'pi-manage api createtoken' is deprecated and will be removed in a "
+                "future release. The X-API-Key API clients feature is intended to replace it.",
+                fg="yellow", err=True)
     if role not in ["admin", "validate"]:
         click.secho("ERROR: The role must be 'admin' or 'validate'!", fg="red")
         ctx.exit(1)

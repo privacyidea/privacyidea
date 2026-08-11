@@ -1780,7 +1780,7 @@ class TokenClass:
                     # challenge is still valid
                     # Add the challenge to the options for check_otp
                     options["challenge"] = challenge.challenge
-                    options["data"] = challenge.data
+                    options["data"] = challenge.get_data()
                     if challenge.session == ChallengeSession.ENROLLMENT:
                         self.enroll_via_validate_2nd_step(passw, options=options)
                         challenge.delete()

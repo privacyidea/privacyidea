@@ -24,7 +24,7 @@ import re
 import time
 from dataclasses import dataclass
 from enum import Enum
-from urllib.parse import urlencode
+from urllib.parse import quote
 
 import requests
 from pydash import get
@@ -70,6 +70,10 @@ TIMEOUT = "timeout"
 
 log = logging.getLogger(__name__)
 
+# Matches a single tag such as '{username}'. The tag name must not contain braces, so a match can never span across
+# the closing brace of another tag.
+TAG_PATTERN = re.compile(r"\{([^{}]+)\}")
+
 
 @dataclass
 class Error:
@@ -103,7 +107,7 @@ class HTTPMethod(Enum):
 
 class RequestConfig:
 
-    def __init__(self, config: dict, default_headers: dict, tags: dict | None = None, wildcard: str = "*"):
+    def __init__(self, config: dict, default_headers: dict, tags: dict | None = None):
         config = copy.deepcopy(config)
         self._method = HTTPMethod.GET
         self.method = get_required(config, METHOD)
@@ -140,20 +144,63 @@ class RequestConfig:
 
         # replace tags in endpoint and request mapping
         if tags:
-            for tag, value in tags.items():
-                value_str = str(value).replace("*", wildcard)
-                self.endpoint = self.endpoint.replace(f"{{{tag}}}", value_str)
-                if isinstance(request_mapping, dict):
-                    self._replace_tags_in_dict(request_mapping, f"{{{tag}}}", value_str)
+            self.endpoint = self._substitute_tags(self.endpoint, tags, quote_values=True)
+            if isinstance(request_mapping, dict):
+                self._replace_tags_in_dict(request_mapping, tags)
         self.request_mapping = request_mapping
 
     @staticmethod
-    def _replace_tags_in_dict(d: dict, tag: str, value: str):
+    def _substitute_tags(template: str, tags: dict, quote_values: bool = False) -> str:
+        """
+        Replaces all tags in the template with their value from tags. The template is traversed only once, hence a
+        placeholder contained in a substituted value is not replaced again.
+        Tags without an entry in tags are kept as they are.
+
+        Values which are substituted into the endpoint must be percent-encoded (quote_values=True), otherwise a
+        reserved character in a username or user id, e.g. '#', '?' or '/', is interpreted as part of the URL structure
+        instead of being part of the value. Only the values are encoded, the template itself keeps its structure.
+        Values of the request mapping must not be encoded, since requests encodes the query string and the request
+        body itself.
+
+        :param template: string which may contain tags such as '{username}'
+        :param tags: maps the tag names to the values they are replaced with
+        :param quote_values: whether the values have to be percent-encoded
+        :return: the template with all known tags replaced
+        """
+
+        def substitute(match) -> str:
+            tag = match.group(1)
+            if tag not in tags:
+                return match.group(0)
+            value = str(tags[tag])
+            # safe="" because '/' must be encoded as well, otherwise a value could add further path segments
+            return quote(value, safe="") if quote_values else value
+
+        return TAG_PATTERN.sub(substitute, template)
+
+    @staticmethod
+    def _replace_tags_in_dict(d: dict, tags: dict):
         for k in d:
-            if isinstance(d[k], str):
-                d[k] = d[k].replace(tag, value)
-            elif isinstance(d[k], dict):
-                RequestConfig._replace_tags_in_dict(d[k], tag, value)
+            d[k] = RequestConfig._replace_tags_in_value(d[k], tags)
+
+    @staticmethod
+    def _replace_tags_in_value(value, tags: dict):
+        """
+        Replaces the tags in a single value of the request mapping. Dicts and lists are traversed recursively, since
+        a tag can be nested at any depth of a JSON request mapping, e.g. '{"businessPhones": ["{mobile}"]}'. Values of
+        other types can not contain a tag and are returned unchanged.
+
+        :param value: a value of the request mapping
+        :param tags: maps the tag names to the values they are replaced with
+        :return: the value with all known tags replaced
+        """
+        if isinstance(value, str):
+            return RequestConfig._substitute_tags(value, tags)
+        elif isinstance(value, dict):
+            return {key: RequestConfig._replace_tags_in_value(entry, tags) for key, entry in value.items()}
+        elif isinstance(value, list):
+            return [RequestConfig._replace_tags_in_value(entry, tags) for entry in value]
+        return value
 
     @staticmethod
     def get_as_dict(value: str | dict) -> dict:
@@ -390,7 +437,7 @@ class HTTPResolver(UserIdResolver):
             log.debug("No configuration to get user by name available.")
             return login_name
 
-        config = RequestConfig(config_get_user_by_name, self.headers, {"username": login_name}, "")
+        config = RequestConfig(config_get_user_by_name, self.headers, {"username": login_name})
         user_info = self._get_user(login_name, config, ["userid"])
         user_id = user_info.get("userid", "")
         return user_id
@@ -414,7 +461,7 @@ class HTTPResolver(UserIdResolver):
         :param attributes: list of attribute names to be returned for the user. If None, all attributes are returned.
         :return:  dictionary, if no object is found, the dictionary is empty
         """
-        config = RequestConfig(self.config_get_user_by_id, self.headers, {"userid": user_id}, "")
+        config = RequestConfig(self.config_get_user_by_id, self.headers, {"userid": user_id})
         user_info = self._get_user(user_id, config, attributes)
         return user_info
 
@@ -453,7 +500,7 @@ class HTTPResolver(UserIdResolver):
             log.debug("No configuration to list users available.")
             return []
 
-        config = RequestConfig(config_get_user_list, self.headers, search_dict, self.wildcard)
+        config = RequestConfig(config_get_user_list, self.headers, self._translate_search_wildcard(search_dict))
         user_list = self._get_user_list(search_dict, config, attributes)
         return user_list
 
@@ -475,7 +522,7 @@ class HTTPResolver(UserIdResolver):
             return uid
 
         # Prepare request
-        config = RequestConfig(config_create_user, self.headers, attributes, self.wildcard)
+        config = RequestConfig(config_create_user, self.headers, attributes)
         config.headers.update(self._get_auth_header())
         request_params = config.request_mapping if config.request_mapping else {}
         request_params.update(self._pi_user_to_user_store_user(attributes))
@@ -512,7 +559,7 @@ class HTTPResolver(UserIdResolver):
             return success
 
         # Prepare Request
-        config = RequestConfig(config_delete_user, self.headers, {"userid": uid}, "")
+        config = RequestConfig(config_delete_user, self.headers, {"userid": uid})
         config.headers.update(self._get_auth_header())
         params = config.request_mapping if config.request_mapping else {}
 
@@ -544,7 +591,7 @@ class HTTPResolver(UserIdResolver):
             return success
 
         # Prepare Request
-        config = RequestConfig(config_edit_user, self.headers, {"userid": uid}, "")
+        config = RequestConfig(config_edit_user, self.headers, {"userid": uid})
         config.headers.update(self._get_auth_header())
         request_params = config.request_mapping if config.request_mapping else {}
         request_params.update(self._pi_user_to_user_store_user(attributes))
@@ -576,7 +623,7 @@ class HTTPResolver(UserIdResolver):
 
         # Prepare Request
         config = RequestConfig(self.config_user_auth, self.headers,
-                               {"userid": uid, "username": username, "password": password}, self.wildcard)
+                               {"userid": uid, "username": username, "password": password})
         request_params = config.request_mapping if config.request_mapping else {}
 
         # Request
@@ -802,7 +849,7 @@ class HTTPResolver(UserIdResolver):
             if param.get(CONFIG_USER_AUTH):
                 try:
                     RequestConfig(param.get(CONFIG_USER_AUTH), resolver.headers, {"username": test_username,
-                                                                                  "password": "test"}, "")
+                                                                                  "password": "test"})
                 except Exception as e:
                     description = f"Failed to load config to check user password: {e}"
                     return False, description
@@ -841,7 +888,7 @@ class HTTPResolver(UserIdResolver):
         """
         # Request
         user_id = user.get(self.attribute_mapping_pi_to_user_store.get("userid", ""), "")
-        config = RequestConfig(self.config_get_user_groups, self.headers, {"userid": user_id}, "")
+        config = RequestConfig(self.config_get_user_groups, self.headers, {"userid": user_id})
         config.headers.update(self._get_auth_header())
         params = config.request_mapping if config.request_mapping else {}
 
@@ -936,7 +983,7 @@ class HTTPResolver(UserIdResolver):
             return auth_header
 
         config = RequestConfig(self.authorization_config, {"Content-Type": "application/x-www-form-urlencoded"},
-                               {"username": self.username, "password": self.password}, "")
+                               {"username": self.username, "password": self.password})
 
         response = self._do_request(config, config.request_mapping, censor_log=True)
 
@@ -975,12 +1022,43 @@ class HTTPResolver(UserIdResolver):
             mapped_response[key] = value
         return mapped_response
 
+    @staticmethod
+    def _booleans_to_lowercase(params: dict | None) -> dict | None:
+        """
+        Converts boolean values to their lowercase string representation. requests renders a Python bool with str(),
+        which results in 'True'/'False', while the APIs expect the JSON notation 'true'/'false'. Booleans can enter the
+        parameters from a JSON request mapping, e.g. '{"exact": true}'.
+        Only applicable to the query string and to a form encoded body. A json body must keep the real booleans, since
+        json.dumps already writes them in the correct notation.
+        A boolean can be nested in a list or dict value of the request mapping, hence they are traversed recursively.
+
+        :param params: The request parameters, may be None
+        :return: The request parameters with all booleans converted to 'true'/'false'
+        """
+        if not params:
+            return params
+        return {key: HTTPResolver._boolean_value_to_lowercase(value) for key, value in params.items()}
+
+    @staticmethod
+    def _boolean_value_to_lowercase(value):
+        """
+        Converts a boolean value, and every boolean nested in a list or dict value, to 'true'/'false'.
+        """
+        if isinstance(value, bool):
+            return str(value).lower()
+        elif isinstance(value, dict):
+            return {key: HTTPResolver._boolean_value_to_lowercase(entry) for key, entry in value.items()}
+        elif isinstance(value, list):
+            return [HTTPResolver._boolean_value_to_lowercase(entry) for entry in value]
+        return value
+
     def _do_request(self, config: RequestConfig, params: dict | None, censor_log: bool = False) -> Response:
         """
         Performs the HTTP request based on the provided configuration and parameters.
 
         :param config: Configuration for the HTTP request
-        :param params: Request parameters
+        :param params: Request parameters as a dict, requests encodes them. It must not be an already encoded string,
+            since requests would use it unchanged.
         :return: The response object from the HTTP request
         """
         if config.endpoint.startswith("http"):
@@ -995,32 +1073,23 @@ class HTTPResolver(UserIdResolver):
                 # params are dict than we can pass them as json parameters to be formatted correctly
                 json_params = params
                 params = None
+        # Only for the query string and the form encoded body. A json body keeps the real booleans.
+        params = self._booleans_to_lowercase(params)
 
         start_time = time.time()
         try:
-            # dicts passed to json or data are encoded accordingly, no manual urlencoding required
-            if config.method == HTTPMethod.GET:
-                response = requests.get(config.endpoint, params=urlencode(params or {}), headers=config.headers,
-                                        timeout=self.timeout,
-                                        verify=self.tls)
-            elif config.method == HTTPMethod.POST:
-                response = requests.post(config.endpoint, json=json_params, data=params, headers=config.headers,
-                                         timeout=self.timeout,
-                                         verify=self.tls)
-            elif config.method == HTTPMethod.PUT:
-                response = requests.put(config.endpoint, json=json_params, data=params, headers=config.headers,
-                                        timeout=self.timeout,
-                                        verify=self.tls)
-            elif config.method == HTTPMethod.PATCH:
-                response = requests.patch(config.endpoint, json=json_params, data=params, headers=config.headers,
-                                          timeout=self.timeout,
-                                          verify=self.tls)
-            elif config.method == HTTPMethod.DELETE:
-                response = requests.delete(config.endpoint, params=urlencode(params or {}), headers=config.headers,
-                                           timeout=self.timeout, verify=self.tls)
-            else:  # pragma: no cover
-                # Should not happen as the method is already checked in the config object
-                raise ResolverError(f"Unsupported HTTP method: {config.method}")
+            # The params are passed as a dict, they must not be encoded here: requests encodes a dict itself with
+            # urlencode(..., doseq=True), so it additionally handles list values (repeated keys instead of the string
+            # representation of the list) and skips entries with the value None. A pre-encoded string would be used as
+            # it is, hence the params have to stay a dict.
+            # The same applies to the request body: dicts passed to json or data are encoded by requests as well.
+            if config.method in HTTPMethod.methods_with_body():
+                # The params are the body, either as json or form encoded, so there is no query string
+                response = requests.request(config.method.value, config.endpoint, json=json_params, data=params,
+                                            headers=config.headers, timeout=self.timeout, verify=self.tls)
+            else:
+                response = requests.request(config.method.value, config.endpoint, params=params,
+                                            headers=config.headers, timeout=self.timeout, verify=self.tls)
         except Exception as error:
             log.warning(f"Failed to perform HTTP request: {error}")
             raise ResolverError("Failed to perform HTTP request!")
@@ -1081,6 +1150,27 @@ class HTTPResolver(UserIdResolver):
         """
         return response
 
+    def _translate_search_wildcard(self, search_dict: dict | None) -> dict:
+        """
+        Replaces the privacyIDEA wildcard '*' in the search values with the wildcard used by the user store.
+        Only search values may be translated this way. Other values, such as passwords, must be passed unchanged.
+
+        :param search_dict: dictionary containing search criteria for user attributes
+        :return: a new dictionary with the translated search values
+        """
+        if not search_dict:
+            return {}
+        return {key: self._translate_wildcard(value) for key, value in search_dict.items()}
+
+    def _translate_wildcard(self, value) -> str:
+        """
+        Replaces the privacyIDEA wildcard '*' in a single search value with the wildcard used by the user store.
+
+        :param value: a search value, e.g. a user name or a user id
+        :return: the value with the translated wildcard
+        """
+        return str(value).replace("*", self.wildcard)
+
     def _get_search_params(self, search_dict: dict) -> dict:
         """
         Returns a dictionary containing the search parameters in the format expected by the user store API.
@@ -1095,7 +1185,7 @@ class HTTPResolver(UserIdResolver):
         for key, value in search_dict.items():
             user_store_key = self.attribute_mapping_pi_to_user_store.get(key)
             if user_store_key:
-                value = value.replace("*", self.wildcard)
+                value = self._translate_wildcard(value)
                 if value:
                     request_parameters[user_store_key] = value
             else:

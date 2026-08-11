@@ -131,12 +131,12 @@ export class TokenTableActionsComponent {
   }
 
   deleteSelectedTokens(): void {
-    const serialList = this.tokenSelection().map((token) => token.serial);
+    const serialList = this.tokenSelection.selectedRows().map((token) => token.serial);
     this.tokenService.bulkDeleteWithConfirmDialog(serialList, () => this.tokenService.tokenResource.reload());
   }
 
   toggleActiveSelectedTokens(): void {
-    const selectedTokens = this.tokenSelection();
+    const selectedTokens = this.tokenSelection.selectedRows();
     if (selectedTokens.length === 0) return;
     this.dialogService
       .openDialog({
@@ -195,7 +195,7 @@ export class TokenTableActionsComponent {
   }
 
   resetFailcounterSelectedTokens(): void {
-    const selectedTokens = this.tokenSelection();
+    const selectedTokens = this.tokenSelection.selectedRows();
     if (selectedTokens.length === 0) return;
     this.dialogService
       .openDialog({
@@ -245,7 +245,7 @@ export class TokenTableActionsComponent {
       .pipe(
         filter(Boolean),
         switchMap((result) =>
-          from(this.tokenSelection()).pipe(
+          from(this.tokenSelection.selectedRows()).pipe(
             concatMap((token) => {
               const assign$ = this.tokenService.assignUser({
                 tokenSerial: token.serial,
@@ -274,7 +274,7 @@ export class TokenTableActionsComponent {
   }
 
   unassignSelectedTokens() {
-    const selectedTokens = this.tokenSelection();
+    const selectedTokens = this.tokenSelection.selectedRows();
     this.dialogService
       .openDialog({
         component: SimpleConfirmationDialogComponent,

@@ -80,16 +80,14 @@ describe("ServiceIdsComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should toggle row and all-row selection", () => {
-    const row = component.serviceIdDataSource().data[0];
-    component.toggleRow(row);
-    expect(component.isSelected(row)).toBe(true);
-    component.toggleRow(row);
-    expect(component.isSelected(row)).toBe(false);
-    component.toggleAllRows();
-    expect(component.isAllSelected()).toBe(true);
-    component.toggleAllRows();
-    expect(component.selection().length).toBe(0);
+  it("should only select the service IDs left by the filter", async () => {
+    component.onFilterInput("service1");
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    component.selector.selectAllRows();
+
+    expect(component.selector.selectedRows().map((row) => row.servicename)).toEqual(["service1"]);
   });
 
   it("should display service IDs from service", () => {
@@ -117,7 +115,7 @@ describe("ServiceIdsComponent", () => {
 
   it("should delete service ID after confirmation", async () => {
     const serviceId = serviceIdServiceMock.serviceIds()[0];
-    component.selection.set([serviceId]);
+    component.selector.selectRow(serviceId);
     component.deleteSelected();
     expect(dialogServiceMock.openDialog).toHaveBeenCalled();
     confirmClosed.next(true);

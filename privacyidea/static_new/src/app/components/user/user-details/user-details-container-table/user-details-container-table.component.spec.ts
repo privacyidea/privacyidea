@@ -133,45 +133,31 @@ describe("UserDetailsContainerTableComponent", () => {
     });
   });
 
-  describe("selection signal source", () => {
-    it("falls back to undefined when the resource has no value, still resolving to []", () => {
-      containerServiceMock.userContainersResource.value.set(undefined);
-      expect(component.selection()).toEqual([]);
-    });
-  });
+  const showContainers = (...rows: ContainerDetailData[]) => {
+    component.userContainers.set(rows);
+    fixture.detectChanges();
+    component.selector.deselectAllRows();
+  };
 
   describe("selection", () => {
-    const rows: ContainerDetailData[] = [
-      { serial: "C-1", states: [] } as unknown as ContainerDetailData,
-      { serial: "C-2", states: [] } as unknown as ContainerDetailData
-    ];
+    it("has nothing to select when the resource has no value", () => {
+      containerServiceMock.userContainersResource.value.set(undefined);
+      fixture.detectChanges();
 
-    beforeEach(() => {
-      component.dataSource.data = rows;
+      expect(component.selector.hasVisibleRows()).toBe(false);
+      expect(component.selector.allRowsSelected()).toBe(false);
     });
 
-    it("toggleAllRows selects and deselects every row", () => {
-      component.toggleAllRows();
-      expect(component.selection()).toEqual(rows);
-      expect(component.isAllSelected()).toBe(true);
+    it("scopes the selection to the containers of the user", () => {
+      showContainers(
+        { serial: "C-1", states: [] } as unknown as ContainerDetailData,
+        { serial: "C-2", states: [] } as unknown as ContainerDetailData
+      );
 
-      component.toggleAllRows();
-      expect(component.selection()).toEqual([]);
-      expect(component.isAllSelected()).toBe(false);
-    });
+      component.selector.selectAllRows();
 
-    it("toggleRow adds and removes a single row", () => {
-      component.toggleRow(rows[0]);
-      expect(component.selection()).toEqual([rows[0]]);
-
-      component.toggleRow(rows[0]);
-      expect(component.selection()).toEqual([]);
-    });
-
-    it("isAllSelected is false when the table is empty", () => {
-      component.dataSource.data = [];
-      component.selection.set([]);
-      expect(component.isAllSelected()).toBe(false);
+      expect(component.selector.selectedRows().map((row) => row.serial)).toEqual(["C-1", "C-2"]);
+      expect(component.selector.allRowsSelected()).toBe(true);
     });
   });
 
@@ -188,7 +174,8 @@ describe("UserDetailsContainerTableComponent", () => {
     }
 
     it("deletes every selected container and reloads when confirmed", () => {
-      component.selection.set(selected);
+      showContainers(...selected);
+      component.selector.selectAllRows();
       mockDialogResult(true);
 
       component.deleteSelected();
@@ -199,7 +186,8 @@ describe("UserDetailsContainerTableComponent", () => {
     });
 
     it("does nothing when the confirmation is dismissed", () => {
-      component.selection.set(selected);
+      showContainers(...selected);
+      component.selector.selectAllRows();
       mockDialogResult(false);
 
       component.deleteSelected();
@@ -212,10 +200,11 @@ describe("UserDetailsContainerTableComponent", () => {
   it("unassignSelected unassigns each container for the current user and reloads", () => {
     userServiceMock.detailsUser.set({ username: "alice", realm: "r1" });
     userServiceMock.selectedUserRealm.set("r1");
-    component.selection.set([
+    showContainers(
       { serial: "C-1", states: [] } as unknown as ContainerDetailData,
       { serial: "C-2", states: [] } as unknown as ContainerDetailData
-    ]);
+    );
+    component.selector.selectAllRows();
 
     component.unassignSelected();
 
@@ -225,10 +214,11 @@ describe("UserDetailsContainerTableComponent", () => {
   });
 
   it("toggleActiveSelected toggles each container and reloads", () => {
-    component.selection.set([
+    showContainers(
       { serial: "C-1", states: ["active"] } as unknown as ContainerDetailData,
       { serial: "C-2", states: ["disabled"] } as unknown as ContainerDetailData
-    ]);
+    );
+    component.selector.selectAllRows();
 
     component.toggleActiveSelected();
 
