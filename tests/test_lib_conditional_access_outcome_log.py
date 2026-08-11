@@ -160,7 +160,7 @@ class OutcomeLogTestCase(MyTestCase):
         self.assertListEqual([], list(get_outcomes(event_id)))
 
     def test_the_same_outcomes_can_be_retried_after_a_failed_write(self):
-        # The outcomes are the very objects the engine built, so a retry re-uses them. A rolled-back session expunges
+        # The outcomes are the very objects the engine built, so a retry reuses them. A rolled-back session expunges
         # what it had pending, leaving them transient - which is what makes the request context's "keep them and retry
         # on the next flush" behaviour work.
         event_id = self._auth_log_row()
