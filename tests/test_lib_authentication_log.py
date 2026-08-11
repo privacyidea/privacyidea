@@ -569,6 +569,32 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertEqual({"reason": "after", "note": "updated",
                           "conditional_access_findings": [{"policy_id": 1}]}, entry.other_info)
 
+    def test_amending_an_event_without_other_info_keeps_conditional_access_findings(self):
+        # The common case: an event carries no other_info at all, so the update would write NULL over the column the
+        # findings live in.
+        event = PendingAuthEvent(event_type=AuthEventType.LOGIN_SUCCESS)
+        write_authentication_events([event])
+        record_conditional_access_finding(event.row_id, {"policy_id": 1})
+
+        event.event_type = AuthEventType.NOT_AUTHORIZED
+        update_authentication_events([event])
+
+        entry = get_authentication_log_event(event.row_id)
+        self.assertIsNotNone(entry)
+        self.assertEqual({"conditional_access_findings": [{"policy_id": 1}]}, entry.other_info)
+
+    def test_amending_an_event_without_findings_leaves_other_info_unset(self):
+        # No out-of-band keys to preserve: the column stays NULL rather than becoming an empty dict.
+        event = PendingAuthEvent(event_type=AuthEventType.LOGIN_SUCCESS)
+        write_authentication_events([event])
+
+        event.event_type = AuthEventType.NOT_AUTHORIZED
+        update_authentication_events([event])
+
+        entry = get_authentication_log_event(event.row_id)
+        self.assertIsNotNone(entry)
+        self.assertIsNone(entry.other_info)
+
     def test_record_conditional_access_finding_swallows_an_unserializable_finding(self):
         # A finding that cannot be serialized into the JSON column fails when the write flushes. Recording a finding is
         # a diagnostic side effect of an already-finished request, so the failure must be swallowed and must leave the

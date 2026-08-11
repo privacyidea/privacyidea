@@ -308,6 +308,27 @@ class ConditionalAccessContextTestCase(MyTestCase):
         context.reclassify(AuthEventType.NOT_AUTHORIZED)
         self.assertFalse(context.has_data)
 
+    def test_22a_reclassify_leaves_an_immediate_event_alone(self):
+        # A push_wait timeout suppresses the terminal event, so the challenge trigger written on the spot is the only
+        # staged event. Reclassifying it would destroy that record; the caller has to stage its own event instead.
+        context = ConditionalAccessContext()
+        trigger = context.stage(self._event("alice", AuthEventType.CHALLENGE_TRIGGERED))
+        trigger.immediate = True
+
+        self.assertIsNone(context.amendable)
+        context.reclassify(AuthEventType.NOT_AUTHORIZED)
+        self.assertEqual(AuthEventType.CHALLENGE_TRIGGERED, trigger.event_type)
+
+    def test_22b_an_event_written_by_an_early_flush_stays_amendable(self):
+        # /auth flushes in-view before evaluating; that must not stop a later stage from correcting the outcome.
+        context = ConditionalAccessContext()
+        event = context.stage(self._event("alice", AuthEventType.LOGIN_SUCCESS))
+        context.flush()
+
+        self.assertIs(event, context.amendable)
+        context.reclassify(AuthEventType.NOT_AUTHORIZED)
+        self.assertEqual(AuthEventType.NOT_AUTHORIZED, event.event_type)
+
     def test_23_post_eval_without_a_staged_event_does_nothing(self):
         # Staging an event is the signal to evaluate, so a request that logged nothing evaluates nothing.
         context = ConditionalAccessContext()

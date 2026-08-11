@@ -206,16 +206,20 @@ class PendingAuthEvent:
     serial: str | None = None
     attempt_id: str | None = None
     other_info: dict | None = None
+    # A point-in-time record another request has to see while this one is still running (the push_wait challenge
+    # trigger), rather than this request's classification. Such an event is written on the spot and must not be
+    # reclassified afterwards - see ConditionalAccessContext.amendable.
+    immediate: bool = False
     # Id of the stored row, set once it has been committed; None means "not written yet".
     row_id: int | None = None
     # Set when a field is assigned after the row was written, i.e. the stored row no longer matches this event.
     _changed: bool = field(init=False, default=False, repr=False, compare=False)
 
     def __setattr__(self, name: str, value) -> None:
-        # ``row_id`` and the flag itself are bookkeeping rather than row content, so they never mark the event
-        # changed. ``self.__dict__`` is read directly because the dataclass __init__ assigns the fields through here
-        # too, at which point ``row_id`` does not exist yet.
-        if name not in ("row_id", "_changed") and self.__dict__.get("row_id") is not None:
+        # ``row_id``, ``immediate`` and the flag itself are bookkeeping rather than row content, so they never mark
+        # the event changed. ``self.__dict__`` is read directly because the dataclass __init__ assigns the fields
+        # through here too, at which point ``row_id`` does not exist yet.
+        if name not in ("row_id", "immediate", "_changed") and self.__dict__.get("row_id") is not None:
             object.__setattr__(self, "_changed", True)
         object.__setattr__(self, name, value)
 
@@ -272,15 +276,18 @@ def _merge_other_info_for_update(stored: dict | None, updated: dict | None) -> d
     event does not carry (currently conditional-access findings appended after insert).
 
     If *updated* explicitly sets one of those keys, that explicit value wins.
+
+    An event that carries no ``other_info`` of its own yields ``updated is None`` - the common case, since only a
+    caller-supplied value or a truncation overflow fills it - so the out-of-band keys have to be carried over into a
+    fresh dict there as well, or the update would null the column and drop them.
     """
-    if not isinstance(updated, dict):
+    if not isinstance(stored, dict):
         return updated
-    merged = dict(updated)
-    if isinstance(stored, dict):
-        for key in _OUT_OF_BAND_OTHER_INFO_KEYS:
-            if key in stored and key not in merged:
-                merged[key] = stored[key]
-    return merged
+    preserved = {key: stored[key] for key in _OUT_OF_BAND_OTHER_INFO_KEYS if key in stored}
+    if not preserved:
+        return updated
+    merged = dict(updated) if isinstance(updated, dict) else {}
+    return {**preserved, **merged}
 
 
 def _build_entry(event: PendingAuthEvent) -> AuthenticationLog:
