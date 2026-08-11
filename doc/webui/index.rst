@@ -184,6 +184,48 @@ against the channel row's total. Reads ``GET
    final delivery: the synchronous return value is ``True`` once the
    job has been queued, regardless of what the worker eventually does.
 
+Conditional access
+~~~~~~~~~~~~~~~~~~
+
+.. index:: conditional access, dashboard metrics, lockout, blocklist
+
+The *Conditional Access* panel summarises what the conditional-access
+lockout policies are configured to do and what they are currently
+enforcing:
+
+* **Enforcing policies** - enabled policies whose actions actually run.
+  Policies in dry-run mode are counted separately, since they only record
+  what they *would* have done, and disabled policies are counted on their
+  own as well.
+* **Users locked** and **IPs blocked** - the locks and IP blocks in force
+  right now, with the permanent ones broken out below the total. A
+  non-zero count is highlighted red, a zero count green.
+* **Expired records** - locks and blocks whose time has run out. They
+  restrict nobody, and are what the purge action on the *Locked Users*
+  and *Blocklist* pages removes.
+* **Blocks and locks over time** - a histogram of when restrictions were
+  imposed (blocked IPs and the recent locks), bucketed across the shown
+  window, with a range slider on top of it. The icon button at each end of
+  the slider opens presets for that end of the window (*Last 24 hours* ...
+  *Everything on record* on the left, *Up to now* / *Up to 24 hours ago* /
+  *Up to 7 days ago* on the right); the thumbs narrow the selection inside
+  the window. The header counts what falls in the selected range.
+* **Restrictions in force** - every restriction still in force that was
+  imposed inside the selected range, blocked IPs and locked users in one
+  list, most recent first. An IP links to the authentication log
+  pre-filtered on that source IP, a user to the *Locked Users* page; a
+  footer names how many further restrictions the list does not show
+  (those outside the range, and any beyond the 100 lock records read).
+
+Every row links to the page it summarises. The three areas are governed
+by separate rights (``lockout_policy_read``, ``user_lockout_read``,
+``blocklist_read``); the panel shows only the areas an administrator may
+read and is offered as soon as any one of the three is granted. It reads
+the regular endpoints
+``GET /conditionalaccess/policy``, ``GET /conditionalaccess/lockout/users``
+(once per lock state, for the counts only) and
+``GET /conditionalaccess/blocklist``.
+
 Storage and cleanup
 ~~~~~~~~~~~~~~~~~~~
 

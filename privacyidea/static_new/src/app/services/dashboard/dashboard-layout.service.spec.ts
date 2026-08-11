@@ -338,6 +338,26 @@ describe("DashboardLayoutService", () => {
       expect(service.isWidgetTypeAllowed("tokens")).toBe(false);
     });
 
+    it("should report a widget type that names no required action as allowed", () => {
+      build([]);
+      auth.actionAllowed.mockReturnValue(false);
+      expect(service.isWidgetTypeAllowed("certificate-health")).toBe(true);
+    });
+
+    it("should report a widget type with several required actions as allowed on any one of them", () => {
+      build([]);
+      auth.actionAllowed.mockImplementation((action: string) => action === "blocklist_read");
+      expect(service.isWidgetTypeAllowed("conditional-access")).toBe(true);
+    });
+
+    it("should report a widget type with several required actions as forbidden when none is granted", () => {
+      build([]);
+      auth.actionAllowed.mockImplementation(
+        (action: string) => !["lockout_policy_read", "user_lockout_read", "blocklist_read"].includes(action)
+      );
+      expect(service.isWidgetTypeAllowed("conditional-access")).toBe(false);
+    });
+
     it("should not add a widget the user is not allowed to see", () => {
       build([]);
       auth.actionAllowed.mockImplementation((action: string) => action !== "events_handling_read" && action !== "eventhandling_read");

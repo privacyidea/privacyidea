@@ -182,6 +182,35 @@
   }
 }
 
+// "IP" reading through the open circle of the `block` glyph: the icon says "blocked", the text says what was
+// blocked, in the space of a single icon. Wrap the icon and put the text before it:
+//   <span class="icon-block-ip"><span class="icon-block-ip-text" aria-hidden="true">IP</span>
+//     <mat-icon>block</mat-icon></span>
+.icon-block-ip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: text-bottom;
+
+  .icon-block-ip-text {
+    position: absolute;
+    z-index: 0;
+    // Scaled per instance, so the letters keep their weight relative to a smaller or larger glyph.
+    font-size: var(--icon-block-ip-text-size, 7px);
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.5px;
+  }
+
+  // The glyph covers the text except in its open middle, where the letters read through.
+  .mat-icon {
+    position: relative;
+    z-index: 1;
+    margin-right: 0;
+  }
+}
+
 // Per-instance badge adjustment: shrink the overlay glyph. Sets an inheritable
 // custom property, so it works on the .icon-badge itself or on an ancestor.
 .icon-badge-glyph-small {

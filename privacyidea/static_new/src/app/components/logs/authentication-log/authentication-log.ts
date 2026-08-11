@@ -466,6 +466,22 @@ export class AuthenticationLog {
     // Keep the time filter in sync with edits made directly to the start_time/end_time entries in the main filter
     // text (the slider/date picker write the same signals via applyTimeRange).
     effect(() => this.syncTimeFilterFromText());
+    // "All" is the default page size: the first response tells us how many entries there are, and the page size is
+    // widened to that once. Only once, so a page size the user picks afterwards stands.
+    effect(() => this.applyDefaultPageSize());
+  }
+
+  private defaultPageSizeApplied = false;
+
+  private applyDefaultPageSize(): void {
+    const total = this.totalLength();
+    if (this.defaultPageSizeApplied || total <= 0) {
+      return;
+    }
+    this.defaultPageSizeApplied = true;
+    if (total > this.authenticationLogService.pageSize()) {
+      this.authenticationLogService.pageSize.set(total);
+    }
   }
 
   // Drive the time filter from the start_time/end_time entries in the filter text. Guards keep re-mirroring the signal
@@ -531,10 +547,18 @@ export class AuthenticationLog {
   readonly hasInfoValues = computed(() =>
     this.dataSource().data.some((entry) => entry.other_info && Object.keys(entry.other_info).length > 0)
   );
+  // The presets, the active page size, and the total number of matching entries - the last one so the selector also
+  // offers "everything on one page", sorted into place among the presets.
   pageSizeOptions = computed(() =>
-    [...new Set([...this.tableUtilsService.pageSizeOptions(), this.authenticationLogService.pageSize()])].sort(
-      (a, b) => a - b
-    )
+    [
+      ...new Set([
+        ...this.tableUtilsService.pageSizeOptions(),
+        this.authenticationLogService.pageSize(),
+        this.totalLength()
+      ])
+    ]
+      .filter((size) => size > 0)
+      .sort((a, b) => a - b)
   );
   noDataText = computed(() =>
     Object.keys(this.authenticationLogService.filterParams()).length > 0 ||

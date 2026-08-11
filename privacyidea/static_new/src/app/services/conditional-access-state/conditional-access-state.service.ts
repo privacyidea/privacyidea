@@ -38,6 +38,11 @@ const LOCKED_USERS_DEFAULT_PAGE_SIZE = 15;
 // (permanent / temporary / expired) and replaces the former "show expired" toggle.
 const LOCKED_USERS_FILTER_KEYS = ["usernames", "realms", "resolvers", "states"];
 
+// The lock states a record can be in, as accepted by the `states` query parameter of `lockout/users`:
+// permanent (no expiry), temporary (expiry still ahead) and expired (a stale row a purge removes).
+// Mirrors privacyidea.lib.conditional_access.lockout_state.LOCK_STATES.
+export type LockState = "permanent" | "temporary" | "expired";
+
 // Shallow value-equality for the flat filter-params record, so a value-less key edit does not re-notify.
 function shallowEqualRecord(a: Record<string, string>, b: Record<string, string>): boolean {
   const aKeys = Object.keys(a);
@@ -94,8 +99,11 @@ export interface ConditionalAccessStateServiceInterface {
   lockedUsersPageSize: WritableSignal<number>;
   lockedUsersPageIndex: WritableSignal<number>;
   lockedUsersResource: HttpResourceRef<PiResponse<LockedUsersPage> | undefined>;
+  countLockedUsers(states: LockState[]): Observable<PiResponse<LockedUsersPage>>;
+  fetchLockedUsers(states: LockState[], pageSize?: number): Observable<PiResponse<LockedUsersPage>>;
   purgeUserLockouts(): Observable<number>;
   blocklistResource: HttpResourceRef<PiResponse<BlocklistEntry[]> | undefined>;
+  fetchBlocklist(includeExpired?: boolean): Observable<PiResponse<BlocklistEntry[]>>;
   removeBlocklistEntry(entry: BlocklistEntry): Observable<boolean>;
   purgeBlocklist(): Observable<number>;
 }
@@ -205,6 +213,25 @@ export class ConditionalAccessStateService implements ConditionalAccessStateServ
     };
   });
 
+  // Count the locks in the given state(s) without pulling the records themselves: the page metadata carries the
+  // total, so the smallest page is enough. Used by the dashboard widget, whose summary needs one number per state
+  // (the paginated resource above is bound to the locked-users page and its filters).
+  countLockedUsers(states: LockState[]): Observable<PiResponse<LockedUsersPage>> {
+    return this.http.get<PiResponse<LockedUsersPage>>(this.conditionalAccessBaseUrl + "lockout/users", {
+      headers: this.authService.getHeaders(),
+      params: { states: states.join(","), page: 1, page_size: 1 }
+    });
+  }
+
+  // The most recently locked users in the given state(s), for callers that need the records rather than only the
+  // total (the dashboard widget's highlights list).
+  fetchLockedUsers(states: LockState[], pageSize = 20): Observable<PiResponse<LockedUsersPage>> {
+    return this.http.get<PiResponse<LockedUsersPage>>(this.conditionalAccessBaseUrl + "lockout/users", {
+      headers: this.authService.getHeaders(),
+      params: { states: states.join(","), page: 1, page_size: pageSize, sort_column: "locked_at", sort_order: "desc" }
+    });
+  }
+
   resetUserLockout(request: ResetUserLockoutRequest): Observable<boolean> {
     const payload =
       "uid" in request
@@ -256,6 +283,15 @@ export class ConditionalAccessStateService implements ConditionalAccessStateServ
       params: {}
     };
   });
+
+  // One-off read of the whole blocklist for callers outside the blocklist page, where blocklistResource
+  // deliberately does not fetch (e.g. the dashboard widget, which caches the response itself).
+  fetchBlocklist(includeExpired = true): Observable<PiResponse<BlocklistEntry[]>> {
+    return this.http.get<PiResponse<BlocklistEntry[]>>(this.conditionalAccessBaseUrl + "blocklist", {
+      headers: this.authService.getHeaders(),
+      params: { include_expired: includeExpired }
+    });
+  }
 
   removeBlocklistEntry(entry: BlocklistEntry): Observable<boolean> {
     return this.http

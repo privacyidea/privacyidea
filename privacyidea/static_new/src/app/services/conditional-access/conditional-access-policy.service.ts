@@ -25,7 +25,7 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
-import { lastValueFrom } from "rxjs";
+import { lastValueFrom, Observable } from "rxjs";
 
 // The set of event/action types the UI offers is fetched from the backend at runtime (see
 // eventTypesResource / actionTypesResource) so a newly added type shows up without a WebUI change.
@@ -213,6 +213,8 @@ export interface ConditionalAccessPolicyServiceInterface {
 
   countModesForTarget(target: LockoutTarget): CountMode[];
 
+  getPolicies(): Observable<PiResponse<LockoutPolicy[]>>;
+
   operatorsForConditionType(conditionType: string): ConditionOperatorMeta[];
 
   choicesForConditionType(conditionType: string): string[] | null;
@@ -376,6 +378,12 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
 
   countModesForTarget(target: LockoutTarget): CountMode[] {
     return this.countModesByTarget()[target] ?? [];
+  }
+
+  // One-off read of the policy list for callers outside the conditional-access page, where policiesResource
+  // deliberately does not fetch (e.g. the dashboard widget, which caches the response itself).
+  getPolicies(): Observable<PiResponse<LockoutPolicy[]>> {
+    return this.http.get<PiResponse<LockoutPolicy[]>>(this.baseUrl, { headers: this.authService.getHeaders() });
   }
 
   // The operators a condition type permits, with their translated labels. Empty until

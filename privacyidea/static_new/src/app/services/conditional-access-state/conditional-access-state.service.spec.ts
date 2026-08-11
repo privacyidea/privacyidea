@@ -269,6 +269,29 @@ describe("ConditionalAccessStateService", () => {
     expect(notification.error).toHaveBeenCalled();
   });
 
+  // --- countLockedUsers ---
+
+  it("countLockedUsers asks for the smallest page of the requested states", () => {
+    let count: number | undefined;
+    service
+      .countLockedUsers(["permanent", "temporary"])
+      .subscribe((response) => (count = response.result?.value?.count));
+    const req = httpMock.expectOne((r) => r.url === BASE + "lockout/users" && r.method === "GET");
+
+    expect(req.request.params.get("states")).toBe("permanent,temporary");
+    expect(req.request.params.get("page_size")).toBe("1");
+    req.flush(
+      MockPiResponse.fromValue<LockedUsersPage>({
+        locked_users: [lockoutStatus()],
+        count: 7,
+        current: 1,
+        prev: null,
+        next: null
+      })
+    );
+    expect(count).toBe(7);
+  });
+
   // --- purgeUserLockouts ---
 
   it("purgeUserLockouts maps the removed count", () => {
@@ -303,6 +326,26 @@ describe("ConditionalAccessStateService", () => {
     (authService.actionAllowed as jest.Mock).mockReturnValue(false);
     TestBed.tick();
     httpMock.expectNone((r) => r.url === BASE + "blocklist");
+  });
+
+  // --- fetchBlocklist ---
+
+  it("fetchBlocklist reads the list off route, including the expired entries by default", () => {
+    let entries: BlocklistEntry[] | undefined;
+    service.fetchBlocklist().subscribe((response) => (entries = response.result?.value));
+    const req = httpMock.expectOne((r) => r.url === BASE + "blocklist" && r.method === "GET");
+
+    expect(req.request.params.get("include_expired")).toBe("true");
+    req.flush(MockPiResponse.fromValue<BlocklistEntry[]>([blocklistEntry("10.0.0.1")]));
+    expect(entries).toEqual([blocklistEntry("10.0.0.1")]);
+  });
+
+  it("fetchBlocklist can ask for the enforced entries only", () => {
+    service.fetchBlocklist(false).subscribe();
+    const req = httpMock.expectOne((r) => r.url === BASE + "blocklist" && r.method === "GET");
+
+    expect(req.request.params.get("include_expired")).toBe("false");
+    req.flush(MockPiResponse.fromValue<BlocklistEntry[]>([]));
   });
 
   // --- removeBlocklistEntry ---
