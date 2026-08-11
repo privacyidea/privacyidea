@@ -22,7 +22,7 @@ Unit tests for the per-request conditional-access buffer
 import mock
 from sqlalchemy import select
 
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import (CA_ENFORCEMENT_EVENT_TYPES, AuthEventType)
 from privacyidea.lib.conditional_access.engine import LockoutAction, LockoutEvaluation
 from privacyidea.lib.conditional_access.outcome_log import get_outcomes
 from privacyidea.lib.conditional_access.authentication_log import (PendingAuthEvent, get_authentication_logs,
@@ -332,6 +332,25 @@ class ConditionalAccessContextTestCase(MyTestCase):
         context.reclassify(AuthEventType.NOT_AUTHORIZED)
         self.assertEqual(AuthEventType.NOT_AUTHORIZED, event.event_type)
 
+    def test_22c_reclassify_leaves_a_conditional_access_rejection_alone(self):
+        # The gate is the innermost decorator, so the post-policies still run on its rejection response. That row is
+        # the only record of why the request was refused, and relabelling it would also slip the refused request past
+        # the CA_ENFORCEMENT_EVENT_TYPES guard in run_post_eval and into the lockout counters.
+        for event_type in CA_ENFORCEMENT_EVENT_TYPES:
+            with self.subTest(event_type=event_type):
+                context = ConditionalAccessContext()
+                rejection = context.stage(self._event("alice", event_type))
+
+                self.assertTrue(context.rejected_by_conditional_access)
+                self.assertIsNone(context.amendable)
+                context.reclassify(AuthEventType.NOT_AUTHORIZED)
+                self.assertEqual(event_type, rejection.event_type)
+
+    def test_22d_an_ordinary_outcome_is_not_a_conditional_access_rejection(self):
+        context = ConditionalAccessContext()
+        context.stage(self._event("alice", AuthEventType.LOGIN_SUCCESS))
+        self.assertFalse(context.rejected_by_conditional_access)
+
     def test_23_post_eval_without_a_staged_event_does_nothing(self):
         # Staging an event is the signal to evaluate, so a request that logged nothing evaluates nothing.
         context = ConditionalAccessContext()
@@ -374,6 +393,20 @@ class ConditionalAccessContextTestCase(MyTestCase):
         with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies",
                         side_effect=RuntimeError("engine boom")):
             self.assertListEqual([], context.run_post_eval())
+
+    def test_25b_a_failed_evaluation_is_retried_at_teardown(self):
+        # /auth evaluates in-view and teardown evaluates again. A classification counts as evaluated only once the
+        # engine returned, so a transient failure in the early call does not cost the evaluation entirely.
+        context = ConditionalAccessContext()
+        context.stage(self._event("alice"))
+        with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies",
+                        side_effect=RuntimeError("engine boom")):
+            self.assertListEqual([], context.run_post_eval())
+
+        with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies") as evaluate:
+            evaluate.return_value = LockoutEvaluation(notices=["locked"], outcomes=[])
+            self.assertListEqual(["locked"], context.run_post_eval())
+        evaluate.assert_called_once()
 
     def test_26_evaluation_counts_over_a_committed_read_view(self):
         # What keeps the counts off a stale snapshot: finalize() flushes before evaluating, and that commit ends the

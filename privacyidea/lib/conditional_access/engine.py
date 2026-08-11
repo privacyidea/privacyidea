@@ -918,7 +918,18 @@ def evaluate_lockout_policies(user: "User", event_type: AuthEventType | None, so
     notices: list[str] = []
     outcomes: list[ConditionalAccessOutcome] = []
     for policy in policies:
-        evaluation = _evaluate_policy(policy, user, event_type, source_ip, now)
+        # Guarded per policy, for two reasons. One policy's failure must not cost the others theirs - a broken policy
+        # would otherwise disable every policy ordered behind it. And it keeps the actions this call already executed
+        # from being repeated: the caller evaluates a classification again when an earlier attempt did not return
+        # (see ConditionalAccessContext.run_post_eval), and a stage whose actions leave no live state - an EMAIL-only
+        # stage writes neither a lock nor a block - has nothing for the de-dup below to recognize on the second pass.
+        # With the loop guarded, the only failure that still escapes is the policy query above, which runs before any
+        # action does, so the retry always starts from a clean slate.
+        try:
+            evaluation = _evaluate_policy(policy, user, event_type, source_ip, now)
+        except Exception as ex:
+            log.warning(f"Lockout policy {policy.name!r} failed to evaluate: {ex!r}; skipping it.")
+            continue
         notices.extend(evaluation.notices)
         outcomes.extend(evaluation.outcomes)
     # De-duplicate the notices while preserving order: several policies tracking the same user can emit the same one

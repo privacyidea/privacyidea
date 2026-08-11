@@ -25,6 +25,9 @@ from collections.abc import Sequence
 from datetime import datetime, timedelta, timezone
 from email import message_from_string
 
+import mock
+
+from privacyidea.lib.conditional_access import engine
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
 from privacyidea.lib.conditional_access.engine import (
     AccessDecision,
@@ -925,6 +928,31 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertEqual(str(LockoutAction.BLOCK_IP), outcomes[0].action_type)
         # Dry run: the IP is never actually blocked.
         self.assertIsNone(self._block(ip))
+
+    def test_a_failing_policy_does_not_cost_the_other_policies_their_evaluation(self):
+        # Guarded per policy: the first one raising must neither disable the ones ordered behind it nor let the
+        # failure escape - the caller evaluates the classification again when the call does not return, and a stage
+        # whose actions leave no live state (EMAIL-only) has no de-dup to stop the second pass repeating them.
+        self._make_policy(name="broken", counter_type=AuthEventType.MFA_FAIL, priority=1)
+        self._make_policy(name="works", counter_type=AuthEventType.MFA_FAIL, priority=2)
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+
+        real = engine._evaluate_policy
+        calls = []
+
+        def fail_the_first(policy, *args, **kwargs):
+            calls.append(policy.name)
+            if policy.name == "broken":
+                raise RuntimeError("policy boom")
+            return real(policy, *args, **kwargs)
+
+        with mock.patch.object(engine, "_evaluate_policy", side_effect=fail_the_first):
+            evaluation = evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
+
+        self.assertListEqual(["broken", "works"], calls)
+        # The surviving policy still locked the user, and nothing propagated to the caller.
+        self.assertListEqual([str(LockoutAction.LOCK_USER)], [outcome.action_type for outcome in evaluation.outcomes])
+        self.assertTrue(is_user_locked(self.user))
 
     def test_dry_run_returns_no_notices(self):
         self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True)

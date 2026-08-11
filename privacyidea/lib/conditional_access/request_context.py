@@ -117,15 +117,38 @@ class ConditionalAccessContext:
         """
         The staged event a later request stage may correct, or ``None`` if there is none.
 
-        That is :attr:`latest`, unless it was staged ``immediate``. Such an event records something that *happened* at
-        that point rather than this request's outcome - the ``push_wait`` challenge trigger, which a concurrent
-        ``/ttype/push`` has to be able to read - and a later stage must not overwrite that history. It matters where
-        the terminal event is suppressed (a ``push_wait`` timeout): the trigger is then the only staged event, and
-        reclassifying it would destroy the trigger record instead of logging the corrected outcome. A caller that
-        finds nothing amendable stages its own event instead.
+        That is :attr:`latest`, with two exceptions - both events that record something other than the outcome the
+        request's token logic reached, and that a later stage must therefore not overwrite. A caller that finds
+        nothing amendable stages its own event instead.
+
+        An ``immediate`` event records something that *happened* at that point - the ``push_wait`` challenge trigger,
+        which a concurrent ``/ttype/push`` has to be able to read. It matters where the terminal event is suppressed
+        (a ``push_wait`` timeout): the trigger is then the only staged event, and reclassifying it would destroy the
+        trigger record instead of logging the corrected outcome.
+
+        A :data:`~privacyidea.lib.conditional_access.authentication_event_types.CA_ENFORCEMENT_EVENT_TYPES` event
+        records that conditional access turned the request away before any token logic ran - the one place an admin
+        can see *why* it was refused. The post-policies still run on the gate's rejection response (the gate is the
+        innermost decorator), so without this they would relabel that row: the reason would be lost, and the
+        relabelled event would pass the matching guard in :meth:`run_post_eval` and let the lock feed itself.
         """
         event = self.latest
-        return event if event is not None and not event.immediate else None
+        if event is None or event.immediate or event.event_type in CA_ENFORCEMENT_EVENT_TYPES:
+            return None
+        return event
+
+    @property
+    def rejected_by_conditional_access(self) -> bool:
+        """
+        Whether conditional access itself turned this request away (see :data:`CA_ENFORCEMENT_EVENT_TYPES`).
+
+        The gate is the innermost decorator, so the post-policies still run on its rejection response and would
+        otherwise classify a request that never reached any token logic. There is nothing for them to say about it:
+        the request was refused for a reason already recorded, and logging their own outcome on top would both bury
+        that reason and hand the lockout counters an attempt the lock itself produced.
+        """
+        event = self.latest
+        return event is not None and event.event_type in CA_ENFORCEMENT_EVENT_TYPES
 
     def attempt_id_for_transaction(self, transaction_id: str) -> str | None:
         """
@@ -238,7 +261,8 @@ class ConditionalAccessContext:
         Runs **once per distinct classification**, not merely once: an endpoint that needs the notices in its own
         response can run it early (``/auth`` does) and request teardown will not repeat the same evaluation. Should a
         post-policy correct the outcome in between, however, teardown *does* evaluate again - otherwise the engine
-        would be left having judged a classification that no longer holds.
+        would be left having judged a classification that no longer holds. A classification counts as evaluated only
+        once the engine returned, so an early call that failed is retried at teardown rather than swallowed.
 
         The evaluation counts events over the authentication log, so it must run **after** :meth:`flush` - otherwise
         the count would miss the very event that triggered it. That ordering also keeps the counts from reading a stale
@@ -272,7 +296,6 @@ class ConditionalAccessContext:
             log.debug(f"Not evaluating conditional-access policies for {event.event_type}: this request was rejected "
                       f"by conditional access itself.")
             return []
-        self._evaluated_as = event.event_type
         # Deferred import: the engine pulls in the ORM models, so importing it at module level would risk an
         # import-order cycle during app startup.
         from privacyidea.lib.conditional_access.engine import evaluate_lockout_policies
@@ -281,6 +304,9 @@ class ConditionalAccessContext:
         except Exception as ex:
             log.warning(f"Conditional-access policy evaluation failed: {ex!r}")
             return []
+        # Marked evaluated only now: a failure above leaves the classification unevaluated, so the teardown call is
+        # the retry rather than a skipped second attempt.
+        self._evaluated_as = event.event_type
         record_outcomes(evaluation.outcomes, event.row_id)
         return evaluation.notices
 

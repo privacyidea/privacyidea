@@ -1274,11 +1274,15 @@ def is_authorized(request, response):
     if authorized_pol:
         if list(authorized_pol)[0] == AUTHORIZED.DENY:
             context = get_ca_context()
-            if context.amendable is not None:
-                # Correcting the staged event
-                context.reclassify(AuthEventType.NOT_AUTHORIZED)
-            else:
-                log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=request.User)
+            # Nothing to classify when conditional access already turned the request away before any token logic ran:
+            # its rejection row records why, and a NOT_AUTHORIZED row of our own would bury that reason and hand the
+            # lockout counters an attempt the lock itself produced.
+            if not context.rejected_by_conditional_access:
+                if context.amendable is not None:
+                    # Correcting the staged event
+                    context.reclassify(AuthEventType.NOT_AUTHORIZED)
+                else:
+                    log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=request.User)
             raise ValidateError("User is not authorized to authenticate under these conditions.")
 
     return response

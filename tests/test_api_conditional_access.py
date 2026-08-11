@@ -746,6 +746,24 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         # The row says NOT_AUTHORIZED, so the LOGIN_SUCCESS policy never saw a matching event and did not lock.
         self.assertFalse(is_user_locked(self.user))
 
+    def test_a_conditional_access_rejection_is_not_reclassified_by_authz_deny(self):
+        # The gate is the innermost decorator, so authorized=deny still runs on its rejection response. The rejection
+        # row is the only record of *why* the request was refused, and relabelling it to NOT_AUTHORIZED would also
+        # take the refused request past the CA_ENFORCEMENT_EVENT_TYPES guard and into the lockout counters - a lock
+        # feeding itself. So the rejection stands and the post-policy logs nothing of its own.
+        self._lock_user(utc_now() + timedelta(seconds=600))
+        set_policy("authz_deny", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHORIZED}={AUTHORIZED.DENY}")
+        try:
+            with self.app.test_request_context('/validate/check', method='POST',
+                                               data={"user": "cornelius", "pass": "pin755224"}):
+                self.app.full_dispatch_request()
+        finally:
+            delete_policy("authz_deny")
+
+        entries = get_authentication_logs()
+        self.assertEqual(1, len(entries))
+        self.assertEqual(str(AuthEventType.USER_LOCKED), entries[0].event_type)
+
     def test_row_is_written_even_when_the_view_raises(self):
         # Teardown runs whether or not the request succeeded, so a request that ends in an error still logs its event.
         body = self._check({"user": "cornelius", "pass": "wrongpin000000"})
