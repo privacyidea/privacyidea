@@ -25,7 +25,7 @@ import { ActivatedRoute } from "@angular/router";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { of } from "rxjs";
 import { ContainerTableActionsComponent } from "./container-table-actions.component";
-import { ContainerService } from "@services/container/container.service";
+import { ContainerDetailData, ContainerService } from "@services/container/container.service";
 import {
   MockContainerService,
   MockContentService,
@@ -80,29 +80,25 @@ describe("ContainerTableActionsComponent", () => {
 
     it("deletes every selected container, clears the selection and reloads when confirmed", () => {
       const reloadSpy = jest.spyOn(containerService.containerResource, "reload");
-      containerService.containerSelection.set([{ serial: "CONT-1" }, { serial: "CONT-2" }] as ReturnType<
-        typeof containerService.containerSelection
-      >);
+      containerService.setContainerSelection([{ serial: "CONT-1" }, { serial: "CONT-2" }] as ContainerDetailData[]);
       mockDialogResult(true);
 
       component.deleteSelectedContainer();
 
       expect(containerService.deleteContainer).toHaveBeenCalledWith("CONT-1");
       expect(containerService.deleteContainer).toHaveBeenCalledWith("CONT-2");
-      expect(containerService.containerSelection()).toEqual([]);
+      expect(containerService.containerSelection.hasSelection()).toBe(false);
       expect(reloadSpy).toHaveBeenCalled();
     });
 
     it("does nothing when the confirmation is dismissed", () => {
-      containerService.containerSelection.set([{ serial: "CONT-1" }] as ReturnType<
-        typeof containerService.containerSelection
-      >);
+      containerService.setContainerSelection([{ serial: "CONT-1" }] as ContainerDetailData[]);
       mockDialogResult(false);
 
       component.deleteSelectedContainer();
 
       expect(containerService.deleteContainer).not.toHaveBeenCalled();
-      expect(containerService.containerSelection().length).toBe(1);
+      expect(containerService.containerSelection.selectedCount()).toBe(1);
     });
   });
 

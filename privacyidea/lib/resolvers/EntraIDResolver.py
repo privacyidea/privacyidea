@@ -300,8 +300,9 @@ class EntraIDResolver(HTTPResolver):
                     advanced_query = False
 
                 # EntraID does not support advanced wildcard searches. We can only filter for attributes
-                # that start (or end) with the given value.
-                escaped_value = value.replace("*", self.wildcard)
+                # that start (or end) with the given value. The wildcard is removed from the escaped value, the
+                # escaping of the single quotes has to be kept.
+                escaped_value = escaped_value.replace("*", self.wildcard)
                 if advanced_query:
                     filter_values.append(
                         f"(startswith({entra_key}, '{escaped_value}') or endswith({entra_key}, '{escaped_value}'))")

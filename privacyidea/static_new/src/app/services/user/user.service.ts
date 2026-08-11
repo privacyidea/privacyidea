@@ -30,7 +30,10 @@ import { FilterValue } from "@core/models/filter_value/filter_value";
 import { parseFilterTokens } from "@core/models/filter_value_generic/filter-value-generic";
 import { environment } from "@env/environment";
 import { NotificationService } from "@services/notification/notification.service";
-import { FilterableTableService, FilterableTableServiceInterface } from "@services/table-utils/filterable-table-service";
+import {
+  FilterableTableService,
+  FilterableTableServiceInterface
+} from "@services/table-utils/filterable-table-service";
 import { buildFilterParams, filterParamsEqual } from "@utils/filter.utils";
 import { Observable, of } from "rxjs";
 import { catchError, map } from "rxjs/operators";
@@ -130,7 +133,6 @@ export class UserService extends FilterableTableService implements UserServiceIn
   private readonly notificationService = inject(NotificationService);
   private readonly http = inject(HttpClient);
   private baseUrl = environment.proxyUrl + "/user/";
-  private hasTokenSelection = computed(() => this.tokenService.tokenSelection().length > 0);
   filterValue = signal({} as Record<string, string>);
 
   constructor() {
@@ -445,7 +447,7 @@ export class UserService extends FilterableTableService implements UserServiceIn
       return undefined;
     }
     // On the tokens route we require at least one selected token before loading users.
-    if (this.contentService.onTokens() && !this.hasTokenSelection()) {
+    if (this.contentService.onTokens() && !this.tokenService.tokenSelection.hasSelection()) {
       return undefined;
     }
 

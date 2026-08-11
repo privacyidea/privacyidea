@@ -31,7 +31,7 @@
       class="policies-table-filter"></app-policy-filter>
   }
 
-  <app-policies-table-actions [policySelection]="selectedPolicies()" />
+  <app-policies-table-actions [policySelection]="selector.selectedRows()" />
 
   <table
     (matSortChange)="onSortChange($event)"
@@ -46,10 +46,10 @@
         *matHeaderCellDef
         mat-header-cell>
         <mat-checkbox
-          (change)="masterToggle()"
-          [checked]="isAllSelected()"
-          [disabled]="policyService.allPolicies().length === 0"
-          [indeterminate]="selectedPolicies().size > 0 && !isAllSelected()"
+          (change)="$event.checked ? selector.selectAllRows() : selector.deselectAllRows()"
+          [checked]="selector.allRowsSelected()"
+          [disabled]="!selector.hasVisibleRows()"
+          [indeterminate]="selector.someRowsSelected()"
           aria-label="Select all policies"
           i18n-aria-label></mat-checkbox>
       </th>
@@ -57,9 +57,9 @@
         *matCellDef="let policy"
         mat-cell>
         <mat-checkbox
-          (change)="updateSelection($event, policy.name)"
+          (change)="selector.setRowSelected(policy, $event.checked)"
           (click)="$event.stopPropagation()"
-          [checked]="selectedPolicies().has(policy.name)"
+          [checked]="selector.isRowSelected(policy)"
           [disabled]="!policy.name"
           aria-label="Select policy"
           i18n-aria-label></mat-checkbox>

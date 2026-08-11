@@ -87,12 +87,12 @@
                 class="table-checkbox"
                 mat-header-cell>
                 <mat-checkbox
-                  (change)="$event ? toggleAllRows() : null"
+                  (change)="$event.checked ? containerSelection.selectAllRows() : containerSelection.deselectAllRows()"
                   aria-label="Select all containers"
                   i18n-aria-label
-                  [checked]="isAllSelected()"
-                  [disabled]="total() === 0"
-                  [indeterminate]="containerSelection().length > 0 && !isAllSelected()"></mat-checkbox>
+                  [checked]="containerSelection.allRowsSelected()"
+                  [disabled]="!containerSelection.hasVisibleRows()"
+                  [indeterminate]="containerSelection.someRowsSelected()"></mat-checkbox>
               </th>
             } @else {
               <th
@@ -166,11 +166,11 @@
                 @switch (column.key) {
                   @case ("select") {
                     <mat-checkbox
-                      (change)="$event ? toggleRow(row) : null"
+                      (change)="containerSelection.setRowSelected(row, $event.checked)"
                       (click)="$event.stopPropagation()"
                       attr.aria-label="Select container {{ element.serial }}"
-                      [checked]="containerSelection().includes(row)"
-                      [disabled]="total() === 0"></mat-checkbox>
+                      [checked]="containerSelection.isRowSelected(row)"
+                      [disabled]="!containerSelection.hasVisibleRows()"></mat-checkbox>
                   }
                   @case ("serial") {
                     <app-copyable [copyText]="element.serial">

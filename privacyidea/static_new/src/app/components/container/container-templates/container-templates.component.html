@@ -35,7 +35,7 @@
       showFirstLastButtons />
   </div>
 
-  <app-container-templates-table-actions [selectedTemplates]="selectedTemplates()">
+  <app-container-templates-table-actions [selectedTemplates]="selector.selectedRows()">
   </app-container-templates-table-actions>
 
   <table
@@ -49,10 +49,10 @@
         mat-header-cell
         *matHeaderCellDef>
         <mat-checkbox
-          (change)="toggleAllRows()"
-          [checked]="isAllSelected()"
-          [indeterminate]="isPartiallySelected()"
-          [disabled]="containerTemplateService.templates().length === 0"
+          (change)="$event.checked ? selector.selectAllRows() : selector.deselectAllRows()"
+          [checked]="selector.allRowsSelected()"
+          [indeterminate]="selector.someRowsSelected()"
+          [disabled]="!selector.hasVisibleRows()"
           aria-label="Select all templates"
           i18n-aria-label>
         </mat-checkbox>
@@ -62,8 +62,8 @@
         *matCellDef="let row">
         <mat-checkbox
           (click)="$event.stopPropagation()"
-          (change)="updateSelection($event, row)"
-          [checked]="selectedTemplateNames().has(row.name)"
+          (change)="selector.setRowSelected(row, $event.checked)"
+          [checked]="selector.isRowSelected(row)"
           [disabled]="!row.name"
           [aria-label]="row.name ? 'Select template ' + row.name : 'Select template'"
           i18n-aria-label>
