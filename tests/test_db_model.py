@@ -855,7 +855,7 @@ class ConditionalAccessOutcomeTestCase(MyTestCase):
 
     def _make_outcome(self, auth_log_id: int, **overrides: Any) -> ConditionalAccessOutcome:
         """An outcome carrying everything the engine always knows, so a test only states what it is about."""
-        fields = {"auth_log_id": auth_log_id, "action_type": "LOCK_USER", "policy_id": 7,
+        fields = {"auth_log_id": auth_log_id, "action_type": "LOCK_USER",
                   "policy_name": "Brute Force PIN Lockout", "threshold": 5, "event_count": 6}
         return ConditionalAccessOutcome(**{**fields, **overrides})
 
@@ -890,7 +890,6 @@ class ConditionalAccessOutcomeTestCase(MyTestCase):
 
         outcome = ConditionalAccessOutcome.query.filter_by(id=outcome_id).one()
         self.assertTrue(outcome.dry_run)
-        self.assertEqual(7, outcome.policy_id)
         self.assertEqual("Brute Force PIN Lockout", outcome.policy_name)
         self.assertEqual("Second strike", outcome.stage_name)
         self.assertEqual(5, outcome.threshold)
@@ -927,16 +926,16 @@ class ConditionalAccessOutcomeTestCase(MyTestCase):
         # The history of a request dies with the request. Only MySQL/MariaDB and PostgreSQL enforce this; the lib
         # delete paths remove the child rows explicitly so SQLite behaves the same.
         self.assertEqual("CASCADE", foreign_keys[0].ondelete)
-        # policy_id carries no foreign key: an outcome must survive the deletion of its policy, which is why
-        # policy_name is a denormalized copy. Whether the policy still exists is a LEFT JOIN away.
-        self.assertSetEqual(set(), set(table.c.policy_id.foreign_keys))
+        # The policy is identified by name only. An outcome must survive the deletion of its policy, and an id could not
+        # be trusted afterwards: SQLite and MySQL/MariaDB can hand a deleted policy's id to the next one.
+        self.assertNotIn("policy_id", table.c)
         # Two indexes, each backing a query the feature makes: the batched fetch by parent (which the delete paths use
         # too), and the action-first history.
         self.assertSetEqual({"ix_ca_outcome_authlog", "ix_ca_outcome_action"},
                             {index.name for index in table.indexes})
         # The subject and the time live on the parent row and are deliberately not repeated here; there is no stage id
-        # because update_lockout_policy replaces a policy's stages, so (policy_id, threshold) is the stage's key.
-        self.assertSetEqual({"id", "auth_log_id", "action_type", "dry_run", "policy_id", "policy_name",
+        # because update_lockout_policy replaces a policy's stages, so the threshold identifies the stage.
+        self.assertSetEqual({"id", "auth_log_id", "action_type", "dry_run", "policy_name",
                              "threshold", "event_count", "stage_name", "info"},
                             set(table.columns.keys()))
         # Everything a triggered stage knows is mandatory; only an unnamed stage and an action with nothing of its own

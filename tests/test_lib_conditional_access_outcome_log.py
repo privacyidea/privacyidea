@@ -39,7 +39,7 @@ from .base import MyTestCase
 
 def _outcome(**overrides: Any) -> ConditionalAccessOutcome:
     """An outcome carrying everything the engine always knows, so a test only states what it is about."""
-    fields = {"action_type": str(LockoutAction.LOCK_USER), "policy_id": 7, "policy_name": "Brute Force PIN Lockout",
+    fields = {"action_type": str(LockoutAction.LOCK_USER), "policy_name": "Brute Force PIN Lockout",
               "threshold": 5, "event_count": 6}
     return ConditionalAccessOutcome(**{**fields, **overrides})
 
@@ -81,7 +81,6 @@ class OutcomeLogTestCase(MyTestCase):
         outcome = get_outcomes(event_id)[0]
         self.assertEqual(str(LockoutAction.LOCK_USER), outcome.action_type)
         self.assertTrue(outcome.dry_run)
-        self.assertEqual(7, outcome.policy_id)
         self.assertEqual("Brute Force PIN Lockout", outcome.policy_name)
         self.assertEqual(5, outcome.threshold)
         self.assertEqual(6, outcome.event_count)
@@ -110,12 +109,13 @@ class OutcomeLogTestCase(MyTestCase):
 
     def test_outcome_for_stage_copies_what_the_history_must_keep(self):
         # The policy name and the stage name are denormalized copies, so the history stays readable after a rename or a
-        # deletion; the threshold identifies the stage.
+        # deletion; the threshold identifies the stage. The policy's *id* is deliberately not copied: it can be handed
+        # to a different policy after a deletion (SQLite, MySQL/MariaDB), which would misattribute the history.
         policy, stage = self._policy_and_stage()
         outcome = outcome_for_stage(policy, stage, LockoutAction.LOCK_USER, 6, dry_run=True)
 
-        self.assertEqual(policy.id, outcome.policy_id)
         self.assertEqual(policy.name, outcome.policy_name)
+        self.assertFalse(hasattr(outcome, "policy_id"), "the outcome must not carry a policy id")
         self.assertEqual(stage.failure_threshold, outcome.threshold)
         self.assertEqual(stage.name, outcome.stage_name)
         self.assertEqual(6, outcome.event_count)

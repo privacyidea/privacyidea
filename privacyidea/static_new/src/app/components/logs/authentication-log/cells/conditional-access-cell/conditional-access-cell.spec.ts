@@ -35,6 +35,18 @@ describe("ConditionalAccessCell", () => {
     fixture = TestBed.createComponent(ConditionalAccessCell);
     component = fixture.componentInstance;
     fixture.componentRef.setInput("entryId", 42);
+    // The policies these tests link to, with the id each has *now*. An outcome stores only the policy's name, so this
+    // map is what makes a link possible - and only for a name that still exists (see the deleted-policy test).
+    fixture.componentRef.setInput(
+      "policyIdsByName",
+      new Map([
+        ["Brute Force PIN Lockout", 7],
+        ["Permanent IP Block", 7],
+        ["Email Notification Test", 3],
+        ["Notify", 3],
+        ["Brute force", 7]
+      ])
+    );
   });
 
   function viewsFor(outcomes: unknown) {
@@ -50,7 +62,6 @@ describe("ConditionalAccessCell", () => {
           auth_log_id: 1,
           action_type: "LOCK_USER",
           dry_run: true,
-          policy_id: 7,
           policy_name: "Brute Force PIN Lockout",
           threshold: 5,
           event_count: 5,
@@ -75,7 +86,7 @@ describe("ConditionalAccessCell", () => {
   it("keeps only the fields the column shows, whatever else the row carries", () => {
     // An allow-list, so a new column on conditional_access_outcome cannot appear in the log column by accident.
     const [view] = viewsFor([
-      { action_type: "EMAIL_ADMIN", policy_id: 3, policy_name: "Notify", dry_run: false, something_new: "leaked?" }
+      { action_type: "EMAIL_ADMIN", policy_name: "Notify", dry_run: false, something_new: "leaked?" }
     ]);
     expect(Object.keys(view).sort()).toEqual([
       "action",
@@ -93,8 +104,8 @@ describe("ConditionalAccessCell", () => {
 
   it("describes every outcome of the request, in order", () => {
     const views = viewsFor([
-      { policy_id: 7, policy_name: "Permanent IP Block", action_type: "PERMANENT_BLOCK_IP", dry_run: true },
-      { policy_id: 3, policy_name: "Email Notification Test", action_type: "EMAIL_ADMIN", dry_run: true }
+      { policy_name: "Permanent IP Block", action_type: "PERMANENT_BLOCK_IP", dry_run: true },
+      { policy_name: "Email Notification Test", action_type: "EMAIL_ADMIN", dry_run: true }
     ]);
     expect(views.map((view) => view.policy)).toEqual(["Permanent IP Block", "Email Notification Test"]);
     expect(views.map((view) => view.action)).toEqual(["PERMANENT_BLOCK_IP", "EMAIL_ADMIN"]);
@@ -108,7 +119,7 @@ describe("ConditionalAccessCell", () => {
     // stage_name is the one nullable identifier of a stage, so the threshold has to be shown: it is what an admin
     // recognizes the stage by when they never named one.
     const [view] = viewsFor([
-      { policy_id: 7, policy_name: "Brute Force PIN Lockout", action_type: "LOCK_USER", threshold: 5, dry_run: false }
+      { policy_name: "Brute Force PIN Lockout", action_type: "LOCK_USER", threshold: 5, dry_run: false }
     ]);
     expect(view.threshold).toBe(5);
     expect(view.stage).toBeUndefined();
@@ -143,12 +154,22 @@ describe("ConditionalAccessCell", () => {
     expect(views.map((view) => view.key)).toEqual(["12", "42-1"]);
   });
 
-  it("omits the policy link when the policy is gone", () => {
-    // policy_id has no foreign key, so it can point at a deleted policy; the denormalized name still reads.
+  it("omits the policy link when no policy of that name exists any more", () => {
+    // The outcome names its policy and stores no id, precisely because a deleted policy's id can be handed to another
+    // one. So a link is a lookup: no policy of that name, no link - and the denormalized name still reads.
     const [view] = viewsFor([{ policy_name: "Deleted policy", action_type: "LOCK_USER", dry_run: true }]);
     expect(view.policy).toBe("Deleted policy");
     expect(view.policyLink).toBeUndefined();
     expect(view.dryRun).toBe(true);
+  });
+
+  it("omits every policy link for an admin who may not read the policies", () => {
+    // Then the caller passes no policies at all, so the column degrades to names without links rather than to links
+    // that land on a page the admin cannot open.
+    fixture.componentRef.setInput("policyIdsByName", new Map<string, number>());
+    const [view] = viewsFor([{ policy_name: "Brute force", action_type: "LOCK_USER" }]);
+    expect(view.policy).toBe("Brute force");
+    expect(view.policyLink).toBeUndefined();
   });
 
   it("is empty for a request conditional access did nothing to, and for anything that is not a list", () => {
@@ -194,7 +215,6 @@ describe("ConditionalAccessCell", () => {
         id: 12,
         action_type: "LOCK_USER",
         dry_run: false,
-        policy_id: 7,
         policy_name: "Brute Force PIN Lockout",
         threshold: 5,
         event_count: 5,

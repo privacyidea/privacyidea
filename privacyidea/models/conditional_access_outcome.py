@@ -60,21 +60,28 @@ class ConditionalAccessOutcome(db.Model):
     outcomes without reading them back - so the relationship that exposes them is declared ``lazy="raise"`` and only
     the paginated log query opts in.
 
-    ``policy_id`` carries **no foreign key** on purpose: an outcome must survive the deletion of the policy that
-    produced it, which is also why ``policy_name`` is a denormalized copy. The id is still the durable link - a policy
-    keeps it for its whole lifetime, renames included - and whether the policy *still exists* is a ``LEFT JOIN
-    lockout_policies`` away, so nothing has to be written when one is deleted. ``auth_log_id``, in contrast, cascades:
-    the history of a request is deleted with the request.
+    The policy is identified by **name only**, denormalized, with no id and no foreign key: an outcome must survive the
+    deletion of the policy that produced it, and a stored ``policy_id`` could not be acted on afterwards. Ids are not
+    reused on PostgreSQL or Oracle (a sequence), but SQLite hands out ``max(rowid)+1`` and MySQL/MariaDB recompute the
+    ``AUTO_INCREMENT`` counter as ``max(id)+1`` on restart (MySQL persists it only from 8.0), so a deleted policy's id
+    can turn up on a *different* policy - and finding the logged id on a policy with another name is indistinguishable
+    from a rename, which is the one case an id was worth keeping for. Matching on the name an admin chose can at worst
+    hit a policy deliberately recreated under that name; matching on a recycled surrogate key attributes history to a
+    policy that never produced it.
+
+    Whether the policy still exists is therefore a lookup by name (unique on ``lockout_policies``).
+    ``auth_log_id``, in contrast, is a real foreign key and cascades: the history of a request is deleted with the
+    request.
 
     There is deliberately **no stage id**:
     :func:`~privacyidea.lib.conditional_access.lockout_policy.update_lockout_policy` replaces a policy's stages as a
     whole, so every edit gives them fresh ids and a stored one would dangle - the same
     reason ``user_lockout_state.last_stage_triggered`` is reset by such an edit. The stage is identified by its natural
-    key instead: ``(policy_id, threshold)`` is unique (``uq_lockout_stage_policy_threshold``) and survives edits, and
-    the threshold is what a human reads anyway.
+    key instead: a stage is unique per policy by its threshold (``uq_lockout_stage_policy_threshold``) and that survives
+    edits, and the threshold is what a human reads anyway.
 
-    Everything a triggered stage knows is therefore mandatory - ``policy_id``, ``policy_name``, ``threshold``,
-    ``event_count`` - because the engine always has all four when it records an outcome. Only two columns are nullable,
+    Everything a triggered stage knows is therefore mandatory - ``policy_name``, ``threshold``, ``event_count`` -
+    because the engine always has all three when it records an outcome. Only two columns are nullable,
     each meaning something: ``stage_name`` (the admin never named the stage) and ``info`` (the action had nothing of its
     own to record).
 
@@ -112,11 +119,10 @@ class ConditionalAccessOutcome(db.Model):
         case_sensitive_unicode(conditional_access_outcome_column_length["action_type"]), nullable=False)
     # The policy was in dry run: nothing was actually done and this row says what would have happened.
     dry_run: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    # Stable for the policy's whole lifetime, renames included, but without a foreign key - see the class docstring.
-    policy_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    # The policy's name at the time, and its only identifier here.
     policy_name: Mapped[str] = mapped_column(
         case_sensitive_unicode(conditional_access_outcome_column_length["policy_name"]), nullable=False)
-    # The triggered stage's threshold. With policy_id it is the stage's natural key, and on its own it is how a human
+    # The triggered stage's threshold. With the policy it is the stage's natural key, and on its own it is how a human
     # names the stage ("the threshold-5 one").
     threshold: Mapped[int] = mapped_column(Integer, nullable=False)
     # The count that tripped the stage, i.e. how far past its threshold the subject was.
@@ -136,8 +142,8 @@ class ConditionalAccessOutcome(db.Model):
         """
         Serialize the outcome for the API response.
 
-        Every column is emitted, including the ones the WebUI does not display (``info``, ``event_count``,
-        ``threshold``, ``policy_id``): what to show is the view's decision, and a client querying the history needs the
-        rest. There is no timestamp of its own - the entry this is nested under carries it.
+        Every column is emitted, including the ones the WebUI does not display (``info``, ``event_count``): what to show
+        is the view's decision, and a client querying the history needs the rest. There is no timestamp of its own - the
+        entry this is nested under carries it.
         """
         return {name: getattr(self, name) for name in self.__table__.columns.keys()}

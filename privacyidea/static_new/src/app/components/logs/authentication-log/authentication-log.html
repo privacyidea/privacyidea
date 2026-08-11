@@ -415,6 +415,7 @@
                 @case ("conditional_access_outcomes") {
                   <app-conditional-access-cell
                     [entryId]="element.id"
+                    [policyIdsByName]="policyIdsByName()"
                     [outcomes]="element.conditional_access_outcomes" />
                 }
                 @case ("other_info") {

@@ -37,6 +37,8 @@ export interface OutcomeView {
   // backend sent one; otherwise the entry and the position, which is unique within the rendered page.
   key: string;
   policy: string;
+  // Set only while a policy of that name exists (and the caller may read the policy list): the outcome names its policy
+  // and stores no id, so a link is a *lookup*, not a stored reference.
   policyLink?: string;
   // Marked in the column because it is the exception: a dry-run outcome describes what *would* have happened.
   dryRun: boolean;
@@ -75,6 +77,11 @@ export class ConditionalAccessCell {
   readonly outcomes = input<AuthenticationLogEntry["conditional_access_outcomes"]>(null);
   // Only used to build a key for outcomes the backend sent without an id.
   readonly entryId = input<number | undefined>(undefined);
+  // The current id of each existing policy, by name. An outcome stores the policy's *name* and no id (a deleted
+  // policy's id can be handed to another one), so this is what turns a name into a link - and only for a policy that
+  // still exists under that name. An empty map means "link nothing", which is also the right answer for an admin
+  // without lockout_policy_read: the name is still readable as text.
+  readonly policyIdsByName = input<ReadonlyMap<string, number>>(new Map<string, number>());
 
   // Anything that is not a list yields nothing. The guard is not redundant with the input's type: the table's skeleton
   // rows are built by key and set *every* column to "", so the declared type is a promise the loading state breaks.
@@ -82,17 +89,16 @@ export class ConditionalAccessCell {
     const outcomes = this.outcomes();
     if (!Array.isArray(outcomes)) return [];
     return outcomes.map((outcome, index) => {
-      const policyId = outcome["policy_id"];
+      const policy = String(outcome["policy_name"] ?? "");
+      const policyId = this.policyIdsByName().get(policy);
       const stage = outcome["stage_name"];
       const threshold = outcome["threshold"];
       const id = outcome["id"];
       return {
         key: typeof id === "number" ? String(id) : `${this.entryId()}-${index}`,
-        policy: String(outcome["policy_name"] ?? ""),
+        policy,
         policyLink:
-          policyId === null || policyId === undefined
-            ? undefined
-            : `${ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_DETAILS}${policyId}`,
+          policyId === undefined ? undefined : `${ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_DETAILS}${policyId}`,
         dryRun: !!outcome["dry_run"],
         action: String(outcome["action_type"] ?? ""),
         stage: typeof stage === "string" && stage ? stage : undefined,

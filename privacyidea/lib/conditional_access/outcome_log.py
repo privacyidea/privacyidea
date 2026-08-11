@@ -65,7 +65,10 @@ def outcome_for_stage(policy: LockoutPolicy, stage: LockoutPolicyStage, action_t
                       expires_at: datetime | None = None) -> ConditionalAccessOutcome:
     """
     Describe what one action of *stage* did (or, in dry run, would have done), copying out of the policy configuration
-    what the history has to keep on its own: the policy name, the threshold and the stage name.
+    what the history has to keep on its own: the policy name, the threshold and the stage name. Deliberately not the
+    policy's id - see
+    :class:`~privacyidea.models.conditional_access_outcome.ConditionalAccessOutcome` on why a recycled id is worse than
+    no id.
 
     The result is **transient** - ``auth_log_id`` is left unset, because the engine that calls this has no row to point
     at yet - and :func:`record_outcomes` supplies it and writes the row.
@@ -83,7 +86,7 @@ def outcome_for_stage(policy: LockoutPolicy, stage: LockoutPolicyStage, action_t
         sites stay readable, and recorded in the row's ``info`` (see :func:`_restriction_info`); an action with nothing
         to expire simply omits it.
     """
-    return ConditionalAccessOutcome(action_type=str(action_type), policy_id=policy.id, policy_name=policy.name,
+    return ConditionalAccessOutcome(action_type=str(action_type), policy_name=policy.name,
                                     threshold=stage.failure_threshold, event_count=event_count,
                                     dry_run=dry_run, stage_name=stage.name,
                                     info=_restriction_info(expires_at))

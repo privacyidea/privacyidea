@@ -822,7 +822,7 @@ class AuthenticationLogOutcomeJoinTestCase(MyTestCase):
         """Write one authentication-log row plus *count* conditional-access outcomes, and return the row id."""
         event_id = log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res1", uid="u1",
                                             realm="realm1", **kwargs)
-        record_outcomes([ConditionalAccessOutcome(action_type="LOCK_USER", policy_id=1, policy_name="p",
+        record_outcomes([ConditionalAccessOutcome(action_type="LOCK_USER", policy_name="p",
                                                  threshold=3, event_count=3) for _ in range(count)], event_id)
         return event_id
 

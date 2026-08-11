@@ -265,7 +265,7 @@ describe("AuthenticationLog", () => {
           event_type: "USER_LOCKED",
           timestamp: "2026-08-03T09:00:00Z",
           other_info: null,
-          conditional_access_outcomes: [{ policy_id: 7, policy_name: "Brute Force PIN Lockout" }]
+          conditional_access_outcomes: [{ policy_name: "Brute Force PIN Lockout" }]
         }
       ] as AuthenticationLogEntry[])
     );

@@ -375,7 +375,7 @@ class ConditionalAccessContextTestCase(MyTestCase):
 
     @staticmethod
     def _make_outcome(action_type: str = LockoutAction.LOCK_USER) -> ConditionalAccessOutcome:
-        return ConditionalAccessOutcome(action_type=str(action_type), policy_id=1, policy_name="p", threshold=3,
+        return ConditionalAccessOutcome(action_type=str(action_type), policy_name="p", threshold=3,
                                         event_count=3)
 
     def test_30_pre_auth_outcomes_wait_for_the_first_staged_event(self):

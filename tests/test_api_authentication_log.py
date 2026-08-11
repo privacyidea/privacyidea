@@ -140,7 +140,7 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
     def test_entry_carries_its_conditional_access_outcomes(self):
         event_id = log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res1", uid="u1",
                                             realm=self.realm1)
-        record_outcomes([ConditionalAccessOutcome(action_type="LOCK_USER", policy_id=4, policy_name="Brute force",
+        record_outcomes([ConditionalAccessOutcome(action_type="LOCK_USER", policy_name="Brute force",
                                                  threshold=3, event_count=3, stage_name="Second strike",
                                                  info={"expires_at": "2026-08-07T12:00:00+00:00"})], event_id)
         try:
@@ -148,7 +148,6 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
                          if e["id"] == event_id)
             outcome = entry["conditional_access_outcomes"][0]
             self.assertEqual("LOCK_USER", outcome["action_type"])
-            self.assertEqual(4, outcome["policy_id"])
             self.assertEqual("Brute force", outcome["policy_name"])
             self.assertEqual("Second strike", outcome["stage_name"])
             self.assertEqual(3, outcome["threshold"])
@@ -187,7 +186,7 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
 
     @staticmethod
     def _make_outcome(action_type, policy_name, dry_run=False):
-        return ConditionalAccessOutcome(action_type=action_type, policy_id=1, policy_name=policy_name, threshold=3,
+        return ConditionalAccessOutcome(action_type=action_type, policy_name=policy_name, threshold=3,
                                         event_count=3, dry_run=dry_run)
 
     def _clear_outcomes(self):

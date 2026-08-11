@@ -557,6 +557,12 @@ export class AuthenticationLog {
     )
   );
   readonly canReadLockoutPolicies = computed(() => this.authService.actionAllowed("lockout_policy_read"));
+  // How an outcome's policy name becomes a link: the id each existing policy has *now*, from the list this page already
+  // loads. Without `lockout_policy_read` the list is empty, so the cell renders the name as text (see its
+  // `policyIdsByName`).
+  readonly policyIdsByName = computed<ReadonlyMap<string, number>>(
+    () => new Map(this.conditionalAccessPolicyService.policies().map((policy) => [policy.name, policy.id]))
+  );
 
   readonly dryRunOptions = DRY_RUN_OPTIONS;
   // The trigger's accessible name carries the rule as well as the purpose, so it is heard before the menu is opened

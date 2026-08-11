@@ -809,7 +809,6 @@ class LockoutEngineTestCase(LockoutTestCase):
         outcome = evaluation.outcomes[0]
         self.assertTrue(outcome.dry_run)
         self.assertEqual(str(LockoutAction.LOCK_USER), outcome.action_type)
-        self.assertEqual(policy.id, outcome.policy_id)
         self.assertEqual("dry", outcome.policy_name)
         self.assertEqual(3, outcome.threshold)
         self.assertEqual(3, outcome.event_count)

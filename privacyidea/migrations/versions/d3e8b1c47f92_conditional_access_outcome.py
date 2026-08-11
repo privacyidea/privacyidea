@@ -59,7 +59,6 @@ def upgrade():
             sa.Column('auth_log_id', BigIntegerType, nullable=False),
             sa.Column('action_type', _unicode_case_sensitive(100), nullable=False),
             sa.Column('dry_run', sa.Boolean(), nullable=False),
-            sa.Column('policy_id', sa.Integer(), nullable=False),
             sa.Column('policy_name', _unicode_case_sensitive(255), nullable=False),
             sa.Column('threshold', sa.Integer(), nullable=False),
             sa.Column('event_count', sa.Integer(), nullable=False),
