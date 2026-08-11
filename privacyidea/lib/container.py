@@ -251,7 +251,6 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
         else:
             stmt = stmt.where(func.upper(TokenContainer.serial) == serial.upper())
 
-
     if isinstance(ctype_exact, list):
         type_values = [str(t).strip() for t in ctype_exact if t and str(t).strip()]
         if not type_values:
@@ -385,10 +384,10 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
         stmt = stmt.order_by(sort_col.desc())
     else:
         stmt = stmt.order_by(sort_col.asc())
-    #print("----------------------------- CREATE CONTAINER QUERY -----------------------------")
-    #from sqlalchemy.dialects import postgresql
-    #print(stmt.compile(dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}))
-    #print("----------------------------------------------------------------------------------")
+    # print("----------------------------- CREATE CONTAINER QUERY -----------------------------")
+    # from sqlalchemy.dialects import postgresql
+    # print(stmt.compile(dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}))
+    # print("----------------------------------------------------------------------------------")
     return stmt
 
 
@@ -443,12 +442,13 @@ def get_all_containers(user: User = None, serial: str = None, ctype: str = None,
               'next', 'current', 'count')
     """
     sql_query: Select = _create_container_query(user=user, serial=serial, ctype=ctype, ctype_exact=ctype_exact,
-                                         token_serial=token_serial,
-                                        realm=realm, allowed_realms=allowed_realms, template=template,
-                                        description=description,
-                                        assigned=assigned, resolver=resolver, info=info,
-                                        last_auth_delta=last_auth_delta,
-                                        last_sync_delta=last_sync_delta, state=state, sortby=sortby, sortdir=sortdir)
+                                                token_serial=token_serial,
+                                                realm=realm, allowed_realms=allowed_realms, template=template,
+                                                description=description,
+                                                assigned=assigned, resolver=resolver, info=info,
+                                                last_auth_delta=last_auth_delta,
+                                                last_sync_delta=last_sync_delta, state=state, sortby=sortby,
+                                                sortdir=sortdir)
     ret = {}
     # Paginate if requested
     if page > 0 or pagesize > 0:
@@ -1529,6 +1529,7 @@ def get_container_template_classes() -> dict[str, type[ContainerTemplateBase]]:
 
     return ret
 
+
 def delete_container_template(template_name: str) -> bool:
     """
     Delete a container template by its name.
@@ -1540,6 +1541,7 @@ def delete_container_template(template_name: str) -> bool:
     except ResourceNotFoundError:
         log.warning(f"Template with name '{template_name}' does not exist.")
         return False
+
 
 def create_container_template(container_type: str, template_name: str, options: dict, default: bool = False) -> int:
     """
@@ -1828,12 +1830,7 @@ def check_container_challenge(transaction_id: str) -> dict:
         if challenge:
             if challenge.data:
                 # check if the challenge is for a container
-                try:
-                    challenge_data = json.loads(challenge.data)
-                    if isinstance(challenge_data, dict):
-                        challenge_type = challenge_data.get("type")
-                except json.JSONDecodeError:
-                    pass
+                challenge_type = challenge.get_data().get("type")
             if challenge_type and challenge_type == "container":
                 # The challenge belongs to a container, if the challenge is already answered, we can delete it and
                 # return a successful authentication

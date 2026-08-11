@@ -1205,14 +1205,7 @@ def poll_transaction(transaction_id=None):
         })
         # check if the challenge is from a token or container
         challenge = log_challenges[0]
-        challenge_type = "token"
-        if challenge.data:
-            try:
-                challenge_data = json.loads(challenge.data)
-                if isinstance(challenge_data, dict):
-                    challenge_type = challenge_data.get("type", "token")
-            except json.JSONDecodeError:
-                pass
+        challenge_type = challenge.get_data().get("type", "token")
         if challenge_type == "container":
             container = find_container_by_serial(log_challenges[0].serial)
             users = container.get_users()

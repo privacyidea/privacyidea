@@ -376,12 +376,11 @@ class SmartphoneContainer(TokenContainerClass):
         nonce = geturandom(20, hex=True)
         data["scope"] = scope
         data["type"] = "container"
-        data_str = json.dumps(data)
         if validity_time:
             validity_time *= 60
         from privacyidea.lib.token import create_challenge
         db_challenge = create_challenge(serial=self.serial, challenge=nonce,
-                                        data=data_str, validitytime=validity_time)
+                                        data=data, validitytime=validity_time)
         timestamp = db_challenge.timestamp.replace(tzinfo=timezone.utc)
         time_stamp_iso = timestamp.isoformat()
 

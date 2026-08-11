@@ -31,7 +31,7 @@ import { TokenEnrollmentLastStepDialogComponent } from "./token-enrollment-last-
 describe("TokenEnrollmentLastStepDialogComponent", () => {
   let component: TokenEnrollmentLastStepDialogComponent;
   let fixture: ComponentFixture<TokenEnrollmentLastStepDialogComponent>;
-  const mockDialogData: TokenEnrollmentDialogData = {
+  const createDialogData = (): TokenEnrollmentDialogData => ({
     response: {
       type: "totp",
       detail: {
@@ -52,14 +52,15 @@ describe("TokenEnrollmentLastStepDialogComponent", () => {
       data: {} as unknown as TokenEnrollmentData,
       mapper: {} as unknown as BaseApiPayloadMapper
     }
-  };
+  });
 
-  beforeEach(async () => {
+  const setup = async (dialogData: TokenEnrollmentDialogData): Promise<void> => {
+    TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [TokenEnrollmentLastStepDialogComponent],
       providers: [
         { provide: MatDialogRef, useClass: MockMatDialogRef },
-        { provide: MAT_DIALOG_DATA, useValue: mockDialogData },
+        { provide: MAT_DIALOG_DATA, useValue: dialogData },
         { provide: ContentService, useClass: MockContentService },
         { provide: TokenService, useClass: MockTokenService }
       ]
@@ -68,6 +69,10 @@ describe("TokenEnrollmentLastStepDialogComponent", () => {
     fixture = TestBed.createComponent(TokenEnrollmentLastStepDialogComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
+  };
+
+  beforeEach(async () => {
+    await setup(createDialogData());
   });
 
   it("should create", () => {
@@ -79,10 +84,44 @@ describe("TokenEnrollmentLastStepDialogComponent", () => {
     expect(component.title()).toBe("Token Successfully Enrolled");
   });
 
-  it("should render title for rollover", () => {
-    mockDialogData.rollover = true;
-    fixture = TestBed.createComponent(TokenEnrollmentLastStepDialogComponent);
-    component = fixture.componentInstance;
+  it("should render the enrollment data when showEnrollData is not set", () => {
+    expect(fixture.nativeElement.querySelector("app-token-enrollment-data")).toBeTruthy();
+  });
+
+  it("should not render the QR code when showEnrollData is false", async () => {
+    const pushDialogData: TokenEnrollmentDialogData = {
+      ...createDialogData(),
+      showEnrollData: false,
+      tokenType: "push",
+      response: {
+        type: "push",
+        result: { status: true },
+        detail: {
+          type: "push",
+          serial: "PIPU0001",
+          pushurl: {
+            description: "Push URL",
+            img: "data:image/png;base64,qr",
+            value: "otpauth://pipush/PIPU0001"
+          }
+        }
+      }
+    };
+    await setup(pushDialogData);
+
+    expect(fixture.nativeElement.querySelector("app-token-enrollment-data")).toBeNull();
+    expect(fixture.nativeElement.querySelector('img[alt="QR Code"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector("app-token-enrolled-text")).toBeTruthy();
+    expect(component.title()).toBe("Token Successfully Enrolled");
+    expect(
+      Array.from(fixture.nativeElement.querySelectorAll("button")).some((button) =>
+        (button as HTMLButtonElement).textContent?.includes("Close")
+      )
+    ).toBe(true);
+  });
+
+  it("should render title for rollover", async () => {
+    await setup({ ...createDialogData(), rollover: true });
 
     expect(component["rollover"]).toBe(true);
     expect(component.title()).toBe("Token Successfully Rolled Over");

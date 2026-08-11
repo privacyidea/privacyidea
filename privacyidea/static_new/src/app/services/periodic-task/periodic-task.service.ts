@@ -29,7 +29,7 @@ import { NotificationService } from "@services/notification/notification.service
 import { catchError, forkJoin, lastValueFrom, Observable, of, throwError } from "rxjs";
 
 export interface PeriodicTask {
-  id: number | null;
+  id: number;
   name: string;
   active: boolean;
   interval: string;
@@ -42,7 +42,11 @@ export interface PeriodicTask {
   last_runs: Record<string, string>;
 }
 
-export const EMPTY_PERIODIC_TASK: PeriodicTask = {
+export interface PeriodicTaskEdit extends Omit<PeriodicTask, "id"> {
+  id: number | null;
+}
+
+export const EMPTY_PERIODIC_TASK: PeriodicTaskEdit = {
   id: null,
   name: "",
   active: true,
@@ -105,7 +109,7 @@ export interface PeriodicTaskServiceInterface {
 
   deleteWithConfirmDialog(task: PeriodicTask): Promise<PiResponse<number, never> | undefined>;
 
-  savePeriodicTask(task: PeriodicTask): Observable<PiResponse<number, never> | undefined>;
+  savePeriodicTask(task: PeriodicTaskEdit): Observable<PiResponse<number, never> | undefined>;
 
   fetchAllModuleOptions(): void;
 }
@@ -221,10 +225,6 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
       return;
     }
     try {
-      if (task.id == null) {
-        this.notificationService.error("Failed to delete periodic task: Missing ID.");
-        return;
-      }
       const response = await lastValueFrom(this.deletePeriodicTask(task.id));
       if (response?.result?.value !== undefined) {
         this.notificationService.success("Successfully deleted periodic task.");
@@ -236,7 +236,7 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
     return undefined;
   }
 
-  savePeriodicTask(task: PeriodicTask): Observable<PiResponse<number, never> | undefined> {
+  savePeriodicTask(task: PeriodicTaskEdit): Observable<PiResponse<number, never> | undefined> {
     const headers = this.authService.getHeaders();
     const { id, ...rest } = task;
     const params = {
