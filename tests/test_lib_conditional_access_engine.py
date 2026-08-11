@@ -1598,6 +1598,36 @@ class LockoutEngineTestCase(LockoutTestCase):
             delete_smtpserver("lockoutmail")
 
     @smtpmock.activate
+    def test_email_admin_alerts_on_userless_spraying_traffic(self):
+        # A source-IP policy fires on traffic that resolved no user, which is exactly the traffic an
+        # EMAIL_ADMIN alert exists to report. The user-derived tags render empty, but the alert is sent.
+        smtpmock.setdata(response={})
+        add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
+        ip = "10.0.0.32"
+        try:
+            email_config = {"smtp_identifier": "lockoutmail",
+                            "recipient_group": "soc@example.com",
+                            "subject": "spraying from {client_ip}",
+                            "body": "{count} accounts, user {username}."}
+            self._make_policy(
+                name="spray alert", counter_type=AuthEventType.MFA_FAIL,
+                target=LockoutTarget.SOURCE_IP, count_mode=CountMode.DISTINCT_USERS,
+                stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.EMAIL_ADMIN,
+                                                                     email_config)]),))
+            self._seed_ip_accounts(ip, (self.realm1, self.realm1, self.realm1))
+
+            evaluate_lockout_policies(CAContext(None, source_ip=ip), AuthEventType.MFA_FAIL)
+
+            self.assertEqual(["soc@example.com"], smtpmock.get_sent_recipient())
+            parsed = message_from_string(smtpmock.get_sent_message())
+            self.assertEqual(f"spraying from {ip}", parsed["Subject"])
+            # The user tags resolve to empty rather than dropping the alert.
+            self.assertEqual("3 accounts, user .",
+                             parsed.get_payload(decode=True).decode("utf-8"))
+        finally:
+            delete_smtpserver("lockoutmail")
+
+    @smtpmock.activate
     def test_email_admin_explicit_recipient_list(self):
         smtpmock.setdata(response={})
         add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
@@ -1982,3 +2012,34 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertEqual(AccessDecision.DENY, evaluate_access_decision(CAContext(self.user)))
         self.assertEqual(AccessDecision.CONTINUE,
                          evaluate_access_decision(CAContext(User("cornelius", self.realm2))))
+
+    def test_conditions_scope_the_pre_auth_decision_count(self):
+        # The pre-auth counterpart of test_conditions_exclude_rows_outside_them_from_a_source_ip_count:
+        # gating and scoping are separate, so a policy the conditions admit must still count only the
+        # rows they describe. Two realm1 accounts plus five realm2 ones is seven distinct accounts,
+        # which would deny on a threshold of 3 unscoped; scoped to realm1 the count is 2.
+        ip = "10.0.0.30"
+        self._make_policy(
+            name="scoped spray deny", counter_type=AuthEventType.MFA_FAIL,
+            target=LockoutTarget.SOURCE_IP, count_mode=CountMode.DISTINCT_USERS,
+            conditions=[self._condition(ConditionType.USER_REALM, ConditionOperator.IN, [self.realm1])],
+            stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.DENY)]),))
+        self._seed_ip_accounts(ip, (self.realm1, self.realm1,
+                                    self.realm2, self.realm2, self.realm2, self.realm2, self.realm2))
+
+        self.assertEqual(AccessDecision.CONTINUE,
+                         evaluate_access_decision(CAContext(User("cornelius", self.realm1), source_ip=ip)))
+
+    def test_pre_auth_decision_denies_once_the_scoped_count_reaches_the_threshold(self):
+        # The complement, so the test above cannot pass merely by never denying: three realm1 accounts
+        # do reach the same threshold, and the two realm2 ones neither add to nor block that.
+        ip = "10.0.0.31"
+        self._make_policy(
+            name="scoped spray deny", counter_type=AuthEventType.MFA_FAIL,
+            target=LockoutTarget.SOURCE_IP, count_mode=CountMode.DISTINCT_USERS,
+            conditions=[self._condition(ConditionType.USER_REALM, ConditionOperator.IN, [self.realm1])],
+            stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.DENY)]),))
+        self._seed_ip_accounts(ip, (self.realm1, self.realm1, self.realm1, self.realm2, self.realm2))
+
+        self.assertEqual(AccessDecision.DENY,
+                         evaluate_access_decision(CAContext(User("cornelius", self.realm1), source_ip=ip)))

@@ -786,20 +786,23 @@ def _policy_access_decision(policy: LockoutPolicy, context: CAContext,
     # contributes no decision, and costs no counting query.
     if not policy_matches_context(policy, context):
         return None
+    # The conditions scope the count here exactly as they do post-response (see _evaluate_policy for
+    # why this narrows what is counted without changing which requests the policy applies to).
+    count_filters = condition_sql_filters(policy) if policy_conditions_are_scopable(policy) else None
     if policy.target == LockoutTarget.SOURCE_IP:
         # IP-scoped: decide on the source IP regardless of user resolution. A
         # never-block IP is never denied by an IP policy (mirrors the BLOCK_IP
         # allowlist), so it contributes no decision.
         if not context.source_ip or is_ip_never_block(context.source_ip):
             return None
-        count = _policy_count_ip(policy, context.source_ip, now)
+        count = _policy_count_ip(policy, context.source_ip, now, extra_filters=count_filters)
         subject_label = f"source IP {context.source_ip}"
     else:
         # User-scoped: keyed on the resolved user, so an unresolved user is never
         # decided by a user policy.
         if not _resolved(context.user):
             return None
-        count = _policy_count(policy, context.user, now)
+        count = _policy_count(policy, context.user, now, extra_filters=count_filters)
         subject_label = repr(context.user)
     decision = next((d for d in (_stage_access_decision(stage, count) for stage in policy.stages)
                      if d is not None), None)
@@ -1212,7 +1215,7 @@ def _login_notice(action_type: "LockoutAction", email_config: dict, render_tags:
 
 
 def _send_lockout_email(action_type: "LockoutAction", stage_action: LockoutStageAction,
-                        user: "User", tags: dict) -> str | None:
+                        user: "User | None", tags: dict) -> str | None:
     """
     Send the EMAIL_ADMIN / EMAIL_USER notification for a triggered stage action.
 
@@ -1224,6 +1227,12 @@ def _send_lockout_email(action_type: "LockoutAction", stage_action: LockoutStage
     ``recipient_group``. EMAIL_USER sends to the user's own email address. A
     missing field or a user without an email address is logged and skipped; this
     runs post-response and must never raise.
+
+    *user* is ``None`` when the request carried no user to resolve - the normal case for a source-IP
+    policy firing on spraying or enumeration traffic, which is exactly the traffic an EMAIL_ADMIN
+    alert exists to report. The user-derived tags then render empty (as they already do in
+    :func:`_base_action_tags`) and EMAIL_USER finds no recipient and skips, but the admin alert is
+    still sent.
 
     :return: the user-facing login-screen notice if the email was sent, else
         ``None`` (misconfiguration, no recipient, or delivery failure).
@@ -1237,7 +1246,7 @@ def _send_lockout_email(action_type: "LockoutAction", stage_action: LockoutStage
         return
 
     # Resolver-backed attributes are fetched once, only now that an email is sent.
-    info = user.info or {}
+    info = (user.info if user else None) or {}
     render_tags = {**tags, "email": info.get("email") or "",
                    "givenname": info.get("givenname") or "", "surname": info.get("surname") or ""}
 
