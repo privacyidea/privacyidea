@@ -547,7 +547,12 @@
       <a
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.BLOCKLIST ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.BLOCKLIST]">
-        <mat-icon>block</mat-icon>
+        <span class="icon-block-ip">
+          <span
+            class="icon-block-ip-text"
+            aria-hidden="true">IP</span>
+          <mat-icon>block</mat-icon>
+        </span>
         <span i18n>IP Blocklist</span>
       </a>
     }

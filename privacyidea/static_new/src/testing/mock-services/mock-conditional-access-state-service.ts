@@ -25,6 +25,7 @@ import {
   ConditionalAccessStateServiceInterface,
   LockedUsersPage,
   LockedUserEntry,
+  LockState,
   ResetUserLockoutRequest
 } from "@services/conditional-access-state/conditional-access-state.service";
 import { Observable, of } from "rxjs";
@@ -54,12 +55,50 @@ export class MockConditionalAccessStateService implements ConditionalAccessState
     MockPiResponse.fromValue<LockedUsersPage>({ locked_users: [], count: 0, current: 1, prev: null, next: null })
   );
 
+  // Counts per lock state, keyed by the states the caller asks for (see setLockedUsersCount).
+  lockedUsersCounts = new Map<string, number>();
+
+  countLockedUsers = jest.fn().mockImplementation(
+    (states: LockState[]): Observable<PiResponse<LockedUsersPage>> =>
+      of(
+        MockPiResponse.fromValue<LockedUsersPage>({
+          locked_users: [],
+          count: this.lockedUsersCounts.get(states.join(",")) ?? 0,
+          current: 1,
+          prev: null,
+          next: null
+        })
+      )
+  );
+
+  fetchLockedUsers = jest.fn().mockImplementation(
+    (_states: LockState[], __ = 20): Observable<PiResponse<LockedUsersPage>> =>
+      of(
+        MockPiResponse.fromValue<LockedUsersPage>(
+          this.lockedUsersResource.value()?.result?.value ?? {
+            locked_users: [],
+            count: 0,
+            current: 1,
+            prev: null,
+            next: null
+          }
+        )
+      )
+  );
+
   purgeUserLockouts = jest.fn().mockImplementation((): Observable<number> => of(0));
 
   // Blocklist — flat list
   blocklistResource = new MockHttpResourceRef<PiResponse<BlocklistEntry[]> | undefined>(
     MockPiResponse.fromValue<BlocklistEntry[]>([])
   );
+
+  fetchBlocklist = jest
+    .fn()
+    .mockImplementation(
+      (_ = true): Observable<PiResponse<BlocklistEntry[]>> =>
+        of(MockPiResponse.fromValue<BlocklistEntry[]>(this.blocklistResource.value()?.result?.value ?? []))
+    );
 
   removeBlocklistEntry = jest.fn().mockImplementation((_: BlocklistEntry): Observable<boolean> => of(true));
   purgeBlocklist = jest.fn().mockImplementation((): Observable<number> => of(0));
@@ -90,5 +129,10 @@ export class MockConditionalAccessStateService implements ConditionalAccessState
 
   setBlocklistResourceUndefined(): void {
     this.blocklistResource.set(undefined);
+  }
+
+  // Seed what countLockedUsers() reports for one set of states, e.g. setLockedUsersCount(["permanent"], 2).
+  setLockedUsersCount(states: LockState[], count: number): void {
+    this.lockedUsersCounts.set(states.join(","), count);
   }
 }
