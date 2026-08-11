@@ -193,3 +193,30 @@ class IndexedSecretTokenTestCase(MyTestCase):
 
         # Clean up
         remove_token(token.token.serial)
+
+    def test_06_position_count_zero_is_not_answerable(self):
+        # A position count of 0 creates a challenge without any positions. Such a challenge
+        # must not be answerable - especially not by an empty password, which would otherwise
+        # match the empty expected answer.
+        my_secret = "mysimplesecret"
+        set_policy("pol1", scope=SCOPE.AUTH, action=f"indexedsecret_{PIIXACTION.COUNT!s}=0")
+
+        t = init_token({"type": "indexedsecret",
+                        "otpkey": my_secret,
+                        "serial": "PIIX1234"})
+        g = FakeFlaskG()
+        g.audit_object = FakeAudit
+        g.policy_object = PolicyClass()
+
+        r, message, transaction_id, reply_dict = t.create_challenge(options={"g": g})
+        self.assertTrue(r)
+        self.assertListEqual([], reply_dict.get("attributes").get("random_positions"))
+
+        r = t.check_challenge_response(passw="", options={"transaction_id": transaction_id})
+        self.assertEqual(-1, r)
+
+        r = t.check_challenge_response(passw=my_secret[0], options={"transaction_id": transaction_id})
+        self.assertEqual(-1, r)
+
+        delete_policy("pol1")
+        remove_token("PIIX1234")
