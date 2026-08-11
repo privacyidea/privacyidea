@@ -1,8 +1,31 @@
+@use "sass:color";
+@use "sass:math";
 @use "styles";
 
 $icon-size-sm: 18px;
 $toolbar-padding: 8px 16px;
 $breakpoint-compact: 1822px;
+
+// An active tab takes a flat tone rather than --surface-raised: the gradient is sized to the
+// element, so a short tab would run the whole ramp instead of the slice of the toolbar's it sits
+// on. These tones are that slice, stepping left to right across the bar, and .utils-group carries
+// the ramp on past the last tab.
+$nav-active-first: #f3f3f3;
+$nav-active-start: #f4f4f4;
+$nav-active-end: #f7f7f7;
+$nav-active-first-dark: #1e1e1e;
+$nav-active-start-dark: #202020;
+$nav-active-end-dark: #262626;
+// One per section, plus the overflow "More" tab.
+$nav-item-count: 10;
+
+// The bar the tabs and the util group sit on runs the same ramp they are stepped from, so the
+// tones line up at every depth setting. Fixed rather than --surface-raised, which is sized to the
+// element and drops its gradient at the flat setting.
+$bar-gradient-start: $nav-active-first;
+$bar-gradient-end: #f9f9f9;
+$bar-gradient-start-dark: $nav-active-first-dark;
+$bar-gradient-end-dark: #2a2a2a;
 
 @mixin flex-center {
   display: flex;
@@ -40,7 +63,8 @@ $breakpoint-compact: 1822px;
   @include flex-center;
   gap: 8px;
   padding: $toolbar-padding;
-  background: var(--mat-sys-surface-variant);
+  // Material paints a mat-toolbar from this token, so a plain `background` here would not survive.
+  --mat-toolbar-container-background-color: var(--mat-sys-surface-variant);
   min-height: 0;
 }
 
@@ -93,6 +117,10 @@ $breakpoint-compact: 1822px;
   padding-left: 10px;
   overflow: hidden;
   min-width: 0;
+  // Lifted like .toolbar-actions: the secondary toolbar is a later sibling and would otherwise
+  // paint over the glow of the active tab that meets this bar's bottom edge.
+  position: relative;
+  z-index: 1000;
 }
 
 .nav-button {
@@ -116,13 +144,26 @@ $breakpoint-compact: 1822px;
   @include flex-center;
 
   &.active {
-    background-color: var(--mat-sys-surface-container-lowest);
+    background: light-dark($nav-active-first, $nav-active-first-dark);
     box-shadow: var(--side-glow);
     // --side-glow drops the vertical offset but keeps its blur, so it would bleed above and
-    // below. Clipping flush with those edges, open at the sides, confines it to the sides.
-    clip-path: inset(0 -40px);
+    // below. Clipping confines it to the sides; the bottom is cut a pixel short of the edge, so
+    // it stops at the bar rather than reaching into the toolbar below.
+    clip-path: inset(0 -40px 1px);
     border-top-right-radius: var(--border-radius);
     border-top-left-radius: var(--border-radius);
+  }
+
+  // Every tab after the first steps evenly from $nav-active-start to $nav-active-end.
+  @for $i from 2 through $nav-item-count {
+    &:nth-child(#{$i}).active {
+      $weight: math.div($i - 2, $nav-item-count - 2) * 100%;
+
+      background: light-dark(
+        color.mix($nav-active-end, $nav-active-start, $weight),
+        color.mix($nav-active-end-dark, $nav-active-start-dark, $weight)
+      );
+    }
   }
 }
 
@@ -142,7 +183,13 @@ $breakpoint-compact: 1822px;
   gap: 8px;
   padding: $toolbar-padding;
   min-height: 44px;
-  background: var(--mat-sys-surface-container-lowest);
+  // Material paints a mat-toolbar from this token with a `background` shorthand, so the gradient
+  // goes here; setting `background` directly would lose to that rule.
+  --mat-toolbar-container-background-color: #{linear-gradient(
+      to right,
+      light-dark($bar-gradient-start, $bar-gradient-start-dark),
+      light-dark($bar-gradient-end, $bar-gradient-end-dark)
+    )};
   overflow: hidden;
   flex-wrap: nowrap;
   box-shadow: var(--elevation-5);

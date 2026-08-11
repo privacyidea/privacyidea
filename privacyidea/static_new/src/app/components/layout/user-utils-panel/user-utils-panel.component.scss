@@ -25,11 +25,15 @@ $font-size-default: 14px;
   align-items: center;
   gap: 4px;
   padding: 12px;
-  background-color: var(--table-color);
+  // Flat, not --surface-raised: the gradient is sized to the element, so this group would run the
+  // whole ramp instead of the slice of the toolbar's it sits on. It stands at the right end, past
+  // the last nav tab (see $nav-active-* in navigation.component.scss).
+  background: light-dark(#f8f8f8, #282828);
   box-shadow: var(--side-glow);
   // --side-glow drops the vertical offset but keeps its blur, so it would bleed above and below.
-  // Clipping flush with those edges, open at the sides, confines it to the sides.
-  clip-path: inset(0 -40px);
+  // Clipping confines it to the sides; the bottom is cut a pixel short of the edge, so it stops
+  // at the bar rather than reaching into the toolbar below.
+  clip-path: inset(0 -40px 1px);
   border-top-right-radius: var(--border-radius);
   border-top-left-radius: var(--border-radius);
 }

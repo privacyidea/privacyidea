@@ -25,6 +25,15 @@
 $light-source-steps: 18;
 $light-source-step-angle: math.div(360, $light-source-steps);
 
+@function sign-of($value) {
+  @if $value > 0 {
+    @return 1;
+  } @else if $value < 0 {
+    @return -1;
+  }
+  @return 0;
+}
+
 html,
 body {
   background: var(--mat-sys-background);
@@ -77,6 +86,8 @@ body {
   --depth-scale: 1;
   --depth-dir-x: 1;
   --depth-dir-y: 1;
+  --depth-sign-x: 1;
+  --depth-sign-y: 1;
 
   // Strength of the surface tints and the inset tones, defaulting to the shadow scale. Every
   // html.depth-* level sets its own value.
@@ -288,11 +299,11 @@ html.depth-flat {
   // is what keeps the two bands off each other's side.
   --flat-light: var(--mat-sys-surface-container);
   --flat-pair:
-    calc(1px * var(--depth-dir-x)) calc(1px * var(--depth-dir-y)) 0 1px var(--mat-sys-shadow),
-    calc(-1px * var(--depth-dir-x)) calc(-1px * var(--depth-dir-y)) 0 1px var(--flat-light);
+    calc(1px * var(--depth-sign-x)) calc(1px * var(--depth-sign-y)) 0 1px var(--mat-sys-shadow),
+    calc(-1px * var(--depth-sign-x)) calc(-1px * var(--depth-sign-y)) 0 1px var(--flat-light);
   --flat-inset-pair:
-    inset calc(1px * var(--depth-dir-x)) calc(1px * var(--depth-dir-y)) 0 1px var(--mat-sys-shadow),
-    inset calc(-1px * var(--depth-dir-x)) calc(-1px * var(--depth-dir-y)) 0 1px var(--flat-light);
+    inset calc(1px * var(--depth-sign-x)) calc(1px * var(--depth-sign-y)) 0 1px var(--mat-sys-shadow),
+    inset calc(-1px * var(--depth-sign-x)) calc(-1px * var(--depth-sign-y)) 0 1px var(--flat-light);
 
   --elevation-3: var(--flat-pair);
   --elevation-5: var(--flat-pair);
@@ -300,21 +311,12 @@ html.depth-flat {
   --inset-shadow-3: var(--flat-inset-pair);
   --inset-shadow-5: var(--flat-inset-pair);
   --inset-shadow-8: var(--flat-inset-pair);
-  // The same pair, horizontal and with no spread: these surfaces hang off a bar, and a spread
-  // would draw a line along the bottom edge they share with it.
+  // The same pair, horizontal only: these surfaces hang off a bar, and the spread the other slots
+  // use would draw a line along the bottom edge they share with it. The offset carries the full
+  // 2px instead, so the band is as thick as theirs.
   --side-glow:
-    calc(1px * var(--depth-dir-x)) 0 0 0 var(--mat-sys-shadow),
-    calc(-1px * var(--depth-dir-x)) 0 0 0 var(--flat-light);
-}
-
-// Full-width, so only the top and bottom edges are visible: the line it shares with the primary
-// toolbar, drawn inset where the toolbar above cannot paint over it, and the line to the content
-// below. Shadows rather than borders so they add no height, and global so it outranks the
-// toolbar's own box-shadow rule.
-html.depth-flat .secondary-toolbar {
-  box-shadow:
-    0 1px 0 0 var(--mat-sys-outline-variant),
-    inset 0 1px 0 0 var(--mat-sys-outline-variant);
+    calc(2px * var(--depth-sign-x)) 0 0 0 var(--mat-sys-shadow),
+    calc(-2px * var(--depth-sign-x)) 0 0 0 var(--flat-light);
 }
 
 // Each level's tone scale is the next level's shadow scale; very-strong tops the ladder out with
@@ -348,10 +350,18 @@ html.depth-very-strong {
   // 0 and 180 are skipped, matching LIGHT_SOURCE_LEVELS: a purely horizontal light leaves the
   // shadows no vertical offset at all.
   @if $angle != 0 and $angle != 180 {
+    $dir-x: -1 * math.cos($angle * 1deg);
+    $dir-y: -1 * math.sin($angle * 1deg);
+
     html.light-source-#{$i} {
       --dial-angle: #{$angle}deg;
-      --depth-dir-x: #{-1 * math.cos($angle * 1deg)};
-      --depth-dir-y: #{-1 * math.sin($angle * 1deg)};
+      --depth-dir-x: #{$dir-x};
+      --depth-dir-y: #{$dir-y};
+      // The same directions as -1, 0 or 1. Blurred shadows take the fractional ones; the hard
+      // flat pair takes these, so its offsets stay whole pixels and every edge rasterizes to the
+      // same width wherever the box happens to land on the pixel grid.
+      --depth-sign-x: #{sign-of($dir-x)};
+      --depth-sign-y: #{sign-of($dir-y)};
     }
   }
 }
