@@ -147,7 +147,7 @@ def identify_client_by_key(plaintext: str) -> Client | None:
     return client
 
 
-def create_client(display_name: str, client_type: str, config: dict = None,
+def create_client(display_name: str, client_type: str, config: dict | None = None,
                   prefix: str = DEFAULT_KEY_PREFIX) -> tuple[Client, str]:
     """
     Create a new client with a freshly generated API key and persist it.
@@ -211,8 +211,8 @@ def get_clients() -> list[Client]:
     return Client.query.order_by(Client.created_at).all()
 
 
-def update_client(client_id: str, display_name: str = None, status: str = None,
-                  config: dict = None) -> Client:
+def update_client(client_id: str, display_name: str | None = None, status: str | None = None,
+                  config: dict | None = None) -> Client:
     """
     Update the metadata of an existing client. The API key is not touched here;
     use :func:`rotate_client_key` for that.

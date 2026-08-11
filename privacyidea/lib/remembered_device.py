@@ -125,7 +125,7 @@ class UserIdentity(NamedTuple):
     realm_id: int
 
 
-def user_identity(user: "User | None") -> "UserIdentity | None":
+def user_identity(user: "User | None") -> UserIdentity | None:
     """
     Build the resolver-stable identity a remembered device binds to.
 
@@ -146,8 +146,9 @@ def user_identity(user: "User | None") -> "UserIdentity | None":
     return UserIdentity(resolver, user_id, user.realm_id)
 
 
-def create_remembered_device(identity: "UserIdentity", client_id: str, ip_address: str = None,
-                        user_agent: str = None, validity_days: int = None) -> tuple[RememberedDevice, str]:
+def create_remembered_device(identity: UserIdentity, client_id: str, ip_address: str | None = None,
+                             user_agent: str | None = None,
+                             validity_days: int | None = None) -> tuple[RememberedDevice, str]:
     """
     Create and persist a new remembered device.
 
@@ -174,11 +175,11 @@ def create_remembered_device(identity: "UserIdentity", client_id: str, ip_addres
     # (ip/user agent) is truncated, so an over-long value there can never raise on
     # save and turn an already-successful auth into a 500.
     device = RememberedDevice(series_id=series_id, device_id=device_id, client_id=client_id,
-                          resolver=identity.resolver, user_id=identity.user_id,
-                          realm_id=identity.realm_id,
-                          ip_address=(ip_address or None) and ip_address[:64],
-                          user_agent=(user_agent or None) and user_agent[:255], counter=1,
-                          expires_at=expires_at)
+                              resolver=identity.resolver, user_id=identity.user_id,
+                              realm_id=identity.realm_id,
+                              ip_address=(ip_address or None) and ip_address[:64],
+                              user_agent=(user_agent or None) and user_agent[:255], counter=1,
+                              expires_at=expires_at)
     device.save()
     return device, build_cookie_value(series_id, device.counter)
 
@@ -195,8 +196,8 @@ class ValidDevice(NamedTuple):
     is_grace: bool
 
 
-def get_valid_device(cookie_value: str, client_id: str, identity: "UserIdentity",
-                      client_ip: str = None) -> "ValidDevice | None":
+def get_valid_device(cookie_value: str, client_id: str, identity: UserIdentity,
+                      client_ip: str | None = None) -> ValidDevice | None:
     """
     Look up and validate a remember-device cookie **without** rotating it.
 
@@ -350,8 +351,8 @@ class ConsumeResult(NamedTuple):
     expires_at: datetime | None
 
 
-def consume_remember_device_cookie(cookie_value: str, client_id: str, identity: "UserIdentity",
-                                   client_ip: str = None) -> ConsumeResult:
+def consume_remember_device_cookie(cookie_value: str, client_id: str, identity: UserIdentity,
+                                   client_ip: str | None = None) -> ConsumeResult:
     """
     Consume a presented remember-device cookie: validate it (see
     :func:`get_valid_device`) and rotate it on a fresh use. This is the single
@@ -452,7 +453,7 @@ def apply_cookie_action(response, action: CookieAction | None) -> None:
         clear_persistent_cookie(response)
 
 
-def cleanup_expired_remembered_devices(chunk_size: int = None) -> int:
+def cleanup_expired_remembered_devices(chunk_size: int | None = None) -> int:
     """
     Delete expired remembered devices from the remembered_devices
     table.
@@ -470,7 +471,7 @@ def cleanup_expired_remembered_devices(chunk_size: int = None) -> int:
     return delete_matching_rows(db.session, RememberedDevice.__table__, criterion, chunk_size)
 
 
-def get_client_device(client_id: str, device_id: str) -> "RememberedDevice | None":
+def get_client_device(client_id: str, device_id: str) -> RememberedDevice | None:
     """
     Return a single remembered device of a client by its public ``device_id``, or
     ``None``. Scoped to ``client_id`` so a client id cannot reach another client's
@@ -500,7 +501,7 @@ def count_user_devices(client_id: str, resolver: str, user_id: str, realm_id: in
     ).count()
 
 
-def get_client_devices(client_id: str, realm_ids: "list[int] | set[int]" = None) -> list[RememberedDevice]:
+def get_client_devices(client_id: str, realm_ids: list[int] | set[int] | None = None) -> list[RememberedDevice]:
     """
     Return the remembered devices belonging to a client, newest first, optionally
     restricted to a set of realms.
@@ -517,8 +518,8 @@ def get_client_devices(client_id: str, realm_ids: "list[int] | set[int]" = None)
     return query.order_by(RememberedDevice.created_at.desc()).all()
 
 
-def revoke_client_devices(client_id: str, realm_id: int = None, resolver: str = None,
-                           user_id: str = None, realm_ids: "list[int]" = None) -> int:
+def revoke_client_devices(client_id: str, realm_id: int | None = None, resolver: str | None = None,
+                           user_id: str | None = None, realm_ids: list[int] | None = None) -> int:
     """
     Revoke (delete) remembered devices of a client in bulk, optionally narrowed
     to a single realm (``realm_id``), a set of realms (``realm_ids``), or a
@@ -555,7 +556,7 @@ def revoke_client_devices(client_id: str, realm_id: int = None, resolver: str = 
     return count
 
 
-def revoke_devices(realm_id: int = None, resolver: str = None, user_id: str = None) -> int:
+def revoke_devices(realm_id: int | None = None, resolver: str | None = None, user_id: str | None = None) -> int:
     """
     Revoke (delete) remembered devices across **all** clients, filtered by realm
     and/or a ``(resolver, user_id, realm_id)`` user identity. This is the
@@ -612,8 +613,8 @@ def devices_to_dicts(devices: list[RememberedDevice]) -> list[dict]:
     return [device_to_dict(device, realm_names=realm_names, logins=logins) for device in devices]
 
 
-def device_to_dict(device: RememberedDevice, realm_names: dict[int, str] = None,
-                   logins: dict = None) -> dict:
+def device_to_dict(device: RememberedDevice, realm_names: dict[int, str] | None = None,
+                   logins: dict | None = None) -> dict:
     """
     Serialise a remembered device for API output. Neither the secret
     ``series_id`` nor the rotating ``counter`` (i.e. no part of the cookie) is
