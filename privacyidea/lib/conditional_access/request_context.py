@@ -112,6 +112,21 @@ class ConditionalAccessContext:
         """
         return self.pending[-1] if self.pending else None
 
+    @property
+    def amendable(self) -> PendingAuthEvent | None:
+        """
+        The staged event a later request stage may correct, or ``None`` if there is none.
+
+        That is :attr:`latest`, unless it was staged ``immediate``. Such an event records something that *happened* at
+        that point rather than this request's outcome - the ``push_wait`` challenge trigger, which a concurrent
+        ``/ttype/push`` has to be able to read - and a later stage must not overwrite that history. It matters where
+        the terminal event is suppressed (a ``push_wait`` timeout): the trigger is then the only staged event, and
+        reclassifying it would destroy the trigger record instead of logging the corrected outcome. A caller that
+        finds nothing amendable stages its own event instead.
+        """
+        event = self.latest
+        return event if event is not None and not event.immediate else None
+
     def attempt_id_for_transaction(self, transaction_id: str) -> str | None:
         """
         The ``attempt_id`` of a staged event carrying *transaction_id*, newest first, or ``None`` if this request
@@ -196,9 +211,9 @@ class ConditionalAccessContext:
         :meth:`run_post_eval`), so correcting the event is all there is to it. *fields* are applied only when given, so
         a post-policy that has no serial of its own does not clear the logged one.
 
-        With nothing staged this is a no-op: a caller with no event of its own must stage one instead.
+        With nothing :attr:`amendable` this is a no-op: a caller with no event of its own must stage one instead.
         """
-        event = self.latest
+        event = self.amendable
         if event is None:
             return
         event.event_type = event_type

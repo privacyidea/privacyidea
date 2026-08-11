@@ -209,6 +209,10 @@ class PendingAuthEvent:
     serial: str | None = None
     attempt_id: str | None = None
     other_info: dict | None = None
+    # A point-in-time record another request has to see while this one is still running (the push_wait challenge
+    # trigger), rather than this request's classification. Such an event is written on the spot and must not be
+    # reclassified afterwards - see ConditionalAccessContext.amendable.
+    immediate: bool = False
     # Id of the stored row, set once it has been committed; None means "not written yet".
     row_id: int | None = None
     # What conditional access did to this request, waiting for the row id it has to be recorded against (see
@@ -218,10 +222,10 @@ class PendingAuthEvent:
     _changed: bool = field(init=False, default=False, repr=False, compare=False)
 
     def __setattr__(self, name: str, value: Any) -> None:
-        # ``row_id``, ``outcomes`` and the flag itself are bookkeeping rather than row content, so they never mark the
-        # event changed. ``self.__dict__`` is read directly because the dataclass __init__ assigns the fields through
-        # here too, at which point ``row_id`` does not exist yet.
-        if name not in ("row_id", "outcomes", "_changed") and self.__dict__.get("row_id") is not None:
+        # ``row_id``, ``outcomes``, ``immediate`` and the flag itself are bookkeeping rather than row content, so they
+        # never mark the event changed. ``self.__dict__`` is read directly because the dataclass __init__ assigns the
+        # fields through here too, at which point ``row_id`` does not exist yet.
+        if name not in ("row_id", "outcomes", "immediate", "_changed") and self.__dict__.get("row_id") is not None:
             object.__setattr__(self, "_changed", True)
         object.__setattr__(self, name, value)
 

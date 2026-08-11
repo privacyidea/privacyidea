@@ -429,6 +429,7 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
         client_label=client_label,
         serial=serial,
         attempt_id=attempt_id,
+        immediate=immediate,
     )
     context.stage(event)
     if immediate:

@@ -1163,7 +1163,7 @@ def multichallenge_enroll_via_validate(request, response):
         # Re-classify staged authentication log event or create new if non exists
         enrolled_serial = content.get("detail", {}).get("serial")
         context = get_ca_context()
-        if context.latest is not None:
+        if context.amendable is not None:
             # Pass only what this policy determined, so an absent serial does not clear the logged one.
             corrections = {}
             if enrolled_serial is not None:
@@ -1274,7 +1274,7 @@ def is_authorized(request, response):
     if authorized_pol:
         if list(authorized_pol)[0] == AUTHORIZED.DENY:
             context = get_ca_context()
-            if context.latest is not None:
+            if context.amendable is not None:
                 # Correcting the staged event
                 context.reclassify(AuthEventType.NOT_AUTHORIZED)
             else:
