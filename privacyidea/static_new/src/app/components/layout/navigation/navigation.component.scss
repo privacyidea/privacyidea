@@ -10,12 +10,15 @@ $breakpoint-compact: 1822px;
 // element, so a short tab would run the whole ramp instead of the slice of the toolbar's it sits
 // on. These tones are that slice, stepping left to right across the bar, and .utils-group carries
 // the ramp on past the last tab.
+// The dark tones mirror the light ones by their distance from the page background rather than by
+// hex step, so the bar stands off the page by the same amount in both themes: light runs 5 to 8
+// points above a 90% page, dark the same above a 20% one, starting on surface-container-high.
 $nav-active-first: #f3f3f3;
 $nav-active-start: #f4f4f4;
 $nav-active-end: #f7f7f7;
-$nav-active-first-dark: #1e1e1e;
-$nav-active-start-dark: #202020;
-$nav-active-end-dark: #262626;
+$nav-active-first-dark: #404040;
+$nav-active-start-dark: #414141;
+$nav-active-end-dark: #444444;
 // One per section, plus the overflow "More" tab.
 $nav-item-count: 10;
 
@@ -25,7 +28,7 @@ $nav-item-count: 10;
 $bar-gradient-start: $nav-active-first;
 $bar-gradient-end: #f9f9f9;
 $bar-gradient-start-dark: $nav-active-first-dark;
-$bar-gradient-end-dark: #2a2a2a;
+$bar-gradient-end-dark: #464646;
 
 @mixin flex-center {
   display: flex;
@@ -272,7 +275,9 @@ $bar-gradient-end-dark: #2a2a2a;
 
 .version-text {
   font-size: 14px;
-  color: var(--mat-sys-surface-container-highest);
+  // A text tone, not a surface one: the bar it sits on is itself near surface-container-highest in
+  // dark mode, which would leave the two barely a step apart.
+  color: var(--mat-sys-on-surface-variant);
   white-space: nowrap;
 }
 
