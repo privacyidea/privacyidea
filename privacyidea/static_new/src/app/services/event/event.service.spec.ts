@@ -421,6 +421,49 @@ describe("EventService", () => {
       expect(service.modulePositions()).toEqual([]);
     });
 
+    it("should load the module defaults if handler module is selected", async () => {
+      // Setup
+      service.selectedHandlerModule.set("testModule");
+      TestBed.tick();
+
+      // Execute
+      const req = httpMock.expectOne(`${service.eventBaseUrl}/defaults/testModule`);
+      req.flush({ result: { value: { abort_on_error: true } } });
+      TestBed.tick();
+      await Promise.resolve();
+
+      // Assertion
+      expect(service.moduleDefaults()).toEqual({ abort_on_error: true });
+    });
+
+    it("moduleDefaults should return null if resource not loaded", () => {
+      // Setup
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS);
+      TestBed.tick();
+
+      // Assertion
+      httpMock.expectNone(`${service.eventBaseUrl}/defaults/testModule`);
+      expect(service.moduleDefaultsResource.value()).toBeUndefined();
+      expect(service.moduleDefaults()).toBeNull();
+    });
+
+    it("should handle http error for moduleDefaultsResource", async () => {
+      // Setup
+      service.selectedHandlerModule.set("testModule");
+      TestBed.tick();
+
+      // Execute
+      const req = httpMock.expectOne(`${service.eventBaseUrl}/defaults/testModule`);
+      req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
+        status: 403,
+        statusText: "Permission denied"
+      });
+      await Promise.resolve();
+
+      // Assertion
+      expect(service.moduleDefaults()).toBeNull();
+    });
+
     it("should load all module actions if handler module is selected", async () => {
       // Setup
       service.selectedHandlerModule.set("testModule");
