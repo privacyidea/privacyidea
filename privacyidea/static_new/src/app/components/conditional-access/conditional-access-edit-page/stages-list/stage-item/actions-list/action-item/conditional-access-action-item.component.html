@@ -140,6 +140,50 @@
                 }
               </mat-form-field>
             }
+            @case ("smtp") {
+              <mat-form-field
+                appearance="fill"
+                subscriptSizing="dynamic"
+                class="input-width-l">
+                <mat-label>{{ field.label }}</mat-label>
+                <mat-select
+                  [value]="emailFieldValue(field.key)"
+                  (selectionChange)="onEmailFieldInput(field.key, $event.value)">
+                  @for (identifier of smtpOptions(); track identifier) {
+                    <mat-option [value]="identifier">
+                      {{ identifier }}
+                      @if (identifier === staleSmtpIdentifier()) {
+                        <span
+                          class="ca-action-stale-tag"
+                          i18n>
+                          (not configured)
+                        </span>
+                      }
+                    </mat-option>
+                  }
+                </mat-select>
+                <!--
+                  Rendered as a hint rather than a mat-error: a mat-select without a form control never
+                  enters errorState, so a mat-error would be silently dropped. As a hint it both shows
+                  and lands in the form field's aria-describedby, so it is announced with the control.
+                -->
+                @if (staleSmtpIdentifier()) {
+                  <mat-hint
+                    class="ca-action-stale"
+                    i18n>
+                    No SMTP server named "{{ staleSmtpIdentifier() }}" is configured, so no email would be sent.
+                  </mat-hint>
+                } @else if (smtpOptions().length === 0 && !smtpServersLoading()) {
+                  <mat-hint
+                    class="ca-action-stale"
+                    i18n>
+                    No SMTP server to choose from. Configure one under External Services.
+                  </mat-hint>
+                } @else {
+                  <mat-hint>{{ field.hint }}</mat-hint>
+                }
+              </mat-form-field>
+            }
             @case ("select") {
               <mat-form-field
                 appearance="fill"

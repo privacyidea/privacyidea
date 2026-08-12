@@ -28,6 +28,17 @@
   font-size: var(--mat-sys-body-small-size, 0.75rem);
 }
 
+// The SMTP server an email action names is not configured, so the mail cannot go out.
+.ca-action-stale {
+  color: var(--mat-sys-error);
+}
+
+// Marks that identifier in the option list and - through the option's text content - in the closed
+// select's trigger.
+.ca-action-stale-tag {
+  color: var(--mat-sys-error);
+}
+
 // Holds the per-action-type value fields (duration, or the several email
 // fields), wrapping them so they flow below the type select.
 .ca-action-value {

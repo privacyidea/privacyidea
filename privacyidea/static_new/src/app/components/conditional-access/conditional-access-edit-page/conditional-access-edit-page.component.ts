@@ -39,6 +39,7 @@ import {
   ConditionalAccessPolicyService,
   ConditionalAccessPolicyServiceInterface,
   CountMode,
+  EMAIL_ACTION_TYPES,
   EMPTY_LOCKOUT_POLICY,
   LockoutPolicy,
   LockoutPolicyCondition,
@@ -164,6 +165,13 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   readonly selectedTemplateDescription = computed<string>(
     () => this.policyService.templates().find((t) => t.key === this.selectedTemplateKey())?.description ?? ""
   );
+
+  // Cached rather than written as `?? []` in the template: a policy without conditions would hand the
+  // conditions component - and every mat-select inside it - a new empty array on each change-detection
+  // pass, and mat-select's value setter marks its view dirty, which schedules the next pass. That loop
+  // never settles, and the CDK positions an overlay on the next stable tick: an open select panel is
+  // left sitting in the top-left corner for as long as it runs.
+  readonly editConditions = computed<LockoutPolicyCondition[]>(() => this.editPolicy().conditions ?? []);
 
   timeWindowValid = computed(() => this.editPolicy().time_window_seconds >= 1);
   // The raw text of the priority field, kept separate from the parsed value so an
@@ -373,10 +381,28 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     // Templates carry no priority: the admin must pick a unique one, so normalize the
     // missing key to null and leave the field empty (see priorityValid). Spelling the
     // target type out here makes the compiler enforce that normalization.
-    const policy: LockoutPolicySaveParams = { ...prefill, priority: prefill.priority ?? null };
+    const policy: LockoutPolicySaveParams = {
+      ...prefill,
+      priority: prefill.priority ?? null,
+      stages: this.withConfigurableActions(prefill.stages)
+    };
     this.editPolicy.set(policy);
     this.syncTimeWindowFromSeconds(policy.time_window_seconds);
     this.syncPriorityInput(policy.priority);
+  }
+
+  // Templates prefill EMAIL_ADMIN actions, which an admin who may not read the SMTP server
+  // configuration cannot complete - the action select leaves those actions out for the same reason
+  // (see ConditionalAccessActionItemComponent.emailActionsAvailable), so a template must not smuggle
+  // one in. The rest of the template still applies, and a stage left with no actions is valid.
+  private withConfigurableActions(stages: LockoutPolicyStage[]): LockoutPolicyStage[] {
+    if (this.authService.actionAllowed("smtpserver_read")) {
+      return stages;
+    }
+    return stages.map((stage) => ({
+      ...stage,
+      actions: stage.actions.filter((action) => !EMAIL_ACTION_TYPES.includes(action.action_type))
+    }));
   }
 
   // The template select's clear button: drop the selected template and reset the

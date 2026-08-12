@@ -25,13 +25,16 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
   ConditionalAccessPolicyService,
   ConditionalAccessPolicyServiceInterface,
+  EMAIL_ACTION_TYPES,
   LockoutActionType,
   LockoutStageAction,
   LockoutTarget
 } from "@services/conditional-access/conditional-access-policy.service";
+import { SmtpService, SmtpServiceInterface } from "@services/smtp/smtp.service";
 import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 
 // One-line explanation of what each action does, shown under the action select.
@@ -65,21 +68,27 @@ const DURATION_UNIT_FACTORS: Record<DurationUnit, number> = {
 interface EmailField {
   key: string;
   label: string;
-  kind: "text" | "textarea" | "select";
+  // "smtp" is a select over the configured SMTP server identifiers, fetched from the backend;
+  // "select" one over the field's own fixed options.
+  kind: "text" | "textarea" | "select" | "smtp";
   options?: readonly string[];
   onlyAdmin?: boolean;
   rows?: number;
   hint?: string;
 }
 
+// Shown for the identifier when it has to stay a free-text input, i.e. when the configured servers
+// cannot be listed (see emailFields).
+const SMTP_TEXT_HINT = $localize`Name of a configured SMTP server.`;
+
 // Order matters for layout: the three short fields come first so they share one
 // wrapping row, then the wide subject/body textareas flow onto their own rows.
 const EMAIL_FIELDS: readonly EmailField[] = [
   {
     key: "smtp_identifier",
-    label: $localize`SMTP server identifier`,
-    kind: "text",
-    hint: $localize`Name of a configured SMTP server.`
+    label: $localize`SMTP server`,
+    kind: "smtp",
+    hint: $localize`The configured SMTP server that sends the email.`
   },
   {
     key: "recipient_group",
@@ -146,6 +155,8 @@ const EMAIL_PLACEHOLDERS: readonly EmailPlaceholder[] = [
 })
 export class ConditionalAccessActionItemComponent {
   protected readonly policyService: ConditionalAccessPolicyServiceInterface = inject(ConditionalAccessPolicyService);
+  private readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly smtpService: SmtpServiceInterface = inject(SmtpService);
 
   readonly action = input.required<LockoutStageAction>();
   readonly target = input<LockoutTarget>("user");
@@ -156,11 +167,20 @@ export class ConditionalAccessActionItemComponent {
 
   readonly actionDescription = computed<string>(() => ACTION_DESCRIPTIONS[this.action().action_type] ?? "");
 
-  // The action types offered for the current target (see the /targets endpoint).
-  // The currently-selected type is always included so a stale, now-incompatible
-  // action stays visible in the select for the user to change.
+  // Whether the email actions may be offered: their one mandatory setting is which configured SMTP
+  // server sends the mail, and that list needs smtpserver_read - the right /smtpserver/ requires.
+  // Without it the list is never fetched (see SmtpService), leaving nothing to pick from.
+  readonly emailActionsAvailable = computed<boolean>(() => this.authService.actionAllowed("smtpserver_read"));
+
+  // The action types offered for the current target (see the /targets endpoint), minus the email ones
+  // when those are unavailable. The currently-selected type is always included so a stale action -
+  // now-incompatible with the target, or an email action on a policy this admin may not configure
+  // SMTP for - stays visible in the select instead of being dropped on the next save.
   readonly allowedActionTypes = computed<LockoutActionType[]>(() => {
-    const allowed = this.policyService.actionsForTarget(this.target());
+    const offered = this.policyService.actionsForTarget(this.target());
+    const allowed = this.emailActionsAvailable()
+      ? offered
+      : offered.filter((actionType) => !EMAIL_ACTION_TYPES.includes(actionType));
     const current = this.action().action_type;
     return allowed.includes(current) ? allowed : [...allowed, current];
   });
@@ -191,7 +211,41 @@ export class ConditionalAccessActionItemComponent {
 
   readonly emailFields = computed<EmailField[]>(() => {
     const isAdmin = this.action().action_type === "EMAIL_ADMIN";
-    return EMAIL_FIELDS.filter((field) => isAdmin || !field.onlyAdmin);
+    const fields = EMAIL_FIELDS.filter((field) => isAdmin || !field.onlyAdmin);
+    if (this.emailActionsAvailable()) {
+      return fields;
+    }
+    // Only reached by an email action a policy already carries: with no list to pick from, the
+    // identifier stays a plain input, which at least shows what the action is configured with.
+    return fields.map((field) => (field.kind === "smtp" ? { ...field, kind: "text", hint: SMTP_TEXT_HINT } : field));
+  });
+
+  // The identifiers of the configured SMTP servers, from /smtpserver/ (see SmtpService).
+  readonly smtpIdentifiers = computed<string[]>(() =>
+    this.smtpService.smtpServers().map((server) => server.identifier)
+  );
+
+  // Nothing can be said about the servers while the request is in flight, and a template prefills
+  // its email action expanded, so without this the "none configured" hint flashes on the create page.
+  readonly smtpServersLoading = computed<boolean>(() => this.smtpService.smtpServerResource.isLoading());
+
+  // The options of the SMTP server select: the configured identifiers plus the one the action already
+  // carries when that is not among them. Without it mat-select would render a blank trigger for a
+  // value it has no option for, and the admin could not see what the action actually says.
+  readonly smtpOptions = computed<string[]>(() => {
+    const identifiers = this.smtpIdentifiers();
+    const current = this.emailFieldValue("smtp_identifier");
+    return current && !identifiers.includes(current) ? [...identifiers, current] : identifiers;
+  });
+
+  // The stored identifier when it names a server that is not configured - deleted or renamed since -
+  // in which case the engine finds no server and skips the email (_send_lockout_email), so it is
+  // flagged rather than left looking valid. Judged only against a non-empty list: until /smtpserver/
+  // has answered the identifiers are simply unknown, and calling the stored one gone would be a guess.
+  readonly staleSmtpIdentifier = computed<string>(() => {
+    const identifiers = this.smtpIdentifiers();
+    const current = this.emailFieldValue("smtp_identifier");
+    return identifiers.length > 0 && !identifiers.includes(current) ? current : "";
   });
 
   private static modeFor(actionType: LockoutActionType): ActionValueMode {
