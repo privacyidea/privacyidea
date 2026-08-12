@@ -164,6 +164,7 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
   static override readonly title = $localize`Conditional Access`;
   static override readonly icon = "security";
   static override readonly titleLink = ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS;
+  static override readonly titleLinkAction = POLICY_READ;
   // Tall by default: the count rows and the highlights below them only pay off when they are visible at once.
   static override readonly defaultSize: WidgetSize = { cols: 6, rows: 11 };
   static override readonly minSize: WidgetSize = { cols: 6, rows: 5 };
@@ -414,7 +415,9 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
           // Expired entries are included so the widget can report the stale rows a purge would remove.
           // The records behind the list: the locks still in force, so a lock is listed next to a blocked IP. The
           // counts above stay exact regardless of how many records this page holds.
-          recentLocks: canReadLockouts ? this.stateService.fetchLockedUsers(["permanent", "temporary"], LOCK_RECORD_LIMIT) : of(null),
+          recentLocks: canReadLockouts
+            ? this.stateService.fetchLockedUsers(["permanent", "temporary"], LOCK_RECORD_LIMIT)
+            : of(null),
           blocklist: canReadBlocklist ? this.stateService.fetchBlocklist(true) : of(null)
         })
       )
