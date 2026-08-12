@@ -405,16 +405,15 @@
                 }
                 @default {
                   @if (element[column.key]) {
-                    @let truncateWidth = truncatedWidth(column.key);
+                    @let truncateClass = truncatedClass(column.key);
                     <app-copyable [copyText]="element[column.key]">
-                      @if (truncateWidth) {
-                        <!-- Clipped to a fixed width; the tooltip carries the full value, and it stays copyable and
-                             filterable in full. -->
+                      @if (truncateClass) {
+                        <!-- Clipped to the width its class sets; the tooltip carries the full value, and it stays
+                             copyable and filterable in full. -->
                         <span
-                          class="cell-truncate"
-                          [style.max-width]="truncateWidth"
+                          class="cell-truncate {{ truncateClass }}"
                           [appTruncationTooltip]="element[column.key]">
-                            {{ element[column.key] }}
+                          {{ element[column.key] }}
                         </span>
                       } @else {
                         <span>{{ element[column.key] }}</span>

@@ -240,14 +240,14 @@ const FILTER_TOOLTIPS: Record<string, string> = {
   attempt_id: $localize`Filter by this attempt ID`
 };
 
-// Columns whose value is clipped to a fixed width instead of widening the table: the full value stays available in the
-// truncation tooltip, the copy button and the inline filter button. The width is per column - the two opaque ids (32
-// hex chars, 20 digits) are read by their leading characters, while a client label reads as a name. Neither narrows its
+// Columns whose value is clipped instead of widening the table: the full value stays available in the truncation
+// tooltip, the copy button and the inline filter button. The classes carry the width (see the .cell-truncate-* rules):
+// the two opaque ids are read by their leading characters, while a client label reads as a name. Neither narrows its
 // column past the header (label + filter + sort icons), which is the real floor.
-const TRUNCATED_COLUMN_WIDTHS: Record<string, string> = {
-  attempt_id: "10ch",
-  transaction_id: "10ch",
-  client_label: "24ch"
+const TRUNCATED_COLUMN_CLASSES: Record<string, string> = {
+  attempt_id: "cell-truncate-id",
+  transaction_id: "cell-truncate-id",
+  client_label: "cell-truncate-client"
 };
 
 // Key fragments that read as acronyms rather than words when an other_info key is humanized for display.
@@ -762,9 +762,9 @@ export class AuthenticationLog {
     return FILTER_TOOLTIPS[columnKey] ?? $localize`Filter by this value`;
   }
 
-  // The width a clipped column's value is capped at, or null for a column shown in full.
-  truncatedWidth(columnKey: string): string | null {
-    return TRUNCATED_COLUMN_WIDTHS[columnKey] ?? null;
+  // The width class a clipped column's value carries, or null for a column shown in full.
+  truncatedClass(columnKey: string): string | null {
+    return TRUNCATED_COLUMN_CLASSES[columnKey] ?? null;
   }
 
   // Inline "filter by this value" action on a cell: add the value to the column's filter (a no-op if already there).

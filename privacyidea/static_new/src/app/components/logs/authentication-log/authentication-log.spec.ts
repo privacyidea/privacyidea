@@ -331,12 +331,12 @@ describe("AuthenticationLog", () => {
   });
 
   it("clips only the long-valued columns, and does so per column", () => {
-    // The two opaque ids share a width; a client label needs more room to stay readable as a name.
-    expect(component.truncatedWidth("attempt_id")).toBe("10ch");
-    expect(component.truncatedWidth("transaction_id")).toBe("10ch");
-    expect(component.truncatedWidth("client_label")).toBe("24ch");
-    expect(component.truncatedWidth("source_ip")).toBeNull();
-    expect(component.truncatedWidth("serial")).toBeNull();
+    // The two opaque ids share a width class; a client label needs more room to stay readable as a name.
+    expect(component.truncatedClass("attempt_id")).toBe("cell-truncate-id");
+    expect(component.truncatedClass("transaction_id")).toBe("cell-truncate-id");
+    expect(component.truncatedClass("client_label")).toBe("cell-truncate-client");
+    expect(component.truncatedClass("source_ip")).toBeNull();
+    expect(component.truncatedClass("serial")).toBeNull();
   });
 
   it("renders a clipped cell that still carries the full value for copying and filtering", () => {
@@ -363,7 +363,7 @@ describe("AuthenticationLog", () => {
     const clipped = fixture.nativeElement.querySelectorAll(".cell-truncate");
     // Only the attempt id: the row carries no client label, and the source IP is never clipped.
     expect(clipped.length).toBe(1);
-    expect(clipped[0].style.maxWidth).toBe("10ch");
+    expect(clipped[0].classList).toContain("cell-truncate-id");
     // Clipping is visual only - the DOM keeps the whole id, so copy, tooltip and filter all see it.
     expect(clipped[0].textContent.trim()).toBe(attemptId);
 
