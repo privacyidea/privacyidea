@@ -42,7 +42,7 @@ from flask import (Blueprint,
 from flask import g, jsonify, current_app
 
 from privacyidea.api.lib.utils import (get_all_params, get_optional, map_error_to_code, send_error,
-                                       log_authentication, conditional_access_posteval)
+                                       log_authentication)
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.config import (get_token_class, get_from_config,
                                     SYSCONF, ensure_no_config_object, get_privacyidea_node)
@@ -185,9 +185,8 @@ def token(ttype=None):
         # and the conditional-access engine to the resolved token owner (the param
         # user is empty for a push answer) so per-user failure counts add up.
         owner = _push_token_owner(serial)
-        event_id = log_authentication(push_auth_event, request, user=owner, serial=serial,
-                                      transaction_id=getattr(g, PUSH_AUTH_TRANSACTION_ID, None))
-        conditional_access_posteval(owner, push_auth_event, event_id)
+        log_authentication(push_auth_event, request, user=owner, serial=serial,
+                           transaction_id=getattr(g, PUSH_AUTH_TRANSACTION_ID, None))
 
     if res[0] == "json":
         return jsonify(res[1])

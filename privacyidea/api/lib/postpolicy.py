@@ -58,7 +58,7 @@ from flask_babel import _, lazy_gettext
 
 from privacyidea.api.lib.utils import get_all_params, log_authentication, hardening_action_active
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
-from privacyidea.lib.conditional_access.authentication_log import reclassify_authentication_log_event
+from privacyidea.lib.conditional_access.request_context import get_ca_context
 from privacyidea.config import ConfigKey
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.config import (get_multichallenge_enrollable_types, get_token_class, get_privacyidea_node)
@@ -1160,12 +1160,17 @@ def multichallenge_enroll_via_validate(request, response):
         content.get("detail", {})["enroll_via_multichallenge"] = True
         content.get("detail", {})["enroll_via_multichallenge_optional"] = enrollment_optional
 
-        # Re-classify authentication log entry to ENROLLMENT_TRIGGERED. Fall back to a fresh row if no id was stashed.
+        # Re-classify staged authentication log event or create new if non exists
         enrolled_serial = content.get("detail", {}).get("serial")
-        event_id = getattr(g, "auth_log_event_id", None)
-        if event_id:
-            reclassify_authentication_log_event(event_id, AuthEventType.ENROLLMENT_TRIGGERED,
-                                                serial=enrolled_serial, transaction_id=transaction_id)
+        context = get_ca_context()
+        if context.amendable is not None:
+            # Pass only what this policy determined, so an absent serial does not clear the logged one.
+            corrections = {}
+            if enrolled_serial is not None:
+                corrections["serial"] = enrolled_serial
+            if transaction_id:
+                corrections["transaction_id"] = transaction_id
+            context.reclassify(AuthEventType.ENROLLMENT_TRIGGERED, **corrections)
         else:
             log_authentication(AuthEventType.ENROLLMENT_TRIGGERED, request, user=user,
                                serial=enrolled_serial, transaction_id=transaction_id)
@@ -1268,21 +1273,12 @@ def is_authorized(request, response):
 
     if authorized_pol:
         if list(authorized_pol)[0] == AUTHORIZED.DENY:
-            event_id = getattr(g, "auth_log_event_id", None)
-            if event_id:
-                reclassify_authentication_log_event(event_id, AuthEventType.NOT_AUTHORIZED)
+            context = get_ca_context()
+            if context.amendable is not None:
+                # Correcting the staged event
+                context.reclassify(AuthEventType.NOT_AUTHORIZED)
             else:
-                event_id = log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=request.User)
-            # check()'s finally already ran the lockout engine on the pre-authz outcome (e.g. LOGIN_SUCCESS), so the
-            # denial above was never seen by it. Re-evaluate with the corrected NOT_AUTHORIZED outcome so a policy
-            # tracking it counts this attempt. Deferred import avoids a bootstrap circular import; guarded so a
-            # failure here can never break the (already-decided) deny response.
-            try:
-                from privacyidea.lib.conditional_access.engine import evaluate_lockout_policies
-                evaluate_lockout_policies(request.User, AuthEventType.NOT_AUTHORIZED, source_ip=g.client_ip,
-                                          auth_log_event_id=event_id)
-            except Exception as ex:
-                log.warning(f"Lockout re-evaluation after authorization denial failed: {ex!r}")
+                log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=request.User)
             raise ValidateError("User is not authorized to authenticate under these conditions.")
 
     return response

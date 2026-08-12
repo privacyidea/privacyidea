@@ -38,8 +38,9 @@ from flask import jsonify, current_app, Response, Request, request, g, has_reque
 from flask_babel import _
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
-from privacyidea.lib.conditional_access.authentication_log import (log_authentication_event, AuthLogUserRole,
+from privacyidea.lib.conditional_access.authentication_log import (AuthLogUserRole, PendingAuthEvent,
                                                                    get_attempt_id_for_transaction)
+from privacyidea.lib.conditional_access.request_context import AuthPrincipal, get_ca_context
 from privacyidea.lib.user import User
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.config import get_from_config, SYSCONF
@@ -163,6 +164,12 @@ def resolve_attempt_id(request: Request | None, transaction_id: str | None = Non
                                   or get_optional(request_data, "state"))
     lookup_transaction_id = request_transaction_id or transaction_id
     if lookup_transaction_id:
+        # The events this request itself staged come first: their rows may not be written yet, so the
+        # authentication-log lookup below - which only sees committed rows - would miss them. This is what keeps a
+        # challenge resolved inside its own triggering request (push_wait) in one attempt.
+        staged = get_ca_context().attempt_id_for_transaction(lookup_transaction_id)
+        if staged:
+            return staged
         existing = get_attempt_id_for_transaction(lookup_transaction_id)
         if existing:
             return existing
@@ -335,14 +342,25 @@ def _determine_user_role(user: User | None, internal_admin: bool) -> AuthLogUser
 def log_authentication(event_type: AuthEventType | None, request: Request | None = None, user: User | None = None,
                        serial: str | None = None, transaction_id: str | None = None,
                        username: str | None = None,
-                       internal_admin: bool = False, attempt_id: str | None = None) -> int | None:
+                       internal_admin: bool = False, attempt_id: str | None = None,
+                       immediate: bool = False) -> "PendingAuthEvent | None":
     """
-    Write one authentication_log entry for the current request.
+    Record one authentication_log entry for the current request.
 
     This is the single API-layer persistence point: the lib layer classifies
     the outcome and the views call this to record it. ``source_ip`` uses the
     same client-IP resolution as the audit log; ``client_label`` is the
     ``client_id`` parameter if supplied, otherwise the User-Agent header.
+
+    The entry is **staged**, not written: it goes into this request's conditional-access buffer and is written once,
+    with everything else the request staged, at request teardown. A later stage can therefore still amend it (a
+    post-policy correcting the classification just assigns to the returned event), and the request produces one row
+    per event rather than a row plus corrections. The returned :class:`PendingAuthEvent` is that handle; its
+    ``row_id`` is filled in when the row is written.
+
+    Pass *immediate* to flush the buffer on the spot. Needed only when another **request** has to see the row before
+    this one ends - the ``push_wait`` trigger, whose answer arrives out of band at ``/ttype/push`` while this request
+    is still blocking (see :func:`resolve_attempt_id`).
 
     The ``(resolver, uid, realm)`` identity tuple is only written for a resolved
     user; an unresolvable user (e.g. USER_UNKNOWN) is logged with resolver and uid
@@ -393,7 +411,13 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
                 resolved = True
         except Exception as ex:
             log.debug(f"Could not resolve the token owner for the authentication log: {ex!r}")
-    return log_authentication_event(
+    context = get_ca_context()
+    # Record who this request is authenticating on the request's context, so the policy evaluation acts on the same
+    # principal the row is written for - including the token owner resolved just above, which the caller does not know
+    # about. Kept as an AuthPrincipal rather than a bare User because a local database admin has no user object.
+    context.principal = AuthPrincipal(user=user or User(), username=username, internal_admin=internal_admin)
+    context.source_ip = source_ip
+    event = PendingAuthEvent(
         event_type=event_type,
         transaction_id=transaction_id,
         resolver=user.resolver if resolved else None,
@@ -405,7 +429,12 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
         client_label=client_label,
         serial=serial,
         attempt_id=attempt_id,
+        immediate=immediate,
     )
+    context.stage(event)
+    if immediate:
+        context.flush()
+    return event
 
 
 def conditional_access_precheck(user) -> "Response | None":
@@ -470,42 +499,6 @@ def conditional_access_gate(identity_resolver=None):
             return wrapped_function(*args, **kwargs)
         return wrapper
     return decorator
-
-
-def conditional_access_posteval(user, event_type, auth_log_event_id: int | None = None) -> None:
-    """
-    Run the conditional-access policy engine for this request's classified
-    *event_type*, after the authentication-log row for it has been written (so a
-    failure count over the log includes the just-written event). ``g.client_ip``
-    is passed as the source IP for ``BLOCK_IP`` actions.
-
-    This only produces side effects that the NEXT inbound request consults (it
-    writes lockout state); it must never alter or break the response that already
-    completed, so every error is swallowed.
-
-    :param auth_log_event_id: id of the authentication_log row this request already wrote; passed through so a
-        dry-run policy's finding can be attached to it (see
-        :func:`~privacyidea.lib.conditional_access.engine.evaluate_lockout_policies`)
-    """
-    from privacyidea.lib.conditional_access.engine import evaluate_lockout_policies
-    from privacyidea.models import db
-    try:
-        # The engine commits its own writes (and rolls them back on failure), so
-        # this caller must NOT wrap them in a transaction. Wrapping in
-        # db.session.begin_nested() and then committing breaks under SQLAlchemy 2.x:
-        # the engine's inner commit closes the transaction, so leaving the savepoint
-        # context raises InvalidRequestError ("Can't operate on closed transaction
-        # inside context manager") — which this caller would silently swallow.
-        evaluate_lockout_policies(user, event_type, source_ip=g.client_ip, auth_log_event_id=auth_log_event_id)
-    except Exception as ex:
-        log.warning(f"Conditional-access policy evaluation failed: {ex!r}")
-        # A failure may leave the session in an aborted state; clear it so request
-        # teardown can proceed cleanly. Guard the rollback so this helper never
-        # raises (it must never break the already-completed response).
-        try:
-            db.session.rollback()
-        except Exception:
-            pass
 
 
 def check_unquote(request, data):

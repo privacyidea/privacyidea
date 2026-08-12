@@ -19,6 +19,7 @@
 import ipaddress
 import logging
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
@@ -29,8 +30,9 @@ from sqlalchemy import func, select
 from privacyidea.lib import _
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
 from privacyidea.lib.conditional_access.authentication_log import _naive_utc, record_conditional_access_finding
+from privacyidea.lib.conditional_access.session import get_ca_session, guarded_write
 from privacyidea.models import (AuthenticationLog, BlockList, LockoutPolicy, LockoutPolicyCounterType,
-                                LockoutStageAction, UserLockoutState, db)
+                                LockoutStageAction, UserLockoutState)
 from privacyidea.models.utils import utc_now
 
 if TYPE_CHECKING:
@@ -175,7 +177,7 @@ def _count_events(subject, event_types: list[str], window_seconds: int,
     type_values = [str(t) for t in event_types]
     lower_bound = AuthenticationLog.timestamp >= window_start
     if since_last_success:
-        last_success = db.session.scalar(
+        last_success = get_ca_session().scalar(
             select(func.max(AuthenticationLog.timestamp))
             .where(*subject,
                    AuthenticationLog.event_type == str(AuthEventType.LOGIN_SUCCESS),
@@ -189,7 +191,7 @@ def _count_events(subject, event_types: list[str], window_seconds: int,
                    AuthenticationLog.event_type.in_(type_values),
                    lower_bound,
                    AuthenticationLog.timestamp <= window_end))
-    return db.session.scalar(stmt) or 0
+    return get_ca_session().scalar(stmt) or 0
 
 
 def count_user_events(resolver: str, uid: str, realm: str,
@@ -286,10 +288,10 @@ def count_distinct_users_for_ip(source_ip: str, event_types: list[str],
                                 AuthenticationLog.timestamp <= window_end)
                          .distinct()
                          .subquery())
-    return db.session.scalar(select(func.count()).select_from(distinct_accounts)) or 0
+    return get_ca_session().scalar(select(func.count()).select_from(distinct_accounts)) or 0
 
 
-def _count_matching_attempts(rows: list[AuthenticationLog], tracked_types: set[str],
+def _count_matching_attempts(rows: Sequence[AuthenticationLog], tracked_types: set[str],
                              since_last_success: bool = False) -> int:
     """
     Reduce authentication-log rows to one representative event per attempt and count the attempts whose
@@ -349,7 +351,7 @@ def _count_attempts(subject, event_types: list[str], window_seconds: int,
     """
     window_end = _naive_utc(window_end) if window_end is not None else utc_now()
     window_start = window_end - timedelta(seconds=window_seconds)
-    rows = db.session.scalars(
+    rows = get_ca_session().scalars(
         select(AuthenticationLog)
         .where(*subject,
                AuthenticationLog.timestamp >= window_start,
@@ -517,7 +519,7 @@ def get_user_lockout(user: "User", now: datetime | None = None, *,
     """
     if not _resolved(user):
         return None
-    state = db.session.get(UserLockoutState, (user.resolver, user.uid, user.realm))
+    state = get_ca_session().get(UserLockoutState, (user.resolver, user.uid, user.realm))
     if not state:
         return None
     if state.lock_expires_at is None:
@@ -626,7 +628,7 @@ def get_ip_block(source_ip: str | None, now: datetime | None = None, *,
     """
     if not source_ip:
         return None
-    state = db.session.get(BlockList, source_ip)
+    state = get_ca_session().get(BlockList, source_ip)
     if not state:
         return None
     # A block row exists; honor the never-block allowlist so adding an IP to it
@@ -705,7 +707,7 @@ def evaluate_access_decision(user: "User", source_ip: str | None = None,
     :return: the :class:`AccessDecision` for this request
     """
     now = _naive_utc(now) if now is not None else utc_now()
-    policies = db.session.scalars(
+    policies = get_ca_session().scalars(
         select(LockoutPolicy)
         .where(LockoutPolicy.enabled.is_(True))
         .order_by(LockoutPolicy.priority.asc())
@@ -838,7 +840,7 @@ def evaluate_lockout_policies(user: "User", event_type, source_ip: str | None = 
     # table (policy_id, counter_type) is unique, so a policy matches at
     # most once. The combined count over *all* of a matched policy's tracked types
     # is then computed in _evaluate_policy.
-    policies = db.session.scalars(
+    policies = get_ca_session().scalars(
         select(LockoutPolicy)
         .join(LockoutPolicy.counter_types)
         .where(LockoutPolicy.enabled.is_(True),
@@ -985,7 +987,7 @@ def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
     # again. Otherwise an expired or admin-lifted lock would leave a dead zone in
     # which the offender could re-reach the threshold without being re-locked /
     # re-blocked.
-    user_state = db.session.get(UserLockoutState, (user.resolver, user.uid, user.realm))
+    user_state = get_ca_session().get(UserLockoutState, (user.resolver, user.uid, user.realm))
     user_incident_active = (user_state is not None
                             and (user_state.lock_expires_at is None
                                  or user_state.lock_expires_at > now))
@@ -1000,7 +1002,7 @@ def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
     ip_dedup = False
     if source_ip and any(a.action_type in (LockoutAction.BLOCK_IP, LockoutAction.PERMANENT_BLOCK_IP)
                          for a in pending_actions):
-        ip_state = db.session.get(BlockList, source_ip)
+        ip_state = get_ca_session().get(BlockList, source_ip)
         ip_incident_active = (ip_state is not None
                               and (ip_state.block_expires_at is None
                                    or ip_state.block_expires_at > now))
@@ -1265,13 +1267,9 @@ def _delete_user_lockout_state(state: UserLockoutState) -> None:
     failure is logged and rolled back so cleaning up can never break the
     authentication response that is still in flight.
     """
-    try:
-        db.session.delete(state)
-        db.session.commit()
-    except Exception as ex:
-        log.warning("Failed to delete the expired user lockout state "
-                    f"({state.resolver!r}, {state.uid!r}, {state.realm!r}): {ex!r}")
-        db.session.rollback()
+    with guarded_write("the deletion of the expired user lockout state "
+                       f"({state.resolver!r}, {state.uid!r}, {state.realm!r})"):
+        get_ca_session().delete(state)
 
 
 def _delete_ip_block(state: BlockList) -> None:
@@ -1282,12 +1280,8 @@ def _delete_ip_block(state: BlockList) -> None:
     logged and rolled back so cleaning up can never break the authentication
     response that is still in flight.
     """
-    try:
-        db.session.delete(state)
-        db.session.commit()
-    except Exception as ex:
-        log.warning(f"Failed to delete the expired IP block {state.ip!r}: {ex!r}")
-        db.session.rollback()
+    with guarded_write(f"the deletion of the expired IP block {state.ip!r}"):
+        get_ca_session().delete(state)
 
 
 def _upsert_user_lockout_state(user: "User", *, lock_expires_at: datetime | None, stage_id: int) -> None:
@@ -1299,21 +1293,18 @@ def _upsert_user_lockout_state(user: "User", *, lock_expires_at: datetime | None
     completed. An existing **permanent** lock is never downgraded to a timed
     lock.
     """
-    try:
-        state = db.session.get(UserLockoutState, (user.resolver, user.uid, user.realm))
+    with guarded_write(f"the user lockout state for {user!r}"):
+        session = get_ca_session()
+        state = session.get(UserLockoutState, (user.resolver, user.uid, user.realm))
         if state is None:
             state = UserLockoutState(resolver=user.resolver, uid=user.uid, realm=user.realm)
-            db.session.add(state)
+            session.add(state)
         elif state.lock_expires_at is None and lock_expires_at is not None:
             log.info(f"Not downgrading the existing permanent lock for {user!r} to a timed lock.")
             return
         state.username = user.login
         state.lock_expires_at = lock_expires_at
         state.last_stage_triggered = stage_id
-        db.session.commit()
-    except Exception as ex:
-        log.warning(f"Failed to write the user lockout state for {user!r}: {ex!r}")
-        db.session.rollback()
 
 
 def _upsert_ip_block(source_ip: str, *, block_expires_at: datetime | None, stage_id: int) -> None:
@@ -1332,17 +1323,14 @@ def _upsert_ip_block(source_ip: str, *, block_expires_at: datetime | None, stage
     if is_ip_never_block(source_ip):
         log.info(f"Not blocking IP {source_ip!r}: it is on the conditional-access never-block list.")
         return
-    try:
-        state = db.session.get(BlockList, source_ip)
+    with guarded_write(f"the IP block for {source_ip!r}"):
+        session = get_ca_session()
+        state = session.get(BlockList, source_ip)
         if state is None:
             state = BlockList(ip=source_ip)
-            db.session.add(state)
+            session.add(state)
         elif state.block_expires_at is None and block_expires_at is not None:
             log.info(f"Not downgrading the existing permanent block for IP {source_ip!r} to a timed block.")
             return
         state.block_expires_at = block_expires_at
         state.last_stage_triggered = stage_id
-        db.session.commit()
-    except Exception as ex:
-        log.warning(f"Failed to write the IP block for {source_ip!r}: {ex!r}")
-        db.session.rollback()

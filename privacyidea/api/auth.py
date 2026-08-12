@@ -87,9 +87,9 @@ from privacyidea.lib.auth import (check_webui_user, ROLE, verify_db_admin,
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
                                                                            LOG_TRANSACTION_ID_KEY)
 from privacyidea.lib.conditional_access.engine import (get_user_lockout, get_ip_block,
-                                                       evaluate_lockout_policies,
                                                        evaluate_access_decision, AccessDecision,
                                                        RestrictionStatus)
+from privacyidea.lib.conditional_access.request_context import get_ca_context
 from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_object, get_privacyidea_node
 from privacyidea.lib.crypto import geturandom, init_hsm
 from privacyidea.lib.error import AuthError, Error, ResourceNotFoundError
@@ -684,24 +684,21 @@ def get_auth_token():
         # log_authentication below is a no-op and no row is added over the one the token already wrote.
         auth_event_type = AuthEventType.LOGIN_SUCCESS if (
                 admin_auth or user_auth) else AuthEventType.UNKNOWN_FAIL_REASON
-    auth_log_event_id = log_authentication(auth_event_type, request, user=user,
-                                           serial=serials or details.get("serial"),
-                                           transaction_id=(get_optional(request.all_data, "transaction_id")
-                                                           or details.get("transaction_id") or log_transaction_id),
-                                           username=login_name,
-                                           internal_admin=internal_admin)
+    log_authentication(auth_event_type, request, user=user,
+                       serial=serials or details.get("serial"),
+                       transaction_id=(get_optional(request.all_data, "transaction_id")
+                                       or details.get("transaction_id") or log_transaction_id),
+                       username=login_name,
+                       internal_admin=internal_admin)
 
-    # Feed the classified outcome to the lockout engine (after the log row is written so the
-    # count includes it). It writes lockout state for the next request and returns any
-    # user-facing notices produced by executed actions (e.g. "an email was sent"), which we
-    # surface on the rejection below just like the lockout message. It must never break this
-    # login response.
-    lockout_notices = []
-    try:
-        lockout_notices = evaluate_lockout_policies(user, auth_event_type, source_ip=g.client_ip,
-                                                    auth_log_event_id=auth_log_event_id) or []
-    except Exception as ex:
-        log.warning(f"Conditional-access policy evaluation failed: {ex!r}")
+    # Feed the classified outcome to the lockout engine. Unlike the other endpoints this cannot wait for request
+    # teardown: the engine's notices (e.g. "an email was sent") are surfaced on the rejection below, and the
+    # lock/block it may have just written is read back there to lead with the right message. So the staged log row is
+    # written now - the count has to include it - and the evaluation is run in-view. Both are idempotent, so teardown
+    # finds nothing left to do. Guarded internally; it must never break this login response.
+    context = get_ca_context()
+    context.flush()
+    lockout_notices = context.run_post_eval()
 
     if not admin_auth and not user_auth:
         # If this very request tripped a stage that locked the user or blocked its source
