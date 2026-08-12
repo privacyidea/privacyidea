@@ -117,9 +117,11 @@ export class AppearanceService {
   /** Applies the cookie-cached levels at bootstrap, before any stored setting can arrive. */
   public initializeAppearance(): void {
     const cached = this.readCachedAppearance();
-    this.applyStoredDepth(cached["depth"]);
-    this.applyStoredLightSource(cached["light_source"]);
-    this.applyStoredCorners(cached["corner_radius"]);
+    this.apply(this.depthGroup, cached["depth"]);
+    this.apply(this.lightSourceGroup, cached["light_source"]);
+    this.apply(this.cornerGroup, cached["corner_radius"]);
+    // One write for all three groups: caching per group would persist half-updated intermediate states.
+    this.cacheAppearance();
   }
 
   public setDepth(level: DepthLevel): void {
@@ -137,24 +139,38 @@ export class AppearanceService {
   /** Applies a stored level (user setting or cookie) without writing it back; unknown values fall back. */
   public applyStoredDepth(level: unknown): void {
     this.apply(this.depthGroup, level);
+    this.cacheAppearance();
   }
 
   public applyStoredLightSource(level: unknown): void {
     this.apply(this.lightSourceGroup, level);
+    this.cacheAppearance();
   }
 
   public applyStoredCorners(level: unknown): void {
     this.apply(this.cornerGroup, level);
+    this.cacheAppearance();
   }
 
   public resetToDefaults(): void {
-    this.setDepth(this.depthGroup.fallback);
-    this.setLightSource(this.lightSourceGroup.fallback);
-    this.setCorners(this.cornerGroup.fallback);
+    this.apply(this.depthGroup, this.depthGroup.fallback);
+    this.apply(this.lightSourceGroup, this.lightSourceGroup.fallback);
+    this.apply(this.cornerGroup, this.cornerGroup.fallback);
+    this.store(this.depthGroup);
+    this.store(this.lightSourceGroup);
+    this.store(this.cornerGroup);
+    // One write for all three groups: caching per group would persist half-updated intermediate states.
+    this.cacheAppearance();
   }
 
   private set<T extends string>(group: LevelGroup<T>, level: T): void {
     this.apply(group, level);
+    this.store(group);
+    this.cacheAppearance();
+  }
+
+  /** Persists a group's current level for an authenticated principal; anonymous ones keep the cookie only. */
+  private store<T extends string>(group: LevelGroup<T>): void {
     if (this.authService.isAuthenticated()) {
       this.userSettingsService.setSetting(group.settingKey, group.level()).subscribe({ error: () => undefined });
     }
@@ -166,7 +182,6 @@ export class AppearanceService {
     group.levels.forEach((offered) => this.renderer.removeClass(this.htmlElement, `${group.classPrefix}${offered}`));
     this.renderer.addClass(this.htmlElement, `${group.classPrefix}${applied}`);
     group.level.set(applied);
-    this.cacheAppearance();
   }
 
   private cacheAppearance(): void {

@@ -29,6 +29,7 @@
     </h3>
     <button
       (click)="resetSettings()"
+      [attr.aria-label]="resetTooltip"
       [matTooltip]="resetTooltip"
       mat-icon-button
       type="button">

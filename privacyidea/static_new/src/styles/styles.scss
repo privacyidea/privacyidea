@@ -24,6 +24,8 @@
 // Stops of the light-source dial, shared with light-source-dial.component.scss.
 $light-source-steps: 18;
 $light-source-step-angle: math.div(360, $light-source-steps);
+// Must stay in step with AppearanceService's DEFAULT_LIGHT_SOURCE.
+$default-light-source: 16;
 
 @function sign-of($value) {
   @if $value > 0 {
@@ -57,6 +59,9 @@ body {
 }
 
 :root {
+  // Points at the light, 0deg due right and growing clockwise. The html.light-source-* class wins
+  // over :root and carries the level in effect; this is only what holds before one is applied.
+  --dial-angle: #{$default-light-source * $light-source-step-angle}deg;
   --overlay-margin: 297px;
   --blur: 4px;
   --border-radius: 4px;
@@ -136,7 +141,7 @@ body {
     calc(-1 * var(--depth-x-5)) 0 var(--depth-blur-5) var(--mat-sys-light);
   // Surface shading: a gradient running light to dark when raised and dark to light when
   // recessed. 90deg behind the dial angle puts its light end on the corner the light comes from.
-  --depth-gradient-angle: calc(var(--dial-angle, 340deg) - 90deg);
+  --depth-gradient-angle: calc(var(--dial-angle) - 90deg);
   --depth-tint: clamp(0%, calc(12% * var(--depth-tone-scale)), 100%);
   --surface-raised: linear-gradient(
     var(--depth-gradient-angle),

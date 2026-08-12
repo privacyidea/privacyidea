@@ -82,7 +82,7 @@ const CORNER_LABELS: Record<CornerLevel, string> = {
   square: $localize`square`,
   default: $localize`default`,
   round: $localize`round`,
-  "extra-round": $localize`extra-round`
+  "extra-round": $localize`extra round`
 };
 
 function presetLabel(preset: AppearancePreset): string {

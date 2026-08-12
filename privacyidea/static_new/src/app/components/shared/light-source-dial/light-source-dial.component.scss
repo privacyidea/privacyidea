@@ -116,7 +116,7 @@
   left: 50%;
   top: 50%;
   transform-origin: 0 50%;
-  transform: rotate(var(--dial-angle, 225deg));
+  transform: rotate(var(--dial-angle));
   transition: transform 300ms cubic-bezier(0.23, 1, 0.32, 1);
   pointer-events: none;
 }
