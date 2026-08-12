@@ -43,6 +43,7 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
+import { MatTooltipModule } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
@@ -146,6 +147,7 @@ const columnKeysMap = [
     MatIcon,
     MatButtonModule,
     MatIconModule,
+    MatTooltipModule,
     ScrollEdgesDirective,
     LocalDateTimePipe,
     TableStateComponent

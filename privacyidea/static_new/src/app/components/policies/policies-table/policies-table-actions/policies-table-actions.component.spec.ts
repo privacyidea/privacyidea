@@ -24,7 +24,7 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { AuthService } from "@services/auth/auth.service";
 import { DialogService } from "@services/dialog/dialog.service";
-import { PolicyService } from "@services/policies/policies.service";
+import { PolicyDetail, PolicyService } from "@services/policies/policies.service";
 import { MockRouter } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
@@ -55,7 +55,7 @@ describe("PoliciesTableActionsComponent", () => {
     dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
     policyService = TestBed.inject(PolicyService) as unknown as MockPolicyService;
     router = TestBed.inject(Router);
-    fixture.componentRef.setInput("policySelection", new Set(["policy1"]));
+    fixture.componentRef.setInput("policySelection", [{ name: "policy1" } as PolicyDetail]);
     fixture.detectChanges();
   });
 

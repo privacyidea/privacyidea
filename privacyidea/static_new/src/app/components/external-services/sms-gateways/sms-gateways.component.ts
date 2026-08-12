@@ -38,6 +38,7 @@ import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-t
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
 import { isInitialLoad, TableState } from "@core/models/table_state/table-state";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { renderedRows, RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 
 @Component({
@@ -88,8 +89,6 @@ export class SmsGatewaysComponent {
 
   displayedColumns: string[] = ["select", "name", "description", "providermodule"];
 
-  selection = signal<SmsGateway[]>([]);
-
   smsDataSource = computed(() => {
     if (isInitialLoad(this.smsGatewayService.smsGatewayResource)) {
       return this.tableUtilsService.emptyDataSource<SmsGateway>(this.pageSizeOptions()[1] ?? 10, this.displayedColumns);
@@ -101,6 +100,11 @@ export class SmsGatewaysComponent {
     return dataSource;
   });
 
+  selector = new RowSelector<SmsGateway>({
+    keyGetter: (gateway) => gateway.name,
+    visibleRows: renderedRows(this.smsDataSource)
+  });
+
   onCreateNewGateway(): void {
     this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SMS_NEW);
   }
@@ -109,34 +113,8 @@ export class SmsGatewaysComponent {
     this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SMS_DETAILS + gateway.name);
   }
 
-  isAllSelected(): boolean {
-    const rows = this.smsDataSource().data;
-    return rows.length > 0 && this.selection().length === rows.length;
-  }
-
-  toggleAllRows(): void {
-    if (this.isAllSelected()) {
-      this.selection.set([]);
-    } else {
-      this.selection.set([...this.smsDataSource().data]);
-    }
-  }
-
-  toggleRow(gateway: SmsGateway): void {
-    const current = this.selection();
-    if (current.includes(gateway)) {
-      this.selection.set(current.filter((row) => row !== gateway));
-    } else {
-      this.selection.set([...current, gateway]);
-    }
-  }
-
-  isSelected(gateway: SmsGateway): boolean {
-    return this.selection().includes(gateway);
-  }
-
   deleteSelected(): void {
-    const selected = this.selection();
+    const selected = this.selector.selectedRows();
     if (selected.length === 0) {
       return;
     }
@@ -156,7 +134,7 @@ export class SmsGatewaysComponent {
           selected.forEach(
             (gateway) => void this.smsGatewayService.deleteSmsGateway(gateway.name).catch(() => undefined)
           );
-          this.selection.set([]);
+          this.selector.deselectAllRows();
         }
       });
   }

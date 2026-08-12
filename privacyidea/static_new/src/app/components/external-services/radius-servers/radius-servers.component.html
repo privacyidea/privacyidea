@@ -59,13 +59,12 @@
       </button>
       <button
         (click)="deleteSelected()"
-        [disabled]="selection().length === 0"
+        [disabled]="!selector.hasSelection()"
         class="action-button-delete-secondary button-width-l"
         mat-stroked-button>
         <mat-icon>delete_sweep</mat-icon>
         <span i18n>Delete</span>
       </button>
-
     </div>
     <table
       [dataSource]="radiusDataSource()"
@@ -78,19 +77,19 @@
           class="table-checkbox"
           mat-header-cell>
           <mat-checkbox
-            (change)="$event ? toggleAllRows() : null"
-            [checked]="isAllSelected()"
-            [disabled]="totalLength() === 0"
-            [indeterminate]="selection().length > 0 && !isAllSelected()" />
+            (change)="$event.checked ? selector.selectAllRows() : selector.deselectAllRows()"
+            [checked]="selector.allRowsSelected()"
+            [disabled]="!selector.hasVisibleRows()"
+            [indeterminate]="selector.someRowsSelected()" />
         </th>
         <td
           *matCellDef="let row"
           class="table-checkbox"
           mat-cell>
           <mat-checkbox
-            (change)="$event ? toggleRow(row) : null"
+            (change)="selector.setRowSelected(row, $event.checked)"
             (click)="$event.stopPropagation()"
-            [checked]="isSelected(row)" />
+            [checked]="selector.isRowSelected(row)" />
         </td>
       </ng-container>
 

@@ -30,7 +30,10 @@ export type WidgetTypeId =
   | "administration"
   | "policies"
   | "events"
-  | "subscriptions";
+  | "subscriptions"
+  | "certificate-health"
+  | "resolver-timing"
+  | "notification-delivery";
 
 export interface WidgetSize {
   cols: number;
@@ -50,6 +53,7 @@ export abstract class DashboardWidget {
   readonly state = signal<WidgetState>("loading");
   readonly loading = computed(() => this.state() === "loading");
   readonly partialLoading = computed(() => false);
+  readonly refreshFailed = computed(() => false);
 
   static readonly type: WidgetTypeId;
   static readonly title: string = "";
@@ -61,6 +65,8 @@ export abstract class DashboardWidget {
   static readonly pinned: boolean = false;
   static readonly fixedPosition: { x: number; y: number } | null = null;
   static readonly requiredAction: PolicyAction | null = null;
+  static readonly titleLink: string | null = null;
+  static readonly titleLinkAction: PolicyAction | null = null;
 
   abstract reload(): void;
 }

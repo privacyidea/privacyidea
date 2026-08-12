@@ -23,6 +23,7 @@ import {
   ElementRef,
   inject,
   linkedSignal,
+  OnDestroy,
   ViewChild,
   WritableSignal
 } from "@angular/core";
@@ -54,9 +55,11 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
 import { TableState } from "@core/models/table_state/table-state";
 import { FilterValue } from "@core/models/filter_value/filter_value";
+import { MultiSelectFilterComponent } from "@components/shared/multi-select-filter/multi-select-filter.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { filterColumnHint, inlineFilterHint } from "@utils/filter-hint.utils";
 import { withDefaultRealm } from "@utils/filter.utils";
+import { StringUtils } from "@utils/string.utils";
 import { TokenTableActionsComponent } from "./token-table-actions/token-table-actions.component";
 
 const columnKeysMap = [
@@ -89,6 +92,7 @@ const columnKeysMap = [
     ScrollToTopDirective,
     ClearableInputComponent,
     CopyableComponent,
+    MultiSelectFilterComponent,
     TokenTableActionsComponent,
     MatButton,
     MatIconButton,
@@ -102,7 +106,7 @@ const columnKeysMap = [
   templateUrl: "./token-table.component.html",
   styleUrl: "./token-table.component.scss"
 })
-export class TokenTableComponent {
+export class TokenTableComponent implements OnDestroy {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
@@ -118,6 +122,7 @@ export class TokenTableComponent {
     (keyword) => !this.tokenService.unsupportedKeys.has(keyword) && !keyword.includes(" ")
   );
   readonly filterHint = inlineFilterHint();
+  readonly tokenTypeFilterOptions = computed(() => this.tokenService.tokenTypeOptions().map((type) => type.key));
   private basePageSizeOptions = [...this.tableUtilsService.pageSizeOptions()];
   @ViewChild("filterHTMLInputElement", { static: false })
   filterInput!: ElementRef<HTMLInputElement>;
@@ -209,25 +214,8 @@ export class TokenTableComponent {
     return this.basePageSizeOptions;
   });
 
-  isAllSelected() {
-    return this.tokenSelection().length === this.tokenDataSource().data.length;
-  }
-
-  toggleAllRows() {
-    if (this.isAllSelected()) {
-      this.tokenSelection.set([]);
-    } else {
-      this.tokenSelection.set([...this.tokenDataSource().data]);
-    }
-  }
-
-  toggleRow(tokenDetails: TokenDetails): void {
-    const current = this.tokenSelection();
-    if (current.includes(tokenDetails)) {
-      this.tokenSelection.set(current.filter((r) => r !== tokenDetails));
-    } else {
-      this.tokenSelection.set([...current, tokenDetails]);
-    }
+  ngOnDestroy(): void {
+    this.tokenSelection.deselectAllRows();
   }
 
   toggleActive(tokenDetails: TokenDetails): void {
@@ -350,6 +338,16 @@ export class TokenTableComponent {
         });
       }
     }
+  }
+
+  selectedFilterValues(keyword: string): string[] {
+    return StringUtils.splitFilterList(this.tokenService.filterDraft().getValueOfKey(keyword));
+  }
+
+  setFilterValues(keyword: string, values: string[]): void {
+    this.tokenService.updateFilter((current) =>
+      values.length ? current.addEntry(keyword, values.join(",")) : current.removeKey(keyword)
+    );
   }
 
   onItemSelected(keyword: string, value: string): void {

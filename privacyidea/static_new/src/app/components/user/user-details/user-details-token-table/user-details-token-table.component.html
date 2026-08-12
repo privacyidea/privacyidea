@@ -34,7 +34,7 @@
         @if (authService.actionAllowed("delete")) {
           <button
             (click)="deleteSelected()"
-            [disabled]="selection().length === 0"
+            [disabled]="!selector.hasSelection()"
             class="action-button-delete-secondary button-width-l"
             mat-stroked-button>
             <mat-icon>delete_sweep</mat-icon>
@@ -44,7 +44,7 @@
         @if (authService.actionAllowed("unassign")) {
           <button
             (click)="unassignSelected()"
-            [disabled]="selection().length === 0"
+            [disabled]="!selector.hasSelection()"
             class="action-button-secondary button-width-l"
             mat-stroked-button>
             <mat-icon>person_remove</mat-icon>
@@ -54,7 +54,7 @@
         @if (authService.actionAllowed("enable") && authService.actionAllowed("disable")) {
           <button
             (click)="toggleActiveSelected()"
-            [disabled]="selection().length === 0"
+            [disabled]="!selector.hasSelection()"
             class="action-button-secondary button-width-l"
             mat-stroked-button>
             <mat-icon>toggle_on</mat-icon>
@@ -64,7 +64,7 @@
         @if (authService.actionAllowed("reset")) {
           <button
             (click)="resetFailcountSelected()"
-            [disabled]="selection().length === 0"
+            [disabled]="!selector.hasSelection()"
             class="action-button-secondary button-width-l"
             mat-stroked-button>
             <mat-icon>restart_alt</mat-icon>
@@ -87,20 +87,20 @@
               class="table-checkbox"
               mat-header-cell>
               <mat-checkbox
-                (change)="$event ? toggleAllRows() : null"
-                [checked]="isAllSelected()"
-                [disabled]="dataSource.data.length === 0"
-                [indeterminate]="selection().length > 0 && !isAllSelected()" />
+                (change)="$event.checked ? selector.selectAllRows() : selector.deselectAllRows()"
+                [checked]="selector.allRowsSelected()"
+                [disabled]="!selector.hasVisibleRows()"
+                [indeterminate]="selector.someRowsSelected()" />
             </th>
             <td
               *matCellDef="let row"
               class="table-checkbox"
               mat-cell>
               <mat-checkbox
-                (change)="$event ? toggleRow(row) : null"
+                (change)="selector.setRowSelected(row, $event.checked)"
                 (click)="$event.stopPropagation()"
-                [checked]="selection().includes(row)"
-                [disabled]="dataSource.data.length === 0" />
+                [checked]="selector.isRowSelected(row)"
+                [disabled]="!selector.hasVisibleRows()" />
             </td>
           </ng-container>
           @for (column of columnsKeyMap; track column) {

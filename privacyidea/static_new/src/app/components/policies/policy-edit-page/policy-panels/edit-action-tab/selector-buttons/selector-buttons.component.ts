@@ -19,12 +19,13 @@
 
 import { Component, ElementRef, input, linkedSignal, output, viewChildren, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
+import { MatIcon } from "@angular/material/icon";
 import { MatTooltipModule } from "@angular/material/tooltip";
 
 @Component({
   selector: "app-selector-buttons",
   standalone: true,
-  imports: [MatButtonModule, MatTooltipModule],
+  imports: [MatButtonModule, MatIcon, MatTooltipModule],
   templateUrl: "./selector-buttons.component.html",
   styleUrl: "./selector-buttons.component.scss"
 })
@@ -33,6 +34,7 @@ export class SelectorButtonsComponent<T> {
   readonly initialValue = input.required<T | undefined>();
   readonly values = input.required<T[]>();
   readonly labels = input<T[] | undefined>(undefined);
+  readonly icons = input<string[] | undefined>(undefined);
   readonly allowDeselect = input<boolean>(false);
   readonly disabled = input<boolean>(false);
 

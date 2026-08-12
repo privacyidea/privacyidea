@@ -10,3 +10,10 @@
   flex-direction: column;
   overflow: hidden;
 }
+
+.filter-action-button {
+  margin-left: 8px;
+  // align on the 56px input infix rather than the full field height, which includes the hint line below
+  align-self: flex-start;
+  margin-top: 8px;
+}

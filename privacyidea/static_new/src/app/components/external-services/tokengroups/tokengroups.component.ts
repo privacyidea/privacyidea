@@ -35,6 +35,7 @@ import { TableStateComponent } from "@components/shared/table-state/table-state.
 import { isInitialLoad, TableState } from "@core/models/table_state/table-state";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { renderedRows, RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { Tokengroup, TokengroupService, TokengroupServiceInterface } from "@services/tokengroup/tokengroup.service";
 
@@ -86,8 +87,6 @@ export class TokengroupsComponent {
 
   displayedColumns: string[] = ["select", "id", "groupname", "description"];
 
-  selection = signal<Tokengroup[]>([]);
-
   tokengroupDataSource = computed(() => {
     if (isInitialLoad(this.tokengroupService.tokengroupResource)) {
       return this.tableUtilsService.emptyDataSource<Tokengroup>(this.pageSizeOptions()[1] ?? 10, this.displayedColumns);
@@ -99,6 +98,11 @@ export class TokengroupsComponent {
     return dataSource;
   });
 
+  selector = new RowSelector<Tokengroup>({
+    keyGetter: (group) => group.groupname,
+    visibleRows: renderedRows(this.tokengroupDataSource)
+  });
+
   onCreateNewTokengroup(): void {
     this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_NEW);
   }
@@ -107,34 +111,8 @@ export class TokengroupsComponent {
     this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_DETAILS + group.groupname);
   }
 
-  isAllSelected(): boolean {
-    const rows = this.tokengroupDataSource().data;
-    return rows.length > 0 && this.selection().length === rows.length;
-  }
-
-  toggleAllRows(): void {
-    if (this.isAllSelected()) {
-      this.selection.set([]);
-    } else {
-      this.selection.set([...this.tokengroupDataSource().data]);
-    }
-  }
-
-  toggleRow(row: Tokengroup): void {
-    const current = this.selection();
-    if (current.includes(row)) {
-      this.selection.set(current.filter((selected) => selected !== row));
-    } else {
-      this.selection.set([...current, row]);
-    }
-  }
-
-  isSelected(row: Tokengroup): boolean {
-    return this.selection().includes(row);
-  }
-
   deleteSelected(): void {
-    const selected = this.selection();
+    const selected = this.selector.selectedRows();
     if (selected.length === 0) {
       return;
     }
@@ -152,7 +130,7 @@ export class TokengroupsComponent {
       .subscribe((result) => {
         if (result) {
           selected.forEach((row) => void this.tokengroupService.deleteTokengroup(row.groupname).catch(() => undefined));
-          this.selection.set([]);
+          this.selector.deselectAllRows();
         }
       });
   }

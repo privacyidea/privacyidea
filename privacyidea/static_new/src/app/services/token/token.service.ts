@@ -35,7 +35,11 @@ import { ContentService, ContentServiceInterface, DetailsUser } from "@services/
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
-import { FilterableTableService, FilterableTableServiceInterface } from "@services/table-utils/filterable-table-service";
+import {
+  FilterableTableService,
+  FilterableTableServiceInterface
+} from "@services/table-utils/filterable-table-service";
+import { loadedRows, RowSelector } from "@services/table-utils/row-selector";
 import { FilterCaseNote } from "@utils/filter-hint.utils";
 import { filterParamsEqual, toBooleanParam, withDefaultRealm } from "@utils/filter.utils";
 import { StringUtils } from "@utils/string.utils";
@@ -131,6 +135,50 @@ const caseNotes: Record<string, FilterCaseNote> = {
 // the filter clauses were removed in 78c0cc621 and not restored. Once they either work
 // again or are dropped, remove this set along with the whole "unsupported" mechanism.
 const unsupportedKeys = new Set(["userid", "resolver"]);
+
+function toParamValue(key: string, value: string): string {
+  if (booleanKeys.has(key)) {
+    return toBooleanParam(value) ?? value;
+  }
+  if (exactMatchKeys.has(key)) {
+    return value;
+  }
+  // The tokenrealm query param accepts a comma-separated list, so every entry is wildcarded on its own.
+  if (key === "tokenrealm") {
+    return StringUtils.splitFilterList(value)
+      .map((entry) => `*${entry}*`)
+      .join(",");
+  }
+  return `*${value}*`;
+}
+
+// A single typed token type maps to the `type` query param, multiple to `type_list`. A hidden
+// `type_list` is the set of types the route allows at all, so it is sent as its own param and
+// the backend ands both clauses. Several typed types share the param with the allowed set and
+// are therefore narrowed down to it.
+function toTypeParams(filter: FilterValue): Record<string, string> {
+  const allowedTypes = StringUtils.splitFilterList(filter.hiddenFilterMap.get("type_list"));
+  const typedTypes = Array.from(
+    new Set([
+      ...StringUtils.splitFilterList(filter.filterMap.get("type")),
+      ...StringUtils.splitFilterList(filter.filterMap.get("type_list"))
+    ])
+  );
+  const params: Record<string, string> = {};
+  if (allowedTypes.length > 0) {
+    params["type_list"] = allowedTypes.join(",");
+  }
+  if (typedTypes.length === 1) {
+    params["type"] = `*${typedTypes[0]}*`;
+  } else if (typedTypes.length > 1) {
+    const narrowedTypes =
+      allowedTypes.length > 0 ? typedTypes.filter((type) => allowedTypes.includes(type)) : typedTypes;
+    if (narrowedTypes.length > 0) {
+      params["type_list"] = narrowedTypes.join(",");
+    }
+  }
+  return params;
+}
 
 export interface Tokens {
   count: number;
@@ -300,7 +348,7 @@ export interface TokenServiceInterface extends FilterableTableServiceInterface {
   tokenResource: HttpResourceRef<PiResponse<Tokens> | undefined>;
   tokenSerialResource: HttpResourceRef<PiResponse<Tokens> | undefined>;
   tokenResourceValue: Signal<Tokens | null>;
-  tokenSelection: WritableSignal<TokenDetails[]>;
+  tokenSelection: RowSelector<TokenDetails>;
   selectedToken: WritableSignal<string | null>;
   tokenOptions: Signal<string[]>;
   filteredTokenOptions: Signal<string[]>;
@@ -461,18 +509,17 @@ export class TokenService extends FilterableTableService implements TokenService
   override readonly filterParams = computed<Record<string, string>>(
     () => {
       const allowed = [...this.allFilterKeys(), "infokey", "infovalue"];
-      const plainKeys = exactMatchKeys;
-      const entries = this.activeFilter()
-        .allEntries.filter(([key]) => allowed.includes(key))
+      const activeFilter = this.activeFilter();
+      const entries = activeFilter.allEntries
+        // Filter unknown keys, token types are handled by toTypeParams
+        .filter(([key]) => allowed.includes(key) && key !== "type" && key !== "type_list")
+        // Normalize values
         .map(([key, value]) => [key, (value ?? "").toString().trim()] as const)
+        // Remove empty values
         .filter(([key, v]) => (key === "container_serial" ? true : StringUtils.validFilterValue(v)))
-        .map(([key, v]) => {
-          if (booleanKeys.has(key)) {
-            return [key, toBooleanParam(v) ?? v] as const;
-          }
-          return [key, plainKeys.has(key) ? v : `*${v}*`] as const;
-        });
-      return Object.fromEntries(entries) as Record<string, string>;
+        // Convert to query param values
+        .map(([key, v]) => [key, toParamValue(key, v)] as const);
+      return { ...Object.fromEntries(entries), ...toTypeParams(activeFilter) };
     },
     { equal: filterParamsEqual }
   );
@@ -675,12 +722,9 @@ export class TokenService extends FilterableTableService implements TokenService
     return this.tokenResource.value()?.result?.value || null;
   });
 
-  tokenSelection: WritableSignal<TokenDetails[]> = linkedSignal({
-    source: () => ({
-      routeUrl: this.contentService.routeUrl(),
-      tokenResource: this.tokenResourceValue()
-    }),
-    computation: () => []
+  tokenSelection = new RowSelector<TokenDetails>({
+    keyGetter: (token) => token.serial,
+    visibleRows: loadedRows(this.tokenResource, (response) => response.result?.value?.tokens)
   });
 
   selectedToken = signal<string | null>(null);

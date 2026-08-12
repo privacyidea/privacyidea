@@ -33,6 +33,7 @@ import { ClientsService } from "@services/clients/clients.service";
 import { ContainerTemplateService } from "@services/container-template/container-template.service";
 import { ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
+import { DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { DocumentationService } from "@services/documentation/documentation.service";
 import { EventService } from "@services/event/event.service";
@@ -216,10 +217,18 @@ describe("UserUtilsPanelComponent", () => {
     it("refreshes user details route", () => {
       content.routeUrl.set(`${ROUTE_PATHS.USERS_DETAILS}/alice`);
       component.refreshPage();
-      expect(userService.usersResource.reload).toHaveBeenCalled();
+      expect(userService.userResource.reload).toHaveBeenCalled();
       expect(tokenService.tokenResource.reload).toHaveBeenCalled();
       expect(tokenService.userTokenResource.reload).toHaveBeenCalled();
       expect(containerService.userContainersResource.reload).toHaveBeenCalled();
+    });
+
+    it("refreshes dashboard route", () => {
+      content.routeUrl.set(ROUTE_PATHS.DASHBOARD);
+      const dataStore = TestBed.inject(DashboardDataStore);
+      const refreshSpy = jest.spyOn(dataStore, "refreshAll");
+      component.refreshPage();
+      expect(refreshSpy).toHaveBeenCalled();
     });
 
     it("refreshes tokens route", () => {

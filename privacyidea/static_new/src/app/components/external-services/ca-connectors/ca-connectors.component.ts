@@ -42,6 +42,7 @@ import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-t
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
 import { isInitialLoad, TableState } from "@core/models/table_state/table-state";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { renderedRows, RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 
 @Component({
@@ -91,8 +92,6 @@ export class CaConnectorsComponent {
 
   displayedColumns: string[] = ["select", "connectorname", "type"];
 
-  selection = signal<CaConnector[]>([]);
-
   caConnectorDataSource = computed(() => {
     if (isInitialLoad(this.caConnectorService.caConnectorResource)) {
       return this.tableUtilsService.emptyDataSource<CaConnector>(
@@ -107,6 +106,11 @@ export class CaConnectorsComponent {
     return dataSource;
   });
 
+  selector = new RowSelector<CaConnector>({
+    keyGetter: (connector) => connector.connectorname,
+    visibleRows: renderedRows(this.caConnectorDataSource)
+  });
+
   openEditDialog(connector?: CaConnector): void {
     if (connector) {
       this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS_DETAILS + connector.connectorname);
@@ -115,34 +119,8 @@ export class CaConnectorsComponent {
     }
   }
 
-  isAllSelected(): boolean {
-    const rows = this.caConnectorDataSource().data;
-    return rows.length > 0 && this.selection().length === rows.length;
-  }
-
-  toggleAllRows(): void {
-    if (this.isAllSelected()) {
-      this.selection.set([]);
-    } else {
-      this.selection.set([...this.caConnectorDataSource().data]);
-    }
-  }
-
-  toggleRow(row: CaConnector): void {
-    const current = this.selection();
-    if (current.includes(row)) {
-      this.selection.set(current.filter((selected) => selected !== row));
-    } else {
-      this.selection.set([...current, row]);
-    }
-  }
-
-  isSelected(row: CaConnector): boolean {
-    return this.selection().includes(row);
-  }
-
   deleteSelected(): void {
-    const selected = this.selection();
+    const selected = this.selector.selectedRows();
     if (selected.length === 0) {
       return;
     }
@@ -162,7 +140,7 @@ export class CaConnectorsComponent {
           selected.forEach(
             (row) => void this.caConnectorService.deleteCaConnector(row.connectorname).catch(() => undefined)
           );
-          this.selection.set([]);
+          this.selector.deselectAllRows();
         }
       });
   }

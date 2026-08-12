@@ -19,7 +19,6 @@
 
 import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { MatCheckboxChange } from "@angular/material/checkbox";
 import { By } from "@angular/platform-browser";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
@@ -122,49 +121,39 @@ describe("ContainerTemplatesComponent", () => {
     expect(component.pageIndex()).toBe(0);
   });
 
-  it("should only select displayed rows on the current page when toggleAllRows is called", () => {
+  it("should only select displayed rows on the current page", () => {
     component.pageSize.set(1);
     fixture.detectChanges();
 
-    component.toggleAllRows();
-    expect(component.selectedTemplateNames().size).toBe(1);
-    expect(component.selectedTemplateNames().has("Template-C")).toBeTruthy();
-    expect(component.selectedTemplates().length).toBe(1);
+    component.selector.selectAllRows();
+
+    expect(component.selector.selectedRows().map((template) => template.name)).toEqual(["Template-C"]);
+    expect(component.selector.allRowsSelected()).toBe(true);
   });
 
   it("should clear selection when page changes", () => {
     component.pageSize.set(1);
     fixture.detectChanges();
-    component.toggleAllRows();
+    component.selector.selectAllRows();
 
     component.pageIndex.set(1);
     fixture.detectChanges();
 
-    expect(component.selectedTemplateNames().size).toBe(0);
-  });
-
-  it("should update selection when updateSelection is called", () => {
-    const template = mockTemplates[0];
-    component.updateSelection({ checked: true } as MatCheckboxChange, template);
-    expect(component.selectedTemplateNames().has(template.name)).toBeTruthy();
-    expect(component.selectedTemplates()[0].name).toBe(template.name);
-
-    component.updateSelection({ checked: false } as MatCheckboxChange, template);
-    expect(component.selectedTemplateNames().has(template.name)).toBeFalsy();
+    expect(component.selector.hasSelection()).toBe(false);
   });
 
   it("should reduce selection when pageSize changes from 10 to 1 and update child component", () => {
     component.pageSize.set(10);
     fixture.detectChanges();
 
-    component.toggleAllRows();
+    component.selector.selectAllRows();
     fixture.detectChanges();
-    expect(component.selectedTemplates().length).toBe(3);
+    expect(component.selector.selectedCount()).toBe(3);
 
     component.pageSize.set(1);
     fixture.detectChanges();
 
-    expect(component.selectedTemplates().length).toBe(1);
+    expect(component.selector.selectedCount()).toBe(1);
 
     const actionComponent = fixture.debugElement.query(
       By.css("app-container-templates-table-actions")

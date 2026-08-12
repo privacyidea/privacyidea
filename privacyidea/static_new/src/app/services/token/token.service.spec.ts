@@ -448,6 +448,81 @@ describe("TokenService", () => {
       expect(req.request.params.get("serial")).toBe("*OTP*");
       req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
     });
+
+    it("sends a hidden type_list entry unwrapped as a comma-separated param", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(new FilterValue().updateHiddenEntry("type_list", "hotp,webauthn"));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("type_list")).toBe("hotp,webauthn");
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("combines a hidden type_list with a typed tokentype filter", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(
+        new FilterValue({ value: "type: hotp" }).updateHiddenEntry("type_list", "hotp,webauthn")
+      );
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("type_list")).toBe("hotp,webauthn");
+      expect(req.request.params.get("type")).toBe("*hotp*");
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("omits type_list when the hidden entry is empty", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(new FilterValue().updateHiddenEntry("type_list", ""));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.has("type_list")).toBe(false);
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+    it("sends a single token type as a wildcarded type param", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(new FilterValue({ value: "type: hotp" }));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("type")).toBe("*hotp*");
+      expect(req.request.params.has("type_list")).toBe(false);
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("sends multiple token types as type_list instead of type", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(new FilterValue({ value: "type: hotp,totp" }));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("type_list")).toBe("hotp,totp");
+      expect(req.request.params.has("type")).toBe(false);
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("merges the type and type_list keywords into a single deduplicated list", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(new FilterValue({ value: "type: hotp type_list: totp,hotp" }));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("type_list")).toBe("hotp,totp");
+      expect(req.request.params.has("type")).toBe(false);
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("wildcard-wraps every token realm of a comma-separated list on its own", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(new FilterValue({ value: "tokenrealm: realm1,realm2" }));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("tokenrealm")).toBe("*realm1*,*realm2*");
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
   });
 
   describe("tokenTypeOptions() ordering", () => {
@@ -1249,6 +1324,29 @@ describe("TokenService", () => {
 
       expect(tokenService.tokenResource.hasValue()).toBe(true);
       expect(tokenService.tokenResourceValue()).toEqual(responseValue);
+    });
+
+    it("scopes tokenSelection to the loaded page and drops it when a new page arrives", async () => {
+      contentServiceMock.onTokens = signal(true);
+      TestBed.tick();
+
+      const firstPage = mockBackend.expectOne((r) => r.url === "/token/");
+      firstPage.flush(
+        MockPiResponse.fromValue({ count: 25, current: 1, tokens: [{ serial: "T-1" }, { serial: "T-2" }] })
+      );
+      await Promise.resolve();
+
+      tokenService.tokenSelection.selectAllRows();
+      expect(tokenService.tokenSelection.selectedRows().map((token) => token.serial)).toEqual(["T-1", "T-2"]);
+      expect(tokenService.tokenSelection.allRowsSelected()).toBe(true);
+
+      tokenService.pageIndex.set(1);
+      TestBed.tick();
+      const secondPage = mockBackend.expectOne((r) => r.url === "/token/");
+      secondPage.flush(MockPiResponse.fromValue({ count: 25, current: 2, tokens: [{ serial: "T-3" }] }));
+      await Promise.resolve();
+
+      expect(tokenService.tokenSelection.hasSelection()).toBe(false);
     });
 
     it("should handle error state from tokenResource", async () => {

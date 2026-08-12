@@ -49,6 +49,7 @@ import {
 } from "@services/container/container.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { forkJoin } from "rxjs";
@@ -113,12 +114,9 @@ export class UserDetailsContainerTableComponent {
     }
   });
 
-  selection: WritableSignal<ContainerDetailData[]> = linkedSignal({
-    source: () =>
-      this.containerService.userContainersResource.hasValue()
-        ? this.containerService.userContainersResource.value()
-        : undefined,
-    computation: () => []
+  selector = new RowSelector<ContainerDetailData>({
+    keyGetter: (container) => container.serial,
+    visibleRows: this.userContainers
   });
 
   readonly tableState = new TableState({
@@ -149,29 +147,8 @@ export class UserDetailsContainerTableComponent {
     });
   }
 
-  isAllSelected() {
-    return this.selection().length === this.dataSource.data.length && this.dataSource.data.length > 0;
-  }
-
-  toggleAllRows() {
-    if (this.isAllSelected()) {
-      this.selection.set([]);
-    } else {
-      this.selection.set([...this.dataSource.data]);
-    }
-  }
-
-  toggleRow(row: ContainerDetailData) {
-    const current = this.selection();
-    if (current.includes(row)) {
-      this.selection.set(current.filter((r) => r !== row));
-    } else {
-      this.selection.set([...current, row]);
-    }
-  }
-
   deleteSelected() {
-    const selected = this.selection();
+    const selected = this.selector.selectedRows();
     this.dialogService
       .openDialog({
         component: SimpleConfirmationDialogComponent,
@@ -195,7 +172,7 @@ export class UserDetailsContainerTableComponent {
   }
 
   unassignSelected() {
-    const selected = this.selection();
+    const selected = this.selector.selectedRows();
     const username = this.userService.detailsUser().username;
     const realm = this.userService.selectedUserRealm();
     forkJoin(
@@ -206,7 +183,7 @@ export class UserDetailsContainerTableComponent {
   }
 
   toggleActiveSelected() {
-    const selected = this.selection();
+    const selected = this.selector.selectedRows();
     forkJoin(
       selected.map((container) => this.containerService.toggleActive(container.serial, container.states))
     ).subscribe({

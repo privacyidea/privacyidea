@@ -91,12 +91,12 @@
                 class="table-checkbox"
                 mat-header-cell>
                 <mat-checkbox
-                  (change)="$event ? toggleAllRows() : null"
+                  (change)="$event.checked ? tokenSelection.selectAllRows() : tokenSelection.deselectAllRows()"
                   aria-label="Select all tokens"
                   i18n-aria-label
-                  [checked]="isAllSelected()"
-                  [disabled]="totalLength() === 0"
-                  [indeterminate]="tokenSelection().length > 0 && !isAllSelected()" />
+                  [checked]="tokenSelection.allRowsSelected()"
+                  [disabled]="!tokenSelection.hasVisibleRows()"
+                  [indeterminate]="tokenSelection.someRowsSelected()" />
               </th>
             } @else {
               <th
@@ -108,20 +108,22 @@
                     @if (
                       apiFilterKeyMap[column.key] && tokenService.apiFilterKeys.includes(apiFilterKeyMap[column.key])
                     ) {
-                      @if (apiFilterKeyMap[column.key] === "realm" || apiFilterKeyMap[column.key] === "tokenrealm") {
+                      @if (apiFilterKeyMap[column.key] === "tokenrealm") {
+                        <app-multi-select-filter
+                          [label]="column.label"
+                          [options]="realmService.realmOptions()"
+                          [selected]="selectedFilterValues('tokenrealm')"
+                          (selectionChange)="setFilterValues('tokenrealm', $event)" />
+                      } @else if (apiFilterKeyMap[column.key] === "type") {
+                        <app-multi-select-filter
+                          [label]="column.label"
+                          [options]="tokenTypeFilterOptions()"
+                          [selected]="selectedFilterValues('type')"
+                          (selectionChange)="setFilterValues('type', $event)" />
+                      } @else if (apiFilterKeyMap[column.key] === "realm") {
                         <button
                           [matMenuTriggerData]="{ keyword: apiFilterKeyMap[column.key] }"
                           [matMenuTriggerFor]="realmMenu"
-                          aria-label="Filter by {{ column.label }}"
-                          i18n-aria-label
-                          class="filter-button"
-                          mat-icon-button>
-                          <mat-icon class="keyword-button-icon margin-left-0"> filter_list</mat-icon>
-                        </button>
-                      } @else if (apiFilterKeyMap[column.key] === "type") {
-                        <button
-                          [matMenuTriggerData]="{ keyword: apiFilterKeyMap[column.key] }"
-                          [matMenuTriggerFor]="typeMenu"
                           aria-label="Filter by {{ column.label }}"
                           i18n-aria-label
                           class="filter-button"
@@ -167,11 +169,11 @@
                 @switch (column.key) {
                   @case ("select") {
                     <mat-checkbox
-                      (change)="$event ? toggleRow(tokenDetails) : null"
+                      (change)="tokenSelection.setRowSelected(tokenDetails, $event.checked)"
                       (click)="$event.stopPropagation()"
                       attr.aria-label="Select token {{ tokenDetails.serial }}"
-                      [checked]="tokenSelection().includes(tokenDetails)"
-                      [disabled]="totalLength() === 0" />
+                      [checked]="tokenSelection.isRowSelected(tokenDetails)"
+                      [disabled]="!tokenSelection.hasVisibleRows()" />
                   }
                   @case ("serial") {
                     <app-copyable [copyText]="tokenDetails.serial">
@@ -333,27 +335,6 @@
         (click)="onItemSelected(keyword, realm)"
         mat-menu-item>
         {{ realm }}
-      </button>
-    }
-  </ng-template>
-</mat-menu>
-
-<mat-menu #typeMenu="matMenu">
-  <ng-template
-    let-keyword="keyword"
-    matMenuContent>
-    <button
-      (click)="onItemSelected(keyword, '')"
-      mat-menu-item>
-      <mat-icon>filter_alt_off</mat-icon>
-      <span i18n>Clear Filter</span>
-    </button>
-    <mat-divider />
-    @for (typeOption of tokenService.tokenTypeOptions(); track typeOption.key) {
-      <button
-        (click)="onItemSelected(keyword, typeOption.key)"
-        mat-menu-item>
-        {{ typeOption.key }}
       </button>
     }
   </ng-template>

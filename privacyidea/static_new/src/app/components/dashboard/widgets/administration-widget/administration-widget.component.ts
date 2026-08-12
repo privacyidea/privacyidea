@@ -18,6 +18,9 @@
  **/
 import { Component, OnInit, computed, effect, inject, signal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { TableSortHeaderComponent } from "@components/dashboard/widgets/table-sort/table-sort-header.component";
+import { TableSort } from "@components/dashboard/widgets/table-sort/table-sort";
 import { WidgetStateComponent } from "@components/dashboard/widgets/widget-state/widget-state.component";
 import { LocalDateTimePipe } from "@components/shared/pipes/local-date-time.pipe";
 import { DASHBOARD_COLUMNS, DashboardWidget, WidgetSize } from "@models/dashboard";
@@ -29,7 +32,7 @@ import { forkJoin } from "rxjs";
 @Component({
   selector: "app-administration-widget",
   standalone: true,
-  imports: [LocalDateTimePipe, WidgetStateComponent],
+  imports: [LocalDateTimePipe, WidgetStateComponent, TableSortHeaderComponent],
   templateUrl: "./administration-widget.component.html",
   styleUrl: "./administration-widget.component.scss"
 })
@@ -38,6 +41,8 @@ export class AdministrationWidgetComponent extends DashboardWidget implements On
   static override readonly requiredAction = "auditlog";
   static override readonly title = $localize`Administration`;
   static override readonly icon = "supervised_user_circle";
+  static override readonly titleLink = ROUTE_PATHS.AUDIT;
+  static override readonly titleLinkAction = "auditlog";
   static override readonly defaultSize: WidgetSize = { cols: 10, rows: 6 };
   static override readonly minSize: WidgetSize = { cols: 7, rows: 4 };
   static override readonly maxSize: WidgetSize = { cols: DASHBOARD_COLUMNS, rows: 8 };
@@ -50,6 +55,10 @@ export class AdministrationWidgetComponent extends DashboardWidget implements On
 
   private readonly dataRef = signal<DashboardDataRef<PiResponse<Audit>[]> | null>(null);
   override readonly partialLoading = computed(() => this.dataRef()?.revalidating() ?? false);
+  override readonly refreshFailed = computed(() => {
+    const ref = this.dataRef();
+    return !!ref && ref.error() && ref.value() !== undefined;
+  });
 
   readonly entries = computed<AuditData[]>(() => {
     const responses = this.dataRef()?.value() ?? [];
@@ -68,6 +77,15 @@ export class AdministrationWidgetComponent extends DashboardWidget implements On
     return collected.slice(0, 5);
   });
 
+  readonly sort = new TableSort<AuditData, "date" | "administrator" | "action" | "action_detail">({
+    date: (entry) => entry.date,
+    administrator: (entry) => entry.administrator,
+    action: (entry) => entry.action,
+    action_detail: (entry) => entry.action_detail
+  });
+
+  readonly sortedEntries = computed<AuditData[]>(() => this.sort.apply(this.entries()));
+
   constructor() {
     super();
     effect(() => {
@@ -76,18 +94,15 @@ export class AdministrationWidgetComponent extends DashboardWidget implements On
         return;
       }
       const value = ref.value();
-      if (value !== undefined) {
-        this.state.set(value.every((response) => response.result?.status === true) ? "ready" : "error");
-      } else if (ref.error()) {
-        this.state.set("error");
-      } else {
-        this.state.set("loading");
+      if (value === undefined) {
+        this.state.set(ref.error() ? "error" : "loading");
+        return;
       }
+      this.state.set(value.every((response) => response.result?.status === true) ? "ready" : "error");
     });
   }
 
   override reload(): void {
-    this.store.invalidate("dashboard:administration");
     this.ngOnInit();
   }
 

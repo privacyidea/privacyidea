@@ -278,6 +278,7 @@ table {
 .mat-mdc-paginator-container {
   padding: 0 0 0 var(--global-padding);
   flex-wrap: nowrap !important;
+  --mat-paginator-container-size: 0px;
 }
 
 a {
@@ -552,7 +553,6 @@ tr.skeleton-row {
 
 .details-cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
   gap: 16px;
   align-items: start;
 }
@@ -632,6 +632,10 @@ tr.skeleton-row {
 .selfservice-paginator-label {
   flex: 1;
   margin-right: 16px;
+}
+
+.mat-mdc-autocomplete-panel.token-option-panel {
+  max-height: 400px;
 }
 
 .token-option {

@@ -38,6 +38,7 @@ import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-t
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
 import { isInitialLoad, TableState } from "@core/models/table_state/table-state";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { renderedRows, RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 
 @Component({
@@ -86,8 +87,6 @@ export class SmtpServersComponent {
 
   displayedColumns: string[] = ["select", "identifier", "server", "sender", "tls", "description"];
 
-  selection = signal<SmtpServer[]>([]);
-
   smtpDataSource = computed(() => {
     if (isInitialLoad(this.smtpService.smtpServerResource)) {
       return this.tableUtilsService.emptyDataSource<SmtpServer>(this.pageSizeOptions()[1] ?? 10, this.displayedColumns);
@@ -99,6 +98,11 @@ export class SmtpServersComponent {
     return dataSource;
   });
 
+  selector = new RowSelector<SmtpServer>({
+    keyGetter: (server) => server.identifier,
+    visibleRows: renderedRows(this.smtpDataSource)
+  });
+
   onCreateNewServer(): void {
     this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP_NEW);
   }
@@ -107,34 +111,8 @@ export class SmtpServersComponent {
     this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP_DETAILS + server.identifier);
   }
 
-  isAllSelected(): boolean {
-    const rows = this.smtpDataSource().data;
-    return rows.length > 0 && this.selection().length === rows.length;
-  }
-
-  toggleAllRows(): void {
-    if (this.isAllSelected()) {
-      this.selection.set([]);
-    } else {
-      this.selection.set([...this.smtpDataSource().data]);
-    }
-  }
-
-  toggleRow(row: SmtpServer): void {
-    const current = this.selection();
-    if (current.includes(row)) {
-      this.selection.set(current.filter((selected) => selected !== row));
-    } else {
-      this.selection.set([...current, row]);
-    }
-  }
-
-  isSelected(row: SmtpServer): boolean {
-    return this.selection().includes(row);
-  }
-
   deleteSelected(): void {
-    const selected = this.selection();
+    const selected = this.selector.selectedRows();
     if (selected.length === 0) {
       return;
     }
@@ -152,7 +130,7 @@ export class SmtpServersComponent {
       .subscribe((result) => {
         if (result) {
           selected.forEach((row) => void this.smtpService.deleteSmtpServer(row.identifier).catch(() => undefined));
-          this.selection.set([]);
+          this.selector.deselectAllRows();
         }
       });
   }
