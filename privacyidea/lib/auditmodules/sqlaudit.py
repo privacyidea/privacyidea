@@ -43,12 +43,14 @@ token database.
 """
 
 import datetime
+import inspect
 import logging
 import traceback
 from collections import OrderedDict
 
 from sqlalchemy import asc, desc, and_, or_, select, delete
 from sqlalchemy import create_engine
+from sqlalchemy.engine.url import make_url
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.sql.expression import FunctionElement
@@ -65,6 +67,26 @@ from privacyidea.models import Audit as LogEntry
 from privacyidea.models import audit_column_length as column_length
 
 log = logging.getLogger(__name__)
+
+
+def _pool_accepts_pool_size(connect_string, engine_kwargs):
+    """
+    Check whether the connection pool that ``create_engine()`` will use for this
+    connect string takes a ``pool_size``.
+
+    ``NullPool`` and ``StaticPool`` do not, and they can be requested for any database
+    through the ``poolclass`` engine option, so the database type alone does not answer
+    this. Passing ``pool_size`` to a pool that does not know it is a ``TypeError``.
+
+    :param connect_string: The connect string the engine will be created with
+    :param engine_kwargs: The keyword arguments for ``create_engine()``
+    :return: True if the pool takes a pool_size
+    """
+    pool_class = engine_kwargs.get("poolclass")
+    if pool_class is None:
+        url = make_url(connect_string)
+        pool_class = url.get_dialect().get_pool_class(url)
+    return "pool_size" in inspect.signature(pool_class).parameters
 
 
 # Define function to convert SQL DateTime objects to an ISO-format string
@@ -185,27 +207,17 @@ class Audit(AuditBase):
                                       self.config.get(ConfigKey.SQLALCHEMY_ENGINE_OPTIONS, {}))
         log.debug(f"Using Audit SQLAlchemy engine options: {sqa_options!s}")
         # The engine options are merged over the pool defaults instead of being passed
-        # alongside them: a key present in both would raise a TypeError about duplicate
-        # keyword arguments, which is indistinguishable from the SQLite case below and
-        # would silently drop the audit pool settings.
-        engine_kwargs = {"pool_size": self.config.get(ConfigKey.AUDIT_POOL_SIZE, 20),
-                         "pool_recycle": self.config.get(ConfigKey.AUDIT_POOL_RECYCLE, 600)}
+        # alongside them, because a key present in both would raise a TypeError about
+        # duplicate keyword arguments and take the whole pool configuration down with it.
+        # The merge comes first, since the poolclass may be configured here as well.
+        engine_kwargs = {"pool_recycle": self.config.get(ConfigKey.AUDIT_POOL_RECYCLE, 600)}
         engine_kwargs.update(sqa_options)
-        try:
-            engine = create_engine(connect_string, **engine_kwargs)
+        if _pool_accepts_pool_size(connect_string, engine_kwargs):
+            engine_kwargs.setdefault("pool_size", self.config.get(ConfigKey.AUDIT_POOL_SIZE, 20))
             log.debug(f"Using SQL pool size of {engine_kwargs['pool_size']}")
-        except TypeError:
-            # Depending on the pool it picks, SQLite does not accept pool_size. Which
-            # pool that is depends on the SQLAlchemy version and on whether the database
-            # is a file or in memory, and the error does not always name the argument,
-            # so the connect string decides. On any other database a TypeError means the
-            # configuration is wrong and has to be seen.
-            if not connect_string.startswith("sqlite"):
-                raise
-            engine_kwargs.pop("pool_size", None)
-            engine = create_engine(connect_string, **engine_kwargs)
-            log.debug("Using no SQL pool_size.")
-        return engine
+        else:
+            log.debug("The configured connection pool takes no pool size, using none.")
+        return create_engine(connect_string, **engine_kwargs)
 
     def _finalize_session(self):
         """ Close current session and dispose connections of db engine"""
