@@ -303,9 +303,9 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
     per event rather than a row plus corrections. The returned :class:`PendingAuthEvent` is that handle; its
     ``row_id`` is filled in when the row is written.
 
-    Pass *immediate* to flush the buffer on the spot. Needed only when the row has to be ordered ahead of one another
-    **request** writes while this one is still running - the ``push_wait`` trigger, whose answer arrives out of band at
-    ``/ttype/push`` during the wait, and whose row ``id`` must stay below that answer's.
+    Pass *immediate* to flush the buffer on the spot. Needed only when this row has to be ordered ahead of a row that
+    **another request** writes while this one is still running - the ``push_wait`` trigger, whose answer arrives out of
+    band at ``/ttype/push`` during the wait, and whose row ``id`` must therefore stay below that answer's.
 
     The ``(resolver, uid, realm)`` identity tuple is only written for a resolved
     user; an unresolvable user (e.g. USER_UNKNOWN) is logged with resolver and uid

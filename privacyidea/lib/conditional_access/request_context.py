@@ -30,7 +30,7 @@ import secrets
 from dataclasses import dataclass, field
 from typing import Any
 
-from flask import has_app_context
+from flask import has_request_context
 
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType,
                                                                            CA_ENFORCEMENT_EVENT_TYPES)
@@ -414,10 +414,15 @@ def current_attempt_id() -> str | None:
     The attempt id of the request in progress, or ``None`` when there is no request to attribute anything to.
 
     For :func:`~privacyidea.lib.token.auth.create_challenge`, which stamps it into every challenge so a later request
-    answering that challenge can rejoin the attempt. Outside an app context - the CLI, a periodic task - there is no
-    attempt to speak of and the challenge simply carries none.
+    answering that challenge can rejoin the attempt.
+
+    An attempt is a property of one HTTP request, so this deliberately tests for a **request** context rather than
+    merely an app context. A ``pi-manage`` command or a periodic task runs inside an app context and would otherwise be
+    handed an attempt id - and since the buffer lives on ``g``, which such a task holds for its whole run, every
+    challenge it created would be stamped with the *same* id and read back as one authentication attempt. Outside a
+    request there is no attempt to speak of, so the challenge carries none and a request answering it starts its own.
     """
-    if not has_app_context():
+    if not has_request_context():
         return None
     return get_ca_context().attempt_id
 
