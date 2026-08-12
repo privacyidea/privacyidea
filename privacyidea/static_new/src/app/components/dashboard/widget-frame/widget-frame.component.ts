@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { CdkDragHandle } from "@angular/cdk/drag-drop";
-import { RouterLink } from "@angular/router";
 import { NgComponentOutlet } from "@angular/common";
 import { Component, computed, inject, input, viewChild } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
@@ -80,8 +79,6 @@ export class WidgetFrameComponent {
   });
 
   protected readonly headerIcon = computed(() => this.widgetType()?.headerIcon ?? null);
-  // Set by a widget that summarizes one page, so its title doubles as the way there.
-  protected readonly titleLink = computed(() => this.widgetType()?.titleLink ?? null);
 
   protected readonly titleLink = computed(() => {
     if (this.layoutService.editMode()) {
