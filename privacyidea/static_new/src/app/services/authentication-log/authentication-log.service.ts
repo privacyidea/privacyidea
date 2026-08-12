@@ -71,8 +71,6 @@ function shallowEqualRecord(a: Record<string, string>, b: Record<string, string>
 
 // Filter parameters that the backend matches exactly (see _FILTER_PARAMS in api/authentication_log.py).
 const apiFilter = [
-  "resolver",
-  "uid",
   "realm",
   "username",
   "event_type",
@@ -86,7 +84,9 @@ const apiFilter = [
 // Filters not tied to a table column, reached via the "more filters" control instead of a column header. The three
 // ca_* ones filter on the entry's conditional-access outcomes (see _FILTER_PARAMS in api/authentication_log.py): they
 // are offered in the Conditional access column's menu, and listed here so they can also be typed in the main filter.
-const advancedApiFilter: string[] = ["user_role", "ca_action_type", "ca_policy_name", "ca_dry_run"];
+// resolver and uid have no column either - they identify the same user the username column already names - but stay
+// filterable by hand.
+const advancedApiFilter: string[] = ["user_role", "resolver", "uid", "ca_action_type", "ca_policy_name", "ca_dry_run"];
 
 export interface AuthenticationLogServiceInterface {
   apiFilter: string[];

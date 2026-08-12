@@ -38,8 +38,8 @@
             matInput
             placeholder="Example query: 'username: alice event_type: LOGIN_SUCCESS'" />
         </app-clearable-input>
-        <mat-hint i18n>The search is case-insensitive. Use * as a wildcard. Wrap the filter value in quotation marks
-                       if it contains colons or spaces.
+        <mat-hint i18n>The search is case-insensitive. Use * as a wildcard. Wrap the filter value in quotation marks if
+                       it contains colons or spaces.
         </mat-hint>
       </mat-form-field>
     </div>
@@ -394,23 +394,6 @@
                     </app-copyable>
                   }
                 }
-                @case ("resolver") {
-                  @if (element.resolver) {
-                    <app-copyable [copyText]="element.resolver">
-                      <a
-                        [routerLink]="['/users/resolvers/details', element.resolver]"
-                        aria-label="{{ column.label }} Link"
-                        i18n-aria-label>
-                        {{ element.resolver }}
-                      </a>
-                      <app-filter-value-button
-                        class="margin-left-8"
-                        [label]="filterTooltip('resolver')"
-                        [value]="element.resolver"
-                        (filterValue)="addFilterValue('resolver', $event)" />
-                    </app-copyable>
-                  }
-                }
                 @case ("conditional_access_outcomes") {
                   <app-conditional-access-cell
                     [entryId]="element.id"
@@ -422,8 +405,20 @@
                 }
                 @default {
                   @if (element[column.key]) {
+                    @let truncateWidth = truncatedWidth(column.key);
                     <app-copyable [copyText]="element[column.key]">
-                      <span>{{ element[column.key] }}</span>
+                      @if (truncateWidth) {
+                        <!-- Clipped to a fixed width; the tooltip carries the full value, and it stays copyable and
+                             filterable in full. -->
+                        <span
+                          class="cell-truncate"
+                          [style.max-width]="truncateWidth"
+                          [appTruncationTooltip]="element[column.key]">
+                            {{ element[column.key] }}
+                        </span>
+                      } @else {
+                        <span>{{ element[column.key] }}</span>
+                      }
                       @if (showInlineCellFilter(column.key)) {
                         <app-filter-value-button
                           class="margin-left-8"

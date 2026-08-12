@@ -37,6 +37,14 @@
   overflow-wrap: break-word;
 }
 
+// Long values (attempt id, client label) clipped to the max-width the column carries, so they cannot widen the table.
+// A flex item of the copyable row, hence the explicit min-width: 0 to let it shrink below its content.
+.cell-truncate {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 // Applied to the Info column's header and data cells only while some entry on the page carries other_info, so the
 // column claims its 300px when there is something to show and collapses when there is not. Both cells need it: a table
 // column is only as wide as its widest constrained cell.

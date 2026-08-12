@@ -61,6 +61,7 @@ import { CopyableComponent } from "@components/shared/copyable/copyable.componen
 import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
+import { TruncationTooltipDirective } from "@components/shared/directives/truncation-tooltip.directive";
 import { MultiSelectFilterComponent } from "@components/shared/multi-select-filter/multi-select-filter.component";
 import { MultiSelectFilterOption } from "@components/shared/multi-select-filter/multi-select-filter-option";
 import { MultiSelectMenuComponent } from "@components/shared/multi-select-filter/multi-select-menu/multi-select-menu.component";
@@ -89,9 +90,9 @@ const OUTCOME_CLASS: Record<string, string> = {
   pending: "highlight-warning"
 };
 
-// User-identifying columns hidden in self-service: every row is the logged-in user (redundant), and their
-// realm/resolver/user links point to admin-only pages.
-const USER_SCOPED_COLUMN_KEYS = ["username", "realm", "resolver", "uid"];
+// User-identifying columns hidden in self-service: every row is the logged-in user (redundant), and their realm/user
+// links point to admin-only pages.
+const USER_SCOPED_COLUMN_KEYS = ["username", "realm"];
 
 // Single source for all user roles: filter-menu label, and badge metadata for admin roles.
 // Regular users get no badge (they are the default and appear on almost every row).
@@ -131,16 +132,16 @@ const columnKeysMap: { key: string; label: string; filterable: boolean; sortable
   // The timestamp filter lives in the table-action row (preset menu + custom-range slider), not in the column header,
   // so the header only offers sorting.
   { key: "timestamp", label: $localize`Timestamp`, filterable: false, sortable: true },
+  // Directly after the timestamp: the attempt id groups the rows of one logical attempt, so it reads as part of
+  // locating a row rather than as a detail of it.
+  { key: "attempt_id", label: $localize`Attempt ID`, filterable: true, sortable: true },
   { key: "event_type", label: $localize`Event Type`, filterable: true, sortable: true },
   { key: "username", label: $localize`User`, filterable: true, sortable: true },
   { key: "realm", label: $localize`Realm`, filterable: true, sortable: true },
-  { key: "resolver", label: $localize`Resolver`, filterable: true, sortable: true },
-  { key: "uid", label: $localize`UID`, filterable: true, sortable: true },
   { key: "source_ip", label: $localize`Source IP`, filterable: true, sortable: true },
   { key: "client_label", label: $localize`Client`, filterable: true, sortable: true },
   { key: "serial", label: $localize`Serial`, filterable: true, sortable: true },
   { key: "transaction_id", label: $localize`Transaction ID`, filterable: true, sortable: true },
-  { key: "attempt_id", label: $localize`Attempt ID`, filterable: true, sortable: true },
   // Neither is backed by a sortable column: other_info is JSON, and the conditional-access outcomes live in their own
   // table, read alongside each entry.
   // The only column whose filter is not a single key: its header menu offers the three ca_* keys (see
@@ -233,12 +234,18 @@ function parseFilterTimestamp(value: string | null | undefined): string | null {
 // back to the button's generic default.
 const FILTER_TOOLTIPS: Record<string, string> = {
   username: $localize`Filter by this user`,
-  resolver: $localize`Filter by this resolver`,
-  uid: $localize`Filter by this UID`,
   source_ip: $localize`Filter by this source IP`,
   serial: $localize`Filter by this serial`,
   transaction_id: $localize`Filter by this transaction ID`,
   attempt_id: $localize`Filter by this attempt ID`
+};
+
+// Columns whose value is clipped to a fixed width instead of widening the table: the full value stays available in the
+// truncation tooltip, the copy button and the inline filter button. The width is per column - an attempt id is random
+// hex whose leading characters already tell rows apart, while a client label reads as a name.
+const TRUNCATED_COLUMN_WIDTHS: Record<string, string> = {
+  attempt_id: "10ch",
+  client_label: "24ch"
 };
 
 // Key fragments that read as acronyms rather than words when an other_info key is humanized for display.
@@ -267,6 +274,7 @@ const FILTER_TOOLTIPS: Record<string, string> = {
     RouterLink,
     ScrollToTopDirective,
     ScrollEdgesDirective,
+    TruncationTooltipDirective,
     DatePipe,
     ClearableInputComponent,
     ConditionalAccessCell,
@@ -321,7 +329,7 @@ export class AuthenticationLog {
   );
 
   // Columns to render: a self-service user only ever sees their own entries, so the user-identifying columns are
-  // hidden (redundant, and their realm/resolver/user links target admin-only pages).
+  // hidden (redundant, and their realm/user links target admin-only pages).
   readonly visibleColumns = computed(() =>
     this.authService.isSelfServiceUser()
       ? this.columnKeysMap.filter((column) => !USER_SCOPED_COLUMN_KEYS.includes(column.key))
@@ -750,6 +758,11 @@ export class AuthenticationLog {
   // Localized tooltip for a cell's inline filter button, falling back to the generic phrasing.
   filterTooltip(columnKey: string): string {
     return FILTER_TOOLTIPS[columnKey] ?? $localize`Filter by this value`;
+  }
+
+  // The width a clipped column's value is capped at, or null for a column shown in full.
+  truncatedWidth(columnKey: string): string | null {
+    return TRUNCATED_COLUMN_WIDTHS[columnKey] ?? null;
   }
 
   // Inline "filter by this value" action on a cell: add the value to the column's filter (a no-op if already there).

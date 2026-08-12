@@ -87,6 +87,47 @@ describe("TruncationTooltipDirective", () => {
     jest.useRealTimers();
   });
 
+  it("waits for the pointer to rest before opening", () => {
+    jest.useFakeTimers();
+    const element = elementOf("with-text");
+    setWidths(element, 300, 100);
+
+    element.dispatchEvent(new MouseEvent("mouseenter"));
+    jest.advanceTimersByTime(400);
+    // Still nothing: a pointer merely passing over the element must not pop a tooltip.
+    expect(tooltipOf("with-text")._isTooltipVisible()).toBe(false);
+
+    jest.advanceTimersByTime(100);
+    expect(tooltipOf("with-text")._isTooltipVisible()).toBe(true);
+    jest.useRealTimers();
+  });
+
+  it("drops a pending tooltip when the pointer moves on before the delay is up", () => {
+    jest.useFakeTimers();
+    const element = elementOf("with-text");
+    setWidths(element, 300, 100);
+
+    element.dispatchEvent(new MouseEvent("mouseenter"));
+    jest.advanceTimersByTime(200);
+    element.dispatchEvent(new MouseEvent("mouseleave"));
+    jest.runOnlyPendingTimers();
+
+    expect(tooltipOf("with-text")._isTooltipVisible()).toBe(false);
+    jest.useRealTimers();
+  });
+
+  it("opens without the delay on keyboard focus", () => {
+    jest.useFakeTimers();
+    const element = elementOf("with-text");
+    setWidths(element, 300, 100);
+
+    element.dispatchEvent(new FocusEvent("focusin"));
+    jest.advanceTimersByTime(0);
+
+    expect(tooltipOf("with-text")._isTooltipVisible()).toBe(true);
+    jest.useRealTimers();
+  });
+
   it("closes again when the pointer leaves", () => {
     jest.useFakeTimers();
     const element = elementOf("with-text");
