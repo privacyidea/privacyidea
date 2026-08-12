@@ -97,18 +97,28 @@ class TestMigrationD9e0f1a2b3c4(MigrationTestBase):
         finally:
             engine.dispose()
 
-    def test_upgrade_of_a_handler_stored_with_a_full_module_path(self, flask_app):
-        """A handlermodule that is not the plain identifier stays best-effort instead of matching by accident."""
+    def test_upgrade_matches_the_handlermodule_exactly(self, flask_app):
+        """A handlermodule that only contains the identifier must not be matched."""
         engine = self._engine()
         try:
             self._load_seed_and_upgrade_to_parent(engine)
-            legacy_handlers = self._fetch_scalar(engine, "SELECT COUNT(*) FROM eventhandler")
+            # A dotted module path and a name that contains the identifier must both stay best-effort,
+            # otherwise the migration matches on a substring rather than on the identifier.
+            self._insert_rows(engine, "eventhandler", [
+                {"id": 111, "name": "legacy federation", "active": True, "ordering": 0, "position": "post",
+                 "event": "token_init", "condition": "", "action": "forward",
+                 "handlermodule": "privacyidea.lib.eventhandler.federationhandler.FederationEventHandler"},
+                {"id": 112, "name": "not a federation handler", "active": True, "ordering": 0,
+                 "position": "post", "event": "token_init", "condition": "", "action": "sendmail",
+                 "handlermodule": "FederationNotification"},
+            ])
 
             self._upgrade()
 
             # Read the values instead of filtering in SQL: the column is a real boolean on PostgreSQL and a
             # number on Oracle, so there is no comparison that is valid on every dialect.
-            assert legacy_handlers > 0
+            assert bool(self._abort_on_error(engine, 111)) is False
+            assert bool(self._abort_on_error(engine, 112)) is False
             assert not any(bool(value) for value in self._abort_on_error_values(engine))
         finally:
             engine.dispose()

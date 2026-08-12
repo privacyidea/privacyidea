@@ -25,7 +25,8 @@ import {
   inject,
   linkedSignal,
   OnDestroy,
-  signal
+  signal,
+  untracked
 } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
@@ -106,6 +107,8 @@ export class EventEditPageComponent implements OnDestroy {
     this.isNewEvent() ? $localize`Create New Event Handler` : $localize`Edit Event Handler`
   );
   hasChanges = signal(false);
+  // Set once the user operates the "abort on error" toggle, so the default of the handler module stops applying
+  abortOnErrorTouched = signal(false);
   eventLoaded = computed(() => this.isNewEvent() || this.editEvent() !== EMPTY_EVENT);
   selectedEvents = linkedSignal(() => this.event().event);
   validConditionsDefinition = computed(() => {
@@ -174,6 +177,23 @@ export class EventEditPageComponent implements OnDestroy {
       }
     });
 
+    // A handler whose result the request consumes is created with "abort on error" enabled. Only a new
+    // binding the user has not edited yet is pre-selected, so that an existing binding keeps its stored value.
+    // The current binding is read untracked: the effect writes it, and tracking it here would retrigger the
+    // effect with its own write.
+    effect(() => {
+      const defaults = this.eventService.moduleDefaults();
+      if (!defaults) {
+        return;
+      }
+      untracked(() => {
+        const current = this.editEvent();
+        if (this.isNewEvent() && !this.abortOnErrorTouched() && current.abort_on_error !== defaults.abort_on_error) {
+          this.editEvent.set({ ...current, abort_on_error: defaults.abort_on_error });
+        }
+      });
+    });
+
     this.pendingChangesService.registerHasChanges(() => this.hasChanges());
     this.pendingChangesService.registerSave(this.saveEvent.bind(this));
     this.pendingChangesService.registerValidChanges(() => this.canSave());
@@ -185,6 +205,11 @@ export class EventEditPageComponent implements OnDestroy {
 
   cancelEdit(): void {
     this.router.navigateByUrl(ROUTE_PATHS.EVENTS);
+  }
+
+  setAbortOnError(abortOnError: boolean): void {
+    this.abortOnErrorTouched.set(true);
+    this.updateEventHandler("abort_on_error", abortOnError);
   }
 
   setNewAction(action: string): void {

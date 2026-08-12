@@ -179,20 +179,28 @@ class EventDecoratorExceptionHandlingTestCase(MyTestCase):
         self.assertTrue(second_handler_called,
                         "Second handler should run even after first handler fails")
 
-    def test_check_condition_exception_propagates(self):
-        """An exception while evaluating the conditions must not be treated like an unmet condition."""
+    def test_check_condition_exception_is_a_handler_failure(self):
+        """An exception while evaluating the conditions is a failure of the handler, not an unmet condition."""
         self._add_event("condition_fails", position="post")
         api_fn = self._make_decorated_fn()
 
-        with patch("privacyidea.lib.event.get_handler_object",
-                   return_value=self._make_failing_handler(
-                       condition_exc=KeyError("bad condition key"))):
-            with self.assertRaises(KeyError):
-                api_fn()
+        with (patch("privacyidea.lib.event.get_handler_object",
+                    return_value=self._make_failing_handler(condition_exc=KeyError("bad condition key"))),
+              patch("privacyidea.lib.event.getAudit") as mock_get_audit):
+            mock_audit_obj = MagicMock()
+            mock_get_audit.return_value = mock_audit_obj
 
-    def test_pre_event_check_condition_exception_propagates(self):
-        """A pre-event handler whose condition evaluation raises must not silently skip the handler."""
-        self._add_event("pre_condition_fails", position="pre")
+            result = api_fn()
+
+            self.assertIn(b"true", result.data)
+            success_logged = any(call_args[0][0].get("success") is False
+                                 for call_args in mock_audit_obj.log.call_args_list if call_args[0])
+            self.assertTrue(success_logged,
+                            f"Expected success=False in audit log calls: {mock_audit_obj.log.call_args_list}")
+
+    def test_check_condition_exception_aborts_when_configured(self):
+        """A binding that aborts on error also aborts if its conditions could not be evaluated."""
+        self._add_event("pre_condition_fails", position="pre", abort_on_error=True)
         api_fn = self._make_decorated_fn()
 
         with patch("privacyidea.lib.event.get_handler_object",
@@ -200,6 +208,31 @@ class EventDecoratorExceptionHandlingTestCase(MyTestCase):
                        condition_exc=RuntimeError("resolver unreachable"))):
             with self.assertRaises(RuntimeError):
                 api_fn()
+
+    def test_check_condition_exception_rolls_back_the_session(self):
+        """A condition check that fails mid-transaction must not leave the session in a failed state."""
+        self._add_event("condition_fails_in_transaction", position="pre")
+        api_fn = self._make_decorated_fn()
+
+        with (patch("privacyidea.lib.event.get_handler_object",
+                    return_value=self._make_failing_handler(condition_exc=RuntimeError("resolver died"))),
+              patch("privacyidea.lib.event.db") as mock_db):
+            api_fn()
+            mock_db.session.rollback.assert_called_once()
+
+    def test_handler_without_a_name_does_not_fail_the_request(self):
+        """The name of a binding is optional, so run_details must not be concatenated onto it."""
+        self._add_event(None, position="post")
+        api_fn = self._make_decorated_fn()
+
+        handler = MagicMock()
+        handler.check_condition.return_value = True
+        handler.do.return_value = True
+        handler.run_details = "sent to alice@example.com"
+
+        with patch("privacyidea.lib.event.get_handler_object", return_value=handler):
+            result = api_fn()
+            self.assertIn(b"true", result.data)
 
     def test_audit_failure_in_except_block_does_not_crash(self):
         """If auditing the failure itself fails, log.error is called and request succeeds."""

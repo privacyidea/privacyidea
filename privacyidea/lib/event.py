@@ -76,27 +76,6 @@ def _aborts_on_error(e_handler_def: dict, exception: Exception) -> bool:
     return isinstance(exception, HandlerAbortError) or is_true(e_handler_def.get("abort_on_error"))
 
 
-def _log_handler_failure(event_audit, event_audit_data: dict, e_handler_def: dict, exception: Exception):
-    """
-    Mark the pending audit entry of an event handler as failed and write it.
-
-    Failing to write the audit entry must not replace the exception of the handler, so such an error is only
-    logged.
-
-    :param event_audit: The audit object created for this handler
-    :param event_audit_data: The audit data of this handler
-    :param e_handler_def: The definition of the event handler
-    :param exception: The exception raised by the handler
-    """
-    try:
-        event_audit_data["info"] = _handler_failure_info(e_handler_def, exception)
-        event_audit.log(event_audit_data)
-        event_audit.log({"success": False})
-        event_audit.finalize_log()
-    except Exception as audit_exception:
-        log.error(f"Failed to audit handler failure: {audit_exception!r}")
-
-
 class event:
     """
     This is the event decorator that calls the event handler in the handler
@@ -109,6 +88,95 @@ class event:
             AVAILABLE_EVENTS.append(eventname)
         self.request = request
         self.g = g
+
+    def _new_handler_audit(self, position: str, e_handler_def: dict) -> tuple:
+        """
+        Create the audit object and the audit data for a single run of an event handler.
+
+        :param position: "PRE-EVENT" or "POST-EVENT"
+        :param e_handler_def: The definition of the event handler
+        :return: The audit object and its audit data
+        """
+        event_audit = getAudit(self.g.audit_object.config)
+        # copy all values from the original audit entry
+        event_audit_data = dict(self.g.audit_object.audit_data)
+        event_audit_data["action"] = (f"{position} {self.eventname}>>"
+                                      f"{e_handler_def.get('handlermodule')}:{e_handler_def.get('action')}")
+        event_audit_data["action_detail"] = f"{e_handler_def.get('options')}"
+        event_audit_data["info"] = e_handler_def.get("name")
+        return event_audit, event_audit_data
+
+    def _log_handler_failure(self, position: str, e_handler_def: dict, exception: Exception,
+                             event_audit=None, event_audit_data: dict | None = None):
+        """
+        Write the audit entry of an event handler that did not complete.
+
+        The entry of the handler is reused if it was already created, otherwise a new one is created: a handler
+        that fails while its conditions are evaluated has no pending entry yet. Failing to write the entry must
+        not replace the exception of the handler, so such an error is only logged.
+
+        :param position: "PRE-EVENT" or "POST-EVENT"
+        :param e_handler_def: The definition of the event handler
+        :param exception: The exception raised by the handler
+        :param event_audit: The audit object of the handler, if it was created before the failure
+        :param event_audit_data: The audit data of the handler, if it was created before the failure
+        """
+        try:
+            if event_audit is None:
+                event_audit, event_audit_data = self._new_handler_audit(position, e_handler_def)
+            event_audit_data["info"] = _handler_failure_info(e_handler_def, exception)
+            event_audit.log(event_audit_data)
+            event_audit.log({"success": False})
+            event_audit.finalize_log()
+        except Exception as audit_exception:
+            log.error(f"Failed to audit handler failure: {audit_exception!r}")
+
+    def _run_handler(self, event_handler, e_handler_def: dict, options: dict, position: str) -> bool:
+        """
+        Evaluate the conditions of one event handler and run its action.
+
+        A failure of either is logged, rolled back and audited. Whether it also aborts the request is decided
+        by the configuration of the handler, see ``_aborts_on_error``. Evaluating the conditions is part of
+        this: an error while checking them is a failure of the handler, not an unmet condition, and a handler
+        that is configured to be best-effort must not fail the request because its conditions could not be
+        evaluated.
+
+        :param event_handler: The handler object
+        :param e_handler_def: The definition of the event handler
+        :param options: The options passed to the handler
+        :param position: "PRE-EVENT" or "POST-EVENT"
+        :return: True if the action of the handler ran, so the caller knows the response may have been replaced
+        """
+        event_audit = None
+        event_audit_data = None
+        try:
+            if not event_handler.check_condition(options=options):
+                return False
+            log.debug(f"{position} handling event {self.eventname} with options {options}")
+            event_audit, event_audit_data = self._new_handler_audit(position, e_handler_def)
+            event_audit.log(event_audit_data)
+            result = event_handler.do(e_handler_def.get("action"), options=options)
+        except Exception as e:
+            log.warning(f"{position.capitalize()} handler {e_handler_def.get('name')!r} "
+                        f"({e_handler_def.get('handlermodule')}:"
+                        f"{e_handler_def.get('action')}) failed: {e!r}")
+            log.debug(traceback.format_exc())
+            # A handler that failed in the middle of a transaction leaves the session in a failed state.
+            # Without the rollback the following handlers and the wrapped API function die on their own commit.
+            db.session.rollback()
+            self._log_handler_failure(position, e_handler_def, e, event_audit, event_audit_data)
+            if _aborts_on_error(e_handler_def, e):
+                raise
+            return False
+
+        if event_handler.run_details:
+            # The name of a handler definition is optional, so it is formatted instead of concatenated
+            event_audit_data["info"] = f"{e_handler_def.get('name')} ({event_handler.run_details})"
+            event_audit.log(event_audit_data)
+        # set audit object to success
+        event_audit.log({"success": result})
+        event_audit.finalize_log()
+        return True
 
     def __call__(self, func):
         """
@@ -133,39 +201,7 @@ class event:
                 # The action is determined by the event configuration
                 # In the options we can pass the mailserver configuration
                 options = {"request": self.request, "g": self.g, "handler_def": e_handler_def}
-                if event_handler.check_condition(options=options):
-                    log.debug(f"Pre-Handling event {self.eventname} with options {options}")
-                    # create a new audit object for this action
-                    event_audit = getAudit(self.g.audit_object.config)
-                    # copy all values from the original audit entry
-                    event_audit_data = dict(self.g.audit_object.audit_data)
-                    event_audit_data["action"] = (f"PRE-EVENT {self.eventname}>>"
-                                                  f"{e_handler_def.get('handlermodule')}:"
-                                                  f"{e_handler_def.get('action')}")
-                    event_audit_data["action_detail"] = f"{e_handler_def.get('options')}"
-                    event_audit_data["info"] = e_handler_def.get("name")
-                    event_audit.log(event_audit_data)
-
-                    try:
-                        result = event_handler.do(e_handler_def.get("action"), options=options)
-                    except Exception as e:
-                        log.warning(f"Pre-event handler {e_handler_def.get('name')!r} "
-                                    f"({e_handler_def.get('handlermodule')}:"
-                                    f"{e_handler_def.get('action')}) failed: {e!r}")
-                        log.debug(traceback.format_exc())
-                        # A handler that failed in the middle of a transaction leaves the session in a failed
-                        # state. Without the rollback the wrapped API function dies on its own commit.
-                        db.session.rollback()
-                        _log_handler_failure(event_audit, event_audit_data, e_handler_def, e)
-                        if _aborts_on_error(e_handler_def, e):
-                            raise
-                    else:
-                        if event_handler.run_details:
-                            event_audit_data["info"] += f" ({event_handler.run_details})"
-                            event_audit.log(event_audit_data)
-                        # set audit object to success
-                        event_audit.log({"success": result})
-                        event_audit.finalize_log()
+                self._run_handler(event_handler, e_handler_def, options, "PRE-EVENT")
 
             f_result = func(*args, **kwds)
 
@@ -181,41 +217,9 @@ class event:
                            "g": self.g,
                            "response": f_result,
                            "handler_def": e_handler_def}
-                if event_handler.check_condition(options=options):
-                    log.debug(f"Post-Handling event {self.eventname} with options {options}")
-                    # create a new audit object
-                    event_audit = getAudit(self.g.audit_object.config)
-                    # copy all values from the original audit entry
-                    event_audit_data = dict(self.g.audit_object.audit_data)
-                    event_audit_data["action"] = (f"POST-EVENT {self.eventname}>>"
-                                                  f"{e_handler_def.get('handlermodule')}:"
-                                                  f"{e_handler_def.get('action')}")
-                    event_audit_data["action_detail"] = f"{e_handler_def.get('options')}"
-                    event_audit_data["info"] = e_handler_def.get("name")
-                    event_audit.log(event_audit_data)
-
-                    try:
-                        result = event_handler.do(e_handler_def.get("action"), options=options)
-                    except Exception as e:
-                        log.warning(f"Post-event handler {e_handler_def.get('name')!r} "
-                                    f"({e_handler_def.get('handlermodule')}:"
-                                    f"{e_handler_def.get('action')}) failed: {e!r}")
-                        log.debug(traceback.format_exc())
-                        # A handler that failed in the middle of a transaction leaves the session in a failed
-                        # state. Without the rollback the following handlers die on their own commit.
-                        db.session.rollback()
-                        _log_handler_failure(event_audit, event_audit_data, e_handler_def, e)
-                        if _aborts_on_error(e_handler_def, e):
-                            raise
-                    else:
-                        if event_handler.run_details:
-                            event_audit_data["info"] += f" ({event_handler.run_details})"
-                            event_audit.log(event_audit_data)
-                        # In case the handler has modified the response
-                        f_result = options.get("response")
-                        # set audit object to success
-                        event_audit.log({"success": result})
-                        event_audit.finalize_log()
+                if self._run_handler(event_handler, e_handler_def, options, "POST-EVENT"):
+                    # In case the handler has modified the response
+                    f_result = options.get("response")
 
             return f_result
 
@@ -284,7 +288,7 @@ def enable_event(event_id, enable=True):
 
 
 def set_event(name=None, event=None, handlermodule=None, action=None, conditions=None,
-              ordering=0, options=None, id=None, active=True, position="post", abort_on_error=False):
+              ordering=0, options=None, id=None, active=True, position="post", abort_on_error=None):
     """
     Set an event handling configuration. This writes an entry to the
     database eventhandler.
@@ -312,8 +316,9 @@ def set_event(name=None, event=None, handlermodule=None, action=None, conditions
     :type id: int
     :param position: The position of the event handler being "post" or "pre"
     :type position: basestring
-    :param abort_on_error: Abort the request if the handler raises an exception. By default, a failing handler
-        only adds a failure entry to the audit log and the request continues without it.
+    :param abort_on_error: Abort the request if the handler raises an exception. A failing handler otherwise
+        only adds a failure entry to the audit log and the request continues without it. If it is None, an
+        existing event keeps its value and a new event gets the default of its handler module.
     :type abort_on_error: bool
     :return: The id of the event.
     """
@@ -341,6 +346,11 @@ def set_event(name=None, event=None, handlermodule=None, action=None, conditions
         if abort_on_error is not None:
             existing_event_handler.abort_on_error = abort_on_error
     else:
+        if abort_on_error is None:
+            # A handler whose result the request consumes defaults to aborting, so that a new binding of it is
+            # not silently best-effort. Once stored, only the binding decides.
+            handler_object = get_handler_object(handlermodule)
+            abort_on_error = handler_object.default_abort_on_error if handler_object else False
         id = EventHandler(name=name, event=event, handlermodule=handlermodule, action=action, ordering=ordering,
                           id=id, active=active, position=position, abort_on_error=abort_on_error).save()
     save_config_timestamp()
