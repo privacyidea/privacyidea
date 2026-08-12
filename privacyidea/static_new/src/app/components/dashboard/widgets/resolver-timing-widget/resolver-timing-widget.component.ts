@@ -62,6 +62,8 @@ export class ResolverTimingWidgetComponent extends DashboardWidget implements On
   static override readonly type = "resolver-timing";
   static override readonly title = $localize`Resolver Timing`;
   static override readonly icon = "speed";
+  static override readonly titleLink = ROUTE_PATHS.USERS_RESOLVERS;
+  static override readonly titleLinkAction = "resolverread";
   static override readonly defaultSize: WidgetSize = { cols: 12, rows: 6 };
   static override readonly minSize: WidgetSize = { cols: 10, rows: 4 };
   static override readonly maxSize: WidgetSize = { cols: 18, rows: 10 };
