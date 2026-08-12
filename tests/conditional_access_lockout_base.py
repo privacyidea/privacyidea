@@ -32,6 +32,7 @@ from privacyidea.models.authentication_log import AuthenticationLog
 from privacyidea.models.lockout_policy import (
     BlockList,
     LockoutPolicy,
+    LockoutPolicyCondition,
     LockoutPolicyCounterType,
     LockoutPolicyStage,
     LockoutStageAction,
@@ -44,10 +45,15 @@ from .base import MyTestCase
 class LockoutTestCase(MyTestCase):
     """
     Base for conditional-access lockout tests: a resolved test user plus a clean
-    slate of all lockout tables around every test.
+    slate of all lockout tables - and of Flask's ``g`` - around every test.
     """
 
     def setUp(self):
+        # The app context is pushed once per class, so g outlives the individual requests a test
+        # dispatches and leftovers bleed between tests (e.g. a previous /auth leaving
+        # resolved_user.is_local_admin set, which build_ca_context reads to classify the role).
+        # The engine's inputs come from g, so these tests start it empty.
+        self.reset_flask_g()
         self.setUp_user_realms()
         # "cornelius" resolves to a non-empty uid in the test resolver ("root" has an
         # empty uid there), so it is a fully resolved (resolver, uid, realm) identity
@@ -62,7 +68,8 @@ class LockoutTestCase(MyTestCase):
     @staticmethod
     def _clear():
         for model in (UserLockoutState, BlockList, LockoutStageAction, LockoutPolicyStage,
-                      LockoutPolicyCounterType, LockoutPolicy, AuthenticationLog):
+                      LockoutPolicyCondition, LockoutPolicyCounterType, LockoutPolicy,
+                      AuthenticationLog):
             db.session.query(model).delete()
         db.session.commit()
 

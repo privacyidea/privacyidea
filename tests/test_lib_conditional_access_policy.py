@@ -25,6 +25,9 @@ from unittest import mock
 from privacyidea.lib.conditional_access import lockout_policy as lockout_policy_module
 from privacyidea.lib.conditional_access.authentication_event_types import CA_ENFORCEMENT_EVENT_TYPES  # noqa: F401
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
+from privacyidea.lib.conditional_access.authentication_log import AuthLogUserRole
+from privacyidea.lib.conditional_access.conditions import (ConditionOperator, ConditionType,
+                                                           get_condition_types)
 from privacyidea.lib.conditional_access.engine import LockoutAction, LockoutTarget
 from privacyidea.lib.conditional_access.lockout_policy import (
     _ACTIONS_BY_TARGET,
@@ -43,6 +46,7 @@ from privacyidea.lib.error import ConflictError, ParameterError, ResourceNotFoun
 from privacyidea.models import db
 from privacyidea.models.lockout_policy import (
     LockoutPolicy,
+    LockoutPolicyCondition,
     LockoutPolicyCounterType,
     LockoutPolicyStage,
     LockoutStageAction,
@@ -72,7 +76,8 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         # so a persistent object a test loaded (e.g. via a rejected update) cannot collide with a later test that
         # reuses the same primary key - mirroring the per-request session teardown that isolates this in production.
         db.session.rollback()
-        for model in (LockoutStageAction, LockoutPolicyStage, LockoutPolicyCounterType, LockoutPolicy):
+        for model in (LockoutStageAction, LockoutPolicyStage, LockoutPolicyCondition,
+                      LockoutPolicyCounterType, LockoutPolicy):
             db.session.query(model).delete()
         db.session.commit()
         db.session.expunge_all()
@@ -688,3 +693,148 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         self.assertRaises(ParameterError, reorder_lockout_policies, [first, second], [1, "x"])
         self.assertRaises(ParameterError, reorder_lockout_policies, [first, second], [1, 0])
         self.assertListEqual([("P1", 1), ("P2", 2)], self._order())
+
+    # --- conditions -----------------------------------------------------------
+
+    @staticmethod
+    def _condition(condition_type: ConditionType | str = ConditionType.USER_ROLE,
+                   operator: ConditionOperator | str = ConditionOperator.IN,
+                   value: list | str | None = None, **extra) -> dict:
+        return {"condition_type": str(condition_type), "operator": str(operator),
+                "value": value if value is not None else [str(AuthLogUserRole.USER)], **extra}
+
+    def _create_with_conditions(self, name: str, conditions, priority: int = 1) -> int:
+        """Create a policy carrying *conditions*, deliberately left unannotated: several tests pass
+        malformed input (a bare string, a list of non-dicts, a falsy non-list) to assert it is
+        rejected. Returns the new policy id."""
+        return create_lockout_policy(name, 600, ["PIN_FAIL"], [_stage()], target=LockoutTarget.USER,
+                                     priority=priority, conditions=conditions)
+
+    def test_29_conditions_round_trip(self):
+        policy_id = self._create_with_conditions("Conditioned", [self._condition()])
+        conditions = get_lockout_policy(policy_id)["conditions"]
+        self.assertEqual(1, len(conditions))
+        # No id is served: nothing addresses a condition, and an update replaces them wholesale.
+        self.assertSetEqual({"condition_type", "operator", "value"}, set(conditions[0]))
+        self.assertEqual(str(ConditionType.USER_ROLE), conditions[0]["condition_type"])
+        self.assertEqual(str(ConditionOperator.IN), conditions[0]["operator"])
+        self.assertListEqual([str(AuthLogUserRole.USER)], conditions[0]["value"])
+
+    def test_29a_conditions_are_served_in_condition_type_order(self):
+        # A canonical order, whichever order they were written in: they are ANDed, so order means
+        # nothing, and a stable serialization is what lets a client diff a policy against its draft.
+        self.setUp_user_realms()
+        policy_id = self._create_with_conditions(
+            "Ordered", [self._condition(ConditionType.USER_ROLE),
+                        self._condition(ConditionType.USER_REALM, value=[self.realm1])])
+        self.assertListEqual([str(ConditionType.USER_REALM), str(ConditionType.USER_ROLE)],
+                             [c["condition_type"] for c in get_lockout_policy(policy_id)["conditions"]])
+
+    def test_30_conditions_are_optional(self):
+        policy_id = create_lockout_policy("Unconditioned", 600, ["PIN_FAIL"], [_stage()],
+                                          target=LockoutTarget.USER, priority=1)
+        self.assertListEqual([], get_lockout_policy(policy_id)["conditions"])
+
+    def test_31_condition_values_are_deduplicated(self):
+        self.setUp_user_realms()
+        policy_id = self._create_with_conditions(
+            "Deduplicated", [self._condition(ConditionType.USER_REALM, value=["realm1", "realm1", " realm1 "])])
+        # Surrounding whitespace is stripped and the duplicates collapse to one entry.
+        self.assertListEqual([self.realm1], get_lockout_policy(policy_id)["conditions"][0]["value"])
+
+    def test_32_condition_value_case_must_match_exactly(self):
+        # Realm names are canonically lower-case, so a differently-cased value is a
+        # typo and is reported rather than silently rewritten.
+        self.setUp_user_realms()
+        self.assertRaises(ParameterError, self._create_with_conditions,
+                          "Miscased", [self._condition(ConditionType.USER_REALM, value=["REALM1"])])
+
+    def test_33_unknown_condition_type_is_rejected(self):
+        self.assertRaises(ParameterError, self._create_with_conditions,
+                          "Bad type", [self._condition("NO_SUCH_TYPE")])
+
+    def test_34_operator_not_allowed_for_type_is_rejected(self):
+        self.assertRaises(ParameterError, self._create_with_conditions,
+                          "Bad operator", [self._condition(operator="MATCHES")])
+
+    def test_35_unknown_value_is_rejected(self):
+        # A misspelled role would silently never match, so it fails at write time.
+        self.assertRaises(ParameterError, self._create_with_conditions,
+                          "Bad value", [self._condition(value=["superuser"])])
+        self.setUp_user_realms()
+        self.assertRaises(ParameterError, self._create_with_conditions,
+                          "Bad realm", [self._condition(ConditionType.USER_REALM, value=["nosuchrealm"])])
+
+    def test_36_malformed_condition_is_rejected(self):
+        for conditions in ([self._condition(value=[])],  # empty value list
+                           [self._condition(value="user")],  # not a list
+                           [self._condition(value=[1])],  # non-string entry
+                           [self._condition(unknown_key="x")],  # unknown key
+                           [self._condition(id=3)],  # conditions carry no id, so it is not accepted either
+                           [self._condition(key="somekey")],  # conditions take no sub-key
+                           ["not a dict"]):
+            self.assertRaises(ParameterError, self._create_with_conditions, "Malformed", conditions)
+        self.assertRaises(ParameterError, self._create_with_conditions, "Malformed", "not a list")
+
+    def test_36a_falsy_non_list_conditions_are_rejected(self):
+        # A falsy non-list must be a 400 like any other malformed value, not be read as "no conditions":
+        # that would create a policy applying to *everyone*, the wrong direction to fail for an
+        # access-control policy. Only an omitted parameter means unconditioned (test_30).
+        # Distinct name *and* priority per case on purpose: both are unique across policies, so if the
+        # validation regressed, the first case would leak a policy and every later one would raise on the
+        # collision instead of on the value - passing for the wrong reason and hiding the regression.
+        for index, conditions in enumerate((0, False, {}, "")):
+            with self.subTest(conditions=conditions):
+                self.assertRaises(ParameterError, self._create_with_conditions,
+                                  f"Falsy{index}", conditions, priority=index + 1)
+
+    def test_37_duplicate_condition_type_is_rejected(self):
+        self.assertRaises(ParameterError, self._create_with_conditions, "Duplicate",
+                          [self._condition(value=[str(AuthLogUserRole.USER)]),
+                           self._condition(operator=ConditionOperator.NOT_IN,
+                                           value=[str(AuthLogUserRole.ADMIN_INTERNAL)])])
+
+    def test_38_update_replaces_conditions_wholesale(self):
+        policy_id = self._create_with_conditions("Updatable", [self._condition()])
+        # Reusing the same condition type across the update must stay within the
+        # (policy_id, condition_type) unique constraint.
+        _, changed = update_lockout_policy(
+            policy_id, conditions=[self._condition(operator=ConditionOperator.NOT_IN,
+                                                   value=[str(AuthLogUserRole.ADMIN_INTERNAL)])])
+        self.assertIn("conditions", changed)
+        conditions = get_lockout_policy(policy_id)["conditions"]
+        self.assertEqual(1, len(conditions))
+        self.assertEqual(str(ConditionOperator.NOT_IN), conditions[0]["operator"])
+
+    def test_39_update_can_clear_conditions(self):
+        policy_id = self._create_with_conditions("Clearable", [self._condition()])
+        update_lockout_policy(policy_id, conditions=[])
+        self.assertListEqual([], get_lockout_policy(policy_id)["conditions"])
+
+    def test_40_update_leaves_conditions_untouched_when_omitted(self):
+        policy_id = self._create_with_conditions("Untouched", [self._condition()])
+        _, changed = update_lockout_policy(policy_id, name="Renamed")
+        self.assertNotIn("conditions", changed)
+        self.assertEqual(1, len(get_lockout_policy(policy_id)["conditions"]))
+
+    def test_41_invalid_conditions_do_not_partially_apply(self):
+        policy_id = self._create_with_conditions("Atomic", [self._condition()])
+        self.assertRaises(ParameterError, update_lockout_policy, policy_id,
+                          name="NewName", conditions=[self._condition(value=["nope"])])
+        db.session.rollback()
+        # Neither the rename nor the conditions were written.
+        policy = get_lockout_policy(policy_id)
+        self.assertEqual("Atomic", policy["name"])
+        self.assertEqual(1, len(policy["conditions"]))
+
+    def test_42_condition_type_metadata(self):
+        self.setUp_user_realms()
+        metadata = get_condition_types()
+        self.assertSetEqual({t.value for t in ConditionType}, set(metadata))
+        realm_entry = metadata[ConditionType.USER_REALM.value]
+        self.assertSetEqual({"label", "operators", "choices"}, set(realm_entry))
+        self.assertListEqual([ConditionOperator.IN.value, ConditionOperator.NOT_IN.value],
+                             [operator["name"] for operator in realm_entry["operators"]])
+        self.assertIn(self.realm1, realm_entry["choices"])
+        self.assertListEqual(sorted(role.value for role in AuthLogUserRole),
+                             metadata[ConditionType.USER_ROLE.value]["choices"])
