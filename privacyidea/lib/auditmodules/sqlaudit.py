@@ -195,7 +195,13 @@ class Audit(AuditBase):
             engine = create_engine(connect_string, **engine_kwargs)
             log.debug(f"Using SQL pool size of {engine_kwargs['pool_size']}")
         except TypeError:
-            # SQLite does not support pool_size
+            # Depending on the pool it picks, SQLite does not accept pool_size. Which
+            # pool that is depends on the SQLAlchemy version and on whether the database
+            # is a file or in memory, and the error does not always name the argument,
+            # so the connect string decides. On any other database a TypeError means the
+            # configuration is wrong and has to be seen.
+            if not connect_string.startswith("sqlite"):
+                raise
             engine_kwargs.pop("pool_size", None)
             engine = create_engine(connect_string, **engine_kwargs)
             log.debug("Using no SQL pool_size.")

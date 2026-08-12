@@ -70,7 +70,7 @@ yourself. The connection is then validated when it is taken from the pool and
 transparently replaced if the database server has closed it in the meantime. Without
 it, a connection that was dropped at the MariaDB/MySQL ``wait_timeout`` or during a
 database restart is handed to a request and fails it with *MySQL server has gone
-away*. The ping is skipped for SQLite, where connections can not go stale, and it can
+away*. The ping is skipped for SQLite, where connections cannot go stale, and it can
 be switched off with ``SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": False}``.
 
 The engine options can also be set through the environment, since values of

@@ -497,6 +497,20 @@ class AuditEngineOptionsTestCase(unittest.TestCase):
         self.assertNotIn("pool_size", calls[-1])
         self.assertEqual(3600, calls[-1]["pool_recycle"])
 
+    def test_05_type_error_on_other_databases_is_raised(self):
+        # a TypeError from a database that does support pool_size means the engine
+        # options are wrong and must not be retried away
+        with self.assertRaises(TypeError):
+            self._engine_kwargs({"SQLALCHEMY_DATABASE_URI": "mysql+pymysql://pi:pi@localhost/pi"},
+                                sqlite_rejects_pool_size=True)
+
+    def test_06_in_memory_sqlite(self):
+        # in-memory SQLite raises a TypeError that does not name pool_size at all
+        calls = self._engine_kwargs({"SQLALCHEMY_DATABASE_URI": "sqlite://"},
+                                    sqlite_rejects_pool_size=True)
+        self.assertEqual(2, len(calls))
+        self.assertNotIn("pool_size", calls[-1])
+
 
 class AuditColumnLengthTestCase(OverrideConfigTestCase):
     class Config(TestingConfig):
