@@ -39,9 +39,11 @@ log = logging.getLogger(__name__)
 
 authentication_log_blueprint = Blueprint("authentication_log_blueprint", __name__)
 
-# Filter parameters that map 1:1 to a get_authentication_logs_paginate keyword argument.
+# Filter parameters that map 1:1 to a get_authentication_logs_paginate keyword argument. The ca_* ones filter on the
+# entry's conditional-access outcomes rather than on a column of its own row; ca_dry_run is parsed separately because
+# it is a boolean, not a list of values.
 _FILTER_PARAMS = ["resolver", "uid", "realm", "username", "user_role", "event_type", "source_ip", "serial",
-                  "transaction_id", "attempt_id", "client_label"]
+                  "transaction_id", "attempt_id", "client_label", "ca_action_type", "ca_policy_name"]
 
 
 def _split_csv(value: str | None) -> list[str] | None:
@@ -95,10 +97,20 @@ def get_authentication_log():
     :query end_time: only entries at/before this ISO 8601 timestamp.
     :query case_insensitive: if set, plain (non-wildcard) filter values match case-insensitively (wildcard values
         always match case-insensitively).
+    :query ca_action_type: only entries with a conditional-access outcome of this action type (e.g. ``LOCK_USER``).
+        Takes a list and a wildcard like the other filters, so ``ca_action_type=*`` means "conditional access acted on
+        this request at all".
+    :query ca_policy_name: only entries with an outcome recorded for this conditional-access policy name.
+    :query ca_dry_run: ``true`` for only entries with a dry-run outcome, ``false`` for only entries with an enforced
+        one; omit it to get both. The three ``ca_*`` filters apply to the *same* outcome, so an entry matches when one
+        of its outcomes satisfies all of them.
     :status 200: paginated result in ``result.value`` with ``auth_logs``, ``count``, ``current``, ``prev``, ``next``.
     """
     params = request.all_data
     filters = {name: _split_csv(get_optional(params, name)) for name in _FILTER_PARAMS}
+    # A tri-state: absent (or empty) does not filter, so that "both" needs no value of its own.
+    ca_dry_run = get_optional(params, "ca_dry_run")
+    filters["ca_dry_run"] = is_true(ca_dry_run) if ca_dry_run not in (None, "") else None
 
     start_time = get_optional(params, "start_time")
     start_time = isoparse(start_time) if start_time else None

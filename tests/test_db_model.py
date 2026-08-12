@@ -21,9 +21,11 @@
 import os
 from datetime import datetime
 from datetime import timedelta
+from typing import Any
 
 from mock import mock
 from sqlalchemy import func, delete, select
+from sqlalchemy.exc import IntegrityError
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.engine import LockoutTarget
@@ -45,7 +47,8 @@ from privacyidea.models import (Token,
                                 Challenge, PasswordReset, ClientApplication, UserCache,
                                 EventCounter, MonitoringStats, PolicyCondition, db,
                                 Tokengroup, TokenTokengroup, Serviceid, TokenInfo,
-                                LockoutPolicy, LockoutPolicyStage, LockoutStageAction)
+                                LockoutPolicy, LockoutPolicyStage, LockoutStageAction,
+                                AuthenticationLog, ConditionalAccessOutcome)
 from .base import MyTestCase
 
 
@@ -828,3 +831,126 @@ class LockoutPolicyTestCase(MyTestCase):
         self.assertEqual([AuthEventType.PASSWORD_FAIL, AuthEventType.MFA_FAIL, AuthEventType.TOKEN_ONLY_FAIL],
                          reloaded.counter_types_to_track)
         reloaded.delete()
+
+
+class ConditionalAccessOutcomeTestCase(MyTestCase):
+    """
+    The conditional-access outcome table: the history of what the engine did, one row per executed action, hanging off
+    the authentication_log row of the request that caused it.
+    """
+
+    def tearDown(self):
+        # Children first: nothing cascades on SQLite.
+        db.session.rollback()
+        db.session.query(ConditionalAccessOutcome).delete()
+        db.session.query(AuthenticationLog).delete()
+        db.session.commit()
+        super().tearDown()
+
+    def _authentication_log_row(self, event_type: str = AuthEventType.PASSWORD_FAIL) -> int:
+        """Write a parent authentication_log row and return its id."""
+        entry = AuthenticationLog(event_type=str(event_type), username="cornelius", realm="realm1",
+                                  resolver="resolver1", uid="1000", source_ip="10.0.0.1")
+        return entry.save()
+
+    def _make_outcome(self, auth_log_id: int, **overrides: Any) -> ConditionalAccessOutcome:
+        """An outcome carrying everything the engine always knows, so a test only states what it is about."""
+        fields = {"auth_log_id": auth_log_id, "action_type": "LOCK_USER",
+                  "policy_name": "Brute Force PIN Lockout", "threshold": 5, "event_count": 6}
+        return ConditionalAccessOutcome(**{**fields, **overrides})
+
+    def _store(self, outcome: ConditionalAccessOutcome) -> int:
+        """
+        Store an outcome and return its id. Spelled out rather than ``outcome.save()``: this model deliberately has no
+        MethodsMixin, because production writes must go on the conditional-access session (see record_outcomes).
+        """
+        db.session.add(outcome)
+        db.session.commit()
+        return outcome.id
+
+    def test_01_minimal_outcome_and_defaults(self):
+        auth_log_id = self._authentication_log_row()
+        outcome_id = self._store(self._make_outcome(auth_log_id))
+        self.assertGreaterEqual(outcome_id, 1)
+
+        outcome = ConditionalAccessOutcome.query.filter_by(id=outcome_id).one()
+        self.assertEqual(auth_log_id, outcome.auth_log_id)
+        self.assertEqual("LOCK_USER", outcome.action_type)
+        # An enforced action unless flagged otherwise.
+        self.assertFalse(outcome.dry_run)
+        # The only two columns that may be empty: an unnamed stage, and an action with nothing of its own to record.
+        self.assertIsNone(outcome.stage_name)
+        self.assertIsNone(outcome.info)
+
+
+    def test_02_full_outcome_round_trip_and_to_dict(self):
+        auth_log_id = self._authentication_log_row()
+        info = {"expires_at": "2026-08-07T12:34:56+00:00"}
+        outcome_id = self._store(self._make_outcome(auth_log_id, dry_run=True, stage_name="Second strike", info=info))
+
+        outcome = ConditionalAccessOutcome.query.filter_by(id=outcome_id).one()
+        self.assertTrue(outcome.dry_run)
+        self.assertEqual("Brute Force PIN Lockout", outcome.policy_name)
+        self.assertEqual("Second strike", outcome.stage_name)
+        self.assertEqual(5, outcome.threshold)
+        self.assertEqual(6, outcome.event_count)
+        # The action-specific bag round-trips as the dict it was given.
+        self.assertEqual(info, outcome.info)
+
+        outcome_dict = outcome.to_dict()
+        self.assertEqual(info, outcome_dict["info"])
+        # Every column is emitted; what to display is the view's decision. There is no timestamp of its own - the
+        # authentication-log entry this is nested under carries it.
+        self.assertSetEqual(set(ConditionalAccessOutcome.__table__.columns.keys()), set(outcome_dict))
+        self.assertNotIn("timestamp", outcome_dict)
+
+    def test_03_an_action_with_nothing_to_record_has_no_info(self):
+        # EMAIL_* / DENY create no restriction, and a permanent lock has no expiry, so there is nothing action-specific
+        # to store: the column stays NULL rather than holding an empty dict.
+        auth_log_id = self._authentication_log_row()
+        outcome = self._make_outcome(auth_log_id, action_type="EMAIL_ADMIN")
+        self._store(outcome)
+
+        self.assertIsNone(outcome.info)
+        self.assertIsNone(outcome.to_dict()["info"])
+
+
+    def test_04_schema_contract(self):
+        table = ConditionalAccessOutcome.__table__
+        # The parent link is mandatory: an outcome without the request that caused it is not meaningful, and the
+        # subject columns this table does not carry are only reachable through it.
+        self.assertFalse(table.c.auth_log_id.nullable)
+        foreign_keys = list(table.c.auth_log_id.foreign_keys)
+        self.assertEqual(1, len(foreign_keys))
+        self.assertEqual("authentication_log.id", foreign_keys[0].target_fullname)
+        # The history of a request dies with the request. Only MySQL/MariaDB and PostgreSQL enforce this; the lib
+        # delete paths remove the child rows explicitly so SQLite behaves the same.
+        self.assertEqual("CASCADE", foreign_keys[0].ondelete)
+        # The policy is identified by name only. An outcome must survive the deletion of its policy, and an id could not
+        # be trusted afterwards: SQLite and MySQL/MariaDB can hand a deleted policy's id to the next one.
+        self.assertNotIn("policy_id", table.c)
+        # Two indexes, each backing a query the feature makes: the batched fetch by parent (which the delete paths use
+        # too), and the action-first history.
+        self.assertSetEqual({"ix_ca_outcome_authlog", "ix_ca_outcome_action"},
+                            {index.name for index in table.indexes})
+        # The subject and the time live on the parent row and are deliberately not repeated here; there is no stage id
+        # because update_lockout_policy replaces a policy's stages, so the threshold identifies the stage.
+        self.assertSetEqual({"id", "auth_log_id", "action_type", "dry_run", "policy_name",
+                             "threshold", "event_count", "stage_name", "info"},
+                            set(table.columns.keys()))
+        # Everything a triggered stage knows is mandatory; only an unnamed stage and an action with nothing of its own
+        # to record may be empty.
+        self.assertSetEqual({"stage_name", "info"},
+                            {name for name, column in table.columns.items() if column.nullable})
+
+    def test_05_mandatory_columns_are_enforced_by_the_database(self):
+        # The NOT NULL constraints are the contract, not just a docstring: a half-described outcome must not be
+        # storable. event_count stands in for the four mandatory policy fields.
+        auth_log_id = self._authentication_log_row()
+        incomplete = self._make_outcome(auth_log_id)
+        incomplete.event_count = None
+        db.session.add(incomplete)
+        self.assertRaises(IntegrityError, db.session.commit)
+        db.session.rollback()
+
+        self.assertEqual([], ConditionalAccessOutcome.query.filter_by(auth_log_id=auth_log_id).all())

@@ -27,11 +27,16 @@ session it writes on.
 """
 import logging
 from dataclasses import dataclass, field
+from typing import Any
 
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType,
+                                                                           CA_ENFORCEMENT_EVENT_TYPES)
 from privacyidea.lib.conditional_access.authentication_log import (PendingAuthEvent, update_authentication_events,
                                                                    write_authentication_events)
+from privacyidea.lib.conditional_access.outcome_log import record_outcomes
 from privacyidea.lib.framework import get_request_local_store
 from privacyidea.lib.user import User
+from privacyidea.models import ConditionalAccessOutcome
 
 log = logging.getLogger(__name__)
 
@@ -70,10 +75,13 @@ class ConditionalAccessContext:
     They are written in staging order, so the log reconstructs the sequence.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.pending: list[PendingAuthEvent] = []
         self.principal = AuthPrincipal()
         self.source_ip: str | None = None
+        # Outcomes produced before any event was staged, i.e. by the pre-auth decision. The first event staged after
+        # them takes them over (see stage), because that is the row they belong to.
+        self.pending_outcomes: list[ConditionalAccessOutcome] = []
         # The classification the engine has already been run for, so a repeated call is skipped but a *corrected*
         # outcome is not (see run_post_eval).
         self._evaluated_as = None
@@ -109,15 +117,38 @@ class ConditionalAccessContext:
         """
         The staged event a later request stage may correct, or ``None`` if there is none.
 
-        That is :attr:`latest`, unless it was staged ``immediate``. Such an event records something that *happened* at
-        that point rather than this request's outcome - the ``push_wait`` challenge trigger, which a concurrent
-        ``/ttype/push`` has to be able to read - and a later stage must not overwrite that history. It matters where
-        the terminal event is suppressed (a ``push_wait`` timeout): the trigger is then the only staged event, and
-        reclassifying it would destroy the trigger record instead of logging the corrected outcome. A caller that
-        finds nothing amendable stages its own event instead.
+        That is :attr:`latest`, with two exceptions - both events that record something other than the outcome the
+        request's token logic reached, and that a later stage must therefore not overwrite. A caller that finds
+        nothing amendable stages its own event instead.
+
+        An ``immediate`` event records something that *happened* at that point - the ``push_wait`` challenge trigger,
+        which a concurrent ``/ttype/push`` has to be able to read. It matters where the terminal event is suppressed
+        (a ``push_wait`` timeout): the trigger is then the only staged event, and reclassifying it would destroy the
+        trigger record instead of logging the corrected outcome.
+
+        A :data:`~privacyidea.lib.conditional_access.authentication_event_types.CA_ENFORCEMENT_EVENT_TYPES` event
+        records that conditional access turned the request away before any token logic ran - the one place an admin
+        can see *why* it was refused. The post-policies still run on the gate's rejection response (the gate is the
+        innermost decorator), so without this they would relabel that row: the reason would be lost, and the
+        relabelled event would pass the matching guard in :meth:`run_post_eval` and let the lock feed itself.
         """
         event = self.latest
-        return event if event is not None and not event.immediate else None
+        if event is None or event.immediate or event.event_type in CA_ENFORCEMENT_EVENT_TYPES:
+            return None
+        return event
+
+    @property
+    def rejected_by_conditional_access(self) -> bool:
+        """
+        Whether conditional access itself turned this request away (see :data:`CA_ENFORCEMENT_EVENT_TYPES`).
+
+        The gate is the innermost decorator, so the post-policies still run on its rejection response and would
+        otherwise classify a request that never reached any token logic. There is nothing for them to say about it:
+        the request was refused for a reason already recorded, and logging their own outcome on top would both bury
+        that reason and hand the lockout counters an attempt the lock itself produced.
+        """
+        event = self.latest
+        return event is not None and event.event_type in CA_ENFORCEMENT_EVENT_TYPES
 
     def attempt_id_for_transaction(self, transaction_id: str) -> str | None:
         """
@@ -132,30 +163,70 @@ class ConditionalAccessContext:
                 return event.attempt_id
         return None
 
+    def add_outcomes(self, outcomes: list[ConditionalAccessOutcome]) -> None:
+        """
+        Buffer what conditional access decided *before* this request logged anything - the pre-auth DENY decision,
+        enforced or dry-run.
+
+        There is no row to record them against yet, and for a rejected request there will not be one until the
+        pre-check stages its own event. So they wait here and the next staged event takes them over (:meth:`stage`).
+        A request that never stages an event drops them, which is correct: with no authentication event there is
+        nothing the outcome could belong to, and the decision will be re-derived on the next request that does log one.
+        """
+        self.pending_outcomes.extend(outcomes)
+
     def stage(self, event: PendingAuthEvent) -> PendingAuthEvent:
         """
         Add *event* to this request's buffer and return it, so the caller can keep the handle - a later stage can
         still amend the event, and its ``row_id`` becomes available once it is written.
+
+        Any outcomes buffered by :meth:`add_outcomes` are handed to this event, so they are written as soon as its row
+        id is known.
         """
+        if self.pending_outcomes:
+            event.outcomes.extend(self.pending_outcomes)
+            self.pending_outcomes.clear()
         self.pending.append(event)
         return event
 
     def flush(self) -> bool:
         """
-        Bring the database in line with everything staged: insert the events that have no row yet, oldest first, and
-        re-write the rows of events amended since they were written.
+        Bring the database in line with everything staged: insert the events that have no row yet, oldest first,
+        re-write the rows of events amended since they were written, and record the conditional-access outcomes waiting
+        on a row id.
 
         Idempotent, so it is safe to call at any point and again at request teardown: an event that is already stored
-        and unchanged is skipped. Guarded internally - a failure is logged and swallowed, and the affected events keep
-        their "needs writing" state so a later flush retries them.
+        and unchanged is skipped, and outcomes already recorded are dropped from the event. Guarded internally - a
+        failure is logged and swallowed, and the affected events keep their "needs writing" state so a later flush
+        retries them.
 
         :return: whether everything staged is now stored as the events describe it
         """
         inserted = write_authentication_events(self.unwritten)
         updated = update_authentication_events(self.amended)
-        return inserted and updated
+        recorded = self._record_outcomes()
+        return inserted and updated and recorded
 
-    def reclassify(self, event_type, **fields) -> None:
+    def _record_outcomes(self) -> bool:
+        """
+        Write the outcomes carried by staged events whose row now exists, and clear them so a later flush does not
+        record them twice.
+
+        An outcome is only meaningful next to the request it belongs to, so one whose event has no row (the write
+        failed) stays on the event and is retried by the next flush. The list is emptied in place: assigning to the
+        event would mark it "changed" and provoke a pointless UPDATE of columns that did not move.
+        """
+        recorded = True
+        for event in self.pending:
+            if not event.outcomes or event.row_id is None:
+                continue
+            if record_outcomes(event.outcomes, event.row_id):
+                event.outcomes.clear()
+            else:
+                recorded = False
+        return recorded
+
+    def reclassify(self, event_type: AuthEventType, **fields: Any) -> None:
         """
         Correct the outcome of this request: assign *event_type* (and any other *fields*) to the staged event.
 
@@ -190,7 +261,8 @@ class ConditionalAccessContext:
         Runs **once per distinct classification**, not merely once: an endpoint that needs the notices in its own
         response can run it early (``/auth`` does) and request teardown will not repeat the same evaluation. Should a
         post-policy correct the outcome in between, however, teardown *does* evaluate again - otherwise the engine
-        would be left having judged a classification that no longer holds.
+        would be left having judged a classification that no longer holds. A classification counts as evaluated only
+        once the engine returned, so an early call that failed is retried at teardown rather than swallowed.
 
         The evaluation counts events over the authentication log, so it must run **after** :meth:`flush` - otherwise
         the count would miss the very event that triggered it. That ordering also keeps the counts from reading a stale
@@ -202,26 +274,41 @@ class ConditionalAccessContext:
         Every error is swallowed: this only writes state that the *next* request consults and must never affect the
         response that already completed.
 
-        The event's ``row_id`` is handed to the engine so a policy can attach a finding to the row it just judged (a
-        dry-run policy records what it *would* have done). It is available because :meth:`flush` ran first; when the
-        row could not be written it stays ``None`` and the engine only logs the finding.
+        What the engine decided comes back as outcomes, and they are recorded here against the row of the event it
+        judged - a dry-run policy's included, since that records what it *would* have done. The row id is available
+        because :meth:`flush` ran first; had the row not been written, the outcomes are dropped with a log message
+        rather than stored without the request they belong to.
 
-        NOTE: should conditional access ever log events of its own (a rejection by the lockout pre-check, say), those
-        event types must be filtered out here - evaluating them would let a lock feed itself.
+        What the engine decided is recorded as this request's conditional-access history, against the row of the event
+        it judged - which exists because :meth:`flush` ran first. Recording is guarded internally, so a failure there
+        costs the history entry and nothing else.
+
+        The event types conditional access writes for its own rejections are skipped: evaluating them would let a lock
+        feed itself, since a locked user's rejected requests would keep the count above the threshold forever. They are
+        also absent from the trackable vocabulary, so no policy could match one anyway - this saves the query and keeps
+        the guarantee readable where the evaluation happens
+        (:data:`~privacyidea.lib.conditional_access.authentication_event_types.CA_ENFORCEMENT_EVENT_TYPES`).
         """
         event = self.latest
         if event is None or event.event_type == self._evaluated_as:
             return []
-        self._evaluated_as = event.event_type
+        if event.event_type in CA_ENFORCEMENT_EVENT_TYPES:
+            log.debug(f"Not evaluating conditional-access policies for {event.event_type}: this request was rejected "
+                      f"by conditional access itself.")
+            return []
         # Deferred import: the engine pulls in the ORM models, so importing it at module level would risk an
         # import-order cycle during app startup.
         from privacyidea.lib.conditional_access.engine import evaluate_lockout_policies
         try:
-            return evaluate_lockout_policies(self.principal.user, event.event_type, source_ip=self.source_ip,
-                                             auth_log_event_id=event.row_id) or []
+            evaluation = evaluate_lockout_policies(self.principal.user, event.event_type, source_ip=self.source_ip)
         except Exception as ex:
             log.warning(f"Conditional-access policy evaluation failed: {ex!r}")
             return []
+        # Marked evaluated only now: a failure above leaves the classification unevaluated, so the teardown call is
+        # the retry rather than a skipped second attempt.
+        self._evaluated_as = event.event_type
+        record_outcomes(evaluation.outcomes, event.row_id)
+        return evaluation.notices
 
     def finalize(self) -> None:
         """

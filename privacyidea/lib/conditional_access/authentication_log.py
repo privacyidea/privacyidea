@@ -20,12 +20,13 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
+from typing import Any
 
-from sqlalchemy import and_, delete, false, func, or_, select
-from sqlalchemy.orm import InstrumentedAttribute
+from sqlalchemy import and_, false, func, or_, select
+from sqlalchemy.orm import InstrumentedAttribute, selectinload
 from sqlalchemy.sql import ColumnElement
 
-from privacyidea.models import AuthenticationLog, authentication_log_column_length
+from privacyidea.models import AuthenticationLog, ConditionalAccessOutcome, authentication_log_column_length
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.session import get_ca_session, guarded_write
 from privacyidea.lib.error import ParameterError
@@ -107,7 +108,9 @@ class AuthenticationLogPage:
     def to_dict(self) -> dict:
         """Serialize the page (entries plus pagination metadata) for the API response."""
         return {
-            "auth_logs": [entry.to_dict() for entry in self.auth_logs],
+            # The entries were loaded with their outcomes (see get_authentication_logs_paginate), so this is the one
+            # place that may serialize them.
+            "auth_logs": [entry.to_dict(include_outcomes=True) for entry in self.auth_logs],
             "count": self.count,
             "current": self.current,
             "prev": self.prev,
@@ -137,7 +140,7 @@ class _TruncatedValue:
     overflow: str | None
 
 
-def _truncate(column: str, value, separator: str | None = None) -> _TruncatedValue:
+def _truncate(column: str, value: Any, separator: str | None = None) -> _TruncatedValue:
     """
     Convert *value* to a string and truncate it to the length of the given column of the authentication_log table, so a
     pathological value (e.g. a very long User-Agent or login name) can never overflow the column on insert. The cut-off
@@ -212,14 +215,17 @@ class PendingAuthEvent:
     immediate: bool = False
     # Id of the stored row, set once it has been committed; None means "not written yet".
     row_id: int | None = None
+    # What conditional access did to this request, waiting for the row id it has to be recorded against (see
+    # ConditionalAccessContext.flush). Not row content: it becomes rows in conditional_access_outcome, not columns here.
+    outcomes: list[ConditionalAccessOutcome] = field(default_factory=list)
     # Set when a field is assigned after the row was written, i.e. the stored row no longer matches this event.
     _changed: bool = field(init=False, default=False, repr=False, compare=False)
 
-    def __setattr__(self, name: str, value) -> None:
-        # ``row_id``, ``immediate`` and the flag itself are bookkeeping rather than row content, so they never mark
-        # the event changed. ``self.__dict__`` is read directly because the dataclass __init__ assigns the fields
-        # through here too, at which point ``row_id`` does not exist yet.
-        if name not in ("row_id", "immediate", "_changed") and self.__dict__.get("row_id") is not None:
+    def __setattr__(self, name: str, value: Any) -> None:
+        # ``row_id``, ``outcomes``, ``immediate`` and the flag itself are bookkeeping rather than row content, so they
+        # never mark the event changed. ``self.__dict__`` is read directly because the dataclass __init__ assigns the
+        # fields through here too, at which point ``row_id`` does not exist yet.
+        if name not in ("row_id", "outcomes", "immediate", "_changed") and self.__dict__.get("row_id") is not None:
             object.__setattr__(self, "_changed", True)
         object.__setattr__(self, name, value)
 
@@ -250,9 +256,6 @@ _TRUNCATED_COLUMNS = {
     "attempt_id": None,
 }
 
-# other_info keys written out-of-band on the stored row after insert; event updates must not clobber them.
-_OUT_OF_BAND_OTHER_INFO_KEYS = {"conditional_access_findings"}
-
 
 def _row_values(event: PendingAuthEvent) -> dict:
     """
@@ -268,26 +271,6 @@ def _row_values(event: PendingAuthEvent) -> dict:
         if result.overflow is not None:
             overflow[column] = result.overflow
     return {**stored, "other_info": _store_overflow(event.other_info, overflow)}
-
-
-def _merge_other_info_for_update(stored: dict | None, updated: dict | None) -> dict | None:
-    """
-    Merge *updated* into the existing stored value for ``other_info`` while preserving out-of-band keys that the
-    event does not carry (currently conditional-access findings appended after insert).
-
-    If *updated* explicitly sets one of those keys, that explicit value wins.
-
-    An event that carries no ``other_info`` of its own yields ``updated is None`` - the common case, since only a
-    caller-supplied value or a truncation overflow fills it - so the out-of-band keys have to be carried over into a
-    fresh dict there as well, or the update would null the column and drop them.
-    """
-    if not isinstance(stored, dict):
-        return updated
-    preserved = {key: stored[key] for key in _OUT_OF_BAND_OTHER_INFO_KEYS if key in stored}
-    if not preserved:
-        return updated
-    merged = dict(updated) if isinstance(updated, dict) else {}
-    return {**preserved, **merged}
 
 
 def _build_entry(event: PendingAuthEvent) -> AuthenticationLog:
@@ -351,8 +334,6 @@ def update_authentication_events(events: Sequence[PendingAuthEvent]) -> bool:
                 log.info(f"Cannot update authentication log entry {event.row_id!r}: not found.")
                 continue
             values = _row_values(event)
-            stored_other_info = getattr(entry, "other_info", None)
-            values["other_info"] = _merge_other_info_for_update(stored_other_info, values["other_info"])
             for column, value in values.items():
                 setattr(entry, column, value)
     if not outcome.succeeded:
@@ -412,42 +393,13 @@ def delete_authentication_log_event(event_id: int) -> None:
 
     A management operation, so a failure surfaces to the caller instead of being swallowed.
     """
-    stmt = delete(AuthenticationLog).where(AuthenticationLog.id == event_id)
     with guarded_write(f"the deletion of authentication log entry {event_id}", reraise=True):
-        get_ca_session().execute(stmt)
-
-
-def record_conditional_access_finding(event_id: int, finding: dict) -> None:
-    """
-    Append *finding* to the ``conditional_access_findings`` list in an existing
-    authentication_log row's ``other_info``, alongside whatever else is already stored
-    there.
-
-    This records what a conditional-access policy did to the request on the request's own
-    log row. A dry-run finding carries ``dry_run: True``: a dry-run policy never writes
-    lockout state and never runs its actions, so the finding records what it *would* have
-    done, letting an admin review a policy's real-world hit rate before enforcing it.
-
-    Like the insert, this must never break the response that triggered it: a failure is logged and swallowed, and it
-    runs on the conditional-access session so a rollback leaves the request's own pending writes alone.
-
-    The engine runs *after* the row was written (that ordering is what lets its counts include this request's own
-    event), so the finding has to be an ``UPDATE`` on the stored row rather than a field on the staged event. Once the
-    engine hands its findings back to the API layer instead of writing them itself, this becomes a mutation of
-    ``PendingAuthEvent.other_info`` before the row is ever written, and this function goes away.
-
-    :param event_id: id of the entry to attach the finding to
-    :param finding: JSON-serializable dict describing what the policy did (or, in dry run, would have done)
-    """
-    # The lookup is inside the guarded block so a failing read cannot break the response either.
-    with guarded_write(f"the conditional-access finding on authentication log entry {event_id}"):
-        entry = get_ca_session().get(AuthenticationLog, event_id)
-        if entry is None:
-            log.info(f"Cannot record conditional-access finding on authentication log entry {event_id!r}: not found.")
-            return
-        other_info = dict(entry.other_info) if entry.other_info else {}
-        other_info["conditional_access_findings"] = [*other_info.get("conditional_access_findings", []), finding]
-        entry.other_info = other_info
+        session = get_ca_session()
+        entry = session.get(AuthenticationLog, event_id)
+        if entry is not None:
+            # Deleted as an *object*, so the ``outcomes`` relationship cascade takes this request's conditional-access
+            # history with it - on every backend, without relying on a foreign key SQLite does not enforce.
+            session.delete(entry)
 
 
 def get_authentication_log_event(event_id: int) -> AuthenticationLog | None:
@@ -542,6 +494,46 @@ def _filter_conditions(resolver: str | list[str] | None = None,
     return conditions
 
 
+def _outcome_condition(ca_action_type: str | list[str] | None = None,
+                       ca_policy_name: str | list[str] | None = None,
+                       ca_dry_run: bool | None = None,
+                       case_insensitive: bool = False) -> ColumnElement[bool] | None:
+    """
+    Build the condition "this entry has a conditional-access outcome like this", or ``None`` when none of the outcome
+    filters is set.
+
+    The string filters behave like every other filter on the log (a value or a list of them, ``*`` as the only
+    wildcard, *case_insensitive* for the plain values -- see :func:`match_condition`); ``ca_dry_run`` is a boolean, so
+    ``None`` means "either" rather than "unset". ``ca_action_type="*"`` therefore reads as "entries conditional access
+    acted on at all".
+
+    **All conditions apply to the same outcome row.** An entry matches when *one* of its outcomes satisfies all of
+    them, which is what the filter says: ``ca_action_type=LOCK_USER`` with ``ca_policy_name=Notify`` must not match a
+    request where *Notify* sent an email and some other policy locked the user.
+
+    An ``EXISTS`` rather than a join, for the reason the listing reads the outcomes with ``selectinload``
+    (:func:`get_authentication_logs_paginate`): a join multiplies an entry by its outcomes, which would break both the
+    page's ``LIMIT`` and the ``count`` that shares these conditions -- an entry with three matching outcomes would be
+    counted three times and appear three times.
+
+    :param ca_action_type: match outcomes with this ``action_type`` (a ``LockoutAction`` value)
+    :param ca_policy_name: match outcomes recorded for this policy name (the denormalized copy, so a deleted policy is
+        still matchable)
+    :param ca_dry_run: match only dry-run outcomes (``True``) or only enforced ones (``False``)
+    :param case_insensitive: match the plain string values case-insensitively
+    """
+    terms = [condition for column, value in ((ConditionalAccessOutcome.action_type, ca_action_type),
+                                             (ConditionalAccessOutcome.policy_name, ca_policy_name))
+             if (condition := match_condition(column, value, case_insensitive)) is not None]
+    if ca_dry_run is not None:
+        terms.append(ConditionalAccessOutcome.dry_run.is_(ca_dry_run))
+    if not terms:
+        return None
+    return (select(1)
+            .where(ConditionalAccessOutcome.auth_log_id == AuthenticationLog.id, *terms)
+            .exists())
+
+
 def _visibility_condition(scopes: list[AuthenticationLogVisibilityScope]) -> ColumnElement[bool]:
     """
     Build a single ``where`` condition restricting the visible entries to the given scopes: an entry must match all
@@ -626,6 +618,9 @@ def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
                                      transaction_id: str | list[str] | None = None,
                                      attempt_id: str | list[str] | None = None,
                                      client_label: str | list[str] | None = None,
+                                     ca_action_type: str | list[str] | None = None,
+                                     ca_policy_name: str | list[str] | None = None,
+                                     ca_dry_run: bool | None = None,
                                      start_time: datetime | None = None,
                                      end_time: datetime | None = None,
                                      visibility_scopes: list[AuthenticationLogVisibilityScope] | None = None,
@@ -641,8 +636,14 @@ def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
     ``source_ip``, ``serial``, ``transaction_id``, ``attempt_id``, ``client_label``,
     ``start_time`` and
     ``end_time`` -- behave
-    exactly like :func:`get_authentication_logs`. The remaining parameters control visibility scoping and pagination:
+    exactly like :func:`get_authentication_logs`. The ``ca_*`` parameters filter on what conditional access *did* to the
+    request and are only offered here, since this is the endpoint that reads the outcomes:
 
+    :param ca_action_type: only entries with an outcome of this action type; ``"*"`` reads as "conditional access acted
+        on this request at all"
+    :param ca_policy_name: only entries with an outcome recorded for this policy name
+    :param ca_dry_run: only entries with a dry-run outcome (``True``) or with an enforced one (``False``); ``None``
+        does not filter
     :param visibility_scopes: restrict the result to entries matching any of these scopes
         (see :func:`_visibility_condition`); ``None`` means no restriction
     :param case_insensitive: if set, plain (non-wildcard) filter values match case-insensitively; wildcard values
@@ -661,6 +662,13 @@ def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
                                     client_label=client_label,
                                     start_time=start_time, end_time=end_time,
                                     case_insensitive=case_insensitive)
+    # An EXISTS over the outcome table, kept out of _filter_conditions: those conditions are also applied to DELETE
+    # statements (see delete_authentication_logs), and "delete every entry a policy ever locked someone on" is not a
+    # retention rule anybody asked for.
+    outcome_condition = _outcome_condition(ca_action_type=ca_action_type, ca_policy_name=ca_policy_name,
+                                           ca_dry_run=ca_dry_run, case_insensitive=case_insensitive)
+    if outcome_condition is not None:
+        conditions.append(outcome_condition)
     if visibility_scopes is not None:
         conditions.append(_visibility_condition(visibility_scopes))
     stmt = select(AuthenticationLog).where(*conditions)
@@ -679,12 +687,68 @@ def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
     page = max(1, page)
     page_size = max(1, page_size)
     offset = (page - 1) * page_size
+    # The only place that loads the conditional-access outcomes. selectinload fetches them for the whole page in one
+    # extra statement (WHERE auth_log_id IN (<the page's ids>)), so the statement count does not grow with the page
+    # size. A JOIN would be wrong rather than merely slower: it multiplies each entry by its outcomes, which breaks
+    # both LIMIT and the count above.
+    stmt = stmt.options(selectinload(AuthenticationLog.outcomes))
     auth_logs = get_ca_session().scalars(stmt.limit(page_size).offset(offset)).all()
     return AuthenticationLogPage(auth_logs=auth_logs,
                                  count=count,
                                  current=page,
                                  prev=page - 1 if page > 1 else None,
                                  next=page + 1 if offset + page_size < count else None)
+
+
+def _delete_outcomes_of(criterion: ColumnElement[bool], chunk_size: int | None = None) -> int:
+    """
+    Delete the conditional-access outcomes of every authentication-log row matching *criterion*, and return how many
+    were removed.
+
+    Always called **before** the parent rows: the ``auth_log_id`` foreign key cascades on MySQL/MariaDB and PostgreSQL
+    but not on SQLite, where ``PRAGMA foreign_keys`` is off by default and privacyIDEA never enables it. Deleting the
+    children explicitly is what makes all supported backends behave the same.
+
+    An ORM ``cascade="all, delete-orphan"`` relationship would **not** do this job. That cascade is only consulted when
+    a mapped object is deleted through the session (``session.delete(entry)``); every delete path here is set-based Core
+    SQL - ``table.delete().where(...)``, or ``DeleteLimit`` when chunking - which SQLAlchemy does not run relationship
+    cascades for. Declaring one would leave the children behind on SQLite while looking like it handled them. Loading
+    every doomed parent to delete it object-by-object is the only way to make the cascade fire, and that defeats the
+    point of :func:`~privacyidea.lib.sqlutils.delete_matching_rows`: retention has to remove millions of rows with
+    bounded memory.
+
+    The children are matched through the parents (``auth_log_id IN (SELECT id FROM authentication_log WHERE …)``).
+
+    This commits separately from the parent delete (:func:`~privacyidea.lib.sqlutils.delete_matching_rows` commits per
+    call, and chunked deletes commit per chunk). A failure of the parent delete afterwards therefore leaves entries
+    whose history is already gone - acceptable for a management operation, where the alternative is holding one
+    transaction open across an unbounded number of chunked deletes.
+    """
+    return delete_matching_rows(get_ca_session(), ConditionalAccessOutcome.__table__,
+                                ConditionalAccessOutcome.auth_log_id.in_(select(AuthenticationLog.id).where(criterion)),
+                                chunk_size)
+
+
+def _delete_entries(criterion: ColumnElement[bool], chunk_size: int | None = None) -> int:
+    """
+    Delete the authentication-log rows matching *criterion* **together with their conditional-access outcomes**, and
+    return how many entries were removed.
+
+    Every set-based delete of authentication-log rows goes through here (the single-row path,
+    :func:`delete_authentication_log_event`, does both deletes in one transaction instead). That is deliberate: neither
+    an explicit call per delete path nor an ORM cascade is self-enforcing, so the one thing that can be enforced is that
+    there is a single place to route through - a new delete path calls this instead of assembling the two halves again.
+
+    :param criterion: the ``where`` clause selecting the entries to delete
+    :param chunk_size: delete in chunks of this size to avoid long locks on large tables
+    :return: the number of authentication-log entries deleted (the outcome count is logged, not returned: the caller
+        asked to delete entries, and their history is part of them)
+    """
+    outcomes = _delete_outcomes_of(criterion, chunk_size)
+    deleted = delete_matching_rows(get_ca_session(), AuthenticationLog.__table__, criterion, chunk_size)
+    if outcomes:
+        log.debug(f"Deleted {outcomes} conditional-access outcome(s) along with {deleted} authentication log entries.")
+    return deleted
 
 
 def delete_authentication_logs(resolver: str | list[str] | None = None,
@@ -729,7 +793,7 @@ def delete_authentication_logs(resolver: str | list[str] | None = None,
         raise ParameterError("Refusing to delete the whole authentication log: at least one filter is required.")
     if visibility_scopes is not None:
         conditions.append(_visibility_condition(visibility_scopes))
-    return delete_matching_rows(get_ca_session(), AuthenticationLog.__table__, and_(*conditions), chunk_size)
+    return _delete_entries(and_(*conditions), chunk_size)
 
 
 def cleanup_authentication_log(older_than: datetime, chunk_size: int | None = None) -> int:
@@ -741,5 +805,4 @@ def cleanup_authentication_log(older_than: datetime, chunk_size: int | None = No
     :param chunk_size: if given, delete in chunks of this size to avoid long locks / deadlocks on large tables
     :return: the number of deleted rows
     """
-    criterion = AuthenticationLog.timestamp < _naive_utc(older_than)
-    return delete_matching_rows(get_ca_session(), AuthenticationLog.__table__, criterion, chunk_size)
+    return _delete_entries(AuthenticationLog.timestamp < _naive_utc(older_than), chunk_size)

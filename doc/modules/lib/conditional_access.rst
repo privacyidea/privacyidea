@@ -22,9 +22,23 @@ Authentication log
    :members:
    :undoc-members:
 
+Conditional access outcome log
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. automodule:: privacyidea.lib.conditional_access.outcome_log
+   :members:
+   :undoc-members:
+
 Conditional access engine
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: privacyidea.lib.conditional_access.engine
+   :members:
+   :undoc-members:
+
+Per-request context
+~~~~~~~~~~~~~~~~~~~~
+
+.. automodule:: privacyidea.lib.conditional_access.request_context
    :members:
    :undoc-members:

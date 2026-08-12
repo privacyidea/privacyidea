@@ -26,10 +26,11 @@ import mock
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import log_authentication_event, AuthLogUserRole
+from privacyidea.lib.conditional_access.outcome_log import record_outcomes
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, PolicyAction
 from privacyidea.lib.realm import set_realm, delete_realm
 from privacyidea.lib.resolver import save_resolver, delete_resolver
-from privacyidea.models import db
+from privacyidea.models import ConditionalAccessOutcome, db
 from .authlog_utils import AuthLogTestCase
 
 
@@ -133,6 +134,147 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
         # timestamp is serialized as an ISO 8601 string, not a datetime
         self.assertIsInstance(entry["timestamp"], str)
         datetime.datetime.fromisoformat(entry["timestamp"])
+        # Every entry carries its conditional-access history, empty when the request tripped no policy.
+        self.assertEqual([], entry["conditional_access_outcomes"])
+
+    def test_entry_carries_its_conditional_access_outcomes(self):
+        event_id = log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res1", uid="u1",
+                                            realm=self.realm1)
+        record_outcomes([ConditionalAccessOutcome(action_type="LOCK_USER", policy_name="Brute force",
+                                                 threshold=3, event_count=3, stage_name="Second strike",
+                                                 info={"expires_at": "2026-08-07T12:00:00+00:00"})], event_id)
+        try:
+            entry = next(e for e in self._get({"page_size": 50})["result"]["value"]["auth_logs"]
+                         if e["id"] == event_id)
+            outcome = entry["conditional_access_outcomes"][0]
+            self.assertEqual("LOCK_USER", outcome["action_type"])
+            self.assertEqual("Brute force", outcome["policy_name"])
+            self.assertEqual("Second strike", outcome["stage_name"])
+            self.assertEqual(3, outcome["threshold"])
+            self.assertEqual(3, outcome["event_count"])
+            self.assertFalse(outcome["dry_run"])
+            # Action-specific detail rides along as the dict it was stored as.
+            self.assertDictEqual({"expires_at": "2026-08-07T12:00:00+00:00"}, outcome["info"])
+            # No timestamp of its own: the entry it hangs off carries it.
+            self.assertNotIn("timestamp", outcome)
+        finally:
+            db.session.query(ConditionalAccessOutcome).delete()
+            db.session.commit()
+
+    # --- filtering on what conditional access did ---
+
+    def _seed_outcomes(self):
+        """
+        Three entries: one locked by "Brute force", one only notified by "Notify", one a dry run of "Notify", plus a
+        fourth entry conditional access never touched. Returns the ids by key.
+        """
+        ids = {
+            "locked": log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res", uid="1",
+                                               realm=self.realm1),
+            "notified": log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res", uid="2",
+                                                 realm=self.realm1),
+            "simulated": log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res", uid="3",
+                                                 realm=self.realm1),
+            "untouched": log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="4",
+                                                  realm=self.realm1),
+        }
+        db.session.commit()
+        record_outcomes([self._make_outcome("LOCK_USER", "Brute force")], ids["locked"])
+        record_outcomes([self._make_outcome("EMAIL_ADMIN", "Notify")], ids["notified"])
+        record_outcomes([self._make_outcome("LOCK_USER", "Notify", dry_run=True)], ids["simulated"])
+        return ids
+
+    @staticmethod
+    def _make_outcome(action_type, policy_name, dry_run=False):
+        return ConditionalAccessOutcome(action_type=action_type, policy_name=policy_name, threshold=3,
+                                        event_count=3, dry_run=dry_run)
+
+    def _clear_outcomes(self):
+        db.session.query(ConditionalAccessOutcome).delete()
+        db.session.commit()
+
+    def test_filter_by_outcome_action_type(self):
+        ids = self._seed_outcomes()
+        try:
+            value = self._get({"ca_action_type": "LOCK_USER"})["result"]["value"]
+            self.assertEqual(2, value["count"])
+            self.assertSetEqual({ids["locked"], ids["simulated"]}, self._returned_ids(value))
+            # A list and a wildcard work as for every other filter, and "*" means "acted on at all".
+            self.assertSetEqual({ids["locked"], ids["notified"], ids["simulated"]},
+                                self._returned_ids(self._get({"ca_action_type": "LOCK_USER,EMAIL_ADMIN"})
+                                                   ["result"]["value"]))
+            self.assertSetEqual({ids["notified"]},
+                                self._returned_ids(self._get({"ca_action_type": "EMAIL*"})["result"]["value"]))
+            self.assertSetEqual({ids["locked"], ids["notified"], ids["simulated"]},
+                                self._returned_ids(self._get({"ca_action_type": "*"})["result"]["value"]))
+        finally:
+            self._clear_outcomes()
+
+    def test_filter_by_outcome_policy_name(self):
+        ids = self._seed_outcomes()
+        try:
+            value = self._get({"ca_policy_name": "Notify"})["result"]["value"]
+            self.assertSetEqual({ids["notified"], ids["simulated"]}, self._returned_ids(value))
+            # The outcome columns use the same case-sensitive collation as the log, so the flag is needed here too.
+            self.assertEqual(0, self._get({"ca_policy_name": "notify"})["result"]["value"]["count"])
+            self.assertEqual(2, self._get({"ca_policy_name": "notify", "case_insensitive": "1"})
+                             ["result"]["value"]["count"])
+        finally:
+            self._clear_outcomes()
+
+    def test_filter_by_outcome_dry_run_is_a_tri_state(self):
+        ids = self._seed_outcomes()
+        try:
+            self.assertSetEqual({ids["simulated"]},
+                                self._returned_ids(self._get({"ca_dry_run": "true"})["result"]["value"]))
+            self.assertSetEqual({ids["locked"], ids["notified"]},
+                                self._returned_ids(self._get({"ca_dry_run": "false"})["result"]["value"]))
+            # Omitted or empty does not filter at all - which is how "both" is expressed.
+            self.assertEqual(4, self._get({"page_size": 50})["result"]["value"]["count"])
+            self.assertEqual(4, self._get({"ca_dry_run": "", "page_size": 50})["result"]["value"]["count"])
+        finally:
+            self._clear_outcomes()
+
+    def test_outcome_filters_apply_to_one_and_the_same_outcome(self):
+        # The entry has two outcomes: LOCK_USER by "Brute force" and EMAIL_ADMIN by "Notify". Asking for a LOCK_USER
+        # *by Notify* must not match it, even though each half is true of a different outcome of the same entry.
+        event_id = log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res", uid="9",
+                                            realm=self.realm1)
+        db.session.commit()
+        record_outcomes([self._make_outcome("LOCK_USER", "Brute force"),
+                         self._make_outcome("EMAIL_ADMIN", "Notify")], event_id)
+        try:
+            self.assertEqual(0, self._get({"ca_action_type": "LOCK_USER", "ca_policy_name": "Notify"})
+                             ["result"]["value"]["count"])
+            self.assertEqual(1, self._get({"ca_action_type": "LOCK_USER", "ca_policy_name": "Brute force"})
+                             ["result"]["value"]["count"])
+        finally:
+            self._clear_outcomes()
+
+    def test_outcome_filter_returns_an_entry_once_however_many_outcomes_match(self):
+        # The EXISTS must not multiply the entry the way a join would - in the page or in the count.
+        event_id = log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res", uid="8",
+                                            realm=self.realm1)
+        db.session.commit()
+        record_outcomes([self._make_outcome("LOCK_USER", "P1"), self._make_outcome("LOCK_USER", "P2"),
+                         self._make_outcome("LOCK_USER", "P3")], event_id)
+        try:
+            value = self._get({"ca_action_type": "LOCK_USER"})["result"]["value"]
+            self.assertEqual(1, value["count"])
+            self.assertListEqual([event_id], [entry["id"] for entry in value["auth_logs"]])
+        finally:
+            self._clear_outcomes()
+
+    def test_outcome_filter_combines_with_a_filter_on_the_entry(self):
+        ids = self._seed_outcomes()
+        try:
+            self.assertSetEqual({ids["locked"]},
+                                self._returned_ids(self._get({"ca_action_type": "LOCK_USER", "uid": "1"})
+                                                   ["result"]["value"]))
+            self.assertEqual(0, self._get({"ca_action_type": "LOCK_USER",
+                                           "event_type": AuthEventType.LOGIN_SUCCESS})["result"]["value"]["count"])
+        finally:
+            self._clear_outcomes()
 
     def test_filter_by_event_type(self):
         self._seed(include_no_realm=True)
@@ -229,6 +371,11 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
         self.assertEqual("success", by_name["LOGIN_SUCCESS"])
         self.assertEqual("failure", by_name["USER_UNKNOWN"])
         self.assertEqual("pending", by_name["CHALLENGE_TRIGGERED"])
+        # Including the ones conditional access writes for its own rejections: a policy may not count them, but an
+        # admin must be able to filter the log for them.
+        self.assertEqual("failure", by_name["USER_LOCKED"])
+        self.assertEqual("failure", by_name["IP_BLOCKED"])
+        self.assertEqual("failure", by_name["ACCESS_DENIED"])
 
     def test_event_types_accessible_to_user(self):
         self.authenticate_selfservice_user()

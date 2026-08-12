@@ -98,6 +98,19 @@ describe("AuthenticationLogService", () => {
     expect(service.filterParams()).toEqual({ user_role: "admin-internal,admin-external" });
   });
 
+  it("forwards the conditional-access outcome filters as flat params", () => {
+    // Three advanced keys, sent as they are typed: the backend filters on the entry's outcomes with them (ca_dry_run is
+    // a tri-state there, so its absence means "both").
+    service.authenticationLogFilter.set(
+      new FilterValue({ value: "ca_action_type: LOCK_USER,BLOCK_IP ca_policy_name: Brute* ca_dry_run: false" })
+    );
+    expect(service.filterParams()).toEqual({
+      ca_action_type: "LOCK_USER,BLOCK_IP",
+      ca_policy_name: "Brute*",
+      ca_dry_run: "false"
+    });
+  });
+
   it("resets pageIndex to 1 (first page) when the filter changes", () => {
     service.pageIndex.set(4);
     service.authenticationLogFilter.set(new FilterValue({ value: "username: bob" }));

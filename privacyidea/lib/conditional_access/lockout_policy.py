@@ -59,6 +59,7 @@ must be :class:`~privacyidea.lib.conditional_access.engine.LockoutAction` names;
 :class:`~privacyidea.lib.error.ParameterError` (fail-closed - a typo must not silently create a policy that never
 matches or an action that never fires).
 """
+
 import logging
 from contextlib import contextmanager
 from dataclasses import dataclass, field
@@ -66,13 +67,15 @@ from dataclasses import dataclass, field
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
+from privacyidea.lib.conditional_access.authentication_event_types import (
+    TRACKABLE_EVENT_TYPES,
+    CountMode,
+)
 from privacyidea.lib.conditional_access.engine import LockoutAction, LockoutTarget
 from privacyidea.lib.error import ConflictError, ParameterError, ResourceNotFoundError
 from privacyidea.lib.log import log_with
 from privacyidea.models import db
-from privacyidea.models.lockout_policy import (LockoutPolicy, LockoutPolicyStage,
-                                               LockoutStageAction)
+from privacyidea.models.lockout_policy import LockoutPolicy, LockoutPolicyStage, LockoutStageAction
 
 log = logging.getLogger(__name__)
 
@@ -95,6 +98,7 @@ class StageActionDefinition:
     resolved to the action-aware default in :func:`_build_stages` (re-trigger for
     the :data:`DECISION_ACTIONS`, fire-once for the post-response effects).
     """
+
     action_type: str
     action_value: object = None
     retrigger_above_threshold: bool | None = None
@@ -108,6 +112,7 @@ class StageDefinition:
     dataclass (instead of a bare ``dict``) makes the shape explicit and lets
     the type checker verify the hand-off between validation and ORM building.
     """
+
     failure_threshold: int
     priority: int
     actions: list[StageActionDefinition] = field(default_factory=list)
@@ -142,9 +147,11 @@ def lockout_policy_to_dict(policy: LockoutPolicy) -> dict:
                     "action_type": action.action_type,
                     "action_value": action.action_value,
                     "retrigger_above_threshold": action.retrigger_above_threshold,
-                } for action in stage.actions
+                }
+                for action in stage.actions
             ],
-        } for stage in sorted(policy.stages, key=lambda stage: stage.failure_threshold)
+        }
+        for stage in sorted(policy.stages, key=lambda stage: stage.failure_threshold)
     ]
     return result
 
@@ -192,8 +199,9 @@ def _validate_priority(priority, exclude_id: int | None = None) -> int:
     priority = _validate_positive_int(priority, "priority")
     existing = db.session.scalar(select(LockoutPolicy).where(LockoutPolicy.priority == priority))
     if existing and existing.id != exclude_id:
-        raise ParameterError(f"A lockout policy with priority {priority} already exists ('{existing.name}'); "
-                             "priorities must be unique.")
+        raise ParameterError(
+            f"A lockout policy with priority {priority} already exists ('{existing.name}'); priorities must be unique."
+        )
     return priority
 
 
@@ -230,11 +238,21 @@ def _validate_stage_name(name) -> str | None:
 # EMAIL_USER would have no user to act on. Both targets may decide the request
 # pre-auth via ALLOW/DENY (keyed on the user, resp. the source IP).
 _ACTIONS_BY_TARGET = {
-    LockoutTarget.USER: {LockoutAction.LOCK_USER, LockoutAction.PERMANENT_LOCK_USER,
-                         LockoutAction.EMAIL_USER, LockoutAction.EMAIL_ADMIN,
-                         LockoutAction.DENY, LockoutAction.ALLOW},
-    LockoutTarget.SOURCE_IP: {LockoutAction.BLOCK_IP, LockoutAction.PERMANENT_BLOCK_IP,
-                              LockoutAction.EMAIL_ADMIN, LockoutAction.DENY, LockoutAction.ALLOW},
+    LockoutTarget.USER: {
+        LockoutAction.LOCK_USER,
+        LockoutAction.PERMANENT_LOCK_USER,
+        LockoutAction.EMAIL_USER,
+        LockoutAction.EMAIL_ADMIN,
+        LockoutAction.DENY,
+        LockoutAction.ALLOW,
+    },
+    LockoutTarget.SOURCE_IP: {
+        LockoutAction.BLOCK_IP,
+        LockoutAction.PERMANENT_BLOCK_IP,
+        LockoutAction.EMAIL_ADMIN,
+        LockoutAction.DENY,
+        LockoutAction.ALLOW,
+    },
 }
 
 
@@ -243,8 +261,7 @@ def get_actions_by_target() -> dict[str, list[str]]:
     The stage actions each target permits, as ``{target_value: [action_value, ...]}``
     (see :data:`_ACTIONS_BY_TARGET`).
     """
-    return {target.value: sorted(action.value for action in actions)
-            for target, actions in _ACTIONS_BY_TARGET.items()}
+    return {target.value: sorted(action.value for action in actions) for target, actions in _ACTIONS_BY_TARGET.items()}
 
 
 def get_target_constraints() -> dict[str, dict[str, list[str]]]:
@@ -254,9 +271,13 @@ def get_target_constraints() -> dict[str, dict[str, list[str]]]:
     (:data:`_COUNT_MODES_BY_TARGET`), both sorted. Actions and count modes are the two things constrained by the
     target.
     """
-    return {target.value: {"actions": sorted(action.value for action in _ACTIONS_BY_TARGET[target]),
-                           "count_modes": sorted(mode.value for mode in _COUNT_MODES_BY_TARGET[target])}
-            for target in LockoutTarget}
+    return {
+        target.value: {
+            "actions": sorted(action.value for action in _ACTIONS_BY_TARGET[target]),
+            "count_modes": sorted(mode.value for mode in _COUNT_MODES_BY_TARGET[target]),
+        }
+        for target in LockoutTarget
+    }
 
 
 def _validate_target(target) -> "LockoutTarget":
@@ -279,11 +300,14 @@ def _validate_target_actions(stage_defs: list["StageDefinition"], target: "Locko
     :data:`_ACTIONS_BY_TARGET`) - e.g. ``LOCK_USER`` on a ``source_ip`` policy.
     """
     allowed = _ACTIONS_BY_TARGET[target]
-    invalid = sorted({action.action_type for stage in stage_defs for action in stage.actions
-                      if action.action_type not in allowed})
+    invalid = sorted(
+        {action.action_type for stage in stage_defs for action in stage.actions if action.action_type not in allowed}
+    )
     if invalid:
-        raise ParameterError(f"Action(s) {', '.join(invalid)} are not allowed for target '{target}'. "
-                             f"Allowed: {', '.join(sorted(allowed))}.")
+        raise ParameterError(
+            f"Action(s) {', '.join(invalid)} are not allowed for target '{target}'. "
+            f"Allowed: {', '.join(sorted(allowed))}."
+        )
 
 
 # The count modes each target may use, and the default when the caller does not specify one. Both targets support the
@@ -320,8 +344,10 @@ def _validate_count_mode(count_mode, target: "LockoutTarget") -> str:
         raise ParameterError(f"Unknown count_mode '{count_mode}'. Valid modes: {valid_modes}.")
     allowed = _COUNT_MODES_BY_TARGET[target]
     if mode not in allowed:
-        raise ParameterError(f"count_mode '{mode}' is not allowed for target '{target}'. "
-                             f"Allowed: {', '.join(sorted(m.value for m in allowed))}.")
+        raise ParameterError(
+            f"count_mode '{mode}' is not allowed for target '{target}'. "
+            f"Allowed: {', '.join(sorted(m.value for m in allowed))}."
+        )
     return mode.value
 
 
@@ -336,12 +362,13 @@ def _validate_counter_types(counter_types) -> list[str]:
     """
     if not isinstance(counter_types, list) or not counter_types:
         raise ParameterError("'counter_types_to_track' must be a non-empty list of authentication event types.")
-    valid_types = {event_type.value for event_type in AuthEventType}
+    valid_types = {event_type.value for event_type in TRACKABLE_EVENT_TYPES}
     seen = []
     for counter_type in counter_types:
         if counter_type not in valid_types:
-            raise ParameterError(f"Unknown counter type '{counter_type}'. "
-                                 f"Valid types: {', '.join(sorted(valid_types))}.")
+            raise ParameterError(
+                f"Unknown counter type '{counter_type}'. Valid types: {', '.join(sorted(valid_types))}."
+            )
         if counter_type not in seen:
             seen.append(counter_type)
     return seen
@@ -393,18 +420,24 @@ def _validate_stages(stages) -> list[StageDefinition]:
                 raise ParameterError(f"Unknown action key(s): {', '.join(sorted(unknown))}.")
             action_type = action.get("action_type")
             if action_type not in valid_actions:
-                raise ParameterError(f"Unknown action type '{action_type}'. "
-                                     f"Valid types: {', '.join(sorted(valid_actions))}.")
+                raise ParameterError(
+                    f"Unknown action type '{action_type}'. Valid types: {', '.join(sorted(valid_actions))}."
+                )
             # retrigger_above_threshold is a per-action checkbox (coerced like the
             # policy-level enabled/dry_run booleans). An omitted flag stays None
             # and is resolved to the action-aware default by :func:`_build_stages`.
             retrigger_raw = action.get("retrigger_above_threshold")
             retrigger = None if retrigger_raw is None else bool(retrigger_raw)
-            normalized_actions.append(StageActionDefinition(action_type=action_type,
-                                                            action_value=action.get("action_value"),
-                                                            retrigger_above_threshold=retrigger))
-        normalized.append(StageDefinition(failure_threshold=threshold, priority=priority,
-                                          name=name, actions=normalized_actions))
+            normalized_actions.append(
+                StageActionDefinition(
+                    action_type=action_type,
+                    action_value=action.get("action_value"),
+                    retrigger_above_threshold=retrigger,
+                )
+            )
+        normalized.append(
+            StageDefinition(failure_threshold=threshold, priority=priority, name=name, actions=normalized_actions)
+        )
     return normalized
 
 
@@ -430,10 +463,16 @@ def _build_stages(stage_defs: list[StageDefinition]) -> list[LockoutPolicyStage]
             name=stage.name,
             failure_threshold=stage.failure_threshold,
             priority=stage.priority,
-            actions=[LockoutStageAction(action_type=action.action_type, action_value=action.action_value,
-                                        retrigger_above_threshold=_default_retrigger(action))
-                     for action in stage.actions],
-        ) for stage in stage_defs
+            actions=[
+                LockoutStageAction(
+                    action_type=action.action_type,
+                    action_value=action.action_value,
+                    retrigger_above_threshold=_default_retrigger(action),
+                )
+                for action in stage.actions
+            ],
+        )
+        for stage in stage_defs
     ]
 
 
@@ -484,14 +523,24 @@ def _unique_conflict_as_400():
         yield
     except IntegrityError as ex:
         db.session.rollback()
-        raise ParameterError("The lockout policy conflicts with existing data: name and priority must be unique "
-                             "across policies, and counter types and stage thresholds unique within a policy.") from ex
+        raise ParameterError(
+            "The lockout policy conflicts with existing data: name and priority must be unique "
+            "across policies, and counter types and stage thresholds unique within a policy."
+        ) from ex
 
 
 @log_with(log)
-def create_lockout_policy(name: str, time_window_seconds: int, counter_types_to_track: list[str],
-                          stages: list[dict], target: str, priority: int, enabled: bool = True,
-                          dry_run: bool = False, count_mode: str | None = None) -> int:
+def create_lockout_policy(
+    name: str,
+    time_window_seconds: int,
+    counter_types_to_track: list[str],
+    stages: list[dict],
+    target: str,
+    priority: int,
+    enabled: bool = True,
+    dry_run: bool = False,
+    count_mode: str | None = None,
+) -> int:
     """
     Create a lockout policy with its stages and actions in one transaction.
 
@@ -514,10 +563,17 @@ def create_lockout_policy(name: str, time_window_seconds: int, counter_types_to_
     stage_defs = _validate_stages(stages)
     _validate_target_actions(stage_defs, lockout_target)
 
-    policy = LockoutPolicy(name=name, time_window_seconds=time_window_seconds,
-                           enabled=bool(enabled), dry_run=bool(dry_run), priority=priority,
-                           target=lockout_target, counter_types_to_track=counter_types,
-                           count_mode=count_mode, stages=_build_stages(stage_defs))
+    policy = LockoutPolicy(
+        name=name,
+        time_window_seconds=time_window_seconds,
+        enabled=bool(enabled),
+        dry_run=bool(dry_run),
+        priority=priority,
+        target=lockout_target,
+        counter_types_to_track=counter_types,
+        count_mode=count_mode,
+        stages=_build_stages(stage_defs),
+    )
     db.session.add(policy)
     with _unique_conflict_as_400():
         db.session.commit()
@@ -526,12 +582,18 @@ def create_lockout_policy(name: str, time_window_seconds: int, counter_types_to_
 
 
 @log_with(log)
-def update_lockout_policy(policy_id: int, name: str | None = None,
-                          time_window_seconds: int | None = None,
-                          counter_types_to_track: list[str] | None = None,
-                          stages: list[dict] | None = None, enabled: bool | None = None,
-                          dry_run: bool | None = None, priority: int | None = None,
-                          target: str | None = None, count_mode: str | None = None) -> tuple[int, list[str]]:
+def update_lockout_policy(
+    policy_id: int,
+    name: str | None = None,
+    time_window_seconds: int | None = None,
+    counter_types_to_track: list[str] | None = None,
+    stages: list[dict] | None = None,
+    enabled: bool | None = None,
+    dry_run: bool | None = None,
+    priority: int | None = None,
+    target: str | None = None,
+    count_mode: str | None = None,
+) -> tuple[int, list[str]]:
     """
     Update a lockout policy. Only the given (non-``None``) fields are changed.
 
@@ -626,14 +688,15 @@ def update_lockout_policy(policy_id: int, name: str | None = None,
             policy.stages = _build_stages(stages)
             changed_fields.append("stages")
         db.session.commit()
-    log.info(f"Updated lockout policy '{policy.name}' (id {policy.id}); "
-             f"changed fields: {', '.join(changed_fields) or 'none'}.")
+    log.info(
+        f"Updated lockout policy '{policy.name}' (id {policy.id}); "
+        f"changed fields: {', '.join(changed_fields) or 'none'}."
+    )
     return policy.id, changed_fields
 
 
 @log_with(log)
-def reorder_lockout_policies(policy_ids: list[int],
-                             expected_priorities: list[int] | None = None) -> None:
+def reorder_lockout_policies(policy_ids: list[int], expected_priorities: list[int] | None = None) -> None:
     """
     Rearrange the evaluation order of the given policies.
 
@@ -676,17 +739,19 @@ def reorder_lockout_policies(policy_ids: list[int],
     if expected_priorities is not None:
         if not isinstance(expected_priorities, (list, tuple)) or len(expected_priorities) != len(ids):
             raise ParameterError("'expected_priorities' must have one entry per policy id.")
-        expected_priorities = [_validate_positive_int(priority, "expected priority")
-                               for priority in expected_priorities]
+        expected_priorities = [
+            _validate_positive_int(priority, "expected priority") for priority in expected_priorities
+        ]
     policies = [_get_policy(policy_id) for policy_id in ids]
     if expected_priorities is not None:
-        stale = [policy.name for policy, expected in zip(policies, expected_priorities)
-                 if policy.priority != expected]
+        stale = [policy.name for policy, expected in zip(policies, expected_priorities) if policy.priority != expected]
         if stale:
             # Raise error for mismatching policy priorities.
             names = ", ".join(f"'{name}'" for name in stale)
-            raise ConflictError("The submitted expected priorities do not match the current "
-                                f"priorities of these lockout policies: {names}.")
+            raise ConflictError(
+                "The submitted expected priorities do not match the current "
+                f"priorities of these lockout policies: {names}."
+            )
     # The values these policies hold, lowest first: reassigned in the requested order.
     priorities = sorted(policy.priority for policy in policies)
     with _unique_conflict_as_400():

@@ -17,12 +17,16 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 from datetime import datetime, timezone
+from typing import TYPE_CHECKING
 
 from sqlalchemy import BigInteger, DateTime, JSON, Index, Sequence
-from sqlalchemy.orm import mapped_column, Mapped
+from sqlalchemy.orm import mapped_column, Mapped, relationship
 
 from privacyidea.models import db
 from privacyidea.models.utils import MethodsMixin, utc_now, BigIntegerType, case_sensitive_unicode
+
+if TYPE_CHECKING:
+    from privacyidea.models import ConditionalAccessOutcome
 
 # Maximum length of the string columns. The lib layer truncates values to these lengths before insert (see
 # privacyidea.lib.conditional_access.authentication_log._truncate), so a value can never overflow a column.
@@ -89,6 +93,34 @@ class AuthenticationLog(MethodsMixin, db.Model):
         case_sensitive_unicode(authentication_log_column_length["attempt_id"]))
     other_info: Mapped[dict | None] = mapped_column(JSON)
 
+    # What conditional access did to this request: zero or more rows of conditional_access_outcome, oldest first.
+    #
+    # The target is named as a **string** because models/__init__ imports this module before
+    # conditional_access_outcome, so the class does not exist yet at import time; SQLAlchemy resolves it at mapper
+    # configuration. That is the declarative idiom for two peer models, not a workaround for a layering problem.
+    #
+    # ``cascade="all, delete-orphan"`` so that deleting an entry *as an object* takes its history with it, the way a
+    # token container takes its owners and states. This covers a whole class of callers rather than one code path -
+    # including ``MethodsMixin.delete()``, which this model offers - and it works on every backend, because SQLAlchemy
+    # issues the child DELETEs itself rather than relying on the foreign key (SQLite does not enforce those:
+    # ``PRAGMA foreign_keys`` is off by default and privacyIDEA never enables it).
+    #
+    # Set-based deletes are **not** covered: SQLAlchemy does not consult relationship cascades for
+    # ``table.delete().where(...)``, which is what retention has to use to remove large volumes with bounded memory.
+    # Those paths delete the children explicitly - see
+    # :func:`~privacyidea.lib.conditional_access.authentication_log._delete_entries`.
+    #
+    # ``lazy="raise"`` because **nothing on the authentication path may load these**. The engine counts over this table
+    # and writes outcomes without reading them back, and one path in particular would pay for a mistake here:
+    # ``_count_attempts`` fetches whole AuthenticationLog objects for every in-window row of a subject, so an eager or
+    # even lazy relationship would add a fan-out query to every PER_ATTEMPT count. Raising turns that from something to
+    # notice in review into an error, and exactly one query opts in - the paginated log listing, via ``selectinload``.
+    # The guard does not get in the cascade's way: the unit of work loads the collection through its own path, not
+    # through attribute access.
+    outcomes: Mapped[list["ConditionalAccessOutcome"]] = relationship(
+        "ConditionalAccessOutcome", cascade="all, delete-orphan", lazy="raise",
+        order_by="ConditionalAccessOutcome.id")
+
     @property
     def aware_timestamp(self) -> datetime:
         """
@@ -100,7 +132,16 @@ class AuthenticationLog(MethodsMixin, db.Model):
         """
         return self.timestamp.replace(tzinfo=timezone.utc)
 
-    def to_dict(self):
+    def to_dict(self, include_outcomes: bool = False) -> dict:
+        """
+        Serialize the entry for the API response, with the timestamp as an ISO-8601 UTC string.
+
+        *include_outcomes* adds the conditional-access history of this request as ``conditional_access_outcomes``. It is
+        off by default and only the paginated listing turns it on, because the relationship is ``lazy="raise"``: reading
+        it on an entry that was not loaded with its outcomes must fail loudly rather than emit a query per entry.
+        """
         auth_log_dict = {name: getattr(self, name) for name in self.__table__.columns.keys()}
         auth_log_dict["timestamp"] = self.aware_timestamp.isoformat()
+        if include_outcomes:
+            auth_log_dict["conditional_access_outcomes"] = [outcome.to_dict() for outcome in self.outcomes]
         return auth_log_dict

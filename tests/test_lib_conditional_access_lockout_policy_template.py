@@ -24,7 +24,7 @@ sends after prefilling from a template).
 from datetime import timedelta
 
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventOutcome,
-                                                                           outcome_of)
+                                                                           TRACKABLE_EVENT_TYPES, outcome_of)
 from privacyidea.lib.conditional_access.engine import (
     AccessDecision,
     LockoutAction,
@@ -127,7 +127,10 @@ class LockoutPolicyTemplateTestCase(MyTestCase):
             AuthEventType.USER_UNKNOWN,             # inert for a user target; the per-IP set counts it (enumeration)
             AuthEventType.ENROLLMENT_CANCELED_FAIL,  # enrollment housekeeping, not a credential attempt
         }
-        all_failures = {event_type.value for event_type in AuthEventType
+        # Only over the trackable types: conditional access's own rejections (USER_LOCKED, IP_BLOCKED, ACCESS_DENIED)
+        # are FAILURE outcomes too, but they are excluded from the policy vocabulary by construction
+        # (CA_ENFORCEMENT_EVENT_TYPES), so there is no decision to make about them here.
+        all_failures = {event_type.value for event_type in TRACKABLE_EVENT_TYPES
                         if outcome_of(event_type) == AuthEventOutcome.FAILURE}
         user_counted = {str(t) for t in self._policy("user_failed_rate_limiting")["counter_types_to_track"]}
         ip_counted = {str(t) for t in self._policy("ip_failed_rate_limiting")["counter_types_to_track"]}
@@ -238,12 +241,13 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
             now = utc_now()
             self._create("mfa_bruteforce", configure_email=True)
             self._seed_events(AuthEventType.MFA_FAIL, 5, timestamp=now)
-            notices = evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, now=now)
+            evaluation = evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, now=now)
             status = get_user_lockout(self.user, now=now)
             self.assertFalse(status.permanent, "lock is permanent, expected timed")
             self.assertEqual(1800, status.seconds_remaining, "wrong lock duration")
             self.assertIn("soc@example.com", smtpmock.get_sent_recipient(), "admin not emailed")
-            self.assertEqual(["Your administrator has been notified by email."], notices, "wrong login notice")
+            self.assertListEqual(["Your administrator has been notified by email."], evaluation.notices,
+                                 "wrong login notice")
         finally:
             Admin.query.filter_by(username="ca_soc").delete()
             db.session.commit()
@@ -276,10 +280,10 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
         now = utc_now()
         self._create("mfa_bruteforce")  # email deliberately left unconfigured
         self._seed_events(AuthEventType.MFA_FAIL, 5, timestamp=now)
-        notices = evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, now=now)
+        evaluation = evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, now=now)
         self.assertEqual(1800, get_user_lockout(self.user, now=now).seconds_remaining,
                          "lock did not fire without SMTP configured")
-        self.assertEqual([], notices, "unexpected login notice")
+        self.assertListEqual([], evaluation.notices, "unexpected login notice")
 
     # --- per-user rate limit (all attempts, DENY) -----------------------------
 
@@ -291,14 +295,14 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
         self._seed_attempts(AuthEventType.LOGIN_SUCCESS, 10, timestamp=now, start=0)
         self._seed_attempts(AuthEventType.MFA_FAIL, 5, timestamp=now, start=10)
         self._seed_attempts(AuthEventType.CHALLENGE_TRIGGERED, 5, timestamp=now, start=15)
-        self.assertEqual(AccessDecision.DENY, evaluate_access_decision(self.user, now=now))
+        self.assertEqual(AccessDecision.DENY, evaluate_access_decision(self.user, now=now).decision)
         self.assertFalse(is_user_locked(self.user, now=now), "a rate limit must not lock the account")
 
     def test_user_rate_limiting_below_threshold_continues(self):
         now = utc_now()
         self._create("user_rate_limiting")
         self._seed_attempts(AuthEventType.LOGIN_SUCCESS, 19, timestamp=now)
-        self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(self.user, now=now))
+        self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(self.user, now=now).decision)
 
     # --- per-user failed-attempt rate limit (DENY) ----------------------------
 
@@ -308,7 +312,7 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
         self._create("user_failed_rate_limiting")
         self._seed_attempts(AuthEventType.PASSWORD_FAIL, 5, timestamp=now, start=0)
         self._seed_attempts(AuthEventType.CHALLENGE_ANSWERED_FAIL, 5, timestamp=now, start=5)
-        self.assertEqual(AccessDecision.DENY, evaluate_access_decision(self.user, now=now))
+        self.assertEqual(AccessDecision.DENY, evaluate_access_decision(self.user, now=now).decision)
 
     def test_user_failed_rate_limiting_ignores_successful_attempts(self):
         # Successful attempts reduce to LOGIN_SUCCESS (not a tracked failure type), so a busy successful client is
@@ -317,7 +321,7 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
         self._create("user_failed_rate_limiting")
         self._seed_attempts(AuthEventType.MFA_FAIL, 9, timestamp=now, start=0)
         self._seed_attempts(AuthEventType.LOGIN_SUCCESS, 50, timestamp=now, start=9)
-        self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(self.user, now=now))
+        self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(self.user, now=now).decision)
 
     # --- per-IP failed-attempt rate limit (distinct accounts, DENY) - ships dry-run ---
 
@@ -329,7 +333,7 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
         policy_id = self._create("ip_failed_rate_limiting")
         self.assertTrue(get_lockout_policy(policy_id)["dry_run"], "ip_failed_rate_limiting must ship as dry-run")
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=25, timestamp=now)
-        self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(self.user, source_ip=ip, now=now))
+        self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(self.user, source_ip=ip, now=now).decision)
 
     def test_ip_failed_rate_limiting_denies_after_distinct_failed_accounts_when_enforced(self):
         # Once an admin enables enforcement: distinct accounts the IP failed against, real or probed, are counted -
@@ -341,14 +345,14 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=10, timestamp=now)
         self._seed_ip_unknown_events(ip, AuthEventType.USER_UNKNOWN,
                                      [f"ghost{i}" for i in range(10)], timestamp=now)
-        self.assertEqual(AccessDecision.DENY, evaluate_access_decision(self.user, source_ip=ip, now=now))
+        self.assertEqual(AccessDecision.DENY, evaluate_access_decision(self.user, source_ip=ip, now=now).decision)
 
     def test_ip_failed_rate_limiting_below_threshold_continues_when_enforced(self):
         now = utc_now()
         ip = "203.0.113.41"
         self._create("ip_failed_rate_limiting", enforce=True)
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=19, timestamp=now)
-        self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(self.user, source_ip=ip, now=now))
+        self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(self.user, source_ip=ip, now=now).decision)
 
     # --- per-IP rate limit (all outcomes, distinct accounts) - ships dry-run ---
 
@@ -360,7 +364,7 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
         policy_id = self._create("ip_rate_limiting")
         self.assertTrue(get_lockout_policy(policy_id)["dry_run"], "ip_rate_limiting must ship as dry-run")
         self._seed_ip_events(ip, AuthEventType.LOGIN_SUCCESS, n_users=35, timestamp=now)
-        self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(self.user, source_ip=ip, now=now))
+        self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(self.user, source_ip=ip, now=now).decision)
 
     # --- user enumeration template (source_ip target) -------------------------
 
