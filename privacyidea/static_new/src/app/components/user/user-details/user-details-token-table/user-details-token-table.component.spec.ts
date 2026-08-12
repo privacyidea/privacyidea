@@ -37,6 +37,7 @@ import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { ContainerDetailToken } from "@services/container/container.service";
+import { MatTableDataSource } from "@angular/material/table";
 import { TokenDetails, Tokens, TokenService } from "@services/token/token.service";
 import { UserService } from "@services/user/user.service";
 
@@ -98,6 +99,11 @@ describe("UserDetailsTokenTableComponent", () => {
   it("wires sort in ngAfterViewInit", () => {
     expect(component.dataSource.sort).toBe(component.sort);
   });
+
+  const showTokens = (...rows: ContainerDetailToken[]) => {
+    component.userTokenData.set(new MatTableDataSource(rows as unknown as TokenDetails[]));
+    fixture.detectChanges();
+  };
 
   it("populates dataSource from userTokenResource via linkedSignal", () => {
     tokenServiceMock.userTokenResource.value.set(
@@ -193,40 +199,20 @@ describe("UserDetailsTokenTableComponent", () => {
     expect(component.dataSource.data).toEqual([]);
   });
 
-  it("toggleRow adds and removes a row from the selection", () => {
-    const rowA = { serial: "A" } as unknown as ContainerDetailToken;
-    const rowB = { serial: "B" } as unknown as ContainerDetailToken;
+  it("scopes the selection to the rows of the token table", () => {
+    showTokens({ serial: "A" } as unknown as ContainerDetailToken, { serial: "B" } as unknown as ContainerDetailToken);
 
-    component.toggleRow(rowA);
-    expect(component.selection()).toEqual([rowA]);
+    component.selector.selectAllRows();
 
-    component.toggleRow(rowB);
-    expect(component.selection()).toEqual([rowA, rowB]);
-
-    component.toggleRow(rowA);
-    expect(component.selection()).toEqual([rowB]);
-  });
-
-  it("toggleAllRows selects all rows and clears when all are selected", () => {
-    const rowA = { serial: "A" } as unknown as ContainerDetailToken;
-    const rowB = { serial: "B" } as unknown as ContainerDetailToken;
-    component.dataSource.data = [rowA, rowB];
-
-    expect(component.isAllSelected()).toBe(false);
-
-    component.toggleAllRows();
-    expect(component.selection()).toEqual([rowA, rowB]);
-    expect(component.isAllSelected()).toBe(true);
-
-    component.toggleAllRows();
-    expect(component.selection()).toEqual([]);
-    expect(component.isAllSelected()).toBe(false);
+    expect(component.selector.selectedRows().map((row) => row.serial)).toEqual(["A", "B"]);
+    expect(component.selector.allRowsSelected()).toBe(true);
   });
 
   it("deleteSelected calls bulkDeleteWithConfirmDialog with the selected serials", () => {
     const rowA = { serial: "A" } as unknown as ContainerDetailToken;
     const rowB = { serial: "B" } as unknown as ContainerDetailToken;
-    component.selection.set([rowA, rowB]);
+    showTokens(rowA, rowB);
+    component.selector.selectAllRows();
 
     component.deleteSelected();
 
@@ -239,7 +225,8 @@ describe("UserDetailsTokenTableComponent", () => {
   it("unassignSelected unassigns each selected token and reloads", () => {
     const rowA = { serial: "A" } as unknown as ContainerDetailToken;
     const rowB = { serial: "B" } as unknown as ContainerDetailToken;
-    component.selection.set([rowA, rowB]);
+    showTokens(rowA, rowB);
+    component.selector.selectAllRows();
 
     component.unassignSelected();
 
@@ -252,7 +239,8 @@ describe("UserDetailsTokenTableComponent", () => {
   it("unassignSelected still reloads when one of the requests fails and shows a summary", () => {
     const rowA = { serial: "A" } as unknown as ContainerDetailToken;
     const rowB = { serial: "B" } as unknown as ContainerDetailToken;
-    component.selection.set([rowA, rowB]);
+    showTokens(rowA, rowB);
+    component.selector.selectAllRows();
     tokenServiceMock.unassignUser.mockImplementation((serial: string) =>
       serial === "A" ? throwError(() => new Error("failed")) : of(null)
     );
@@ -266,7 +254,8 @@ describe("UserDetailsTokenTableComponent", () => {
   it("toggleActiveSelected toggles each selected token and reloads", () => {
     const rowA = { serial: "A", active: true } as unknown as ContainerDetailToken;
     const rowB = { serial: "B", active: false } as unknown as ContainerDetailToken;
-    component.selection.set([rowA, rowB]);
+    showTokens(rowA, rowB);
+    component.selector.selectAllRows();
 
     component.toggleActiveSelected();
 
@@ -279,7 +268,8 @@ describe("UserDetailsTokenTableComponent", () => {
   it("resetFailcountSelected resets each selected token and reloads", () => {
     const rowA = { serial: "A" } as unknown as ContainerDetailToken;
     const rowB = { serial: "B" } as unknown as ContainerDetailToken;
-    component.selection.set([rowA, rowB]);
+    showTokens(rowA, rowB);
+    component.selector.selectAllRows();
 
     component.resetFailcountSelected();
 

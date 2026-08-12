@@ -60,14 +60,14 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
     "radiusServerUrl", "smsgatewayUrl",
     "defaultRealmUrl", "systemUrl", "periodicTaskUrl",
     "privacyideaServerUrl", "CAConnectorUrl", "tokengroupUrl",
-    "serviceidUrl",
+    "serviceidUrl", "clientsUrl",
     function (AuthFactory, $http, $state, $rootScope,
               resolverUrl, realmUrl, machineResolverUrl,
               policyUrl, eventUrl, smtpServerUrl,
               radiusServerUrl, smsgatewayUrl,
               defaultRealmUrl, systemUrl,
               periodicTaskUrl, privacyideaServerUrl,
-              CAConnectorUrl, tokengroupUrl, serviceidUrl) {
+              CAConnectorUrl, tokengroupUrl, serviceidUrl, clientsUrl) {
         /**
          Each service - just like this service factory - is a singleton.
          */
@@ -1024,6 +1024,109 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
                         'PI-Authorization': AuthFactory.getAuthToken(),
                         'Content-Type': 'application/json'
                     }
+                }).then(function (response) {
+                    callback(response.data)
+                }, function (error) {
+                    AuthFactory.authError(error.data)
+                });
+            },
+            getClients: function (clientId, callback) {
+                $http.get(clientsUrl + "/" + (clientId || ""), {
+                    headers: {
+                        'PI-Authorization': AuthFactory.getAuthToken(),
+                        'Content-Type': 'application/json'
+                    }
+                }).then(function (response) {
+                    callback(response.data)
+                }, function (error) {
+                    AuthFactory.authError(error.data)
+                });
+            },
+            addClient: function (params, callback) {
+                $http.post(clientsUrl + "/", params, {
+                    headers: {
+                        'PI-Authorization': AuthFactory.getAuthToken(),
+                        'Content-Type': 'application/json'
+                    }
+                }).then(function (response) {
+                    callback(response.data)
+                }, function (error) {
+                    AuthFactory.authError(error.data)
+                });
+            },
+            updateClient: function (clientId, params, callback) {
+                $http.patch(clientsUrl + "/" + clientId, params, {
+                    headers: {
+                        'PI-Authorization': AuthFactory.getAuthToken(),
+                        'Content-Type': 'application/json'
+                    }
+                }).then(function (response) {
+                    callback(response.data)
+                }, function (error) {
+                    AuthFactory.authError(error.data)
+                });
+            },
+            rotateClientKey: function (clientId, callback) {
+                $http.post(clientsUrl + "/" + clientId + "/rotate", {}, {
+                    headers: {
+                        'PI-Authorization': AuthFactory.getAuthToken(),
+                        'Content-Type': 'application/json'
+                    }
+                }).then(function (response) {
+                    callback(response.data)
+                }, function (error) {
+                    AuthFactory.authError(error.data)
+                });
+            },
+            delClient: function (clientId, callback) {
+                $http.delete(clientsUrl + "/" + clientId, {
+                    headers: {
+                        'PI-Authorization': AuthFactory.getAuthToken(),
+                        'Content-Type': 'application/json'
+                    }
+                }).then(function (response) {
+                    callback(response.data)
+                }, function (error) {
+                    AuthFactory.authError(error.data)
+                });
+            },
+            getClientRememberedDevices: function (clientId, callback) {
+                $http.get(clientsUrl + "/" + clientId + "/remembered_devices", {
+                    headers: {
+                        'PI-Authorization': AuthFactory.getAuthToken(),
+                        'Content-Type': 'application/json'
+                    }
+                }).then(function (response) {
+                    callback(response.data)
+                }, function (error) {
+                    AuthFactory.authError(error.data)
+                });
+            },
+            revokeClientRememberedDevice: function (clientId, deviceId, callback) {
+                $http.delete(clientsUrl + "/" + clientId + "/remembered_devices/" + deviceId, {
+                    headers: {
+                        'PI-Authorization': AuthFactory.getAuthToken(),
+                        'Content-Type': 'application/json'
+                    }
+                }).then(function (response) {
+                    callback(response.data)
+                }, function (error) {
+                    AuthFactory.authError(error.data)
+                });
+            },
+            revokeAllClientRememberedDevices: function (clientId, callback) {
+                $http.delete(clientsUrl + "/" + clientId + "/remembered_devices", {
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                }).then(function (response) {
+                    callback(response.data)
+                }, function (error) {
+                    AuthFactory.authError(error.data)
+                });
+            },
+            revokeRememberedDevices: function (params, callback) {
+                $http.delete(clientsUrl + "/remembered_devices", {
+                    params: params,
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                 }).then(function (response) {
                     callback(response.data)
                 }, function (error) {

@@ -24,7 +24,9 @@ import { MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatProgressSpinner } from "@angular/material/progress-spinner";
 import { MatTooltip } from "@angular/material/tooltip";
+import { RouterLink } from "@angular/router";
 import { WidgetInstance, WidgetState } from "@models/dashboard";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DashboardLayoutService, DashboardLayoutServiceInterface } from "@services/dashboard/dashboard-layout.service";
 import { WidgetRegistryService, WidgetRegistryServiceInterface } from "@services/dashboard/widget-registry.service";
 
@@ -45,6 +47,7 @@ interface DashboardWidgetLike {
 })
 export class WidgetFrameComponent {
   private readonly registry: WidgetRegistryServiceInterface = inject(WidgetRegistryService);
+  private readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly layoutService: DashboardLayoutServiceInterface = inject(DashboardLayoutService);
 
   readonly instance = input.required<WidgetInstance>();
@@ -79,6 +82,19 @@ export class WidgetFrameComponent {
   protected readonly headerIcon = computed(() => this.widgetType()?.headerIcon ?? null);
   // Set by a widget that summarizes one page, so its title doubles as the way there.
   protected readonly titleLink = computed(() => this.widgetType()?.titleLink ?? null);
+
+  protected readonly titleLink = computed(() => {
+    if (this.layoutService.editMode()) {
+      return null;
+    }
+    const widgetType = this.widgetType();
+    const link = widgetType?.titleLink ?? null;
+    if (!link) {
+      return null;
+    }
+    const action = widgetType?.titleLinkAction ?? null;
+    return !action || this.authService.actionAllowed(action) ? link : null;
+  });
 
   protected readonly showHeaderSpinner = computed(
     () => !this.initialLoading() && (this.loading() || this.partialLoading())

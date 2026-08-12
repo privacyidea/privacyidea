@@ -1,0 +1,117 @@
+<p translate>API clients authenticate against privacyIDEA with an API key that is sent
+    in the <code>X-API-Key</code> header. The plaintext key is shown only once, right
+    after it is created or rotated.</p>
+
+<div class="alert alert-success" ng-show="newApiKey">
+    <button type="button" class="close" ng-click="dismissApiKey()">
+        <span aria-hidden="true">&times;</span>
+    </button>
+    <h4 translate>API key for "{{ newApiKey.display_name }}"</h4>
+    <p translate>Copy this key now. For security reasons it is shown only once and
+        cannot be retrieved again. If you lose it, rotate the key to generate a new one.</p>
+    <pre class="pi-api-key">{{ newApiKey.api_key }}</pre>
+    <button class="btn btn-default btn-sm" ng-click="copyApiKey()">
+        <span class="glyphicon glyphicon-copy"></span>
+        <span translate>Copy to clipboard</span>
+    </button>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-bordered table-responsive table-striped">
+        <thead>
+        <tr>
+            <th translate>Name</th>
+            <th translate>Type</th>
+            <th translate>Status</th>
+            <th translate>Key ID</th>
+            <th translate>Created</th>
+            <th translate>Last used</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="client in clients">
+            <td>
+                <input ng-if="checkRight('api_client_edit')" class="form-control input-sm"
+                       ng-model="client.display_name"
+                       ng-blur="renameClient(client)"
+                       title="{{ 'Rename this client' | translate }}"/>
+                <span ng-if="!checkRight('api_client_edit')">{{ client.display_name }}</span>
+            </td>
+            <td>{{ clientTypeLabel(client.client_type) }}</td>
+            <td>
+                <select ng-if="checkRight('api_client_edit')"
+                        class="form-control input-sm"
+                        ng-model="client.status"
+                        ng-change="setClientStatus(client)"
+                        ng-options="state for state in clientStates"></select>
+                <span ng-if="!checkRight('api_client_edit')" class="label"
+                      ng-class="{'label-success': client.status === 'active',
+                                 'label-warning': client.status === 'suspended'}">
+                    {{ client.status }}</span>
+            </td>
+            <td><code>pi_{{ client.key_id }}</code></td>
+            <td>{{ client.created_at | date:'yyyy-MM-dd HH:mm' }}</td>
+            <td>{{ (client.last_used_at | date:'yyyy-MM-dd HH:mm') || '-' }}</td>
+            <td>
+                <!-- While a confirm dialog is open for this row, only that
+                     dialog's buttons are shown (same inline pattern as the
+                     token/user detail views). -->
+                <button class="btn btn-default"
+                        ng-show="checkRight('remembered_device_list')"
+                        ng-hide="showRotateDialog[client.id] || showDeleteDialog[client.id]"
+                        ng-click="showRememberedDevices(client)">
+                    <span class="glyphicon glyphicon-list-alt"></span>
+                    <span translate>Remembered devices</span>
+                </button>
+                <button class="btn btn-default"
+                        ng-show="checkRight('api_client_rotate')"
+                        ng-hide="showRotateDialog[client.id] || showDeleteDialog[client.id]"
+                        ng-click="showRotateDialog[client.id] = true">
+                    <span class="glyphicon glyphicon-refresh"></span>
+                    <span translate>Rotate key</span>
+                </button>
+                <button class="btn btn-danger"
+                        ng-show="checkRight('api_client_delete')"
+                        ng-hide="showRotateDialog[client.id] || showDeleteDialog[client.id]"
+                        ng-click="showDeleteDialog[client.id] = true">
+                    <span class="glyphicon glyphicon-trash"></span>
+                    <span translate>Delete</span>
+                </button>
+
+                <!-- Rotate confirmation -->
+                <span ng-show="showRotateDialog[client.id]" class="text-warning">
+                    <span translate>Rotate the key? The current key stops working
+                        immediately.</span>
+                </span>
+                <button class="btn btn-warning"
+                        ng-show="showRotateDialog[client.id]"
+                        ng-click="rotateClientKey(client.id)">
+                    <span translate>Rotate key</span>
+                </button>
+                <button class="btn btn-default"
+                        ng-show="showRotateDialog[client.id]"
+                        ng-click="showRotateDialog[client.id] = false">
+                    <span translate>Cancel</span>
+                </button>
+
+                <!-- Delete confirmation -->
+                <span ng-show="showDeleteDialog[client.id]" class="text-danger">
+                    <span translate>Delete this client? Its API key and remembered
+                        devices are removed.</span>
+                </span>
+                <button class="btn btn-danger"
+                        ng-show="showDeleteDialog[client.id]"
+                        ng-click="delClient(client.id)">
+                    <span translate>Delete client</span>
+                </button>
+                <button class="btn btn-default"
+                        ng-show="showDeleteDialog[client.id]"
+                        ng-click="showDeleteDialog[client.id] = false">
+                    <span translate>Cancel</span>
+                </button>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>

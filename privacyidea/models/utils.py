@@ -38,6 +38,18 @@ def utc_now() -> datetime:
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
+def utc_isoformat(value: "datetime | None") -> "str | None":
+    """
+    Render a naive-UTC timestamp (as produced by :func:`utc_now`) as an
+    explicitly UTC-aware ISO-8601 string (``…+00:00``), or ``None``.
+
+    Serialising a naive timestamp without a zone lets a client that assumes local
+    time (e.g. the WebUI's AngularJS ``date`` filter) misread it and show a
+    shifted value, so attach the UTC zone on the way out.
+    """
+    return value.replace(tzinfo=timezone.utc).isoformat() if value else None
+
+
 def case_sensitive_unicode(length: int):
     """
     A ``Unicode`` column pinned to a case-sensitive collation on MySQL/MariaDB.

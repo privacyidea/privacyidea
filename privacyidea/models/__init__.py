@@ -40,6 +40,8 @@ from .authentication_log import AuthenticationLog, authentication_log_column_len
 from .cache import AuthCache, UserCache
 from .caconnector import CAConnector, CAConnectorConfig
 from .challenge import Challenge, cleanup_challenges
+from .client import Client, ClientStatus
+from .remembered_device import RememberedDevice
 from .conditional_access_outcome import (ConditionalAccessOutcome,
                                          conditional_access_outcome_column_length)
 from .config import (Config, NodeName, Admin, PasswordReset,
@@ -74,10 +76,9 @@ from .tokengroup import Tokengroup, TokenTokengroup
 from .usersetting import UserSetting
 
 # We don't use "import *" but to avoid the unused import warning we define this
-__all__ = ["db", "Audit", "audit_column_length", "AuthenticationLog", "authentication_log_column_length",
-           "AuthCache", "UserCache",
-           "CAConnector", "CAConnectorConfig", "Challenge", "cleanup_challenges",
-           "ConditionalAccessOutcome", "conditional_access_outcome_column_length",
+__all__ = ["db", "Audit", "audit_column_length", "AuthenticationLog", "authentication_log_column_length", "AuthCache",
+           "UserCache", "CAConnector", "CAConnectorConfig", "Challenge", "cleanup_challenges", "Client", "ClientStatus",
+           "RememberedDevice", "ConditionalAccessOutcome", "conditional_access_outcome_column_length",
            "Config", "NodeName", "Admin", "PasswordReset", "save_config_timestamp",
            "PRIVACYIDEA_TIMESTAMP", "CustomUserAttribute", "InternalUserAttribute",
            "EventHandler", "EventHandlerOption", "EventHandlerCondition", "EventCounter",
