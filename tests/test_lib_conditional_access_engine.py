@@ -1816,28 +1816,35 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertFalse(condition_matches(
             self._condition(ConditionType.USER_REALM, "NO_SUCH_OP", ["x"]), context, "p"))
 
-    def test_non_list_condition_value_does_not_match(self):
-        # A malformed value (not a list - only a hand-edited row gets here, since the CRUD accepts only a
-        # non-empty list of strings) is rejected outright rather than compared against an empty list. The
-        # distinction only shows on NOT_IN: an empty list would make it match *everything*, so a corrupted
-        # exemption would silently apply to every request instead of to none.
-        for operator in (ConditionOperator.IN, ConditionOperator.NOT_IN):
-            with self.subTest(operator=operator):
-                self.assertFalse(condition_matches(
-                    self._condition(ConditionType.USER_REALM, operator, "realm1"),
-                    CAContext(self.user), "p"))
+    # Only a hand-edited row reaches the evaluators with any of these, since the CRUD writes nothing but a
+    # non-empty list of strings. Each has to be rejected outright rather than compared, and NOT_IN is what
+    # makes that load-bearing: a value no row can match answers False for IN on its own, but True for
+    # NOT_IN, so a corrupted exemption would apply to *everything* instead of to nothing.
+    MALFORMED_CONDITION_VALUES = [("not a list", "realm1"), ("empty list", []), ("non-strings", [1, 2])]
 
-    def test_non_list_condition_value_does_not_match_a_row(self):
+    def test_malformed_condition_value_does_not_match(self):
+        for label, value in self.MALFORMED_CONDITION_VALUES:
+            for operator in (ConditionOperator.IN, ConditionOperator.NOT_IN):
+                with self.subTest(value=label, operator=operator):
+                    self.assertFalse(condition_matches(
+                        self._condition(ConditionType.USER_REALM, operator, value),
+                        CAContext(self.user), "p"))
+
+    def test_malformed_condition_value_does_not_match_a_row(self):
         # The row evaluator answers a malformed value the same way as the gate, so a corrupted condition
         # cannot gate one way and scope another.
         row = AuthenticationLog(event_type=str(AuthEventType.MFA_FAIL), realm=self.realm1,
                                 attempt_id="att-malformed", timestamp=utc_now())
-        for priority, operator in enumerate((ConditionOperator.IN, ConditionOperator.NOT_IN), start=1):
-            with self.subTest(operator=operator):
-                policy, _ = self._make_policy(
-                    name=f"malformed {operator}", counter_type=AuthEventType.MFA_FAIL, priority=priority,
-                    conditions=[self._condition(ConditionType.USER_REALM, operator, "realm1")])
-                self.assertFalse(conditions_match_row(policy, row))
+        priority = 0
+        for label, value in self.MALFORMED_CONDITION_VALUES:
+            for operator in (ConditionOperator.IN, ConditionOperator.NOT_IN):
+                priority += 1
+                with self.subTest(value=label, operator=operator):
+                    policy, _ = self._make_policy(
+                        name=f"malformed {label} {operator}", counter_type=AuthEventType.MFA_FAIL,
+                        priority=priority,
+                        conditions=[self._condition(ConditionType.USER_REALM, operator, value)])
+                    self.assertFalse(conditions_match_row(policy, row))
 
     def test_conditions_gate_the_post_response_engine(self):
         # A policy excluded by its realm condition neither counts nor locks.

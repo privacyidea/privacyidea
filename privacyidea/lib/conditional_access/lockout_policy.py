@@ -644,7 +644,11 @@ def create_lockout_policy(name: str, time_window_seconds: int, counter_types_to_
     counter_types = _validate_counter_types(counter_types_to_track)
     stage_defs = _validate_stages(stages)
     _validate_target_actions(stage_defs, lockout_target)
-    condition_defs = _validate_conditions(conditions or [])
+    # `is None`, not `or []`: only an *omitted* conditions parameter means "applies to everyone". Any other
+    # value goes through _validate_conditions, so a falsy non-list (0, False, {}) is a 400 rather than
+    # being silently read as "no conditions" - which would widen an access-control policy to every request
+    # on malformed input. Mirrors the `is not None` discipline of update_lockout_policy.
+    condition_defs = _validate_conditions([] if conditions is None else conditions)
 
     policy = LockoutPolicy(name=name, time_window_seconds=time_window_seconds,
                            enabled=bool(enabled), dry_run=bool(dry_run), priority=priority,

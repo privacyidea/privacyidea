@@ -690,9 +690,9 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         return {"condition_type": str(condition_type), "operator": str(operator),
                 "value": value if value is not None else [str(AuthLogUserRole.USER)], **extra}
 
-    def _create_with_conditions(self, name: str, conditions: list | str, priority: int = 1) -> int:
-        """Create a policy carrying *conditions*, which is deliberately not narrowed to ``list[dict]``:
-        several tests pass malformed input (a bare string, a list of non-dicts) to assert it is
+    def _create_with_conditions(self, name: str, conditions, priority: int = 1) -> int:
+        """Create a policy carrying *conditions*, deliberately left unannotated: several tests pass
+        malformed input (a bare string, a list of non-dicts, a falsy non-list) to assert it is
         rejected. Returns the new policy id."""
         return create_lockout_policy(name, 600, ["PIN_FAIL"], [_stage()], target=LockoutTarget.USER,
                                      priority=priority, conditions=conditions)
@@ -762,6 +762,18 @@ class LockoutPolicyCrudTestCase(MyTestCase):
                            ["not a dict"]):
             self.assertRaises(ParameterError, self._create_with_conditions, "Malformed", conditions)
         self.assertRaises(ParameterError, self._create_with_conditions, "Malformed", "not a list")
+
+    def test_36a_falsy_non_list_conditions_are_rejected(self):
+        # A falsy non-list must be a 400 like any other malformed value, not be read as "no conditions":
+        # that would create a policy applying to *everyone*, the wrong direction to fail for an
+        # access-control policy. Only an omitted parameter means unconditioned (test_30).
+        # Distinct name *and* priority per case on purpose: both are unique across policies, so if the
+        # validation regressed, the first case would leak a policy and every later one would raise on the
+        # collision instead of on the value - passing for the wrong reason and hiding the regression.
+        for index, conditions in enumerate((0, False, {}, "")):
+            with self.subTest(conditions=conditions):
+                self.assertRaises(ParameterError, self._create_with_conditions,
+                                  f"Falsy{index}", conditions, priority=index + 1)
 
     def test_37_duplicate_condition_type_is_rejected(self):
         self.assertRaises(ParameterError, self._create_with_conditions, "Duplicate",

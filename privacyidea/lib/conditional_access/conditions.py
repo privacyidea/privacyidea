@@ -268,12 +268,17 @@ def _values_are_well_formed(condition: "LockoutPolicyCondition", policy_name: st
     set-membership operators. Checked with the unknown-type/operator checks rather than at comparison
     time, because a malformed condition is malformed whatever the request or row carries.
 
-    ``value`` is a JSON column, so its Python type is guaranteed by the CRUD layer
-    (:func:`~privacyidea.lib.conditional_access.lockout_policy._validate_condition_value` accepts only a
-    non-empty list of strings) and not by the schema. A row that reaches here with another shape was
-    hand-edited, and the only safe reading of it is that the condition does not hold: substituting an
-    empty list instead would answer ``False`` for ``IN`` but ``True`` for ``NOT_IN``, so a corrupted
-    exemption would silently apply to *everything* rather than to nothing.
+    ``value`` is a JSON column, so its Python type is guaranteed by the CRUD layer and not by the schema.
+    The shape accepted here is therefore exactly the one
+    :func:`~privacyidea.lib.conditional_access.lockout_policy._validate_condition_value` writes - a
+    **non-empty list of strings** - and nothing weaker: an empty list, or one holding non-strings,
+    compares as cleanly as a well-formed one and so would pass a mere "is it a list?" test while meaning
+    nothing.
+
+    Every rejected shape has to fail the same way, and that way has to be "does not hold". The reason is
+    the asymmetry of the operators: for a value no row can match, ``IN`` answers ``False`` on its own but
+    ``NOT_IN`` answers ``True`` - so a corrupted exemption would silently apply to *everything* rather
+    than to nothing, both gating every request and leaving every counted row in scope.
 
     When a scalar operator is added the accepted shape becomes operator-dependent, and this is where
     that branches - mirroring the same note on ``_validate_condition_value``.
@@ -282,10 +287,12 @@ def _values_are_well_formed(condition: "LockoutPolicyCondition", policy_name: st
     :param policy_name: the owning policy's name, for the log message only
     :return: True if the value has a usable shape
     """
-    if isinstance(condition.value, (list, tuple)):
+    value = condition.value
+    if (isinstance(value, (list, tuple)) and len(value) > 0
+            and all(isinstance(entry, str) for entry in value)):
         return True
-    log.warning(f"Policy {policy_name!r} carries a condition whose value is not a list "
-                f"({condition.condition_type!r} / {condition.operator!r}, value {condition.value!r}); "
+    log.warning(f"Policy {policy_name!r} carries a condition whose value is not a non-empty list of "
+                f"strings ({condition.condition_type!r} / {condition.operator!r}, value {value!r}); "
                 f"treating it as not matching.")
     return False
 
