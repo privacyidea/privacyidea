@@ -74,7 +74,7 @@ def upgrade():
         # The columns in the composite index below (resolver, uid, realm, event_type) are kept small enough that the
         # index stays below the 3072-byte InnoDB key limit of MySQL/MariaDB with utf8mb4:
         # (120+320+255+40)*4 + 8 (timestamp) = 2948 bytes. The non-indexed columns (client_label, serial) are sized
-        # generously to avoid truncation. transaction_id (indexed below) matches the challenge table's 64 chars.
+        # generously to avoid truncation. transaction_id matches the challenge table's 64 chars.
         op.create_table(
             'authentication_log',
             id_column,
@@ -97,9 +97,6 @@ def upgrade():
                         ['resolver', 'uid', 'realm', 'event_type', 'timestamp'])
         op.create_index('ix_authlog_ip_event_time', 'authentication_log',
                         ['source_ip', 'event_type', 'timestamp'])
-        # Serves the attempt_id recovery lookup by transaction_id (see get_attempt_id_for_transaction).
-        op.create_index('ix_authlog_transaction', 'authentication_log',
-                        ['transaction_id'])
         # Serves PER_ATTEMPT counting (count_user_attempts / count_ip_attempts): a subject's rows range-scanned by
         # time, no event_type predicate.
         op.create_index('ix_authlog_user_time', 'authentication_log',
@@ -131,7 +128,6 @@ def downgrade():
         with op.batch_alter_table('authentication_log', schema=None) as batch_op:
             batch_op.drop_index('ix_authlog_user_event_time')
             batch_op.drop_index('ix_authlog_ip_event_time')
-            batch_op.drop_index('ix_authlog_transaction')
             batch_op.drop_index('ix_authlog_user_time')
             batch_op.drop_index('ix_authlog_ip_time')
 

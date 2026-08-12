@@ -171,7 +171,7 @@ def assert_authentication_log(event_types, transaction_id=None, same_attempt=Tru
     else:
         entries = get_authentication_logs()
     assert [entry.event_type for entry in entries] == event_types
-    # Every row is auto-assigned an attempt_id (see resolve_attempt_id).
+    # Every row is auto-assigned an attempt_id (see ConditionalAccessContext.attempt_id).
     assert all(entry.attempt_id is not None for entry in entries)
     if same_attempt and entries:
         assert len({entry.attempt_id for entry in entries}) == 1

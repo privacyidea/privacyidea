@@ -26,7 +26,6 @@ import functools
 import json
 import logging
 import re
-import secrets
 import string
 import threading
 import time
@@ -39,8 +38,7 @@ from flask import jsonify, current_app, Response, Request, request, g, has_reque
 from flask_babel import _
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
-from privacyidea.lib.conditional_access.authentication_log import (AuthLogUserRole, PendingAuthEvent,
-                                                                   get_attempt_id_for_transaction)
+from privacyidea.lib.conditional_access.authentication_log import AuthLogUserRole, PendingAuthEvent
 from privacyidea.lib.conditional_access.request_context import AuthPrincipal, get_ca_context
 from privacyidea.lib.user import User
 from privacyidea.lib.audit import getAudit
@@ -121,63 +119,6 @@ def to_list_param(value):
         return None
     items = value if isinstance(value, (list, tuple)) else str(value).split(",")
     return [entry for entry in (str(item).strip() for item in items) if entry]
-
-
-def generate_attempt_id() -> str:
-    """
-    Mint a fresh attempt id: 128-bit cryptographically random hex string (32 hex chars).
-
-    Each logical authentication attempt (which may span multiple HTTP requests in challenge / multichallenge flows)
-    shares the same attempt id. The high entropy avoids silent collision across the retained authentication log.
-    """
-    return secrets.token_hex(16)
-
-
-def resolve_attempt_id(request: Request | None, transaction_id: str | None = None) -> str:
-    """
-    Determine the per-attempt correlation id for the authentication-log row of the current request.
-
-    All rows of one logical authentication attempt share an ``attempt_id`` so a policy can count *attempts* rather
-    than individual log rows (a challenge / multichallenge attempt spans several requests, hence several rows). The id
-    is derived entirely from the durable authentication log, so nothing has to be stored on the (ephemeral) challenge:
-
-    * A request that carries no ``transaction_id`` / ``state`` starts a new attempt and gets a freshly minted id.
-    * A request answering a previously triggered challenge carries that challenge's ``transaction_id``. The trigger
-      request already wrote a row with both that ``transaction_id`` and the ``attempt_id``, so the attempt is
-      recovered from it (:func:`~privacyidea.lib.conditional_access.authentication_log.get_attempt_id_for_transaction`)
-      and every row of the attempt shares one id. ``state`` is the RADIUS alias of ``transaction_id``.
-
-    The **client-sent** transaction id takes precedence: for a multichallenge continuation the row's own
-    *transaction_id* is the freshly minted next challenge (no attempt row yet), while the request still carries the
-    *answered* one, which is the correct grouping key. When the request carries none, the row's own *transaction_id*
-    is used as a fallback — this is what groups a challenge resolved inside its own triggering request (push_wait
-    logs both the trigger and the terminal row on one request that has no transaction_id of its own).
-
-    A missing or legacy trigger row (no stored ``attempt_id``) falls back to a fresh id, so every new row is grouped
-    as at least its own attempt rather than left ungrouped.
-
-    :param request: the current request, or ``None`` when logging outside a request
-    :param transaction_id: the transaction_id being written on this row, used as the lookup key when the request
-        itself carries none
-    :return: the attempt id to store on this request's authentication-log row
-    """
-    request_transaction_id = None
-    if request is not None:
-        request_data = getattr(request, "all_data", {})
-        request_transaction_id = (get_optional(request_data, "transaction_id")
-                                  or get_optional(request_data, "state"))
-    lookup_transaction_id = request_transaction_id or transaction_id
-    if lookup_transaction_id:
-        # The events this request itself staged come first: their rows may not be written yet, so the
-        # authentication-log lookup below - which only sees committed rows - would miss them. This is what keeps a
-        # challenge resolved inside its own triggering request (push_wait) in one attempt.
-        staged = get_ca_context().attempt_id_for_transaction(lookup_transaction_id)
-        if staged:
-            return staged
-        existing = get_attempt_id_for_transaction(lookup_transaction_id)
-        if existing:
-            return existing
-    return generate_attempt_id()
 
 
 def send_result(obj, rid=1, details=None, **kwargs) -> Response:
@@ -346,7 +287,7 @@ def _determine_user_role(user: User | None, internal_admin: bool) -> AuthLogUser
 def log_authentication(event_type: AuthEventType | None, request: Request | None = None, user: User | None = None,
                        serial: str | None = None, transaction_id: str | None = None,
                        username: str | None = None,
-                       internal_admin: bool = False, attempt_id: str | None = None,
+                       internal_admin: bool = False,
                        immediate: bool = False) -> "PendingAuthEvent | None":
     """
     Record one authentication_log entry for the current request.
@@ -362,9 +303,9 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
     per event rather than a row plus corrections. The returned :class:`PendingAuthEvent` is that handle; its
     ``row_id`` is filled in when the row is written.
 
-    Pass *immediate* to flush the buffer on the spot. Needed only when another **request** has to see the row before
-    this one ends - the ``push_wait`` trigger, whose answer arrives out of band at ``/ttype/push`` while this request
-    is still blocking (see :func:`resolve_attempt_id`).
+    Pass *immediate* to flush the buffer on the spot. Needed only when the row has to be ordered ahead of one another
+    **request** writes while this one is still running - the ``push_wait`` trigger, whose answer arrives out of band at
+    ``/ttype/push`` during the wait, and whose row ``id`` must stay below that answer's.
 
     The ``(resolver, uid, realm)`` identity tuple is only written for a resolved
     user; an unresolvable user (e.g. USER_UNKNOWN) is logged with resolver and uid
@@ -386,16 +327,14 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
     ``internal_admin=True`` for a local database admin (``/auth`` only); an admin-realm admin is detected from the
     user's realm, so the caller need not flag it.
 
-    ``attempt_id`` groups all rows of one logical authentication attempt (see :func:`resolve_attempt_id`). When not
-    given it is resolved automatically from the request: minted fresh for an initial request, or recovered from the
-    answered challenge's trigger row for a follow-up. Pass it explicitly only when the answered ``transaction_id`` is
-    not carried on the request (e.g. the out-of-band push answer at ``/ttype/push``).
+    ``attempt_id`` groups all rows of one logical authentication attempt and is taken off this request's
+    conditional-access context, which resolved it once (see
+    :attr:`~privacyidea.lib.conditional_access.request_context.ConditionalAccessContext.attempt_id`) - there is
+    nothing for a caller to pass.
     """
     if not event_type:
         log.debug("Not logging authentication event, because no event type is given.")
         return
-    if attempt_id is None:
-        attempt_id = resolve_attempt_id(request, transaction_id)
     client_label = None
     source_ip = None
     if has_request_context():
@@ -416,6 +355,21 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
         except Exception as ex:
             log.debug(f"Could not resolve the token owner for the authentication log: {ex!r}")
     context = get_ca_context()
+    # Fall back to the row's own transaction when nothing has established the attempt yet. ``before_request`` covers
+    # the requests that answer a challenge - it must, since the token logic deletes a challenge it answered
+    # successfully - so this catches the callers that only learn their transaction here: the out-of-band /ttype/push
+    # answer, and a challenge triggered and resolved inside one request (push_wait).
+    context.continue_attempt(transaction_id)
+    if not context.attempt_resolved:
+        answered = get_optional_one_of(getattr(request, "all_data", None) or {}, ["transaction_id", "state"])
+        if answered:
+            # The request continues a transaction, yet no challenge of it records an attempt, so this row starts one of
+            # its own instead of joining the transaction's other rows. Expected for a stale or forged transaction_id.
+            # Otherwise it is the fingerprint of a broken invariant, and the reason this is logged at all: an endpoint
+            # that answers a challenge without ``before_request`` resolving the attempt before the token logic consumes
+            # the challenge, or a ``set_data`` that replaced a challenge's data rather than updating it.
+            log.debug(f"Transaction {answered} has no challenge recording an authentication attempt. The log row for "
+                      f"this request starts a new attempt rather than joining that transaction's.")
     # Record who this request is authenticating on the request's context, so the policy evaluation acts on the same
     # principal the row is written for - including the token owner resolved just above, which the caller does not know
     # about. Kept as an AuthPrincipal rather than a bare User because a local database admin has no user object.
@@ -432,7 +386,7 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
         source_ip=source_ip,
         client_label=client_label,
         serial=serial,
-        attempt_id=attempt_id,
+        attempt_id=context.attempt_id,
         immediate=immediate,
     )
     context.stage(event)
