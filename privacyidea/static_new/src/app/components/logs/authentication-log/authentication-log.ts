@@ -241,10 +241,12 @@ const FILTER_TOOLTIPS: Record<string, string> = {
 };
 
 // Columns whose value is clipped to a fixed width instead of widening the table: the full value stays available in the
-// truncation tooltip, the copy button and the inline filter button. The width is per column - an attempt id is random
-// hex whose leading characters already tell rows apart, while a client label reads as a name.
+// truncation tooltip, the copy button and the inline filter button. The width is per column - the two opaque ids (32
+// hex chars, 20 digits) are read by their leading characters, while a client label reads as a name. Neither narrows its
+// column past the header (label + filter + sort icons), which is the real floor.
 const TRUNCATED_COLUMN_WIDTHS: Record<string, string> = {
   attempt_id: "10ch",
+  transaction_id: "10ch",
   client_label: "24ch"
 };
 

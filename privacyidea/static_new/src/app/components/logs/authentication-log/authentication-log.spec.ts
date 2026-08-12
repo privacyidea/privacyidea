@@ -331,10 +331,12 @@ describe("AuthenticationLog", () => {
   });
 
   it("clips only the long-valued columns, and does so per column", () => {
+    // The two opaque ids share a width; a client label needs more room to stay readable as a name.
     expect(component.truncatedWidth("attempt_id")).toBe("10ch");
+    expect(component.truncatedWidth("transaction_id")).toBe("10ch");
     expect(component.truncatedWidth("client_label")).toBe("24ch");
-    expect(component.truncatedWidth("transaction_id")).toBeNull();
     expect(component.truncatedWidth("source_ip")).toBeNull();
+    expect(component.truncatedWidth("serial")).toBeNull();
   });
 
   it("renders a clipped cell that still carries the full value for copying and filtering", () => {
