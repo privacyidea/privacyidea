@@ -20,8 +20,10 @@ Unit tests for the per-request conditional-access buffer
 (:mod:`privacyidea.lib.conditional_access.request_context`).
 """
 import mock
+from flask import has_request_context
 from sqlalchemy import select
 
+from privacyidea.lib.challenge import delete_challenges
 from privacyidea.lib.conditional_access.authentication_event_types import (CA_ENFORCEMENT_EVENT_TYPES, AuthEventType)
 from privacyidea.lib.conditional_access.engine import LockoutAction, LockoutEvaluation
 from privacyidea.lib.conditional_access.outcome_log import get_outcomes
@@ -29,9 +31,11 @@ from privacyidea.lib.conditional_access.authentication_log import (AuthLogUserRo
                                                                   get_authentication_logs,
                                                                   write_authentication_events)
 from privacyidea.lib.conditional_access.context import CAContext
-from privacyidea.lib.conditional_access.request_context import (AuthPrincipal, ConditionalAccessContext,
+from privacyidea.lib.conditional_access.request_context import (ATTEMPT_ID_CHALLENGE_KEY, AuthPrincipal,
+                                                              ConditionalAccessContext, current_attempt_id,
                                                               get_ca_context)
 from privacyidea.lib.conditional_access.session import close_ca_session, get_ca_session
+from privacyidea.lib.token import create_challenge
 from privacyidea.lib.user import User
 from privacyidea.models import ConditionalAccessOutcome, db
 from privacyidea.models.authentication_log import AuthenticationLog, authentication_log_column_length
@@ -523,3 +527,36 @@ class ConditionalAccessContextTestCase(MyTestCase):
 
         outcomes = get_outcomes(event.row_id)
         self.assertListEqual([str(LockoutAction.PERMANENT_LOCK_USER)], [outcome.action_type for outcome in outcomes])
+
+    def test_40_an_unreadable_challenge_leaves_the_attempt_unresolved(self):
+        # Correlating an attempt must never break the authentication it describes. A challenge store that raises leaves
+        # the request without an adopted attempt, and it goes on to start one of its own.
+        context = ConditionalAccessContext()
+        with mock.patch("privacyidea.lib.challenge.get_challenges", side_effect=RuntimeError("challenge boom")):
+            context.continue_attempt("1234567890")
+
+        self.assertFalse(context.attempt_resolved)
+        self.assertTrue(context.attempt_id)
+
+    def test_41_no_attempt_id_outside_a_request(self):
+        # A pi-manage command or a periodic task runs inside an app context but not a request, and must not be handed
+        # an attempt id: the buffer lives on g, which such a run holds throughout, so every challenge it created would
+        # be stamped with the *same* id and read back as one authentication attempt.
+        serial = "CA_ATTEMPT_NO_REQUEST"
+        self.assertFalse(has_request_context())
+        self.assertIsNone(current_attempt_id())
+        try:
+            first = create_challenge(serial)
+            second = create_challenge(serial)
+            self.assertNotIn(ATTEMPT_ID_CHALLENGE_KEY, first.get_data())
+            self.assertNotIn(ATTEMPT_ID_CHALLENGE_KEY, second.get_data())
+        finally:
+            delete_challenges(serial=serial)
+
+    def test_42_a_request_gets_an_attempt_id(self):
+        # The converse of test_41: inside a request there is an attempt to attribute a challenge to, and it is the
+        # one the request's buffer holds.
+        with self.app.test_request_context("/validate/check"):
+            attempt_id = current_attempt_id()
+            self.assertTrue(attempt_id)
+            self.assertEqual(attempt_id, get_ca_context().attempt_id)
