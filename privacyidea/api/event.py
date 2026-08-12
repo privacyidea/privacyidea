@@ -191,6 +191,13 @@ def set_eventhandling():
         first. Default ``0``.
     :jsonparam active: ``True`` (default) to enable the binding, ``False``
         to create it disabled.
+    :jsonparam abort_on_error: ``False`` (default) to keep the binding
+        best-effort: if the handler raises, the failure is written to the
+        audit log and the request continues without it. ``True`` aborts the
+        request with an error instead. Set this for a handler whose result
+        the request itself consumes, such as a response mangler that removes
+        data from the response, or a federation handler that forwards the
+        request to another privacyIDEA.
     :jsonparam conditions: dict (or JSON-encoded dict) of per-binding
         conditions; see :http:get:`/event/conditions/(handlermodule)`.
         On update, replaces all conditions.
@@ -212,6 +219,7 @@ def set_eventhandling():
     action = get_required(param, "action")
     ordering = param.get("ordering", 0)
     position = param.get("position", "post")
+    abort_on_error = is_true(param.get("abort_on_error", False))
     conditions = param.get("conditions", {})
     if not isinstance(conditions, dict):
         try:
@@ -228,7 +236,7 @@ def set_eventhandling():
     res = set_event(name, event, handlermodule=handlermodule,
                     action=action, conditions=conditions,
                     ordering=ordering, id=eid, options=options, active=active,
-                    position=position)
+                    position=position, abort_on_error=abort_on_error)
     g.audit_object.log({"success": True,
                         "info": res})
     return send_result(res)
