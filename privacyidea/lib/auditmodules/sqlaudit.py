@@ -184,17 +184,20 @@ class Audit(AuditBase):
         sqa_options = self.config.get(ConfigKey.AUDIT_SQL_OPTIONS,
                                       self.config.get(ConfigKey.SQLALCHEMY_ENGINE_OPTIONS, {}))
         log.debug(f"Using Audit SQLAlchemy engine options: {sqa_options!s}")
+        # The engine options are merged over the pool defaults instead of being passed
+        # alongside them: a key present in both would raise a TypeError about duplicate
+        # keyword arguments, which is indistinguishable from the SQLite case below and
+        # would silently drop the audit pool settings.
+        engine_kwargs = {"pool_size": self.config.get(ConfigKey.AUDIT_POOL_SIZE, 20),
+                         "pool_recycle": self.config.get(ConfigKey.AUDIT_POOL_RECYCLE, 600)}
+        engine_kwargs.update(sqa_options)
         try:
-            pool_size = self.config.get(ConfigKey.AUDIT_POOL_SIZE, 20)
-            engine = create_engine(
-                connect_string,
-                pool_size=pool_size,
-                pool_recycle=self.config.get(ConfigKey.AUDIT_POOL_RECYCLE, 600),
-                **sqa_options)
-            log.debug(f"Using SQL pool size of {pool_size}")
+            engine = create_engine(connect_string, **engine_kwargs)
+            log.debug(f"Using SQL pool size of {engine_kwargs['pool_size']}")
         except TypeError:
             # SQLite does not support pool_size
-            engine = create_engine(connect_string, **sqa_options)
+            engine_kwargs.pop("pool_size", None)
+            engine = create_engine(connect_string, **engine_kwargs)
             log.debug("Using no SQL pool_size.")
         return engine
 

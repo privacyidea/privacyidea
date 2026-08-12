@@ -65,6 +65,25 @@ such as a table name, column name, or label name. For Oracle version 19 and abov
 the `max_identifier_length <https://docs.sqlalchemy.org/en/14/core/engines
 .html#sqlalchemy.create_engine.params.max_identifier_length>`_ should be set to 128.
 
+privacyIDEA adds ``pool_pre_ping = True`` to these options unless you set the key
+yourself. The connection is then validated when it is taken from the pool and
+transparently replaced if the database server has closed it in the meantime. Without
+it, a connection that was dropped at the MariaDB/MySQL ``wait_timeout`` or during a
+database restart is handed to a request and fails it with *MySQL server has gone
+away*. The ping is skipped for SQLite, where connections can not go stale, and it can
+be switched off with ``SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": False}``.
+
+The engine options can also be set through the environment, since values of
+``PRIVACYIDEA_*`` variables are parsed as JSON and ``__`` addresses a key inside a
+dictionary::
+
+   PRIVACYIDEA_SQLALCHEMY_ENGINE_OPTIONS='{"pool_recycle": 3600, "pool_pre_ping": true}'
+   PRIVACYIDEA_SQLALCHEMY_ENGINE_OPTIONS__pool_recycle=3600
+
+.. note:: A normal installation reads the environment *before* the config file, so a
+   value in ``pi.cfg`` wins over the environment. The docker deployment reads the
+   config file first, so there the environment wins.
+
 The ``SUPERUSER_REALM`` is a list of realms, in which the users get the role
 of an administrator.
 

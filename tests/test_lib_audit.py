@@ -6,6 +6,7 @@ This tests the files
 import datetime
 import os
 import types
+import unittest
 
 from mock import mock
 
@@ -13,7 +14,7 @@ from privacyidea.config import TestingConfig
 from privacyidea.lib.audit import getAudit, search
 from privacyidea.lib.auditmodules.containeraudit import Audit as ContainerAudit
 from privacyidea.lib.auditmodules.loggeraudit import Audit as LoggerAudit
-from privacyidea.lib.auditmodules.sqlaudit import column_length
+from privacyidea.lib.auditmodules.sqlaudit import Audit as SQLAudit, column_length
 from privacyidea.lib.utils import AUTH_RESPONSE
 from .base import MyTestCase, OverrideConfigTestCase
 from testfixtures import log_capture
@@ -438,6 +439,63 @@ class AuditTestCase(MyTestCase):
         self.assertEqual(set(audit_log.auditdata[0].keys()),
                          set(self.Audit.available_audit_columns),
                          audit_log.auditdata[0].keys())
+
+
+class AuditEngineOptionsTestCase(unittest.TestCase):
+    """
+    The audit engine is built from the pool defaults with the configured engine
+    options merged on top. The engine creation is mocked, so the recorded keyword
+    arguments can be checked without a reachable database server.
+    """
+
+    @staticmethod
+    def _engine_kwargs(config, sqlite_rejects_pool_size=False):
+        calls = []
+
+        def fake_create_engine(_connect_string, **kwargs):
+            calls.append(kwargs)
+            if sqlite_rejects_pool_size and "pool_size" in kwargs:
+                raise TypeError("Invalid argument(s) 'pool_size' sent to create_engine()")
+            return "engine"
+
+        audit = types.SimpleNamespace(config=config)
+        with mock.patch("privacyidea.lib.auditmodules.sqlaudit.create_engine", fake_create_engine):
+            SQLAudit._create_engine(audit)
+        return calls
+
+    def test_01_pool_defaults(self):
+        kwargs = self._engine_kwargs({"SQLALCHEMY_DATABASE_URI": AUDIT_DB})[-1]
+        self.assertEqual(20, kwargs["pool_size"])
+        self.assertEqual(600, kwargs["pool_recycle"])
+
+    def test_02_engine_options_with_pool_recycle(self):
+        # A pool_recycle in SQLALCHEMY_ENGINE_OPTIONS must not collide with the audit
+        # pool default and take the whole pool configuration down with it
+        kwargs = self._engine_kwargs({"SQLALCHEMY_DATABASE_URI": AUDIT_DB,
+                                      "SQLALCHEMY_ENGINE_OPTIONS": {"pool_recycle": 3600,
+                                                                    "pool_pre_ping": True}})[-1]
+        self.assertEqual(20, kwargs["pool_size"])
+        self.assertEqual(3600, kwargs["pool_recycle"])
+        self.assertTrue(kwargs["pool_pre_ping"])
+
+    def test_03_audit_pool_settings_win_over_engine_options(self):
+        kwargs = self._engine_kwargs({"SQLALCHEMY_DATABASE_URI": AUDIT_DB,
+                                      "PI_AUDIT_POOL_SIZE": 7,
+                                      "PI_AUDIT_SQL_OPTIONS": {"pool_pre_ping": True},
+                                      "SQLALCHEMY_ENGINE_OPTIONS": {"pool_recycle": 3600}})[-1]
+        self.assertEqual(7, kwargs["pool_size"])
+        # PI_AUDIT_SQL_OPTIONS supersedes SQLALCHEMY_ENGINE_OPTIONS entirely
+        self.assertEqual(600, kwargs["pool_recycle"])
+        self.assertTrue(kwargs["pool_pre_ping"])
+
+    def test_04_pool_size_dropped_if_unsupported(self):
+        calls = self._engine_kwargs({"SQLALCHEMY_DATABASE_URI": AUDIT_DB,
+                                     "SQLALCHEMY_ENGINE_OPTIONS": {"pool_recycle": 3600}},
+                                    sqlite_rejects_pool_size=True)
+        self.assertEqual(2, len(calls))
+        # only pool_size is given up, the remaining options still reach the engine
+        self.assertNotIn("pool_size", calls[-1])
+        self.assertEqual(3600, calls[-1]["pool_recycle"])
 
 
 class AuditColumnLengthTestCase(OverrideConfigTestCase):
