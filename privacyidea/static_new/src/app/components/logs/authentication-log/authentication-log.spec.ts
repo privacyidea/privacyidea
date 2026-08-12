@@ -20,13 +20,14 @@ import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { PageEvent } from "@angular/material/paginator";
 import { MatTableDataSource } from "@angular/material/table";
-import { ROUTE_PATHS } from "@app/route_paths";
+import { provideRouter } from "@angular/router";
 import {
   AuthenticationLogEntry,
   AuthenticationLogService
 } from "@services/authentication-log/authentication-log.service";
 import { AuthService } from "@services/auth/auth.service";
 import { ClientsService } from "@services/clients/clients.service";
+import { ConditionalAccessPolicyService } from "@services/conditional-access/conditional-access-policy.service";
 import { ContentService } from "@services/content/content.service";
 import { RealmService } from "@services/realm/realm.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
@@ -34,6 +35,7 @@ import { FilterValue } from "@core/models/filter_value/filter_value";
 import {
   MockAuthenticationLogService,
   MockClientsService,
+  MockConditionalAccessPolicyService,
   MockContentService,
   MockPiResponse,
   MockRealmService,
@@ -49,6 +51,7 @@ describe("AuthenticationLog", () => {
   let service: MockAuthenticationLogService;
   let tableUtils: MockTableUtilsService;
   let clientsService: MockClientsService;
+  let policyService: MockConditionalAccessPolicyService;
   let authService: MockAuthService;
 
   beforeEach(async () => {
@@ -57,17 +60,22 @@ describe("AuthenticationLog", () => {
       imports: [AuthenticationLog],
       providers: [
         provideHttpClient(),
+        // The cells that link (realm, resolver, a policy behind an outcome) instantiate routerLink, which needs an
+        // ActivatedRoute.
+        provideRouter([]),
         { provide: MockAuthenticationLogService, useClass: MockAuthenticationLogService },
         { provide: MockTableUtilsService, useClass: MockTableUtilsService },
         { provide: MockContentService, useClass: MockContentService },
         { provide: MockRealmService, useClass: MockRealmService },
         { provide: MockClientsService, useClass: MockClientsService },
+        { provide: MockConditionalAccessPolicyService, useClass: MockConditionalAccessPolicyService },
         { provide: AuthService, useClass: MockAuthService },
         { provide: AuthenticationLogService, useExisting: MockAuthenticationLogService },
         { provide: TableUtilsService, useExisting: MockTableUtilsService },
         { provide: ContentService, useExisting: MockContentService },
         { provide: RealmService, useExisting: MockRealmService },
-        { provide: ClientsService, useExisting: MockClientsService }
+        { provide: ClientsService, useExisting: MockClientsService },
+        { provide: ConditionalAccessPolicyService, useExisting: MockConditionalAccessPolicyService }
       ]
     }).compileComponents();
 
@@ -76,6 +84,7 @@ describe("AuthenticationLog", () => {
     service = TestBed.inject(MockAuthenticationLogService);
     tableUtils = TestBed.inject(MockTableUtilsService);
     clientsService = TestBed.inject(MockClientsService);
+    policyService = TestBed.inject(MockConditionalAccessPolicyService);
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
     fixture.detectChanges();
   });
@@ -259,7 +268,7 @@ describe("AuthenticationLog", () => {
     expect(badges[0].classList).toContain("role-badge-admin-internal");
   });
 
-  it("hasInfoValues only reports true when an entry on the page actually carries other_info", () => {
+  it("hasInfoValues only reports true when an entry on the page actually carries something to show", () => {
     // The table swaps in a fresh MatTableDataSource per page, so the signal must be re-set (not mutated in place) for
     // the computed to see new rows.
     const rows: AuthenticationLogEntry[] = [
@@ -276,158 +285,151 @@ describe("AuthenticationLog", () => {
           id: 3,
           event_type: "PIN_FAIL",
           timestamp: "2026-08-03T09:00:02Z",
-          other_info: { conditional_access_findings: [] }
+          other_info: { truncated: { serial: "TOK…" } }
         }
       ])
     );
     expect(component.hasInfoValues()).toBe(true);
   });
 
-  it("infoEntries renders key/value rows, CSV arrays, a sub-list for nested dicts and JSON for deeper nesting", () => {
-    expect(component.infoEntries(null)).toEqual([]);
-    expect(
-      component.infoEntries({
-        serial: "TOTP001",
-        roles: ["admin", "user"],
-        truncated: { username: "abc", deep: { x: 1 } },
-        n: 3
-      })
-    ).toEqual([
-      { key: "Serial", value: "TOTP001" },
-      { key: "Roles", value: "admin, user" },
-      {
-        key: "Truncated",
-        children: [
-          { key: "Username", value: "abc" },
-          { key: "Deep", value: '{"x":1}' }
-        ]
-      },
-      { key: "N", value: "3" }
-    ]);
+  it("sizes each info-like column on its own content", () => {
+    // The two columns are independent: a rejection row carries outcomes and no other_info, so the Conditional access
+    // column must claim its width while the Info column stays narrow.
+    component.dataSource.set(
+      new MatTableDataSource([
+        {
+          id: 1,
+          event_type: "USER_LOCKED",
+          timestamp: "2026-08-03T09:00:00Z",
+          other_info: null,
+          conditional_access_outcomes: [{ policy_name: "Brute Force PIN Lockout" }]
+        }
+      ] as AuthenticationLogEntry[])
+    );
+    expect(component.hasOutcomeValues()).toBe(true);
+    expect(component.hasInfoValues()).toBe(false);
+    expect(component.hasColumnContent("conditional_access_outcomes")).toBe(true);
+    expect(component.hasColumnContent("other_info")).toBe(false);
+
+    // An empty list is nothing to show, like an empty other_info.
+    component.dataSource.set(
+      new MatTableDataSource([
+        {
+          id: 1,
+          event_type: "LOGIN_SUCCESS",
+          timestamp: "2026-08-03T09:00:00Z",
+          other_info: null,
+          conditional_access_outcomes: []
+        }
+      ] as AuthenticationLogEntry[])
+    );
+    expect(component.hasOutcomeValues()).toBe(false);
   });
 
-  it("infoEntries humanizes snake_case keys and uppercases acronym fragments", () => {
-    expect(component.infoEntries({ policy_name: "p", source_ip: "1.2.3.4", stage_id: 7 })).toEqual([
-      { key: "Policy name", value: "p" },
-      { key: "Source IP", value: "1.2.3.4" },
-      { key: "Stage ID", value: "7" }
-    ]);
+  it("treats only the Info and Conditional access columns as info-like", () => {
+    expect(component.isInfoColumn("conditional_access_outcomes")).toBe(true);
+    expect(component.isInfoColumn("other_info")).toBe(true);
+    expect(component.isInfoColumn("serial")).toBe(false);
   });
 
-  it("infoEntries renders a dry-run finding as a 'Dry Run:' prefix plus the linked policy, with no parent label row", () => {
-    expect(
-      component.infoEntries({
-        conditional_access_findings: [
-          {
-            policy_id: 7,
-            policy_name: "Brute Force PIN Lockout",
-            stage_name: "Lock 10 min",
-            threshold: 5,
-            actions: ["LOCK_USER"],
-            dry_run: true
-          }
-        ]
-      })
-    ).toEqual([
-      {
-        // No "Conditional access findings" row: the heading carries that context.
-        key: "",
-        groups: [
-          {
-            // The prefix is separate from the label so only the policy name becomes the link.
-            prefix: "Dry Run:",
-            label: "Brute Force PIN Lockout",
-            link: `${ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_DETAILS}7`,
-            // policy_name heads the group, policy_id backs the link and dry_run picks the prefix, so none of them is
-            // repeated as a row.
-            rows: [
-              { key: "Stage name", value: "Lock 10 min" },
-              { key: "Threshold", value: "5" },
-              { key: "Actions", value: "LOCK_USER" }
-            ]
-          }
-        ]
-      }
-    ]);
+  // --- the Conditional access column's filter ---
+
+  it("offers the action vocabulary and the policy names the backend serves, not a hardcoded list", () => {
+    expect(component.outcomeActionOptions()).toEqual([]);
+    policyService.actionTypes.set(["LOCK_USER", "BLOCK_IP"] as never);
+    policyService.policies.set([
+      { id: 2, name: "Notify" },
+      { id: 1, name: "Brute force" },
+      // Two policies can carry the same name over time; the filter offers it once.
+      { id: 3, name: "Notify" }
+    ] as never);
+
+    expect(component.outcomeActionOptions()).toEqual(["LOCK_USER", "BLOCK_IP"]);
+    expect(component.outcomePolicyOptions()).toEqual(["Brute force", "Notify"]);
   });
 
-  it("infoEntries heads every finding group by its own policy, so the label is not a positional index", () => {
-    const entries = component.infoEntries({
-      conditional_access_findings: [
-        { policy_id: 7, policy_name: "Permanent IP Block", threshold: 7, dry_run: true },
-        { policy_id: 3, policy_name: "Email Notification Test", threshold: 6, dry_run: true }
-      ]
-    });
-    expect(entries[0].groups?.map((group) => group.label)).toEqual(["Permanent IP Block", "Email Notification Test"]);
-    // Every group carries the prefix, so each finding is individually marked as a dry run.
-    expect(entries[0].groups?.map((group) => group.prefix)).toEqual(["Dry Run:", "Dry Run:"]);
-    expect(entries[0].groups?.map((group) => group.link)).toEqual([
-      `${ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_DETAILS}7`,
-      `${ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_DETAILS}3`
-    ]);
+  it("falls back to typing a policy name for an admin who may not read the policies", () => {
+    // Without lockout_policy_read there is no list to offer, so the menu entry has to lead somewhere else.
+    const authData = authService.authData()!;
+    authService.authData.set({ ...authData, rights: ["authentication_log_read", "lockout_policy_read"] });
+    expect(component.canReadLockoutPolicies()).toBe(true);
+
+    authService.authData.set({ ...authData, rights: ["authentication_log_read"] });
+    expect(component.canReadLockoutPolicies()).toBe(false);
   });
 
-  it("infoEntries omits the heading link when the finding carries no policy id", () => {
-    const groups = component.infoEntries({
-      conditional_access_findings: [{ policy_name: "Legacy finding", threshold: 4, dry_run: true }]
-    })[0].groups;
-    expect(groups?.[0].label).toBe("Legacy finding");
-    expect(groups?.[0].prefix).toBe("Dry Run:");
-    expect(groups?.[0].link).toBeUndefined();
+  it("clearing the Conditional access filter drops all three of its keys at once", () => {
+    component.setFilterValues("ca_action_type", ["LOCK_USER"]);
+    component.setFilterValues("ca_policy_name", ["Brute force"]);
+    component.setDryRunFilter("false");
+    // A filter on another column is not part of this menu and must survive.
+    component.setFilterValues("username", ["alice"]);
+
+    component.clearOutcomeFilters();
+
+    const filter = service.authenticationLogFilter();
+    expect(filter.hasKey("ca_action_type")).toBe(false);
+    expect(filter.hasKey("ca_policy_name")).toBe(false);
+    expect(filter.hasKey("ca_dry_run")).toBe(false);
+    expect(filter.getValueOfKey("username")).toBe("alice");
   });
 
-  it("infoEntries heads an enforced finding with the plain conditional-access prefix", () => {
-    const groups = component.infoEntries({
-      conditional_access_findings: [{ policy_id: 7, policy_name: "Brute Force PIN Lockout", threshold: 5 }]
-    })[0].groups;
-    expect(groups?.[0].prefix).toBe("Conditional Access:");
-    expect(groups?.[0].label).toBe("Brute Force PIN Lockout");
+  it("dry run is an exclusive choice of two values, cleared to mean both", () => {
+    expect(component.dryRunOptions.map((option) => option.value)).toEqual(["false", "true"]);
+    expect(component.dryRunFilter()).toBe("");
+    component.setDryRunFilter("false");
+    expect(service.authenticationLogFilter().getValueOfKey("ca_dry_run")).toBe("false");
+    expect(component.dryRunFilter()).toBe("false");
+
+    component.setDryRunFilter("true");
+    expect(component.dryRunFilter()).toBe("true");
+
+    // "Both" is the absence of the key, reached by clearing the filter, so nothing must be sent then.
+    component.setDryRunFilter("");
+    expect(service.authenticationLogFilter().hasKey("ca_dry_run")).toBe(false);
+    expect(component.dryRunFilter()).toBe("");
+    expect(service.filterParams()["ca_dry_run"]).toBeUndefined();
   });
 
-  it("infoEntries falls back to an ordinal label for unnamed groups and omits it for a lone one", () => {
-    expect(component.infoEntries({ items: [{ a: 1 }] })[0].groups).toEqual([
-      { label: "", rows: [{ key: "A", value: "1" }] }
-    ]);
-    expect(component.infoEntries({ items: [{ a: 1 }, { a: 2 }] })[0].groups?.map((group) => group.label)).toEqual([
-      "1",
-      "2"
-    ]);
+  it("stores the outcome filters as ordinary filter entries", () => {
+    // Which is what makes them typeable in the main filter input too; the service turns them into query params (see
+    // its own spec).
+    component.setFilterValues("ca_action_type", ["LOCK_USER", "BLOCK_IP"]);
+    component.setFilterValues("ca_policy_name", ["Brute force"]);
+    component.setDryRunFilter("false");
+
+    const filter = service.authenticationLogFilter();
+    expect(filter.getValueOfKey("ca_action_type")).toBe("LOCK_USER,BLOCK_IP");
+    expect(filter.getValueOfKey("ca_policy_name")).toBe("Brute force");
+    expect(filter.getValueOfKey("ca_dry_run")).toBe("false");
   });
 
-  it("infoEntries numbers the groups of a multi-element object list and flattens nested arrays", () => {
-    const entries = component.infoEntries({
-      items: [
-        { policy_id: 1, actions: ["LOCK_USER"] },
-        { policy_id: 3, actions: ["EMAIL_ADMIN", "LOCK_USER"] }
-      ]
-    });
-    expect(entries).toEqual([
-      {
-        key: "Items",
-        groups: [
-          {
-            label: "1",
-            rows: [
-              { key: "Policy ID", value: "1" },
-              { key: "Actions", value: "LOCK_USER" }
-            ]
-          },
-          {
-            label: "2",
-            rows: [
-              { key: "Policy ID", value: "3" },
-              { key: "Actions", value: "EMAIL_ADMIN, LOCK_USER" }
-            ]
-          }
-        ]
-      }
-    ]);
-  });
+  it("renders the Conditional access filter as one menu of its three keys, behind the shared filter icon", () => {
+    policyService.actionTypes.set(["LOCK_USER"] as never);
+    fixture.detectChanges();
+    const header: HTMLElement = fixture.nativeElement.querySelector("th.mat-column-conditional_access_outcomes");
+    const trigger: HTMLButtonElement = header.querySelector("button.filter-button")!;
+    // The same icon as the other selection filters: this menu sets several keys, so it has no set/not-set state.
+    expect(trigger.querySelector("mat-icon")?.textContent?.trim()).toBe("filter_list");
 
-  it("infoEntries keeps a scalar array as a CSV value rather than treating it as groups", () => {
-    expect(component.infoEntries({ tags: ["a", "b"], empty: [] })).toEqual([
-      { key: "Tags", value: "a, b" },
-      { key: "Empty", value: "" }
+    // The rule that governs a combination of these filters is stated in the menu, not left to a hover tooltip, and
+    // repeated on the trigger so it is announced before the menu is even opened.
+    expect(trigger.getAttribute("aria-label")).toContain("All conditions must match one and the same outcome.");
+
+    trigger.click();
+    fixture.detectChanges();
+    const panel: HTMLElement = document.querySelector(".mat-mdc-menu-panel")!;
+    expect(panel.querySelector('[role="note"]')?.textContent).toContain(
+      "All conditions must match one and the same outcome."
+    );
+    // A note, not an action: it must not be offered as a menu item.
+    expect(panel.querySelector('button[role="note"]')).toBeNull();
+    const items = Array.from(panel.querySelectorAll("button.mat-mdc-menu-item"));
+    expect(items.map((item) => item.textContent?.trim())).toEqual([
+      "filter_alt_offClear Filter",
+      "Action",
+      "Policy",
+      "Dry run"
     ]);
   });
 

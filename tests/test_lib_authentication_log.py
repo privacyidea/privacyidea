@@ -15,9 +15,12 @@
 #
 # SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
+from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 
 import mock
+from sqlalchemy import event
+from sqlalchemy.exc import InvalidRequestError
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import (
@@ -31,13 +34,15 @@ from privacyidea.lib.conditional_access.authentication_log import (
     get_authentication_logs,
     get_authentication_logs_paginate,
     log_authentication_event,
-    record_conditional_access_finding,
     update_authentication_events,
     write_authentication_events,
 )
+from privacyidea.lib.conditional_access.engine import count_user_attempts, count_user_events
+from privacyidea.lib.conditional_access.outcome_log import get_outcomes, record_outcomes
 from privacyidea.lib.conditional_access.session import get_ca_session
 from privacyidea.lib.error import ParameterError
-from privacyidea.models import authentication_log_column_length
+from privacyidea.models import AuthenticationLog, ConditionalAccessOutcome, db, authentication_log_column_length
+from privacyidea.models.utils import utc_now
 
 from .base import MyTestCase
 
@@ -539,115 +544,31 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertEqual(AuthEventType.NOT_AUTHORIZED, entry.event_type)
         self.assertEqual("TOK001", entry.serial)
 
-    def test_amending_a_written_event_keeps_conditional_access_findings(self):
-        # Findings are appended on the stored row after insert, so a later event update must not clobber them.
+    def test_amending_a_written_event_leaves_other_info_alone(self):
         event = PendingAuthEvent(event_type=AuthEventType.LOGIN_SUCCESS, other_info={"reason": "before"})
         write_authentication_events([event])
-        record_conditional_access_finding(event.row_id, {"policy_id": 1})
 
         event.event_type = AuthEventType.NOT_AUTHORIZED
-        update_authentication_events([event])
-
-        entry = get_authentication_log_event(event.row_id)
-        self.assertIsNotNone(entry)
-        self.assertEqual(AuthEventType.NOT_AUTHORIZED, entry.event_type)
-        self.assertEqual({"reason": "before", "conditional_access_findings": [{"policy_id": 1}]},
-                         entry.other_info)
-
-    def test_amending_other_info_keeps_conditional_access_findings(self):
-        # Updating event.other_info should merge with findings already written out-of-band on the stored row.
-        event = PendingAuthEvent(event_type=AuthEventType.LOGIN_SUCCESS,
-                                 other_info={"reason": "before", "random": "value"})
-        write_authentication_events([event])
-        record_conditional_access_finding(event.row_id, {"policy_id": 1})
-
         event.other_info = {"reason": "after", "note": "updated"}
         update_authentication_events([event])
 
         entry = get_authentication_log_event(event.row_id)
         self.assertIsNotNone(entry)
-        self.assertEqual({"reason": "after", "note": "updated",
-                          "conditional_access_findings": [{"policy_id": 1}]}, entry.other_info)
+        self.assertEqual(AuthEventType.NOT_AUTHORIZED, entry.event_type)
+        self.assertEqual({"reason": "after", "note": "updated"}, entry.other_info)
 
-    def test_amending_an_event_without_other_info_keeps_conditional_access_findings(self):
-        # The common case: an event carries no other_info at all, so the update would write NULL over the column the
-        # findings live in.
+    def test_outcomes_on_an_event_are_not_row_content(self):
+        # An event carries its conditional-access outcomes until the row id they are recorded against exists. They are
+        # not columns, so attaching them to an already-written event must not mark it changed and provoke an UPDATE.
         event = PendingAuthEvent(event_type=AuthEventType.LOGIN_SUCCESS)
         write_authentication_events([event])
-        record_conditional_access_finding(event.row_id, {"policy_id": 1})
+        self.assertFalse(event.changed)
 
-        event.event_type = AuthEventType.NOT_AUTHORIZED
-        update_authentication_events([event])
+        event.outcomes = ["an outcome"]
+        self.assertFalse(event.changed)
+        event.outcomes.append("another")
+        self.assertFalse(event.changed)
 
-        entry = get_authentication_log_event(event.row_id)
-        self.assertIsNotNone(entry)
-        self.assertEqual({"conditional_access_findings": [{"policy_id": 1}]}, entry.other_info)
-
-    def test_amending_an_event_without_findings_leaves_other_info_unset(self):
-        # No out-of-band keys to preserve: the column stays NULL rather than becoming an empty dict.
-        event = PendingAuthEvent(event_type=AuthEventType.LOGIN_SUCCESS)
-        write_authentication_events([event])
-
-        event.event_type = AuthEventType.NOT_AUTHORIZED
-        update_authentication_events([event])
-
-        entry = get_authentication_log_event(event.row_id)
-        self.assertIsNotNone(entry)
-        self.assertIsNone(entry.other_info)
-
-    def test_record_conditional_access_finding_swallows_an_unserializable_finding(self):
-        # A finding that cannot be serialized into the JSON column fails when the write flushes. Recording a finding is
-        # a diagnostic side effect of an already-finished request, so the failure must be swallowed and must leave the
-        # session usable for the rest of that request.
-        event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, other_info={"reason": "policy"})
-        # A set is not serializable.
-        self.assertIsNone(record_conditional_access_finding(event_id, {"actions": {"LOCK_USER"}}))
-        # The session survived: a further write still goes through.
-        self.assertIsNotNone(log_authentication_event(event_type=AuthEventType.PIN_FAIL))
-
-    def test_record_conditional_access_finding_swallows_a_failing_commit(self):
-        # The update succeeds but the commit fails: the error is swallowed and the session is rolled back, so the rest
-        # of the request can still use it. The commit is patched on the conditional-access session, which is the one
-        # these writes run on - patching db.session would no longer intercept anything.
-        event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS)
-        with mock.patch.object(get_ca_session(), "commit", side_effect=RuntimeError("commit boom")):
-            self.assertIsNone(record_conditional_access_finding(event_id, {"policy_id": 1}))
-        self.assertIsNotNone(log_authentication_event(event_type=AuthEventType.PIN_FAIL))
-
-    def test_record_conditional_access_finding_on_row_with_no_prior_other_info(self):
-        event_id = log_authentication_event(event_type=AuthEventType.PASSWORD_FAIL, resolver="res1", uid="user1",
-                                            realm="realm1")
-        record_conditional_access_finding(event_id, {"policy_id": 1, "policy_name": "p1"})
-        entry = get_authentication_log_event(event_id)
-        assert entry is not None
-        self.assertEqual({"conditional_access_findings": [{"policy_id": 1, "policy_name": "p1"}]}, entry.other_info)
-
-    def test_record_conditional_access_finding_preserves_existing_other_info(self):
-        # An existing other_info key (e.g. from a caller-supplied value, or a serial-overflow "truncated" key) must
-        # survive alongside the new "conditional_access_findings" key rather than being clobbered.
-        max_serial = authentication_log_column_length["serial"]
-        serial = "S" * (max_serial + 5)
-        event_id = log_authentication_event(event_type=AuthEventType.PASSWORD_FAIL, serial=serial,
-                                            other_info={"reason": "policy"})
-        record_conditional_access_finding(event_id, {"policy_id": 1})
-        entry = get_authentication_log_event(event_id)
-        assert entry is not None
-        self.assertEqual({"reason": "policy",
-                          "truncated": {"serial": "SSSSS"},
-                          "conditional_access_findings": [{"policy_id": 1}]}, entry.other_info)
-
-    def test_record_conditional_access_finding_twice_accumulates_a_list(self):
-        event_id = log_authentication_event(event_type=AuthEventType.PASSWORD_FAIL, resolver="res1", uid="user1",
-                                            realm="realm1")
-        record_conditional_access_finding(event_id, {"policy_id": 1})
-        record_conditional_access_finding(event_id, {"policy_id": 2})
-        entry = get_authentication_log_event(event_id)
-        assert entry is not None
-        self.assertEqual([{"policy_id": 1}, {"policy_id": 2}], entry.other_info["conditional_access_findings"])
-
-    def test_record_conditional_access_finding_on_missing_event_id_is_a_silent_noop(self):
-        # A non-existent event_id must not raise; it is logged and swallowed, same as reclassify.
-        record_conditional_access_finding(999999999, {"policy_id": 1})
 
 
 class AuthenticationLogDBTestCase(MyTestCase):
@@ -700,8 +621,10 @@ class AuthenticationLogDBTestCase(MyTestCase):
 class AuthenticationLogPaginateTestCase(MyTestCase):
 
     def tearDown(self):
-        from privacyidea.models import db
+        from privacyidea.models import ConditionalAccessOutcome, db
         from privacyidea.models.authentication_log import AuthenticationLog
+        # Children first: nothing cascades on SQLite.
+        db.session.query(ConditionalAccessOutcome).delete()
         db.session.query(AuthenticationLog).delete()
         db.session.commit()
         super().tearDown()
@@ -847,8 +770,10 @@ class AuthenticationLogPaginateTestCase(MyTestCase):
 class AuthenticationLogDeleteTestCase(MyTestCase):
 
     def tearDown(self):
-        from privacyidea.models import db
+        from privacyidea.models import ConditionalAccessOutcome, db
         from privacyidea.models.authentication_log import AuthenticationLog
+        # Children first: nothing cascades on SQLite.
+        db.session.query(ConditionalAccessOutcome).delete()
         db.session.query(AuthenticationLog).delete()
         db.session.commit()
         super().tearDown()
@@ -878,3 +803,150 @@ class AuthenticationLogDeleteTestCase(MyTestCase):
         self.assertEqual(1, deleted)
         remaining_realms = {entry.realm for entry in get_authentication_logs()}
         self.assertEqual({"realm2", None}, remaining_realms)
+
+
+class AuthenticationLogOutcomeJoinTestCase(MyTestCase):
+    """
+    How the conditional-access outcomes of a request reach a reader: only through the paginated listing, in one batched
+    query, and never on the authentication path (see the ``outcomes`` relationship and D11 of the design notes).
+    """
+
+    def tearDown(self):
+        db.session.query(ConditionalAccessOutcome).delete()
+        db.session.query(AuthenticationLog).delete()
+        db.session.commit()
+        super().tearDown()
+
+    @staticmethod
+    def _entry_with_outcomes(count: int = 1, **kwargs) -> int:
+        """Write one authentication-log row plus *count* conditional-access outcomes, and return the row id."""
+        event_id = log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res1", uid="u1",
+                                            realm="realm1", **kwargs)
+        record_outcomes([ConditionalAccessOutcome(action_type="LOCK_USER", policy_name="p",
+                                                 threshold=3, event_count=3) for _ in range(count)], event_id)
+        return event_id
+
+    @staticmethod
+    @contextmanager
+    def _statements(table: str):
+        """Collect the SQL statements executed against *table* while the block runs."""
+        seen: list[str] = []
+
+        def listener(conn, cursor, statement, parameters, context, executemany):
+            if table in statement:
+                seen.append(statement)
+
+        event.listen(db.engine, "before_cursor_execute", listener)
+        try:
+            yield seen
+        finally:
+            event.remove(db.engine, "before_cursor_execute", listener)
+
+    def test_the_page_carries_the_outcomes_of_each_entry(self):
+        self._entry_with_outcomes(2)
+        page = get_authentication_logs_paginate()
+
+        entry = page.auth_logs[0]
+        self.assertEqual(2, len(entry.outcomes))
+        # to_dict of the *page* opts in, so a client sees them alongside the entry.
+        self.assertEqual(2, len(page.to_dict()["auth_logs"][0]["conditional_access_outcomes"]))
+        self.assertEqual("LOCK_USER", page.to_dict()["auth_logs"][0]["conditional_access_outcomes"][0]["action_type"])
+
+    def test_an_entry_without_outcomes_carries_an_empty_list(self):
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="realm1")
+        page = get_authentication_logs_paginate()
+        self.assertListEqual([], page.to_dict()["auth_logs"][0]["conditional_access_outcomes"])
+
+    def test_the_outcomes_of_a_whole_page_cost_one_statement(self):
+        # selectinload fetches the page's outcomes in a single extra query, so the statement count does not grow with
+        # the page size. A lazy relationship would pass every content assertion above while emitting one query per
+        # entry, which is why this asserts on statements rather than on the payload.
+        for _ in range(5):
+            self._entry_with_outcomes()
+
+        with self._statements("conditional_access_outcome") as statements:
+            page = get_authentication_logs_paginate(page_size=5)
+            self.assertEqual(5, len(page.auth_logs))
+        self.assertEqual(1, len(statements), statements)
+
+    def test_the_unpaginated_query_does_not_load_the_outcomes(self):
+        # get_authentication_logs is used by lib callers and tests, not by the log view, so it must not pay for the
+        # join - and reading the relationship afterwards is an error rather than a silent query.
+        self._entry_with_outcomes()
+
+        with self._statements("conditional_access_outcome") as statements:
+            entries = get_authentication_logs()
+        self.assertListEqual([], statements)
+        self.assertRaises(InvalidRequestError, lambda: entries[0].outcomes)
+
+    def test_to_dict_of_a_single_entry_leaves_the_outcomes_out(self):
+        # The default is off precisely because the relationship raises: an entry that was not loaded with its outcomes
+        # must not try to fetch them while being serialized.
+        event_id = self._entry_with_outcomes()
+        entry = get_authentication_log_event(event_id)
+        self.assertNotIn("conditional_access_outcomes", entry.to_dict())
+
+    def test_counting_events_never_touches_the_outcome_table(self):
+        # The engine's counting path fetches whole AuthenticationLog objects (PER_ATTEMPT), which is exactly where an
+        # eagerly configured relationship would add a fan-out query per count.
+        self._entry_with_outcomes()
+
+        with self._statements("conditional_access_outcome") as statements:
+            count_user_events("res1", "u1", "realm1", [str(AuthEventType.MFA_FAIL)], 3600)
+            count_user_attempts("res1", "u1", "realm1", [str(AuthEventType.MFA_FAIL)], 3600)
+        self.assertListEqual([], statements)
+
+    def test_deleting_one_entry_takes_its_outcomes(self):
+        kept = self._entry_with_outcomes()
+        removed = self._entry_with_outcomes()
+
+        delete_authentication_log_event(removed)
+
+        self.assertListEqual([], list(get_outcomes(removed)))
+        self.assertEqual(1, len(get_outcomes(kept)))
+
+    def test_deleting_an_entry_as_an_object_takes_its_outcomes(self):
+        # The relationship cascade covers every caller that deletes an entry as an object, not just the one delete
+        # function in this module - including MethodsMixin.delete(), which this model offers and which a future caller
+        # may well reach for. Without the cascade those paths would orphan the outcomes on SQLite, where the foreign
+        # key is not enforced.
+        kept = self._entry_with_outcomes()
+        removed = self._entry_with_outcomes()
+
+        # Loaded through db.session, because that is the session MethodsMixin.delete() commits on.
+        AuthenticationLog.query.filter_by(id=removed).one().delete()
+
+        self.assertListEqual([], list(get_outcomes(removed)))
+        self.assertEqual(1, len(get_outcomes(kept)))
+
+    def test_a_filtered_delete_takes_the_outcomes_with_it(self):
+        removed = self._entry_with_outcomes(2, username="doomed")
+        kept = self._entry_with_outcomes(username="spared")
+
+        self.assertEqual(1, delete_authentication_logs(username="doomed"))
+
+        self.assertEqual([], list(get_outcomes(removed)))
+        self.assertEqual(1, len(get_outcomes(kept)))
+
+    def test_retention_takes_the_outcomes_with_it(self):
+        removed = self._entry_with_outcomes(2)
+        # Age the row past the cutoff; its outcomes have no timestamp of their own, so they are matched through it.
+        db.session.query(AuthenticationLog).filter_by(id=removed).update({"timestamp": utc_now() - timedelta(days=10)})
+        db.session.commit()
+        kept = self._entry_with_outcomes()
+
+        self.assertEqual(1, cleanup_authentication_log(older_than=utc_now() - timedelta(days=1)))
+
+        self.assertListEqual([], list(get_outcomes(removed)))
+        self.assertEqual(1, len(get_outcomes(kept)))
+
+    def test_retention_deletes_the_outcomes_in_chunks_too(self):
+        # The chunked path is a different code path in delete_matching_rows; the children must follow it as well.
+        removed = [self._entry_with_outcomes(2) for _ in range(3)]
+        db.session.query(AuthenticationLog).filter(AuthenticationLog.id.in_(removed)).update(
+            {"timestamp": utc_now() - timedelta(days=10)})
+        db.session.commit()
+
+        self.assertEqual(3, cleanup_authentication_log(older_than=utc_now() - timedelta(days=1), chunk_size=2))
+
+        self.assertEqual(0, get_ca_session().query(ConditionalAccessOutcome).count())

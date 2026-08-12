@@ -23,6 +23,7 @@ Tests for the conditional-access lockout-policy CRUD layer
 from unittest import mock
 
 from privacyidea.lib.conditional_access import lockout_policy as lockout_policy_module
+from privacyidea.lib.conditional_access.authentication_event_types import CA_ENFORCEMENT_EVENT_TYPES  # noqa: F401
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
 from privacyidea.lib.conditional_access.authentication_log import AuthLogUserRole
 from privacyidea.lib.conditional_access.conditions import (ConditionOperator, ConditionType,
@@ -317,6 +318,18 @@ class LockoutPolicyCrudTestCase(MyTestCase):
             "Dedup", 600, ["MFA_FAIL", "PIN_FAIL", "MFA_FAIL"], [_stage()], target=LockoutTarget.USER, priority=1
         )
         self.assertEqual(["MFA_FAIL", "PIN_FAIL"], get_lockout_policy(policy_id)["counter_types_to_track"])
+
+    def test_02c_event_types_written_by_conditional_access_are_not_trackable(self):
+        # A policy counting its own rejections is a lock that feeds itself: while the user is locked every request adds
+        # to the count, so a re-triggering lock never expires and no successful login can clear it. Refusing the value
+        # at the CRUD boundary makes that impossible rather than merely discouraged.
+        for event_type in CA_ENFORCEMENT_EVENT_TYPES:
+            self.assertRaises(
+                ParameterError,
+                create_lockout_policy,
+                f"Self feeding {event_type}", 600, [str(event_type)], [_stage()],
+                target=LockoutTarget.USER, priority=1,
+            )
 
     def test_02j_target_action_compatibility(self):
         # BLOCK_IP only makes sense on a source_ip target; LOCK_USER only on a user target.

@@ -18,7 +18,7 @@
  **/
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
-import { signal } from "@angular/core";
+import { ApplicationRef, signal } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
 import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
@@ -102,6 +102,31 @@ describe("ConditionalAccessPolicyService", () => {
       contentServiceMock.onConditionalAccess = signal(false);
       TestBed.tick();
       httpMock.expectNone(service.baseUrl);
+    });
+
+    it("should also fetch on the authentication log, whose outcome filter offers the policy names", async () => {
+      contentServiceMock.onConditionalAccess = signal(false);
+      contentServiceMock.onAuthenticationLog = signal(true);
+      TestBed.tick();
+
+      httpMock.expectOne(service.baseUrl).flush(MockPiResponse.fromValue([samplePolicy]));
+      // The action types come along for the same filter; the editor-only vocabulary does not.
+      httpMock.expectOne(service.actionTypesUrl).flush(MockPiResponse.fromValue(["LOCK_USER"]));
+      httpMock.expectNone(service.eventTypesUrl);
+      httpMock.expectNone(service.targetsUrl);
+      httpMock.expectNone(service.templatesUrl);
+      await TestBed.inject(ApplicationRef).whenStable();
+
+      expect(service.policies()).toEqual([samplePolicy]);
+      expect(service.actionTypes()).toEqual(["LOCK_USER"]);
+    });
+
+    it("should not fetch on a route that reads neither the policies nor the log", () => {
+      contentServiceMock.onConditionalAccess = signal(false);
+      contentServiceMock.onAuthenticationLog = signal(false);
+      TestBed.tick();
+      httpMock.expectNone(service.baseUrl);
+      httpMock.expectNone(service.actionTypesUrl);
     });
 
     it("should load policies from the resource", async () => {

@@ -34,7 +34,8 @@ import logging
 from dataclasses import dataclass
 
 from privacyidea.lib import lazy_gettext
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, CountMode,
+                                                                              TRACKABLE_EVENT_TYPES)
 from privacyidea.lib.conditional_access.engine import LockoutAction, LockoutTarget
 from privacyidea.lib.log import log_with
 
@@ -150,10 +151,10 @@ USER_RATE_LIMITING = LockoutPolicyTemplate(
         "enabled": True,
         "dry_run": False,
         "target": LockoutTarget.USER,
-        # PER_ATTEMPT so a multichallenge / push login counts as one attempt; every AuthEventType is tracked so
-        # successes and abandoned (pending) attempts count too - this caps the request rate, it does not lock.
+        # PER_ATTEMPT so a multichallenge / push login counts as one attempt; every *trackable* event type is counted
+        # so successes and abandoned (pending) attempts count too - this caps the request rate, it does not lock.
         "count_mode": CountMode.PER_ATTEMPT,
-        "counter_types_to_track": list(AuthEventType),
+        "counter_types_to_track": list(TRACKABLE_EVENT_TYPES),
         "stages": [
             {"failure_threshold": 20, "priority": 1,
              "actions": [{"action_type": LockoutAction.DENY}]},
@@ -256,7 +257,7 @@ IP_RATE_LIMITING = LockoutPolicyTemplate(
         "dry_run": True,
         "target": LockoutTarget.SOURCE_IP,
         "count_mode": CountMode.DISTINCT_USERS,
-        "counter_types_to_track": list(AuthEventType),
+        "counter_types_to_track": list(TRACKABLE_EVENT_TYPES),
         "stages": [
             {"failure_threshold": 30, "priority": 1,
              "actions": [{"action_type": LockoutAction.DENY}]},

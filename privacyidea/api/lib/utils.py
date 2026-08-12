@@ -488,7 +488,7 @@ def build_ca_context(user, internal_admin: bool | None = None) -> "CAContext":
                      user_role=str(_determine_user_role(user, bool(internal_admin))))
 
 
-def conditional_access_precheck(user) -> "Response | None":
+def conditional_access_precheck(user: User, log_rejection: bool = True) -> "Response | None":
     """
     Reject a request pre-auth (before any token logic and before the failcounter /
     max_auth checks) when conditional-access policies forbid it. Returns a generic
@@ -497,37 +497,60 @@ def conditional_access_precheck(user) -> "Response | None":
 
     The rejection is deliberately generic and leaks no reason: the machine-facing
     API response never reveals that the user is locked, the source IP is blocked,
-    or a policy denied access — the real reason is recorded only in the audit log.
+    or a policy denied access — the real reason is recorded in the audit log and,
+    for the admin, as this request's authentication-log row.
 
     A currently-locked user is rejected first, then a source IP blocked by a
     ``BLOCK_IP`` action. The pre-auth conditional-access DENY decision is evaluated
     last, after the lock/block pre-checks (so an ALLOW cannot override them); a
     DENY rejects this single request without persisting state, while
     ALLOW / CONTINUE fall through. ``g.client_ip`` is the source IP checked.
+
+    Each rejection also **classifies the request** in the authentication log
+    (:class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthEventType`:
+    ``USER_LOCKED`` / ``IP_BLOCKED`` / ``ACCESS_DENIED``), because the reason is otherwise nowhere an admin can filter
+    for: the request is turned away before anything else logs an outcome for it.
+
+    :param user: the identity to gate on
+    :param log_rejection: write that authentication-log row. A rejection row **replaces** the row the request would
+        have written anyway and must never create one where there would be none, so a caller whose endpoint logs no
+        authentication event when it succeeds passes ``False``. Exactly one does: ``/validate/polltransaction``, where
+        a poll carries no new authentication event and the response is generic - so a client polling in a loop cannot
+        tell why it fails and would otherwise fill the log at its polling frequency.
     """
     # Imported lazily: this module is loaded early, while the engine pulls in the
     # ORM models, so a module-level import would risk an import-order cycle.
     from privacyidea.lib.conditional_access.engine import (is_user_locked, is_ip_blocked,
                                                            evaluate_access_decision, AccessDecision)
+
+    def reject(event_type: AuthEventType, audit_info: str) -> "Response":
+        """Classify the request in the authentication log (unless opted out) and return the generic failure."""
+        if log_rejection:
+            # Staged like any other event, so request teardown writes it; attempt_id resolves as usual, which links the
+            # rejection into the attempt it refused to process when the request carries that transaction.
+            log_authentication(event_type, request, user=user,
+                               transaction_id=get_optional_one_of(request.all_data, ["transaction_id", "state"]))
+        g.audit_object.log({"success": False, "info": audit_info})
+        return send_result(False, rid=2, details={})
+
     if is_user_locked(user, clear_expired=True):
         log.info(f"Rejecting authentication for locked user {user!r}.")
-        g.audit_object.log({"success": False,
-                            "info": "Rejected: account is temporarily locked"})
-        return send_result(False, rid=2, details={})
+        return reject(AuthEventType.USER_LOCKED, "Rejected: account is temporarily locked")
     if is_ip_blocked(g.client_ip, clear_expired=True):
         log.info(f"Rejecting authentication from blocked IP {g.client_ip!r}.")
-        g.audit_object.log({"success": False,
-                            "info": "Rejected: source IP is blocked"})
-        return send_result(False, rid=2, details={})
-    if evaluate_access_decision(build_ca_context(user)) == AccessDecision.DENY:
+        return reject(AuthEventType.IP_BLOCKED, "Rejected: source IP is blocked")
+    decision = evaluate_access_decision(build_ca_context(user))
+    # A DENY decision is part of this request's history, but no authentication-log row exists yet to record it against
+    # (and a dry-run DENY lets the request continue, so its row comes later). The context holds the outcomes until the
+    # request stages the event they belong to - which, for an enforced DENY, is the row written just below.
+    get_ca_context().add_outcomes(decision.outcomes)
+    if decision.decision == AccessDecision.DENY:
         log.info(f"Denying authentication for {user!r} by conditional-access policy.")
-        g.audit_object.log({"success": False,
-                            "info": "Rejected: denied by conditional-access policy"})
-        return send_result(False, rid=2, details={})
+        return reject(AuthEventType.ACCESS_DENIED, "Rejected: denied by conditional-access policy")
     return None
 
 
-def conditional_access_gate(identity_resolver=None):
+def conditional_access_gate(identity_resolver=None, log_rejection: bool = True):
     """
     View decorator that runs :func:`conditional_access_precheck` before the
     decorated endpoint body (and, when placed above them, before the endpoint's
@@ -539,12 +562,14 @@ def conditional_access_gate(identity_resolver=None):
         omitted, ``request.User`` is used. Endpoints that must resolve the
         identity differently (a serial/credential-id request, or a transaction
         owner) pass their own resolver.
+    :param log_rejection: passed through to the pre-check; see there for when an
+        endpoint has to opt out.
     """
     def decorator(wrapped_function):
         @functools.wraps(wrapped_function)
         def wrapper(*args, **kwargs):
             user = identity_resolver() if identity_resolver is not None else request.User
-            rejection = conditional_access_precheck(user)
+            rejection = conditional_access_precheck(user, log_rejection=log_rejection)
             if rejection is not None:
                 return rejection
             return wrapped_function(*args, **kwargs)

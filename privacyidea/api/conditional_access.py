@@ -35,7 +35,7 @@ from flask import Blueprint, request, g
 from privacyidea.api.auth import admin_required
 from privacyidea.api.lib.prepolicy import prepolicy, check_base_action
 from privacyidea.api.lib.utils import send_result, to_list_param
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import TRACKABLE_EVENT_TYPES
 from privacyidea.lib.conditional_access.engine import LockoutAction
 from privacyidea.lib.conditional_access.lockout_policy import (list_lockout_policies,
                                                                get_lockout_policy,
@@ -109,14 +109,21 @@ def _int_policy_id(policy_id) -> int:
 def list_event_types():
     """
     Return the authoritative list of authentication event types a policy can
-    track (the :class:`AuthEventType` values), so the WebUI does not duplicate
-    the list and automatically picks up newly added types.
+    track, so the WebUI does not duplicate the list and automatically picks up
+    newly added types.
+
+    This is the **trackable** subset of :class:`AuthEventType`: the types
+    conditional access writes for its own rejections are left out, because a
+    policy counting them would let a lock feed itself (see
+    :data:`~privacyidea.lib.conditional_access.authentication_event_types.CA_ENFORCEMENT_EVENT_TYPES`).
+    The authentication log's own ``/authentication_log/eventtypes`` still lists
+    every type, since an admin must be able to filter for a rejection.
 
     Requires the admin policy action :ref:`policy_lockout_policy_read`.
 
     :status 200: list of event-type name strings in ``result.value``, in definition order
     """
-    event_types = [event_type.value for event_type in AuthEventType]
+    event_types = [event_type.value for event_type in TRACKABLE_EVENT_TYPES]
     g.audit_object.log({"success": True, "info": f"{len(event_types)} event types"})
     return send_result(event_types)
 

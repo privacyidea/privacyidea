@@ -1108,7 +1108,10 @@ def trigger_challenge():
 @CheckSubscription(request)
 @prepolicy(api_key_required, request=request)
 @event("validate_poll_transaction", request, g)
-@conditional_access_gate(_poll_transaction_identity)
+# log_rejection=False: a poll carries no new authentication event, so a rejection row here would not *replace* the
+# row this request writes - it would create one where there is none, once per poll, for a client that cannot tell from
+# the generic response why it is failing. The restriction's own history is the outcome row that created it.
+@conditional_access_gate(_poll_transaction_identity, log_rejection=False)
 def poll_transaction(transaction_id=None):
     """
     Report whether a challenge has been answered. Out-of-band tokens

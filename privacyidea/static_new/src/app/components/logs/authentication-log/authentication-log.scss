@@ -47,46 +47,31 @@ td.cell-info-sized {
   max-width: 300px;
 }
 
-// The Info column is narrow, so the nested lists claim no horizontal space of their own: no bullets, no indentation
-// and no margins. Hierarchy is carried by the muted keys and the rules between groups instead.
-.info-list {
-  margin: 0;
-  padding-left: 0;
-  list-style: none;
-  line-height: 1.35;
-}
-
-// One element of a list-valued info key (e.g. a single conditional-access dry-run finding). Successive groups are
-// separated by a horizontal rule rather than a left border, which would cost width the column does not have.
-.info-group {
-  margin: 0;
-
-  & + .info-group {
-    margin-top: 2px;
-    padding-top: 2px;
-    border-top: 1px solid var(--mat-sys-outline-variant);
-  }
-}
-
-// Separates the prefix from the group name that follows it. Done here rather than with trailing whitespace in the
-// prefix string, which Angular collapses between elements and translators would drop.
-.info-group-prefix {
-  margin-right: 4px;
-}
-
-// The fields of a group sit slightly inside its heading, so the heading reads as the thing they belong to.
-.info-group-row {
-  padding-left: 4px;
-}
-
-.info-key {
-  color: var(--mat-sys-on-surface-variant);
-}
-
 // Reclaim the cell's default padding for content. Qualified with the element so it outweighs Material's own
 // single-class cell padding.
 td.cell-info {
   padding: 0 8px;
+}
+
+// The rule that governs the Conditional access filter menu, shown as its first line. Not a mat-menu-item: it is text,
+// not an action, so it must not be offered as one to a keyboard or a screen reader.
+.filter-menu-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: 260px;
+  padding: 8px 16px;
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.75rem;
+  line-height: 1.35;
+  white-space: normal;
+
+  .mat-icon {
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+  }
 }
 
 .header-label {

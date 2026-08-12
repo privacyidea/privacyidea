@@ -274,25 +274,46 @@ def _conditional_access_precheck(user: User) -> None:
     with a message stating it was a conditional-access decision (the policy is not
     named); like the lock/block messages it is maskable via the
     hide_specific_error_message policy. ALLOW / CONTINUE fall through silently.
+
+    Every rejection also classifies the login in the authentication log (``USER_LOCKED`` / ``IP_BLOCKED`` /
+    ``ACCESS_DENIED``), which is the only place an admin can filter for the reason: the login is turned away before
+    anything else logs an outcome for it. The event type follows the restriction actually reported, so the log and the
+    message a user saw cannot disagree. ``internal_admin`` comes from the flag ``before_request`` already resolved, so
+    a blocked local admin is recorded as ``admin-internal`` rather than falling back to ``user``.
     """
     lockout = get_user_lockout(user, clear_expired=True)
     ip_block = get_ip_block(g.client_ip, clear_expired=True)
     restriction = _binding_restriction(lockout, ip_block)
+
+    def log_rejection(event_type: AuthEventType) -> None:
+        """Classify this login in the authentication log. Staged, so request teardown writes it even though the
+        AuthError below unwinds the view."""
+        log_authentication(event_type, request, user=user,
+                           internal_admin=g.get("resolved_user", {}).get("is_local_admin", False))
+
     if restriction == "block":
         log.info(f"Rejecting /auth login from blocked IP {g.client_ip!r}.")
         g.audit_object.log({"info": "Rejected: source IP is blocked"})
+        log_rejection(AuthEventType.IP_BLOCKED)
         raise AuthError(_blocked_ip_error_message(g.client_ip, ip_block),
                         id=Error.AUTHENTICATE_WRONG_CREDENTIALS,
                         details={"restriction": _restriction_kind(ip_block)})
     if restriction == "lock":
         log.info(f"Rejecting /auth login for locked user {user!r}.")
         g.audit_object.log({"info": "Rejected: account is temporarily locked"})
+        log_rejection(AuthEventType.USER_LOCKED)
         raise AuthError(_lockout_error_message(lockout),
                         id=Error.AUTHENTICATE_WRONG_CREDENTIALS,
                         details={"restriction": _restriction_kind(lockout)})
-    if evaluate_access_decision(build_ca_context(user)) == AccessDecision.DENY:
+    decision = evaluate_access_decision(build_ca_context(user))
+    # The decision belongs to this request's history, but its authentication-log row does not exist yet: the context
+    # keeps the outcomes until the login stages its event (a dry-run DENY lets the login continue and land on that row).
+    get_ca_context().add_outcomes(decision.outcomes)
+    if decision.decision == AccessDecision.DENY:
         log.info(f"Denying /auth login for {user!r} by conditional-access policy.")
         g.audit_object.log({"info": "Rejected: denied by conditional-access policy"})
+        # Staged after add_outcomes above, so this is the row the buffered DENY outcome is recorded against.
+        log_rejection(AuthEventType.ACCESS_DENIED)
         raise AuthError(_("Authentication failure. Access has been denied by a conditional-access policy."),
                         id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
 
