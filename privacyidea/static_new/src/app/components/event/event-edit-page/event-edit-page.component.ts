@@ -25,8 +25,7 @@ import {
   inject,
   linkedSignal,
   OnDestroy,
-  signal,
-  untracked
+  signal
 } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
@@ -109,6 +108,16 @@ export class EventEditPageComponent implements OnDestroy {
   hasChanges = signal(false);
   // Set once the user operates the "abort on error" toggle, so the default of the handler module stops applying
   abortOnErrorTouched = signal(false);
+  // A handler whose result the request consumes is created with "abort on error" enabled, see
+  // GET /event/defaults/<handlermodule>. The default only fills in for a new binding that the user has not
+  // decided on yet: an existing binding keeps its stored value, and so does an explicit choice of the user.
+  abortOnError = computed(() => {
+    const editedValue = this.editEvent().abort_on_error;
+    if (!this.isNewEvent() || this.abortOnErrorTouched()) {
+      return editedValue;
+    }
+    return this.eventService.moduleDefaults()?.abort_on_error ?? editedValue;
+  });
   eventLoaded = computed(() => this.isNewEvent() || this.editEvent() !== EMPTY_EVENT);
   selectedEvents = linkedSignal(() => this.event().event);
   validConditionsDefinition = computed(() => {
@@ -177,23 +186,6 @@ export class EventEditPageComponent implements OnDestroy {
       }
     });
 
-    // A handler whose result the request consumes is created with "abort on error" enabled. Only a new
-    // binding the user has not edited yet is pre-selected, so that an existing binding keeps its stored value.
-    // The current binding is read untracked: the effect writes it, and tracking it here would retrigger the
-    // effect with its own write.
-    effect(() => {
-      const defaults = this.eventService.moduleDefaults();
-      if (!defaults) {
-        return;
-      }
-      untracked(() => {
-        const current = this.editEvent();
-        if (this.isNewEvent() && !this.abortOnErrorTouched() && current.abort_on_error !== defaults.abort_on_error) {
-          this.editEvent.set({ ...current, abort_on_error: defaults.abort_on_error });
-        }
-      });
-    });
-
     this.pendingChangesService.registerHasChanges(() => this.hasChanges());
     this.pendingChangesService.registerSave(this.saveEvent.bind(this));
     this.pendingChangesService.registerValidChanges(() => this.canSave());
@@ -255,6 +247,8 @@ export class EventEditPageComponent implements OnDestroy {
       eventParams.id = String(eventParams.id);
     }
     eventParams.handlermodule = this.eventService.selectedHandlerModule();
+    // The default of the handler module is not written into the edited binding, so it is resolved here
+    eventParams.abort_on_error = this.abortOnError();
     delete eventParams.options;
     return eventParams;
   }

@@ -379,17 +379,23 @@ describe("EventEditPageComponent — create new mode", () => {
 
   it("should preset abort on error from the default of the handler module", () => {
     mockEventService.moduleDefaults.set({ abort_on_error: true });
-    fixture.detectChanges();
 
-    expect(component.editEvent().abort_on_error).toBe(true);
+    expect(component.abortOnError()).toBe(true);
+    expect(component.getSaveParameters().abort_on_error).toBe(true);
   });
 
   it("should keep the choice of the user over the default of the handler module", () => {
     component.setAbortOnError(false);
     mockEventService.moduleDefaults.set({ abort_on_error: true });
-    fixture.detectChanges();
 
-    expect(component.editEvent().abort_on_error).toBe(false);
+    expect(component.abortOnError()).toBe(false);
+    expect(component.getSaveParameters().abort_on_error).toBe(false);
+  });
+
+  it("should not preset abort on error while the default of the handler module is unknown", () => {
+    mockEventService.moduleDefaults.set(null);
+
+    expect(component.abortOnError()).toBe(false);
   });
 
   it("should save new event without id and navigate back", () => {

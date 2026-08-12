@@ -137,7 +137,7 @@
       <div class="margin-bottom-32">
         <mat-slide-toggle
           (change)="setAbortOnError($event.checked)"
-          [checked]="editEvent().abort_on_error">
+          [checked]="abortOnError()">
           <span i18n>Abort the request if the handler fails</span>
         </mat-slide-toggle>
         <p class="checkbox-hint" i18n>
