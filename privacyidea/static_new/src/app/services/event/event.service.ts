@@ -36,6 +36,7 @@ export interface EventHandler {
   handlermodule: string;
   ordering: number;
   position: string;
+  abort_on_error: boolean;
   event: string[];
   action: string;
   options: Record<string, string> | null;
@@ -49,6 +50,7 @@ export const EMPTY_EVENT: EventHandler = {
   handlermodule: "",
   ordering: 0,
   position: "post",
+  abort_on_error: false,
   event: [],
   action: "",
   options: {},
@@ -87,6 +89,7 @@ export interface EventHandlerSaveParams {
   handlermodule: string | null;
   ordering: number;
   position: string;
+  abort_on_error: boolean;
   event: string[];
   action: string;
   conditions: Record<string, unknown>;

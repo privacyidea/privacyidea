@@ -46,7 +46,8 @@ const mockEventHandler: EventHandler = {
   options: { opt3: "true" },
   conditions: { condA: "true" },
   position: "post",
-  ordering: 0
+  ordering: 0,
+  abort_on_error: false
 };
 
 describe("EventEditPageComponent — edit mode", () => {
@@ -300,7 +301,8 @@ describe("EventEditPageComponent — edit mode", () => {
       "option.opt3": "true",
       conditions: { condA: "true" },
       position: "post",
-      ordering: 0
+      ordering: 0,
+      abort_on_error: false
     };
     expect(mockEventService.saveEventHandler).toHaveBeenCalledWith(convertedParams);
     expect(reloadSpy).toHaveBeenCalled();
@@ -397,7 +399,8 @@ describe("EventEditPageComponent — create new mode", () => {
       "option.opt3": "true",
       conditions: { condA: "true" },
       position: "pre",
-      ordering: 0
+      ordering: 0,
+      abort_on_error: false
     };
     expect(mockEventService.saveEventHandler).toHaveBeenCalledWith(convertedParams);
     expect(reloadSpy).toHaveBeenCalled();
