@@ -138,7 +138,7 @@ from privacyidea.lib.utils import get_plugin_info_from_useragent, AUTH_RESPONSE
 from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
 from .lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
 from .lib.utils import (get_required, get_auth_error_status_code, send_error, send_result,
-                        log_authentication, conditional_access_gate, conditional_access_posteval)
+                        log_authentication, conditional_access_gate)
 from ..lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
                                                                  LOG_TRANSACTION_ID_KEY)
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
@@ -570,11 +570,9 @@ def check():
             context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NO_USABLE_TOKEN
         raise
     finally:
-        # Write the single authentication-log row for this request, then let the
-        # conditional-access engine react to the classified outcome.
+        # Stage the single authentication-log row for this request. It is written at request teardown, which then
+        # lets the conditional-access engine react to the classified outcome.
         _log_authentication_event(context)
-        conditional_access_posteval(context["user"], context[AUTH_EVENT_TYPE_KEY],
-                                    getattr(g, "auth_log_event_id", None))
     return response
 
 
@@ -903,20 +901,20 @@ def _finalize_auth_response(context):
 
 def _log_authentication_event(context):
     """
-    Write the single authentication-log row for this /validate/check request.
+    Stage the single authentication-log row for this /validate/check request.
 
     Called from check()'s finally, so it runs exactly once whether the request succeeded or a handler raised. The
     classified outcome is read from the explicit *context* dict (no framework global), and log_authentication is a
-    no-op if nothing classified the request.
+    no-op if nothing classified the request. The row itself is written at request teardown, so a post-policy that
+    runs after this - enroll_via_multichallenge, is_authorized - can still correct the staged event.
     """
-    # Stash the written row id so a later post-policy (enroll_via_multichallenge) can reclassify this same row
     request_txn = request.all_data.get("transaction_id") or request.all_data.get("state")
     # The log-only TXN (push_wait success) stands in for the challenge TXN that the response does not carry.
     details_txn = context["details"].get("transaction_id") or context.get(LOG_TRANSACTION_ID_KEY)
     # Prefer the newly-created challenge TXN (details) over the answered-challenge TXN (request); the rows of one
     # attempt share an attempt_id regardless, so the answered challenge is still correlated via that.
     logged_txn = details_txn or request_txn
-    g.auth_log_event_id = log_authentication(
+    log_authentication(
         context[AUTH_EVENT_TYPE_KEY],
         request,
         user=context["user"],
@@ -1082,16 +1080,13 @@ def trigger_challenge():
     # last challenge it created).
     challenge_serials = [challenge_info["serial"] for challenge_info in details["multi_challenge"]]
 
-    event_id = log_authentication(
+    log_authentication(
         event_type,
         request,
         user=user,
         serial=",".join(challenge_serials) or None,
         transaction_id=details.get("transaction_id"),
     )
-    # Let the conditional-access engine react to the classified outcome (e.g. a
-    # policy tracking NO_TOKEN); side effects only, never breaks this response.
-    conditional_access_posteval(user, event_type, event_id)
 
     r = send_result(triggered_challenges, rid=2, details=details)
     g.audit_object.log({

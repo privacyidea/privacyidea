@@ -15,34 +15,38 @@
 #
 # SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 
 import mock
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import (
-    log_authentication_event,
+    AuthenticationLogVisibilityScope,
+    AuthLogUserRole,
+    PendingAuthEvent,
+    cleanup_authentication_log,
     delete_authentication_log_event,
-    reclassify_authentication_log_event,
-    record_conditional_access_finding,
+    delete_authentication_logs,
     get_authentication_log_event,
     get_authentication_logs,
     get_authentication_logs_paginate,
-    delete_authentication_logs,
-    cleanup_authentication_log,
-    AuthenticationLogVisibilityScope,
-    AuthLogUserRole,
+    log_authentication_event,
+    record_conditional_access_finding,
+    update_authentication_events,
+    write_authentication_events,
 )
+from privacyidea.lib.conditional_access.session import get_ca_session
 from privacyidea.lib.error import ParameterError
 from privacyidea.models import authentication_log_column_length
+
 from .base import MyTestCase
 
 
 class AuthenticationLogTestCase(MyTestCase):
 
     def tearDown(self):
-        from privacyidea.models.authentication_log import AuthenticationLog
         from privacyidea.models import db
+        from privacyidea.models.authentication_log import AuthenticationLog
         db.session.query(AuthenticationLog).delete()
         db.session.commit()
 
@@ -407,20 +411,26 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertIsNone(event_id)
         self.assertEqual([], get_authentication_logs())
 
-    def test_failed_write_preserves_prior_pending_write(self):
-        # The insert runs inside a SAVEPOINT, so a failing entry must roll back only itself and leave an earlier,
-        # still-uncommitted write of the same session intact.
+    def test_failed_write_leaves_prior_pending_write_pending(self):
+        # The insert runs on the conditional-access session, so a failing entry must neither roll back nor commit
+        # an earlier, still-uncommitted write of the *request* session.
         from privacyidea.models import db
         from privacyidea.models.authentication_log import AuthenticationLog
 
         # A prior write that is pending but not yet committed.
-        db.session.add(AuthenticationLog(event_type=AuthEventType.LOGIN_SUCCESS, resolver="prior"))
+        prior = AuthenticationLog(event_type=AuthEventType.LOGIN_SUCCESS, resolver="prior")
+        db.session.add(prior)
 
         # A failing auth-log write (event_type is NOT NULL).
         event_id = log_authentication_event(event_type=None, resolver="failing", uid="u1", realm="r1")
         self.assertIsNone(event_id)
 
-        # The prior pending write survived the savepoint rollback and was committed; the failing one was not written.
+        # The prior write is untouched: still pending, so neither it nor the failing entry is in the log yet.
+        self.assertIn(prior, db.session.new)
+        self.assertListEqual([], get_authentication_logs())
+
+        # It is still the request session's to commit, and only its own row lands.
+        db.session.commit()
         results = get_authentication_logs()
         self.assertEqual(1, len(results))
         self.assertEqual("prior", results[0].resolver)
@@ -498,45 +508,111 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertEqual("S" * max_serial, entry.serial)
         self.assertEqual({"truncated": {"serial": "SSSSS"}}, entry.other_info)
 
-    def test_reclassify_preserves_serial_overflow(self):
-        # Reclassification truncates the same way as the insert and preserves the serial overflow into the entry's
+    def test_amending_a_written_event_preserves_serial_overflow(self):
+        # An amended row truncates the same way as the insert and preserves the serial overflow into the entry's
         # existing other_info.
-        event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, serial="TOK001")
+        event = PendingAuthEvent(event_type=AuthEventType.LOGIN_SUCCESS, serial="TOK001")
+        write_authentication_events([event])
         max_serial = authentication_log_column_length["serial"]
         head = "S" * (max_serial - 4)
-        reclassify_authentication_log_event(event_id, AuthEventType.ENROLLMENT_TRIGGERED,
-                                            serial=f"{head},AAA,BBBBBBBBBB")
-        entry = get_authentication_log_event(event_id)
+
+        event.event_type = AuthEventType.ENROLLMENT_TRIGGERED
+        event.serial = f"{head},AAA,BBBBBBBBBB"
+        update_authentication_events([event])
+
+        entry = get_authentication_log_event(event.row_id)
         assert entry is not None
         self.assertEqual(f"{head},AAA", entry.serial)
         self.assertEqual({"truncated": {"serial": "BBBBBBBBBB"}}, entry.other_info)
 
-    def test_record_conditional_access_finding_swallows_a_failing_savepoint(self):
-        # A finding that cannot be serialized into the JSON column fails when the SAVEPOINT flushes. Recording a
-        # dry-run finding is a diagnostic side effect of an already-finished request, so the failure must be swallowed
-        # and must leave the session usable for the rest of that request.
+    def test_amending_only_the_event_type_keeps_the_serial(self):
+        # Amending just the classification must leave the rest of the row alone, e.g. the authorized=deny post-policy
+        # corrects a successful login to NOT_AUTHORIZED without touching the serial.
+        event = PendingAuthEvent(event_type=AuthEventType.LOGIN_SUCCESS, serial="TOK001")
+        write_authentication_events([event])
+
+        event.event_type = AuthEventType.NOT_AUTHORIZED
+        update_authentication_events([event])
+
+        entry = get_authentication_log_event(event.row_id)
+        assert entry is not None
+        self.assertEqual(AuthEventType.NOT_AUTHORIZED, entry.event_type)
+        self.assertEqual("TOK001", entry.serial)
+
+    def test_amending_a_written_event_keeps_conditional_access_findings(self):
+        # Findings are appended on the stored row after insert, so a later event update must not clobber them.
+        event = PendingAuthEvent(event_type=AuthEventType.LOGIN_SUCCESS, other_info={"reason": "before"})
+        write_authentication_events([event])
+        record_conditional_access_finding(event.row_id, {"policy_id": 1})
+
+        event.event_type = AuthEventType.NOT_AUTHORIZED
+        update_authentication_events([event])
+
+        entry = get_authentication_log_event(event.row_id)
+        self.assertIsNotNone(entry)
+        self.assertEqual(AuthEventType.NOT_AUTHORIZED, entry.event_type)
+        self.assertEqual({"reason": "before", "conditional_access_findings": [{"policy_id": 1}]},
+                         entry.other_info)
+
+    def test_amending_other_info_keeps_conditional_access_findings(self):
+        # Updating event.other_info should merge with findings already written out-of-band on the stored row.
+        event = PendingAuthEvent(event_type=AuthEventType.LOGIN_SUCCESS,
+                                 other_info={"reason": "before", "random": "value"})
+        write_authentication_events([event])
+        record_conditional_access_finding(event.row_id, {"policy_id": 1})
+
+        event.other_info = {"reason": "after", "note": "updated"}
+        update_authentication_events([event])
+
+        entry = get_authentication_log_event(event.row_id)
+        self.assertIsNotNone(entry)
+        self.assertEqual({"reason": "after", "note": "updated",
+                          "conditional_access_findings": [{"policy_id": 1}]}, entry.other_info)
+
+    def test_amending_an_event_without_other_info_keeps_conditional_access_findings(self):
+        # The common case: an event carries no other_info at all, so the update would write NULL over the column the
+        # findings live in.
+        event = PendingAuthEvent(event_type=AuthEventType.LOGIN_SUCCESS)
+        write_authentication_events([event])
+        record_conditional_access_finding(event.row_id, {"policy_id": 1})
+
+        event.event_type = AuthEventType.NOT_AUTHORIZED
+        update_authentication_events([event])
+
+        entry = get_authentication_log_event(event.row_id)
+        self.assertIsNotNone(entry)
+        self.assertEqual({"conditional_access_findings": [{"policy_id": 1}]}, entry.other_info)
+
+    def test_amending_an_event_without_findings_leaves_other_info_unset(self):
+        # No out-of-band keys to preserve: the column stays NULL rather than becoming an empty dict.
+        event = PendingAuthEvent(event_type=AuthEventType.LOGIN_SUCCESS)
+        write_authentication_events([event])
+
+        event.event_type = AuthEventType.NOT_AUTHORIZED
+        update_authentication_events([event])
+
+        entry = get_authentication_log_event(event.row_id)
+        self.assertIsNotNone(entry)
+        self.assertIsNone(entry.other_info)
+
+    def test_record_conditional_access_finding_swallows_an_unserializable_finding(self):
+        # A finding that cannot be serialized into the JSON column fails when the write flushes. Recording a finding is
+        # a diagnostic side effect of an already-finished request, so the failure must be swallowed and must leave the
+        # session usable for the rest of that request.
         event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, other_info={"reason": "policy"})
-        self.assertIsNone(record_conditional_access_finding(event_id, {"actions": {"LOCK_USER"}}))  # a set is not serializable
+        # A set is not serializable.
+        self.assertIsNone(record_conditional_access_finding(event_id, {"actions": {"LOCK_USER"}}))
         # The session survived: a further write still goes through.
         self.assertIsNotNone(log_authentication_event(event_type=AuthEventType.PIN_FAIL))
 
     def test_record_conditional_access_finding_swallows_a_failing_commit(self):
-        # The SAVEPOINT update succeeds but the outer commit fails: the error is swallowed and the session is rolled
-        # back, so the rest of the request can still use it.
+        # The update succeeds but the commit fails: the error is swallowed and the session is rolled back, so the rest
+        # of the request can still use it. The commit is patched on the conditional-access session, which is the one
+        # these writes run on - patching db.session would no longer intercept anything.
         event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS)
-        with mock.patch("privacyidea.models.db.session.commit", side_effect=RuntimeError("commit boom")):
+        with mock.patch.object(get_ca_session(), "commit", side_effect=RuntimeError("commit boom")):
             self.assertIsNone(record_conditional_access_finding(event_id, {"policy_id": 1}))
         self.assertIsNotNone(log_authentication_event(event_type=AuthEventType.PIN_FAIL))
-
-    def test_reclassify_without_serial_keeps_existing_serial(self):
-        # Reclassifying with the default serial=None means "do not modify": an existing serial must survive, e.g. the
-        # authorized=deny post-policy reclassifies a successful login to NOT_AUTHORIZED without passing a serial.
-        event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, serial="TOK001")
-        reclassify_authentication_log_event(event_id, AuthEventType.NOT_AUTHORIZED)
-        entry = get_authentication_log_event(event_id)
-        assert entry is not None
-        self.assertEqual(AuthEventType.NOT_AUTHORIZED, entry.event_type)
-        self.assertEqual("TOK001", entry.serial)
 
     def test_record_conditional_access_finding_on_row_with_no_prior_other_info(self):
         event_id = log_authentication_event(event_type=AuthEventType.PASSWORD_FAIL, resolver="res1", uid="user1",
@@ -577,8 +653,8 @@ class AuthenticationLogTestCase(MyTestCase):
 class AuthenticationLogDBTestCase(MyTestCase):
 
     def tearDown(self):
-        from privacyidea.models.authentication_log import AuthenticationLog
         from privacyidea.models import db
+        from privacyidea.models.authentication_log import AuthenticationLog
         db.session.query(AuthenticationLog).delete()
         db.session.commit()
 
@@ -624,8 +700,8 @@ class AuthenticationLogDBTestCase(MyTestCase):
 class AuthenticationLogPaginateTestCase(MyTestCase):
 
     def tearDown(self):
-        from privacyidea.models.authentication_log import AuthenticationLog
         from privacyidea.models import db
+        from privacyidea.models.authentication_log import AuthenticationLog
         db.session.query(AuthenticationLog).delete()
         db.session.commit()
         super().tearDown()
@@ -771,8 +847,8 @@ class AuthenticationLogPaginateTestCase(MyTestCase):
 class AuthenticationLogDeleteTestCase(MyTestCase):
 
     def tearDown(self):
-        from privacyidea.models.authentication_log import AuthenticationLog
         from privacyidea.models import db
+        from privacyidea.models.authentication_log import AuthenticationLog
         db.session.query(AuthenticationLog).delete()
         db.session.commit()
         super().tearDown()

@@ -31,7 +31,7 @@ from privacyidea.lib.conditional_access.engine import (LockoutAction, LockoutTar
                                                        is_user_locked, is_ip_blocked)
 from privacyidea.lib.conditional_access.lockout_policy import create_lockout_policy
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
+from privacyidea.lib.policy import SCOPE, AUTHORIZED, set_policy, delete_policy
 from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
 from privacyidea.lib.token import init_token, remove_token, get_tokens
 from privacyidea.lib.user import User
@@ -226,10 +226,10 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertTrue(body["result"]["value"], body)
 
     def test_lockout_write_does_not_corrupt_transaction(self):
-        # Regression: conditional_access_posteval wrapped the engine (which commits
-        # its own writes) in db.session.begin_nested() + commit. Under SQLAlchemy
-        # 2.x the engine's first inner commit closes the transaction, so the next
-        # DB operation still inside the savepoint context raised InvalidRequestError
+        # Regression: the engine's writes used to run on the shared request session, wrapped in
+        # db.session.begin_nested() + commit. Under SQLAlchemy 2.x the first inner commit closes the
+        # transaction, so the next DB operation still inside the savepoint context raised InvalidRequestError.
+        # They now run on the conditional-access session, one guarded transaction per write
         # ("Can't operate on closed transaction inside context manager") on every
         # request that wrote more than once. The helper swallowed it as a warning.
         # Two policies tripping in one request force that second write; assert the
@@ -627,6 +627,52 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertEqual(logs_after_success, len(get_authentication_logs()))
         self.assertEqual(0, self._failcount())
 
+    # --- deferred write: one row per request, written at teardown ---------------
+
+    def test_one_row_per_request_when_a_post_policy_corrects_the_outcome(self):
+        # The authorized=deny post-policy runs after check() classified the request. Since the row is only written at
+        # teardown, the correction amends the staged event instead of adding or re-writing a row: exactly one row, and
+        # it carries the corrected classification.
+        set_policy("authz_deny", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHORIZED}={AUTHORIZED.DENY}")
+        try:
+            with self.app.test_request_context('/validate/check', method='POST',
+                                               data={"user": "cornelius", "pass": "pin755224"}):
+                response = self.app.full_dispatch_request()
+                # authorized=deny raises ValidateError, which the error handler maps to 400.
+                self.assertEqual(400, response.status_code, response)
+        finally:
+            delete_policy("authz_deny")
+
+        entries = get_authentication_logs()
+        self.assertEqual(1, len(entries))
+        self.assertEqual(str(AuthEventType.NOT_AUTHORIZED), entries[0].event_type)
+
+    def test_engine_evaluates_the_corrected_outcome_only(self):
+        # Two policies, one tracking the pre-authz outcome and one the corrected one. Only the corrected outcome may
+        # be evaluated.
+        create_lockout_policy(
+            name="ca_on_success", time_window_seconds=3600,
+            counter_types_to_track=_counter_types(AuthEventType.LOGIN_SUCCESS),
+            stages=[{"failure_threshold": 1, "priority": 1,
+                     "actions": [{"action_type": str(LockoutAction.PERMANENT_LOCK_USER), "action_value": None}]}],
+            target=LockoutTarget.USER, priority=1)
+        set_policy("authz_deny", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHORIZED}={AUTHORIZED.DENY}")
+        try:
+            with self.app.test_request_context('/validate/check', method='POST',
+                                               data={"user": "cornelius", "pass": "pin755224"}):
+                self.app.full_dispatch_request()
+        finally:
+            delete_policy("authz_deny")
+
+        # The row says NOT_AUTHORIZED, so the LOGIN_SUCCESS policy never saw a matching event and did not lock.
+        self.assertFalse(is_user_locked(self.user))
+
+    def test_row_is_written_even_when_the_view_raises(self):
+        # Teardown runs whether or not the request succeeded, so a request that ends in an error still logs its event.
+        body = self._check({"user": "cornelius", "pass": "wrongpin000000"})
+        self.assertFalse(body["result"]["value"], body)
+        self.assertEqual(1, len(get_authentication_logs()))
+
 
 class ConditionalAccessAuthTestCase(MyApiTestCase):
     """The WebUI JWT login (/auth) is gated by the same lockout engine."""
@@ -674,9 +720,9 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
             target=LockoutTarget.USER, dry_run=True, priority=priority)
 
     def test_dry_run_finding_persisted_on_auth_login(self):
-        # /auth calls the engine directly rather than through conditional_access_posteval, so it
-        # needs the row id of the login's own authentication_log entry threaded in as well.
-        # Without it a dry-run policy tripped by a WebUI login records nothing.
+        # /auth evaluates in-view rather than at request teardown (it surfaces the engine's notices in its own
+        # response), so it flushes the staged row first - the finding needs that row to exist. Without it a
+        # dry-run policy tripped by a WebUI login records nothing.
         self._make_dry_run_password_policy(threshold=2)
 
         for _ in range(2):

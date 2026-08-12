@@ -32,10 +32,10 @@ from sqlalchemy import and_, delete, false, func, or_, select, ColumnElement
 
 from privacyidea.lib.conditional_access.authentication_log import match_condition
 from privacyidea.lib.conditional_access.engine import get_user_lockout
+from privacyidea.lib.conditional_access.session import get_ca_session, guarded_write
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.user import User
-from privacyidea.models import db
 from privacyidea.models.lockout_policy import BlockList, UserLockoutState
 from privacyidea.models.utils import utc_now
 
@@ -61,26 +61,16 @@ SORTABLE_COLUMNS = {
 
 def _delete_and_commit(stmt) -> int:
     """
-    Execute a ``DELETE`` inside a SAVEPOINT, commit it, and return the number of rows removed.
+    Execute a ``DELETE`` on the conditional-access session, commit it, and return the number of rows removed.
 
     The engine's delete helpers swallow failures because they run while an authentication response is
     still in flight. These are management operations instead: the caller reports the outcome back to an
-    admin, so a failure has to surface rather than be indistinguishable from "nothing matched". The
-    SAVEPOINT bounds the damage — a failed statement rolls back on its own and leaves the session usable
-    for the rest of the request (which still has its audit entry to write).
-
-    The commit is deliberately *outside* the savepoint context: committing inside it breaks under
-    SQLAlchemy 2.x (see :func:`privacyidea.api.lib.utils.conditional_access_postcheck`).
+    admin, so a failure has to surface rather than be indistinguishable from "nothing matched" — hence
+    ``reraise``. The rollback still leaves the session usable for the rest of the request (which has its
+    audit entry to write).
     """
-    with db.session.begin_nested():
-        count = db.session.execute(stmt).rowcount
-    try:
-        db.session.commit()
-    except Exception:
-        # The savepoint flushed cleanly but the outer commit failed; clear the session so the rest of
-        # the request can still run, then let the caller report the failure.
-        db.session.rollback()
-        raise
+    with guarded_write("a conditional-access state deletion", reraise=True):
+        count = get_ca_session().execute(stmt).rowcount
     return count
 
 
@@ -249,7 +239,7 @@ def list_locked_users(realms: list[str] | None = None, resolvers: list[str] | No
     conditions = _lockout_conditions(realms, resolvers, usernames, states,
                                      visibility_scopes, moment, case_insensitive)
     stmt = select(UserLockoutState).where(*conditions).order_by(UserLockoutState.locked_at.desc())
-    return [_locked_user_dict(row, moment) for row in db.session.scalars(stmt).all()]
+    return [_locked_user_dict(row, moment) for row in get_ca_session().scalars(stmt).all()]
 
 
 @log_with(log)
@@ -270,7 +260,7 @@ def list_locked_users_paginate(realms: list[str] | None = None, resolvers: list[
     moment = now if now is not None else utc_now()
     conditions = _lockout_conditions(realms, resolvers, usernames, states,
                                      visibility_scopes, moment, case_insensitive)
-    count = db.session.scalar(
+    count = get_ca_session().scalar(
         select(func.count()).select_from(UserLockoutState).where(*conditions))
     order_column = SORTABLE_COLUMNS.get(sort_column)
     if order_column is None:
@@ -283,7 +273,7 @@ def list_locked_users_paginate(realms: list[str] | None = None, resolvers: list[
     page = max(1, page)
     page_size = max(1, page_size)
     offset = (page - 1) * page_size
-    rows = db.session.scalars(stmt.limit(page_size).offset(offset)).all()
+    rows = get_ca_session().scalars(stmt.limit(page_size).offset(offset)).all()
     return {
         "locked_users": [_locked_user_dict(row, moment) for row in rows],
         "count": count,
@@ -303,7 +293,7 @@ def get_user_lockout_dict(user: User, now: datetime | None = None) -> dict | Non
     status = get_user_lockout(user, now=now)
     if status is None:
         return None
-    row = db.session.get(UserLockoutState, (user.resolver, user.uid, user.realm))
+    row = get_ca_session().get(UserLockoutState, (user.resolver, user.uid, user.realm))
     return _locked_user_dict(row, now if now is not None else utc_now())
 
 
@@ -379,7 +369,7 @@ def list_blocklist(include_expired: bool = True, now: datetime | None = None) ->
     if not include_expired:
         conditions.append(_not_expired_condition(BlockList.block_expires_at, moment))
     stmt = select(BlockList).where(*conditions).order_by(BlockList.blocked_at.desc())
-    return [_blocklist_dict(row, moment) for row in db.session.scalars(stmt).all()]
+    return [_blocklist_dict(row, moment) for row in get_ca_session().scalars(stmt).all()]
 
 
 @log_with(log)
