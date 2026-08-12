@@ -212,16 +212,11 @@ td.cell-info {
   .range-summary {
     display: flex;
     align-items: center;
-    justify-content: space-around;
+    justify-content: space-between;
     font-size: 12px;
     height: 12px;
     font-variant-numeric: tabular-nums;
     color: var(--mat-sys-on-surface-variant);
     white-space: nowrap;
-  }
-
-  .range-summary-sep {
-    font-weight: bold;
-    font-size: 20px;
   }
 }

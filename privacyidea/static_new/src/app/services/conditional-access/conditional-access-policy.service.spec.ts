@@ -160,6 +160,20 @@ describe("ConditionalAccessPolicyService", () => {
     });
   });
 
+  describe("getPolicies", () => {
+    it("should read the policy list on demand, off the conditional-access route", () => {
+      contentServiceMock.onConditionalAccess = signal(false);
+      let policies: LockoutPolicy[] | undefined;
+      service.getPolicies().subscribe((response) => (policies = response.result?.value));
+
+      const req = httpMock.expectOne(service.baseUrl);
+      expect(req.request.method).toBe("GET");
+      req.flush(MockPiResponse.fromValue([samplePolicy]));
+
+      expect(policies).toEqual([samplePolicy]);
+    });
+  });
+
   describe("constant lists", () => {
     it("should load event types and action types from the backend", async () => {
       contentServiceMock.onConditionalAccess = signal(true);

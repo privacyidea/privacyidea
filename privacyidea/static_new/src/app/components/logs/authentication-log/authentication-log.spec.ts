@@ -129,6 +129,43 @@ describe("AuthenticationLog", () => {
     expect(service.pageIndex()).toBe(4);
   });
 
+  // One response carrying `count` entries in total, of which one is on the page.
+  function respondWithCount(count: number): void {
+    service.authenticationLogResource.set(
+      MockPiResponse.fromValue({
+        auth_logs: [{ id: 1, event_type: "PIN_FAIL", timestamp: "2026-08-03T09:00:00Z" }],
+        count,
+        current: 1,
+        prev: null,
+        next: null
+      })
+    );
+    fixture.detectChanges();
+  }
+
+  it("defaults the page size to the whole result once it is known", () => {
+    respondWithCount(42);
+    expect(service.pageSize()).toBe(42);
+  });
+
+  it("does not override a page size the user picked afterwards", () => {
+    respondWithCount(42);
+    component.onPageEvent({ pageIndex: 0, pageSize: 10 } as PageEvent);
+    respondWithCount(99);
+
+    expect(service.pageSize()).toBe(10);
+  });
+
+  it("offers the total number of entries as a page size, sorted among the presets", () => {
+    component.totalLength.set(37);
+    expect(component.pageSizeOptions()).toEqual([5, 10, 15, 25, 37, 50]);
+  });
+
+  it("leaves the page-size options untouched for an empty result", () => {
+    component.totalLength.set(0);
+    expect(component.pageSizeOptions()).toEqual([5, 10, 15, 25, 50]);
+  });
+
   it("onKeywordClick toggles the keyword in the filter for free-text columns", () => {
     tableUtils.toggleKeywordInFilter.mockReturnValue(new FilterValue({ value: "client_label: " }));
     component.onKeywordClick("client_label");
