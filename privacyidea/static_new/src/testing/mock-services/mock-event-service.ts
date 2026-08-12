@@ -18,7 +18,13 @@
  **/
 import { computed, signal, Signal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
-import { EventActions, EventCondition, EventHandler, EventServiceInterface } from "@services/event/event.service";
+import {
+  EventActions,
+  EventCondition,
+  EventHandler,
+  EventHandlerModuleDefaults,
+  EventServiceInterface
+} from "@services/event/event.service";
 import { of } from "rxjs";
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 
@@ -62,6 +68,12 @@ export class MockEventService implements EventServiceInterface {
   );
 
   modulePositions: Signal<string[]> = computed(() => ["pre", "post"]);
+
+  readonly moduleDefaultsResource = new MockHttpResourceRef<PiResponse<EventHandlerModuleDefaults>>(
+    MockPiResponse.fromValue<EventHandlerModuleDefaults>({ abort_on_error: false })
+  );
+
+  moduleDefaults = signal<EventHandlerModuleDefaults | null>({ abort_on_error: false });
 
   readonly moduleActionsResource = new MockHttpResourceRef<PiResponse<EventActions>>(
     MockPiResponse.fromValue<EventActions>({})
