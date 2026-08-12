@@ -19,13 +19,18 @@
 import { Directive, ElementRef, inject, input } from "@angular/core";
 import { MatTooltip } from "@angular/material/tooltip";
 
+// How long the pointer has to rest on the element before the tooltip appears. A pointer crossing a dense table - while
+// scanning it or scrolling it - passes over many clipped cells on its way, and none of them should pop a tooltip.
+const HOVER_SHOW_DELAY_MS = 500;
+
 @Directive({
   selector: "[appTruncationTooltip]",
   standalone: true,
   hostDirectives: [MatTooltip],
   host: {
     "(mouseenter)": "open()",
-    "(focusin)": "open()",
+    // Focusing an element is deliberate, unlike passing over it, so the keyboard path skips the hover delay.
+    "(focusin)": "open(0)",
     "(mouseleave)": "close()",
     "(focusout)": "close()"
   }
@@ -40,13 +45,19 @@ export class TruncationTooltipDirective {
   private readonly tooltip = inject(MatTooltip);
   private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
 
+  constructor() {
+    // Set on the tooltip rather than only passed to show() below: once it has a message,
+    // MatTooltip's own mouseenter listener opens it too, and that path reads showDelay.
+    this.tooltip.showDelay = HOVER_SHOW_DELAY_MS;
+  }
+
   // MatTooltip attaches its own pointer listeners only once it has a message, which it
   // does not have before the first hover. So the tooltip is opened and closed from here
   // instead of leaving the first hover unanswered.
-  protected open(): void {
+  protected open(delay = this.tooltip.showDelay): void {
     this.syncTooltip();
     if (!this.tooltip.disabled) {
-      this.tooltip.show();
+      this.tooltip.show(delay);
     }
   }
 
