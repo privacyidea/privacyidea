@@ -1192,11 +1192,11 @@ class WebAuthnTokenClass(TokenClass):
             data = {FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: user_verification}
             # Create the challenge in the database
             challenge = _create_challenge(self.token.serial,
-                                               transaction_id=get_optional(params, "transaction_id"),
-                                               challenge=hexlify_and_unicode(nonce),
-                                               data=json.dumps(data),
-                                               session=get_optional(params, "session"),
-                                               validitytime=self._get_challenge_validity_time())
+                                          transaction_id=get_optional(params, "transaction_id"),
+                                          challenge=hexlify_and_unicode(nonce),
+                                          data=data,
+                                          session=get_optional(params, "session"),
+                                          validitytime=self._get_challenge_validity_time())
 
             exclude_credential_ids = []
             if is_true(get_optional(params, FIDO2PolicyAction.AVOID_DOUBLE_REGISTRATION)):
@@ -1367,11 +1367,11 @@ class WebAuthnTokenClass(TokenClass):
         data = {FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: user_verification}
         # Create the challenge in the database
         db_challenge = _create_challenge(self.token.serial,
-                                              transaction_id=transactionid,
-                                              challenge=challenge,
-                                              data=json.dumps(data),
-                                              session=get_optional(options, "session"),
-                                              validitytime=self._get_challenge_validity_time())
+                                         transaction_id=transactionid,
+                                         challenge=challenge,
+                                         data=data,
+                                         session=get_optional(options, "session"),
+                                         validitytime=self._get_challenge_validity_time())
 
         allowed_transports = get_required(options, FIDO2PolicyAction.ALLOWED_TRANSPORTS)
         if isinstance(allowed_transports, str):

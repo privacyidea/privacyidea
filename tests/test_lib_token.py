@@ -71,7 +71,7 @@ from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
 from privacyidea.lib.user import (User)
 from privacyidea.lib.utils import b32encode_and_unicode, hexlify_and_unicode
-from privacyidea.models import (db, Token, Challenge, TokenRealm)
+from privacyidea.models import (db, Token, Challenge, TokenRealm, TokenOwner)
 from .base import MyTestCase
 
 PWFILE = "tests/testdata/passwords"
@@ -1382,6 +1382,58 @@ class TokenTestCase(MyTestCase):
         tok_r1.delete_token()
         tok_r2.delete_token()
         tok_r3.delete_token()
+
+    def test_41b_paginate_count_with_duplicate_owner_rows(self):
+        """Verify that token count is not inflated by outer-join fan-out.
+
+        The TokenOwner outerjoin can fan out when a token has more than one
+        owner row.  The count must use COUNT(DISTINCT token.id) so that it
+        agrees with the .unique() de-duplication applied to the token list.
+
+        Without the fix, get_tokens(count=True) would return 2 (one per
+        joined row), while the de-duplicated token list has length 1.
+        """
+        self.setUp_user_realms()
+
+        # Create a fresh token assigned to a user
+        tok = init_token({"type": "hotp", "genkey": True},
+                         user=User("cornelius", self.realm1))
+        serial = tok.get_serial()
+
+        # Directly insert a second TokenOwner row for the same token,
+        # bypassing the application-level single-owner restriction.
+        # This simulates the fan-out that any future one-to-many
+        # owner relationship would cause.
+        # Use select(Token.id) (not select(Token)) to avoid triggering
+        # SQLAlchemy's joined-eager-loading uniqueness requirement.
+        token_id = db.session.execute(
+            select(Token.id).where(Token.serial == serial)
+        ).scalar_one()
+        second_owner = TokenOwner(
+            token_id=token_id,
+            user_id="9999",
+            resolver=self.resolvername1,
+            realmname=self.realm1,
+        )
+        second_owner.save()
+        db.session.commit()
+
+        # get_tokens(count=True) must return 1, not 2
+        count = get_tokens(serial=serial, count=True)
+        self.assertEqual(1, count,
+                         "count must reflect distinct tokens, not raw joined rows")
+
+        # The de-duplicated token list must also have length 1
+        token_list = get_tokens(serial=serial)
+        self.assertEqual(1, len(token_list))
+
+        # count and list length must agree
+        self.assertEqual(count, len(token_list))
+
+        # Clean up the extra owner row and the token
+        db.session.delete(second_owner)
+        db.session.commit()
+        tok.delete_token()
 
     def test_42_sort_tokens(self):
         # return pagination

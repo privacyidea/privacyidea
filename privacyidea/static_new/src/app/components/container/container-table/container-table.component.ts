@@ -16,7 +16,16 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, ElementRef, ViewChild, WritableSignal, computed, inject, linkedSignal } from "@angular/core";
+import {
+  Component,
+  ElementRef,
+  OnDestroy,
+  ViewChild,
+  WritableSignal,
+  computed,
+  inject,
+  linkedSignal
+} from "@angular/core";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { Sort } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
@@ -73,7 +82,7 @@ import { inlineFilterHint } from "@utils/filter-hint.utils";
   templateUrl: "./container-table.component.html",
   styleUrl: "./container-table.component.scss"
 })
-export class ContainerTableComponent {
+export class ContainerTableComponent implements OnDestroy {
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
@@ -161,28 +170,8 @@ export class ContainerTableComponent {
     realms: "container_realm"
   } as const;
 
-  isAllSelected() {
-    return (
-      this.containerSelection().length === this.containerDataSource().data.length &&
-      this.containerDataSource().data.length > 0
-    );
-  }
-
-  toggleAllRows() {
-    if (this.isAllSelected()) {
-      this.containerSelection.set([]);
-    } else {
-      this.containerSelection.set([...this.containerDataSource().data]);
-    }
-  }
-
-  toggleRow(row: ContainerDetailData): void {
-    const current = this.containerSelection();
-    if (current.includes(row)) {
-      this.containerSelection.set(current.filter((r) => r !== row));
-    } else {
-      this.containerSelection.set([...current, row]);
-    }
+  ngOnDestroy(): void {
+    this.containerSelection.deselectAllRows();
   }
 
   handleStateClick(element: ContainerDetailData) {
