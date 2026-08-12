@@ -307,6 +307,19 @@ myApp.controller("eventDetailController", ["$scope", "$stateParams",
             $scope.getHandlerActions();
             $scope.getHandlerConditions();
             $scope.getHandlerPositions();
+            $scope.getHandlerDefaults();
+        };
+
+        $scope.getHandlerDefaults = function () {
+            // A handler whose result the request consumes is created with "abort on error" enabled. Only a new
+            // event handler is preset, an existing one keeps its stored value.
+            if ($scope.eventid) {
+                return;
+            }
+            ConfigFactory.getHandlerDefaults($scope.form.handlermodule,
+                function (defaults) {
+                    $scope.form.abort_on_error = defaults.result.value.abort_on_error;
+                });
         };
 
         $scope.actionChanged = function () {

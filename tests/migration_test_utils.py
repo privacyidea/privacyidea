@@ -158,6 +158,14 @@ class MigrationTestBase:
         ctx = app.app_context()
         ctx.push()
         yield app
+        # Every test builds its own app, and alembic migrates through the engine of that app (see the
+        # migrations env.py). The connection pool of the engine keeps its connections open, so without
+        # disposing it here the pools of all previous tests stay open until the end of the session and
+        # exhaust the connection limit of the database server.
+        from privacyidea.models import db
+        db.session.remove()
+        for engine in db.engines.values():
+            engine.dispose()
         ctx.pop()
 
     @pytest.fixture(autouse=True)

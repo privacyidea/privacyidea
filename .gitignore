@@ -17,6 +17,11 @@ doc/_build/
 *.log*
 *.old
 *.orig
+*.bak
+*.bak-*
+# Backups of a local database keep the original name as prefix (data.sqlite.bak-<date>),
+# so *.sqlite does not cover them
+*.sqlite.*
 tests/testdata/ca2
 tests/testdata/gpg/.gpg-v*-migrated
 tests/testdata/gpg/private-keys-v*.d

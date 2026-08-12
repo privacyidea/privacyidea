@@ -213,6 +213,15 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
                     AuthFactory.authError(error.data)
                 });
             },
+            getHandlerDefaults: function (handlername, callback) {
+                $http.get(eventUrl + "/defaults/" + handlername, {
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                }).then(function (response) {
+                    callback(response.data)
+                }, function (error) {
+                    AuthFactory.authError(error.data)
+                });
+            },
             delPeriodicTask: function (ptaskid, callback) {
                 $http.delete(periodicTaskUrl + "/" + ptaskid, {
                         headers: {'PI-Authorization': AuthFactory.getAuthToken()}
