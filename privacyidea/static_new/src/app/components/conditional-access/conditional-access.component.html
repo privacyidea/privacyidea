@@ -167,14 +167,33 @@
         @if (reorderMode()) {
           <span class="flex ali-center">{{ policy.name }}</span>
         } @else {
-          <a
-            role="button"
-            tabindex="0"
-            (click)="onEditPolicy(policy)"
-            (keydown.enter)="onEditPolicy(policy)"
-            class="flex ali-center">
-            {{ policy.name }}
-          </a>
+           <div class="ca-name-cell">
+             <a
+               role="button"
+               tabindex="0"
+               (click)="onEditPolicy(policy)"
+               (keydown.enter)="onEditPolicy(policy)"
+               class="flex ali-center">
+               {{ policy.name }}
+             </a>
+             @if (hasStaleConditions(policy)) {
+               <!--
+                 aria-hidden="false" is load-bearing and must stay a static attribute: mat-icon is
+                 decorative by default and sets aria-hidden="true" on itself unless it finds a *static*
+                 one (it reads the attribute, not a binding). Without it this icon is out of the
+                 accessibility tree, the aria-label below is never announced, and the stale-condition
+                 warning becomes sighted-only - the sole cue that the policy names something that no
+                 longer exists. mat-icon already carries role="img", so the label is valid on it.
+               -->
+               <mat-icon
+                 aria-hidden="false"
+                 [attr.aria-label]="staleConditionsTooltip"
+                 [matTooltip]="staleConditionsTooltip"
+                 class="ca-stale-condition-icon">
+                 warning
+               </mat-icon>
+             }
+           </div>
         }
       </td>
     </ng-container>

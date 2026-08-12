@@ -43,6 +43,8 @@ export class PoliciesWidgetComponent extends DashboardWidget implements OnInit {
   static override readonly requiredAction = "policyread";
   static override readonly title = $localize`Policies`;
   static override readonly icon = "gavel";
+  static override readonly titleLink = ROUTE_PATHS.POLICIES;
+  static override readonly titleLinkAction = "policyread";
   static override readonly defaultSize: WidgetSize = { cols: 10, rows: 5 };
   static override readonly minSize: WidgetSize = { cols: 6, rows: 5 };
   static override readonly maxSize: WidgetSize = { cols: DASHBOARD_COLUMNS, rows: 8 };

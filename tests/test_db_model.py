@@ -47,8 +47,8 @@ from privacyidea.models import (Token,
                                 Challenge, PasswordReset, ClientApplication, UserCache,
                                 EventCounter, MonitoringStats, PolicyCondition, db,
                                 Tokengroup, TokenTokengroup, Serviceid, TokenInfo,
-                                LockoutPolicy, LockoutPolicyStage, LockoutStageAction,
-                                AuthenticationLog, ConditionalAccessOutcome)
+                                LockoutPolicy, LockoutPolicyCondition, LockoutPolicyStage,
+                                LockoutStageAction, AuthenticationLog, ConditionalAccessOutcome)
 from .base import MyTestCase
 
 
@@ -416,11 +416,9 @@ class TokenModelTestCase(MyTestCase):
         self.assertEqual(20, len(c.transaction_id), c.transaction_id)
         self.assertEqual(20, len(c.get_transaction_id()), c.transaction_id)
 
-        c.set_data("some data")
-        self.assertEqual("some data", c.data)
-        self.assertEqual("some data", c.get_data(), c.data)
         c.set_data({"some": "data"})
-        self.assertIn("some", c.data, c.data)
+        self.assertDictEqual({"some": "data"}, c.get_data())
+        self.assertIn("some", c.data)
         c.set_session("session")
         self.assertEqual("session", c.get_session(), c.session)
         c.set_challenge("challenge")
@@ -831,6 +829,55 @@ class LockoutPolicyTestCase(MyTestCase):
         self.assertEqual([AuthEventType.PASSWORD_FAIL, AuthEventType.MFA_FAIL, AuthEventType.TOKEN_ONLY_FAIL],
                          reloaded.counter_types_to_track)
         reloaded.delete()
+
+    def test_04_conditions_round_trip_and_cascade(self):
+        # A policy carries its applicability conditions as child rows, the JSON value
+        # holding the list the set-membership operators compare against.
+        policy = LockoutPolicy(name="Realm scoped policy",
+                               counter_types_to_track=[AuthEventType.MFA_FAIL],
+                               time_window_seconds=600,
+                               target=LockoutTarget.USER,
+                               priority=3,
+                               conditions=[
+                                   LockoutPolicyCondition(condition_type="USER_REALM", operator="IN",
+                                                          value=["sales", "support"]),
+                                   LockoutPolicyCondition(condition_type="USER_ROLE", operator="NOT_IN",
+                                                          value=["admin-internal"]),
+                               ])
+        policy_id = policy.save()
+
+        reloaded = LockoutPolicy.query.filter_by(name="Realm scoped policy").one()
+        self.assertEqual(2, len(reloaded.conditions))
+        realm_condition, role_condition = reloaded.conditions
+        self.assertEqual("USER_REALM", realm_condition.condition_type)
+        self.assertEqual("IN", realm_condition.operator)
+        self.assertListEqual(["sales", "support"], realm_condition.value)
+        self.assertEqual("NOT_IN", role_condition.operator)
+        self.assertEqual(policy_id, realm_condition.policy.id)
+
+        # Deleting the policy takes its conditions with it.
+        reloaded.delete()
+        self.assertEqual([], LockoutPolicyCondition.query.filter_by(policy_id=policy_id).all())
+
+    def test_05_condition_is_unique_per_type(self):
+        # Conditions are ANDed, so two of the same type on one policy could only
+        # narrow to a contradiction; the (policy_id, condition_type) constraint
+        # rejects them. Every other not-null column is filled in, so the
+        # IntegrityError can only be that constraint.
+        policy = LockoutPolicy(name="Duplicate condition policy",
+                               counter_types_to_track=[AuthEventType.MFA_FAIL],
+                               time_window_seconds=600,
+                               target=LockoutTarget.USER,
+                               priority=4,
+                               conditions=[
+                                   LockoutPolicyCondition(condition_type="USER_REALM", operator="IN",
+                                                          value=["sales"]),
+                                   LockoutPolicyCondition(condition_type="USER_REALM", operator="NOT_IN",
+                                                          value=["support"]),
+                               ])
+        db.session.add(policy)
+        self.assertRaises(IntegrityError, db.session.commit)
+        db.session.rollback()
 
 
 class ConditionalAccessOutcomeTestCase(MyTestCase):

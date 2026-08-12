@@ -35,9 +35,7 @@ from privacyidea.lib.token.query import get_one_token, get_tokens
 if TYPE_CHECKING:
     from privacyidea.models import Challenge
 
-
 log = logging.getLogger(__name__)
-
 
 
 @log_with(log)
@@ -682,7 +680,7 @@ def challenge_text_replace(message: str, user: User | None, token_obj: TokenClas
 
 
 def create_challenge(serial: str, transaction_id: str = None, challenge: str = '',
-                     data=None, session: str = '',
+                     data: dict | None = None, session: str = '',
                      validitytime: int = 120) -> "Challenge":
     """
     Create a new challenge and persist it - to Redis if available, to the DB otherwise.
@@ -703,7 +701,7 @@ def create_challenge(serial: str, transaction_id: str = None, challenge: str = '
     :param serial: Serial number of the token this challenge belongs to
     :param transaction_id: Transaction id of the challenge. A new one is generated if None.
     :param challenge: The challenge string
-    :param data: Optional data to store with the challenge (str, dict, or None)
+    :param data: Challenge data dict. Pass None or {} for no data.
     :param session: Session string
     :param validitytime: Validity period in seconds (default: 120)
     :return: The created Challenge object
@@ -713,7 +711,7 @@ def create_challenge(serial: str, transaction_id: str = None, challenge: str = '
     db_challenge = Challenge(serial,
                              transaction_id=transaction_id,
                              challenge=challenge,
-                             data=data if data is not None else '',
+                             data=data if data is not None else {},
                              session=session if session is not None else '',
                              validitytime=validitytime)
     if redis_feature_enabled("challenges"):

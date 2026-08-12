@@ -70,6 +70,7 @@ export abstract class DashboardWidget {
   // The right(s) a widget needs to be offered at all. A list means any one of them is enough, for a widget that
   // summarizes several separately-governed areas: it then shows only the parts the admin may read.
   static readonly requiredAction: PolicyAction | PolicyAction[] | null = null;
+  static readonly titleLinkAction: PolicyAction | null = null;
 
   abstract reload(): void;
 }

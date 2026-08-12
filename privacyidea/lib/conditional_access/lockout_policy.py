@@ -34,6 +34,9 @@ A policy is passed around as a plain dict::
         "target": "user",
         "count_mode": "PER_REQUEST",
         "counter_types_to_track": ["PIN_FAIL", "MFA_FAIL"],
+        "conditions": [
+            {"condition_type": "USER_REALM", "operator": "IN", "value": ["sales", "support"]},
+        ],
         "stages": [
             {
                 "failure_threshold": 5,
@@ -58,6 +61,12 @@ values must be
 must be :class:`~privacyidea.lib.conditional_access.engine.LockoutAction` names; anything else is a
 :class:`~privacyidea.lib.error.ParameterError` (fail-closed - a typo must not silently create a policy that never
 matches or an action that never fires).
+
+``conditions`` is the *applicability* axis, orthogonal to the counting one: it restricts which requests the policy
+applies to at all, while the counter types and thresholds decide what trips it. It is optional - a policy without
+conditions applies to every request - and is validated against the registries in
+:mod:`~privacyidea.lib.conditional_access.conditions` under the same fail-closed rule, since a condition naming an
+unknown realm or a misspelled role would otherwise silently never match.
 """
 
 import logging
@@ -71,11 +80,13 @@ from privacyidea.lib.conditional_access.authentication_event_types import (
     TRACKABLE_EVENT_TYPES,
     CountMode,
 )
+from privacyidea.lib.conditional_access.conditions import CONDITION_TYPES
 from privacyidea.lib.conditional_access.engine import LockoutAction, LockoutTarget
 from privacyidea.lib.error import ConflictError, ParameterError, ResourceNotFoundError
 from privacyidea.lib.log import log_with
 from privacyidea.models import db
-from privacyidea.models.lockout_policy import LockoutPolicy, LockoutPolicyStage, LockoutStageAction
+from privacyidea.models.lockout_policy import (LockoutPolicy, LockoutPolicyCondition,
+                                               LockoutPolicyStage, LockoutStageAction)
 
 log = logging.getLogger(__name__)
 
@@ -105,6 +116,14 @@ class StageActionDefinition:
 
 
 @dataclass
+class ConditionDefinition:
+    """One validated applicability condition (see :func:`_validate_conditions`)."""
+    condition_type: str
+    operator: str
+    value: list[str]
+
+
+@dataclass
 class StageDefinition:
     """
     One validated stage with its actions, as produced by
@@ -131,6 +150,20 @@ def lockout_policy_to_dict(policy: LockoutPolicy) -> dict:
     # serialized explicitly.
     result = {column: getattr(policy, column) for column in policy.__table__.columns.keys()}
     result["counter_types_to_track"] = list(policy.counter_types_to_track)
+    # Conditions restrict which requests the policy applies to; an empty list means
+    # it applies to everyone. Unlike a stage, a condition carries no id here: nothing
+    # addresses one (no foreign key points at the table, and within a policy the
+    # condition type is already unique), and an update replaces them wholesale, so an
+    # id would only be a value that churns on every write. They are served in
+    # condition_type order - a canonical order for an ANDed set, so the same
+    # conditions always serialize identically and a client can diff the response.
+    result["conditions"] = [
+        {
+            "condition_type": condition.condition_type,
+            "operator": condition.operator,
+            "value": condition.value,
+        } for condition in policy.conditions
+    ]
     # Stages are ordered for display by ascending failure_threshold (the stage
     # that triggers first comes first). This is independent of the engine's
     # evaluation order (highest priority first, see the model relationship),
@@ -441,6 +474,102 @@ def _validate_stages(stages) -> list[StageDefinition]:
     return normalized
 
 
+def _validate_conditions(conditions) -> list[ConditionDefinition]:
+    """
+    Validate a policy's applicability conditions: a list of dicts, each naming a
+    known :class:`~privacyidea.lib.conditional_access.conditions.ConditionType`,
+    an operator that type permits, and a non-empty list of values.
+
+    An **empty list is valid** and means "no restrictions": the policy applies to
+    every request, which is how a policy without conditions behaves and how an
+    admin removes conditions on update.
+
+    Everything is rejected rather than coerced, because every one of these
+    mistakes produces a policy that silently never matches - which for a ``DENY``
+    policy is a restriction that quietly stops protecting anything:
+
+    * an unknown condition type or operator, or an operator the type does not
+      permit;
+    * a value that is not a non-empty list, or holds a non-string;
+    * a value outside the type's current vocabulary (an unknown realm, a
+      misspelled role) - checked here, at write time, where it can be reported.
+      Evaluation never does this: a realm deleted *after* the policy was written
+      must simply stop matching, never raise on the authentication path;
+    * the same condition type twice, which the database rejects anyway and which
+      could only express a contradiction, since conditions are ANDed.
+
+    Duplicates within one condition's value list are dropped rather than rejected -
+    listing a realm twice changes nothing about the outcome.
+
+    :return: normalized list of :class:`ConditionDefinition` (without ids)
+    """
+    if not isinstance(conditions, list):
+        raise ParameterError("'conditions' must be a list of condition definitions.")
+    allowed_keys = {"condition_type", "operator", "value"}
+    normalized = []
+    seen = set()
+    for condition in conditions:
+        if not isinstance(condition, dict):
+            raise ParameterError("Each condition must be a dictionary.")
+        unknown = set(condition) - allowed_keys
+        if unknown:
+            raise ParameterError(f"Unknown condition key(s): {', '.join(sorted(unknown))}.")
+        condition_type = condition.get("condition_type")
+        spec = CONDITION_TYPES.get(condition_type)
+        if spec is None:
+            raise ParameterError(f"Unknown condition type '{condition_type}'. "
+                                 f"Valid types: {', '.join(sorted(CONDITION_TYPES))}.")
+        operator = condition.get("operator")
+        if operator not in spec.operators:
+            raise ParameterError(f"Operator '{operator}' is not allowed for condition type "
+                                 f"'{condition_type}'. Allowed: {', '.join(sorted(spec.operators))}.")
+        if condition_type in seen:
+            raise ParameterError(f"Duplicate condition '{condition_type}': a policy can carry it only once.")
+        seen.add(condition_type)
+        normalized.append(ConditionDefinition(condition_type=condition_type, operator=operator,
+                                              value=_validate_condition_value(condition.get("value"), spec)))
+    return normalized
+
+
+def _validate_condition_value(value, spec) -> list[str]:
+    """
+    Validate one condition's value list against its condition type *spec*: a
+    non-empty list of strings drawn from the type's vocabulary, with duplicates
+    removed (order preserved).
+
+    Values are matched against the vocabulary **exactly**. Both sides are already
+    canonical - realm names are lower-cased when a realm is created, and the
+    choices come from that same source - so a value that differs only in case is a
+    typo, and reporting it here beats quietly rewriting what the admin wrote.
+
+    Every operator in use takes a list; when a scalar operator is added, the
+    accepted shape becomes operator-dependent and this is where that branches.
+    """
+    if not isinstance(value, (list, tuple)) or not value:
+        raise ParameterError(f"The value of condition '{spec.name}' must be a non-empty list.")
+    choices = spec.choices() if spec.choices else None
+    validated = []
+    for entry in value:
+        if not isinstance(entry, str):
+            raise ParameterError(f"The values of condition '{spec.name}' must be strings.")
+        entry = entry.strip()
+        if choices is not None and entry not in choices:
+            raise ParameterError(f"Unknown value '{entry}' for condition '{spec.name}'. "
+                                 f"Valid values: {', '.join(sorted(choices))}.")
+        if entry not in validated:
+            validated.append(entry)
+    return validated
+
+
+def _build_conditions(condition_defs: list[ConditionDefinition]) -> list[LockoutPolicyCondition]:
+    """Turn validated :class:`ConditionDefinition` objects into (unpersisted) ORM objects."""
+    return [
+        LockoutPolicyCondition(condition_type=condition.condition_type,
+                               operator=condition.operator, value=condition.value)
+        for condition in condition_defs
+    ]
+
+
 def _default_retrigger(action: StageActionDefinition) -> bool:
     """The action's ``retrigger_above_threshold``, defaulted by action type when unset."""
     if action.retrigger_above_threshold is None:
@@ -540,6 +669,7 @@ def create_lockout_policy(
     enabled: bool = True,
     dry_run: bool = False,
     count_mode: str | None = None,
+    conditions: list[dict] | None = None,
 ) -> int:
     """
     Create a lockout policy with its stages and actions in one transaction.
@@ -551,6 +681,8 @@ def create_lockout_policy(
     likewise required (no default) and must be unique across policies, so the
     caller always picks a deliberate, unambiguous precedence.
     ``count_mode`` defaults to the target's default when not given (see :func:`_validate_count_mode`).
+    ``conditions`` restricts which requests the policy applies to; omitted (or
+    empty) it applies to every request.
 
     :return: the id of the new policy
     """
@@ -562,6 +694,11 @@ def create_lockout_policy(
     counter_types = _validate_counter_types(counter_types_to_track)
     stage_defs = _validate_stages(stages)
     _validate_target_actions(stage_defs, lockout_target)
+    # `is None`, not `or []`: only an *omitted* conditions parameter means "applies to everyone". Any other
+    # value goes through _validate_conditions, so a falsy non-list (0, False, {}) is a 400 rather than
+    # being silently read as "no conditions" - which would widen an access-control policy to every request
+    # on malformed input. Mirrors the `is not None` discipline of update_lockout_policy.
+    condition_defs = _validate_conditions([] if conditions is None else conditions)
 
     policy = LockoutPolicy(
         name=name,
@@ -573,6 +710,7 @@ def create_lockout_policy(
         counter_types_to_track=counter_types,
         count_mode=count_mode,
         stages=_build_stages(stage_defs),
+        conditions=_build_conditions(condition_defs),
     )
     db.session.add(policy)
     with _unique_conflict_as_400():
@@ -593,12 +731,15 @@ def update_lockout_policy(
     priority: int | None = None,
     target: str | None = None,
     count_mode: str | None = None,
+    conditions: list[dict] | None = None,
 ) -> tuple[int, list[str]]:
     """
     Update a lockout policy. Only the given (non-``None``) fields are changed.
 
-    ``counter_types_to_track`` and ``stages`` are **replaced as a whole** when
-    given - the delete-orphan cascade drops the previous child rows. Replacing
+    ``counter_types_to_track``, ``stages`` and ``conditions`` are **replaced as a
+    whole** when given - the delete-orphan cascade drops the previous child rows.
+    Passing an empty ``conditions`` list therefore removes every condition, which
+    widens the policy to apply to all requests. Replacing
     the stages resets any ``last_stage_triggered`` references in
     ``user_lockout_state``/``block_list`` to ``NULL`` (FK ``SET NULL``), which
     simply re-arms the de-dup for the edited policy; existing locks and blocks
@@ -632,6 +773,8 @@ def update_lockout_policy(
         counter_types_to_track = _validate_counter_types(counter_types_to_track)
     if stages is not None:
         stages = _validate_stages(stages)
+    if conditions is not None:
+        conditions = _validate_conditions(conditions)
     # target and stages must stay mutually compatible.
     if lockout_target is not None or stages is not None:
         effective_target = lockout_target if lockout_target is not None else LockoutTarget(policy.target)
@@ -687,6 +830,14 @@ def update_lockout_policy(
             db.session.flush()
             policy.stages = _build_stages(stages)
             changed_fields.append("stages")
+        if conditions is not None:
+            # Same split-flush replacement, keeping the
+            # (policy_id, condition_type) unique constraint when a condition type
+            # is reused across the update.
+            policy.conditions = []
+            db.session.flush()
+            policy.conditions = _build_conditions(conditions)
+            changed_fields.append("conditions")
         db.session.commit()
     log.info(
         f"Updated lockout policy '{policy.name}' (id {policy.id}); "

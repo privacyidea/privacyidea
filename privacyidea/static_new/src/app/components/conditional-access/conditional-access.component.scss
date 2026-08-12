@@ -95,3 +95,19 @@
     opacity: 0.38;
   }
 }
+
+.ca-name-cell {
+  align-items: center;
+  display: flex;
+  gap: 4px;
+}
+
+// Flags a policy whose conditions reference values that no longer exist. Sized to the row text
+// rather than the default 24px, so it does not stretch the row height.
+.ca-stale-condition-icon {
+  color: var(--mat-sys-error);
+  flex: 0 0 auto;
+  font-size: 18px;
+  height: 18px;
+  width: 18px;
+}

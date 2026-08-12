@@ -19,13 +19,14 @@
 import ipaddress
 import logging
 import re
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any, TYPE_CHECKING
 
 from sqlalchemy import func, select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.sql import ColumnElement
 
 from privacyidea.lib import _
@@ -33,6 +34,11 @@ from privacyidea.lib.conditional_access.authentication_event_types import (AuthE
                                                                            CA_ENFORCEMENT_EVENT_TYPES,
                                                                            CountMode)
 from privacyidea.lib.conditional_access.authentication_log import _naive_utc
+from privacyidea.lib.conditional_access.conditions import (condition_sql_filters,
+                                                          conditions_match_row,
+                                                          policy_conditions_are_scopable,
+                                                          policy_matches_context)
+from privacyidea.lib.conditional_access.context import CAContext
 from privacyidea.lib.conditional_access.outcome_log import outcome_for_stage
 from privacyidea.lib.conditional_access.session import get_ca_session, guarded_write
 from privacyidea.models import (AuthenticationLog, BlockList, ConditionalAccessOutcome, LockoutPolicy,
@@ -236,7 +242,8 @@ def _count_events(subject: Sequence[ColumnElement[bool]], event_types: list[str]
 def count_user_events(resolver: str, uid: str, realm: str,
                       event_types: list[str],
                       window_seconds: int, window_end: datetime | None = None,
-                      since_last_success: bool = False) -> int:
+                      since_last_success: bool = False,
+                      extra_filters: "Sequence | None" = None) -> int:
     """
     Count the ``authentication_log`` rows for one user identity and event
     type(s) within a sliding time window ``[window_end - window_seconds, window_end]``.
@@ -270,16 +277,22 @@ def count_user_events(resolver: str, uid: str, realm: str,
         ``timestamp`` column.
     :param since_last_success: only count events after the most recent
         ``LOGIN_SUCCESS`` in the window (a successful login resets the counter)
+    :param extra_filters: extra SQLAlchemy predicates ANDed into the ``WHERE``, narrowing which
+        rows count to the ones a policy's conditions describe (see
+        :func:`~privacyidea.lib.conditional_access.conditions.condition_sql_filters`). ``None`` or
+        empty counts every row of the subject.
     :return: the number of matching events
     """
     return _count_events([AuthenticationLog.resolver == resolver,
                           AuthenticationLog.uid == uid,
-                          AuthenticationLog.realm == realm],
+                          AuthenticationLog.realm == realm,
+                          *(extra_filters or ())],
                          event_types, window_seconds, window_end, since_last_success)
 
 
-def count_distinct_users_for_ip(source_ip: str, event_types: list[str],
-                                window_seconds: int, window_end: datetime | None = None) -> int:
+def count_distinct_users_for_ip(source_ip: str, event_types: list[str], window_seconds: int,
+                                window_end: datetime | None = None,
+                                extra_filters: "Sequence | None" = None) -> int:
     """
     Count the number of **distinct accounts** a single *source_ip* targeted with any of *event_types* within the
     sliding window ``[window_end - window_seconds, window_end]``. This is the password-spraying / enumeration signal:
@@ -315,6 +328,10 @@ def count_distinct_users_for_ip(source_ip: str, event_types: list[str],
         The engine passes the single reference instant captured for the whole
         evaluation so this count shares it with the de-dup window and the new
         block's expiry.
+:param extra_filters: extra SQLAlchemy predicates ANDed into the ``WHERE``, narrowing which
+        rows count to the ones a policy's conditions describe (see
+        :func:`~privacyidea.lib.conditional_access.conditions.condition_sql_filters`). ``None`` or
+        empty counts every row of the subject.
     :return: the number of distinct targeted accounts
     """
     window_end = _naive_utc(window_end) if window_end is not None else utc_now()
@@ -324,25 +341,32 @@ def count_distinct_users_for_ip(source_ip: str, event_types: list[str],
                          .where(AuthenticationLog.source_ip == source_ip,
                                 AuthenticationLog.event_type.in_(type_values),
                                 AuthenticationLog.timestamp >= window_start,
-                                AuthenticationLog.timestamp <= window_end)
+                                AuthenticationLog.timestamp <= window_end,
+                                *(extra_filters or ()))
                          .distinct()
                          .subquery())
     return get_ca_session().scalar(select(func.count()).select_from(distinct_accounts)) or 0
 
 
 def _count_matching_attempts(rows: Sequence[AuthenticationLog], tracked_types: set[str],
-                             since_last_success: bool = False) -> int:
+                             since_last_success: bool = False,
+                             row_filter: "Callable[[AuthenticationLog], bool] | None" = None) -> int:
     """
     Reduce authentication-log rows to one representative event per attempt and count the attempts whose
     representative is in *tracked_types*.
 
     All rows sharing an ``attempt_id`` are one authentication attempt. Its representative — the event that classifies
-    the whole attempt — is :attr:`AuthEventType.LOGIN_SUCCESS` if the attempt ever logged in (a completed success is
-    terminal: a later stray answer replayed on the same, now-answered challenge maps to the same ``attempt_id`` but
-    must not undo the success), otherwise the **latest** event by row ``id``. Row ``id`` is the insertion order, which
-    orders the multichallenge steps correctly independent of event type — e.g. a wrong answer *then* a continue reads
-    as in-progress (latest = the continue), while a continue *then* a wrong answer reads as failed (latest = the fail),
-    which an event-type ranking could not distinguish.
+    the whole attempt — is the :attr:`AuthEventType.LOGIN_SUCCESS` row if the attempt ever logged in (a completed
+    success is terminal: a later stray answer replayed on the same, now-answered challenge maps to the same
+    ``attempt_id`` but must not undo the success), otherwise the **latest** row by ``id``. Row ``id`` is the insertion
+    order, which orders the multichallenge steps correctly independent of event type — e.g. a wrong answer *then* a
+    continue reads as in-progress (latest = the continue), while a continue *then* a wrong answer reads as failed
+    (latest = the fail), which an event-type ranking could not distinguish.
+
+    The representative is carried as the *row*, not just its event type, because *row_filter* has to be asked of the
+    event that classifies the attempt. For a succeeded attempt those are two different rows — the type comes from the
+    success while the latest row may be that stray replay — and a policy tracking ``LOGIN_SUCCESS`` (a rate limit
+    tracking every type) would otherwise classify by one row and filter by another.
 
     Comparisons rely on :class:`AuthEventType` being a ``str`` subclass, so the stored ``event_type`` strings match
     the enum members directly — no conversion needed.
@@ -350,13 +374,18 @@ def _count_matching_attempts(rows: Sequence[AuthenticationLog], tracked_types: s
     :param rows: the authentication-log rows of the attempts to reduce
     :param tracked_types: the event types a representative must be in to count the attempt
     :param since_last_success: only count attempts whose latest row is newer than the last ``LOGIN_SUCCESS`` row
-    :return: the number of attempts whose representative event is in *tracked_types*
+    :param row_filter: an optional ``(row) -> bool`` applied to each attempt's representative row; an attempt whose
+        representative it rejects does not count. ``None`` counts every reduced attempt. This is where a policy's
+        conditions scope a ``PER_ATTEMPT`` count (see
+        :func:`~privacyidea.lib.conditional_access.conditions.conditions_match_row`) — they cannot be applied to
+        *rows* before this reduction without corrupting it.
+    :return: the number of matching attempts
     """
     latest: dict[str, AuthenticationLog] = {}
-    succeeded: set[str] = set()
+    success: dict[str, AuthenticationLog] = {}
     last_success_id = -1
-    # First pass: aggregate every row into its attempt — the attempt's latest (highest-id) row, whether it succeeded,
-    # and the newest LOGIN_SUCCESS row id (the reset point for since_last_success).
+    # First pass: aggregate every row into its attempt — the attempt's latest (highest-id) row, its latest success row
+    # if it has one, and the newest LOGIN_SUCCESS row id (the reset point for since_last_success).
     for row in rows:
         if row.event_type in CA_ENFORCEMENT_EVENT_TYPES:
             # A row conditional access wrote for its own rejection is not an outcome *of* the attempt and must not
@@ -366,24 +395,31 @@ def _count_matching_attempts(rows: Sequence[AuthenticationLog], tracked_types: s
             # from reaching its next stage once the lock expired.
             continue
         if row.event_type == AuthEventType.LOGIN_SUCCESS:
-            succeeded.add(row.attempt_id)
             last_success_id = max(last_success_id, row.id)
+            won = success.get(row.attempt_id)
+            if won is None or row.id > won.id:
+                success[row.attempt_id] = row
         current = latest.get(row.attempt_id)
         if current is None or row.id > current.id:
             latest[row.attempt_id] = row
     cutoff_id = last_success_id if since_last_success else -1
     matches = 0
-    # Second pass: over the distinct attempts, resolve each representative event and count the ones that match — and,
-    # when flooring, only those whose latest row is newer than the last successful login.
+    # Second pass: over the distinct attempts, resolve each representative row and count the ones whose event matches —
+    # when flooring, only those whose latest row is newer than the last successful login, and only those whose
+    # representative the row filter admits.
     for attempt_id, row in latest.items():
-        representative = AuthEventType.LOGIN_SUCCESS if attempt_id in succeeded else row.event_type
-        if representative in tracked_types and row.id > cutoff_id:
-            matches += 1
+        representative = success.get(attempt_id) or row
+        if representative.event_type not in tracked_types or row.id <= cutoff_id:
+            continue
+        if row_filter is not None and not row_filter(representative):
+            continue
+        matches += 1
     return matches
 
 
 def _count_attempts(subject: Sequence[ColumnElement[bool]], event_types: list[str], window_seconds: int,
-                    window_end: datetime | None = None, since_last_success: bool = False) -> int:
+                    window_end: datetime | None = None, since_last_success: bool = False,
+                    row_filter: "Callable[[AuthenticationLog], bool] | None" = None) -> int:
     """
     Count whole authentication *attempts* matching *subject* whose representative event is in *event_types*, within the
     sliding window ``[window_end - window_seconds, window_end]`` (``PER_ATTEMPT``).
@@ -399,6 +435,11 @@ def _count_attempts(subject: Sequence[ColumnElement[bool]], event_types: list[st
     rejected, they can never be an attempt's representative (see :func:`_count_matching_attempts`), and excluding them
     here rather than in Python means they cost neither a row over the wire nor an ORM object. It is an extra predicate
     on the same index range scan, not a different plan.
+
+    *subject* deliberately carries no condition predicates - unlike the row counters, which take them as
+    ``extra_filters``. Narrowing the ``WHERE`` here would hide rows from the reduction rather than from the count, and
+    an attempt reduced from a subset of its own rows is misclassified, not narrowed. Conditions arrive as *row_filter*
+    instead and are applied to the reduced representative (see :func:`_count_matching_attempts`).
     """
     window_end = _naive_utc(window_end) if window_end is not None else utc_now()
     window_start = window_end - timedelta(seconds=window_seconds)
@@ -408,12 +449,14 @@ def _count_attempts(subject: Sequence[ColumnElement[bool]], event_types: list[st
                AuthenticationLog.timestamp >= window_start,
                AuthenticationLog.timestamp <= window_end,
                AuthenticationLog.event_type.notin_(sorted(str(event) for event in CA_ENFORCEMENT_EVENT_TYPES)))).all()
-    return _count_matching_attempts(rows, set(event_types), since_last_success=since_last_success)
+    return _count_matching_attempts(rows, set(event_types), since_last_success=since_last_success,
+                                    row_filter=row_filter)
 
 
 def count_user_attempts(resolver: str, uid: str, realm: str, event_types: list[str],
                         window_seconds: int, window_end: datetime | None = None,
-                        since_last_success: bool = False) -> int:
+                        since_last_success: bool = False,
+                        row_filter: "Callable[[AuthenticationLog], bool] | None" = None) -> int:
     """
     Count whole authentication *attempts* (not individual ``authentication_log`` rows) for one user identity whose
     representative event matches *event_types*, within a sliding time window ``[window_end - window_seconds,
@@ -431,16 +474,21 @@ def count_user_attempts(resolver: str, uid: str, realm: str, event_types: list[s
         naive UTC.
     :param since_last_success: only count attempts after the user's most recent completed login in the window (a
         successful login resets the counter); see :func:`_count_matching_attempts`
+    :param row_filter: an optional ``(row) -> bool`` narrowing the count to the attempts a policy's conditions
+        describe. It takes a row predicate rather than the ``extra_filters`` SQL predicates the event counters take:
+        the conditions must be applied to the *reduced* representative, never to the rows the reduction reads (see
+        :func:`_count_attempts`). ``None`` counts every attempt of the subject.
     :return: the number of matching attempts
     """
     return _count_attempts([AuthenticationLog.resolver == resolver,
                             AuthenticationLog.uid == uid,
                             AuthenticationLog.realm == realm],
-                           event_types, window_seconds, window_end, since_last_success)
+                           event_types, window_seconds, window_end, since_last_success,
+                           row_filter=row_filter)
 
 
 def count_ip_events(source_ip: str, event_types: list[str], window_seconds: int,
-                    window_end: datetime | None = None) -> int:
+                    window_end: datetime | None = None, extra_filters: "Sequence | None" = None) -> int:
     """
     Count the ``authentication_log`` rows a single *source_ip* produced with any of *event_types* within the sliding
     window ``[window_end - window_seconds, window_end]``. This is the
@@ -466,13 +514,19 @@ def count_ip_events(source_ip: str, event_types: list[str], window_seconds: int,
     :param window_seconds: width of the look-back window in seconds
     :param window_end: the instant the window ends; defaults to :func:`utc_now`. An aware value is normalized to naive
         UTC.
+    :param extra_filters: extra SQLAlchemy predicates ANDed into the ``WHERE``, narrowing which
+        rows count to the ones a policy's conditions describe (see
+        :func:`~privacyidea.lib.conditional_access.conditions.condition_sql_filters`). ``None`` or
+        empty counts every row of the subject.
     :return: the number of matching events
     """
-    return _count_events([AuthenticationLog.source_ip == source_ip], event_types, window_seconds, window_end)
+    return _count_events([AuthenticationLog.source_ip == source_ip, *(extra_filters or ())],
+                         event_types, window_seconds, window_end)
 
 
-def count_ip_attempts(source_ip: str, event_types: list[str],
-                      window_seconds: int, window_end: datetime | None = None) -> int:
+def count_ip_attempts(source_ip: str, event_types: list[str], window_seconds: int,
+                      window_end: datetime | None = None,
+                      row_filter: "Callable[[AuthenticationLog], bool] | None" = None) -> int:
     """
     Count whole authentication *attempts* (not individual ``authentication_log`` rows) a single *source_ip* produced
     whose representative event matches *event_types*, within the sliding window ``[window_end - window_seconds,
@@ -489,17 +543,43 @@ def count_ip_attempts(source_ip: str, event_types: list[str],
     :param window_seconds: width of the look-back window in seconds
     :param window_end: the instant the window ends; defaults to :func:`utc_now`. An aware value is normalized to naive
         UTC.
+    :param row_filter: an optional ``(row) -> bool`` narrowing the count to the attempts a policy's conditions
+        describe. It takes a row predicate rather than the ``extra_filters`` SQL predicates the event counters take:
+        the conditions must be applied to the *reduced* representative, never to the rows the reduction reads (see
+        :func:`_count_attempts`). ``None`` counts every attempt of the subject.
     :return: the number of matching attempts
     """
-    return _count_attempts([AuthenticationLog.source_ip == source_ip], event_types, window_seconds, window_end)
+    return _count_attempts([AuthenticationLog.source_ip == source_ip],
+                           event_types, window_seconds, window_end, row_filter=row_filter)
+
+
+def _count_scoping(policy: LockoutPolicy) -> "tuple[list | None, Callable[[AuthenticationLog], bool] | None]":
+    """
+    The policy's conditions as the two things a counter can consume: SQL predicates for the row counters, and a row
+    predicate for the attempt counters.
+
+    Both express the same conditions and are gated by the same rule
+    (:func:`~privacyidea.lib.conditional_access.conditions.policy_conditions_are_scopable`) - a policy that cannot
+    have *all* of its conditions honoured counts unscoped either way, rather than half-scoped. They differ only in
+    *where* they can be applied: a row counter narrows its ``WHERE``, while an attempt counter must reduce whole
+    attempts first and apply the conditions to the reduced representative (see :func:`_count_attempts` for why
+    filtering rows there would misclassify attempts rather than narrow the count).
+
+    :param policy: the policy whose conditions are translated
+    :return: ``(sql_filters, row_filter)``, both ``None`` when the policy's conditions cannot scope a count
+    """
+    if not policy_conditions_are_scopable(policy):
+        return None, None
+    return condition_sql_filters(policy), lambda row: conditions_match_row(policy, row)
 
 
 def _policy_count(policy: LockoutPolicy, user: "User", window_end: datetime,
                   since_last_success: bool = False) -> int:
     """
     Count a user-target policy's events (``PER_REQUEST``) or attempts (``PER_ATTEMPT``) over its window, per the
-    policy's :attr:`~privacyidea.models.lockout_policy.LockoutPolicy.count_mode`. (Source-IP policies dispatch
-    separately via :func:`_policy_count_ip`.)
+    policy's :attr:`~privacyidea.models.lockout_policy.LockoutPolicy.count_mode`, scoped to the rows the policy's
+    conditions describe (:func:`_count_scoping`). (Source-IP policies dispatch separately via
+    :func:`_policy_count_ip`.)
 
     :param policy: the policy whose ``time_window_seconds`` and ``counter_types_to_track`` are counted over
     :param user: the resolved user to count for
@@ -510,13 +590,16 @@ def _policy_count(policy: LockoutPolicy, user: "User", window_end: datetime,
         which is why it is a separate mode and does not go through here.)
     :return: the event count (``PER_REQUEST``) or the attempt count (``PER_ATTEMPT``)
     """
+    sql_filters, row_filter = _count_scoping(policy)
     if policy.count_mode == CountMode.PER_ATTEMPT:
         return count_user_attempts(user.resolver, user.uid, user.realm,
                                    policy.counter_types_to_track, policy.time_window_seconds,
-                                   window_end=window_end, since_last_success=since_last_success)
+                                   window_end=window_end, since_last_success=since_last_success,
+                                   row_filter=row_filter)
     return count_user_events(user.resolver, user.uid, user.realm,
                              policy.counter_types_to_track, policy.time_window_seconds,
-                             window_end=window_end, since_last_success=since_last_success)
+                             window_end=window_end, since_last_success=since_last_success,
+                             extra_filters=sql_filters)
 
 
 def _policy_count_ip(policy: LockoutPolicy, source_ip: str, window_end: datetime) -> int:
@@ -524,9 +607,10 @@ def _policy_count_ip(policy: LockoutPolicy, source_ip: str, window_end: datetime
     Count a source-IP-target policy's subject over its window, per the policy's
     :attr:`~privacyidea.models.lockout_policy.LockoutPolicy.count_mode`: distinct targeted accounts
     (``DISTINCT_USERS``, the default and spraying/enumeration signal), individual events (``PER_REQUEST``) or whole
-    attempts (``PER_ATTEMPT``, the two volume modes = plain per-IP rate limiting). None of the three resets on a
-    successful login - a legit login by one account must not clear a signal aggregated across the whole IP - so there
-    is no ``since_last_success`` parameter, unlike the user path (:func:`_policy_count`).
+    attempts (``PER_ATTEMPT``, the two volume modes = plain per-IP rate limiting), scoped to what the policy's
+    conditions describe (:func:`_count_scoping`). None of the three resets on a successful login - a legit login by
+    one account must not clear a signal aggregated across the whole IP - so there is no ``since_last_success``
+    parameter, unlike the user path (:func:`_policy_count`).
 
     :param policy: the policy whose ``time_window_seconds`` and ``counter_types_to_track`` are counted over
     :param source_ip: the client IP to count for
@@ -534,14 +618,18 @@ def _policy_count_ip(policy: LockoutPolicy, source_ip: str, window_end: datetime
     :return: the distinct-account count (``DISTINCT_USERS``), event count (``PER_REQUEST``) or attempt count
         (``PER_ATTEMPT``)
     """
+    sql_filters, row_filter = _count_scoping(policy)
     if policy.count_mode == CountMode.PER_REQUEST:
         return count_ip_events(source_ip, policy.counter_types_to_track,
-                               policy.time_window_seconds, window_end=window_end)
+                               policy.time_window_seconds, window_end=window_end,
+                               extra_filters=sql_filters)
     if policy.count_mode == CountMode.PER_ATTEMPT:
         return count_ip_attempts(source_ip, policy.counter_types_to_track,
-                                 policy.time_window_seconds, window_end=window_end)
+                                 policy.time_window_seconds, window_end=window_end,
+                                 row_filter=row_filter)
     return count_distinct_users_for_ip(source_ip, policy.counter_types_to_track,
-                                       policy.time_window_seconds, window_end=window_end)
+                                       policy.time_window_seconds, window_end=window_end,
+                                       extra_filters=sql_filters)
 
 
 def get_user_lockout(user: "User", now: datetime | None = None, *,
@@ -715,8 +803,7 @@ def is_ip_blocked(source_ip: str | None, now: datetime | None = None, *, clear_e
     return get_ip_block(source_ip, now=now, clear_expired=clear_expired) is not None
 
 
-def evaluate_access_decision(user: "User", source_ip: str | None = None,
-                             now: datetime | None = None) -> "AccessDecisionResult":
+def evaluate_access_decision(context: CAContext, now: datetime | None = None) -> "AccessDecisionResult":
     """
     Pre-auth conditional-access decision for the current request: should it be
     denied, explicitly allowed, or left to the normal flow?
@@ -749,12 +836,14 @@ def evaluate_access_decision(user: "User", source_ip: str | None = None,
     Both targets decide here: a ``user`` policy is keyed on the resolved
     ``(resolver, uid, realm)`` user (an unresolved user - unknown login, local
     admin - is never decided by a user policy), while a ``source_ip`` policy is
-    keyed on *source_ip* and therefore applies even when the user is unresolved
-    (the spraying/enumeration case). A never-block source IP is exempt from an IP
-    ``DENY``, mirroring the ``BLOCK_IP`` allowlist.
+    keyed on the context's source IP and therefore applies even when the user is
+    unresolved (the spraying/enumeration case). A never-block source IP is exempt
+    from an IP ``DENY``, mirroring the ``BLOCK_IP`` allowlist.
 
-    :param user: the authenticating user; only ``user``-target policies need it
-    :param source_ip: the resolved client IP; ``source_ip``-target policies decide on it
+    :param context: what is known about the request under evaluation (see
+        :class:`~privacyidea.lib.conditional_access.context.CAContext`); a
+        ``user`` policy needs its user resolved, a ``source_ip`` policy its
+        source IP
     :param now: the reference time; defaults to :func:`utc_now`
     :return: the :class:`AccessDecisionResult` for this request: the decision, plus the outcomes to record on
         whichever authentication-log row this request ends up writing
@@ -762,12 +851,13 @@ def evaluate_access_decision(user: "User", source_ip: str | None = None,
     now = _naive_utc(now) if now is not None else utc_now()
     policies = get_ca_session().scalars(
         select(LockoutPolicy)
+        .options(selectinload(LockoutPolicy.conditions))
         .where(LockoutPolicy.enabled.is_(True))
         .order_by(LockoutPolicy.priority.asc())
     ).all()
     outcomes: list[ConditionalAccessOutcome] = []
     for policy in policies:
-        contribution = _policy_access_decision(policy, user, source_ip, now)
+        contribution = _policy_access_decision(policy, context, now)
         outcomes.extend(contribution.outcomes)
         if contribution.decision != AccessDecision.CONTINUE:
             # The first policy that decides wins, so no lower-priority policy is even consulted - and the outcomes
@@ -776,7 +866,7 @@ def evaluate_access_decision(user: "User", source_ip: str | None = None,
     return AccessDecisionResult(outcomes=outcomes)
 
 
-def _policy_access_decision(policy: LockoutPolicy, user: "User", source_ip: str | None,
+def _policy_access_decision(policy: LockoutPolicy, context: CAContext,
                             now: datetime) -> "AccessDecisionResult":
     """
     What a single policy contributes to the pre-auth decision: its ALLOW/DENY verdict, and the outcome to record for it.
@@ -796,21 +886,29 @@ def _policy_access_decision(policy: LockoutPolicy, user: "User", source_ip: str 
     Only a ``DENY`` produces an outcome. An ``ALLOW`` at threshold 0 is the documented default-allow idiom and matches
     every request of every user it covers, so recording it would add a row to every authentication.
     """
+    # Applicability first: a policy whose conditions exclude this request
+    # contributes no decision, and costs no counting query.
+    if not policy_matches_context(policy, context):
+        return AccessDecisionResult()
+    # The counts below scope themselves to the policy's conditions (see _count_scoping), exactly as the
+    # post-response path does. Both paths must scope identically: they count the same subject over the
+    # same window, so a policy that denies on one count and acts on another would be reasoning about two
+    # different histories.
     if policy.target == LockoutTarget.SOURCE_IP:
         # IP-scoped: decide on the source IP regardless of user resolution. A
         # never-block IP is never denied by an IP policy (mirrors the BLOCK_IP
         # allowlist), so it contributes no decision.
-        if not source_ip or is_ip_never_block(source_ip):
+        if not context.source_ip or is_ip_never_block(context.source_ip):
             return AccessDecisionResult()
-        count = _policy_count_ip(policy, source_ip, now)
-        subject_label = f"source IP {source_ip}"
+        count = _policy_count_ip(policy, context.source_ip, now)
+        subject_label = f"source IP {context.source_ip}"
     else:
         # User-scoped: keyed on the resolved user, so an unresolved user is never
         # decided by a user policy.
-        if not _resolved(user):
+        if not _resolved(context.user):
             return AccessDecisionResult()
-        count = _policy_count(policy, user, now)
-        subject_label = repr(user)
+        count = _policy_count(policy, context.user, now)
+        subject_label = repr(context.user)
     decision, deciding_stage = None, None
     for stage in policy.stages:
         decision = _stage_access_decision(stage, count)
@@ -858,7 +956,7 @@ def _stage_access_decision(stage: LockoutPolicyStage, count: int) -> "AccessDeci
     return AccessDecision.ALLOW if has_allow else None
 
 
-def evaluate_lockout_policies(user: "User", event_type: AuthEventType | None, source_ip: str | None = None,
+def evaluate_lockout_policies(context: CAContext, event_type: AuthEventType | None,
                               now: datetime | None = None) -> "LockoutEvaluation":
     """
     Evaluate every enabled lockout policy that tracks *event_type* and execute
@@ -890,11 +988,13 @@ def evaluate_lockout_policies(user: "User", event_type: AuthEventType | None, so
     request's history.
     The engine deliberately does not write them: it never sees the id of the authentication-log row they belong to.
 
-    :param user: the authenticating user; ``user``-target policies need it
-        resolved, ``source_ip``-target policies act on the IP regardless
+    :param context: what is known about the request under evaluation (see
+        :class:`~privacyidea.lib.conditional_access.context.CAContext`);
+        ``user``-target policies need its user resolved, ``source_ip``-target
+        policies act on its source IP regardless, and the ``BLOCK_IP`` action
+        blocks that IP
     :param event_type: the classified outcome of the request
         (:class:`AuthEventType`)
-    :param source_ip: the resolved client IP; the ``BLOCK_IP`` action blocks it
     :param now: the reference time; defaults to :func:`utc_now`
     :return: a :class:`LockoutEvaluation` holding the de-duplicated, order-preserving user-facing notices produced by
         executed actions, and the outcomes to record (both empty if nothing was triggered)
@@ -910,6 +1010,7 @@ def evaluate_lockout_policies(user: "User", event_type: AuthEventType | None, so
     # is then computed in _evaluate_policy.
     policies = get_ca_session().scalars(
         select(LockoutPolicy)
+        .options(selectinload(LockoutPolicy.conditions))
         .join(LockoutPolicy.counter_types)
         .where(LockoutPolicy.enabled.is_(True),
                LockoutPolicyCounterType.counter_type == event_type)
@@ -926,7 +1027,7 @@ def evaluate_lockout_policies(user: "User", event_type: AuthEventType | None, so
         # With the loop guarded, the only failure that still escapes is the policy query above, which runs before any
         # action does, so the retry always starts from a clean slate.
         try:
-            evaluation = _evaluate_policy(policy, user, event_type, source_ip, now)
+            evaluation = _evaluate_policy(policy, context, event_type, now)
         except Exception as ex:
             log.warning(f"Lockout policy {policy.name!r} failed to evaluate: {ex!r}; skipping it.")
             continue
@@ -967,8 +1068,8 @@ def _stage_pending_actions(stage: LockoutPolicyStage, count: int) -> list[Lockou
             if _action_threshold_met(action, stage.failure_threshold, count)]
 
 
-def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
-                     source_ip: str | None, now: datetime) -> "LockoutEvaluation":
+def _evaluate_policy(policy: LockoutPolicy, context: CAContext, event_type: str,
+                     now: datetime) -> "LockoutEvaluation":
     """
     Evaluate a single policy: count the user's events over the policy window,
     find the triggered stage, de-duplicate, then execute the stage's *pending*
@@ -985,7 +1086,26 @@ def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
         outcomes describing what was done (both empty if no stage triggered or the stage was de-duplicated away; in
         dry run there are outcomes but no notices, since nothing ran)
     """
+    # Applicability first: a policy whose conditions exclude this request neither
+    # counts nor acts, and costs no counting query.
+    if not policy_matches_context(policy, context):
+        return LockoutEvaluation()
+    # A condition then *also* narrows what is counted, which the counts below apply for themselves (see
+    # _count_scoping). The two halves cannot disagree: OperatorSpec.matches_missing is what answers a
+    # missing value on both sides - directly for the row predicate, and mirrored by OperatorSpec.sql for
+    # the SQL one - so a request the gate admits is one whose rows the scoping admits.
+    #
+    # What it changes is what a policy counts once it applies. That matters for a source-IP policy,
+    # whose subject is the IP and whose rows therefore span many identities, realms and roles: without
+    # this it would count the whole IP's history however narrowly it was scoped. For a user policy the
+    # filters are redundant rather than wrong - the subject is one (resolver, uid, realm) identity, so
+    # the realm is pinned, and with it the role (an admin realm holds only admins, and an internal
+    # admin has no realm at all, so no identity is ever both).
+    #
+    # A policy whose conditions cannot all be expressed as predicates counts unscoped, as before.
     window = policy.time_window_seconds
+    user = context.user
+    source_ip = context.source_ip
     if policy.target == LockoutTarget.SOURCE_IP:
         if not source_ip:
             # An IP-targeted policy cannot count or act without a source IP.
@@ -1040,7 +1160,7 @@ def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
         # ALLOW/DENY are left out: they decide the request pre-auth and are recorded there (_policy_access_decision),
         # so recording them again here would double-count the same decision.
         outcomes = [outcome_for_stage(policy, triggered_stage, action.action_type, count, dry_run=True,
-                                        expires_at=_action_expiry(action, now))
+                                      expires_at=_action_expiry(action, now))
                     for action in pending_actions
                     if action.action_type not in (LockoutAction.ALLOW, LockoutAction.DENY)]
         return LockoutEvaluation(outcomes=outcomes)
@@ -1056,7 +1176,11 @@ def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
     # again. Otherwise an expired or admin-lifted lock would leave a dead zone in
     # which the offender could re-reach the threshold without being re-locked /
     # re-blocked.
-    user_state = get_ca_session().get(UserLockoutState, (user.resolver, user.uid, user.realm))
+    # Only a resolved user can carry a lockout-state row (it is keyed by the
+    # (resolver, uid, realm) tuple), so an unresolved one — which a source-IP
+    # policy still evaluates for — simply has no user de-dup.
+    user_state = (get_ca_session().get(UserLockoutState, (user.resolver, user.uid, user.realm))
+                  if _resolved(user) else None)
     user_incident_active = (user_state is not None
                             and (user_state.lock_expires_at is None
                                  or user_state.lock_expires_at > now))
@@ -1088,8 +1212,8 @@ def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
     log.info(f"Policy {policy.name!r} triggered stage {triggered_stage.id} "
              f"(threshold {triggered_stage.failure_threshold}) for {subject_label}: "
              f"{count} event(s) of {_types_label(policy.counter_types_to_track)} in {window}s.")
-    tags = _base_action_tags(policy, triggered_stage, user, event_type, count, source_ip, now)
-    return _execute_stage_actions(policy, triggered_stage, pending_actions, user, source_ip, now, count, tags)
+    tags = _base_action_tags(policy, triggered_stage, context, event_type, count, now)
+    return _execute_stage_actions(policy, triggered_stage, pending_actions, context, now, count, tags)
 
 
 def _action_expiry(stage_action: LockoutStageAction, now: datetime) -> datetime | None:
@@ -1147,8 +1271,8 @@ def _safe_format(template: str, tags: dict) -> str:
         return template
 
 
-def _base_action_tags(policy: LockoutPolicy, stage: LockoutPolicyStage, user: "User", event_type: str,
-                      count: int, source_ip: str | None, now: datetime) -> dict:
+def _base_action_tags(policy: LockoutPolicy, stage: LockoutPolicyStage, context: CAContext, event_type: str,
+                      count: int, now: datetime) -> dict:
     """
     Build the ``{tag}`` substitution context available to EMAIL_* templates. Only
     fields already loaded on the request are included here; the resolver-backed
@@ -1163,11 +1287,12 @@ def _base_action_tags(policy: LockoutPolicy, stage: LockoutPolicyStage, user: "U
     available tags in the policy editor and rejecting unknown ``{tags}`` when a
     template is saved belong to the policy CRUD/editor layer, not here.)
     """
+    user = context.user
     return {
-        "username": user.login,
-        "realm": user.realm or "",
-        "resolver": user.resolver or "",
-        "client_ip": source_ip or "",
+        "username": user.login if user else "",
+        "realm": (user.realm if user else "") or "",
+        "resolver": (user.resolver if user else "") or "",
+        "client_ip": context.source_ip or "",
         "count": count,
         "threshold": stage.failure_threshold,
         "event_type": event_type,
@@ -1221,7 +1346,7 @@ def _login_notice(action_type: "LockoutAction", email_config: dict, render_tags:
 
 
 def _send_lockout_email(action_type: "LockoutAction", stage_action: LockoutStageAction,
-                        user: "User", tags: dict) -> str | None:
+                        user: "User | None", tags: dict) -> str | None:
     """
     Send the EMAIL_ADMIN / EMAIL_USER notification for a triggered stage action.
 
@@ -1233,6 +1358,12 @@ def _send_lockout_email(action_type: "LockoutAction", stage_action: LockoutStage
     ``recipient_group``. EMAIL_USER sends to the user's own email address. A
     missing field or a user without an email address is logged and skipped; this
     runs post-response and must never raise.
+
+    *user* is ``None`` when the request carried no user to resolve - the normal case for a source-IP
+    policy firing on spraying or enumeration traffic, which is exactly the traffic an EMAIL_ADMIN
+    alert exists to report. The user-derived tags then render empty (as they already do in
+    :func:`_base_action_tags`) and EMAIL_USER finds no recipient and skips, but the admin alert is
+    still sent.
 
     :return: the user-facing login-screen notice if the email was sent, else
         ``None`` (misconfiguration, no recipient, or delivery failure).
@@ -1246,7 +1377,7 @@ def _send_lockout_email(action_type: "LockoutAction", stage_action: LockoutStage
         return
 
     # Resolver-backed attributes are fetched once, only now that an email is sent.
-    info = user.info or {}
+    info = (user.info if user else None) or {}
     render_tags = {**tags, "email": info.get("email") or "",
                    "givenname": info.get("givenname") or "", "surname": info.get("surname") or ""}
 
@@ -1275,7 +1406,7 @@ def _send_lockout_email(action_type: "LockoutAction", stage_action: LockoutStage
 
 
 def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
-                           actions: Sequence[LockoutStageAction], user: "User", source_ip: str | None,
+                           actions: Sequence[LockoutStageAction], context: CAContext,
                            now: datetime, count: int, tags: dict) -> "LockoutEvaluation":
     """
     Execute the given *actions* of a triggered *stage* (the stage's pending
@@ -1297,6 +1428,8 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
     """
     notices: list[str] = []
     outcomes: list[ConditionalAccessOutcome] = []
+    user = context.user
+    source_ip = context.source_ip
 
     def record(action_type: str, expires_at: datetime | None = None) -> None:
         """Note that *action_type* ran, with the expiry it wrote (if any)."""

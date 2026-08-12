@@ -36,10 +36,13 @@ from privacyidea.lib.conditional_access.lockout_policy import create_lockout_pol
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
 from privacyidea.models import db
+from privacyidea.lib.conditional_access.authentication_log import AuthLogUserRole
+from privacyidea.lib.conditional_access.conditions import ConditionOperator, ConditionType
 from privacyidea.models.authentication_log import AuthenticationLog
 from privacyidea.models.lockout_policy import (
     BlockList,
     LockoutPolicy,
+    LockoutPolicyCondition,
     LockoutPolicyCounterType,
     LockoutPolicyStage,
     LockoutStageAction,
@@ -62,7 +65,8 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
     @staticmethod
     def _clear() -> None:
         for model in (UserLockoutState, BlockList, LockoutStageAction, LockoutPolicyStage,
-                      LockoutPolicyCounterType, LockoutPolicy, AuthenticationLog):
+                      LockoutPolicyCondition, LockoutPolicyCounterType, LockoutPolicy,
+                      AuthenticationLog):
             db.session.query(model).delete()
         db.session.commit()
 
@@ -605,3 +609,56 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
             self.assertEqual(200, res.status_code, res.json)
         finally:
             delete_policy("ca_write")
+
+    # --- conditions ------------------------------------------------------------
+
+    def test_list_condition_types(self):
+        self.setUp_user_realms()
+        res = self._request("conditiontypes")
+        self.assertEqual(200, res.status_code, res.json)
+        metadata = res.json["result"]["value"]
+        self.assertSetEqual({str(ConditionType.USER_REALM), str(ConditionType.USER_ROLE)}, set(metadata))
+        realm_entry = metadata[str(ConditionType.USER_REALM)]
+        self.assertListEqual([str(ConditionOperator.IN), str(ConditionOperator.NOT_IN)],
+                             [operator["name"] for operator in realm_entry["operators"]])
+        # choices are resolved per call, so a realm created in this test shows up.
+        self.assertIn(self.realm1, realm_entry["choices"])
+
+    def test_create_with_conditions_round_trips(self):
+        policy_id = self._create_policy(
+            conditions=[{"condition_type": str(ConditionType.USER_ROLE),
+                         "operator": str(ConditionOperator.IN),
+                         "value": [str(AuthLogUserRole.USER)]}])
+        res = self._request(f"policy/{policy_id}")
+        self.assertEqual(200, res.status_code, res.json)
+        conditions = res.json["result"]["value"]["conditions"]
+        self.assertEqual(1, len(conditions))
+        self.assertEqual(str(ConditionType.USER_ROLE), conditions[0]["condition_type"])
+        self.assertListEqual([str(AuthLogUserRole.USER)], conditions[0]["value"])
+
+    def test_create_without_conditions_yields_empty_list(self):
+        policy_id = self._create_policy()
+        res = self._request(f"policy/{policy_id}")
+        self.assertListEqual([], res.json["result"]["value"]["conditions"])
+
+    def test_create_with_invalid_condition_is_400(self):
+        res = self._request("policy", method="POST", json_data=self._policy_body(
+            conditions=[{"condition_type": "NO_SUCH_TYPE", "operator": "IN", "value": ["x"]}]))
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertIn("NO_SUCH_TYPE", res.json["result"]["error"]["message"])
+
+    def test_patch_replaces_and_clears_conditions(self):
+        policy_id = self._create_policy(
+            conditions=[{"condition_type": str(ConditionType.USER_ROLE),
+                         "operator": str(ConditionOperator.IN),
+                         "value": [str(AuthLogUserRole.USER)]}])
+        res = self._request(f"policy/{policy_id}", method="PATCH", json_data={
+            "conditions": [{"condition_type": str(ConditionType.USER_ROLE),
+                            "operator": str(ConditionOperator.NOT_IN),
+                            "value": [str(AuthLogUserRole.ADMIN_INTERNAL)]}]})
+        self.assertEqual(200, res.status_code, res.json)
+        conditions = self._request(f"policy/{policy_id}").json["result"]["value"]["conditions"]
+        self.assertEqual(str(ConditionOperator.NOT_IN), conditions[0]["operator"])
+        # An empty list removes every condition, widening the policy to all requests.
+        self._request(f"policy/{policy_id}", method="PATCH", json_data={"conditions": []})
+        self.assertListEqual([], self._request(f"policy/{policy_id}").json["result"]["value"]["conditions"])

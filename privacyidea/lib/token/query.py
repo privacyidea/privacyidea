@@ -500,8 +500,12 @@ def get_tokens(tokentype: str | None = None, token_type_list: list[str] | None =
     session: Session = db.session
 
     if count:
+        # Use count(distinct Token.id) to avoid over-counting when outer joins
+        # (e.g. TokenOwner) produce multiple rows per token.
         ret = session.execute(
-            select(func.count()).select_from(sql_query.subquery())
+            sql_query.order_by(None).with_only_columns(
+                func.count(func.distinct(Token.id)), maintain_column_froms=True
+            )
         ).scalar_one()
     else:
         tokens = session.execute(sql_query).unique().scalars().all()
@@ -598,9 +602,13 @@ def get_tokens_paginate(tokentype: str | None = None, token_type_list: list[str]
 
     session: Session = db.session
 
-    # Get the total count from a query without limit/offset
+    # Get the total count from a query without limit/offset.
+    # Use count(distinct Token.id) to avoid over-counting when outer joins
+    # (e.g. TokenOwner) produce multiple rows per token.
     total_count = session.execute(
-        select(func.count()).select_from(sql_query.subquery())
+        sql_query.order_by(None).with_only_columns(
+            func.count(func.distinct(Token.id)), maintain_column_froms=True
+        )
     ).scalar_one()
 
     # Now apply the limit and offset for the current page

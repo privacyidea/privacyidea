@@ -33,6 +33,7 @@ from privacyidea.lib.conditional_access.authentication_event_types import (AuthE
                                                                            CA_ENFORCEMENT_EVENT_TYPES)
 from privacyidea.lib.conditional_access.authentication_log import (PendingAuthEvent, update_authentication_events,
                                                                    write_authentication_events)
+from privacyidea.lib.conditional_access.context import CAContext
 from privacyidea.lib.conditional_access.outcome_log import record_outcomes
 from privacyidea.lib.framework import get_request_local_store
 from privacyidea.lib.user import User
@@ -279,9 +280,12 @@ class ConditionalAccessContext:
         because :meth:`flush` ran first; had the row not been written, the outcomes are dropped with a log message
         rather than stored without the request they belong to.
 
-        What the engine decided is recorded as this request's conditional-access history, against the row of the event
-        it judged - which exists because :meth:`flush` ran first. Recording is guarded internally, so a failure there
-        costs the history entry and nothing else.
+        The :class:`~privacyidea.lib.conditional_access.context.CAContext` a policy's conditions are matched against is
+        assembled here rather than by :func:`~privacyidea.api.lib.utils.build_ca_context`: everything it needs is
+        already recorded, so this stays Flask-free and - more importantly - the conditions are evaluated against
+        exactly the identity the row states. ``user_role`` is taken off the event for that reason: it was determined
+        when the event was staged, from the ``internal_admin`` flag the caller verified, which a local database admin
+        cannot be classified without.
 
         The event types conditional access writes for its own rejections are skipped: evaluating them would let a lock
         feed itself, since a locked user's rejected requests would keep the count above the threshold forever. They are
@@ -299,8 +303,10 @@ class ConditionalAccessContext:
         # Deferred import: the engine pulls in the ORM models, so importing it at module level would risk an
         # import-order cycle during app startup.
         from privacyidea.lib.conditional_access.engine import evaluate_lockout_policies
+        context = CAContext(user=self.principal.user or None, source_ip=self.source_ip,
+                            user_role=event.user_role)
         try:
-            evaluation = evaluate_lockout_policies(self.principal.user, event.event_type, source_ip=self.source_ip)
+            evaluation = evaluate_lockout_policies(context, event.event_type)
         except Exception as ex:
             log.warning(f"Conditional-access policy evaluation failed: {ex!r}")
             return []

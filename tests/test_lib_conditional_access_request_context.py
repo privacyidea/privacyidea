@@ -25,8 +25,10 @@ from sqlalchemy import select
 from privacyidea.lib.conditional_access.authentication_event_types import (CA_ENFORCEMENT_EVENT_TYPES, AuthEventType)
 from privacyidea.lib.conditional_access.engine import LockoutAction, LockoutEvaluation
 from privacyidea.lib.conditional_access.outcome_log import get_outcomes
-from privacyidea.lib.conditional_access.authentication_log import (PendingAuthEvent, get_authentication_logs,
+from privacyidea.lib.conditional_access.authentication_log import (AuthLogUserRole, PendingAuthEvent,
+                                                                  get_authentication_logs,
                                                                   write_authentication_events)
+from privacyidea.lib.conditional_access.context import CAContext
 from privacyidea.lib.conditional_access.request_context import (AuthPrincipal, ConditionalAccessContext,
                                                               get_ca_context)
 from privacyidea.lib.conditional_access.session import close_ca_session, get_ca_session
@@ -278,7 +280,7 @@ class ConditionalAccessContextTestCase(MyTestCase):
         # The evaluation reads the classification off the event, so a reclassification cannot leave it evaluating an
         # outcome that no longer holds - there is no second copy to keep in step.
         context = ConditionalAccessContext()
-        context.stage(self._event("alice", AuthEventType.LOGIN_SUCCESS))
+        event = context.stage(self._event("alice", AuthEventType.LOGIN_SUCCESS))
         context.principal = AuthPrincipal(user=User("cornelius", self.realm1))
         context.source_ip = "10.0.0.1"
         context.flush()
@@ -288,10 +290,29 @@ class ConditionalAccessContextTestCase(MyTestCase):
             evaluate.return_value = LockoutEvaluation()
             context.run_post_eval()
 
-        # The engine is handed the classification and the subject only; the outcomes it returns are recorded by the
-        # context against the row of the event it judged.
-        evaluate.assert_called_once_with(context.principal.user, AuthEventType.NOT_AUTHORIZED,
-                                         source_ip="10.0.0.1")
+        # The engine is handed the classification and the subject only - the subject as a CAContext describing the
+        # identity the row states; the outcomes it returns are recorded by the context against the row it judged.
+        evaluate.assert_called_once_with(CAContext(user=context.principal.user, source_ip="10.0.0.1",
+                                                  user_role=event.user_role),
+                                         AuthEventType.NOT_AUTHORIZED)
+
+    def test_20a_post_eval_takes_the_user_role_off_the_event(self):
+        # The role a policy's conditions match on comes from the event, not from a second lookup: it was determined
+        # when the event was staged, from the verified internal_admin flag - which is the only way a local database
+        # admin is classified as admin-internal at all, and what a break-glass condition keys on.
+        context = ConditionalAccessContext()
+        event = context.stage(self._event("admin"))
+        event.user_role = str(AuthLogUserRole.ADMIN_INTERNAL)
+        context.principal = AuthPrincipal(username="admin", internal_admin=True)
+
+        with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies") as evaluate:
+            evaluate.return_value = LockoutEvaluation()
+            context.run_post_eval()
+
+        ca_context = evaluate.call_args.args[0]
+        self.assertEqual(str(AuthLogUserRole.ADMIN_INTERNAL), ca_context.user_role)
+        # A local admin has no user object, so the context carries no user and no user-target policy can lock it.
+        self.assertIsNone(ca_context.user)
 
     def test_21_reclassify_applies_only_the_fields_given(self):
         context = ConditionalAccessContext()

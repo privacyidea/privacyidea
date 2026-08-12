@@ -59,7 +59,8 @@ const mockPolicy: LockoutPolicy = {
   target: "user",
   count_mode: "PER_REQUEST",
   counter_types_to_track: ["PIN_FAIL"],
-  stages: [{ failure_threshold: 5, priority: 1, actions: [{ action_type: "LOCK_USER", action_value: null }] }]
+  stages: [{ failure_threshold: 5, priority: 1, actions: [{ action_type: "LOCK_USER", action_value: null }] }],
+  conditions: []
 };
 
 const EMPTY_TEMPLATE_POLICY: LockoutPolicySaveParams = {
@@ -333,6 +334,104 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
     expect(policyServiceMock.deleteWithConfirmDialog).toHaveBeenCalledWith({ id: 1, name: "Brute Force" });
     expect(routerMock.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS);
   });
+
+  describe("conditions", () => {
+    beforeEach(() => {
+      policyServiceMock.conditionTypes.set({
+        USER_REALM: {
+          label: "User realm",
+          operators: [
+            { name: "IN", label: "is one of" },
+            { name: "NOT_IN", label: "is not one of" }
+          ],
+          choices: ["sales", "support"]
+        }
+      });
+    });
+
+    it("should store emitted conditions on the policy", () => {
+      component.onConditionsChange([{ condition_type: "USER_REALM", operator: "NOT_IN", value: ["sales"] }]);
+      expect(component.editPolicy().conditions).toEqual([
+        { condition_type: "USER_REALM", operator: "NOT_IN", value: ["sales"] }
+      ]);
+      expect(component.hasChanges()).toBe(true);
+    });
+
+    // An empty list would stringify differently from an absent key, marking a policy that never had
+    // conditions as dirty after a condition was added and removed again.
+    it("should drop the key rather than store an empty list, leaving the policy unchanged", () => {
+      component.onConditionsChange([{ condition_type: "USER_REALM", operator: "IN", value: ["sales"] }]);
+      component.onConditionsChange([]);
+      expect(component.editPolicy().conditions).toBeUndefined();
+      expect(component.hasChanges()).toBe(false);
+    });
+
+    it("should not send a conditions key for a policy that has none", async () => {
+      await component.savePolicy();
+      expect(policyServiceMock.savePolicy).toHaveBeenCalledTimes(1);
+      expect(policyServiceMock.savePolicy.mock.calls[0][0]).not.toHaveProperty("conditions");
+    });
+
+    it("should send the conditions it has", async () => {
+      component.onConditionsChange([{ condition_type: "USER_REALM", operator: "IN", value: ["sales"] }]);
+      await component.savePolicy();
+      expect(policyServiceMock.savePolicy.mock.calls[0][0].conditions).toEqual([
+        { condition_type: "USER_REALM", operator: "IN", value: ["sales"] }
+      ]);
+    });
+
+    // Omitting the key here would leave the stored conditions in place: the backend replaces them
+    // only when the key is present, so clearing them takes an explicit empty list.
+    it("should send an empty list when the stored policy's last condition is removed", async () => {
+      policyServiceMock.policies.set([
+        { ...mockPolicy, conditions: [{ condition_type: "USER_REALM", operator: "IN", value: ["sales"] }] }
+      ]);
+      paramMap$.next(convertToParamMap({ id: String(mockPolicy.id) }));
+      fixture.detectChanges();
+
+      component.onConditionsChange([]);
+      await component.savePolicy();
+      expect(policyServiceMock.savePolicy.mock.calls[0][0].conditions).toEqual([]);
+    });
+
+    it("should be valid when every condition value still exists", () => {
+      component.onConditionsChange([{ condition_type: "USER_REALM", operator: "IN", value: ["sales"] }]);
+      expect(component.conditionValuesValid()).toBe(true);
+      expect(component.canSave()).toBe(true);
+    });
+
+    // The backend rejects a value outside the type's current vocabulary, and the editor PATCHes the
+    // whole policy - so without this gate any save of such a policy would fail with a 400.
+    it("should be invalid and block saving when a condition names a value that is gone", () => {
+      component.onConditionsChange([{ condition_type: "USER_REALM", operator: "IN", value: ["sales", "deleted"] }]);
+      expect(component.conditionValuesValid()).toBe(false);
+      expect(component.canSave()).toBe(false);
+      expect(component.staleConditionValues()).toEqual([{ condition_type: "USER_REALM", values: ["deleted"] }]);
+    });
+
+    it("should not block while the condition vocabulary has not loaded", () => {
+      policyServiceMock.conditionTypes.set({});
+      component.onConditionsChange([{ condition_type: "USER_REALM", operator: "IN", value: ["deleted"] }]);
+      expect(component.conditionValuesValid()).toBe(true);
+    });
+
+    // Dropping a stale value silently would rewrite the policy on load: dropping it from a NOT_IN
+    // widens an exemption and from an IN narrows enforcement, neither of which the admin asked for.
+    it("should keep a stale value on the loaded policy instead of dropping it", () => {
+      policyServiceMock.policies.set([
+        { ...mockPolicy, conditions: [{ condition_type: "USER_REALM", operator: "NOT_IN", value: ["deleted"] }] }
+      ]);
+      paramMap$.next(convertToParamMap({ id: String(mockPolicy.id) }));
+      fixture.detectChanges();
+      // toMatchObject rather than toEqual: Signal Forms stamps its own identity symbols onto the
+      // objects of the model it wraps, which an exact comparison would trip over.
+      expect(component.editPolicy().conditions).toMatchObject([
+        { condition_type: "USER_REALM", operator: "NOT_IN", value: ["deleted"] }
+      ]);
+      expect(component.hasChanges()).toBe(false);
+      expect(component.canSave()).toBe(false);
+    });
+  });
 });
 
 describe("ConditionalAccessEditPageComponent — new mode", () => {
@@ -426,6 +525,7 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
       {
         key: "password_bruteforce",
         description: "Lock a user after repeated wrong passwords.",
+        // Without a "conditions" key, as the backend serves it: a template applies everywhere.
         policy: {
           name: "Password Brute-Force",
           time_window_seconds: 900,
@@ -446,6 +546,7 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
     expect(component.editPolicy().stages.length).toBe(1);
     // The admin must still pick a priority: the template leaves it empty.
     expect(component.editPolicy().priority).toBeNull();
+    expect(component.editPolicy().conditions).toBeUndefined();
     expect(component.selectedTemplateKey()).toBe("password_bruteforce");
 
     // The clear button resets the prefill back to the empty policy.

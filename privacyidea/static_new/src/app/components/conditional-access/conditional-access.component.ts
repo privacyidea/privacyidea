@@ -336,6 +336,16 @@ export class ConditionalAccessComponent implements OnDestroy {
     return policy.stages.flatMap((stage) => stage.actions.map((action) => action.action_type)).join(", ");
   }
 
+  // A policy whose conditions name values that no longer exist - typically a deleted realm - is
+  // flagged here rather than given a column of its own: the table is already wide, and what the admin
+  // needs from the list is only whether a policy needs attention. The condition has silently stopped
+  // doing what it was written to do, and the backend will refuse to save the policy until it is fixed.
+  hasStaleConditions(policy: LockoutPolicy): boolean {
+    return this.policyService.staleConditionValues(policy.conditions).length > 0;
+  }
+
+  staleConditionsTooltip = $localize`This policy has conditions that are no longer valid.`;
+
   isAllSelected(): boolean {
     const rows = this.policyDataSource().data;
     return rows.length > 0 && this.policySelection().length === rows.length;

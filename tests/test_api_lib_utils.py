@@ -7,7 +7,7 @@ from privacyidea.api.lib.utils import (check_policy_name,
                                        verify_auth_token, is_fqdn,
                                        attestation_certificate_allowed, get_priority_from_param,
                                        get_required_one_of, get_optional_one_of, get_required, get_optional,
-                                       to_list_param)
+                                       to_list_param, build_ca_context)
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.user import User
@@ -283,6 +283,25 @@ class UtilsTestCase(MyApiTestCase):
             # We see the message in the log, that the JSON data was read
             mock_log.assert_any_call("Update params in request POST http://localhost/token/init with values.")
         remove_token(serial)
+
+    def test_08b_build_ca_context_without_client_ip(self):
+        # A request context is no guarantee that before_request got as far as setting g.client_ip: an
+        # error raised early leaves it unset, and the conditional-access engine is also reached from
+        # post-response and error-handling paths. Reading it must not turn an authentication into a
+        # 500, so an absent client IP yields source_ip None (source_ip-target policies then simply do
+        # not apply) rather than an AttributeError.
+        with self.app.test_request_context('/auth', method='POST'):
+            # The app context is pushed once per class, so without this an earlier test's /auth leaves
+            # resolved_user.is_local_admin set and the role below comes back as admin-internal.
+            self.reset_flask_g()
+            # The bare g.client_ip read this replaced raised AttributeError here.
+            context = build_ca_context(User())
+            self.assertIsNone(context.source_ip)
+            # An empty user object is collapsed to None, so a condition on the user reads "no value"
+            # rather than an empty string (see _resolve_user_realm).
+            self.assertIsNone(context.user)
+            # Nothing marks this principal as a local admin, so it classifies as a regular user.
+            self.assertEqual("user", context.user_role)
 
     def test_09_check_unquote(self):
         self.setUp_user_realms()

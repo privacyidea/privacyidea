@@ -80,7 +80,8 @@ from privacyidea.api.lib.prepolicy import (is_remote_user_allowed, prepolicy,
                                            disabled_token_types, auth_timelimit, load_challenge_text)
 from privacyidea.api.lib.utils import (send_result, get_all_params, INTERNAL_OPTION_KEYS,
                                        verify_auth_token, get_optional, get_required, log_authentication,
-                                       get_auth_token_from_request, logged_in_user_from_token)
+                                       get_auth_token_from_request, logged_in_user_from_token,
+                                       build_ca_context)
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.auth import (check_webui_user, ROLE, verify_db_admin,
                                   db_admin_exists)
@@ -304,7 +305,7 @@ def _conditional_access_precheck(user: User) -> None:
         raise AuthError(_lockout_error_message(lockout),
                         id=Error.AUTHENTICATE_WRONG_CREDENTIALS,
                         details={"restriction": _restriction_kind(lockout)})
-    decision = evaluate_access_decision(user, g.client_ip)
+    decision = evaluate_access_decision(build_ca_context(user))
     # The decision belongs to this request's history, but its authentication-log row does not exist yet: the context
     # keeps the outcomes until the login stages its event (a dry-run DENY lets the login continue and land on that row).
     get_ca_context().add_outcomes(decision.outcomes)

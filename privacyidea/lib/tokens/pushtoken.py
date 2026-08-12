@@ -885,12 +885,8 @@ class PushTokenClass(TokenClass):
                                          "recording as a plain decline.")
                             challenge.set_session(ChallengeSession.DECLINED)
                     else:
-                        # Verify the presence_answer which is stored in the challenge data (json).
-                        # Legacy format: the correct choice is stored as the last entry in the data (str)separated by
-                        # a comma. Make sure that the presence_answer is given if it is set in the challenge so that
-                        # a response with a valid signature but no presence_answer does not pass!
-                        if (isinstance(challenge_data, dict) and
-                                challenge_data.get("mode") == PushMode.REQUIRE_PRESENCE and presence_answer):
+                        # Verify the presence_answer which is stored in the challenge data.
+                        if (challenge_data.get("mode") == PushMode.REQUIRE_PRESENCE and presence_answer):
                             correct_answer = challenge_data.get("correct_answer")
                             if presence_answer != correct_answer:
                                 log.debug(f"Challenge data ({challenge_data}) does not match "
@@ -899,25 +895,15 @@ class PushTokenClass(TokenClass):
                             else:
                                 # Presence answer matches, mark the challenge as answered
                                 challenge.set_otp_status(True)
-                        elif isinstance(challenge_data, str) and presence_answer:
-                            # Legacy handling
-                            if presence_answer != challenge_data.split(",").pop():
-                                log.debug(f"Challenge data ({challenge_data}) does not match "
-                                          f"given presence answer ({presence_answer})!")
-                                result = False
-                            else:
-                                challenge.set_otp_status(True)
                         # Check if presence_answer is missing, but it is required
-                        elif (isinstance(challenge_data, dict)
-                              and challenge_data.get("mode") == PushMode.REQUIRE_PRESENCE
+                        elif (challenge_data.get("mode") == PushMode.REQUIRE_PRESENCE
                               and not presence_answer):
                             log.warning("'push_require_presence' Policy is set but the presence answer "
                                         "is not present in the smartphone request!")
                             result = False
                         # Code to Phone: smartphone has confirmed, now generate a number to show and
                         # save it to the challenge.
-                        elif (isinstance(challenge_data, dict) and challenge_data.get(
-                                "mode") == PushMode.CODE_TO_PHONE):
+                        elif challenge_data.get("mode") == PushMode.CODE_TO_PHONE:
                             display_code = "".join([str(secrets.randbelow(10))
                                                     for _ in range(CODE_TO_PHONE_DISPLAY_CODE_LENGTH)])
                             challenge_data["smartphone_confirmed"] = True
@@ -1048,23 +1034,15 @@ class PushTokenClass(TokenClass):
 
     def _get_existing_challenge_data(self, transaction_id: str, push_mode: PushMode) -> dict | None:
         """
-        Load challenge data either in the current format (json/dict) or in the legacy format, which was a string
-        that was used for require_presence.
+        Load challenge data for the given transaction and push mode.
+
+        Returns the challenge data dict if a matching push challenge is found, or None.
         """
         challenges = get_challenges(transaction_id=transaction_id)
         for c in challenges:
             c_data = c.get_data()
-            if (isinstance(c_data, dict) and c_data.get("type", "") == "push"
-                    and c_data.get("mode") == push_mode):
+            if c_data.get("type", "") == "push" and c_data.get("mode") == push_mode:
                 return c_data
-            elif isinstance(c_data, str) and c.serial.startswith("PIPU") and push_mode == PushMode.REQUIRE_PRESENCE:
-                # Challenge data is string => legacy handling for presence
-                split_presence_options = c_data.split(",")
-                return {
-                    "mode": PushMode.REQUIRE_PRESENCE,
-                    "options": split_presence_options[:-1],
-                    "correct_answer": split_presence_options[-1]
-                }
         return None
 
     def _handle_presence_challenge(self, options: dict, transaction_id: str) -> tuple[dict, list, str]:
@@ -1167,12 +1145,8 @@ class PushTokenClass(TokenClass):
                 # The mode determines what we return to the smartphone. code_to_phone step 1
                 # is presented as a standard challenge (no display_code, no presence options).
                 presence_options = None
-                if isinstance(challenge_data, dict):
-                    if challenge_data.get("mode") == PushMode.REQUIRE_PRESENCE:
-                        presence_options = challenge_data.get("options")
-                elif isinstance(challenge_data, str) and challenge_data:
-                    # Legacy handling, when require_presence was a string of options with the correct one at the end
-                    presence_options = challenge_data.split(",")[:-1]
+                if challenge_data.get("mode") == PushMode.REQUIRE_PRESENCE:
+                    presence_options = challenge_data.get("options")
                 # then return the necessary smartphone data to answer the challenge
                 smartphone_data = _build_smartphone_data(token, challenge.challenge, registration_url, private_key,
                                                          options, presence_options)
@@ -1582,7 +1556,7 @@ class PushTokenClass(TokenClass):
                 continue
 
             data = challenge.get_data()
-            if isinstance(data, dict) and data.get("mode") == PushMode.CODE_TO_PHONE:
+            if data.get("mode") == PushMode.CODE_TO_PHONE:
                 if not data.get("smartphone_confirmed"):
                     # Step 1 not completed yet; smartphone has not confirmed.
                     log.debug("code_to_phone: waiting for smartphone confirmation.")

@@ -31,6 +31,7 @@ import string
 import threading
 import time
 from copy import copy
+from typing import TYPE_CHECKING
 from urllib.parse import unquote
 
 import jwt
@@ -65,6 +66,9 @@ from privacyidea.lib.policies.actions import PolicyAction
 from ...lib.error import (ConflictError, PolicyError, ResourceNotFoundError,
                           PrivacyIDEAError, AuthError, Error)
 from ...lib.log import log_with
+
+if TYPE_CHECKING:
+    from privacyidea.lib.conditional_access.context import CAContext
 
 log = logging.getLogger(__name__)
 ENCODING = "utf-8"
@@ -437,6 +441,53 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
     return event
 
 
+def build_ca_context(user, internal_admin: bool | None = None) -> "CAContext":
+    """
+    Assemble the :class:`~privacyidea.lib.conditional_access.context.CAContext`
+    for the current request — the single parameter object the conditional-access
+    engine evaluates against.
+
+    This is the one place that reads Flask state (``g`` / ``request``) for the
+    engine, keeping the lib layer free of it. Outside a request context (an event
+    recorded from outside a view, e.g. the push_wait flow) the request-scoped
+    fields are simply ``None``; nothing here raises.
+
+    ``internal_admin`` flags a local database admin, which
+    :func:`_determine_user_role` cannot infer from the user object alone (such an
+    admin has no realm to match against ``SUPERUSER_REALM``). Left at ``None`` it
+    is taken from ``g.resolved_user``, which ``/auth``'s ``before_request`` fills
+    in from its own ``db_admin_exists`` lookup — so the **pre-auth** check
+    classifies a local admin correctly without a second query, and endpoints that
+    never see one (``/validate/*``, where ``g.resolved_user`` is absent) fall back
+    to ``False``. Pass it explicitly to override, as ``/auth`` does after the
+    credential check, where the flag is *verified* rather than merely claimed.
+
+    Note the pre-auth value is a claimed identity: it says an admin of that name
+    exists and no realm was given, not that the password was right. That is the
+    same standing as the admin-realm classification, which likewise reads the
+    realm before any credential is checked, and it is what lets a break-glass
+    condition (``USER_ROLE NOT_IN [admin-internal]``) exempt the emergency account
+    from a pre-auth DENY.
+
+    :param user: the authenticating user
+    :param internal_admin: True for a local database admin; ``None`` to derive it
+        from the request
+    :return: the context describing this request
+    """
+    from privacyidea.lib.conditional_access.context import CAContext
+    source_ip = None
+    if has_request_context():
+        # g.get, not g.client_ip: a request context is not a guarantee that before_request got as far
+        # as setting it (an AuthError raised early leaves it unset, which is why
+        # hardening_action_active re-derives it), and this must never turn an authentication into a
+        # 500. A missing source IP simply means source_ip-target policies do not apply.
+        source_ip = g.get("client_ip")
+        if internal_admin is None:
+            internal_admin = g.get("resolved_user", {}).get("is_local_admin", False)
+    return CAContext(user=user or None, source_ip=source_ip,
+                     user_role=str(_determine_user_role(user, bool(internal_admin))))
+
+
 def conditional_access_precheck(user: User, log_rejection: bool = True) -> "Response | None":
     """
     Reject a request pre-auth (before any token logic and before the failcounter /
@@ -488,7 +539,7 @@ def conditional_access_precheck(user: User, log_rejection: bool = True) -> "Resp
     if is_ip_blocked(g.client_ip, clear_expired=True):
         log.info(f"Rejecting authentication from blocked IP {g.client_ip!r}.")
         return reject(AuthEventType.IP_BLOCKED, "Rejected: source IP is blocked")
-    decision = evaluate_access_decision(user, g.client_ip)
+    decision = evaluate_access_decision(build_ca_context(user))
     # A DENY decision is part of this request's history, but no authentication-log row exists yet to record it against
     # (and a dry-run DENY lets the request continue, so its row comes later). The context holds the outcomes until the
     # request stages the event they belong to - which, for an enforced DENY, is the row written just below.
