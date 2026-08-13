@@ -136,6 +136,10 @@ class BaseEventHandler:
     description = "This is the base class of an EventHandler with no " \
                   "functionality"
     run_details = None
+    # A new binding of this handler aborts the request if the handler fails. Set this for a handler whose
+    # result the request itself consumes, where continuing without the handler changes what the client
+    # receives. It is only the value a new binding starts with, the binding decides at runtime.
+    default_abort_on_error = False
 
     def __init__(self):
         pass
