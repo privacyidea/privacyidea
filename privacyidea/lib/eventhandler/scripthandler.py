@@ -32,7 +32,7 @@ The scripts can take parameters like
 from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib.utils import is_true
 from privacyidea.lib.framework import get_app_config_value
-from privacyidea.lib.error import ServerError, ConfigAdminError
+from privacyidea.lib.error import HandlerAbortError, ConfigAdminError
 from privacyidea.lib import _
 from privacyidea.app import db
 import logging
@@ -206,11 +206,11 @@ class ScriptEventHandler(BaseEventHandler):
             log.warning(f"Failed to execute script {script_name!r}: {e!r}")
             log.warning(traceback.format_exc())
             if handler_options.get("background") == SCRIPT_WAIT and is_true(handler_options.get("raise_error")):
-                raise ServerError("Failed to start script.")
+                raise HandlerAbortError("Failed to start script.")
 
         if rcode:
             log.warning(f"Script {script_name!r} failed to execute with error code {rcode!r}")
             if is_true(handler_options.get("raise_error")):
-                raise ServerError("Error during execution of the script.")
+                raise HandlerAbortError("Error during execution of the script.")
 
         return ret
