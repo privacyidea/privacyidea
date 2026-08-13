@@ -38,6 +38,8 @@ from .lib.utils import (get_all_params, get_before_request_config, get_optional,
 from .container import container_blueprint
 from ..lib.container import find_container_for_token, find_container_by_serial
 from ..lib.framework import get_app_config_value
+from ..lib.clients import identify_client_by_key, touch_client
+from ..models import ClientStatus, db
 from ..lib.policies.actions import PolicyAction
 from ..lib.user import get_user_from_param
 import logging
@@ -75,6 +77,7 @@ from .subscriptions import subscriptions_blueprint
 from .monitoring import monitoring_blueprint
 from .tokengroup import tokengroup_blueprint
 from .serviceid import serviceid_blueprint
+from .clients import clients_blueprint
 from .healthcheck import healthz_blueprint
 from .info import info_blueprint
 from privacyidea.api.lib.postpolicy import postrequest, sign_response, hide_version
@@ -96,6 +99,65 @@ log = logging.getLogger(__name__)
 def log_begin_request():
     log.debug(f"Begin handling of request {redact_url(request.full_path)!r}")
     g.startdate = datetime.datetime.now()
+
+
+@token_blueprint.before_app_request
+def identify_api_client():
+    """
+    Identify the API client from the ``X-API-Key`` header for *every* request
+    and expose it as ``g.client_id`` (``None`` when no valid client).
+
+    The header is an *optional* identification mechanism, so an absent, unknown
+    or disabled key simply leaves the request unidentified (``g.client_id =
+    None``) rather than rejecting it - otherwise a stale key sent to an endpoint
+    that does not use API-key auth (e.g. the WebUI) would break that request.
+    Endpoints that require an identified client (``/validate/capabilities``,
+    ``/validate/remember_device``) enforce it themselves.
+
+    A *known* key whose client is disabled (``suspended``) is stashed on
+    ``g.rejected_api_client`` so an endpoint with an audit object can record that
+    a real, previously issued key is still being used after it was disabled. An
+    unknown/invalid key is only logged (auditing every probe would flood the
+    audit log).
+    """
+    g.client_id = None
+    g.rejected_api_client = None
+    api_key = request.headers.get("X-API-Key")
+    if not api_key:
+        return
+
+    try:
+        client = identify_client_by_key(api_key)
+    except Exception as exc:
+        # Identification is optional and runs in a global before-request hook, so
+        # a failure here (e.g. a transient DB error) must never turn an otherwise
+        # valid request into a 500. Leave the request unidentified and continue.
+        log.warning(f"Could not resolve the X-API-Key; treating the request as unidentified: {exc}")
+        g.client_id = None
+        g.rejected_api_client = None
+        return
+
+    if client is None:
+        # Unknown key_id or wrong secret: do not reject app-wide, do not audit.
+        # DEBUG, not WARNING: a spoofable header on every request would flood logs.
+        log.debug("Ignoring an unknown or invalid X-API-Key.")
+    elif client.status == ClientStatus.ACTIVE:
+        g.client_id = client.id
+        # Refresh the client's usage timestamp, throttled so a busy client does
+        # not issue a DB write on every request. This is best-effort and isolated:
+        # a write failure here must not un-identify an otherwise valid client.
+        try:
+            touch_client(client)
+        except Exception as exc:
+            # touch_client commits; a failed commit leaves the session in a failed
+            # transaction, so roll back or the real endpoint dies with
+            # PendingRollbackError - defeating the best-effort intent.
+            db.session.rollback()
+            log.warning(f"Could not update the client's last_used_at timestamp: {exc}")
+    else:
+        # Known key, valid secret, but the client is disabled.
+        g.rejected_api_client = {"client_id": client.id, "status": client.status}
+        log.warning(f"A {client.status} API key was presented (client {client.id}).")
 
 
 @token_blueprint.teardown_app_request
@@ -199,6 +261,7 @@ def before_userendpoint_request():
 @monitoring_blueprint.before_request
 @tokengroup_blueprint.before_request
 @serviceid_blueprint.before_request
+@clients_blueprint.before_request
 @admin_required
 def before_admin_request():
     before_request()
@@ -446,6 +509,7 @@ def before_request():
 @recover_blueprint.after_request
 @tokengroup_blueprint.after_request
 @serviceid_blueprint.after_request
+@clients_blueprint.after_request
 @container_blueprint.after_request
 @info_blueprint.after_request
 @jwtauth.after_request

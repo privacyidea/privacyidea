@@ -94,6 +94,20 @@
                            class="form-control" min="0" />
         </div>
     </div>
+
+    <div class="form-group">
+        <label for="abort_on_error" class="col-sm-3 control-label" translate>
+            Abort on error</label>
+        <div class="col-sm-6">
+            <input type="checkbox" id="abort_on_error"
+                   ng-model="form.abort_on_error" />
+            <span class="help-block" translate>
+                If the handler fails, the request is answered with an error. By default a failing handler only
+                adds an entry to the audit log and the request continues without it. Enable this if the request
+                depends on the result of the handler, like a response mangler that removes data from the
+                response.</span>
+        </div>
+    </div>
     <div class="text-center"
          ng-show="checkRight('eventhandling_write')">
         <button ng-click="createEvent()"

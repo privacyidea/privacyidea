@@ -287,6 +287,7 @@ class GROUP:
     SETTING_ACTIONS = "setting actions"
     TOKENGROUP = "tokengroup"
     SERVICEID = "service ID"
+    CLIENTS = "API clients"
     CONTAINER = "container"
     REGISTRATION = "registration and synchronization"
     SMARTPHONE = "smartphone"
@@ -2161,6 +2162,42 @@ def get_static_policy_definitions(scope=None):
                 'desc': _("The Admin is allowed delete a service ID definition."),
                 'mainmenu': [MAIN_MENU.CONFIG],
                 'group': GROUP.SERVICEID},
+            PolicyAction.API_CLIENT_LIST: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed to list API clients."),
+                'mainmenu': [MAIN_MENU.CONFIG],
+                'group': GROUP.CLIENTS},
+            PolicyAction.API_CLIENT_ADD: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed to create API clients."),
+                'mainmenu': [MAIN_MENU.CONFIG],
+                'group': GROUP.CLIENTS},
+            PolicyAction.API_CLIENT_EDIT: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed to modify API clients (display name, status, config)."),
+                'mainmenu': [MAIN_MENU.CONFIG],
+                'group': GROUP.CLIENTS},
+            PolicyAction.API_CLIENT_ROTATE: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed to rotate the API key of a client."),
+                'mainmenu': [MAIN_MENU.CONFIG],
+                'group': GROUP.CLIENTS},
+            PolicyAction.API_CLIENT_DELETE: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed to delete API clients."),
+                'mainmenu': [MAIN_MENU.CONFIG],
+                'group': GROUP.CLIENTS},
+            PolicyAction.REMEMBERED_DEVICE_LIST: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed to list the remembered devices of API clients."),
+                'mainmenu': [MAIN_MENU.CONFIG],
+                'group': GROUP.CLIENTS},
+            PolicyAction.REMEMBERED_DEVICE_REVOKE: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed to revoke remembered devices (of a client, "
+                          "or realm-wide / per user across all clients)."),
+                'mainmenu': [MAIN_MENU.CONFIG],
+                'group': GROUP.CLIENTS},
             PolicyAction.TOKENGROUPS: {
                 'type': 'bool',
                 'desc': _("The Admin is allowed to manage the tokengroups of a token."),
@@ -2570,6 +2607,23 @@ def get_static_policy_definitions(scope=None):
             }
         },
         SCOPE.AUTH: {
+            PolicyAction.REMEMBER_DEVICE: {
+                'type': 'bool',
+                'desc': _("Allow an API client to obtain a persistent 'remember this device' "
+                          "cookie on successful authentication. Requires the request to be made "
+                          "by an identified API client (the X-API-Key header): without one, no "
+                          "cookie is issued and the recognition endpoint returns 401.")},
+            PolicyAction.REMEMBER_DEVICE_VALIDITY: {
+                'type': 'int',
+                'desc': _("How many days a 'remember this device' cookie stays valid "
+                          "(default 30 if unset). Scope it with a realm/user condition to give "
+                          "different lifetimes, e.g. a shorter one for admins than for users.")},
+            PolicyAction.REMEMBER_DEVICE_MAX_DEVICES: {
+                'type': 'int',
+                'desc': _("Maximum number of remembered devices a single user may have per API "
+                          "client. Once the user has this many live devices for the client, "
+                          "further opt-ins on that client issue no new cookie (the existing "
+                          "devices keep working). Unset or 0 means unlimited.")},
             PolicyAction.OTPPIN: {
                 'type': 'str',
                 'value': [ACTIONVALUE.TOKENPIN, ACTIONVALUE.USERSTORE,
@@ -2833,7 +2887,9 @@ def get_static_policy_definitions(scope=None):
             },
             PolicyAction.APIKEY: {
                 'type': 'bool',
-                'desc': _('The sending of an API Auth Key is required during '
+                'desc': _('DEPRECATED (planned for removal in a future release; the X-API-Key '
+                          'API clients feature is intended to replace it): '
+                          'The sending of an API Auth Key is required during '
                           'authentication. This avoids rogue authenticate '
                           'requests against the /validate/check interface.'),
                 'group': GROUP.SETTING_ACTIONS,
@@ -3331,7 +3387,8 @@ class Match:
             if "password" in request_data:
                 del request_data["password"]
         return self._g.policy_object.match_policies(audit_data=audit_data, request_headers=request_headers,
-                                                    pinode=self.pinode, request_data=request_data, **self._match_kwargs)
+                                                    pinode=self.pinode, request_data=request_data,
+                                                    **self._match_kwargs)
 
     def any(self, write_to_audit_log=True):
         """

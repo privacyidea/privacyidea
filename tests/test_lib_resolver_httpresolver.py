@@ -1,6 +1,7 @@
 import copy
 import json
 from typing import Optional, Union
+from urllib.parse import quote
 
 import mock
 import pytest
@@ -187,6 +188,76 @@ class RequestConfigTestCase(MyTestCase):
         self.assertEqual("Alice", config.request_mapping["displayName"])
         self.assertEqual("s3cr3t!", config.request_mapping["passwordProfile"]["password"])
 
+    def test_05b_tag_replacement_in_list_values(self):
+        # Tags are replaced at any depth of the request mapping, also inside list values and inside dicts of a list
+        config_dict = {
+            ENDPOINT: "http://example.com/users",
+            METHOD: "post",
+            HEADERS: {"Content-Type": "application/json"},
+            REQUEST_MAPPING: '{"businessPhones": ["{mobile}", "0000"], '
+                             '"identities": [{"issuerAssignedId": "{username}"}], '
+                             '"nested": [["{mobile}"]], "count": 1}'
+        }
+        config = RequestConfig(config_dict, {}, {"mobile": "+49123", "username": "alice"})
+        self.assertEqual(["+49123", "0000"], config.request_mapping["businessPhones"])
+        self.assertEqual([{"issuerAssignedId": "alice"}], config.request_mapping["identities"])
+        self.assertEqual([["+49123"]], config.request_mapping["nested"])
+        # Values which can not contain a tag keep their type
+        self.assertEqual(1, config.request_mapping["count"])
+
+    def test_06_tag_values_are_not_rescanned(self):
+        # Each tag is replaced only once: if the value of a tag contains another tag, the latter must not be replaced.
+        config_dict = {
+            ENDPOINT: "http://example.com/auth/{username}",
+            METHOD: "post",
+            HEADERS: {"Content-Type": "application/json"},
+            REQUEST_MAPPING: '{"displayName": "{givenname} {surname}", '
+                             '"passwordProfile": {"password": "{password}"}}'
+        }
+        config = RequestConfig(config_dict, {}, {"givenname": "{username}", "surname": "Doe",
+                                                 "username": "{givenname}", "password": "Sup3rS3cret"})
+        self.assertEqual("{username} Doe", config.request_mapping["displayName"])
+        self.assertEqual("Sup3rS3cret", config.request_mapping["passwordProfile"]["password"])
+        # In the endpoint the value is percent-encoded, hence the braces can not be mistaken for a tag either
+        self.assertEqual("http://example.com/auth/%7Bgivenname%7D", config.endpoint)
+
+    def test_06b_endpoint_values_are_percent_encoded(self):
+        # Reserved characters in a value must not become part of the URL structure. Only the values are encoded, the
+        # template keeps its structure, and values of the request mapping stay untouched (requests encodes them).
+        config_dict = {
+            ENDPOINT: "http://example.com/users/{username}?filter={username}",
+            METHOD: "post",
+            HEADERS: {"Content-Type": "application/json"},
+            REQUEST_MAPPING: '{"login": "{username}"}'
+        }
+        config = RequestConfig(config_dict, {}, {"username": "gu#est/a b'c?d&e"})
+        self.assertEqual("http://example.com/users/gu%23est%2Fa%20b%27c%3Fd%26e"
+                         "?filter=gu%23est%2Fa%20b%27c%3Fd%26e", config.endpoint)
+        self.assertEqual("gu#est/a b'c?d&e", config.request_mapping["login"])
+
+        # A value can not add further path segments
+        config = RequestConfig(config_dict, {}, {"username": "../applications"})
+        self.assertEqual("http://example.com/users/..%2Fapplications?filter=..%2Fapplications", config.endpoint)
+
+        # Identifiers without reserved characters are not modified
+        config = RequestConfig(config_dict, {}, {"username": "87d349ed-44d7-43e1-9a83-5f2406dee5bd"})
+        self.assertEqual("http://example.com/users/87d349ed-44d7-43e1-9a83-5f2406dee5bd"
+                         "?filter=87d349ed-44d7-43e1-9a83-5f2406dee5bd", config.endpoint)
+
+    def test_07_unknown_tags_and_braces_are_kept(self):
+        # Tags without a value are kept as they are, and braces which are no tags must not be modified
+        config_dict = {
+            ENDPOINT: "http://example.com/users/{unknown_tag}",
+            METHOD: "post",
+            HEADERS: {"Content-Type": "application/x-www-form-urlencoded"},
+            REQUEST_MAPPING: 'scope={"a":1}&id={userid}&other={also_unknown}'
+        }
+        config = RequestConfig(config_dict, {}, {"userid": "u1"})
+        self.assertEqual("http://example.com/users/{unknown_tag}", config.endpoint)
+        self.assertEqual('{"a":1}', config.request_mapping["scope"])
+        self.assertEqual("u1", config.request_mapping["id"])
+        self.assertEqual("{also_unknown}", config.request_mapping["other"])
+
 
 class DoRequestTestCase(MyTestCase):
     """Tests _do_request routing: params go to json=, data=, or query string depending on method and Content-Type."""
@@ -352,6 +423,87 @@ class DoRequestTestCase(MyTestCase):
 
         self.assertEqual(self.USERNAME, received["params"]["username"])
         self.assertEqual(self.PASSWORD, received["params"]["password"])
+
+    def _captured_query(self, method, params):
+        """Returns the query string of the request which is sent for the given params"""
+        captured = {}
+
+        def client_mock(request):
+            captured["url"] = request.url
+            return 200, {}, "{}"
+
+        responses.add_callback(getattr(responses, method.upper()), "http://example.com/api", callback=client_mock)
+        config = self._make_config(method, "application/json")
+        self._make_resolver()._do_request(config, params)
+        _, _, query = captured["url"].partition("?")
+        return query
+
+    @responses.activate
+    def test_09_get_list_params_are_sent_as_repeated_keys(self):
+        # A list must result in a repeated key, not in the string representation of the list
+        self.assertEqual("phones=1&phones=2", self._captured_query("get", {"phones": ["1", "2"]}))
+
+    @responses.activate
+    def test_10_get_params_with_value_none_are_omitted(self):
+        # requests skips entries without a value instead of sending the string "None"
+        self.assertEqual("a=x", self._captured_query("get", {"a": "x", "b": None}))
+
+    @responses.activate
+    def test_11_empty_params_do_not_add_a_query_string(self):
+        self.assertEqual("", self._captured_query("get", {}))
+        self.assertEqual("", self._captured_query("delete", None))
+
+    @responses.activate
+    def test_12_query_string_of_the_preconfigured_resolvers(self):
+        # These are the query strings the shipped resolvers send. They must not change, and they
+        # especially must not end up unencoded.
+        entra_filter = "(startswith(userPrincipalName, 'te''st') or endswith(userPrincipalName, 'te''st'))"
+        self.assertEqual("%24filter=%28startswith%28userPrincipalName%2C+%27te%27%27st%27%29+or+"
+                         "endswith%28userPrincipalName%2C+%27te%27%27st%27%29%29&%24expand=memberOf",
+                         self._captured_query("get", {"$filter": entra_filter, "$expand": "memberOf"}))
+        self.assertEqual("username=elizabeth&exact=true",
+                         self._captured_query("get", {"username": "elizabeth", "exact": True}))
+
+    @responses.activate
+    def test_13_booleans_in_the_query_string_are_lowercase(self):
+        # A JSON request mapping such as '{"exact": true}' results in a Python bool. requests would render it as
+        # 'True', but the APIs expect the JSON notation.
+        self.assertEqual("exact=true&deleted=false", self._captured_query("get", {"exact": True, "deleted": False}))
+
+    @responses.activate
+    def test_13b_booleans_nested_in_the_query_string_are_lowercase(self):
+        # Booleans are also converted if they are nested in a list value of the request mapping
+        self.assertEqual("flags=true&flags=false", self._captured_query("get", {"flags": [True, False]}))
+
+    @responses.activate
+    def test_14_booleans_in_a_json_body_stay_booleans(self):
+        # In contrast to the query string, a json body must contain real booleans and not the strings "true"/"false"
+        received = {}
+
+        def client_mock(request):
+            received["body"] = json.loads(request.body)
+            return 200, {}, "{}"
+
+        responses.add_callback(responses.POST, "http://example.com/api", callback=client_mock)
+        config = self._make_config("post", "application/json", '{"accountEnabled": true, "displayName": "Alice"}')
+        self._make_resolver()._do_request(config, config.request_mapping)
+
+        self.assertEqual({"accountEnabled": True, "displayName": "Alice"}, received["body"])
+        self.assertIsInstance(received["body"]["accountEnabled"], bool)
+
+    @responses.activate
+    def test_15_booleans_in_a_form_encoded_body_are_lowercase(self):
+        received = {}
+
+        def client_mock(request):
+            received["body"] = request.body
+            return 200, {}, "{}"
+
+        responses.add_callback(responses.POST, "http://example.com/api", callback=client_mock)
+        config = self._make_config("post", "application/x-www-form-urlencoded")
+        self._make_resolver()._do_request(config, {"exact": True})
+
+        self.assertEqual("exact=true", received["body"])
 
 
 class HTTPResolverTestCase(MyTestCase):
@@ -1248,6 +1400,81 @@ class HTTPResolverTestCase(MyTestCase):
         self.assertFalse(resolver.checkPass("111-aaa-333", "testpassword", "testuser"))
 
     @responses.activate
+    def test_24b_check_pass_password_with_asterisk(self):
+        # The search wildcard must not be applied to credentials: an asterisk in the password has to be sent as is
+        resolver = HTTPResolver()
+        config = copy.deepcopy(self.advanced_config)
+        resolver.loadConfig(config)
+        resolver.wildcard = ""
+
+        received = {}
+
+        def callback(request):
+            received.update(json.loads(request.body))
+            return 200, {}, json.dumps({"access_token": "12345"})
+
+        responses.add_callback(responses.POST, "https://example.com/auth", callback=callback)
+
+        self.assertTrue(resolver.checkPass("111-aaa-333", "P*ssw*rd", "al*ice"))
+        self.assertEqual("P*ssw*rd", received["password"])
+        self.assertEqual("al*ice", received["username"])
+
+    @responses.activate
+    def test_24c_get_auth_header_password_with_asterisk(self):
+        # The service account credentials of the authorization request keep their asterisks as well, independent of
+        # the wildcard configured for the resolver.
+        resolver = HTTPResolver()
+        config = copy.deepcopy(self.advanced_config)
+        config[CONFIG_AUTHORIZATION] = {METHOD: HTTPMethod.POST.value, ENDPOINT: "/token",
+                                        REQUEST_MAPPING: "username={username}&password={password}",
+                                        RESPONSE_MAPPING: '{"Authorization": "Bearer {access_token}"}',
+                                        HEADERS: '{"Content-Type": "application/x-www-form-urlencoded"}'}
+        config[USERNAME] = "adm*in"
+        config[PASSWORD] = "s*cr*t"
+        resolver.loadConfig(config)
+
+        received = {}
+
+        def callback(request):
+            from urllib.parse import parse_qs
+            received.update({k: v[0] for k, v in parse_qs(request.body).items()})
+            return 200, {}, json.dumps({"access_token": "12345"})
+
+        responses.add_callback(responses.POST, "https://example.com/token", callback=callback)
+
+        self.assertEqual({"Authorization": "Bearer 12345"}, resolver._get_auth_header())
+        self.assertEqual("adm*in", received["username"])
+        self.assertEqual("s*cr*t", received["password"])
+
+    @responses.activate
+    def test_24d_get_user_list_translates_search_wildcard(self):
+        # search values are still translated to the wildcard of the user store, also when they are
+        # used as a tag in the endpoint
+        resolver = HTTPResolver()
+        config = copy.deepcopy(self.advanced_config)
+        config[CONFIG_GET_USER_LIST] = {METHOD: HTTPMethod.GET.value, ENDPOINT: "/users/{username}"}
+        resolver.loadConfig(config)
+        resolver.wildcard = "%"
+
+        responses.add(responses.GET, "https://example.com/users/test%", status=200,
+                      body="""[{"login": "testuser", "id": "1234"}]""")
+        users = resolver.getUserList({"username": "test*"})
+        self.assertEqual(1, len(users))
+        self.assertEqual("https://example.com/users/test%25?login=test%25", responses.calls[0].request.url)
+
+    @responses.activate
+    def test_24e_get_user_list_with_a_non_string_search_value(self):
+        # A search value which is no string, e.g. a numeric user id, is searched for as well
+        resolver = HTTPResolver()
+        resolver.loadConfig(copy.deepcopy(self.advanced_config))
+
+        responses.add(responses.GET, "https://example.com/users", status=200,
+                      body="""[{"login": "testuser", "id": "1234"}]""")
+        users = resolver.getUserList({"userid": 1234})
+        self.assertEqual(1, len(users))
+        self.assertEqual("https://example.com/users?id=1234", responses.calls[0].request.url)
+
+    @responses.activate
     def test_25_get_user_groups(self):
         instance = HTTPResolver()
         config = copy.deepcopy(self.advanced_config)
@@ -1269,7 +1496,7 @@ class HTTPResolverTestCase(MyTestCase):
         self.assertListEqual([], groups)
 
         # SSL error
-        with mock.patch('requests.get', side_effect=SSLError("SSL error message")):
+        with mock.patch('requests.request', side_effect=SSLError("SSL error message")):
             groups = instance.get_user_groups(user)
             self.assertListEqual([], groups)
 
@@ -1858,7 +2085,9 @@ class EntraIDResolverTestCase(MyTestCase):
 
         # success
         user_name = "AdeleV@contoso.com"
-        responses.add(responses.GET, f"https://graph.microsoft.com/v1.0/users/{user_name}", status=200,
+        # The username is substituted into the endpoint path, hence it is percent-encoded ('@' -> '%40')
+        quoted_user_name = quote(user_name, safe="")
+        responses.add(responses.GET, f"https://graph.microsoft.com/v1.0/users/{quoted_user_name}", status=200,
                       body="""{"businessPhones": ["+1 425 555 0109"],
                                "displayName": "Adele Vance",
                                "givenName": "Adele",
@@ -1875,11 +2104,39 @@ class EntraIDResolverTestCase(MyTestCase):
         self.assertEqual("87d349ed-44d7-43e1-9a83-5f2406dee5bd", resolver.getUserId(user_name))
 
         # User ID does not exists
-        responses.add(responses.GET, f"https://graph.microsoft.com/v1.0/users/{user_name}", status=404,
+        responses.add(responses.GET, f"https://graph.microsoft.com/v1.0/users/{quoted_user_name}", status=404,
                       body="""{"error": {"code": "Request_ResourceNotFound", 
                                                "message": "Resource 'AdeleV@contoso.com' does not exist."}}"""
                       )
         self.assertEqual("", resolver.getUserId(user_name))
+
+    @responses.activate
+    def test_11b_getUserId_guest_user(self):
+        # The user principal name of a guest user contains '#'. Without encoding, requests treats everything after it
+        # as the URL fragment and never sends it, so the wrong user is requested.
+        resolver = self.set_up_resolver()
+        user_name = "guest_contoso.com#EXT#@tenant.onmicrosoft.com"
+
+        responses.add(responses.GET, f"https://graph.microsoft.com/v1.0/users/{quote(user_name, safe='')}", status=200,
+                      body=json.dumps({"userPrincipalName": user_name,
+                                       "id": "87d349ed-44d7-43e1-9a83-5f2406dee5bd"}))
+
+        self.assertEqual("87d349ed-44d7-43e1-9a83-5f2406dee5bd", resolver.getUserId(user_name))
+        # The complete UPN has to be part of the request target, the fragment must not be cut off
+        self.assertEqual("/v1.0/users/guest_contoso.com%23EXT%23%40tenant.onmicrosoft.com",
+                         responses.calls[0].request.path_url)
+
+    @responses.activate
+    def test_11c_getUserId_does_not_leave_the_users_endpoint(self):
+        # A login name is attacker controlled. It must not be able to add path segments and thereby address another
+        # resource of the API.
+        resolver = self.set_up_resolver()
+
+        responses.add(responses.GET, "https://graph.microsoft.com/v1.0/users/..%2Fapplications", status=404,
+                      body=json.dumps({"error": {"code": "Request_ResourceNotFound", "message": "does not exist"}}))
+
+        self.assertEqual("", resolver.getUserId("../applications"))
+        self.assertEqual("/v1.0/users/..%2Fapplications", responses.calls[0].request.path_url)
 
     @responses.activate
     def test_12_testconnection_success(self):
@@ -1929,7 +2186,7 @@ class EntraIDResolverTestCase(MyTestCase):
                                         }""")
 
         # user by name response
-        responses.add(responses.GET, "https://graph.microsoft.com/v1.0/users/AdeleV@contoso.com", status=200,
+        responses.add(responses.GET, "https://graph.microsoft.com/v1.0/users/AdeleV%40contoso.com", status=200,
                       body="""{"businessPhones": ["+1 425 555 0109"],
                                "displayName": "Adele Vance",
                                "givenName": "Adele",
@@ -2002,7 +2259,7 @@ class EntraIDResolverTestCase(MyTestCase):
                                            "id": "87d349ed-44d7-43e1-9a83-5f2406dee5bd"
                                         }""")
         # user by name response
-        responses.add(responses.GET, "https://graph.microsoft.com/v1.0/users/AdeleV@contoso.com", status=200,
+        responses.add(responses.GET, "https://graph.microsoft.com/v1.0/users/AdeleV%40contoso.com", status=200,
                       body="""{"businessPhones": ["+1 425 555 0109"],
                                "displayName": "Adele Vance",
                                "givenName": "Adele",
@@ -2137,6 +2394,25 @@ class EntraIDResolverTestCase(MyTestCase):
         correct_query = "(userPrincipalName eq 'D'' test')"
         self.assertEqual(correct_query, search_params["$filter"])
 
+    def test_14b_get_search_params_escapes_quotes_in_a_wildcard_search(self):
+        # Single quotes are escaped in a wildcard search as well, otherwise the value ends the string literal of the
+        # filter: the quote must be doubled and the asterisks must be removed
+        resolver = EntraIDResolver()
+
+        search_params = resolver._get_search_params({"username": "O'Br*"})
+        self.assertEqual("(startswith(userPrincipalName, 'O''Br') or endswith(userPrincipalName, 'O''Br'))",
+                         search_params["$filter"])
+
+        # The same for a simple query without the advanced query capabilities
+        resolver.config[CONFIG_GET_USER_LIST][HEADERS] = ""
+        search_params = resolver._get_search_params({"username": "O'Br*"})
+        self.assertEqual("startswith(userPrincipalName, 'O''Br')", search_params["$filter"])
+
+        # A value can not add further clauses to the filter
+        search_params = resolver._get_search_params({"username": "x') or startswith(userPrincipalName,'a*"})
+        self.assertEqual("startswith(userPrincipalName, 'x'') or startswith(userPrincipalName,''a')",
+                         search_params["$filter"])
+
     def test_15_get_config(self):
         resolver = EntraIDResolver()
 
@@ -2217,6 +2493,24 @@ class EntraIDResolverTestCase(MyTestCase):
 
         uid = resolver.add_user(user_data)
         self.assertEqual("123456789", uid)
+
+    @responses.activate
+    def test_16b_add_user_password_with_asterisk(self):
+        # The initial password is interpolated into passwordProfile via the {password} tag. The wildcard must not be
+        # applied to it.
+        resolver = self.set_up_resolver()
+        received = {}
+
+        def callback(request):
+            received.update(json.loads(request.body))
+            return 201, {"Content-Type": "application/json"}, json.dumps({"id": "123456789"})
+
+        responses.add_callback(responses.POST, "https://graph.microsoft.com/v1.0/users", callback=callback)
+
+        user_data = {"username": "AdeleV@contoso.com", "givenname": "Adele", "surname": "Vance",
+                     "password": "xWw*vJ]6NMw+bWH-d"}
+        self.assertEqual("123456789", resolver.add_user(user_data))
+        self.assertEqual("xWw*vJ]6NMw+bWH-d", received["passwordProfile"]["password"])
 
     @responses.activate
     def test_17_add_user_fails(self):
@@ -2368,6 +2662,26 @@ class EntraIDResolverTestCase(MyTestCase):
                                callback=self.check_pass_callback)
 
         self.assertTrue(resolver.checkPass("111-aaa-333", "testpassword", "testuser"))
+
+    @responses.activate
+    def test_23b_check_pass_credentials_with_asterisk(self):
+        # EntraID does not support wildcards, so its wildcard is an empty string. It must not be applied to the
+        # credentials: an asterisk in the username or password has to reach the token endpoint unchanged.
+        from urllib.parse import parse_qs
+        resolver = self.set_up_resolver()
+        self.assertEqual("", resolver.wildcard)
+        received = {}
+
+        def callback(request):
+            received.update({k: v[0] for k, v in parse_qs(request.body).items()})
+            return 200, {}, json.dumps({"token_type": "Bearer", "access_token": "12345"})
+
+        responses.add_callback(responses.POST, "https://login.microsoftonline.com/organization/oauth2/v2.0/token",
+                               callback=callback)
+
+        self.assertTrue(resolver.checkPass("111-aaa-333", "P*ssw*rd", "al*ice"))
+        self.assertEqual("P*ssw*rd", received["password"])
+        self.assertEqual("al*ice", received["username"])
 
     @responses.activate
     def test_24_check_pass_fails(self):
@@ -3050,6 +3364,26 @@ class KeycloakResolverTestCase(MyTestCase):
         responses.add_callback(responses.POST, "http://localhost:8080/realms/master/protocol/openid-connect/token",
                                callback=special_char_callback)
         self.assertTrue(resolver.checkPass("111-aaa-333", "P@ss+w0rd&secret=1", "testuser"))
+
+    @responses.activate
+    def test_23c_check_pass_credentials_with_asterisk(self):
+        # Keycloak does not support wildcards, so its wildcard is an empty string. It must not be applied to the
+        # credentials: an asterisk in the username or password has to reach the token endpoint unchanged.
+        from urllib.parse import parse_qs
+        resolver = self.set_up_resolver()
+        self.assertEqual("", resolver.wildcard)
+        received = {}
+
+        def callback(request):
+            received.update({k: v[0] for k, v in parse_qs(request.body).items()})
+            return 200, {}, json.dumps({"token_type": "Bearer", "access_token": "12345"})
+
+        responses.add_callback(responses.POST, "http://localhost:8080/realms/master/protocol/openid-connect/token",
+                               callback=callback)
+
+        self.assertTrue(resolver.checkPass("111-aaa-333", "P*ssw*rd", "al*ice"))
+        self.assertEqual("P*ssw*rd", received["password"])
+        self.assertEqual("al*ice", received["username"])
 
     @responses.activate
     def test_24_testconnection(self):

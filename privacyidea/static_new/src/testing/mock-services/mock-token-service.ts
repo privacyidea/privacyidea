@@ -32,6 +32,7 @@ import {
   TokenType,
   TokenTypeKey
 } from "@services/token/token.service";
+import { RowSelector } from "@services/table-utils/row-selector";
 import { Debouncer } from "@utils/debounce.utils";
 import { FilterCaseNote } from "@utils/filter-hint.utils";
 import { of, Subject } from "rxjs";
@@ -123,7 +124,17 @@ export class MockTokenService implements TokenServiceInterface {
   readonly tokenResource = new MockHttpResourceRef<PiResponse<Tokens> | undefined>(undefined);
   tokenResourceValue = signal<Tokens | null>(null);
   readonly tokenSerialResource = new MockHttpResourceRef<PiResponse<Tokens> | undefined>(undefined);
-  readonly tokenSelection = signal<TokenDetails[]>([]);
+  readonly selectableTokens = signal<TokenDetails[]>([]);
+  readonly tokenSelection = new RowSelector<TokenDetails>({
+    keyGetter: (token) => token.serial,
+    visibleRows: this.selectableTokens
+  });
+
+  /** Makes the given tokens the visible rows and selects them all. */
+  setTokenSelection(tokens: TokenDetails[]): void {
+    this.selectableTokens.set(tokens);
+    this.tokenSelection.selectAllRows();
+  }
   selectedToken = signal<string | null>(null);
   tokenOptions = signal<string[]>([]);
   filteredTokenOptions: Signal<string[]> = computed(() => {
