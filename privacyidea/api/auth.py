@@ -286,9 +286,9 @@ def get_auth_token():
     #  maybe a new user object that is not directly evaluated against the user store and where we can store some more
     #  information like the role (local / external admin) would be helpful
     user = request.User or User()
-    # The conditional-access pre-check and this login's audit subject are handled by the outermost pre-policy
-    # (_conditional_access_precheck_policy), so a locked user, a blocked source IP or a DENY decision is rejected
-    # before any other pre-policy runs - auth_timelimit included, which would otherwise log a trackable event first.
+    # The conditional-access pre-check and this login's audit subject are handled by the outermost decorator,
+    # @conditional_access_login_gate, so a locked user, a blocked source IP or a DENY decision is rejected before any
+    # pre-policy runs - auth_timelimit included, which would otherwise log a trackable event first.
     username = get_optional(request.all_data, "username")
     password = get_optional(request.all_data, "password")
     realm_param = get_optional(request.all_data, "realm")

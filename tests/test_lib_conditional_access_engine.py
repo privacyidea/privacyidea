@@ -851,8 +851,8 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertIsNone(self._state())
 
     def test_dry_run_records_on_every_qualifying_request(self):
-        # Dry-run neither reads nor writes the de-dup state, so two successive qualifying requests both record. (A live
-        # policy would suppress the second via UserLockoutState.)
+        # A re-triggering action qualifies on every request at or above its threshold, so both requests record an
+        # outcome. Dry run differs only in enforcement: it writes no lock, so no state exists at the end.
         _, stages = self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
         stages[0].actions[0].retrigger_above_threshold = True
         db.session.commit()
