@@ -75,9 +75,8 @@ class ConditionalAccessOutcome(db.Model):
 
     There is deliberately **no stage id**:
     :func:`~privacyidea.lib.conditional_access.lockout_policy.update_lockout_policy` replaces a policy's stages as a
-    whole, so every edit gives them fresh ids and a stored one would dangle - the same
-    reason ``user_lockout_state.last_stage_triggered`` is reset by such an edit. The stage is identified by its natural
-    key instead: a stage is unique per policy by its threshold (``uq_lockout_stage_policy_threshold``) and that survives
+    whole, so every edit gives them fresh ids and a stored one would dangle. The stage is identified by its natural key
+    instead: a stage is unique per policy by its threshold (``uq_lockout_stage_policy_threshold``) and that survives
     edits, and the threshold is what a human reads anyway.
 
     Everything a triggered stage knows is therefore mandatory - ``policy_name``, ``threshold``, ``event_count`` -

@@ -96,7 +96,7 @@ def _seed_ip_spray(user: "User", event_type: AuthEventType, source_ip: str, n_us
 class ConditionalAccessValidateTestCase(MyApiTestCase):
     serial = "CA_HOTP"
 
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
         self.setUp_user_realms()
         init_token({"serial": self.serial, "type": "hotp", "otpkey": self.otpkey, "pin": "pin"},
@@ -104,7 +104,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.user = User("cornelius", self.realm1)
         self._clear()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         if get_tokens(serial=self.serial):
             remove_token(self.serial)
         self._clear()
@@ -852,13 +852,13 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
 class ConditionalAccessAuthTestCase(MyApiTestCase):
     """The WebUI JWT login (/auth) is gated by the same lockout engine."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
         self.setUp_user_realms()
         self.user = User("cornelius", self.realm1)
         self._clear()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self._clear()
         super().tearDown()
 

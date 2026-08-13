@@ -41,7 +41,9 @@ separate issue, which is why the two gates are still separate functions with dup
 """
 import functools
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Any
 
 from flask import request, g, Response
 from flask_babel import _
@@ -117,7 +119,8 @@ def conditional_access_precheck(user: User, log_rejection: bool = True) -> Respo
     return None
 
 
-def conditional_access_gate(identity_resolver=None, log_rejection: bool = True):
+def conditional_access_gate(identity_resolver: Callable[[], User] | None = None,
+                            log_rejection: bool = True) -> Callable[[Callable], Callable]:
     """
     View decorator that runs :func:`conditional_access_precheck` before the
     decorated endpoint body (and, when placed above them, before the endpoint's
@@ -132,9 +135,9 @@ def conditional_access_gate(identity_resolver=None, log_rejection: bool = True):
     :param log_rejection: passed through to the pre-check; see there for when an
         endpoint has to opt out.
     """
-    def decorator(wrapped_function):
+    def decorator(wrapped_function: Callable) -> Callable:
         @functools.wraps(wrapped_function)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             user = identity_resolver() if identity_resolver is not None else request.User
             rejection = conditional_access_precheck(user, log_rejection=log_rejection)
             if rejection is not None:
@@ -314,7 +317,7 @@ def _reject_restricted_login(user: User) -> None:
                         id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
 
 
-def conditional_access_login_gate():
+def conditional_access_login_gate() -> Callable[[Callable], Callable]:
     """
     View decorator that refuses a restricted ``/auth`` login before the view body and before every other decorator
     listed below it.
@@ -337,9 +340,9 @@ def conditional_access_login_gate():
     ``jwtauth`` error handler exactly as one raised from the view would be.
     """
 
-    def decorator(wrapped_function):
+    def decorator(wrapped_function: Callable) -> Callable:
         @functools.wraps(wrapped_function)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             user = request.User or User()
             g.audit_object.log({"user": user.login, "realm": user.realm})
             _reject_restricted_login(user)

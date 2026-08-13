@@ -739,11 +739,8 @@ def update_lockout_policy(
     ``counter_types_to_track``, ``stages`` and ``conditions`` are **replaced as a
     whole** when given - the delete-orphan cascade drops the previous child rows.
     Passing an empty ``conditions`` list therefore removes every condition, which
-    widens the policy to apply to all requests. Replacing
-    the stages resets any ``last_stage_triggered`` references in
-    ``user_lockout_state``/``block_list`` to ``NULL`` (FK ``SET NULL``), which
-    simply re-arms the de-dup for the edited policy; existing locks and blocks
-    themselves stay in force.
+    widens the policy to apply to all requests. Locks and blocks this policy has
+    already written stay in force: live state is independent of the policy config.
 
     ``target`` may be changed, but the resulting ``(target, stages)`` combination
     must stay action-compatible (e.g. a ``source_ip`` policy cannot carry
@@ -926,9 +923,8 @@ def delete_lockout_policy(policy_id: int) -> int:
     """
     Delete a lockout policy with all its stages and actions.
 
-    Existing locks/blocks written by this policy stay in force (live state is
-    independent of the policy config); their ``last_stage_triggered`` FK is set
-    to ``NULL``.
+    Existing locks/blocks written by this policy stay in force: live state is
+    independent of the policy config.
 
     :return: the id of the deleted policy
     :raises ResourceNotFoundError: if no policy with this id exists
