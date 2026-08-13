@@ -659,6 +659,12 @@ def list_api():
         user. Without a ``user`` parameter, returns every token
         assigned to any user in this realm. Ignored for user-role
         callers.
+    :query resolver: filter by the resolver of the assigned user.
+        Case-insensitive, substring match via ``*``. Only tokens that
+        are assigned to a user can match.
+    :query userid: filter by the user id of the assigned user.
+        Substring match via ``*``. Only tokens that are assigned to a
+        user can match.
     :query tokenrealm: filter to tokens that belong to this realm
         (independent of the user's realm). Substring match via ``*``;
         comma-separated list of realm names also supported, where each

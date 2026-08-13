@@ -141,6 +141,20 @@
   pass a stale or misspelled user name to `GET /container/` and relied on getting an empty result need to handle the
   error.
 
+* **HTTP API change** - the `resolver` and `userid` filters of `GET /token/` are now applied. Both parameters have
+  always been accepted and documented, but they never became a condition of the query, so a request carrying one of
+  them returned *all* tokens instead of the tokens of that resolver or of that user id. `resolver` is matched
+  case-insensitively and `*` acts as a wildcard in both, consistent with `GET /container/`. Since only a token that is
+  assigned to a user can match either filter, tokens without an owner are no longer part of such a result. Saved
+  filters, scripts and integrations that pass `resolver` or `userid` will therefore receive fewer tokens than before -
+  namely the ones they asked for.
+
+* **HTTP API change** - `GET /token/?realm=<name>` now returns an empty list if the realm does not exist, instead of
+  answering with a 404 `ResourceNotFoundError`. An unknown value matches nothing, the way every other filter of the
+  endpoint (including `tokenrealm`) already behaves. A `user` that can not be resolved to a user id is still rejected
+  with a 400, because the request would otherwise be filtered by the realm and the resolver alone and return the tokens
+  of other users.
+
 ## Update from 3.12 to 3.13
 
 * `enrollpin` right enforcement has been made stricter. If you try to enroll a token with a PIN but do not have the the

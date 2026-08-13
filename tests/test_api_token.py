@@ -3878,6 +3878,165 @@ class APITokenTestCase(MyApiTestCase):
         delete_policy("applspec_genkey")
         delete_policy("enroll")
 
+    def test_64a_list_tokens_resolver_filter(self):
+        """The resolver filter returns the tokens of the users of that resolver, with and without a
+        realm parameter, case-insensitive and with '*' as wildcard."""
+        self.setUp_user_realms()
+        save_resolver({"resolver": self.resolvername3, "type": "passwdresolver", "fileName": PWFILE2})
+        set_realm(self.realm1, [{"name": self.resolvername1}, {"name": self.resolvername3}])
+
+        token_resolver1 = init_token({"genkey": 1}, user=User("cornelius", self.realm1, self.resolvername1))
+        token_resolver3 = init_token({"genkey": 1}, user=User("daemon", self.realm1, self.resolvername3))
+        token_unassigned = init_token({"genkey": 1}, tokenrealms=[self.realm1])
+
+        def list_serials(query):
+            with self.app.test_request_context("/token/", method="GET", query_string=urlencode(query),
+                                               headers={"Authorization": self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+                return [t["serial"] for t in res.json["result"]["value"]["tokens"]]
+
+        try:
+            serials = list_serials({"resolver": self.resolvername3, "pagesize": 100})
+            self.assertEqual([token_resolver3.get_serial()], serials)
+
+            # The resolver is also applied in combination with the realm
+            serials = list_serials({"realm": self.realm1, "resolver": self.resolvername3, "pagesize": 100})
+            self.assertEqual([token_resolver3.get_serial()], serials)
+
+            # The name is matched case-insensitively
+            serials = list_serials({"resolver": self.resolvername3.upper(), "pagesize": 100})
+            self.assertEqual([token_resolver3.get_serial()], serials)
+
+            # A wildcard matches both resolvers, but never a token without an owner
+            serials = list_serials({"resolver": "res*", "pagesize": 100})
+            self.assertIn(token_resolver1.get_serial(), serials)
+            self.assertIn(token_resolver3.get_serial(), serials)
+            self.assertNotIn(token_unassigned.get_serial(), serials)
+
+            # A resolver that does not exist matches nothing
+            self.assertEqual([], list_serials({"resolver": "no_such_resolver", "pagesize": 100}))
+
+            # A resolver of only wildcards is no filter at all
+            serials = list_serials({"resolver": "*", "pagesize": 100})
+            self.assertIn(token_unassigned.get_serial(), serials)
+        finally:
+            remove_token(token_resolver1.get_serial())
+            remove_token(token_resolver3.get_serial())
+            remove_token(token_unassigned.get_serial())
+            set_realm(self.realm1, [{"name": self.resolvername1}])
+
+    def test_64b_list_tokens_userid_filter(self):
+        """The userid filter returns the tokens of the owner with that user id."""
+        self.setUp_user_realms()
+        cornelius = User("cornelius", self.realm1, self.resolvername1)
+        selfservice = User("selfservice", self.realm1, self.resolvername1)
+        token_cornelius = init_token({"genkey": 1}, user=cornelius)
+        token_selfservice = init_token({"genkey": 1}, user=selfservice)
+        token_unassigned = init_token({"genkey": 1}, tokenrealms=[self.realm1])
+
+        def list_serials(query):
+            with self.app.test_request_context("/token/", method="GET", query_string=urlencode(query),
+                                               headers={"Authorization": self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+                return [t["serial"] for t in res.json["result"]["value"]["tokens"]]
+
+        try:
+            serials = list_serials({"userid": cornelius.uid, "pagesize": 100})
+            self.assertIn(token_cornelius.get_serial(), serials)
+            self.assertNotIn(token_selfservice.get_serial(), serials)
+            self.assertNotIn(token_unassigned.get_serial(), serials)
+
+            serials = list_serials({"userid": selfservice.uid, "pagesize": 100})
+            self.assertIn(token_selfservice.get_serial(), serials)
+            self.assertNotIn(token_cornelius.get_serial(), serials)
+
+            # A wildcard matches several user ids, but never a token without an owner
+            serials = list_serials({"userid": "100*", "pagesize": 100})
+            self.assertIn(token_cornelius.get_serial(), serials)
+            self.assertIn(token_selfservice.get_serial(), serials)
+            self.assertNotIn(token_unassigned.get_serial(), serials)
+
+            # A user id that does not exist matches nothing
+            self.assertEqual([], list_serials({"userid": "999999", "pagesize": 100}))
+        finally:
+            remove_token(token_cornelius.get_serial())
+            remove_token(token_selfservice.get_serial())
+            remove_token(token_unassigned.get_serial())
+
+    def test_64c_list_tokens_unknown_realm_returns_empty_list(self):
+        """Both realm filters of the endpoint return an empty list for a realm that does not exist."""
+        self.setUp_user_realms()
+        token = init_token({"genkey": 1}, user=User("cornelius", self.realm1, self.resolvername1))
+
+        try:
+            for query in ({"realm": "no_such_realm"}, {"tokenrealm": "no_such_realm"}):
+                with self.app.test_request_context("/token/", method="GET", query_string=urlencode(query),
+                                                   headers={"Authorization": self.at}):
+                    res = self.app.full_dispatch_request()
+                    self.assertEqual(200, res.status_code, res.json)
+                    self.assertEqual([], res.json["result"]["value"]["tokens"], query)
+                    self.assertEqual(0, res.json["result"]["value"]["count"], query)
+        finally:
+            remove_token(token.get_serial())
+
+    def test_64d_user_role_is_limited_to_own_tokens(self):
+        """A caller with role 'user' only ever sees and modifies the tokens of the user they are
+        logged in as, also when a resolver of their realm is passed."""
+        self.setUp_user_realms()
+        save_resolver({"resolver": self.resolvername3, "type": "passwdresolver", "fileName": PWFILE2})
+        set_realm(self.realm1, [{"name": self.resolvername1}, {"name": self.resolvername3}])
+        self.authenticate_selfservice_user()
+
+        other_token = init_token({"genkey": 1}, user=User("daemon", self.realm1, self.resolvername3))
+        own_token = init_token({"genkey": 1}, user=User("selfservice", self.realm1, self.resolvername1))
+        set_policy("userpol", scope=SCOPE.USER,
+                   action=f"{PolicyAction.DELETE},{PolicyAction.DISABLE},{PolicyAction.SETDESCRIPTION}")
+
+        try:
+            # The token list only contains the own token
+            with self.app.test_request_context("/token/", method="GET",
+                                               query_string=urlencode({"resolver": self.resolvername3,
+                                                                       "pagesize": 100}),
+                                               headers={"Authorization": self.at_user}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+                serials = [t["serial"] for t in res.json["result"]["value"]["tokens"]]
+                self.assertIn(own_token.get_serial(), serials)
+                self.assertNotIn(other_token.get_serial(), serials)
+
+            # The token of the other user can not be modified or deleted
+            for url, method, data in (("/token/description", "POST",
+                                       {"serial": other_token.get_serial(), "description": "changed",
+                                        "resolver": self.resolvername3}),
+                                      ("/token/disable", "POST",
+                                       {"serial": other_token.get_serial(), "resolver": self.resolvername3}),
+                                      (f"/token/{other_token.get_serial()}", "DELETE",
+                                       {"resolver": self.resolvername3})):
+                with self.app.test_request_context(url, method=method, data=data,
+                                                   headers={"Authorization": self.at_user}):
+                    res = self.app.full_dispatch_request()
+                    self.assertEqual(404, res.status_code, res.json)
+                    self.assertEqual(601, res.json["result"]["error"]["code"], res.json)
+
+            self.assertEqual("", other_token.token.description)
+            self.assertTrue(other_token.token.active)
+            self.assertTrue(token_exist(other_token.get_serial()))
+
+            # The own token can be modified
+            with self.app.test_request_context("/token/description", method="POST",
+                                               data={"serial": own_token.get_serial(),
+                                                     "description": "changed"},
+                                               headers={"Authorization": self.at_user}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+        finally:
+            delete_policy("userpol")
+            remove_token(other_token.get_serial())
+            remove_token(own_token.get_serial())
+            set_realm(self.realm1, [{"name": self.resolvername1}])
+
     def test_65_bulk_unassign(self):
         set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.UNASSIGN, realm=self.realm1)
 

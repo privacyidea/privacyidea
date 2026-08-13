@@ -214,6 +214,45 @@ class TokenTestCase(MyTestCase):
         tokenobject_list = get_tokens(serial_wildcard="*")
         self.assertEqual(4, len(tokenobject_list))
 
+    def test_02c_get_tokens_resolver_and_userid_filter(self):
+        # The resolver and the userid are filters of their own, independent of a user object
+        init_token({"type": "spass", "serial": "RESO01"},
+                   user=User(login="cornelius", realm=self.realm1, resolver=self.resolvername1))
+        init_token({"type": "spass", "serial": "RESO02"})
+
+        serials = [token.token.serial for token in get_tokens(resolver=self.resolvername1)]
+        self.assertIn("RESO01", serials)
+        self.assertNotIn("RESO02", serials)
+
+        # The resolver name is matched case-insensitively and honors '*' as wildcard
+        serials = [token.token.serial for token in get_tokens(resolver=self.resolvername1.upper())]
+        self.assertIn("RESO01", serials)
+        serials = [token.token.serial for token in get_tokens(resolver="resol*")]
+        self.assertIn("RESO01", serials)
+        self.assertNotIn("RESO02", serials)
+
+        # A resolver that does not exist matches nothing
+        self.assertEqual([], get_tokens(resolver="no_such_resolver"))
+
+        # The same for the user id of the token owner
+        serials = [token["serial"] for token in get_tokens_paginate(userid="1000")["tokens"]]
+        self.assertIn("RESO01", serials)
+        self.assertNotIn("RESO02", serials)
+        self.assertEqual([], get_tokens_paginate(userid="999999")["tokens"])
+
+        # A user object carrying only a realm returns the tokens of all users of that realm
+        serials = [token.token.serial for token in get_tokens(user=User(realm=self.realm1))]
+        self.assertIn("RESO01", serials)
+        self.assertNotIn("RESO02", serials)
+
+        # A realm that does not exist matches nothing, while an unresolvable login is an error
+        self.assertEqual([], get_tokens(user=User(realm="no_such_realm")))
+        self.assertRaises(UserError, get_tokens,
+                          user=User(login="no_such_user", realm=self.realm1))
+
+        remove_token("RESO01")
+        remove_token("RESO02")
+
     def test_02a_get_tokens_like_wildcard_escaping(self):
         # SQL LIKE metacharacters (_ and %) in filter values must be matched
         # literally; only the '*' wildcard should expand.

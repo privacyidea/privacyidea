@@ -126,16 +126,12 @@ const exactMatchKeys = new Set([
 ]);
 const booleanKeys = new Set(["active", "assigned"]);
 // `serial` is a raw LIKE (SQLite/MySQL fold case, PostgreSQL does not), the tokeninfo
-// keys are a raw equality comparison (only MySQL with a _ci collation folds case).
+// keys and `userid` are a raw comparison (only MySQL with a _ci collation folds case).
 const caseNotes: Record<string, FilterCaseNote> = {
   serial: "usually-insensitive",
+  userid: "usually-sensitive",
   "infokey & infovalue": "usually-sensitive"
 };
-// TODO: temporary. The backend accepts these keywords but never applies them, because
-// the filter clauses were removed in 78c0cc621 and not restored. Once they either work
-// again or are dropped, remove this set along with the whole "unsupported" mechanism.
-const unsupportedKeys = new Set(["userid", "resolver"]);
-
 function toParamValue(key: string, value: string): string {
   if (booleanKeys.has(key)) {
     return toBooleanParam(value) ?? value;
@@ -344,7 +340,6 @@ export interface TokenServiceInterface extends FilterableTableServiceInterface {
   defaultSizeOptions: number[];
   booleanKeys: Set<string>;
   caseNotes: Record<string, FilterCaseNote>;
-  unsupportedKeys: Set<string>;
   tokenResource: HttpResourceRef<PiResponse<Tokens> | undefined>;
   tokenSerialResource: HttpResourceRef<PiResponse<Tokens> | undefined>;
   tokenResourceValue: Signal<Tokens | null>;
@@ -446,7 +441,6 @@ export class TokenService extends FilterableTableService implements TokenService
   override readonly exactMatchKeys = exactMatchKeys;
   readonly booleanKeys = booleanKeys;
   readonly caseNotes = caseNotes;
-  readonly unsupportedKeys = unsupportedKeys;
 
   showOnlyTokenInContainer = linkedSignal({
     source: this.contentService.routeUrl,
