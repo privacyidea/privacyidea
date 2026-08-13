@@ -182,6 +182,7 @@ class WebHookHandler(BaseEventHandler):
                 # (the admin).  create_tag_dict always uses g.logged_in_user for
                 # {admin} and {realm}, so we keep {logged_in_user} as a separate
                 # alias that preserves the old request.User-first behavior.
+                tags["realm"] = user.realm if user else ""
                 tags["logged_in_user"] = user.login if user else ""
                 tags["token_serial"] = tags.get("serial", "")
                 tags["token_owner"] = tags.get("givenname", "")
