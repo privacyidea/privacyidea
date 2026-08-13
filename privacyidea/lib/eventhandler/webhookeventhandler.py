@@ -211,7 +211,7 @@ class WebHookHandler(BaseEventHandler):
                 else:
                     # Content Type URLENCODED, simple format
                     webhook_text = webhook_text.format(**tags)
-            except (KeyError, AttributeError) as err:
+            except (KeyError, AttributeError, IndexError) as err:
                 log.warning(f"Unable to replace placeholder: ({err})! Please check the webhooks data option.")
             except (ValueError, TypeError) as err:
                 log.warning(f"Unable to parse JSON string '{webhook_text}': {err}")
