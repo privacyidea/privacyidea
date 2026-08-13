@@ -955,6 +955,40 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         entries = assert_authentication_log([AuthEventType.USER_LOCKED])
         assert_authentication_log_entry(entries[AuthEventType.USER_LOCKED], user=self.user)
 
+    def test_lock_is_checked_before_the_auth_timelimit_prepolicy(self):
+        # The pre-check must run ahead of every other pre-policy, because auth_timelimit writes a *trackable*
+        # NOT_AUTHORIZED row when its limit is hit (prepolicy.auth_timelimit). While the pre-check sat in the view
+        # body, that row was written first, so a locked user's rejected logins kept feeding the counters that locked
+        # them - the one way a lock could refresh itself from inside the lock.
+        set_policy("ca_maxfail", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXFAIL}=2/1m")
+        self.addCleanup(delete_policy, "ca_maxfail")
+        # Two failed logins put the classic time limit over its threshold (it counts the audit log).
+        for _ in range(2):
+            self.assertEqual(401, self._auth("cornelius", "wrongpassword").status_code)
+
+        # Positive control: with no lock in force the time limit is what refuses the next login, proving it is armed -
+        # otherwise the assertion below would hold for the wrong reason.
+        self._clear_authentication_log()
+        self.assertEqual(401, self._auth("cornelius", "test").status_code)
+        self.assertListEqual([AuthEventType.NOT_AUTHORIZED], _rows_since(0))
+
+        # Same tripped time limit, but now the user is locked: the lock is what refuses the login, and the row records
+        # the lock rather than the time limit.
+        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
+                                        lock_expires_at=utc_now() + timedelta(seconds=600)))
+        db.session.commit()
+        self._clear_authentication_log()
+        self.assertEqual(401, self._auth("cornelius", "test").status_code)
+        entries = assert_authentication_log([AuthEventType.USER_LOCKED])
+        assert_authentication_log_entry(entries[AuthEventType.USER_LOCKED], user=self.user)
+
+    @staticmethod
+    def _clear_authentication_log() -> None:
+        # Only the authentication log, never the audit log: the classic AUTHMAXFAIL counts from the audit log, so
+        # clearing that would un-trip the very policy under test.
+        db.session.query(AuthenticationLog).delete()
+        db.session.commit()
+
     def test_permanently_locked_user_message_at_auth(self):
         # A permanent lock (no expiry) points the user at the administrator.
         db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,

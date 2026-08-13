@@ -113,6 +113,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            webauthntoken_request, check_application_tokentype,
                                            increase_failcounter_on_challenge, get_first_policy_value, fido2_enroll,
                                            disabled_token_types, load_challenge_text)
+from privacyidea.api.lib.conditional_access import conditional_access_gate
 from privacyidea.api.lib.utils import (get_all_params, get_before_request_config, get_optional_one_of, get_optional,
                                        INTERNAL_OPTION_KEYS)
 from privacyidea.api.recover import recover_blueprint
@@ -141,7 +142,7 @@ from privacyidea.lib.utils import get_plugin_info_from_useragent, AUTH_RESPONSE
 from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
 from .lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
 from .lib.utils import (get_required, get_auth_error_status_code, send_error, send_result,
-                        log_authentication, conditional_access_gate)
+                        log_authentication)
 from ..lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
                                                                  LOG_TRANSACTION_ID_KEY)
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
