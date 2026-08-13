@@ -90,8 +90,12 @@ describe("UserDetailsContainerTableComponent", () => {
     expect(component.displayedColumns).toEqual(["select", "serial", "type", "states", "description", "realms"]);
   });
 
-  it("wires sort onto the dataSource", () => {
-    expect(component.dataSource.sort).toBe(component.sort);
+  it("leaves the data source's sort unset so it keeps a working change subscription", () => {
+    // MatTableDataSource reads _sort.sortChange/_sort.initialized whenever the table reconnects.
+    // Anything that is not a MatSort there makes that a merge() over undefined, which throws and
+    // leaves the data source unable to render. Ordering is done by this component, not by the
+    // data source, so the seat stays empty.
+    expect(component.dataSource.sort).toBeFalsy();
   });
 
   describe("userContainers signal", () => {

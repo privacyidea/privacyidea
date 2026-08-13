@@ -125,10 +125,15 @@ describe("ContainerDetailsTokenTableComponent", () => {
     expect(cmp.displayedColumns).toEqual(expect.arrayContaining(["actions"]));
   });
 
-  it("sets paginator and sort on both internal and external data sources", () => {
+  it("sets the paginator but leaves sort unset on both internal and external data sources", () => {
+    // MatTableDataSource reads _sort.sortChange/_sort.initialized whenever the table reconnects.
+    // Anything that is not a MatSort there makes that a merge() over undefined, which throws and
+    // leaves the data source unable to render. Ordering is done by this component, not by the
+    // data source, so the seat stays empty.
     const ds = component.containerTokenData();
     expect(ds.paginator).toBe(component.paginator);
-    expect(ds.sort).toBe(component.sort);
+    expect(ds.sort).toBeFalsy();
+    expect(component.dataSource().sort).toBeFalsy();
   });
 
   it("updates filterValue & sets filter on both internal and external data sources", () => {

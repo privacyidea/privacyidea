@@ -96,8 +96,64 @@ describe("UserDetailsTokenTableComponent", () => {
     ]);
   });
 
-  it("wires sort in ngAfterViewInit", () => {
-    expect(component.dataSource.sort).toBe(component.sort);
+  it("leaves the data source's sort unset so it keeps a working change subscription", () => {
+    // MatTableDataSource reads _sort.sortChange/_sort.initialized whenever the table reconnects.
+    // Anything that is not a MatSort there makes that a merge() over undefined, which throws and
+    // leaves the data source unable to render. Ordering is done by this component, not by the
+    // data source, so the seat stays empty.
+    expect(component.dataSource.sort).toBeFalsy();
+  });
+
+  it("renders rows after the table returns from the empty state", () => {
+    // Through authData, so the rights signal the TableState reads actually changes; a plain
+    // mockReturnValue would leave the computed with its first, cached verdict.
+    const authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+    authServiceMock.authData.set({ ...authServiceMock.authData()!, rights: ["tokenlist"] });
+    fixture.detectChanges();
+
+    const table = () => fixture.nativeElement.querySelector("table");
+
+    // Loading keeps the table mounted, so the data source is connected first.
+    tokenServiceMock.userTokenResource.value.set(undefined);
+    fixture.detectChanges();
+    expect(component.tableState.status()).toBe("loading");
+    expect(table()).not.toBeNull();
+
+    // No tokens tears it down again, disconnecting the data source.
+    tokenServiceMock.userTokenResource.value.set(
+      MockPiResponse.fromValue<Tokens>({ count: 0, current: 0, tokens: [] })
+    );
+    fixture.detectChanges();
+    expect(component.tableState.status()).toBe("empty");
+    expect(table()).toBeNull();
+
+    tokenServiceMock.userTokenResource.value.set(
+      MockPiResponse.fromValue<Tokens>({
+        count: 1,
+        current: 1,
+        tokens: [
+          {
+            serial: "T-AFTER-ASSIGN",
+            tokentype: "hotp",
+            active: true,
+            revoked: false,
+            locked: false,
+            description: "",
+            failcount: 0,
+            maxfail: 10,
+            container_serial: "",
+            user_realm: "r1",
+            username: "alice",
+            resolver: ""
+          }
+        ] as TokenDetails[]
+      })
+    );
+    fixture.detectChanges();
+
+    // The table is created only now, so this is the first time the data source reconnects.
+    expect(table()).not.toBeNull();
+    expect(fixture.nativeElement.textContent).toContain("T-AFTER-ASSIGN");
   });
 
   const showTokens = (...rows: ContainerDetailToken[]) => {
