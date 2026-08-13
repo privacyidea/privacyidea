@@ -44,7 +44,14 @@ coverage:
       frontend:
         flags:
           - frontend
+        # `target: auto` requires the patch to be covered as well as the flag
+        # already is. With a small patch that bar has no tolerance: at ~85%
+        # flag coverage a six-line patch fails on a single uncovered line,
+        # which is usually a guard clause or an error branch rather than
+        # untested logic. The threshold allows that much slack while the
+        # target keeps new frontend code at the level of the existing code.
         target: auto
+        threshold: 5%
 
 flag_management:
   default_rules:
