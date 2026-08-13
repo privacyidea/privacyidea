@@ -247,6 +247,34 @@ def _warn_if_base_url_missing(app: Flask):
                     "this privacyIDEA server.")
 
 
+def _setup_database_engine_options(app: Flask):
+    """
+    Resolve the options for the main database engine before ``db.init_app()`` creates it.
+
+    Anything the operator put into ``SQLALCHEMY_ENGINE_OPTIONS`` is kept as is, only
+    the defaults privacyIDEA wants on top of SQLAlchemy's own are filled in.
+    """
+    # The options may come from a class attribute of the configuration object, so work
+    # on a copy. Mutating it in place would leak into later create_app() calls in the
+    # same process, which mostly hits the tests and pi-manage.
+    engine_options = dict(app.config.get(ConfigKey.SQLALCHEMY_ENGINE_OPTIONS, {}))
+
+    # Pessimistic disconnect handling: validate a connection when it is checked out and
+    # transparently replace it if the server closed it in the meantime. MariaDB/MySQL
+    # drop idle connections at wait_timeout and the pool has no way to know, so without
+    # this a request is handed a dead socket ("MySQL server has gone away"). It costs
+    # one lightweight ping per checkout, which is wasted on SQLite, where a connection
+    # cannot go stale.
+    database_uri = app.config.get(ConfigKey.SQLALCHEMY_DATABASE_URI) or ""
+    if "pool_pre_ping" not in engine_options and not database_uri.startswith("sqlite"):
+        engine_options["pool_pre_ping"] = True
+
+    app.config[ConfigKey.SQLALCHEMY_ENGINE_OPTIONS] = engine_options
+    log.debug(f"Database engine options: {engine_options}")
+    if app.config.get(ConfigKey.VERBOSE):
+        sys.stderr.write(f"Database engine options: {engine_options}\n")
+
+
 def _setup_node_configuration(app: Flask):
     # check that we have a correct node_name -> UUID relation
     with app.app_context():
@@ -414,6 +442,7 @@ def create_app(config_name="development",
 
 
     # Set up Plug-Ins
+    _setup_database_engine_options(app)
     db.init_app(app)
 
     # TODO: This is not necessary except for the pi-manage command line util
@@ -536,6 +565,7 @@ def create_docker_app():
     _register_blueprints(app)
 
     # Set up Plug-Ins
+    _setup_database_engine_options(app)
     db.init_app(app)
 
     Versioned(app, format='%(path)s?v=%(version)s')
