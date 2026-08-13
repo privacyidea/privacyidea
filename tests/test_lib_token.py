@@ -1398,11 +1398,16 @@ class TokenTestCase(MyTestCase):
         # root lives in reso3 (realm3) with uid 0
         tok_root = init_token({"type": "hotp", "genkey": True},
                               user=User("root", self.realm3))
+        # franzi lives in reso3 (realm3) with uid 1000, the very uid cornelius
+        # has in resolver1. Only the realm/resolver tells the two apart.
+        tok_franzi = init_token({"type": "hotp", "genkey": True},
+                                user=User("franzi", self.realm3))
 
         # --- filter by exact userid ---
         tokens = get_tokens_paginate(userid="1000")["tokens"]
         serials = [t["serial"] for t in tokens]
         self.assertIn(tok_cornelius.get_serial(), serials)
+        self.assertIn(tok_franzi.get_serial(), serials)
         self.assertNotIn(tok_hans.get_serial(), serials)
         self.assertNotIn(tok_root.get_serial(), serials)
 
@@ -1420,6 +1425,7 @@ class TokenTestCase(MyTestCase):
         tokens = get_tokens_paginate(resolver=self.resolvername3)["tokens"]
         serials = [t["serial"] for t in tokens]
         self.assertIn(tok_root.get_serial(), serials)
+        self.assertIn(tok_franzi.get_serial(), serials)
         self.assertNotIn(tok_cornelius.get_serial(), serials)
         self.assertNotIn(tok_hans.get_serial(), serials)
 
@@ -1429,16 +1435,19 @@ class TokenTestCase(MyTestCase):
         self.assertIn(tok_cornelius.get_serial(), serials)
         self.assertIn(tok_hans.get_serial(), serials)
         self.assertIn(tok_root.get_serial(), serials)
+        self.assertIn(tok_franzi.get_serial(), serials)
 
         # --- non-matching resolver returns no tokens ---
         tokens = get_tokens_paginate(resolver="nonexistent")["tokens"]
         self.assertEqual(0, len(tokens))
 
         # --- combine userid and resolver ---
+        # franzi shares the uid, so only the resolver keeps that token out
         tokens = get_tokens_paginate(userid="1000",
                                      resolver=self.resolvername1)["tokens"]
         serials = [t["serial"] for t in tokens]
         self.assertIn(tok_cornelius.get_serial(), serials)
+        self.assertNotIn(tok_franzi.get_serial(), serials)
         self.assertNotIn(tok_hans.get_serial(), serials)
         self.assertNotIn(tok_root.get_serial(), serials)
 
@@ -1448,6 +1457,7 @@ class TokenTestCase(MyTestCase):
         tokens = get_tokens_paginate(user=realm_user, userid="1000")["tokens"]
         serials = [t["serial"] for t in tokens]
         self.assertIn(tok_cornelius.get_serial(), serials)
+        self.assertNotIn(tok_franzi.get_serial(), serials)
         self.assertNotIn(tok_hans.get_serial(), serials)
         self.assertNotIn(tok_root.get_serial(), serials)
 
@@ -1462,10 +1472,36 @@ class TokenTestCase(MyTestCase):
         self.assertIn(tok_cornelius.get_serial(), serials)
         self.assertIn(tok_hans.get_serial(), serials)
         self.assertNotIn(tok_root.get_serial(), serials)
+        self.assertNotIn(tok_franzi.get_serial(), serials)
+
+        # --- the realm of the User narrows down a matching userid ---
+        # uid 1000 matches cornelius and franzi, only the realm separates them
+        realm3_user = User(login="", realm=self.realm3)
+        tokens = get_tokens_paginate(user=realm3_user, userid="1000")["tokens"]
+        serials = [t["serial"] for t in tokens]
+        self.assertIn(tok_franzi.get_serial(), serials)
+        self.assertNotIn(tok_cornelius.get_serial(), serials)
+        self.assertNotIn(tok_hans.get_serial(), serials)
+        self.assertNotIn(tok_root.get_serial(), serials)
+
+        # --- the realm of the User narrows down a matching resolver ---
+        # "reso*" matches resolver1 and reso3, only the realm separates them
+        tokens = get_tokens_paginate(user=realm3_user, resolver="reso*")["tokens"]
+        serials = [t["serial"] for t in tokens]
+        self.assertIn(tok_root.get_serial(), serials)
+        self.assertIn(tok_franzi.get_serial(), serials)
+        self.assertNotIn(tok_cornelius.get_serial(), serials)
+        self.assertNotIn(tok_hans.get_serial(), serials)
+
+        # a resolver that exists but holds no token of that realm returns nothing
+        tokens = get_tokens_paginate(user=realm3_user,
+                                     resolver=self.resolvername1)["tokens"]
+        self.assertEqual(0, len(tokens))
 
         tok_cornelius.delete_token()
         tok_hans.delete_token()
         tok_root.delete_token()
+        tok_franzi.delete_token()
 
     def test_41c_paginate_count_with_duplicate_owner_rows(self):
         """Verify that token count is not inflated by outer-join fan-out.
