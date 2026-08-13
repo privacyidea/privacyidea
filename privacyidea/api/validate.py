@@ -1435,6 +1435,7 @@ def poll_transaction(transaction_id=None):
 @validate_blueprint.route('/initialize', methods=['POST', 'GET'])
 @prepolicy(fido2_auth, request=request)
 @prepolicy(disabled_token_types, request=request)
+@conditional_access_gate()
 def initialize():
     """
     Initialize an authentication by requesting a fresh challenge for
@@ -1462,13 +1463,26 @@ def initialize():
         type is disabled by policy, or the relying-party id policy
         is missing.
     """
-    token_type = get_required(request.all_data, "type")
     details = {}
-    if PolicyAction.DISABLED_TOKEN_TYPES in request.all_data:
-        if token_type in request.all_data[PolicyAction.DISABLED_TOKEN_TYPES]:
+    # Covers both ways the request can fail to name a type this endpoint can initialize: the parameter missing (which
+    # get_required raises on, before any assignment of ours could run) and a type that is not passkey.
+    event_type = AuthEventType.INVALID_TOKEN_TYPE
+    try:
+        token_type = get_required(request.all_data, "type")
+        if token_type in request.all_data.get(PolicyAction.DISABLED_TOKEN_TYPES, []):
+            event_type = AuthEventType.NO_USABLE_TOKEN
             raise PolicyError(_("The authentication method is not available."))
+        if token_type.lower() != "passkey":
+            raise ParameterError(
+                _("Unsupported token type '{token_type}' for authentication initialization!").format(
+                    token_type=token_type
+                )
+            )
 
-    if token_type.lower() == "passkey":
+        # A valid passkey initialization from here on, so any failure below is the server failing to produce the
+        # challenge rather than the client failing a factor - the missing policy, and anything that goes wrong
+        # building the challenge itself.
+        event_type = AuthEventType.CHALLENGE_TRIGGER_FAIL
         rp_id = request.all_data[FIDO2PolicyAction.RELYING_PARTY_ID]
         if not rp_id:
             raise PolicyError(
@@ -1481,14 +1495,9 @@ def initialize():
             challenge["message"] = request.all_data[f"passkey_{PolicyAction.CHALLENGETEXT}"]
         details["passkey"] = challenge
         details["transaction_id"] = challenge["transaction_id"]
-    else:
-        raise ParameterError(
-            _("Unsupported token type '{token_type}' for authentication initialization!").format(
-                token_type=token_type
-            )
-        )
-
-    log_authentication(AuthEventType.CHALLENGE_TRIGGERED, request, transaction_id=details.get("transaction_id"))
+        event_type = AuthEventType.CHALLENGE_TRIGGERED
+    finally:
+        log_authentication(event_type, request, transaction_id=details.get("transaction_id"))
 
     g.audit_object.log({"success": True})
     response = send_result(False, rid=2, details=details)

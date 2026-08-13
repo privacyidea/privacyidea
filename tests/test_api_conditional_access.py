@@ -24,13 +24,14 @@ policy stage and lock the user.
 from datetime import datetime, timedelta
 
 from privacyidea.lib.conditional_access.conditions import ConditionOperator, ConditionType
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
 from privacyidea.lib.conditional_access.authentication_log import AuthLogUserRole, get_authentication_logs
 from privacyidea.lib.conditional_access.engine import (LockoutAction, LockoutTarget,
                                                        is_user_locked, is_ip_blocked)
 from privacyidea.lib.conditional_access.lockout_policy import create_lockout_policy
 from privacyidea.lib.conditional_access.outcome_log import get_outcomes
 from privacyidea.lib.conditional_access.session import get_ca_session
+from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, AUTHORIZED, set_policy, delete_policy
 from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
@@ -113,7 +114,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
     def _clear() -> None:
         for model in (ConditionalAccessOutcome, UserLockoutState, BlockList, LockoutStageAction,
                       LockoutPolicyStage, LockoutPolicyCondition, LockoutPolicyCounterType, LockoutPolicy,
-                      AuthenticationLog):
+                      AuthenticationLog, Challenge):
             db.session.query(model).delete()
         db.session.commit()
 
@@ -688,6 +689,81 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
     # rejected, enrollment NOT gated) is covered end-to-end with real signed push
     # answers in tests/test_api_push_validate.py (test_18e / test_18f), since the
     # pre-check now lives in the push token's _api_endpoint_post auth branch.
+
+    # --- /validate/initialize --------------------------------------------------
+
+    def _initialize(self, remote_addr: str | None = None) -> dict:
+        kwargs = {"environ_base": {"REMOTE_ADDR": remote_addr}} if remote_addr else {}
+        with self.app.test_request_context('/validate/initialize', method='POST',
+                                           data={"type": "passkey"}, **kwargs):
+            response = self.app.full_dispatch_request()
+            self.assertEqual(200, response.status_code, response)
+            return response.json
+
+    def _set_relying_party_id(self) -> None:
+        """The relying-party id the passkey challenge needs; without it the endpoint fails before creating one, which
+        would let a gate test pass for the wrong reason."""
+        set_policy("ca_rp_id", scope=SCOPE.ENROLL, action=f"{FIDO2PolicyAction.RELYING_PARTY_ID}=example.com")
+        self.addCleanup(delete_policy, "ca_rp_id")
+
+    def test_initialize_blocked_ip_rejected(self):
+        self._set_relying_party_id()
+        # Positive control: unblocked, the endpoint initializes a challenge and writes a *trackable* row - userless
+        # (the passkey flow resolves nobody) but carrying the source IP, which is what a source-IP policy counts.
+        body = self._initialize(remote_addr="203.0.113.7")
+        self.assertIn("passkey", body["detail"], body)
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
+        assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGERED], user=None,
+                                        source_ip="203.0.113.7",
+                                        transaction_id=body["detail"]["transaction_id"])
+        challenges_before = db.session.query(Challenge).count()
+
+        db.session.add(BlockList(ip="203.0.113.7", block_expires_at=utc_now() + timedelta(seconds=600)))
+        db.session.commit()
+        body = self._initialize(remote_addr="203.0.113.7")
+        # Generic reject, and the body never ran: no challenge payload leaks and no challenge is created.
+        self.assertFalse(body["result"]["value"], body)
+        self.assertFalse(body.get("detail"), body)
+        self.assertEqual(challenges_before, db.session.query(Challenge).count())
+        # The rejection *replaces* the CHALLENGE_TRIGGERED row this request would have written: only the first call's
+        # row remains, and the second contributes an untrackable IP_BLOCKED one.
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.IP_BLOCKED],
+                                            same_attempt=False)
+        assert_authentication_log_entry(entries[AuthEventType.IP_BLOCKED], user=None, source_ip="203.0.113.7")
+
+    def test_initialize_cannot_feed_the_counter_that_blocked_it(self):
+        # /validate/initialize writes a trackable CHALLENGE_TRIGGERED row.
+        self._set_relying_party_id()
+        create_lockout_policy(
+            name="ca_initialize_rate", time_window_seconds=3600,
+            counter_types_to_track=_counter_types(AuthEventType.CHALLENGE_TRIGGERED),
+            stages=[{"failure_threshold": 2, "priority": 1,
+                     "actions": [{"action_type": str(LockoutAction.BLOCK_IP), "action_value": 600}]}],
+            target=LockoutTarget.SOURCE_IP, count_mode=str(CountMode.PER_REQUEST), priority=1)
+
+        # The first call is counted: one trackable CHALLENGE_TRIGGERED row, below the threshold.
+        body = self._initialize(remote_addr="203.0.113.7")
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
+        assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGERED], user=None,
+                                        source_ip="203.0.113.7",
+                                        transaction_id=body["detail"]["transaction_id"])
+        self.assertFalse(is_ip_blocked("203.0.113.7"))
+
+        # The second reaches the threshold, so its post-eval writes the block. Two separate requests, hence two
+        # attempts (same_attempt=False).
+        body = self._initialize(remote_addr="203.0.113.7")
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED] * 2, same_attempt=False)
+        assert_authentication_log_entry(entries.all[1], user=None, source_ip="203.0.113.7",
+                                        transaction_id=body["detail"]["transaction_id"])
+        self.assertTrue(is_ip_blocked("203.0.113.7"))
+
+        for _ in range(3):
+            self._initialize(remote_addr="203.0.113.7")
+        # Every further call is turned away and classified IP_BLOCKED, which is untrackable by construction: no third
+        # CHALLENGE_TRIGGERED row ever joins the two that produced the block, so the count that blocked this IP cannot
+        # be refreshed by the block's own traffic.
+        assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED] * 2 + [AuthEventType.IP_BLOCKED] * 3,
+                                  same_attempt=False)
 
     # --- serial-only lock-evasion (resolve owner before the pre-check) ---------
 

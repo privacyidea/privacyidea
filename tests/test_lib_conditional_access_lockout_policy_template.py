@@ -127,6 +127,12 @@ class LockoutPolicyTemplateTestCase(MyTestCase):
             AuthEventType.NOT_AUTHORIZED,           # authorization denial, not an authentication failure
             AuthEventType.USER_UNKNOWN,             # inert for a user target; the per-IP set counts it (enumeration)
             AuthEventType.ENROLLMENT_CANCELED_FAIL,  # enrollment housekeeping, not a credential attempt
+            # The server could not offer a factor (a required policy is missing, or building the challenge failed), so
+            # the fault is the server's: counting it would let a configuration gap throttle and then block the very
+            # clients it is already failing. Trackable, so an admin can still opt in.
+            AuthEventType.CHALLENGE_TRIGGER_FAIL,
+            # A request that named no token type the endpoint can initialize - malformed, not a credential attempt.
+            AuthEventType.INVALID_TOKEN_TYPE,
         }
         # Only over the trackable types: conditional access's own rejections (USER_LOCKED, IP_BLOCKED, ACCESS_DENIED)
         # are FAILURE outcomes too, but they are excluded from the policy vocabulary by construction
