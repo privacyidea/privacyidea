@@ -16,15 +16,16 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { NgClass } from "@angular/common";
+import { NgClass, NgTemplateOutlet } from "@angular/common";
 import {
-  AfterViewInit,
   Component,
   computed,
   effect,
   inject,
+  input,
   linkedSignal,
   signal,
+  TemplateRef,
   WritableSignal
 } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
@@ -84,6 +85,7 @@ interface BulkActionResult {
     MatTable,
     MatTooltip,
     NgClass,
+    NgTemplateOutlet,
     MatHeaderCellDef,
     MatNoDataRow,
     TableStateComponent
@@ -91,7 +93,15 @@ interface BulkActionResult {
   templateUrl: "./user-details-token-table.component.html",
   styleUrl: "./user-details-token-table.component.scss"
 })
-export class UserDetailsTokenTableComponent implements AfterViewInit {
+export class UserDetailsTokenTableComponent {
+  /**
+   * The two ways out of the empty state. They are passed as templates rather than projected content
+   * because this component renders them in a different place depending on the table's state, and a
+   * single ng-content slot can only ever be rendered once.
+   */
+  readonly enrollAction = input<TemplateRef<unknown> | undefined>(undefined);
+  readonly assignAction = input<TemplateRef<unknown> | undefined>(undefined);
+
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
@@ -140,6 +150,22 @@ export class UserDetailsTokenTableComponent implements AfterViewInit {
     count: () => this.userTokenData().data.length,
     allowed: () => this.authService.actionAllowed("tokenlist")
   });
+
+  /** Both routes out of the empty state are rights-gated, so the hint only offers the ones this admin has. */
+  readonly emptyHint = computed(() => {
+    const canEnroll = this.authService.tokenEnrollmentAllowed();
+    const canAssign = this.authService.actionAllowed("assign");
+    if (canEnroll && canAssign) {
+      return $localize`Enroll a new token for this user, or assign an existing one.`;
+    }
+    if (canEnroll) {
+      return $localize`Enroll a new token for this user.`;
+    }
+    if (canAssign) {
+      return $localize`Assign an existing token to this user.`;
+    }
+    return "";
+  });
   private readonly emptyRows = computed<ContainerDetailToken[]>(
     () => this.tableUtilsService.emptyDataSource<ContainerDetailToken>(5, this.columnsKeyMap).data
   );
@@ -164,10 +190,6 @@ export class UserDetailsTokenTableComponent implements AfterViewInit {
       const s = this.sort();
       this.dataSource.data = this.tableUtilsService.clientsideSortTokenData([...this.dataSource.data], s);
     });
-  }
-
-  ngAfterViewInit(): void {
-    (this.dataSource as unknown as { _sort: WritableSignal<Sort> })._sort = this.sort;
   }
 
   deleteSelected(): void {

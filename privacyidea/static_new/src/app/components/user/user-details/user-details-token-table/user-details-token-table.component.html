@@ -26,11 +26,11 @@
       <h4 class="username-header">&nbsp;{{ userService.detailsUser().username }}</h4>
       <h4>:</h4>
     </div>
-    <!-- The enroll action projected by the details page is the only way out of the empty state,
-         so it stays outside the table gate. The bulk actions need a selection and go with the table. -->
-    <div class="flex-row gap-8 margin-bottom-16">
-      <ng-content></ng-content>
-      @if (tableState.showTable()) {
+    <!-- With rows present the enroll action heads the bulk actions, which need a selection; with none
+         it moves into the state panel instead, so the way out of the empty state sits with the message. -->
+    @if (tableState.showTable()) {
+      <div class="flex-row gap-8 margin-bottom-16">
+        <ng-container *ngTemplateOutlet="enrollAction() ?? null"></ng-container>
         @if (authService.actionAllowed("delete")) {
           <button
             (click)="deleteSelected()"
@@ -71,8 +71,8 @@
             <span i18n>Reset Failcounters</span>
           </button>
         }
-      }
-    </div>
+      </div>
+    }
     @if (tableState.showTable()) {
       <div class="responsive-flex-row-1580">
         <table
@@ -210,13 +210,19 @@
           </tr>
         </table>
       </div>
+      <ng-container *ngTemplateOutlet="assignAction() ?? null"></ng-container>
     } @else {
       <app-table-state
+        [hint]="emptyHint()"
         [table]="tableState"
         heading="No tokens assigned to this user"
-        hint="Assign a token to this user to see it here."
         i18n-heading
-        i18n-hint />
+        icon="shield">
+        <div class="table-state-actions">
+          <ng-container *ngTemplateOutlet="enrollAction() ?? null"></ng-container>
+          <ng-container *ngTemplateOutlet="assignAction() ?? null"></ng-container>
+        </div>
+      </app-table-state>
     }
   </div>
 </div>

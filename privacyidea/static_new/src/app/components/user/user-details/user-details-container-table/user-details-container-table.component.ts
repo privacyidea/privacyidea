@@ -16,8 +16,18 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { NgClass } from "@angular/common";
-import { Component, computed, effect, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { NgClass, NgTemplateOutlet } from "@angular/common";
+import {
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  linkedSignal,
+  signal,
+  TemplateRef,
+  WritableSignal
+} from "@angular/core";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatIcon } from "@angular/material/icon";
@@ -75,12 +85,20 @@ import { forkJoin } from "rxjs";
     MatIconButton,
     MatButton,
     MatCheckbox,
-    TableStateComponent
+    TableStateComponent,
+    NgTemplateOutlet
   ],
   templateUrl: "./user-details-container-table.component.html",
   styleUrl: "./user-details-container-table.component.scss"
 })
 export class UserDetailsContainerTableComponent {
+  /**
+   * The way out of the empty state. Passed as a template rather than projected content because this
+   * component renders it in a different place depending on the table's state, and a single
+   * ng-content slot can only ever be rendered once.
+   */
+  readonly createAction = input<TemplateRef<unknown> | undefined>(undefined);
+
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
@@ -124,13 +142,18 @@ export class UserDetailsContainerTableComponent {
     count: () => this.userContainers().length,
     allowed: () => this.authService.actionAllowed("container_list")
   });
+
+  /** Creating one is the only route out of the empty state here, so the hint is dropped without that right. */
+  readonly emptyHint = computed(() =>
+    this.authService.actionAllowed("container_create")
+      ? $localize`Create a container for this user to see it here.`
+      : ""
+  );
   private readonly emptyRows = computed<ContainerDetailData[]>(
     () => this.tableUtilsService.emptyDataSource<ContainerDetailData>(5, this.columnsKeyMap).data
   );
 
   constructor() {
-    (this.dataSource as unknown as { _sort: WritableSignal<Sort> })._sort = this.sort;
-
     effect(() => {
       const base = this.userContainers();
       const resource = this.containerService.userContainersResource;
