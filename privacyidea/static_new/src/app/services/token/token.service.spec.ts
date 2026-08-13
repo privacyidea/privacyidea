@@ -1369,6 +1369,7 @@ describe("TokenService", () => {
       expect(tokenService.caseNotes).toEqual({
         serial: "usually-insensitive",
         userid: "usually-sensitive",
+        resolver: "usually-insensitive",
         "infokey & infovalue": "usually-sensitive"
       });
     });

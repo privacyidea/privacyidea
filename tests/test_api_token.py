@@ -3983,28 +3983,29 @@ class APITokenTestCase(MyApiTestCase):
 
     def test_64d_user_role_is_limited_to_own_tokens(self):
         """A caller with role 'user' only ever sees and modifies the tokens of the user they are
-        logged in as, also when a resolver of their realm is passed."""
+        logged in as, also when a resolver or a userid of another user is passed."""
         self.setUp_user_realms()
         save_resolver({"resolver": self.resolvername3, "type": "passwdresolver", "fileName": PWFILE2})
         set_realm(self.realm1, [{"name": self.resolvername1}, {"name": self.resolvername3}])
         self.authenticate_selfservice_user()
 
-        other_token = init_token({"genkey": 1}, user=User("daemon", self.realm1, self.resolvername3))
+        other_user = User("daemon", self.realm1, self.resolvername3)
+        other_token = init_token({"genkey": 1}, user=other_user)
         own_token = init_token({"genkey": 1}, user=User("selfservice", self.realm1, self.resolvername1))
         set_policy("userpol", scope=SCOPE.USER,
                    action=f"{PolicyAction.DELETE},{PolicyAction.DISABLE},{PolicyAction.SETDESCRIPTION}")
 
         try:
-            # The token list only contains the own token
-            with self.app.test_request_context("/token/", method="GET",
-                                               query_string=urlencode({"resolver": self.resolvername3,
-                                                                       "pagesize": 100}),
-                                               headers={"Authorization": self.at_user}):
-                res = self.app.full_dispatch_request()
-                self.assertEqual(200, res.status_code, res.json)
-                serials = [t["serial"] for t in res.json["result"]["value"]["tokens"]]
-                self.assertIn(own_token.get_serial(), serials)
-                self.assertNotIn(other_token.get_serial(), serials)
+            # Neither a foreign resolver nor a foreign userid widens the list beyond the own token
+            for widen in ({"resolver": self.resolvername3}, {"userid": other_user.uid}):
+                with self.app.test_request_context("/token/", method="GET",
+                                                   query_string=urlencode({**widen, "pagesize": 100}),
+                                                   headers={"Authorization": self.at_user}):
+                    res = self.app.full_dispatch_request()
+                    self.assertEqual(200, res.status_code, res.json)
+                    serials = [t["serial"] for t in res.json["result"]["value"]["tokens"]]
+                    self.assertIn(own_token.get_serial(), serials, widen)
+                    self.assertNotIn(other_token.get_serial(), serials, widen)
 
             # The token of the other user can not be modified or deleted
             for url, method, data in (("/token/description", "POST",

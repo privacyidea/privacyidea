@@ -130,6 +130,7 @@ const booleanKeys = new Set(["active", "assigned"]);
 const caseNotes: Record<string, FilterCaseNote> = {
   serial: "usually-insensitive",
   userid: "usually-sensitive",
+  resolver: "usually-insensitive",
   "infokey & infovalue": "usually-sensitive"
 };
 function toParamValue(key: string, value: string): string {
