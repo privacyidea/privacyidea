@@ -97,6 +97,11 @@ DOCKER_LOGGING_CONFIG = {
 class SecureFormatter(Formatter):
 
     def format(self, record):
+        if not isinstance(record.msg, str):
+            # Logging allows any object as the message (log.info(exception) is common).
+            # Coerce it here, like logging.LogRecord.getMessage() would, so the string
+            # operations below can not fail on the message object.
+            record.msg = str(record.msg)
         if 's_line' in record.__dict__ and '_called' not in record.__dict__:
             # rotating file handler calls "format" to check for its length before
             # emitting the actual line
