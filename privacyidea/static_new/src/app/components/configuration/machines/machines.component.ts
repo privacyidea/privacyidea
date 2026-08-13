@@ -87,7 +87,9 @@ export class MachinesComponent {
 
   machineDataSource = computed(() => {
     if (isInitialLoad(this.machineService.machinesResource)) {
-      return this.tableUtilsService.emptyDataSource<Machine>(this.pageSize(), this.displayedColumns);
+      return this.tableUtilsService.emptyDataSource<Machine>(this.pageSize(), this.displayedColumns, {
+        hostname: []
+      });
     }
     const machines = this.machineService.machines() ?? [];
     const dataSource = new MatTableDataSource(machines);

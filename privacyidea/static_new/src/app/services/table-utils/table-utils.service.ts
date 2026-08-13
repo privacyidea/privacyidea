@@ -91,9 +91,16 @@ type KeysOfColumns<C extends readonly ColumnDef[]> = {
 export interface TableUtilsServiceInterface {
   pageSizeOptions: WritableSignal<number[]>;
 
+  /**
+   * Placeholder rows shown while the first page loads. Cells default to "", which is only a valid
+   * stand-in for columns rendered as text; a column whose template treats the value as an array (or
+   * any other type) has to name its own empty value here, or that template throws on every skeleton
+   * row before any real data arrives.
+   */
   emptyDataSource<T>(
     pageSize: number,
-    columnsKeyMap: readonly (Readonly<{ key: string; label: string }> | string)[]
+    columnsKeyMap: readonly (Readonly<{ key: string; label: string }> | string)[],
+    emptyValues?: Readonly<Record<string, unknown>>
   ): MatTableDataSource<T>;
 
   toggleKeywordInFilter(args: { keyword: string; currentValue: FilterValue }): FilterValue;
@@ -143,13 +150,15 @@ export class TableUtilsService implements TableUtilsServiceInterface {
 
   emptyDataSource<T>(
     pageSize: number,
-    columnsKeyMap: readonly (Readonly<{ key: string; label: string }> | string)[]
+    columnsKeyMap: readonly (Readonly<{ key: string; label: string }> | string)[],
+    emptyValues: Readonly<Record<string, unknown>> = {}
   ): MatTableDataSource<T> {
     return new MatTableDataSource(
       Array.from({ length: pageSize }, () => {
-        const emptyRow: Record<string, string> = {};
+        const emptyRow: Record<string, unknown> = {};
         columnsKeyMap.forEach((column) => {
-          emptyRow[typeof column === "string" ? column : column.key] = "";
+          const key = typeof column === "string" ? column : column.key;
+          emptyRow[key] = key in emptyValues ? emptyValues[key] : "";
         });
         return emptyRow as T;
       })

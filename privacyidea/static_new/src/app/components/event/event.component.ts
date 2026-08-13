@@ -128,7 +128,13 @@ export class EventComponent {
     }),
     computation: (source) => {
       if (isInitialLoad(this.eventService.allEventsResource)) {
-        return this.tableUtilsService.emptyDataSource<EventHandler>(this.pageSizeOptions()[1] ?? 10, this.columnKeys());
+        return this.tableUtilsService.emptyDataSource<EventHandler>(
+          this.pageSizeOptions()[1] ?? 10,
+          this.columnKeys(),
+          {
+            event: []
+          }
+        );
       }
       const sorted = this.clientsideSortEventData(source.eventHandlers ?? [], this.sort());
       const dataSource = new MatTableDataSource(sorted);

@@ -24,9 +24,10 @@ import { provideRouter, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService } from "@services/auth/auth.service";
 import { MachineService } from "@services/machine/machine.service";
+import { TokenService } from "@services/token/token.service";
 import { MachinesComponent } from "./machines.component";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
-import { MockAuthService, MockMachineService, MockTableUtilsService } from "@testing/mock-services";
+import { MockAuthService, MockMachineService, MockTableUtilsService, MockTokenService } from "@testing/mock-services";
 
 describe("MachinesComponent", () => {
   let component: MachinesComponent;
@@ -109,5 +110,42 @@ describe("MachinesComponent pageSize fallback", () => {
 
     expect(component.pageSizeOptions()[1]).toBeUndefined();
     expect(component.pageSize()).toBe(10);
+  });
+});
+
+// Uses the real TableUtilsService: MockTableUtilsService returns an empty data source from
+// emptyDataSource, so with the mock in place no placeholder row is ever rendered and the loading
+// state of this table cannot be exercised at all.
+describe("MachinesComponent loading placeholders", () => {
+  it("renders the placeholder rows without the hostname cell throwing", async () => {
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({
+      imports: [MachinesComponent],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
+        { provide: MachineService, useClass: MockMachineService },
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: TokenService, useClass: MockTokenService },
+        TableUtilsService
+      ]
+    }).compileComponents();
+
+    const authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+    authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["machinelist"] });
+
+    // No value and no error is the initial load, which fills the table with placeholder rows. The
+    // hostname cell joins its value, so a placeholder that is not an array throws once per row, and
+    // the page stays broken even after the real machines arrive.
+    const machineServiceMock = TestBed.inject(MachineService) as unknown as MockMachineService;
+    machineServiceMock.machinesResource.value.set(undefined);
+
+    const fixture = TestBed.createComponent(MachinesComponent);
+    expect(() => fixture.detectChanges()).not.toThrow();
+
+    const hostnameCells = fixture.nativeElement.querySelectorAll("td.mat-column-hostname");
+    expect(hostnameCells.length).toBeGreaterThan(0);
+    expect(hostnameCells[0].textContent.trim()).toBe("");
   });
 });
