@@ -113,6 +113,33 @@ def get_module_positions(handlermodule=None):
     return send_result(ret)
 
 
+@eventhandling_blueprint.route('/defaults/<handlermodule>', methods=["GET"])
+@log_with(log)
+@prepolicy(check_base_action, request, PolicyAction.EVENTHANDLINGREAD)
+def get_module_defaults(handlermodule=None):
+    """
+    Return the values a new binding of a handler module starts with, for the
+    settings that are not specific to an action.
+
+    Currently this is ``abort_on_error``, which is ``True`` for a handler
+    whose result the request itself consumes: continuing without such a
+    handler changes what the client receives, so a new binding of it should
+    not be best-effort. The stored binding decides at runtime; this is only
+    the value it is created with.
+
+    Requires admin authentication and the policy action
+    :ref:`policy_eventhandling_read`.
+
+    :param handlermodule: path component, the handler module identifier
+        (e.g. ``Federation``).
+    :status 200: dict of default values in ``result.value``.
+    """
+    h_obj = get_handler_object(handlermodule)
+    ret = {"abort_on_error": bool(h_obj.default_abort_on_error) if h_obj else False}
+    g.audit_object.log({"success": True})
+    return send_result(ret)
+
+
 @eventhandling_blueprint.route('/actions/<handlermodule>', methods=["GET"])
 @log_with(log)
 @prepolicy(check_base_action, request, PolicyAction.EVENTHANDLINGREAD)
@@ -191,6 +218,15 @@ def set_eventhandling():
         first. Default ``0``.
     :jsonparam active: ``True`` (default) to enable the binding, ``False``
         to create it disabled.
+    :jsonparam abort_on_error: ``False`` to keep the binding best-effort: if
+        the handler raises, the failure is written to the audit log and the
+        request continues without it. ``True`` aborts the request with an
+        error instead. Set this for a handler whose result the request itself
+        consumes, such as a response mangler that removes data from the
+        response, or a federation handler that forwards the request to
+        another privacyIDEA. If omitted, an existing binding keeps its
+        current value and a new binding gets the default of its handler
+        module, see :http:get:`/event/defaults/(handlermodule)`.
     :jsonparam conditions: dict (or JSON-encoded dict) of per-binding
         conditions; see :http:get:`/event/conditions/(handlermodule)`.
         On update, replaces all conditions.
@@ -212,6 +248,9 @@ def set_eventhandling():
     action = get_required(param, "action")
     ordering = param.get("ordering", 0)
     position = param.get("position", "post")
+    # If it is not given, an existing binding keeps its value and a new one gets the default of its handler
+    # module, see :http:get:`/event/defaults/(handlermodule)`.
+    abort_on_error = is_true(param.get("abort_on_error")) if "abort_on_error" in param else None
     conditions = param.get("conditions", {})
     if not isinstance(conditions, dict):
         try:
@@ -228,7 +267,7 @@ def set_eventhandling():
     res = set_event(name, event, handlermodule=handlermodule,
                     action=action, conditions=conditions,
                     ordering=ordering, id=eid, options=options, active=active,
-                    position=position)
+                    position=position, abort_on_error=abort_on_error)
     g.audit_object.log({"success": True,
                         "info": res})
     return send_result(res)

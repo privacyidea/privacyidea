@@ -75,6 +75,7 @@ class EventHandlerLibTestCase(MyTestCase):
         self.assertTrue(event_1.active)
         self.assertEqual("post", event_1.position)
         self.assertEqual("", event_1.condition)
+        self.assertFalse(event_1.abort_on_error)
         # Relationships
         self.assertEqual("emailconfig", event_1.options[0].Key)
         self.assertEqual("themis", event_1.options[0].Value)
@@ -187,6 +188,36 @@ class EventHandlerLibTestCase(MyTestCase):
 
         h_obj = get_handler_object("Container")
         self.assertEqual(type(h_obj), ContainerEventHandler)
+
+    def test_03_abort_on_error(self):
+        def stored(event_id):
+            return db.session.scalars(select(EventHandler).where(EventHandler.id == event_id)).one_or_none()
+
+        # A handler whose result the request consumes is created as aborting, the others are best-effort
+        federation_id = set_event("federation", "token_init", "Federation", "forward")
+        notification_id = set_event("notification", "token_init", "UserNotification", "sendmail")
+        self.assertTrue(stored(federation_id).abort_on_error)
+        self.assertFalse(stored(notification_id).abort_on_error)
+
+        # An update that does not mention abort_on_error keeps the stored value
+        set_event("federation", "token_init", "Federation", "forward", id=federation_id, ordering=2)
+        self.assertTrue(stored(federation_id).abort_on_error)
+
+        # The stored value can be changed in both directions
+        set_event("federation", "token_init", "Federation", "forward", id=federation_id, abort_on_error=False)
+        self.assertFalse(stored(federation_id).abort_on_error)
+        set_event("notification", "token_init", "UserNotification", "sendmail", id=notification_id,
+                  abort_on_error=True)
+        self.assertTrue(stored(notification_id).abort_on_error)
+
+        # The handler definition passed to the event handlers carries the value
+        event_config = EventConfiguration()
+        handler_definitions = {d.get("id"): d for d in event_config.get_handled_events("token_init")}
+        self.assertFalse(handler_definitions[federation_id].get("abort_on_error"))
+        self.assertTrue(handler_definitions[notification_id].get("abort_on_error"))
+
+        delete_event(federation_id)
+        delete_event(notification_id)
 
 
 class BaseEventHandlerTestCase(MyTestCase):

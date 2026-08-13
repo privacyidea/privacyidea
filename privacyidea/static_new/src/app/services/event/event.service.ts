@@ -36,6 +36,7 @@ export interface EventHandler {
   handlermodule: string;
   ordering: number;
   position: string;
+  abort_on_error: boolean;
   event: string[];
   action: string;
   options: Record<string, string> | null;
@@ -49,11 +50,19 @@ export const EMPTY_EVENT: EventHandler = {
   handlermodule: "",
   ordering: 0,
   position: "post",
+  abort_on_error: false,
   event: [],
   action: "",
   options: {},
   conditions: {}
 };
+
+/**
+ * The values a new binding of a handler module starts with, for the settings that are not specific to an action.
+ */
+export interface EventHandlerModuleDefaults {
+  abort_on_error: boolean;
+}
 
 export interface EventConditionMultiValue {
   name: string;
@@ -87,6 +96,7 @@ export interface EventHandlerSaveParams {
   handlermodule: string | null;
   ordering: number;
   position: string;
+  abort_on_error: boolean;
   event: string[];
   action: string;
   conditions: Record<string, unknown>;
@@ -104,6 +114,8 @@ export interface EventServiceInterface {
   availableEvents: Signal<string[]>;
   readonly modulePositionsResource: HttpResourceRef<PiResponse<string[]> | undefined>;
   modulePositions: Signal<string[]>;
+  readonly moduleDefaultsResource: HttpResourceRef<PiResponse<EventHandlerModuleDefaults> | undefined>;
+  moduleDefaults: Signal<EventHandlerModuleDefaults | null>;
   readonly moduleActionsResource: HttpResourceRef<PiResponse<EventActions> | undefined>;
   moduleActions: Signal<EventActions>;
   readonly moduleConditionsResource: HttpResourceRef<PiResponse<Record<string, EventCondition>> | undefined>;
@@ -218,6 +230,20 @@ export class EventService implements EventServiceInterface {
       return resource.result?.value || [];
     }
     return [];
+  });
+  readonly moduleDefaultsResource = httpResource<PiResponse<EventHandlerModuleDefaults>>(() => {
+    if (!this.selectedHandlerModule()) {
+      return undefined;
+    }
+    return {
+      url: this.eventBaseUrl + "/defaults/" + encodeURIComponent(this.selectedHandlerModule() || ""),
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
+  });
+  moduleDefaults = computed(() => {
+    if (!this.moduleDefaultsResource.hasValue()) return null;
+    return this.moduleDefaultsResource.value()?.result?.value ?? null;
   });
 
   // -------------------------------------
