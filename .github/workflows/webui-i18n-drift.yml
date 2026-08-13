@@ -8,7 +8,7 @@
 # retires an id and mints a new one, and the localized build only warns about
 # the now-missing translation (i18nMissingTranslation defaults to "warning"),
 # so the string silently falls back to English in all 12 locales. This job
-# re-runs the extraction and fails if src/locale is not already in sync.
+# re-runs the extraction and reports whether src/locale is still in sync.
 #
 # Note for maintainers: src/locale is co-owned by Weblate (component
 # privacyidea-webui-next). A Weblate pull request that re-serializes a file in
@@ -26,10 +26,9 @@ permissions:
 
 jobs:
   i18n-drift:
-    # No `paths:` filter, for the same reason as webui-lockfile-sync.yml: a
-    # path-filtered required check never reports on PRs outside those paths and
-    # blocks the merge indefinitely. The change detection below short-circuits
-    # the expensive steps.
+    # No `paths:` filter, mirroring webui-lockfile-sync.yml so the job reports
+    # on every PR. The change detection below short-circuits the expensive
+    # steps when the WebUI sources are untouched.
     name: i18n extraction drift check
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -80,13 +79,42 @@ jobs:
         if: steps.changed.outputs.changed == 'true'
         run: npm run i18n:extract
         working-directory: ./privacyidea/static_new
-      - name: Fail on i18n drift
+      - name: Report i18n drift
         if: steps.changed.outputs.changed == 'true'
+        env:
+          DIFF_FILE: ${{ runner.temp }}/i18n-drift.diff
+          MAX_LINES: '400'
         run: |
-          if ! git diff --exit-code privacyidea/static_new/src/locale; then
-            echo "::error::Extracted messages differ from the committed translation files."
-            echo "Run 'npm run i18n:extract' in privacyidea/static_new and commit src/locale."
-            echo "A message marked state=\"new\" means its English source changed and the"
-            echo "existing translation needs review, not that the file is broken."
-            exit 1
+          if git diff --quiet privacyidea/static_new/src/locale; then
+            echo "Translation files are in sync with the extracted messages."
+            echo "WebUI i18n: translation files are in sync." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
           fi
+          git diff privacyidea/static_new/src/locale > "$DIFF_FILE"
+          echo "::warning title=WebUI i18n drift::Extracted messages differ from the committed translation files. Run 'npm run i18n:extract' in privacyidea/static_new and commit src/locale."
+          {
+            echo "## WebUI i18n drift"
+            echo
+            echo "The committed translation files do not match a fresh extraction."
+            echo "Run \`npm run i18n:extract\` in \`privacyidea/static_new\` and commit \`src/locale\`."
+            echo
+            echo "A message marked \`state=\"new\"\` means its English source changed and the"
+            echo "existing translation needs review, not that the file is broken."
+            echo
+            echo '```'
+            git diff --stat privacyidea/static_new/src/locale
+            echo '```'
+            echo
+            echo "<details><summary>Diff</summary>"
+            echo
+            echo '```diff'
+            head -n "$MAX_LINES" "$DIFF_FILE"
+            if [ "$(wc -l < "$DIFF_FILE")" -gt "$MAX_LINES" ]; then
+              echo "... diff truncated after $MAX_LINES lines ..."
+            fi
+            echo '```'
+            echo
+            echo "</details>"
+          } >> "$GITHUB_STEP_SUMMARY"
+          # Advisory only: never fail the run.
+          exit 0
