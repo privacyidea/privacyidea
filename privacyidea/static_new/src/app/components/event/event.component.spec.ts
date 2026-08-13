@@ -105,7 +105,8 @@ describe("EventComponent", () => {
       conditions: {},
       options: {},
       active: true,
-      ordering: 1
+      ordering: 1,
+      abort_on_error: false
     };
     component.onEditEventHandler(handler);
     expect(spy).toHaveBeenCalled();
@@ -130,7 +131,8 @@ describe("EventComponent", () => {
       conditions: {},
       options: {},
       active: true,
-      ordering: 1
+      ordering: 1,
+      abort_on_error: false
     };
     component.onDeleteEventHandler(handler);
     expect(spy).toHaveBeenCalled();
@@ -148,7 +150,8 @@ describe("EventComponent", () => {
       event: [],
       conditions: {},
       active: true,
-      ordering: 1
+      ordering: 1,
+      abort_on_error: false
     };
     expect(ds.filterPredicate(handler, "specialname")).toBe(true);
     expect(ds.filterPredicate(handler, "notfound")).toBe(false);
@@ -166,7 +169,8 @@ describe("EventComponent", () => {
       event: [],
       conditions: {},
       active: true,
-      ordering: 1
+      ordering: 1,
+      abort_on_error: false
     };
     expect(ds.filterPredicate(handler, "modulex")).toBe(true);
     expect(ds.filterPredicate(handler, "notfound")).toBe(false);
@@ -184,7 +188,8 @@ describe("EventComponent", () => {
       event: [],
       conditions: {},
       active: true,
-      ordering: 1
+      ordering: 1,
+      abort_on_error: false
     };
     expect(ds.filterPredicate(handler, "posy")).toBe(true);
     expect(ds.filterPredicate(handler, "notfound")).toBe(false);
@@ -202,7 +207,8 @@ describe("EventComponent", () => {
       event: [],
       conditions: {},
       active: true,
-      ordering: 1
+      ordering: 1,
+      abort_on_error: false
     };
     expect(ds.filterPredicate(handler, "actionz")).toBe(true);
     expect(ds.filterPredicate(handler, "notfound")).toBe(false);
@@ -220,7 +226,8 @@ describe("EventComponent", () => {
       event: [],
       conditions: {},
       active: true,
-      ordering: 1
+      ordering: 1,
+      abort_on_error: false
     };
     expect(ds.filterPredicate(handler, "foo: baropt")).toBe(true);
     expect(ds.filterPredicate(handler, "foo")).toBe(true);
@@ -240,7 +247,8 @@ describe("EventComponent", () => {
       event: ["EventA"],
       conditions: {},
       active: true,
-      ordering: 1
+      ordering: 1,
+      abort_on_error: false
     };
     expect(ds.filterPredicate(handler, "eventa")).toBe(true);
     expect(ds.filterPredicate(handler, "notfound")).toBe(false);
@@ -258,7 +266,8 @@ describe("EventComponent", () => {
       event: [],
       conditions: { cond: "CondVal" },
       active: true,
-      ordering: 1
+      ordering: 1,
+      abort_on_error: false
     };
     expect(ds.filterPredicate(handler, "cond: condval")).toBe(true);
     expect(ds.filterPredicate(handler, "cond")).toBe(true);
@@ -278,7 +287,8 @@ describe("EventComponent", () => {
       event: [],
       conditions: {},
       active: true,
-      ordering: 1
+      ordering: 1,
+      abort_on_error: false
     };
     expect(ds.filterPredicate(handler, "")).toBe(true);
     expect(ds.filterPredicate(handler, "   ")).toBe(true);
@@ -297,7 +307,8 @@ describe("EventComponent", () => {
         options: {},
         conditions: {},
         active: true,
-        ordering: 1
+        ordering: 1,
+        abort_on_error: false
       },
       {
         id: 2,
@@ -309,7 +320,8 @@ describe("EventComponent", () => {
         options: {},
         conditions: {},
         active: true,
-        ordering: 2
+        ordering: 2,
+        abort_on_error: false
       }
     ];
     mockEventService.eventHandlers.set(eventHandlers);
@@ -330,7 +342,8 @@ describe("EventComponent", () => {
         options: {},
         conditions: {},
         active: true,
-        ordering: 1
+        ordering: 1,
+        abort_on_error: false
       }
     ];
     mockEventService.eventHandlers.set(eventHandlers);
