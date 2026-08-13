@@ -8,7 +8,13 @@
 #   2. Build + smoke  — build the image, "compose up", then assert readiness,
 #                       admin authentication, and that pi-cron is running.
 #
-# Path-gated to the Docker deployment files so it does not run on every PR.
+# Everything runs on pull requests that touch deploy/docker itself — those are
+# the changes most likely to break the deployment, and the feedback belongs in
+# review. Changes on the application side (Python sources, dependencies) can
+# break the image too, but a full build plus compose boot is too expensive to
+# pay for on every backend PR, and no image is published from this repository.
+# That drift is caught by the nightly run on master, which reports breakage as a
+# GitHub issue.
 
 name: Docker Build
 
@@ -19,12 +25,10 @@ on:
       - 'branch-*'
     paths:
       - 'deploy/docker/**'
-      - 'privacyidea/**.py'
-      - 'privacyidea/static_new/package.json'
-      - 'privacyidea/static_new/package-lock.json'
-      - 'pyproject.toml'
-      - 'requirements.txt'
       - '.github/workflows/docker-build.yml'
+  schedule:
+    # Nightly at 03:00 UTC, after the nightly unit-test runs.
+    - cron: '0 3 * * *'
   workflow_dispatch:
 
 permissions:
@@ -117,3 +121,27 @@ jobs:
       - name: Tear down
         if: always()
         run: docker compose -f deploy/docker/compose.yaml down -v
+
+  notify-failure:
+    needs: [static-checks, build-and-smoke]
+    # Surface nightly breakage as a GitHub issue. Scheduled runs only — PR
+    # failures already show up as PR checks.
+    if: ${{ failure() && github.event_name == 'schedule' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read # for actions/checkout to reach the local composite action
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/notify-nightly-failure
+        with:
+          title: Nightly Docker build failed on master
+          body: |
+            The nightly Docker image build and compose smoke test failed on master.
+
+            Commit: ${{ github.sha }}
+            Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          token: ${{ secrets.GITHUB_TOKEN }}
