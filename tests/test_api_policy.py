@@ -12,6 +12,7 @@ from privacyidea.lib.policies.conditions import ConditionSection, ConditionHandl
 from privacyidea.lib.policy import (set_policy, SCOPE, delete_policy,
                                     rename_policy, get_policies)
 from privacyidea.lib.token import init_token, remove_token
+from privacyidea.lib.tokens.push_types import PushAction
 from privacyidea.lib.user import User
 from privacyidea.lib.utils.compare import PrimaryComparators
 from privacyidea.models import db, NodeName
@@ -225,6 +226,56 @@ class APIPolicyTestCase(MyApiTestCase):
         self.assertTrue(policy.get("user_case_insensitive"), policy)
 
         delete_policy("polci")
+
+    def test_01bb_set_push_biometric_policy_controls(self):
+        policy_name = "push_biometric_controls"
+        with self.app.test_request_context(
+            f"/policy/{policy_name}",
+            method="POST",
+            data={
+                "scope": SCOPE.ENROLL,
+                "action": (
+                    f"{PushAction.APP_BIOMETRIC_LEVEL}=strong,"
+                    f"{PushAction.APP_INVALIDATE_ON_BIOMETRIC_CHANGE}=true"
+                ),
+            },
+            headers={"Authorization": self.at},
+        ):
+            response = self.app.full_dispatch_request()
+            self.assertEqual(200, response.status_code, response)
+
+        policy = get_policies(name=policy_name)[0]
+        self.assertEqual(
+            "strong",
+            policy["action"][PushAction.APP_BIOMETRIC_LEVEL],
+        )
+        self.assertEqual(
+            "true",
+            policy["action"][PushAction.APP_INVALIDATE_ON_BIOMETRIC_CHANGE]
+        )
+
+        with self.app.test_request_context(
+            f"/policy/{policy_name}",
+            method="POST",
+            data={
+                "scope": SCOPE.ENROLL,
+                "action": (
+                    f"{PushAction.APP_BIOMETRIC_LEVEL}=any,"
+                    f"{PushAction.APP_INVALIDATE_ON_BIOMETRIC_CHANGE}=false"
+                ),
+            },
+            headers={"Authorization": self.at},
+        ):
+            response = self.app.full_dispatch_request()
+            self.assertEqual(200, response.status_code, response)
+
+        policy = get_policies(name=policy_name)[0]
+        self.assertEqual("any", policy["action"][PushAction.APP_BIOMETRIC_LEVEL])
+        self.assertEqual(
+            "false",
+            policy["action"][PushAction.APP_INVALIDATE_ON_BIOMETRIC_CHANGE],
+        )
+        delete_policy(policy_name)
 
     def test_01c_set_policy_active(self):
         policy_name = "policy_inactive"

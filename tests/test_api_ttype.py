@@ -473,6 +473,41 @@ class TtypePushAPITestCase(MyApiTestCase):
         # remove the policy
         delete_policy("push1")
 
+    def test_03a_api_enroll_push_with_biometric_policy_controls(self):
+        self.authenticate()
+        set_policy(
+            "push_biometric_controls",
+            scope=SCOPE.ENROLL,
+            action=(
+                f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
+                f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL},"
+                f"push_{PolicyAction.APP_FORCE_UNLOCK}=biometric,"
+                f"{PushAction.APP_BIOMETRIC_LEVEL}=strong,"
+                f"{PushAction.APP_INVALIDATE_ON_BIOMETRIC_CHANGE}=true"
+            ),
+        )
+
+        serial = None
+        try:
+            with self.app.test_request_context(
+                "/token/init",
+                method="POST",
+                data={"type": "push", "genkey": 1},
+                headers={"Authorization": self.at},
+            ):
+                response = self.app.full_dispatch_request()
+                self.assertEqual(response.status_code, 200, response)
+                detail = response.json["detail"]
+                serial = detail["serial"]
+                push_url = detail["pushurl"]["value"]
+                self.assertIn("app_force_unlock=biometric", push_url)
+                self.assertIn("app_biometric_level=strong", push_url)
+                self.assertIn("app_invalidate_on_biometric_change=true", push_url)
+        finally:
+            if serial:
+                remove_token(serial)
+            delete_policy("push_biometric_controls")
+
     def test_04_api_poll_declined_chal(self):
         self.setUp_user_realms()
         # create FireBase Service and policies

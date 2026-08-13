@@ -9,6 +9,14 @@ class PushMode(str, Enum):
     REQUIRE_PRESENCE = "require_presence"
     CODE_TO_PHONE = "code_to_phone"
 
+
+class PushBiometricLevel(str, Enum):
+    """Minimum biometric assurance requested from the authenticator app."""
+
+    ANY = "any"
+    STRONG = "strong"
+
+
 # Length of the short display code for code_to_phone mode.
 # The security does not lie in this code; it's only used so the client
 # knows the smartphone has completed its confirmation.
@@ -67,6 +75,8 @@ class PushAction:
     PRESENCE_NUM_OPTIONS = "push_presence_num_options"
     USE_PIA_SCHEME = "push_use_pia_scheme"
     CHALLENGE_TEXT = "push_challenge_text"
+    APP_BIOMETRIC_LEVEL = "push_app_biometric_level"
+    APP_INVALIDATE_ON_BIOMETRIC_CHANGE = "push_app_invalidate_on_biometric_change"
 
 
 class PushAllowPolling:

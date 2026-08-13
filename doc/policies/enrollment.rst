@@ -951,3 +951,26 @@ This policy can be used to force the privacyIDEA Authenticator App to secure the
 biometric. If you select any, the token can be unlocked with both.
 
 .. note:: This needs the privacyIDEA Authenticator app 4.6.1 or higher.
+
+push_app_biometric_level
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``string``
+
+For Push tokens, this policy requests either any system biometric (``any``) or
+a strong biometric (``strong``) from a supporting Authenticator App. It only
+refines ``push_app_force_unlock=biometric``; older applications ignore the
+additional enrollment parameter.
+
+push_app_invalidate_on_biometric_change
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``string``
+
+For Push tokens, this policy asks a supporting Authenticator App to protect the
+Push key so that a change to the enrolled biometrics invalidates it. Set it to
+``true`` to bind the key to the current biometric enrollment or explicitly set
+it to ``false`` to opt out. If the policy is not configured, the enrollment URL
+does not contain this parameter, allowing supporting applications to apply their
+own fail-safe default. Once the application detects an invalidated key, the
+token must be enrolled again.

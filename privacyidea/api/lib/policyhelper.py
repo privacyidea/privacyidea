@@ -33,7 +33,7 @@ from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.conditions import ConditionSection
 from privacyidea.lib.policy import Match, SCOPE
 from privacyidea.lib.realm import realm_is_defined
-from privacyidea.lib.tokens.push_types import PushAction
+from privacyidea.lib.tokens.push_types import PushAction, PushBiometricLevel
 from privacyidea.lib.token import get_tokens_from_serial_or_user, get_token_owner
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
@@ -146,6 +146,35 @@ def get_pushtoken_add_config(g, params=None, user_obj=None):
     use_pia_scheme = Match.user(g, scope=SCOPE.ENROLL, action=PushAction.USE_PIA_SCHEME,
                                 user_object=user).allowed()
     params[PushAction.USE_PIA_SCHEME] = use_pia_scheme
+
+    biometric_level = Match.user(
+        g,
+        scope=SCOPE.ENROLL,
+        action=PushAction.APP_BIOMETRIC_LEVEL,
+        user_object=user,
+    ).action_values(unique=True)
+    if len(biometric_level) == 1:
+        level = next(iter(biometric_level))
+        allowed_levels = {item.value for item in PushBiometricLevel}
+        if level not in allowed_levels:
+            raise PolicyError(
+                f"Invalid value for {PushAction.APP_BIOMETRIC_LEVEL}: {level}"
+            )
+        params[PushAction.APP_BIOMETRIC_LEVEL] = level
+
+    invalidate_on_change = Match.user(
+        g,
+        scope=SCOPE.ENROLL,
+        action=PushAction.APP_INVALIDATE_ON_BIOMETRIC_CHANGE,
+        user_object=user,
+    ).action_values(unique=True)
+    if len(invalidate_on_change) == 1:
+        value = next(iter(invalidate_on_change))
+        if value not in {"true", "false"}:
+            raise PolicyError(
+                f"Invalid value for {PushAction.APP_INVALIDATE_ON_BIOMETRIC_CHANGE}: {value}"
+            )
+        params[PushAction.APP_INVALIDATE_ON_BIOMETRIC_CHANGE] = value
     return params
 
 

@@ -71,7 +71,7 @@ from privacyidea.lib.token import get_one_token, init_token, create_challenge
 from privacyidea.lib.tokenclass import (TokenClass, AuthenticationMode, ClientMode,
                                         ChallengeSession, CHALLENGE_REFUSAL_STATUS)
 from privacyidea.lib.tokenrolloutstate import RolloutState
-from privacyidea.lib.tokens.push_types import (PushMode, PushPresenceOptions,
+from privacyidea.lib.tokens.push_types import (PushMode, PushPresenceOptions, PushBiometricLevel,
                                                PushAction, PushAllowPolling,
                                                PushDeclineReason, PushCapability,
                                                CODE_TO_PHONE_DISPLAY_CODE_LENGTH)
@@ -499,6 +499,20 @@ class PushTokenClass(TokenClass):
                                          'be unlocked with pin or biometric. This needs the privacyIDEA '
                                          'Authenticator app 4.6.1 or higher.')
                            },
+                           PushAction.APP_BIOMETRIC_LEVEL: {
+                               'type': 'str',
+                               'value': [level.value for level in PushBiometricLevel],
+                               'group': "PUSH",
+                               'desc': _('Select whether the Authenticator App may use any system biometric '
+                                         'or must require a strong biometric for this Push token.')
+                           },
+                           PushAction.APP_INVALIDATE_ON_BIOMETRIC_CHANGE: {
+                               'type': 'str',
+                               'value': ['true', 'false'],
+                               'group': "PUSH",
+                               'desc': _('Require the Authenticator App to invalidate the protected Push key '
+                                         'when the biometric enrollment changes.')
+                           },
                            PushAction.USE_PIA_SCHEME: {
                                'type': 'bool',
                                'desc': _("Use the privacyIDEA app URL scheme 'pia' in the enroll URL for push tokens "
@@ -714,6 +728,19 @@ class PushTokenClass(TokenClass):
                 extra_data.update({'pin': True})
             if params.get(PolicyAction.APP_FORCE_UNLOCK):
                 extra_data.update({'app_force_unlock': params.get(PolicyAction.APP_FORCE_UNLOCK)})
+            biometric_level = policy_params.get(PushAction.APP_BIOMETRIC_LEVEL)
+            if biometric_level:
+                extra_data['app_biometric_level'] = biometric_level
+            if PushAction.APP_INVALIDATE_ON_BIOMETRIC_CHANGE in policy_params:
+                invalidate_on_change = str(
+                    policy_params[PushAction.APP_INVALIDATE_ON_BIOMETRIC_CHANGE]
+                ).lower()
+                if invalidate_on_change not in {'true', 'false'}:
+                    raise ParameterError(
+                        f"Invalid value for {PushAction.APP_INVALIDATE_ON_BIOMETRIC_CHANGE}: "
+                        f"{invalidate_on_change}"
+                    )
+                extra_data['app_invalidate_on_biometric_change'] = invalidate_on_change
 
             # Get scheme to use
             pia_scheme = policy_params.get(PushAction.USE_PIA_SCHEME, False)

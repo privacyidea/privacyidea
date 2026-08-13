@@ -140,6 +140,19 @@ class PushTokenTestCase(MyTestCase):
         self.assertEqual([x for x in PushPresenceOptions.__members__],
                          token.get_class_info(key="policy")[SCOPE.AUTH][PushAction.PRESENCE_OPTIONS]["value"],
                          token.get_class_info())
+        enroll_policy = token.get_class_info(key="policy")[SCOPE.ENROLL]
+        self.assertEqual(
+            ["any", "strong"],
+            enroll_policy[PushAction.APP_BIOMETRIC_LEVEL]["value"],
+        )
+        self.assertEqual(
+            "str",
+            enroll_policy[PushAction.APP_INVALIDATE_ON_BIOMETRIC_CHANGE]["type"],
+        )
+        self.assertEqual(
+            ["true", "false"],
+            enroll_policy[PushAction.APP_INVALIDATE_ON_BIOMETRIC_CHANGE]["value"],
+        )
 
         # Test to do the 2nd step, although the token is not yet in clientwait
         self.assertRaises(ParameterError, token.update, {"otpkey": "1234", "pubkey": "1234", "serial": self.serial1})
@@ -223,6 +236,51 @@ class PushTokenTestCase(MyTestCase):
                                                             PushAction.REGISTRATION_URL: "https://privacyidea.com/enroll"},
                                                PolicyAction.APP_FORCE_UNLOCK: "pin"})
         self.assertIn('app_force_unlock=pin', detail["pushurl"]["value"])
+        remove_token(token.get_serial())
+
+    def test_01b_enroll_with_biometric_key_policies(self):
+        token_param = {"type": "push", "genkey": 1}
+        token_param.update(FB_CONFIG_VALS)
+        token = init_token(param=token_param)
+        detail = token.get_init_detail(
+            params={
+                "policies": {
+                    PushAction.FIREBASE_CONFIG: POLL_ONLY,
+                    PushAction.REGISTRATION_URL: (
+                        "https://privacyidea.com/enroll"
+                    ),
+                    PushAction.APP_BIOMETRIC_LEVEL: "strong",
+                    PushAction.APP_INVALIDATE_ON_BIOMETRIC_CHANGE: "true",
+                },
+                PolicyAction.APP_FORCE_UNLOCK: "biometric",
+            }
+        )
+        push_url = detail["pushurl"]["value"]
+        self.assertIn("app_force_unlock=biometric", push_url)
+        self.assertIn("app_biometric_level=strong", push_url)
+        self.assertIn("app_invalidate_on_biometric_change=true", push_url)
+        remove_token(token.get_serial())
+
+    def test_01c_enroll_with_any_biometric_without_invalidation(self):
+        token_param = {"type": "push", "genkey": 1}
+        token_param.update(FB_CONFIG_VALS)
+        token = init_token(param=token_param)
+        detail = token.get_init_detail(
+            params={
+                "policies": {
+                    PushAction.FIREBASE_CONFIG: POLL_ONLY,
+                    PushAction.REGISTRATION_URL: (
+                        "https://privacyidea.com/enroll"
+                    ),
+                    PushAction.APP_BIOMETRIC_LEVEL: "any",
+                    PushAction.APP_INVALIDATE_ON_BIOMETRIC_CHANGE: "false",
+                },
+                PolicyAction.APP_FORCE_UNLOCK: "biometric",
+            }
+        )
+        push_url = detail["pushurl"]["value"]
+        self.assertIn("app_biometric_level=any", push_url)
+        self.assertIn("app_invalidate_on_biometric_change=false", push_url)
         remove_token(token.get_serial())
 
     def test_02a_lib_enroll(self):

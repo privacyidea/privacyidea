@@ -1385,6 +1385,8 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         self.assertEqual("10", policies.get(PushAction.TTL))
         self.assertEqual("1", policies.get(PushAction.SSL_VERIFY))
         self.assertFalse(policies.get(PushAction.USE_PIA_SCHEME))
+        self.assertIsNone(policies.get(PushAction.APP_BIOMETRIC_LEVEL))
+        self.assertIsNone(policies.get(PushAction.APP_INVALIDATE_ON_BIOMETRIC_CHANGE))
 
         # the request tries to inject a rogue value, but we assure sslverify=1
         g.policy_object = PolicyClass()
@@ -1413,10 +1415,50 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         pushtoken_add_config(req, "init")
         self.assertTrue(g.policies.get(PushAction.USE_PIA_SCHEME))
 
+        set_policy(
+            "push_biometric_security",
+            scope=SCOPE.ENROLL,
+            action=(
+                f"{PushAction.APP_BIOMETRIC_LEVEL}=strong,"
+                f"{PushAction.APP_INVALIDATE_ON_BIOMETRIC_CHANGE}=true"
+            ),
+        )
+        req.all_data = {"type": "push"}
+        g.policies = {}
+        pushtoken_add_config(req, "init")
+        self.assertEqual("strong", g.policies.get(PushAction.APP_BIOMETRIC_LEVEL))
+        self.assertEqual(
+            "true",
+            g.policies.get(PushAction.APP_INVALIDATE_ON_BIOMETRIC_CHANGE),
+        )
+
+        delete_policy("push_biometric_security")
+        set_policy(
+            "push_biometric_no_invalidation",
+            scope=SCOPE.ENROLL,
+            action=f"{PushAction.APP_INVALIDATE_ON_BIOMETRIC_CHANGE}=false",
+        )
+        g.policies = {}
+        pushtoken_add_config(req, "init")
+        self.assertEqual(
+            "false",
+            g.policies.get(PushAction.APP_INVALIDATE_ON_BIOMETRIC_CHANGE),
+        )
+
+        delete_policy("push_biometric_no_invalidation")
+        set_policy(
+            "push_biometric_invalid",
+            scope=SCOPE.ENROLL,
+            action=f"{PushAction.APP_BIOMETRIC_LEVEL}=unsupported",
+        )
+        g.policies = {}
+        self.assertRaises(PolicyError, pushtoken_add_config, req, "init")
+
         # finally delete policy
         delete_policy("push_pol")
         delete_policy("push_pol2")
         delete_policy("pia_scheme")
+        delete_policy("push_biometric_invalid")
 
     def test_24_push_wait_policy(self):
 
