@@ -41,12 +41,8 @@ def upgrade():
         'block_list',
         sa.Column('ip', sa.Unicode(length=50), nullable=False),
         sa.Column('block_expires_at', sa.DateTime(), nullable=True),
-        sa.Column('last_stage_triggered', sa.Integer(), nullable=True),
         sa.Column('blocked_at', sa.DateTime(), nullable=False),
-        sa.ForeignKeyConstraint(['last_stage_triggered'], ['lockout_policy_stages.id'],
-                                ondelete='SET NULL'),
         sa.PrimaryKeyConstraint('ip'),
-        sa.Index('ix_block_list_last_stage_triggered', 'last_stage_triggered'),
     )
 
 
