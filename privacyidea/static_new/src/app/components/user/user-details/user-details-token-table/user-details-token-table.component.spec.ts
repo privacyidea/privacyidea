@@ -148,7 +148,7 @@ describe("UserDetailsTokenTableComponent", () => {
     expect(component.dataSource.data.map((t: ContainerDetailToken) => t.serial)).toEqual(["T-1", "T-2"]);
   });
 
-  it("keeps previous list when userTokenResource is missing (linkedSignal fallback)", () => {
+  it("keeps the previous list in userTokenData while the resource has no value (linkedSignal fallback)", () => {
     tokenServiceMock.userTokenResource.value.set(
       MockPiResponse.fromValue<Tokens>({
         count: 1,
@@ -177,7 +177,8 @@ describe("UserDetailsTokenTableComponent", () => {
     tokenServiceMock.userTokenResource.value.set(undefined);
     fixture.detectChanges();
 
-    expect(component.dataSource.data.map((t: ContainerDetailToken) => t.serial)).toEqual(["KEEP-ME"]);
+    expect(component.userTokenData().data.map((t: TokenDetails) => t.serial)).toEqual(["KEEP-ME"]);
+    expect(component.dataSource.data).toEqual([]);
   });
 
   it("falls back to a new empty data source when there is no resource value and no previous value", () => {

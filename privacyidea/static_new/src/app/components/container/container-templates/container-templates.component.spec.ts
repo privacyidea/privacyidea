@@ -20,7 +20,7 @@
 import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
-import { Router } from "@angular/router";
+import { provideRouter, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService } from "@services/auth/auth.service";
 import { ContainerTemplateService } from "@services/container-template/container-template.service";
@@ -64,7 +64,7 @@ describe("ContainerTemplatesComponent", () => {
         { provide: ContainerTemplateService, useValue: mockContainerTemplateService },
         { provide: AuthService, useValue: mockAuthService },
         { provide: DialogService, useValue: mockDialogService },
-        { provide: Router, useValue: { navigateByUrl: jest.fn() } }
+        provideRouter([])
       ]
     }).compileComponents();
 
@@ -164,7 +164,7 @@ describe("ContainerTemplatesComponent", () => {
   });
   it("should navigate to details route only if row is not a skeleton row", () => {
     const router = TestBed.inject(Router);
-    const navigateSpy = jest.spyOn(router, "navigateByUrl");
+    const navigateSpy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
 
     component.onClickTemplateName(mockTemplates[0]);
     expect(navigateSpy).toHaveBeenCalledWith(ROUTE_PATHS.CONTAINERS_TEMPLATES_DETAILS + mockTemplates[0].name);
@@ -191,7 +191,7 @@ describe("ContainerTemplatesComponent", () => {
 
     const noDataRow = fixture.debugElement.query(By.css("tr.mat-mdc-no-data-row"));
     expect(noDataRow).toBeTruthy();
-    expect(noDataRow.nativeElement.textContent).toContain("No data matching the filter.");
+    expect(noDataRow.nativeElement.textContent).toContain("No entries match the filter");
   });
 
   it("should toggle filter keys and reset pageIndex when clicking header filter buttons", () => {

@@ -92,8 +92,9 @@ describe("PoliciesTableComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should show skeleton rows when service returns no policies", () => {
+  it("should show skeleton rows while the policies are still loading", () => {
     mockPolicyService.allPolicies.set([]);
+    mockPolicyService.allPoliciesResource.value.set(undefined);
     fixture.detectChanges();
 
     const rows = fixture.debugElement.queryAll(By.css("tr[mat-row]"));
@@ -104,6 +105,7 @@ describe("PoliciesTableComponent", () => {
 
   it("should disable header checkbox when in skeleton state", () => {
     mockPolicyService.allPolicies.set([]);
+    mockPolicyService.allPoliciesResource.value.set(undefined);
     fixture.detectChanges();
 
     const headerCheckbox = fixture.debugElement.query(By.css("th.mat-column-select mat-checkbox"));
@@ -160,7 +162,7 @@ describe("PoliciesTableComponent", () => {
 
     const noDataRow = fixture.debugElement.query(By.css("tr.mat-mdc-no-data-row"));
     expect(noDataRow).toBeTruthy();
-    expect(noDataRow.nativeElement.textContent).toContain($localize`No data matching the filter.`);
+    expect(noDataRow.nativeElement.textContent).toContain($localize`No entries match the filter`);
   });
 
   it("should toggle filter keys when clicking header filter buttons", () => {

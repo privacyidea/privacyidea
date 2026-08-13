@@ -101,8 +101,8 @@ describe("MachineResolverComponent", () => {
     expect(component.machineResolversDataSource().filteredData.length).toBe(2);
   });
 
-  it("falls back to an empty data source when no resolvers are loaded", () => {
-    machineResolverServiceMock.machineResolvers.set(undefined as never);
+  it("falls back to an empty data source while the resource has not loaded yet", () => {
+    machineResolverServiceMock.machineResolverResource.value.set(undefined);
     fixture.detectChanges();
     expect(component.machineResolversDataSource().data).toEqual([]);
   });

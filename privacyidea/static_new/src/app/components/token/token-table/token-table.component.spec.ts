@@ -230,16 +230,25 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
   });
 
   it("tokenDataSource/totalLength reflect tokenResource; fall back to empty skeleton when undefined", () => {
-    const initial = table.tokenDataSource().data;
+    authServiceMock.jwtData.set({ ...authServiceMock.jwtData(), rights: ["tokenlist"] } as JwtData);
+    const allowedFixture = TestBed.createComponent(TokenTableComponent);
+    const allowedTable = allowedFixture.componentInstance;
+    allowedFixture.detectChanges();
+
+    const initial = allowedTable.tokenDataSource().data;
     expect(Array.isArray(initial)).toBe(true);
-    expect(initial.length).toBe(table.pageSize());
+    expect(initial.length).toBe(allowedTable.pageSize());
 
     const tokens = [{ serial: "S-1" }, { serial: "S-2" }] as TokenDetails[];
     tokenService.tokenResourceValue.set({ tokens, count: 2, current: 1 });
-    tableFixture.detectChanges();
+    allowedFixture.detectChanges();
 
-    expect(table.tokenDataSource().data).toEqual(tokens);
-    expect(table.totalLength()).toBe(2);
+    expect(allowedTable.tokenDataSource().data).toEqual(tokens);
+    expect(allowedTable.totalLength()).toBe(2);
+  });
+
+  it("tokenDataSource stays empty when the user may not list tokens", () => {
+    expect(table.tokenDataSource().data).toEqual([]);
   });
 
   it("self-service column keys include revoke/delete depending on permissions", () => {
