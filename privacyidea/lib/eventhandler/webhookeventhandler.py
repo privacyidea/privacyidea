@@ -23,6 +23,8 @@ api requests and reduce your traffic this way.
 
 from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib import _
+from privacyidea.lib.token import get_tokens
+from privacyidea.lib.utils import create_tag_dict, is_true
 import json
 import logging
 import requests
@@ -104,9 +106,14 @@ class WebHookHandler(BaseEventHandler):
             "replace": {
                 "type": "bool",
                 "required": True,
-                "description": _("You can use the following placeholders: {logged_in_user}, {realm}, {surname}, "
-                                 "{token_owner}, {user_realm}, {token_serial}. "
-                                 "However, tag availability is depending on the endpoint."),
+                "description": _("You can use the following placeholders: "
+                                 "{admin}, {realm}, {action}, {serial}, {url}, {user}, {surname}, "
+                                 "{givenname}, {username}, {userrealm}, {tokentype}, {tokendescription}, "
+                                 "{time}, {date}, {client_ip}, {ua_browser}, {ua_string}, {challenge}. "
+                                 "For backward compatibility the following aliases also work: "
+                                 "{logged_in_user}, {token_serial} (= {serial}), "
+                                 "{token_owner} (= {givenname}), {user_realm} (= {userrealm}). "
+                                 "Tag availability depends on the endpoint."),
             },
             "data": {
                 "type": "str",
@@ -135,7 +142,7 @@ class WebHookHandler(BaseEventHandler):
         webhook_text = handler_options.get("data")
         # Map the database entries, which might contain the older values, to the actual content type value
         content_type = DB_CONTENT_TYPE_MAP.get(handler_options.get("content_type"))
-        replace = handler_options.get("replace")
+        replace = is_true(handler_options.get("replace"))
 
         user = request.User if hasattr(request, 'User') else None
         if not user:
@@ -147,41 +154,66 @@ class WebHookHandler(BaseEventHandler):
 
         if replace:
             # If tags should be replaced, gather information about the user and token
-            token_serial = request.all_data.get('serial') if request else ""
+            token_serial = request.all_data.get('serial', '') if request else ""
             tokenowner = self._get_tokenowner(request) if request else None
-
-            login = user.login if user else ""
-            realm = user.realm if user else ""
-            surname = tokenowner.info.get("surname") if tokenowner else ""
-            given_name = tokenowner.info.get("givenname") if tokenowner else ""
-            user_realm = tokenowner.realm if tokenowner else ""
+            logged_in_user = g.logged_in_user if hasattr(g, 'logged_in_user') else {}
+            tokentype = None
+            tokendescription = None
+            if token_serial:
+                tokens = get_tokens(serial=token_serial)
+                if tokens:
+                    tokentype = tokens[0].get_tokentype()
+                    tokendescription = tokens[0].token.description
+            else:
+                token_objects = get_tokens(user=tokenowner) if tokenowner else []
+                token_serial = ','.join([tok.get_serial() for tok in token_objects])
 
             try:
-                attributes = {
-                    "logged_in_user": login,
-                    "realm": realm,
-                    "surname": surname,
-                    "token_owner": given_name,
-                    "user_realm": user_realm,
-                    "token_serial": token_serial
-                }
+                tags = create_tag_dict(logged_in_user=logged_in_user,
+                                       request=request,
+                                       client_ip=g.client_ip if hasattr(g, 'client_ip') else None,
+                                       tokenowner=tokenowner,
+                                       serial=token_serial,
+                                       tokentype=tokentype,
+                                       tokendescription=tokendescription)
+                # Backward-compatible aliases so existing webhook configs keep working.
+                # The old {logged_in_user} was sourced from request.User first
+                # (the authenticating end-user), falling back to g.logged_in_user
+                # (the admin).  create_tag_dict always uses g.logged_in_user for
+                # {admin} and {realm}, so we keep {logged_in_user} as a separate
+                # alias that preserves the old request.User-first behavior.
+                tags["logged_in_user"] = user.login if user else ""
+                tags["token_serial"] = tags.get("serial", "")
+                tags["token_owner"] = tags.get("givenname", "")
+                tags["user_realm"] = tags.get("userrealm", "")
+
+                # Replace None values with empty strings so .format() doesn't insert 'None'
+                tags = {k: (v if v is not None else "") for k, v in tags.items()}
+
                 if content_type == ContentType.JSON:
                     def replace_recursive(val):
-                        for k, v in val.items():
-                            k = k.format(**attributes)
-                            if isinstance(v, dict):
-                                return {k: replace_recursive(v)}
-                            else:
-                                return {k: v.format(**attributes)}
+                        if isinstance(val, dict):
+                            return {
+                                k.format(**tags) if isinstance(k, str) else k:
+                                    replace_recursive(v)
+                                for k, v in val.items()
+                            }
+                        elif isinstance(val, list):
+                            return [replace_recursive(item) for item in val]
+                        elif isinstance(val, str):
+                            return val.format(**tags)
+                        else:
+                            # numbers, booleans, None – pass through unchanged
+                            return val
 
                     new_json = replace_recursive(json.loads(webhook_text))
                     webhook_text = json.dumps(new_json)
                 else:
                     # Content Type URLENCODED, simple format
-                    webhook_text = webhook_text.format(**attributes)
-            except KeyError as err:
+                    webhook_text = webhook_text.format(**tags)
+            except (KeyError, AttributeError) as err:
                 log.warning(f"Unable to replace placeholder: ({err})! Please check the webhooks data option.")
-            except ValueError as err:
+            except (ValueError, TypeError) as err:
                 log.warning(f"Unable to parse JSON string '{webhook_text}': {err}")
 
         # Send the request
