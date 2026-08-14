@@ -17,24 +17,42 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
-  appScrollToTop class="audit-table-container">
+  appScrollToTop
+  class="audit-table-container">
   <div class="filter-paginator-container">
     <mat-form-field
-      class="audit-table-filter" subscriptSizing="dynamic">
+      class="audit-table-filter"
+      subscriptSizing="dynamic">
       <mat-label i18n>Filter Audit Log...</mat-label>
       <app-clearable-input
-        (clearButtonClick)="auditService.clearFilter()" [showClearButton]="auditService.auditFilter().isNotEmpty">
+        (clearButtonClick)="auditService.clearFilter()"
+        [showClearButton]="auditService.filterDraft().isNotEmpty">
         <input
           #filterHTMLInputElement
+          [appFilterAutocomplete]="auditService.apiFilterKeys"
           (input)="auditService.handleFilterInput($event)"
-          [value]="auditService.auditFilter().value"
+          [value]="auditService.filterDraft().value"
           aria-label="Filter Input"
           i18n-aria-label
           i18n-placeholder
           matInput
           placeholder="Example query: 'action: GET success: false'" />
       </app-clearable-input>
+      <mat-hint>{{ filterHint }}</mat-hint>
     </mat-form-field>
+    @if (authService.actionAllowed("auditlog_download")) {
+      <button
+        (click)="auditService.downloadCSV()"
+        [disabled]="auditService.isDownloading()"
+        aria-label="Download Audit Log"
+        class="filter-action-button"
+        i18n-aria-label
+        i18n-matTooltip
+        mat-icon-button
+        matTooltip="Download Audit Log">
+        <mat-icon>download</mat-icon>
+      </button>
+    }
     <mat-paginator
       (page)="onPageEvent($event)"
       [length]="totalLength()"
@@ -43,34 +61,35 @@
       [pageSize]="auditService.pageSize()"
       showFirstLastButtons />
   </div>
-  <div class="margin-bottom-16">
-    @if (authService.actionAllowed("auditlog_download")) {
-      <button
-        (click)="auditService.downloadCSV()"
-        [disabled]="auditService.isDownloading()"
-        class="action-button-primary button-width-m"
-        mat-stroked-button>
-        <mat-icon>download</mat-icon>
-        <span i18n>Download</span>
-      </button>
-    }
-  </div>
   <div
-    appScrollEdges class="table-scroll-region">
+    appScrollEdges
+    class="table-scroll-region">
     <table
-      [dataSource]="auditDataSource()" aria-label="Audit Data Table" class="audit-table" i18n-aria-label mat-table>
+      [dataSource]="auditDataSource()"
+      aria-label="Audit Data Table"
+      class="audit-table"
+      i18n-aria-label
+      mat-table>
       @for (column of columnKeysMap; track column) {
         <ng-container [matColumnDef]="column.key">
           <th
-            *matHeaderCellDef attr.aria-label="{{ column.label }} Header" mat-header-cell>
+            *matHeaderCellDef
+            attr.aria-label="{{ column.label }} Header"
+            mat-header-cell>
             <div class="flex ali-center">
               {{ column.label }}
-              @if (!["number", "log_level", "clearance_level", "sig_check", "missing_line", "thread_id"].includes(
-                column.key
-              )) {
+              @if (
+                !["number", "log_level", "clearance_level", "sig_check", "missing_line", "thread_id"].includes(
+                  column.key
+                )
+              ) {
                 <div class="margin-left-16">
                   <button
-                    (click)="onKeywordClick(apiFilterKeyMap[column.key])" class="filter-button" mat-icon-button>
+                    (click)="onKeywordClick(apiFilterKeyMap[column.key])"
+                    aria-label="Filter by {{ column.label }}"
+                    i18n-aria-label
+                    class="filter-button"
+                    mat-icon-button>
                     <mat-icon class="keyword-button-icon margin-left-0">
                       {{ getFilterIconName(column.key) }}
                     </mat-icon>
@@ -80,9 +99,12 @@
             </div>
           </th>
           <td
-            *matCellDef="let element; let row" [ngClass]="{
+            *matCellDef="let element; let row"
+            [ngClass]="{
               'table-checkbox': column.key === 'select'
-            }" attr.aria-label="{{ column.label }} Cell" mat-cell>
+            }"
+            attr.aria-label="{{ column.label }} Cell"
+            mat-cell>
             <div>
               @switch (getCellRenderType(column.key)) {
                 @case ("status-span") {
@@ -105,7 +127,7 @@
                 }
                 @case ("date") {
                   <span>
-                    {{ element[column.key].split(".")[0].replace("T", " ") }}
+                    {{ element[column.key] | localDateTime }}
                   </span>
                 }
                 @case ("policies-csv") {
@@ -166,13 +188,24 @@
         </ng-container>
       }
       <tr
-        *matHeaderRowDef="columnKeys; sticky: true" aria-label="Header Row" i18n-aria-label mat-header-row></tr>
+        *matHeaderRowDef="columnKeys; sticky: true"
+        aria-label="Header Row"
+        i18n-aria-label
+        mat-header-row></tr>
       <tr
-        *matRowDef="let row; columns: columnKeys" aria-label="Data Row" i18n-aria-label mat-row></tr>
+        *matRowDef="let row; columns: columnKeys"
+        aria-label="Data Row"
+        i18n-aria-label
+        mat-row></tr>
       <tr
-        *matNoDataRow aria-label="No Data Row" i18n-aria-label>
+        *matNoDataRow
+        aria-label="No Data Row"
+        i18n-aria-label>
         <td
-          [attr.colspan]="columnKeys.length" aria-label="No Data Cell" i18n i18n-aria-label>
+          [attr.colspan]="columnKeys.length"
+          aria-label="No Data Cell"
+          i18n
+          i18n-aria-label>
           No data matching the filter.
         </td>
       </tr>

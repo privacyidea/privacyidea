@@ -28,6 +28,7 @@ import {
 import { MatPaginatorIntl } from "@angular/material/paginator";
 import { provideRouter } from "@angular/router";
 import { localeBaseHref } from "@core/locale";
+import { UiPreferencesService } from "@services/user-settings/ui-preferences.service";
 import { routes } from "./app.routes";
 import { createPaginatorIntl } from "./paginator-intl";
 import { loadingInterceptor } from "./interceptor/loading/loading.interceptor";
@@ -42,6 +43,12 @@ export function baseHrefFactory(): string {
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    // Before the router resolves the first URL: a path asking for a locale bundle the
+    // server did not serve would otherwise be answered with the landing page.
+    provideAppInitializer(() => {
+      const uiPreferencesService = inject(UiPreferencesService);
+      uiPreferencesService.normalizeLocaleUrl();
+    }),
     provideAppInitializer(() => {
       const configService = inject(ConfigService);
       configService.loadConfig();

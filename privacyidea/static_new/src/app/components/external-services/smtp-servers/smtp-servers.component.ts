@@ -19,6 +19,7 @@
 
 import { Component, computed, ElementRef, inject, signal, ViewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
+import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatIconModule } from "@angular/material/icon";
 import { MatPaginator } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
@@ -35,6 +36,7 @@ import { CopyableComponent } from "@components/shared/copyable/copyable.componen
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { renderedRows, RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 
 @Component({
@@ -46,6 +48,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
     MatSortModule,
     MatIconModule,
     MatButtonModule,
+    MatCheckboxModule,
     MatTooltipModule,
     ScrollToTopDirective,
     MatFormField,
@@ -73,7 +76,7 @@ export class SmtpServersComponent {
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
 
-  displayedColumns: string[] = ["identifier", "server", "sender", "tls", "description", "actions"];
+  displayedColumns: string[] = ["select", "identifier", "server", "sender", "tls", "description"];
 
   smtpDataSource = computed(() => {
     const servers = this.smtpService.smtpServers();
@@ -81,6 +84,11 @@ export class SmtpServersComponent {
     dataSource.paginator = this.paginator;
     dataSource.sort = this.sort;
     return dataSource;
+  });
+
+  selector = new RowSelector<SmtpServer>({
+    keyGetter: (server) => server.identifier,
+    visibleRows: renderedRows(this.smtpDataSource)
   });
 
   onCreateNewServer(): void {
@@ -91,21 +99,26 @@ export class SmtpServersComponent {
     this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP_DETAILS + server.identifier);
   }
 
-  deleteServer(server: SmtpServer): void {
+  deleteSelected(): void {
+    const selected = this.selector.selectedRows();
+    if (selected.length === 0) {
+      return;
+    }
     this.dialogService
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Delete SMTP Server`,
-          items: [server.identifier],
+          title: $localize`Delete SMTP Servers`,
+          items: selected.map((row) => row.identifier),
           itemType: "smtp-server",
           confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
-      .subscribe(async (result) => {
+      .subscribe((result) => {
         if (result) {
-          await this.smtpService.deleteSmtpServer(server.identifier);
+          selected.forEach((row) => void this.smtpService.deleteSmtpServer(row.identifier).catch(() => undefined));
+          this.selector.deselectAllRows();
         }
       });
   }

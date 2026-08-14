@@ -87,9 +87,29 @@ global.MutationObserver = jest.fn().mockImplementation(() => ({
   takeRecords: jest.fn(() => [])
 }));
 
+// jsdom implements no layout, so Range has no getBoundingClientRect. Code that measures
+// text width (e.g. truncation detection) gets a zero-sized rect unless a spec mocks it.
+if (typeof Range.prototype.getBoundingClientRect !== "function") {
+  Range.prototype.getBoundingClientRect = () => new DOMRect();
+}
+
 if (typeof globalThis.structuredClone !== "function") {
   globalThis.structuredClone = (<T>(value: T): T => deserialize(serialize(value)) as T) as typeof structuredClone;
 }
+
+// Pin the default Intl locale so date formatting is deterministic across dev machines
+// and CI, regardless of the runtime's OS/LANG settings. Production code keeps calling
+// Intl.DateTimeFormat(undefined, ...) to honor the real user's browser locale.
+const RealDateTimeFormat = Intl.DateTimeFormat;
+function PatchedDateTimeFormat(locales?: Intl.LocalesArgument, options?: Intl.DateTimeFormatOptions) {
+  const isEmptyList = Array.isArray(locales) && locales.length === 0;
+  return new RealDateTimeFormat(locales == null || isEmptyList ? "en-US" : locales, options);
+}
+// Keeps static members like supportedLocalesOf available after the patch.
+Object.setPrototypeOf(PatchedDateTimeFormat, RealDateTimeFormat);
+// Keeps `instanceof Intl.DateTimeFormat` and RealDateTimeFormat.prototype usage working.
+PatchedDateTimeFormat.prototype = RealDateTimeFormat.prototype;
+Intl.DateTimeFormat = PatchedDateTimeFormat as typeof Intl.DateTimeFormat;
 
 Object.defineProperty(window, "matchMedia", {
   writable: true,

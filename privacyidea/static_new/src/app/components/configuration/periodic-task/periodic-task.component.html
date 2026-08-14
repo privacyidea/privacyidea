@@ -48,12 +48,15 @@
         (click)="onCreateNewTask()"
         class="action-button-primary button-width-l"
         mat-stroked-button>
-        <mat-icon>add</mat-icon>
+        <span class="icon-badge">
+          <mat-icon>event_repeat</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+        </span>
         <span i18n>Create Periodic Task</span>
       </button>
       <button
         (click)="deleteSelected()"
-        [disabled]="selectedTaskIds().size < 1"
+        [disabled]="!selector.hasSelection()"
         class="action-button-secondary button-width-l"
         color="warn"
         mat-stroked-button>
@@ -79,10 +82,10 @@
         *matHeaderCellDef
         mat-header-cell>
         <mat-checkbox
-          (change)="masterToggle()"
-          [checked]="isAllSelected()"
-          [disabled]="!authService.actionAllowed('periodictask_write') || selectableTaskIds().length === 0"
-          [indeterminate]="selectedTaskIds().size > 0 && !isAllSelected()"
+          (change)="$event.checked ? selector.selectAllRows() : selector.deselectAllRows()"
+          [checked]="selector.allRowsSelected()"
+          [disabled]="!authService.actionAllowed('periodictask_write') || !selector.hasVisibleRows()"
+          [indeterminate]="selector.someRowsSelected()"
           aria-label="Select all periodic tasks"
           i18n-aria-label></mat-checkbox>
       </th>
@@ -90,9 +93,9 @@
         *matCellDef="let task"
         mat-cell>
         <mat-checkbox
-          (change)="updateSelection($event, task)"
+          (change)="selector.setRowSelected(task, $event.checked)"
           (click)="$event.stopPropagation()"
-          [checked]="task.id !== null && task.id !== undefined && selectedTaskIds().has(task.id)"
+          [checked]="selector.isRowSelected(task)"
           [disabled]="!authService.actionAllowed('periodictask_write') || task.id === null || task.id === undefined"
           aria-label="Select periodic task"
           i18n-aria-label></mat-checkbox>

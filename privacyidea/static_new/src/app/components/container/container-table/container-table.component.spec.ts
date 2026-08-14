@@ -20,9 +20,8 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
-import { MatPaginator, PageEvent } from "@angular/material/paginator";
+import { PageEvent } from "@angular/material/paginator";
 import { Sort } from "@angular/material/sort";
-import { MatTableDataSource } from "@angular/material/table";
 import { ActivatedRoute, NavigationEnd, Router } from "@angular/router";
 import { of, Subject } from "rxjs";
 
@@ -35,6 +34,7 @@ import { NotificationService } from "@services/notification/notification.service
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 
 import { ContainerTableComponent } from "@components/container/container-table/container-table.component";
+import { FilterValue } from "@core/models/filter_value/filter_value";
 import { DialogService } from "@services/dialog/dialog.service";
 import { TokenService } from "@services/token/token.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
@@ -166,12 +166,46 @@ describe("ContainerTableComponent (Jest)", () => {
     });
   });
 
-  describe("Selection helpers", () => {
-    it("toggleAllRows selects *then* clears every row", () => {
-      const dataSource = component.containerDataSource();
-      expect(dataSource.data.length).toBe(0);
+  describe("#onFilterInput", () => {
+    it("applies the filter while typing as long as no user or realm filter is used", () => {
+      const inputEvent = { target: { value: "type: generic" } } as unknown as Event;
 
-      const containerDetailData0: ContainerDetailData = {
+      component.onFilterInput(inputEvent);
+
+      expect(containerService.handleFilterInput).toHaveBeenCalledWith(inputEvent);
+    });
+
+    it("defers the user and the realm filter until the input is confirmed", () => {
+      component.onFilterInput({ target: { value: "user: alice" } } as unknown as Event);
+      expect(containerService.handleFilterInput).not.toHaveBeenCalled();
+
+      component.onFilterInput({ target: { value: "realm: realm1" } } as unknown as Event);
+      expect(containerService.handleFilterInput).not.toHaveBeenCalled();
+    });
+
+    it("hints that the filter has to be confirmed while a user filter is typed", () => {
+      component.onFilterInput({ target: { value: "user: alice" } } as unknown as Event);
+
+      expect(component.showFilterHint()).toBe(true);
+    });
+
+    it("does not hint once the typed filter is the applied one", () => {
+      containerService.activeFilter.set(new FilterValue({ value: "user: alice" }));
+      component.onFilterInput({ target: { value: "user: alice" } } as unknown as Event);
+
+      expect(component.showFilterHint()).toBe(false);
+    });
+
+    it("does not hint for a filter that is applied while typing", () => {
+      component.onFilterInput({ target: { value: "type: generic" } } as unknown as Event);
+
+      expect(component.showFilterHint()).toBe(false);
+    });
+  });
+
+  describe("Selection", () => {
+    it("exposes the selection held by the container service", () => {
+      const containerDetailData: ContainerDetailData = {
         serial: "CONT-1",
         states: [],
         realms: [],
@@ -179,35 +213,11 @@ describe("ContainerTableComponent (Jest)", () => {
         type: "",
         users: []
       };
-      const containerDetailData1 = { ...containerDetailData0, serial: "CONT-2" };
-      const containerDetailData2 = { ...containerDetailData0, serial: "CONT-3" };
-      const dataSourceFilled = new MatTableDataSource<ContainerDetailData, MatPaginator>([
-        containerDetailData0,
-        containerDetailData1,
-        containerDetailData2
-      ]);
-      component.containerDataSource.set(dataSourceFilled);
+      containerService.setContainerSelection([containerDetailData, { ...containerDetailData, serial: "CONT-2" }]);
 
-      fixture.detectChanges();
-      expect(component.isAllSelected()).toBe(false);
-      component.toggleAllRows();
-      expect(component.isAllSelected()).toBe(true);
-      const elements = component.containerDataSource().data;
-      expect(component.containerSelection().length).toBe(elements.length);
-
-      component.toggleAllRows();
-      expect(component.isAllSelected()).toBe(false);
-      expect(component.containerSelection().length).toBe(0);
-    });
-
-    it("toggleRow adds and removes a single row", () => {
-      const row = component.containerDataSource().data[0];
-
-      component.toggleRow(row);
-      expect(component.containerSelection()).toContain(row);
-
-      component.toggleRow(row);
-      expect(component.containerSelection()).not.toContain(row);
+      expect(component.containerSelection).toBe(containerService.containerSelection);
+      expect(component.containerSelection.selectedRows().map((row) => row.serial)).toEqual(["CONT-1", "CONT-2"]);
+      expect(component.containerSelection.allRowsSelected()).toBe(true);
     });
   });
 });

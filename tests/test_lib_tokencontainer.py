@@ -350,9 +350,11 @@ class TokenContainerManagementTestCase(MyTestCase):
         # Set existing realms
         result = set_container_realms(container_serial, [self.realm1, self.realm2], None)
         # Check return value
-        self.assertFalse(result['deleted'])
-        self.assertTrue(result[self.realm1])
-        self.assertTrue(result[self.realm2])
+        self.assertListEqual(sorted([self.realm1, self.realm2]), result.attached)
+        self.assertListEqual([], result.not_added)
+        self.assertListEqual([], result.removed)
+        self.assertListEqual([], result.not_removed)
+        self.assertTrue(result.success)
         # Check realms
         container_realms = [realm.name for realm in container.realms]
         self.assertIn(self.realm1, container_realms)
@@ -361,9 +363,11 @@ class TokenContainerManagementTestCase(MyTestCase):
         # Set one non-existing realm
         result = set_container_realms(container_serial, ["nonexisting", self.realm2], None)
         # Check return value
-        self.assertTrue(result['deleted'])
-        self.assertFalse(result['nonexisting'])
-        self.assertTrue(result[self.realm2])
+        self.assertListEqual([self.realm2], result.attached)
+        self.assertListEqual(["nonexisting"], result.not_added)
+        self.assertListEqual([self.realm1], result.removed)
+        self.assertListEqual([], result.not_removed)
+        self.assertFalse(result.success)
         # Check realms
         container_realms = [realm.name for realm in container.realms]
         self.assertNotIn("nonexisting", container_realms)
@@ -371,7 +375,8 @@ class TokenContainerManagementTestCase(MyTestCase):
 
         # Set empty realm
         result = set_container_realms(container_serial, [""], None)
-        self.assertTrue(result['deleted'])
+        self.assertListEqual([self.realm2], result.removed)
+        self.assertTrue(result.success)
         container_realms = [realm.name for realm in container.realms]
         self.assertEqual(0, len(container_realms))
 
@@ -568,11 +573,11 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertEqual(1, len(container_info))
         self.assertIn("creation_date", container_info)
 
-        # Try to delete internal info key
+        # Deleting a specific reserved internal key is refused
         container.update_container_info(
             [TokenContainerInfoData(key="public_server_key", value="123456789", info_type=PI_INTERNAL)])
-        res = delete_container_info(container_serial, "public_server_key")
-        self.assertDictEqual({"public_server_key": False}, res)
+        self.assertRaises(PolicyError, delete_container_info, container_serial, "public_server_key")
+        # Bulk deletion keeps internal keys silently instead of raising
         res = delete_container_info(container_serial)
         self.assertDictEqual({"public_server_key": False, "creation_date": False}, res)
 
@@ -872,10 +877,49 @@ class TokenContainerManagementTestCase(MyTestCase):
         container1_owner = container_data["containers"][0].get_users()[0]
         self.assertEqual(user_cornelius_1, container1_owner)
 
-        # Filter for non-existing user
-        user_invalid = User(login="invalid", realm="random")
-        container_data = get_all_containers(user=user_invalid, pagesize=15)
+        # Filter by the realm of the user only: lists the containers of all users of that realm
+        container_data = get_all_containers(user=User(realm=self.realm1), pagesize=15)
+        self.assertEqual(1, len(container_data["containers"]))
+        self.assertEqual(container_serials[1], container_data["containers"][0].serial)
+
+        # The realm of the user is matched case-insensitive
+        container_data = get_all_containers(user=User(realm=self.realm2.upper()), pagesize=15)
+        self.assertEqual(1, len(container_data["containers"]))
+        self.assertEqual(container_serials[2], container_data["containers"][0].serial)
+
+        # Filter by the realm and the resolver of the user
+        container_data = get_all_containers(user=User(realm=self.realm1, resolver=self.resolvername1), pagesize=15)
+        self.assertEqual(1, len(container_data["containers"]))
+        self.assertEqual(container_serials[1], container_data["containers"][0].serial)
+
+        # The resolver of the user allows wildcards, like the separate resolver filter does
+        container_data = get_all_containers(user=User(realm=self.realm1, resolver="resolver*"), pagesize=15)
+        self.assertEqual(1, len(container_data["containers"]))
+        self.assertEqual(container_serials[1], container_data["containers"][0].serial)
+
+        # A user object with only a resolver is empty and does not filter at all
+        all_containers = get_all_containers(pagesize=15)["containers"]
+        container_data = get_all_containers(user=User(resolver=self.resolvername1), pagesize=15)
+        self.assertEqual(len(all_containers), len(container_data["containers"]))
+
+        # A realm that does not exist matches nothing
+        container_data = get_all_containers(user=User(realm="non_existing_realm"), pagesize=15)
         self.assertEqual(0, len(container_data["containers"]))
+
+        # The realm is evaluated first, hence an unresolvable user in a realm that does not exist also
+        # matches nothing instead of raising
+        container_data = get_all_containers(user=User(login="invalid", realm="non_existing_realm"), pagesize=15)
+        self.assertEqual(0, len(container_data["containers"]))
+
+        # Filter for non-existing user
+        user_invalid = User(login="invalid", realm=self.realm1)
+        self.assertRaises(UserError, get_all_containers, user=user_invalid, pagesize=15)
+
+        # A username that does not exist in the given resolver is rejected instead of being filtered by the
+        # realm and the resolver alone
+        user_unresolvable = User(login="invalid", realm=self.realm1, resolver=self.resolvername1)
+        self.assertFalse(user_unresolvable.uid)
+        self.assertRaises(UserError, get_all_containers, user=user_unresolvable, pagesize=15)
 
         # ---- assigned ----
         container_data = get_all_containers(assigned=True, pagesize=15)
@@ -1105,6 +1149,30 @@ class TokenContainerManagementTestCase(MyTestCase):
 
         template = get_template_obj(template_params["name"])
         template.delete()
+
+    def test_28a_get_all_containers_like_escaping(self):
+        # SQL LIKE metacharacters (_ and %) in filter values must be matched
+        # literally; only the '*' wildcard should expand. Explicit serials give a
+        # deterministic order (get_all_containers sorts by serial ascending).
+        init_container({"type": "generic", "container_serial": "CONTESCA",
+                        "description": "disc_ount 50%"})
+        init_container({"type": "generic", "container_serial": "CONTESCB",
+                        "description": "discXount 50Y"})
+
+        # '_' is literal, so "disc_ount*" matches only CONTESCA, not "discXount ..."
+        result = get_all_containers(description="disc_ount*", pagesize=15)
+        self.assertListEqual(["CONTESCA"], [container.serial for container in result["containers"]], result)
+
+        # '%' is literal, so "*50%*" matches only the container whose description contains "50%"
+        result = get_all_containers(description="*50%*", pagesize=15)
+        self.assertListEqual(["CONTESCA"], [container.serial for container in result["containers"]], result)
+
+        # '*' still expands as a wildcard and matches both, ordered by serial
+        result = get_all_containers(description="disc*ount*", pagesize=15)
+        self.assertListEqual(["CONTESCA", "CONTESCB"], [container.serial for container in result["containers"]], result)
+
+        for serial in ["CONTESCA", "CONTESCB"]:
+            find_container_by_serial(serial).delete()
 
     def test_29_gen_serial(self):
         # Test class prefix

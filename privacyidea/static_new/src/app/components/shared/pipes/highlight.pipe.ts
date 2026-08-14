@@ -27,12 +27,28 @@ import { DomSanitizer } from "@angular/platform-browser";
 export class HighlightPipe implements PipeTransform {
   private sanitizer = inject(DomSanitizer);
 
-  transform(value: string, searchTerm: string): string | null {
-    if (!searchTerm || !value) return this.escapeHtml(value);
-    const escapedSearch = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  transform(value: string, searchTerm: string | string[]): string | null {
+    const terms = (Array.isArray(searchTerm) ? searchTerm : [searchTerm]).filter((term) => !!term);
+    if (terms.length === 0 || !value) return this.escapeHtml(value);
+    // Longer terms first so overlapping matches prefer the longer one in the alternation.
+    const alternation = terms
+      .sort((a, b) => b.length - a.length)
+      .map((term) => term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+      .join("|");
     // g - global (all occurrences), i - case-insensitive
-    const regex = new RegExp(escapedSearch, "gi");
-    const highlighted = this.escapeHtml(value).replace(regex, (match) => `<span class="highlight">${match}</span>`);
+    const regex = new RegExp(alternation, "gi");
+    // Match against the raw value and HTML-escape the matched and unmatched pieces separately. Escaping
+    // the whole string first would let the regex match inside generated entities (e.g. searching "&"
+    // hitting the "&" of "&amp;"), corrupting the output and failing to match terms with HTML metacharacters.
+    let highlighted = "";
+    let lastIndex = 0;
+    for (const match of value.matchAll(regex)) {
+      const start = match.index!;
+      highlighted += this.escapeHtml(value.slice(lastIndex, start));
+      highlighted += `<span class="highlight">${this.escapeHtml(match[0])}</span>`;
+      lastIndex = start + match[0].length;
+    }
+    highlighted += this.escapeHtml(value.slice(lastIndex));
     return this.sanitizer.sanitize(SecurityContext.HTML, highlighted);
   }
 

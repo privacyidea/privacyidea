@@ -29,11 +29,13 @@
         <mat-label i18n>Filter Containers...</mat-label>
         <app-clearable-input
           (clearButtonClick)="containerService.clearFilter()"
-          [showClearButton]="containerService.containerFilter().isNotEmpty">
+          [showClearButton]="containerService.filterDraft().isNotEmpty">
           <input
             #filterHTMLInputElement
-            (input)="containerService.handleFilterInput($event)"
-            [value]="containerService.containerFilter().filterString"
+            [appFilterAutocomplete]="filterKeywords"
+            (input)="onFilterInput($event)"
+            (keyup.enter)="containerService.applyFilterInput($event)"
+            [value]="containerService.filterDraft().filterString"
             aria-label="Filter Input"
             i18n-aria-label
             i18n-placeholder
@@ -41,7 +43,23 @@
             matInput
             placeholder="Example query: 'type: generic'" />
         </app-clearable-input>
+        <mat-hint>{{ filterHint }}</mat-hint>
+        @if (showFilterHint()) {
+          <mat-hint
+            align="end"
+            i18n
+            >Press enter to apply the filter</mat-hint
+          >
+        }
       </mat-form-field>
+      <button
+        [matMenuTriggerFor]="advancedFilterMenu"
+        class="margin-left-8"
+        i18n-matTooltip
+        mat-icon-button
+        matTooltip="More Filter">
+        <mat-icon>filter_list</mat-icon>
+      </button>
       <mat-paginator
         (page)="onPageEvent($event)"
         [length]="total()"
@@ -51,7 +69,9 @@
         showFirstLastButtons />
     </div>
     <app-container-table-actions />
-    <div class="table-scroll-region" appScrollEdges>
+    <div
+      class="table-scroll-region"
+      appScrollEdges>
       <table
         [dataSource]="containerDataSource()"
         aria-label="Container Data Table"
@@ -67,10 +87,12 @@
                 class="table-checkbox"
                 mat-header-cell>
                 <mat-checkbox
-                  (change)="$event ? toggleAllRows() : null"
-                  [checked]="isAllSelected()"
-                  [disabled]="total() === 0"
-                  [indeterminate]="containerSelection().length > 0 && !isAllSelected()"></mat-checkbox>
+                  (change)="$event.checked ? containerSelection.selectAllRows() : containerSelection.deselectAllRows()"
+                  aria-label="Select all containers"
+                  i18n-aria-label
+                  [checked]="containerSelection.allRowsSelected()"
+                  [disabled]="!containerSelection.hasVisibleRows()"
+                  [indeterminate]="containerSelection.someRowsSelected()"></mat-checkbox>
               </th>
             } @else {
               <th
@@ -81,16 +103,16 @@
                   {{ column.label }}
                   <div class="margin-left-16 flex">
                     @if (
-                      apiFilterKeyMap[column.key] && containerService.apiFilter.includes(apiFilterKeyMap[column.key])
+                      apiFilterKeyMap[column.key] && containerService.apiFilterKeys.includes(apiFilterKeyMap[column.key])
                     ) {
                       @if (apiFilterKeyMap[column.key] === "type") {
                         <button
                           [matMenuTriggerData]="{ keyword: apiFilterKeyMap[column.key] }"
                           [matMenuTriggerFor]="typeMenu"
+                          aria-label="Filter by {{ column.label }}"
+                          i18n-aria-label
                           class="filter-button"
-                          i18n-matTooltip
                           mat-icon-button
-                          matTooltip="Filter by type"
                           type="button">
                           <mat-icon class="keyword-button-icon margin-left-0"> filter_list</mat-icon>
                         </button>
@@ -98,20 +120,20 @@
                         <button
                           [matMenuTriggerData]="{ keyword: apiFilterKeyMap[column.key] }"
                           [matMenuTriggerFor]="statesMenu"
+                          aria-label="Filter by {{ column.label }}"
+                          i18n-aria-label
                           class="filter-button"
-                          i18n-matTooltip
                           mat-icon-button
-                          matTooltip="Filter by state"
                           type="button">
                           <mat-icon class="keyword-button-icon margin-left-0">filter_list</mat-icon>
                         </button>
                       } @else {
                         <button
                           (click)="onKeywordClick(apiFilterKeyMap[column.key])"
+                          aria-label="Filter by {{ column.label }}"
+                          i18n-aria-label
                           class="filter-button"
-                          i18n-matTooltip
                           mat-icon-button
-                          matTooltip="Toggle filter"
                           type="button">
                           <mat-icon class="keyword-button-icon margin-left-0">
                             {{ getFilterIconName(apiFilterKeyMap[column.key]) }}
@@ -121,10 +143,10 @@
                     }
                     <button
                       (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
+                      aria-label="Sort by {{ column.label }}"
+                      i18n-aria-label
                       class="sort-button"
-                      i18n-matTooltip
                       mat-icon-button
-                      matTooltip="Sort by column"
                       type="button">
                       <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
                     </button>
@@ -144,10 +166,11 @@
                 @switch (column.key) {
                   @case ("select") {
                     <mat-checkbox
-                      (change)="$event ? toggleRow(row) : null"
+                      (change)="containerSelection.setRowSelected(row, $event.checked)"
                       (click)="$event.stopPropagation()"
-                      [checked]="containerSelection().includes(row)"
-                      [disabled]="total() === 0"></mat-checkbox>
+                      attr.aria-label="Select container {{ element.serial }}"
+                      [checked]="containerSelection.isRowSelected(row)"
+                      [disabled]="!containerSelection.hasVisibleRows()"></mat-checkbox>
                   }
                   @case ("serial") {
                     <app-copyable [copyText]="element.serial">
@@ -296,6 +319,19 @@
     <div i18n>You do not have the permission to view the container list.</div>
   }
 </div>
+
+<mat-menu
+  #advancedFilterMenu="matMenu"
+  class="button-width-m">
+  @for (keyword of advancedApiFilterKeys; track keyword) {
+    <button
+      (click)="onKeywordClick(keyword)"
+      mat-menu-item>
+      <mat-icon class="margin-right-16">{{ getFilterIconName(keyword) }}</mat-icon>
+      {{ keyword }}
+    </button>
+  }
+</mat-menu>
 
 <mat-menu #statesMenu="matMenu">
   <ng-template

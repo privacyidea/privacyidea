@@ -80,6 +80,16 @@ describe("TokengroupsComponent", () => {
     expect(component).toBeTruthy();
   });
 
+  it("should only select the groups left by the filter", async () => {
+    component.onFilterInput("group1");
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    component.selector.selectAllRows();
+
+    expect(component.selector.selectedRows().map((row) => row.groupname)).toEqual(["group1"]);
+  });
+
   it("should display groups from service", () => {
     expect(component.tokengroupDataSource().data.length).toBe(2);
     expect(component.tokengroupDataSource().data[0].groupname).toBe("group1");
@@ -105,7 +115,8 @@ describe("TokengroupsComponent", () => {
 
   it("should delete group after confirmation", () => {
     const group = tokengroupServiceMock.tokengroups()[0];
-    component.deleteTokengroup(group);
+    component.selector.selectRow(group);
+    component.deleteSelected();
     expect(dialogServiceMock.openDialog).toHaveBeenCalled();
     confirmClosed.next("discard");
     confirmClosed.complete();

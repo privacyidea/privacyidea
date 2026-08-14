@@ -160,6 +160,103 @@ class APIAuthTestCase(MyApiTestCase):
 
         delete_policy("realmadmin")
 
+    def test_03b_realmadmin_get_user_multi_realm_single_policy(self):
+        """A single policy granting userlist on multiple realms should return
+        users from all those realms when GET /user/ is called without an
+        explicit realm parameter."""
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        self.setUp_user_realm3()
+        # Grant testadmin userlist on realm1 AND realm3
+        set_policy(name="realmadmin_multi", scope=SCOPE.ADMIN,
+                   action=PolicyAction.USERLIST,
+                   realm=[self.realm1, self.realm3],
+                   user="testadmin")
+
+        with self.app.test_request_context('/user/',
+                                           method='GET',
+                                           data={},
+                                           headers={'Authorization':
+                                                        self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json.get("result")
+            realms_in_result = set(u.get("realm") for u in result.get("value"))
+            # Users from both realm1 and realm3 must appear
+            self.assertIn(self.realm1, realms_in_result)
+            self.assertIn(self.realm3, realms_in_result)
+            # But realm2 must NOT appear
+            self.assertNotIn(self.realm2, realms_in_result)
+
+        delete_policy("realmadmin_multi")
+
+    def test_03c_realmadmin_get_user_multi_policy(self):
+        """Multiple policies granting userlist on different realms should be
+        unioned — users from all granted realms should be returned."""
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        self.setUp_user_realm3()
+        # Two separate policies, each granting one realm
+        set_policy(name="realmadmin_pol1", scope=SCOPE.ADMIN,
+                   action=PolicyAction.USERLIST,
+                   realm=self.realm1,
+                   user="testadmin")
+        set_policy(name="realmadmin_pol2", scope=SCOPE.ADMIN,
+                   action=PolicyAction.USERLIST,
+                   realm=self.realm3,
+                   user="testadmin")
+
+        with self.app.test_request_context('/user/',
+                                           method='GET',
+                                           data={},
+                                           headers={'Authorization':
+                                                        self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json.get("result")
+            realms_in_result = set(u.get("realm") for u in result.get("value"))
+            self.assertIn(self.realm1, realms_in_result)
+            self.assertIn(self.realm3, realms_in_result)
+            self.assertNotIn(self.realm2, realms_in_result)
+
+        # Remove the restrictive admin policies so the audit log is readable.
+        delete_policy("realmadmin_pol1")
+        delete_policy("realmadmin_pol2")
+
+        # The audit info must record the realms as a plain scalar, not a
+        # Python list-repr, even when several realms are in scope.
+        audit_entry = self.find_most_recent_audit_entry(action="GET /user/")
+        self.assertNotIn("[", audit_entry.get("info", ""), audit_entry)
+        self.assertIn(self.realm1, audit_entry.get("info", ""))
+        self.assertIn(self.realm3, audit_entry.get("info", ""))
+
+    def test_03d_realmadmin_no_realm_in_policy_means_all(self):
+        """A policy with no realm restriction should leave the realm
+        parameter unset so the endpoint queries all realms."""
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        self.setUp_user_realm3()
+        # Policy with no realm → all realms
+        set_policy(name="realmadmin_all", scope=SCOPE.ADMIN,
+                   action=PolicyAction.USERLIST,
+                   user="testadmin")
+
+        with self.app.test_request_context('/user/',
+                                           method='GET',
+                                           data={},
+                                           headers={'Authorization':
+                                                        self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json.get("result")
+            realms_in_result = set(u.get("realm") for u in result.get("value"))
+            # All three realms should be present
+            self.assertIn(self.realm1, realms_in_result)
+            self.assertIn(self.realm2, realms_in_result)
+            self.assertIn(self.realm3, realms_in_result)
+
+        delete_policy("realmadmin_all")
+
     def test_04_auth_timelimit_maxfail(self):
         # Test with local admin
         set_policy(name="policy", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXFAIL}=2/20s")
@@ -1452,6 +1549,61 @@ class APISelfserviceTestCase(MyApiTestCase):
                              details)
 
         delete_policy("pol_time")
+
+    def test_47_auth_timelimit_maxfail_webui_challenge_response(self):
+        # The two-step WebUI login (login_mode=privacyIDEA with a challenge
+        # response token) must not count the challenge-trigger step (correct
+        # password, challenge is returned) as a failed authentication.
+        self.setUp_user_realm2()
+        user = User("timelimituser", realm=self.realm2)
+        pin = "spass"
+        token = init_token({"type": "hotp", "genkey": True, "pin": pin}, user=user)
+        set_policy(name="pol_time1", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXFAIL}=3/20s")
+        set_policy(name="pol_loginmode", scope=SCOPE.WEBUI,
+                   action="{}={}".format(PolicyAction.LOGINMODE, LOGINMODE.PRIVACYIDEA))
+        set_policy(name="challenge_response", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
+        self.app_context.g.audit_object.clear()
+
+        # Use up all but one allowed failure with wrong passwords
+        for _ in range(2):
+            with self.app.test_request_context('/auth',
+                                               method='POST',
+                                               data={"username": "timelimituser@" + self.realm2,
+                                                     "password": "wrong"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 401)
+
+        # The correct PIN triggers the challenge (first step of the WebUI login)
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "timelimituser@" + self.realm2,
+                                                 "password": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json.get("result")
+            self.assertTrue(result["status"], result)
+            self.assertFalse(result["value"], result)
+            self.assertEqual(result.get("authentication"), "CHALLENGE")
+            transaction_id = res.json.get("detail").get("transaction_id")
+
+        # Answering the challenge with the correct OTP value must succeed:
+        # the challenge-trigger entry does not count as a failed authentication.
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "timelimituser@" + self.realm2,
+                                                 "password": token.get_otp()[2],
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res.json)
+            result = res.json.get("result")
+            self.assertTrue(result["status"], result)
+            self.assertTrue(result["value"], result)
+
+        delete_policy("pol_time1")
+        delete_policy("pol_loginmode")
+        delete_policy("challenge_response")
+        token.delete_token()
 
 
 class PolicyConditionsTestCase(MyApiTestCase):

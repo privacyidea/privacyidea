@@ -104,7 +104,13 @@ describe("ConditionsTabComponent", () => {
     expect(component.selectedClient()).toEqual(["client1"]);
   });
 
-  it("should correctly compute selectedUserAgents", () => {
+  it("should map a known user agent key to its display label", () => {
+    fixture.componentRef.setInput("policy", { ...mockPolicy, user_agents: ["privacyidea-cp"] });
+    fixture.detectChanges();
+    expect(component.selectedUserAgents()).toEqual(["Credential Provider"]);
+  });
+
+  it("should fall back to the raw identifier for an unknown/legacy user agent key", () => {
     expect(component.selectedUserAgents()).toEqual(["userAgent1"]);
   });
 

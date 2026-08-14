@@ -32,7 +32,10 @@
   @if (authService.actionAllowed("adduser") && anyEditableResolver()) {
     <button
       (click)="navigateToCreateUser()" class="action-button-primary button-width-m" mat-stroked-button>
-      <mat-icon>add</mat-icon>
+      <span class="icon-badge">
+        <mat-icon class="padding-right-3">person</mat-icon>
+        <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+      </span>
       <span i18n>Create User</span>
     </button>
   }

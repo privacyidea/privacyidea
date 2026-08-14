@@ -41,7 +41,6 @@ import { MatTooltip } from "@angular/material/tooltip";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { ErrorStateDirective } from "@components/shared/directives/error-state.directive";
@@ -81,7 +80,6 @@ export type eventTab = "events" | "action" | "conditions";
     MatButton,
     MatSlideToggle,
     MatTooltip,
-    CopyButtonComponent,
     ErrorStateDirective,
     ClearableInputComponent
   ],
@@ -108,6 +106,19 @@ export class EventEditPageComponent implements OnDestroy {
     this.isNewEvent() ? $localize`Create New Event Handler` : $localize`Edit Event Handler`
   );
   hasChanges = signal(false);
+  // Set once the user operates the "abort on error" toggle, so the default of the handler module stops applying
+  abortOnErrorTouched = signal(false);
+  // A handler whose result the request consumes is created with "abort on error" enabled, see
+  // GET /event/defaults/<handlermodule>. The default only fills in for a new binding that the user has not
+  // decided on yet: an existing binding keeps its stored value, and so does an explicit choice of the user.
+  abortOnError = computed(() => {
+    const editedValue = this.editEvent().abort_on_error;
+    if (!this.isNewEvent() || this.abortOnErrorTouched()) {
+      return editedValue;
+    }
+    return this.eventService.moduleDefaults()?.abort_on_error ?? editedValue;
+  });
+  eventLoaded = computed(() => this.isNewEvent() || this.editEvent() !== EMPTY_EVENT);
   selectedEvents = linkedSignal(() => this.event().event);
   validConditionsDefinition = computed(() => {
     if (!this.editEvent().conditions) return true;
@@ -121,7 +132,7 @@ export class EventEditPageComponent implements OnDestroy {
     const validity: Record<string, boolean> = {};
     validity["events"] = this.editEvent().event.length > 0;
     validity["action"] = !!this.editEvent().action && this.validOptions();
-    validity["name"] = this.editEvent().name !== "" && /^[a-zA-Z0-9._-]*$/.test(this.editEvent().name);
+    validity["name"] = this.editEvent().name !== "" && /^[a-zA-Z0-9._\- ]*$/.test(this.editEvent().name);
     validity["handlerModule"] =
       this.eventService.selectedHandlerModule() !== null && this.eventService.selectedHandlerModule() !== "";
     validity["position"] = this.editEvent().position !== null && this.editEvent().position !== "";
@@ -188,6 +199,11 @@ export class EventEditPageComponent implements OnDestroy {
     this.router.navigateByUrl(ROUTE_PATHS.EVENTS);
   }
 
+  setAbortOnError(abortOnError: boolean): void {
+    this.abortOnErrorTouched.set(true);
+    this.updateEventHandler("abort_on_error", abortOnError);
+  }
+
   setNewAction(action: string): void {
     this.editEvent.set({ ...this.editEvent(), action });
     this.hasChanges.set(true);
@@ -231,6 +247,8 @@ export class EventEditPageComponent implements OnDestroy {
       eventParams.id = String(eventParams.id);
     }
     eventParams.handlermodule = this.eventService.selectedHandlerModule();
+    // The default of the handler module is not written into the edited binding, so it is resolved here
+    eventParams.abort_on_error = this.abortOnError();
     delete eventParams.options;
     return eventParams;
   }

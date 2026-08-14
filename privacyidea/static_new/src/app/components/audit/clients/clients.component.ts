@@ -47,6 +47,7 @@ import { MatTooltip } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { LocalDateTimePipe } from "@components/shared/pipes/local-date-time.pipe";
 import { StringUtils } from "@utils/string.utils";
 import { filter } from "rxjs";
 
@@ -103,7 +104,8 @@ interface FlattenedClientRow {
     MatIconButton,
     MatTooltip,
     MatIcon,
-    ClearableInputComponent
+    ClearableInputComponent,
+    LocalDateTimePipe
   ]
 })
 export class ClientsComponent {
@@ -165,7 +167,6 @@ export class ClientsComponent {
 
   filterValue = "";
 
-
   onSortChange(event: { active: string }) {
     this.activeSortColumn.set(event.active || null);
   }
@@ -183,11 +184,11 @@ export class ClientsComponent {
   showInAuditLog(column: string, value: string) {
     if (column === "application") {
       const userAgent = this._split_user_agent(value);
-      this.auditService.auditFilter.set(
+      this.auditService.setFilter(
         new FilterValue({ value: `user_agent: ${userAgent.userAgent} user_agent_version: ${userAgent.version}` })
       );
     } else if (column === "ip") {
-      this.auditService.auditFilter.set(new FilterValue({ value: `client: ${value}` }));
+      this.auditService.setFilter(new FilterValue({ value: `client: ${value}` }));
     }
   }
 

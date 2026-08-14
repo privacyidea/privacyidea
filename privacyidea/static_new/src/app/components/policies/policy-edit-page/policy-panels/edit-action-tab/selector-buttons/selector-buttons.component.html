@@ -28,6 +28,9 @@
       [disabled]="disabled()"
       matTooltip="{{ labels()?.[$index] || value }}"
       [matTooltipDisabled]="!isOverflowing(labelEl)">
+      @if (icons()?.[$index]; as icon) {
+        <mat-icon class="button-icon">{{ icon }}</mat-icon>
+      }
       <span
         #labelEl
         class="button-label">

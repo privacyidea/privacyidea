@@ -56,11 +56,10 @@ from urllib.parse import quote
 from flask import g, current_app, make_response, Request
 from flask_babel import _, lazy_gettext
 
-from privacyidea.api.lib.utils import get_all_params
+from privacyidea.api.lib.utils import get_all_params, hardening_action_active
 from privacyidea.config import ConfigKey
 from privacyidea.lib.auth import ROLE
-from privacyidea.lib.config import (get_multichallenge_enrollable_types, get_token_class, get_privacyidea_node,
-                                    get_from_config, SYSCONF)
+from privacyidea.lib.config import (get_multichallenge_enrollable_types, get_token_class, get_privacyidea_node)
 from privacyidea.lib.crypto import Sign
 from privacyidea.lib.error import PolicyError, ValidateError
 from privacyidea.lib.info.rss import FETCH_DAYS
@@ -281,43 +280,8 @@ def hide_version(request, response):
     if logged_in_user:
         return response
 
-    if response.is_json:
-        # Ensure g.policy_object and g.client_ip are available even when
-        # before_request failed early (e.g. due to AuthError before the
-        # policy object was created).
-        if not hasattr(g, "policy_object"):
-            try:
-                from privacyidea.lib.policy import PolicyClass
-                g.policy_object = PolicyClass()
-            except Exception:  # pragma: no cover
-                return response  # pragma: no cover
-        if not hasattr(g, "client_ip") or not g.client_ip:
-            from privacyidea.lib.utils import get_client_ip
-            try:
-                override_client = get_from_config(SYSCONF.OVERRIDECLIENT)
-            except Exception:
-                override_client = None
-            g.client_ip = get_client_ip(request, override_client)
-        if not g.get("user_agent"):
-            from privacyidea.lib.utils import get_plugin_info_from_useragent
-            ua_name, _ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
-            g.user_agent = ua_name
-        # Skip the policy evaluation entirely when no hardening policy is
-        # configured. This keeps high-volume anonymous endpoints such as
-        # /validate/check fast while the feature is disabled, instead of running
-        # a full policy match on every response. Any failure here (the policy/DB
-        # backend being unavailable, or g.policy_object not being a usable
-        # PolicyClass) degrades to a no-op rather than raising a 500 out of
-        # after_request.
-        try:
-            if not g.policy_object.list_policies(scope=SCOPE.HARDENING, active=True):
-                return response
-            policy = Match.action_only(g, scope=SCOPE.HARDENING, action=PolicyAction.HIDE_VERSION).policies(
-                write_to_audit_log=False)
-        except Exception:
-            return response
-        if policy:
-            strip_version_from_response(response, strip_nested=True)
+    if response.is_json and hardening_action_active(g, request, PolicyAction.HIDE_VERSION):
+        strip_version_from_response(response, strip_nested=True)
     return response
 
 
@@ -473,9 +437,11 @@ def preferred_client_mode(request, response):
     else:
         preferred_client_mode_list = DEFAULT_PREFERRED_CLIENT_MODE_LIST
 
-    # check policy if client mode per user shall be used
+    # check policy if client mode per user shall be used. This is an opt-in toggle,
+    # so use enforced()/any() rather than the fail-open allowed(), which would
+    # enable it by default on any system without auth policies defined at all.
     client_mode_per_user_pol = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.CLIENT_MODE_PER_USER,
-                                          user_object=user).allowed()
+                                          user_object=user).enforced()
     last_used_token_type = None
     if client_mode_per_user_pol:
         user_agent, __, __ = get_plugin_info_from_useragent(request.user_agent.string)
@@ -864,7 +830,9 @@ def get_webui_settings(request, response):
                     check_subscription("privacyidea")
                 except SubscriptionError:
                     subject = EXPIRE_MESSAGE
-                # Check policy, if the admin is allowed to save config
+                # Check policy, if the admin is allowed to save config. This is a genuine
+                # permission check: an admin on a system without admin policies effectively
+                # has systemwrite rights, so the fail-open allowed() is intended here.
                 action_allowed = Match.generic(g, scope=role,
                                                action=PolicyAction.SYSTEMWRITE,
                                                adminuser=username,

@@ -31,8 +31,10 @@ import {
   ContainerTypes,
   TemplateComparisonResult
 } from "@services/container/container.service";
+import { RowSelector } from "@services/table-utils/row-selector";
 import { MockHttpResourceRef, MockPiResponse } from "@testing/mock-services/mock-utils";
 import { Observable, of, Subject } from "rxjs";
+import { Debouncer } from "@utils/debounce.utils";
 
 export class MockContainerService implements ContainerServiceInterface {
   containersForTokenType: Signal<string[]> = signal([]);
@@ -40,8 +42,16 @@ export class MockContainerService implements ContainerServiceInterface {
   compatibleWithSelectedTokenType = signal<string | null>(null);
   filterContainersByTokenOwner = signal(false);
   isPollingActive: Signal<boolean> = signal(false);
-  apiFilter: string[] = [];
-  advancedApiFilter: string[] = [];
+  apiFilterKeys: string[] = [];
+  advancedApiFilterKeys: string[] = [];
+  hiddenApiFilterKeys: string[] = [];
+  apiFilterKeyMap: Record<string, string> = {};
+  exactMatchKeys = new Set<string>();
+  allFilterKeys: Signal<string[]> = signal([
+    ...this.apiFilterKeys,
+    ...this.advancedApiFilterKeys,
+    ...this.hiddenApiFilterKeys
+  ]);
   stopPolling$ = new Subject<void>();
   readonly containerBaseUrl = "mockEnvironment.proxyUrl + '/container'";
   readonly eventPageSize = signal(10);
@@ -49,14 +59,10 @@ export class MockContainerService implements ContainerServiceInterface {
   readonly containerSerial = signal("CONT-1");
   readonly selectedContainerSerial = signal("");
   readonly sort = signal<Sort>({ active: "serial", direction: "asc" });
-  readonly containerFilter = signal<FilterValue>(new FilterValue());
-  readonly filterParams = computed<Record<string, string>>(() =>
-    Object.fromEntries(
-      Object.entries(this.containerFilter()).filter(([key]) =>
-        [...this.apiFilter, ...this.advancedApiFilter].includes(key)
-      )
-    )
-  );
+  readonly activeFilter = signal<FilterValue>(new FilterValue());
+  filterDebouncer = new Debouncer(this.activeFilter);
+  readonly filterDraft = this.activeFilter;
+  readonly filterParams = signal<Record<string, string>>({});
   pageSize = signal<number>(10);
   pageIndex = signal<number>(0);
   containerResource = new MockHttpResourceRef<PiResponse<ContainerDetails> | undefined>(
@@ -68,7 +74,17 @@ export class MockContainerService implements ContainerServiceInterface {
   containersForTokenTypeResource = new MockHttpResourceRef<PiResponse<ContainerDetails> | undefined>(
     MockPiResponse.fromValue({ containers: [], count: 0 })
   );
-  containerSelection = signal<ContainerDetailData[]>([]);
+  selectableContainers = signal<ContainerDetailData[]>([]);
+  containerSelection = new RowSelector<ContainerDetailData>({
+    keyGetter: (container) => container.serial,
+    visibleRows: this.selectableContainers
+  });
+
+  /** Makes the given containers the visible rows and selects them all. */
+  setContainerSelection(containers: ContainerDetailData[]): void {
+    this.selectableContainers.set(containers);
+    this.containerSelection.selectAllRows();
+  }
   containerTypesResource = new MockHttpResourceRef<PiResponse<ContainerTypes, unknown> | undefined>(
     MockPiResponse.fromValue<ContainerTypes>(new Map())
   );
@@ -99,6 +115,7 @@ export class MockContainerService implements ContainerServiceInterface {
     })
   );
   containerDetails = signal<ContainerDetails>({ containers: [], count: 0 });
+  supportedTokenTypes = signal<string[]>([]);
   containerDetail = signal<ContainerDetailData | null>(null);
   templateComparison = signal<TemplateComparisonResult | null>(null);
   addToken = jest.fn().mockReturnValue(of(null));
@@ -122,7 +139,15 @@ export class MockContainerService implements ContainerServiceInterface {
 
   readonly unregister = jest.fn().mockReturnValue(of({}));
   containerBelongsToUser = jest.fn().mockReturnValue(false);
+  filterFromInput = jest.fn();
   handleFilterInput = jest.fn();
+  applyFilterInput = jest.fn();
+  setFilter = jest.fn().mockImplementation((filter: FilterValue) => {
+    this.activeFilter.set(filter);
+  });
+  updateFilter = jest.fn().mockImplementation((computeFilter: (current: FilterValue) => FilterValue) => {
+    this.activeFilter.set(computeFilter(this.activeFilter()));
+  });
   clearFilter = jest.fn();
   stopPolling = jest.fn();
   createContainer = jest.fn();

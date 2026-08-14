@@ -19,7 +19,7 @@
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { DetailsEditRegistry } from "@components/shared/details-shared/details-edit-registry.service";
+import { DetailsEditRegistry } from "@components/shared/details-shared/field-editing/details-edit-registry.service";
 import { AuthService } from "@services/auth/auth.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { TokenService } from "@services/token/token.service";

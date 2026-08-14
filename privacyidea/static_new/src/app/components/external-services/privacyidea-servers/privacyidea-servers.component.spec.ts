@@ -81,6 +81,16 @@ describe("PrivacyideaServersComponent", () => {
     expect(component).toBeTruthy();
   });
 
+  it("should only select the servers left by the filter", async () => {
+    component.onFilterInput("server1");
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    component.selector.selectAllRows();
+
+    expect(component.selector.selectedRows().map((row) => row.identifier)).toEqual(["server1"]);
+  });
+
   it("should display servers from service", () => {
     expect(component.privacyideaDataSource().data.length).toBe(2);
     expect(component.privacyideaDataSource().data[0].identifier).toBe("server1");
@@ -113,7 +123,8 @@ describe("PrivacyideaServersComponent", () => {
 
   it("should delete server after confirmation", () => {
     const server = privacyideaServerServiceMock.remoteServerOptions()[0];
-    component.deleteServer(server);
+    component.selector.selectRow(server);
+    component.deleteSelected();
     expect(dialogServiceMock.openDialog).toHaveBeenCalled();
     confirmClosed.next(true);
     confirmClosed.complete();

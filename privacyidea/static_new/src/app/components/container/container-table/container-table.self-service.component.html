@@ -34,7 +34,10 @@
         (click)="navigateToCreate()"
         aria-label="Create Container"
         i18n-aria-label>
-        <mat-icon>create_new_folder</mat-icon>
+        <span class="icon-badge">
+          <mat-icon class="padding-right-3">folder</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+        </span>
         <span i18n>Create Container</span>
       </button>
     }
@@ -46,7 +49,9 @@
       [pageSize]="pageSize()"
       showFirstLastButtons />
   </div>
-  <div class="table-scroll-region" appScrollEdges>
+  <div
+    class="table-scroll-region"
+    appScrollEdges>
     <table
       [dataSource]="containerDataSource()"
       aria-label="Container Data Table"
@@ -62,10 +67,12 @@
               class="table-checkbox"
               mat-header-cell>
               <mat-checkbox
-                (change)="$event ? toggleAllRows() : null"
-                [checked]="isAllSelected()"
-                [disabled]="total() === 0"
-                [indeterminate]="containerSelection().length > 0 && !isAllSelected()" />
+                (change)="$event.checked ? containerSelection.selectAllRows() : containerSelection.deselectAllRows()"
+                aria-label="Select all containers"
+                i18n-aria-label
+                [checked]="containerSelection.allRowsSelected()"
+                [disabled]="!containerSelection.hasVisibleRows()"
+                [indeterminate]="containerSelection.someRowsSelected()" />
             </th>
           } @else {
             <th
@@ -77,6 +84,8 @@
                 <div class="margin-left-16 flex">
                   <button
                     (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
+                    aria-label="Sort by {{ column.label }}"
+                    i18n-aria-label
                     class="sort-button"
                     mat-icon-button
                     type="button">
@@ -98,10 +107,11 @@
               @switch (column.key) {
                 @case ("select") {
                   <mat-checkbox
-                    (change)="$event ? toggleRow(row) : null"
+                    (change)="containerSelection.setRowSelected(row, $event.checked)"
                     (click)="$event.stopPropagation()"
-                    [checked]="containerSelection().includes(row)"
-                    [disabled]="total() === 0" />
+                    attr.aria-label="Select container {{ element.serial }}"
+                    [checked]="containerSelection.isRowSelected(row)"
+                    [disabled]="!containerSelection.hasVisibleRows()" />
                 }
                 @case ("serial") {
                   <app-copyable [copyText]="element.serial">
@@ -140,7 +150,8 @@
                 @case ("delete") {
                   <button
                     (click)="deleteContainer(element.serial)"
-                    i18n-aria-label="Delete Container"
+                    aria-label="Delete Container"
+                    i18n-aria-label
                     mat-icon-button>
                     <mat-icon> delete</mat-icon>
                   </button>

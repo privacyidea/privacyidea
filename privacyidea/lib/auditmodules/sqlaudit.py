@@ -43,12 +43,14 @@ token database.
 """
 
 import datetime
+import inspect
 import logging
 import traceback
 from collections import OrderedDict
 
 from sqlalchemy import asc, desc, and_, or_, select, delete
 from sqlalchemy import create_engine
+from sqlalchemy.engine.url import make_url
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.sql.expression import FunctionElement
@@ -59,11 +61,32 @@ from privacyidea.lib.crypto import Sign
 from privacyidea.lib.lifecycle import register_finalizer
 from privacyidea.lib.pooling import get_engine
 from privacyidea.lib.utils import censor_connect_string
-from privacyidea.lib.utils import truncate_comma_list, is_true
+from privacyidea.lib.utils import (truncate_comma_list, is_true,
+                                   convert_wildcard_to_sql_like, SQL_LIKE_ESCAPE)
 from privacyidea.models import Audit as LogEntry
 from privacyidea.models import audit_column_length as column_length
 
 log = logging.getLogger(__name__)
+
+
+def _pool_accepts_pool_size(connect_string, engine_kwargs):
+    """
+    Check whether the connection pool that ``create_engine()`` will use for this
+    connect string takes a ``pool_size``.
+
+    ``NullPool`` and ``StaticPool`` do not, and they can be requested for any database
+    through the ``poolclass`` engine option, so the database type alone does not answer
+    this. Passing ``pool_size`` to a pool that does not know it is a ``TypeError``.
+
+    :param connect_string: The connect string the engine will be created with
+    :param engine_kwargs: The keyword arguments for ``create_engine()``
+    :return: True if the pool takes a pool_size
+    """
+    pool_class = engine_kwargs.get("poolclass")
+    if pool_class is None:
+        url = make_url(connect_string)
+        pool_class = url.get_dialect().get_pool_class(url)
+    return "pool_size" in inspect.signature(pool_class).parameters
 
 
 # Define function to convert SQL DateTime objects to an ISO-format string
@@ -183,19 +206,18 @@ class Audit(AuditBase):
         sqa_options = self.config.get(ConfigKey.AUDIT_SQL_OPTIONS,
                                       self.config.get(ConfigKey.SQLALCHEMY_ENGINE_OPTIONS, {}))
         log.debug(f"Using Audit SQLAlchemy engine options: {sqa_options!s}")
-        try:
-            pool_size = self.config.get(ConfigKey.AUDIT_POOL_SIZE, 20)
-            engine = create_engine(
-                connect_string,
-                pool_size=pool_size,
-                pool_recycle=self.config.get(ConfigKey.AUDIT_POOL_RECYCLE, 600),
-                **sqa_options)
-            log.debug(f"Using SQL pool size of {pool_size}")
-        except TypeError:
-            # SQLite does not support pool_size
-            engine = create_engine(connect_string, **sqa_options)
-            log.debug("Using no SQL pool_size.")
-        return engine
+        # The engine options are merged over the pool defaults instead of being passed
+        # alongside them, because a key present in both would raise a TypeError about
+        # duplicate keyword arguments and take the whole pool configuration down with it.
+        # The merge comes first, since the poolclass may be configured here as well.
+        engine_kwargs = {"pool_recycle": self.config.get(ConfigKey.AUDIT_POOL_RECYCLE, 600)}
+        engine_kwargs.update(sqa_options)
+        if _pool_accepts_pool_size(connect_string, engine_kwargs):
+            engine_kwargs.setdefault("pool_size", self.config.get(ConfigKey.AUDIT_POOL_SIZE, 20))
+            log.debug(f"Using SQL pool size of {engine_kwargs['pool_size']}")
+        else:
+            log.debug("The configured connection pool takes no pool size, using none.")
+        return create_engine(connect_string, **engine_kwargs)
 
     def _finalize_session(self):
         """ Close current session and dispose connections of db engine"""
@@ -276,8 +298,15 @@ class Audit(AuditBase):
                     realm_conditions.append(LogEntry.realm == realm)
                 filter_realm = or_(*realm_conditions)
                 conditions.append(filter_realm)
-            # We do not search if the search value only consists of '*'
-            elif search_value.strip() != '' and search_value.strip('*') != '':
+            # Any other filter value is compared as a string. Coerce non-string
+            # scalars so a meaningful filter is never silently dropped, which would
+            # widen the audit result set. An empty value or a bare '*' wildcard means
+            # "no filter" for this key.
+            elif search_value is not None:
+                if not isinstance(search_value, str):
+                    search_value = str(search_value)
+                if search_value.strip() == '' or search_value.strip('*') == '':
+                    continue
                 try:
                     if search_key == "success":
                         # "success" is the only integer.
@@ -285,21 +314,25 @@ class Audit(AuditBase):
                         conditions.append(getattr(LogEntry, search_key) ==
                                           int(is_true(search_value)))
                     else:
-                        # All other keys are compared as strings
+                        # All other keys are compared as strings. Only '*' is a wildcard; literal '%' and '_' are
+                        # matched literally. A leading '!' negates the condition.
                         column = getattr(LogEntry, search_key)
                         if search_key in ["date", "startdate"]:
                             # but we cast a column with a DateTime type to an
                             # ISO-format string first
                             column = to_isodate(column)
-                        search_value = search_value.replace('*', '%')
-                        if '%' in search_value:
-                            if search_value.startswith("!"):
-                                conditions.append(column.notlike(search_value[1:]))
+                        negate = search_value.startswith("!")
+                        if negate:
+                            search_value = search_value[1:]
+                        if "*" in search_value:
+                            pattern = convert_wildcard_to_sql_like(search_value)
+                            if negate:
+                                conditions.append(column.notlike(pattern, escape=SQL_LIKE_ESCAPE))
                             else:
-                                conditions.append(column.like(search_value))
+                                conditions.append(column.like(pattern, escape=SQL_LIKE_ESCAPE))
                         else:
-                            if search_value.startswith("!"):
-                                conditions.append(column != search_value[1:])
+                            if negate:
+                                conditions.append(column != search_value)
                             else:
                                 conditions.append(column == search_value)
                 except Exception as exx:

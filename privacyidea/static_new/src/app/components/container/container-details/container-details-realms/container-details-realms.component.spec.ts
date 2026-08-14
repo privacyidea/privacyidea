@@ -19,7 +19,8 @@
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { DetailsEditRegistry } from "@components/shared/details-shared/details-edit-registry.service";
+import { DetailsEditRegistry } from "@components/shared/details-shared/field-editing/details-edit-registry.service";
+import { EditableField } from "@components/shared/details-shared/field-editing/editable-field";
 import { AuthService } from "@services/auth/auth.service";
 import { ContainerService } from "@services/container/container.service";
 import { RealmService } from "@services/realm/realm.service";
@@ -27,15 +28,16 @@ import { MockAuthService, MockContainerService, MockRealmService } from "@testin
 import { ContainerDetailsRealmsComponent } from "./container-details-realms.component";
 
 interface ContainerRealmsFieldInternals {
-  toggle(): void;
-  commit(): void;
-  cancel(): void;
+  field: EditableField;
+  realmOptions: () => { value: string; label: string; disabled: boolean }[];
 }
 
 describe("ContainerDetailsRealmsComponent", () => {
   let component: ContainerDetailsRealmsComponent;
+  let internals: ContainerRealmsFieldInternals;
   let fixture: ComponentFixture<ContainerDetailsRealmsComponent>;
   let containerService: MockContainerService;
+  let realmService: MockRealmService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -52,7 +54,9 @@ describe("ContainerDetailsRealmsComponent", () => {
 
     fixture = TestBed.createComponent(ContainerDetailsRealmsComponent);
     component = fixture.componentInstance;
+    internals = component as unknown as ContainerRealmsFieldInternals;
     containerService = TestBed.inject(ContainerService) as unknown as MockContainerService;
+    realmService = TestBed.inject(RealmService) as unknown as MockRealmService;
     fixture.componentRef.setInput("realms", ["realm1"]);
     fixture.detectChanges();
   });
@@ -62,33 +66,43 @@ describe("ContainerDetailsRealmsComponent", () => {
   });
 
   it("toggle() seeds the selection from the current realms when entering edit mode", () => {
-    (component as unknown as ContainerRealmsFieldInternals).toggle();
+    internals.field.toggle();
 
-    expect(component.isEditing()).toBe(true);
+    expect(internals.field.isEditing()).toBe(true);
     expect(component.selectedRealms()).toEqual(["realm1"]);
 
-    (component as unknown as ContainerRealmsFieldInternals).toggle();
-    expect(component.isEditing()).toBe(false);
+    internals.field.toggle();
+    expect(internals.field.isEditing()).toBe(false);
   });
 
-  it("commit() persists the selected realms and leaves edit mode", () => {
-    component.isEditing.set(true);
+  it("commit() persists the selected realms and leaves edit mode", async () => {
+    internals.field.toggle();
     component.selectedRealms.set(["realm2"]);
 
-    (component as unknown as ContainerRealmsFieldInternals).commit();
+    await internals.field.commit();
 
     expect(containerService.setContainerRealm).toHaveBeenCalledWith(containerService.containerSerial(), ["realm2"]);
-    expect(component.isEditing()).toBe(false);
+    expect(internals.field.isEditing()).toBe(false);
   });
 
   it("cancel() restores the original realms and leaves edit mode", () => {
-    component.isEditing.set(true);
+    internals.field.toggle();
     component.selectedRealms.set(["realm2"]);
 
-    (component as unknown as ContainerRealmsFieldInternals).cancel();
+    internals.field.cancel();
 
     expect(component.selectedRealms()).toEqual(["realm1"]);
-    expect(component.isEditing()).toBe(false);
+    expect(internals.field.isEditing()).toBe(false);
+  });
+
+  it("realmOptions() maps realms to options and disables the user's realm", () => {
+    fixture.componentRef.setInput("userRealm", "realm2");
+    realmService.realmOptions.set(["realm1", "realm2"]);
+
+    expect(internals.realmOptions()).toEqual([
+      { value: "realm1", label: "realm1", disabled: false },
+      { value: "realm2", label: "realm2", disabled: true }
+    ]);
   });
 
   it("registers and unregisters its edit handle with the registry", () => {

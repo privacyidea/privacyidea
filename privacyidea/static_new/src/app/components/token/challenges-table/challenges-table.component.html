@@ -27,15 +27,16 @@
       <mat-label i18n>Filter Challenges...</mat-label>
       <app-clearable-input
         (clearButtonClick)="challengesService.clearFilter()"
-        [showClearButton]="challengesService.challengesFilter().isNotEmpty">
+        [showClearButton]="challengesService.filterDraft().isNotEmpty">
         <input
           #filterHTMLInputElement
           (input)="challengesService.handleFilterInput($event)"
-          [value]="challengesService.challengesFilter().filterString"
+          [value]="challengesService.filterDraft().filterString"
           i18n-placeholder
           matInput
           placeholder="Example query: 'transaction_id: 00000000000000000001'" />
       </app-clearable-input>
+      <mat-hint>{{ filterHint }}</mat-hint>
     </mat-form-field>
     <mat-paginator
       (page)="onPageEvent($event)"
@@ -48,7 +49,9 @@
   <div class="margin-bottom-16">
     <app-challenges-table-actions />
   </div>
-  <div class="table-scroll-region" appScrollEdges>
+  <div
+    class="table-scroll-region"
+    appScrollEdges>
     <table
       [dataSource]="challengesDataSource()"
       aria-label="Token Challenges Table"
@@ -64,9 +67,11 @@
             <div class="flex ali-center">
               {{ column.label }}
               <div class="margin-left-16 flex">
-                @if (apiFilter.includes(column.key)) {
+                @if (apiFilterKeys.includes(column.key)) {
                   <button
                     (click)="onKeywordClick(column.key)"
+                    aria-label="Filter by {{ column.label }}"
+                    i18n-aria-label
                     class="filter-button"
                     mat-icon-button
                     type="button">
@@ -77,6 +82,8 @@
                 }
                 <button
                   (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
+                  aria-label="Sort by {{ column.label }}"
+                  i18n-aria-label
                   class="sort-button"
                   mat-icon-button
                   type="button">

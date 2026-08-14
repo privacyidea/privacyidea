@@ -18,6 +18,7 @@
  **/
 import { Component, computed, ElementRef, inject, signal, ViewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
+import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatIconModule } from "@angular/material/icon";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { MatPaginator } from "@angular/material/paginator";
@@ -32,6 +33,7 @@ import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/con
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { renderedRows, RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { Tokengroup, TokengroupService, TokengroupServiceInterface } from "@services/tokengroup/tokengroup.service";
 
@@ -44,6 +46,7 @@ import { Tokengroup, TokengroupService, TokengroupServiceInterface } from "@serv
     MatSortModule,
     MatIconModule,
     MatButtonModule,
+    MatCheckboxModule,
     MatTooltipModule,
     ScrollToTopDirective,
     MatFormField,
@@ -73,7 +76,7 @@ export class TokengroupsComponent {
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef;
 
-  displayedColumns: string[] = ["id", "groupname", "description", "actions"];
+  displayedColumns: string[] = ["select", "id", "groupname", "description"];
 
   tokengroupDataSource = computed(() => {
     const groups = this.tokengroupService.tokengroups();
@@ -81,6 +84,11 @@ export class TokengroupsComponent {
     dataSource.paginator = this.paginator;
     dataSource.sort = this.sort;
     return dataSource;
+  });
+
+  selector = new RowSelector<Tokengroup>({
+    keyGetter: (group) => group.groupname,
+    visibleRows: renderedRows(this.tokengroupDataSource)
   });
 
   onCreateNewTokengroup(): void {
@@ -91,13 +99,17 @@ export class TokengroupsComponent {
     this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_DETAILS + group.groupname);
   }
 
-  deleteTokengroup(group: Tokengroup): void {
+  deleteSelected(): void {
+    const selected = this.selector.selectedRows();
+    if (selected.length === 0) {
+      return;
+    }
     this.dialogService
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Delete Tokengroup`,
-          items: [group.groupname],
+          title: $localize`Delete Token Groups`,
+          items: selected.map((row) => row.groupname),
           itemType: "tokengroup",
           confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
         }
@@ -105,7 +117,8 @@ export class TokengroupsComponent {
       .afterClosed()
       .subscribe((result) => {
         if (result) {
-          this.tokengroupService.deleteTokengroup(group.groupname);
+          selected.forEach((row) => void this.tokengroupService.deleteTokengroup(row.groupname).catch(() => undefined));
+          this.selector.deselectAllRows();
         }
       });
   }

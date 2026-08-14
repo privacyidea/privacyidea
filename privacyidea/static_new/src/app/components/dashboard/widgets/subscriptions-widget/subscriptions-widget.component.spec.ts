@@ -21,11 +21,12 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideRouter } from "@angular/router";
 import { DashboardWidget, WidgetInstance } from "@models/dashboard";
 import { AuthService } from "@services/auth/auth.service";
+import { DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { Subscription, SubscriptionService } from "@services/subscription/subscription.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockSubscriptionService } from "@testing/mock-services/mock-subscription-service";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
-import { of } from "rxjs";
+import { of, Subject } from "rxjs";
 import { SubscriptionsWidgetComponent } from "./subscriptions-widget.component";
 
 const MOCK_SUBSCRIPTION: Subscription = {
@@ -127,5 +128,42 @@ describe("SubscriptionsWidgetComponent", () => {
 
     expect(fixture2.nativeElement.querySelector("table")).toBeNull();
     fixture2.destroy();
+  });
+
+  it("should set the state to loading while the request is still in flight", () => {
+    TestBed.inject(DashboardDataStore).invalidate();
+    subscriptionMock.getSubscriptions.mockReturnValue(
+      new Subject<MockPiResponse<Record<string, Subscription>>>().asObservable()
+    );
+
+    const fixture2 = TestBed.createComponent(SubscriptionsWidgetComponent);
+    fixture2.componentRef.setInput("instance", instance);
+    fixture2.detectChanges();
+
+    expect(fixture2.componentInstance.state()).toBe("loading");
+    fixture2.destroy();
+  });
+
+  it("should set the state to error when the request fails", () => {
+    TestBed.inject(DashboardDataStore).invalidate();
+    const subject = new Subject<MockPiResponse<Record<string, Subscription>>>();
+    subscriptionMock.getSubscriptions.mockReturnValue(subject.asObservable());
+
+    const fixture2 = TestBed.createComponent(SubscriptionsWidgetComponent);
+    fixture2.componentRef.setInput("instance", instance);
+    fixture2.detectChanges();
+    subject.error(new Error("boom"));
+    fixture2.detectChanges();
+
+    expect(fixture2.componentInstance.state()).toBe("error");
+    fixture2.destroy();
+  });
+
+  it("should invalidate the cache and reload on reload()", () => {
+    subscriptionMock.getSubscriptions.mockClear();
+
+    component.reload();
+
+    expect(subscriptionMock.getSubscriptions).toHaveBeenCalledTimes(1);
   });
 });

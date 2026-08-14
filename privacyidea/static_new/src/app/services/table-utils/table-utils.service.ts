@@ -127,7 +127,7 @@ export interface TableUtilsServiceInterface {
 
   getSortIcon(columnKey: string, sort: Sort): string;
 
-  onSortButtonClick(key: string, sort: WritableSignal<Sort>): void;
+  onSortButtonClick(key: string, sort: WritableSignal<Sort>, fallback?: Sort): void;
 
   clientsideSortTokenData(data: ContainerDetailToken[], s: Sort): ContainerDetailToken[];
 }
@@ -150,41 +150,15 @@ export class TableUtilsService implements TableUtilsServiceInterface {
     );
   }
 
+  // A keyword such as "machineid & resolver" is a label for two keys that are filtered together.
   toggleKeywordInFilter(args: { keyword: string; currentValue: FilterValue }): FilterValue {
     const { keyword, currentValue } = args;
-
-    if (keyword.includes("&")) {
-      const keywords = keyword.split("&").map((k) => k.trim());
-      let newValue = currentValue;
-      for (const key of keywords) {
-        newValue = this.toggleKeywordInFilter({ keyword: key, currentValue: newValue });
-      }
-      return newValue;
-    }
-    if (currentValue.hasKey(keyword)) {
-      return currentValue.removeKey(keyword);
-    } else {
-      return currentValue.addKey(keyword);
-    }
+    return currentValue.toggleKeys(keyword.split("&").map((key) => key.trim()));
   }
 
   public toggleBooleanInFilter(args: { keyword: string; currentValue: FilterValue }): FilterValue {
     const { keyword, currentValue } = args;
-    const booleanValue = currentValue.getValueOfKey(keyword)?.toLowerCase();
-
-    if (!booleanValue) {
-      return currentValue.addEntry(keyword, "true");
-    } else {
-      const existingValue = booleanValue;
-
-      if (existingValue === "true") {
-        return currentValue.addEntry(keyword, "false");
-      } else if (existingValue === "false") {
-        return currentValue.removeKey(keyword);
-      } else {
-        return currentValue.addEntry(keyword, "true");
-      }
-    }
+    return currentValue.toggleBooleanKey(keyword);
   }
 
   isLink(columnKey: string): boolean {
@@ -406,7 +380,7 @@ export class TableUtilsService implements TableUtilsServiceInterface {
     return sort.direction === "asc" ? "keyboard_arrow_upward" : "keyboard_arrow_downward";
   }
 
-  onSortButtonClick(columnKey: string, sort: WritableSignal<Sort>): void {
+  onSortButtonClick(columnKey: string, sort: WritableSignal<Sort>, fallback: Sort = { active: "serial", direction: "asc" }): void {
     const current = sort();
     let direction: Sort["direction"] = "asc";
 
@@ -418,11 +392,7 @@ export class TableUtilsService implements TableUtilsServiceInterface {
       }
     }
 
-    if (direction === "") {
-      sort.set({ active: "serial", direction: "asc" });
-    } else {
-      sort.set({ active: columnKey, direction });
-    }
+    sort.set(direction === "" ? fallback : { active: columnKey, direction });
   }
 
   clientsideSortTokenData(data: ContainerDetailToken[], s: Sort) {

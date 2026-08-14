@@ -46,8 +46,8 @@ from urllib.parse import urlparse, urlunparse
 
 import redis as redis_lib
 
+from privacyidea.lib.challenge_types import is_challenge_open
 from privacyidea.lib.framework import get_app_config_value, get_app_local_store
-from privacyidea.lib.utils import convert_column_to_unicode
 from privacyidea.models.utils import utc_now
 
 log = logging.getLogger(__name__)
@@ -82,6 +82,7 @@ class CacheState(Enum):
     back to the database / issue defensive eviction.
     """
 
+
 # Default cooldown between connection attempts after any failure (init or
 # runtime). One unified value covers boot-order races (worker up before
 # Redis container) and transient runtime errors (Redis restart, network
@@ -103,6 +104,7 @@ def _retry_cooldown_seconds() -> int:
     except (TypeError, ValueError):
         return _DEFAULT_RETRY_COOLDOWN_SECONDS
     return value if value > 0 else _DEFAULT_RETRY_COOLDOWN_SECONDS
+
 
 # Redis key templates
 #
@@ -341,6 +343,9 @@ class ChallengeDTO:
         now = utc_now()
         return self.timestamp <= now < self.expiration
 
+    def is_open(self) -> bool:
+        return is_challenge_open(self.is_valid(), self.otp_valid, self.get_session())
+
     def get_session(self) -> str:
         return self.session
 
@@ -350,13 +355,25 @@ class ChallengeDTO:
     def get_transaction_id(self) -> str:
         return self.transaction_id
 
-    def get_data(self):
+    def get_data(self) -> dict:
+        """
+        Get the challenge data as a dict.
+
+        :return: The challenge data as a dict. Returns ``{}`` if no data is stored.
+        :rtype: dict
+        """
         if not self.data:
             return {}
         try:
-            return json.loads(self.data)
+            result = json.loads(self.data)
         except (json.JSONDecodeError, ValueError):
-            return self.data
+            log.warning("ChallengeDTO %s: failed to decode data as JSON.", self.transaction_id)
+            return {}
+        if not isinstance(result, dict):
+            log.warning("ChallengeDTO %s: data is not a dict (got %s). Returning empty dict.",
+                        self.transaction_id, type(result).__name__)
+            return {}
+        return result
 
     def get_otp_status(self) -> tuple[int, bool]:
         return self.received_count, self.otp_valid
@@ -387,16 +404,15 @@ class ChallengeDTO:
         self.otp_valid = valid
         self.save()
 
-    def set_data(self, data):
-        # Mirror Challenge.set_data (models/challenge.py): str -> as-is,
-        # dict -> JSON, anything else (bytes, ints, ...) -> unicode coercion.
-        # Keeps both backends accepting the same input shapes.
-        if isinstance(data, str):
-            self.data = data
-        elif isinstance(data, dict):
-            self.data = json.dumps(data)
+    def set_data(self, data: dict | None):
+        """
+        Set the challenge data. Must be a dict (or None/empty).
+        Mirrors Challenge.set_data (models/challenge.py).
+        """
+        if not data:
+            self.data = ''
         else:
-            self.data = convert_column_to_unicode(data)
+            self.data = json.dumps(data)
         self.save()
 
     def set_session(self, session: str):

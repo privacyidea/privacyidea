@@ -45,21 +45,21 @@ describe("ChallengesService", () => {
   });
 
   it("should not include empty filter values in filterParams except for the serial", () => {
-    challengesService.challengesFilter.set(
+    challengesService.activeFilter.set(
       new FilterValue({
         value: "serial: '' transaction_id: ***"
       })
     );
-    let params = challengesService.filterParams();
+    let params = challengesService.requestParams();
     expect(params).toHaveProperty("serial", "");
     expect(params).not.toHaveProperty("transaction_id");
 
-    challengesService.challengesFilter.set(
+    challengesService.activeFilter.set(
       new FilterValue({
         value: "serial: '123' transaction_id: '    '"
       })
     );
-    params = challengesService.filterParams();
+    params = challengesService.requestParams();
     expect(params).toHaveProperty("serial", "*123*");
     expect(params).not.toHaveProperty("transaction_id");
   });

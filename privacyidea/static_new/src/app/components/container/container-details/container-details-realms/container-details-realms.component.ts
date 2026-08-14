@@ -16,14 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, inject, input, OnDestroy, OnInit, signal } from "@angular/core";
-import { MatFormFieldModule } from "@angular/material/form-field";
-import { MatListItem } from "@angular/material/list";
-import { MatSelectModule } from "@angular/material/select";
-import { CopyableComponent } from "@components/shared/copyable/copyable.component";
-import { DetailsEditRegistry } from "@components/shared/details-shared/details-edit-registry.service";
-import { AutofocusDirective } from "@components/shared/directives/app-autofocus.directive";
-import { EditableElement, EditButtonsComponent } from "@components/shared/edit-buttons/edit-buttons.component";
+import { Component, computed, inject, input, signal } from "@angular/core";
+import { DetailFieldRowComponent } from "@components/shared/details-shared/field-editing/detail-field-row/detail-field-row.component";
+import { injectEditableField } from "@components/shared/details-shared/field-editing/editable-field";
+import { DetailsListDisplayComponent } from "@components/shared/details-shared/value-cells/details-list-display/details-list-display.component";
+import { DetailsMultiSelectCellComponent } from "@components/shared/details-shared/value-cells/details-multi-select-cell/details-multi-select-cell.component";
+import { EditButtonsComponent } from "@components/shared/edit-buttons/edit-buttons.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
@@ -32,66 +30,38 @@ import { RealmService, RealmServiceInterface } from "@services/realm/realm.servi
   selector: "app-container-details-realms",
   standalone: true,
   imports: [
-    MatFormFieldModule,
-    MatSelectModule,
-    MatListItem,
-    AutofocusDirective,
-    CopyableComponent,
+    DetailFieldRowComponent,
+    DetailsMultiSelectCellComponent,
+    DetailsListDisplayComponent,
     EditButtonsComponent
   ],
   templateUrl: "./container-details-realms.component.html",
   styleUrl: "./container-details-realms.component.scss"
 })
-export class ContainerDetailsRealmsComponent implements OnInit, OnDestroy {
+export class ContainerDetailsRealmsComponent {
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
-  private readonly registry = inject(DetailsEditRegistry);
 
   readonly realms = input<string[]>([]);
   readonly userRealm = input<string>("");
   readonly blockEditing = input(false);
 
-  readonly isEditing = signal(false);
   readonly selectedRealms = signal<string[]>([]);
   protected readonly editable = computed(() => this.authService.actionAllowed("container_realms"));
+  protected readonly realmOptions = computed(() =>
+    this.realmService
+      .realmOptions()
+      .map((realm) => ({ value: realm, label: realm, disabled: realm === this.userRealm() }))
+  );
 
-  protected readonly editButtonsElement: EditableElement<string[]> = {
-    keyMap: { key: "" },
-    isEditing: this.isEditing,
-    value: []
-  };
-
-  private readonly handle = {
-    isEditing: this.isEditing,
-    save: () => this.commit(),
-    cancel: () => this.cancel()
-  };
-
-  ngOnInit(): void {
-    this.registry.register(this.handle);
-  }
-
-  ngOnDestroy(): void {
-    this.registry.unregister(this.handle);
-  }
-
-  protected readonly toggle = (): void => {
-    if (!this.isEditing()) {
-      this.selectedRealms.set([...this.realms()]);
+  protected readonly field = injectEditableField({
+    onOpen: () => this.selectedRealms.set([...this.realms()]),
+    onCancel: () => this.selectedRealms.set([...this.realms()]),
+    onCommit: async () => {
+      this.containerService
+        .setContainerRealm(this.containerService.containerSerial(), this.selectedRealms())
+        .subscribe({ next: () => this.containerService.containerDetailsResource.reload() });
     }
-    this.isEditing.update((editing) => !editing);
-  };
-
-  protected readonly commit = (): void => {
-    this.containerService
-      .setContainerRealm(this.containerService.containerSerial(), this.selectedRealms())
-      .subscribe({ next: () => this.containerService.containerDetailsResource.reload() });
-    this.isEditing.set(false);
-  };
-
-  protected readonly cancel = (): void => {
-    this.selectedRealms.set([...this.realms()]);
-    this.isEditing.set(false);
-  };
+  });
 }

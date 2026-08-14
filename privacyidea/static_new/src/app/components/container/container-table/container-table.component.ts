@@ -16,7 +16,16 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, ElementRef, ViewChild, WritableSignal, inject, linkedSignal } from "@angular/core";
+import {
+  Component,
+  ElementRef,
+  OnDestroy,
+  ViewChild,
+  WritableSignal,
+  computed,
+  inject,
+  linkedSignal
+} from "@angular/core";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { Sort } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
@@ -38,19 +47,21 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatMenuModule } from "@angular/material/menu";
-import { MatTooltipModule } from "@angular/material/tooltip";
 import { ContainerTableActionsComponent } from "@components/container/container-table/container-table-actions/container-table-actions.component";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
-import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { inlineFilterHint } from "@utils/filter-hint.utils";
 @Component({
   selector: "app-container-table",
   standalone: true,
   imports: [
+    FilterAutocompleteDirective,
     MatTableModule,
     MatFormFieldModule,
     MatInputModule,
@@ -66,13 +77,12 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
     MatButtonModule,
     MatMenuModule,
     MatDividerModule,
-    MatTooltipModule,
     ScrollEdgesDirective
   ],
   templateUrl: "./container-table.component.html",
   styleUrl: "./container-table.component.scss"
 })
-export class ContainerTableComponent {
+export class ContainerTableComponent implements OnDestroy {
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
@@ -90,8 +100,25 @@ export class ContainerTableComponent {
     "realms"
   );
   readonly columnKeys = [...this.tableUtilsService.getColumnKeys(this.columnsKeyMap)];
-  readonly apiFilter = this.containerService.apiFilter;
-  readonly advancedApiFilter = this.containerService.advancedApiFilter;
+  readonly apiFilterKeys = this.containerService.apiFilterKeys;
+  readonly advancedApiFilterKeys = this.containerService.advancedApiFilterKeys;
+  readonly filterKeywords = [...this.containerService.apiFilterKeys, ...this.containerService.advancedApiFilterKeys];
+  readonly filterHint = inlineFilterHint();
+  // The `user` and `realm` filters are exact values that the backend resolves against the user store, so
+  // they are only applied when the input is confirmed with enter. All other filters are applied while typing.
+  protected readonly filterInputValue = linkedSignal({
+    source: () => this.containerService.activeFilter().filterString,
+    computation: (filterString) => filterString
+  });
+  readonly showFilterHint = computed(() => {
+    const current = this.filterInputValue().trim().toLowerCase();
+    const applied = this.containerService.activeFilter().filterString.trim().toLowerCase();
+
+    if (current !== applied) {
+      return /(^|\s)user:/.test(current) || /(^|\s)realm:/.test(current);
+    }
+    return false;
+  });
   containerSelection = this.containerService.containerSelection;
 
   pageSize = this.containerService.pageSize;
@@ -139,31 +166,12 @@ export class ContainerTableComponent {
     states: "state",
     description: "description",
     user_name: "user",
+    user_realm: "realm",
     realms: "container_realm"
   } as const;
 
-  isAllSelected() {
-    return (
-      this.containerSelection().length === this.containerDataSource().data.length &&
-      this.containerDataSource().data.length > 0
-    );
-  }
-
-  toggleAllRows() {
-    if (this.isAllSelected()) {
-      this.containerSelection.set([]);
-    } else {
-      this.containerSelection.set([...this.containerDataSource().data]);
-    }
-  }
-
-  toggleRow(row: ContainerDetailData): void {
-    const current = this.containerSelection();
-    if (current.includes(row)) {
-      this.containerSelection.set(current.filter((r) => r !== row));
-    } else {
-      this.containerSelection.set([...current, row]);
-    }
+  ngOnDestroy(): void {
+    this.containerSelection.deselectAllRows();
   }
 
   handleStateClick(element: ContainerDetailData) {
@@ -187,12 +195,24 @@ export class ContainerTableComponent {
     this.sort.set($event);
   }
 
+  onFilterInput($event: Event) {
+    const input = $event.target as HTMLInputElement;
+    this.filterInputValue.set(input.value);
+    const value = input.value.toLowerCase();
+    const hasUser = /(^|\s)user:/.test(value);
+    const hasRealm = /(^|\s)realm:/.test(value);
+    if (!hasUser && !hasRealm) {
+      this.containerService.handleFilterInput($event);
+    }
+  }
+
   toggleFilter(filterKeyword: string): void {
-    const newValue = this.tableUtilsService.toggleKeywordInFilter({
-      keyword: filterKeyword,
-      currentValue: this.containerService.containerFilter()
-    });
-    this.containerService.containerFilter.set(newValue);
+    this.containerService.updateFilter((current) =>
+      this.tableUtilsService.toggleKeywordInFilter({
+        keyword: filterKeyword,
+        currentValue: current
+      })
+    );
   }
 
   isFilterSelected(filter: string, inputValue: FilterValue): boolean {
@@ -200,7 +220,7 @@ export class ContainerTableComponent {
   }
 
   getFilterIconName(keyword: string): string {
-    const isSelected = this.isFilterSelected(keyword, this.containerService.containerFilter());
+    const isSelected = this.isFilterSelected(keyword, this.containerService.activeFilter());
     return isSelected ? "filter_alt_off" : "filter_alt";
   }
 
@@ -210,10 +230,8 @@ export class ContainerTableComponent {
   }
 
   onItemSelected(keyword: string, value: string | undefined): void {
-    if (!value) {
-      this.containerService.containerFilter.set(this.containerService.containerFilter().removeKey(keyword));
-    } else {
-      this.containerService.containerFilter.set(this.containerService.containerFilter().addEntry(keyword, value));
-    }
+    this.containerService.updateFilter((current) =>
+      value ? current.addEntry(keyword, value) : current.removeKey(keyword)
+    );
   }
 }

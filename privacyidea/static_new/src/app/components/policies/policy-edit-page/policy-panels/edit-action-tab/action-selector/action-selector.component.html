@@ -34,7 +34,7 @@
           </p>
           <app-selector-buttons
             class="flex-1"
-            [values]="allPolicyScopes"
+            [values]="allPolicyScopes()"
             [initialValue]="policy().scope"
             [allowDeselect]="true"
             (selected)="selectActionScope($event)"
@@ -87,9 +87,10 @@
             <p i18n>No actions match the search filter.</p>
             <button
               mat-stroked-button
-              (click)="actionFilter.set('')"
-              i18n>
-              Clear Filter
+              class="action-button-secondary button-width-m"
+              (click)="actionFilter.set('')">
+              <mat-icon>filter_alt_off</mat-icon>
+              <span i18n>Clear Filter</span>
             </button>
           } @else {
             <p i18n>No actions available for the selected scope and group.</p>

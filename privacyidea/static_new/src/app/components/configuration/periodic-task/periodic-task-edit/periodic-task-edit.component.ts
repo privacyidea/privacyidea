@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { DatePipe } from "@angular/common";
 import {
   Component,
   computed,
@@ -47,13 +46,14 @@ import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
+import { LocalDateTimePipe } from "@components/shared/pipes/local-date-time.pipe";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import {
   EMPTY_PERIODIC_TASK,
   PERIODIC_TASK_MODULE_MAPPING,
-  PeriodicTask,
+  PeriodicTaskEdit,
   PeriodicTaskModule,
   PeriodicTaskOption,
   PeriodicTaskService,
@@ -90,7 +90,7 @@ import { firstValueFrom } from "rxjs";
     FormField,
     ClearableInputComponent,
     CopyButtonComponent,
-    DatePipe
+    LocalDateTimePipe
   ],
   templateUrl: "./periodic-task-edit.component.html",
   styleUrl: "./periodic-task-edit.component.scss"
@@ -108,11 +108,11 @@ export class PeriodicTaskEditComponent implements OnDestroy {
   protected readonly parseBooleanValue = parseBooleanValue;
 
   isNewTask = signal<boolean>(false);
-  editTask = signal<PeriodicTask>({ ...EMPTY_PERIODIC_TASK });
+  editTask = signal<PeriodicTaskEdit>({ ...EMPTY_PERIODIC_TASK });
 
   readonly title = computed(() => (this.isNewTask() ? $localize`Create Periodic Task` : $localize`Edit Periodic Task`));
 
-  private originalTask: PeriodicTask = { ...EMPTY_PERIODIC_TASK };
+  private originalTask: PeriodicTaskEdit = { ...EMPTY_PERIODIC_TASK };
   private editName: string | null = null;
 
   editTaskForm = form(this.editTask, (f) => {
@@ -224,12 +224,12 @@ export class PeriodicTaskEditComponent implements OnDestroy {
     return JSON.stringify(this.editTask()) !== JSON.stringify(this.originalTask);
   }
 
-  private loadTask(task: PeriodicTask): void {
+  private loadTask(task: PeriodicTaskEdit): void {
     this.originalTask = task;
     this.editTask.set(deepCopy(task));
   }
 
-  private findTaskByName(name: string): PeriodicTask | undefined {
+  private findTaskByName(name: string): PeriodicTaskEdit | undefined {
     const resource = this.periodicTaskService.periodicTasksResource;
     if (resource.hasValue && !resource.hasValue()) return undefined;
     const tasks = resource.value()?.result?.value ?? [];

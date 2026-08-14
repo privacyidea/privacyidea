@@ -195,7 +195,8 @@ from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import (check_time_in_range, check_pin_contents,
                                    fetch_one_resource, is_true, check_ip_in_policy,
-                                   determine_logged_in_userparams, parse_string_to_dict)
+                                   determine_logged_in_userparams, parse_string_to_dict,
+                                   SQL_LIKE_ESCAPE, convert_wildcard_to_sql_like)
 from privacyidea.lib.utils.compare import COMPARATOR_DESCRIPTIONS
 from privacyidea.lib.utils.export import (register_import, register_export)
 from .log import log_with
@@ -203,6 +204,7 @@ from .policies.actions import PolicyAction, PasskeyLoginButtonOptions
 from .policies.conditions import PolicyConditionClass, ConditionCheck, ConditionSection
 from .policies.evaluators import EVALUATOR_FUNCTIONS
 from ..models import (Policy, db, save_config_timestamp, PolicyDescription, PolicyCondition)
+from ..models.policy import parse_action_string
 
 log = logging.getLogger(__name__)
 
@@ -285,6 +287,7 @@ class GROUP:
     SETTING_ACTIONS = "setting actions"
     TOKENGROUP = "tokengroup"
     SERVICEID = "service ID"
+    CLIENTS = "API clients"
     CONTAINER = "container"
     REGISTRATION = "registration and synchronization"
     SMARTPHONE = "smartphone"
@@ -558,24 +561,26 @@ class PolicyClass:
                 pinode, [p.get('name') for p in reduced_policies]))
 
         # Match the user agent
-        new_policies = []
-        for policy in reduced_policies:
-            policy_matches = False
-            # The policy either matches if it has no user agents defined or if the user agent is contained in the list
-            if not policy.get("user_agents"):
-                # If no user agent is defined, we match this policy
-                policy_matches = True
-            elif user_agent:
-                policy_agents = [agent.lower() for agent in policy.get("user_agents") if agent]
-                if user_agent.lower() in policy_agents:
+        if user_agent is not None:
+            new_policies = []
+            for policy in reduced_policies:
+                policy_matches = False
+                # The policy either matches if it has no user agents defined
+                # or if the user agent is contained in the list
+                if not policy.get("user_agents"):
+                    # If no user agent is defined, we match this policy
                     policy_matches = True
+                elif user_agent:
+                    policy_agents = [agent.lower() for agent in policy.get("user_agents") if agent]
+                    if user_agent.lower() in policy_agents:
+                        policy_matches = True
 
-            if policy_matches:
-                new_policies.append(policy)
+                if policy_matches:
+                    new_policies.append(policy)
 
-        reduced_policies = new_policies
-        log.debug("Policies after matching the user_agent={!s}: {!s}".format(
-            user_agent, [p.get('name') for p in reduced_policies]))
+            reduced_policies = new_policies
+            log.debug("Policies after matching the user_agent={!s}: {!s}".format(
+                user_agent, [p.get('name') for p in reduced_policies]))
 
         # Match the client IP.
         # Client IPs may be direct match, may be located in subnets or may
@@ -1154,6 +1159,12 @@ def remove_wildcards_and_negations(value_list: list[str]) -> list[str]:
     return raw_values
 
 
+def _allowed_actions_for_scope(scope: str) -> set:
+    """Return the set of action names defined for the given scope (static + dynamic)."""
+    from .token import get_dynamic_policy_definitions
+    return set(get_static_policy_definitions(scope) | get_dynamic_policy_definitions(scope))
+
+
 def validate_actions(scope: str, action: str | dict) -> bool:
     """
     Check if the given actions are valid for the given scope.
@@ -1162,26 +1173,14 @@ def validate_actions(scope: str, action: str | dict) -> bool:
     :param action: The policy actions
     :return: True if all actions are valid, raises a Parameter Error otherwise
     """
-    from .token import get_dynamic_policy_definitions
-    policy_definitions_static = get_static_policy_definitions(scope)
-    policy_definitions_dynamic = get_dynamic_policy_definitions(scope)
-    policy_definitions = policy_definitions_static | policy_definitions_dynamic
-    allowed_actions = set(policy_definitions.keys())
-    actions = {}
+    allowed_actions = _allowed_actions_for_scope(scope)
     if isinstance(action, dict):
-        action_keys = list(action.keys())
-        actions = action
+        actions = dict(action)
     elif isinstance(action, str):
-        # This is similarly implemented in models.py in Policy.get(), but with the actual code structure there is no
-        # possibility to use the same function without mixing up the layers
-        for x in re.split(r'(?<!\\),', action or ""):
-            action_tmp = x.strip().split("=", 1)
-            action_key = action_tmp[0]
-            action_value = action_tmp[1] if len(action_tmp) == 2 else True
-            actions[action_key] = action_value
-        action_keys = list(actions.keys())
+        actions = parse_action_string(action)
     else:
         raise ParameterError(f"Invalid actions type {type(action)}. Must be a string or a dictionary.")
+    action_keys = list(actions.keys())
 
     raw_actions = remove_wildcards_and_negations(action_keys)
     invalid_actions = list(set(raw_actions) - allowed_actions)
@@ -1200,6 +1199,42 @@ def validate_actions(scope: str, action: str | dict) -> bool:
                 raise ParameterError(f"Invalid value for action '{action_key}': {e.message}")
 
     return True
+
+
+def filter_invalid_actions(scope: str, action: str | dict) -> tuple[dict, list]:
+    """
+    Remove the actions that are not valid for the given scope.
+
+    This is used to import a policy that was exported from a different
+    privacyIDEA version which still contained actions (e.g. of a removed token
+    type) that are no longer available.
+
+    :param scope: The scope of the policy
+    :param action: The policy actions as a dict or comma separated string
+    :return: A tuple ``(cleaned_actions, dropped_actions)`` where
+        ``cleaned_actions`` is a dict of the actions that are valid for the
+        scope and ``dropped_actions`` is the list of action keys that were
+        removed because they are not valid for the scope.
+    """
+    allowed_actions = _allowed_actions_for_scope(scope)
+
+    if isinstance(action, dict):
+        actions = dict(action)
+    elif isinstance(action, str):
+        actions = parse_action_string(action)
+    else:
+        return {}, []
+
+    cleaned = {}
+    dropped = []
+    for action_key, action_value in actions.items():
+        # check the action key without its wildcard/negation prefix
+        raw = remove_wildcards_and_negations([action_key])
+        if raw and raw[0] not in allowed_actions:
+            dropped.append(action_key)
+        else:
+            cleaned[action_key] = action_value
+    return cleaned, dropped
 
 
 def validate_values(values: str | list | None, allowed_values: list, name: str) -> bool:
@@ -1284,8 +1319,8 @@ def get_policies(active: bool | None = None, name: str | None = None, scope: str
     for attribute, value in filter_options.items():
         if value is not None:
             if "*" in value:
-                value = value.replace("*", "%")
-                stmt = stmt.filter(getattr(Policy, attribute).ilike(value))
+                stmt = stmt.filter(getattr(Policy, attribute).ilike(
+                    convert_wildcard_to_sql_like(value), escape=SQL_LIKE_ESCAPE))
             else:
                 stmt = stmt.filter(getattr(Policy, attribute) == value)
 
@@ -1412,6 +1447,9 @@ def set_policy(name: str | None = None, scope: str | None = None, action: str | 
         # Remove None or empty values
         user_agents = [user_agent for user_agent in user_agents if user_agent]
         user_agents = ", ".join(user_agents)
+    if isinstance(user_agents, str):
+        # Remove empty or whitespace-only entries from a comma-separated string
+        user_agents = ", ".join([ua.strip() for ua in user_agents.split(",") if ua.strip()])
     # Evaluate condition parameter and convert tuple into PolicyConditionClass object
     conditions_data = []
     if conditions is not None:
@@ -2124,6 +2162,42 @@ def get_static_policy_definitions(scope=None):
                 'desc': _("The Admin is allowed delete a service ID definition."),
                 'mainmenu': [MAIN_MENU.CONFIG],
                 'group': GROUP.SERVICEID},
+            PolicyAction.API_CLIENT_LIST: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed to list API clients."),
+                'mainmenu': [MAIN_MENU.CONFIG],
+                'group': GROUP.CLIENTS},
+            PolicyAction.API_CLIENT_ADD: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed to create API clients."),
+                'mainmenu': [MAIN_MENU.CONFIG],
+                'group': GROUP.CLIENTS},
+            PolicyAction.API_CLIENT_EDIT: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed to modify API clients (display name, status, config)."),
+                'mainmenu': [MAIN_MENU.CONFIG],
+                'group': GROUP.CLIENTS},
+            PolicyAction.API_CLIENT_ROTATE: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed to rotate the API key of a client."),
+                'mainmenu': [MAIN_MENU.CONFIG],
+                'group': GROUP.CLIENTS},
+            PolicyAction.API_CLIENT_DELETE: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed to delete API clients."),
+                'mainmenu': [MAIN_MENU.CONFIG],
+                'group': GROUP.CLIENTS},
+            PolicyAction.REMEMBERED_DEVICE_LIST: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed to list the remembered devices of API clients."),
+                'mainmenu': [MAIN_MENU.CONFIG],
+                'group': GROUP.CLIENTS},
+            PolicyAction.REMEMBERED_DEVICE_REVOKE: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed to revoke remembered devices (of a client, "
+                          "or realm-wide / per user across all clients)."),
+                'mainmenu': [MAIN_MENU.CONFIG],
+                'group': GROUP.CLIENTS},
             PolicyAction.TOKENGROUPS: {
                 'type': 'bool',
                 'desc': _("The Admin is allowed to manage the tokengroups of a token."),
@@ -2533,6 +2607,23 @@ def get_static_policy_definitions(scope=None):
             }
         },
         SCOPE.AUTH: {
+            PolicyAction.REMEMBER_DEVICE: {
+                'type': 'bool',
+                'desc': _("Allow an API client to obtain a persistent 'remember this device' "
+                          "cookie on successful authentication. Requires the request to be made "
+                          "by an identified API client (the X-API-Key header): without one, no "
+                          "cookie is issued and the recognition endpoint returns 401.")},
+            PolicyAction.REMEMBER_DEVICE_VALIDITY: {
+                'type': 'int',
+                'desc': _("How many days a 'remember this device' cookie stays valid "
+                          "(default 30 if unset). Scope it with a realm/user condition to give "
+                          "different lifetimes, e.g. a shorter one for admins than for users.")},
+            PolicyAction.REMEMBER_DEVICE_MAX_DEVICES: {
+                'type': 'int',
+                'desc': _("Maximum number of remembered devices a single user may have per API "
+                          "client. Once the user has this many live devices for the client, "
+                          "further opt-ins on that client issue no new cookie (the existing "
+                          "devices keep working). Unset or 0 means unlimited.")},
             PolicyAction.OTPPIN: {
                 'type': 'str',
                 'value': [ACTIONVALUE.TOKENPIN, ACTIONVALUE.USERSTORE,
@@ -2796,7 +2887,9 @@ def get_static_policy_definitions(scope=None):
             },
             PolicyAction.APIKEY: {
                 'type': 'bool',
-                'desc': _('The sending of an API Auth Key is required during '
+                'desc': _('DEPRECATED (planned for removal in a future release; the X-API-Key '
+                          'API clients feature is intended to replace it): '
+                          'The sending of an API Auth Key is required during '
                           'authentication. This avoids rogue authenticate '
                           'requests against the /validate/check interface.'),
                 'group': GROUP.SETTING_ACTIONS,
@@ -3106,6 +3199,18 @@ def get_static_policy_definitions(scope=None):
                           'Note: This policy is evaluated without user/realm/resolver/time conditions '
                           '(client IP and user agent matching still apply).'),
                 'group': GROUP.SYSTEM,
+            },
+            PolicyAction.HIDE_AUTH_ERROR_STATUS: {
+                'type': 'bool',
+                'desc': _('Return a uniform 401 HTTP status code for failed authentications, so the status code '
+                          'cannot be used to distinguish the reason a request failed. Combine with '
+                          '"hide_specific_error_message" (in the authentication scope) to also mask the error '
+                          'message. WARNING: This changes the HTTP status codes returned by the /auth and '
+                          '/validate endpoints (e.g. 400/403/404 all become 401). Clients, proxies or monitoring '
+                          'that rely on the specific status codes may break. Only enable this if you understand '
+                          'the impact on your integrations. This policy is evaluated without '
+                          'user/realm/resolver/time conditions (client IP and user agent matching still apply).'),
+                'group': GROUP.SYSTEM,
             }
         }
 
@@ -3245,6 +3350,15 @@ class Match:
 
     def __init__(self, g, **kwargs):
         self._g = g
+        # In a policy-matching context the user_agent must always be a string
+        # so that list_policies applies the user-agent filter.  The classmethods
+        # pass g.get("user_agent") which may be None when the attribute was
+        # never set (e.g. outside a request context).  Coerce None to "" so
+        # that only generic (no-UA) policies match in that case; callers that
+        # truly want *no* filtering (e.g. config export) invoke list_policies
+        # directly with user_agent=None.
+        if kwargs.get("user_agent") is None:
+            kwargs["user_agent"] = ""
         self._match_kwargs = kwargs
         self.pinode = get_privacyidea_node()
 
@@ -3273,7 +3387,8 @@ class Match:
             if "password" in request_data:
                 del request_data["password"]
         return self._g.policy_object.match_policies(audit_data=audit_data, request_headers=request_headers,
-                                                    pinode=self.pinode, request_data=request_data, **self._match_kwargs)
+                                                    pinode=self.pinode, request_data=request_data,
+                                                    **self._match_kwargs)
 
     def any(self, write_to_audit_log=True):
         """
@@ -3284,6 +3399,25 @@ class Match:
         :return: True or False
         """
         return bool(self.policies(write_to_audit_log=write_to_audit_log))
+
+    def enforced(self, write_to_audit_log: bool = True) -> bool:
+        """
+        Return True if at least one policy matches, i.e. the matched action is
+        actively configured.
+
+        This is an intention-revealing alias for :py:meth:`any` meant for
+        *opt-in* enforcement/feature toggles: a feature is only enforced if a
+        policy explicitly turns it on. Use this instead of :py:meth:`allowed`
+        whenever the result is stored as a feature flag rather than used as a
+        permission gate, because :py:meth:`allowed` is fail-open (it returns
+        True when the whole scope is unconfigured) and would enable the feature
+        by default.
+
+        :param write_to_audit_log: If True, write the list of matching policies
+            to the audit log
+        :return: True or False
+        """
+        return self.any(write_to_audit_log=write_to_audit_log)
 
     def action_values(self, unique, allow_white_space_in_action=False, write_to_audit_log=True):
         """
@@ -3321,6 +3455,17 @@ class Match:
         This is the case
          * *either* if there are no active policies defined in the matched scope
          * *or* the action is explicitly allowed by a policy in the matched scope
+
+        This method is **fail-open**: it returns True when the whole scope is
+        unconfigured. It is therefore only correct for *permission gates* -
+        checks whose result is immediately used to deny an action (typically
+        ``if not match.allowed(): raise PolicyError(...)``).
+
+        Do **not** capture the result into a feature flag or enforcement toggle.
+        For an *opt-in* toggle (a feature that should stay off unless a policy
+        turns it on) use :py:meth:`enforced` / :py:meth:`any` instead, otherwise
+        the feature would be enabled by default on any system without policies
+        in the matched scope.
 
         Example usage::
 
@@ -3612,16 +3757,60 @@ def export_policy(name=None):
 
 
 @register_import('policy')
-def import_policy(data, name=None):
-    """Import policy configuration"""
+def import_policy(data, name=None, skip_invalid=False):
+    """Import policy configuration
+
+    Each policy is imported independently. If a single policy cannot be
+    imported (e.g. because it references an action that is not available in
+    this privacyIDEA version), the remaining policies are still imported and a
+    ``PolicyError`` summarizing the failures is raised after all policies have
+    been processed.
+
+    :param skip_invalid: If True, actions that are not valid for the policy's
+        scope (e.g. of a removed token type) are dropped instead of failing the
+        whole policy. A policy that has no valid action left after dropping is
+        skipped without causing a failure.
+    """
     log.debug(f'Import policy config: {data!s}')
+    imported = []
+    skipped = []
+    failed = {}
     for res_data in data:
-        if name and name != res_data.get('name'):
+        policy_name = res_data.get('name')
+        if name and name != policy_name:
             continue
-        rid = set_policy(**res_data)
+        if skip_invalid:
+            cleaned, dropped = filter_invalid_actions(res_data.get('scope'),
+                                                      res_data.get('action', {}))
+            if dropped:
+                log.warning(f'Policy "{policy_name}": dropping actions not valid '
+                            f'for this version: {dropped}')
+                res_data['action'] = cleaned
+            # Only skip when dropping actions emptied the policy. A policy that
+            # had no actions to begin with has nothing invalid and must import
+            # just like a plain (non-skip_invalid) import would.
+            if not cleaned and dropped:
+                log.warning(f'Skipping policy "{policy_name}": no valid actions '
+                            f'remain after dropping {dropped}.')
+                skipped.append(policy_name)
+                continue
+        try:
+            rid = set_policy(**res_data)
+        except Exception as e:
+            log.warning(f'Could not import policy "{policy_name}": {e!r}')
+            failed[policy_name] = e
+            continue
         # TODO: we have no information if a new policy was created or an
         #  existing policy updated. We would need to enhance "set_policy()"
         #  to either force overwriting or not and also return if the policy
         #  existed before.
-        log.info('Import of policy "{!s}" finished,'
-                 ' id: {!s}'.format(res_data['name'], rid))
+        imported.append(policy_name)
+        log.info(f'Import of policy "{policy_name}" finished, id: {rid!s}')
+
+    if skipped:
+        log.warning(f'Skipped policies with no valid actions: {skipped}')
+
+    if failed:
+        failure_summary = ', '.join(f'"{n}" ({e!r})' for n, e in failed.items())
+        raise PolicyError(f"Could not import the following policies: "
+                          f"{failure_summary}. Successfully imported: {imported}.")

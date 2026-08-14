@@ -65,6 +65,25 @@ such as a table name, column name, or label name. For Oracle version 19 and abov
 the `max_identifier_length <https://docs.sqlalchemy.org/en/14/core/engines
 .html#sqlalchemy.create_engine.params.max_identifier_length>`_ should be set to 128.
 
+privacyIDEA adds ``pool_pre_ping = True`` to these options unless you set the key
+yourself. The connection is then validated when it is taken from the pool and
+transparently replaced if the database server has closed it in the meantime. Without
+it, a connection that was dropped at the MariaDB/MySQL ``wait_timeout`` or during a
+database restart is handed to a request and fails it with *MySQL server has gone
+away*. The ping is skipped for SQLite, where connections cannot go stale, and it can
+be switched off with ``SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": False}``.
+
+The engine options can also be set through the environment, since values of
+``PRIVACYIDEA_*`` variables are parsed as JSON and ``__`` addresses a key inside a
+dictionary::
+
+   PRIVACYIDEA_SQLALCHEMY_ENGINE_OPTIONS='{"pool_recycle": 3600, "pool_pre_ping": true}'
+   PRIVACYIDEA_SQLALCHEMY_ENGINE_OPTIONS__pool_recycle=3600
+
+.. note:: A normal installation reads the environment *before* the config file, so a
+   value in ``pi.cfg`` wins over the environment. The docker deployment reads the
+   config file first, so there the environment wins.
+
 The ``SUPERUSER_REALM`` is a list of realms, in which the users get the role
 of an administrator.
 
@@ -632,3 +651,31 @@ accepted when set via an environment variable).
    the document structure and a size limit are enforced) so the Web UI can evolve
    its settings freely. ``PI_USER_SETTINGS_ALLOWED_KEYS`` will take effect once
    key enforcement is enabled.
+
+.. _ini_remember_device_grace:
+
+Remember-device grace window
+----------------------------
+
+``PI_REMEMBER_DEVICE_GRACE_SECONDS`` (default ``10``) controls the grace window
+of the :ref:`api_clients` "remember this device" feature. Two near-simultaneous
+requests carrying the same rotating cookie would otherwise make the second look
+like a replay (a stale counter) and destroy the session series. Within this many
+seconds, and from the same source IP, the immediately-previous counter is
+accepted without rotating, so concurrent requests converge on one token.
+
+This is an advanced knob with a sensible default; most deployments never need to
+change it. It is a system-wide protocol tolerance, not a per-user or per-realm
+setting, so it is configured here rather than by policy. Set it to ``0`` for
+strict, fail-secure behaviour (no grace: any stale counter is treated as theft).
+Widening it trades theft-detection tightness for fewer re-registrations when a
+client loses a rotation response.
+
+The window is anchored to the rotation, not to the last request: it is not
+refreshed on each grace hit. A client that never stores the rotated cookie (and
+so keeps presenting the previous counter) is therefore tolerated only for this
+many seconds and is then treated as theft, forcing the device to re-register.
+This is intentional — refreshing the window on every stale request would keep a
+never-rotating (or stolen) cookie alive indefinitely and defeat the rotation.
+
+.. versionadded:: 3.14

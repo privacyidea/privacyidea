@@ -21,11 +21,12 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideRouter } from "@angular/router";
 import { DASHBOARD_COLUMNS, DashboardWidget, WidgetInstance } from "@models/dashboard";
 import { AuthService } from "@services/auth/auth.service";
+import { DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { PolicyDetail, PolicyService } from "@services/policies/policies.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
-import { of } from "rxjs";
+import { of, Subject } from "rxjs";
 import { PoliciesWidgetComponent } from "./policies-widget.component";
 
 describe("PoliciesWidgetComponent", () => {
@@ -86,8 +87,8 @@ describe("PoliciesWidgetComponent", () => {
   });
 
   it("should render the active and inactive counts", () => {
-    const cells = fixture.nativeElement.querySelectorAll("td:last-child");
-    const values = Array.from(cells).map((td: Element) => td.textContent?.trim());
+    const cells: Element[] = Array.from(fixture.nativeElement.querySelectorAll("td:last-child"));
+    const values = cells.map((td) => td.textContent?.trim());
     expect(values).toContain("2");
     expect(values).toContain("1");
   });
@@ -118,5 +119,40 @@ describe("PoliciesWidgetComponent", () => {
 
     expect(fixture2.nativeElement.querySelector("table")).toBeNull();
     fixture2.destroy();
+  });
+
+  it("should set the state to loading while the request is still in flight", () => {
+    TestBed.inject(DashboardDataStore).invalidate();
+    policyMock.getPolicies.mockReturnValue(new Subject<MockPiResponse<PolicyDetail[]>>().asObservable());
+
+    const fixture2 = TestBed.createComponent(PoliciesWidgetComponent);
+    fixture2.componentRef.setInput("instance", instance);
+    fixture2.detectChanges();
+
+    expect(fixture2.componentInstance.state()).toBe("loading");
+    fixture2.destroy();
+  });
+
+  it("should set the state to error when the request fails", () => {
+    TestBed.inject(DashboardDataStore).invalidate();
+    const subject = new Subject<MockPiResponse<PolicyDetail[]>>();
+    policyMock.getPolicies.mockReturnValue(subject.asObservable());
+
+    const fixture2 = TestBed.createComponent(PoliciesWidgetComponent);
+    fixture2.componentRef.setInput("instance", instance);
+    fixture2.detectChanges();
+    subject.error(new Error("boom"));
+    fixture2.detectChanges();
+
+    expect(fixture2.componentInstance.state()).toBe("error");
+    fixture2.destroy();
+  });
+
+  it("should invalidate the cache and reload on reload()", () => {
+    policyMock.getPolicies.mockClear();
+
+    component.reload();
+
+    expect(policyMock.getPolicies).toHaveBeenCalledTimes(1);
   });
 });

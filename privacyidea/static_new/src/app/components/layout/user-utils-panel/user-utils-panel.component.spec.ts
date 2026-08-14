@@ -33,6 +33,7 @@ import { ClientsService } from "@services/clients/clients.service";
 import { ContainerTemplateService } from "@services/container-template/container-template.service";
 import { ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
+import { DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { DocumentationService } from "@services/documentation/documentation.service";
 import { EventService } from "@services/event/event.service";
@@ -216,10 +217,18 @@ describe("UserUtilsPanelComponent", () => {
     it("refreshes user details route", () => {
       content.routeUrl.set(`${ROUTE_PATHS.USERS_DETAILS}/alice`);
       component.refreshPage();
-      expect(userService.usersResource.reload).toHaveBeenCalled();
+      expect(userService.userResource.reload).toHaveBeenCalled();
       expect(tokenService.tokenResource.reload).toHaveBeenCalled();
       expect(tokenService.userTokenResource.reload).toHaveBeenCalled();
       expect(containerService.userContainersResource.reload).toHaveBeenCalled();
+    });
+
+    it("refreshes dashboard route", () => {
+      content.routeUrl.set(ROUTE_PATHS.DASHBOARD);
+      const dataStore = TestBed.inject(DashboardDataStore);
+      const refreshSpy = jest.spyOn(dataStore, "refreshAll");
+      component.refreshPage();
+      expect(refreshSpy).toHaveBeenCalled();
     });
 
     it("refreshes tokens route", () => {
@@ -305,6 +314,32 @@ describe("UserUtilsPanelComponent", () => {
     it("format for times equal or larger than an hour is 'H h mm min'", () => {
       sessionTimerService.remainingTime.set(60 * 60 * 1000);
       expect(component.sessionTimeFormat()).toBe("H'\u202Fh' mm'\u202Fmin'");
+    });
+  });
+
+  describe("session time over a day", () => {
+    it("sessionOverOneDay is false below a day and true at/above a day", () => {
+      sessionTimerService.remainingTime.set(24 * 60 * 60 * 1000 - 1);
+      expect(component.sessionOverOneDay()).toBe(false);
+
+      sessionTimerService.remainingTime.set(24 * 60 * 60 * 1000);
+      expect(component.sessionOverOneDay()).toBe(true);
+    });
+
+    it("sessionOverOneDay defaults to false when remainingTime is undefined", () => {
+      sessionTimerService.remainingTime.set(undefined);
+      expect(component.sessionOverOneDay()).toBe(false);
+    });
+
+    it("sessionDaysText shows only the days when there are no whole hours", () => {
+      sessionTimerService.remainingTime.set(24 * 60 * 60 * 1000);
+      expect(component.sessionDaysText()).toBe("1\u202Fd");
+    });
+
+    it("sessionDaysText appends whole hours (without minutes) when present", () => {
+      // 2 days, 5 hours, 30 minutes -> minutes are dropped.
+      sessionTimerService.remainingTime.set((2 * 24 + 5) * 60 * 60 * 1000 + 30 * 60 * 1000);
+      expect(component.sessionDaysText()).toBe("2\u202Fd 5\u202Fh");
     });
   });
 

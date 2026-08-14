@@ -18,7 +18,7 @@
  **/
 
 import { HttpClient, HttpParams, httpResource, HttpResourceRef } from "@angular/common/http";
-import { computed, effect, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { effect, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
 import { PiResponse } from "@app/app.component";
 import { AuditDownloadDialogComponent } from "@components/audit/audit-download-dialog/audit-download-dialog.component";
@@ -28,7 +28,7 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
-import { StringUtils } from "@utils/string.utils";
+import { FilterableTableService, FilterableTableServiceInterface } from "@services/table-utils/filterable-table-service";
 import { finalize, Observable, Subscription } from "rxjs";
 
 export interface Audit {
@@ -70,7 +70,7 @@ export interface AuditData {
   user_agent_version?: string;
 }
 
-const apiFilter = [
+const apiFilterKeys = [
   "action",
   "success",
   "authentication",
@@ -116,23 +116,9 @@ const apiFilterKeyMap: Record<string, string> = {
   container_type: "container_type"
 };
 
-const advancedApiFilter: string[] = [];
-
-export interface AuditServiceInterface {
-  apiFilterKeyMap: Record<string, string>;
-  apiFilter: string[];
-  advancedApiFilter: string[];
-  auditFilter: WritableSignal<FilterValue>;
-  filterParams: () => Record<string, string>;
-  pageSize: WritableSignal<number>;
-  pageIndex: WritableSignal<number>;
+export interface AuditServiceInterface extends FilterableTableServiceInterface {
   auditResource: HttpResourceRef<PiResponse<Audit> | undefined>;
-  sort: WritableSignal<Sort>;
   isDownloading: WritableSignal<boolean>;
-
-  clearFilter(): void;
-
-  handleFilterInput($event: Event): void;
 
   downloadCSV(): void;
 
@@ -140,39 +126,33 @@ export interface AuditServiceInterface {
 }
 
 @Injectable()
-export class AuditService implements AuditServiceInterface {
+export class AuditService extends FilterableTableService implements AuditServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly http = inject(HttpClient);
-  readonly apiFilterKeyMap = apiFilterKeyMap;
-  readonly apiFilter = apiFilter;
-  readonly advancedApiFilter = advancedApiFilter;
-  auditFilter = signal(new FilterValue());
-  filterParams = computed<Record<string, string>>(() => {
-    const allowed = [...this.apiFilter, ...this.advancedApiFilter];
-    const entries = Array.from(this.auditFilter().filterMap.entries())
-      .filter(([key]) => allowed.includes(key))
-      .map(([key, value]) => {
-        const v = (value ?? "").toString().trim();
-        return [key, v ? `*${v}*` : v] as const;
-      })
-      .filter(([, v]) => StringUtils.validFilterValue(v));
-    return Object.fromEntries(entries) as Record<string, string>;
-  });
+  readonly apiFilterKeys = apiFilterKeys;
+  override readonly apiFilterKeyMap = apiFilterKeyMap;
+
+  readonly activeFilter = signal(new FilterValue());
+
   pageSize = linkedSignal({
     source: () => this.authService.auditPageSize(),
     computation: (pageSize) => (pageSize > 0 ? pageSize : 10)
   });
+
   pageIndex = linkedSignal({
     source: () => ({
-      filterValue: this.auditFilter(),
+      filterValue: this.activeFilter(),
       pageSize: this.pageSize(),
       routeUrl: this.contentService.routeUrl()
     }),
     computation: () => 1
   });
+
+  sort = signal({ active: "serial", direction: "asc" } as Sort);
+
   private auditBaseUrl = environment.proxyUrl + "/audit/";
   auditResource = httpResource<PiResponse<Audit>>(() => {
     // Only load audit logs on the audit route.
@@ -191,22 +171,14 @@ export class AuditService implements AuditServiceInterface {
       }
     };
   });
-  sort = signal({ active: "serial", direction: "asc" } as Sort);
+
   isDownloading = signal(false);
 
   constructor() {
+    super();
     effect(() => {
       this.notificationService.handleResourceError(this.auditResource.error(), "audit data");
     });
-  }
-
-  clearFilter(): void {
-    this.auditFilter.set(this.auditFilter().copyWith({ value: "" }));
-  }
-
-  handleFilterInput($event: Event): void {
-    const input = $event.target as HTMLInputElement;
-    this.auditFilter.set(this.auditFilter().copyWith({ value: input.value }));
   }
 
   downloadCSV(): void {

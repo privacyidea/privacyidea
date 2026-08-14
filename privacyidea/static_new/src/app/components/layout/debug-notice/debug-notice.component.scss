@@ -1,0 +1,67 @@
+// Size of the square corner area the ribbon is clipped to.
+$corner-size: 96px;
+// The band spans that square's full diagonal, so both of its ends are clipped by the container
+// rather than stopping short of an edge — a narrower band leaves a gap beside the corner.
+$band-width: $corner-size * 1.4143;
+// A stacked pair is pushed apart along the diagonal by half a band each, so the pair stays centred
+// on the same diagonal a single band occupies.
+$band-height: 21px;
+$band-gap: 2px;
+$band-offset: ($band-height + $band-gap) * 0.5;
+// Room for two bands plus the shadow they cast on the lower one.
+$corner-size-stacked: 132px;
+
+.debug-ribbon {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  width: $corner-size;
+  height: $corner-size;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.debug-ribbon-text {
+  position: absolute;
+  // Centred on the square, so the band's centre line runs across its diagonal.
+  top: 24%;
+  left: 24%;
+  background-color: light-dark(var(--yellow-dark), var(--yellow-light-active));
+  color: white;
+  width: $band-width;
+  padding: 4px 0;
+  transform: translate(-50%, -50%) rotate(-45deg);
+  font-size: 0.8rem;
+  text-align: center;
+  font-weight: bold;
+  text-transform: uppercase;
+  box-shadow: var(--elevation-8);
+  pointer-events: auto;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.debug-ribbon-stacked {
+  width: $corner-size-stacked;
+  height: $corner-size-stacked;
+
+  .debug-ribbon-text {
+    width: $corner-size-stacked * 1.4143;
+  }
+
+  // Positive Y in the rotated frame points away from the corner, so the debug band sits nearer it.
+  .debug-ribbon-text:not(.debug-ribbon-text-passwords) {
+    transform: translate(-50%, -50%) rotate(-45deg) translateY(-$band-offset);
+  }
+
+  .debug-ribbon-text-passwords {
+    transform: translate(-50%, -50%) rotate(-45deg) translateY($band-offset);
+  }
+}
+
+.debug-ribbon-text-passwords {
+  background-color: var(--red-dark);
+  color: #fff;
+}

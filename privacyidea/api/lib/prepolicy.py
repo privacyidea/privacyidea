@@ -99,7 +99,7 @@ from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_ty
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.certificatetoken import ACTION as CERTIFICATE_ACTION
 from privacyidea.lib.tokens.indexedsecrettoken import PIIXACTION
-from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
+from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass, DEFAULT_USER_LABEL
 from privacyidea.lib.tokens.push_types import PushAction
 # Token specific imports!
 from privacyidea.lib.tokens.webauthn import (AUTHENTICATOR_ATTACHMENT_TYPES,
@@ -290,28 +290,49 @@ def init_random_pin(request=None, action=None):
 
 def realmadmin(request=None, action=None):
     """
-    This decorator adds the first REALM to the parameters if the
-    administrator, calling this API is a realm admin.
+    This decorator adds the realm(s) to the parameters if the administrator
+    calling this API is a realm admin.
     This way, if the admin calls e.g. GET /user without realm parameter,
-    he will not see all users, but only users in one of his realms.
+    he will not see all users, but only users in the realms granted by
+    matching policies.
 
-    TODO: If a realm admin is allowed to see more than one realm,
-          this is not handled at the moment. We need to change the underlying
-          library functions!
+    All realms from all matching policies are collected (union).
+    If any matching policy lists no realms (i.e. "all realms"), the realm
+    parameter is left unset so that the downstream function queries all
+    realms.
 
-    :param request: The HTTP reqeust
+    For the user-list action, several granted realms are injected as a list;
+    a single granted realm, or any other action, injects a single realm
+    string (endpoints other than the user list expect a scalar realm).
+
+    :param request: The HTTP request
     :param action: The action like ACTION.USERLIST
     """
     # This decorator is only valid for admins
     if g.logged_in_user.get("role") == ROLE.ADMIN:
         params = request.all_data
         if "realm" not in params:
-            # add the realm to params
-            po = Match.admin(g, action=action).policies()
-            # TODO: fix this: there could be a list of policies with a list
-            # of realms!
-            if po and po[0].get("realm"):
-                request.all_data["realm"] = po[0].get("realm")[0]
+            # Collect the union of realms from every matching policy.
+            matching_policies = Match.admin(g, action=action).policies()
+            if matching_policies:
+                all_realms = []
+                for pol in matching_policies:
+                    pol_realms = pol.get("realm")
+                    if not pol_realms:
+                        # A policy with no realm restriction means
+                        # "all realms" — leave request.all_data without
+                        # a realm filter so the downstream function
+                        # queries every realm.
+                        all_realms = []
+                        break
+                    all_realms.extend(pol_realms)
+                if all_realms:
+                    # Deduplicate while preserving order
+                    unique_realms = list(dict.fromkeys(all_realms))
+                    if len(unique_realms) == 1 or action != PolicyAction.USERLIST:
+                        request.all_data["realm"] = unique_realms[0]
+                    else:
+                        request.all_data["realm"] = unique_realms
 
     return True
 
@@ -1734,7 +1755,11 @@ def force_server_generate_key(request: Request, action=None):
     params = request.all_data
     tokentype = params.get("type", "HOTP")
     action = f"{tokentype.lower()}_{PolicyAction.FORCE_SERVER_GENERATE}"
-    force_genkey = Match.admin_or_user(g, action=action, user_obj=request.User).allowed()
+    # This is an opt-in enforcement toggle: the server is only forced to generate
+    # the key if a policy explicitly says so. Use enforced()/any() rather than the
+    # fail-open allowed(), which would force key generation on any system that has
+    # no admin/user policies defined at all.
+    force_genkey = Match.admin_or_user(g, action=action, user_obj=request.User).enforced()
     g.policies[action] = force_genkey
 
     return True
@@ -1769,12 +1794,35 @@ def check_external(request=None, action="init"):
     return True
 
 
+_api_key_required_deprecation_warned = False
+
+
+def _warn_api_key_required_deprecated():
+    """
+    Log the ``api_key_required`` deprecation once per process, so a deployment
+    that still relies on it is nudged toward API clients without spamming the log
+    on every request.
+    """
+    global _api_key_required_deprecation_warned
+    if not _api_key_required_deprecation_warned:
+        _api_key_required_deprecation_warned = True
+        log.warning("The 'api_key_required' policy (and the JWT minted by 'pi-manage api "
+                    "createtoken') is deprecated and will be removed in a future release. "
+                    "The X-API-Key API clients feature is intended to replace it.")
+
+
 def api_key_required(request=None, action=None):
     """
     This is a decorator for check_user_pass and check_serial_pass.
     It checks, if a policy scope=auth, action=apikeyrequired is set.
     If so, the validate request will only be performed, if a JWT token is passed
     with role=validate.
+
+    .. deprecated::
+        The ``api_key_required`` policy and its ``Authorization`` JWT (minted by
+        ``pi-manage api createtoken``) are deprecated and will be removed in a
+        future release. The X-API-Key API clients feature is intended to replace
+        them; it does not yet cover this use case.
     """
     user_object = request.User
 
@@ -1782,6 +1830,7 @@ def api_key_required(request=None, action=None):
     action = Match.user(g, scope=SCOPE.AUTHZ, action=PolicyAction.APIKEY, user_object=user_object).policies()
     # Do we have a policy?
     if action:
+        _warn_api_key_required_deprecated()
         # check if we were passed a correct JWT
         # Get the Authorization token from the header
         auth_token = request.headers.get('PI-Authorization')
@@ -2304,6 +2353,9 @@ def fido2_enroll(request, action):
                            else None)
     if passkey_attestation:
         request.all_data[PasskeyAction.AttestationConveyancePreference] = passkey_attestation
+
+    request.all_data[PasskeyAction.UserLabel] = get_first_policy_value(
+        PasskeyAction.UserLabel, default=DEFAULT_USER_LABEL, scope=SCOPE.ENROLL, user=user_object)
     if request and hasattr(request, "environ"):
         request.all_data['HTTP_ORIGIN'] = request.environ.get('HTTP_ORIGIN')
     else:

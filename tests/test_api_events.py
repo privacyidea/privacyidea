@@ -396,6 +396,92 @@ class APIEventsTestCase(MyApiTestCase):
             detail = res.json.get("detail")
             self.assertEqual(result.get("value"), [])
 
+    def test_06b_module_defaults(self):
+        # A handler whose result the request consumes is created as aborting on error
+        with self.app.test_request_context('/event/defaults/Federation',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            self.assertTrue(res.json.get("result").get("value").get("abort_on_error"))
+
+        # Any other handler is best-effort
+        with self.app.test_request_context('/event/defaults/UserNotification',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            self.assertFalse(res.json.get("result").get("value").get("abort_on_error"))
+
+        # An unknown handler module does not fail the request
+        with self.app.test_request_context('/event/defaults/DoesNotExist',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            self.assertFalse(res.json.get("result").get("value").get("abort_on_error"))
+
+    def test_06c_create_federation_event_defaults_to_abort(self):
+        # A Federation binding created without the parameter gets the default of its handler module
+        param = {
+            "name": "forward to the remote server",
+            "event": "validate_check",
+            "action": "forward",
+            "handlermodule": "Federation",
+            "position": "post"
+        }
+        with self.app.test_request_context('/event',
+                                           method='POST',
+                                           data=param,
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            event_id = res.json.get("result").get("value")
+
+        with self.app.test_request_context(f'/event/{event_id}',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            self.assertTrue(res.json.get("result").get("value")[0].get("abort_on_error"))
+
+        # An update that does not send the parameter keeps the stored value
+        param["id"] = event_id
+        param["ordering"] = 2
+        with self.app.test_request_context('/event',
+                                           method='POST',
+                                           data=param,
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+
+        with self.app.test_request_context(f'/event/{event_id}',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.json.get("result").get("value")[0].get("abort_on_error"))
+
+        # It can be switched off explicitly
+        param["abort_on_error"] = False
+        with self.app.test_request_context('/event',
+                                           method='POST',
+                                           data=param,
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+
+        with self.app.test_request_context(f'/event/{event_id}',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertFalse(res.json.get("result").get("value")[0].get("abort_on_error"))
+
+        with self.app.test_request_context(f'/event/{event_id}',
+                                           method='DELETE',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+
     def test_07_positions(self):
         # test the available Positions
 

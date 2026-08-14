@@ -32,6 +32,7 @@ import {
   MockNotificationService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { expectedLocalDateTimeFromInput } from "@testing/expected-local-date-time";
 import { MockTableUtilsService } from "@testing/mock-services/mock-table-utils-service";
 import { of } from "rxjs";
 import { AuditComponent } from "./audit.component";
@@ -188,5 +189,72 @@ describe("AuditComponent (unit)", () => {
     });
     expect(mockAuditService.pageSize()).toBe(15);
     expect(mockAuditService.pageIndex()).toBe(2);
+  });
+});
+
+describe("AuditComponent (template rendering)", () => {
+  let fixture: ComponentFixture<AuditComponent>;
+  let component: AuditComponent;
+  let mockAuditService: MockAuditService;
+
+  beforeEach(async () => {
+    TestBed.resetTestingModule();
+
+    await TestBed.configureTestingModule({
+      imports: [AuditComponent],
+      providers: [
+        provideHttpClient(),
+        { provide: ActivatedRoute, useValue: { params: of({ id: "123" }) } },
+        { provide: MockAuditService, useClass: MockAuditService },
+        { provide: MockTableUtilsService, useClass: MockTableUtilsService },
+        { provide: MockContentService, useClass: MockContentService },
+        { provide: MockAuthService, useClass: MockAuthService },
+        { provide: AuditService, useExisting: MockAuditService },
+        { provide: TableUtilsService, useExisting: MockTableUtilsService },
+        { provide: ContentService, useExisting: MockContentService },
+        { provide: AuthService, useExisting: MockAuthService },
+        MockLocalService,
+        MockNotificationService
+      ]
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(AuditComponent);
+    component = fixture.componentInstance;
+    mockAuditService = TestBed.inject(MockAuditService);
+    fixture.detectChanges();
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("renders the startdate column as local date/time, not the raw server string", () => {
+    const rows: AuditData[] = [{ startdate: "2026-01-15T10:00:00.123456" } as AuditData];
+    mockAuditService.auditResource.value.set({
+      detail: undefined,
+      id: 0,
+      jsonrpc: "",
+      signature: "",
+      time: 0,
+      version: "",
+      versionnumber: "",
+      result: {
+        value: {
+          count: 1,
+          auditdata: rows,
+          auditcolumns: [],
+          current: 0
+        },
+        status: true
+      }
+    });
+    fixture.detectChanges();
+
+    const startdateColumnIndex = component.columnKeysMap.findIndex((c) => c.key === "startdate");
+    const cells = fixture.nativeElement.querySelectorAll("tbody td");
+    const cellText = cells[startdateColumnIndex].textContent.trim();
+
+    expect(cellText).toBe(expectedLocalDateTimeFromInput("2026-01-15T10:00:00.123456"));
+    expect(cellText).not.toContain("2026-01-15T10:00:00");
   });
 });

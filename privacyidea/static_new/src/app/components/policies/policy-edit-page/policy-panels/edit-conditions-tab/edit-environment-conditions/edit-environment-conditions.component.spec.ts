@@ -253,7 +253,7 @@ describe("EditEnvironmentConditionsComponent", () => {
 
       component.handleEnterOnSearch(makeEvent(), select);
 
-      expect(spy).toHaveBeenCalledWith({ user_agents: ["PAM", "Keycloak"] });
+      expect(spy).toHaveBeenCalledWith({ user_agents: ["PAM", "privacyIDEA-Keycloak"] });
       expect(component.userAgentSearch()).toBe("");
       expect(select.close).toHaveBeenCalled();
     });
@@ -264,7 +264,7 @@ describe("EditEnvironmentConditionsComponent", () => {
 
       component.handleEnterOnSearch(makeEvent(), select);
 
-      expect(spy).toHaveBeenCalledWith({ user_agents: ["PAM", "Credential Provider"] });
+      expect(spy).toHaveBeenCalledWith({ user_agents: ["PAM", "privacyidea-cp"] });
       expect(select.close).toHaveBeenCalled();
     });
 
@@ -283,7 +283,7 @@ describe("EditEnvironmentConditionsComponent", () => {
     it("does nothing when every preset is already selected", () => {
       fixture.componentRef.setInput("policy", {
         name: "test-policy",
-        user_agents: [...component.userAgentPresets]
+        user_agents: component.userAgentOptions.map((o) => o.key)
       });
       fixture.detectChanges();
       const spy = jest.spyOn(component.policyEdit, "emit");

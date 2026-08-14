@@ -32,22 +32,23 @@ import copy
 
 from flask_babel import _
 
-from .lib.utils import (get_all_params, get_optional, map_error_to_code, send_error, verify_auth_token,
-                        get_auth_token_from_request, logged_in_user_from_token)
+from .lib.utils import (get_all_params, get_before_request_config, get_optional, map_error_to_code,
+                        get_auth_error_status_code, send_error, verify_auth_token, get_auth_token_from_request,
+                        logged_in_user_from_token)
 from .container import container_blueprint
 from ..lib.container import find_container_for_token, find_container_by_serial
 from ..lib.framework import get_app_config_value
+from ..lib.clients import identify_client_by_key, touch_client
+from ..models import ClientStatus, db
 from ..lib.policies.actions import PolicyAction
 from ..lib.user import get_user_from_param
 import logging
 from flask import request, g
-from privacyidea.lib.audit import getAudit
-from flask import current_app
-from privacyidea.lib.policy import PolicyClass, Match, SCOPE
-from privacyidea.lib.event import EventConfiguration
+from privacyidea.lib.policy import Match, SCOPE
 from privacyidea.lib.lifecycle import call_finalizers
+from privacyidea.lib.log import redact_url
 from privacyidea.api.auth import (user_required, admin_required, jwtauth)
-from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_object, get_privacyidea_node
+from privacyidea.lib.config import ensure_no_config_object, get_privacyidea_node
 from privacyidea.lib.token import get_token_type, get_token_owner
 from privacyidea.api.ttype import ttype_blueprint
 from privacyidea.api.validate import validate_blueprint
@@ -76,13 +77,14 @@ from .subscriptions import subscriptions_blueprint
 from .monitoring import monitoring_blueprint
 from .tokengroup import tokengroup_blueprint
 from .serviceid import serviceid_blueprint
+from .clients import clients_blueprint
 from .healthcheck import healthz_blueprint
 from .info import info_blueprint
 from privacyidea.api.lib.postpolicy import postrequest, sign_response, hide_version
-from ..lib.error import (PrivacyIDEAError,
+from ..lib.error import (PrivacyIDEAError, Error,
                          AuthError, UserError,
                          PolicyError, ResourceNotFoundError)
-from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent
+from privacyidea.lib.utils import get_plugin_info_from_useragent, AUTH_RESPONSE
 from privacyidea.lib.user import User
 import datetime
 import threading
@@ -95,8 +97,67 @@ log = logging.getLogger(__name__)
 # The decorated functions are called before and after *every* request.
 @token_blueprint.before_app_request
 def log_begin_request():
-    log.debug(f"Begin handling of request {request.full_path!r}")
+    log.debug(f"Begin handling of request {redact_url(request.full_path)!r}")
     g.startdate = datetime.datetime.now()
+
+
+@token_blueprint.before_app_request
+def identify_api_client():
+    """
+    Identify the API client from the ``X-API-Key`` header for *every* request
+    and expose it as ``g.client_id`` (``None`` when no valid client).
+
+    The header is an *optional* identification mechanism, so an absent, unknown
+    or disabled key simply leaves the request unidentified (``g.client_id =
+    None``) rather than rejecting it - otherwise a stale key sent to an endpoint
+    that does not use API-key auth (e.g. the WebUI) would break that request.
+    Endpoints that require an identified client (``/validate/capabilities``,
+    ``/validate/remember_device``) enforce it themselves.
+
+    A *known* key whose client is disabled (``suspended``) is stashed on
+    ``g.rejected_api_client`` so an endpoint with an audit object can record that
+    a real, previously issued key is still being used after it was disabled. An
+    unknown/invalid key is only logged (auditing every probe would flood the
+    audit log).
+    """
+    g.client_id = None
+    g.rejected_api_client = None
+    api_key = request.headers.get("X-API-Key")
+    if not api_key:
+        return
+
+    try:
+        client = identify_client_by_key(api_key)
+    except Exception as exc:
+        # Identification is optional and runs in a global before-request hook, so
+        # a failure here (e.g. a transient DB error) must never turn an otherwise
+        # valid request into a 500. Leave the request unidentified and continue.
+        log.warning(f"Could not resolve the X-API-Key; treating the request as unidentified: {exc}")
+        g.client_id = None
+        g.rejected_api_client = None
+        return
+
+    if client is None:
+        # Unknown key_id or wrong secret: do not reject app-wide, do not audit.
+        # DEBUG, not WARNING: a spoofable header on every request would flood logs.
+        log.debug("Ignoring an unknown or invalid X-API-Key.")
+    elif client.status == ClientStatus.ACTIVE:
+        g.client_id = client.id
+        # Refresh the client's usage timestamp, throttled so a busy client does
+        # not issue a DB write on every request. This is best-effort and isolated:
+        # a write failure here must not un-identify an otherwise valid client.
+        try:
+            touch_client(client)
+        except Exception as exc:
+            # touch_client commits; a failed commit leaves the session in a failed
+            # transaction, so roll back or the real endpoint dies with
+            # PendingRollbackError - defeating the best-effort intent.
+            db.session.rollback()
+            log.warning(f"Could not update the client's last_used_at timestamp: {exc}")
+    else:
+        # Known key, valid secret, but the client is disabled.
+        g.rejected_api_client = {"client_id": client.id, "status": client.status}
+        log.warning(f"A {client.status} API key was presented (client {client.id}).")
 
 
 @token_blueprint.teardown_app_request
@@ -110,7 +171,7 @@ def teardown_request(exc):
         # Also during calling webui, there is no audit_object, yet.
         pass
     call_finalizers()
-    log.debug(f"End handling of request {request.full_path!r}")
+    log.debug(f"End handling of request {redact_url(request.full_path)!r}")
 
 
 @token_blueprint.before_request
@@ -200,6 +261,7 @@ def before_userendpoint_request():
 @monitoring_blueprint.before_request
 @tokengroup_blueprint.before_request
 @serviceid_blueprint.before_request
+@clients_blueprint.before_request
 @admin_required
 def before_admin_request():
     before_request()
@@ -301,6 +363,14 @@ def resolve_logged_in_user():
         # ...to restrict token view, audit view or token actions.
         request.all_data["user"] = g.logged_in_user.get("username")
         request.all_data["realm"] = g.logged_in_user.get("realm")
+        # The resolver is part of the identity of the logged-in user and is determined below. It has to be
+        # removed before the user object is created, because get_user_from_param() would otherwise build
+        # a user object with the resolver taken from the request.
+        request.all_data.pop("resolver", None)
+        # The userid is a stand-alone filter on the token owner and is not part of the forced user
+        # identity. A user-role caller's list is already scoped to their own tokens, so it is dropped
+        # here as well: for them it could only ever match their own uid or nothing.
+        request.all_data.pop("userid", None)
 
     try:
         request.User = get_user_from_param(request.all_data)
@@ -315,22 +385,6 @@ def resolve_logged_in_user():
         # In cases like the policy API, the parameter "user" is part of the
         # policy and will not resolve to a user object
         request.User = User()
-
-
-def get_before_request_config():
-    """
-    Gets the policy object, the audit object and the event configuration object and sets them to the global flask
-    variable. Additionally, reads the client IP and the HTTP headers from the request object and writes them to the
-    global flask variable.
-    """
-    g.policy_object = PolicyClass()
-    g.audit_object = getAudit(current_app.config, g.startdate)
-    g.event_config = EventConfiguration()
-    # access_route contains the ip addresses of all clients, hops and proxies.
-    g.client_ip = get_client_ip(request, get_from_config(SYSCONF.OVERRIDECLIENT))
-    # Save the HTTP header in the localproxy object
-    g.request_headers = request.headers
-    g.policies = {}
 
 
 def before_request():
@@ -463,6 +517,7 @@ def before_request():
 @recover_blueprint.after_request
 @tokengroup_blueprint.after_request
 @serviceid_blueprint.after_request
+@clients_blueprint.after_request
 @container_blueprint.after_request
 @info_blueprint.after_request
 @jwtauth.after_request
@@ -505,6 +560,12 @@ def auth_error(error):
     if "audit_object" in g:
         message = ''
 
+        if request.blueprint == "jwtauth" and request.path.endswith("/auth"):
+            # Mark failed logins as REJECT like _finalize_auth_response() in
+            # validate.py does, so the "!CHALLENGE" filter in check_max_auth_fail
+            # matches them (SQL "!=" does not match NULL).
+            g.audit_object.log({"authentication": AUTH_RESPONSE.REJECT})
+
         if hasattr(error, 'message'):
             message = error.message
 
@@ -518,12 +579,16 @@ def auth_error(error):
                                       user_object=request.User if hasattr(request, 'User') else None).any()
             if hide_message:
                 error.message = _("Authentication failed.")
-                error.details["message"] = error.message
-                error.details.pop("loginmode", None)
+                # Remap to the generic AUTHENTICATE id, so a masked failure is
+                # indistinguishable from any other unspecified auth failure.
+                error.id = Error.AUTHENTICATE
+                # Replace the details completely, so future additions to the
+                # details cannot accidentally leak information either.
+                error.details = {"message": error.message}
 
         g.audit_object.add_to_log({"info": message}, add_with_comma=True)
 
-    return send_error(error.message, error_code=error.id, details=error.details), map_error_to_code(error)
+    return send_error(error.message, error_code=error.id, details=error.details), get_auth_error_status_code(error)
 
 
 @system_blueprint.errorhandler(PolicyError)
@@ -549,7 +614,7 @@ def auth_error(error):
 def policy_error(error):
     if "audit_object" in g:
         g.audit_object.add_to_log({"info": error.message}, add_with_comma=True)
-    return send_error(error.message, error_code=error.id), map_error_to_code(error)
+    return send_error(error.message, error_code=error.id), get_auth_error_status_code(error)
 
 
 @system_blueprint.app_errorhandler(ResourceNotFoundError)
@@ -578,7 +643,7 @@ def resource_not_found_error(error):
     """
     if "audit_object" in g:
         g.audit_object.log({"info": error.message})
-    return send_error(error.message, error_code=error.id), map_error_to_code(error)
+    return send_error(error.message, error_code=error.id), get_auth_error_status_code(error)
 
 
 @system_blueprint.app_errorhandler(PrivacyIDEAError)
@@ -608,7 +673,7 @@ def privacyidea_error(error):
     """
     if "audit_object" in g:
         g.audit_object.log({"info": str(error)})
-    return send_error(str(error), error_code=error.id), map_error_to_code(error)
+    return send_error(str(error), error_code=error.id), get_auth_error_status_code(error)
 
 
 @system_blueprint.app_errorhandler(NotImplementedError)

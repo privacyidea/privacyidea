@@ -18,6 +18,7 @@
  **/
 import { Component, computed, ElementRef, inject, signal, ViewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
+import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ServiceId, ServiceIdService, ServiceIdServiceInterface } from "@services/service-id/service-id.service";
@@ -34,6 +35,7 @@ import { CopyableComponent } from "@components/shared/copyable/copyable.componen
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { renderedRows, RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 
 @Component({
@@ -45,6 +47,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
     MatSortModule,
     MatIconModule,
     MatButtonModule,
+    MatCheckboxModule,
     MatTooltipModule,
     ScrollToTopDirective,
     MatFormField,
@@ -69,16 +72,24 @@ export class ServiceIdsComponent {
   totalLength: WritableSignal<number> = computed(
     () => this.serviceIdService.serviceIds().length
   ) as WritableSignal<number>;
+
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
-  displayedColumns: string[] = ["id", "servicename", "description", "actions"];
+
+  displayedColumns: string[] = ["select", "id", "servicename", "description"];
+
   serviceIdDataSource = computed(() => {
     const services = this.serviceIdService.serviceIds();
     const dataSource = new MatTableDataSource(services);
     dataSource.paginator = this.paginator;
     dataSource.sort = this.sort;
     return dataSource;
+  });
+
+  selector = new RowSelector<ServiceId>({
+    keyGetter: (service) => service.servicename,
+    visibleRows: renderedRows(this.serviceIdDataSource)
   });
 
   onCreateNewServiceId(): void {
@@ -89,21 +100,26 @@ export class ServiceIdsComponent {
     this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_DETAILS + serviceId.servicename);
   }
 
-  deleteServiceId(serviceId: ServiceId): void {
+  deleteSelected(): void {
+    const selected = this.selector.selectedRows();
+    if (selected.length === 0) {
+      return;
+    }
     this.dialogService
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Delete Service ID`,
-          items: [serviceId.servicename],
+          title: $localize`Delete Service IDs`,
+          items: selected.map((row) => row.servicename),
           itemType: "service-id",
           confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
-      .subscribe({
-        next: (result) => {
-          if (result) this.serviceIdService.deleteServiceId(serviceId.servicename);
+      .subscribe((result) => {
+        if (result) {
+          selected.forEach((row) => void this.serviceIdService.deleteServiceId(row.servicename).catch(() => undefined));
+          this.selector.deselectAllRows();
         }
       });
   }

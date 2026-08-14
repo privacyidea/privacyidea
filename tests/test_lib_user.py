@@ -11,8 +11,8 @@ from testfixtures import log_capture, LogCapture
 from privacyidea.config import TestingConfig
 from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.framework import get_app_config
-from privacyidea.lib.realm import (set_realm, delete_realm, get_realm_id, get_ordered_resolvers)
-from privacyidea.lib.resolver import (save_resolver, delete_resolver)
+from privacyidea.lib.realm import (set_realm, delete_realm, get_realm_id, get_realms, get_ordered_resolvers)
+from privacyidea.lib.resolver import (save_resolver, delete_resolver, get_resolver_list)
 from privacyidea.lib.resolvers.EntraIDResolver import (CLIENT_ID, CLIENT_CREDENTIAL_TYPE, ClientCredentialType,
                                                        CLIENT_SECRET, TENANT)
 from privacyidea.lib.user import (User, create_user,
@@ -58,20 +58,36 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
                     "givenname" : "givenname", \
                     "password" : "password", \
                     "phone": "phone", \
-                    "mobile": "mobile"}'
-                  }
+                    "mobile": "mobile"}'}
 
-    def test_00_create_user(self):
+    def setUp(self):
+        super().setUp()
+        # Remember the node config so tests that override it can be rolled back in tearDown
+        self._orig_node_uuid = get_app_config().get("PI_NODE_UUID")
+        # Create the primary resolver and realm used by most tests
         rid = save_resolver({"resolver": self.resolvername1,
                              "type": "passwdresolver",
                              "fileName": PWFILE})
         self.assertTrue(rid > 0, rid)
+        (added, failed) = set_realm(self.realm1, [{'name': self.resolvername1}])
+        self.assertEqual(len(failed), 0, failed)
+        self.assertEqual(len(added), 1, added)
 
-        (added, failed) = set_realm(self.realm1,
-                                    [{'name': self.resolvername1}])
-        self.assertTrue(len(failed) == 0)
-        self.assertTrue(len(added) == 1)
+    def tearDown(self):
+        # Remove all realms first, so that no resolver is still assigned to a realm, then remove
+        # all resolvers. This keeps cleanup independent of the specific names a test created.
+        for realm in list(get_realms()):
+            delete_realm(realm, delete_custom_attributes=True)
+        for resolver in list(get_resolver_list()):
+            delete_resolver(resolver)
+        # Restore the node config that individual tests may have overridden
+        if self._orig_node_uuid is None:
+            get_app_config().pop("PI_NODE_UUID", None)
+        else:
+            get_app_config()["PI_NODE_UUID"] = self._orig_node_uuid
+        super().tearDown()
 
+    def test_create_user(self):
         user = User(login="root",
                     realm=self.realm1,
                     resolver=self.resolvername1)
@@ -87,7 +103,7 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
         expected = "User(login='root', realm='realm1', resolver='resolver1')"
         self.assertTrue(user_repr == expected, user_repr)
 
-    def test_01_resolvers_of_user(self):
+    def test_resolvers_of_user(self):
         user = User(login="root",
                     realm=self.realm1)
 
@@ -102,15 +118,14 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
         self.assertTrue(self.resolvername1 in resolvers, resolvers)
         self.assertFalse(self.resolvername2 in resolvers, resolvers)
 
-    def test_02_get_user_identifiers(self):
-        # create user by login
+    def test_get_user_identifiers(self):
         user = User(login="root",
                     realm=self.realm1)
         (uid, rtype, resolvername) = user.get_user_identifiers()
         self.assertEqual("0", uid)
         self.assertEqual("passwdresolver", rtype)
         self.assertEqual(self.resolvername1, resolvername)
-        self.assertEqual(user.realm_id, 1)
+        self.assertEqual(get_realm_id(self.realm1), user.realm_id)
 
         # create user by uid. fail, since the resolver is missing
         self.assertRaises(UserError, User, realm=self.realm1, uid="0")
@@ -120,13 +135,13 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
         self.assertEqual("root", user2.login)
         self.assertEqual("passwdresolver", rtype)
         self.assertEqual(self.resolvername1, resolvername)
-        self.assertEqual(user.realm_id, 1)
+        self.assertEqual(user.realm_id, user2.realm_id)
 
-    def test_03_get_username(self):
+    def test_get_username(self):
         username = get_username("0", self.resolvername1)
         self.assertTrue(username == "root", username)
 
-    def test_05_get_user_list(self):
+    def test_get_user_list(self):
         # all users
         userlist = get_user_list()
         self.assertTrue(len(userlist) > 10, userlist)
@@ -149,7 +164,120 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
                                   "resolver": self.resolvername2})
         self.assertTrue(len(userlist) == 0, userlist)
 
-    def test_06_get_user_phone(self):
+    def test_get_user_list_dedup_without_username_attribute(self):
+        """
+        get_user_list returns all users of a realm even when the requested attributes
+        do not include 'username'. The username is always fetched internally so users can
+        be deduplicated across resolvers, and is stripped from the output when not requested.
+        """
+        # Request only 'givenname' — username is not in the requested attributes
+        userlist = get_user_list({"realm": self.realm1},
+                                 requested_attributes=["givenname"])
+        # The passwd file has 48 users; we must get all of them, not just 1
+        self.assertTrue(len(userlist) > 1,
+                        f"Expected many users but got {len(userlist)}")
+        # All results should have the full count from the resolver
+        full_list = get_user_list({"realm": self.realm1})
+        self.assertEqual(len(userlist), len(full_list))
+        # username should NOT appear in the returned dicts since it wasn't requested
+        for u in userlist:
+            self.assertNotIn("username", u,
+                             "username should be stripped from output when not requested")
+        # givenname should be present
+        self.assertTrue(any("givenname" in u for u in userlist))
+
+    def test_get_user_list_dedup_with_username_attribute(self):
+        """
+        When requested_attributes includes 'username', it should be present in output.
+        """
+        userlist = get_user_list({"realm": self.realm1},
+                                 requested_attributes=["username", "givenname"])
+        full_list = get_user_list({"realm": self.realm1})
+        self.assertEqual(len(userlist), len(full_list))
+        # username should be present in results
+        for u in userlist:
+            self.assertIn("username", u)
+
+    def test_get_user_list_comma_separated_realms(self):
+        # Set up first realm
+        rid = save_resolver({"resolver": self.resolvername1,
+                             "type": "passwdresolver",
+                             "fileName": PWFILE})
+        self.assertTrue(rid > 0, rid)
+        (added, failed) = set_realm(self.realm1,
+                                    [{'name': self.resolvername1}])
+        self.assertTrue(len(failed) == 0)
+        self.assertTrue(len(added) == 1)
+
+        # Set up a second realm with a different resolver
+        rid = save_resolver({"resolver": self.resolvername3,
+                             "type": "passwdresolver",
+                             "fileName": PWFILE2})
+        self.assertTrue(rid > 0, rid)
+        (added, failed) = set_realm(self.realm2,
+                                    [{'name': self.resolvername3}])
+        self.assertTrue(len(failed) == 0)
+        self.assertTrue(len(added) == 1)
+
+        # Comma-separated realms should return users from both realms
+        userlist = get_user_list({"realm": f"{self.realm1},{self.realm2}"})
+        realms_in_result = set(u.get("realm") for u in userlist)
+        self.assertIn(self.realm1, realms_in_result)
+        self.assertIn(self.realm2, realms_in_result)
+
+        # Verify it returns more users than a single realm
+        userlist_realm1 = get_user_list({"realm": self.realm1})
+        userlist_realm2 = get_user_list({"realm": self.realm2})
+        self.assertEqual(len(userlist), len(userlist_realm1) + len(userlist_realm2))
+
+        # Comma-separated with spaces should also work
+        userlist_spaces = get_user_list({"realm": f" {self.realm1} , {self.realm2} "})
+        self.assertEqual(len(userlist_spaces), len(userlist))
+
+        # List form should also work
+        userlist_list = get_user_list({"realm": [self.realm1, self.realm2]})
+        self.assertEqual(len(userlist_list), len(userlist))
+
+        # A single realm with surrounding whitespace must be stripped, too
+        userlist_padded = get_user_list({"realm": f" {self.realm1} "})
+        self.assertEqual(len(userlist_padded), len(userlist_realm1))
+        self.assertTrue(len(userlist_padded) > 0)
+
+        delete_realm(self.realm2)
+
+    def test_get_user_list_empty_realm_filter_does_not_list_all_realms(self):
+        # A realm filter that is present but normalises to no valid realm names
+        # (e.g. only commas or whitespace) must not fall through to searching
+        # every realm, which would let a realm-scoped caller enumerate all users.
+        rid = save_resolver({"resolver": self.resolvername1,
+                             "type": "passwdresolver",
+                             "fileName": PWFILE})
+        self.assertTrue(rid > 0, rid)
+        (added, failed) = set_realm(self.realm1, [{'name': self.resolvername1}])
+        self.assertTrue(len(failed) == 0)
+        self.assertTrue(len(added) == 1)
+
+        rid = save_resolver({"resolver": self.resolvername3,
+                             "type": "passwdresolver",
+                             "fileName": PWFILE2})
+        self.assertTrue(rid > 0, rid)
+        (added, failed) = set_realm(self.realm2, [{'name': self.resolvername3}])
+        self.assertTrue(len(failed) == 0)
+        self.assertTrue(len(added) == 1)
+
+        # Sanity check: without any realm filter, all realms are searched.
+        all_users = get_user_list({})
+        self.assertTrue(len(all_users) > 0)
+
+        # A comma-only / whitespace-only realm filter yields no valid realm and
+        # must return an empty list, not the users of every realm.
+        for empty_filter in (",", " , ", "   ", [",", ""], ["", " "]):
+            userlist = get_user_list({"realm": empty_filter})
+            self.assertEqual(userlist, [], empty_filter)
+
+        delete_realm(self.realm2)
+
+    def test_get_user_phone(self):
         phone = User(login="cornelius", realm=self.realm1).get_user_phone()
         self.assertTrue(phone == "+49 561 3166797", phone)
 
@@ -157,7 +285,7 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
                      realm=self.realm1).get_user_phone("landline")
         self.assertTrue(phone == "", phone)
 
-    def test_07_get_user_realms(self):
+    def test_get_user_realms(self):
         user = User(login="cornelius", realm=self.realm1)
         realms = user.get_user_realms()
         self.assertTrue(len(realms) == 1, realms)
@@ -174,7 +302,7 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
         self.assertTrue(len(realms) == 1, realms)
         self.assertTrue(self.realm1 in realms, realms)
 
-    def test_08_split_user(self):
+    def test_split_user(self):
         user = split_user("user@realm1")
         self.assertTrue(user == ("user", "realm1"), user)
 
@@ -192,7 +320,7 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
         self.assertEqual(user, ("user@non_existing_realm.com", ""))
 
     @log_capture(level=logging.DEBUG)
-    def test_09_get_user_from_param(self, capture):
+    def test_get_user_from_param(self, capture):
         # enable splitAtSign
         set_privacyidea_config("splitAtSign", True)
         user = get_user_from_param({"user": "cornelius"})
@@ -272,8 +400,10 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
         # reset splitAtSign setting
         set_privacyidea_config("splitAtSign", True)
 
-    #    @log_capture(level=logging.DEBUG)
-    def test_10_check_user_password(self):
+    def test_check_user_password(self):
+        save_resolver({"resolver": self.resolvername3,
+                       "type": "passwdresolver",
+                       "fileName": PWFILE2})
         (added, failed) = set_realm("passwordrealm",
                                     [{'name': self.resolvername3}])
         self.assertEqual(0, len(failed))
@@ -329,6 +459,13 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
 
         # test cornelius@realm2, since he is located in more than one
         # resolver.
+        save_resolver({"resolver": self.resolvername3,
+                       "type": "passwdresolver",
+                       "fileName": PWFILE2})
+        (added, failed) = set_realm(self.realm2,
+                                    [
+                                        {'name': self.resolvername1, 'priority': 1},
+                                        {'name': self.resolvername3, 'priority': 2}])
         self.assertEqual(User(login="cornelius",
                               realm="realm2").check_password("test"), None)
 
@@ -344,10 +481,7 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
                 user.check_password("test")
                 mock_check_password.assert_called_with("1234", "test", "cornelius")
 
-        delete_realm("realm2")
-        delete_realm("passwordrealm")
-
-    def test_11_get_search_fields(self):
+    def test_get_search_fields(self):
         user = User(login="cornelius", realm=self.realm1)
         s_f = user.get_search_fields()
         self.assertTrue(self.resolvername1 in s_f, s_f)
@@ -355,7 +489,7 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
         self.assertTrue("username" in resolver_s_f, resolver_s_f)
         self.assertTrue("userid" in resolver_s_f, resolver_s_f)
 
-    def test_12_resolver_priority(self):
+    def test_resolver_priority(self):
         # Test the priority of resolvers.
         # we create resolvers with the same user in it. Depending on the
         # priority we either get the one or the other user.
@@ -391,7 +525,7 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
         user = get_user_from_param({"user": "cornelius", "realm": "double"})
         self.assertEqual(user.resolver, "double3")
 
-    def test_13_update_user(self):
+    def test_update_user(self):
         realm = "sqlrealm"
         resolver = "SQL1"
         parameters = self.parameters
@@ -419,7 +553,7 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
         user.update_user_info({"givenname": "",
                                "username": "wordpressuser"})
 
-    def test_14_create_delete_user(self):
+    def test_create_delete_user(self):
         realm = "sqlrealm"
         resolver = "SQL1"
         parameters = self.parameters
@@ -447,15 +581,11 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
         r = user.delete()
         self.assertTrue(r)
 
-    def test_15_user_exist(self):
+    def test_user_exist(self):
         root = User("root", resolver=self.resolvername1, realm=self.realm1)
         self.assertTrue(root.exist())
-        delete_realm("realm1")
 
-    def test_16_ordered_resolver(self):
-        save_resolver({"resolver": "resolver1",
-                       "type": "passwdresolver",
-                       "fileName": PWFILE})
+    def test_ordered_resolver(self):
         save_resolver({"resolver": "resolver2",
                        "type": "passwdresolver",
                        "fileName": PWFILE})
@@ -505,9 +635,10 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
         # Now check with nodes given
         nd1_uuid = "8e4272a9-9037-40df-8aa3-976e4a04b5a9"
         nd2_uuid = "d1d7fde6-330f-4c12-88f3-58a1752594bf"
-        node1 = NodeName(id=nd1_uuid, name="Node1")
-        node2 = NodeName(id=nd2_uuid, name="Node2")
-        db.session.add_all([node1, node2])
+        # Use merge to handle the case where nodes may already exist from a failed prior run
+        node1 = db.session.merge(NodeName(id=nd1_uuid, name="Node1"))
+        node2 = db.session.merge(NodeName(id=nd2_uuid, name="Node2"))
+        db.session.flush()
 
         (added, failed) = set_realm("sort_node_realm",
                                     [
@@ -576,14 +707,10 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
         self.assertEqual(15, len(ul), ul)
 
         delete_realm("sort_node_realm")
-        delete_resolver("resolver1")
-        delete_resolver("resolver2")
-        delete_resolver("reso3")
-        delete_resolver("reso4")
         db.session.delete(node1)
         db.session.delete(node2)
 
-    def test_17_check_nonascii_user(self):
+    def test_check_nonascii_user(self):
         realm = "sqlrealm"
         resolver = "SQL1"
         parameters = self.parameters
@@ -631,7 +758,7 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
                               "(['unknown']) not available in column mapping.\", id=905)"))
 
     @ldap3mock.activate
-    def test_18_user_with_several_phones(self):
+    def test_user_with_several_phones(self):
         ldap3mock.setLDAPDirectory(LDAPDirectory_small)
         params = ({'LDAPURI': 'ldap://localhost',
                    'LDAPBASE': 'o=test',
@@ -668,11 +795,8 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
         r = u.get_user_phone("mobile", index=2)
         self.assertEqual(r, "")
 
-        delete_realm("ldap")
-        delete_resolver("ldapresolver")
-
     @ldap3mock.activate
-    def test_19_compare_user_object(self):
+    def test_compare_user_object(self):
         set_realm(self.realm1, [{'name': self.resolvername1}])
         ldap3mock.setLDAPDirectory(LDAPDirectory_small)
         params = ({'LDAPURI': 'ldap://localhost',
@@ -709,13 +833,8 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
         self.assertTrue(User("salesman", "ldap") == User("salesman", "ldap"))
         self.assertTrue(User(resolver='ldapresolver', realm="ldap",
                              uid="039b36ef-e7c0-42f3-9bf9-ca6a6c0d4d54") == User("salesman", "ldap"))
-        delete_realm("ldap")
-        delete_resolver("ldapresolver")
 
-    def test_20_available_info_keys(self):
-        save_resolver({"resolver": self.resolvername1, "type": "passwdresolver",
-                       "fileName": PWFILE})
-        set_realm(self.realm1, [{'name': self.resolvername1}])
+    def test_available_info_keys(self):
         user = User("root", self.realm1)
 
         info_keys = user.available_info_keys
@@ -723,14 +842,7 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
             {"username", "userid", "givenname", "surname", "phone", "mobile", "email", "description", "cryptpass"},
             set(info_keys))
 
-        # Cleanup
-        delete_realm(self.realm1)
-        delete_resolver(self.resolvername1)
-
-    def test_21_get_specific_info(self):
-        save_resolver({"resolver": self.resolvername1, "type": "passwdresolver",
-                       "fileName": PWFILE})
-        set_realm(self.realm1, [{'name': self.resolvername1}])
+    def test_get_specific_info(self):
         user = User("root", self.realm1)
 
         # get specific info keys
@@ -767,13 +879,8 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
         info = non_existing_user.get_specific_info()
         self.assertEqual({}, info)
 
-        # Cleanup
-        delete_realm(self.realm1)
-        delete_resolver(self.resolvername1)
-
-    def test_22_get_attributes(self):
-        self.setUp_user_realms()
-        user = User(login="hans", realm=self.realm1)
+    def test_get_attributes(self):
+        user = User(login="cornelius", realm=self.realm1)
         realm_id = get_realm_id(self.realm1)
 
         # user has no attributes yet
@@ -800,15 +907,13 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
 
         # Clean up
         user.delete_attribute()
-        delete_realm(self.realm1)
-        delete_resolver(self.resolvername1)
 
-    def test_90_masking_users_in_ordered_resolvers(self):
+    def test_masking_users_in_ordered_resolvers(self):
         # Two resolvers point at different passwd files that both contain a
-        # user "cornelius" with the same uid. resolvername1 (PWFILE3) has the
+        # user "cornelius" with the same uid. "mask_resolver" (PWFILE3) has the
         # higher priority (1) and must mask resolvername2 (PWFILE, priority 2).
         realmname = "masked_realm"
-        save_resolver({"resolver": self.resolvername1,
+        save_resolver({"resolver": "mask_resolver",
                        "type": "passwdresolver",
                        "fileName": PWFILE3})
         save_resolver({"resolver": self.resolvername2,
@@ -817,7 +922,7 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
 
         (added, failed) = set_realm(realmname,
                                     [
-                                        {'name': self.resolvername1, 'priority': 1},
+                                        {'name': "mask_resolver", 'priority': 1},
                                         {'name': self.resolvername2, 'priority': 2}])
         self.assertEqual(len(failed), 0)
         self.assertEqual(len(added), 2)
@@ -828,11 +933,11 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
         self.assertEqual(1, len(r), r)
         user = r[0]
         # The returned entry must be the one from the higher-priority
-        # resolver (resolvername1 → PWFILE3). The passwdresolver splits the
+        # resolver (mask_resolver → PWFILE3). The passwdresolver splits the
         # GECOS field "Cornelius K" into givenname="Cornelius", surname="K",
         # with email info@netknights.it — distinct from PWFILE's
         # surname="Kölbel" / cornelius.koelbel@netknights.it.
-        self.assertEqual(self.resolvername1, user.get("resolver"), user)
+        self.assertEqual("mask_resolver", user.get("resolver"), user)
         self.assertEqual("info@netknights.it", user.get("email"), user)
         self.assertEqual("K", user.get("surname"), user)
         self.assertEqual("cornelius", user.get("username"), user)
@@ -840,13 +945,10 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
         self.assertEqual(realmname, user.get("realm"), user)
 
         delete_realm(realmname)
-        delete_resolver(self.resolvername1)
+        delete_resolver("mask_resolver")
         delete_resolver(self.resolvername2)
 
-    def test_50_user_attributes(self):
-        save_resolver({"resolver": self.resolvername1, "type": "passwdresolver",
-                       "fileName": PWFILE})
-        set_realm(self.realm1, [{'name': self.resolvername1}])
+    def test_user_attributes(self):
         user = User(login="root",
                     realm=self.realm1)
         r = user.set_attribute("hans", "wurst")
@@ -875,14 +977,8 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
         self.assertEqual(attrs.get("hans"), None)
         self.assertEqual(attrs.get("hugen"), None)
         self.assertEqual(attrs.get("key"), None)
-        # Cleanup
-        delete_realm(self.realm1)
-        delete_resolver(self.resolvername1)
 
-    def test_51_internal_user_attributes(self):
-        save_resolver({"resolver": self.resolvername1, "type": "passwdresolver",
-                       "fileName": PWFILE})
-        set_realm(self.realm1, [{'name': self.resolvername1}])
+    def test_internal_user_attributes(self):
         user = User(login="root", realm=self.realm1)
 
         # Set + read JSON-typed values (dict and scalar string)
@@ -922,11 +1018,7 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
         self.assertEqual(6, r)
         self.assertEqual({}, user.internal_attributes)
 
-        # Cleanup
-        delete_realm(self.realm1)
-        delete_resolver(self.resolvername1)
-
-    def test_51b_internal_attributes_unresolved_user(self):
+    def test_internal_attributes_unresolved_user(self):
         """Unresolved User (empty uid) reads return {} (callers like
         preferred_client_mode run on every auth response); writes/deletes
         refuse to create empty-uid rows that would be shared across users."""
@@ -937,7 +1029,31 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
         self.assertRaises(UserError, unresolved.set_internal_attribute, "k", "v")
         self.assertRaises(UserError, unresolved.delete_internal_attribute)
 
-    def test_53_find_and_delete_orphaned_internal_attributes(self):
+    def test_internal_user_attribute_node_column(self):
+        """The ``node`` column is reserved for future per-node state and is
+        not writable through the set_internal_attribute API yet, so every
+        row written via the API has node = NULL."""
+        user = User(login="root", realm=self.realm1)
+
+        def _row(key):
+            return db.session.execute(
+                select(InternalUserAttribute).filter_by(
+                    user_id=user.uid, resolver=user.resolver,
+                    realm_id=user.realm_id, Key=key)
+            ).scalar_one()
+
+        # Rows written through the API default node to NULL (global value)
+        user.set_internal_attribute("global_key", "v1")
+        self.assertIsNone(_row("global_key").node)
+        user.set_internal_attribute("global_key", "v2")
+        self.assertIsNone(_row("global_key").node)
+
+        # The write API does not accept a node argument
+        self.assertRaises(TypeError, user.set_internal_attribute, "k", "v", "node-A")
+
+        user.delete_internal_attribute()
+
+    def test_find_and_delete_orphaned_internal_attributes(self):
         """find_orphaned_internal_attributes() flags rows whose user has
         vanished from the resolver; delete_orphaned_internal_attributes()
         prunes them and leaves resolvable users untouched."""
@@ -945,9 +1061,6 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
             delete_orphaned_internal_attributes,
             find_orphaned_internal_attributes,
         )
-        save_resolver({"resolver": self.resolvername1, "type": "passwdresolver",
-                       "fileName": PWFILE})
-        set_realm(self.realm1, [{'name': self.resolvername1}])
         live_user = User(login="root", realm=self.realm1)
         live_user.set_internal_attribute("k", "v-live")
 
@@ -970,16 +1083,11 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
         self.assertEqual([], find_orphaned_internal_attributes())
 
         live_user.delete_internal_attribute()
-        delete_realm(self.realm1)
-        delete_resolver(self.resolvername1)
 
-    def test_53b_find_orphaned_edge_cases(self):
+    def test_find_orphaned_edge_cases(self):
         """Cover the remaining orphan-detection branches:
         empty identifiers, deleted resolver, and resolver raising on lookup."""
         from privacyidea.lib.user import find_orphaned_internal_attributes
-        save_resolver({"resolver": self.resolvername1, "type": "passwdresolver",
-                       "fileName": PWFILE})
-        set_realm(self.realm1, [{'name': self.resolvername1}])
         live_user = User(login="root", realm=self.realm1)
 
         # Branch 1: row with an empty user_id or empty resolver. Bypass the
@@ -1015,37 +1123,6 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
         # Cleanup
         db.session.execute(delete(InternalUserAttribute))
         db.session.commit()
-        delete_realm(self.realm1)
-        delete_resolver(self.resolvername1)
-
-    def test_52_internal_user_attribute_node_column(self):
-        """The ``node`` column is reserved for future per-node state and is
-        not writable through the set_internal_attribute API yet, so every
-        row written via the API has node = NULL."""
-        save_resolver({"resolver": self.resolvername1, "type": "passwdresolver",
-                       "fileName": PWFILE})
-        set_realm(self.realm1, [{'name': self.resolvername1}])
-        user = User(login="root", realm=self.realm1)
-
-        def _row(key):
-            return db.session.execute(
-                select(InternalUserAttribute).filter_by(
-                    user_id=user.uid, resolver=user.resolver,
-                    realm_id=user.realm_id, Key=key)
-            ).scalar_one()
-
-        # Rows written through the API default node to NULL (global value)
-        user.set_internal_attribute("global_key", "v1")
-        self.assertIsNone(_row("global_key").node)
-        user.set_internal_attribute("global_key", "v2")
-        self.assertIsNone(_row("global_key").node)
-
-        # The write API does not accept a node argument
-        self.assertRaises(TypeError, user.set_internal_attribute, "k", "v", "node-A")
-
-        user.delete_internal_attribute()
-        delete_realm(self.realm1)
-        delete_resolver(self.resolvername1)
 
 
 class HidePasswordInDebugLogTestCase(OverrideConfigTestCase):

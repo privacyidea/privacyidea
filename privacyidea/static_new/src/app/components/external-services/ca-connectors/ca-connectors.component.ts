@@ -19,6 +19,7 @@
 
 import { Component, computed, ElementRef, inject, signal, ViewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
+import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
@@ -39,6 +40,7 @@ import { CopyableComponent } from "@components/shared/copyable/copyable.componen
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { renderedRows, RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 
 @Component({
@@ -50,6 +52,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
     MatSortModule,
     MatIconModule,
     MatButtonModule,
+    MatCheckboxModule,
     MatTooltipModule,
     ScrollToTopDirective,
     MatFormField,
@@ -78,7 +81,7 @@ export class CaConnectorsComponent {
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
 
-  displayedColumns: string[] = ["connectorname", "type", "actions"];
+  displayedColumns: string[] = ["select", "connectorname", "type"];
 
   caConnectorDataSource = computed(() => {
     const connectors = this.caConnectorService.caConnectors();
@@ -86,6 +89,11 @@ export class CaConnectorsComponent {
     dataSource.paginator = this.paginator;
     dataSource.sort = this.sort;
     return dataSource;
+  });
+
+  selector = new RowSelector<CaConnector>({
+    keyGetter: (connector) => connector.connectorname,
+    visibleRows: renderedRows(this.caConnectorDataSource)
   });
 
   openEditDialog(connector?: CaConnector): void {
@@ -96,21 +104,28 @@ export class CaConnectorsComponent {
     }
   }
 
-  deleteConnector(connector: CaConnector): void {
+  deleteSelected(): void {
+    const selected = this.selector.selectedRows();
+    if (selected.length === 0) {
+      return;
+    }
     this.dialogService
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Delete CA Connector`,
-          items: [connector.connectorname],
+          title: $localize`Delete CA Connectors`,
+          items: selected.map((row) => row.connectorname),
           itemType: "ca-connector",
           confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
-      .subscribe({
-        next: (result) => {
-          if (result) this.caConnectorService.deleteCaConnector(connector.connectorname);
+      .subscribe((result) => {
+        if (result) {
+          selected.forEach(
+            (row) => void this.caConnectorService.deleteCaConnector(row.connectorname).catch(() => undefined)
+          );
+          this.selector.deselectAllRows();
         }
       });
   }

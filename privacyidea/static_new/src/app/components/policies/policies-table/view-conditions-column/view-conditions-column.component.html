@@ -20,12 +20,14 @@
   <!-- Admin Conditions -->
   @if (selectedAdminrealm().length > 0) {
     <app-view-condition-section
+      [highlightTerms]="highlightTerms()"
       [label]="'Admin Realms'"
       [values]="selectedAdminrealm()">
     </app-view-condition-section>
   }
   @if (selectedAdmins().length > 0) {
     <app-view-condition-section
+      [highlightTerms]="highlightTerms()"
       [label]="'Admins'"
       [values]="selectedAdmins()">
     </app-view-condition-section>
@@ -34,18 +36,21 @@
   <!-- User Conditions -->
   @if (selectedRealms().length > 0) {
     <app-view-condition-section
+      [highlightTerms]="highlightTerms()"
       [label]="'Realms'"
       [values]="selectedRealms()">
     </app-view-condition-section>
   }
   @if (selectedResolvers().length > 0) {
     <app-view-condition-section
+      [highlightTerms]="highlightTerms()"
       [label]="'Resolvers'"
       [values]="selectedResolvers()">
     </app-view-condition-section>
   }
   @if (selectedUsers().length > 0) {
     <app-view-condition-section
+      [highlightTerms]="highlightTerms()"
       [label]="'Users'"
       [values]="selectedUsers()"
       [marker]="userCaseInsensitive() ? 'case-insensitive' : 'case-sensitive'">
@@ -55,24 +60,28 @@
   <!-- Environment Conditions -->
   @if (selectedPinodes().length > 0) {
     <app-view-condition-section
+      [highlightTerms]="highlightTerms()"
       [label]="'privacyIDEA Nodes'"
       [values]="selectedPinodes()">
     </app-view-condition-section>
   }
   @if (selectedValidTime() !== "") {
     <app-view-condition-section
+      [highlightTerms]="highlightTerms()"
       [label]="'Valid time'"
       [values]="[selectedValidTime()]">
     </app-view-condition-section>
   }
   @if (selectedClient() && selectedClient().length > 0) {
     <app-view-condition-section
+      [highlightTerms]="highlightTerms()"
       [label]="'Client'"
       [values]="selectedClient()">
     </app-view-condition-section>
   }
   @if (selectedUserAgents().length > 0) {
     <app-view-condition-section
+      [highlightTerms]="highlightTerms()"
       [label]="'User Agents'"
       [values]="selectedUserAgents()">
     </app-view-condition-section>
@@ -85,15 +94,19 @@
         <div class="additional-condition-item">
           <div class="status-row">
             <div class="active-status">
-              <mat-icon [class.active]="!condition[4]">{{ !condition[4] ? "check_circle" : "cancel" }}</mat-icon>
+              <mat-icon [class.active]="condition[4]">{{ condition[4] ? "check_circle" : "cancel" }}</mat-icon>
             </div>
             <span class="additional-condition-badge">{{ getSectionLabel(condition[0]) }}</span>
           </div>
 
           <div class="data-row">
-            <strong class="force-wrap">{{ condition[1] }}</strong>
+            <strong
+              class="force-wrap"
+              [innerHTML]="condition[1] | highlight: highlightTerms()"></strong>
             <span class="force-wrap">{{ getComparatorLabel(condition[2]) }}</span>
-            <strong class="force-wrap">{{ condition[3] }}</strong>
+            <strong
+              class="force-wrap"
+              [innerHTML]="condition[3] | highlight: highlightTerms()"></strong>
             <span
               class="missing-data-info force-wrap"
               i18n

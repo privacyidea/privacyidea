@@ -46,7 +46,10 @@
     @if (authService.actionAllowed("eventhandling_write")) {
       <button
         (click)="onCreateNewEventHandler()" class="action-button-primary button-width-xl" mat-stroked-button>
-        <mat-icon>add</mat-icon>
+        <span class="icon-badge">
+          <mat-icon class="padding-right-3">flag</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+        </span>
         <span i18n>Create New Event Handler</span>
       </button>
     }

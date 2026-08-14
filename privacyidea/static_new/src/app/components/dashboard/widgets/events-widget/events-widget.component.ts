@@ -43,6 +43,8 @@ export class EventsWidgetComponent extends DashboardWidget implements OnInit {
   static override readonly requiredAction = "eventhandling_read";
   static override readonly title = $localize`Events`;
   static override readonly icon = "flag";
+  static override readonly titleLink = ROUTE_PATHS.EVENTS;
+  static override readonly titleLinkAction = "eventhandling_read";
   static override readonly defaultSize: WidgetSize = { cols: 6, rows: 3 };
   static override readonly minSize: WidgetSize = { cols: 4, rows: 3 };
   static override readonly maxSize: WidgetSize = { cols: 10, rows: 6 };
@@ -54,6 +56,11 @@ export class EventsWidgetComponent extends DashboardWidget implements OnInit {
   private readonly store = inject(DashboardDataStore);
 
   private readonly dataRef = signal<DashboardDataRef<PiResponse<EventHandler[]>> | null>(null);
+  override readonly partialLoading = computed(() => this.dataRef()?.revalidating() ?? false);
+  override readonly refreshFailed = computed(() => {
+    const ref = this.dataRef();
+    return !!ref && ref.error() && ref.value() !== undefined;
+  });
 
   readonly events = computed<EventPartition>(() => {
     const all = this.dataRef()?.value()?.result?.value ?? [];
@@ -77,14 +84,16 @@ export class EventsWidgetComponent extends DashboardWidget implements OnInit {
         return;
       }
       const value = ref.value();
-      if (value !== undefined) {
-        this.state.set(value.result?.status === true ? "ready" : "error");
-      } else if (ref.error()) {
-        this.state.set("error");
-      } else {
-        this.state.set("loading");
+      if (value === undefined) {
+        this.state.set(ref.error() ? "error" : "loading");
+        return;
       }
+      this.state.set(value.result?.status === true ? "ready" : "error");
     });
+  }
+
+  override reload(): void {
+    this.ngOnInit();
   }
 
   ngOnInit(): void {

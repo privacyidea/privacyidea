@@ -65,6 +65,7 @@ export class MachinesComponent {
 
   filterString = signal<string>("");
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
+  pageSize = signal(this.pageSizeOptions()[1] ?? 10);
   totalLength: WritableSignal<number> = computed(
     () => this.machineService.machines()?.length ?? 0
   ) as WritableSignal<number>;
