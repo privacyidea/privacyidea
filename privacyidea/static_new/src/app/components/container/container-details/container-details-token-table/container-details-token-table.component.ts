@@ -152,6 +152,9 @@ export class ContainerDetailsTokenTableComponent implements AfterViewInit {
         containerSerial: this.containerService.containerSerial()
       };
     },
+    // The rows are mutated on the kept data source rather than a new one being handed back, so the
+    // default reference equality would report "unchanged" and leave the table state on a stale count.
+    equal: () => false,
     computation: (source, previous) => {
       const { sortedData, comparison, containerSerial } = source;
       const ds = previous?.value ?? new MatTableDataSource<ContainerDetailTokenData>([]);

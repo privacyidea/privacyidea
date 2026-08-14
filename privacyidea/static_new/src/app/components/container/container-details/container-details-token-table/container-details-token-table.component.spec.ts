@@ -112,6 +112,24 @@ describe("ContainerDetailsTokenTableComponent", () => {
 
   afterEach(() => jest.clearAllMocks());
 
+  it("leaves the empty state once rows appear on the kept data source", () => {
+    // The data source is mutated in place and the same reference returned, so the table state can
+    // only see new rows if that signal still reports a change.
+    (TestBed.inject(AuthService) as unknown as MockAuthService).authData.set({
+      ...MockAuthService.MOCK_AUTH_DATA,
+      rights: ["container_list"]
+    });
+    fixture.componentRef.setInput("containerTokenData", new MatTableDataSource([] as never[]));
+    fixture.detectChanges();
+    expect(component.tableState.status()).toBe("empty");
+
+    fixture.componentRef.setInput("containerTokenData", new MatTableDataSource([{ serial: "T-NEW" }] as never[]));
+    fixture.detectChanges();
+
+    expect(component.dataSource().data.length).toBe(1);
+    expect(component.tableState.status()).toBe("ready");
+  });
+
   it("gates the table on its read right, row count and filter", () => {
     expectsTableStateGating({
       state: component.tableState,
