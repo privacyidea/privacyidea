@@ -45,7 +45,8 @@ def set_realms(serial: str, realms: list | None = None, add: bool = False,
     :type realms: list
     :param add: if the realms should be added and not replaced
     :type add: bool
-    :param allowed_realms: A list of realms, that the admin is allowed to manage
+    :param allowed_realms: A list of realms, that the admin is allowed to manage, None if all realms are
+        allowed and an empty list if none is
     """
     realms = realms or []
     corrected_realms = []
@@ -61,7 +62,9 @@ def set_realms(serial: str, realms: list | None = None, add: bool = False,
     old_realms = token.get_realms()
 
     matching_realms = corrected_realms
-    if allowed_realms:
+    # An empty list is an admin allowed no realm at all, which is not the same as None ("every
+    # realm"): no realm is set and none of the existing ones is removed.
+    if allowed_realms is not None:
         matching_realms = list(set(corrected_realms).intersection(allowed_realms))
         excluded_realms = list(set(corrected_realms) - set(matching_realms))
         if len(excluded_realms) > 0:

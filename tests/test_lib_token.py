@@ -568,6 +568,20 @@ class TokenTestCase(MyTestCase):
         token_realm_db = db.session.execute(stmt).one_or_none()
         self.assertIsNone(token_realm_db)
 
+    def test_16a_set_realms_with_no_allowed_realm(self):
+        # An empty list of allowed realms is an admin allowed no realm at all, which is not the
+        # same as None ("every realm"): no realm is set and the existing ones are kept.
+        self.setUp_user_realm2()
+        serial = "NOALLOWEDREALM01"
+        init_token({"serial": serial, "otpkey": self.otpkey})
+        set_realms(serial, [self.realm1])
+        self.assertEqual([self.realm1], get_realms_of_token(serial))
+
+        set_realms(serial, [self.realm2], allowed_realms=[])
+
+        self.assertEqual([self.realm1], get_realms_of_token(serial))
+        remove_token(serial=serial)
+
     def test_17_set_defaults(self):
         serial = "SETTOKEN"
         tokenobject = init_token({"serial": serial,
