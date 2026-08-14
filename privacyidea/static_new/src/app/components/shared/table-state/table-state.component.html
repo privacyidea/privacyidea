@@ -73,13 +73,26 @@
         i18n>
         The request failed. Check the connection to the privacyIDEA server and try again.
       </p>
-      <button
-        (click)="table().retry()"
-        class="action-button-secondary button-width-m"
-        mat-stroked-button>
-        <mat-icon>refresh</mat-icon>
-        <span i18n>Try Again</span>
-      </button>
+      <div class="table-state-actions">
+        <button
+          (click)="table().retry()"
+          class="action-button-secondary button-width-m"
+          mat-stroked-button>
+          <mat-icon>refresh</mat-icon>
+          <span i18n>Try Again</span>
+        </button>
+        <!-- Where the request carries the filter, retrying alone repeats whatever failed and the
+             filter itself is unreachable, since the state panel replaces the filter row. -->
+        @if (table().canResetFilter && table().isFiltered()) {
+          <button
+            (click)="table().resetFilter()"
+            class="action-button-secondary button-width-m"
+            mat-stroked-button>
+            <mat-icon>filter_alt_off</mat-icon>
+            <span i18n>Reset Filter</span>
+          </button>
+        }
+      </div>
     }
     @case ("denied") {
       <h2

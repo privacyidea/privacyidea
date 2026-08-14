@@ -65,11 +65,19 @@ export class TableState {
       return this.options.filterActive?.() ? "filtered" : "empty";
     });
     this.rowStatus = computed(() => (this.status() === "ready" ? "filtered" : this.status()));
+    this.isFiltered = computed(() => this.options.filterActive?.() ?? false);
     this.showTable = computed(() => {
       const status = this.status();
       return status !== "empty" && status !== "denied" && status !== "error";
     });
   }
+
+  /**
+   * Whether a filter is narrowing the list right now. Read by the error panel: where the request
+   * carries the filter, the filter is a candidate cause of the failure, and retrying the same
+   * request cannot clear it.
+   */
+  readonly isFiltered: Signal<boolean>;
 
   get canResetFilter(): boolean {
     return this.options.resetFilter !== undefined;
