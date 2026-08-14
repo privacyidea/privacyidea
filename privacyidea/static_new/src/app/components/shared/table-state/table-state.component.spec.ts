@@ -18,7 +18,7 @@
  **/
 import { signal, WritableSignal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { TableState } from "@core/models/table_state/table-state";
+import { FIRST_LOAD_GRACE_MS, TableState } from "@core/models/table_state/table-state";
 import { TableStateComponent } from "./table-state.component";
 
 describe("TableStateComponent", () => {
@@ -146,6 +146,43 @@ describe("TableStateComponent", () => {
 
       expect(buttonLabelled("Reset Filter")).toBeUndefined();
       expect(buttonLabelled("Try Again")).toBeDefined();
+    });
+  });
+
+  describe("while the first load is still out", () => {
+    it("draws neither the table nor the panel, so a short load cannot flash one and take it away", () => {
+      value.set(undefined);
+      const state = buildState();
+      render(state);
+
+      expect(state.status()).toBe("loading");
+      expect(state.showTable()).toBe(false);
+      expect(text().trim()).toBe("");
+      expect(fixture.nativeElement.querySelector("mat-icon")).toBeNull();
+    });
+
+    it("hands the table its placeholder rows once the load turns out to be a slow one", async () => {
+      value.set(undefined);
+      const state = buildState();
+      render(state);
+
+      await new Promise((resolve) => setTimeout(resolve, FIRST_LOAD_GRACE_MS + 20));
+
+      expect(state.status()).toBe("loading");
+      expect(state.showTable()).toBe(true);
+    });
+
+    it("goes straight to the empty panel when the load resolves inside the window", () => {
+      value.set(undefined);
+      const state = buildState();
+      render(state);
+      expect(state.showTable()).toBe(false);
+
+      value.set({});
+      fixture.detectChanges();
+
+      expect(state.status()).toBe("empty");
+      expect(text()).toContain("No entries yet");
     });
   });
 });

@@ -10,6 +10,13 @@
   min-width: var(--table-state-min-width, auto);
 }
 
+// Nothing is drawn while the request is still out, so the panel must not reserve its footprint
+// either - the page would hold a gap open where the table is about to go.
+:host(.table-state-idle) {
+  min-height: 0;
+  min-width: 0;
+}
+
 // The no-data row inside a rendered table is one row among the chrome that stays
 // (filter, paginator, header), so there it keeps the compact treatment. The page
 // opt-in is set on the page's host and inherits down here too, so each stepped-up

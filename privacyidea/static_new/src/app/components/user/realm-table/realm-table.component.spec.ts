@@ -49,6 +49,7 @@ import { AuthService } from "@services/auth/auth.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { expectsTableStateGating } from "@testing/table-state-gating";
 import { TokenService } from "@services/token/token.service";
+import { settleFirstLoadGrace } from "@testing/first-load-grace";
 
 class LocalMockMatDialog {
   result$ = of(true);
@@ -724,6 +725,7 @@ describe("RealmTableComponent loading placeholders", () => {
 
     const fixture = TestBed.createComponent(RealmTableComponent);
     expect(() => fixture.detectChanges()).not.toThrow();
+    await settleFirstLoadGrace(fixture);
 
     const rows = fixture.nativeElement.querySelectorAll("tr.mat-mdc-row");
     expect(rows.length).toBeGreaterThan(0);

@@ -51,6 +51,7 @@ import { of } from "rxjs";
 import { TokenTableComponent } from "./token-table.component";
 import { TokenTableSelfServiceComponent } from "./token-table.self-service.component";
 import { expectsTableStateGating } from "@testing/table-state-gating";
+import { settleFirstLoadGrace } from "@testing/first-load-grace";
 
 class MatDialogMock {
   result = { confirmed: true };
@@ -337,7 +338,9 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     expect(tokenService.activeFilter()).toBe(currentFilter);
   });
 
-  it("shows a hint while user:/realm: filter syntax is typed but not yet applied", () => {
+  it("shows a hint while user:/realm: filter syntax is typed but not yet applied", async () => {
+    await settleFirstLoadGrace(tableFixture);
+
     authServiceMock.jwtData.set({ ...authServiceMock.jwtData(), rights: ["tokenlist"] } as JwtData);
     tableFixture.detectChanges();
 
@@ -430,6 +433,8 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
   });
 
   it("onKeywordClick toggles the filter, focuses the input, and positions the cursor after 'user:'", async () => {
+    await settleFirstLoadGrace(tableFixture);
+
     authServiceMock.jwtData.set({ ...authServiceMock.jwtData(), rights: ["tokenlist"] } as JwtData);
     tableUtilsService.toggleKeywordInFilter.mockReturnValue(new FilterValue().addEntry("user", "bob"));
     tableFixture.detectChanges();
@@ -448,6 +453,8 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
   });
 
   it("onKeywordClick does not schedule cursor positioning for non-user keywords", async () => {
+    await settleFirstLoadGrace(tableFixture);
+
     authServiceMock.jwtData.set({ ...authServiceMock.jwtData(), rights: ["tokenlist"] } as JwtData);
     tableUtilsService.toggleKeywordInFilter.mockReturnValue(new FilterValue().addEntry("description", "foo"));
     tableFixture.detectChanges();
@@ -460,7 +467,9 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     expect(setSelectionRangeSpy).not.toHaveBeenCalled();
   });
 
-  it("onItemSelected adds or removes a filter entry and focuses the input", () => {
+  it("onItemSelected adds or removes a filter entry and focuses the input", async () => {
+    await settleFirstLoadGrace(tableFixture);
+
     authServiceMock.jwtData.set({ ...authServiceMock.jwtData(), rights: ["tokenlist"] } as JwtData);
     tableFixture.detectChanges();
     const focusSpy = jest.spyOn(table.filterInput.nativeElement, "focus");

@@ -34,6 +34,7 @@ import { MockDialogService, MockPolicyService, MockRouter, MockTableUtilsService
 import { expectsTableStateGating } from "@testing/table-state-gating";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { of } from "rxjs";
+import { settleFirstLoadGrace } from "@testing/first-load-grace";
 
 @Component({ selector: "app-policy-filter", template: "", standalone: true })
 class MockPolicyFilterComponent {
@@ -102,7 +103,9 @@ describe("PoliciesTableComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should show skeleton rows while the policies are still loading", () => {
+  it("should show skeleton rows while the policies are still loading", async () => {
+    await settleFirstLoadGrace(fixture);
+
     mockPolicyService.allPolicies.set([]);
     mockPolicyService.allPoliciesResource.value.set(undefined);
     fixture.detectChanges();
@@ -113,7 +116,9 @@ describe("PoliciesTableComponent", () => {
     expect(rows[0].classes["skeleton-row"]).toBeTruthy();
   });
 
-  it("should disable header checkbox when in skeleton state", () => {
+  it("should disable header checkbox when in skeleton state", async () => {
+    await settleFirstLoadGrace(fixture);
+
     mockPolicyService.allPolicies.set([]);
     mockPolicyService.allPoliciesResource.value.set(undefined);
     fixture.detectChanges();

@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { computed, Signal } from "@angular/core";
+import { computed, signal, Signal } from "@angular/core";
 
 export type TableStatus = "denied" | "loading" | "error" | "empty" | "filtered" | "ready";
 
@@ -37,6 +37,13 @@ export interface TableStateOptions {
   readonly allowed?: () => boolean;
   readonly resetFilter?: () => void;
 }
+
+/**
+ * How long the first load is given before anything is drawn for it. A response that arrives inside
+ * this window goes straight to the table or to the state panel, so neither is shown and taken away
+ * again. The global progress bar covers the wait either way.
+ */
+export const FIRST_LOAD_GRACE_MS = 200;
 
 export class TableState {
   readonly status: Signal<TableStatus>;
@@ -68,8 +75,16 @@ export class TableState {
     this.isFiltered = computed(() => this.options.filterActive?.() ?? false);
     this.showTable = computed(() => {
       const status = this.status();
-      return status !== "empty" && status !== "denied" && status !== "error";
+      if (status === "empty" || status === "denied" || status === "error") {
+        return false;
+      }
+      // Drawing a table of placeholder rows only to replace it with the empty panel a moment later
+      // reads as a glitch, so the first load draws neither until it has taken long enough to be
+      // worth reporting. The grace runs from construction, which is when that load starts.
+      return status !== "loading" || this.firstLoadGraceElapsed();
     });
+
+    setTimeout(() => this.firstLoadGraceElapsed.set(true), FIRST_LOAD_GRACE_MS);
   }
 
   /**
@@ -78,6 +93,9 @@ export class TableState {
    * request cannot clear it.
    */
   readonly isFiltered: Signal<boolean>;
+
+  /** False only for the opening moments of the first load; see FIRST_LOAD_GRACE_MS. */
+  private readonly firstLoadGraceElapsed = signal(false);
 
   get canResetFilter(): boolean {
     return this.options.resetFilter !== undefined;

@@ -29,6 +29,7 @@ import { DialogService } from "@services/dialog/dialog.service";
 import { ContainerTemplatesComponent } from "./container-templates.component";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { expectsTableStateGating } from "@testing/table-state-gating";
+import { settleFirstLoadGrace } from "@testing/first-load-grace";
 
 describe("ContainerTemplatesComponent", () => {
   let component: ContainerTemplatesComponent;
@@ -87,7 +88,9 @@ describe("ContainerTemplatesComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should show skeleton rows when service returns no templates", () => {
+  it("should show skeleton rows when service returns no templates", async () => {
+    await settleFirstLoadGrace(fixture);
+
     templatesSignal.set([]);
     templatesLoaded.set(false);
     fixture.detectChanges();
@@ -98,7 +101,9 @@ describe("ContainerTemplatesComponent", () => {
     expect(rows[0].classes["skeleton-row"]).toBeTruthy();
   });
 
-  it("should disable header checkbox when in skeleton state", () => {
+  it("should disable header checkbox when in skeleton state", async () => {
+    await settleFirstLoadGrace(fixture);
+
     templatesSignal.set([]);
     templatesLoaded.set(false);
     fixture.detectChanges();

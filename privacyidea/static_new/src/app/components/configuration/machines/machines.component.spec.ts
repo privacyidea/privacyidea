@@ -29,6 +29,7 @@ import { MachinesComponent } from "./machines.component";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { MockAuthService, MockMachineService, MockTableUtilsService, MockTokenService } from "@testing/mock-services";
 import { expectsTableStateGating } from "@testing/table-state-gating";
+import { settleFirstLoadGrace } from "@testing/first-load-grace";
 
 describe("MachinesComponent", () => {
   let component: MachinesComponent;
@@ -151,6 +152,7 @@ describe("MachinesComponent loading placeholders", () => {
 
     const fixture = TestBed.createComponent(MachinesComponent);
     expect(() => fixture.detectChanges()).not.toThrow();
+    await settleFirstLoadGrace(fixture);
 
     const hostnameCells = fixture.nativeElement.querySelectorAll("td.mat-column-hostname");
     expect(hostnameCells.length).toBeGreaterThan(0);

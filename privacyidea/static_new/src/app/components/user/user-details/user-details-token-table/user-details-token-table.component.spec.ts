@@ -44,6 +44,7 @@ import { UserService } from "@services/user/user.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { expectsTableStateGating } from "@testing/table-state-gating";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
+import { settleFirstLoadGrace } from "@testing/first-load-grace";
 
 describe("UserDetailsTokenTableComponent", () => {
   let fixture: ComponentFixture<UserDetailsTokenTableComponent>;
@@ -134,7 +135,9 @@ describe("UserDetailsTokenTableComponent", () => {
     expect(component.dataSource.sort).toBeFalsy();
   });
 
-  it("renders rows after the table returns from the empty state", () => {
+  it("renders rows after the table returns from the empty state", async () => {
+    await settleFirstLoadGrace(fixture);
+
     // Through authData, so the rights signal the TableState reads actually changes; a plain
     // mockReturnValue would leave the computed with its first, cached verdict.
     const authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;

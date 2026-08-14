@@ -25,6 +25,7 @@ import { TableState, TableStatus } from "@core/models/table_state/table-state";
   selector: "app-table-state",
   standalone: true,
   imports: [MatIconModule, MatButtonModule],
+  host: { "[class.table-state-idle]": "isLoading()" },
   templateUrl: "./table-state.component.html",
   styleUrl: "./table-state.component.scss"
 })
@@ -43,6 +44,8 @@ export class TableStateComponent {
   };
 
   readonly currentStatus = computed(() => this.status() ?? this.table().status());
+  /** The panel says nothing while the request is still out; the global progress bar reports that. */
+  readonly isLoading = computed(() => this.currentStatus() === "loading");
   readonly resolvedIcon = computed(() => TableStateComponent.STATUS_ICONS[this.currentStatus()] ?? this.icon());
   /** The projected call to action stays available where the list is empty for good, not where it failed or was filtered away. */
   readonly showsProjectedAction = computed(() => this.currentStatus() === "empty" || this.currentStatus() === "denied");
