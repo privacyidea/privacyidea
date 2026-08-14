@@ -70,6 +70,21 @@ describe("TokenApplicationsSshComponent (Jest)", () => {
     fixture.detectChanges();
   });
 
+  it("asks for placeholder rows while the first page loads and empties the table after an error", () => {
+    const tableUtilsMock = TestBed.inject(TableUtilsService) as unknown as MockTableUtilsService;
+    tableUtilsMock.emptyDataSource.mockClear();
+
+    machineServiceMock.tokenApplications.set(undefined as never);
+    machineServiceMock.tokenApplicationResource.value.set(undefined as never);
+    // The row count cannot be asserted here: MockTableUtilsService hands back an empty data source
+    // where the real one builds one placeholder row per page slot.
+    expect(component.dataSource().data).toEqual([]);
+    expect(tableUtilsMock.emptyDataSource).toHaveBeenCalled();
+
+    machineServiceMock.tokenApplicationResource.error.set(new Error("boom"));
+    expect(component.dataSource().data).toEqual([]);
+  });
+
   it("gates the table on its read right, row count and filter", () => {
     expectsTableStateGating({
       state: component.tableState,
