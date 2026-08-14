@@ -80,6 +80,28 @@ describe("UserDetailsTokenTableComponent", () => {
 
   afterEach(() => jest.clearAllMocks());
 
+  it("names only the routes out of the empty list that this admin is allowed to take", () => {
+    const authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+    // Rights drive the computed; tokenEnrollmentAllowed is a plain stub and reads no signal, so the
+    // rights change is what makes the hint re-evaluate after it is set.
+    const withRights = (canEnroll: boolean, rights: string[]) => {
+      authServiceMock.tokenEnrollmentAllowed.mockReturnValue(canEnroll);
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights });
+    };
+
+    withRights(true, ["assign"]);
+    expect(component.emptyHint()).toContain("or assign an existing one");
+
+    withRights(true, []);
+    expect(component.emptyHint()).toBe("Enroll a new token for this user.");
+
+    withRights(false, ["assign"]);
+    expect(component.emptyHint()).toBe("Assign an existing token to this user.");
+
+    withRights(false, []);
+    expect(component.emptyHint()).toBe("");
+  });
+
   it("gates the table on its read right, row count and filter", () => {
     expectsTableStateGating({
       state: component.tableState,
