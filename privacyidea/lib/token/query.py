@@ -439,7 +439,7 @@ def convert_token_objects_to_dicts(tokens: list[TokenClass], user: User | None, 
 def get_tokens(tokentype: str | None = None, token_type_list: list[str] | None = None, realm: str | None = None,
                assigned: bool | None = None, user: User | None = None,
                serial: str | None = None, serial_wildcard: str | None = None, active: bool | None = None,
-               resolver: str | None = None, rollout_state: str | None = None,
+               resolver: str | None = None, userid: str | None = None, rollout_state: str | None = None,
                count: bool = False, revoked: bool | None = None, locked: bool | None = None,
                tokeninfo: dict | None = None,
                maxfail: bool | None = None, all_nodes: bool = False) -> list[TokenClass] | int:
@@ -483,6 +483,9 @@ def get_tokens(tokentype: str | None = None, token_type_list: list[str] | None =
     :param resolver: filter for the resolver of the token owner (case-insensitive and allows "*" as
         wildcard)
     :type resolver: basestring
+    :param userid: filter for the user id of the token owner, i.e. the identifier the resolver reports
+        for the user (case-sensitive and allows "*" as wildcard)
+    :type userid: basestring
     :param rollout_state: returns a list of the tokens in the certain rollout
         state. Some tokens are not enrolled in a single step but in multiple
         steps. These tokens are then identified by the DB-column rollout_state.
@@ -513,7 +516,7 @@ def get_tokens(tokentype: str | None = None, token_type_list: list[str] | None =
                                     realm=realm,
                                     assigned=assigned, user=user,
                                     serial_exact=serial, serial_wildcard=serial_wildcard, serial_list=serial_list,
-                                    active=active, resolver=resolver,
+                                    active=active, resolver=resolver, userid=userid,
                                     rollout_state=rollout_state,
                                     revoked=revoked, locked=locked,
                                     tokeninfo=tokeninfo, maxfail=maxfail, all_nodes=all_nodes)

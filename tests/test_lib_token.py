@@ -234,11 +234,21 @@ class TokenTestCase(MyTestCase):
         # A resolver that does not exist matches nothing
         self.assertEqual([], get_tokens(resolver="no_such_resolver"))
 
-        # The same for the user id of the token owner
+        # The same for the user id of the token owner, in both entry points
+        serials = [token.token.serial for token in get_tokens(userid="1000")]
+        self.assertIn("RESO01", serials)
+        self.assertNotIn("RESO02", serials)
+        self.assertEqual([], get_tokens(userid="999999"))
+
         serials = [token["serial"] for token in get_tokens_paginate(userid="1000")["tokens"]]
         self.assertIn("RESO01", serials)
         self.assertNotIn("RESO02", serials)
         self.assertEqual([], get_tokens_paginate(userid="999999")["tokens"])
+
+        # The user id honors '*' as wildcard
+        serials = [token.token.serial for token in get_tokens(userid="100*")]
+        self.assertIn("RESO01", serials)
+        self.assertNotIn("RESO02", serials)
 
         # A user object carrying only a realm returns the tokens of all users of that realm
         serials = [token.token.serial for token in get_tokens(user=User(realm=self.realm1))]
@@ -323,8 +333,20 @@ class TokenTestCase(MyTestCase):
         self.assertEqual(0, get_num_tokens_in_realm(self.realm1, active=False))
 
     def test_05_get_token_in_resolver(self):
-        tokenobject_list = get_tokens_in_resolver(self.resolvername1)
-        self.assertGreater(len(tokenobject_list), 0)
+        # Only the tokens whose owner is in the given resolver are returned
+        init_token({"type": "spass", "serial": "INRES01"},
+                   user=User(login="cornelius", realm=self.realm1, resolver=self.resolvername1))
+        init_token({"type": "spass", "serial": "INRES02"})
+
+        serials = [token_obj.token.serial for token_obj in get_tokens_in_resolver(self.resolvername1)]
+        self.assertIn("INRES01", serials)
+        self.assertNotIn("INRES02", serials)
+
+        # A resolver that owns no token matches nothing
+        self.assertEqual([], get_tokens_in_resolver("no_such_resolver"))
+
+        remove_token("INRES01")
+        remove_token("INRES02")
 
     def test_06_get_realms_of_token(self):
         # Return a list of realmnames for a token
