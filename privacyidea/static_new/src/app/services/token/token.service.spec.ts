@@ -1370,6 +1370,8 @@ describe("TokenService", () => {
     it("marks the keywords whose case behaviour deviates", () => {
       expect(tokenService.caseNotes).toEqual({
         serial: "usually-insensitive",
+        userid: "usually-sensitive",
+        resolver: "usually-insensitive",
         "infokey & infovalue": "usually-sensitive"
       });
     });

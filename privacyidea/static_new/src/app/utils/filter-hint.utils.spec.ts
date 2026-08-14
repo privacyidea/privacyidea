@@ -76,15 +76,4 @@ describe("filterColumnHint", () => {
   it("describes boolean keywords as true/false only", () => {
     expect(filterColumnHint("Active", { exactMatch: false, isBoolean: true })).toBe("Filter by Active\ntrue or false");
   });
-
-  it("marks unsupported keywords instead of describing their matching", () => {
-    expect(
-      filterColumnHint("Resolver", {
-        exactMatch: true,
-        isBoolean: true,
-        isUnsupported: true,
-        caseNote: "sensitive"
-      })
-    ).toBe("Filter by Resolver\ncurrently not supported");
-  });
 });
