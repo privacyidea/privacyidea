@@ -35,6 +35,8 @@
       </p>
     }
   } @else {
-    <app-news-list [items]="items()" />
+    <app-news-list
+      [items]="items()"
+      [maxAgeDays]="authService.rssAge()" />
   }
 </app-widget-state>

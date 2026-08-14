@@ -22,11 +22,6 @@
   aria-label="News"
   class="news-page"
   i18n-aria-label>
-  <h3
-    class="margin-8"
-    i18n>
-    News
-  </h3>
   @if (newsDisabled()) {
     @if (canReadPolicies()) {
       <p
@@ -46,6 +41,7 @@
   } @else {
     <app-news-list
       [items]="infoService.newsItems()"
+      [maxAgeDays]="authService.rssAge()"
       [showSummary]="true" />
   }
 </div>

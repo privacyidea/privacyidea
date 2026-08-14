@@ -33,7 +33,7 @@
         </a>
         @if (item.date; as date) {
           <span class="news-date">
-            {{ date | date: "shortDate" }}
+            {{ date | date: "yyyy-MM-dd" }}
           </span>
         }
         @if (showSummary()) {
@@ -47,6 +47,12 @@
 } @else {
   <div class="news-empty">
     <mat-icon class="news-empty-icon">newspaper</mat-icon>
-    <span i18n>No news available.</span>
+    @if (maxAgeDays() === 1) {
+      <span i18n>No news within the last day.</span>
+    } @else if (maxAgeDays() > 1) {
+      <span i18n>No news within the last {{ maxAgeDays() }} days.</span>
+    } @else {
+      <span i18n>No news available.</span>
+    }
   </div>
 }

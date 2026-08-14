@@ -24,7 +24,7 @@ import { environment } from "@env/environment";
 import { AuthService } from "@services/auth/auth.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
-import { InfoService, NEWS_ITEM_LIMIT, NewsChannels, NewsItem, sortNewsItems } from "./info.service";
+import { InfoService, NewsChannels, NewsItem, sortNewsItems } from "./info.service";
 
 const newsUrl = environment.proxyUrl + "/info/rss";
 
@@ -106,24 +106,6 @@ describe("sortNewsItems", () => {
     const channels = { Blog: null } as unknown as NewsChannels;
 
     expect(sortNewsItems(channels)).toEqual([]);
-  });
-
-  it("should limit the result to the default item limit", () => {
-    const channels: NewsChannels = {
-      Blog: Array.from({ length: NEWS_ITEM_LIMIT + 5 }, (_, index) =>
-        newsItem(`Item${index}`, "Mon, 20 Jul 2026 10:00:00 +0000")
-      )
-    };
-
-    expect(sortNewsItems(channels)).toHaveLength(NEWS_ITEM_LIMIT);
-  });
-
-  it("should limit the result to an explicit maximum", () => {
-    const channels: NewsChannels = {
-      Blog: [newsItem("A", "Fri, 24 Jul 2026 10:00:00 +0000"), newsItem("B", "Mon, 20 Jul 2026 10:00:00 +0000")]
-    };
-
-    expect(sortNewsItems(channels, 1).map((item) => item.title)).toEqual(["A"]);
   });
 });
 

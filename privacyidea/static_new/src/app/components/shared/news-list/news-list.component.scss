@@ -63,6 +63,22 @@
   white-space: nowrap;
 }
 
+.news-list:has(.news-summary) {
+  grid-template-columns: minmax(0, 16ch) minmax(0, 1fr) max-content;
+}
+
+.news-item:has(.news-summary) {
+  .news-title {
+    font-size: 1.35em;
+    font-weight: 600;
+  }
+
+  .news-channel,
+  .news-date {
+    font-size: 0.9em;
+  }
+}
+
 .news-date {
   color: var(--mat-sys-outline);
   font-size: 0.85em;

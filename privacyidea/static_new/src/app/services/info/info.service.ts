@@ -40,9 +40,7 @@ export interface NewsListItem {
   date: Date | null;
 }
 
-export const NEWS_ITEM_LIMIT = 20;
-
-export function sortNewsItems(channels: NewsChannels, maxItems: number = NEWS_ITEM_LIMIT): NewsListItem[] {
+export function sortNewsItems(channels: NewsChannels): NewsListItem[] {
   return Object.entries(channels)
     .flatMap(([channel, items]) =>
       (items ?? []).map((item) => ({
@@ -53,8 +51,7 @@ export function sortNewsItems(channels: NewsChannels, maxItems: number = NEWS_IT
         date: parseNewsDate(item.pub_date)
       }))
     )
-    .sort(byDateDescending)
-    .slice(0, maxItems);
+    .sort(byDateDescending);
 }
 
 function parseNewsDate(value: string): Date | null {

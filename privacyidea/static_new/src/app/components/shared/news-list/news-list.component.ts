@@ -31,4 +31,5 @@ import { NewsListItem } from "@services/info/info.service";
 export class NewsListComponent {
   readonly items = input.required<NewsListItem[]>();
   readonly showSummary = input(false);
+  readonly maxAgeDays = input(0);
 }

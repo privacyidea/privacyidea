@@ -22,8 +22,8 @@
 .news-page {
   @include styles.main-component-style;
   box-sizing: border-box;
-  height: var(--content-max-height);
-  width: var(--max-width);
+  height: 100%;
+  width: 100%;
 }
 
 .news-hint {

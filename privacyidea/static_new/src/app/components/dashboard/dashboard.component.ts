@@ -17,12 +17,27 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { CdkDrag, CdkDragEnd, CdkDragMove, CdkDragStart } from "@angular/cdk/drag-drop";
-import { afterRenderEffect, Component, computed, ElementRef, inject, OnDestroy, signal, viewChild } from "@angular/core";
+import {
+  afterRenderEffect,
+  Component,
+  computed,
+  ElementRef,
+  inject,
+  OnDestroy,
+  signal,
+  viewChild
+} from "@angular/core";
+import { MatButton } from "@angular/material/button";
+import { MatIconModule } from "@angular/material/icon";
 import { WidgetFrameComponent } from "@components/dashboard/widget-frame/widget-frame.component";
+import { WidgetPaletteComponent } from "@components/dashboard/widget-palette/widget-palette.component";
 import { DASHBOARD_COLUMNS, DashboardWidget, WidgetInstance, WidgetSize } from "@models/dashboard";
 import { DashboardLayoutService, DashboardLayoutServiceInterface } from "@services/dashboard/dashboard-layout.service";
 import { WidgetRegistryService, WidgetRegistryServiceInterface } from "@services/dashboard/widget-registry.service";
-import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import {
+  PendingChangesService,
+  PendingChangesServiceInterface
+} from "@services/pending-changes/pending-changes.service";
 
 interface FieldRect {
   x: number;
@@ -64,14 +79,14 @@ type DragTarget = FieldRect & { valid: boolean };
 @Component({
   selector: "app-dashboard",
   standalone: true,
-  imports: [CdkDrag, WidgetFrameComponent],
+  imports: [CdkDrag, WidgetFrameComponent, MatIconModule, MatButton, WidgetPaletteComponent],
   templateUrl: "./dashboard.component.html",
   styleUrl: "./dashboard.component.scss"
 })
 export class DashboardComponent implements OnDestroy {
   protected readonly layoutService: DashboardLayoutServiceInterface = inject(DashboardLayoutService);
   private readonly registry: WidgetRegistryServiceInterface = inject(WidgetRegistryService);
-  private readonly pendingChanges = inject(PendingChangesService);
+  private readonly pendingChanges: PendingChangesServiceInterface = inject(PendingChangesService);
   protected readonly widgets = this.layoutService.widgets;
 
   private resizeState: ResizeState | null = null;
@@ -112,6 +127,26 @@ export class DashboardComponent implements OnDestroy {
   });
 
   protected readonly fieldHeight = computed(() => this.heightPx(this.rowCount()));
+
+  protected enterDashboardEdit(): void {
+    this.layoutService.beginEdit();
+    this.pendingChanges.registerHasChanges(() => this.layoutService.hasPendingChanges());
+    this.pendingChanges.registerValidChanges(() => true);
+    this.pendingChanges.registerSave(() => {
+      this.layoutService.saveEdit();
+      return Promise.resolve(true);
+    });
+  }
+
+  protected saveDashboard(): void {
+    this.layoutService.saveEdit();
+    this.pendingChanges.clearAllRegistrations();
+  }
+
+  protected cancelDashboard(): void {
+    this.layoutService.cancelEdit();
+    this.pendingChanges.clearAllRegistrations();
+  }
 
   protected anchorBackgroundSize(): string {
     return `calc((100% + ${this.gap}px) / ${this.columns}) ${this.rowHeight + this.gap}px`;
