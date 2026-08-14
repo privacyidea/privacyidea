@@ -27,6 +27,8 @@ import { ContainerTemplateService } from "@services/container-template/container
 import { ContainerTemplate } from "@services/container/container.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { ContainerTemplatesComponent } from "./container-templates.component";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { expectsTableStateGating } from "@testing/table-state-gating";
 
 describe("ContainerTemplatesComponent", () => {
   let component: ContainerTemplatesComponent;
@@ -46,11 +48,6 @@ describe("ContainerTemplatesComponent", () => {
     templatesResource: { hasValue: () => templatesLoaded(), error: () => null, reload: jest.fn() }
   };
 
-  const mockAuthService = {
-    isAdmin: signal(true),
-    actionAllowed: () => true
-  };
-
   const mockDialogService = {
     openDialog: jest.fn()
   };
@@ -62,15 +59,28 @@ describe("ContainerTemplatesComponent", () => {
       imports: [ContainerTemplatesComponent],
       providers: [
         { provide: ContainerTemplateService, useValue: mockContainerTemplateService },
-        { provide: AuthService, useValue: mockAuthService },
+        { provide: AuthService, useClass: MockAuthService },
         { provide: DialogService, useValue: mockDialogService },
         provideRouter([])
       ]
     }).compileComponents();
 
+    (TestBed.inject(AuthService) as unknown as MockAuthService).authData.set({
+      ...MockAuthService.MOCK_AUTH_DATA,
+
+      rights: ["container_template_list"]
+    });
+
     fixture = TestBed.createComponent(ContainerTemplatesComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
+  });
+
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState,
+      right: "container_template_list"
+    });
   });
 
   it("should create", () => {

@@ -50,6 +50,7 @@ import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { of } from "rxjs";
 import { TokenTableComponent } from "./token-table.component";
 import { TokenTableSelfServiceComponent } from "./token-table.self-service.component";
+import { expectsTableStateGating } from "@testing/table-state-gating";
 
 class MatDialogMock {
   result = { confirmed: true };
@@ -112,6 +113,15 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+  });
+
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: table.tableState,
+      right: "tokenlist",
+      // This spec drives rights through jwtData, which its other tests rely on.
+      setRights: (rights) => authServiceMock.jwtData.set({ ...authServiceMock.jwtData(), rights } as JwtData)
+    });
   });
 
   it("TokenTableComponent should create", () => {

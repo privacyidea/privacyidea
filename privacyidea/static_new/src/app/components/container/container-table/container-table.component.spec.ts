@@ -38,6 +38,7 @@ import { FilterValue } from "@core/models/filter_value/filter_value";
 import { DialogService } from "@services/dialog/dialog.service";
 import { TokenService } from "@services/token/token.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { expectsTableStateGating } from "@testing/table-state-gating";
 import {
   MockContainerService,
   MockContentService,
@@ -90,6 +91,13 @@ describe("ContainerTableComponent (Jest)", () => {
     containerService = TestBed.inject(ContainerService) as unknown as MockContainerService;
     component = fixture.componentInstance;
     fixture.detectChanges();
+  });
+
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState,
+      right: "container_list"
+    });
   });
 
   it("should create", () => {

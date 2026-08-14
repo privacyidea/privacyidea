@@ -26,6 +26,7 @@ import { AuthService } from "@services/auth/auth.service";
 import { ClientsDict, ClientsService } from "@services/clients/clients.service";
 import { ContentService } from "@services/content/content.service";
 import { MockAuditService, MockClientsService, MockContentService, MockPiResponse } from "@testing/mock-services";
+import { expectsTableStateGating } from "@testing/table-state-gating";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { expectedLocalDateTimeFromInput } from "@testing/expected-local-date-time";
 
@@ -57,6 +58,13 @@ describe("ClientsComponent", () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+  });
+
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState,
+      right: "clienttype"
+    });
   });
 
   it("should be created", () => {

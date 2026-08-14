@@ -28,6 +28,7 @@ import { TokenService } from "@services/token/token.service";
 import { MachinesComponent } from "./machines.component";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { MockAuthService, MockMachineService, MockTableUtilsService, MockTokenService } from "@testing/mock-services";
+import { expectsTableStateGating } from "@testing/table-state-gating";
 
 describe("MachinesComponent", () => {
   let component: MachinesComponent;
@@ -58,6 +59,13 @@ describe("MachinesComponent", () => {
     fixture = TestBed.createComponent(MachinesComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
+  });
+
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState,
+      right: "machinelist"
+    });
   });
 
   it("should create", () => {

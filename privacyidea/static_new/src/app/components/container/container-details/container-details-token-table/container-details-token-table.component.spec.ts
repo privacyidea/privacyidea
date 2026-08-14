@@ -32,6 +32,7 @@ import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { TokenService } from "@services/token/token.service";
 import { UserService } from "@services/user/user.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { expectsTableStateGating } from "@testing/table-state-gating";
 import {
   MockContainerService,
   MockContentService,
@@ -110,6 +111,13 @@ describe("ContainerDetailsTokenTableComponent", () => {
   });
 
   afterEach(() => jest.clearAllMocks());
+
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState,
+      right: "container_list"
+    });
+  });
 
   it("creates the component", () => {
     expect(component).toBeTruthy();

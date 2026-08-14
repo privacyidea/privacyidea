@@ -35,6 +35,9 @@ import {
 } from "@testing/mock-services";
 import { TokenApplicationsOfflineComponent } from "./token-applications-offline.component";
 import { ContentService } from "@services/content/content.service";
+import { AuthService } from "@services/auth/auth.service";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { expectsTableStateGating } from "@testing/table-state-gating";
 
 describe("TokenApplicationsOfflineComponent (Jest)", () => {
   let fixture: ComponentFixture<TokenApplicationsOfflineComponent>;
@@ -47,6 +50,7 @@ describe("TokenApplicationsOfflineComponent (Jest)", () => {
     await TestBed.configureTestingModule({
       imports: [TokenApplicationsOfflineComponent, MatTabsModule, CopyButtonComponent],
       providers: [
+        { provide: AuthService, useClass: MockAuthService },
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: MachineService, useClass: MockMachineService },
@@ -63,6 +67,13 @@ describe("TokenApplicationsOfflineComponent (Jest)", () => {
     machineServiceMock = TestBed.inject(MachineService) as unknown as MockMachineService;
     component = fixture.componentInstance;
     fixture.detectChanges();
+  });
+
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState,
+      right: "manage_machine_tokens"
+    });
   });
 
   it("should create", () => {

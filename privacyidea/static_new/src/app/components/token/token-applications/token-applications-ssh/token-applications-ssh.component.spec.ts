@@ -35,6 +35,9 @@ import {
 import { TokenApplicationsSshComponent } from "./token-applications-ssh.component";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { ContentService } from "@services/content/content.service";
+import { AuthService } from "@services/auth/auth.service";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { expectsTableStateGating } from "@testing/table-state-gating";
 
 describe("TokenApplicationsSshComponent (Jest)", () => {
   let fixture: ComponentFixture<TokenApplicationsSshComponent>;
@@ -48,6 +51,7 @@ describe("TokenApplicationsSshComponent (Jest)", () => {
     await TestBed.configureTestingModule({
       imports: [TokenApplicationsSshComponent, MatTabsModule, CopyButtonComponent],
       providers: [
+        { provide: AuthService, useClass: MockAuthService },
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: MachineService, useClass: MockMachineService },
@@ -64,6 +68,13 @@ describe("TokenApplicationsSshComponent (Jest)", () => {
     component = fixture.componentInstance;
     machineServiceMock = TestBed.inject(MachineService) as unknown as MockMachineService;
     fixture.detectChanges();
+  });
+
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState,
+      right: "manage_machine_tokens"
+    });
   });
 
   it("should create", () => {

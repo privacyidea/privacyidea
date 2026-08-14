@@ -32,6 +32,7 @@ import {
   MockNotificationService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { expectsTableStateGating } from "@testing/table-state-gating";
 import { expectedLocalDateTimeFromInput } from "@testing/expected-local-date-time";
 import { MockTableUtilsService } from "@testing/mock-services/mock-table-utils-service";
 import { of } from "rxjs";
@@ -91,6 +92,13 @@ describe("AuditComponent (unit)", () => {
   afterEach(() => {
     jest.useRealTimers();
     jest.clearAllMocks();
+  });
+
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState,
+      right: "auditlog"
+    });
   });
 
   it("creates", () => {

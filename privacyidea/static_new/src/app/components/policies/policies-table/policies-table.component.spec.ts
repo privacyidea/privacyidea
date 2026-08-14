@@ -31,6 +31,7 @@ import { DialogService } from "@services/dialog/dialog.service";
 import { PolicyDetail, PolicyService } from "@services/policies/policies.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { MockDialogService, MockPolicyService, MockRouter, MockTableUtilsService } from "@testing/mock-services";
+import { expectsTableStateGating } from "@testing/table-state-gating";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { of } from "rxjs";
 
@@ -79,13 +80,22 @@ describe("PoliciesTableComponent", () => {
     router = TestBed.inject(Router) as unknown as MockRouter;
 
     const mockAuthService = TestBed.inject(AuthService) as unknown as MockAuthService;
-    mockAuthService.actionAllowed.mockImplementation((action: string) => action === "policyread");
+    // Through the rights signal rather than by pinning actionAllowed: a constant answer reads no
+    // signal, so anything computed from it caches its first verdict and never re-evaluates.
+    mockAuthService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["policyread"] });
 
     mockPolicyService.allPolicies.set(mockPolicies);
 
     fixture = TestBed.createComponent(PoliciesTableComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
+  });
+
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState,
+      right: "policyread"
+    });
   });
 
   it("should create", () => {
