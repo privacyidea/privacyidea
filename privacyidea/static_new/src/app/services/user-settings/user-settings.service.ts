@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { HttpClient } from "@angular/common/http";
+import { HttpClient, HttpErrorResponse } from "@angular/common/http";
 import { computed, inject, Injectable, Signal, signal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
 import { environment } from "@env/environment";
@@ -140,7 +140,8 @@ export class UserSettingsService implements UserSettingsServiceInterface {
   private fail(error: unknown, message: string): Observable<never> {
     this.request = null;
     console.error(message, error);
-    this.notificationService.error(message);
+    const detail = (error as HttpErrorResponse)?.error?.result?.error?.message || "";
+    this.notificationService.error(detail ? `${message} ${detail}` : message);
     return throwError(() => error);
   }
 }

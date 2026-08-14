@@ -5,6 +5,7 @@ Tests for the /user/settings API endpoints.
 """
 import json
 
+from privacyidea.lib.error import Error
 from privacyidea.lib.usersetting import MAX_SETTINGS_BYTES, SettingsSubject, get_user_settings
 from .base import MyApiTestCase
 
@@ -42,6 +43,7 @@ class UserSettingsAPITestCase(MyApiTestCase):
     def test_03_post_rejects_unknown_key(self):
         res = self._post({"settings": {"frontend_key": "v"}})
         self.assertEqual(400, res.status_code, res)
+        self.assertEqual(Error.PARAMETER, res.json["result"]["error"]["code"], res.json)
         self.assertIn("frontend_key", res.json["result"]["error"]["message"])
         self.assertNotIn("frontend_key", self._get().json["result"]["value"])
 

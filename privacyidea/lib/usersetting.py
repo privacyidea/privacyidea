@@ -53,6 +53,7 @@ SUBJECT_USER = "user"
 # arbitrary per-principal storage.
 MAX_SETTINGS_BYTES = 16384
 
+# Accepts a list (pi.cfg) or a comma-separated string (environment variable).
 USER_SETTINGS_ALLOWED_KEYS_CONFIG = "PI_USER_SETTINGS_ALLOWED_KEYS"
 
 # These are the keys the WebUI writes, as declared by the ``UserSettingKey`` type in
@@ -64,12 +65,9 @@ KNOWN_SETTING_KEYS = {
     "dashboard",
 }
 
-# A rejection message echoes the offending keys into the audit log, whose ``info``
-# column holds 500 characters. PI_AUDIT_SQL_TRUNCATE is not enabled by default, and
-# without it an entry that does not fit is dropped rather than cut. 200 keeps the
-# whole message well inside that column, leaving room for the text around the keys
-# and for what other handlers append to the same field.
-MAX_REPORTED_KEYS_LENGTH = 200
+# How many of the offending keys a rejection message names as examples. The full
+# list goes to the debug log.
+MAX_REPORTED_KEYS = 3
 
 
 def get_allowed_keys() -> set:
@@ -143,35 +141,6 @@ class SettingsSubject:
                    user_id=user.uid or "", resolver=user.resolver or "", realm_id=user.realm_id)
 
 
-def _describe_unknown_keys(unknown: list) -> str:
-    """
-    Render the unknown keys for a rejection message, staying within
-    :data:`MAX_REPORTED_KEYS_LENGTH`.
-
-    Only whole keys are listed, so the message never shows a half key that reads
-    like a name the caller actually sent. A single key that is longer than the
-    budget is cut, because there is nothing whole left to keep.
-
-    Non-printable characters are escaped rather than dropped, so the reader sees
-    which character was sent. A JSON key may contain a line break, and the
-    message reaches the audit log, whose CSV export is line-oriented -- an
-    unescaped key could forge an entry there. The test is the same one
-    :class:`privacyidea.lib.log.SecureFormatter` uses, which covers the control
-    characters beyond the usual line-break suspects (NUL, ESC and friends).
-    """
-    packed = ""
-    for key in unknown:
-        key = "".join(char if char.isprintable() else char.encode("unicode_escape").decode("ascii")
-                      for char in key)
-        candidate = f"{packed}, {key}" if packed else key
-        if len(candidate) > MAX_REPORTED_KEYS_LENGTH:
-            if not packed:
-                return f"{key[:MAX_REPORTED_KEYS_LENGTH]}..."
-            return f"{packed}, ... ({len(unknown)} keys in total)"
-        packed = candidate
-    return packed
-
-
 def validate_user_settings(settings: dict, check_keys: bool = True) -> None:
     """
     Validate a settings document before it is stored.
@@ -203,8 +172,12 @@ def validate_user_settings(settings: dict, check_keys: bool = True) -> None:
         allowed = get_allowed_keys()
         unknown = sorted(str(key) for key in settings if key not in allowed)
         if unknown:
-            raise ParameterError(f"Unknown setting key{'s' if len(unknown) > 1 else ''}: "
-                                 f"{_describe_unknown_keys(unknown)}.")
+            log.debug(f"Rejecting settings with unknown keys: {unknown}")
+            examples = ", ".join(unknown[:MAX_REPORTED_KEYS])
+            if len(unknown) > MAX_REPORTED_KEYS:
+                examples += ", ..."
+            raise ParameterError(f"{len(unknown)} unknown setting "
+                                 f"key{'s' if len(unknown) > 1 else ''}: {examples}.")
 
 
 def _select_for_subject(subject: SettingsSubject):
