@@ -195,7 +195,8 @@ export class UserTableComponent implements OnDestroy {
     computation: (src, prev) => {
       // Skeleton rows (emptyResource) are shown while loading and must not be filtered.
       const data =
-        src.filtered ?? (isInitialLoad(this.userService.usersResource) ? (prev?.value?.data ?? this.emptyResource()) : []);
+        src.filtered ??
+        (isInitialLoad(this.userService.usersResource) ? (prev?.value?.data ?? this.emptyResource()) : []);
       const sorted = this.clientsideSortUserData([...data], src.sort);
       const ds = new MatTableDataSource(sorted);
       ds.paginator = src.paginator ?? null;
