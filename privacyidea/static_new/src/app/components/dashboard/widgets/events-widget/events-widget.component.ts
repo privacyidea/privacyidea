@@ -43,6 +43,8 @@ export class EventsWidgetComponent extends DashboardWidget implements OnInit {
   static override readonly requiredAction = "eventhandling_read";
   static override readonly title = $localize`Events`;
   static override readonly icon = "flag";
+  static override readonly titleLink = ROUTE_PATHS.EVENTS;
+  static override readonly titleLinkAction = "eventhandling_read";
   static override readonly defaultSize: WidgetSize = { cols: 6, rows: 3 };
   static override readonly minSize: WidgetSize = { cols: 4, rows: 3 };
   static override readonly maxSize: WidgetSize = { cols: 10, rows: 6 };

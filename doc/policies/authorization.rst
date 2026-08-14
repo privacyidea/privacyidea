@@ -181,6 +181,13 @@ api_key_required
 
 type: ``bool``
 
+.. deprecated:: 3.14
+   This policy and its ``Authorization`` JWT (minted by ``pi-manage api
+   createtoken``) are deprecated and will be removed in a future release. The
+   :ref:`api_clients` feature (``X-API-Key``) is intended to replace them — API
+   clients are stored, individually revocable and rotatable — but it does not
+   yet cover this ``/validate`` gating use case.
+
 This policy is checked *before* the user is validated.
 
 You can create an API key that needs to be passed to use the validate API.

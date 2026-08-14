@@ -46,7 +46,8 @@ const mockEventHandler: EventHandler = {
   options: { opt3: "true" },
   conditions: { condA: "true" },
   position: "post",
-  ordering: 0
+  ordering: 0,
+  abort_on_error: false
 };
 
 describe("EventEditPageComponent — edit mode", () => {
@@ -300,7 +301,8 @@ describe("EventEditPageComponent — edit mode", () => {
       "option.opt3": "true",
       conditions: { condA: "true" },
       position: "post",
-      ordering: 0
+      ordering: 0,
+      abort_on_error: false
     };
     expect(mockEventService.saveEventHandler).toHaveBeenCalledWith(convertedParams);
     expect(reloadSpy).toHaveBeenCalled();
@@ -375,6 +377,27 @@ describe("EventEditPageComponent — create new mode", () => {
     expect(mockEventService.selectedHandlerModule()).toBe("mockModule");
   });
 
+  it("should preset abort on error from the default of the handler module", () => {
+    mockEventService.moduleDefaults.set({ abort_on_error: true });
+
+    expect(component.abortOnError()).toBe(true);
+    expect(component.getSaveParameters().abort_on_error).toBe(true);
+  });
+
+  it("should keep the choice of the user over the default of the handler module", () => {
+    component.setAbortOnError(false);
+    mockEventService.moduleDefaults.set({ abort_on_error: true });
+
+    expect(component.abortOnError()).toBe(false);
+    expect(component.getSaveParameters().abort_on_error).toBe(false);
+  });
+
+  it("should not preset abort on error while the default of the handler module is unknown", () => {
+    mockEventService.moduleDefaults.set(null);
+
+    expect(component.abortOnError()).toBe(false);
+  });
+
   it("should save new event without id and navigate back", () => {
     mockEventService.selectedHandlerModule.set("mockModule");
     component.setNewAction("actionB");
@@ -397,7 +420,8 @@ describe("EventEditPageComponent — create new mode", () => {
       "option.opt3": "true",
       conditions: { condA: "true" },
       position: "pre",
-      ordering: 0
+      ordering: 0,
+      abort_on_error: false
     };
     expect(mockEventService.saveEventHandler).toHaveBeenCalledWith(convertedParams);
     expect(reloadSpy).toHaveBeenCalled();

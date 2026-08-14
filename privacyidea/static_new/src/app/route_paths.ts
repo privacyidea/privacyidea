@@ -19,6 +19,7 @@
 export const ROUTE_PATHS = {
   LOGIN: "/login",
   DASHBOARD: "/dashboard",
+  SETTINGS: "/configuration/ui-settings",
   AUDIT: "/audit",
   NEWS: "/news",
   CLIENTS: "/audit/clients",

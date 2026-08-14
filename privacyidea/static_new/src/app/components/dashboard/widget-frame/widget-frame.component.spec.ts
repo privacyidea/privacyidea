@@ -19,17 +19,21 @@
 import { provideZonelessChangeDetection } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideRouter } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { TokensWidgetComponent } from "@components/dashboard/widgets/tokens-widget/tokens-widget.component";
 import { WidgetInstance } from "@models/dashboard";
-import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService } from "@services/auth/auth.service";
 import { DashboardLayoutService } from "@services/dashboard/dashboard-layout.service";
+import { WidgetRegistryService } from "@services/dashboard/widget-registry.service";
 import { InfoService } from "@services/info/info.service";
+import { ResolverService } from "@services/resolver/resolver.service";
 import { SubscriptionService } from "@services/subscription/subscription.service";
+import { SystemService } from "@services/system/system.service";
 import { TokenService } from "@services/token/token.service";
-import { MockInfoService } from "@testing/mock-services";
-import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockAuthService, MockInfoService } from "@testing/mock-services";
+import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
 import { MockSubscriptionService } from "@testing/mock-services/mock-subscription-service";
+import { MockSystemService } from "@testing/mock-services/mock-system-service";
 import { MockTokenService } from "@testing/mock-services/mock-token-service";
 import { WidgetFrameComponent } from "./widget-frame.component";
 
@@ -49,7 +53,9 @@ describe("WidgetFrameComponent", () => {
         { provide: AuthService, useClass: MockAuthService },
         { provide: TokenService, useClass: MockTokenService },
         { provide: SubscriptionService, useClass: MockSubscriptionService },
-        { provide: InfoService, useClass: MockInfoService }
+        { provide: InfoService, useClass: MockInfoService },
+        { provide: SystemService, useClass: MockSystemService },
+        { provide: ResolverService, useClass: MockResolverService }
       ]
     }).compileComponents();
 
@@ -82,10 +88,82 @@ describe("WidgetFrameComponent", () => {
     expect(fixture.nativeElement.querySelector(".widget-title").textContent).toContain("Token Usage");
   });
 
-  it("should render the title as plain text for a widget without a title route", () => {
-    expect(component["titleRoute"]()).toBeNull();
-    expect(fixture.nativeElement.querySelector("span.widget-title")).not.toBeNull();
-    expect(fixture.nativeElement.querySelector("a.widget-title")).toBeNull();
+  describe("title link", () => {
+    const resolverTimingInstance: WidgetInstance = { id: "r1", type: "resolver-timing", x: 0, y: 0, cols: 12, rows: 6 };
+
+    /**
+     * The mock denies every right by default. Rights have to be granted before the frame renders:
+     * the real `actionAllowed` reads a signal, so the link recomputes when auth data arrives, but
+     * the jest mock has no signal to invalidate the computed with.
+     */
+    const renderWith = (instance: WidgetInstance, rights: string[]) => {
+      const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+      authService.actionAllowed.mockImplementation((action: string) => rights.includes(action));
+
+      fixture = TestBed.createComponent(WidgetFrameComponent);
+      component = fixture.componentInstance;
+      fixture.componentRef.setInput("instance", instance);
+      fixture.detectChanges();
+    };
+
+    const titleLink = () => fixture.nativeElement.querySelector("a.widget-title-link");
+
+    it("should link the title to the matching menu in view mode", () => {
+      renderWith(tokensInstance, ["tokenlist"]);
+
+      expect(titleLink()).not.toBeNull();
+      expect(titleLink().getAttribute("href")).toBe("/tokens");
+    });
+
+    it("should render a plain title in edit mode so the header stays a drag handle", () => {
+      renderWith(tokensInstance, ["tokenlist"]);
+      layoutService.editMode.set(true);
+      fixture.detectChanges();
+
+      expect(titleLink()).toBeNull();
+      expect(fixture.nativeElement.querySelector(".widget-title").textContent).toContain("Token Usage");
+    });
+
+    it("should not link the title for widgets without a matching menu", () => {
+      renderWith({ id: "n1", type: "notification-delivery", x: 0, y: 0, cols: 8, rows: 6 }, ["tokenlist", "auditlog"]);
+
+      expect(titleLink()).toBeNull();
+    });
+
+    it("should drop the title link when the user lacks the right for the target page", () => {
+      renderWith(resolverTimingInstance, []);
+
+      expect(titleLink()).toBeNull();
+    });
+
+    it("should link the resolver timing title once the user may read resolvers", () => {
+      renderWith(resolverTimingInstance, ["resolverread"]);
+
+      expect(titleLink().getAttribute("href")).toBe("/users/resolvers");
+    });
+
+    // A widget stays on screen without its requiredAction and renders as "denied" instead of being
+    // dropped, so the title must not remain a link into a page the user cannot use.
+    it("should render a plain title for a denied widget", () => {
+      renderWith(tokensInstance, []);
+
+      const widget = component["outlet"]()?.componentInstance as TokensWidgetComponent;
+      expect(widget.state()).toBe("denied");
+      expect(titleLink()).toBeNull();
+      expect(fixture.nativeElement.querySelector(".widget-title").textContent).toContain("Token Usage");
+    });
+
+    // Without a right of its own a title link would fall back to "always visible", since the frame
+    // cannot infer the target page's right from the widget.
+    it("should declare a right for every widget that links its heading", () => {
+      const registry = TestBed.inject(WidgetRegistryService);
+      const linking = registry.widgetTypes.filter((widgetType) => widgetType.titleLink);
+
+      expect(linking.length).toBeGreaterThan(0);
+      expect(linking.filter((widgetType) => !widgetType.titleLinkAction).map((widgetType) => widgetType.type)).toEqual(
+        []
+      );
+    });
   });
 
   it("should show a reload button when the widget is not loading", () => {
@@ -150,8 +228,8 @@ describe("WidgetFrameComponent", () => {
       fixture.detectChanges();
     });
 
-    it("should expose the title route of the widget type in view mode", () => {
-      expect(component["titleRoute"]()).toBe(ROUTE_PATHS.NEWS);
+    it("should expose the title route of the widget instance in view mode", () => {
+      expect(component["titleLink"]()).toBe(ROUTE_PATHS.NEWS);
     });
 
     it("should render the title as a link to that route", () => {
@@ -165,7 +243,7 @@ describe("WidgetFrameComponent", () => {
       layoutService.editMode.set(true);
       fixture.detectChanges();
 
-      expect(component["titleRoute"]()).toBeNull();
+      expect(component["titleLink"]()).toBeNull();
       expect(fixture.nativeElement.querySelector("a.widget-title")).toBeNull();
       expect(fixture.nativeElement.querySelector("span.widget-title").textContent).toContain("News");
     });

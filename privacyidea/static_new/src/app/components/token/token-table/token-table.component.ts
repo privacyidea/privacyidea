@@ -23,6 +23,7 @@ import {
   ElementRef,
   inject,
   linkedSignal,
+  OnDestroy,
   ViewChild,
   WritableSignal
 } from "@angular/core";
@@ -98,7 +99,7 @@ const columnKeysMap = [
   templateUrl: "./token-table.component.html",
   styleUrl: "./token-table.component.scss"
 })
-export class TokenTableComponent {
+export class TokenTableComponent implements OnDestroy {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
@@ -111,7 +112,7 @@ export class TokenTableComponent {
   readonly apiFilterKeyMap = this.tokenService.apiFilterKeyMap;
   readonly advancedApiFilterKeys = this.tokenService.advancedApiFilterKeys;
   readonly filterKeywords = [...this.tokenService.apiFilterKeys, ...this.tokenService.advancedApiFilterKeys].filter(
-    (keyword) => !this.tokenService.unsupportedKeys.has(keyword) && !keyword.includes(" ")
+    (keyword) => !keyword.includes(" ")
   );
   readonly filterHint = inlineFilterHint();
   readonly tokenTypeFilterOptions = computed(() => this.tokenService.tokenTypeOptions().map((type) => type.key));
@@ -195,25 +196,8 @@ export class TokenTableComponent {
     return this.basePageSizeOptions;
   });
 
-  isAllSelected() {
-    return this.tokenSelection().length === this.tokenDataSource().data.length;
-  }
-
-  toggleAllRows() {
-    if (this.isAllSelected()) {
-      this.tokenSelection.set([]);
-    } else {
-      this.tokenSelection.set([...this.tokenDataSource().data]);
-    }
-  }
-
-  toggleRow(tokenDetails: TokenDetails): void {
-    const current = this.tokenSelection();
-    if (current.includes(tokenDetails)) {
-      this.tokenSelection.set(current.filter((r) => r !== tokenDetails));
-    } else {
-      this.tokenSelection.set([...current, tokenDetails]);
-    }
+  ngOnDestroy(): void {
+    this.tokenSelection.deselectAllRows();
   }
 
   toggleActive(tokenDetails: TokenDetails): void {
@@ -295,13 +279,8 @@ export class TokenTableComponent {
     return filterColumnHint(label, {
       exactMatch: this.tokenService.exactMatchKeys.has(keyword),
       isBoolean: this.tokenService.booleanKeys.has(keyword),
-      isUnsupported: this.tokenService.unsupportedKeys.has(keyword),
       caseNote: this.tokenService.caseNotes[keyword]
     });
-  }
-
-  isUnsupportedKeyword(keyword: string): boolean {
-    return this.tokenService.unsupportedKeys.has(keyword);
   }
 
   getFilterIconName(keyword: string): string {
@@ -318,9 +297,6 @@ export class TokenTableComponent {
   }
 
   onKeywordClick(filterKeyword: string): void {
-    if (this.isUnsupportedKeyword(filterKeyword)) {
-      return;
-    }
     this.toggleFilter(filterKeyword);
     const inputElement = this.filterInput?.nativeElement;
     if (inputElement) {

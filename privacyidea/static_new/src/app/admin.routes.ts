@@ -52,6 +52,7 @@ import { MachineResolverDetailsComponent } from "@components/machine-resolver/ma
 import { MachineResolverComponent } from "@components/machine-resolver/machine-resolver.component";
 import { NewsComponent } from "@components/news/news.component";
 import { PolicyEditPageComponent } from "@components/policies/policy-edit-page/policy-edit-page.component";
+import { UISettingsComponent } from "@components/ui-settings/ui-settings.component";
 import { PoliciesTableComponent } from "@components/policies/policies-table/policies-table.component";
 import { ChallengesTableComponent } from "@components/token/challenges-table/challenges-table.component";
 import { ContainerCreateComponent } from "@components/container/container-create/container-create.component";
@@ -173,6 +174,7 @@ export const routes: Routes = [
       },
       { path: "subscription", component: SubscriptionComponent },
       { path: "system", component: SystemConfigComponent, canDeactivate: [pendingChangesGuard] },
+      { path: "ui-settings", component: UISettingsComponent },
       { path: "tokens", component: TokenTypeConfigComponent, canDeactivate: [pendingChangesGuard] }
     ]
   },

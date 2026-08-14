@@ -32,7 +32,11 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
-import { FilterableTableService, FilterableTableServiceInterface } from "@services/table-utils/filterable-table-service";
+import {
+  FilterableTableService,
+  FilterableTableServiceInterface
+} from "@services/table-utils/filterable-table-service";
+import { loadedRows, RowSelector } from "@services/table-utils/row-selector";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { buildFilterParams, filterParamsEqual, toWildcardParam, withDefaultRealm } from "@utils/filter.utils";
@@ -206,12 +210,13 @@ export interface ContainerServiceInterface extends FilterableTableServiceInterfa
   userContainersResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined>;
   containersForTokenTypeResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined>;
   containersForTokenType: Signal<string[]>;
-  containerSelection: WritableSignal<ContainerDetailData[]>;
+  containerSelection: RowSelector<ContainerDetailData>;
   containerTypesResource: HttpResourceRef<PiResponse<ContainerTypes> | undefined>;
   containerTypeOptions: Signal<ContainerType[]>;
   selectedContainerType: WritableSignal<ContainerType | undefined>;
   containerDetailsResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined>;
   containerDetails: WritableSignal<ContainerDetails>;
+  supportedTokenTypes: Signal<string[]>;
   templateComparison: WritableSignal<TemplateComparisonResult | null>;
   addToken: (tokenSerial: string, containerSerial: string) => Observable<PiResponse<boolean>>;
   removeToken: (tokenSerial: string, containerSerial: string) => Observable<PiResponse<boolean>>;
@@ -541,14 +546,9 @@ export class ContainerService extends FilterableTableService implements Containe
     }
   });
 
-  containerSelection: WritableSignal<ContainerDetailData[]> = linkedSignal({
-    source: () => ({
-      pageIndex: this.pageIndex(),
-      pageSize: this.pageSize(),
-      sort: this.sort(),
-      filterValue: this.activeFilter()
-    }),
-    computation: () => []
+  containerSelection = new RowSelector<ContainerDetailData>({
+    keyGetter: (container) => container.serial,
+    visibleRows: loadedRows(this.containerResource, (response) => response.result?.value?.containers)
   });
 
   containerTypesResource = httpResource<PiResponse<ContainerTypes>>(() => {
@@ -556,6 +556,7 @@ export class ContainerService extends FilterableTableService implements Containe
     const onAllowedRoute =
       this.contentService.onContainers() ||
       this.contentService.onContainersCreate() ||
+      this.contentService.onContainersDetails() ||
       this.contentService.onContainersWizard() ||
       this.contentService.onTokensEnrollment() ||
       this.contentService.onTokenDetails();
@@ -632,6 +633,11 @@ export class ContainerService extends FilterableTableService implements Containe
       if (!containerDetail) return source.isLoading ? (previous?.value ?? empty) : empty;
       return containerDetail;
     }
+  });
+
+  supportedTokenTypes = computed<string[]>(() => {
+    const containerType = this.containerDetails().containers[0]?.type;
+    return this.containerTypeOptions().find((type) => type.containerType === containerType)?.token_types ?? [];
   });
 
   addToken(tokenSerial: string, containerSerial: string): Observable<PiResponse<boolean>> {

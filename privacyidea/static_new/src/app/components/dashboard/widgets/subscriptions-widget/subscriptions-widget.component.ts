@@ -38,6 +38,8 @@ export class SubscriptionsWidgetComponent extends DashboardWidget implements OnI
   static override readonly requiredAction = "managesubscription";
   static override readonly title = $localize`Subscriptions`;
   static override readonly icon = "event_repeat";
+  static override readonly titleLink = ROUTE_PATHS.SUBSCRIPTION;
+  static override readonly titleLinkAction = "managesubscription";
   static override readonly defaultSize: WidgetSize = { cols: 8, rows: 5 };
   static override readonly minSize: WidgetSize = { cols: 8, rows: 5 };
   static override readonly maxSize: WidgetSize = { cols: 8, rows: 5 };

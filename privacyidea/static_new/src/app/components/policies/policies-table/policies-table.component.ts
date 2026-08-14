@@ -20,7 +20,7 @@
 import { CommonModule, KeyValuePipe } from "@angular/common";
 import { Component, computed, inject, linkedSignal, signal, viewChild } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
-import { MatCheckboxChange, MatCheckboxModule } from "@angular/material/checkbox";
+import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
@@ -38,6 +38,7 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PolicyDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
+import { RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { PoliciesTableActionsComponent } from "./policies-table-actions/policies-table-actions.component";
 import { PolicyFilterComponent } from "./policy-filter/policy-filter.component";
@@ -142,17 +143,9 @@ export class PoliciesTableComponent {
     });
   });
 
-  readonly selectedPolicies = linkedSignal<PolicyDetail[], Set<string>>({
-    source: () => this.policiesListFiltered(),
-    computation: (source, previous) => {
-      const selected = new Set(previous?.value ?? []);
-      if (this.policyService.allPolicies().length === 0) return new Set();
-      const currentNames = new Set(source.map((p) => p.name));
-      for (const name of selected) {
-        if (!currentNames.has(name)) selected.delete(name);
-      }
-      return selected;
-    }
+  readonly selector = new RowSelector<PolicyDetail>({
+    keyGetter: (policy) => policy.name,
+    visibleRows: computed(() => this.sortedFilteredPolicies().filter((policy) => !!policy.name))
   });
 
   readonly keepOrder = () => 0;
@@ -171,34 +164,6 @@ export class PoliciesTableComponent {
     const nextFilter = option.toggle ? option.toggle(this.filter()) : this.filter().toggleKey(option.key);
     this.onFilterUpdate(nextFilter);
     this.filterComponent()?.updateFilterManually(nextFilter);
-  }
-
-  updateSelection($event: MatCheckboxChange, policyName: string): void {
-    if (!policyName) return;
-    const selected = new Set(this.selectedPolicies());
-    if ($event.checked) {
-      selected.add(policyName);
-    } else {
-      selected.delete(policyName);
-    }
-    this.selectedPolicies.set(selected);
-  }
-
-  isAllSelected(): boolean {
-    const displayed = this.sortedFilteredPolicies().filter((p) => !!p.name);
-    if (displayed.length === 0) return false;
-    return displayed.every((p) => this.selectedPolicies().has(p.name));
-  }
-
-  masterToggle(): void {
-    const selected = new Set(this.selectedPolicies());
-    const displayed = this.sortedFilteredPolicies().filter((p) => !!p.name);
-    if (this.isAllSelected()) {
-      displayed.forEach((p) => selected.delete(p.name));
-    } else {
-      displayed.forEach((p) => selected.add(p.name));
-    }
-    this.selectedPolicies.set(selected);
   }
 
   getFilterIconName(columnKey: string): string {

@@ -68,6 +68,8 @@ export abstract class DashboardWidget {
   static readonly pinned: boolean = false;
   static readonly fixedPosition: { x: number; y: number } | null = null;
   static readonly requiredAction: PolicyAction | null = null;
+  static readonly titleLink: string | null = null;
+  static readonly titleLinkAction: PolicyAction | null = null;
 
   abstract reload(): void;
 }

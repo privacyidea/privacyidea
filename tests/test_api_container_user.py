@@ -5,7 +5,6 @@ import json
 from privacyidea.lib.container import (create_container_template, get_template_obj, delete_container_by_serial)
 from privacyidea.lib.container import (init_container, find_container_by_serial, add_token_to_container, assign_user)
 from privacyidea.lib.containers.container_info import PI_INTERNAL, TokenContainerInfoData, RegistrationState
-from privacyidea.lib.error import Error
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
 from privacyidea.lib.realm import set_realm
@@ -381,9 +380,12 @@ class APIContainerAuthorizationUser(APIContainerAuthorization):
         assign_user(my_container_serial, User("selfservice", self.realm1, self.resolvername1))
 
         try:
-            # The user does not exist in the second resolver, hence the request can not be resolved to a user
-            self.request_assert_error(400, '/container/', {"resolver": "reso3", "pagesize": 100},
-                                      self.at_user, 'GET', error_code=Error.USER)
+            # A resolver of the realm the user is not in is not applied, the request stays scoped to the user
+            result = self.request_assert_success('/container/', {"resolver": "reso3", "pagesize": 100},
+                                                 self.at_user, 'GET')
+            serials = {c["serial"] for c in result["result"]["value"]["containers"]}
+            self.assertIn(my_container_serial, serials)
+            self.assertNotIn(other_container_serial, serials)
 
             # The user sees their own container, but never the one of the other user
             result = self.request_assert_success('/container/', {"pagesize": 100}, self.at_user, 'GET')

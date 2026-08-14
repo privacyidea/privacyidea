@@ -97,6 +97,11 @@ DOCKER_LOGGING_CONFIG = {
 class SecureFormatter(Formatter):
 
     def format(self, record):
+        if not isinstance(record.msg, str):
+            # Logging allows any object as the message (log.info(exception) is common).
+            # Coerce it here, like logging.LogRecord.getMessage() would, so the string
+            # operations below can not fail on the message object.
+            record.msg = str(record.msg)
         if 's_line' in record.__dict__ and '_called' not in record.__dict__:
             # rotating file handler calls "format" to check for its length before
             # emitting the actual line
@@ -121,9 +126,15 @@ SENSITIVE_KEY_NAMES = frozenset({
     # "anotpval" is the parameter holding the OTP in the check_otp signature of every token class.
     # It is listed literally because "otp" is too short to be matched inside a longer name.
     "anotpval",
+    # "apikey" (squashed) hides both the "api_key" result field and the "X-API-Key" request
+    # header, so the plaintext API client key is never written to the log.
+    "apikey",
     "answer", "answers", "authorization", "bindpw", "cakey", "cookie", "credential", "fbtoken",
     "key_enc", "key_iv", "otp", "otp1", "otp2", "otpkey", "otpvalue", "pass", "passphrase",
     "passw", "passwd", "password", "pin", "privatekey", "questions", "recoverycode", "secret",
+    # "series_id" is the secret half of the remember-device cookie (series_id:counter); logging it
+    # at DEBUG would write a replayable bearer token to the log.
+    "series_id",
     "session", "sshkey", "tans",
 })
 

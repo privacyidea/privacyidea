@@ -135,7 +135,7 @@ class KeycloakResolver(HTTPResolver):
         the endpoint to get all users but filter for the username.
         """
         config_get_user_by_name = self.config.get(CONFIG_GET_USER_BY_NAME)
-        config = RequestConfig(config_get_user_by_name, self.headers, {"username": login_name}, "")
+        config = RequestConfig(config_get_user_by_name, self.headers, {"username": login_name})
         try:
             users = self._get_user_list({}, config, ["userid"])
         except ResolverError as error:

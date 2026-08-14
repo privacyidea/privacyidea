@@ -71,7 +71,7 @@ from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
 from privacyidea.lib.user import (User)
 from privacyidea.lib.utils import b32encode_and_unicode, hexlify_and_unicode
-from privacyidea.models import (db, Token, Challenge, TokenRealm)
+from privacyidea.models import (db, Token, Challenge, TokenRealm, TokenOwner)
 from .base import MyTestCase
 
 PWFILE = "tests/testdata/passwords"
@@ -214,6 +214,55 @@ class TokenTestCase(MyTestCase):
         tokenobject_list = get_tokens(serial_wildcard="*")
         self.assertEqual(4, len(tokenobject_list))
 
+    def test_02c_get_tokens_resolver_and_userid_filter(self):
+        # The resolver and the userid are filters of their own, independent of a user object
+        init_token({"type": "spass", "serial": "RESO01"},
+                   user=User(login="cornelius", realm=self.realm1, resolver=self.resolvername1))
+        init_token({"type": "spass", "serial": "RESO02"})
+
+        serials = [token.token.serial for token in get_tokens(resolver=self.resolvername1)]
+        self.assertIn("RESO01", serials)
+        self.assertNotIn("RESO02", serials)
+
+        # The resolver name is matched case-insensitively and honors '*' as wildcard
+        serials = [token.token.serial for token in get_tokens(resolver=self.resolvername1.upper())]
+        self.assertIn("RESO01", serials)
+        serials = [token.token.serial for token in get_tokens(resolver="resol*")]
+        self.assertIn("RESO01", serials)
+        self.assertNotIn("RESO02", serials)
+
+        # A resolver that does not exist matches nothing
+        self.assertListEqual([], get_tokens(resolver="no_such_resolver"))
+
+        # The same for the user id of the token owner, in both entry points
+        serials = [token.token.serial for token in get_tokens(userid="1000")]
+        self.assertIn("RESO01", serials)
+        self.assertNotIn("RESO02", serials)
+        self.assertListEqual([], get_tokens(userid="999999"))
+
+        serials = [token["serial"] for token in get_tokens_paginate(userid="1000")["tokens"]]
+        self.assertIn("RESO01", serials)
+        self.assertNotIn("RESO02", serials)
+        self.assertListEqual([], get_tokens_paginate(userid="999999")["tokens"])
+
+        # The user id honors '*' as wildcard
+        serials = [token.token.serial for token in get_tokens(userid="100*")]
+        self.assertIn("RESO01", serials)
+        self.assertNotIn("RESO02", serials)
+
+        # A user object carrying only a realm returns the tokens of all users of that realm
+        serials = [token.token.serial for token in get_tokens(user=User(realm=self.realm1))]
+        self.assertIn("RESO01", serials)
+        self.assertNotIn("RESO02", serials)
+
+        # A realm that does not exist matches nothing, while an unresolvable login is an error
+        self.assertListEqual([], get_tokens(user=User(realm="no_such_realm")))
+        self.assertRaises(UserError, get_tokens,
+                          user=User(login="no_such_user", realm=self.realm1))
+
+        remove_token("RESO01")
+        remove_token("RESO02")
+
     def test_02a_get_tokens_like_wildcard_escaping(self):
         # SQL LIKE metacharacters (_ and %) in filter values must be matched
         # literally; only the '*' wildcard should expand.
@@ -284,8 +333,20 @@ class TokenTestCase(MyTestCase):
         self.assertEqual(0, get_num_tokens_in_realm(self.realm1, active=False))
 
     def test_05_get_token_in_resolver(self):
-        tokenobject_list = get_tokens_in_resolver(self.resolvername1)
-        self.assertGreater(len(tokenobject_list), 0)
+        # Only the tokens whose owner is in the given resolver are returned
+        init_token({"type": "spass", "serial": "INRES01"},
+                   user=User(login="cornelius", realm=self.realm1, resolver=self.resolvername1))
+        init_token({"type": "spass", "serial": "INRES02"})
+
+        serials = [token_obj.token.serial for token_obj in get_tokens_in_resolver(self.resolvername1)]
+        self.assertIn("INRES01", serials)
+        self.assertNotIn("INRES02", serials)
+
+        # A resolver that owns no token matches nothing
+        self.assertListEqual([], get_tokens_in_resolver("no_such_resolver"))
+
+        remove_token("INRES01")
+        remove_token("INRES02")
 
     def test_06_get_realms_of_token(self):
         # Return a list of realmnames for a token
@@ -1382,6 +1443,58 @@ class TokenTestCase(MyTestCase):
         tok_r1.delete_token()
         tok_r2.delete_token()
         tok_r3.delete_token()
+
+    def test_41b_paginate_count_with_duplicate_owner_rows(self):
+        """Verify that token count is not inflated by outer-join fan-out.
+
+        The TokenOwner outerjoin can fan out when a token has more than one
+        owner row.  The count must use COUNT(DISTINCT token.id) so that it
+        agrees with the .unique() de-duplication applied to the token list.
+
+        Without the fix, get_tokens(count=True) would return 2 (one per
+        joined row), while the de-duplicated token list has length 1.
+        """
+        self.setUp_user_realms()
+
+        # Create a fresh token assigned to a user
+        tok = init_token({"type": "hotp", "genkey": True},
+                         user=User("cornelius", self.realm1))
+        serial = tok.get_serial()
+
+        # Directly insert a second TokenOwner row for the same token,
+        # bypassing the application-level single-owner restriction.
+        # This simulates the fan-out that any future one-to-many
+        # owner relationship would cause.
+        # Use select(Token.id) (not select(Token)) to avoid triggering
+        # SQLAlchemy's joined-eager-loading uniqueness requirement.
+        token_id = db.session.execute(
+            select(Token.id).where(Token.serial == serial)
+        ).scalar_one()
+        second_owner = TokenOwner(
+            token_id=token_id,
+            user_id="9999",
+            resolver=self.resolvername1,
+            realmname=self.realm1,
+        )
+        second_owner.save()
+        db.session.commit()
+
+        # get_tokens(count=True) must return 1, not 2
+        count = get_tokens(serial=serial, count=True)
+        self.assertEqual(1, count,
+                         "count must reflect distinct tokens, not raw joined rows")
+
+        # The de-duplicated token list must also have length 1
+        token_list = get_tokens(serial=serial)
+        self.assertEqual(1, len(token_list))
+
+        # count and list length must agree
+        self.assertEqual(count, len(token_list))
+
+        # Clean up the extra owner row and the token
+        db.session.delete(second_owner)
+        db.session.commit()
+        tok.delete_token()
 
     def test_42_sort_tokens(self):
         # return pagination

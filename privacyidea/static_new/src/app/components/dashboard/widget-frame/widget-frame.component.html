@@ -29,12 +29,12 @@
       } @else if (widgetType()?.icon) {
         <mat-icon class="widget-title-icon">{{ widgetType()?.icon }}</mat-icon>
       }
-      @if (titleRoute(); as route) {
+      @if (titleLink(); as link) {
         <a
-          class="widget-title"
-          [routerLink]="route">
-          {{ widgetType()?.title }}
-        </a>
+          class="widget-title widget-title-link"
+          [routerLink]="link"
+          >{{ widgetType()?.title }}</a
+        >
       } @else {
         <span class="widget-title">{{ widgetType()?.title }}</span>
       }

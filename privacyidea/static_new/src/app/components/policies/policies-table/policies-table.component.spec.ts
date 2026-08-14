@@ -123,14 +123,17 @@ describe("PoliciesTableComponent", () => {
     expect(component.sortedFilteredPolicies().length).toBe(3);
   });
 
-  it("should select all displayed rows when masterToggle is called", () => {
+  it("should select all displayed rows when select-all is triggered", () => {
     fixture.detectChanges();
 
-    component.masterToggle();
-    expect(component.selectedPolicies().size).toBe(3);
-    expect(component.selectedPolicies().has("Policy-A")).toBeTruthy();
-    expect(component.selectedPolicies().has("Policy-B")).toBeTruthy();
-    expect(component.selectedPolicies().has("Policy-C")).toBeTruthy();
+    component.selector.selectAllRows();
+
+    expect(component.selector.selectedRows().map((policy) => policy.name)).toEqual([
+      "Policy-A",
+      "Policy-B",
+      "Policy-C"
+    ]);
+    expect(component.selector.allRowsSelected()).toBe(true);
   });
 
   it("should open edit dialog only if row is not a skeleton row", () => {

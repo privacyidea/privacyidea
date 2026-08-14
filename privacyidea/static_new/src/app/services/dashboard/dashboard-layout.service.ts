@@ -65,11 +65,13 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
   private readonly persistence: DashboardPersistenceServiceInterface = inject(DashboardPersistenceService);
   private readonly registry: WidgetRegistryServiceInterface = inject(WidgetRegistryService);
   private readonly auth: AuthServiceInterface = inject(AuthService);
-  public readonly widgets: WritableSignal<WidgetInstance[]> = signal(
-    this.reconcilePinned(this.persistence.load() ?? this.defaultWidgets())
-  );
+  public readonly widgets: WritableSignal<WidgetInstance[]> = signal(this.reconcilePinned(this.defaultWidgets()));
   public readonly editMode = signal(false);
   public readonly insertRow: WritableSignal<number> = signal(0);
+
+  constructor() {
+    this.loadLayout();
+  }
 
   public beginEdit(): void {
     this.snapshot = this.widgets().map((widget) => ({ ...widget }));
@@ -79,7 +81,7 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
   public saveEdit(): void {
     this.snapshot = null;
     this.editMode.set(false);
-    this.persist();
+    this.persistIfLive();
   }
 
   public cancelEdit(): void {
@@ -154,7 +156,7 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
   }
 
   public persist(): void {
-    this.persistence.save(this.widgets());
+    this.persistence.save(this.widgets()).subscribe();
   }
 
   public resetLayout(): void {
@@ -163,11 +165,34 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
   }
 
   private snapshot: WidgetInstance[] | null = null;
+  private loaded = false;
+  private changedWhileLoading = false;
+
+  private loadLayout(): void {
+    this.persistence.load().subscribe((stored) => {
+      this.loaded = true;
+      // A layout the user changed while the request was in flight wins over the
+      // stored one and is written back, so the change is not silently dropped.
+      if (this.changedWhileLoading) {
+        this.persist();
+        return;
+      }
+      if (stored) {
+        this.widgets.set(this.reconcilePinned(stored));
+      }
+    });
+  }
 
   private persistIfLive(): void {
-    if (!this.editMode()) {
-      this.persist();
+    if (this.editMode()) {
+      return;
     }
+    // Writing the default layout before the stored one arrived would overwrite it.
+    if (!this.loaded) {
+      this.changedWhileLoading = true;
+      return;
+    }
+    this.persist();
   }
 
   private sameLayout(a: WidgetInstance[], b: WidgetInstance[]): boolean {
@@ -189,7 +214,10 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
   }
 
   private reconcilePinned(widgets: WidgetInstance[]): WidgetInstance[] {
-    const result = widgets.filter((widget) => !this.registry.get(widget.type)?.pinned);
+    const result = widgets.filter((widget) => {
+      const widgetType = this.registry.get(widget.type);
+      return !!widgetType && !widgetType.pinned;
+    });
     for (const widgetType of this.registry.widgetTypes) {
       if (!widgetType.pinned) {
         continue;
