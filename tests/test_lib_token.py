@@ -232,18 +232,18 @@ class TokenTestCase(MyTestCase):
         self.assertNotIn("RESO02", serials)
 
         # A resolver that does not exist matches nothing
-        self.assertEqual([], get_tokens(resolver="no_such_resolver"))
+        self.assertListEqual([], get_tokens(resolver="no_such_resolver"))
 
         # The same for the user id of the token owner, in both entry points
         serials = [token.token.serial for token in get_tokens(userid="1000")]
         self.assertIn("RESO01", serials)
         self.assertNotIn("RESO02", serials)
-        self.assertEqual([], get_tokens(userid="999999"))
+        self.assertListEqual([], get_tokens(userid="999999"))
 
         serials = [token["serial"] for token in get_tokens_paginate(userid="1000")["tokens"]]
         self.assertIn("RESO01", serials)
         self.assertNotIn("RESO02", serials)
-        self.assertEqual([], get_tokens_paginate(userid="999999")["tokens"])
+        self.assertListEqual([], get_tokens_paginate(userid="999999")["tokens"])
 
         # The user id honors '*' as wildcard
         serials = [token.token.serial for token in get_tokens(userid="100*")]
@@ -256,7 +256,7 @@ class TokenTestCase(MyTestCase):
         self.assertNotIn("RESO02", serials)
 
         # A realm that does not exist matches nothing, while an unresolvable login is an error
-        self.assertEqual([], get_tokens(user=User(realm="no_such_realm")))
+        self.assertListEqual([], get_tokens(user=User(realm="no_such_realm")))
         self.assertRaises(UserError, get_tokens,
                           user=User(login="no_such_user", realm=self.realm1))
 
@@ -343,7 +343,7 @@ class TokenTestCase(MyTestCase):
         self.assertNotIn("INRES02", serials)
 
         # A resolver that owns no token matches nothing
-        self.assertEqual([], get_tokens_in_resolver("no_such_resolver"))
+        self.assertListEqual([], get_tokens_in_resolver("no_such_resolver"))
 
         remove_token("INRES01")
         remove_token("INRES02")

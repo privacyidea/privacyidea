@@ -3898,15 +3898,15 @@ class APITokenTestCase(MyApiTestCase):
 
         try:
             serials = list_serials({"resolver": self.resolvername3, "pagesize": 100})
-            self.assertEqual([token_resolver3.get_serial()], serials)
+            self.assertListEqual([token_resolver3.get_serial()], serials)
 
             # The resolver is also applied in combination with the realm
             serials = list_serials({"realm": self.realm1, "resolver": self.resolvername3, "pagesize": 100})
-            self.assertEqual([token_resolver3.get_serial()], serials)
+            self.assertListEqual([token_resolver3.get_serial()], serials)
 
             # The name is matched case-insensitively
             serials = list_serials({"resolver": self.resolvername3.upper(), "pagesize": 100})
-            self.assertEqual([token_resolver3.get_serial()], serials)
+            self.assertListEqual([token_resolver3.get_serial()], serials)
 
             # A wildcard matches both resolvers, but never a token without an owner
             serials = list_serials({"resolver": "res*", "pagesize": 100})
@@ -3915,7 +3915,7 @@ class APITokenTestCase(MyApiTestCase):
             self.assertNotIn(token_unassigned.get_serial(), serials)
 
             # A resolver that does not exist matches nothing
-            self.assertEqual([], list_serials({"resolver": "no_such_resolver", "pagesize": 100}))
+            self.assertListEqual([], list_serials({"resolver": "no_such_resolver", "pagesize": 100}))
 
             # A resolver of only wildcards is no filter at all
             serials = list_serials({"resolver": "*", "pagesize": 100})
@@ -3959,7 +3959,7 @@ class APITokenTestCase(MyApiTestCase):
             self.assertNotIn(token_unassigned.get_serial(), serials)
 
             # A user id that does not exist matches nothing
-            self.assertEqual([], list_serials({"userid": "999999", "pagesize": 100}))
+            self.assertListEqual([], list_serials({"userid": "999999", "pagesize": 100}))
         finally:
             remove_token(token_cornelius.get_serial())
             remove_token(token_selfservice.get_serial())
@@ -3976,7 +3976,7 @@ class APITokenTestCase(MyApiTestCase):
                                                    headers={"Authorization": self.at}):
                     res = self.app.full_dispatch_request()
                     self.assertEqual(200, res.status_code, res.json)
-                    self.assertEqual([], res.json["result"]["value"]["tokens"], query)
+                    self.assertListEqual([], res.json["result"]["value"]["tokens"], query)
                     self.assertEqual(0, res.json["result"]["value"]["count"], query)
         finally:
             remove_token(token.get_serial())
