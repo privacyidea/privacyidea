@@ -29,7 +29,7 @@ import { DialogService } from "@services/dialog/dialog.service";
 import { DocumentationService } from "@services/documentation/documentation.service";
 import { RealmService } from "@services/realm/realm.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
-import { TokenService } from "@services/token/token.service";
+import { TokenDetails, Tokens, TokenService } from "@services/token/token.service";
 import {
   MatDialogMock,
   MockAuditService,
@@ -44,6 +44,7 @@ import {
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
+import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { expectsTableStateGating } from "@testing/table-state-gating";
 import { of } from "rxjs";
 import { TokenTableSelfServiceComponent } from "./token-table.self-service.component";
@@ -95,6 +96,22 @@ describe("TokenTableSelfServiceComponent", () => {
   });
 
   afterEach(() => jest.clearAllMocks());
+
+  it("lists the user's tokens without requiring the admin-only tokenlist right", () => {
+    // tokenlist exists in the admin policy scope only, so gating the rows on it would leave every
+    // self-service user with an empty table under a paginator showing the real count.
+    authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: [], role: "user" });
+    (authServiceMock.role as unknown as { set: (r: string) => void }).set("user");
+    tokenServiceMock.tokenResourceValue.set(
+      MockPiResponse.fromValue<Tokens>({
+        count: 1,
+        current: 1,
+        tokens: [{ serial: "T-SELF" }] as TokenDetails[]
+      }).result!.value!
+    );
+
+    expect(component.tokenDataSource().data.map((token) => token.serial)).toEqual(["T-SELF"]);
+  });
 
   it("should create", () => {
     expect(component).toBeTruthy();

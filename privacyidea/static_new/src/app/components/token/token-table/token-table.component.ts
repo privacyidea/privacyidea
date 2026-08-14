@@ -178,7 +178,10 @@ export class TokenTableComponent implements OnDestroy {
   tokenDataSource: WritableSignal<MatTableDataSource<TokenDetails>> = linkedSignal({
     source: () => ({ value: this.tokenService.tokenResourceValue(), error: this.tokenResource.error() }),
     computation: (src, previous) => {
-      if (src.error || !this.authService.actionAllowed("tokenlist")) {
+      // tokenlist only exists in the admin scope, so a self-service user must not be gated on it -
+      // the same guard the token service applies before loading.
+      const deniedForAdmin = this.authService.role() === "admin" && !this.authService.actionAllowed("tokenlist");
+      if (src.error || deniedForAdmin) {
         return new MatTableDataSource<TokenDetails>([]);
       }
       if (src.value) {
