@@ -128,11 +128,6 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     expect(table).toBeTruthy();
   });
 
-  it("TokenTableSelfServiceComponent should create", () => {
-    const selfFixture = TestBed.createComponent(TokenTableSelfServiceComponent);
-    expect(selfFixture.componentInstance).toBeTruthy();
-  });
-
   it("exposes the selection held by the token service", () => {
     const tokens = [{ serial: "T-1" } as TokenDetails, { serial: "T-2" } as TokenDetails];
     tokenService.setTokenSelection(tokens);

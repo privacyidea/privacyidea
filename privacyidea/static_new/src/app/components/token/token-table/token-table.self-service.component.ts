@@ -103,13 +103,11 @@ export class TokenTableSelfServiceComponent extends TokenTableComponent {
       .afterClosed()
       .subscribe({
         next: (result) => {
-          this.tokenService.revokeToken(serial).subscribe({
-            next: () => {
-              if (result) {
-                this.tokenService.tokenResource.reload();
-              }
-            }
-          });
+          if (result) {
+            this.tokenService.revokeToken(serial).subscribe({
+              next: () => this.tokenService.tokenResource.reload()
+            });
+          }
         }
       });
   }
@@ -128,13 +126,11 @@ export class TokenTableSelfServiceComponent extends TokenTableComponent {
       .afterClosed()
       .subscribe({
         next: (result) => {
-          this.tokenService.deleteToken(serial).subscribe({
-            next: () => {
-              if (result) {
-                this.tokenService.tokenResource.reload();
-              }
-            }
-          });
+          if (result) {
+            this.tokenService.deleteToken(serial).subscribe({
+              next: () => this.tokenService.tokenResource.reload()
+            });
+          }
         }
       });
   }
