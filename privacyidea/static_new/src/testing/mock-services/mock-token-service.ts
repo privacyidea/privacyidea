@@ -119,7 +119,6 @@ export class MockTokenService implements TokenServiceInterface {
   exactMatchKeys = new Set<string>();
   booleanKeys = new Set<string>();
   caseNotes: Record<string, FilterCaseNote> = {};
-  unsupportedKeys = new Set<string>();
   sort = signal<Sort>({ active: "serial", direction: "asc" });
   readonly pageIndex = signal(0);
   readonly tokenResource = new MockHttpResourceRef<PiResponse<Tokens> | undefined>(undefined);
