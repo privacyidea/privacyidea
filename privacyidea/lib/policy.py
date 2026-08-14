@@ -2854,7 +2854,9 @@ def get_static_policy_definitions(scope=None):
                 'value': realms,
                 'desc': _('The Realm of the user is set to this very realm. '
                           'This is important if the user is not contained in '
-                          'the default realm and can not pass his realm.'),
+                          'the default realm and can not pass his realm.')
+                        + " <em>" + _("Deprecated since v3.14 - use the set_realm action in the "
+                                      "authentication scope, which takes precedence over this one.") + "</em>",
                 'group': GROUP.SETTING_ACTIONS,
             },
             PolicyAction.NODETAILSUCCESS: {
