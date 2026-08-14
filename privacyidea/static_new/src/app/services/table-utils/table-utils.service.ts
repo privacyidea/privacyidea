@@ -93,9 +93,10 @@ export interface TableUtilsServiceInterface {
 
   /**
    * Placeholder rows shown while the first page loads. Cells default to "", which is only a valid
-   * stand-in for columns rendered as text; a column whose template treats the value as an array (or
+   * stand-in for a field rendered as text; a field whose template treats the value as an array (or
    * any other type) has to name its own empty value here, or that template throws on every skeleton
-   * row before any real data arrives.
+   * row before any real data arrives. Keys that are not columns are seeded too, since a cell may
+   * render a field the column list does not mention.
    */
   emptyDataSource<T>(
     pageSize: number,
@@ -155,10 +156,14 @@ export class TableUtilsService implements TableUtilsServiceInterface {
   ): MatTableDataSource<T> {
     return new MatTableDataSource(
       Array.from({ length: pageSize }, () => {
-        const emptyRow: Record<string, unknown> = {};
+        // Seeded first, so a value can be named for a field the template reads but that is not one
+        // of the columns - the resolver groups of a realm row, for instance.
+        const emptyRow: Record<string, unknown> = { ...emptyValues };
         columnsKeyMap.forEach((column) => {
           const key = typeof column === "string" ? column : column.key;
-          emptyRow[key] = key in emptyValues ? emptyValues[key] : "";
+          if (!(key in emptyRow)) {
+            emptyRow[key] = "";
+          }
         });
         return emptyRow as T;
       })

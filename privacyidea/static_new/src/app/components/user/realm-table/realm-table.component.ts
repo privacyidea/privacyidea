@@ -275,7 +275,10 @@ export class RealmTableComponent implements OnDestroy, OnInit {
       if (isInitialLoad(this.realmService.realmResource)) {
         return this.tableUtilsService.emptyDataSource<RealmRow>(
           this.tableUtilsService.pageSizeOptions()[1] ?? 10,
-          this.columnKeys
+          this.columnKeys,
+          // The resolvers cell reads resolverGroups, which is not one of the columns, so a
+          // placeholder row without it throws when the cell asks for its length.
+          { resolverGroups: [] }
         );
       }
       const sortedRows = this._clientsideSortRealmData([...(src.rows ?? [])], this.sort());
