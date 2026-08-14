@@ -134,6 +134,19 @@
         </mat-form-field>
       </div>
 
+      <div class="margin-bottom-32">
+        <mat-slide-toggle
+          (change)="setAbortOnError($event.checked)"
+          [checked]="abortOnError()">
+          <span i18n>Abort the request if the handler fails</span>
+        </mat-slide-toggle>
+        <p class="checkbox-hint" i18n>
+          By default a failing handler only adds an entry to the audit log and the request continues without it.
+          Enable this if the request depends on the result of the handler, for example a response mangler that
+          removes data from the response.
+        </p>
+      </div>
+
       <app-event-selection
         (newEvents)="setNewEvents($event)"
         [events]="editEvent().event"></app-event-selection>

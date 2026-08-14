@@ -127,6 +127,31 @@
   If you rely on a specific resolver ordering within a realm, make sure each resolver has an explicit, distinct
   priority.
 
+* **A failing event handler no longer aborts the request.** Previously any exception raised by an event handler
+  ended the request with an error, so a single unreachable SMTP server or a broken script could make token
+  enrollment or authentication fail. A failing handler is now best-effort: the failure is written to the audit log
+  (`success=False`, with the exception class in the `info` column), the remaining handlers still run, and the
+  request continues. The exception text itself only goes to the privacyIDEA log, not into the audit database,
+  because it can contain the parameters of the forwarded request.
+
+  This is configurable per event handler binding with the new **Abort on error** option (API parameter
+  `abort_on_error`, new column in the `eventhandler` table). Enable it for a binding whose result the request
+  itself consumes — otherwise the handler silently not running changes what the client receives. The clearest
+  cases are a **response mangler** that removes data from a response (if it does not run, the data is sent to the
+  client) and a **request mangler** that overwrites request parameters (if it does not run, the endpoint uses the
+  values the client sent). Review your handlers under *Config -> Events* and decide for each whether a failure
+  should fail the request.
+
+  The schema update sets `abort_on_error` for existing **Federation** handlers, because a federation handler
+  replaces the response with the one of the remote privacyIDEA: continuing without it would answer the client
+  with the locally generated response as if the remote server had produced it. All other existing handlers keep
+  the new best-effort behaviour. If you would rather have a failed federation request answered locally, clear the
+  option for those handlers after the update.
+
+  Note that a post-event handler runs after the API function has already done its work, so aborting the request
+  there reports an error for an operation that partly happened — the local token was created, only the forwarded
+  request failed.
+
 * **Machine `hostname` in `GET /machine/` is always a list.** The LDAP machine resolver previously returned a single
   string (e.g. `"dc01.example.test"`); it now returns a list (e.g. `["dc01.example.test"]`), consistent with the hosts
   resolver and the documented API.
@@ -140,6 +165,20 @@
   would otherwise be filtered by the realm and the resolver alone and return the containers of other users. Scripts that
   pass a stale or misspelled user name to `GET /container/` and relied on getting an empty result need to handle the
   error.
+
+* **HTTP API change** - the `resolver` and `userid` filters of `GET /token/` are now applied. Both parameters have
+  always been accepted and documented, but they never became a condition of the query, so a request carrying one of
+  them returned *all* tokens instead of the tokens of that resolver or of that user id. `resolver` is matched
+  case-insensitively and `*` acts as a wildcard in both, consistent with `GET /container/`. Since only a token that is
+  assigned to a user can match either filter, tokens without an owner are no longer part of such a result. Saved
+  filters, scripts and integrations that pass `resolver` or `userid` will therefore receive fewer tokens than before -
+  namely the ones they asked for.
+
+* **HTTP API change** - `GET /token/?realm=<name>` now returns an empty list if the realm does not exist, instead of
+  answering with a 404 `ResourceNotFoundError`. An unknown value matches nothing, the way every other filter of the
+  endpoint (including `tokenrealm`) already behaves. A `user` that can not be resolved to a user id is still rejected
+  with a 400, because the request would otherwise be filtered by the realm and the resolver alone and return the tokens
+  of other users.
 
 ## Update from 3.12 to 3.13
 
