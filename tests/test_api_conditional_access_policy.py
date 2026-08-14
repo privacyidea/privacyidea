@@ -662,3 +662,39 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         # An empty list removes every condition, widening the policy to all requests.
         self._request(f"policy/{policy_id}", method="PATCH", json_data={"conditions": []})
         self.assertListEqual([], self._request(f"policy/{policy_id}").json["result"]["value"]["conditions"])
+
+    def test_create_with_stage_error_message_round_trips(self):
+        message = "Your account is locked. Please try again in about {duration}."
+        stages = self._policy_body()["stages"]
+        stages[0]["error_message"] = message
+        policy_id = self._create_policy(stages=stages)
+        stages = self._request(f"policy/{policy_id}").json["result"]["value"]["stages"]
+        self.assertEqual(message, stages[0]["error_message"])
+
+    def test_create_without_stage_error_message_yields_none(self):
+        # The default is silence: with no message the rejection stays generic.
+        policy_id = self._create_policy()
+        stages = self._request(f"policy/{policy_id}").json["result"]["value"]["stages"]
+        self.assertIsNone(stages[0]["error_message"])
+
+    def test_create_with_over_long_stage_error_message_is_400(self):
+        body = self._policy_body()
+        body["stages"][0]["error_message"] = "x" * 501
+        res = self._request("policy", method="POST", json_data=body)
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertIn("500", res.json["result"]["error"]["message"])
+
+    def test_patch_replaces_and_clears_the_stage_error_message(self):
+        stages = self._policy_body()["stages"]
+        stages[0]["error_message"] = "Old."
+        policy_id = self._create_policy(stages=stages)
+        patched = [{**stages[0], "error_message": "New."}]
+        res = self._request(f"policy/{policy_id}", method="PATCH", json_data={"stages": patched})
+        self.assertEqual(200, res.status_code, res.json)
+        stages = self._request(f"policy/{policy_id}").json["result"]["value"]["stages"]
+        self.assertEqual("New.", stages[0]["error_message"])
+        # Stages are replaced wholesale, so a stage sent without a message clears it.
+        cleared = [{key: value for key, value in patched[0].items() if key != "error_message"}]
+        self._request(f"policy/{policy_id}", method="PATCH", json_data={"stages": cleared})
+        stages = self._request(f"policy/{policy_id}").json["result"]["value"]["stages"]
+        self.assertIsNone(stages[0]["error_message"])

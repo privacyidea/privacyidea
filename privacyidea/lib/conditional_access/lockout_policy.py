@@ -41,6 +41,7 @@ A policy is passed around as a plain dict::
             {
                 "failure_threshold": 5,
                 "priority": 1,
+                "error_message": "Your account is locked. Please try again in about {duration}.",
                 "actions": [
                     {"action_type": "LOCK_USER", "action_value": {"lock_duration_seconds": 600},
                      "retrigger_above_threshold": True},
@@ -62,6 +63,12 @@ must be :class:`~privacyidea.lib.conditional_access.engine.LockoutAction` names;
 :class:`~privacyidea.lib.error.ParameterError` (fail-closed - a typo must not silently create a policy that never
 matches or an action that never fires).
 
+A stage's optional ``error_message`` is the text an end user sees when a request is turned away by that stage. It is
+opt-in and there is no default: without one the rejection stays generic, so privacyIDEA never volunteers that an
+account is locked or an IP blocked unless an admin chose to say so. ``{duration}`` is substituted with the remaining
+time at rejection; on a permanent restriction it renders as "permanently". Every other brace expression is left exactly
+as written - braces in prose need no escaping - so only the length is validated here.
+
 ``conditions`` is the *applicability* axis, orthogonal to the counting one: it restricts which requests the policy
 applies to at all, while the counter types and thresholds decide what trips it. It is optional - a policy without
 conditions applies to every request - and is validated against the registries in
@@ -76,6 +83,7 @@ from dataclasses import dataclass, field
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
+from privacyidea.lib import _
 from privacyidea.lib.conditional_access.authentication_event_types import (
     TRACKABLE_EVENT_TYPES,
     CountMode,
@@ -93,6 +101,9 @@ log = logging.getLogger(__name__)
 # name is Unicode(255) in the model; checked here so an over-long name is a
 # clean ParameterError instead of a DB-dependent truncation or error.
 MAX_NAME_LENGTH = 255
+
+# Same for a stage's error message, which is Unicode(500) in the model.
+MAX_STAGE_ERROR_MESSAGE_LENGTH = 500
 
 # The pre-auth ALLOW/DENY actions: standing decisions that apply while the count
 # stays at or above the threshold, so they default to re-triggering (the
@@ -136,6 +147,7 @@ class StageDefinition:
     priority: int
     actions: list[StageActionDefinition] = field(default_factory=list)
     name: str | None = None
+    error_message: str | None = None
 
 
 def lockout_policy_to_dict(policy: LockoutPolicy) -> dict:
@@ -172,6 +184,7 @@ def lockout_policy_to_dict(policy: LockoutPolicy) -> dict:
         {
             "id": stage.id,
             "name": stage.name,
+            "error_message": stage.error_message,
             "failure_threshold": stage.failure_threshold,
             "priority": stage.priority,
             "actions": [
@@ -264,6 +277,34 @@ def _validate_stage_name(name) -> str | None:
     if len(name) > MAX_NAME_LENGTH:
         raise ParameterError(f"The stage name must not exceed {MAX_NAME_LENGTH} characters.")
     return name
+
+
+def _validate_stage_error_message(error_message: str | None) -> str | None:
+    """
+    Validate the optional stage error message - the text surfaced to the end user
+    when a request is turned away by this stage. ``None`` or an empty/blank string
+    means "say nothing" and returns ``None``, which is the default: a rejection
+    reveals no conditional-access detail unless an admin writes it here.
+
+    Only the length is checked. Brace expressions are deliberately *not*
+    validated: ``{duration}`` is the one tag substituted at rejection time and
+    everything else - ``{}``, ``{whatever}`` - is left literal, so an admin can
+    write braces in ordinary prose without escaping them. The WebUI hints at an
+    unrecognized tag; it is not an error here.
+    """
+    if error_message is None:
+        return None
+    if not isinstance(error_message, str):
+        raise ParameterError(_("The stage error message must be a string."))
+    stripped = error_message.strip()
+    if not stripped:
+        return None
+    if len(stripped) > MAX_STAGE_ERROR_MESSAGE_LENGTH:
+        # .format, not an f-string: gettext extracts the literal msgid, so the
+        # placeholder has to survive into the translated string.
+        raise ParameterError(_("The stage error message must not exceed {length} characters.").format(
+            length=MAX_STAGE_ERROR_MESSAGE_LENGTH))
+    return stripped
 
 
 # The actions each target may carry. A user-targeted policy locks/notifies the
@@ -411,7 +452,7 @@ def _validate_stages(stages) -> list[StageDefinition]:
     """
     Validate the stage definitions: a non-empty list of dicts, each with a
     unique non-negative ``failure_threshold``, an optional positive ``priority``
-    (default 1) and a list of actions whose ``action_type`` is a valid
+    (default 1), an optional user-facing ``error_message`` and a list of actions whose ``action_type`` is a valid
     :class:`LockoutAction`. ``action_value`` may be any JSON-serializable value
     (its action-specific interpretation happens in the engine); unknown keys in
     a stage or action dict are rejected so typos fail loudly.
@@ -421,7 +462,7 @@ def _validate_stages(stages) -> list[StageDefinition]:
     if not isinstance(stages, list) or not stages:
         raise ParameterError("'stages' must be a non-empty list of stage definitions.")
     valid_actions = {action.value for action in LockoutAction}
-    allowed_stage_keys = {"name", "failure_threshold", "priority", "actions"}
+    allowed_stage_keys = {"name", "error_message", "failure_threshold", "priority", "actions"}
     allowed_action_keys = {"action_type", "action_value", "retrigger_above_threshold"}
     normalized = []
     thresholds = set()
@@ -440,6 +481,7 @@ def _validate_stages(stages) -> list[StageDefinition]:
             raise ParameterError(f"Duplicate failure_threshold {threshold}: thresholds must be unique within a policy.")
         thresholds.add(threshold)
         name = _validate_stage_name(stage.get("name"))
+        error_message = _validate_stage_error_message(stage.get("error_message"))
         priority = _validate_positive_int(stage.get("priority", 1), "priority")
         actions = stage.get("actions", [])
         if not isinstance(actions, list):
@@ -469,7 +511,8 @@ def _validate_stages(stages) -> list[StageDefinition]:
                 )
             )
         normalized.append(
-            StageDefinition(failure_threshold=threshold, priority=priority, name=name, actions=normalized_actions)
+            StageDefinition(failure_threshold=threshold, priority=priority, name=name,
+                            error_message=error_message, actions=normalized_actions)
         )
     return normalized
 
@@ -590,6 +633,7 @@ def _build_stages(stage_defs: list[StageDefinition]) -> list[LockoutPolicyStage]
     return [
         LockoutPolicyStage(
             name=stage.name,
+            error_message=stage.error_message,
             failure_threshold=stage.failure_threshold,
             priority=stage.priority,
             actions=[

@@ -213,6 +213,9 @@ class LockoutPolicyStage(MethodsMixin, db.Model):
         Integer, ForeignKey('lockout_policies.id', ondelete='CASCADE'), nullable=False)
     # Optional human-readable label for the stage (e.g. "Warn", "Lock 10 min").
     name: Mapped[str | None] = mapped_column(Unicode(255), nullable=True)
+    # Optional error text shown to the end user when a request is turned away by
+    # this stage. NULL (or blank) means nothing is surfaced, which is the default.
+    error_message: Mapped[str | None] = mapped_column(Unicode(500), nullable=True)
     failure_threshold: Mapped[int] = mapped_column(Integer, nullable=False)
     priority: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
 
