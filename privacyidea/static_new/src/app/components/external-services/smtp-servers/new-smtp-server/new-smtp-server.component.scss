@@ -8,12 +8,13 @@
 
 .smtp-page-container {
   @include styles.main-component-style;
+  min-width: calc(var(--config-form-width) + var(--double-global-padding));
   display: grid;
   position: relative;
 }
 
 .smtp-dialog-content {
-  min-width: 664px;
+  min-width: var(--config-form-width);
   margin-left: 16px;
 }
 

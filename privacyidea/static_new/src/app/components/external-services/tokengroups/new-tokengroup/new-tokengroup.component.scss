@@ -2,6 +2,7 @@
 
 .tokengroup-page-container {
   @include styles.main-component-style;
+  min-width: calc(var(--config-form-width) + var(--double-global-padding));
   display: grid;
   position: relative;
 }

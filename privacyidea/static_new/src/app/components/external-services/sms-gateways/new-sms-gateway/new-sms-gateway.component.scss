@@ -8,12 +8,13 @@
 
 .sms-gateway-page-container {
   @include styles.main-component-style;
+  min-width: calc(var(--config-form-width) + var(--double-global-padding));
   display: grid;
   position: relative;
 }
 
 .sms-gateway-content {
-  width: 664px;
+  width: var(--config-form-width);
 }
 
 .parameters-form {

@@ -202,6 +202,9 @@ body {
   --input-width-xl: 616px;
   --input-width-xxl: 932px;
 
+  // Width of a config form body: one input-width-xl field plus its leading inset.
+  --config-form-width: calc(var(--input-width-xl) + 16px);
+
   --button-width-xs: 40px;
   --button-width-s: 120px;
   --button-width-m: 180px;
