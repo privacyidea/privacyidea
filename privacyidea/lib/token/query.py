@@ -222,24 +222,6 @@ def _create_token_query(tokentype: str | None = None, token_type_list: list[str]
         else:
             sql_query = sql_query.where(TokenOwner.user_id == userid)
 
-    # Filtering by standalone userid parameter (independent of user object)
-    if userid and userid.strip("*"):
-        if "*" in userid:
-            sql_query = sql_query.where(
-                TokenOwner.user_id.like(convert_wildcard_to_sql_like(userid), escape=SQL_LIKE_ESCAPE)
-            )
-        else:
-            sql_query = sql_query.where(TokenOwner.user_id == userid)
-
-    # Filtering by standalone resolver parameter (independent of user object)
-    if resolver and resolver.strip("*"):
-        if "*" in resolver:
-            sql_query = sql_query.where(
-                TokenOwner.resolver.like(convert_wildcard_to_sql_like(resolver), escape=SQL_LIKE_ESCAPE)
-            )
-        else:
-            sql_query = sql_query.where(TokenOwner.resolver == resolver)
-
     # Filtering by token status flags
     if active is not None:
         sql_query = sql_query.where(Token.active == active)
