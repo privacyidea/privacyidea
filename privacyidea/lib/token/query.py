@@ -405,6 +405,9 @@ def _get_container_serial_by_token_id(token_ids: list[int]) -> dict[int, str]:
     Return the serial of the container each of the given tokens is in, with one query for the whole
     page.
 
+    The association table allows a token in several containers. The one with the lowest ID is
+    returned in that case, so that the same page does not show a different container every time.
+
     :param token_ids: The database IDs of the tokens
     :return: dictionary mapping a token ID to a container serial. Tokens that are in no container
              are not contained.
@@ -415,9 +418,10 @@ def _get_container_serial_by_token_id(token_ids: list[int]) -> dict[int, str]:
             select(TokenContainerToken.token_id, TokenContainer.serial)
             .join(TokenContainer, TokenContainer.id == TokenContainerToken.container_id)
             .where(TokenContainerToken.token_id.in_(chunk))
+            .order_by(TokenContainerToken.container_id)
         ).all()
         for token_id, container_serial in rows:
-            container_serial_by_token_id[token_id] = container_serial
+            container_serial_by_token_id.setdefault(token_id, container_serial)
     return container_serial_by_token_id
 
 
@@ -445,7 +449,10 @@ def _resolve_owner_logins(owners: list[TokenOwner]) -> tuple[dict[tuple[str, str
             # An owner without a resolver is a broken assignment, its login name is not knowable
             unresolvable_owners.add((owner.resolver, owner.user_id))
 
-    for resolver_name, user_ids in user_ids_by_resolver.items():
+    for resolver_name, owned_user_ids in user_ids_by_resolver.items():
+        # Several tokens of one user are the normal case, and a resolver without a batch lookup of
+        # its own pays for every repetition. dict.fromkeys drops the duplicates but keeps the order.
+        user_ids = list(dict.fromkeys(owned_user_ids))
         resolver = None
         try:
             # Building a resolver reads and applies its configuration, which raises on a broken one

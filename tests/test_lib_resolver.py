@@ -3123,6 +3123,14 @@ class BaseResolverTestCase(MyTestCase):
             user_info_map = resolver.get_user_info_batch(["1", "2"], attributes=["username"])
         self.assertEqual({"1": {"username": "user1"}, "2": {"username": "user2"}}, user_info_map)
 
+        # A user several tokens share is only looked up once
+        with mock.patch.object(UserIdResolver, "get_user_info",
+                               side_effect=lambda user_id, attributes=None: {"username": f"user{user_id}"}
+                               ) as mock_get_user_info:
+            user_info_map = resolver.get_user_info_batch(["1", "2", "1", "2"], attributes=["username"])
+        self.assertEqual({"1": {"username": "user1"}, "2": {"username": "user2"}}, user_info_map)
+        self.assertEqual(2, mock_get_user_info.call_count)
+
         # Users the resolver does not know are left out
         self.assertEqual({}, resolver.get_user_info_batch(["1", "2"]))
         self.assertEqual({}, resolver.get_user_info_batch([]))
@@ -3136,6 +3144,14 @@ class BaseResolverTestCase(MyTestCase):
             login_map = resolver.get_usernames_batch(["1", "2"])
         self.assertEqual({"1": "user1", "2": "user2"}, login_map)
         self.assertEqual(2, mock_get_username.call_count)
+
+        # A user several tokens share is only looked up once
+        with mock.patch.object(UserIdResolver, "getUsername",
+                               side_effect=lambda user_id: f"user{user_id}") as mock_get_username:
+            login_map = resolver.get_usernames_batch(["1", "2", "1", "2"])
+        self.assertEqual({"1": "user1", "2": "user2"}, login_map)
+        self.assertEqual(2, mock_get_username.call_count)
+
         self.assertEqual({}, resolver.get_usernames_batch([]))
 
 

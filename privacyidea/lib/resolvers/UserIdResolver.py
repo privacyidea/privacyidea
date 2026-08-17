@@ -169,7 +169,9 @@ class UserIdResolver:
         :return: dictionary mapping each resolved user ID to its user information
         """
         user_info_map = {}
-        for user_id in user_ids:
+        # dict.fromkeys drops duplicate IDs but keeps their order, so a user that several tokens
+        # share is only looked up once
+        for user_id in dict.fromkeys(user_ids):
             user_info = self.get_user_info(user_id, attributes=attributes)
             if user_info:
                 user_info_map[user_id] = user_info
@@ -186,7 +188,9 @@ class UserIdResolver:
         :param user_ids: IDs of the users in the resolver
         :return: dictionary mapping each user ID to its login name
         """
-        return {user_id: self.getUsername(user_id) for user_id in user_ids}
+        # dict.fromkeys drops duplicate IDs, so a user that several tokens share is only looked up
+        # once even though the result would be the same
+        return {user_id: self.getUsername(user_id) for user_id in dict.fromkeys(user_ids)}
 
     def get_available_info_keys(self) -> list[str]:
         """

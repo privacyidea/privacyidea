@@ -9,15 +9,17 @@ time. A timing assertion would say the same thing far less reliably, so this cou
 from contextlib import contextmanager
 
 import mock
-from sqlalchemy import event
+from sqlalchemy import delete, event
 from sqlalchemy.engine import Engine
 
-from privacyidea.lib.container import add_token_to_container, init_container
+from privacyidea.lib.container import add_token_to_container, find_container_by_serial, init_container
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver as LDAPResolver
-from privacyidea.lib.token import convert_token_objects_to_dicts, get_tokens, get_tokens_paginate, init_token
+from privacyidea.lib.token import (convert_token_objects_to_dicts, get_tokens, get_tokens_paginate, init_token,
+                                   remove_token)
 from privacyidea.lib.user import User
+from privacyidea.models import db, TokenContainerToken
 from . import ldap3mock
 from .base import MyTestCase
 
@@ -196,3 +198,53 @@ class TokenListLookupTestCase(MyTestCase):
         self.assertEqual(NUM_TOKENS, len(result["tokens"]), result)
         for token in result["tokens"]:
             self.assertEqual("**resolver error**", token["username"], token)
+
+    @ldap3mock.activate
+    def test_07_a_token_in_two_containers_reports_the_same_one_every_time(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        # The association table permits a token in several containers, in which case the page has to
+        # settle on one of them instead of following the order the rows come back in
+        second_serial = init_container({"type": "generic"})["container_serial"]
+        second_container_id = find_container_by_serial(second_serial)._db_container.id
+        token_id = get_tokens(serial="LIST00")[0].token.id
+        TokenContainerToken(token_id=token_id, container_id=second_container_id).save()
+
+        try:
+            container_serials = set()
+            for _ in range(3):
+                result = get_tokens_paginate(serial="LIST00", psize=1, page=1)
+                container_serials.add(result["tokens"][0]["container_serial"])
+            self.assertEqual({self.container_serial}, container_serials, container_serials)
+        finally:
+            db.session.execute(delete(TokenContainerToken)
+                               .where(TokenContainerToken.token_id == token_id)
+                               .where(TokenContainerToken.container_id == second_container_id))
+            db.session.commit()
+
+    @ldap3mock.activate
+    def test_08_tokens_sharing_an_owner_are_looked_up_once(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        init_token({"type": "hotp", "genkey": 1, "serial": "LISTSHARED"},
+                   user=User(login="user00", realm="ldaprealm"))
+
+        requested_user_ids = []
+        original_batch = LDAPResolver.get_usernames_batch
+
+        def recording_batch(self, user_ids):
+            requested_user_ids.extend(user_ids)
+            return original_batch(self, user_ids)
+
+        try:
+            # A resolver without a batch lookup of its own pays for every repeated ID, so the page
+            # must not hand the same owner in twice
+            with mock.patch.object(LDAPResolver, "get_usernames_batch", recording_batch):
+                result = get_tokens_paginate(serial=self.serial_wildcard, psize=NUM_TOKENS + 1, page=1)
+
+            self.assertEqual(NUM_TOKENS + 1, len(result["tokens"]), result)
+            self.assertEqual(NUM_TOKENS, len(requested_user_ids), requested_user_ids)
+            self.assertEqual(1, requested_user_ids.count("0"), requested_user_ids)
+            usernames = {token["serial"]: token["username"] for token in result["tokens"]}
+            self.assertEqual("user00", usernames["LISTSHARED"], usernames)
+            self.assertEqual("user00", usernames["LIST00"], usernames)
+        finally:
+            remove_token("LISTSHARED")
