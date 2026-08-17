@@ -735,10 +735,10 @@ class IdResolver(UserIdResolver):
             elif cached_info:
                 user_info_map[user_id] = cached_info
 
-        if attributes:
-            ldap_attributes = [self.userinfo[attribute] for attribute in attributes if attribute in self.userinfo]
-        else:
-            ldap_attributes = list(self.userinfo.values())
+        # Request every mapped attribute and reduce afterwards, exactly like get_user_info does: a
+        # recursive group search substitutes the user's attributes into the configured group filter,
+        # so asking for less than the full mapping would leave placeholders in that filter.
+        ldap_attributes = list(self.userinfo.values())
         if str(self.uidtype) not in ldap_attributes:
             # the search results are mapped back to the requested IDs via the uid attribute
             ldap_attributes.append(str(self.uidtype))
@@ -773,8 +773,16 @@ class IdResolver(UserIdResolver):
             result = self._search(search_base=self.basedn, search_filter=search_filter,
                                   attributes=ldap_attributes)
             for entry in result:
+                if entry.get("type") == "searchResRef":
+                    # A referral carries no attributes to read the uid from
+                    continue
                 returned_id = self._get_uid(entry, self.uidtype)
-                user_id = requested_ids.get(returned_id, requested_ids_lower.get(returned_id.lower()))
+                if not returned_id:  # pragma: no cover
+                    log.info("Ignoring an LDAP object that carries no value for the uid attribute.")
+                    continue
+                user_id = requested_ids.get(returned_id)
+                if user_id is None:
+                    user_id = requested_ids_lower.get(returned_id.lower())
                 if user_id is None:  # pragma: no cover
                     log.info(f"Ignoring LDAP object with uid {returned_id!r}, which was not searched for.")
                     continue
@@ -784,7 +792,30 @@ class IdResolver(UserIdResolver):
                 user_info_map[user_id] = user_info
                 cache_store(self, "get_user_info", user_id, user_info)
 
+            if (self.connection.result or {}).get("result") == RESULT_SIZE_LIMIT_EXCEEDED:
+                # The server cut the result set short without raising, so the IDs that fell off it
+                # would be indistinguishable from users that do not exist. Fetch those one by one.
+                log.warning(f"The LDAP server applied a size limit to a search for {len(chunk)} user ids. "
+                            f"Looking the remaining ids up one by one.")
+                for user_id in chunk:
+                    if user_id not in user_info_map:
+                        user_info = self.get_user_info(user_id, attributes=attributes)
+                        if user_info:
+                            user_info_map[user_id] = user_info
+
         return user_info_map
+
+    @track_resolver_op("get_usernames_batch")
+    def get_usernames_batch(self, user_ids: list) -> dict:
+        """
+        Return the login names of several users with one LDAP search per chunk of IDs.
+
+        :param user_ids: The user IDs in this resolver
+        :return: dictionary mapping each user ID to its login name. IDs without a matching LDAP
+                 object are mapped to an empty string, as getUsername does for a single user.
+        """
+        user_info_map = self.get_user_info_batch(user_ids, attributes=["username"])
+        return {user_id: user_info_map.get(user_id, {}).get("username", "") for user_id in user_ids}
 
     def get_available_info_keys(self) -> list[str]:
         """

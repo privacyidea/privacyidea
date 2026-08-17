@@ -362,6 +362,18 @@ class IdResolver (UserIdResolver):
 
         return user_info_map
 
+    @track_resolver_op("get_usernames_batch")
+    def get_usernames_batch(self, user_ids: list) -> dict:
+        """
+        Return the login names of several users with one query per chunk of IDs.
+
+        :param user_ids: The user IDs in this resolver
+        :return: dictionary mapping each user ID to its login name. IDs without a matching row are
+                 mapped to an empty string, as getUsername does for a single user.
+        """
+        user_info_map = self.get_user_info_batch(user_ids, attributes=["username"])
+        return {user_id: user_info_map.get(user_id, {}).get("username", "") for user_id in user_ids}
+
     def get_available_info_keys(self) -> list[str]:
         """
         This function returns a list of known privacyIDEA user attributes which can be used, e.g. for getUserList or

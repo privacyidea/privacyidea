@@ -421,7 +421,8 @@ def _get_container_serial_by_token_id(token_ids: list[int]) -> dict[int, str]:
     return container_serial_by_token_id
 
 
-def _resolve_owner_logins(owners: list[TokenOwner]) -> tuple[dict[tuple[str, str], str], set[tuple[str, str]]]:
+def _resolve_owner_logins(owners: list[TokenOwner]) -> tuple[dict[tuple[str, str], str], dict[str, bool],
+                                                             set[tuple[str, str]]]:
     """
     Resolve the login names of the given token owners with one batch lookup per resolver, instead
     of one user store lookup per owner.
@@ -430,11 +431,12 @@ def _resolve_owner_logins(owners: list[TokenOwner]) -> tuple[dict[tuple[str, str
     can mark that single token while the rest of the page still renders.
 
     :param owners: The token owners of the page
-    :return: a tuple of the login names, keyed by resolver name and user ID, and the set of the
-             keys that could not be resolved
+    :return: a tuple of the login names keyed by resolver name and user ID, whether each resolver is
+             editable, and the set of the keys that could not be resolved
     """
     user_ids_by_resolver = {}
     login_by_owner = {}
+    editable_by_resolver = {}
     unresolvable_owners = set()
     for owner in owners:
         if owner.resolver:
@@ -444,33 +446,40 @@ def _resolve_owner_logins(owners: list[TokenOwner]) -> tuple[dict[tuple[str, str
             unresolvable_owners.add((owner.resolver, owner.user_id))
 
     for resolver_name, user_ids in user_ids_by_resolver.items():
-        resolver = get_resolver_object(resolver_name)
+        resolver = None
+        try:
+            # Building a resolver reads and applies its configuration, which raises on a broken one
+            resolver = get_resolver_object(resolver_name)
+        except Exception as resolver_error:
+            log.error(f"The resolver {resolver_name!r} can not be loaded: {resolver_error!s}")
+            log.debug(traceback.format_exc())
         if resolver is None:
-            log.error(f"The resolver {resolver_name!r} does not exist!")
+            log.error(f"No user information can be retrieved from the resolver {resolver_name!r}!")
             unresolvable_owners.update((resolver_name, user_id) for user_id in user_ids)
             continue
+        editable_by_resolver[resolver_name] = resolver.editable
 
         # In certain cases the LDAP or SQL server might not be reachable. Then an exception is raised
         try:
-            user_info_map = resolver.get_user_info_batch(user_ids, attributes=["username"])
+            login_map = resolver.get_usernames_batch(user_ids)
         except Exception as batch_error:
             # A failing batch must not cost the whole page. Fall back to looking the users of this
             # resolver up one by one, so that only the ones that keep failing are marked.
             log.error(f"User information can not be retrieved in one batch: {batch_error!s}")
             log.debug(traceback.format_exc())
-            user_info_map = {}
+            login_map = {}
             for user_id in user_ids:
                 try:
-                    user_info_map[user_id] = resolver.get_user_info(user_id, attributes=["username"])
+                    login_map[user_id] = resolver.getUsername(user_id)
                 except Exception as user_error:
                     log.error(f"User information can not be retrieved: {user_error!s}")
                     log.debug(traceback.format_exc())
                     unresolvable_owners.add((resolver_name, user_id))
 
         for user_id in user_ids:
-            login_by_owner[(resolver_name, user_id)] = user_info_map.get(user_id, {}).get("username", "")
+            login_by_owner[(resolver_name, user_id)] = login_map.get(user_id) or ""
 
-    return login_by_owner, unresolvable_owners
+    return login_by_owner, editable_by_resolver, unresolvable_owners
 
 
 def _build_token_dicts(tokens: list[TokenClass], hidden_token_info: list[str] | None = None) -> list[dict]:
@@ -489,7 +498,8 @@ def _build_token_dicts(tokens: list[TokenClass], hidden_token_info: list[str] | 
     token_objects = [token for token in tokens if isinstance(token, TokenClass)]
     token_ids = [token.token.id for token in token_objects]
     owner_by_token_id = _get_owner_by_token_id(token_ids)
-    login_by_owner, unresolvable_owners = _resolve_owner_logins(list(owner_by_token_id.values()))
+    login_by_owner, editable_by_resolver, unresolvable_owners = _resolve_owner_logins(
+        list(owner_by_token_id.values()))
     container_serial_by_token_id = _get_container_serial_by_token_id(token_ids)
 
     token_dict_list = []
@@ -506,7 +516,7 @@ def _build_token_dicts(tokens: list[TokenClass], hidden_token_info: list[str] | 
             else:
                 token_dict["username"] = login_by_owner.get(owner_key, "")
                 token_dict["user_realm"] = owner.realm.name.lower() if owner.realm else ""
-                token_dict["user_editable"] = get_resolver_object(owner.resolver).editable
+                token_dict["user_editable"] = editable_by_resolver.get(owner.resolver, False)
 
         if hidden_token_info:
             for key in list(token_dict['info']):

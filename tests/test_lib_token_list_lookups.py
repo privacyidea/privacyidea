@@ -182,3 +182,17 @@ class TokenListLookupTestCase(MyTestCase):
         for token in result["tokens"]:
             self.assertEqual("**resolver error**", token["username"], token)
             self.assertNotIn("user_editable", token, token)
+
+    @ldap3mock.activate
+    def test_06_a_resolver_that_can_not_be_loaded_is_marked(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+
+        # Building a resolver applies its configuration, which raises on a broken one. That must
+        # mark its tokens rather than fail the whole list
+        with mock.patch("privacyidea.lib.token.query.get_resolver_object",
+                        side_effect=Exception("the resolver configuration is broken")):
+            result = get_tokens_paginate(serial=self.serial_wildcard, psize=NUM_TOKENS, page=1)
+
+        self.assertEqual(NUM_TOKENS, len(result["tokens"]), result)
+        for token in result["tokens"]:
+            self.assertEqual("**resolver error**", token["username"], token)

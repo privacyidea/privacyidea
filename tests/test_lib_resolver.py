@@ -737,6 +737,18 @@ class SQLResolverTestCase(MyTestCase):
             self.assertEqual({}, resolver.get_user_info_batch([]))
         self.assertEqual(0, mock_execute.call_count)
 
+    def test_13_get_usernames_batch(self):
+        resolver = SQLResolver()
+        resolver.loadConfig(self.parameters)
+
+        # The login names of several users cost one query, and an unknown ID maps to the empty
+        # string that getUsername returns for a single user
+        with mock.patch.object(resolver.session, "execute", wraps=resolver.session.execute) as mock_execute:
+            login_map = resolver.get_usernames_batch(["1", "3", "4242"])
+        self.assertEqual(1, mock_execute.call_count)
+        self.assertEqual({"1": "user1", "3": "cornelius", "4242": ""}, login_map)
+        self.assertEqual(resolver.getUsername("3"), login_map["3"], login_map)
+
     def test_99_testconnection_fail(self):
         resolver = SQLResolver()
         self.parameters['Database'] = "does_not_exist"
@@ -3048,6 +3060,42 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertEqual(1, len(search_filters), search_filters)
         self.assertIn("(oid=3\\29\\28cn=\\2a)", search_filters[0], search_filters)
 
+    @ldap3mock.activate
+    def test_51_get_user_info_batch_survives_a_server_size_limit(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        resolver = self._get_batch_resolver()
+        original_search = LDAPResolver._search
+
+        def truncating_search(self, search_base, search_filter, attributes):
+            # A server that applies a size limit answers with a part of the result set and reports
+            # it in the result code, it does not raise
+            result = original_search(self, search_base, search_filter, attributes)
+            if len(result) > 1:
+                self.connection.result = {"result": RESULT_SIZE_LIMIT_EXCEEDED}
+                return result[:1]
+            return result
+
+        # The IDs the server dropped are fetched one by one instead of looking like unknown users
+        with mock.patch.object(LDAPResolver, "_search", truncating_search):
+            with LogCapture(level=logging.WARNING) as lc:
+                user_info_map = resolver.get_user_info_batch(["1", "2", "3"], attributes=["username"])
+        self.assertEqual({"1", "2", "3"}, set(user_info_map.keys()), user_info_map)
+        self.assertEqual("alice", user_info_map["2"]["username"], user_info_map)
+        self.assertIn("size limit", str(lc), str(lc))
+
+    @ldap3mock.activate
+    def test_52_get_usernames_batch(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        resolver = self._get_batch_resolver()
+
+        # The login names of several users cost one search, and an unknown ID maps to the empty
+        # string that getUsername returns for a single user
+        with self._count_searches() as search_filters:
+            login_map = resolver.get_usernames_batch(["1", "2", "does-not-exist"])
+        self.assertEqual(1, len(search_filters), search_filters)
+        self.assertEqual({"1": "manager", "2": "alice", "does-not-exist": ""}, login_map)
+        self.assertEqual(resolver.getUsername("2"), login_map["2"], login_map)
+
 
 class BaseResolverTestCase(MyTestCase):
 
@@ -3078,6 +3126,17 @@ class BaseResolverTestCase(MyTestCase):
         # Users the resolver does not know are left out
         self.assertEqual({}, resolver.get_user_info_batch(["1", "2"]))
         self.assertEqual({}, resolver.get_user_info_batch([]))
+
+    def test_02_get_usernames_batch(self):
+        # The login names go through getUsername, which for several resolvers is cheaper than
+        # reading the full user information
+        resolver = UserIdResolver()
+        with mock.patch.object(UserIdResolver, "getUsername",
+                               side_effect=lambda user_id: f"user{user_id}") as mock_get_username:
+            login_map = resolver.get_usernames_batch(["1", "2"])
+        self.assertEqual({"1": "user1", "2": "user2"}, login_map)
+        self.assertEqual(2, mock_get_username.call_count)
+        self.assertEqual({}, resolver.get_usernames_batch([]))
 
 
 class ResolverTestCase(MyTestCase):
