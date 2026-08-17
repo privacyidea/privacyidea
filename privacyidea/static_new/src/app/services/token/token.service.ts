@@ -128,9 +128,11 @@ const exactMatchKeys = new Set([
 ]);
 const booleanKeys = new Set(["active", "assigned"]);
 // `serial` is a raw LIKE (SQLite/MySQL fold case, PostgreSQL does not), the tokeninfo
-// keys are a raw equality comparison (only MySQL with a _ci collation folds case).
+// keys and `userid` are a raw comparison (only MySQL with a _ci collation folds case).
 const caseNotes: Record<string, FilterCaseNote> = {
   serial: "usually-insensitive",
+  userid: "usually-sensitive",
+  resolver: "usually-insensitive",
   "infokey & infovalue": "usually-sensitive"
 };
 

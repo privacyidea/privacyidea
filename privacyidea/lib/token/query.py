@@ -8,7 +8,7 @@ from collections.abc import Iterator
 from typing import Any
 
 from flask_sqlalchemy.session import Session
-from sqlalchemy import and_, func, or_, select
+from sqlalchemy import and_, false, func, or_, select
 from sqlalchemy.sql import Select
 
 from privacyidea.lib import _
@@ -179,25 +179,48 @@ def _create_token_query(tokentype: str | None = None, token_type_list: list[str]
 
     # Filtering by user object
     if user and not user.is_empty():
-        if user.login and not user.resolver:
-            # A specific username was requested but could not be found in any
-            # resolver. Raise the user error here instead of in the user class. The condition is the same.
+        realm_db_result = None
+        if user.realm:
+            realm_db = select(Realm).where(func.lower(Realm.name) == user.realm.lower())
+            # Execute the subquery using the provided session
+            realm_db_result = session.execute(realm_db).scalars().first()
+        if user.login and not user.uid:
+            # A username was requested, but it can not be resolved to a user id: neither the realm nor
+            # the resolver of the user may be used as a fallback filter, because the query would then
+            # return the tokens of all users of that realm or resolver.
             raise UserError("The user can not be found in any resolver in this realm!")
+        elif user.realm and not realm_db_result:
+            # No user can be in a realm that does not exist: like every other filter, an unknown value
+            # matches nothing.
+            sql_query = sql_query.where(false())
         else:
-            if user.realm:
-                realm_db = select(Realm).where(func.lower(Realm.name) == user.realm.lower())
-                # Execute the subquery using the provided session
-                realm_db_result = session.execute(realm_db).scalars().first()
-                if realm_db_result:
-                    sql_query = sql_query.where(TokenOwner.realm_id == realm_db_result.id)
-                else:
-                    raise ResourceNotFoundError(f"Realm '{user.realm}' does not exist.")
+            # The realm, the resolver and the user id are applied independently, so that the tokens of
+            # all users of a realm can be listed without specifying a username.
+            if realm_db_result:
+                sql_query = sql_query.where(TokenOwner.realm_id == realm_db_result.id)
             if user.resolver:
-                sql_query = sql_query.where(TokenOwner.resolver == user.resolver)
-                (uid, _rtype, _resolver) = user.get_user_identifiers()
-                if uid:
-                    uid_str = str(uid) if isinstance(uid, int) else uid
-                    sql_query = sql_query.where(TokenOwner.user_id == uid_str)
+                sql_query = sql_query.where(func.lower(TokenOwner.resolver) == user.resolver.lower())
+            if user.uid:
+                uid_str = str(user.uid) if isinstance(user.uid, int) else user.uid
+                sql_query = sql_query.where(TokenOwner.user_id == uid_str)
+
+    # Filtering by the resolver of the token owner, independent of a user object
+    if resolver and resolver.strip("*"):
+        if "*" in resolver:
+            sql_query = sql_query.where(
+                TokenOwner.resolver.ilike(convert_wildcard_to_sql_like(resolver), escape=SQL_LIKE_ESCAPE)
+            )
+        else:
+            sql_query = sql_query.where(func.lower(TokenOwner.resolver) == resolver.lower())
+
+    # Filtering by the user id of the token owner, independent of a user object
+    if userid and userid.strip("*"):
+        if "*" in userid:
+            sql_query = sql_query.where(
+                TokenOwner.user_id.like(convert_wildcard_to_sql_like(userid), escape=SQL_LIKE_ESCAPE)
+            )
+        else:
+            sql_query = sql_query.where(TokenOwner.user_id == userid)
 
     # Filtering by standalone userid parameter (independent of user object)
     if userid and userid.strip("*"):
@@ -434,7 +457,7 @@ def convert_token_objects_to_dicts(tokens: list[TokenClass], user: User | None, 
 def get_tokens(tokentype: str | None = None, token_type_list: list[str] | None = None, realm: str | None = None,
                assigned: bool | None = None, user: User | None = None,
                serial: str | None = None, serial_wildcard: str | None = None, active: bool | None = None,
-               resolver: str | None = None, rollout_state: str | None = None,
+               resolver: str | None = None, userid: str | None = None, rollout_state: str | None = None,
                count: bool = False, revoked: bool | None = None, locked: bool | None = None,
                tokeninfo: dict | None = None,
                maxfail: bool | None = None, all_nodes: bool = False) -> list[TokenClass] | int:
@@ -462,7 +485,11 @@ def get_tokens(tokentype: str | None = None, token_type_list: list[str] | None =
     :type realm: basestring
     :param assigned: Get either assigned (True) or unassigned (False) tokens. If None, gets all tokens.
     :type assigned: bool
-    :param user: Filter for the Owner of the token
+    :param user: Filter for the Owner of the token. The realm, the resolver and the user id of the user
+        are applied independently, hence a user object carrying only a realm lists the tokens of all
+        users of that realm. Note that a user object with only a resolver is empty (User.is_empty
+        ignores the resolver) and therefore does not filter at all. A realm that does not exist matches
+        nothing, and a login name that can not be resolved to a user id raises a UserError.
     :type user: User Object
     :param serial: The exact serial number of a token
     :type serial: basestring
@@ -471,8 +498,12 @@ def get_tokens(tokentype: str | None = None, token_type_list: list[str] | None =
     :param active: Whether only active (True) or inactive (False) tokens
         should be returned
     :type active: bool
-    :param resolver: filter for the given resolver name
+    :param resolver: filter for the resolver of the token owner (case-insensitive and allows "*" as
+        wildcard)
     :type resolver: basestring
+    :param userid: filter for the user id of the token owner, i.e. the identifier the resolver reports
+        for the user (case-sensitive and allows "*" as wildcard)
+    :type userid: basestring
     :param rollout_state: returns a list of the tokens in the certain rollout
         state. Some tokens are not enrolled in a single step but in multiple
         steps. These tokens are then identified by the DB-column rollout_state.
@@ -503,7 +534,7 @@ def get_tokens(tokentype: str | None = None, token_type_list: list[str] | None =
                                     realm=realm,
                                     assigned=assigned, user=user,
                                     serial_exact=serial, serial_wildcard=serial_wildcard, serial_list=serial_list,
-                                    active=active, resolver=resolver,
+                                    active=active, resolver=resolver, userid=userid,
                                     rollout_state=rollout_state,
                                     revoked=revoked, locked=locked,
                                     tokeninfo=tokeninfo, maxfail=maxfail, all_nodes=all_nodes)
