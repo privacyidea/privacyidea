@@ -105,16 +105,14 @@ APPLICATION_ALIASES = {user_agent.lower(): application
                        for user_agent in config.get("user_agents", [])}
 
 
-def get_subscription_application(plugin_name):
+def get_subscription_application(plugin_name: str) -> str:
     """
     Map a plugin user-agent name to the application whose subscription it
     counts against, following :data:`APPLICATION_ALIASES`. Names that are not
     aliases are returned lower-cased and otherwise unchanged.
 
     :param plugin_name: the plugin name parsed from a request's user-agent
-    :type plugin_name: str
     :return: the canonical application name for subscription counting
-    :rtype: str
     """
     name = (plugin_name or "").lower()
     return APPLICATION_ALIASES.get(name, name)
@@ -173,7 +171,7 @@ _github_version_cache = {"fetched_at": None, "versions": {}}
 log = logging.getLogger(__name__)
 
 
-def _fetch_latest_release(repo):
+def _fetch_latest_release(repo: str) -> dict | None:
     """
     Return ``{"version": ..., "released": ..., "url": ...}`` for the latest
     release of a GitHub ``owner/repo`` — the release tag with any leading ``v``
@@ -198,14 +196,12 @@ def _fetch_latest_release(repo):
     return None
 
 
-def get_latest_github_versions():
+def get_latest_github_versions() -> dict[str, dict | None]:
     """
     Return ``{application: {"version": ..., "released": ...} or None}`` for the
     clients in :data:`GITHUB_REPOS`. Results are fetched from GitHub
     concurrently and cached for :data:`GITHUB_VERSION_TTL`; this is best-effort,
     so unreachable or unknown repositories map to None.
-
-    :rtype: dict
     """
     now = datetime.datetime.now()
     if (_github_version_cache["fetched_at"]
@@ -252,7 +248,8 @@ def get_users_with_active_tokens():
     return len(rows)
 
 
-def _subscription_state(subscription, now, token_users):
+def _subscription_state(subscription: dict | None, now: datetime.datetime,
+                        token_users: int) -> tuple[str, datetime.datetime | None, int | None]:
     """
     Classify a subscription record into a dashboard subscription state. This is
     about the subscription itself, independent of how recently the plugin was
@@ -273,7 +270,6 @@ def _subscription_state(subscription, now, token_users):
     :param token_users: number of users with active tokens (for the token check)
     :return: ``(state, date_till, days_left)`` — ``date_till``/``days_left`` are
         None when no subscription is on file.
-    :rtype: tuple
     """
     if not subscription:
         return "none", None, None
@@ -289,13 +285,12 @@ def _subscription_state(subscription, now, token_users):
     return "valid", date_till, days_left
 
 
-def _usage_state(has_subscription, last_seen, now):
+def _usage_state(has_subscription: bool, last_seen: datetime.datetime | None,
+                 now: datetime.datetime) -> str:
     """
     Classify whether a plugin is actively used: ``"yes"`` (green) if it has a
     subscription on file or was seen within :data:`USAGE_RECENT_DAYS` days,
     otherwise ``"no"`` (blue).
-
-    :rtype: str
     """
     if has_subscription:
         return "yes"
@@ -324,7 +319,6 @@ def get_plugin_subscription_status() -> list[dict]:
         has the keys ``application``, ``usage``, ``subscription``, ``last_seen``,
         ``date_till``, ``days_left`` and ``versions`` (the distinct client
         versions seen in the user-agents, newest first).
-    :rtype: list[dict]
     """
     stmt = (
         select(ClientApplication.clienttype,
@@ -390,8 +384,6 @@ def get_server_subscription_status() -> dict:
     entries from :func:`get_plugin_subscription_status` plus ``is_server: True``,
     so the frontend renders the server row without duplicating the
     classification rules.
-
-    :rtype: dict
     """
     # Pick the row with the latest date_till for determinism when multiple
     # server subscriptions exist.
