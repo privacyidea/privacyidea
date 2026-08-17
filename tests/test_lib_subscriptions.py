@@ -496,6 +496,27 @@ class PluginSubscriptionStatusTestCase(MyTestCase):
         self.assertEqual("valid", radius["subscription"])
         self.assertTrue(radius["in_use"])
 
+    def test_13_nextcloud_row_matches_the_user_agent_the_app_sends(self):
+        # The Nextcloud app identifies itself as "privacyidea-nextcloud/<version>", which
+        # has to be the row's key: a name the clients do not send would leave the row
+        # permanently unused without any error.
+        db.session.add(ClientApplication(
+            ip="1.2.3.4",
+            clienttype="privacyidea-nextcloud/1.2.0",
+            node="localnode",
+            lastseen=datetime.now()))
+        db.session.commit()
+
+        with mock.patch(
+                "privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                return_value=0):
+            overview = {e["application"]: e
+                        for e in get_plugin_subscription_status()}
+
+        nextcloud = overview["privacyidea-nextcloud"]
+        self.assertTrue(nextcloud["in_use"])
+        self.assertListEqual(["1.2.0"], nextcloud["versions"])
+
 
 class ServerSubscriptionStatusTestCase(MyTestCase):
     """
